@@ -1,0 +1,40 @@
+
+wradlib package
+=============== 
+
+Modules
+---------
+
+- transformation - trafo
+- zr - zr
+- clutteridentification - clutter
+- gapfilling - fill
+- attenuation correction - atten 
+- vertical profile of reflectivity correction - vpr
+- interpolation (from polar to target points) - ipol
+- qualityfield - qual
+- composition (of different radar locations) - comp
+- gageadjustment - adjust
+- georeferencing - georef
+- visualisation - vis
+- verification - verify
+
+Entry points
+------------
+
+- data:
+
+	- ndarray of radar data (potential variables: refelctivity, rainfall intensity, rainfall sum, quality indices, ...)
+		- polar grid (2d array)
+		- cartesian grid (2d array)
+		- irregular points (1d array)
+	- ndarray of point observations
+		- irregular points (1d array)
+
+- metadata:
+
+	- azimuth resolution
+	- range resolution
+	- elevation
+	- x/y/z coordinates
+	- time
