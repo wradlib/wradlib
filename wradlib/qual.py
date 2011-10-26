@@ -1,17 +1,18 @@
 #-------------------------------------------------------------------------------
-# Name:        module1
+# Name:        qual
 # Purpose:
 #
-# Author:      heistermann
+# Authors:     Maik Heistermann, Stephan Jacobi and Thomas Pfaff
 #
 # Created:     26.10.2011
-# Copyright:   (c) heistermann 2011
-# Licence:     <your licence>
+# Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
+# Licence:     The MIT License
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-def main():
-    pass
+"""
+"""
+
 
 if __name__ == '__main__':
-    main()
+    print 'wradlib: Calling module <qual> as main...'
