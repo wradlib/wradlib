@@ -10,23 +10,42 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-"""
+"""Standard plotting and mapping procedures
 """
 
-def polar_plot(data):
-    n_r, n_theta = data.shape
+import os.path as path
+import numpy as np
+import pylab as pl
+
+def polar_plot(data, title='', saveto=None, saveformat='png'):
+    """Plots data from a polar grid
+
+    Parameters:
+    -----------
+    data : 2-d array - polar grid data to be plotted
+            1st dimension must be azimuth angles, 2nd must be ranges!
+    title : string - a title of the plot
+    """
+    n_theta, n_r = data.shape
     R = 1.
     theta = np.linspace(0, 2*np.pi, n_theta+1)
     r = np.linspace(0., R, n_r + 1)
 
     # plot as pcolormesh
-    pl.figure(figsize=(8,8))
-    pl.subplot(1,1,1, projection="polar", aspect=1.)
+    fig = pl.figure(figsize=(8,8))
+    ax = fig.add_subplot(111, projection="polar", aspect=1.)
     pl.jet()
-    pl.pcolormesh(theta+np.pi/2, r, np.fliplr((data)),rasterized=True)
-    pl.colorbar(shrink=0.75)
-    pl.show()
-    pl.close()
+    circle = ax.pcolormesh(theta+np.pi/2, r, np.fliplr(np.transpose(data)),rasterized=True)
+    pl.colorbar(circle, shrink=0.75)
+    pl.title(title)
+    if saveto==None:
+        # show plot
+        pl.show()
+        pl.close()
+    else:
+        # save plot to file
+        if path.exists(path.dirname(saveto)):
+            pl.savefig(saveto+'.png')
 
 
 if __name__ == '__main__':
