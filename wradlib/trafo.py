@@ -9,8 +9,22 @@
 # Licence:     The MIT License
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
-
 """
+Data Transformations
+^^^^^^^^^^^^^^^^^^^^
+
+Module trafo does data transformations e.g. from RVP-units
+to dBZ-values to Z-values and vice versa.
+
+.. currentmodule:: wradlib.trafo
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+   
+   
+   
+
 """
 
 
