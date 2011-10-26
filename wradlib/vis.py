@@ -10,7 +10,19 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-"""Standard plotting and mapping procedures
+"""
+Visualisation
+^^^^^^^^^^^^^
+
+Standard plotting and mapping procedures
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   polar_plot
+
+
 """
 
 import os.path as path
