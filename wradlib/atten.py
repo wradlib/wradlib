@@ -13,6 +13,8 @@
 """
 """
 
+def attcor(): pass
+
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <atten> as main...'
