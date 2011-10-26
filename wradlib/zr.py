@@ -9,9 +9,22 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
+"""
+Z-R Conversions
+^^^^^^^^^^^^^^^
 
-"""Module zr takes care of transforming reflectivity
+Module zr takes care of transforming reflectivity
 into rainfall rates and vice versa
+
+.. currentmodule:: wradlib.zr
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+   
+   z2r
+   
+
 """
 
 def z2r(z, a=200., b=1.6, opts=None):
