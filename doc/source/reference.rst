@@ -4,6 +4,17 @@ Library Reference
 .. toctree::
    :maxdepth: 1
 
-   trafo.rst
-   zr.rst
+   trafo
+   zr
+   georef
+   ipol
+   qual
+   comp
+   clutter
+   fill
+   vpr
+   atten
+   adjust
+   verify
+   vis
    
