@@ -30,6 +30,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.coverage', 
               'sphinx.ext.pngmath',
               'sphinx.ext.autosummary',
+              'numpydoc',
               ]
 
 autosummary_generate = True
