@@ -20,6 +20,7 @@ Clutter Identification
    filter_gabella
    filter_gabella_a
    filter_gabella_b
+   histo_cut
 
 """
 import numpy as np
