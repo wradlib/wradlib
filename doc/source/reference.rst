@@ -4,6 +4,7 @@ Library Reference
 .. toctree::
    :maxdepth: 1
 
+   io
    trafo
    zr
    georef
