@@ -25,7 +25,6 @@ Clutter Identification
 """
 import numpy as np
 import scipy.ndimage as ndi
-from   statlib import stats
 
 def _filter_gabella_a(windowdata, tr1=6.):
     r"""helper function to be passed to scipy.ndimage.filters.generic_filter as
