@@ -30,7 +30,9 @@ into rainfall rates and vice versa
 """
 
 def z2r(z, a=200., b=1.6):
-    """Calculates rain rates from radar reflectivities using
+    """Conversion from reflectivities to rain rates.
+
+    Calculates rain rates from radar reflectivities using
     a power law Z/R relationship Z = a*R**b
 
     Parameters
