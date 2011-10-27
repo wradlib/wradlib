@@ -30,13 +30,16 @@ import numpy as np
 import pylab as pl
 
 def polar_plot(data, title='', saveto=None, saveformat='png'):
-    """Plots data from a polar grid
+    """Plots data from a polar grid.
 
-    Parameters:
-    -----------
-    data : 2-d array - polar grid data to be plotted
-            1st dimension must be azimuth angles, 2nd must be ranges!
-    title : string - a title of the plot
+    Parameters
+    ----------
+    data : 2-d array
+        polar grid data to be plotted
+        1st dimension must be azimuth angles, 2nd must be ranges!
+    title : string
+        a title of the plot
+
     """
     n_theta, n_r = data.shape
     R = 1.
