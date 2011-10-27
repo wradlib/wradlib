@@ -110,12 +110,13 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
 
 
     k = np.empty(gateset.shape)
+    k[...,0] = 0.
     ksum = 0.
 
     # multidimensional version
     # assumes that iteration is only along the last dimension (i.e. range gates)
     # all other dimensions are calculated simultaneously to gain some speed
-    for gate in range(gateset.shape[-1]):
+    for gate in range(gateset.shape[-1]-1):
         # calculate k in dB/km from k-Z relation
         # c.f. Krämer2008(p. 147)
         kn = a * (10.0**((gateset[...,gate] + ksum)/10.0))**b  * 2.0 * l
@@ -123,7 +124,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
         #dBkn = 10*math.log10(a) + (bin+ksum)*b + 10*math.log10(2*l)
         ksum += kn
 
-        k[...,gate] = ksum
+        k[...,gate+1] = ksum
         # stop-criterion, if corrected reflectivity is larger than 59 dBZ
         overflow = (gateset[...,gate] + ksum) > thrs
         if np.any(overflow):
