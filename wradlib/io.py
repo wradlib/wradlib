@@ -86,8 +86,7 @@ def readDX(filename, elevations=None, azimuths=None):
 
     Returns
     -------
-    output : array
-        numpy array of image data.
+    output : numpy array of image data.
 
     """
 
