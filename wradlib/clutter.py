@@ -242,7 +242,7 @@ def histo_cut(yearsum):
     Returns
     -------
     output : array
-        boolean array with pixels identified as clutter set to True.
+        boolean array with pixels identified as clutter/shadings set to True.
 
     """
 
