@@ -220,7 +220,7 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=8, tr2=1.3):
     ntr1 = filter_gabella_a(img, wsize, tr1)
     clutter1 = ntr1 < n_p
 
-    ratio = gabella_filter2(img, thrsnorain)
+    ratio = filter_gabella_b(img, thrsnorain)
     clutter2 = np.abs(ratio) < tr2
 
     return clutter1 | clutter2
