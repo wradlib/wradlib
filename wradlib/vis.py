@@ -29,7 +29,7 @@ import os.path as path
 import numpy as np
 import pylab as pl
 
-def polar_plot(data, title='', saveto=None, saveformat='png'):
+def polar_plot(data, title='', saveto=''):
     """Plots data from a polar grid.
 
     Parameters
@@ -39,6 +39,9 @@ def polar_plot(data, title='', saveto=None, saveformat='png'):
         1st dimension must be azimuth angles, 2nd must be ranges!
     title : string
         a title of the plot
+    saveto : string - path of the file in which the figure should be saved
+        if string is empty, no figure will be saved and the plot will be
+        sent to screen
 
     """
     n_theta, n_r = data.shape
@@ -53,14 +56,16 @@ def polar_plot(data, title='', saveto=None, saveformat='png'):
     circle = ax.pcolormesh(theta+np.pi/2, r, np.fliplr(np.transpose(data)),rasterized=True)
     pl.colorbar(circle, shrink=0.75)
     pl.title(title)
-    if saveto==None:
+    if saveto=='':
         # show plot
         pl.show()
-        pl.close()
+        if not pl.isinteractive():
+            # close figure eplicitely if pylab is not in interactive mode
+            pl.close()
     else:
         # save plot to file
-        if path.exists(path.dirname(saveto)):
-            pl.savefig(saveto+'.png')
+        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+            pl.savefig(saveto)
 
 
 if __name__ == '__main__':
