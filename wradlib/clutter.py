@@ -169,7 +169,7 @@ def filter_gabella_b(img, thrs=0.):
 
 
 def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=8, tr2=1.3):
-    r"""Clutter identification filter developed by Gabella [1]_ .
+    r"""Clutter identification filter developed by Gabella [Gabella2002]_ .
 
     This is a two-part identification algorithm using echo continuity and
     minimum echo area to distinguish between meteorological (rain) and non-
@@ -196,11 +196,11 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=8, tr2=1.3):
 
     References
     ----------
-    .. [1] Gabella, M. & Notarpietro, R., 2002.
-    Ground clutter characterization and elimination in mountainous terrain.
-    In Proceedings of ERAD. Delft: Copernicus GmbH, pp. 305-311.
-    Available at: http://www.einfalt.de/literature/Gabel_Groun.pdf
-    [Accessed July 22, 2010].
+    .. [Gabella2002] Gabella, M. & Notarpietro, R., 2002.
+        Ground clutter characterization and elimination in mountainous terrain.
+        In Proceedings of ERAD. Delft: Copernicus GmbH, pp. 305-311.
+        Available at: http://www.copernicus.org/erad/online/erad-305.pdf
+        [Accessed Oct 27, 2010].
 
     Examples
     --------
