@@ -115,7 +115,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
     # multidimensional version
     # assumes that iteration is only along the last dimension (i.e. range gates)
     # all other dimensions are calculated simultaneously to gain some speed
-    for gate in range(gateset.shape[0]):
+    for gate in range(gateset.shape[-1]):
         # calculate k in dB/km from k-Z relation
         # c.f. Krämer2008(p. 147)
         kn = a * (10.0**((gateset[...,gate] + ksum)/10.0))**b  * 2.0 * l
