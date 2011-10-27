@@ -10,7 +10,15 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-"""Converts input raws into ndarrays
+"""
+Raw Data I/O
+^^^^^^^^^^^^
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   readDX
 
 """
 
@@ -66,11 +74,23 @@ def unpackDX(raw):
 
 
 def readDX(filename, elevations=None, azimuths=None):
-    """Function reads German Weather Service DX - raw radar data - files
-    It does, however, not do any data conversion, so that clutter bits ect.
-    are preserved. It basically unpacks the zeroes and returns a regular
-    array of 128 by 360 data values
+    r"""Data reader for German Weather Service DX raw radar data files
+    developed by Thomas Pfaff.
+
+    The algorith basically unpacks the zeroes and returns a regular array of
+    128 by 360 data values.
+
+    Parameters
+    ----------
+    filename : binary file of DX raw data
+
+    Returns
+    -------
+    output : array
+        numpy array of image data.
+
     """
+
     azimuthbitmask = 2**(14-1)
     databitmask = 2**(13-1) - 1
     # open the DX file in binary mode for reading
