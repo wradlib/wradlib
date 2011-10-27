@@ -15,7 +15,7 @@ if __name__ == '__main__':
     import pylab            as pl
 
     # load annual rainfall radar array
-    yearsum = np.loadtxt('d:\\Stephan\\Arbeit\\PROGRESS\\python\\RADAR\\wradlib\\examples\\data\\annual_rainfall_fbg.dat')
+    yearsum = np.loadtxt('d:\\Stephan\\Arbeit\\PROGRESS\\python\\RADAR\\wradlib\\examples\\data\\annual_rainfall_fbg.gz')
 
     # get boolean array for clutter and shading
     mask = clutter.histo_cut(yearsum)
