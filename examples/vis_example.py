@@ -10,12 +10,12 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-import numpy as np
 import wradlib.vis as vis
 
 
 if __name__ == '__main__':
 
+    import numpy as np
     testdata = np.loadtxt('data/polar_dBZ.dat')
     vis.polar_plot(testdata, title='Reflectivity (dBZ)')
 
