@@ -271,7 +271,7 @@ def histo_cut(yearsum):
         index=np.where(n == n.max())
         index= index[0]
 
-        # separeted stop criterion chek in case one of the bounds is already robust
+        # separeted stop criterion check in case one of the bounds is already robust
         if (abs(lower_bound - lower_bound_before) > 1):
         # get the index of the class which underscores the occurence of the biggest class by 1%,
         #beginning from the class with the biggest occurence to the first class
