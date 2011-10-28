@@ -88,7 +88,7 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     radius : float - the radius of the radar circle (same units as src and trg)
     center : array of float - the location coordinates of the radar
     data : ndarray of float - the data that should be transferred to composite
-    interpol : an interpolation class name from wradlib.ipol
+    interpol : an interpolation class name from wradlib.ipol - e.g. Nearest or Idw
 
     Returns
     -------
