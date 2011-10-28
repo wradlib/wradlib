@@ -116,7 +116,7 @@ class AdjustAdd(AdjustBase):
         # checking input shape consistency
         self._check_shape(obs, raw)
         # computing the error
-        error = obs - self.get_raw_at_obs(raw)
+        error = obs - self.get_raw_at_obs(raw, obs)
         # interpolate error field
         error = self.ip(error)
         # add error field to raw and cut negatives to zero
@@ -156,7 +156,7 @@ class Raw_at_obs():
         # get the values of the raw neighbours of obs
         raw_neighbs = raw[self.raw_ix]
         # and summarize the values of these neighbours by using a statistics option
-        return self.statfunc(raw_neighbs)
+        return self.statfunc(obs, raw_neighbs)
 
 
 def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
@@ -236,8 +236,8 @@ def _get_statfunc(funcname):
     try:
         # first try to find a numpy function which corresponds to <funcname>
         func = getattr(np,funcname)
-        def newfunc(x):
-            return func(x, axis=1)
+        def newfunc(x, y):
+            return func(y, axis=1)
     except:
         try:
             # then try to find a function in this module with name funcname
@@ -277,63 +277,11 @@ def best(x, y):
         y = np.array(y).reshape((1,-1))
         axis = None
     else:
-        axis = 0
-    return y[np.argmin(np.abs(x-y), axis=axis)]
+        axis = 1
+    return y[np.arange(len(y)),np.argmin(np.abs(x-y), axis=axis)]
 
 
 
 
 if __name__ == '__main__':
-##    print 'wradlib: Calling module <adjust> as main...'
-##    x = np.array([1., 5., 10.])
-##    x=10.
-##    y = np.array([1., 10., 40.])
-##    print best(x,y)
-    num_raw = 100
-    raw_coords = np.meshgrid(np.linspace(0,100,num_raw), np.linspace(0,100,num_raw))
-    raw_coords = np.vstack((raw_coords[0].ravel(), raw_coords[1].ravel())).transpose()
-    raw = np.abs(np.sin(0.1*raw_coords).sum(axis=1))
-    obs_ix = np.random.uniform(low=0, high=num_raw**2, size=50).astype('i4')
-    obs_coords = raw_coords[obs_ix]
-    obs = raw[obs_ix]+np.random.uniform(low=-1., high=1, size=len(obs_ix))
-    obs = np.abs(obs)
-
-    # adjustment
-    adjuster = AdjustAdd(obs_coords, raw_coords, stat='mean', p_idw=2.)
-    result = adjuster(obs, raw)
-
-    import pylab as pl
-    maxval = np.max(np.concatenate((raw, obs, result)).ravel())
-    fig = pl.figure()
-    # unadjusted
-    ax = fig.add_subplot(221, aspect='equal')
-    raw_plot = ax.scatter(raw_coords[:,0], raw_coords[:,1], c=raw, vmin=0, vmax=maxval, edgecolor='none')
-    ax.scatter(obs_coords[:,0], obs_coords[:,1], c=obs.ravel(), marker='s', s=50, vmin=0, vmax=maxval)
-    pl.colorbar(raw_plot)
-    pl.title('Raw field and observations')
-    # adjusted
-    ax = fig.add_subplot(222, aspect='equal')
-    raw_plot = ax.scatter(raw_coords[:,0], raw_coords[:,1], c=result, vmin=0, vmax=maxval, edgecolor='none')
-#    ax.scatter(obs_coords[:,0], obs_coords[:,1], c=obs.ravel(), marker='s', s=50, vmin=0, vmax=maxval)
-    pl.colorbar(raw_plot)
-    pl.title('Adjusted field and observations')
-    # scatter
-    ax = fig.add_subplot(223, aspect='equal')
-    ax.scatter(obs, raw[obs_ix])
-    ax.plot([0,maxval],[0,maxval],'-', color='grey')
-    pl.title('Scatter plot raw vs. obs')
-    ax.set_xlim(left=0)
-    ax.set_ylim(bottom=0)
-    # scatter
-    ax = fig.add_subplot(224, aspect='equal')
-    ax.scatter(obs, result[obs_ix])
-    ax.plot([0,maxval],[0,maxval],'-', color='grey')
-    ax.set_xlim(left=0)
-    ax.set_ylim(bottom=0)
-    pl.title('Scatter plot adjusted vs. obs')
-
-
-    pl.show()
-    pl.close()
-
-
+    print 'wradlib: Calling module <adjust> as main...'
