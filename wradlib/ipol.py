@@ -16,8 +16,11 @@ Interpolation
 
 Interpolation allows to transfer data from one set of locations to another.
 This includes for example:
+
 - interpolating the data from a polar grid to a cartesian grid or irregular points
+
 - interpolating point observations to a grid or a set of irregular points
+
 - filling missing values, e.g. filling clutters
 
 .. autosummary::
@@ -35,7 +38,78 @@ from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 
 
-class Nearest():
+class IpolBase():
+    """
+    IpolBase(src, trg)
+
+    The base class for interpolation in N dimensions.
+    Provides the basic interface for all other classes.
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the source points.
+    trg : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the target points.
+
+    """
+
+    def __init__(self, src, trg):
+        src = self._make_coord_arrays(src)
+        trg = self._make_coord_arrays(trg)
+    def __call__(self, vals):
+        """
+        Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape (numsources)
+            Values at the source points which to interpolate
+
+        Returns
+        -------
+        output : None
+
+        """
+        self._check_shape(vals)
+        return None
+    def _check_shape(self, vals):
+        """
+        Checks whether the values correspond to the source points
+
+        Parameters
+        ----------
+        vals : ndarray of float
+        """
+        assert len(vals)==self.numsources, 'Length of value array %d does not correspond to \
+        number of source points %d' % (len(vals), self.numsources)
+    def _make_coord_arrays(self, x):
+        """
+        Make sure that the coordinates are provided as ndarray
+        of shape (numpoints, ndim)
+
+        Parameters
+        ----------
+        x : ndarray of float with shape (numpoints, ndim)
+            OR a sequence of ndarrays of float with len(sequence)==ndim and the length
+            of the ndarray corresponding to the number of points
+
+        """
+        if type(x) in [list, tuple]:
+            x = [item.ravel() for item in x]
+            x = np.array(x).transpose()
+        elif type(x)==np.ndarray:
+            if x.ndim==1:
+                x = x.reshape(-1,1)
+            elif x.ndim==2:
+                pass
+            else:
+                raise Exception('Cannot deal wih 3-d arrays, yet.')
+        return x
+
+
+
+class Nearest(IpolBase):
     """
     Nearest(src, trg)
 
@@ -86,42 +160,9 @@ class Nearest():
             return out
         else:
             return np.where(self.dists>maxdist, np.nan, out)
-    def _check_shape(self, vals):
-        """
-        Checks whether the values correspond to the source points
-
-        Parameters
-        ----------
-        vals : ndarray of float
-        """
-        assert len(vals)==self.numsources, 'Length of value array %d does not correspond to \
-        number of source points %d' % (len(vals), self.numsources)
-    def _make_coord_arrays(self, x):
-        """
-        Make sure that the coordinates are provided as ndarray
-        of shape (numpoints, ndim)
-
-        Parameters
-        ----------
-        x : ndarray of float with shape (numpoints, ndim)
-            OR a sequence of ndarrays of float with len(sequence)==ndim and the length
-            of the ndarray corresponding to the number of points
-
-        """
-        if type(x) in [list, tuple]:
-            x = [item.ravel() for item in x]
-            x = np.array(x).transpose()
-        elif type(x)==np.ndarray:
-            if x.ndim==1:
-                x = x.reshape(-1,1)
-            elif x.ndim==2:
-                pass
-            else:
-                raise Exception('Cannot deal wih 3-d arrays, yet.')
-        return x
 
 
-class Idw(Nearest):
+class Idw(IpolBase):
     """
     Idw(src, trg, nnearest=4, p=2.)
 
@@ -201,7 +242,7 @@ class Idw(Nearest):
         return interpol ## if self.qdim > 1  else interpol[0]
 
 
-class Linear(Nearest):
+class Linear(IpolBase):
     """
     Interface to the scipy.interpol.LinearNDInterpolator class.
 
@@ -255,29 +296,9 @@ if __name__ == '__main__':
 #    xtrg = np.transpose(np.vstack((xtrg[0].ravel(), xtrg[1].ravel())))
     vals = np.loadtxt('../examples/data/polar_R_tur.gz').ravel()
 
-##    print 'Linear interpolation takes:'
-##    t0 = dt.datetime.now()
-##    test = griddata(xsrc, vals, xtrg, 'linear')
-##    print dt.datetime.now()-t0
-##    pl.scatter(xtrg[0], xtrg[1], c=test.ravel(), s=5, edgecolor='none')
-##    pl.show()
-##    pl.close()
-
-##    print 'Building the object takes:'
-##    t0 = dt.datetime.now()
-##    ip = NearestNDInterpolator(xsrc, vals)
-##    print dt.datetime.now()-t0
-##    print 'Calling the object takes:'
-##    t0 = dt.datetime.now()
-##    test = ip(xtrg)
-##    print dt.datetime.now()-t0
-##    pl.scatter(xtrg[0], xtrg[1], c=test.ravel(), s=5, edgecolor='none')
-##    pl.show()
-##    pl.close()
-
     print 'Building our object takes:'
     t0 = dt.datetime.now()
-    ip = Linear(xsrc, xtrg)
+    ip = Idw(xsrc, xtrg)
     print dt.datetime.now()-t0
     print 'Calling the object takes:'
     t0 = dt.datetime.now()
@@ -286,17 +307,6 @@ if __name__ == '__main__':
     pl.scatter(xtrg[0].ravel(), xtrg[1].ravel(), c=test.ravel(), s=5, edgecolor='none')
     pl.show()
     pl.close()
-##
-##    xsrc = np.arange(10)[:,None]
-##    xtrg = np.linspace(0,20,40)[:,None]
-##    vals = np.sin(xsrc).ravel()
-##    ip = Nearest(xsrc, xtrg)
-##    test = ip(vals)
-##    print vals, test
-##    pl.plot(xsrc.ravel(), vals, 'b+')
-##    pl.plot(xtrg.ravel(), test, 'r+')
-##    pl.show()
-##    pl.close()
 
     xsrc = np.arange(10)[:,None]
     xtrg = np.linspace(0,20,40)[:,None]
