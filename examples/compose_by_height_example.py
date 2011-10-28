@@ -60,7 +60,7 @@ if __name__ == '__main__':
     ymin = np.min(yc)-5000
     ymax = np.max(yc)+5000
 
-    gridshape=(900,900)
+    gridshape=(100,100)
     coords = np.meshgrid(np.linspace(xmin,xmax,gridshape[0]), np.linspace(ymin,ymax,gridshape[1]))
     coords = np.vstack((coords[0].ravel(), coords[1].ravel())).transpose()
 
@@ -79,10 +79,13 @@ if __name__ == '__main__':
     #---------------------------------------------------------------------------
     # combine radar data according to height (lower bin wins)
     #---------------------------------------------------------------------------
-    radinfo = np.hstack((np.empty_like(rad1_gridded)*np.nan, rad1_gridded, rad2_gridded))
-    heightinfo = np.hstack((np.ones_like(heights1_gridded)*1e10, heights1_gridded, heights2_gridded))
-    select = np.nanargmin(heightinfo, axis=1)
-    composite = radinfo[np.arange(select.shape[0]),select]
+##    radinfo = np.hstack((np.empty_like(rad1_gridded)*np.nan, rad1_gridded, rad2_gridded))
+##    heightinfo = np.hstack((np.ones_like(heights1_gridded)*1e10, heights1_gridded, heights2_gridded))
+##    select = np.nanargmin(heightinfo, axis=1)
+##    composite = radinfo[np.arange(select.shape[0]),select]
+    ## second approach using the function
+    composite = comp.compose_ko([rad1_gridded, rad2_gridded],[1./(heights1_gridded+0.001), 1./(heights2_gridded+0.001)])
+
 
     #---------------------------------------------------------------------------
     # visualize the results
