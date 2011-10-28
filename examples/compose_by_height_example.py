@@ -83,9 +83,10 @@ if __name__ == '__main__':
 ##    heightinfo = np.hstack((np.ones_like(heights1_gridded)*1e10, heights1_gridded, heights2_gridded))
 ##    select = np.nanargmin(heightinfo, axis=1)
 ##    composite = radinfo[np.arange(select.shape[0]),select]
-    ## second approach using the function
-    composite = comp.compose_ko([rad1_gridded, rad2_gridded],[1./(heights1_gridded+0.001), 1./(heights2_gridded+0.001)])
-
+    # second approach using the function
+##    composite = comp.compose_ko([rad1_gridded, rad2_gridded],[1./(heights1_gridded+0.001), 1./(heights2_gridded+0.001)])
+    # third approach using weighted averaging
+    composite = comp.compose_weighted([rad1_gridded, rad2_gridded],[1./(heights1_gridded+0.001), 1./(heights2_gridded+0.001)])
 
     #---------------------------------------------------------------------------
     # visualize the results

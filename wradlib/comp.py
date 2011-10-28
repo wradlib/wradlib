@@ -179,7 +179,19 @@ def compose_weighted(radargrids, qualitygrids):
     -------
     composite : array
 
+    See Also
+    --------
+    compose_ko : for more description about the shape of the input arrays
+
     """
+    radarinfo = np.array(radargrids)
+    qualityinfo = np.array(qualitygrids)
+
+    qualityinfo /= np.nansum(qualityinfo, axis=0)
+
+    composite = np.nansum(radarinfo*qualityinfo, axis=0)
+
+    return composite
 
 
 if __name__ == '__main__':
