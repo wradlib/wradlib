@@ -21,6 +21,9 @@ Combine data from different radar locations on one common set of locations
    :toctree: generated/
 
    extract_circle
+   togrid
+   compose_ko
+   compose_weighted
 
 """
 import numpy as np
@@ -77,7 +80,8 @@ def extract_circle(center, radius, coords):
 
 def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     """
-    Interpolate data from a radar location to the composite grid or set of locations
+    Interpolate data from a radar location to the composite grid or set of \
+    locations
 
     Parameters
     ----------
@@ -85,10 +89,14 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
         cartesian x / y coordinates of the radar bins
     trg : ndarray of float of shape (numpoints, ndim)
         cartesian x / y coordinates of the composite
-    radius : float - the radius of the radar circle (same units as src and trg)
-    center : array of float - the location coordinates of the radar
-    data : ndarray of float - the data that should be transferred to composite
-    interpol : an interpolation class name from wradlib.ipol - e.g. Nearest or Idw
+    radius : float
+        the radius of the radar circle (same units as src and trg)
+    center : array of float
+        the location coordinates of the radar
+    data : ndarray of float
+        the data that should be transferred to composite
+    interpol : an interpolation class name from wradlib.ipol - e.g. Nearest or
+       Idw
 
     Returns
     -------
