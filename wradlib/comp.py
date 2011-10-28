@@ -72,7 +72,7 @@ def extract_circle(center, radius, coords):
         index array referring to the coords array
 
     """
-    return np.where( ((coords-center)**2).sum(axis=1) < radius**2 )[0]
+    return np.where( ((coords-center)**2).sum(axis=-1) < radius**2 )[0]
 
 
 def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
