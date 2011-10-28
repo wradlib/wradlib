@@ -66,15 +66,15 @@ class AdjustBase(ipol.IpolBase):
 
     """
     def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', nnear_idw=6, p_idw=2.):
-        self.obs_coords = _make_coord_arrays(obs_coords)
-        self.raw_coords = _make_coord_arrays(raw_coords)
+        self.obs_coords = self._make_coord_arrays(obs_coords)
+        self.raw_coords = self._make_coord_arrays(raw_coords)
         self.get_raw_at_obs = Raw_at_obs(obs_coords, raw_coords, nnear=nnear_raws, stat=stat)
         self.ip = ipol.Idw(src=obs_coords, trg=raw_coords, nnearest=nnear_idw, p=p_idw)
-    def _check_shape(obs, raw):
+    def _check_shape(self, obs, raw):
         """
         Check consistency of the input data obs and raw with the shapes of the coordinates
         """
-        pass
+        print 'TODO WARNING: fill in _check_shape method'
 
 class AdjustAdd(AdjustBase):
     """
@@ -100,25 +100,28 @@ class AdjustAdd(AdjustBase):
     Inherits from AdjustBase
 
     """
-    def __call__(obs, raw):
+
+    def __call__(self, obs, raw):
         """
         Return the field of raw values adjusted by obs
 
         Parameters
         ----------
         obs : array of float
-            point observations
+            observations
         raw : array of float
             raw unadjusted field
+
         """
         # checking input shape consistency
-        _check_shape(obs, raw)
+        self._check_shape(obs, raw)
         # computing the error
         error = obs - self.get_raw_at_obs(raw)
         # interpolate error field
         error = self.ip(error)
         # add error field to raw and cut negatives to zero
         return np.where( (raw + error)<0., 0., raw + error)
+
 
 
 class Raw_at_obs():
@@ -136,10 +139,11 @@ class Raw_at_obs():
     stat: string
         function name
     """
-    def __init__(self, obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
+    def __init__(self, obs_coords, raw_coords, nnear=9, stat='median'):
         self.statfunc = _get_statfunc(stat)
         self.raw_ix = _get_neighbours_ix(obs_coords, raw_coords, nnear)
-    def __call__(self, raw):
+
+    def __call__(self, raw, obs=None):
         """
         Returns the values of raw at the observation locations
 
@@ -147,9 +151,10 @@ class Raw_at_obs():
         ----------
         raw : array of float
             raw values
+
         """
         # get the values of the raw neighbours of obs
-        raw_neighbs = raw_[self.raw_ix]
+        raw_neighbs = raw[self.raw_ix]
         # and summarize the values of these neighbours by using a statistics option
         return self.statfunc(raw_neighbs)
 
@@ -279,8 +284,56 @@ def best(x, y):
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <adjust> as main...'
-    x = np.array([1., 5., 10.])
-    x=10.
-    y = np.array([1., 10., 40.])
-    print best(x,y)
+##    print 'wradlib: Calling module <adjust> as main...'
+##    x = np.array([1., 5., 10.])
+##    x=10.
+##    y = np.array([1., 10., 40.])
+##    print best(x,y)
+    num_raw = 100
+    raw_coords = np.meshgrid(np.linspace(0,100,num_raw), np.linspace(0,100,num_raw))
+    raw_coords = np.vstack((raw_coords[0].ravel(), raw_coords[1].ravel())).transpose()
+    raw = np.abs(np.sin(0.1*raw_coords).sum(axis=1))
+    obs_ix = np.random.uniform(low=0, high=num_raw**2, size=50).astype('i4')
+    obs_coords = raw_coords[obs_ix]
+    obs = raw[obs_ix]+np.random.uniform(low=-1., high=1, size=len(obs_ix))
+    obs = np.abs(obs)
+
+    # adjustment
+    adjuster = AdjustAdd(obs_coords, raw_coords, stat='mean', p_idw=2.)
+    result = adjuster(obs, raw)
+
+    import pylab as pl
+    maxval = np.max(np.concatenate((raw, obs, result)).ravel())
+    fig = pl.figure()
+    # unadjusted
+    ax = fig.add_subplot(221, aspect='equal')
+    raw_plot = ax.scatter(raw_coords[:,0], raw_coords[:,1], c=raw, vmin=0, vmax=maxval, edgecolor='none')
+    ax.scatter(obs_coords[:,0], obs_coords[:,1], c=obs.ravel(), marker='s', s=50, vmin=0, vmax=maxval)
+    pl.colorbar(raw_plot)
+    pl.title('Raw field and observations')
+    # adjusted
+    ax = fig.add_subplot(222, aspect='equal')
+    raw_plot = ax.scatter(raw_coords[:,0], raw_coords[:,1], c=result, vmin=0, vmax=maxval, edgecolor='none')
+#    ax.scatter(obs_coords[:,0], obs_coords[:,1], c=obs.ravel(), marker='s', s=50, vmin=0, vmax=maxval)
+    pl.colorbar(raw_plot)
+    pl.title('Adjusted field and observations')
+    # scatter
+    ax = fig.add_subplot(223, aspect='equal')
+    ax.scatter(obs, raw[obs_ix])
+    ax.plot([0,maxval],[0,maxval],'-', color='grey')
+    pl.title('Scatter plot raw vs. obs')
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+    # scatter
+    ax = fig.add_subplot(224, aspect='equal')
+    ax.scatter(obs, result[obs_ix])
+    ax.plot([0,maxval],[0,maxval],'-', color='grey')
+    ax.set_xlim(left=0)
+    ax.set_ylim(bottom=0)
+    pl.title('Scatter plot adjusted vs. obs')
+
+
+    pl.show()
+    pl.close()
+
+
