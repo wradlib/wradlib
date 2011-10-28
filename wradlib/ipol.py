@@ -17,13 +17,16 @@ Interpolation
 Interpolation allows to transfer data from one set of locations to another.
 This includes for example:
 - interpolating the data from a polar grid to a cartesian grid or irregular points
+- interpolating point observations to a grid or a set of irregular points
+- filling missing values, e.g. filling clutters
 
 .. autosummary::
    :nosignatures:
    :toctree: generated/
 
    Nearest
-
+   Idw
+   Linear
 
 """
 
