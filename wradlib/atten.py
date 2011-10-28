@@ -48,6 +48,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
         the *last* dimension so, e.g., for a set of `l` radar images stored in
         polar form with `m` azimuths and `n` range-bins the input array's
         shape can be either (l,m,n) or (m,l,n)
+        data havs to be provided in decibel representation of reflectivity (dBZ)
     coefficients : dictionary
         correction coefficients
         a: proportionality factor of the k-Z relation ( :math:`k=a*Z^{b}` )
