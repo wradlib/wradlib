@@ -28,6 +28,7 @@ This includes for example:
 """
 
 from scipy.spatial import cKDTree
+from scipy.interpolate import LinearNDInterpolator
 import numpy as np
 
 
@@ -197,17 +198,59 @@ class Idw(Nearest):
         return interpol ## if self.qdim > 1  else interpol[0]
 
 
+class Linear(Nearest):
+    """
+    Interface to the scipy.interpol.LinearNDInterpolator class.
+
+    We provide this class in order to achieve a uniform interface for all
+    Interpolator classes
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the source points.
+    trg : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the target points.
+
+    """
+
+    def __init__(self, src, trg):
+        self.src = self._make_coord_arrays(src)
+        self.trg = self._make_coord_arrays(trg)
+        # remember some things
+        self.numtargets = len(trg)
+        self.numsources = len(src)
+    def __call__(self, vals, fill_value=np.nan):
+        """
+        Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape (numsources)
+            Values at the source points which to interpolate
+        fill_value : float
+            is needed if linear interpolation fails; defaults to np.nan
+
+        Returns
+        -------
+        output : ndarray of float with shape (numtargetpoints,...)
+
+        """
+        self._check_shape(vals)
+        ip = LinearNDInterpolator(self.src, vals, fill_value=fill_value)
+        return ip(self.trg)
+
 
 
 if __name__ == '__main__':
     import datetime as dt
     import pylab as pl
     from scipy.interpolate import griddata
-    xsrc = np.loadtxt('../examples/data/bin_coords.dat')
+    xsrc = np.loadtxt('../examples/data/bin_coords_tur.gz')
 #    xtrg = np.loadtxt('../examples/data/target_coords.dat')
     xtrg = np.meshgrid(np.linspace(3300000.0, 3300000.0+900000,100), np.linspace(5200000.0, 5200000.0+900000.,100))
 #    xtrg = np.transpose(np.vstack((xtrg[0].ravel(), xtrg[1].ravel())))
-    vals = np.loadtxt('../examples/data/polar_R.dat').ravel()
+    vals = np.loadtxt('../examples/data/polar_R_tur.gz').ravel()
 
 ##    print 'Linear interpolation takes:'
 ##    t0 = dt.datetime.now()
@@ -231,7 +274,7 @@ if __name__ == '__main__':
 
     print 'Building our object takes:'
     t0 = dt.datetime.now()
-    ip = Idw(xsrc, xtrg)
+    ip = Linear(xsrc, xtrg)
     print dt.datetime.now()-t0
     print 'Calling the object takes:'
     t0 = dt.datetime.now()
