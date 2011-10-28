@@ -225,19 +225,22 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=8, tr2=1.3):
 
     return clutter1 | clutter2
 
-def histo_cut(yearsum):
+def histo_cut(prec_accum):
     r"""Histogram based clutter identification.
 
-    This identification algorithm uses the histogram of the annual rainfall.
-    It iteratively detects classes whose frequency falls below a specified
-    percentage (1% by default) of the frequency of the class with the biggest
-    frequency and remove the values from the dataset until the changes from
-    iteration to iteration falls below a threshold. This algorithm is able to
-    detect static clutter as well as shadings.
+    This identification algorithm uses the histogram of temporal accumulated
+    rainfall. It iteratively detects classes whose frequency falls below a
+    specified percentage (1% by default) of the frequency of the class with the
+    biggest frequency and remove the values from the dataset until the changes
+    from iteration to iteration falls below a threshold. This algorithm is able
+    to detect static clutter as well as shadings. It is suggested to choose a
+    representative time periode for the input precipitation accumulation. The
+    recommended time period should cover one year.
 
     Parameters
     ----------
-    yearsum : array_like
+    prec_accum : array_like
+        spatial array containing rain accumulation
 
     Returns
     -------
@@ -246,11 +249,11 @@ def histo_cut(yearsum):
 
     """
 
-    yearsum = np.array(yearsum)
+    prec_accum = np.array(prec_accum)
 
     # initialization of data bounds for clutter and shade definition
     lower_bound = 0
-    upper_bound = yearsum.max()
+    upper_bound = prec_accum.max()
 
     # predefinitions for the first iteration
     lower_bound_before = -51
@@ -260,13 +263,13 @@ def histo_cut(yearsum):
     while ((abs(lower_bound - lower_bound_before) > 1) or (abs(upper_bound - upper_bound_before) > 1)):
 
         # masks for bins with sums over/under the data bounds
-        upper_mask = (yearsum <= upper_bound).astype(int)
-        lower_mask = (yearsum >= lower_bound).astype(int)
+        upper_mask = (prec_accum <= upper_bound).astype(int)
+        lower_mask = (prec_accum >= lower_bound).astype(int)
         # NaNs in place of masked bins
-        yearsum_masked = np.where((upper_mask * lower_mask) == 0, np.nan,yearsum) # Kopie der Datenmatrix mit 0 an Stellen, wo der Threshold erreicht wird
+        prec_accum_masked = np.where((upper_mask * lower_mask) == 0, np.nan,prec_accum) # Kopie der Datenmatrix mit 0 an Stellen, wo der Threshold erreicht wird
 
         # generate a histogram of the valid bins with 50 classes
-        (n, bins) = np.histogram(yearsum_masked[np.isfinite(yearsum_masked)].ravel(), bins = 50)
+        (n, bins) = np.histogram(prec_accum_masked[np.isfinite(prec_accum_masked)].ravel(), bins = 50)
         # get the class with biggest occurence
         index=np.where(n == n.max())
         index= index[0]
@@ -289,7 +292,7 @@ def histo_cut(yearsum):
         lower_bound = bins[i]
         upper_bound = bins[j + 1]
 
-    return np.where(np.isnan(yearsum_masked), True, False)
+    return np.where(np.isnan(prec_accum_masked), True, False)
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <clutter> as main...'
