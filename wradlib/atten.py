@@ -55,7 +55,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
         b: exponent of the k-Z relation
         l: length of a range gate.
         if set to None the following default dictionary will be used
-        {'a':5.0e-3, 'b':0.69, 'l':1.0}
+        {'a':1.67e-4, 'b':0.70, 'l':1.0}
 
     mode : string
         controls how the function reacts, if the sum of signal and attenuation
@@ -101,7 +101,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
 
     """
     if coefficients is None:
-        _coefficients = {'a':5.0e-3, 'b':0.69, 'l':1.0}
+        _coefficients = {'a':1.67e-4, 'b':0.7, 'l':1.0}
     else:
         _coefficients = coefficients
 
