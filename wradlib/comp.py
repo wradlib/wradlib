@@ -23,7 +23,7 @@ Combine data from different radar locations on one common set of locations
    extract_circle
 
 """
-
+import numpy as np
 import wradlib.ipol as ipol
 
 ##from scipy.spatial import KDTree
