@@ -108,6 +108,70 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     return compose_grid
 
 
+def compose_ko(radargrids, qualitygrids):
+    """Composes grids according to quality information using quality \
+    information as a knockout criterion.
+
+    The value of the composed pixel is taken from the radargrid whose
+    quality grid has the highest value.
+
+    Parameters
+    ----------
+    radargrids : list of arrays
+        radar data to be composited. Each item in the list corresponds to the
+        data of one radar location. All items must have the same shape.
+    qualitygrids : list of arrays
+        quality data to decide upon which radar site will contribute its pixel
+        to the composite. Then length of this list must be the same as that
+        of `radargrids`. All items must have the same shape and be aligned with
+        the items in `radargrids`.
+
+
+    Returns
+    -------
+    composite : array
+
+    """
+    # first add a fallback array for all pixels having missing values in all
+    # radargrids
+    radarfallback = (np.repeat(np.nan, np.prod(radargrids[0].shape))
+                          .reshape(radargrids[0].shape))
+    radargrids.append(radarfallback)
+    radarinfo = np.array(radargrids)
+    # then do the same for the quality grids
+    qualityfallback = (np.repeat(-np.inf, np.prod(radargrids[0].shape))
+                            .reshape(radargrids[0].shape))
+    qualitygrids.append(qualityfallback)
+    qualityinfo = np.array(qualitygrids)
+
+    select = np.nanargmax(qualityinfo, axis=0)
+    composite = (radarinfo.reshape((radarinfo.shape[0],-1))
+                   [select.ravel(), np.arange(np.prod(radarinfo.shape[1:]))]
+                      .reshape(radarinfo.shape[1:])
+                )
+    radargrids.pop()
+    qualitygrids.pop()
+
+    return composite
+
+
+def compose_weighted(radargrids, qualitygrids):
+    """Composes grids according to quality information using a weighted \
+    averaging approach.
+
+    The value of the composed pixel is the weighted average of all radar
+    pixels with the quality values being the weights.
+
+    Parameters
+    ----------
+    radargrids : list of arrays
+    qualitygrids : list of arrays
+
+    Returns
+    -------
+    composite : array
+
+    """
 
 
 if __name__ == '__main__':
