@@ -32,21 +32,255 @@ Basically, we only need two data sources:
    :nosignatures:
    :toctree: generated/
 
+   AdjustAdd
+   Raw_at_obs
 
 """
 
 # site packages
 import numpy as np
+from scipy.spatial import cKDTree
 
 # wradlib modules
 import wradlib.ipol as ipol
 
-class AdjustBase():
+
+class AdjustBase(ipol.IpolBase):
     """
     The basic adjustment class
+
+    Parameters
+    ----------
+    obs_coords : array of float
+        coordinate pairs of observations points
+    raw_coords : array of float
+        coordinate pairs of raw (unadjusted) field
+    nnear_raws : integer
+        defaults to 9
+    stat : string
+        defaults to 'median'
+    nnear_idw : integer
+        defaults to 6
+    p_idw : float
+        defaults to 2.
+
     """
-    def __init__(self):
+    def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', nnear_idw=6, p_idw=2.):
+        self.obs_coords = _make_coord_arrays(obs_coords)
+        self.raw_coords = _make_coord_arrays(raw_coords)
+        self.get_raw_at_obs = Raw_at_obs(obs_coords, raw_coords, nnear=nnear_raws, stat=stat)
+        self.ip = ipol.Idw(src=obs_coords, trg=raw_coords, nnearest=nnear_idw, p=p_idw)
+    def _check_shape(obs, raw):
+        """
+        Check consistency of the input data obs and raw with the shapes of the coordinates
+        """
         pass
+
+class AdjustAdd(AdjustBase):
+    """
+    Gage adjustment using an additive error model
+
+    Parameters
+    ----------
+    obs_coords : array of float
+        coordinate pairs of observations points
+    raw_coords : array of float
+        coordinate pairs of raw (unadjusted) field
+    nnear_raws : integer
+        defaults to 9
+    stat : string
+        defaults to 'median'
+    nnear_idw : integer
+        defaults to 6
+    p_idw : float
+        defaults to 2.
+
+    Notes
+    -----
+    Inherits from AdjustBase
+
+    """
+    def __call__(obs, raw):
+        """
+        Return the field of raw values adjusted by obs
+
+        Parameters
+        ----------
+        obs : array of float
+            point observations
+        raw : array of float
+            raw unadjusted field
+        """
+        # checking input shape consistency
+        _check_shape(obs, raw)
+        # computing the error
+        error = obs - self.get_raw_at_obs(raw)
+        # interpolate error field
+        error = self.ip(error)
+        # add error field to raw and cut negatives to zero
+        return np.where( (raw + error)<0., 0., raw + error)
+
+
+class Raw_at_obs():
+    """
+    Get the raw values in the neighbourhood of the observation points
+
+    Parameters
+    ----------
+    obs_coords : array of float
+        coordinate pairs of observations points
+    raw_coords : array of float
+        coordinate pairs of raw (unadjusted) field
+    nnear: integer
+        number of neighbours which should be considered in the vicinity of each point in obs
+    stat: string
+        function name
+    """
+    def __init__(self, obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
+        self.statfunc = _get_statfunc(stat)
+        self.raw_ix = _get_neighbours_ix(obs_coords, raw_coords, nnear)
+    def __call__(self, raw):
+        """
+        Returns the values of raw at the observation locations
+
+        Parameters
+        ----------
+        raw : array of float
+            raw values
+        """
+        # get the values of the raw neighbours of obs
+        raw_neighbs = raw_[self.raw_ix]
+        # and summarize the values of these neighbours by using a statistics option
+        return self.statfunc(raw_neighbs)
+
+
+def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
+    """
+    Get the raw values in the neighbourhood of the observation points
+
+    Parameters
+    ----------
+
+    obs_coords :
+
+    raw: Datset of raw values (which shall be adjusted by obs)
+    nnear: number of neighbours which should be considered in the vicinity of each point in obs
+    stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourshood of obs
+    """
+    # get the values of the raw neighbours of obs
+    raw_neighbs = _get_neighbours(obs_coords, raw_coords, raw, nnear)
+    # and summarize the values of these neighbours by using a statistics option
+    return _get_statfunc(stat)(raw_neighbs)
+
+
+def _get_neighbours_ix(obs_coords, raw_coords, nnear):
+    """
+    Returns <nnear> neighbour indices per <obs_coords> coordinate pair
+
+    Parameters
+    ----------
+    obs_coords : array of float of shape (num_points,ndim)
+        in the neighbourhood of these coordinate pairs we look for neighbours
+    raw_coords : array of float of shape (num_points,ndim)
+        from these coordinate pairs the neighbours are selected
+    nnear : integer
+        number of neighbours to be selected per coordinate pair of obs_coords
+
+    """
+    # plant a tree
+    tree = cKDTree(raw_coords)
+    # return nearest neighbour indices
+    return tree.query(obs_coords, k=nnear)[1]
+
+
+
+def _get_neighbours(obs_coords, raw_coords, raw, nnear):
+    """
+    Returns <nnear> neighbour values per <obs_coords> coordinate pair
+
+    Parameters
+    ----------
+    obs_coords : array of float of shape (num_points,ndim)
+        in the neighbourhood of these coordinate pairs we look for neighbours
+    raw_coords : array of float of shape (num_points,ndim)
+        from these coordinate pairs the neighbours are selected
+    raw : array of float of shape (num_points,...)
+        this is the data corresponding to the coordinate pairs raw_coords
+    nnear : integer
+        number of neighbours to be selected per coordinate pair of obs_coords
+
+    """
+    # plant a tree
+    tree = cKDTree(raw_coords)
+    # retrieve nearest neighbour indices
+    ix = tree.query(obs_coords, k=nnear)[1]
+    # return the values of the nearest neighbours
+    return raw[ix]
+
+def _get_statfunc(funcname):
+    """
+    Returns a function that corresponds to parameter <funcname>
+
+    Parameters
+    ----------
+    funcname : string
+        a name of a numpy function OR another option known by _get_statfunc
+        Potential options: 'mean', 'median', 'best'
+
+    """
+    try:
+        # first try to find a numpy function which corresponds to <funcname>
+        func = getattr(np,funcname)
+        def newfunc(x):
+            return func(x, axis=1)
+    except:
+        try:
+            # then try to find a function in this module with name funcname
+            if funcname=='best':
+                newfunc=best
+        except:
+            # if no function can be found, raise an Exception
+            raise NameError('Unkown function name option: '+funcname)
+    return newfunc
+
+
+def best(x, y):
+    """
+    Find the values of y which corresponds best to x
+
+    If x is an array, the comparison is carried out for each element of x
+
+    Parameters
+    ----------
+    x : float or 1-d array of float
+    y : array of float
+
+    Returns
+    -------
+    output : 1-d array of float with length len(y)
+
+    """
+    if type(x)==np.ndarray:
+        assert x.ndim==1, 'x must be a 1-d array of floats or a float.'
+        assert len(x)==len(y), 'Length of x and y must be equal.'
+    if type(y)==np.ndarray:
+        assert y.ndim<=2, 'y must be 1-d or 2-d array of floats.'
+    else:
+        raise ValueError('y must be 1-d or 2-d array of floats.')
+    x = np.array(x).reshape((-1,1))
+    if y.ndim==1:
+        y = np.array(y).reshape((1,-1))
+        axis = None
+    else:
+        axis = 0
+    return y[np.argmin(np.abs(x-y), axis=axis)]
+
+
+
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <adjust> as main...'
+    x = np.array([1., 5., 10.])
+    x=10.
+    y = np.array([1., 10., 40.])
+    print best(x,y)
