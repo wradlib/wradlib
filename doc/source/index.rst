@@ -10,8 +10,11 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-   
+
+   gettingstarted   
+   tutorials
    reference
+   dev_setup
 
 Indices and tables
 ==================
