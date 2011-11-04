@@ -65,6 +65,8 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
         array of azimuth angles containing values between 0° and 360°.
         These are assumed to start with 0° pointing north and counted positive
         clockwise!
+    sitecoords : a sequence of two floats
+        the lat / lon coordinates of the radar location
     re : float
         earth's radius [km]
 
