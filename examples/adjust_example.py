@@ -22,13 +22,14 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------
     # number of points of raw per axis (total number of points of raw will be num_raw**2)
     num_raw = 100
+    num_obs = 50
     # making raw coordinates
     raw_coords = np.meshgrid(np.linspace(0,100,num_raw), np.linspace(0,100,num_raw))
     raw_coords = np.vstack((raw_coords[0].ravel(), raw_coords[1].ravel())).transpose()
     # making raw data
     raw = np.abs(np.sin(0.1*raw_coords).sum(axis=1))
     # indices for creating obs from raw
-    obs_ix = np.random.uniform(low=0, high=num_raw**2, size=10).astype('i4')
+    obs_ix = np.random.uniform(low=0, high=num_raw**2, size=num_obs).astype('i4')
     # creating obs_coordinates
     obs_coords = raw_coords[obs_ix]
     # creating obs data by perturbing raw
