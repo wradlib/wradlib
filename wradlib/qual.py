@@ -32,6 +32,7 @@ fields except that they exhibit the numpy ndarray interface.
    :toctree: generated/
 
     beam_height_ft
+    bin_volume
 
 """
 
@@ -72,6 +73,33 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
         elev = elevations
 
     return ((ranges**2*np.cos(elev)**2)/(2*(4./3.)*re))+ranges*np.sin(elev)
+
+
+def pulse_volume(ranges, h, theta):
+    """Calculates the sampling volume of the radar beam per bin depending on \
+    range and aperture.
+
+    We assume a cone frustum which has the volume V=(pi/3)*h*(R**2 + R*r + r**2).
+    R and r are the radii of the two frustum surface circles. Assuming that the
+    pulse width is small compared to the range, we get R=r=tan(theta*pi/180)*range.
+    Thus, the pulse volume simpy becomes a the volume of a cylinder with
+    V=pi * h * range**2 * tan(theta*pi/180)**2
+
+    Parameters
+    ----------
+    ranges : array
+        the distances of each bin from the radar [m]
+    h : float
+        puls width (which corresponds to the range resolution [m])
+    theta : float
+        the aperture angle (beam width) of the radar beam [degree]
+
+    Returns
+    -------
+    output : volume of radar bins at each range in `ranges` (qubic metres)
+
+    """
+    return np.pi * h * (ranges**2) * (np.tan( np.radians(theta) ))**2
 
 
 if __name__ == '__main__':
