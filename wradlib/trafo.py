@@ -73,5 +73,24 @@ def idecibel(x):
     return 10.**(x/10.)
 
 
+def r2depth(x, width):
+    """
+    Computes rainfall depth (mm) from rainfall intensity (mm/h)
+
+    Parameters
+    ----------
+    x : float or array of float
+        rainfall intensity in mm/h
+    width : number
+        width of the time interval the values of `x` represent (in seconds)
+
+    Returns
+    -------
+    output : float or array of float
+        rainfall depth in mm
+
+    """
+    return x * width / 3600.
+
 if __name__ == '__main__':
     print 'wradlib: Calling module <trafo> as main...'
