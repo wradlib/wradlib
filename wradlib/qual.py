@@ -32,7 +32,7 @@ fields except that they exhibit the numpy ndarray interface.
    :toctree: generated/
 
     beam_height_ft
-    bin_volume
+    pulse_volume
 
 """
 
