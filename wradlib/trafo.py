@@ -28,6 +28,8 @@ to dBZ-values to Z-values and vice versa.
    idecibel
 
 """
+import numpy as np
+
 
 def rvp2dBZ(x):
     """Calculates dBZ-values from DWD RVP6 values as given in DX-product
