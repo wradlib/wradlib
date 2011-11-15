@@ -57,6 +57,21 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
     """Transforms polar coordinates (of a PPI) to latitude/longitude \
     coordinates.
 
+    This function assumes that the transformation from the polar radar
+    coordinate system to the earth's spherical coordinate system may be done
+    in the same way as astronomical observations are transformed from the
+    horizon's coordinate system to the equatorial coordinate system.
+
+    The conversion formulas used were taken from
+    http://de.wikipedia.org/wiki/Nautisches_Dreieck [accessed 2001-11-02] and
+    are
+    only valid as long as the radar's elevation angle is small, as one main
+    assumption of this method is, that the 'zenith-star'-side of the nautic
+    triangle
+    can be described by the radar range divided by the earths radius.
+    For lager elevation angles, this side
+    would have to be reduced.
+
     Parameters
     ----------
     r : array
