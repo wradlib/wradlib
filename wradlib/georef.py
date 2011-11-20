@@ -97,6 +97,31 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
     the usually assumed WGS coordinate systems where the coordinates are based
     on a more complex ellipsoid.
 
+    Examples
+    --------
+
+    A few standard directions (North, South, North, East, South, West) with
+    different distances (amounting to roughly 1°) from a site
+    located at 48°N 9°E
+
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
+    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
+    >>> csite = (48.0, 9.0)
+    >>> lat1, lon1= __pol2latlon(r, az, csite)
+    >>> for x, y in zip(lat1, lon1):
+    ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
+     48.00,   9.00
+     48.00,   9.00
+     49.00,   9.00
+     47.99,  10.49
+     47.00,   9.00
+     47.99,   7.51
+
+    The coordinates of the east and west directions won't come to lie on the
+    latitude of the site because doesn't travel along the latitude circle but
+    along a great circle.
+
+
     """
 
     #phi = 48.58611111 * pi/180.  # drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
@@ -114,11 +139,127 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
     return latc, lonc
 
 
+def __pol2latlon(rng, az, sitecoords, re=6370.04):
+    """Alternative implementation using spherical geometry only.
+
+    apparently it produces the same results as polar2latlon.
+    I wrote it because I suddenly doubted that the assumptions of the nautic
+    triangle were wrong. I leave it here, in case someone might find it useful.
+
+    Examples
+    --------
+
+    A few standard directions (North, South, North, East, South, West) with
+    different distances (amounting to roughly 1°) from a site
+    located at 48°N 9°E
+
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
+    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
+    >>> csite = (48.0, 9.0)
+    >>> lat1, lon1= __pol2latlon(r, az, csite)
+    >>> for x, y in zip(lat1, lon1):
+    ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
+     48.00,   9.00
+     48.00,   9.00
+     49.00,   9.00
+     47.99,  10.49
+     47.00,   9.00
+     47.99,   7.51
+
+    The coordinates of the east and west directions won't come to lie on the
+    latitude of the site because doesn't travel along the latitude circle but
+    along a great circle.
+
+    """
+    phia = sitecoords[0]
+    thea = sitecoords[1]
+
+    l = np.deg2rad(90.-phia)
+    r = rng/re
+
+    easterly = az<=180.
+    westerly = ~easterly
+    a = np.deg2rad(np.where(easterly,az,az-180.))
+
+    m = np.arccos(np.cos(r)*np.cos(l) + np.sin(r)*np.sin(l)*np.cos(a))
+    g = np.arcsin((np.sin(r)*np.sin(a))/(np.sin(m)))
+
+    return 90.-np.rad2deg(m), thea+np.rad2deg(np.where(easterly,g,-g))
+
+
+def centroid2polyvert(centroid, delta):
+    """Calculates the 2-D Polygon vertices necessary to form a rectangular
+    Polygon around the centroid's coordinates.
+
+    The vertices order will be clockwise, as this is the convention used
+    by ESRI's shapefile format for a polygon.
+
+    Parameters
+    ----------
+    centroid : array_like
+               list of 2-D coordinates of the center point of the rectangle
+    delta :    scalar or array
+               symmetric distances of the vertices from the centroid in each
+               direction. If `delta` is scalar, it is assumed to apply to
+               both dimensions.
+
+    Returns
+    -------
+    vertices : array
+               an array with 5 vertices per centroid.
+
+    Notes
+    -----
+    The function can currently only deal with 2-D data (If you come up with a
+    higher dimensional version of 'clockwise' you're welcome to add it).
+    The data is then assumed to be organized within the `centroid` array with
+    the last dimension being the 2-D coordinates of each point.
+
+    Examples
+    --------
+
+    >>> centroid2polyvert([0., 1.], [0.5, 1.5])
+    array([[-0.5, -0.5],
+           [-0.5,  2.5],
+           [ 0.5,  2.5],
+           [ 0.5, -0.5],
+           [-0.5, -0.5]])
+    >>> centroid2polyvert(np.arange(4).reshape((2,2)), 0.5)
+    array([[[-0.5,  0.5],
+            [-0.5,  1.5],
+            [ 0.5,  1.5],
+            [ 0.5,  0.5],
+            [-0.5,  0.5]],
+    <BLANKLINE>
+           [[ 1.5,  2.5],
+            [ 1.5,  3.5],
+            [ 2.5,  3.5],
+            [ 2.5,  2.5],
+            [ 1.5,  2.5]]])
+
+    """
+    cent = np.asanyarray(centroid)
+    assert cent.shape[-1] == 2
+    dshape = [1]*cent.ndim
+    dshape.insert(-1, 5)
+    dshape[-1] = 2
+
+    d = np.array([[-1.,-1.],
+                  [-1.,1.],
+                  [1., 1.],
+                  [1.,-1.],
+                  [-1.,-1.]]).reshape(tuple(dshape))
+
+    return np.asanyarray(centroid)[...,None,:] + d * np.asanyarray(delta)
+
+
+def _doctest_():
+    import doctest
+    print 'doctesting'
+    doctest.testmod()
+    print 'finished'
 
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <georef> as main...'
-    r = np.array([0.,0.,10.,10.,10.,10.,])
-    az = np.array([0.,180.,0.,90.,180.,270.,])
-    csite = (48.0, 9.0)
-    print polar2latlon(r, az, csite)
+    _doctest_()
