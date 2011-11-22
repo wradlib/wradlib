@@ -270,8 +270,8 @@ def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
 def correctAttenuationHJ(gateset, coefficients = None, mode = 'zero',
                               thrs_dBZ = 59.0, max_PIA = 20.0):
     """Gate-by-Gate attenuation correction based on Stefan Kraemer
-    [Kraemer2008]_, expanded by Stephan Jacobi and Maik Heistermann
-    [Jacobi2011]_.
+    [Kraemer2008]_, expanded by Stephan Jacobi, Maik Heistermann and
+    Thomas Pfaff [Jacobi2011]_.
 
 
 
