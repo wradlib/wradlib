@@ -152,12 +152,15 @@ def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
     Parameters
     ----------
     gateset : array
-        multidimensional array. The range gates (over which iteration has to
-        be performed) are supposed to vary along
-        the *last* dimension so, e.g., for a set of `l` radar images stored in
-        polar form with `m` azimuths and `n` range-bins the input array's
-        shape can be either (l,m,n) or (m,l,n)
-        data havs to be provided in decibel representation of reflectivity (dBZ)
+        Multidimensional array, where the range gates (over which iteration has
+        to be performed) are supposed to vary along the *last* dimension so,
+        e.g., for a set of `l` radar images stored in polar form with `m`
+        azimuths and `n` range-bins the input array's shape can be either
+        (l,m,n) or (m,l,n).
+
+        Data havs to be provided in decibel representation of reflectivity
+        (dBZ).
+
     coefficients : dictionary
         correction coefficients
 
@@ -174,12 +177,12 @@ def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
 
         l: length of a range gate.
 
-        if set to None the following default dictionary will be used
-        {'a_max':1.67e-4, 'a_min':2.33e-5, 'b':0.70, 'n':30, 'l':1.0}
+        If set to None the following default dictionary will be used:
+            {'a_max':1.67e-4, 'a_min':2.33e-5, 'b':0.70, 'n':30, 'l':1.0}.
 
     mode : string
-        controls how the function reacts in case of signal overflow (sum of
-        signal and attenuation exceeds the threshold ``thrs``)
+        Controls how the function reacts in case of signal overflow (sum of
+        signal and attenuation exceeds the threshold ``thrs``).
         Possible values:
 
         'warn' : emit a warning through the module's logger but continue
@@ -189,10 +192,10 @@ def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
 
         'nan' : set offending gates to nan
 
-        Any other mode will raise an Exception
+        Any other mode will raise an Exception.
 
     thrs_dBZ : float
-        threshold, for the attenuation corrected signal in dBZ, which is deemed
+        Threshold, for the attenuation corrected signal in dBZ, which is deemed
         unplausible.
 
     Returns
