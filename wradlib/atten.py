@@ -20,6 +20,7 @@ Attenuation Correction
    :toctree: generated/
 
     correctAttenuationHB
+    correctAttenuationKraemer
 
 """
 import numpy as np
@@ -76,7 +77,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
     -------
     k : array
         Array with the same shape as ``gateset`` containing the calculated
-        attenuation for each range gate
+        attenuation for each range gate.
 
     Raises
     ------
@@ -97,7 +98,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
         für die Niederschlagsvorhersage und die Siedlungsentwässerung,
         Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
         Landwirtschaftlichen Wasserbau
-        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090
+        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
 
     """
     if coefficients is None:
@@ -140,6 +141,252 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
 
     return k
 
+
+def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
+                              thrs_dBZ = 59.0):
+    """Gate-by-Gate attenuation correction according to Stefan Kraemer
+    [Kraemer2008]_
+
+
+
+    Parameters
+    ----------
+    gateset : array
+        multidimensional array. The range gates (over which iteration has to
+        be performed) are supposed to vary along
+        the *last* dimension so, e.g., for a set of `l` radar images stored in
+        polar form with `m` azimuths and `n` range-bins the input array's
+        shape can be either (l,m,n) or (m,l,n)
+        data havs to be provided in decibel representation of reflectivity (dBZ)
+    coefficients : dictionary
+        correction coefficients
+
+        a_max: initial value for linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` )
+
+        a_min: minimal allowed linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
+        overflow (sum of signal and attenuation exceeds the threshold ``thrs``)
+
+        b: exponent of the k-Z relation ( :math:`k=a*Z^{b}` )
+
+        n: number of iterations from a_max to a_min
+
+        l: length of a range gate.
+
+        if set to None the following default dictionary will be used
+        {'a_max':1.67e-4, 'a_min':2.33e-5, 'b':0.70, 'n':30, 'l':1.0}
+
+    mode : string
+        controls how the function reacts in case of signal overflow (sum of
+        signal and attenuation exceeds the threshold ``thrs``)
+        Possible values:
+
+        'warn' : emit a warning through the module's logger but continue
+        execution
+
+        'zero' : set offending gates to 0.0
+
+        'nan' : set offending gates to nan
+
+        Any other mode will raise an Exception
+
+    thrs_dBZ : float
+        threshold, for the attenuation corrected signal in dBZ, which is deemed
+        unplausible.
+
+    Returns
+    -------
+    k : array
+        Array with the same shape as ``gateset`` containing the calculated
+        attenuation for each range gate.
+
+    Raises
+    ------
+    AttenuationOverflowError
+        Exception, if attenuation exceeds ``thrs`` even with smallest possible
+        linear coefficient (a_min) and no handling ``mode`` is set.
+
+    References
+    ----------
+
+    .. [Kraemer2008] Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
+        für die Niederschlagsvorhersage und die Siedlungsentwässerung,
+        Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
+        Landwirtschaftlichen Wasserbau
+        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
+
+    """
+    if coefficients is None:
+        _coefficients = {'a_max':1.67e-4,
+                         'a_min':2.33e-5,
+                         'b':0.7,
+                         'n':30,
+                         'l':1.0}
+    else:
+        _coefficients = coefficients
+
+    a_max = _coefficients['a_max']
+    a_min = _coefficients['a_min']
+    b     = _coefficients['b']
+    n     = _coefficients['n']
+    l     = _coefficients['l']
+
+    if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
+
+    da = (a_max - a_min) / (n - 1)
+    ai = a_max + da
+    k = np.zeros(gateset.shape)
+    k[...,0] = 0.0
+    # indexing all rows of last dimension (radarbeams)
+    beams2correct = np.where(np.max(k, axis = k.ndim - 1) > (-1.))
+    # iterate over possible a-parameters
+    for i in range(n):
+        ai = ai - da
+        # subset of beams that have to be corrected and corresponding attenuations
+        sub_gateset = gateset[beams2correct]
+        sub_k = k[beams2correct]
+        for gate in range(gateset.shape[-1] - 1):
+            kn = ai * (10.0**((sub_gateset[...,gate] + sub_k[...,gate])/10.0))**b  * 2.0 * l
+            sub_k[...,gate + 1] = sub_k[...,gate] + kn
+        # integration of the calculated attenuation subset to the whole attenuation matrix
+        k[beams2correct] = sub_k
+        # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
+        beams2correct = np.where(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ)
+        # if there is no beam left for correction, the iteration can be interrupted prematurely
+        if len(k[beams2correct]) == 0: break
+    if len(k[beams2correct]) > 0:
+        if mode == 'warn': logger.warning('dB-sum over threshold (%3.1f)'%thrs)
+        elif mode == 'nan':  k[beams2correct] = np.nan
+        else: k[beams2correct] = 0.0
+
+    return k
+
+
+def correctAttenuationHJ(gateset, coefficients = None, mode = 'zero',
+                              thrs_dBZ = 59.0, max_PIA = 20.0):
+    """Gate-by-Gate attenuation correction based on Stefan Kraemer
+    [Kraemer2008]_, expanded by Stephan Jacobi and Maik Heistermann
+    [Jacobi2011]_
+
+
+
+    Parameters
+    ----------
+    gateset : array
+        multidimensional array. The range gates (over which iteration has to
+        be performed) are supposed to vary along
+        the *last* dimension so, e.g., for a set of `l` radar images stored in
+        polar form with `m` azimuths and `n` range-bins the input array's
+        shape can be either (l,m,n) or (m,l,n)
+        data havs to be provided in decibel representation of reflectivity (dBZ)
+    coefficients : dictionary
+        correction coefficients
+
+        a_max: initial value for linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` )
+
+        a_min: minimal allowed linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
+        overflow (sum of signal and attenuation exceeds the threshold ``thrs``)
+
+        b: exponent of the k-Z relation ( :math:`k=a*Z^{b}` )
+
+        n: number of iterations from a_max to a_min
+
+        l: length of a range gate.
+
+        if set to None the following default dictionary will be used
+        {'a_max':1.67e-4, 'a_min':2.33e-5, 'b':0.70, 'n':30, 'l':1.0}
+
+    mode : string
+        controls how the function reacts in case of signal overflow (sum of
+        signal and attenuation exceeds the threshold ``thrs``)
+        Possible values:
+
+        'warn' : emit a warning through the module's logger but continue
+        execution
+
+        'zero' : set offending gates to 0.0
+
+        'nan' : set offending gates to nan
+
+        Any other mode will raise an Exception
+
+    thrs_dBZ : float
+        threshold, for the attenuation corrected signal in dBZ, which is deemed
+        unplausible.
+
+    max_PIA : float
+        threshold, for the attenuation corrected signal in dBZ, which is deemed
+        unplausible.
+
+    Returns
+    -------
+    k : array
+        Array with the same shape as ``gateset`` containing the calculated
+        attenuation for each range gate
+
+    Raises
+    ------
+    AttenuationOverflowError
+        Exception, if attenuation exceeds ``thrs`` even with smallest possible
+        linear coefficient (a_min) and no handling ``mode`` is set.
+
+    References
+    ----------
+
+    .. [Kraemer2008] Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
+        für die Niederschlagsvorhersage und die Siedlungsentwässerung,
+        Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
+        Landwirtschaftlichen Wasserbau
+        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090
+
+    """
+    if coefficients is None:
+        _coefficients = {'a_max':1.67e-4,
+                         'a_min':2.33e-5,
+                         'b':0.7,
+                         'n':30,
+                         'l':1.0}
+    else:
+        _coefficients = coefficients
+
+    a_max = _coefficients['a_max']
+    a_min = _coefficients['a_min']
+    b     = _coefficients['b']
+    n     = _coefficients['n']
+    l     = _coefficients['l']
+
+    if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
+
+    da = (a_max - a_min) / (n - 1)
+    ai = a_max + da
+    k = np.zeros(gateset.shape)
+    k[...,0] = 0.0
+    # indexing all rows of last dimension (radarbeams)
+    beams2correct = np.where(np.max(k, axis = k.ndim - 1) > (-1.))
+    # iterate over possible a-parameters
+    for i in range(n):
+        ai = ai - da
+        # subset of beams that have to be corrected and corresponding attenuations
+        sub_gateset = gateset[beams2correct]
+        sub_k = k[beams2correct]
+        for gate in range(gateset.shape[-1] - 1):
+            kn = ai * (10.0**((sub_gateset[...,gate] + sub_k[...,gate])/10.0))**b  * 2.0 * l
+            sub_k[...,gate + 1] = sub_k[...,gate] + kn
+        # integration of the calculated attenuation subset to the whole attenuation matrix
+        k[beams2correct] = sub_k
+        # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
+        beams2correct = np.where(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ)
+        # if there is no beam left for correction, the iteration can be interrupted prematurely
+        if len(k[beams2correct]) == 0: break
+    if len(k[beams2correct]) > 0:
+        if mode == 'warn': logger.warning('dB-sum over threshold (%3.1f)'%thrs)
+        elif mode == 'nan':  k[beams2correct] = np.nan
+        else: k[beams2correct] = 0.0
+
+    return k
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <atten> as main...'
