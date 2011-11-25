@@ -393,7 +393,8 @@ def correctAttenuationHJ(gateset, coefficients = None, mode = 'zero',
         k[beams2correct] = sub_k
         # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the thresholds
         # of corrected attenuation or PIA
-        beams2correct = np.where(np.logical_or(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ, np.max(k, axis = k.ndim - 1) > max_PIA))
+        beams2correct = np.where(np.logical_or(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ,
+                                               np.max(k, axis = k.ndim - 1) > max_PIA))
         # if there is no beam left for correction, the iteration can be interrupted prematurely
         if len(k[beams2correct]) == 0: break
     if len(k[beams2correct]) > 0:
