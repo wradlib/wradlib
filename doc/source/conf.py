@@ -25,9 +25,9 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 
-              'sphinx.ext.todo', 
-              'sphinx.ext.coverage', 
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
               'sphinx.ext.pngmath',
               'sphinx.ext.autosummary',
               'numpydoc',
@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'wradlib'
-copyright = u'2011, Maik Heistermann, Stefan Jacobi, Thomas Pfaff'
+copyright = u'2011, Maik Heistermann, Stephan Jacobi, Thomas Pfaff'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
