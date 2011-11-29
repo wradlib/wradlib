@@ -36,7 +36,8 @@ class AttenuationOverflowError(Exception):
     pass
 
 
-def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
+def correctAttenuationHB(gateset, a = 1.67e-4, b = 0.7, l = 1.0, mode='',
+                         thrs=59.0):
     """Gate-by-Gate attenuation correction according to Hitschfeld & Bordan
     [Hitschfeld1954]_
 
@@ -51,13 +52,17 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
         polar form with `m` azimuths and `n` range-bins the input array's
         shape can be either (l,m,n) or (m,l,n)
         data havs to be provided in decibel representation of reflectivity (dBZ)
-    coefficients : dictionary
-        correction coefficients
-        a: proportionality factor of the k-Z relation ( :math:`k=a*Z^{b}` )
-        b: exponent of the k-Z relation
-        l: length of a range gate.
-        if set to None the following default dictionary will be used
-        {'a':1.67e-4, 'b':0.70, 'l':1.0}
+
+    a : float
+        proportionality factor of the k-Z relation ( :math:`k=a*Z^{b}` ).
+        Per default set to 1.67e-4.
+
+    b : float
+        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
+        0.7.
+
+    l : float
+        length of a range gate. Per default set to 1.0.
 
     mode : string
         controls how the function reacts, if the sum of signal and attenuation
@@ -68,7 +73,7 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
         execution
         'zero' : set offending gates to 0.0
         'nan' : set offending gates to nan
-        Any other mode will raise an Exception
+        Any other mode and default setting will raise an Exception.
 
     thrs : float
         threshold, for the sum of attenuation and signal, which is deemed
@@ -143,7 +148,8 @@ def correctAttenuationHB(gateset, coefficients=None, mode='', thrs=59.0):
     return k
 
 
-def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
+def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
+                              b = 0.7, n = 30, l = 1.0, mode = 'zero',
                               thrs_dBZ = 59.0):
     """Gate-by-Gate attenuation correction according to Stefan Kraemer
     [Kraemer2008]_.
@@ -162,24 +168,25 @@ def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
         Data havs to be provided in decibel representation of reflectivity
         (dBZ).
 
-    coefficients : dictionary
-        Correction coefficients stored in a dictionary.
+    a_max : float
+        initial value for linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
 
-        a_max: initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` )
-
-        a_min: minimal allowed linear coefficient of the k-Z relation
+    a_min : float
+        minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
-        overflow (sum of signal and attenuation exceeds the threshold ``thrs``)
+        overflow (sum of signal and attenuation exceeds the threshold ``thrs``).
+        Per default set to 2.33e-5.
 
-        b: exponent of the k-Z relation ( :math:`k=a*Z^{b}` )
+    b : float
+        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
+        0.7.
 
-        n: number of iterations from a_max to a_min
+    n : integer
+        number of iterations from a_max to a_min. Per default set to 30.
 
-        l: length of a range gate.
-
-        If set to None the following default dictionary will be used:
-        {'a_max':1.67e-4, 'a_min':2.33e-5, 'b':0.70, 'n':30, 'l':1.0}.
+    l : float
+        length of a range gate. Per default set to 1.0.
 
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
@@ -221,20 +228,6 @@ def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
         Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
 
     """
-    if coefficients is None:
-        _coefficients = {'a_max':1.67e-4,
-                         'a_min':2.33e-5,
-                         'b':0.7,
-                         'n':30,
-                         'l':1.0}
-    else:
-        _coefficients = coefficients
-
-    a_max = _coefficients['a_max']
-    a_min = _coefficients['a_min']
-    b     = _coefficients['b']
-    n     = _coefficients['n']
-    l     = _coefficients['l']
 
     if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
 
@@ -267,8 +260,9 @@ def correctAttenuationKraemer(gateset, coefficients = None, mode = 'zero',
     return k
 
 
-def correctAttenuationHJ(gateset, coefficients = None, mode = 'zero',
-                              thrs_dBZ = 59.0, max_PIA = 20.0):
+def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
+                         n = 30, l = 1.0, mode = 'zero', thrs_dBZ = 59.0,
+                         max_PIA = 20.0):
     """Gate-by-Gate attenuation correction based on Stefan Kraemer
     [Kraemer2008]_, expanded by Stephan Jacobi, Maik Heistermann and
     Thomas Pfaff [Jacobi2011]_.
@@ -287,24 +281,25 @@ def correctAttenuationHJ(gateset, coefficients = None, mode = 'zero',
         Data havs to be provided in decibel representation of reflectivity
         (dBZ).
 
-    coefficients : dictionary
-        Correction coefficients stored in a dictionary.
+    a_max : float
+        initial value for linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
 
-        a_max: initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` )
-
-        a_min: minimal allowed linear coefficient of the k-Z relation
+    a_min : float
+        minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
-        overflow (sum of signal and attenuation exceeds the threshold ``thrs``)
+        overflow (sum of signal and attenuation exceeds the threshold ``thrs``).
+        Per default set to 2.33e-5.
 
-        b: exponent of the k-Z relation ( :math:`k=a*Z^{b}` )
+    b : float
+        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
+        0.7.
 
-        n: number of iterations from a_max to a_min
+    n : integer
+        number of iterations from a_max to a_min. Per default set to 30.
 
-        l: length of a range gate.
-
-        If set to None the following default dictionary will be used:
-        {'a_max':1.67e-4, 'a_min':2.33e-5, 'b':0.70, 'n':30, 'l':1.0}.
+    l : float
+        length of a range gate. Per default set to 1.0.
 
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
@@ -356,21 +351,6 @@ def correctAttenuationHJ(gateset, coefficients = None, mode = 'zero',
         April 2011, IAHS Publ. 3XX, 2011, in review.
 
     """
-    if coefficients is None:
-        _coefficients = {'a_max':1.67e-4,
-                         'a_min':2.33e-5,
-                         'b':0.7,
-                         'n':30,
-                         'l':1.0}
-
-    else:
-        _coefficients = coefficients
-
-    a_max = _coefficients['a_max']
-    a_min = _coefficients['a_min']
-    b     = _coefficients['b']
-    n     = _coefficients['n']
-    l     = _coefficients['l']
 
     if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
 
