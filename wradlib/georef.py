@@ -294,6 +294,12 @@ def project(latc, lonc, projstr):
         "+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
         +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"
 
+    UTM Zone 51 on the Northern Hemishpere
+        "+proj=utm +zone=51 +ellps=WGS84"
+
+    UTM Zone 51 on the Southern Hemishpere
+        "+proj=utm +zone=51 +ellps=WGS84 +south"
+
     >>> import wradlib.georef as georef
     >>> # This is Gauss-Krueger Zone 3 (aka DHDN 3 aka Germany Zone 3)
     >>> gk3 = '''
