@@ -20,6 +20,7 @@ Georeferencing
    :toctree: generated/
 
    polar2latlon
+   project
 
 """
 
@@ -38,6 +39,7 @@ Georeferencing
 
 from numpy import sin, cos, arcsin, pi
 import numpy as np
+import pyproj
 
 
 def hor2aeq(a, h, phi):
@@ -253,6 +255,62 @@ def centroid2polyvert(centroid, delta):
     return np.asanyarray(centroid)[...,None,:] + d * np.asanyarray(delta)
 
 
+
+def project(latc, lonc, projstr):
+    """
+    Convert from latitude,longitude (based on WGS84)
+    to coordinates in map projection
+
+    This mainly serves as a convenience function to use proj.4 via pyproj.
+    For proj.4 documentation visit http://proj.maptools.org.
+    For pyproj documentation visit http://code.google.com/p/pyproj.
+
+    See http://www.remotesensing.org/geotiff/proj_list for examples of key/value
+    pairs defining different map projections.
+
+    The main challenge is to formulate an appropriate proj.4 projection string
+    for the target projection. See the Examples section for a quick start.
+
+    Parameters
+    ----------
+    latc : array of floats
+        latitude coordinates based on WGS84
+    lonc : array of floats
+        longitude coordinates based on WGS84
+    projstr : string
+        proj.4 projection string
+
+    Returns
+    -------
+    output : a tuple of 2 arrays (x and y coordinates)
+
+    Examples
+    --------
+    Gauss-Krueger Zone 2:
+        "+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=2500000 +y_0=0 +ellps=bessel
+        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"
+
+    Gauss-Krueger Zone 3:
+        "+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
+        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"
+
+    >>> import wradlib.georef as georef
+    >>> # This is Gauss-Krueger Zone 3 (aka DHDN 3 aka Germany Zone 3)
+    >>> gk3 = '''
+    >>> +proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
+    >>> +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs
+    >>> '''
+    >>> latc = [54.5, 55.5]
+    >>> lonc = [9.5, 9.8]
+    >>> gk3_x, gk3_y = georef.project(latc, lonc, gk3)
+
+    """
+    myproj = pyproj.Proj(projstr)
+    x, y = myproj(lonc, latc)
+    return x, y
+
+
+
 def _doctest_():
     import doctest
     print 'doctesting'
@@ -262,4 +320,5 @@ def _doctest_():
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <georef> as main...'
-    _doctest_()
+#    _doctest_()
+
