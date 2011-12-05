@@ -23,6 +23,9 @@ Raw Data I/O
 
 """
 
+import re
+import numpy as np
+
 
 def unpackDX(raw):
     """function removes DWD-DX-product bit-13 zero packing"""
