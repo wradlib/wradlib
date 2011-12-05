@@ -20,6 +20,7 @@ Georeferencing
    :toctree: generated/
 
    polar2latlon
+   project
 
 """
 
@@ -38,6 +39,7 @@ Georeferencing
 
 from numpy import sin, cos, arcsin, pi
 import numpy as np
+import pyproj as proj
 
 
 def hor2aeq(a, h, phi):
@@ -99,11 +101,68 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
     return latc, lonc
 
 
+def project(latc, lonc, projstr):
+    """
+    Convert from latitude,longitude (based on WGS84)
+    to coordinates in map projection
+
+    This mainly serves as a convenience function to use proj.4 via pyproj.
+    For proj.4 documentation visit http://proj.maptools.org. For pyproj
+    documentation visit http://code.google.com/p/pyproj. See
+    http://www.remotesensing.org/geotiff/proj_list for examples of  key/value
+    pairs defining different map projections.
+
+    The main challenge is to formulate an appropriate proj.4 projection string
+    for the target projection. Examples are given in the parameters section.
+
+    Parameters
+    ----------
+    latc : array of floats
+        latitude coordinates based on WGS84
+    lonc : array of floats
+        longitude coordinates based on WGS84
+    projstr : string
+        proj.4 projection string
+
+    Examples
+    --------
+    Gauss-Krueger Zone 2:
+        "+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=2500000 +y_0=0 +ellps=bessel
+        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"
+
+    Gauss-Krueger Zone 3:
+        "+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
+        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"
+
+    >>> import wradlib.georef as georef
+    >>> gk3 = '''
+    >>> +proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
+    >>> +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs
+    >>> '''
+    >>> latc = [54.5, 55.5]
+    >>> lonc = [9.5, 9.8]
+    >>> gk3_coords = georef.project(latc, lonc, gk3)
+
+    """
+    myproj = proj.Proj(projstr)
+    mapcoords = myproj(lonc, latc)
+    return mapcoords
+
+
+
 
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <georef> as main...'
-    r = np.array([0.,0.,10.,10.,10.,10.,])
-    az = np.array([0.,180.,0.,90.,180.,270.,])
-    csite = (48.0, 9.0)
-    print polar2latlon(r, az, csite)
+##    r = np.array([0.,0.,10.,10.,10.,10.,])
+##    az = np.array([0.,180.,0.,90.,180.,270.,])
+##    csite = (48.0, 9.0)
+##    print polar2latlon(r, az, csite)
+
+    latlon = np.genfromtxt('E:/test/georeftest/latlon.txt', names=True)
+    projected = project(projstr="", latc=latlon['y'], lonc=latlon['x'])
+    f = open('E:/test/georeftest/projected.txt', 'w')
+    f.write('x\ty\n')
+    np.savetxt(f, np.transpose(projected), delimiter='\t', fmt='%.2f')
+    f.close()
+
