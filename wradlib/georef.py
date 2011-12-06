@@ -241,6 +241,8 @@ def centroid2polyvert(centroid, delta):
 
     """
     cent = np.asanyarray(centroid)
+    if (cent.shape[0]==2) and (cent.shape[-1]!=2):
+        cent = np.transpose(cent)
     assert cent.shape[-1] == 2
     dshape = [1]*cent.ndim
     dshape.insert(-1, 5)
@@ -253,6 +255,73 @@ def centroid2polyvert(centroid, delta):
                   [-1.,-1.]]).reshape(tuple(dshape))
 
     return np.asanyarray(centroid)[...,None,:] + d * np.asanyarray(delta)
+
+
+
+def polar2polyvert(r, az, sitecoords, re=6370.04):
+    """
+    Generate 2-D polygon vertices directly from polar coordinates
+
+    This is an alternative to centroid2polyvert which does not use centroids,
+    but generates the polygon vertices by simply connecting the corners of the
+    radar bins.
+
+    Parameters
+    ----------
+    r :
+    az :
+    sitecoords :
+    re :
+
+    Returns
+    -------
+    output : a 3-d array of polygon vertices
+        with shape(num_vertices, num_vertex_nodes, 2).
+
+    Examples
+    --------
+    >>> import numpy as pl
+    >>> import pylab as pl
+    >>> import matplotlib as mpl
+    >>> # define the polar coordinates and the site coordinates in lat/lon
+    >>> r = np.array([0., 50., 100., 150.])
+    >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
+    >>> sitecoords = (48.0, 9.0)
+    >>> polygons = polar2polyvert(r, az, sitecoords)
+    >>> # plotting
+    >>> fig = pl.figure()
+    >>> ax = fig.add_subplot(111)
+    >>> polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
+    >>> ax.add_collection(polycoll, autolim=True)
+    >>> ax.set_xlim(7,11)
+    >>> ax.set_ylim(46.5,49.5)
+    >>> pl.show()
+
+
+
+    """
+    r, az = np.meshgrid(r, az)
+    lat, lon= georef.polar2latlon(r, az, sitecoords)
+
+    llc = np.transpose(np.vstack((lon[:-1,:-1].ravel(), lat[:-1,:-1].ravel())))
+    ulc = np.transpose(np.vstack((lon[:-1,1: ].ravel(), lat[:-1,1: ].ravel())))
+    urc = np.transpose(np.vstack((lon[1: ,1: ].ravel(), lat[1: ,1: ].ravel())))
+    lrc = np.transpose(np.vstack((lon[1: ,:-1].ravel(), lat[1: ,:-1].ravel())))
+
+    vertices = np.concatenate((llc, ulc, urc, lrc, llc)).reshape((-1,5,2), order='F')
+
+    return vertices
+
+    fig = pl.figure()
+    ax = fig.add_subplot(111)
+    polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
+    ax.add_collection(polycoll, autolim=True)
+    ax.set_xlim(7,11)
+    ax.set_ylim(46.5,49.5)
+#    ax.plot(vertices[:,:,1], vertices[:,:,0], 'o')
+    pl.show()
+
+
 
 
 
