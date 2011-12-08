@@ -40,6 +40,7 @@ Georeferencing
 from numpy import sin, cos, arcsin, pi
 import numpy as np
 import pyproj
+from sys import exit
 
 
 def hor2aeq(a, h, phi):
@@ -257,7 +258,6 @@ def centroid2polyvert(centroid, delta):
     return np.asanyarray(centroid)[...,None,:] + d * np.asanyarray(delta)
 
 
-
 def polar2polyvert(r, az, sitecoords, re=6370.04):
     """
     Generate 2-D polygon vertices directly from polar coordinates
@@ -266,17 +266,30 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
     but generates the polygon vertices by simply connecting the corners of the
     radar bins.
 
-    Parameters
-    ----------
-    r :
-    az :
-    sitecoords :
-    re :
+    Both azimuth and range arrays are assumed to be equidistant and to contain
+    only unique values. For further information refer to the documentation of
+    polar2latlon.
+
+    r : array
+        array of ranges [km]; r defines the exterior boundaries of the range bins!
+        (not the centroids). Thus, values must be positive!
+    az : array
+        array of azimuth angles containing values between 0° and 360°.
+        The angles are assumed to describe the pointing direction fo the main beam lobe!
+        The first angle can start at any values, but make sure the array is sorted
+        continuously positively clockwise and the angles are equidistant. An angle
+        if 0 degree is pointing north.
+    sitecoords : a sequence of two floats
+        the lat / lon coordinates of the radar location
+    re : float
+        earth's radius [km]
 
     Returns
     -------
-    output : a 3-d array of polygon vertices
-        with shape(num_vertices, num_vertex_nodes, 2).
+    output : a 3-d array of polygon vertices in lon/lat
+        with shape(num_vertices, num_vertex_nodes, 2). The last dimension
+        carries the longitudes on the first position, the latitudes on the
+        second (lon: output[:,:,0], lat: output[:,:,1]
 
     Examples
     --------
@@ -288,20 +301,29 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
     >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
     >>> sitecoords = (48.0, 9.0)
     >>> polygons = polar2polyvert(r, az, sitecoords)
-    >>> # plotting
+    >>> # plot the resulting mesh
     >>> fig = pl.figure()
     >>> ax = fig.add_subplot(111)
     >>> polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
     >>> ax.add_collection(polycoll, autolim=True)
-    >>> ax.set_xlim(7,11)
-    >>> ax.set_ylim(46.5,49.5)
+    >>> pl.axis('tight')
     >>> pl.show()
 
-
-
     """
+    # prepare the range and azimuth array so they describe the boundaries of a bin,
+    #   not the centroid
+    r = r.astype('f4')
+    az = az.astype('f4')
+    _check_polar_coords(r,az)
+    r = np.insert(r, 0, r[0] - _get_range_resolution(r) )
+    az = az - 0.5*_get_range_resolution(az)
+    az = np.append(az, az[0])
+    az = np.where(az<0, az+360., az)
+
+    # generate a grid of polar coordinates of bin corners
     r, az = np.meshgrid(r, az)
-    lat, lon= georef.polar2latlon(r, az, sitecoords)
+    # convert polar coordinates to lat/lon
+    lat, lon= polar2latlon(r, az, sitecoords)
 
     llc = np.transpose(np.vstack((lon[:-1,:-1].ravel(), lat[:-1,:-1].ravel())))
     ulc = np.transpose(np.vstack((lon[:-1,1: ].ravel(), lat[:-1,1: ].ravel())))
@@ -312,14 +334,138 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
 
     return vertices
 
-    fig = pl.figure()
-    ax = fig.add_subplot(111)
-    polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
-    ax.add_collection(polycoll, autolim=True)
-    ax.set_xlim(7,11)
-    ax.set_ylim(46.5,49.5)
-#    ax.plot(vertices[:,:,1], vertices[:,:,0], 'o')
-    pl.show()
+
+
+
+def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04):
+    """
+    Computes the centroids of the radar bins from their polygon vertices
+
+    Both azimuth and range arrays are assumed to be equidistant and to contain
+    only unique values. The ranges are assumed to define the exterior boundaries
+    of the range bins (thus they must be positive). The angles are assumed to
+    describe the pointing direction fo the main beam lobe.
+
+    For further information refer to the documentation of georef.polar2latlon.
+
+    r : array
+        array of ranges [km]; r defines the exterior boundaries of the range bins!
+        (not the centroids). Thus, values must be positive!
+    az : array
+        array of azimuth angles containing values between 0° and 360°.
+        The angles are assumed to describe the pointing direction fo the main beam lobe!
+        The first angle can start at any values, but make sure the array is sorted
+        continuously positively clockwise and the angles are equidistant. An angle
+        if 0 degree is pointing north.
+    sitecoords : a sequence of two floats
+        the lat / lon coordinates of the radar location
+    re : float
+        earth's radius [km]
+
+    Returns
+    -------
+    output : tuple of 2 arrays which describe the bin centroids
+        longitude and latitude
+
+    Note
+    ----
+    Azimuth angles of 360 deg are internally converted to 0 deg.
+
+    """
+    # make sure the range and azimuth angles have the right properties
+    r, az = _check_polar_coords(r, az)
+
+    # to get the centroid, we only have to move the exterior bin boundaries by half the resolution
+    r = r - 0.5*_get_range_resolution(r)
+    # generate a polar grid and convert to lat/lon
+    r, az = np.meshgrid(r, az)
+    lat, lon= polar2latlon(r, az, sitecoords)
+
+    return lon, lat
+
+
+def _check_polar_coords(r, az):
+    """
+    Contains a lot of checks to make sure the polar coordinates are adequate.
+
+    Parameters
+    ----------
+    r : range gates in any unit
+    az : azimuth angles in degree
+
+    """
+    r = np.array(r, 'f4')
+    az = np.array(az, 'f4')
+    az[az==360.] = 0.
+    if 0. in r:
+        print 'Invalid polar coordinates: 0 is not a valid range gate specification (the centroid of a range gate must be positive).'
+        exit()
+    if len(np.unique(r))!=len(r):
+        print 'Invalid polar coordinates: Range gate specification contains duplicate entries.'
+        exit()
+    if len(np.unique(az))!=len(az):
+        print 'Invalid polar coordinates: Azimuth specification contains duplicate entries.'
+        exit()
+    if len(np.unique(az))!=len(az):
+        print 'Invalid polar coordinates: Azimuth specification contains duplicate entries.'
+        exit()
+    if not _is_sorted(r):
+        print 'Invalid polar coordinates: Range array must be sorted.'
+        exit()
+    if len(np.unique(r[1:]-r[:-1]))>1:
+        print 'Invalid polar coordinates: Range gates are not equidistant.'
+        exit()
+    if len(np.where(az>=360.)[0])>0:
+        print 'Invalid polar coordinates: Azimuth angles must not be greater than or equal to 360 deg.'
+        exit()
+    if not _is_sorted(az):
+        # it is ok if the azimuth angle array is not sorted, but it has to be
+        #   'continuously clockwise', e.g. it could start at 90° and stop at °89
+        az_right = az[np.where(np.logical_and(az<=360, az>=az[0]))[0]]
+        az_left = az[np.where(az<az[0])]
+        if ( not _is_sorted(az_right) ) or ( not _is_sorted(az_left) ):
+            print 'Invalid polar coordinates: Azimuth array is not sorted clockwise.'
+            exit()
+    if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1]))>1:
+        print 'Invalid polar coordinates: Azimuth angles are not equidistant.'
+        exit()
+    return r, az
+
+
+def _is_sorted(x):
+    """
+    Returns True when array x is sorted
+    """
+    return np.all(x==np.sort(x))
+
+
+def _get_range_resolution(x):
+    """
+    Returns the range resolution based on
+    the array x of the range gates' exterior limits
+    """
+    res = np.unique(x[1:]-x[:-1])
+    if len(res)>1:
+        print 'The resolution of the range array is ambiguous.'
+        exit()
+    return res[0]
+
+def _get_azimuth_resolution(x):
+    """
+    Returns the azimuth resolution based on the array x of the beams' azimuth angles
+    """
+    res = np.unique(np.sort(x)[1:]-np.sort(x)[:-1])
+    if len(res)>1:
+        print 'The resolution of the azimuth angle array is ambiguous.'
+        exit()
+    return res[0]
+
+
+
+
+
+
+
 
 
 
@@ -383,6 +529,7 @@ def project(latc, lonc, projstr):
     myproj = pyproj.Proj(projstr)
     x, y = myproj(lonc, latc)
     return x, y
+
 
 
 
