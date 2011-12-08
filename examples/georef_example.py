@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # 1st step: generate the centroid coordinates of the radar bins
     #   define the polar coordinates and the site coordinates in lat/lon
-    r = np.arange(1,100)
+    r = np.arange(1,128)
     az = np.linspace(0,360,361)[0:-1]
     #   drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
     #   drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778
@@ -44,6 +44,7 @@ if __name__ == '__main__':
     ax.add_collection(polycoll, autolim=True)
     ax.plot(cent_lon, cent_lat, 'r+')
     ax.axis('tight')
+    pl.title('Zoom in to compare polygons and centroids.')
     pl.show()
 
 
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     x, y = georef.project(cent_lat, cent_lon, gk3)
 
     # export the projected centroid coordinates
-    f = open('centroids.txt', 'w')
+    f = open('centroids.tab', 'w')
     f.write('x\ty\n')
     np.savetxt(f, np.hstack( (x.reshape((-1,1)),y.reshape((-1,1))) ), fmt='%.2f', delimiter='\t')
     f.close()
