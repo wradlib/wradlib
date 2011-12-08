@@ -312,11 +312,9 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
     """
     # prepare the range and azimuth array so they describe the boundaries of a bin,
     #   not the centroid
-    r = r.astype('f4')
-    az = az.astype('f4')
-    _check_polar_coords(r,az)
+    r, az = _check_polar_coords(r,az)
     r = np.insert(r, 0, r[0] - _get_range_resolution(r) )
-    az = az - 0.5*_get_range_resolution(az)
+    az = az - 0.5*_get_azimuth_resolution(az)
     az = np.append(az, az[0])
     az = np.where(az<0, az+360., az)
 
