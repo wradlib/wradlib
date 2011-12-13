@@ -206,6 +206,10 @@ class PolarBasemap():
                     resolution='i',projection='tmerc',lat_0=lat0, lon_0=lon0)
 
         # draw parallels and meridians
+##        self.m.drawmapboundary(fill_color='aqua')
+        # fill continents, set lake color same as ocean color.
+##        self.m.fillcontinents(color='coral',lake_color='aqua')
+        self.m.drawcoastlines(color='white')
         self.m.drawparallels(np.linspace(start=np.round(self.bbox['llcrnrlat']), stop=np.round(self.bbox['urcrnrlat']), num=3), labels=[1,0,0,0])
         self.m.drawmeridians(np.linspace(start=np.round(self.bbox['llcrnrlon']), stop=np.round(self.bbox['urcrnrlon']), num=3), labels=[0,0,0,1])
         # draw map scale
