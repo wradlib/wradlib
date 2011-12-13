@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 #-------------------------------------------------------------------------------
-# Name:        georef_example
+# Name:        verify_example
 # Purpose:
 #
 # Author:      Maik Heistermann
