@@ -33,17 +33,30 @@ import georef
 class PolarNeighbours():
     """
     For a set of projected point coordinates, extract the neighbouring bin values
-    from a data set in polar coordinates
+    from a data set in polar coordinates. Use as follows:
+
+    First, create an instance of PolarNeighbours by passing all the information needed
+    to georeference the polar radar data to the points of interest (see parameters)
+
+    Second, use the method *extract* in order to extract the values from a data array
+    which corresponds to the polar coordinates
 
     Parameters
     ----------
     r : array of floats
+        (see georef for documentation)
     az : array of floats
+        (see georef for documentation)
     sitecoords : sequence of floats
+        (see georef for documentation)
     projstr : string
+        (see georef for documentation)
     x : array of floats
+        x coordinates of the points in map projection corresponding to prostr
     y : array of floats
+        y coordinates of the points in map projection corresponding to prostr
     nnear : int
+        number of neighbouring radar bins you would like to find
 
     """
     def __init__(self, r, az, sitecoords, projstr, x, y, nnear=9):
@@ -83,8 +96,24 @@ class PolarNeighbours():
         vals = vals.reshape(np.concatenate( (shape[:-2], np.array([len(self.az) * len(self.r)])) ) )
         return vals[...,self.ix]
     def get_bincoords(self):
+        """
+        Returns all bin coordinates in map projection
+
+        Returns
+        -------
+        output : array of x coordinates, array of y coordinates
+
+        """
         return self.binx, self.biny
     def get_bincoords_at_points(self):
+        """
+        Returns bin coordinates only in the neighbourshood of points
+
+        Returns
+        -------
+        output : array of x coordinates, array of y coordinates
+
+        """
         return self.binx[self.ix], self.biny[self.ix]
 
 
