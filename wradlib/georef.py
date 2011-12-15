@@ -459,16 +459,6 @@ def _get_azimuth_resolution(x):
     return res[0]
 
 
-
-
-
-
-
-
-
-
-
-
 def project(latc, lonc, projstr):
     """
     Convert from latitude,longitude (based on WGS84)
@@ -529,6 +519,21 @@ def project(latc, lonc, projstr):
     return x, y
 
 
+def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr):
+    """
+    Convenience function to compute projected bin coordinates directly from
+    radar site coordinates and range/azimuth specs
+
+    Parameters
+    ----------
+    r : array
+    az : array
+    sitecoords : tuple
+    projstr : string
+
+    """
+    cent_lon, cent_lat = polar2centroids(r, az, sitecoords)
+    return project(cent_lat, cent_lon, projstr)
 
 
 def _doctest_():
