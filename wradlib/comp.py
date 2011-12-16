@@ -110,7 +110,9 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     ip = interpol(src, trg[ix], *args, **kwargs)
     data_on_subgrid = ip(data).reshape( (len(ix),-1) )
     # create container for entire grid
-    compose_grid = np.repeat( np.nan, len(trg)*data.ndim ).reshape( (len(trg), data.ndim) )
+    composegridshape = [len(trg)]
+    composegridshape.extend(data.shape[1:])
+    compose_grid = np.repeat( np.nan, len(trg)*np.prod(data.shape[1:]) ).reshape( composegridshape )
     # push subgrid results into the large grid
     compose_grid[ix] = data_on_subgrid
     return compose_grid
