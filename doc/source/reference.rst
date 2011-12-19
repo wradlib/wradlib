@@ -18,4 +18,5 @@ Library Reference
    adjust
    verify
    vis
+   util
    
