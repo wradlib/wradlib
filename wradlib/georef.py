@@ -20,6 +20,9 @@ Georeferencing
    :toctree: generated/
 
    polar2latlon
+   polar2centroids
+   polar2polyvert
+   centroid2polyvert
    project
 
 """
@@ -191,8 +194,7 @@ def __pol2latlon(rng, az, sitecoords, re=6370.04):
 
 
 def centroid2polyvert(centroid, delta):
-    """Calculates the 2-D Polygon vertices necessary to form a rectangular
-    Polygon around the centroid's coordinates.
+    """Calculates the 2-D Polygon vertices necessary to form a rectangular polygon around the centroid's coordinates.
 
     The vertices order will be clockwise, as this is the convention used
     by ESRI's shapefile format for a polygon.
@@ -260,7 +262,7 @@ def centroid2polyvert(centroid, delta):
 
 def polar2polyvert(r, az, sitecoords, re=6370.04):
     """
-    Generate 2-D polygon vertices directly from polar coordinates
+    Generate 2-D polygon vertices directly from polar coordinates.
 
     This is an alternative to centroid2polyvert which does not use centroids,
     but generates the polygon vertices by simply connecting the corners of the
@@ -269,6 +271,9 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
     Both azimuth and range arrays are assumed to be equidistant and to contain
     only unique values. For further information refer to the documentation of
     polar2latlon.
+
+    Parameters
+    ----------
 
     r : array
         array of ranges [km]; r defines the exterior boundaries of the range bins!
@@ -337,7 +342,7 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
 
 def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04):
     """
-    Computes the centroids of the radar bins from their polygon vertices
+    Computes the lat/lon centroids of the radar bins from the polar coordinates.
 
     Both azimuth and range arrays are assumed to be equidistant and to contain
     only unique values. The ranges are assumed to define the exterior boundaries
@@ -461,8 +466,7 @@ def _get_azimuth_resolution(x):
 
 def project(latc, lonc, projstr):
     """
-    Convert from latitude,longitude (based on WGS84)
-    to coordinates in map projection
+    Convert from latitude,longitude (based on WGS84) to coordinates in map projection
 
     This mainly serves as a convenience function to use proj.4 via pyproj.
     For proj.4 documentation visit http://proj.maptools.org.
@@ -490,18 +494,18 @@ def project(latc, lonc, projstr):
     Examples
     --------
     Gauss-Krueger Zone 2:
-        "+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=2500000 +y_0=0 +ellps=bessel
-        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"
+        *"+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=2500000 +y_0=0 +ellps=bessel
+        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"*
 
     Gauss-Krueger Zone 3:
-        "+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
-        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"
+        *"+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
+        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"*
 
     UTM Zone 51 on the Northern Hemishpere
-        "+proj=utm +zone=51 +ellps=WGS84"
+        *"+proj=utm +zone=51 +ellps=WGS84"*
 
     UTM Zone 51 on the Southern Hemishpere
-        "+proj=utm +zone=51 +ellps=WGS84 +south"
+        *"+proj=utm +zone=51 +ellps=WGS84 +south"*
 
     >>> import wradlib.georef as georef
     >>> # This is Gauss-Krueger Zone 3 (aka DHDN 3 aka Germany Zone 3)
