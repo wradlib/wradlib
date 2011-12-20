@@ -78,7 +78,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
     >>> for tim in dt_trg: print tim
     >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg)
+    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
 
 
     """
