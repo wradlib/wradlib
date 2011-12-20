@@ -32,4 +32,7 @@ import vpr
 from vpr import *
 import zr
 from zr import *
+import util
+from util import *
+
 
