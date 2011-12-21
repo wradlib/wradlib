@@ -1,10 +1,21 @@
 Development Setup
 =================
 
-As a convention, each release of wradlib will be guaranteed to work with a 
+In the future, each release of wradlib will be guaranteed to work with a 
 certain version of python(x,y) under MS Windows. The current version is 2.6.6.2. 
 On other operating systems, the library should work, if similar versions of the 
 required packages are installed.
+
+However, at the moment you will need to install the following packages beyond python(x,y):
+
+- pyproj: Performs cartographic transformations and geodetic computations. 
+  Visit http://code.google.com/p/pyproj/ and download the package installer.
+
+- basemap: The matplotlib basemap toolkit is a library for plotting 2D data on maps. Find
+  documentation on http://matplotlib.github.com/basemap and download the package installer
+  at http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.2/
+
+
 
 Documentation Setup
 -------------------
