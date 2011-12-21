@@ -217,7 +217,7 @@ class Idw(IpolBase):
         # self distances: a list of arrays of distances of the nearest points which are indicated by self.ix
         outshape = list( vals.shape )
         outshape[0] = len(self.dists)
-        interpol = np.repeat(np.nan, util._shape2size(outshape)).reshape(tuple(outshape))
+        interpol = np.repeat(np.nan, util._shape2size(outshape)).reshape(tuple(outshape)).astype('f4')
         # weights is the container for the weights (a list)
         weights  = range( len(self.dists) )
         # sources is the container for the source point indices
