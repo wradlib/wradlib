@@ -36,6 +36,7 @@ This includes for example:
 from scipy.spatial import cKDTree
 from scipy.interpolate import LinearNDInterpolator
 import numpy as np
+import wradlib.util as util
 
 
 class IpolBase():
@@ -80,6 +81,7 @@ class IpolBase():
         Parameters
         ----------
         vals : ndarray of float
+
         """
         assert len(vals)==self.numsources, 'Length of value array %d does not correspond to \
         number of source points %d' % (len(vals), self.numsources)
@@ -143,7 +145,7 @@ class Nearest(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsources)
+        vals : ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
         maxdist : the maximum distance up to which an interpolated values is
             assigned - if maxdist is exceeded, np.nan will be assigned
@@ -200,7 +202,7 @@ class Idw(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsources)
+        vals : ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
         maxdist : the maximum distance up to which an interpolated values is
             assigned - if maxdist is exceeded, np.nan will be assigned
@@ -215,7 +217,7 @@ class Idw(IpolBase):
         # self distances: a list of arrays of distances of the nearest points which are indicated by self.ix
         outshape = list( vals.shape )
         outshape[0] = len(self.dists)
-        interpol = np.zeros(shape=tuple(outshape))
+        interpol = np.repeat(np.nan, util._shape2size(outshape)).reshape(tuple(outshape))
         # weights is the container for the weights (a list)
         weights  = range( len(self.dists) )
         # sources is the container for the source point indices
@@ -270,7 +272,7 @@ class Linear(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsources)
+        vals : ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
         fill_value : float
             is needed if linear interpolation fails; defaults to np.nan
