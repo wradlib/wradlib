@@ -31,7 +31,3 @@ those docstrings.
 
 So before you can run ``make html`` in the doc-folder you need to install numpydoc
 
-We plan to use jsmath for typesetting mathematical formula. As the jsmath 
-package is large, it is usually not distributed but needs to be installed 
-individually. So in order to have the maths properly set, you need to put the 
-jsmath files in doc/source/static/jsMath
