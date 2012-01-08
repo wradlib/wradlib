@@ -95,11 +95,14 @@ class NorthPolarAxes(PolarAxes):
 register_projection(NorthPolarAxes)
 
 
-def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., theta0=0):
+def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., theta0=0, **kwargs):
     """Plots data from a polar grid.
 
     The data must be an array of shape (number of azimuth angles, number of range bins).
     The azimuth angle of zero corresponds to the north, the angles are counted clock-wise forward.
+
+    additional **kwargs will be passed to the pcolormesh routine displaying
+    the data.
 
     Parameters
     ----------
@@ -140,7 +143,7 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., t
         # plot on the axes object which was passed to this function
         ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
     pl.jet()
-    circle = ax.pcolormesh(theta, r, data,rasterized=True)
+    circle = ax.pcolormesh(theta, r, data,rasterized=True, **kwargs)
     pl.grid(True)
     cbar = pl.colorbar(circle, shrink=0.75)
     cbar.set_label('('+unit+')')
