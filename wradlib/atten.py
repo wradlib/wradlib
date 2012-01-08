@@ -338,12 +338,6 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     References
     ----------
 
-    .. [Kraemer2008] Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
-        für die Niederschlagsvorhersage und die Siedlungsentwässerung.
-        Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
-        Landwirtschaftlichen Wasserbau
-        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
-
     .. [Jacobi2011] Jacobi, S., Heistermann, M., Pfaff, T. 2011: Evaluation and
         improvement of C-band radar attenuation correction for operational flash
         flood forecasting.

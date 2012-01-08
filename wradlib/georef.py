@@ -370,8 +370,8 @@ def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04):
     output : tuple of 2 arrays which describe the bin centroids
         longitude and latitude
 
-    Note
-    ----
+    Notes
+    -----
     Azimuth angles of 360 deg are internally converted to 0 deg.
 
     """
