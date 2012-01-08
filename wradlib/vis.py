@@ -101,7 +101,7 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., t
     The data must be an array of shape (number of azimuth angles, number of range bins).
     The azimuth angle of zero corresponds to the north, the angles are counted clock-wise forward.
 
-    additional **kwargs will be passed to the pcolormesh routine displaying
+    additional `kwargs` will be passed to the pcolormesh routine displaying
     the data.
 
     Parameters
