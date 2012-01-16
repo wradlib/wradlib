@@ -349,12 +349,10 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     da = (a_max - a_min) / (n - 1)
     ai = a_max + da
     k = np.zeros(gateset.shape)
-    k[...,0] = 0.0
-    if np.max(np.isnan(gateset)):
-        print 'There are not processable NaN in the gateset!'
-        return k
+    if np.any(np.isnan(gateset)):
+        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
     # indexing all rows of last dimension (radarbeams)
-    beams2correct = np.where(np.max(k, axis = k.ndim - 1) > (-1.))
+    beams2correct = np.where(np.max(k, axis=-1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
         ai = ai - da
@@ -368,8 +366,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         k[beams2correct] = sub_k
         # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the thresholds
         # of corrected attenuation or PIA
-        beams2correct = np.where(np.logical_or(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ,
-                                               np.max(k, axis = k.ndim - 1) > max_PIA))
+        beams2correct = np.where(np.logical_or(np.max(gateset + k, axis=-1) > thrs_dBZ,
+                                               np.max(k, axis=-1) > max_PIA))
         # if there is no beam left for correction, the iteration can be interrupted prematurely
         if len(k[beams2correct]) == 0: break
     if len(k[beams2correct]) > 0:
