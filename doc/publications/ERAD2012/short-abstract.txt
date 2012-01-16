@@ -1,0 +1,50 @@
+Session
+-------
+hydrological studies employing weather radars
+
+Title
+-----
+
+wradlib - an open source library for weather radar data processing
+
+Authors
+-------
+Thomas Pfaff, Maik Heistermann, Stephan Jacobi
+
+
+Abstract
+--------
+
+Weather radar data has many uses in meteorology, hydrology, disaster prevention 
+and mitigation. Its ability to provide information on precipitation on a high 
+spatial and temporal scale over large areas makes it an invaluable tool for 
+short term weather forecasting or flash flood forecasting.
+
+The indirect method of measuring the precipitation field, however, leads to a 
+significant number of data artifacts, which usually must be removed or dealt 
+with before the data can be used with good accuracy.
+
+While there is increasing cooperation between national weather services 
+regarding the homogenization of data formats and processing tools, in research, 
+most groups working with weather radar data have developed their own set of 
+tools to transform the measurements from polar to cartesian coordinates, compose 
+the data of several radar sites on one common grid, deal with clutter, do 
+attenuation, VPR and other corrections, do gauge adjustment and visualize the 
+data.
+
+The wradlib project has been initiated in order to provide an open source 
+library for the full range of weather radar related processing algorithms, which 
+is well documented and easy to use in order to foster the use of weather radar 
+data in the geosciences and to provide a common platform for research on new 
+algorithms.
+
+The main parts of the library are currently implemented in the python 
+programming language. Python is well known both for its ease of use as well as 
+its ability to integrate code written in other programming languages like 
+Fortran or C/C++. The well established Numpy and Scipy packages are used to 
+provide decent performance for the pure Python implementations. We welcome 
+contributions written in any computer langugage and will try to make them 
+acessible from Python.
+
+We would like to present the current state of this library together with a few 
+showcase examples.
