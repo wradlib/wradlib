@@ -373,7 +373,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     if len(k[beams2correct]) > 0:
         if mode == 'warn': logger.warning('dB-sum over threshold (%3.1f)'%thrs)
         elif mode == 'nan':  k[beams2correct] = np.nan
-        else: k[beams2correct] = 0.0
+        elif mode == 'zero': k[beams2correct] = 0.0
+        else: raise ValueError, 'Reflectivity overflow with unknown handling mode'
 
     return k
 
