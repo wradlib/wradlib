@@ -372,7 +372,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         # if there is no beam left for correction, the iteration can be interrupted prematurely
         if len(k[beams2correct]) == 0: break
     if len(k[beams2correct]) > 0:
-        if mode == 'warn': logger.warning('dB-sum over threshold (%3.1f)'%thrs)
+        if mode == 'warn': logger.warning('threshold exceeded (corrected dBZ or PIA) even for lowest a')
         elif mode == 'nan':  k[beams2correct] = np.nan
         elif mode == 'zero': k[beams2correct] = 0.0
         else: raise AttenuationOverflowError
