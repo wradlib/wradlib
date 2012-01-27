@@ -30,6 +30,7 @@ This includes for example:
    Nearest
    Idw
    Linear
+   interpolate
 
 """
 
@@ -64,7 +65,7 @@ class IpolBase():
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsources)
+        vals : ndarray of float, shape (numsources, ...)
             Values at the source points which to interpolate
 
         Returns
@@ -225,6 +226,9 @@ class Idw(IpolBase):
         # jinterpol is the jth element of interpol
         jinterpol = 0
         for dist, ix in zip( self.dists, self.ix ):
+            valid_dists = np.where(np.isfinite(dist))[0]
+            dist = dist[valid_dists]
+            ix = ix[valid_dists]
             if self.nnearest == 1:
                 # defaults to nearest neighbour
                 wz = vals[ix]
@@ -286,7 +290,92 @@ class Linear(IpolBase):
         ip = LinearNDInterpolator(self.src, vals, fill_value=fill_value)
         return ip(self.trg)
 
+def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
+    """
+    Convenience function to use the interpolation classes in an efficient way
+
+    ATTENTION: Works only for one- and two-dimensional *vals* arrays, yet.
+
+    The interpolation classes in wradlib.ipol are computationally very efficient
+    if they are applied on large multi-dimensional arrays of which the first dimension
+    must be the locations' dimension (1d or 2d coordinates) and the following dimensions
+    can be anything (e.g. time or ensembles). This way, the weights need to be computed
+    only once. However, this can only be done with success if all source values for
+    the interpolation are valid numbers. If the source values contain let's say
+    *np.nan* types, the result of the interpolation will be *np.nan* in the
+    vicinity of the corresponding points, too. Imagine that you have a time series
+    of observations at points and in each time step one observation is missing.
+    You would still like to efficiently apply the interpolation
+    classes, but you will need to account for the resulting *np.nan* values in
+    the interpolation output.
+
+    In order to still allow for the efficient application, you have to take care
+    of the remaining np.nan in your interpolation result. This is done by this
+    convenience function.
+
+    Alternatively, you have to make sure that your *vals* argument does not contain
+    any *np.nan* values OR you have to post-process missing values in your interpolation
+    result in another way.
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the source points.
+    trg : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the target points.
+    vals : ndarray of float, shape (numsourcepoints, ...)
+        Values at the source points which to interpolate
+    Interpolator : a class which inherits from IpolBase
+    *args : arguments of Interpolator (see class documentation)
+    **kwargs : keyword arguments of Interpolator (see class documentation)
+
+    Examples
+    --------
+    >>> # test for 1 dimension in space and two value dimensions
+    >>> src = np.arange(10)[:,None]
+    >>> trg = np.linspace(0,20,40)[:,None]
+    >>> vals = np.hstack((np.sin(src), 10.+np.sin(src)))
+    >>> # here we introduce missing values only in the second dimension
+    >>> vals[3:5,1] = np.nan
+    >>> ipol_result = interpolate(src, trg, vals, Idw, nnearest=2)
+    >>> # plot if you like
+    >>> import pylab as pl
+    >>> pl.plot(trg, ipol_result, 'b+')
+    >>> pl.plot(src, vals, 'ro')
+    >>> pl.show()
+
+
+    """
+    if vals.ndim==1:
+        # source values are one dimensional, we have just to remove invalid data
+        ix_valid = np.where(np.isfinite(vals))[0]
+        ip = Interpolator(src[ix_valid], trg, *args, **kwargs)
+        result = ip(vals[ix_valid])
+    elif vals.ndim==2:
+        # this implementation for 2 dimensions needs generalization
+        ip = Interpolator(src, trg, *args, **kwargs)
+        result = ip(vals)
+        nan_in_result = np.where(np.isnan(result))
+        nan_in_vals = np.where(np.isnan(vals))
+        for i in np.unique(nan_in_result[-1]):
+            ix_good = np.where(np.isfinite(vals[...,i]))[0]
+            ix_broken_targets = nan_in_result[0][np.where(nan_in_result[-1]==i)[0]]
+            ip = Interpolator(src[ix_good], trg[nan_in_result[0][np.where(nan_in_result[-1]==i)[0]]], *args, **kwargs)
+            tmp = ip(vals[ix_good,i].reshape((len(ix_good),-1)))
+            result[ix_broken_targets,i] = tmp.ravel()
+    else:
+        if not np.any(np.isnan(vals.ravel())):
+            raise Exception('At the moment, <interpolate> can only deal with NaN values in <vals> if vals has less than 3 dimension.')
+        else:
+            # if no NaN value are in <vals> we can safely apply the Interpolator as is
+            ip = Interpolator(src, trg, *args, **kwargs)
+            result = ip(vals[ix_valid])
+    return result
 
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <ipol> as main...'
+
+
+
+
