@@ -232,6 +232,7 @@ class Idw(IpolBase):
             if self.nnearest == 1:
                 # defaults to nearest neighbour
                 wz = vals[ix]
+                w = 1.
             elif dist[0] < 1e-10:
                 # if a target point coincides with a source point
                 wz = vals[ix[0]]
