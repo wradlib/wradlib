@@ -23,7 +23,6 @@ to dBZ-values to Z-values and vice versa.
    :toctree: generated/
 
    rvp2dBZ
-   rvp2r
    decibel
    idecibel
 
@@ -41,16 +40,6 @@ def rvp2dBZ(x):
 
     """
     return x*0.5-32.5
-
-def rvp2r(x, **kwargs):
-    """Calculates rain rates from RVP6 values directly using z2r.
-
-    Parameters
-    ----------
-    x : a number or an array
-
-    """
-    return z2r(idecibel(rvp2dBZ(x)), **kwargs)
 
 def decibel(x):
     """Calculates the decibel representation of the input values
