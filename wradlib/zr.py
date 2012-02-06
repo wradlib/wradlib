@@ -299,6 +299,63 @@ def _z2rEnhanced_mdfilt(z):
     return r, si
 
 
+def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
+    """multidimensional version
+    assuming the two last dimensions represent a 2-D image
+    Uses scipy.ndimage.filters.correlate to reduce the number of for-loops
+    even more.
+    """
+    # get the shape of the input
+    dimy = z.shape[-2]
+    dimx = z.shape[-1]
+
+    # calculate the decibel values from the input
+    db = decibel(z)
+    # calculate the shower differences by 1-d correlation with a differencing
+    # kernel
+    db_diffx = np.abs(filters.correlate1d(db, [1,-1], axis=-1, mode=xmode, origin=-1))
+    db_diffy = np.abs(filters.correlate1d(db, [1,-1], axis=-2, mode=ymode, origin=-1))
+
+    diffxmode = 'wrap' if xmode=='wrap' else 'constant'
+    diffymode = 'wrap' if ymode=='wrap' else 'constant'
+    diffx_sum1 = filters.correlate1d(db_diffx, [1,1,1], axis=-2, mode=diffymode)
+    diffxsum = filters.correlate1d(diffx_sum1, [1,1,0], axis=-1, mode=diffxmode)
+    diffy_sum1 = filters.correlate1d(db_diffy, [1,1,1], axis=-1, mode=diffxmode)
+    diffysum = filters.correlate1d(diffy_sum1, [1,1,0], axis=-2, mode=diffymode)
+
+    divider = np.ones(db.shape)*12.
+    if xmode != 'wrap':
+        divider[...,[0,-1]] = np.rint((divider[...,[0,-1]]+1)/1.618)-1
+    if ymode != 'wrap':
+        divider[...,[0,-1],:] = np.rint((divider[...,[0,-1],:]+1)/1.618)-1
+
+
+    # the shower index is the sum of the x- and y-differences
+    si = (diffxsum + diffysum) / divider
+
+    # set up our rainfall output array
+    r = np.zeros(z.shape)
+
+    gt44 = db > 44.
+    r[gt44] = z2r(z[gt44], a=77, b=1.9)
+    si[gt44] = -1.
+    # the same is true for values between 36.5 and 44 dBZ
+    bt3644 = (db >= 36.5) & (db<= 44.)
+    r[bt3644] = z2r(z[bt3644], a=200, b=1.6)
+    si[bt3644] = -2.
+
+    si1 = (si >= 0.)
+    si2 = si1 & (si < 3.5)
+    si3 = si1 &  ~si2 & (si <= 7.5)
+    si4 = si > 7.5
+
+    r[si2] = z2r(z[si2], a=125, b=1.4)
+    r[si3] = z2r(z[si3], a=200, b=1.6)
+    r[si4] = z2r(z[si4], a=320, b=1.4)
+
+    return r, si
+
+
 def z2rEnhanced(z):
     """Calculates rainrates from radar reflectivities using the enhanced
     three-part Z-R-relationship used by the DWD (as of 2009)
