@@ -50,13 +50,9 @@ def _filter_gabella_a(windowdata, tr1=6.):
     filter_gabella : the complete filter
 
     """
-    window = windowdata.reshape((np.sqrt(windowdata.size),
-                                 np.sqrt(windowdata.size)))
-    wshape = window.shape
-    centerx = (wshape[1]-1)//2
-    centery = (wshape[0]-1)//2
+    center = windowdata.shape[0] // 2
 
-    return ((window[centery, centerx] - window) < tr1).sum()-1
+    return ((windowdata[center] - windowdata) < tr1).sum()-1
 
 
 def filter_gabella_a(img, wsize, tr1):
