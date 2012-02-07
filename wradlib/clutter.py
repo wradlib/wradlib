@@ -292,7 +292,7 @@ def histo_cut(prec_accum):
         lower_bound = bins[i]
         upper_bound = bins[j + 1]
 
-    return np.where(np.isnan(prec_accum_masked), True, False)
+    return np.isnan(prec_accum_masked)
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <clutter> as main...'
