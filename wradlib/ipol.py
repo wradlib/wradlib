@@ -197,6 +197,12 @@ class Idw(IpolBase):
         # plant a tree
         self.tree = cKDTree(src)
         self.dists, self.ix = self.tree.query(trg, k=nnearest)
+        # avoid bug, if there is only one neighbor at all
+        if self.dists.ndim == 1:
+            self.dists = self.dists[:,np.newaxis]
+            self.ix = self.ix[:,np.newaxis]
+
+
     def __call__(self, vals):
         """
         Evaluate interpolator for values given at the source points.
