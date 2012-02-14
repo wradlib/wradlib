@@ -347,11 +347,11 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 
     """
 
+    if np.any(np.isnan(gateset)):
+        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
     da = (a_max - a_min) / (n - 1)
     ai = a_max + da
     k = np.zeros(gateset.shape)
-    if np.any(np.isnan(gateset)):
-        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
     # indexing all rows of last dimension (radarbeams)
     beams2correct = np.where(np.max(k, axis=-1) > (-1.))
     # iterate over possible a-parameters
