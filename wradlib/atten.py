@@ -328,7 +328,9 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     -------
     k : array
         Array with the same shape as ``gateset`` containing the calculated
-        attenuation for each range gate.
+        attenuation [dB] for each range gate. In case the input array (gateset)
+        contains NaNs the corresponding beams of the output array (k) will be
+        set as NaN, too.
 
     Raises
     ------
@@ -347,12 +349,17 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 
     """
 
-    if np.any(np.isnan(gateset)):
-        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
+#    if np.any(np.isnan(gateset)):
+#        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
+#    k = np.zeros(gateset.shape)
     da = (a_max - a_min) / (n - 1)
     ai = a_max + da
-    k = np.zeros(gateset.shape)
-    # indexing all rows of last dimension (radarbeams)
+##  initialize an attenuation array with the same shape as the gateset,
+##  filled with zeros, except that NaNs occuring in the gateset will cause a
+##  initialization with Nans for the ENTIRE corresponding attenuation beam
+    k = np.where(np.isnan(gateset), np.nan, 0.)
+    k[np.where(np.isnan(k))[0]] = np.nan
+    # indexing all rows of last dimension (radarbeams) except rows including NaNs
     beams2correct = np.where(np.max(k, axis=-1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
@@ -366,7 +373,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         # integration of the calculated attenuation subset to the whole attenuation matrix
         k[beams2correct] = sub_k
         # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the thresholds
-        # of corrected attenuation or PIA
+        # of corrected attenuation or PIA or NaNs are occuring
         beams2correct = np.where(np.logical_or(np.max(gateset + k, axis=-1) > thrs_dBZ,
                                                np.max(k, axis=-1) > max_PIA))
         # if there is no beam left for correction, the iteration can be interrupted prematurely
