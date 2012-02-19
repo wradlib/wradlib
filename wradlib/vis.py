@@ -95,7 +95,7 @@ class NorthPolarAxes(PolarAxes):
 register_projection(NorthPolarAxes)
 
 
-def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., theta0=0, **kwargs):
+def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., theta0=0, colormap='jet', **kwargs):
     """Plots data from a polar grid.
 
     The data must be an array of shape (number of azimuth angles, number of range bins).
@@ -125,6 +125,8 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., t
     theta0 : integer
         azimuth angle which corresponds to the first slice of the dataset
         (normally corresponds to 0)
+    colormap : string
+        choose between the colormaps "jet" (per default) and "spectral"
 
     """
     n_theta, n_r = data.shape
@@ -142,7 +144,10 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., t
     else:
         # plot on the axes object which was passed to this function
         ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
-    pl.jet()
+    if colormap == 'spectral':
+        pl.spectral()
+    else:
+        pl.jet()
     circle = ax.pcolormesh(theta, r, data,rasterized=True, **kwargs)
     pl.grid(True)
     cbar = pl.colorbar(circle, shrink=0.75)
