@@ -8,6 +8,10 @@ can be used for weather radar processing.
    :maxdepth: 2
    
    tutorial_reading_dx
+   tutorial_conversion
+   tutorial_accumulation
+   tutorial_clutter_correction
+   tutorial_attenuation_correction
 
 
 Just some ideas on a few tutorials for future

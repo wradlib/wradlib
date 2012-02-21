@@ -38,7 +38,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     src : array of shape (..., original number of time steps,...)
         This is the time series data which should be aggregated. The position
         of the time dimension is indicated by the *taxis* argument. The number
-        of time steps corresponds to the length pf the time dimension.
+        of time steps corresponds to the length of the time dimension.
 
     taxis : integer
         This is the position of the time dimension in array *src*.
