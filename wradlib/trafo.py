@@ -25,6 +25,7 @@ to dBZ-values to Z-values and vice versa.
    rvp2dBZ
    decibel
    idecibel
+   r2depth
 
 """
 import numpy as np
@@ -64,7 +65,7 @@ def idecibel(x):
     return 10.**(x/10.)
 
 
-def r2depth(x, width):
+def r2depth(x, interval):
     """
     Computes rainfall depth (mm) from rainfall intensity (mm/h)
 
@@ -72,16 +73,16 @@ def r2depth(x, width):
     ----------
     x : float or array of float
         rainfall intensity in mm/h
-    width : number
-        width of the time interval the values of `x` represent (in seconds)
+    interval : number
+        time interval (s) the values of `x` represent
 
     Returns
     -------
     output : float or array of float
-        rainfall depth in mm
+        rainfall depth (mm)
 
     """
-    return x * width / 3600.
+    return x * interval / 3600.
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <trafo> as main...'
