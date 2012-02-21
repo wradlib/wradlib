@@ -465,7 +465,7 @@ def _get_azimuth_resolution(x):
     return res[0]
 
 
-def project(latc, lonc, projstr):
+def project(latc, lonc, projstr, inverse=False):
     """
     Convert from latitude,longitude (based on WGS84) to coordinates in map projection
 
@@ -520,7 +520,7 @@ def project(latc, lonc, projstr):
 
     """
     myproj = pyproj.Proj(projstr)
-    x, y = myproj(lonc, latc)
+    x, y = myproj(lonc, latc, inverse=inverse)
     return x, y
 
 
