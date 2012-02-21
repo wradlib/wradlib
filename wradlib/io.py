@@ -26,6 +26,7 @@ Raw Data I/O
 
 import re
 import numpy as np
+import netCDF4 as nc
 
 
 def unpackDX(raw):
