@@ -24,6 +24,7 @@ Georeferencing
    polar2polyvert
    centroid2polyvert
    project
+   projected_bincoords_from_radarspecs
 
 """
 
@@ -537,7 +538,8 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr):
 
     """
     cent_lon, cent_lat = polar2centroids(r, az, sitecoords)
-    return project(cent_lat, cent_lon, projstr)
+    x, y = project(cent_lat, cent_lon, projstr)
+    return x.ravel(), y.ravel()
 
 
 def _doctest_():
