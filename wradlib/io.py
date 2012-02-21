@@ -20,6 +20,7 @@ Raw Data I/O
 
    readDX
    writePolygon2Text
+   SUB2dBZ
 
 """
 
@@ -254,6 +255,22 @@ def writePolygon2Text(fname, polygons):
             _write_polygon2txt(f, (count, 0), vertices)
             count += 1
         f.write('END\n')
+
+def SUB2dBZ(filename):
+    r"""Data reader for Philipinean s-band weather radar data files from netCDF.
+
+    Parameters
+    ----------
+    filename : netCDF file of s-band weather radar data
+
+    Returns
+    -------
+    output : numpy array of image data (dBZ).
+
+    """
+    # read the data from file
+    dset = nc.Dataset(filename)
+    return np.array(dset.variables[dset.TypeName])
 
 
 
