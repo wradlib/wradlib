@@ -27,6 +27,7 @@ Raw Data I/O
 import re
 import numpy as np
 import netCDF4 as nc
+import datetime as dt
 
 
 def unpackDX(raw):
@@ -257,21 +258,46 @@ def writePolygon2Text(fname, polygons):
             count += 1
         f.write('END\n')
 
-def SUB2dBZ(filename):
-    r"""Data reader for Philipinean s-band weather radar data files from netCDF.
+
+def read_EDGE_netcdf(filename):
+    """Data reader for netCDF files exported by the EDGE radar software
 
     Parameters
     ----------
-    filename : netCDF file of s-band weather radar data
+    filename : path of the netCDF file
 
     Returns
     -------
-    output : numpy array of image data (dBZ).
+    output : numpy array of image data (dBZ), dictionary of attributes
 
     """
     # read the data from file
     dset = nc.Dataset(filename)
-    return np.array(dset.variables[dset.TypeName])
+    data = dset.variables[dset.TypeName][:]
+    # Azimuth corresponding to 1st slice
+    theta0 = int(dset.variables['Azimuth'][0])
+    # rotate accordingly
+    data = np.roll(data, theta0, axis=1)
+    data = np.flipud(data)
+    data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
+    # Azimuth
+    az = dset.variables['Azimuth'][:]
+    az = np.round(az, 0)
+    az.sort()
+    # Ranges
+    binwidth = dset.getncattr('MaximumRange-value') / len(dset.dimensions['Gate'])
+    r = np.arange(binwidth, dset.getncattr('MaximumRange-value')+binwidth, binwidth)
+    # collect attributes
+    attrs =  {}
+    for attrname in dset.ncattrs():
+        attrs[attrname] = dset.getncattr(attrname)
+
+    attrs['az'] = az
+    attrs['r']  = r
+    attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'])
+    attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
+
+    return data, attrs
 
 
 
