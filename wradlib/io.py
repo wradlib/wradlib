@@ -20,7 +20,7 @@ Raw Data I/O
 
    readDX
    writePolygon2Text
-   SUB2dBZ
+   read_EDGE_netcdf
 
 """
 
@@ -259,12 +259,13 @@ def writePolygon2Text(fname, polygons):
         f.write('END\n')
 
 
-def read_EDGE_netcdf(filename):
+def read_EDGE_netcdf(filename, range_lim = None):
     """Data reader for netCDF files exported by the EDGE radar software
 
     Parameters
     ----------
     filename : path of the netCDF file
+    range_lim : range limitation of the returned radar data
 
     Returns
     -------
@@ -275,15 +276,15 @@ def read_EDGE_netcdf(filename):
     dset = nc.Dataset(filename)
     data = dset.variables[dset.TypeName][:]
     # Azimuth corresponding to 1st slice
-    theta0 = int(dset.variables['Azimuth'][0])
+    theta0 = int(round(dset.variables['Azimuth'][0]))
     # rotate accordingly
-    data = np.roll(data, theta0, axis=1)
-    data = np.flipud(data)
+    data = np.roll(data, theta0, axis=0)
+#    data = np.flipud(data)
     data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
     # Azimuth
     az = dset.variables['Azimuth'][:]
     az = np.round(az, 0)
-    az.sort()
+    az = np.roll(az, theta0)
     # Ranges
     binwidth = dset.getncattr('MaximumRange-value') / len(dset.dimensions['Gate'])
     r = np.arange(binwidth, dset.getncattr('MaximumRange-value')+binwidth, binwidth)
@@ -291,11 +292,15 @@ def read_EDGE_netcdf(filename):
     attrs =  {}
     for attrname in dset.ncattrs():
         attrs[attrname] = dset.getncattr(attrname)
+    # Limiting the returned range
+    if range_lim:
+        data = data[:,:range_lim / binwidth]
 
     attrs['az'] = az
     attrs['r']  = r
-    attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'])
+    attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
     attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
+    attrs['max_range'] = data.shape[1] * binwidth
 
     return data, attrs
 
