@@ -266,7 +266,7 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     ----------
     filename : path of the netCDF file
     range_lim : range limitation [m] of the returned radar data
-        (200000 per default)
+                (200000 per default)
 
     Returns
     -------
