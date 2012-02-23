@@ -259,14 +259,13 @@ def writePolygon2Text(fname, polygons):
         f.write('END\n')
 
 
-def read_EDGE_netcdf(filename, range_lim = 200000.):
+def read_EDGE_netcdf(filename, range_lim = None):
     """Data reader for netCDF files exported by the EDGE radar software
 
     Parameters
     ----------
     filename : path of the netCDF file
-    range_lim : range limitation [m] of the returned radar data
-                (200000 per default)
+    range_lim : range limitation of the returned radar data
 
     Returns
     -------
@@ -287,15 +286,16 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     az = np.round(az, 0)
     az = np.roll(az, theta0)
     # Ranges
-    binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
-    r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
+    binwidth = dset.getncattr('MaximumRange-value') / len(dset.dimensions['Gate'])
+    r = np.arange(binwidth, dset.getncattr('MaximumRange-value')+binwidth, binwidth)
     # collect attributes
     attrs =  {}
     for attrname in dset.ncattrs():
         attrs[attrname] = dset.getncattr(attrname)
     # Limiting the returned range
-    if range_lim and range_lim / binwidth <= data.shape[1]:
+    if not range_lim==None:
         data = data[:,:range_lim / binwidth]
+        r = r[:range_lim / binwidth]
 
     attrs['az'] = az
     attrs['r']  = r
