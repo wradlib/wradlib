@@ -259,7 +259,7 @@ def writePolygon2Text(fname, polygons):
         f.write('END\n')
 
 
-def read_EDGE_netcdf(filename, range_lim = None):
+def read_EDGE_netcdf(filename, range_lim = 200.):
     """Data reader for netCDF files exported by the EDGE radar software
 
     Parameters
@@ -293,7 +293,7 @@ def read_EDGE_netcdf(filename, range_lim = None):
     for attrname in dset.ncattrs():
         attrs[attrname] = dset.getncattr(attrname)
     # Limiting the returned range
-    if range_lim:
+    if range_lim and range_lim / binwidth <= data.shape[1]:
         data = data[:,:range_lim / binwidth]
 
     attrs['az'] = az
