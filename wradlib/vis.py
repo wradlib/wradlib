@@ -95,7 +95,7 @@ class NorthPolarAxes(PolarAxes):
 register_projection(NorthPolarAxes)
 
 
-def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=None, R=1., theta0=0, colormap='jet', **kwargs):
+def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', **kwargs):
     """Plots data from a polar grid.
 
     The data must be an array of shape (number of azimuth angles, number of range bins).
