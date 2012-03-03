@@ -13,10 +13,3 @@ can be used for weather radar processing.
    tutorial_clutter_correction
    tutorial_attenuation_correction
 
-
-Just some ideas on a few tutorials for future
-
-- Georeferencing radar data
-- Clutter detection and infilling
-- Creating quality fields and composition
-- Simple Gauge Adjustment
