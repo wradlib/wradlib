@@ -19,8 +19,9 @@ if __name__ == '__main__':
     import numpy as np
 
     # EXAMPLE 1: Simple polar plot of e.g. reflectivity
-##    testdata = np.loadtxt('data/polar_dBZ_tur.gz')
-##    vis.polar_plot(testdata, title='Reflectivity (dBZ)')
+    testdata = np.loadtxt('data/polar_dBZ_tur.gz')
+    classes = [0, 20, 30, 40, 50, 55, 60, 65]
+    vis.polar_plot(testdata, title='Reflectivity', unit='dBZ', colormap='spectral', classes=classes, extend='max')
 
     # EXAMPLE 2: Plot polar data on a map for Tuerkheim
 ##    testdata = np.loadtxt('data/polar_dBZ_tur.gz')

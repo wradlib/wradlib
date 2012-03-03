@@ -95,7 +95,7 @@ class NorthPolarAxes(PolarAxes):
 register_projection(NorthPolarAxes)
 
 
-def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', **kwargs):
+def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', **kwargs):
     """Plots data from a polar grid.
 
     The data must be an array of shape (number of azimuth angles, number of range bins).
@@ -127,6 +127,13 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
         (normally corresponds to 0)
     colormap : string
         choose between the colormaps "jet" (per default) and "spectral"
+    classes : sequence of numerical values
+        class boundaries for plotting
+    extend : string
+        determines the behaviour of the colorbar: default value 'neither' produces
+        a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
+        maximum end, respectively, and 'both' produces an arrow at both ends. If
+        you use class boundaries for plotting, you should typically use 'both'.
 
     """
     n_theta, n_r = data.shape
@@ -144,13 +151,17 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
     else:
         # plot on the axes object which was passed to this function
         ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
-    if colormap == 'spectral':
-        pl.spectral()
+    if classes==None:
+        # automatic color normalization by vmin and vmax (not recommended)
+        circle = ax.pcolormesh(theta, r, data,rasterized=True, cmap=colormap, **kwargs)
     else:
-        pl.jet()
-    circle = ax.pcolormesh(theta, r, data,rasterized=True, **kwargs)
+        # colors are assigned according to class boundaries and colormap argument
+        mycmap = pl.get_cmap(colormap, lut=len(classes))
+        mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(classes)-1) ))
+        norm   = mpl.colors.BoundaryNorm(classes, mycmap.N)
+        circle = ax.pcolormesh(theta, r, data,rasterized=True, cmap=mycmap, norm=norm, **kwargs)
     pl.grid(True)
-    cbar = pl.colorbar(circle, shrink=0.75)
+    cbar = pl.colorbar(circle, shrink=0.75, extend=extend)
     cbar.set_label('('+unit+')')
     pl.title(title)
     if saveto=='':
