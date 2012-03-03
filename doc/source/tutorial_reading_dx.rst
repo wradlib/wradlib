@@ -1,8 +1,8 @@
-*************************************
-Read and visualize raw DWD radar data
-*************************************
+********************************
+Read and plot raw DWD radar data
+********************************
 
-Decoding raw radar data as provided by German Weather Service (DX-data), transform them to dBZ values and visualize the results.
+This tutorial helps you to read the raw radar data as provided by German Weather Service (DWD), to transform the data to dBZ values and to plot the results.
 
 
 Reading DX-data
