@@ -95,6 +95,83 @@ class NorthPolarAxes(PolarAxes):
 register_projection(NorthPolarAxes)
 
 
+class PolarPlot(object):
+    def __init__(self, ax=None, fig=None, axpos=111, **kwargs):
+        if ax is None:
+            if fig is None:
+                # crate a new figure object
+                fig = pl.figure(**kwargs)
+            # plot on the axes object which was passed to this function
+            ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
+
+        self.fig = fig
+        self.ax = ax
+        self.cmap = 'jet'
+        self.norm = None
+
+    def set_cmap(self, cmap, classes=None):
+        if classes is None:
+            self.cmap = cmap
+        else:
+            mycmap = pl.get_cmap(colormap, lut=len(classes))
+            mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(classes)-1) ))
+            norm   = mpl.colors.BoundaryNorm(classes, mycmap.N)
+            self.cmap = mycmap
+            self.norm = norm
+
+
+    def plot(self, data, R=1., theta0=0, **kwargs):
+        n_theta, n_r = data.shape
+        theta = np.linspace(0, 2*np.pi, n_theta+1)
+        r = np.linspace(0., R, n_r+1)
+
+        data = np.transpose(data)
+        data = np.roll(data, theta0, axis=1)
+
+        circle = self.ax.pcolormesh(theta, r, data, rasterized=True, cmap=self.cmap,
+                           norm=self.norm, **kwargs)
+        return circle
+
+
+    def colorbar(self, *args, **kwargs):
+        #if not kwargs.has_key('shrink'):
+        #    kwargs['shrink'] = 0.75
+        cbar = pl.colorbar(*args, **kwargs)
+        return cbar
+
+
+    def title(self, s, *args, **kwargs):
+        l = self.ax.set_title(s, *args, **kwargs)
+        pl.draw_if_interactive()
+        return l
+
+
+    def grid(self, b=None, which='major', **kwargs):
+        ret =  self.ax.grid(b, which, **kwargs)
+        pl.draw_if_interactive()
+        return ret
+
+
+def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', **kwargs):
+    pp = PolarPlot(fig=fig, axpos=axpos, figsize=(8,8))
+    pp.set_cmap(colormap, classes=classes)
+    circle = pp.plot(data, R=R, theta0=theta0, **kwargs)
+    pp.grid(True)
+    cbar = pp.colorbar(circle, shrink=0.75, extend=extend)
+    cbar.set_label('('+unit+')')
+    pp.title(title)
+    if saveto=='':
+        # show plot
+        pl.show()
+        if not pl.isinteractive():
+            # close figure eplicitely if pylab is not in interactive mode
+            pl.close()
+    else:
+        # save plot to file
+        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+            pl.savefig(saveto)
+
+
 def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', **kwargs):
     """Plots data from a polar grid.
 
