@@ -303,6 +303,7 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
     attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
     attrs['max_range'] = data.shape[1] * binwidth
+    dset.close()
 
     return data, attrs
 
