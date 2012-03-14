@@ -170,6 +170,7 @@ def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., t
         # save plot to file
         if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
             pl.savefig(saveto)
+            pl.close()
 
 
 def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', **kwargs):
@@ -251,6 +252,7 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
         # save plot to file
         if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
             pl.savefig(saveto)
+            pl.close()
 
 
 class PolarBasemap():

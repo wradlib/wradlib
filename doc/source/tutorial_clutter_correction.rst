@@ -73,6 +73,4 @@ Now the clutter bins should be substituted by some meaningful values derived by 
    
 As the result you will see the original rain intensity (left) and the image with clutter correction (right)
 
-.. image:: images/cluttercor.png
-
-Unfortunately there's a lot of clutter left :( but it is less than before. So we keep on improving ...
+.. image:: images/cluttercorrection.gif
