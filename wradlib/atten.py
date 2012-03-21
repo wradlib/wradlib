@@ -22,6 +22,9 @@ Attenuation Correction
     correctAttenuationHB
     correctAttenuationKraemer
     correctAttenuationHJ
+    correctAttenuationConstrained
+    constraint_dBZ
+    constraint_PIA
 
 """
 import numpy as np
@@ -385,6 +388,198 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         else: raise AttenuationOverflowError
 
     return k
+
+
+def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
+                                b_max=0.7, b_min=0.2, na=30, nb=5, l=1.0,
+                                mode='error',
+                                constraints=None, constr_args=None,
+                                diagnostics={}):
+    """Gate-by-Gate attenuation correction based on the iterative approach of
+    Stefan Kraemer [Kraemer2008]_ with a generalized and arbitrary number of
+    constraints.
+
+    Parameters
+    ----------
+    gateset : array
+        Multidimensional array, where the range gates (over which iteration has
+        to be performed) are supposed to vary along the *last* dimension so,
+        e.g., for a set of `l` radar images stored in polar form with `m`
+        azimuths and `n` range-bins the input array's shape can be either
+        (l,m,n) or (m,l,n).
+
+        Data havs to be provided in decibel representation of reflectivity
+        (dBZ).
+
+    a_max : float
+        initial value for linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
+
+    a_min : float
+        minimal allowed linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
+        overflow (sum of signal and attenuation exceeds the threshold ``thrs``).
+        Per default set to 2.33e-5.
+
+    b : float
+        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
+        0.7.
+
+    n : integer
+        number of iterations from a_max to a_min. Per default set to 30.
+
+    l : float
+        length of a range gate. Per default set to 1.0.
+
+    mode : string
+        Controls how the function reacts in case of signal overflow (sum of
+        signal and attenuation exceeds the threshold ``thrs``).
+        Possible values:
+
+        'warn' : emit a warning through the module's logger but continue
+        execution
+
+        'zero' : set offending gates to 0.0
+
+        'nan' : set offending gates to nan
+
+        Per default set to 'zero'. Any other mode will raise an Exception.
+
+    constraints : list
+        list of constraint functions. The signature of these functions has to be
+        constraint_function(`gateset`, `k`, *`constr_args`). Their return value
+        must be a boolean array of shape gateset.shape[:-1] set to True for
+        beams, which do not fulfill the constraint.
+
+    constr_args : list
+        list of lists, which are to be passed to the individual constraint
+        functions using the *args mechanism
+        (len(constr_args) == len(constraints))
+
+    diagnostics : dictionary
+        dictionary of variables, which are usually not returned by the function
+        but may be of interest for research or during testing. Defaults to {},
+        in which case no diagnostics are generated. If a dictionary with
+        certain keys is passed to the function, the respective diagnostics are
+        generated.
+        Currently implemented diagnostics:
+
+            - 'a' - returns the values of the a coefficient of the k-Z
+               relation, which was used to calculate the attenuation for the
+               respective beam as a np.array. The shape of the returned array
+               will be gateset.shape[:-1].
+
+    Returns
+    -------
+    k : array
+        Array with the same shape as ``gateset`` containing the calculated
+        attenuation for each range gate.
+
+    Raises
+    ------
+    AttenuationOverflowError
+        Exception, if not all constraints are satisfied even with the smallest
+        possible linear coefficient (a_min) and no handling ``mode`` is set.
+
+    References
+    ----------
+
+    .. [Kraemer2008] Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
+        für die Niederschlagsvorhersage und die Siedlungsentwässerung,
+        Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
+        Landwirtschaftlichen Wasserbau
+        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
+
+    Examples
+    --------
+    Implementing the original Hitschfeld & Bordan (1954) algorithm with
+    otherwise default parameters
+    >>> k = correctAttenuationConstrained(gateset, n=1, mode='nan')
+
+    Implementing the basic Kraemer algorithm
+    >>> k = correctAttenuationConstrained(gateset,
+    ...                                   mode='nan',
+    ...                                   constraints=[constraint_dBZ],
+    ...                                   constr_args[[59.0]])
+
+    Implementing the PIA algorithm by Jacobi et al.
+    >>> k = correctAttenuationConstrained(gateset,
+    ...                                   mode='nan',
+    ...                                   constraints=[constraint_dBZ,
+    ...                                                constraint_PIA],
+    ...                                   constr_args[[59.0],
+    ...                                               [20.0]])
+
+    """
+
+    if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
+
+    if constraints is None:
+        constraints = []
+    if constr_args is None:
+        constr_args = []
+
+
+    a_used = np.empty(gateset.shape[:-1])
+    b_used = np.empty(gateset.shape[:-1])
+
+    da = (a_max - a_min) / (na - 1)
+    ai = a_max + da
+    k = np.zeros(gateset.shape)
+    db = (b_max - b_min) / (nb - 1)
+
+    # indexing all rows of last dimension (radarbeams)
+    beams2correct = np.where(np.max(k, axis=-1) > (-1.))
+    # iterate over possible a-parameters
+    for j in range(nb):
+        bi = b_max - db*j
+        for i in range(na):
+            ai = a_max - da*i
+            # subset of beams that have to be corrected and corresponding attenuations
+            sub_gateset = gateset[beams2correct]
+            sub_k = k[beams2correct]
+            for gate in range(gateset.shape[-1] - 1):
+                kn = ai * (10.0**((sub_gateset[...,gate] + sub_k[...,gate])/10.0))**bi  * 2.0 * l
+                sub_k[...,gate + 1] = sub_k[...,gate] + kn
+            # integration of the calculated attenuation subset to the whole attenuation matrix
+            k[beams2correct] = sub_k
+            a_used[beams2correct] = ai
+            b_used[beams2correct] = bi
+            # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
+            incorrectbeams = np.zeros(gateset.shape[:-1], dtype=np.bool)
+            for constraint, constr_arg in zip(constraints, constr_args):
+                incorrectbeams |= constraint(gateset, k, *constr_arg)
+            beams2correct = np.where(incorrectbeams) #np.where(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ)
+            # if there is no beam left for correction, the iteration can be interrupted prematurely
+            if len(k[beams2correct]) == 0: break
+        if len(k[beams2correct]) == 0: break
+    if len(k[beams2correct]) > 0:
+        if mode == 'warn': logger.warning('correction did not fulfill constraints within given parameter range')
+        elif mode == 'nan':  k[beams2correct] = np.nan
+        elif mode == 'zero': k[beams2correct] = 0.0
+        else: raise AttenuationOverflowError
+
+    if diagnostics.has_key('a'):
+            diagnostics['a'] = a_used
+    if diagnostics.has_key('b'):
+            diagnostics['b'] = b_used
+
+    return k
+
+
+def constraint_dBZ(gateset, k, thrs_dBZ):
+    """Constraint callback function for correctAttenuationConstrained.
+    Selects beams, in which at least one pixel exceeds `thrs_dBZ` [dBZ].
+    """
+    return np.max(gateset + k, axis=-1) > thrs_dBZ
+
+
+def constraint_PIA(gateset, k, thrs_PIA):
+    """Constraint callback function for correctAttenuationConstrained.
+    Selects beams, in which the path integrated attenuation exceeds `thrs_PIA`.
+    """
+    return np.max(k, axis=-1) > thrs_PIA
+
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <atten> as main...'
