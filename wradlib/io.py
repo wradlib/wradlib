@@ -81,7 +81,7 @@ def unpackDX(raw):
     return np.array(beam)
 
 
-def readDX(filename, elevations=None, azimuths=None):
+def readDX(filename):
     r"""Data reader for German Weather Service DX raw radar data files
     developed by Thomas Pfaff.
 
@@ -94,7 +94,8 @@ def readDX(filename, elevations=None, azimuths=None):
 
     Returns
     -------
-    output : numpy array of image data.
+    output : numpy array of image data (dBZ), dictionary of attributes
+    (elevations, azimuths)
 
     """
 
@@ -168,12 +169,13 @@ def readDX(filename, elevations=None, azimuths=None):
         elevs.append((raw[newazimuths[i]+2] & databitmask)/10.)
         azims.append((raw[newazimuths[i]+1] & databitmask)/10.)
 
-    if type(elevations) is list:
-        elevations.extend(elevs)
-    if type(azimuths) is list:
-        azimuths.extend(azims)
+    attrs =  {}
+    attrs['elev']  = np.array(elevs)
+    attrs['azim'] = np.array(azims)
 
-    return np.array(beams)
+    # converting the DWD rvp6-format into dBZ data and return as numpy array together with attributes
+    return np.array(beams) * 0.5 - 32.5, attrs
+
 
 def purgeDX(data, options):
     clutterflag = 2**15
