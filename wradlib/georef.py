@@ -341,7 +341,7 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
 
 
 
-def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04):
+def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04, range_res = None):
     """
     Computes the lat/lon centroids of the radar bins from the polar coordinates.
 
@@ -380,7 +380,10 @@ def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04):
     r, az = _check_polar_coords(r, az)
 
     # to get the centroid, we only have to move the exterior bin boundaries by half the resolution
-    r = r - 0.5*_get_range_resolution(r)
+    if range_res:
+        r = r - 0.5 * range_res
+    else:
+        r = r - 0.5*_get_range_resolution(r)
     # generate a polar grid and convert to lat/lon
     r, az = np.meshgrid(r, az)
     lat, lon= polar2latlon(r, az, sitecoords)
@@ -524,7 +527,7 @@ def project(latc, lonc, projstr, inverse=False):
     return x, y
 
 
-def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr):
+def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = None):
     """
     Convenience function to compute projected bin coordinates directly from
     radar site coordinates and range/azimuth specs
@@ -537,7 +540,7 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr):
     projstr : string
 
     """
-    cent_lon, cent_lat = polar2centroids(r, az, sitecoords)
+    cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res)
     x, y = project(cent_lat, cent_lon, projstr)
     return x.ravel(), y.ravel()
 
