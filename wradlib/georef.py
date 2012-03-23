@@ -451,6 +451,9 @@ def _get_range_resolution(x):
     Returns the range resolution based on
     the array x of the range gates' exterior limits
     """
+    if len(x)<=1:
+        print 'The range gate array has to contain at least two values for deriving the resolution.'
+        exit()
     res = np.unique(x[1:]-x[:-1])
     if len(res)>1:
         print 'The resolution of the range array is ambiguous.'
@@ -540,7 +543,7 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
     projstr : string
 
     """
-    cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res)
+    cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
     x, y = project(cent_lat, cent_lon, projstr)
     return x.ravel(), y.ravel()
 
