@@ -257,7 +257,7 @@ class Idw(IpolBase):
 
 class Linear(IpolBase):
     """
-    Interface to the scipy.interpol.LinearNDInterpolator class.
+    Interface to the scipy.interpolate.LinearNDInterpolator class.
 
     We provide this class in order to achieve a uniform interface for all
     Interpolator classes
