@@ -538,12 +538,23 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
     Parameters
     ----------
     r : array
+        array of ranges [m]; r defines the exterior boundaries of the range bins!
+        (not the centroids). Thus, values must be positive!
     az : array
     sitecoords : tuple
+        array of azimuth angles containing values between 0° and 360°.
+        The angles are assumed to describe the pointing direction fo the main beam lobe!
+        The first angle can start at any values, but make sure the array is sorted
+        continuously positively clockwise and the angles are equidistant. An angle
+        if 0 degree is pointing north.
     projstr : string
+        proj.4 projection string
+    range_res : float
+        range resolution of radar measurement in case it cannot be derived from
+        r (single entry)
 
     """
-    cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
+    cent_lon, cent_lat = polar2centroids(r / 1000., az, sitecoords, range_res = range_res)
     x, y = project(cent_lat, cent_lon, projstr)
     return x.ravel(), y.ravel()
 
