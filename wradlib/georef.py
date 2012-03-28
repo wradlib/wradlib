@@ -60,7 +60,7 @@ def aeq2hor(tau, delta, phi):
     a = arcsin(cos(delta)*sin(tau)/cos(h))
 
 
-def polar2latlon(r, az, sitecoords, re=6370.04):
+def polar2latlon(r, az, sitecoords, re=6370040):
     """Transforms polar coordinates (of a PPI) to latitude/longitude \
     coordinates.
 
@@ -82,7 +82,7 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
     Parameters
     ----------
     r : array
-        array of ranges [km]
+        array of ranges [m]
     az : array
         array of azimuth angles containing values between 0° and 360°.
         These are assumed to start with 0° pointing north and counted positive
@@ -90,7 +90,7 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
     sitecoords : a sequence of two floats
         the lat / lon coordinates of the radar location
     re : float
-        earth's radius [km]
+        earth's radius [m]
 
     Returns
     -------
@@ -146,7 +146,7 @@ def polar2latlon(r, az, sitecoords, re=6370.04):
     return latc, lonc
 
 
-def __pol2latlon(rng, az, sitecoords, re=6370.04):
+def __pol2latlon(rng, az, sitecoords, re=6370040):
     """Alternative implementation using spherical geometry only.
 
     apparently it produces the same results as polar2latlon.
@@ -261,7 +261,7 @@ def centroid2polyvert(centroid, delta):
     return np.asanyarray(centroid)[...,None,:] + d * np.asanyarray(delta)
 
 
-def polar2polyvert(r, az, sitecoords, re=6370.04):
+def polar2polyvert(r, az, sitecoords):
     """
     Generate 2-D polygon vertices directly from polar coordinates.
 
@@ -277,7 +277,7 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
     ----------
 
     r : array
-        array of ranges [km]; r defines the exterior boundaries of the range bins!
+        array of ranges [m]; r defines the exterior boundaries of the range bins!
         (not the centroids). Thus, values must be positive!
     az : array
         array of azimuth angles containing values between 0° and 360°.
@@ -287,8 +287,6 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
         if 0 degree is pointing north.
     sitecoords : a sequence of two floats
         the lat / lon coordinates of the radar location
-    re : float
-        earth's radius [km]
 
     Returns
     -------
@@ -303,7 +301,7 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
     >>> import pylab as pl
     >>> import matplotlib as mpl
     >>> # define the polar coordinates and the site coordinates in lat/lon
-    >>> r = np.array([0., 50., 100., 150.])
+    >>> r = np.array([50., 100., 150., 200.])
     >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
     >>> sitecoords = (48.0, 9.0)
     >>> polygons = polar2polyvert(r, az, sitecoords)
@@ -341,7 +339,7 @@ def polar2polyvert(r, az, sitecoords, re=6370.04):
 
 
 
-def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04, range_res = None):
+def polar2centroids(r=None, az=None, sitecoords=None, range_res = None):
     """
     Computes the lat/lon centroids of the radar bins from the polar coordinates.
 
@@ -353,7 +351,7 @@ def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04, range_res = No
     For further information refer to the documentation of georef.polar2latlon.
 
     r : array
-        array of ranges [km]; r defines the exterior boundaries of the range bins!
+        array of ranges [m]; r defines the exterior boundaries of the range bins!
         (not the centroids). Thus, values must be positive!
     az : array
         array of azimuth angles containing values between 0° and 360°.
@@ -363,8 +361,9 @@ def polar2centroids(r=None, az=None, sitecoords=None, re=6370.04, range_res = No
         if 0 degree is pointing north.
     sitecoords : a sequence of two floats
         the lat / lon coordinates of the radar location
-    re : float
-        earth's radius [km]
+    range_res : float
+        range resolution of radar measurement [m] in case it cannot be derived
+        from r (single entry in r-array)
 
     Returns
     -------
@@ -550,11 +549,11 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
     projstr : string
         proj.4 projection string
     range_res : float
-        range resolution of radar measurement in case it cannot be derived from
-        r (single entry)
+        range resolution of radar measurement [m] in case it cannot be derived
+        from r (single entry in r-array)
 
     """
-    cent_lon, cent_lat = polar2centroids(r / 1000., az, sitecoords, range_res = range_res)
+    cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
     x, y = project(cent_lat, cent_lon, projstr)
     return x.ravel(), y.ravel()
 
