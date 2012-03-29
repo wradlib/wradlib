@@ -94,8 +94,8 @@ def readDX(filename):
 
     Returns
     -------
-    output : numpy array of image data (dBZ), dictionary of attributes
-    (elevations, azimuths)
+    data : numpy array of image data [dBZ]
+    attributes : dictionary of attributes (elevations, azimuths)
 
     """
 
