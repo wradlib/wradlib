@@ -54,7 +54,7 @@ def correctAttenuationHB(gateset, a = 1.67e-4, b = 0.7, l = 1.0, mode='',
         the *last* dimension so, e.g., for a set of `l` radar images stored in
         polar form with `m` azimuths and `n` range-bins the input array's
         shape can be either (l,m,n) or (m,l,n)
-        data havs to be provided in decibel representation of reflectivity (dBZ)
+        data has to be provided in decibel representation of reflectivity [dBZ]
 
     a : float
         proportionality factor of the k-Z relation ( :math:`k=a*Z^{b}` ).
@@ -65,7 +65,7 @@ def correctAttenuationHB(gateset, a = 1.67e-4, b = 0.7, l = 1.0, mode='',
         0.7.
 
     l : float
-        length of a range gate. Per default set to 1.0.
+        length of a range gate [km]. Per default set to 1.0.
 
     mode : string
         controls how the function reacts, if the sum of signal and attenuation
@@ -84,9 +84,9 @@ def correctAttenuationHB(gateset, a = 1.67e-4, b = 0.7, l = 1.0, mode='',
 
     Returns
     -------
-    k : array
+    pia : array
         Array with the same shape as ``gateset`` containing the calculated
-        attenuation for each range gate.
+        attenuation [dB] for each range gate.
 
     Raises
     ------
@@ -120,8 +120,8 @@ def correctAttenuationHB(gateset, a = 1.67e-4, b = 0.7, l = 1.0, mode='',
     l = _coefficients['l']
 
 
-    k = np.empty(gateset.shape)
-    k[...,0] = 0.
+    pia = np.empty(gateset.shape)
+    pia[...,0] = 0.
     ksum = 0.
 
     # multidimensional version
@@ -130,25 +130,25 @@ def correctAttenuationHB(gateset, a = 1.67e-4, b = 0.7, l = 1.0, mode='',
     for gate in range(gateset.shape[-1]-1):
         # calculate k in dB/km from k-Z relation
         # c.f. Krämer2008(p. 147)
-        kn = a * (10.0**((gateset[...,gate] + ksum)/10.0))**b  * 2.0 * l
-        #kn = 10**(log10(a)+0.1*bin*b)
+        k = a * (10.0**((gateset[...,gate] + ksum)/10.0))**b  * 2.0 * l
+        #k = 10**(log10(a)+0.1*bin*b)
         #dBkn = 10*math.log10(a) + (bin+ksum)*b + 10*math.log10(2*l)
-        ksum += kn
+        ksum += k
 
-        k[...,gate+1] = ksum
+        pia[...,gate+1] = ksum
         # stop-criterion, if corrected reflectivity is larger than 59 dBZ
         overflow = (gateset[...,gate] + ksum) > thrs
         if np.any(overflow):
             if mode == 'warn':
                 logger.warning('dB-sum over threshold (%3.1f)'%thrs)
             if mode == 'nan':
-                k[gate,overflow] = np.nan
+                pia[gate,overflow] = np.nan
             if mode == 'zero':
-                k[gate,overflow] = 0.0
+                pia[gate,overflow] = 0.0
             else:
                 raise AttenuationOverflowError
 
-    return k
+    return pia
 
 
 def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
@@ -168,8 +168,8 @@ def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
         azimuths and `n` range-bins the input array's shape can be either
         (l,m,n) or (m,l,n).
 
-        Data havs to be provided in decibel representation of reflectivity
-        (dBZ).
+        Data has to be provided in decibel representation of reflectivity
+        [dBZ].
 
     a_max : float
         initial value for linear coefficient of the k-Z relation
@@ -189,7 +189,7 @@ def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
         number of iterations from a_max to a_min. Per default set to 30.
 
     l : float
-        length of a range gate. Per default set to 1.0.
+        length of a range gate [km]. Per default set to 1.0.
 
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
@@ -206,14 +206,14 @@ def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
         Per default set to 'zero'. Any other mode will raise an Exception.
 
     thrs_dBZ : float
-        Threshold, for the attenuation corrected signal in dBZ, which is deemed
+        Threshold, for the attenuation corrected signal [dBZ], which is deemed
         unplausible. Per default set to 59.0 dBZ.
 
     Returns
     -------
-    k : array
+    pia : array
         Array with the same shape as ``gateset`` containing the calculated
-        attenuation for each range gate.
+        attenuation [dB] for each range gate.
 
     Raises
     ------
@@ -236,32 +236,32 @@ def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
 
     da = (a_max - a_min) / (n - 1)
     ai = a_max + da
-    k = np.zeros(gateset.shape)
-    k[...,0] = 0.0
+    pia = np.zeros(gateset.shape)
+    pia[...,0] = 0.0
     # indexing all rows of last dimension (radarbeams)
-    beams2correct = np.where(np.max(k, axis = k.ndim - 1) > (-1.))
+    beams2correct = np.where(np.max(pia, axis = pia.ndim - 1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
         ai = ai - da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
-        sub_k = k[beams2correct]
+        sub_pia = pia[beams2correct]
         for gate in range(gateset.shape[-1] - 1):
-            kn = ai * (10.0**((sub_gateset[...,gate] + sub_k[...,gate])/10.0))**b  * 2.0 * l
-            sub_k[...,gate + 1] = sub_k[...,gate] + kn
+            k = ai * (10.0**((sub_gateset[...,gate] + sub_pia[...,gate])/10.0))**b  * 2.0 * l
+            sub_pia[...,gate + 1] = sub_pia[...,gate] + k
         # integration of the calculated attenuation subset to the whole attenuation matrix
-        k[beams2correct] = sub_k
+        pia[beams2correct] = sub_pia
         # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
-        beams2correct = np.where(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ)
+        beams2correct = np.where(np.max(gateset + pia, axis = pia.ndim - 1) > thrs_dBZ)
         # if there is no beam left for correction, the iteration can be interrupted prematurely
-        if len(k[beams2correct]) == 0: break
-    if len(k[beams2correct]) > 0:
+        if len(pia[beams2correct]) == 0: break
+    if len(pia[beams2correct]) > 0:
         if mode == 'warn': logger.warning('dB-sum over threshold (%3.1f)'%thrs)
-        elif mode == 'nan':  k[beams2correct] = np.nan
-        elif mode == 'zero': k[beams2correct] = 0.0
+        elif mode == 'nan':  pia[beams2correct] = np.nan
+        elif mode == 'zero': pia[beams2correct] = 0.0
         else: raise AttenuationOverflowError
 
-    return k
+    return pia
 
 
 def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
@@ -282,8 +282,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         azimuths and `n` range-bins the input array's shape can be either
         (l,m,n) or (m,l,n).
 
-        Data havs to be provided in decibel representation of reflectivity
-        (dBZ).
+        Data has to be provided in decibel representation of reflectivity
+        [dBZ].
 
     a_max : float
         initial value for linear coefficient of the k-Z relation
@@ -303,7 +303,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         number of iterations from a_max to a_min. Per default set to 30.
 
     l : float
-        length of a range gate. Per default set to 1.0.
+        length of a range gate [km]. Per default set to 1.0.
 
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
@@ -320,16 +320,16 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         Per default set to 'zero'. Any other mode will raise an Exception.
 
     thrs_dBZ : float
-        Threshold, for the attenuation corrected signal in dBZ, which is deemed
+        Threshold, for the attenuation corrected signal [dBZ], which is deemed
         unplausible. Per default set to 59.0 dBZ.
 
     max_PIA : float
-        threshold, for the maximum path integrated attenuation which allows
+        threshold, for the maximum path integrated attenuation [dB] which allows
         reasonable attenuation corrections. Per default set to 20.0 dB.
 
     Returns
     -------
-    k : array
+    pia : array
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate. In case the input array (gateset)
         contains NaNs the corresponding beams of the output array (k) will be
@@ -360,34 +360,34 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 ##  initialize an attenuation array with the same shape as the gateset,
 ##  filled with zeros, except that NaNs occuring in the gateset will cause a
 ##  initialization with Nans for the ENTIRE corresponding attenuation beam
-    k = np.where(np.isnan(gateset), np.nan, 0.)
-    k[np.where(np.isnan(k))[0]] = np.nan
+    pia = np.where(np.isnan(gateset), np.nan, 0.)
+    pia[np.where(np.isnan(pia))[0]] = np.nan
     # indexing all rows of last dimension (radarbeams) except rows including NaNs
-    beams2correct = np.where(np.max(k, axis=-1) > (-1.))
+    beams2correct = np.where(np.max(pia, axis=-1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
         ai = ai - da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
-        sub_k = k[beams2correct]
+        sub_pia = pia[beams2correct]
         for gate in range(gateset.shape[-1] - 1):
-            kn = ai * (10.0**((sub_gateset[...,gate] + sub_k[...,gate])/10.0))**b  * 2.0 * l
-            sub_k[...,gate + 1] = sub_k[...,gate] + kn
+            k = ai * (10.0**((sub_gateset[...,gate] + sub_pia[...,gate])/10.0))**b  * 2.0 * l
+            sub_pia[...,gate + 1] = sub_pia[...,gate] + k
         # integration of the calculated attenuation subset to the whole attenuation matrix
-        k[beams2correct] = sub_k
+        pia[beams2correct] = sub_pia
         # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the thresholds
         # of corrected attenuation or PIA or NaNs are occuring
-        beams2correct = np.where(np.logical_or(np.max(gateset + k, axis=-1) > thrs_dBZ,
-                                               np.max(k, axis=-1) > max_PIA))
+        beams2correct = np.where(np.logical_or(np.max(gateset + pia, axis=-1) > thrs_dBZ,
+                                               np.max(pia, axis=-1) > max_PIA))
         # if there is no beam left for correction, the iteration can be interrupted prematurely
-        if len(k[beams2correct]) == 0: break
-    if len(k[beams2correct]) > 0:
+        if len(pia[beams2correct]) == 0: break
+    if len(pia[beams2correct]) > 0:
         if mode == 'warn': logger.warning('threshold exceeded (corrected dBZ or PIA) even for lowest a')
-        elif mode == 'nan':  k[beams2correct] = np.nan
-        elif mode == 'zero': k[beams2correct] = 0.0
+        elif mode == 'nan':  pia[beams2correct] = np.nan
+        elif mode == 'zero': pia[beams2correct] = 0.0
         else: raise AttenuationOverflowError
 
-    return k
+    return pia
 
 
 def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
@@ -408,8 +408,8 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         azimuths and `n` range-bins the input array's shape can be either
         (l,m,n) or (m,l,n).
 
-        Data havs to be provided in decibel representation of reflectivity
-        (dBZ).
+        Data has to be provided in decibel representation of reflectivity
+        [dBZ].
 
     a_max : float
         initial value for linear coefficient of the k-Z relation
@@ -429,7 +429,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         number of iterations from a_max to a_min. Per default set to 30.
 
     l : float
-        length of a range gate. Per default set to 1.0.
+        length of a range gate [km]. Per default set to 1.0.
 
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
@@ -471,9 +471,9 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Returns
     -------
-    k : array
+    pia : array
         Array with the same shape as ``gateset`` containing the calculated
-        attenuation for each range gate.
+        attenuation [dB] for each range gate.
 
     Raises
     ------
