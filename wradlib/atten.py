@@ -28,14 +28,21 @@ Attenuation Correction
 
 """
 import numpy as np
+import scipy.ndimage as ndi
+import scipy.interpolate as spi
 import os, sys
 import math
 import logging
+from .trafo import idecibel
 
 logger = logging.getLogger('attcorr')
 
 
 class AttenuationOverflowError(Exception):
+    pass
+
+
+class AttenuationIterationError(Exception):
     pass
 
 
@@ -471,7 +478,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Returns
     -------
-    pia : array
+    k : array
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate.
 
@@ -579,6 +586,169 @@ def constraint_PIA(gateset, k, thrs_PIA):
     Selects beams, in which the path integrated attenuation exceeds `thrs_PIA`.
     """
     return np.max(k, axis=-1) > thrs_PIA
+
+
+#-------------------------------------------------------------------------------
+# new implementation of Kraemer algorithm
+#-------------------------------------------------------------------------------
+def calc_attenuation_forward(gateset, a, b, l):
+    """Gate-by-Gate forward correction as described in [Kraemer2008]_"""
+    k = np.zeros(gateset.shape)
+    for gate in range(gateset.shape[-1]-1):
+        kn = a * idecibel(gateset[...,gate] + k[...,gate])**b  * 2.0 * l
+        k[...,gate+1] = k[...,gate] + kn
+    return k
+
+
+def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
+    """Gate-by-Gate backward correction as described in [Kraemer2008]_"""
+    k = np.zeros(gateset.shape)
+    k[...,-1] = a_ref
+    for gate in range(gateset.shape[-1]-2, 0, -1):
+        kright = np.zeros(gateset.shape[:-1])+a_ref/gateset.shape[-1]
+        toprocess = np.ones(gateset.shape[:-1], dtype=np.bool)
+        for j in range(maxiter):
+            kleft = a * (idecibel(gateset[...,gate][toprocess]
+                                  + k[...,gate+1][toprocess]
+                                  - kright[toprocess]))**b * 2.0 * l
+            diff = np.abs(kleft-kright)
+            kright[toprocess] = kleft
+            toprocess[diff<tdiff] = False
+            if ~np.any(toprocess):
+                break
+
+        if j == maxiter-1:
+            raise AttenuationIterationError
+
+        k[...,gate] = k[...,gate+1] - kright
+    #k = np.cumsum(k, axis=-1)
+    return k
+
+
+def bisectReferenceAttenuation(gateset,
+                               a_ref,
+                               a_max=1e-3,
+                               a_min=1e-7,
+                               b=0.7,
+                               l=1,
+                               thrs=0.05,
+                               maxiter=np.inf):
+    """Find the optimal linear coefficient for a gateset to
+    achieve a given reference attenuation using a forward correction algorithm
+    """
+    a_hi = a_max
+    a_lo = a_min
+
+    itercount = 0
+    while not np.all(a_hi == a_lo):
+        a_mid = (a_hi+a_lo)/2
+        k = calcAttenuationForward(gateset, a_mid, b, l)
+        overshoot = ((k[...,-1] - a_ref)/a_ref) > thrs
+        undershoot = ((k[...,-1] - a_ref)/a_ref) < -thrs
+        hit = (np.abs(k[...,-1] - a_ref)/a_ref) < thrs
+        a_hi[overshoot] = a_mid[overshoot]
+        a_lo[undershoot] = a_mid[undershoot]
+        a_hi[hit] = a_mid[hit]
+        a_lo[hit] = a_mid[hit]
+        itercount+=1
+        if itercount > maxiter:
+            raise AttenuationIterationError
+
+    return k, a_hi
+
+
+def sector_filter(mask, min_sector_size, axis=-1):
+    """"""
+    kernel = np.ones((min_sector_size,))
+    # todo make the origin dynamic
+    forward_sum = ndi.convolve1d(mask, kernel, axis=-1, mode='wrap', origin=1)
+    backward_sum = ndi.convolve1d(mask, kernel, axis=-1, mode='wrap', origin=-2)
+    forward_corners = (forward_sum == min_sector_size)
+    backward_corners = (backward_sum == min_sector_size)
+    forward_large_sectors = ndi.morphology.binary_dilation(c1, krn, origin=-2).astype(int)
+    backward_large_sectors = ndi.morphology.binary_dilation(c2, krn, origin=1).astype(int)
+
+    return (forward_large_sectors | backward_large_sectors)
+
+
+def nd_pad(data, pad, axis=-1, mode='wrap'):
+    """"""
+    axislen = data.shape[axis]
+    new_shape = np.array(data.shape)
+    new_shape[axis] += 2*pad
+    new_data = np.empty(new_shape)
+
+    dataslices = [slice(None, None) for i in new_shape]
+    dataslices[axis] = slice(pad, axislen+pad)
+
+    new_data[dataslices]=data
+
+    if mode=='wrap':
+        old_leftslice = [slice(None, None) for i in new_shape]
+        old_leftslice[axis] = slice(0, pad)
+        old_rightslice = [slice(None, None) for i in new_shape]
+        old_rightslice[axis] = slice(axislen-pad, axislen)
+
+        new_leftslice = [slice(None, None) for i in new_shape]
+        new_leftslice[axis] = slice(0,pad)
+        new_rightslice = [slice(None, None) for i in new_shape]
+        new_rightslice[axis] = slice(axislen+pad, axislen+2*pad)
+
+        new_data[new_leftslice] = data[old_rightslice]
+        new_data[new_rightslice] = data[old_leftslice]
+
+    return new_data
+
+
+def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, l,
+                                   mode='error', constraints=None,
+                                   thr_sec=10,
+                                   constr_args=None,
+                                   diagnostics={}):
+    """"""
+    if np.any(np.isnan(gateset)):
+        raise Exception('There are not processable NaN in the gateset!')
+
+    if constraints is None:
+        constraints = []
+    if constr_args is None:
+        constr_args = []
+
+    k = np.zeros_like(gateset)
+
+    a_used = np.empty(gateset.shape[:-1])
+    b_used = np.empty(gateset.shape[:-1])
+
+    # forward attenuation calculation
+    # indexing all rows of last dimension (radarbeams)
+    beams2correct = np.where(np.ones(gateset.shape[:-1], dtype=np.bool))
+    # iterate over possible a-parameters
+    for j in range(nb):
+        bi = b_max - db*j
+        for i in range(na):
+            ai = a_max - da*i
+            # subset of beams that have to be corrected and corresponding attenuations
+            sub_gateset = gateset[beams2correct]
+            sub_k = calc_attenuation_forward(sub_gateset, ai, bi, l)
+            # mark overflow
+            k[beams2correct] = sub_k
+            a_used[beams2correct] = ai
+            b_used[beams2correct] = bi
+            # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
+            incorrectbeams = np.zeros(gateset.shape[:-1], dtype=np.bool)
+            for constraint, constr_arg in zip(constraints, constr_args):
+                incorrectbeams |= constraint(gateset, k, *constr_arg)
+
+            # determine sectors larger than thr_sec
+            beams2correct = np.where(sector_filter(incorrectbeams, thr_sec))
+            if len(k[beams2correct]) == 0: break
+        if len(k[beams2correct]) == 0: break
+
+    # interpolate the reference attenuations to invalid sectors
+
+    # do reference bisections over invalid sectors
+    pass
+
 
 
 if __name__ == '__main__':
