@@ -380,28 +380,49 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
             result = ip(vals[ix_valid])
     return result
 
-def interpolate_polar(data, mask, fill_method='nearest'):
+def interpolate_polar(data, mask = None, Interpolator = Nearest):
     """
     Convenience function to interpolate polar data
 
     Parameters
     ----------
     data : 2d-array
-        2 dimensional array of floats, representing polar data
+        2 dimensional array (azimuth, ranges) of floats;
+
+        if no mask is assigned explicitly polar data should be a masked array
     mask : array
-        boolean array with pixels to be interpolated set to True
+        boolean array with pixels to be interpolated set to True;
+
         must have the same shape as data
-    fill_method : string
-        String the describes the interpolation method
-        'nearest' = Nearest Neighbor Interpolation (by default)
-        'linear' = Linear Interpolation
+    Interpolator : a class which inherits from IpolBase
 
     Returns
     -------
     filled_data : 2d-array
         array with interpolated values for the values set to True in the mask
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import wradlib as wrl
+    >>> # creating a data array and mask some values
+    >>> data_array = np.arange(12.).reshape(4,3)
+    >>> masked_values = np.where(np.logical_or(a==2,a==9), True, False)
+    >>> # interpolate the masked data based on ''masked_values''
+    >>> data = wrl.ipol.interpolate_polar(a, mask = masked_values, Interpolator = wrl.ipol.Linear)
+    >>> wrl.vis.polar_plot(data)
+    >>> # the same result can be achieved by using an masked array instead of an explicit mask
+    >>> b = np.ma.array(a, mask = mask)
+    >>> data = wrl.ipol.interpolate_polar(b, Interpolator = wrl.ipol.Linear)
+    >>> wrl.vis.polar_plot(data)
+
+
     """
+
+    if not np.any(mask):
+        if type(data) != np.ma.core.MaskedArray: print 'Warning! Neither an explicit mask is assigned nor the data-array is masked.'
+        mask = np.ma.getmaskarray(data)
+    clutter_indices = np.where(mask.ravel())
     # construct the ranges for every bin
     ranges = np.tile(np.arange(0.5, data.shape[1] + 0.5), data.shape[0])
     # construct the angles for every bin
@@ -409,25 +430,24 @@ def interpolate_polar(data, mask, fill_method='nearest'):
     # calculate cartesian coordinates for every bin
     binx = np.cos(angles) * ranges
     biny = np.sin(angles) * ranges
-    trg_coord = np.array([binx, biny]).transpose()
     # calculate cartesian coordinates for bins, which are not masked
-    clutter_indices = np.where(mask.ravel())
     src_coord = np.array([(np.delete(binx,clutter_indices)), (np.delete(biny,clutter_indices))]).transpose()
-    # building object class for nearest neighbour interpolation either for directly requested interpolation
-    # by nearest neighbours or for filling the boundary gap caused by linear interpolation
-    intpol_nearest = Nearest(src_coord, trg_coord)
+    # calculate cartesian coordinates for bins, which are masked
+    trg_coord = np.array([binx[clutter_indices], biny[clutter_indices]]).transpose()
     # data values for bins, which are not masked
     values_list = np.delete(data,clutter_indices)
-    # nearest neighbour interpolation of data, based on values, which are not masked
-    filled_data = intpol_nearest(values_list).reshape(data.shape[0],data.shape[1])
-    if fill_method == 'linear':
-        # building object class for linear interpolation
-        intpol_linear = Linear(src_coord, trg_coord)
-        # calculating linear interpolation
-        filled_data_linear = intpol_linear(values_list).reshape(data.shape[0],data.shape[1])
-        # and filling gaps (it is impossible to interpolation linear at boundary locations) with nearest neighbour
-        filled_data = np.where(np.isnan(filled_data_linear), filled_data, filled_data_linear)
-    return filled_data
+    filled_data = data.copy().ravel()
+    # interpolate masked bins
+    filling = interpolate(src_coord, trg_coord, values_list, Interpolator)
+    # fill data with the interpolations
+    filled_data[clutter_indices] = filling
+    # in case of nans as processed at the rim when interpolating linear, these values are finally interpolated
+    # by nearest Neighbor interpolation
+    if np.any(np.isnan(filled_data)):
+        trg_coord = np.array([binx[np.where(np.isnan(filled_data))], biny[np.where(np.isnan(filled_data))]]).transpose()
+        filling = interpolate(src_coord, trg_coord, values_list, Interpolator = Nearest)
+        filled_data[np.where(np.isnan(filled_data))] = filling
+    return filled_data.reshape(data.shape[0],data.shape[1])
 
 
 if __name__ == '__main__':
