@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # 1st step: generate the centroid coordinates of the radar bins
     #   define the polar coordinates and the site coordinates in lat/lon
-    r = np.arange(1,129)
+    r = np.arange(1,129)*1000
     az = np.linspace(0,360,361)[0:-1]
     #   drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
     #   drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778

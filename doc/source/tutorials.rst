@@ -2,7 +2,8 @@ Tutorials
 =========
 
 The tutorials should give an idea how the individual functions of *wradlib*
-can be used for weather radar processing.
+can be used for weather radar processing. For additional help to certain functions
+also consider the code examples distributed with the source code.
 
 .. toctree::
    :maxdepth: 2

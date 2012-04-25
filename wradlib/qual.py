@@ -90,13 +90,13 @@ def pulse_volume(ranges, h, theta):
     ranges : array
         the distances of each bin from the radar [m]
     h : float
-        puls width (which corresponds to the range resolution [m])
+        pulse width (which corresponds to the range resolution [m])
     theta : float
         the aperture angle (beam width) of the radar beam [degree]
 
     Returns
     -------
-    output : volume of radar bins at each range in `ranges` (qubic metres)
+    output : volume of radar bins at each range in `ranges` [m**3]
 
     """
     return np.pi * h * (ranges**2) * (np.tan( np.radians(theta) ))**2
