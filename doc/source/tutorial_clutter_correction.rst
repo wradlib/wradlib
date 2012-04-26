@@ -8,7 +8,7 @@ The wradlib function histo_cut is an histogram based clutter identification algo
 
 In a first step you need an radar-image with an representative accumulation timespan, so that precipitation is distributed evenly over the image. As for example this philipinean image, where the scale extend shows us definitely the occurance of clutter:
 
-.. image:: images/phil_sum.png
+.. image:: images/phil_sum.jpg
 
 With the accumulation data as an input histo_cut returns an mask array with ones where clutter is detected::
 
@@ -16,19 +16,19 @@ With the accumulation data as an input histo_cut returns an mask array with ones
    accumulation_array = np.loadtxt('d:/Stephan/Arbeit/PROGRESS/Daten/Philipines_s-band/netcdf/addition/prec_sum.txt')
    cluttermask = wrl.clutter.histo_cut(accumulation_array)
    
-.. image:: images/phil_mask.png
+.. image:: images/phil_mask.jpg
 
 What happens behind the curtain is, histo_cut computes an histogram for all radar bins and the corresponding mask:
 
-.. image:: images/mask1.png
+.. image:: images/mask1.jpg
 
 Seen from the class with the highest frequency histo_cut searches to the left and the right of the histogram for the nearest class wich underscores 1% of highest frequency class and cuts all values beyond these classes by setting them Nan.
 
-.. image:: images/mask2.png
+.. image:: images/mask2.jpg
 
 As the result you see an histogram with a more narrow span of precipitation amounts and an updated clutter mask. This procedure is repeated iteratively until, the changes fall below a threshold value. The result are the final histogram and cluttermask:
 
-.. image:: images/mask3.png
+.. image:: images/mask3.jpg
 
 Now the clutter bins should be substituted by some meaningful values derived by nearest neighbour or linear interpolation::
 
@@ -68,8 +68,10 @@ Now the clutter bins should be substituted by some meaningful values derived by 
    filled_R_linear = intpol_linear(values_list).reshape(len(attrs['az']),len(attrs['r']))
    filled_R = np.where(np.isnan(filled_R_linear), filled_R, filled_R_linear)
    rain_intensity = rain_intensity.reshape(len(attrs['az']), len(attrs['r']))
-   wrl.vis.polar_plot(rain_intensity, title = 'Rain intensity', unit = 'mm/h', R = attrs['max_range'] / 1000., colormap = 'spectral', vmax = 140.)
-   wrl.vis.polar_plot(filled_R, title = 'Clutter corrected rain intensity', unit = 'mm/h', R = attrs['max_range'] / 1000., colormap = 'spectral', vmax = 140.)
+   wrl.vis.polar_plot(rain_intensity, title = 'Rain intensity', unit = 'mm/h',
+       R = attrs['max_range'] / 1000., colormap = 'spectral', vmax = 140.)
+   wrl.vis.polar_plot(filled_R, title = 'Clutter corrected rain intensity',
+       unit = 'mm/h', R = attrs['max_range'] / 1000., colormap = 'spectral', vmax = 140.)
    
 As the result you will see the original rain intensity (left) and the image with clutter correction (right)
 
