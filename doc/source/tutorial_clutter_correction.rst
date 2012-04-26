@@ -32,8 +32,10 @@ As the result you see an histogram with a more narrow span of precipitation amou
 
 Now the clutter bins should be substituted by some meaningful values derived by nearest neighbour or linear interpolation::
 
+   # set the location of your data
+   datadir = 'D:/THIS/IS/MY/DATA/DIRECTORY/'
    # get the radar data which should be clutter corrected
-   data, attrs = wrl.io.read_EDGE_netcdf('d:/Stephan/Arbeit/PROGRESS/Daten/Philipines_s-band/netcdf/20110927/SUB-20110927-050748-01-Z.nc', range_lim = 100000)
+   data, attrs = wrl.io.read_EDGE_netcdf(datadir + 'SUB-20110927-050748-01-Z.nc', range_lim = 100000)
 
    # define clutter-indices on the basis of the clutter-mask
    clutter_indices = np.where(cluttermask.ravel())
