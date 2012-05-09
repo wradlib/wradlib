@@ -769,8 +769,18 @@ def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, 
         if len(k[beams2correct]) == 0: break
 
     # interpolate the reference attenuations to invalid sectors
-
+    interp_atten(k, invalidbeams)
     # do reference bisections over invalid sectors
+    tmp_k, tmp_a = bisectReferenceAttenuation(gateset[invalidbeams,:],
+                                        k[invalidbeams, -1],
+                                        a_max=1e-3,
+                                        a_min=1e-7,
+                                        b=0.7,
+                                        l=1,
+                                        thrs=0.05,
+                                        maxiter=np.inf)
+    k[invalidbeams,:] = tmp_k
+    a_used[invalidbeams] = tmp_a
 
     return k.reshape(gateset.shape)
 
