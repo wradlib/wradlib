@@ -660,13 +660,14 @@ def bisectReferenceAttenuation(gateset,
 def sector_filter(mask, min_sector_size, axis=-1):
     """"""
     kernel = np.ones((min_sector_size,))
-    # todo make the origin dynamic
-    forward_sum = ndi.convolve1d(mask, kernel, axis=-1, mode='wrap', origin=1)
-    backward_sum = ndi.convolve1d(mask, kernel, axis=-1, mode='wrap', origin=-2)
+    forward_origin = -(min_sector_size - (min_sector_size // 2)) + min_sector_size%2
+    backward_origin = (min_sector_size - (min_sector_size // 2)) - 1
+    forward_sum = ndi.correlate1d(mask, kernel, axis=-1, mode='wrap', origin=forward_origin)
+    backward_sum = ndi.correlate1d(mask, kernel, axis=-1, mode='wrap', origin=backward_origin)
     forward_corners = (forward_sum == min_sector_size)
     backward_corners = (backward_sum == min_sector_size)
-    forward_large_sectors = ndi.morphology.binary_dilation(c1, krn, origin=-2).astype(int)
-    backward_large_sectors = ndi.morphology.binary_dilation(c2, krn, origin=1).astype(int)
+    forward_large_sectors = ndi.morphology.binary_dilation(forward_corners, kernel, origin=forward_origin).astype(int)
+    backward_large_sectors = ndi.morphology.binary_dilation(backward_corners, kernel, origin=backward_origin).astype(int)
 
     return (forward_large_sectors | backward_large_sectors)
 
