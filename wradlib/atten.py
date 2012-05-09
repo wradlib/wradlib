@@ -729,31 +729,39 @@ def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, 
         constraints = []
     if constr_args is None:
         constr_args = []
+    naz = gateset.shape[-2]
+    nrng = gateset.shape[-1]
+    tmp_gateset = gateset.reshape((-1,naz,nrng))
 
-    k = np.zeros_like(gateset)
+    k = np.zeros_like(tmp_gateset)
 
-    a_used = np.empty(gateset.shape[:-1])
-    b_used = np.empty(gateset.shape[:-1])
+    a_used = np.empty(tmp_gateset.shape[:-1])
+    b_used = np.empty(tmp_gateset.shape[:-1])
 
     # forward attenuation calculation
     # indexing all rows of last dimension (radarbeams)
-    beams2correct = np.where(np.ones(gateset.shape[:-1], dtype=np.bool))
+    beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype=np.bool))
+    invalidbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
+
+    da = (a_max - a_min)/na
+    db = (b_max - b_min)/nb
+
     # iterate over possible a-parameters
     for j in range(nb):
         bi = b_max - db*j
         for i in range(na):
             ai = a_max - da*i
             # subset of beams that have to be corrected and corresponding attenuations
-            sub_gateset = gateset[beams2correct]
+            sub_gateset = tmp_gateset[beams2correct]
             sub_k = calc_attenuation_forward(sub_gateset, ai, bi, l)
             # mark overflow
             k[beams2correct] = sub_k
             a_used[beams2correct] = ai
             b_used[beams2correct] = bi
             # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
-            incorrectbeams = np.zeros(gateset.shape[:-1], dtype=np.bool)
+            incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
             for constraint, constr_arg in zip(constraints, constr_args):
-                incorrectbeams |= constraint(gateset, k, *constr_arg)
+                incorrectbeams |= constraint(tmp_gateset, k, *constr_arg)
 
             # determine sectors larger than thr_sec
             beams2correct = np.where(sector_filter(incorrectbeams, thr_sec))
@@ -763,7 +771,8 @@ def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, 
     # interpolate the reference attenuations to invalid sectors
 
     # do reference bisections over invalid sectors
-    pass
+
+    return k.reshape(gateset.shape)
 
 
 
