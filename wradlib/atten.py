@@ -701,6 +701,21 @@ def nd_pad(data, pad, axis=-1, mode='wrap'):
     return new_data
 
 
+def interp_atten(k, invalidbeams):
+    """"""
+    x = np.arange(3*k.shape[1])
+
+    for i in range(k.shape[0]):
+        sub_i = invalidbeams[i,:]
+        sub_k = k[i,:,-1]
+        pad_i = np.concatenate([sub_i]*3)
+        pad_k = np.concatenate([sub_k]*3)
+
+        intp = scipy.interpolate.interp1d(x[~pad_i], pad_k[~pad_i], mode='linear')
+
+        k[i,sub_i,-1] = intp(x[k.shape[1]:2*k.shape[1]+1][sub_i])
+
+
 def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, l,
                                    mode='error', constraints=None,
                                    thr_sec=10,
