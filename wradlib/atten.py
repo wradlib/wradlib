@@ -764,7 +764,9 @@ def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, 
                 incorrectbeams |= constraint(tmp_gateset, k, *constr_arg)
 
             # determine sectors larger than thr_sec
-            beams2correct = np.where(sector_filter(incorrectbeams, thr_sec))
+            large_sectors = sector_filter(incorrectbeams, thr_sec)
+            invalidbeams = incorrectbeams & ~large_sectors
+            beams2correct = np.where(large_sectors)
             if len(k[beams2correct]) == 0: break
         if len(k[beams2correct]) == 0: break
 
