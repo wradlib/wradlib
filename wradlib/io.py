@@ -136,6 +136,8 @@ def readDX(filename):
 
     azimuthbitmask = 2**(14-1)
     databitmask = 2**(13-1) - 1
+    clutterflag = 2**15
+    dataflag = 2**13 -1
     # open the DX file in binary mode for reading
     if type(filename) == file:
         f = filename
@@ -204,12 +206,15 @@ def readDX(filename):
         elevs.append((raw[newazimuths[i]+2] & databitmask)/10.)
         azims.append((raw[newazimuths[i]+1] & databitmask)/10.)
 
+    beams = np.array(beams)
+
     attrs =  {}
     attrs['elev']  = np.array(elevs)
     attrs['azim'] = np.array(azims)
+    attrs['clutter'] = (beams & clutterflag) != 0
 
     # converting the DWD rvp6-format into dBZ data and return as numpy array together with attributes
-    return np.array(beams) * 0.5 - 32.5, attrs
+    return (beams & dataflag) * 0.5 - 32.5, attrs
 
 
 def purgeDX(data, options):
