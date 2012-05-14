@@ -28,6 +28,26 @@ import re
 import numpy as np
 import netCDF4 as nc
 import datetime as dt
+import pytz
+
+
+# current DWD file naming pattern (2008) for example:
+# raa00-dx_10488-200608050000-drs---bin
+dwdpattern = re.compile('raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin')
+
+
+def _getTimestampFromFilename(filename):
+    time = dwdpattern.search(filename).group(3)
+    if len(time) == 10:
+        time = '20' + time
+    return dt.datetime.strptime(time, '%Y%m%d%H%M')
+
+
+def getDXTimestamp(str, tz=pytz.utc, opt=None):
+    """converts a dx-timestamp (as part of a dx-product filename) to a python
+    datetime.object."""
+    if opt == None:
+        return _getTimestampFromFilename(str).replace(tzinfo=tz)
 
 
 def unpackDX(raw):
