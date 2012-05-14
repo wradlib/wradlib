@@ -32,6 +32,7 @@ fields except that they exhibit the numpy ndarray interface.
    :toctree: generated/
 
     beam_height_ft
+    beam_height_ft_doviak
     pulse_volume
 
 """
@@ -82,6 +83,52 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
         elev = elevations
 
     return ((ranges**2*np.cos(elev)**2)/(2*(4./3.)*re))+ranges*np.sin(elev)
+
+
+def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
+    """Calculates the height of a radar beam above the antenna according to \
+    the 4/3 (four-thirds -> ft) effective Earth radius model.
+    The formula was taken from [Doviak1993]_.
+
+    Parameters
+    ----------
+    ranges : array
+        the distances of each bin from the radar [m]
+    elevations : array
+        the elevation angles of each bin from the radar [degrees or radians]
+    degrees : bool
+        if True (the default) elevation angles are given in degrees and will
+        be converted to radians before calculation. If False no transformation
+        will be done and `elevations` has to be given in radians.
+    re : float
+        earth radius [m]
+
+    Returns
+    -------
+    output : height of the beam [m]
+
+    Notes
+    -----
+    The shape of `elevations` and `ranges` may differ in which case numpy's
+    broadcasting rules will apply and the shape of `output` will be that of
+    the broadcast arrays. See the numpy documentation on how broadcasting works.
+
+    References
+    ----------
+
+    .. [Doviak1993] Doviak, R.J. & Zrnic, D.S., 1993.
+    Doppler radar and weather observations 2nd ed.,
+    San Diego: Academic Press.
+
+    """
+    if degrees:
+        elev = np.deg2rad(elevations)
+    else:
+        elev = elevations
+
+    reft = (4./3.)*re
+
+    return np.sqrt(re**2 + reft**2 + 2*re*reft*np.sin(elev)) - reft
 
 
 def pulse_volume(ranges, h, theta):
