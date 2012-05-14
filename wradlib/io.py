@@ -18,6 +18,7 @@ Raw Data I/O
    :nosignatures:
    :toctree: generated/
 
+   getDXTimestamp
    readDX
    writePolygon2Text
    read_EDGE_netcdf
@@ -37,17 +38,31 @@ dwdpattern = re.compile('raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin')
 
 
 def _getTimestampFromFilename(filename):
+    """Helper function doing the actual work of getDXTimestamp"""
     time = dwdpattern.search(filename).group(3)
     if len(time) == 10:
         time = '20' + time
     return dt.datetime.strptime(time, '%Y%m%d%H%M')
 
 
-def getDXTimestamp(str, tz=pytz.utc, opt=None):
+def getDXTimestamp(name, tz=pytz.utc):
     """converts a dx-timestamp (as part of a dx-product filename) to a python
-    datetime.object."""
-    if opt == None:
-        return _getTimestampFromFilename(str).replace(tzinfo=tz)
+    datetime.object.
+
+    Parameters
+    ----------
+    name : string representing a DWD product name
+
+    tz : timezone object (see pytz package or datetime module for explanation)
+         in case the timezone of the data is not UTC
+
+    opt : currently unused
+
+    Returns
+    -------
+    time : timezon-aware datetime.datetime object
+    """
+    return _getTimestampFromFilename(name).replace(tzinfo=tz)
 
 
 def unpackDX(raw):
