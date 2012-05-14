@@ -217,24 +217,6 @@ def readDX(filename):
     return (beams & dataflag) * 0.5 - 32.5, attrs
 
 
-def purgeDX(data, options):
-    clutterflag = 2**15
-    dataflag = 2**13 -1
-
-    result = np.ma.MaskedArray(data & dataflag, data & clutterflag)
-
-    if 'mask' in options:
-        return result
-    if 'nan' in options:
-        result.fill_value = np.nan
-        result = result.filled()
-    if 'negative' in options:
-        result.fill_value = -1
-        result = result.filled()
-
-    return result
-
-
 def _write_polygon2txt(f, idx, vertices):
     f.write('%i %i\n'%idx)
     for i, vert in enumerate(vertices):
