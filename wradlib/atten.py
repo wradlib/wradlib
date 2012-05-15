@@ -454,13 +454,13 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     constraints : list
         list of constraint functions. The signature of these functions has to be
-        constraint_function(`gateset`, `k`, *`constr_args`). Their return value
+        constraint_function(`gateset`, `k`, \*`constr_args`). Their return value
         must be a boolean array of shape gateset.shape[:-1] set to True for
         beams, which do not fulfill the constraint.
 
     constr_args : list
         list of lists, which are to be passed to the individual constraint
-        functions using the *args mechanism
+        functions using the \*args mechanism
         (len(constr_args) == len(constraints))
 
     diagnostics : dictionary
@@ -487,15 +487,6 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     AttenuationOverflowError
         Exception, if not all constraints are satisfied even with the smallest
         possible linear coefficient (a_min) and no handling ``mode`` is set.
-
-    References
-    ----------
-
-    .. [Kraemer2008] Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
-        für die Niederschlagsvorhersage und die Siedlungsentwässerung,
-        Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
-        Landwirtschaftlichen Wasserbau
-        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
 
     Examples
     --------

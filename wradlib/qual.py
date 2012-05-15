@@ -41,7 +41,7 @@ import numpy as np
 
 
 def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
-    """Calculates the height of a radar beam above the antenna according to \
+    """Calculates the height of a radar beam above the antenna according to
     the 4/3 (four-thirds -> ft) effective Earth radius model.
     The formula was taken from [Collier1996]_.
 
@@ -49,12 +49,15 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     ----------
     ranges : array
         the distances of each bin from the radar [m]
+
     elevations : array
         the elevation angles of each bin from the radar [degrees or radians]
+
     degrees : bool
         if True (the default) elevation angles are given in degrees and will
         be converted to radians before calculation. If False no transformation
         will be done and elevations has to be given in radians.
+
     re : float
         earth radius [m]
 
@@ -70,11 +73,9 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
 
     References
     ----------
-
     .. [Collier1996] Collier, C.G., 1996.
-    Applications of weather radar systems: A guide to uses of radar data in
-    meteorology and hydrology 2nd edition, New York: John Wiley and Sons.
-
+        Applications of weather radar systems: A guide to uses of radar data in
+        meteorology and hydrology 2nd edition, New York: John Wiley and Sons.
 
     """
     if degrees:
@@ -94,12 +95,16 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     ----------
     ranges : array
         the distances of each bin from the radar [m]
+
     elevations : array
         the elevation angles of each bin from the radar [degrees or radians]
+
     degrees : bool
-        if True (the default) elevation angles are given in degrees and will
+        if True (the default) elevation angles are assumed to be given in
+        degrees and will
         be converted to radians before calculation. If False no transformation
         will be done and `elevations` has to be given in radians.
+
     re : float
         earth radius [m]
 
@@ -117,8 +122,8 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     ----------
 
     .. [Doviak1993] Doviak, R.J. & Zrnic, D.S., 1993.
-    Doppler radar and weather observations 2nd ed.,
-    San Diego: Academic Press.
+        Doppler radar and weather observations 2nd ed.,
+        San Diego: Academic Press.
 
     """
     if degrees:

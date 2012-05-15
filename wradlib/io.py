@@ -121,7 +121,7 @@ def readDX(filename):
     developed by Thomas Pfaff.
 
     The algorith basically unpacks the zeroes and returns a regular array of
-    128 by 360 data values.
+    360 x 128 data values.
 
     Parameters
     ----------
@@ -129,9 +129,14 @@ def readDX(filename):
 
     Returns
     -------
-    data : numpy array of image data [dBZ]
-    attributes : dictionary of attributes (elevations, azimuths)
+    data : numpy array of image data [dBZ]; shape (360,128)
 
+    attributes : dictionary of attributes - currently implemented keys:
+
+        - 'azim' - azimuths np.array of shape (360,)
+        - 'elev' - elevations (1 per azimuth); np.array of shape (360,)
+        - 'clutter - clutter mask; boolean array of same shape as `data`;
+            corresponds to bit 15 set in each dataset.
     """
 
     azimuthbitmask = 2**(14-1)
