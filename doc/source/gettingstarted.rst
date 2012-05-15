@@ -21,7 +21,7 @@ in order to exit the Python environment.
 
 
 Installing wradlib
-----------------
+------------------
 
 There is no installer available, yet. Just download the source from https://bitbucket.org/wradlib/wradlib and copy the *wradlib* directory into your Python installation directory under *./Lib/site-packages/wradlib*. 
 
