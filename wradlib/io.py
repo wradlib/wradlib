@@ -60,7 +60,7 @@ def getDXTimestamp(name, tz=pytz.utc):
 
     Returns
     -------
-    time : timezon-aware datetime.datetime object
+    time : timezone-aware datetime.datetime object
     """
     return _getTimestampFromFilename(name).replace(tzinfo=tz)
 
@@ -135,7 +135,7 @@ def readDX(filename):
 
         - 'azim' - azimuths np.array of shape (360,)
         - 'elev' - elevations (1 per azimuth); np.array of shape (360,)
-        - 'clutter - clutter mask; boolean array of same shape as `data`;
+        - 'clutter' - clutter mask; boolean array of same shape as `data`;
             corresponds to bit 15 set in each dataset.
     """
 
