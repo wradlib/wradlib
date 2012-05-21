@@ -133,7 +133,7 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
 
     reft = (4./3.)*re
 
-    return np.sqrt(re**2 + reft**2 + 2*re*reft*np.sin(elev)) - reft
+    return np.sqrt(ranges**2 + reft**2 + 2*ranges*reft*np.sin(elev)) - reft
 
 
 def pulse_volume(ranges, h, theta):
