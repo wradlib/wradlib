@@ -30,6 +30,7 @@ This includes for example:
    Nearest
    Idw
    Linear
+   OrdinaryKriging
    interpolate
    interpolate_polar
 
@@ -301,6 +302,9 @@ class Linear(IpolBase):
         return ip(self.trg)
 
 
+#-------------------------------------------------------------------------------
+# Covariance routines needed for Kriging
+#-------------------------------------------------------------------------------
 def parse_covariogram(cov_model):
     """"""
     patterns = [re.compile('([\d\.]+) Nug\(([\d\.]+)\)'), # nugget
@@ -356,20 +360,24 @@ def cov_exp(h, sill=1.0, rng=1.0):
     h = np.asanyarray(h)
     return sill * (np.exp(-h/rng))
 
+
 def cov_sph(h, sill=1.0, rng=1.0):
     """spherical type covariance function"""
     h = np.asanyarray(h)
     return np.where(h<rng, sill * (1. - 1.5*h/rng + h**3/(2*rng**3)), 0.)
+
 
 def cov_gau(h, sill=1.0, rng=1.0):
     """gaussian type covariance function"""
     h = np.asanyarray(h)
     return sill * np.exp(-h**2/rng**2)
 
+
 def cov_lin(h, sill=1.0, rng=1.0):
     """linear covariance function"""
     h = np.asanyarray(h)
     return np.where(h<rng, sill * (-h/rng + 1.), 0.)
+
 
 def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
     """matern covariance function"""
@@ -393,10 +401,12 @@ def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
 
     return c
 
+
 def cov_pow(h, sill=1.0, rng=1.0):
     """power law covariance function"""
     h = np.asanyarray(h)
     return sill - h**rng
+
 
 def cov_cau(h, sill=1., rng=1., alpha=1., beta=1.0):
     """
@@ -409,6 +419,118 @@ def cov_cau(h, sill=1., rng=1., alpha=1., beta=1.0):
     return sill*(1 + (h/rng)**alpha)**(-beta/alpha)
 
 
+class OrdinaryKriging(IpolBase):
+    """
+    OrdinaryKriging(src, trg, cov='1.0 Exp(10000.)', nnearest=12)
+
+    Ordinary Kriging
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the source points.
+
+    trg : ndarray of floats, shape (npoints, ndims)
+        Data point coordinates of the target points.
+
+    cov : string
+        covariance (variogram) model string in the syntax ``gstat``
+        uses.
+
+    nnearest : integer - max. number of neighbours to be considered
+
+    Notes
+    -----
+    After initialization the estimation variance of the system may be
+    retrieved from the attribute `estimation_variance`.
+
+    """
+    def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12):
+        """"""
+        self.src = self._make_coord_arrays(src)
+        self.trg = self._make_coord_arrays(trg)
+        # remember some things
+        self.numtargets = len(trg)
+        self.numsources = len(src)
+        self.nnearest = nnearest
+        # plant a tree
+        self.tree = cKDTree(src)
+        self.dists, self.ix = self.tree.query(trg, k=min(nnearest,self.numsources))
+        # avoid bug, if there is only one neighbor at all
+        if self.dists.ndim == 1:
+            self.dists = self.dists[:,np.newaxis]
+            self.ix = self.ix[:,np.newaxis]
+        # parse covariogram function string
+        self.cov_func = parse_covariogram(cov)
+        self.weights = []
+        self.estimation_variance = []
+        # do the kriging
+        self._krige()
+
+
+    def _krig_matrix(self, src):
+        """Sets up the kriging system for a configuration of source points.
+        """
+        var_matrix = self.cov_func(scipy.spatial.distance_matrix(src, src))
+
+        ok_matrix = np.ones((len(src)+1, len(src)+1))
+
+        ok_matrix[:-1,:-1] = var_matrix
+        ok_matrix[-1,-1] = 0.
+
+        return ok_matrix
+
+
+    def _krig_rhs(self, dists):
+        """Sets up a right hand side of the kriging system given the distances
+        of the target to the source points. To be used in conjunction with
+        `_krig_matrix`."""
+        rhs = self.cov_func(dists)
+        ok_rhs = np.concatenate([rhs, [1.]])
+
+        return ok_rhs
+
+
+    def _krige(self):
+        """Sets up the kriging system and solves it in order to obtain the
+        interpolation weights of ordinary kriging.
+        Also calculates the kriging estimation variance from the results"""
+        for dist, ix in zip(self.dists, self.ix):
+            matrix = self._krig_matrix(self.src[ix,:])
+            rhs = self._krig_rhs(dist)
+            weights = np.linalg.solve(matrix, rhs)
+            self.weights.append(weights)
+            self.estimation_variance.append(np.add.reduce(weights[:-1]*rhs[:-1]) + weights[-1])
+
+
+    def __call__(self, vals):
+        """
+        Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape (numsourcepoints, numfields)
+            Values at the source points from which to interpolate
+            Several fields may be calculated at once by passing them
+            along the second dimension.
+            Only this second dimension is implemented. You'll have to
+            reshape a more complex array for the function to work.
+
+        Returns
+        -------
+        output : ndarray of float with shape (numtargetpoints, numfields)
+
+        """
+        # calculate estimator
+        weights = np.array(self.weights)
+        ip = np.add.reduce(weights[:,:-1,np.newaxis]*vals[self.ix,...], axis=1)
+
+        return ip
+
+
+#-------------------------------------------------------------------------------
+# Wrapper functions
+#-------------------------------------------------------------------------------
 def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     """
     Convenience function to use the interpolation classes in an efficient way
