@@ -406,15 +406,15 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
     >>> import numpy as np
     >>> import wradlib as wrl
     >>> # creating a data array and mask some values
-    >>> data_array = np.arange(12.).reshape(4,3)
-    >>> masked_values = np.where(np.logical_or(a==2,a==9), True, False)
+    >>> data = np.arange(12.).reshape(4,3)
+    >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
-    >>> data = wrl.ipol.interpolate_polar(a, mask = masked_values, Interpolator = wrl.ipol.Linear)
-    >>> wrl.vis.polar_plot(data)
+    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)
+    >>> wrl.vis.polar_plot(filled_a)
     >>> # the same result can be achieved by using an masked array instead of an explicit mask
-    >>> b = np.ma.array(a, mask = mask)
-    >>> data = wrl.ipol.interpolate_polar(b, Interpolator = wrl.ipol.Linear)
-    >>> wrl.vis.polar_plot(data)
+    >>> mdata = np.ma.array(data, mask = masked_values)
+    >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)
+    >>> wrl.vis.polar_plot(filled_b)
 
 
     """
