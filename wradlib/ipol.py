@@ -35,6 +35,8 @@ This includes for example:
 
 """
 
+import re
+import scipy
 from scipy.spatial import cKDTree
 from scipy.interpolate import LinearNDInterpolator
 import numpy as np
@@ -297,6 +299,115 @@ class Linear(IpolBase):
         self._check_shape(vals)
         ip = LinearNDInterpolator(self.src, vals, fill_value=fill_value)
         return ip(self.trg)
+
+
+def parse_covariogram(cov_model):
+    """"""
+    patterns = [re.compile('([\d\.]+) Nug\(([\d\.]+)\)'), # nugget
+                re.compile('([\d\.]+) Lin\(([\d\.]+)\)'), # linear
+                re.compile('([\d\.]+) Sph\(([\d\.]+)\)'), # spherical
+                re.compile('([\d\.]+) Exp\(([\d\.]+)\)'), # exponential
+                re.compile('([\d\.]+) Gau\(([\d\.]+)\)'), # gaussian
+                re.compile('([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'), #matern
+                re.compile('([\d\.]+) Pow\(([\d\.]+)\)'),#power
+                re.compile('([\d\.]+) Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),# cauchy
+                ]
+
+    cov_funs = [cov_nug,
+                cov_lin,
+                cov_sph,
+                cov_exp,
+                cov_gau,
+                cov_mat,
+                cov_pow,
+                cov_cau,
+                ]
+
+    funcs = []
+
+    # first split along '+'
+    subparts = cov_model.split('+')
+    # then analyse subparts
+    for i, subpart in enumerate(subparts):
+        # iterate over all available patterns
+        for j, pattern in enumerate(patterns):
+            m = pattern.search(subpart)
+            if m:
+                params = [float(p) for p in m.groups()]
+                funcs.append(_make_cov(cov_funs[j], params))
+
+    # return complete covariance function, which adds
+    # individual subparts
+    return lambda h: reduce(np.add, [f(h) for f in funcs])
+
+
+def _make_cov(func, params):
+    return lambda h: func(h, *params)
+
+
+def cov_nug(h, sill, rng):
+    """nugget covariance function"""
+    h = np.asanyarray(h)
+    return np.where(h<=rng, sill, 0.)
+
+
+def cov_exp(h, sill=1.0, rng=1.0):
+    """exponential type covariance function"""
+    h = np.asanyarray(h)
+    return sill * (np.exp(-h/rng))
+
+def cov_sph(h, sill=1.0, rng=1.0):
+    """spherical type covariance function"""
+    h = np.asanyarray(h)
+    return np.where(h<rng, sill * (1. - 1.5*h/rng + h**3/(2*rng**3)), 0.)
+
+def cov_gau(h, sill=1.0, rng=1.0):
+    """gaussian type covariance function"""
+    h = np.asanyarray(h)
+    return sill * np.exp(-h**2/rng**2)
+
+def cov_lin(h, sill=1.0, rng=1.0):
+    """linear covariance function"""
+    h = np.asanyarray(h)
+    return np.where(h<rng, sill * (-h/rng + 1.), 0.)
+
+def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
+    """matern covariance function"""
+    """Matern Covariance Function Family:
+        shp = 0.5 --> Exponential Model
+        shp = inf --> Gaussian Model
+    """
+    h = np.asanyarray(h)
+
+    # for v > 100 shit happens --> use Gaussian model
+    if shp > 100:
+        c = cov_gau(h, sill, rng)
+    else:
+        Kv = scipy.special.kv      # modified bessel function of second kind of order v
+        Tau = scipy.special.gamma  # Gamma function
+
+        fac1 = h / rng * 2.0*np.sqrt(shp)
+        fac2 = (Tau(shp)*2.0**(shp-1.0))
+
+        c = np.where(h!=0, sill * 1.0 / fac2 * fac1**shp * Kv(shp, fac1), sill)
+
+    return c
+
+def cov_pow(h, sill=1.0, rng=1.0):
+    """power law covariance function"""
+    h = np.asanyarray(h)
+    return sill - h**rng
+
+def cov_cau(h, sill=1., rng=1., alpha=1., beta=1.0):
+    """
+    cauchy covariance function.
+
+    alpha >0 & <=2 ... shape parameter
+    beta >0 ... parameterizes long term memory
+    """
+    h = np.asanyarray(h).astype('float')
+    return sill*(1 + (h/rng)**alpha)**(-beta/alpha)
+
 
 def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     """
