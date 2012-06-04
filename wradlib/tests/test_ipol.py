@@ -31,6 +31,54 @@ def test_OrdinaryKriging_1():
                                    [ 3.,   2.,   1. ]]))
 
 
+def test_ExternalDriftKriging_1():
+    """testing the basic behaviour of the ExternalDriftKriging class
+    with drift terms constant over multiple fields"""
+    src = np.array([[0.,0.], [4.,0]])
+    trg = np.array([[0.,0.], [2.,0.], [1.,0], [4.,0]])
+    src_d = np.array([0., 1.])
+    trg_d = np.array([0.,1.,2.,3.])
+
+    ip = wradlib.ipol.ExternalDriftKriging(src, trg, '1.0 Lin(2.0)',
+                                      src_drift=src_d,
+                                      trg_drift=trg_d)
+
+    vals = np.array([[1., 2., 3.],
+                     [3., 2., 1.]])
+    res = ip(vals)
+    assert np.all(res == np.array([[ 1.,  2.,  3.],
+                                   [ 3.,  2.,  1.],
+                                   [ 5.,  2., -1.],
+                                   [ 7.,  2., -3.]]))
+
+
+def test_ExternalDriftKriging_2():
+    """testing the basic behaviour of the ExternalDriftKriging class
+    with drift terms varying over multiple fields"""
+    src = np.array([[0.,0.], [4.,0]])
+    trg = np.array([[0.,0.], [2.,0.], [1.,0], [4.,0]])
+    src_d = np.array([[0.,0.,0.],
+                      [1.,1.,1.]])
+    trg_d = np.array([[0.,0.,0.],
+                      [1.,1.,1.],
+                      [2.,2.,2.],
+                      [3.,3.,3.]])
+
+    ip = wradlib.ipol.ExternalDriftKriging(src, trg, '1.0 Lin(2.0)',
+                                      src_drift=src_d,
+                                      trg_drift=trg_d)
+
+    vals = np.array([[1., 2., 3.],
+                     [3., 2., 1.]])
+    res = ip(vals)
+    assert np.all(res == np.array([[ 1.,  2.,  3.],
+                                   [ 3.,  2.,  1.],
+                                   [ 5.,  2., -1.],
+                                   [ 7.,  2., -3.]]))
+
+
 if __name__ == '__main__':
     pass
     #test_OrdinaryKriging_1()
+    #test_ExternalDriftKriging_1()
+    #test_ExternalDriftKriging_2()

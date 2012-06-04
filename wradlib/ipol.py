@@ -554,6 +554,181 @@ class OrdinaryKriging(IpolBase):
         return ip
 
 
+class ExternalDriftKriging(IpolBase):
+    """
+    ExternalDriftKriging(src, trg, cov='1.0 Exp(10000.)', nnearest=12,
+                         drift_src=None, drift_trg=None)
+
+    Kriging with external drift
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (nsrcpoints, ndims)
+        Data point coordinates of the source points.
+
+    trg : ndarray of floats, shape (ntrgpoints, ndims)
+        Data point coordinates of the target points.
+
+    cov : string
+        covariance (variogram) model string in the syntax ``gstat``
+        uses.
+
+    nnearest : integer - max. number of neighbours to be considered
+
+    src_drift : ndarray of floats, shape (nsrcpoints,)
+        values of the external drift at each source point
+
+    trg_drift : ndarray of floats, shape (ntrgpoints,)
+        values of the external drift at each target point
+
+    Notes
+    -----
+    After initialization the estimation variance of the system may be
+    retrieved from the attribute `estimation_variance`.
+
+    If drift_src or drift_trg are not given on initialization, they must
+    be provided when using the __call__ method.
+    If any of them is given on initialization its values may be overridden
+    by passing new values to the __call__ method.
+
+    """
+    def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12,
+                 src_drift=None, trg_drift=None):
+        """"""
+        self.src = self._make_coord_arrays(src)
+        self.trg = self._make_coord_arrays(trg)
+        self.src_drift = src_drift
+        self.trg_drift = trg_drift
+        # remember some things
+        self.numtargets = len(trg)
+        self.numsources = len(src)
+        self.nnearest = nnearest
+        # plant a tree
+        self.tree = cKDTree(src)
+        self.dists, self.ix = self.tree.query(trg, k=min(nnearest,self.numsources))
+        # avoid bug, if there is only one neighbor at all
+        if self.dists.ndim == 1:
+            self.dists = self.dists[:,np.newaxis]
+            self.ix = self.ix[:,np.newaxis]
+        # parse covariogram function string
+        self.cov_func = parse_covariogram(cov)
+        self.weights = []
+        self.estimation_variance = []
+
+
+    def _krig_matrix(self, src, drift):
+        """Sets up the kriging system for a configuration of source points.
+        """
+        # the basic covariance matrix
+        var_matrix = self.cov_func(scipy.spatial.distance_matrix(src, src))
+        # the extended matrix, initialized to ones
+        edk_matrix = np.ones((len(src)+2, len(src)+2))
+
+        # adding entries for the first lagrange multiplier for the ordinary
+        # kriging part
+        edk_matrix[:-2,:-2] = var_matrix
+        edk_matrix[-2,-2] = 0.
+
+        # adding entries for the second lagrange multiplier for the  edk part
+        edk_matrix[:-2,-1] = drift
+        edk_matrix[-1,:-2] = drift
+        edk_matrix[-2:,-1] = 0.
+        edk_matrix[-1,-2:] = 0.
+
+        return edk_matrix
+
+
+    def _krig_rhs(self, dists, drift):
+        """Sets up a right hand side of the kriging system given the distances
+        of the target to the source points. To be used in conjunction with
+        `_krig_matrix`."""
+        rhs = self.cov_func(dists)
+        edk_rhs = np.concatenate([rhs, np.array([1., drift])])
+
+        return edk_rhs
+
+
+    def _krige(self, src_drift, trg_drift):
+        """Sets up the kriging system and solves it in order to obtain the
+        interpolation weights of ordinary kriging.
+        Also calculates the kriging estimation variance from the results"""
+        all_weights = []
+        estimation_variances = []
+        for dist, ix, td in zip(self.dists, self.ix, trg_drift):
+            matrix = self._krig_matrix(self.src[ix,:], src_drift[ix])
+            rhs = self._krig_rhs(dist, td)
+            weights = np.linalg.solve(matrix, rhs)
+            all_weights.append(weights)
+            # Todo: the following is WRONG. Need to check the right formula
+            estimation_variances.append(np.add.reduce(weights[:-2]*rhs[:-2]) +
+                                                      weights[-2])
+
+        return all_weights, estimation_variances
+
+
+    def __call__(self, vals, src_drift=None, trg_drift=None):
+        """
+        Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape (numsourcepoints, numfields)
+            Values at the source points from which to interpolate
+            Several fields may be calculated at once by passing them
+            along the second dimension.
+            Only this second dimension is implemented. You'll have to
+            reshape a more complex array for the function to work.
+
+        Returns
+        -------
+        output : ndarray of float with shape (numtargetpoints, numfields)
+
+        """
+        assert vals.ndim <= 2
+        v = self._make_2d(vals)
+        self._check_shape(v)
+
+        if src_drift is None:
+            # check if we have data from __init__
+            if self.src_drift is None:
+                raise ValueError, 'src_drift must be specified either on ' \
+                   + 'initialization or when calling the interpolator.'
+            src_drift = self.src_drift
+        if trg_drift is None:
+            # check if we have data from __init__
+            if self.trg_drift is None:
+                raise ValueError, 'trg_drift must be specified either on ' \
+                   + 'initialization or when calling the interpolator.'
+            trg_drift = self.trg_drift
+
+        src_d = self._make_2d(src_drift)
+        trg_d = self._make_2d(trg_drift)
+        self._check_shape(src_d)
+
+
+        # if drifts are constant, we can save time by solving the kriging
+        # system once
+        if src_d.shape[1] == 1:
+            wght, variances = self._krige(src_d.squeeze(), trg_d.squeeze())
+            self.weights = wght
+            self.estimation_variance = variances
+            weights = np.array(self.weights)
+            ip = np.add.reduce(weights[:,:-2,np.newaxis]*v[self.ix,...], axis=1)
+        # otherwise we need to setup and solve the kriging system for each
+        # field individually
+        else:
+            ip = np.empty((self.trg.shape[0], v.shape[1]))
+            assert (v.shape[1] == src_d.shape[1]) and (v.shape[1] == trg_d.shape[1])
+            for i in range(v.shape[1]):
+                wght, variances = self._krige(src_d[:,i].squeeze(),
+                                              trg_d[:,i].squeeze())
+
+                weights = np.array(wght)
+                ip[:,i] = np.add.reduce(weights[:,:-2]*v[self.ix,i], axis=1)
+
+        return ip
+
+
 #-------------------------------------------------------------------------------
 # Wrapper functions
 #-------------------------------------------------------------------------------
