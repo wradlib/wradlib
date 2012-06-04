@@ -114,6 +114,30 @@ class IpolBase():
                 raise Exception('Cannot deal wih 3-d arrays, yet.')
         return x
 
+    def _make_2d(self, vals):
+        """Reshape increase number of dimensions of vals if smaller than 2,
+        appending additional dimensions (as opposed to the atleast_nd methods
+        of numpy).
+
+        Parameters
+        ----------
+        vals : ndarray
+               values who are to be reshaped to the right shape
+
+        Returns
+        -------
+        output : ndarray
+                 if vals.shape==() [a scalar] output.shape will be (1,1)
+                 if vals.shape==(npt,) output.shape will be (npt,1)
+                 if vals.ndim > 1 vals will be returned as is
+        """
+        if vals.ndim < 2:
+            # ndmin might be 0 so we get it to 1-d first
+            # then we add an axis as we assume that
+            return np.atleast_1d(vals)[:,np.newaxis]
+        else:
+            return vals
+
 
 
 class Nearest(IpolBase):
@@ -521,9 +545,11 @@ class OrdinaryKriging(IpolBase):
         output : ndarray of float with shape (numtargetpoints, numfields)
 
         """
+        v = self._make_2d(vals)
+        self._check_shape(v)
         # calculate estimator
         weights = np.array(self.weights)
-        ip = np.add.reduce(weights[:,:-1,np.newaxis]*vals[self.ix,...], axis=1)
+        ip = np.add.reduce(weights[:,:-1,np.newaxis]*v[self.ix,...], axis=1)
 
         return ip
 
