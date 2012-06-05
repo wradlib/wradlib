@@ -8,7 +8,7 @@ from distutils.core import setup
 
 MAJOR               = 0
 MINOR               = 1
-MICRO               = 0
+MICRO               = 1
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 if __name__ == '__main__':
