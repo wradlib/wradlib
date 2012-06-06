@@ -436,7 +436,8 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
     trg_coord = np.array([binx[clutter_indices], biny[clutter_indices]]).transpose()
     # data values for bins, which are not masked
     values_list = np.delete(data,clutter_indices)
-    filled_data = data.copy().ravel()
+    # copy data and convert them into float64 in order to prevent casting problems from float64 to float32
+    filled_data = data.copy().ravel().astype(float)
     # interpolate masked bins
     filling = interpolate(src_coord, trg_coord, values_list, Interpolator)
     # fill data with the interpolations

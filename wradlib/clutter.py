@@ -262,7 +262,7 @@ def histo_cut(prec_accum):
         upper_mask = (prec_accum <= upper_bound).astype(int)
         lower_mask = (prec_accum >= lower_bound).astype(int)
         # NaNs in place of masked bins
-        prec_accum_masked = np.where((upper_mask * lower_mask) == 0, np.nan,prec_accum) # Kopie der Datenmatrix mit 0 an Stellen, wo der Threshold erreicht wird
+        prec_accum_masked = np.where((upper_mask * lower_mask) == 0, np.nan,prec_accum) # Kopie der Datenmatrix mit Nans an Stellen, wo der Threshold erreicht wird
 
         # generate a histogram of the valid bins with 50 classes
         (n, bins) = np.histogram(prec_accum_masked[np.isfinite(prec_accum_masked)].ravel(), bins = 50)
