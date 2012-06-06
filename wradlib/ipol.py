@@ -524,7 +524,8 @@ class OrdinaryKriging(IpolBase):
             rhs = self._krig_rhs(dist)
             weights = np.linalg.solve(matrix, rhs)
             self.weights.append(weights)
-            self.estimation_variance.append(np.add.reduce(weights[:-1]*rhs[:-1]) + weights[-1])
+            self.estimation_variance.append(self.cov_func(0.)
+                                            - np.sum(weights*rhs))
 
 
     def __call__(self, vals):
@@ -659,9 +660,8 @@ class ExternalDriftKriging(IpolBase):
             rhs = self._krig_rhs(dist, td)
             weights = np.linalg.solve(matrix, rhs)
             all_weights.append(weights)
-            # Todo: the following is WRONG. Need to check the right formula
-            estimation_variances.append(np.add.reduce(weights[:-2]*rhs[:-2]) +
-                                                      weights[-2])
+            estimation_variances.append(self.cov_func(0.)
+                                        - np.sum(weights*rhs))
 
         return all_weights, estimation_variances
 
