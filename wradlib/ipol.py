@@ -436,12 +436,11 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
     trg_coord = np.array([binx[clutter_indices], biny[clutter_indices]]).transpose()
     # data values for bins, which are not masked
     values_list = np.delete(data,clutter_indices)
-    # copy data and convert them into float64 in order to prevent casting problems from float64 to float32
-    filled_data = data.copy().ravel().astype(float)
+    filled_data = data.copy().ravel()
     # interpolate masked bins
     filling = interpolate(src_coord, trg_coord, values_list, Interpolator)
     # fill data with the interpolations
-    filled_data[clutter_indices] = filling
+    filled_data[clutter_indices] = filling.astype(filled_data.dtype)
     # in case of nans as processed at the rim when interpolating linear, these values are finally interpolated
     # by nearest Neighbor interpolation
     if np.any(np.isnan(filled_data)):
