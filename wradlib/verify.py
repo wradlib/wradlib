@@ -52,9 +52,9 @@ class PolarNeighbours():
     projstr : string
         (see georef for documentation)
     x : array of floats
-        x coordinates of the points in map projection corresponding to prostr
+        x coordinates of the points in map projection corresponding to projstr
     y : array of floats
-        y coordinates of the points in map projection corresponding to prostr
+        y coordinates of the points in map projection corresponding to projstr
     nnear : int
         number of neighbouring radar bins you would like to find
 
