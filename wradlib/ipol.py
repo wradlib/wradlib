@@ -725,6 +725,7 @@ class ExternalDriftKriging(IpolBase):
 
                 weights = np.array(wght)
                 ip[:,i] = np.add.reduce(weights[:,:-2]*v[self.ix,i], axis=1)
+                self.estimation_variance.append(variances)
 
         return ip
 
