@@ -658,7 +658,10 @@ class ExternalDriftKriging(IpolBase):
         for dist, ix, td in zip(self.dists, self.ix, trg_drift):
             matrix = self._krig_matrix(self.src[ix,:], src_drift[ix])
             rhs = self._krig_rhs(dist, td)
-            weights = np.linalg.solve(matrix, rhs)
+            try:
+                weights = np.linalg.solve(matrix, rhs)
+            except np.linalg.LinAlgError:
+                weights = np.repeat(np.nan, len(rhs))
             all_weights.append(weights)
             estimation_variances.append(self.cov_func(0.)
                                         - np.sum(weights*rhs))
