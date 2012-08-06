@@ -1,0 +1,2114 @@
+BUFR Table D - Lists of common sequences;;
+
+F;X;Category of sequences
+3;0;BUFR table entries sequences
+3;1;Location and identification sequences
+3;2;Meteorological sequences common to surface data
+3;3;Meteorological sequences common to vertical soundings data
+3;4;Meteorological sequences common to satellite observations
+3;5;Meteorological or hydrological sequences common to hydrological observations
+3;6;Meteorological or oceanographic sequences common to oceanographic observations
+3;7;Surface report sequences (land)
+3;8;Surface report sequences (sea)
+3;9;Vertical sounding sequences (conventional data)
+3;10;Vertical sounding sequences (satellite data)
+3;11;Single level report sequences (conventional data)
+3;12;Single level report sequences (satellite data)
+3;13;Sequences common to image data
+3;14;Reserved
+3;15;Oceanographic report sequences
+3;16;Synoptic feature sequences
+3;18;Radiological report sequences
+3;21;Radar report sequences
+
+Notes:;;
+
+-1;From a conceptual point of view, Table D is not necessary:;
+(a);"The Data description section can fully and completely describe the data using only element descriptors, operator descriptors and the rules of description;";
+(b);"Such a means of defining the data would involve considerable overheads in terms of the length of the Data description section.  Table D is a device to reduce these overheads;";
+(c);"Each entry within Table D contains a list of descriptors.  Each sequence descriptor that references to Table D may be “expanded” by replacing it with the list corresponding to that entry.  The process of “expansion” is well defined, provided it results in a set of element descriptors and operator descriptors;";
+(d);"Descriptors listed in entries to Table D may themselves refer to Table D, provided no circularity results on repeated expansion;";
+(e);The initial Table D has been limited to lists of descriptors likely to be used frequently.  Every attempt has been made not to produce initial tables that are too comprehensive.  Minor differences of reporting practice can be accommodated by not endeavouring to reduce each observation type to a single descriptor.  Indeed, much more flexibility is retained if the Data description section is envisaged as containing three or four descriptors.;
+
+-2;It should be noted that, initially, effort has been concentrated on the requirements for observational data.  Extensions to forecast data, time series data, products, etc., follow logically, and can be added at an appropriate future date.
+
+-3;"Category 1 contains common sequences of non-meteorological descriptors; categories 2 to 6 contain common sequences of meteorological descriptors; categories 7 to 21 contain sequences which define reports, or major subsets of reports."
+
+-4;Underwater soundings are included, with some minor omissions, to illustrate the facility to describe data of slightly different contents.
+
+-5;Satellite data have been split to maximize the benefits of data compression.  Compound combinations may easily be defined using the descriptors available.
+
+-6;Satellite observation data benefit enormously from being split into fragments (1, 2, 3 . . . 7), then applying data compression to many locations within each fragment.  Again, BUFR flexibility enables compound forms to be defined if desired.
+
+-7;"Categories 48 to 63 are reserved for local use; all other categories are reserved for future development."
+
+-8;Entries 192 to 255 within all categories are reserved for local use.
+ Category 00 - BUFR table entries sequences;
+
+
+TABLE;;;;;;
+REFERENCE;;;;;;
+TABLE;;;;;;
+REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;0;2;0;0;2;Table A category, line 1
+;;;0;0;3;Table A category, line 2
+3;0;3;0;0;10;F,  part descriptor
+;;;0;0;11;X,  part descriptor
+;;;0;0;12;Y,  part descriptor
+3;0;4;3;0;3;
+;;;0;0;13;Element name, line 1
+;;;0;0;14;Element name, line 2
+;;;0;0;15;Units name
+;;;0;0;16;Units scale sign
+;;;0;0;17;Units scale
+;;;0;0;18;Units reference sign
+;;;0;0;19;Units reference value
+;;;0;0;20;Element data width
+3;0;10;3;0;3;Table D descriptor to be defined
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Delayed descriptor replication factor
+;;;0;0;30;Descriptor defining sequence
+
+Notes:;;;;;;
+-1;These entries include the facility to update the Table A code figure and data description.;;;;;
+
+-2;"It is better to use different class 00 descriptors for the defining and defined elements, in the same way as different descriptors correspond to pressure considered as a coordinate and pressure measured at a given point; otherwise special rules would be needed to interpret such message.";;;;;
+"Entries 0 00 010 to 0 00 012 define F, X and Y for Tables B and D;  entry 0 00 030 is a descriptor used as data and provides the F, X and Y values defining a sequence for Table D entries.";;;;;;
+
+-3;"It could be argued that, as only additions are possible, only complete lines should be allowed; but it is conceivable that local areas will require changes as well as additions, so it is better and in any case clearer to provide descriptions for all the fields.";;;;;
+
+
+ Category 01 - Location and Identification sequences;;;;;;
+
+TABLE;;;;;;
+REFERENCE;;;;;;
+TABLE;;;;;;
+REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;1;1;0;1;1;WMO block number
+;;;0;1;2;WMO station number
+3;1;002*;0;1;3;WMO Region number
+;;;0;1;4;WMO Region sub-area
+;;;0;1;5;Buoy/platform identifier
+3;1;3;0;1;11;Ship's call sign
+;;;0;1;12;Direction of motion of moving observing platform;
+;;;0;1;13;Speed of motion of moving observing platform;
+3;1;11;0;4;1;Year;
+;;;0;4;2;Month;
+;;;0;4;3;Day;
+3;1;12;0;4;4;Hour;
+;;;0;4;5;Minute;
+3;1;13;0;4;4;Hour;
+;;;0;4;5;Minute;
+;;;0;4;6;Second;
+3;1;21;0;5;1;Latitude;high accuracy
+;;;0;6;1;Longitude;
+3;1;22;0;5;1;Latitude;high accuracy
+;;;0;6;1;Longitude;
+;;;0;7;1;Height of station;
+3;1;23;0;5;2;Latitude;coarse accuracy
+;;;0;6;2;Longitude;
+3;1;24;0;5;2;Latitude;coarse accuracy
+;;;0;6;2;Longitude;
+;;;0;7;1;Height of station;
+3;1;25;3;1;23;Latitude and longitude (coarse accuracy);
+;;;0;4;3;Day;
+;;;3;1;12;Time;
+3;1;26;3;1;21;Latitude and longitude (high accuracy);
+;;;0;4;3;;
+;;;0;4;3;(Time period in days);
+;;;0;4;4;;
+;;;0;4;4;(Time period in hours);
+;;;0;4;5;;
+;;;0;4;5;(Time period in minutes);
+3;1;31;3;1;1;WMO block and station number;
+;;;0;2;1;Type of station;
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;22;Latitude and longitude (high  accuracy), height of station
+3;1;32;3;1;1;WMO block and station number
+;;;0;2;1;Type of station
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;24;Latitude and longitude (coarse accuracy), height of station
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Buoy/platform — fixed)
+3;1;33;0;1;5;Buoy/platform identifier
+;;;0;2;1;Type of station
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;21;Latitude and longitude (high accuracy)
+;;;;;;(Buoy/platform — fixed)
+3;1;34;0;1;5;Buoy/platform identifier
+;;;0;2;1;Type of station
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;;;;(Buoy/platform — moving)
+3;1;035*;0;1;5;Buoy/platform identifier
+;;;0;1;12;Direction of motion of moving observing platform
+;;;0;1;13;Speed of motion of moving observing platform
+;;;0;2;1;Type of station
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;;;;(Ship)
+3;1;36;3;1;3;Ship's call sign and motion
+;;;0;2;1;Type of station
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;;;;(Land station for vertical soundings)
+3;1;37;3;1;1;WMO block and station number
+;;;0;2;11;Radiosonde type
+;;;0;2;12;Radiosonde computational method
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;22;Latitude and longitude (high accuracy), height of station
+;;;;;;(Land station for vertical soundings)
+3;1;38;3;1;1;WMO block and station number
+;;;0;2;11;Radiosonde type
+;;;0;2;12;Radiosonde computational method
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;24;Latitude and longitude (coarse accuracy), height of station
+;;;;;;(Ship for vertical soundings)
+3;1;39;3;1;3;Ship's call sign and motion
+;;;0;2;11;Radiosonde type
+;;;0;2;12;Radiosonde computational method
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFEERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;1;40;3;1;3;Ship's call sign and motion
+;;;0;2;11;Radiosonde type
+;;;0;2;12;Radiosonde computational method
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;24;Latitude and longitude (coarse accuracy), height of station
+3;1;41;0;1;7;Satellite identifier
+;;;0;2;21;Satellite instrument data used in processing
+;;;0;2;22;Satellite data processing technique used
+;;;3;1;11;Date
+;;;3;1;12;Time
+3;1;42;3;1;41;"Satellite identifier, data used, and data processing technique; date/time"
+;;;3;1;21;Latitude, longitude
+3;1;43;0;1;7;Satellite identifier
+;;;0;2;23;Cloud motion computational method
+;;;3;1;11;Date
+;;;3;1;13;Time
+;;;3;1;21;Latitude, longitude
+3;1;44;0;1;7;Satellite identifier
+;;;0;2;24;Integrated mean humidity computational method
+;;;3;1;11;Date
+;;;3;1;13;Time
+;;;3;1;21;Latitude, longitude
+;;;;;;(Satellite location and velocity)
+3;1;45;3;1;11;Year, month, day
+;;;3;1;12;Time (hour, minute)
+;;;2;1;138;Change width to 16 bits
+;;;2;2;131;Change scale to 3
+;;;0;4;6;Second
+;;;2;1;0;Change width back to Table B
+;;;2;2;0;Change scale back to Table B
+;;;3;4;30;Location relative to the Earth’s centre
+;;;3;4;31;Velocity relative to the Earth’s centre
+3;1;46;0;1;7;Satellite identifier
+;;;0;1;12;Direction of motion of moving observing platform
+;;;0;2;48;Satellite sensor indicator
+;;;0;21;119;Wind scatterometer geophysical model function
+;;;0;25;60;Software identification
+;;;2;2;124;Change scale
+;;;0;2;26;Cross-track resolution
+;;;0;2;27;Along-tract resolution
+;;;2;2;0;Change scale back to Table B
+;;;0;5;40;Orbit number
+;;;;;;(ERS product header)
+3;1;47;0;1;7;Satellite identifier
+;;;0;25;60;Software identification
+;;;0;1;33;Originating/generating centre
+;;;0;1;34;Originating/generating sub-centre
+;;;0;1;12;Direction of motion of moving observation platform
+;;;3;1;45;Satellite location and velocity
+;;;0;2;21;Satellite instrument data used in processing
+;;;3;1;11;Date (year, month, day)
+;;;3;1;12;Time (hour, minute)
+;;;2;1;138;Change bit width to 16 bits
+;;;2;2;131;Change scale to 3
+;;;0;4;6;Second
+;;;2;1;0;Change width back to Table B
+;;;2;2;0;Change scale back to Table B
+;;;3;1;23;Location (latitude, longitude)
+;;;;;;(Radar parameters)
+3;1;48;0;2;104;Antenna polarization
+;;;0;2;121;Mean frequency
+;;;0;2;113;Number of azimuth looks
+;;;0;2;26;Cross-track resolution
+;;;0;2;27;Along-track resolution
+;;;0;2;111;Radar incidence angle
+;;;0;2;140;Satellite radar beam azimuth angle
+;;;2;2;127;Change scale to –1
+;;;0;1;13;Radar platform velocity
+;;;2;2;126;Change scale to –2
+;;;0;7;1;Radar platform altitude
+;;;2;2;0;Change scale to Table B
+;;;0;25;10;Clutter treatment
+;;;0;21;64;Clutter noise estimate
+;;;;;;(Radar beam data)
+3;1;49;0;2;111;Radar incidence angle
+;;;0;2;112;Radar look angle
+;;;0;21;62;Backscatter
+;;;0;21;63;Radiometric resolution (Noise value)
+;;;0;21;65;Missing packet counter
+3;1;51;0;1;6;Aircraft identifier
+;;;0;2;61;Navigational system
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;21;Latitude, longitude
+;;;0;8;4;Phase of aircraft flight
+3;1;55;0;1;5;Buoy/platform identifier
+;;;0;2;1;Type of station
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;21;Latitude and longitude (high accuracy)
+;;;0;1;12;Direction of motion of moving observing platform
+;;;0;1;14;Platform drift speed (high precision)
+;;;;;;(Radar location(s))
+3;1;62;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;1;1;WMO block and station number
+;;;;;;(ACARS identification)
+3;1;65;0;1;6;Aircraft flight number (see Note)
+;;;0;1;8;Aircraft registration number (see Note)
+;;;0;2;1;Type of station
+;;;0;2;2;Type of instrumentation for wind measurement
+;;;0;2;5;Precision of temperature observation
+;;;0;2;62;Type of aircraft data relay system
+;;;0;2;70;Original specification of latitude/longitude
+;;;0;2;65;ACARS ground receiving station
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(ACARS location)
+3;1;66;3;1;11;Year, month, day
+;;;3;1;13;Hour, minute, second
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;0;7;4;Pressure
+;;;0;2;64;Aircraft roll angle quality
+;;;0;8;4;Phase of aircraft flight
+;;;;;;(Satellite identifier/Generating resolution)
+3;1;71;0;1;7;Satellite identifier
+;;;0;1;31;Generating centre
+;;;0;2;20;Satellite classification
+;;;0;2;28;Segment size at nadir in X direction
+;;;0;2;29;Segment size at nadir in Y direction
+;;;;;;(Satellite identification)
+3;1;72;3;1;71;Satellite identification, Generation resolution
+;;;3;1;11;Date
+;;;3;1;13;Time
+;;;3;1;21;Latitude, longitude
+
+
+*;Descriptor 3 01 002 should not be used.;;;;;
+*;Descriptor 3 01 055 should be used instead of 3 01 035 to encode moving buoy/platform information.;;;;;
+
+Notes:;(1) As supplied by originating sub-center ARINC, this value is a pseudo-value rather than the actual value.  The relationship between this pseudo value and the true value is known only by ARINC.;;;;;
+;(2) Descriptors from 3 01 041 to 3 01 049, 3 01 062, 3 01 071 and 3 01 072 should not be used in CREX for transmission.;;;;;
+ ;;;;;;
+Category 02 - Meteorological sequences common to surface data;;;;;;
+
+TABLE;;;;;;
+REFERENCE;;;;;;
+TABLE;;;;;;
+REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;2;1;0;10;4;Pressure (at station level)
+;;;0;10;51;Pressure reduced to mean sea level
+;;;0;10;61;3-hour pressure change
+;;;0;10;63;Characteristic of pressure tendency
+;;;;;;(High altitude station)
+3;2;2;0;10;4;Pressure (at station level)
+;;;0;7;4;Pressure level
+;;;0;10;3;Geopotential of pressure level
+;;;0;10;61;3-hour pressure change
+;;;0;10;63;Characteristic of pressure tendency
+3;2;3;0;11;11;Wind direction (10 m)
+;;;0;11;12;Wind speed (10 m)
+;;;0;12;4;Temperature (2 m)
+;;;0;12;6;Dew point (2 m)
+;;;0;13;3;Relative humidity
+;;;0;20;1;Horizontal visibility
+;;;0;20;3;Present weather
+;;;0;20;4;Past weather (1)
+;;;0;20;5;Past weather (2)
+;;;;;;(General cloud information)
+3;2;4;0;20;10;Cloud cover (total)
+;;;0;8;2;Vertical significance
+;;;0;20;11;Cloud amount
+;;;0;20;13;Height of base of cloud
+;;;0;20;12;Cloud type
+;;;0;20;12;Cloud type
+;;;0;20;12;Cloud type
+3;2;5;0;8;2;Vertical significance
+;;;0;20;11;Cloud amount
+;;;0;20;12;Cloud type
+;;;0;20;13;Height of base of cloud
+3;2;6;0;10;4;Pressure (at station level)
+;;;0;10;51;Pressure reduced to mean sea level
+;;;0;10;62;24-hour pressure change
+;;;0;10;63;Characteristic of pressure tendency
+;;;;;;(Low altitude station)
+3;2;11;3;2;1;Pressure and pressure change
+;;;3;2;3;Wind, temperature, humidity, visibility, weather
+;;;3;2;4;Significant cloud layer
+;;;;;;(High altitude station)
+3;2;12;3;2;2;Pressure and pressure change
+;;;3;2;3;Wind, temperature, humidity, visibility, weather
+;;;3;2;4;Significant cloud information
+3;2;13;3;2;6;Pressure and pressure change
+;;;3;2;3;Wind, temperature, humidity, visibility, weather
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Delayed descriptor replication factor
+;;;3;2;5;Cloud layer information
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;2;21;0;22;1;Direction of waves
+;;;0;22;11;Period of waves
+;;;0;22;21;Height of waves
+3;2;22;0;22;2;Direction of wind waves
+;;;0;22;12;Period of wind waves
+;;;0;22;22;Height of wind waves
+3;2;23;0;22;3;Direction of swell waves
+;;;0;22;13;Period of swell waves
+;;;0;22;23;Height of swell waves
+3;2;24;3;2;22;Wind waves
+;;;1;1;2;Replicate 1 descriptor 2 times
+;;;3;2;23;Swell waves (2 systems of swell)
+3;2;51;0;10;4;Pressure
+;;;0;10;51;Pressure reduced to mean sea level
+;;;0;7;4;Pressure (vertical location)
+;;;0;10;3;Geopotential
+;;;0;12;4;Dry-bulb temperature at 2 m
+;;;0;12;51;Standard deviation temperature
+;;;0;12;16;Maximum temperature at 2 m, past 24 hours
+;;;0;12;17;Minimum temperature at 2 m, past 24 hours
+;;;0;13;4;Vapour pressure
+;;;1;2;4;Replicate 2 descriptors 4 times
+;;;0;8;51;Qualifier for number of missing values in calculation of statistic
+;;;0;8;20;Total number of missing entities (with respect to accumulation or average)
+
+ Category 03 - Meteorological sequences common to vertical soundings data;;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;3;1;0;7;3;Geopotential
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;3;2;0;7;4;Pressure
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;3;3;0;7;4;Pressure
+;;;0;10;3;Geopotential
+;;;0;12;1;Temperature
+;;;0;12;3;Dew point
+3;3;4;0;7;4;Pressure
+;;;0;10;3;Geopotential
+;;;0;12;1;Temperature
+;;;0;12;3;Dew point
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;3;11;0;7;3;Geopotential
+;;;0;8;1;Vertical sounding significance
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;3;12;0;7;4;Pressure
+;;;0;8;1;Vertical sounding significance
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;3;13;0;7;4;Pressure
+;;;0;8;1;Vertical sounding significance
+;;;0;10;3;Geopotential
+;;;0;12;1;Temperature
+;;;0;13;3;Relative humidity
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;3;14;0;7;4;Pressure
+;;;0;8;1;Vertical sounding significance
+;;;0;10;3;Geopotential
+;;;0;12;1;Temperature
+;;;0;12;3;Dew point
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;3;21;0;7;4;Pressure (1)
+;;;0;7;4;Pressure (2)     defines layer
+;;;2;4;7;Add associated field of 7 bits
+;;;0;31;21;Additional field significance
+3;3;22;3;3;21;Layer, quality
+;;;0;10;3;Geopotential (layer mean thickness)
+;;;2;4;0;Cancel the added associated field
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;3;23;3;3;21;Layer, quality
+;;;0;12;1;Temperature (layer mean)
+;;;2;4;0;Cancel the added associated field
+3;3;24;3;3;21;Layer, quality
+;;;0;13;16;Precipitation water
+;;;2;4;0;Cancel the added associated field
+3;3;25;0;2;25;Satellite channel
+;;;2;4;7;Add associated field of 7 bits
+;;;0;31;21;Additional field significance
+;;;0;12;63;Brightness temperature
+;;;2;4;0;Cancel the added associated field
+3;3;26;0;7;4;Pressure
+;;;0;8;3;Vertical significance
+;;;2;4;7;Add associated field of 7 bits
+;;;0;31;21;Additional field significance
+;;;0;12;1;Temperature
+;;;2;4;0;Cancel the added associated field
+3;3;27;0;7;4;Pressure
+;;;2;4;7;Add associated field of 7 bits
+;;;0;31;21;Additional field significance
+;;;0;10;3;Geopotential
+;;;2;4;0;Cancel the added associated field
+3;3;31;0;7;4;Pressure
+;;;0;8;3;Vertical significance (base of sounding)
+;;;0;7;21;Elevation (local zenith)
+;;;0;7;22;Solar elevation (solar zenith)
+;;;0;8;12;Land/sea qualifier
+;;;0;12;61;Skin temperature
+3;3;32;0;20;11;Cloud amount
+;;;0;20;16;Pressure at top of cloud
+3;3;33;0;20;10;Cloud cover (total)
+;;;0;20;16;Pressure at the top of cloud
+;;;;;;(Wind sequence)
+3;3;41;0;2;152;Geostationary satellite instrument used
+;;;0;2;23;Cloud motion computational method
+;;;0;7;4;Pressure
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+;;;0;2;153;Satellite channel centre frequency
+;;;0;2;154;Satellite channel band width
+;;;0;12;71;Coldest cluster T
+
+;;Note: Descriptors 3 03 021 to 3 03 027 are not available in CREX.;;;;
+ Category 04 - Meteorological sequences common to satellite observations;;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;4;1;0;8;3;Vertical significance
+;;;0;10;4;Pressure
+;;;0;12;1;Temperature
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;4;2;0;8;3;Vertical significance
+;;;0;10;4;Pressure
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+3;4;3;0;8;3;Vertical significance
+;;;0;12;1;Temperature
+3;4;4;0;8;3;Vertical significance
+;;;0;10;4;Pressure
+;;;0;20;10;Cloud cover (total)
+;;;0;12;1;Temperature
+3;4;5;0;2;24;Integrated mean humidity computational method
+;;;0;7;4;Pressure(1)
+;;;0;7;4;Pressure (2)    defines layer
+;;;0;13;3;Relative humidity
+3;4;6;0;14;1;Outgoing long-wave radiation
+;;;0;14;1;Incoming long-wave radiation
+;;;0;14;3;Outgoing short-wave radiation
+;;;;;;(GOES-I/M info)
+3;4;11;0;2;163;Height assignment method
+;;;0;2;164;Tracer correlation method
+;;;0;8;12;Land/sea qualifier
+;;;0;7;24;Satellite zenith angle
+;;;0;2;57;Origin of first guess information
+;;;0;8;21;Time significance
+;;;0;4;1;Year
+;;;0;4;2;Month
+;;;0;4;3;Day
+;;;0;4;4;Hour
+;;;0;8;21;Time significance
+;;;0;4;24;Time period or displacement
+;;;1;10;4;Replicate 10 descriptors 4 times
+;;;0;8;21;Time significance
+;;;0;4;4;Hour
+;;;0;4;5;Minute
+;;;0;4;6;Second
+;;;0;8;21;Time significance
+;;;0;4;4;Hour
+;;;0;4;5;Minute
+;;;0;4;6;Second
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+;;;1;3;10;Replicate 3 descriptors 10 times
+;;;0;2;163;Height assignment method
+;;;0;7;4;Pressure
+;;;0;12;1;Temperature
+;;;;;;(Location of platform)
+3;4;30;0;27;31;In direction of 0 degree longitude, distance from the Earth’s centre
+;;;0;28;31;In direction of 90 degrees East longitude, distance from the Earth’s centre
+;;;0;10;31;In direction of North Pole, distance from Earth’s centre
+;;;;;;(Speed of platform)
+3;4;31;0;1;41;Absolute platform velocity – first component
+;;;0;1;42;Absolute platform velocity – second component
+;;;0;1;43;Absolute platform velocity – third component
+;;;;;;(Cloud fraction)
+3;4;32;0;2;153;Satellite channel centre frequency
+;;;0;2;154;Satellite channel band width
+;;;0;20;81;Cloud amount in segment
+;;;0;20;82;Amount segment cloud free
+;;;0;20;12;Cloud type
+;;;;;;(Clear sky radiance)
+3;4;33;0;2;152;Satellite instrument used in data processing
+;;;0;2;166;Radiance type
+;;;0;2;167;Radiance computational method
+;;;0;2;153;Satellite channel centre frequency
+;;;0;2;154;Satellite channel band width
+;;;0;12;75;Spectral radiance
+;;;0;12;76;Radiance
+;;;0;12;63;Brightness temperature
+
+3;4;34;1;2;4;Replicating next two descriptors 4 times
+;;;0;27;1;Latitude (high accuracy)
+;;;0;28;1;Longitude (high accuracy)
+;;;0;7;22;Solar elevation
+;;;0;5;43;Field of view number
+;;;0;20;10;Cloud cover (total)
+;;;0;20;16;Pressure at top of cloud
+;;;0;33;3;Quality information table
+;;;0;10;40;Number of retrieved layers
+
+ Category 05 - Meteorological or hydrological sequences common to hydrological observations;;;;;;
+
+TABLE;;;;;;
+REFERENCE;TABLE;;;;;
+REFERENCES;ELEMENT NAME;;;;;
+F;X;Y;;;;
+;;;;;;(SADC-HYCOS measurement array definition)
+3;5;3;3;1;12;Hour, minute of first single measurement minus increment
+;;;0;4;65;Short time increment - time interval between measuremens
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;5;1;Single measurement
+
+;;;;;;(MEDHYCOS measurement)
+3;5;6;0;13;72;Downstream water level
+;;;0;13;82;Water temperature
+;;;0;13;19;Precipitation last hour
+;;;0;12;1;Air temperature
+;;;0;13;73;Maximum water height observed
+;;;0;13;60;Total accumulated precipitation
+
+;;;;;;(MEDHYCOS report)
+3;5;7;3;1;29;Identification
+;;;3;1;12;Hour, minute (time of first measurement)
+;;;0;4;65;Short time increment - time interval between measurements
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;5;6;Single measurement
+
+;;;;;;(AOCHYCOS - Chad measurement)
+3;5;8;3;5;6;Same as MEDHYCOS type measurement
+;;;0;12;30;Soil temperature at -50 cm
+
+;;;;;;(AOCHYCOS-Chad report)
+3;5;9;3;1;29;Identification
+;;;3;1;12;Hour, minute (time of first measurement)
+;;;0;4;65;Short time increment - time interval between measurements
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;5;8;Single measurement
+
+;;;;;;(MEDHYCOS report type 2)
+3;5;11;3;1;29;Identification
+;;;3;1;12;Hour, minute (time of first measurement)
+;;;0;4;65;Short time increment - time interval between measurements
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;5;10;Single measurement
+
+;;;;;;(MEDHYCOS report with meteorology and water quality data)
+3;5;18;3;1;29;Identification
+;;;3;1;12;Hour, minute (time) of first measurement
+;;;0;4;65;Hour increment
+;;;1;3;0;Delayed replications of 3 descriptors
+;;;0;31;1;Replication factor
+;;;3;5;8;Same as AOCHYCOS type measurement
+;;;3;5;16;Meteorological parameters associated to hydrological data
+;;;3;5;17;Water quality measurement
+ Category 06 - Meteorological or oceanographic sequences common ;;;;;;
+to oceanographic observations;;;;;;
+
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;6;1;0;2;32;Indicator for digitization
+;;;1;2;0;Delayed replication of 2 descriptors
+;;;0;31;1;Replication factor
+;;;0;7;62;Depth below sea surface
+;;;0;22;42;Subsurface sea temperature
+3;6;2;0;2;31;Method of current measurement
+;;;0;22;4;Direction of current
+;;;0;22;31;Speed of current
+3;6;3;0;2;2;Wind instrumentation
+;;;0;11;11;Wind direction (10 m)
+;;;0;11;12;Wind speed (10 m)
+;;;0;12;4;Dry-bulb temperature (2 m)
+3;6;4;0;2;32;Indicator for digitization
+;;;0;2;33;Method of salinity/depth measurement
+;;;1;3;0;Delayed replication of 3 descriptors
+;;;0;31;1;Replication factor
+;;;0;7;62;Depth below sea surface
+;;;0;22;43;Subsurface sea temperature
+;;;0;22;62;Salinity
+3;6;5;0;2;31;Method of current measurement
+;;;1;3;0;Delayed replication of 3 descriptors
+;;;0;31;1;Replication factor
+;;;0;7;62;Depth below sea surface
+;;;0;22;4;Direction of current
+;;;0;22;31;Speed of current
+;;;;;;(Under water sounding (optional) parameters)
+3;6;6;3;6;3;Surface wind and temperature
+;;;3;6;2;Current
+;;;0;22;63;Total water depth
+;;;;;;(Buoy spare block parameters)
+3;6;7;0;1;12;Direction of motion of moving observing platform
+;;;0;1;14;Platform drift speed (high precision)
+;;;3;6;8;Buoy instrumentation
+;;;0;4;24;Time period
+;;;0;27;3;Alternate latitude
+;;;0;28;3;Alternate longitude
+;;;;;;(Buoy instrumentation parameters)
+3;6;8;0;2;34;Drogue type
+;;;0;2;35;Cable length
+;;;0;2;36;Buoy type
+3;6;23;0;1;15;Station or site name
+;;;3;1;23;Latitude, longitude
+;;;3;1;11;Year, month, day
+;;;3;1;12;Hour, minute
+;;;0;22;38;Tidal level with respect to local chart datum
+;;;0;22;39;Meteorological residual tidal elevation
+;;;0;22;120;Tide station automated water level check
+;;;0;22;121;Tide station manual water level check
+
+ Category 07 - Surface report sequences (land);;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Low altitude station)
+3;7;1;3;1;31;Identification, type, date/time, position (high accuracy), height
+;;;3;2;11;Basic surface report
+;;;;;;(Low altitude station)
+3;7;2;3;1;32;Identification, type, date/time, position (coarse accuracy), height
+;;;3;2;11;Basic surface report
+;;;;;;(Low altitude station)
+3;7;3;3;7;1;Location (high accuracy) and basic report
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;2;5;Cloud layer information
+;;;;;;(Low altitude station)
+3;7;4;3;7;2;Location (coarse accuracy) and basic report
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;2;5;Cloud layer information
+;;;;;;(Low altitude station)
+3;7;5;3;7;1;Location (high accuracy) and basic report
+;;;1;1;4;Replicate 1 descriptor 4 times
+;;;3;2;5;Cloud layer information (4 layers)
+;;;;;;(Low altitude station)
+3;7;6;3;7;2;Location (coarse accuracy) and basic report
+;;;1;1;4;Replicate 1 descriptor 4 times;
+;;;3;2;5;Cloud layer information (4 layers);
+;;;;;;(High altitude station);
+3;7;7;3;1;31;Identification, type, date/time, position (high accuracy), height;
+;;;3;2;12;Basic surface report;
+;;;;;;(High altitude station);
+3;7;8;3;1;32;Identification, type, date/time, position (coarse accuracy), height;
+;;;3;2;12;Basic surface report;
+3;7;9;3;1;31;Identification, type, date/time, position (high accuracy), height;
+;;;3;2;13;Basic surface report;
+;;;;;;(Main part of data for representation of METAR/SPECI code in BUFR);
+3;7;11;0;1;63;ICAO location indicator;CCCC
+;;;0;2;1;Type of station;(AUTO)
+;;;3;1;11;Year, month, day (YY);
+;;;3;1;12;GG, gg;
+;;;3;1;24;Latitude-longitude (coarse accuracy), height of station;
+;;;0;7;6;Height above station (= height of an anemometer);
+;;;0;11;1;Wind direction;ddd
+;;;0;11;16;Extreme counterclockwise wind direction of a variable wind;dndndn
+;;;0;11;17;Extreme clockwise wind direction of a variable wind;dxdxdx
+;;;0;11;2;Wind speed;ff
+;;;0;11;41;Maximum wind speed (gusts);fmfm
+;;;0;7;6;Height above station (= height of a thermometer);
+;;;0;12;1;Temperature;T´T´
+;;;0;12;3;Dew-point temperature;T´dT´d
+;;;0;10;52;Altimeter setting (QNH);PHPHPHPH
+;;;0;20;9;General Weather Indicator TAF/METAR;
+ ;;;;;;;
+;;;;;;(DvVVVV);
+3;7;12;1;3;0;Delayed replication of 3 descriptors;
+;;;0;31;1;Number of replication (up to 3);
+;;;0;8;23;First order statistics;
+;;;0;5;21;Direction of visibility observed;Dv
+;;;0;20;1;Horizontal visibility;VVVV
+;;;;;;(DRDRVRVRVRVR);
+3;7;13;1;6;0;Delayed replication of 6 descriptors;
+;;;0;31;1;Number of replication (up to 4);
+;;;0;1;64;Runway designator;DRDR
+;;;0;8;14;Qualification for runway visual range;
+;;;0;20;61;Runway visual range;VRVRVRVR
+;;;0;8;14;Qualification for runway visual range;
+;;;0;20;61;Runway visual range;VRVRVRVR
+;;;0;20;18;Tendency of runway visual range;i
+;;;;;;(w´w´);
+3;7;14;1;1;0;Delayed replication of 1 descriptor;
+;;;0;31;1;Number of replication (up to 3);
+;;;0;20;19;Significant present weather;w´w´
+;;;;;;(Clouds group(s));
+3;7;15;1;1;0;Delayed replication of 1 descriptor;
+;;;0;31;1;Number of replication;
+;;;3;2;5;(NsNsNs, CC, hshshs);
+;;;0;20;2;Vertical visibility;VVhshshs
+;;;;;;(REw´w´);
+3;7;16;1;1;0;Delayed replication of 1 descriptor;
+;;;0;31;1;Number of replication (up to 3);
+;;;0;20;20;Significant recent weather phenomena;REw´w´
+;;;;;;(Wind shear on runways(s));
+3;7;17;1;1;0;Delayed replication of 1 descriptor;
+;;;0;31;1;Number of replication;
+;;;0;11;70;Runway designator of the runway affected by wind shear (including ALL);WS RWYDRDR
+;;;;;;(Trend-type landing forecast);
+3;7;18;0;8;16;Change qualifier of a trend-type;TTTTT
+;;;;;;forecast or an aerodrome forecast;
+;;;1;2;0;Delayed replication of 2 descriptors;
+;;;0;31;1;Number of replication (up to 2);
+;;;0;8;17;Qualifier of the time when the forecast;TT
+;;;;;;change is expected (FM, TL, AT);
+;;;3;1;12;GG, gg;
+;;;1;4;0;Delayed replication of 4 descriptor;
+;;;0;31;1;Number of replication (up to 1);
+;;;0;7;6;Height above station;
+;;;0;11;1;Wind direction;ddd
+;;;0;11;2;Wind speed;ff
+;;;0;11;41;Maximum wind speed (gusts);fmfm
+;;;0;20;9;General Weather Indicator;
+;;;1;1;0;Delayed replication of 1 descriptor;
+;;;0;31;1;Number of replication (up to 1);
+;;;0;20;1;Horizontal visibility;VVVV
+;;;3;7;14;w´w´;
+;;;;;;(Short METAR/SPECI);
+3;7;20;3;7;11;Main part of data
+;;;3;7;14;w´w´
+;;;3;7;16;REw´w´
+ ;;;;;;
+;;;;;;(Total sequence for representation of METAR/SPECI code in BUFR)
+3;7;21;3;7;11;Main part of data
+;;;3;7;12;DvVVVV
+;;;3;7;13;DRDRVRVRVRVR
+;;;3;7;14;w´w´
+;;;3;7;15;Clouds group(s)
+;;;3;7;16;REw´w´
+;;;3;7;17;Wind shear on runway(s)
+;;;3;7;18;Trend-type landing forecast
+;;;3;7;15;Clouds group(s)
+
+ Category 08 - Surface report sequences (sea);;;;;;
+
+
+TABLE REFERNCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Buoy/platform — fixed)
+3;8;1;3;1;33;Identification, type, date/time, position (high accuracy)
+;;;3;2;11;Basic surface report
+;;;0;22;42;Sea-surface temperature
+;;;;;;(Buoy/platform — fixed)
+3;8;2;3;1;34;Identification, type, date/time, position (coarse accuracy)
+;;;3;2;11;Basic surface report
+;;;0;22;42;Sea-surface temperature
+;;;;;;(Buoy/platform — moving)
+3;8;3;3;1;35;Identification, movement, type, date/time, position (coarse accuracy)
+;;;3;2;11;Basic surface report
+;;;0;22;42;Sea-surface temperature
+;;;;;;(Ship)
+3;8;4;3;1;36;Identification, movement, type, date/time, position (coarse accuracy)
+;;;3;2;11;Basic surface report
+;;;0;22;42;Sea-surface temperature
+3;8;5;3;8;4;Basic ship report
+;;;3;2;24;Wind waves and swell waves
+;;;;;;(Buoy Section 1 optional parameters)
+3;8;6;0;10;4;Pressure
+;;;0;10;61;3-hour pressure change
+;;;0;10;63;Characteristic of pressure tendency
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+;;;0;12;4;Dry-bulb temperature at 2 m
+;;;0;13;3;Relative humidity
+;;;0;22;42;Sea temperature
+3;8;7;3;1;55;Identification, movement type, date/time, position (high accuracy)
+;;;3;2;11;Basic surface report
+;;;0;7;62;Depth below sea/water surface
+;;;0;22;42;Sea/water temperature
+
+Note:;Descriptor 3 08 007 should be used instead of 3 08 003 to encode moving buoy/platform information.;;;;;
+
+ Category 09 - Vertical sounding sequences (conventional data);;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Vertical wind profile)
+3;9;1;3;1;37;Identification, etc. (land station, high accuracy position)
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;11;Winds at heights
+;;;;;;(Vertical wind profile)
+3;9;2;3;1;38;Identification, etc. (land station, coarse accuracy position)
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;11;Winds at heights
+;;;;;;(Vertical wind profile)
+3;9;3;3;1;37;Identification, etc. (land station, high accuracy position)
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;12;Winds at pressure levels
+;;;;;;(Vertical wind profile)
+3;9;4;3;1;38;Identification, etc. (land station, coarse accuracy position)
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;12;Winds at pressure levels
+;;;;;;(Vertical sounding with relative humidity)
+3;9;5;3;1;37;Identification, etc. (land station, high accuracy position)
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;13;Pressure, geopotential, temperature and wind data
+;;;;;;(Vertical sounding with relative humidity)
+3;9;6;3;1;38;Identification, etc. (land station, coarse  accuracy position)
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;13;Pressure, geopotential, temperature and wind data
+;;;;;;(Vertical sounding with dew-point data)
+3;9;7;3;1;37;Identification, etc. (land station, high accuracy position)
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;14;Pressure, geopotential, temperature and wind data
+;;;;;;(Vertical sounding with dew-point data)
+3;9;8;3;1;38;Identification, etc. (land station, coarse accuracy position)
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;14;Pressure, geopotential, temperature and wind data
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCE;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Vertical wind profile)
+3;9;11;3;1;39;Ship's identification, etc.
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;11;Winds at heights
+;;;;;;(Vertical wind profile)
+3;9;12;3;1;39;Ship's identification, etc.
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;12;Winds at pressure levels
+;;;;;;(Vertical sounding with relative humidity)
+3;9;13;3;1;39;Ship's identification, etc.
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;13;Pressure, geopotential, temperature and wind data
+;;;;;;(Vertical sounding with dew-point data)
+3;9;14;3;1;39;Ship's identification, etc.
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;14;Pressure, geopotential, temperature and wind data
+;;;;;;(Vertical wind profile)
+3;9;15;3;1;40;Ship's identification, etc.
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;11;Winds at heights
+;;;;;;(Vertical wind profile)
+3;9;16;3;1;40;Ship's identification, etc.
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;12;Winds at pressure levels
+;;;;;;(Vertical sounding with relative humidity)
+3;9;17;3;1;40;Ship's identification, etc.
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;13;Pressure, geopotential, temperature and wind data
+;;;;;;(Vertical sounding with dew-point data)
+3;9;18;3;1;40;Ship's identification, etc.
+;;;3;2;4;Significant cloud information
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;14;Pressure, geopotential, temperature and wind data
+;;;;;;(Wind profiler — wind data sounding)
+3;9;19;3;1;31;Identification, etc.
+;;;0;2;3;Type of measuring equipment used
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;3;11;Winds at heights
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCE;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Wind profiler — Cartesian coordinates)
+3;9;20;3;1;31;Identification, etc.
+;;;0;2;3;Type of measuring equipment used
+;;;1;4;0;Delayed replication of 4 descriptors
+;;;0;31;1;Replication factor
+;;;0;7;3;Geopotential
+;;;0;11;3;u-component
+;;;0;11;4;v-component
+;;;0;11;5;w-component
+;;;;;;(Ozone sonde flight data)
+3;9;30;0;15;4;Ozone sounding correction factor
+;;;0;15;5;Ozone p
+;;;1;4;0;Delayed replication of 4 descriptors
+;;;0;31;1;Replication factor
+;;;0;4;15;"Time increment since launch time, if needed; in minutes"
+;;;0;8;6;Ozone vertical sounding significance
+;;;0;7;4;Pressure
+;;;0;15;3;Measured ozone partial pressure
+
+ Category 10 - Vertical sounding sequences (satellite data);;;;;;
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Satellite — brightness temperature)
+3;10;1;3;1;42;Identification, method, date/time
+;;;3;3;31;Significance data, land/sea, skin temperature
+;;;3;3;32;Cloud
+;;;1;1;26;Replicate 1 descriptor 26 times
+;;;3;3;25;Satellite channel and brightness temperature
+;;;;;;(Satellite — low level)
+3;10;2;3;1;42;Identification, method, date/time
+;;;3;3;31;Significance data, land/sea, skin temperature
+;;;3;3;32;Cloud
+;;;1;1;9;Replicate 1 descriptor 9 times
+;;;3;3;23;Layer mean temperature
+;;;;;;(Satellite — high level)
+3;10;3;3;1;42;Identification, method, date/time
+;;;3;3;31;Significance data, land/sea, skin temperature
+;;;3;3;32;Cloud
+;;;1;1;6;Replicate 1 descriptor 6 times
+;;;3;3;23;Layer mean temperature
+;;;;;;(Satellite — precipitable water)
+3;10;4;3;1;42;Identification, method, date/time
+;;;3;3;31;Significance data, land/sea, skin temperature
+;;;3;3;32;Cloud
+;;;1;1;3;Replicate 1 descriptor 3 times
+;;;3;3;24;Precipitable water
+
+3;10;5;3;1;42;Identification, method, date/time
+;;;3;3;31;Significance data, land/sea, skin temperature
+;;;3;3;33;Cloud
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Delayed descriptor replication factor
+;;;3;3;25;Satellite channel and brightness temperature
+
+3;10;6;3;1;42;Identification, method, date/time
+;;;3;3;31;Significance data, land/sea, skin temperature
+;;;3;3;33;Cloud
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Delayed descriptor replication factor
+;;;3;3;23;Layer mean temperature
+
+3;10;7;3;1;42;Identification, method, date/time
+;;;3;3;31;Significance data, land/sea, skin temperature
+;;;3;3;33;Cloud
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Delayed descriptor replication factor
+;;;3;3;24;Precipitable water
+ ;;;;;;
+;;;;;;(ATOVS HIRS report)
+3;10;8;3;10;11;ATOVS field of view variables
+;;;1;1;19;Replicate 1 descriptor 19 times
+;;;3;10;12;ATOVS channel variables
+;;;0;2;150;TOVS/ATOVS/AVHRR instrumentation channel number
+;;;0;25;79;Albedo-radiance solar filtered irradiance for ATOVS
+;;;0;25;80;Albedo-radiance equivalent filter width for ATOVS
+;;;0;33;32;Channel quality flags for ATOVS
+;;;0;14;45;Channel radiance
+;;;;;;(ATOVS AMSU-A report)
+3;10;9;3;10;11;ATOVS field of view variables
+;;;1;1;15;Replicate 1 descriptor 15 times
+;;;3;10;12;ATOVS channel variables
+;;;;;;(ATOVS AMSU-B report)
+3;10;10;3;10;11;ATOVS field of view variables
+;;;1;1;5;Replicate 1 descriptor 5 times
+;;;3;10;12;ATOVS channel variables
+;;;;;;(ATOVS field of view variables)
+3;10;11;0;8;70;TOVS/ATOVS product qualifier
+;;;0;1;33;Identification of originating/generating centre
+;;;0;1;34;Identification of originating/generating centre
+;;;0;8;70;TOVS/ATOVS product qualifier
+;;;0;1;33;Identification of originating/generating centre
+;;;0;1;34;Identification of originating/generating centre
+;;;0;1;7;Satellite identification
+;;;0;2;48;Satellite sensor indicator
+;;;0;5;40;Orbit number
+;;;0;25;75;Satellite antenna corrections version number
+;;;2;1;133;Change width
+;;;0;5;41;Scan line number
+;;;2;1;0;Change width
+;;;0;5;43;Field of view number
+;;;0;25;70;Major frame count
+;;;0;33;30;Scan line status flags for ATOVS
+;;;0;33;31;Scan line quality flags for ATOVS
+;;;0;4;1;Year
+;;;0;4;2;Month
+;;;0;4;3;Day
+;;;0;4;4;Hour
+;;;0;4;5;Minute
+;;;2;2;131;Change scale
+;;;2;1;138;Change width
+;;;0;4;6;Second
+;;;2;1;0;Change width
+;;;2;2;0;Change scale
+;;;0;5;1;Latitude
+;;;0;6;1;Longitude
+;;;2;2;126;Change scale
+;;;0;7;1;Height of station
+;;;2;2;0;Change scale
+;;;0;7;24;Satellite zenith angle
+;;;0;5;21;Satellite azimuth
+;;;0;7;25;Solar zenith angle
+;;;0;5;22;Solar azimuth
+;;;0;33;33;Field of view quality flags for ATOVS
+;;;0;2;151;Radiometer identifier
+;;;0;12;64;Instrument temperature
+;;;0;2;151;Radiometer identifier
+;;;0;12;64;Instrument temperature
+;;;0;2;151;Radiometer identifier
+;;;0;12;64;Instrument temperature
+;;;0;2;151;Radiometer identifier
+;;;0;12;64;Instrument temperature
+;;;;;;(ATOVS channel variables)
+3;10;12;0;2;150;TOVS/ATOVS/AVHRR instrumentation channel number
+;;;0;25;76;Log–10 of (temperature-radiance central wavenumber) for ATOVS
+;;;0;25;77;Bandwidth correction coefficient 1 for ATOVS
+;;;0;25;78;Bandwidth correction coefficient 2 for ATOVS
+;;;0;33;32;Channel quality flags for ATOVS
+;;;2;1;132;Change width
+;;;2;2;129;Change scale
+;;;0;12;63;Brightness temperature
+;;;2;2;0;Change scale
+;;;2;1;0;Change width
+;;;;;;(AVHRR (GAC) report)
+3;10;13;0;1;7;Satellite ID
+;;;0;5;40;Orbit number
+;;;0;4;1;Year
+;;;0;4;2;Month
+;;;0;4;3;Day
+;;;0;4;4;Hour
+;;;0;4;5;Minute
+;;;0;4;6;Second
+;;;0;5;1;Latitude
+;;;0;6;1;Longitude
+;;;0;7;25;Solar zenith angle
+;;;0;5;43;Field of view number
+;;;0;25;85;Fraction of clear pixels in HIRS field of view
+;;;2;1;131;Change width
+;;;2;2;129;Change scale
+;;;0;2;150;TOVS/ATOVS/AVHRR instrumentation channel number
+;;;0;8;23;First order statistics
+;;;0;8;72;Pixel(s) type
+;;;0;14;27;Albedo
+;;;0;8;72;Pixel(s) type
+;;;0;14;27;Albedo
+;;;0;2;150;TOVS/ATOVS/AVHRR instrumentation channel number
+;;;0;8;23;First order statistics
+;;;0;8;72;Pixel(s) type
+;;;0;14;27;Albedo
+;;;0;8;72;Pixel(s) type
+;;;0;14;27;Albedo
+;;;0;2;150;ATOVS/AVHRR instrumentation channel number
+;;;0;8;23;First order statistics
+;;;0;8;72;Pixel(s) type
+;;;0;14;27;Albedo
+;;;0;8;72;Pixel(s) type
+;;;0;14;27;Albedo
+;;;2;2;0;Change scale
+;;;2;1;0;Change width
+;;;2;1;132;Change width
+;;;2;2;129;Change scale
+;;;0;2;150;ATOVS/AVHRR instrumentation channel number
+;;;0;8;23;First order statistics
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;0;2;150;ATOVS/AVHRR instrumentation channel number
+;;;0;8;23;First order statistics
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;0;8;23;First order statistics
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;0;2;150;ATOVS/AVHRR instrumentation channel number
+;;;0;8;23;First order statistics
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;0;8;72;Pixel(s) type
+;;;0;12;63;Brightness temperature
+;;;2;2;0;Change scale
+;;;2;1;0;Change width
+;;;;;;(Satellite — geostationnary wind data)
+3;10;14;3;1;72;Satellite identification, date, time, latitude, longitude
+;;;3;3;41;Wind sequence
+;;;3;4;11;GOES-I/M information
+;;;;;;(Meteosat radiace data)
+3;10;15;3;1;72;Satellite identification
+;;;0;7;24;Satellite zenith angle
+;;;0;10;2;Height
+;;;3;3;41;Wind sequence
+;;;1;1;3;Replicate next descriptor 3 times
+;;;3;4;32;Cloud fraction
+;;;0;2;152;Satellite instrument used in data processing
+;;;0;2;24;Integrated mean humidity computational method
+;;;0;7;4;Pressure
+;;;0;7;4;Pressure
+;;;0;13;3;Relative humidity
+;;;1;1;3;Replicate next descriptor 3 times
+;;;3;4;33;Clear sky radiance
+;;;;;;(Meteosat Second Generation (MSG) radiance data)
+3;10;16;3;1;72;Satellite identification
+;;;0;7;24;Satellite zenith angle
+;;;0;10;2;Height
+;;;3;3;41;Wind sequence
+;;;1;1;12;Replicate next descriptor 12 times
+;;;3;4;32;Cloud fraction
+;;;0;2;152;Satellite instrument used in data processing
+;;;0;2;24;Integrated mean humidity computational method
+;;;0;7;4;Pressure
+;;;0;7;4;Pressure
+;;;0;13;3;Relative humidity
+;;;1;1;12;Replicate next descriptor 12 times
+;;;3;4;33;Clear sky radiance
+ ;;;;;;
+;;;;;;(Retrieved ozone data)
+3;10;20;3;10;22;
+;;;3;1;11;Year, month, day
+;;;3;1;13;Hour, minute, second
+;;;3;1;21;Lat., long. (high accuracy)
+;;;3;4;34;
+;;;3;10;21;
+
+3;10;21;1;8;0;Delayed replication of 8 next descriptors
+;;;0;31;1;Delayed descriptor replication factor
+;;;2;1;131;Change data width
+;;;2;2;129;Change scale
+;;;0;7;4;Pressure
+;;;0;7;4;Pressure
+;;;2;2;0;Change scale to Table B
+;;;2;1;0;Change data width to Table B
+;;;0;15;20;Integrated 03 density
+;;;0;10;2;Height
+
+3;10;22;0;1;7;Satellite identifier
+;;;0;2;19;Satellite instrument used
+;;;0;1;33;Identification of originating/generating centre
+;;;0;2;172;Product type for retrieved atmospheric gases
+
+ Category 11 - Single level report sequences (conventional data);;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Aircraft reports)
+3;11;1;3;1;51;ASDAR aircraft identifier, navigational system, date/time, position, phase of aircraft flight
+;;;0;7;2;Altitude
+;;;0;12;1;Temperature
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+;;;0;11;31;Degree of turbulence
+;;;0;11;32;Height of base of turbulence
+;;;0;11;33;Height of top of turbulence
+;;;0;20;41;Airframe icing
+;;;;;;(ACARS reports)
+3;11;2;3;1;65;ACARS identification
+;;;3;1;66;ACARS location
+;;;3;11;3;ACARS standard reported variables
+;;;3;11;4;ACARS supplementary reported variables
+;;;;;;(ACARS standard reported variables)
+3;11;3;0;10;70;Indicated aircraft altitude
+;;;0;11;1;Wind direction
+;;;0;11;2;Wind speed
+;;;0;12;1;Temperature/dry-bulb temperature
+;;;0;13;2;Mixing ratio
+;;;;;;(ACARS supplementary reported variables)
+3;11;4;1;1;0;Delayed replication of one descriptor
+;;;0;31;0;Short delayed descriptor replication factor
+;;;0;11;34;Vertical gust velocity
+;;;1;1;0;Delayed replication of one descriptor
+;;;0;31;0;Short delayed descriptor replication factor
+;;;0;11;35;Vertical gust acceleration
+;;;1;1;0;Delayed replication of one descriptor
+;;;0;31;0;Short delayed descriptor replication factor
+;;;0;11;75;Mean turbulence intensity (eddy dissipation rate)
+;;;1;1;0;Delayed replication of one descriptor
+;;;0;31;0;Short delayed descriptor replication factor
+;;;0;11;76;Peak turbulence intensity (eddy dissipation rate)
+;;;1;1;0;Delayed replication of one descriptor
+;;;0;31;0;Short delayed descriptor replication factor
+;;;0;33;25;ACARS interpolated values
+;;;1;1;0;Delayed replication of one descriptor
+;;;0;31;0;Short delayed descriptor replication factor
+;;;0;33;26;Mixing ratio quality
+
+
+ Category 12 - Single level report sequences (satellite data);;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;12;1;3;1;43;Satellite identifier, instrumentation, location, date/time
+;;;3;4;1;Cloud top pressure, temperature, wind
+3;12;2;3;1;43;Satellite identifier, instrumentation, location, date/time
+;;;3;4;2;Cloud top pressure, wind
+3;12;3;3;1;42;Satellite identifier, instrumentation, location, date/time
+;;;3;4;3;Surface temperature
+3;12;4;3;1;42;Satellite identifier, instrumentation, location, date/time
+;;;3;4;4;Cloud cover
+3;12;5;3;1;42;Satellite identifier, instrumentation, location, date/time
+;;;0;20;14;Height of top of cloud
+3;12;6;3;1;44;Satellite identifier, instrumentation, location, date/time
+;;;3;4;5;Layer mean relative humidity
+3;12;7;3;1;42;Satellite identifier, instrumentation, location, date/time
+;;;3;4;6;Radiation
+;;;;;;(Orbital information, Part I)
+3;12;10;0;1;7;Satellite identifier
+;;;0;5;40;Orbit number
+;;;0;2;21;Satellite instrumentation
+;;;0;5;41;Scan line number
+;;;0;4;1;Year
+;;;0;4;43;Day of year
+;;;;;;(Orbital information, Part II)
+3;12;11;2;2;131;Change scale
+;;;2;1;149;Change width
+;;;0;4;6;Second
+;;;2;1;0;Change width
+;;;2;2;126;Change scale
+;;;0;10;2;Height
+;;;2;2;0;Change scale
+;;;0;5;43;Field of view number
+;;;0;5;53;Field of view number increment
+;;;;;;(HIRS brightness temperatures — channels 1–19)
+3;12;12;2;2;129;Change scale
+;;;2;1;132;Change width
+;;;1;1;19;Replicate 1 descriptor 19 times
+;;;0;12;63;Brightness temperature
+;;;2;1;0;Change width
+;;;2;2;0;Change scale
+;;;;;;(HIRS brightness temperatures — channel 20)
+3;12;13;0;5;42;Channel number
+;;;2;2;129;Change scale
+;;;2;1;135;Change width
+;;;0;12;63;Brightness temperature
+;;;2;1;0;Change width
+;;;2;2;0;Change scale
+ ;;;;;;
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(HIRS satellite data)
+3;12;14;3;12;10;Orbital information, Part I
+;;;3;12;11;Orbital information, Part II
+;;;1;5;56;Replicate 5 descriptors 56 times
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;0;5;42;Channel number
+;;;0;5;52;Channel number increment
+;;;3;12;12;HIRS brightness temperatures — channels 1–19
+;;;3;12;13;HIRS brightness temperature — channel 20
+;;;;;;(MSU brightness temperatures — channels 1–4)
+3;12;15;1;9;11;Replicate 9 descriptors 11 times
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;0;5;42;Channel number
+;;;0;5;52;Channel number increment
+;;;2;2;129;Change scale
+;;;2;1;132;Change width
+;;;1;1;4;Replicate 1 descriptor 4 times
+;;;0;12;63;Brightness temperature
+;;;2;2;0;Change scale
+;;;2;1;0;Change width
+;;;;;;(MSU satellite data)
+3;12;16;3;12;10;Orbital information, Part I
+;;;3;12;11;Orbital information, Part II
+;;;3;12;15;MSU brightness temperatures — channels 1–4
+;;;;;;(SSU brightness temperatures — channels 1–3)
+3;12;17;1;9;8;Replicate 9 descriptors 8 times
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;0;5;42;Channel number
+;;;0;5;52;Channel number increment
+;;;2;2;129;Change scale
+;;;2;1;132;Change width
+;;;1;1;3;Replicate 1 descriptor 3 times
+;;;0;12;63;Brightness temperature
+;;;2;2;0;Change scale
+;;;2;1;0;Change width
+;;;;;;(SSU satellite data)
+3;12;18;3;12;10;Orbital information, Part I
+;;;3;12;11;Orbital information, Part II
+;;;3;12;17;SSU brightness temperatures — channels 1–3
+;;;;;;(Wave scatterometer product with width change for wave number (spectral))
+3;12;19;3;1;47;Product header
+;;;3;1;48;Radar parameters
+;;;0;15;15;Maximum spectrum composition before normalisation
+;;;0;29;2;Coordinate grid type
+;;;0;21;76;Representation of intensities
+;;;1;6;12;Repeat next 6 descriptors 12 times
+;;;2;1;129;Change width to 14 bits
+;;;0;6;30;Wave number (spectral)
+;;;2;1;0;Change width to Table B
+;;;1;2;12;Repeat next 2 descriptors 12 times
+;;;0;5;30;Direction (spectral)
+;;;0;21;75;Image spectrum intensity
+;;;0;21;66;Wave scatterometer product confidence data
+;;;;;;(Wave scatterometer product)
+3;12;20;3;1;47;Product header
+;;;3;1;48;Radar parameters
+;;;0;15;15;Maximum spectrum composition before normalization
+;;;0;29;2;Coordinate grid type
+;;;0;21;76;Representation of intensities
+;;;1;4;12;Repeat next 4 descriptors 12 times
+;;;0;6;30;Wave number (spectral)
+;;;1;2;12;Repeat next 2 descriptors 12 times
+;;;0;5;30;Direction (spectral)
+;;;0;21;75;Spectral intensity
+;;;0;21;66;Wave scatterometer product confidence data
+;;;;;;(Wind scatterometer product)
+3;12;21;3;1;47;Product header
+;;;1;1;3;Repeat 1 descriptor 3 times
+;;;3;1;49;Radar beam data
+;;;0;11;12;Wind speed at 10 m
+;;;0;11;11;Wind direction at 10 m
+;;;0;21;67;Wind product confidence data
+;;;;;;(Radar altimeter product)
+3;12;22;3;1;47;Product header
+;;;0;8;22;Number in average
+;;;0;11;12;Wind speed
+;;;0;11;50;Standard deviation of horizontal wind speed
+;;;0;22;70;Significant wave height
+;;;0;22;26;Standard deviation of significant wave height
+;;;3;12;41;Altitude
+;;;0;10;50;Standard deviation of altitude
+;;;0;21;68;Radar altimeter product confidence data
+;;;0;21;71;Peakiness
+;;;0;21;72;Altimeter calibration status
+;;;0;21;73;Altimeter instrument mode
+;;;3;12;42;Altitude corrections
+;;;0;21;62;Backscatter
+;;;0;15;11;Log 10 of integrated electron density
+;;;;;;(ATSR sea surface temperature product)
+3;12;23;3;1;47;Product header
+;;;1;3;3;Repeat 3 descriptors 3 times
+;;;0;8;22;Number in average
+;;;0;12;61;Skin temperature
+;;;0;22;50;Standard deviation of sea surface temperature
+;;;0;21;69;SST product confidence data
+;;;0;21;85;ATSR sea surface temperature across-track band number
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Wave scatterometer product enhanced)
+3;12;24;3;12;20;(Wave scatterometer product)
+;;;0;8;60;Sample scanning mode significance – range
+;;;0;8;22;Number in sample
+;;;0;8;60;Sample scanning mode signification – horizontal
+;;;0;8;22;Number in sample
+;;;0;25;14;Azimuth clutter cut-off
+;;;0;22;101;Total energy (wavelength > 731 m)
+;;;0;22;97;Mean wavelength of image spectrum
+;;;0;22;98;Wavelength spread (wavelength > 731 m)
+;;;0;22;99;Mean direction (wavelength > 731 m)
+;;;0;22;100;Direction spread (wavelength > 731 m)
+;;;;;;(Wave scatterometer enhanced product (with change of width for wave number (spectral))
+3;12;25;3;12;19;Wave scatterometer product with width change for wave
+;;;;;;number (spectral)
+;;;0;8;60;Sample scanning mode significance – range
+;;;0;8;22;Number in sample
+;;;0;8;60;Sample scanning mode significance – horizontal
+;;;0;8;22;Number in sample
+;;;0;25;14;Azimuth clutter cut-off
+;;;0;22;101;Total energy (wavelength > 731 m)
+;;;0;22;97;Mean wavelength of image spectrum
+;;;0;22;98;Wavelength spread (wavelength > 731 m)
+;;;0;22;99;Mean direction (wavelength > 731 m)
+;;;0;22;100;Direction spread (wavelength > 731 m)
+;;;;;;(QUIKSCAT data)
+3;12;26;3;1;46;
+;;;3;1;11;Data
+;;;3;1;13;Time
+;;;3;1;23;Location
+;;;3;12;31;
+;;;1;1;4;Replicate 1 descriptor 4 times
+;;;3;12;30;
+;;;0;21;110;Number of inner-beam sigma-0 (forward of satellite)
+;;;3;1;23;Location
+;;;3;21;27;
+;;;0;21;111;Number of outer-beam sigma-0 (forward of satellite)
+;;;3;1;23;Location
+;;;3;21;27;
+;;;0;21;112;Number of inner-beam sigma-0 (aft of satellite)
+;;;3;1;23;Location
+;;;3;21;27;
+;;;0;21;113;Number of outer-beam sigma-0 (aft of satellite)
+;;;3;1;23;Location
+;;;3;21;27;
+ ;;;;;;
+;;;;;;(ATSR SST Product (SADIST-2))
+3;12;27;3;1;47;ERS product header
+;;;1;5;9;Repeat next 5 descriptors 9 times
+;;;3;1;23;Location (coarse Latitude + Longitude) of 10-arcmin cell
+;;;0;7;21;Elevation: Incidence angle Nadir view [set to zero]
+;;;0;12;61;Skin temperature: SST [Nadir-only view]
+;;;0;7;21;Elevation: Incidence angle Dual view [set to 'missing']
+;;;0;12;61;Skin temperature: SST [Dual view]
+;;;0;21;85;ATSR SST across-track band number [0-9]
+;;;0;21;70;SST product confidence data (SADIST-2) [23-bit flag]
+;;;;;;(SEAWINDS QUIKSCAT data)
+3;12;28;3;1;46;
+;;;3;1;11;
+;;;3;1;13;
+;;;3;1;23;
+;;;0;8;25;Time difference qualifier
+;;;2;1;136;Change data width
+;;;0;4;6;Second
+;;;2;1;0;Change data width back to Table B
+;;;3;12;31;
+;;;3;12;32;
+;;;1;1;4;Next descriptor replicated four times
+;;;3;12;30;
+;;;1;1;2;Next descriptor replicated two times
+;;;3;12;33;
+;;;0;21;110;Number of inner-beam sigma-0 (forward of satellite)
+;;;3;1;23;
+;;;3;21;28;
+;;;0;21;111;Number of outer-beam sigma-0 (forward of satellite)
+;;;3;1;23;
+;;;3;21;28;
+;;;0;21;112;Number of inner-beam sigma-0 (aft of satellite)
+;;;3;1;23;
+;;;3;21;28;
+;;;0;21;113;Number of outer-beam sigma-0 (aft of satellite)
+;;;3;1;23;
+;;;3;21;28;
+
+3;12;30;2;1;130;Change data width
+;;;2;2;129;Change scale
+;;;0;11;12;Wind speed at 10 m
+;;;2;2;0;Change scale back to Table B
+;;;2;1;0;Change data width to Table B
+;;;0;11;52;Formal uncertainty in wind speed
+;;;2;1;135;Change data width
+;;;2;2;130;Change scale
+;;;0;11;11;Wind direction at 10 m
+;;;2;2;0;Change scale back to Table B
+;;;2;1;0;Change data width to Table B
+;;;0;11;53;Formal uncertainty in wind direction
+;;;0;21;104;Likelihood computed for solution
+ ;;;;;;
+3;12;31;0;5;34;Along-track row number
+;;;0;6;34;Cross-track cell number
+;;;0;21;109;SEAWINDS wind vector cell quality
+;;;0;11;81;Model wind direction at 10 m
+;;;0;11;82;Model wind speed at 10 m
+;;;0;21;101;Number of vector ambiguities
+;;;0;21;102;Index of selected wind vector
+;;;0;21;103;Total number of sigma-0 measurements
+
+3;12;32;0;21;120;Probability of rain
+;;;0;21;121;SEAWINDS NOF rain index
+;;;0;13;55;Intensity of precipitation
+;;;0;21;122;Attenuation correction on sigma-0 (from tB)
+
+3;12;33;0;2;104;Antenna polarisation
+;;;0;8;22;Total number (with respect to accumulation)
+;;;0;12;63;Brightness temperature
+;;;0;12;65;Standard deviation brightness temperature
+;;;;;;(Altitude)
+3;12;41;2;1;141;Change width to 28 bits
+;;;2;2;130;Change scale to 2
+;;;0;7;1;Altitude
+;;;2;1;0;Change width back to Table B
+;;;2;2;0;Change scale back to Table B
+;;;;;;(Altitude corrections)
+3;12;42;0;21;77;Altitude correction, ionosphere
+;;;0;21;78;Altitude correction, dry troposphere
+;;;0;21;79;Altitude correction, wet troposphere
+;;;0;21;80;Altitude correction, calibration constant
+;;;0;21;81;Open loop height-time loop calibration correction
+;;;0;21;82;Open loop automatic gain control calibration correction
+
+Notes:;;;;;;
+
+-1;Separation of single level satellite data into sets of BUFR messages helps compression and results in efficient data transmission and storage.;;;;;
+-2;"Each BUFR message may contain data for a number of locations; the BUFR compression technique involves negligible overheads for data items that are invariant.";;;;;
+-3;Compound BUFR messages may be described within the data description section, if required (e.g. 3 01 041, 3 04 001, 3 04 002, 3 04 003, 3 04 004, 3 04 005, 3 04 006).;;;;;
+
+ Category 13 - Sequences common to image data;;;;;;
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Radar reflectivity values)
+3;13;9;0;21;1;Horizontal reflectivity
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;0;21;1;Horizontal reflectivity
+;;;;;;(Radar rainfall intensities)
+3;13;10;0;21;36;Radar rainfall intensity
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;0;21;36;Radar rainfall intensity
+;;;;;;(Non run-length encoded row for Pixel value (4 bits))
+3;13;31;0;6;2;First longitude location minus one increment
+;;;0;6;12;Longitude increment
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;2;Extended replication factor
+;;;0;30;1;Pixel value (4 bits)
+;;;;;;(Non run-length encoded picture data for Pixel value (4 bits))
+3;13;32;0;5;2;First latitude location minus one increment
+;;;0;5;12;Latitude increment (signed value so cannot cross pole)
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;2;Extended replication factor
+;;;3;13;31;Non run-length encoded row
+;;;;;;(Run-length encoded row for Pixel value (4 bits))
+3;13;41;0;6;2;First longitude location minus one increment
+;;;1;10;0;Delayed replication of 10 descriptors
+;;;0;31;1;Replication factor
+;;;1;4;0;Delayed replication of 4 descriptors
+;;;0;31;1;Replication factor
+;;;0;6;12;Longitude increment
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;12;Repetition factor
+;;;0;30;1;Pixel value (4 bits)
+;;;0;6;12;Longitude increment
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;0;30;1;Pixel value (4 bits)
+;;;;;;(Run-length encoded picture data for Pixel value (4 bits))
+3;13;42;0;5;2;First latitude location minus one increment
+;;;0;5;12;Latitude increment (signed value so cannot cross pole)
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;2;Extended replication factor
+;;;3;13;41;Run-length encoded row
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Run-length encoded picture data for Pixel value (4 bits), regular grid)
+3;13;43;0;6;2;First longitude location minus one increment
+;;;0;5;2;First latitude location minus one increment
+;;;0;5;12;Latitude increment
+;;;1;12;0;Delayed replication of 12 descriptors
+;;;0;31;1;Replication factor
+;;;1;10;0;Delayed replication of 10 descriptors
+;;;0;31;1;Replication factor
+;;;1;4;0;Delayed replication of 4 descriptors
+;;;0;31;1;Replication factor
+;;;0;6;12;Longitude increment
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;11;Repetition factor
+;;;0;30;1;Pixel value (4 bits)
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;0;30;1;Pixel value (4 bits)
+
+ Category 15 - Oceanographic report sequences;;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Typically reported underwater sounding without optional fields)
+3;15;1;0;1;11;Ship's call sign
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;3;6;1;Depth, temperature
+;;;;;;(Typically reported underwater sounding without optional fields)
+3;15;2;0;1;11;Ship's call sign
+;;;3;1;11;Date
+;;;3;1;12;Time
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;3;6;4;Depth, temperature, salinity
+
+ Category 16 - Synoptic feature sequences;;;;;;
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;16;1;3;1;11;Year, month, day
+;;;0;4;4;Hour
+;;;3;1;23;Latitude and longitude (coarse accuracy)
+;;;0;1;21;Synoptic feature identifier
+;;;0;2;41;Method for estimating reports related to synoptic features
+;;;0;19;1;Type of synoptic feature
+;;;0;10;51;Pressure reduced to mean sea level
+;;;0;19;2;Effective radius of feature
+;;;0;19;3;Wind speed threshold (15 m s–1 typically)
+;;;0;19;4;Effective radius with respect to wind speeds above threshold
+;;;;;;(Header)
+3;16;2;0;8;21;Data time (analysis)
+;;;0;4;1;Year
+;;;0;4;2;Month
+;;;0;4;3;Day
+;;;0;4;4;Hour
+;;;0;4;5;Minute
+;;;0;1;33;Originating/generating centre
+;;;0;8;21;Validity time (fcst)
+;;;0;4;1;Year
+;;;0;4;2;Month
+;;;0;4;3;Day
+;;;0;4;4;Hour
+;;;0;4;5;Minute
+;;;0;7;2;Flight level (altitude) (base of chart layer)
+;;;0;7;2;Flight level (altitude) (top of chart layer)
+;;;;;;(Jet stream)
+3;16;3;1;10;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;11;Meteorological feature (jet stream value)
+;;;0;8;7;Dimensional significance (value for line)
+;;;1;4;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;10;2;Flight level (altitude)
+;;;0;11;2;Wind speed
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;11;Meteorological feature (cancel/end of object)
+;;;;;;(Turbulence)
+3;16;4;1;11;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;11;Meteorological feature (value for turbulence)
+;;;0;8;7;Dimensional significance (value for area)
+;;;0;7;2;Flight level (altitude) (base of layer)
+;;;0;7;2;Flight level (altitude) (top of layer)
+;;;1;2;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;11;031(1);Degree of turbulence
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;11;Meteorological feature (cancel/end of object)
+;;;;;;(Storm)
+3;16;5;1;8;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;5;Meteorological attribute significance (storm centre)
+;;;0;8;7;Dimensional significance (value for point)
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;1;26;WMO storm name (use “UNKNOWN” for a sandstorm)
+;;;0;19;1;Synoptic features (value for type of storm)
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;5;Meteorological attribute significance (cancel/end of object)
+;;;;;;(Cloud)
+3;16;6;1;12;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;11;Meteorological feature (value for cloud)
+;;;0;8;7;Dimensional significance (value for area)
+;;;0;7;2;Flight level (altitude) (base of layer)
+;;;0;7;2;Flight level (altitude) (top of layer)
+;;;1;2;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;20;011(2);Cloud amount
+;;;0;20;12;Cloud type
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;11;Meteorological feature (cancel/end of object)
+;;;;;;(Front)
+3;16;7;1;10;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;011(3);Meteorological feature (value for type of front)
+;;;0;8;7;Dimensional significance (value for line)
+;;;1;4;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;19;5;Direction of feature
+;;;0;19;6;Speed of feature
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;11;Meteorological feature (cancel/end of object)
+;;;;;;(Tropopause)
+3;16;8;1;11;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;1;Vertical significance (bit 3 set for tropopause)
+;;;0;8;7;Dimensional significance (value for point)
+;;;0;8;023(4);Statistic (type of tropopause value)
+;;;1;3;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;10;2;Height/altitude
+;;;0;8;23;Statistic (cancel)
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;1;Vertical significance (cancel/end of object)
+ ;;;;;;
+;;;;;;(Airframe icing area)
+3;16;9;1;11;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;11;Meteorological feature (value for airframe icing)
+;;;0;8;7;Dimensional significance (value for area)
+;;;0;7;2;Flight level (altitude) (base of layer)
+;;;0;7;2;Flight level (altitude) (top of layer)
+;;;1;2;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;20;41;Airframe icing (type of airframe icing)
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;11;Meteorological feature (cancel/end of object)
+;;;;;;(Name of feature)
+3;16;10;1;7;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;11;Meteorological feature
+;;;0;8;7;Dimensional significance (value for point)
+;;;0;1;22;Name of feature
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;11;Meteorological feature (cancel/end of object)
+;;;;;;(Volcano erupting)
+3;16;11;1;16;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;8;11;Meteorological feature (value for special clouds)
+;;;0;1;22;Name of feature (volcano name)
+;;;0;8;7;Dimensional significance (value for point)
+;;;1;2;0;Delayed replication
+;;;0;31;1;Replication
+;;;0;5;2;Latitude (coarse)
+;;;0;6;2;Longitude (coarse)
+;;;0;8;21;Time significance (eruption starting time)
+;;;0;4;1;Year
+;;;0;4;2;Month
+;;;0;4;3;Day
+;;;0;4;4;Hour
+;;;0;4;5;Minute
+;;;0;20;90;Special clouds (clouds from volcanic eruptions)
+;;;0;8;21;Time significance (cancel)
+;;;0;8;7;Dimensional significance (cancel)
+;;;0;8;11;Meteorological feature (cancel/end of object)
+ ;;;;;;
+;;;;;;(Forecast data)
+3;16;22;0;1;32;Generating application (NWP model name, etc. code table defined by originating/generating centre)
+;;;0;2;41;Method for estimating reports related to synoptic feature
+;;;0;19;1;Type of synoptic feature
+;;;0;19;10;Method for tracing of the centre of synoptic feature
+;;;1;18;0;Delayed replication of 18 descriptors
+;;;0;31;1;Replication factor
+;;;0;8;21;Time significance (forecast)
+;;;0;4;14;Time increment (hour)
+;;;0;8;5;Surface synoptic feature significance
+;;;3;1;23;Latitude (coarse accuracy), longitude (coarse accuracy)
+;;;0;19;5;Direction of motion of feature
+;;;0;19;6;Speed of motion of feature
+;;;0;10;4;Pressure
+;;;0;11;41;Maximum wind speed (gust: e.g. used in US)
+;;;0;8;21;Time significance (forecast time averaged)
+;;;0;4;75;Time period (minutes)
+;;;0;11;40;Maximum wind speed (mean wind)
+;;;0;19;8;Vertical extent of feature
+;;;1;5;4;Replicate 5 descriptors 4 times
+;;;0;5;21;Starting bearing or azimuth
+;;;0;5;21;Ending bearing or azimuth
+;;;1;2;2;Replicate 2 descriptors 2 times
+;;;0;19;3;Wind speed threshold
+;;;0;19;4;Effective radius with respect to wind speed above threshold
+
+Notes:;;;;;;
+-1;For MOD OCNL SEV code as 12 (extreme in clear air) or 13 (extreme  in cloud);;;;;
+-2;Code table values ;: FRQ;;=  code figure 8 (8 oktas);;
+;;;: OCNL EMBD;=  code figure 6 (6 oktas);;
+;;;: ISOL;;=  code figure 2 (2 oktas) when the cloud = Cb.;
+-3;Front direction (towards which the front is moving) must always be given as it is needed for plotting purposes.  A front direction with a front speed of zero would indicate a slow front.  A value in the code table exists to represent a quasi-stationary front.;;;;;
+-4;The statistic is to determine whether the following tropopause levels are minimum, maximum or spot values (missing code value).;;;;;
+ Category 18 - Radiological report sequences;;;;;;
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+3;18;1;3;1;25;Latitude and longitude (coarse accuracy), day and time
+;;;0;24;11;Dose
+
+3;18;3;3;1;26;Latitude and longitude (high accuracy), time periods in days,
+;;;;;;hours and minutes
+;;;0;24;5;Isotope mass
+;;;0;24;4;Element name
+;;;0;24;21;Air concentration
+
+3;18;4;3;1;25;Latitude and longitude (coarse accuracy), day and time
+;;;0;4;23;Time period or displacement 
+;;;0;13;11;Total precipitation/total water equivalent
+;;;0;24;5;Isotope mass
+;;;0;24;4;Element name
+;;;0;24;22;Concentration in precipitation
+
+
+ Category 21 - Radar report sequences;;;;;;
+
+
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Wind profiler — antenna characteristics)
+3;21;1;0;2;101;Type of antenna
+;;;0;2;114;Antenna effective surface area
+;;;0;2;105;Maximum antenna gain
+;;;0;2;106;3-dB beamwidth
+;;;0;2;107;Sidelobe suppression
+;;;0;2;121;Mean frequency
+;;;;;;(Wind profiler — moment data)
+3;21;3;0;21;51;Signal power above 1 mW
+;;;0;21;14;Doppler mean velocity (radial)
+;;;0;21;17;Doppler velocity spectral width
+;;;0;21;30;Signal to noise ratio
+;;;;;;(Wind profiler — moment data sounding)
+3;21;4;3;1;31;Identification, type, date/time, position (high accuracy), height
+;;;0;2;3;Type of measuring equipment used
+;;;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;3;21;3;Wind profiler — moment data
+;;;;;;(Transmitter-receiver characteristics)
+3;21;5;0;25;4;Echo processing
+;;;0;2;121;Mean frequency
+;;;0;2;122;Frequency agility range
+;;;0;2;123;Peak power
+;;;0;2;124;Average power
+;;;0;2;125;Pulse repetition frequency
+;;;0;2;126;Pulse width
+;;;0;2;127;Receiver intermediate frequency
+;;;0;2;128;Intermediate frequency bandwidth
+;;;0;2;129;Minimum detectable signal
+;;;0;2;130;Dynamic range
+;;;0;2;131;Sensitivity time control
+;;;;;;(Integration characteristics)
+3;21;6;0;25;1;Range-gate length
+;;;0;25;2;Number of gates averaged
+;;;0;25;3;Number of integrated pulses
+;;;0;25;5;Echo integration
+;;;;;;(Corrections)
+3;21;7;0;25;9;Calibration method
+;;;0;25;10;Clutter treatment
+;;;0;25;11;Ground occultation correction
+;;;0;25;12;Range attenuation correction
+;;;0;25;13;Bright-band correction
+;;;0;25;15;Radome attenuation correction
+;;;0;25;16;Clear-air attenuation correction
+;;;0;25;17;Precipitation attenuation correction
+ ;;;;;;
+TABLE REFERENCE;;;;;;
+TABLE REFERENCES;;;;;;
+ELEMENT NAME;;;;;;
+F;X;Y;;;;
+;;;;;;(Z to R conversion)
+3;21;8;0;25;6;Z to R conversion
+;;;0;25;7;Z to R conversion factor
+;;;0;25;8;Z to R conversion exponent
+;;;;;;(A to Z law)
+3;21;9;0;25;18;A to Z law for attenuation factor
+;;;0;25;19;A to Z law for attenuation exponent
+;;;;;;(Antenna characteristics)
+3;21;10;0;2;101;Type of antenna
+;;;0;7;2;Altitude of the tower base
+;;;0;2;102;Antenna height above tower base
+;;;0;2;103;Radome
+;;;0;2;104;Antenna polarisation
+;;;0;2;105;Maximum antenna gain
+;;;0;2;106;3-dB beamwidth
+;;;0;2;107;Sidelobe suppression
+;;;0;2;108;Crosspol discrimination (on axis)
+;;;0;2;109;Antenna speed (azimuth)
+;;;0;2;110;Antenna speed (elevation)
+;;;0;2;132;Azimuth pointing accuracy
+;;;0;2;133;Elevation pointing accuracy
+;;;;;;(General characteristics)
+3;21;11;0;30;31;Picture type
+;;;0;30;32;Combination with other data
+;;;0;29;2;Coordinate grid type
+;;;;;;(Antenna elevations)
+3;21;12;1;1;0;Delayed replication of 1 descriptor
+;;;0;31;1;Replication factor
+;;;0;2;135;Antenna elevation
+;;;;;;(Basic information (System/site header) on Wind profiler/RASS)
+3;21;21;0;2;3;Type of measuring equipment used
+;;;0;2;101;Type of antenna
+;;;2;1;130;Change width to 8 bits
+;;;0;2;106;3-dB beam width
+;;;2;1;0;Change width to table B
+;;;2;1;132;Change width to 11 bits
+;;;2;2;130;Change scale to -6
+;;;0;2;121;Mean frequency
+;;;2;2;0;Change scale to table B
+;;;2;1;0;Change width to table B
+;;;2;1;133;Change width to 11 bits
+;;;2;2;129;Change scale to 0
+;;;0;25;1;Range-gate length
+;;;2;2;0;Change scale to table B
+;;;2;1;0;Change width to table B
+ ;;;;;;
+;;;;;;(Wind profiler: Processed-data winds)
+3;21;22;0;7;7;Height
+;;;2;4;1;Add associated field of 1 bit in length
+;;;0;31;21;Associated field significance
+;;;0;11;1;Wind direction
+;;;2;4;0;Cancel add associated field
+;;;0;11;2;Wind speed
+;;;2;4;1;Add associated field of 1 bit in length
+;;;0;31;21;Associated field significance
+;;;0;11;6;w-component
+;;;2;4;0;Cancel add associated field
+;;;0;21;30;Signal to noise ratio
+;;;;;;Wind profiler: Raw-data winds)
+3;21;23;0;7;7;Height
+;;;0;21;91;Radar signal Doppler spectrum 0th moment
+;;;0;21;30;Signal to noise ratio
+;;;2;2;129;Change scale to 2
+;;;0;21;14;Doppler mean velocity (radial)
+;;;2;1;129;Change width to 9 bits
+;;;0;21;17;Doppler velocity spectral width
+;;;2;2;0;Change scale to table B
+;;;2;1;0;Change width to table B
+;;;;;;(RASS-Mode: Processed-data RASS)
+3;21;24;0;7;7;Height
+;;;2;4;1;Add associated field of 1 bit in length
+;;;0;31;21;Associated field significance
+;;;0;12;7;Virtual temperature
+;;;0;11;6;w-component
+;;;2;4;0;Cancel add associated field
+;;;0;21;30;Signal to noise ratio
+;;;;;;(RASS-Mode: Raw-data RASS)
+3;21;25;0;7;7;Height
+;;;0;21;91;Radar signal Doppler spectrum 0th moment
+;;;0;21;30;Signal to noise ratio
+;;;2;2;129;Change scale to 2
+;;;0;21;14;Doppler mean velocity (radial)
+;;;2;1;129;Change width to 9 bits
+;;;0;21;17;Doppler velocity spectral width
+;;;2;2;0;Change scale to table B
+;;;2;1;0;Change width to table B
+;;;0;21;92;RASS signal Doppler spectrum 0th moment, referring to RASS signal
+;;;0;21;30;Signal to noise ratio, referring to RASS signal 
+;;;0;25;92;Acoustic propagation velocity
+;;;2;1;129;Change width to 9 bits
+;;;2;2;129;Change scale to 2
+;;;0;21;17;Doppler velocity spectral width, referring to RASS signal
+;;;2;2;0;Change scale to table B
+;;;2;1;0;Change width to table B
+ ;;;;;;
+;;;;;;(RASS data - fluxes)
+3;21;26;0;7;7;Height
+;;;2;4;1;Add associated field of 1 bit in length
+;;;0;31;21;Associated field significance
+;;;0;12;7;Virtual temperature
+;;;0;25;91;Structure constant of the refraction index (Cn2)
+;;;0;11;71;Turbulent vertical momentum flux
+;;;0;11;72;Turbulent vertical buoyancy flux
+;;;0;11;73;Turbulent kinetic energy
+;;;0;11;74;Dissipation energy
+;;;2;4;0;Cancel add associated field
+
+3;21;27;0;21;118;Attenuation correction on sigma-0
+;;;2;2;129;Change scale
+;;;2;1;132;Change data width
+;;;0;2;112;Radar look angle
+;;;2;1;0;Change data width to Table B
+;;;2;1;131;Change data width
+;;;0;2;111;Radar incidence angle
+;;;2;1;0;Change data width to Table B
+;;;2;2;0;Change scale back to Table B
+;;;0;2;104;Antenna polarization
+;;;0;21;105;Normalized radar cross-section
+;;;0;21;106;Kp variance coefficient (alpha)
+;;;0;21;107;Kp variance coefficient (beta)
+;;;0;21;114;Kp variance coefficient (gamma)
+;;;0;21;115;SEAWINDS sigma-0 quality
+;;;0;21;116;SEAWINDS sigma-0 mode
+;;;0;8;18;SEAWINDS land/ice surface type
+;;;0;21;117;Sigma-0 variance quality control
+
+3;21;28;0;21;118;Attenuation correction on sigma-0
+;;;2;2;129;Change scale
+;;;2;1;132;Change data width
+;;;0;2;112;Radar look angle
+;;;2;1;0;Data width back to Table B
+;;;2;1;131;Change data width
+;;;0;2;111;Radar incidence angle
+;;;2;1;0;Data width back to Table B
+;;;2;2;0;Scale back  to table B
+;;;0;2;104;Antenna polarization
+;;;0;21;123;SEAWINDS normalized radar cross section
+;;;0;21;106;Kp variance coefficient (alpha)
+;;;0;21;107;Kp variance coefficient (beta)
+;;;0;21;114;Kp variance coefficient (gamma)
+;;;0;21;115;SEAWINDS sigma-0 quality flag
+;;;0;21;116;SEAWINDS sigma-0 mode flag
+;;;0;8;18;SEAWINDS land/ice surface flag
+;;;0;21;117;Sigma-0 variance quality control

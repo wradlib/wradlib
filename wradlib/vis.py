@@ -255,6 +255,121 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
             pl.close()
 
 
+class CartesianPlot(object):
+    def __init__(self, ax=None, fig=None, axpos=111, **kwargs):
+        if ax is None:
+            if fig is None:
+                # create a new figure object
+                fig = pl.figure(**kwargs)
+            # plot on the axes object which was passed to this function
+            ax = fig.add_subplot(axpos, aspect=1.)
+
+        self.fig = fig
+        self.ax = ax
+        self.cmap = 'jet'
+        self.norm = None
+
+    def set_cmap(self, cmap, classes=None):
+        if classes is None:
+            self.cmap = cmap
+        else:
+            mycmap = pl.get_cmap(cmap, lut=len(classes))
+            mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(classes)-1) ))
+            norm   = mpl.colors.BoundaryNorm(classes, mycmap.N)
+            self.cmap = mycmap
+            self.norm = norm
+
+
+    def plot(self, data, x, y, **kwargs):
+
+##        data = np.transpose(data)
+##        data = np.roll(data, theta0, axis=1)
+##        grd = self.ax.contourf(x, y, data, rasterized=True, cmap=self.cmap,
+##                           norm=self.norm, **kwargs)
+        data = np.flipud(data)
+        grd = self.ax.pcolormesh(x,y,data,rasterized=True, cmap=self.cmap,
+                          norm=self.norm, **kwargs)
+        return grd
+
+
+    def colorbar(self, *args, **kwargs):
+        #if not kwargs.has_key('shrink'):
+        #    kwargs['shrink'] = 0.75
+        cbar = pl.colorbar(*args, **kwargs)
+        return cbar
+
+
+    def title(self, s, *args, **kwargs):
+        l = self.ax.set_title(s, *args, **kwargs)
+        pl.draw_if_interactive()
+        return l
+
+
+    def grid(self, b=None, which='major', **kwargs):
+        ret =  self.ax.grid(b, which, **kwargs)
+        pl.draw_if_interactive()
+        return ret
+
+
+
+def cartesian_plot(data, x=None, y=None, title='', unit='', saveto='', fig=None, axpos=111, colormap='jet', classes=None, extend='neither', **kwargs):
+    """Plots data from a cartesian grid.
+
+    The data must be an array of shape (number of rows, number of columns).
+
+    additional `kwargs` will be passed to the pcolormesh routine displaying
+    the data.
+
+    Parameters
+    ----------
+    data : 2-d array
+        regular cartesian grid data to be plotted
+        1st dimension must be number of rows, 2nd must be number of columns!
+    title : string
+        a title of the plot
+    unit : string
+        the unit of the data which is plotted
+    saveto : string - path of the file in which the figure should be saved
+        if string is empty, no figure will be saved and the plot will be
+        sent to screen
+    fig : matplotlib axis object
+        if None, a new matplotlib figure will be created, otherwise we plot on ax
+    axpos : an integer or a string
+        correponds to the positional argument of matplotlib.figure.add_subplot
+    colormap : string
+        choose between the colormaps "jet" (per default) and "spectral"
+    classes : sequence of numerical values
+        class boundaries for plotting
+    extend : string
+        determines the behaviour of the colorbar: default value 'neither' produces
+        a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
+        maximum end, respectively, and 'both' produces an arrow at both ends. If
+        you use class boundaries for plotting, you should typically use 'both'.
+
+    """
+    pp = CartesianPlot(fig=fig, axpos=axpos, figsize=(8,8))
+    pp.set_cmap(colormap, classes=classes)
+    if (x==None) and (y==None):
+        x = np.arange(data.shape[0])
+        y = np.arange(data.shape[1])
+    grd = pp.plot(data, x, y, **kwargs)
+    pp.grid(True)
+    cbar = pp.colorbar(grd, shrink=0.75, extend=extend)
+    cbar.set_label('('+unit+')')
+    pp.title(title)
+    if saveto=='':
+        # show plot
+        pl.show()
+        if not pl.isinteractive():
+            # close figure eplicitely if pylab is not in interactive mode
+            pl.close()
+    else:
+        # save plot to file
+        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+            pl.savefig(saveto)
+            pl.close()
+
+
 class PolarBasemap():
     '''
     Plot a spatial points dataset as a map (or a time series of maps)
