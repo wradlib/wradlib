@@ -1,0 +1,55 @@
+CC = cl
+
+DEBUG = 0
+!IF $(DEBUG)==0
+CFLAGSGEN = /W4 /Izlib_win
+CFLAGS = $(CFLAGSGEN)
+LOPTS  = 
+LFLAGS = $(LOPTS) /stack:30000
+!ELSE
+CFLAGSGEN = /W4 -Zi -DVERBOSE /Izlib_win
+CFLAGS = $(CFLAGSGEN)
+LOPTS  = -debug -debugtype:both
+LFLAGS = $(LOPTS) /stack:30000
+!ENDIF
+
+SRCS    = bufr.c desc.c bitio.c rlenc.c bufr_io.c
+OBJSLIB = bufr.obj desc.obj bitio.obj rlenc.obj
+OBJS    = $(OBJSLIB) bufr_io.obj zlib_win\zdll.lib
+
+all: encbufr.exe decbufr.exe
+
+debug: 
+    nmake -f makefile.vc4 DEBUG=1
+    nmake -f makefile.vc4 samples DEBUG=1
+
+lib: $(OBJSLIB) 
+    -del bufr.lib
+    lib -out:bufr.lib $(OBJSLIB)
+
+debuglib: 
+    nmake -f makefile.vc4 lib DEBUG=1
+
+samples: apisamp.exe apisample.exe apisample_float.exe
+
+clean: 
+    -del *.obj
+    -del bufr.lib
+    -del encbufr.exe
+    -del decbufr.exe
+    -del apisamp.exe
+    -del apisample.exe
+    -del apisample_float.exe
+
+encbufr.exe: $(OBJS) encbufr.obj
+        link $(LFLAGS) encbufr.obj $(OBJS)
+
+decbufr.exe: $(OBJS) decbufr.obj
+        link $(LFLAGS) decbufr.obj $(OBJS)
+
+apisamp.exe: $(OBJS) apisamp.obj
+        link $(LFLAGS) apisamp.obj $(OBJS)
+apisample.exe: $(OBJS) apisample.obj
+        link $(LFLAGS) apisample.obj $(OBJS)
+apisample_float.exe: $(OBJS) apisample_float.obj
+        link $(LFLAGS) apisample_float.obj $(OBJS)
