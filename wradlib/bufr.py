@@ -290,7 +290,11 @@ def decodebufr(buffile):
     background information is available under http://www.knmi.nl/opera/bufr.html.
 
     Basically, a BUFR file consists of a set of *descriptors* which contain all
-    the relevant metadata and a data section.
+    the relevant metadata and a data section. The *descriptors* are identified as
+    a tuple of three integers. The meaning of these tupels is described in the
+    so called BUFR tables. There are generic BUFR tables provided by the WMO, but
+    it is also possible to define so called *local tables* - which was done by the
+    OPERA consortium for the purpose of radar data representation.
 
     This decoding function returns a three element tuple. The first element is a
     dictionary which relates the *descriptor identifiers* to comprehensible

@@ -8,6 +8,7 @@ also consider to have look at the code examples distributed with the source code
 .. toctree::
    :maxdepth: 2
    
+   tutorial_supported_formats
    tutorial_reading_dx
    tutorial_conversion
    tutorial_accumulation
