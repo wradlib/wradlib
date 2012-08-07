@@ -9,11 +9,33 @@
 # Licence:     The MIT License
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
+"""
+Reading BUFR Files
+^^^^^^^^^^^^^^^^^^
+
+The Binary Universal Form for the Representation of meteorological data (BUFR)
+is a binary data format maintained by the World Meteorological Organization (WMO).
+The BUFR format was adopted by the OPERA program for the representation of weather
+radar data. This module provides a wrapper around the OPERA BUFR software, currently
+only for decoding BUFR files. In the future, functions for BUFR encoding might
+be added as well. If you intend to work with BUFR data, we recommend reading
+`OPERA's BUFR software documentation <http://www.knmi.nl/opera/bufr/doc/bufr_sw_desc.pdf>`_.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   decodebufr
+   parse_desctable
+
+"""
+
+
+
 
 import os
 import ctypes as C
 import numpy as np
-import pylab as pl
 import sys
 from subprocess import call
 
@@ -128,7 +150,20 @@ myhome = os.path.abspath( os.getcwd() )
 #-------------------------------------------------------------------------------
 
 def parse_desctable(fpath):
-    """Parses the decriptor table and returns a dict of descriptors
+    """Parses the decriptor table and returns a dictionary of descriptors
+
+    Parameters
+    ----------
+    fpath : string representing the path to the descriptor table file
+
+    Returns
+    -------
+    output : a tuple of two dictionaries (descnames, descvals)
+
+        - descnames: a dictionary of descriptor names
+
+        - descvals: dictionary of descriptor values
+
     """
     desc2name = {}
     name2val  = {}
@@ -248,7 +283,48 @@ def check_descriptor(desc, descnames, descvals, allowed=None, typecast=int, mand
 
 
 def decodebufr(buffile):
-    """Main interface: Decodes BUFR file and returns a dict of descriptors and value array
+    """Main BUFR interface: Decodes BUFR file and returns metadata and values
+
+    The BUFR file format is a self-describing binary format for meteorological
+    data. wradlib uses the decoding software from the OPERA 3 program. All
+    background information is available under http://www.knmi.nl/opera/bufr.html.
+
+    Basically, a BUFR file consists of a set of *descriptors* which contain all
+    the relevant metadata and a data section.
+
+    This decoding function returns a three element tuple. The first element is a
+    dictionary which relates the *descriptor identifiers* to comprehensible
+    *descriptor names*. The second element is a dictionary which relates the
+    *descriptor names* to *descriptor values*. E.g. if the *descriptor identifier*
+    was (0, 30, 21), the *descriptor name* would be 'Number of pixels per row' and
+    the *descriptor value* could be an integer which actually specifies the number
+    of rows of a grid. The third element of the return tuple is the actual value
+    array. It is a multi-dimensional numpy array of which the shape depends on
+    the descriptor specifications (mostly it will be 2-dimensional).
+
+    Parameters
+    ----------
+    buffile : Path to a BUFR file
+
+    Returns
+    -------
+    output: a tuple with three elements (descnames, descrvals, data)
+
+        - descnames: a dictionary of descriptor names
+
+        - descvals: dictionary of descriptor values
+
+        - data: the actual data as a multidimensional numpy array
+
+    Examples
+    --------
+    >>> import wradlib.bufr as bufr
+    >>> buffile = "wradlib/examples/data/test.buf"
+    >>> descnames, descvals, data = bufr.decodebufr(buffile)
+    >>> print descnames
+    >>> print descvals
+    >>> print data.shape
+
     """
     # change to BUFR directory
     os.chdir(bufrlibdir)
