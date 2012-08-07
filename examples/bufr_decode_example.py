@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # This is our test BUFR file
     buffile = "data/test.buf"
     # decode BUFR file
-    descnames, descvals, vals = decodebufr(buffile)
+    descnames, descvals, vals = bufr.decodebufr(buffile)
     # print the BUFR descriptor dictionaries
     print descnames
     print descvals

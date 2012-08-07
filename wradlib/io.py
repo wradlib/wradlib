@@ -22,6 +22,7 @@ Raw Data I/O
    readDX
    writePolygon2Text
    read_EDGE_netcdf
+   read_BUFR
 
 """
 
@@ -30,6 +31,7 @@ import numpy as np
 import netCDF4 as nc
 import datetime as dt
 import pytz
+import wradlib.bufr as bufr
 
 
 # current DWD file naming pattern (2008) for example:
@@ -336,7 +338,53 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
 
     return data, attrs
 
+def read_BUFR(buffile):
+    """Main BUFR interface: Decodes BUFR file and returns metadata and values
 
+    The actual function refererence is contained in :doc:`wradlib.bufr.decodebufr`.
+
+    The BUFR file format is a self-describing binary format for meteorological
+    data. wradlib uses the decoding software from the OPERA 3 program. All
+    background information is available under http://www.knmi.nl/opera/bufr.html.
+
+    Basically, a BUFR file consists of a set of *descriptors* which contain all
+    the relevant metadata and a data section.
+
+    This decoding function returns a three element tuple. The first element is a
+    dictionary which relates the *descriptor identifiers* to comprehensible
+    *descriptor names*. The second element is a dictionary which relates the
+    *descriptor names* to *descriptor values*. E.g. if the *descriptor identifier*
+    was (0, 30, 21), the *descriptor name* would be 'Number of pixels per row' and
+    the *descriptor value* could be an integer which actually specifies the number
+    of rows of a grid. The third element of the return tuple is the actual value
+    array. It is a multi-dimensional numpy array of which the shape depends on
+    the descriptor specifications (mostly it will be 2-dimensional).
+
+    Parameters
+    ----------
+    buffile : Path to a BUFR file
+
+    Returns
+    -------
+    output: a tuple with three elements (descnames, descrvals, data)
+
+        - descnames: a dictionary of descriptor names
+
+        - descvals: dictionary of descriptor values
+
+        - data: the actual data as a multidimensional numpy array
+
+    Examples
+    --------
+    >>> import wradlib.bufr as bufr
+    >>> buffile = "wradlib/examples/data/test.buf"
+    >>> descnames, descvals, data = bufr.decodebufr(buffile)
+    >>> print descnames
+    >>> print descvals
+    >>> print data.shape
+
+    """
+    return bufr.decodebufr(buffile)
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
