@@ -282,11 +282,6 @@ class CartesianPlot(object):
 
     def plot(self, data, x, y, **kwargs):
 
-##        data = np.transpose(data)
-##        data = np.roll(data, theta0, axis=1)
-##        grd = self.ax.contourf(x, y, data, rasterized=True, cmap=self.cmap,
-##                           norm=self.norm, **kwargs)
-        data = np.flipud(data)
         grd = self.ax.pcolormesh(x,y,data,rasterized=True, cmap=self.cmap,
                           norm=self.norm, **kwargs)
         return grd
