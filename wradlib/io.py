@@ -23,15 +23,19 @@ Raw Data I/O
    writePolygon2Text
    read_EDGE_netcdf
    read_BUFR
+   read_RADOLAN_composite
 
 """
 
+import sys
 import re
 import numpy as np
 import netCDF4 as nc
 import datetime as dt
 import pytz
 import wradlib.bufr as bufr
+import h5py
+
 
 
 # current DWD file naming pattern (2008) for example:
@@ -346,7 +350,173 @@ def read_BUFR(buffile):
     """
     return bufr.decodebufr(buffile)
 
+
+def parse_DWD_quant_composite_header(header):
+    """Parses the ASCII header of a DWD quantitative composite file
+
+    Parameters
+    ----------
+    header : string (ASCII header)
+
+    Returns
+    -------
+    output : dictionary of metadata retreived from file header
+
+    """
+    # empty container
+    out = {}
+    # RADOLAN product type def
+    out["producttype"] = header[0:2]
+    # file time stamp as Python datetime object
+    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00", "%d%H%M%y%m%S")
+    # radar location ID (always 10000 for composites)
+    out["radarid"] = header[8:13]
+    pos_VS = header.find("VS")
+    pos_SW = header.find("SW")
+    pos_PR = header.find("PR")
+    pos_INT = header.find("INT")
+    pos_GP = header.find("GP")
+    pos_MS = header.find("MS")
+    if pos_VS > -1:
+        out["maxrange"] = {0:"100 km and 128 km (mixed)", 1: "100 km", 2:"128 km" }[int(header[(pos_VS+2):pos_SW])]
+    else:
+        out["maxrange"] = "100 km"
+    out["radolanversion"] = header[(pos_SW+2):pos_PR]
+    out["intervalseconds"] = int(header[(pos_INT+3):pos_GP])*60
+    dimstrings = header[(pos_GP+2):pos_MS].strip().split("x")
+    out["nrow"] = int(dimstrings[0])
+    out["ncol"] = int(dimstrings[1])
+    locationstring = header[(pos_MS+2):].strip().split("<")[1].strip().strip(">")
+    out["radarlocations"] = locationstring.split(",")
+    return out
+
+
+def read_RADOLAN_composite(fname):
+    """Read quantitative radar composite format of the German Weather Service
+
+    The quantitative composite format of the DWD (German Weather Service) was
+    established in the course of the `RADOLAN project <http://www.dwd.de/radolan>`
+    and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG and
+    many, many more (see format description on the project homepage, [DWD2009).
+
+    At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
+    resolution and in polar-stereographic projection.
+
+    Parameters
+    ----------
+    fname : path to the composite file
+
+    Returns
+    -------
+    output : tuple of two items (data, attrs)
+        - data : numpy array of shape (number of rows, number of columns)
+        - attrs : dictionary of metadata information from the file header
+
+    References
+    ----------
+
+    .. [DWD2009] Germany Weather Service (DWD), 2009: RADLOAN/RADVO-OP -
+        Beschreibung des Kompositformats, Version 2.2.1. Offenbach, Germany,
+        URL: http://dwd.de/radolan (in German)
+
+    """
+    result = []
+    mask = 4095 # max value integer
+    NODATA = -9999
+    header = '' # header string for later processing
+    # open file handle
+    f = open(fname, 'rb')
+    # read header
+    while True :
+        mychar = f.read(1)
+        if mychar == chr(3) :
+            break
+        header = header + mychar
+    attrs = parse_DWD_quant_composite_header(header)
+    attrs["nodataflag"] = -9999
+    if not attrs["radarid"]=="10000":
+        print "WARNING: You are using this function for a non composite file"
+        print "It might work...but please check the validity of the results"
+    if attrs["producttype"] == "RX":
+        # NOT TESTED, YET
+        # read the actual data
+        indat = f.read(attrs["nrow"]*attrs["ncol"])
+        # convert to 16-bit integers
+        arr = np.frombuffer(indat, np.int8)
+        arr = np.where(arr==250,NODATA,arr)
+        clutter = np.where(arr==249)[0]
+    else:
+        # read the actual data
+        indat = f.read(attrs["nrow"]*attrs["ncol"]*2)
+        # convert to 16-bit integers
+        arr = np.frombuffer(indat, np.int16)
+        # evaluate bits 14, 15 and 16
+        nodata   = np.where(arr & int("10000000000000",2))
+        negative = np.where(arr & int("100000000000000",2))
+        clutter  = np.where(arr & int("1000000000000000",2))
+        # mask out the last 4 bits
+        arr = arr & mask
+        # consider negative flag if product is RD (differences from adjustment)
+        if attrs["producttype"]=="RD":
+            # NOT TESTED, YET
+            arr[negative] = -arr[negative]
+        # convert no data to NaN
+        ### This is the old way
+        ##arr = np.where(arr==2500,np.nan,arr)
+        arr[nodata] = NODATA
+    # bring it into shape
+    arr = arr.reshape( (attrs["nrow"], attrs["ncol"]) )
+##    arr = np.flipud(arr)
+    # append clutter mask
+    attrs['cluttermask'] = clutter
+
+    return arr, attrs
+
+def read_OPERA_hdf5(fname):
+    """Reads hdf5 files according to OPERA conventions
+
+    Metadata will be returned according to the OPERA conventions. This means that
+    the returned metadata dictionary will contain the OPERA keywords *how*, *where*,
+    and *what*. This means that the output dictionary will be hierarchical, too: E.g.
+    under key "how" will appear another dictionary containing all the items of the "how"
+    group.
+
+    Parameters
+    ----------
+    fname : string (a hdf5 file path)
+
+    Returns
+    -------
+    output : a tuple of two item (data, attrs)
+        - data : a multidimensional numpy array
+        - attrs : a dictionary of metadata
+
+    UNDER DEVELOPMENT
+    """
+    f = h5py.File(fname, "r")
+    # try verify OPERA conventions
+    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
+        print "File is encoded according to OPERA conventions (ODIM_H5)..."
+        print "Expected the upper level subgroups to be: dataset1, how, what', where"
+        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
+        sys.exit(1)
+    # this is our container for metadata
+    attrs = {}
+    attrs["how"]  = f["how"].attrs
+    attrs["what"] = f["what"].attrs
+    attrs["where"]= f["where"].attrs
+
+    # dummy data
+    data = np.zeros(1)
+
+    f.close()
+
+    return data, attrs
+
+
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
+    data, metadata = read_OPERA_hdf5("E:/data/radar/UK/T_PAGA43_C_EGRR_20100615153410.hdf")
+
     import doctest
     doctest.testmod()
