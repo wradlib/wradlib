@@ -521,7 +521,7 @@ def read_OPERA_hdf5(fname):
             if len(y.attrs) > 0:
                 fcontent[x] = dict(y.attrs)
         elif isinstance(y, h5py.Dataset):
-            fcontent[x] = y[:]
+            fcontent[x] = np.array(y)
     f.visititems(filldict)
 
     f.close()
@@ -531,7 +531,6 @@ def read_OPERA_hdf5(fname):
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
-    fcontent = read_OPERA_hdf5("E:/data/radar/UK/T_PAGA43_C_EGRR_20100615153410.hdf")
 
     import doctest
     doctest.testmod()
