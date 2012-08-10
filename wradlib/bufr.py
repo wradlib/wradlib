@@ -296,15 +296,15 @@ def decodebufr(buffile):
     it is also possible to define so called *local tables* - which was done by the
     OPERA consortium for the purpose of radar data representation.
 
-    This decoding function returns a three element tuple. The first element is a
-    dictionary which relates the *descriptor identifiers* to comprehensible
-    *descriptor names*. The second element is a dictionary which relates the
-    *descriptor names* to *descriptor values*. E.g. if the *descriptor identifier*
-    was (0, 30, 21), the *descriptor name* would be 'Number of pixels per row' and
-    the *descriptor value* could be an integer which actually specifies the number
-    of rows of a grid. The third element of the return tuple is the actual value
-    array. It is a multi-dimensional numpy array of which the shape depends on
-    the descriptor specifications (mostly it will be 2-dimensional).
+    This decoding function returns a two element tuple. The first element of the
+    return tuple is the actual data array. It is a multi-dimensional numpy array
+    of which the shape depends on the descriptor specifications (mostly it will
+    be 2-dimensional). The second element is a tuple of two dictionaries (descnames,
+    descvals). *descnames* relates the *descriptor identifiers* to comprehensible
+    *descriptor names*. *descvals* relates the *descriptor names* to *descriptor values*.
+    E.g. if the *descriptor identifier* was (0, 30, 21), the *descriptor name*
+    would be 'Number of pixels per row' and the *descriptor value* could be an
+    integer which actually specifies the number of rows of a grid.
 
     Parameters
     ----------
@@ -312,22 +312,24 @@ def decodebufr(buffile):
 
     Returns
     -------
-    output: a tuple with three elements (descnames, descrvals, data)
+    output: a tuple with two elements (data, metadata)
 
-        - descnames: a dictionary of descriptor names
+        - data : the actual data as a multidimensional numpy array
 
-        - descvals: dictionary of descriptor values
+        - metadata : tuple of two elements (descnames, descvals)
 
-        - data: the actual data as a multidimensional numpy array
+            - descnames: a dictionary of descriptor names
+
+            - descvals: dictionary of descriptor values
+
 
     Examples
     --------
     >>> import wradlib.bufr as bufr
     >>> buffile = "wradlib/examples/data/test.buf"
-    >>> descnames, descvals, data = bufr.decodebufr(buffile)
-    >>> print descnames
-    >>> print descvals
-    >>> print data.shape
+    >>> data, metadata = bufr.decodebufr(buffile)
+    >>> metadata
+    >>> data.shape
 
     """
     # change to BUFR directory
@@ -408,7 +410,7 @@ def decodebufr(buffile):
     if os.path.exists(sect1file):
         os.remove(sect1file)
     os.chdir(myhome)
-    return descnames, descvals, vals
+    return vals, (descnames, descvals)
 
 
 if __name__ == '__main__':
