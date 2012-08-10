@@ -22,13 +22,13 @@ in order to exit the Python environment.
 Installing wradlib
 ------------------
 
-Download the source from https://bitbucket.org/wradlib/wradlib via the ``get source`` button and extract it to any location of your computer. Inside the extracted folder, open a console window (on the same directory level as the setup.py file) and execute::
+Download the source from https://bitbucket.org/wradlib/wradlib via the ``get source`` button and extract it to any location on your computer. Inside the extracted folder, open a console window (on the same directory level as the setup.py file) and execute::
 
 >>> python setup.py install
 
-This way, the wradlib package will be installed under the Python site-packages directory and will thus be available for import.
+This way, the *wradlib* package will be installed under the Python site-packages directory and will thus be available for import.
 
-Test the integrity of your wradlib installation by opening a console window and typing *python*. The Python prompt should appear. Then type
+Test the integrity of your wradlib installation by opening a console window and typing ``python``. The Python prompt should appear. Then type
 
 >>> import wradlib
 
