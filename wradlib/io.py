@@ -14,15 +14,18 @@
 Raw Data I/O
 ^^^^^^^^^^^^
 
+Please have a look at the tutorial :doc:`tutorial_supported_formats` for an introduction
+on how to deal with different file formats.
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
 
-   getDXTimestamp
    readDX
    writePolygon2Text
    read_EDGE_netcdf
    read_BUFR
+   read_OPERA_hdf5
    read_RADOLAN_composite
 
 """
@@ -52,8 +55,7 @@ def _getTimestampFromFilename(filename):
 
 
 def getDXTimestamp(name, tz=pytz.utc):
-    """converts a dx-timestamp (as part of a dx-product filename) to a python
-    datetime.object.
+    """Converts a dx-timestamp (as part of a dx-product filename) to a python datetime.object.
 
     Parameters
     ----------
@@ -472,14 +474,27 @@ def read_RADOLAN_composite(fname):
 
     return arr, attrs
 
+def browse_hdf5_group(grp):
+    """Browses one hdf5 file level
+    """
+    pass
+
+
 def read_OPERA_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
-    Metadata will be returned according to the OPERA conventions. This means that
-    the returned metadata dictionary will contain the OPERA keywords *how*, *where*,
-    and *what*. This means that the output dictionary will be hierarchical, too: E.g.
-    under key "how" will appear another dictionary containing all the items of the "how"
-    group.
+    Please refer to the `OPERA data model documentation <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
+    in order to understand how an hdf5 file is organized that conforms to the OPERA
+    ODIM_H5 conventions.
+
+    In contrast to other file readers under wradlib.io, this function will *not* return
+    a two item tuple with (data, metadata). Instead, this function returns ONE
+    dictionary that contains all the file contents - both data and metadata. The keys
+    of the output dictionary conform to the Group/Subgroup directory branches of
+    the original file. If the end member of a branch (or path) is "data", then the
+    corresponding item of output dictionary is a numpy array with actual data. Any other
+    end member (either *how*, *where*, and *what*) will contain the meta information
+    applying to the coresponding level of the file hierarchy.
 
     Parameters
     ----------
@@ -487,36 +502,36 @@ def read_OPERA_hdf5(fname):
 
     Returns
     -------
-    output : a tuple of two item (data, attrs)
-        - data : a multidimensional numpy array
-        - attrs : a dictionary of metadata
+    output : a dictionary that contains both data and metadata according to the
+              original hdf5 file structure
 
-    UNDER DEVELOPMENT
     """
     f = h5py.File(fname, "r")
     # try verify OPERA conventions
     if not f.keys() == ['dataset1', 'how', 'what', 'where']:
-        print "File is encoded according to OPERA conventions (ODIM_H5)..."
+        print "File is not organized according to OPERA conventions (ODIM_H5)..."
         print "Expected the upper level subgroups to be: dataset1, how, what', where"
         print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
         sys.exit(1)
-    # this is our container for metadata
-    attrs = {}
-    attrs["how"]  = f["how"].attrs
-    attrs["what"] = f["what"].attrs
-    attrs["where"]= f["where"].attrs
 
-    # dummy data
-    data = np.zeros(1)
+    # now we browse through all Groups and Datasets and store the info in one dictionary
+    fcontent = {}
+    def filldict(x, y):
+        if isinstance(y, h5py.Group):
+            if len(y.attrs) > 0:
+                fcontent[x] = dict(y.attrs)
+        elif isinstance(y, h5py.Dataset):
+            fcontent[x] = y[:]
+    f.visititems(filldict)
 
     f.close()
 
-    return data, attrs
+    return fcontent
 
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
-    data, metadata = read_OPERA_hdf5("E:/data/radar/UK/T_PAGA43_C_EGRR_20100615153410.hdf")
+    fcontent = read_OPERA_hdf5("E:/data/radar/UK/T_PAGA43_C_EGRR_20100615153410.hdf")
 
     import doctest
     doctest.testmod()

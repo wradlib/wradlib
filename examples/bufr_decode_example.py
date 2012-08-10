@@ -17,13 +17,14 @@ import wradlib.bufr as bufr
 if __name__ == '__main__':
 
     import numpy as np
+    import os
     # This is our test BUFR file
-    buffile = "data/test.buf"
+    buffile = os.path.join(os.getcwd(), "data/test.buf")
     # decode BUFR file
-    descnames, descvals, vals = bufr.decodebufr(buffile)
+    data, metadata = bufr.decodebufr(buffile)
     # print the BUFR descriptor dictionaries
-    print descnames
-    print descvals
+    print metadata[0]
+    print metadata[1]
     # plot the image
     classes = [-32, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 70]
-    vis.cartesian_plot(vals, title='Reflectivity', unit='dBZ', colormap='spectral', classes=classes, extend='max')
+    vis.cartesian_plot(data, title='Reflectivity', unit='dBZ', colormap='spectral', classes=classes, extend='max')
