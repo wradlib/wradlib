@@ -470,6 +470,51 @@ def _get_azimuth_resolution(x):
     return res[0]
 
 
+def create_projstr(projname, **kwargs):
+    """Supports the constrution of proj.4 projection strings
+
+    Currently, the following projection names are supported:
+
+    **"aeqd": Azimuthal Equidistant**
+    needs the following keyword arguments: *lat_0*=Latitude at projection center,
+    *lon_0*=Longitude at projection center, *x_0*=False Easting (also known as x-offset),
+    *y_0*=False Northing (also known as y-offset)
+
+    **"gk" : Gauss-Krueger (for Germany)**
+    only needs keyword argument *number* (number of the Gauss-Krueger strip)
+
+    Parameters
+    ----------
+    projname : string (proj.4 projection acronym)
+    kwargs : depends on projname - see above!
+
+    Returns
+    -------
+    output : string (a proj.4 projection string)
+
+    Examples
+    --------
+    # Gauss-Krueger 2nd strip
+    print create_projstr("gk", number=2)
+
+    """
+    if projname=="aeqd":
+        # Azimuthal Equidistant
+        projstr = """+proj=aeqd  +lat_0=%s +lon_0=%s +x_0=%s +y_0=%s""" \
+                  % (kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"])
+    elif projname=="gk":
+        # Gauss-Krueger
+        if kwargs.has_key("number"):
+            projstr = """+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=%d +y_0=0
+            +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7
+            +units=m +no_defs""" % (kwargs["number"] * 1000000 + 500000)
+    else:
+        print "No support for projection %r, yet." % projname
+        print "You need to create projection string by hand..."
+        sys.exit(1)
+    return projstr
+
+
 def project(latc, lonc, projstr, inverse=False):
     """
     Convert from latitude,longitude (based on WGS84) to coordinates in map projection
