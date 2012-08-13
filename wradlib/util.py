@@ -23,6 +23,7 @@ to the other modules
    :toctree: generated/
 
    aggregate_in_time
+   from_to
 
 """
 import numpy as np
@@ -123,6 +124,35 @@ def _shape2size(shape):
     for item in shape:
         out*=item
     return out
+
+
+def from_to(tstart, tend, tdelta):
+    """Return a list of timesteps from <tstart> to <tend> of length <tdelta>
+
+    Parameters
+    ----------
+    tstart : datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12
+    tend : datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12
+    tdelta : integer representing time interval in SECONDS
+
+    Returns
+    -------
+    output : list of datetime.datetime objects
+
+    """
+    tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
+    tend   = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
+    tdelta  = dt.timedelta(seconds=tdelta)
+    tsteps = [tstart,]
+    tmptime = tstart
+    while True:
+        tmptime = tmptime + tdelta
+        if tmptime > tend:
+            break
+        else:
+            tsteps.append(tmptime)
+    return tsteps
+
 
 
 if __name__ == '__main__':
