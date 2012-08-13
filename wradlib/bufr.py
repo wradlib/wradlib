@@ -30,9 +30,6 @@ be added as well. If you intend to work with BUFR data, we recommend reading
 
 """
 
-
-
-
 import os
 import ctypes as C
 import numpy as np
@@ -44,6 +41,31 @@ from subprocess import call
 descfile ="desc.src"
 imgfile  = "img.dec"
 sect1file= "section.1.out"
+
+# BUFR projection reference
+bufrproj = {0:"gnom", 1: "stere", 2:"lcc", 3:"omerc", 4:"aeqd", 5:"laea"}
+"""Relates the value of BUFR descriptor (0 29 201), i.e. projeciton type, to proj.4 projection names
+
+0= Gnomonic Projection,
+1= Stereographic projection,
+2= Lambert's conic projection,
+3= Oblique Mercator's projection,
+4= Azimuthal equidistant projection,
+5= Lambert Azimuthal Equal Area,
+6 - 30 = Reserved,
+31= Missing
+
+Remark #1: Polar stereographic projection is a special form of the stereographic
+projection with the projection origin at the north- or south-pole. If polar
+stereographic projection is used select projection type 1 and set the lat/long
+origin the north- or south-pole as appropriate
+
+Remark #2: "Mercator Projection" is a special form of "Oblique Mercator's
+projection" with an azimuth of initial line set to 0 deg.
+
+Based on BUFR software description, p. 22,
+see http://www.knmi.nl/opera/bufr/doc/bufr_sw_desc.pdf
+"""
 
 # BUFR library directory location
 bufrlibdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bufr_3.1")
