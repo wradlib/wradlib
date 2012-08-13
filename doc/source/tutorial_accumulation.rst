@@ -1,19 +1,19 @@
-**********************************
-Integration of precipitation rates
-**********************************
+*************************************************
+Integration of precipitation rates (Accumulation)
+*************************************************
 
 
 Integrating precipitation rate of one radar scan over its corresponding time interval
 -------------------------------------------------------------------------------------
-For many purposes in hydrology you need data of the height of precipitation. For that reason we have to integrate the calculated precipitation rate over the timespan the accordant radar scan represents. In case of the radar stations of the German Weather Service the precipitation scan is repeated at intervals of 5 minutes (300 seconds)::
+For many purposes in hydrology you need data of precipitation depth. For that reason we have to integrate the precipitation rate over the interval of the corresponding radar scan. In case of the radar stations of the German Weather Service the precipitation scan is repeated at intervals of 5 minutes (300 seconds)::
 
    import wradlib as wrl
    # set the location of your data
    datadir = 'D:/THIS/IS/MY/DATA/DIRECTORY/'
    data_dBZ = wrl.io.readDX(datadir + 'raa00-dx_10908-200608180005-fbg---bin')[0]
-   data_R_rate = wrl.zr.z2r(wrl.trafo.idecibel(data_dBZ))
-   data_R_height = wrl.trafo.r2depth(data_R_rate, 300.)
-   wrl.vis.polar_plot(data_R_height, title = 'Precipitation height 18.8.2006, 00:00 - 00:05 (Radarstation Feldberg)',
+   data_R_rate = wrl.zr.z2r(wrl.trafo.idecibel(data_dBZ)) # in mm/h!!!
+   data_R_depth = wrl.trafo.r2depth(data_R_rate, 300.)    # in mm!!!
+   wrl.vis.polar_plot(data_R_depth, title = 'Precipitation height 18.8.2006, 00:00 - 00:05 (Radarstation Feldberg)',
        unit = 'mm', colormap = 'spectral')
 
 .. image:: images/depth5.jpg
@@ -61,9 +61,9 @@ Now we can fill the empty array with radar data (:doc:`tutorial_reading_dx`)::
        f = 'raa00-dx_10908-' + time.strftime('%Y%m%d%H%M') + '-fbg---bin'
        data_dBZ[i,:,:] = wrl.io.readDX(datadir + f)[0]
 
-and proceed them to 5-minute-precipitation heights (:doc:`tutorial_reading_dx`, :doc:`tutorial_conversion`)::
+and compute 5-minute-precipitation depths (:doc:`tutorial_reading_dx`, :doc:`tutorial_conversion`)::
 
-   data_R_height = wrl.trafo.r2depth(wrl.zr.z2r(data_Z = wrl.trafo.idecibel(data_dBZ)), t_scan_res)
+   data_R_depth = wrl.trafo.r2depth(wrl.zr.z2r(data_Z = wrl.trafo.idecibel(data_dBZ)), t_scan_res)
 
 Before accumulating we finally have to build an array with the accumulated timesteps (e.g. hourly)::
 
@@ -80,7 +80,7 @@ Before accumulating we finally have to build an array with the accumulated times
    
 Now we have everything we need for the accumulation::
 
-   accum_data = wrl.util.aggregate_in_time(data_R_height, times, accum_times)
+   accum_data = wrl.util.aggregate_in_time(data_R_depth, times, accum_times)
    wrl.vis.polar_plot(accum_data[0], title = 'Precipitation height 18.8.2006, 00:05-01:05 (Radarstation Feldberg)',
        unit = 'mm', colormap = 'spectral', vmax = max(accum_data))
    wrl.vis.polar_plot(accum_data[1], title = 'Precipitation height 18.8.2006, 01:05-02:05 (Radarstation Feldberg)',
