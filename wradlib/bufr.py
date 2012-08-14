@@ -360,14 +360,14 @@ def decodebufr(buffile):
     if os.sys.platform=="win32":
         try:
 ##            retval = decbufr.decbufr2py(C.c_char_p(buffile), C.c_char_p(descfile))
-            retval = call([winexecutable, buffile, descfile, imgfile])
+            retval = call([winexecutable, buffile, descfile, imgfile], shell=True)
         except:
             print "Error in calling the external C BUFR decoder."
             raise
     elif "linux" in os.sys.platform:
         try:
 ##            retval = decbufr.decbufr2py(C.c_char_p(buffile), C.c_char_p(descfile))
-            retval = call([linuxexecutable, buffile, descfile, imgfile])
+            retval = call([linuxexecutable, buffile, descfile, imgfile], shell=True)
         except:
             print "Error in calling the external C BUFR decoder."
             print "This might be a Linux issue...code has not yet been tested on Linux."
