@@ -56,7 +56,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
         is the upper limit of output time step 1 and the lower limit of output
         time step 2 and so on.
 
-    func : numby function name, e.g. 'sum', 'mean'
+    func : numpy function name, e.g. 'sum', 'mean'
         Defines the way the data should be aggregated. The string must correspond
         to a valid numpy function, e.g. 'sum', 'mean', 'min', 'max'.
 
@@ -83,19 +83,20 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
 
 
     """
-    src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
+##    src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
+    dt_src, dt_trg = np.array(dt_src), np.array(dt_trg)
     trg_shape = list(src.shape)
     trg_shape[taxis] = len(dt_trg)-1
     trg = np.repeat(np.nan, _shape2size(trg_shape)).reshape(trg_shape)
     for i in range(len(dt_trg)-1):
         trg_slice = [slice(0,j) for j in trg.shape]
         trg_slice[taxis] = i
-        src_slice = [slice(0,src.shape[j]) for j in range(src.ndim)]
+        src_slice = [slice(0,src.shape[j]) for j in range(len(src.shape))]
         src_slice[taxis] = np.where( np.logical_and(dt_src<=dt_trg[i+1], dt_src>=dt_trg[i]) )[0][:-1]
         if len(src_slice[taxis])==0:
             trg[trg_slice] = np.nan
         else:
-            trg[trg_slice] = _get_func(func)(src[src_slice], axis=taxis)
+            trg[trg_slice] = _get_func(func)(src[tuple(src_slice)], axis=taxis)
     return trg
 
 

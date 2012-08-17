@@ -34,7 +34,7 @@ import os
 import ctypes as C
 import numpy as np
 import sys
-from subprocess import call
+import subprocess as sub
 
 
 # Using fixed names for temporary files in order to enforce a stable function interface
@@ -264,7 +264,7 @@ def map_to_levelsclices(vals, levels, nodata):
     mask  = np.where(vals==nodata)[0]
     vals[mask] = 0
     try:
-        vals = np.array(levels)[vals]
+        vals = np.array(levels, dtype="f4")[vals]
     except:
         print "BUFR values are probably inconsistent with slicing information."
         raise
@@ -360,14 +360,14 @@ def decodebufr(buffile):
     if os.sys.platform=="win32":
         try:
 ##            retval = decbufr.decbufr2py(C.c_char_p(buffile), C.c_char_p(descfile))
-            retval = call([winexecutable, buffile, descfile, imgfile], shell=True)
+            retval = sub.call([winexecutable, buffile, descfile, imgfile], shell=True)
         except:
             print "Error in calling the external C BUFR decoder."
             raise
     elif "linux" in os.sys.platform:
         try:
 ##            retval = decbufr.decbufr2py(C.c_char_p(buffile), C.c_char_p(descfile))
-            retval = call([linuxexecutable, buffile, descfile, imgfile], shell=True)
+            retval = sub.call([linuxexecutable, buffile, descfile, imgfile], shell=True)
         except:
             print "Error in calling the external C BUFR decoder."
             print "This might be a Linux issue...code has not yet been tested on Linux."
