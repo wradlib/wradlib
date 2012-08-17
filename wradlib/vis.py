@@ -21,7 +21,7 @@ Standard plotting and mapping procedures
    :toctree: generated/
 
    polar_plot
-
+   Grid2Basemap
 
 """
 
@@ -29,7 +29,7 @@ import os.path as path
 import numpy as np
 import pylab as pl
 from matplotlib import mpl
-from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.basemap import Basemap, cm
 
 import wradlib.georef as georef
 
@@ -113,7 +113,7 @@ class PolarPlot(object):
         if classes is None:
             self.cmap = cmap
         else:
-            mycmap = pl.get_cmap(colormap, lut=len(classes))
+            mycmap = pl.get_cmap(cmap, lut=len(classes))
             mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(classes)-1) ))
             norm   = mpl.colors.BoundaryNorm(classes, mycmap.N)
             self.cmap = mycmap
@@ -504,24 +504,37 @@ class PolarBasemap():
 
 
 class Grid2Basemap():
-    '''
-    Plot a grid a map (or a time series of maps)
+    """Plot gridded data on a background map
+
+    This class allows to plot gridded data (e.g. PPIs or composites) on a background.
+    The background map (Basemap) can include country borders, coastlines, meridians
+    as well as user-defined shapefiles.
+
+    In order to plot the data over user-defined shapefiles, these have to be projected
+    to "geographical projection", i.e. in lat/lon coordinates based on WGS84. You can
+    use any GIS for this task. The shapefiles are then passed to the constructor
+    by providing a list of file paths in the argument *shapefiles* (see `Parameters`).
+
+    Using Grid2Basemap(...), the background map is plotted. The actual data is plotted
+    by using the ``plot`` method. This procedure allows to repeatedly plot data on
+    a map (e.g. a time series) without each time plotting the background again.
 
     Parameters
     ----------
-    data    : Dataset which should be plotted
-                if <dset> contains different time steps, one map will be generated for each time step
-    conf    : a config object
-    title   : a base title - other elements will be appended to this base title
-    bbox    : the bounding box of the entire map in lat/lon; if None, the specs will be read from the config file key 'bbox_map'
-    ncolors : number of colors in the colomap lookup table - will be overridden by the classes argument
+    bbox    : the bounding box of the entire map in lat/lon
+    ncolors : number of colors in the colormap lookup table - will be overridden by the classes argument
     classes : classes of the plotting variable for which colors should be homogenoeous - overrides ncolors!
+    shapefiles : list of paths to shapefiles which will be plotted as map background
     cmap    : name of the default colormap in case no colormap is provided in the config file
-    ensstat : in case dset contains an ensemble Dimension, the statistic function with name <ensstat> will be used to remove the ensemble Dimension by applying ensstat along the ens Dimension
-                <ensstat> should be contained in numpy and be retrived by getattr(numpy, ensstat) and it should have an axis argument
-    saveto  : if None, the plots are shown on the screen - otherwise the figures are saved to directory <saveto>
-    '''
-    def __init__(self, bbox, title='', ncolors=10, classes=None, cmap='jet'):
+    saveto  : if None, the plots are shown on the screen - otherwise the figures are saved to directory *saveto*
+
+    Examples
+    --------
+    >>> import wradlib.vis as vis
+
+
+    """
+    def __init__(self, bbox, unit='', ncolors=10, classes=None, cmap=cm.s3pcpn):
 
         self.bbox = bbox
 
@@ -541,61 +554,57 @@ class Grid2Basemap():
                         urcrnrlon=self.bbox['urx'],urcrnrlat=self.bbox['ury'],
                     resolution='i',projection='tmerc',lat_0=lat0, lon_0=lon0)
 
-        # draw parallels and meridians
-##        self.m.drawmapboundary(fill_color='aqua')
-        # fill continents, set lake color same as ocean color.
-##        self.m.fillcontinents(color='coral',lake_color='aqua')
-        self.m.drawcoastlines(color='white')
+        # draw nice stuff
+        ##self.m.bluemarble()
+        self.m.fillcontinents(color='grey', zorder=0)#,lake_color='aqua')
+        self.m.drawcoastlines()
         self.m.drawparallels(np.linspace(start=np.round(self.bbox['lly']), stop=np.round(self.bbox['ury']), num=3), labels=[1,0,0,0])
         self.m.drawmeridians(np.linspace(start=np.round(self.bbox['llx']), stop=np.round(self.bbox['urx']), num=3), labels=[0,0,0,1])
         # draw map scale
         self.m.drawmapscale(lon=self.bbox['urx']-0.2*(self.bbox['urx']-self.bbox['llx']), lat=self.bbox['lly']+0.1*(self.bbox['ury']-self.bbox['lly']), lon0=lon0, lat0=lat0, length=50., units='km', barstyle='fancy')
 
-        self.mycmap = pl.get_cmap(cmap, lut=len(self.classes))
-        self.mycmap = mpl.colors.ListedColormap(self.mycmap( np.arange(len(self.classes)-1) ))
-
-        norm   = mpl.colors.BoundaryNorm(self.classes, self.mycmap.N)
+        # remember cmap arg
+        self.mycmap = cmap
 
         # define colorbar (we use a dummy mappable object via imshow)
-        self.cbar = pl.colorbar(mappable=pl.imshow(np.repeat(self.classes,2).reshape((2,-1)),
-                    cmap=self.mycmap, norm = norm), orientation='vertical', shrink=0.8, extend='max')
-##        self.cbar.set_label('('+unit+')')
+##        self.cbar = pl.colorbar(mappable=pl.imshow(np.repeat(self.classes,2).reshape((2,-1)),
+##                    cmap=self.mycmap), orientation='vertical', shrink=0.8, extend='max')
+        self.cbar = pl.colorbar(mappable=pl.contourf(np.repeat(self.classes,2).reshape((2,-1)), self.classes, cmap=self.mycmap),
+                    orientation='vertical', shrink=0.8, extend='max')
+        self.cbar.set_label('('+unit+')')
 
-        # get current axes instance
-        self.ax = pl.gca()
+    def plot(self, lon, lat, data, title='', saveto=None):
+        """Plot the data on the map background
 
+        Parameters
+        ----------
+        lon : array of longitudes
+        lat : array of latitudes
+        data : data array of shape (number of longitudes, number of latitudes)
+        title : figure title
+        saveto : string to a directory where figurs should be stored
 
-##        plot_data_on_map(ax=ax, data=data.ravel(), dtime='', mycmap=mycmap,
-##                    polygons=polygons, classes=classes, bbox=bbox, name=var, saveto=None)
-##
-##        pl.close()
-
-    def __call__(self, x, y, data, dtime='', varname='', varunit='', saveto=None):
-        '''
-        Takes care of the actual data plot for each time step (plotting coloured polygons)
-        ---
-        ax      : matplotlib axes instance on which to plot the polygons
-        data    : a data array which must be consistent with the number of polygons as given by polygons
-        dtime   : the datetime which defines the end of the period represented by data
-        mycmap  : a colormap as defined in the calling function
-        polygons: a numpay ndarray of shape (number of polygons, number of polygon corners)
-        bbox    : the map's bounding box
-        name    : the name of the dataset (normally a parameter such as <p> or <wc>)
-        dsettype: the dsettype of the Dataset the data comes from
-        saveto  : if None, the map will be pplotted to the screen, otherwise it will be saved to directory <saveto>
-        '''
-        # add title to plot
-    ##    pl.title( get_map_title(name, dsettype, dtime) )
+        """
+        # add title plot
+        pl.title( title)
+        # get map coordinates
+        x, y =self.m(lon, lat)
+        # plot data
+        cs = self.m.contourf(x,y,data,self.classes, cmap=self.mycmap)
 
         # if no save directory is given, show plot on screen
         if saveto==None:
             pl.show()
         else:
-            fname    = name + '_' + dtime.strftime('%Y%m%d%H%M%S') + '.png'
+            if title=='':
+                fname = "radarfig.png"
+            else:
+                fname    = title.replace(" ", "").replace("\n", "").replace(":","").strip() + '.png'
             savepath = path.join(saveto, fname)
             pl.savefig(savepath)
-        # remove the PolygonCollection from the axis (otherwise the axis object becomes successively overcrowded)
-        self.ax.collections.remove(polycoll)
+        # remove data plot from the axis (otherwise the axis object becomes successively overcrowded)
+        for coll in cs.collections:
+            pl.gca().collections.remove(coll)
 
 
 
