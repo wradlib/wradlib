@@ -46,7 +46,7 @@ class AttenuationIterationError(Exception):
     pass
 
 
-def correctAttenuationHB(gateset, a = 1.67e-4, b = 0.7, l = 1.0, mode='',
+def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), mode='',
                          thrs=59.0):
     """Gate-by-Gate attenuation correction according to Hitschfeld & Bordan
     [Hitschfeld1954]_
@@ -490,22 +490,21 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Examples
     --------
-    Implementing the original Hitschfeld & Bordan (1954) algorithm with
-    otherwise default parameters
+    >>> # Implementing the original Hitschfeld & Bordan (1954) algorithm with
+    >>> # otherwise default parameters
     >>> k = correctAttenuationConstrained(gateset, n=1, mode='nan')
-
-    Implementing the basic Kraemer algorithm
+    >>> # Implementing the basic Kraemer algorithm
     >>> k = correctAttenuationConstrained(gateset,
     ...                                   mode='nan',
     ...                                   constraints=[constraint_dBZ],
-    ...                                   constr_args[[59.0]])
+    ...                                   constr_args=[[59.0]])
 
-    Implementing the PIA algorithm by Jacobi et al.
+    >>> # Implementing the PIA algorithm by Jacobi et al.
     >>> k = correctAttenuationConstrained(gateset,
     ...                                   mode='nan',
     ...                                   constraints=[constraint_dBZ,
     ...                                                constraint_PIA],
-    ...                                   constr_args[[59.0],
+    ...                                   constr_args=[[59.0],
     ...                                               [20.0]])
 
     """
