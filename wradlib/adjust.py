@@ -32,6 +32,7 @@ Basically, we only need two data sources:
    :nosignatures:
    :toctree: generated/
 
+   AdjustMFB
    AdjustAdd
    Raw_at_obs
 
@@ -68,8 +69,8 @@ class AdjustBase(ipol.IpolBase):
     def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', nnear_idw=6, p_idw=2.):
         self.obs_coords = self._make_coord_arrays(obs_coords)
         self.raw_coords = self._make_coord_arrays(raw_coords)
-        self.get_raw_at_obs = Raw_at_obs(obs_coords, raw_coords, nnear=nnear_raws, stat=stat)
-        self.ip = ipol.Idw(src=obs_coords, trg=raw_coords, nnearest=nnear_idw, p=p_idw)
+        self.get_raw_at_obs = Raw_at_obs(self.obs_coords,  self.raw_coords, nnear=nnear_raws, stat=stat)
+        self.ip = ipol.Idw(src=self.obs_coords, trg=self.raw_coords, nnearest=nnear_idw, p=p_idw)
     def _check_shape(self, obs, raw):
         """
         Check consistency of the input data obs and raw with the shapes of the coordinates
@@ -122,6 +123,62 @@ class AdjustAdd(AdjustBase):
         # add error field to raw and cut negatives to zero
         return np.where( (raw + error)<0., 0., raw + error)
 
+
+class AdjustMFB(AdjustBase):
+    """
+    Multiplicative gage adjustment using *one* correction factor for the entire domain
+
+    This method is also known as the Mean Field Bias correction
+
+    Parameters
+    ----------
+    obs_coords : array of float
+        coordinate pairs of observations points
+    raw_coords : array of float
+        coordinate pairs of raw (unadjusted) field
+    nnear_raws : integer
+        defaults to 9
+    stat : string
+        defaults to 'median'
+
+    Notes
+    -----
+    Inherits from AdjustBase
+
+    """
+
+    def __call__(self, obs, raw, threshold):
+        """
+        Return the field of raw values adjusted by obs
+
+        Parameters
+        ----------
+        obs : array of float
+            observations
+        raw : array of float
+            raw unadjusted field
+        threshold : float
+            if the gage or radar observation is below this threshold, the location
+            will not be used for calculating the mean field bias
+
+        """
+        # checking input shape consistency
+        self._check_shape(obs, raw)
+        # computing the multiplicative error for points of significant rainfall
+        ix = np.where(np.logical_and(obs>threshold, self.get_raw_at_obs(raw, obs)>threshold))[0]
+        if len(ix)==0:
+            # no adjustment
+            return raw
+        ratios = obs[ix] / self.get_raw_at_obs(raw, obs)[ix]
+        # compute adjustment factor
+        thesum = np.nansum(ratios)
+        num    = len(ratios) - len(np.where(np.isnan(ratios))[0])
+        if (not np.isnan(thesum)) and (not num==0):
+            corrfact = thesum / num
+        else:
+            corrfact = 1
+        # return adjusted data
+        return corrfact*raw
 
 
 class Raw_at_obs():
@@ -198,7 +255,6 @@ def _get_neighbours_ix(obs_coords, raw_coords, nnear):
     return tree.query(obs_coords, k=nnear)[1]
 
 
-
 def _get_neighbours(obs_coords, raw_coords, raw, nnear):
     """
     Returns <nnear> neighbour values per <obs_coords> coordinate pair
@@ -221,6 +277,7 @@ def _get_neighbours(obs_coords, raw_coords, raw, nnear):
     ix = tree.query(obs_coords, k=nnear)[1]
     # return the values of the nearest neighbours
     return raw[ix]
+
 
 def _get_statfunc(funcname):
     """
