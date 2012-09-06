@@ -194,6 +194,79 @@ def __pol2latlon(rng, az, sitecoords, re=6370040):
     return 90.-np.rad2deg(m), thea+np.rad2deg(np.where(easterly,g,-g))
 
 
+
+def polar2latlonalt(r, az, elev, sitecoords, re=6370040.):
+    """Transforms polar coordinates to lat/lon/altitude coordinates.
+
+    Explicitely accounts for the beam's elevation angle and for the altitude of the radar location.
+
+    This is an alternative implementation based on VisAD code (see
+    http://www.ssec.wisc.edu/visad-docs/javadoc/visad/bom/Radar3DCoordinateSystem.html#toReference%28float[][]%29 and
+    http://www.ssec.wisc.edu/~billh/visad.html ).
+
+    VisAD code has been translated to Python from Java.
+
+    Nomenclature tries to stick to VisAD code for the sake of comparibility, hwoever, names of
+    arguments are the same as for polar2latlon...
+
+    Parameters
+    ----------
+    r : array
+        array of ranges [m]
+    az : array
+        array of azimuth angles containing values between 0° and 360°.
+        These are assumed to start with 0° pointing north and counted positive
+        clockwise!
+    sitecoords : a sequence of three floats
+        the lat / lon coordinates of the radar location and its altitude a.m.s.l. (in meters)
+        if sitecoords is of length two, altitude is assumed to be zero
+    re : float
+        earth's radius [m]
+
+    Returns
+    -------
+    output : a tuple of three arrays (latitudes, longitudes, altitudes)
+
+    """
+    centlat = sitecoords[0]
+    centlon = sitecoords[1]
+    try:
+        centalt = sitecoords[2]
+    except:
+        centalt = 0.
+    # local earth radius
+    re = re + centalt
+
+    cosaz = np.cos( np.deg2rad(az) )
+    sinaz = np.sin( np.deg2rad(az) )
+    # assume azimuth = 0 at north, then clockwise
+    coselev = np.cos( np.deg2rad(elev) )
+    sinelev = np.sin( np.deg2rad(elev) )
+    rp = np.sqrt(re * re + r * r + 2.0 * sinelev * re * r)
+
+    # altitudes
+    alts = rp - re + centalt
+
+    angle = np.arcsin(coselev * r / rp) # really sin(elev+90)
+    radp = re * angle
+    lats = centlat + cosaz * radp / _latscale()
+    lons = centlon + sinaz * radp / _lonscale(centlat)
+
+    return lats, lons, alts
+
+
+def _latscale(re=6370040.):
+    """Return meters per degree latitude assuming spherical earth
+    """
+    return 2*np.pi*re / 360.
+
+
+def _lonscale(lat, re=6370040.):
+    """Return meters per degree longitude assuming spherical earth
+    """
+    return (2*np.pi*re / 360.) * np.cos( np.deg2rad(lat) )
+
+
 def centroid2polyvert(centroid, delta):
     """Calculates the 2-D Polygon vertices necessary to form a rectangular polygon around the centroid's coordinates.
 
