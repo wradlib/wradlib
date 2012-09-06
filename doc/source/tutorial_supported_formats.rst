@@ -84,12 +84,20 @@ The user should inspect the output obtained from his or her hdf5 file in order t
 
 Please note that in order to experiment with such datasets, you can download hdf5 sample data from the `Odyssey page <http://www.knmi.nl/opera/odc.html>`_ of the `OPERA 3 homepage <http://www.knmi.nl/opera>`_.
 
+GAMIC HDF5
+----------
+GAMIC refers to the commercial `GAMIC Enigma V3 MURAN software <http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3>`_ which exports data in hdf5 format. The concept is quite similar to the above `OPERA HDF5 (ODIM_H5)`_ format. Such a file (typical ending: *.mvol*) can be read by::
+
+    data, metadata = io.read_GAMIC_hdf5("mydrive:/path/to/my/file/filename")
+	
+While metadata represents the usual dictionary of metadata, the data variable is a dictionary which might contain several numpy arrays with the keywords of the dictionary indicating different moments.
 
 NetCDF
 ------
 The NetCDF format also claims to be self-describing. However, as for all such formats, the developers of netCDF also admit that "[...] the mere use of netCDF is not sufficient to make data self-describing and meaningful to both humans and machines [...]". The program that reads the data needs to know about the expected content. Different radar operators or data distributors will use different naming conventions and data hierarchies. Even though Python provides a decent netCDF library (netcdf4), wradlib will need to provide different interfaces to netCDF files offered by different distributors.
 
 **NetCDF files exported by the EDGE software**
+
 EDGE is a commercial software for radar control and data analysis provided by the Entreprise Electronics Corporation. It allows for netCDF data export. The resulting files can be read by::
 
    data, metadata = io.read_EDGE_netcdf("mydrive:/path/to/my/file/filename") 
