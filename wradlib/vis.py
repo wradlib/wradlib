@@ -21,6 +21,7 @@ Standard plotting and mapping procedures
    :toctree: generated/
 
    polar_plot
+   rhi_plot
    Grid2Basemap
 
 """
@@ -646,9 +647,9 @@ class Grid2Basemap():
 def get_tick_vector(vrange,vres):
     """Calculates Vector for tickmarks for function create_curvilinear_axes.
 
-        Calculates tickmarks according to value range and wanted resolution. If no resolution is given,
-        standard values [100., 50., 25., 20., 10., 5., 2.5, 2., 1., 0.5, 0.25, 0.2] are used.
-        The number of tickmarks is normally between 5 and 10.
+    Calculates tickmarks according to value range and wanted resolution. If no resolution is given,
+    standard values [100., 50., 25., 20., 10., 5., 2.5, 2., 1., 0.5, 0.25, 0.2] are used.
+    The number of tickmarks is normally between 5 and 10.
 
     Parameters
     ----------
@@ -657,8 +658,7 @@ def get_tick_vector(vrange,vres):
 
     Returns
     ----------
-
-    vector of tickmarks
+    output : array of tickmarks
 
     """
 
@@ -684,15 +684,13 @@ def get_tick_vector(vrange,vres):
     return np.linspace(vrange[0],vrange[1]-rem,num=cnt+1)
 
 def create_curvilinear_axes(fig, **kwargs):
-
     """Creates Axis with Parasite Axis for curvilinear grid.
 
     Parameters
     ----------
     fig : figure object where to create axes
     **kwargs : some axis properties
-                {'R','H','r_res','h_res', 'a_res', 'xtitle', \
-                xunit, yunit, 'ytitle', 'atitle', 'title'}
+       ['R','H','r_res','h_res', 'a_res', 'xtitle',  xunit, yunit, 'ytitle', 'atitle', 'title']
 
     """
 
@@ -809,7 +807,8 @@ def create_curvilinear_axes(fig, **kwargs):
 
 def rhi_plot(data, **kwargs):
     """Returns figure and pylab object of plotted data from a polar grid as an RHI (Range Height Indicator).
-        Plotting need to be done outside wradlib
+
+    Plotting need to be done outside wradlib
 
     The data must be an array of shape (number of azimuth angles, number of range bins).
     The azimuth angle of 0 degrees corresponds to y-axis = 0 (east direction)
@@ -828,59 +827,58 @@ def rhi_plot(data, **kwargs):
         polar grid data to be plotted
         1st dimension must be azimuth angles, 2nd must be ranges!
 
-    'kwargs':
+    Keyword arguments:
 
-        R : tuple of array of float and unit string
-            [display min range, display max range, data max range}, unit string
-            defaults to [0, data.shape range, data.shape range], empty string
-        H : array of array float and unit string
-            [display min height, display max height], unit string
-            defaults to [0,data.shape range ], empty string
-        theta_range: float array
-            theta range (min, max) used to display data
-        rad_range: float array
-            radial range (min, max) used to display data
-        r_res : float array of range (x) tick resolution (empty, single value, multiple values)
-        h_res : float array of height (y) tick resolution (empty, single value, multiple values)
-        a_res : float
-             sets # of angle gridlines and labels, defaults to 8, wich means 10 deg resolution
+    R : tuple of array of float and unit string
+        [display min range, display max range, data max range}, unit string
+        defaults to [0, data.shape range, data.shape range], empty string
+    H : array of array float and unit string
+        [display min height, display max height], unit string
+        defaults to [0,data.shape range ], empty string
+    theta_range: float array
+        theta range (min, max) used to display data
+    rad_range: float array
+        radial range (min, max) used to display data
+    r_res : float array of range (x) tick resolution (empty, single value, multiple values)
+    h_res : float array of height (y) tick resolution (empty, single value, multiple values)
+    a_res : float
+         sets # of angle gridlines and labels, defaults to 8, wich means 10 deg resolution
 
-        title : string
-            a title of the plot, defaults to 'Range Height Indicator'
-        xtitle : string
-            x-axis label
-            defaults to 'Range' or 'Range (km)' if R is given (mostly km)
-        ytitle : string
-            y-axis label
-            defaults to 'Height' or 'Height (km)' if H is given (mostly km)
-        atitle : string
-            angle-axis label, not used at the moment, due to inconvenient placing
-            defaults to '$Angle$')# ($^{\circ}$)'
-
-        saveto : string - path of the file in which the figure should be saved
-            if string is empty, no figure will be saved and the plot will be
-            sent to screen
-        fig : matplotlib axis object
-            if None, a new matplotlib figure will be created, otherwise we plot
-            on given figure
-        figsize : width , hight tuple in inches
-             defaults to (10,6)
-        axpos : an integer or a string
-            correponds to the positional argument of mpl_toolkits.axisartist.SubplotHost
-            defaults to '111'
-            TODO: if multiple plots are used, position and size of labels have to be corrected
-            in source code
-        colormap :  string
-            choose the colormap ("Paired" per default)
-        classes :   sequence of numerical values
-            class boundaries for plotting
-        unit : string
-            the unit of the data which is plotted
-        extend :    string
-            determines the behaviour of the colorbar: default value 'neither' produces
-            a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
-            maximum end, respectively, and 'both' produces an arrow at both ends. If
-            you use class boundaries for plotting, you should typically use 'both'.
+    title : string
+        a title of the plot, defaults to 'Range Height Indicator'
+    xtitle : string
+        x-axis label
+        defaults to 'Range' or 'Range (km)' if R is given (mostly km)
+    ytitle : string
+        y-axis label
+        defaults to 'Height' or 'Height (km)' if H is given (mostly km)
+    atitle : string
+        angle-axis label, not used at the moment, due to inconvenient placing
+        defaults to '$Angle$')# ($^{\circ}$)'
+    saveto : string - path of the file in which the figure should be saved
+        if string is empty, no figure will be saved and the plot will be
+        sent to screen
+    fig : matplotlib axis object
+        if None, a new matplotlib figure will be created, otherwise we plot
+        on given figure
+    figsize : width , hight tuple in inches
+         defaults to (10,6)
+    axpos : an integer or a string
+        correponds to the positional argument of mpl_toolkits.axisartist.SubplotHost
+        defaults to '111'
+        TODO: if multiple plots are used, position and size of labels have to be corrected
+        in source code
+    colormap :  string
+        choose the colormap ("Paired" per default)
+    classes :   sequence of numerical values
+        class boundaries for plotting
+    unit : string
+        the unit of the data which is plotted
+    extend :    string
+        determines the behaviour of the colorbar: default value 'neither' produces
+        a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
+        maximum end, respectively, and 'both' produces an arrow at both ends. If
+        you use class boundaries for plotting, you should typically use 'both'.
 
     Returns
     ----------
