@@ -1,0 +1,18 @@
+This is BUFR local table B version 3 for OPERA radar encoding
+By Helmut Paulitsch, 2003/06/05
+0;02;181;Supplementary present weather sensor;Flag-Table;0;0;21
+0;21;198;dBZ-value offset (Alpha);dBZ;0;-64;7
+0;21;199;dBZ-value increment (Beta);dBZ;1;0;7
+0;21;236;Radar rainfall intensity;mm*h-1;2;0;16
+0;29;192;Type of rotation ellipsoid;Code-Table;0;0;3
+0;29;193;Long Origin;Degree;2;-18000;16
+0;29;194;Lat Origin;Degree;2;-9000;15
+0;29;195;False Easting;Meters;0;0;26
+0;29;196;False Northing;Meters;0;0;26
+0;29;197;Standard parallel 1;Degree;2;-9000;15
+0;29;198;Standard parallel 2;Degree;2;-9000;15
+0;29;199;Semi-major axis of rotation elipsoid;Meters;0;0;26
+0;29;200;Semi-minor axis of rotation elipsoid;Meters;0;0;26
+0;29;201;Projection type;Code-Table;0;0;5
+0;30;192;North south view organisation;Code-table;0;0;3    
+0;30;193;East west view organisation;Code-table;0;0;3    

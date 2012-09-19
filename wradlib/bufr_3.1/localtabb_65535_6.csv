@@ -1,0 +1,35 @@
+0;02;181;Supplementary present weather sensor;Flag-Table;0;0;21
+0;02;193;Antenna rotation direction;Code-Table;0;0;2
+0;07;192;Pixel size in Z-direction;Meters;-1;0;16
+0;21;036;Radar rainfall intensity;mm*h-1;2;0;16
+0;21;198;dBZ-value offset (Alpha);dBZ;2;-6400;14
+0;21;199;dBZ-value increment (Beta);dBZ;1;0;7
+0;21;200;Height of CAPPI;m;0;-1000;15
+0;21;201;Range-bin size;Meter;0;0;14
+0;21;202;Azimuthal resolution;Degree;1;0;8
+0;21;203;Range-bin offset;Meter;-1;0;14
+0;21;204;Azimuth offset;Degree;1;0;12
+0;21;205;V-value offset (av);m/s;2;-16384;15
+0;21;206;V-value increment (bv);m/s;2;0;8
+0;21;207;W-value offset (aw);m/s;2;0;14
+0;21;208;W-value increment (bw);m/s;2;0;8
+0;25;192;Accumulation method;Code-Table;0;0;8
+0;25;193;Adjustment factor;Numeric;2;0;10
+0;29;192;Type of rotation ellipsoid;Code-Table;0;0;3
+0;29;193;Long Origin;Degree;2;-18000;16
+0;29;194;Lat Origin;Degree;2;-9000;15
+0;29;195;X-Offset;Meters;0;-33554432;26
+0;29;196;Y-Offset;Meters;0;-33554432;26
+0;29;197;Standard parallel 1;Degree;2;-9000;15
+0;29;198;Standard parallel 2;Degree;2;-9000;15
+0;29;199;Semi-major axis of rotation ellipsoid;Meters;0;0;26
+0;29;200;Semi-minor axis of rotation ellipsoid;Meters;0;0;26
+0;29;201;Projection type;Code-Table;0;0;5
+0;29;202;Azimuth of initial line;Degree;2;-9000;15
+0;29;203;Long Origin;Degree;5;-18000000;26
+0;29;204;Lat Origin;Degree;5;-9000000;25
+0;30;192;North south view organisation;Code-Table;0;0;3
+0;30;193;East west view organisation;Code-Table;0;0;3
+0;30;194;Number of bins along the radial;Numeric;0;0;12
+0;30;195;Number of azimuths;Numeric;0;0;11
+0;30;196;Type of product;Code-Table;0;0;8

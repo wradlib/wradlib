@@ -6,6 +6,8 @@ wradlib
 
 import adjust
 from adjust import *
+import bufr
+from bufr import *
 import atten
 from atten import *
 import clutter
