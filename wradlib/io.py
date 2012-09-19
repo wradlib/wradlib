@@ -31,15 +31,20 @@ on how to deal with different file formats.
 
 """
 
+# standard libraries
+
 import sys
 import re
-import numpy as np
-import netCDF4 as nc
 import datetime as dt
 import pytz
-import wradlib.bufr as bufr
-import h5py
 
+# site packages
+import h5py
+import numpy as np
+import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+
+# wradib modules
+import wradlib.bufr as bufr
 
 
 # current DWD file naming pattern (2008) for example:
@@ -719,7 +724,7 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
                 el = str(round(el,2))
 
                 # try to read scan data and attrs if wanted elevations are found
-                if el in wanted_elevations or wanted_elevations == 'all':
+                if (el in wanted_elevations) or (wanted_elevations == 'all'):
                     sdata, sattrs = read_gamic_scan(scan = g, scan_type = scan_type, wanted_moments = wanted_moments, range_lim = range_lim)
                     if sdata:
                         data[n.upper()] = sdata
