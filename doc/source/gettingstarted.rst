@@ -4,11 +4,11 @@ Getting Started
 Installing Python
 -----------------
 
-In order to run *wradlib*, you need to have a Python interpreter installed on your local computer. *wradlib* will be guaranteed to work with a particular Python version, however, we will not guarantee upward or downward compatibility at the moment. **The current version of wradlib is designed to be used with Python 2.6.6, but was already successfully tested under Python 2.7.**
+In order to run *wradlib*, you need to have a Python interpreter installed on your local computer. *wradlib* will be guaranteed to work with a particular Python version, however, we will not guarantee upward or downward compatibility at the moment. **The current version of wradlib is designed to be used Python 2.7, but most features are also known to work under Python 2.6**.
 
-*wradlib* was not designed to be a self-contained library. Besides extensive use of Numpy and Scipy, you *might* need to install additional libraries before you can use *wradlib*. See `Dependencies`_ for a full list of dependencies. Under **Linux**, the Python interpreter is usually pre-installed and installation of additional packages is supposed to be easy - but you will have to do it explicitely for each required package. 
+*wradlib* was not designed to be a self-contained library. Besides extensive use of Numpy and Scipy, you *might* need to install additional libraries before you can use *wradlib*. See `Dependencies`_ for a full list of dependencies. Under **Linux**, the Python interpreter is usually pre-installed and installation of additional packages as well as dependency management is supposed to be easy. 
 
-Under **Windows** operating systems, we strongly recommend to install a Python distribution such as Python(x,y) (http://code.google.com/p/pythonxy) which will contain most of the required packages. Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. Download **Python(x,y)-2.6.6.2.exe** and install it. We recommend to use the full installation mode. 
+Under **Windows** operating systems, we strongly recommend to install a Python distribution such as Python(x,y) (http://code.google.com/p/pythonxy) which will contain most of the required packages. Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. Download the latest distribution (currently **Python(x,y)-2.7.2.3.exe** and install it. We recommend to use the full installation mode. 
 
 **When installing Python(x,y), make sure you choose "All Users" under the "Install for" menu component!**
 
@@ -71,3 +71,8 @@ For Windows users: If possible, we will link binary installer files for the libr
 
 - scipy
 
+
+Community
+---------
+
+*wradlib* is intended to be a community effort, and community needs communication. The key communication platform for *wradlib* is the  `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list and forum. Through this forum, you can help to improve wradlib by reporting bugs, proposing enhancements, or by contributing code snippets (in any programming language) and documentation of algorithms. You can also ask other users and developers for help, or use your own knowledge and experience to help other users. We strongly encourage you to `subscribe <https://groups.google.com/group/wradlib-users/subscribe>`_ to this list. Check it out! 

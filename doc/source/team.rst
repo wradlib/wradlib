@@ -16,19 +16,27 @@ Developers
 Contributers
 ------------
 
-Do you want to help in enhancing the capabilities of wradlib? You can join the team of `developers`_! But you can also contribute code (in any programming language) or documentations of specific algorithms you consider useful so that we can include these in wradlib. In this case, we can include you or your group in the list of contributers.
+Do you want to help in enhancing the capabilities of wradlib? You can join the team of `developers`_! But you can also contribute code (in any programming language) or documentations of specific algorithms you consider useful so that we can include these in wradlib.
 
 
 Users
 -----
 
-By using wradlib you can also contribute to its development by reporting bugs or by proposing new developments. We need your continuous feedback to improve *wradlib*. For this purpose, use the issues tab of `wradlib's Bitbucket repository <https://bitbucket.org/wradlib/wradlib>`_ site in order to raise an issue. 
+By using wradlib you can also contribute to its development by reporting bugs or by proposing new developments. We need your continuous feedback to improve *wradlib*. For this purpose, use the issues tab of `wradlib's Bitbucket repository <https://bitbucket.org/wradlib/wradlib>`_ site in order to raise an issue.
 
-The current list of *wradlib* users include (in alphabetical order):
+We also encourage you to register to the mailing list `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_. Using this mailing list or forum, you can ask other users and developers for help and help others, and we can notify you about the latest updates and developments. 
 
-   - National Institute of Geological Sciences (Philippines)
+Selection of institutions using *wradlib* (in alphabetical order):
 
-   - University of Potsdam, Institure for Earth and Environmental Sciences (Germany)
+   - Helmholtz-Centre for Environmental Research (UFZ), Germany
    
-   - University of Stuttgart, Institut für Wasser- und Umweltsystemmodellierung, Germany
+   - National Institute of Geological Sciences, Philippines
+   
+   - Tohoku University, Graduate School of Science, Japan
+   
+   - University of Bonn, Institute of Meteorology, Germany
+
+   - University of Potsdam, Institute of Earth and Environmental Sciences, Germany
+   
+   - University of Stuttgart, Institut fuer Wasser- und Umweltsystemmodellierung, Germany
 
