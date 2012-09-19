@@ -33,6 +33,7 @@ Basically, we only need two data sources:
    :toctree: generated/
 
    AdjustMFB
+   AdjustMultiply
    AdjustAdd
    Raw_at_obs
 
@@ -64,15 +65,18 @@ class AdjustBase(ipol.IpolBase):
         defaults to 6
     p_idw : float
         defaults to 2.
+    mingages : integer
+        minimum number of gages which are required for an adjustment
 
     """
-    def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', nnear_idw=6, p_idw=2.):
+    def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', nnear_idw=6, p_idw=2., mingages=5):
         self.obs_coords = self._make_coord_arrays(obs_coords)
         self.raw_coords = self._make_coord_arrays(raw_coords)
         self.nnear_raws = nnear_raws
         self.stat       = stat
         self.nnear_idw  = nnear_idw
         self.p_idw      = p_idw
+        self.mingages   = mingages
         self.get_raw_at_obs = Raw_at_obs(self.obs_coords,  self.raw_coords, nnear=nnear_raws, stat=stat)
         self.ip = ipol.Idw(src=self.obs_coords, trg=self.raw_coords, nnearest=nnear_idw, p=p_idw)
     def _check_shape(self, obs, raw):
@@ -86,7 +90,7 @@ class AdjustAdd(AdjustBase):
     """Gage adjustment using an additive error model
 
     First, an instance of AdjustAdd has to be created. Calling this instance then
-    does the actual adjustment. The motovation behind this performance. In case
+    does the actual adjustment. The motivation behind this performance. In case
     the observation points are always the same for different time steps, the computation
     of neighbours and invserse distance weights only needs to be performed once.
 
@@ -110,13 +114,19 @@ class AdjustAdd(AdjustBase):
         defaults to 6
     p_idw : float
         defaults to 2.
+    mingages : integer
+        minimum number of gages which are required for an adjustment
+
+    Returns
+    -------
+    output : array of adjusted radar values
 
     Examples
     --------
     >>> import wradlib.adjust as adjust
     >>> import numpy as np
     >>> import pylab as pl
-    >>> # 1-d example
+    >>> # 1-d example including all available adjustment methods
     >>> # --------------------------------------------------------------------------
     >>> # gage and radar coordinates
     >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
@@ -132,15 +142,22 @@ class AdjustAdd(AdjustBase):
     >>> obs = truth[obs_coords]
     >>> # add a missing value to observations (just for testing)
     >>> obs[1] = np.nan
-    >>> # adjust the radar observation by using the additive model
-    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=3)
+    >>> # adjust the radar observation by additive model
+    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
     >>> add_adjusted = add_adjuster(obs, radar)
+    >>> # adjust the radar observation by multiplicative model
+    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
+    >>> mult_adjusted = mult_adjuster(obs, radar,0.)
+    >>> # adjust the radar observation by MFB
+    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
+    >>> mfb_adjusted = mfb_adjuster(obs, radar,0.)
     >>> line1 = pl.plot(radar_coords, radar, 'b-', label="raw radar")
     >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    >>> line3 = pl.plot(radar_coords, add_adjusted, 'r-', label="adjusted by AdjustAdd")
+    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
+    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
+    >>> line4 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
     >>> pl.legend()
     >>> pl.show()
-
 
     Notes
     -----
@@ -166,6 +183,10 @@ class AdjustAdd(AdjustBase):
         rawatobs = self.get_raw_at_obs(raw, obs)
         # check where both gage and radar observations are valid
         ix = np.intersect1d( _idvalid(obs),  _idvalid(rawatobs))
+        # check whether enough gages remain for adjustment
+        if len(ix)<=self.mingages:
+            # no adjustment
+            return raw
         # computing the error
         error = obs[ix] - rawatobs[ix]
         # if not all locations have valid values, we need to recalculate the inverse distance neighbours
@@ -180,22 +201,122 @@ class AdjustAdd(AdjustBase):
         return np.where( (raw + iperror)<0., 0., raw + iperror)
 
 
-def _idvalid(data, isinvalid=[-99., 99, -9999., -9999] ):
-    """Identifies valid entries in an array and returns the corresponding indices
+class AdjustMultiply(AdjustBase):
+    """Gage adjustment using a multiplicative error model
 
-    Invalid values are NaN and Inf. Other invalid values can be passed using the
-    isinvalid keyword argument.
+    First, an instance of AdjustMultiply has to be created. Calling this instance then
+    does the actual adjustment. The motivation behind this performance. In case
+    the observation points are always the same for different time steps, the computation
+    of neighbours and invserse distance weights only needs to be performed once during
+    initialisation.
+
+    AdjustMultiply automatically takes care of invalid gage or radar observations (e.g.
+    NaN, Inf or other typical missing data flags such as -9999. However, in case
+    e.g. the observation data contain missing values, the computation of the inverse
+    distance weights needs to be repeated in __call__ which is at the expense of
+    performance.
 
     Parameters
     ----------
-    data : array of floats
-    invalid : list of what is considered an invalid value
+    obs_coords : array of float
+        coordinate pairs of observations points
+    raw_coords : array of float
+        coordinate pairs of raw (unadjusted) field
+    nnear_raws : integer
+        defaults to 9
+    stat : string
+        defaults to 'median'
+    nnear_idw : integer
+        defaults to 6
+    p_idw : float
+        defaults to 2.
+    mingages : integer
+        minimum number of gages which are required for an adjustment
+
+    Returns
+    -------
+    output : array of adjusted radar values
+
+    Examples
+    --------
+    >>> import wradlib.adjust as adjust
+    >>> import numpy as np
+    >>> import pylab as pl
+    >>> # 1-d example including all available adjustment methods
+    >>> # --------------------------------------------------------------------------
+    >>> # gage and radar coordinates
+    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
+    >>> radar_coords = np.arange(0,101)
+    >>> # true rainfall
+    >>> truth = np.abs(np.sin(0.1*radar_coords))
+    >>> # radar error
+    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
+    >>> errormult= 1.1
+    >>> # radar observation
+    >>> radar = errormult*truth + erroradd
+    >>> # gage observations are assumed to be perfect
+    >>> obs = truth[obs_coords]
+    >>> # add a missing value to observations (just for testing)
+    >>> obs[1] = np.nan
+    >>> # adjust the radar observation by additive model
+    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
+    >>> add_adjusted = add_adjuster(obs, radar)
+    >>> # adjust the radar observation by multiplicative model
+    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
+    >>> mult_adjusted = mult_adjuster(obs, radar,0.)
+    >>> # adjust the radar observation by MFB
+    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
+    >>> mfb_adjusted = mfb_adjuster(obs, radar,0.)
+    >>> line1 = pl.plot(radar_coords, radar, 'b-', label="raw radar")
+    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
+    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
+    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
+    >>> line4 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
+    >>> pl.legend()
+    >>> pl.show()
+
+    Notes
+    -----
+    Inherits from AdjustBase
 
     """
-    ix = np.ma.masked_invalid(data).mask
-    for el in isinvalid:
-        ix = np.logical_or(ix, np.ma.masked_where(data==el, data).mask)
-    return np.where(np.logical_not(ix))[0]
+
+    def __call__(self, obs, raw, minval):
+        """
+        Returns the field of raw values adjusted by obs
+
+        Parameters
+        ----------
+        obs : array of float
+            observations
+        raw : array of float
+            raw unadjusted field
+        minval : float
+            if the gage or radar observation is below this threshold, the location
+            will not be used for adjustment in order to avoid extreme ratios
+
+        """
+        # checking input shape consistency
+        self._check_shape(obs, raw)
+        # radar values at gage locations
+        rawatobs = self.get_raw_at_obs(raw, obs)
+        # check where both gage and radar observations are valid
+        ix = np.intersect1d( _idvalid(obs, minval=minval),  _idvalid(rawatobs, minval=minval))
+        # check whether enough gages remain for adjustment
+        if len(ix)<=self.mingages:
+            # no adjustment
+            return raw
+        # computing the error
+        error = obs[ix] / rawatobs[ix]
+        # if not all locations have valid values, we need to recalculate the inverse distance neighbours
+        if not len(ix)==len(obs):
+            ip = ipol.Idw(src=self.obs_coords[ix], trg=self.raw_coords, nnearest=self.nnear_idw, p=self.p_idw)
+        else:
+            ip = self.ip
+        # interpolate error field
+        iperror = ip(error)
+        # multiply error field with raw
+        return iperror * raw
 
 
 class AdjustMFB(AdjustBase):
@@ -214,6 +335,51 @@ class AdjustMFB(AdjustBase):
         defaults to 9
     stat : string
         defaults to 'median'
+    mingages : integer
+        minimum number of gages which are required for an adjustment
+
+    Returns
+    -------
+    output : array of adjusted radar values
+
+    Examples
+    --------
+    >>> import wradlib.adjust as adjust
+    >>> import numpy as np
+    >>> import pylab as pl
+    >>> # 1-d example including all available adjustment methods
+    >>> # --------------------------------------------------------------------------
+    >>> # gage and radar coordinates
+    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
+    >>> radar_coords = np.arange(0,101)
+    >>> # true rainfall
+    >>> truth = np.abs(np.sin(0.1*radar_coords))
+    >>> # radar error
+    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
+    >>> errormult= 1.1
+    >>> # radar observation
+    >>> radar = errormult*truth + erroradd
+    >>> # gage observations are assumed to be perfect
+    >>> obs = truth[obs_coords]
+    >>> # add a missing value to observations (just for testing)
+    >>> obs[1] = np.nan
+    >>> # adjust the radar observation by additive model
+    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
+    >>> add_adjusted = add_adjuster(obs, radar)
+    >>> # adjust the radar observation by multiplicative model
+    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
+    >>> mult_adjusted = mult_adjuster(obs, radar,0.)
+    >>> # adjust the radar observation by MFB
+    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
+    >>> mfb_adjusted = mfb_adjuster(obs, radar,0.)
+    >>> line1 = pl.plot(radar_coords, radar, 'b-', label="raw radar")
+    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
+    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
+    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
+    >>> line4 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
+    >>> pl.legend()
+    >>> pl.show()
+
 
     Notes
     -----
@@ -221,7 +387,7 @@ class AdjustMFB(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, threshold):
+    def __call__(self, obs, raw, minval):
         """
         Return the field of raw values adjusted by obs
 
@@ -231,7 +397,7 @@ class AdjustMFB(AdjustBase):
             observations
         raw : array of float
             raw unadjusted field
-        threshold : float
+        minval : float
             if the gage or radar observation is below this threshold, the location
             will not be used for calculating the mean field bias
 
@@ -239,11 +405,14 @@ class AdjustMFB(AdjustBase):
         # checking input shape consistency
         self._check_shape(obs, raw)
         # computing the multiplicative error for points of significant rainfall
-        ix = np.where(np.logical_and(obs>threshold, self.get_raw_at_obs(raw, obs)>threshold))[0]
-        if len(ix)==0:
+        rawatobs = self.get_raw_at_obs(raw, obs)
+        # check where both gage and radar observations are valid
+        ix = np.intersect1d( _idvalid(obs, minval=minval),  _idvalid(rawatobs, minval=minval))
+        # check if there are enough remaining gages for adjustment
+        if len(ix)<=self.mingages:
             # no adjustment
             return raw
-        ratios = obs[ix] / self.get_raw_at_obs(raw, obs)[ix]
+        ratios = obs[ix] / rawatobs[ix]
         # compute adjustment factor
         thesum = np.nansum(ratios)
         num    = len(ratios) - len(np.where(np.isnan(ratios))[0])
@@ -253,6 +422,29 @@ class AdjustMFB(AdjustBase):
             corrfact = 1
         # return adjusted data
         return corrfact*raw
+
+
+def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None):
+    """Identifies valid entries in an array and returns the corresponding indices
+
+    Invalid values are NaN and Inf. Other invalid values can be passed using the
+    isinvalid keyword argument.
+
+    Parameters
+    ----------
+    data : array of floats
+    invalid : list of what is considered an invalid value
+
+    """
+    ix = np.ma.masked_invalid(data).mask
+    for el in isinvalid:
+        ix = np.logical_or(ix, np.ma.masked_where(data==el, data).mask)
+    if not minval==None:
+        ix = np.logical_or(ix, np.ma.masked_less(data, minval).mask)
+    if not maxval==None:
+        ix = np.logical_or(ix, np.ma.masked_greater(data, maxval).mask)
+
+    return np.where(np.logical_not(ix))[0]
 
 
 class Raw_at_obs():
@@ -288,27 +480,11 @@ class Raw_at_obs():
         # get the values of the raw neighbours of obs
         raw_neighbs = raw[self.raw_ix]
         # and summarize the values of these neighbours by using a statistics option
-        return self.statfunc(obs, raw_neighbs)
-
-
-def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
-    """
-    Get the raw values in the neighbourhood of the observation points
-
-    Parameters
-    ----------
-
-    obs_coords :
-
-    raw: Datset of raw values (which shall be adjusted by obs)
-    nnear: number of neighbours which should be considered in the vicinity of each point in obs
-    stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourshood of obs
-
-    """
-    # get the values of the raw neighbours of obs
-    raw_neighbs = _get_neighbours(obs_coords, raw_coords, raw, nnear)
-    # and summarize the values of these neighbours by using a statistics option
-    return _get_statfunc(stat)(raw_neighbs)
+        # (only needed in case nnear > 1, i.e. multiple neighnours per observation location)
+        if raw_neighbs.ndim > 1:
+            return self.statfunc(obs, raw_neighbs)
+        else:
+            return raw_neighbs
 
 
 def _get_neighbours_ix(obs_coords, raw_coords, nnear):
@@ -412,6 +588,26 @@ def best(x, y):
     else:
         axis = 1
     return y[np.arange(len(y)),np.argmin(np.abs(x-y), axis=axis)]
+
+
+def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
+    """
+    Get the raw values in the neighbourhood of the observation points
+
+    Parameters
+    ----------
+
+    obs_coords :
+
+    raw: Datset of raw values (which shall be adjusted by obs)
+    nnear: number of neighbours which should be considered in the vicinity of each point in obs
+    stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourshood of obs
+
+    """
+    # get the values of the raw neighbours of obs
+    raw_neighbs = _get_neighbours(obs_coords, raw_coords, raw, nnear)
+    # and summarize the values of these neighbours by using a statistics option
+    return _get_statfunc(stat)(raw_neighbs)
 
 
 
