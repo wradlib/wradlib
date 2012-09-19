@@ -20,7 +20,7 @@ The main objective of this module is the adjustment of radar-based QPE
 by rain gage observations. However, this module can also be applied to adjust
 satellite rainfall by rain gage observations, remotely sensed soil moisture
 patterns by ground truthing moisture sensors or any spatial point pattern
-which ought to be adjusted by selcted point measurements.
+which could be adjusted by selected point measurements (ground truth).
 
 Basically, we only need two data sources:
 
@@ -69,6 +69,10 @@ class AdjustBase(ipol.IpolBase):
     def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', nnear_idw=6, p_idw=2.):
         self.obs_coords = self._make_coord_arrays(obs_coords)
         self.raw_coords = self._make_coord_arrays(raw_coords)
+        self.nnear_raws = nnear_raws
+        self.stat       = stat
+        self.nnear_idw  = nnear_idw
+        self.p_idw      = p_idw
         self.get_raw_at_obs = Raw_at_obs(self.obs_coords,  self.raw_coords, nnear=nnear_raws, stat=stat)
         self.ip = ipol.Idw(src=self.obs_coords, trg=self.raw_coords, nnearest=nnear_idw, p=p_idw)
     def _check_shape(self, obs, raw):
@@ -77,9 +81,20 @@ class AdjustBase(ipol.IpolBase):
         """
         print 'TODO WARNING: fill in _check_shape method'
 
+
 class AdjustAdd(AdjustBase):
-    """
-    Gage adjustment using an additive error model
+    """Gage adjustment using an additive error model
+
+    First, an instance of AdjustAdd has to be created. Calling this instance then
+    does the actual adjustment. The motovation behind this performance. In case
+    the observation points are always the same for different time steps, the computation
+    of neighbours and invserse distance weights only needs to be performed once.
+
+    AdjustAdd automatically takes care of invalid gage or radar observations (e.g.
+    NaN, Inf or other typical missing data flags such as -9999. However, in case
+    e.g. the observation data contain missing values, the computation of the inverse
+    distance weights needs to be repeated in __call__ which is at the expense of
+    performance.
 
     Parameters
     ----------
@@ -95,6 +110,32 @@ class AdjustAdd(AdjustBase):
         defaults to 6
     p_idw : float
         defaults to 2.
+
+    Examples
+    --------
+    >>> # 1-d example
+    >>> # --------------------------------------------------------------------------
+    >>> # gage and radar coordinates
+    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
+    >>> radar_coords = np.arange(0,101)
+    >>> # true rainfall
+    >>> truth = np.abs(np.sin(0.1*radar_coords))
+    >>> # radar error
+    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
+    >>> errormult= 1.1
+    >>> # radar observation
+    >>> radar = errormult*truth + erroradd
+    >>> # gage observations are assumed to be perfect
+    >>> obs = truth[obs_coords]
+    >>> # adjust the radar observation by additive model
+    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=3)
+    >>> add_adjusted = add_adjuster(obs, radar)
+    >>> line1 = pl.plot(radar_coords, radar, 'b-', label="raw radar")
+    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
+    >>> line3 = pl.plot(radar_coords, add_adjusted, 'r-', label="adjusted by AdjustAdd")
+    >>> pl.legend()
+    >>> pl.show()
+
 
     Notes
     -----
@@ -116,12 +157,39 @@ class AdjustAdd(AdjustBase):
         """
         # checking input shape consistency
         self._check_shape(obs, raw)
+        # radar values at gage locations
+        rawatobs = self.get_raw_at_obs(raw, obs)
+        # check where both gage and radar observations are valid
+        ix = np.intersect1d( _idvalid(obs),  _idvalid(rawatobs))
         # computing the error
-        error = obs - self.get_raw_at_obs(raw, obs)
+        error = obs[ix] - rawatobs[ix]
+        # if not all locations have valid values, we need to recalculate the inverse distance neighbours
+        if not len(ix)==len(obs):
+            ip = ipol.Idw(src=self.obs_coords[ix], trg=self.raw_coords[ix], nnearest=self.nnear_idw, p=self.p_idw)
+        else:
+            ip = self.ip
         # interpolate error field
-        error = self.ip(error)
+        error = ip(error)
         # add error field to raw and cut negatives to zero
         return np.where( (raw + error)<0., 0., raw + error)
+
+
+def _idvalid(data, isinvalid=[-99., 99, -9999., -9999] ):
+    """Identifies valid entries in an array and returns the corresponding indices
+
+    Invalid entries are NaN and Inf. Other invalid entries can be passed using the
+    isinvalid keyword argument.
+
+    Parameters
+    ----------
+    data : array of floats
+    invalid : list of what is considered an invalid value
+
+    """
+    ix = np.ma.masked_invalid(data).mask
+    for el in isinvalid:
+        ix = np.logical_or(ix, np.ma.masked_where(data==el, data).mask)
+    return np.where(np.logical_not(ix))[0]
 
 
 class AdjustMFB(AdjustBase):
@@ -195,6 +263,7 @@ class Raw_at_obs():
         number of neighbours which should be considered in the vicinity of each point in obs
     stat: string
         function name
+
     """
     def __init__(self, obs_coords, raw_coords, nnear=9, stat='median'):
         self.statfunc = _get_statfunc(stat)
@@ -228,6 +297,7 @@ def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
     raw: Datset of raw values (which shall be adjusted by obs)
     nnear: number of neighbours which should be considered in the vicinity of each point in obs
     stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourshood of obs
+
     """
     # get the values of the raw neighbours of obs
     raw_neighbs = _get_neighbours(obs_coords, raw_coords, raw, nnear)
