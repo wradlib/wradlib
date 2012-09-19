@@ -31,6 +31,8 @@ if __name__ == '__main__':
     radar = errormult*truth + erroradd
     # gage observations are assumed to be perfect
     obs = truth[obs_coords]
+    # add a missing value to observations (just for testing)
+    obs[1] = np.nan
     # adjust the radar observation by additive model
     add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=3)
     add_adjusted = add_adjuster(obs, radar)

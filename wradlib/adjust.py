@@ -113,6 +113,9 @@ class AdjustAdd(AdjustBase):
 
     Examples
     --------
+    >>> import wradlib.adjust as adjust
+    >>> import numpy as np
+    >>> import pylab as pl
     >>> # 1-d example
     >>> # --------------------------------------------------------------------------
     >>> # gage and radar coordinates
@@ -127,7 +130,9 @@ class AdjustAdd(AdjustBase):
     >>> radar = errormult*truth + erroradd
     >>> # gage observations are assumed to be perfect
     >>> obs = truth[obs_coords]
-    >>> # adjust the radar observation by additive model
+    >>> # add a missing value to observations (just for testing)
+    >>> obs[1] = np.nan
+    >>> # adjust the radar observation by using the additive model
     >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=3)
     >>> add_adjusted = add_adjuster(obs, radar)
     >>> line1 = pl.plot(radar_coords, radar, 'b-', label="raw radar")
@@ -165,13 +170,14 @@ class AdjustAdd(AdjustBase):
         error = obs[ix] - rawatobs[ix]
         # if not all locations have valid values, we need to recalculate the inverse distance neighbours
         if not len(ix)==len(obs):
-            ip = ipol.Idw(src=self.obs_coords[ix], trg=self.raw_coords[ix], nnearest=self.nnear_idw, p=self.p_idw)
+            print "Missing values: Need to recalculate inverse distance weights..."
+            ip = ipol.Idw(src=self.obs_coords[ix], trg=self.raw_coords, nnearest=self.nnear_idw, p=self.p_idw)
         else:
             ip = self.ip
         # interpolate error field
-        error = ip(error)
+        iperror = ip(error)
         # add error field to raw and cut negatives to zero
-        return np.where( (raw + error)<0., 0., raw + error)
+        return np.where( (raw + iperror)<0., 0., raw + iperror)
 
 
 def _idvalid(data, isinvalid=[-99., 99, -9999., -9999] ):
