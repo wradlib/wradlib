@@ -17,7 +17,7 @@ if __name__ == '__main__':
     import numpy as np
     import pylab as pl
 
-    # 1-d example
+    # 1-d example including all available adjustment methods
     # --------------------------------------------------------------------------
     # gage and radar coordinates
     obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
@@ -34,11 +34,19 @@ if __name__ == '__main__':
     # add a missing value to observations (just for testing)
     obs[1] = np.nan
     # adjust the radar observation by additive model
-    add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=3)
+    add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
     add_adjusted = add_adjuster(obs, radar)
+    # adjust the radar observation by multiplicative model
+    mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
+    mult_adjusted = mult_adjuster(obs, radar,0.)
+    # adjust the radar observation by MFB
+    mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
+    mfb_adjusted = mfb_adjuster(obs, radar,0.)
     line1 = pl.plot(radar_coords, radar, 'b-', label="raw radar")
     line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    line3 = pl.plot(radar_coords, add_adjusted, 'r-', label="adjusted by AdjustAdd")
+    line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
+    line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
+    line4 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
     pl.legend()
     pl.show()
 
