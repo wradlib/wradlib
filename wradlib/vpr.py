@@ -14,7 +14,7 @@
 Vertical Profile of Reflectivity (VPR)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-UNDER DEVELOPMENT
+*UNDER DEVELOPMENT*
 
 Precipitation is 3-dimensional in space. The vertical distribution of precipitation
 (and thus reflectivity) is typically non-uniform. As the height of the radar beam increases with the distance
