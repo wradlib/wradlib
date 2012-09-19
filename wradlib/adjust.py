@@ -177,7 +177,7 @@ class AdjustAdd(AdjustBase):
 def _idvalid(data, isinvalid=[-99., 99, -9999., -9999] ):
     """Identifies valid entries in an array and returns the corresponding indices
 
-    Invalid entries are NaN and Inf. Other invalid entries can be passed using the
+    Invalid values are NaN and Inf. Other invalid values can be passed using the
     isinvalid keyword argument.
 
     Parameters
