@@ -1,0 +1,95 @@
+# This file is a modified version of the original OPERA BUFT makefile.gcc in order to adapt the makefile to MinGW on Windows
+# Changes by Maik Heistermann are documented below
+# Last update on 5/7/2012
+# Contact: maik.heistermann@uni-potsdam.de
+
+# ---------------------------------------------------------------------------
+# generic and debugging C compiler flags
+
+CFLAGSGEN = -Wall -ansi -pedantic
+CFLAGSDB = 
+
+# ---------------------------------------------------------------------------
+# C compiler and linker definitions
+
+CC       = gcc
+DEFS     = 
+CFLAGS   = $(DEFS) $(CFLAGSGEN) $(CFLAGSDB)
+LOPTS    =
+# change by Maik Heistermann as compared to the linux gcc makefile: the -lz option was removed 
+LFLAGS   = $(LOPTS) -lm
+
+# ---------------------------------------------------------------------------
+# library targets and sources
+
+SRCS    = bufr.c desc.c bitio.c rlenc.c bufr_io.c encbufr.c decbufr.c\
+		  apisamp.c apisample.c apisample_float.c bufr2wradlib.c
+OBJSLIB = bufr.o desc.o bitio.o rlenc.o
+# change by Maik Heistermann as compared to the linux gcc makefile: zdll.lib was added
+OBJS    = $(OBJSLIB) bufr_io.o zdll.lib
+# change by Maik Heistermann as compared to the linux gcc makefile: renamed from .a to .lib 
+BUFRLIB = libbufr.lib
+
+# ---------------------------------------------------------------------------
+# default rule
+
+default: encbufr decbufr
+	@echo Ready.....
+
+# change by Maik Heistermann as compared to the linux gcc makefile: added .exe extensions 
+clean:
+	-rm -f *.o
+	-rm -f encbufr.exe decbufr.exe apisamp_old.exe apisample.exe apisample_float.exe bufr2wradlib.dll $(BUFRLIB)
+
+debug:
+	make -f makefile.gcc CFLAGSDB="-DVERBOSE -g"
+	make -f makefile.gcc CFLAGSDB="-DVERBOSE -g" samples
+
+lib: $(BUFRLIB)
+
+debuglib: 
+	make -f makefile.gcc CFLAGSDB="-DVERBOSE" lib
+
+samples: apisamp apisample apisample_float
+
+$(BUFRLIB): $(OBJSLIB)
+	$(AR) -r $(BUFRLIB) $(OBJSLIB)
+
+# change by Maik Heistermann as compared to the linux gcc makefile: added target for building DLLs  	
+dll: bufr2wradlib.dll
+	@echo Ready...
+
+# ---------------------------------------------------------------------------
+# executables
+#
+
+# change by Maik Heistermann as compared to the linux gcc makefile: added .exe extensions 
+encbufr: encbufr.o $(OBJS)
+	$(CC) encbufr.o $(OBJS) -o encbufr.exe $(LFLAGS)
+
+decbufr: decbufr.o $(OBJS)
+	$(CC) decbufr.o $(OBJS) -o decbufr.exe $(LFLAGS)
+
+apisamp: apisamp.o $(OBJS)
+	$(CC) apisamp.o $(OBJS) -o apisamp_old.exe $(LFLAGS)
+
+apisample: apisample.o $(OBJS)
+	$(CC) apisample.o $(OBJS) -o apisample.exe $(LFLAGS)
+
+apisample_float: apisample_float.o $(OBJS)
+	$(CC) apisample_float.o $(OBJS) -o apisample_float.exe $(LFLAGS)
+
+# change by Maik Heistermann as compared to the linux gcc makefile: added rules for building DLLs 
+# ---------------------------------------------------------------------------
+# DLLs
+#
+bufr2wradlib.dll: bufr2wradlib.o $(OBJS)
+	$(CC) -shared -o bufr2wradlib.dll bufr2wradlib.o $(OBJS) $(LFLAGS) -DBUILD_DLL
+
+#bufr2wradlib.dll: $(OBJS)
+#	$(CC) -c bufr2wradlib.c $(OBJS) -DBUILD_DLL
+#	$(CC) -shared -o bufr2wradlib.dll bufr2wradlib.o $(OBJS) -Wl,--out-implib, bufr2wradlib.a
+
+
+# ---------------------------------------------------------------------------
+# DO NOT DELETE THIS LINE -- make depend depends on it.

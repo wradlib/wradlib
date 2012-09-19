@@ -1,0 +1,67 @@
+# ---------------------------------------------------------------------------
+# generic and debugging C compiler flags
+
+CFLAGSGEN =
+CFLAGSDB = 
+
+# ---------------------------------------------------------------------------
+# C compiler and linker definitions
+
+CC       = cc
+DEFS     = 
+CFLAGS   = $(DEFS) $(CFLAGSGEN) $(CFLAGSDB)
+LOPTS    = 
+LFLAGS   = $(LOPTS) -lm -lz
+
+# ---------------------------------------------------------------------------
+# library targets and sources
+
+SRCS    = bufr.c desc.c bitio.c rlenc.c bufr_io.c encbufr.c decbufr.c\
+		  apisamp.c apisample.c apisample_float.c
+OBJSLIB = bufr.o desc.o bitio.o rlenc.o
+OBJS    = $(OBJSLIB) bufr_io.o
+BUFRLIB = libbufr.a
+
+# ---------------------------------------------------------------------------
+# default rule
+
+default: encbufr decbufr
+	@echo Ready.....
+
+clean:
+	-rm -f *.o
+	-rm -f encbufr decbufr apisamp_old apisample apisample_float $(BUFRLIB)
+
+debug:
+	make -f makefile.gcc CFLAGSDB="-DVERBOSE -g"
+	make -f makefile.gcc CFLAGSDB="-DVERBOSE -g" samples
+
+lib: $(BUFRLIB)
+
+debuglib: 
+	make -f makefile.gcc CFLAGSDB="-DVERBOSE" lib
+
+samples: apisamp apisample apisample_float
+
+$(BUFRLIB): $(OBJSLIB)
+	$(AR) -r $(BUFRLIB) $(OBJSLIB)
+
+# ---------------------------------------------------------------------------
+# executables
+#
+
+encbufr: encbufr.o $(OBJS)
+	$(CC) encbufr.o $(OBJS) -o encbufr $(LFLAGS)
+
+decbufr: decbufr.o $(OBJS)
+	$(CC) decbufr.o $(OBJS) -o decbufr $(LFLAGS)
+
+apisamp: apisamp.o $(OBJS)
+	$(CC) apisamp.o $(OBJS) -o apisamp_old $(LFLAGS)
+apisample: apisample.o $(OBJS)
+	$(CC) apisample.o $(OBJS) -o apisample $(LFLAGS)
+apisample_float: apisample_float.o $(OBJS)
+	$(CC) apisample_float.o $(OBJS) -o apisample_float $(LFLAGS)
+
+# ---------------------------------------------------------------------------
+# DO NOT DELETE THIS LINE -- make depend depends on it.

@@ -5,6 +5,7 @@ Library Reference
    :maxdepth: 1
 
    io
+   bufr
    trafo
    zr
    georef

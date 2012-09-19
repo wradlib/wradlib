@@ -194,6 +194,79 @@ def __pol2latlon(rng, az, sitecoords, re=6370040):
     return 90.-np.rad2deg(m), thea+np.rad2deg(np.where(easterly,g,-g))
 
 
+
+def polar2latlonalt(r, az, elev, sitecoords, re=6370040.):
+    """Transforms polar coordinates to lat/lon/altitude coordinates.
+
+    Explicitely accounts for the beam's elevation angle and for the altitude of the radar location.
+
+    This is an alternative implementation based on VisAD code (see
+    http://www.ssec.wisc.edu/visad-docs/javadoc/visad/bom/Radar3DCoordinateSystem.html#toReference%28float[][]%29 and
+    http://www.ssec.wisc.edu/~billh/visad.html ).
+
+    VisAD code has been translated to Python from Java.
+
+    Nomenclature tries to stick to VisAD code for the sake of comparibility, hwoever, names of
+    arguments are the same as for polar2latlon...
+
+    Parameters
+    ----------
+    r : array
+        array of ranges [m]
+    az : array
+        array of azimuth angles containing values between 0° and 360°.
+        These are assumed to start with 0° pointing north and counted positive
+        clockwise!
+    sitecoords : a sequence of three floats
+        the lat / lon coordinates of the radar location and its altitude a.m.s.l. (in meters)
+        if sitecoords is of length two, altitude is assumed to be zero
+    re : float
+        earth's radius [m]
+
+    Returns
+    -------
+    output : a tuple of three arrays (latitudes, longitudes, altitudes)
+
+    """
+    centlat = sitecoords[0]
+    centlon = sitecoords[1]
+    try:
+        centalt = sitecoords[2]
+    except:
+        centalt = 0.
+    # local earth radius
+    re = re + centalt
+
+    cosaz = np.cos( np.deg2rad(az) )
+    sinaz = np.sin( np.deg2rad(az) )
+    # assume azimuth = 0 at north, then clockwise
+    coselev = np.cos( np.deg2rad(elev) )
+    sinelev = np.sin( np.deg2rad(elev) )
+    rp = np.sqrt(re * re + r * r + 2.0 * sinelev * re * r)
+
+    # altitudes
+    alts = rp - re + centalt
+
+    angle = np.arcsin(coselev * r / rp) # really sin(elev+90)
+    radp = re * angle
+    lats = centlat + cosaz * radp / _latscale()
+    lons = centlon + sinaz * radp / _lonscale(centlat)
+
+    return lats, lons, alts
+
+
+def _latscale(re=6370040.):
+    """Return meters per degree latitude assuming spherical earth
+    """
+    return 2*np.pi*re / 360.
+
+
+def _lonscale(lat, re=6370040.):
+    """Return meters per degree longitude assuming spherical earth
+    """
+    return (2*np.pi*re / 360.) * np.cos( np.deg2rad(lat) )
+
+
 def centroid2polyvert(centroid, delta):
     """Calculates the 2-D Polygon vertices necessary to form a rectangular polygon around the centroid's coordinates.
 
@@ -468,6 +541,51 @@ def _get_azimuth_resolution(x):
         print 'The resolution of the azimuth angle array is ambiguous.'
         exit()
     return res[0]
+
+
+def create_projstr(projname, **kwargs):
+    """Supports the constrution of proj.4 projection strings
+
+    Currently, the following projection names are supported:
+
+    **"aeqd": Azimuthal Equidistant**
+    needs the following keyword arguments: *lat_0*=Latitude at projection center,
+    *lon_0*=Longitude at projection center, *x_0*=False Easting (also known as x-offset),
+    *y_0*=False Northing (also known as y-offset)
+
+    **"gk" : Gauss-Krueger (for Germany)**
+    only needs keyword argument *number* (number of the Gauss-Krueger strip)
+
+    Parameters
+    ----------
+    projname : string (proj.4 projection acronym)
+    kwargs : depends on projname - see above!
+
+    Returns
+    -------
+    output : string (a proj.4 projection string)
+
+    Examples
+    --------
+    # Gauss-Krueger 2nd strip
+    print create_projstr("gk", number=2)
+
+    """
+    if projname=="aeqd":
+        # Azimuthal Equidistant
+        projstr = """+proj=aeqd  +lat_0=%s +lon_0=%s +x_0=%s +y_0=%s""" \
+                  % (kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"])
+    elif projname=="gk":
+        # Gauss-Krueger
+        if kwargs.has_key("number"):
+            projstr = """+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=%d +y_0=0
+            +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7
+            +units=m +no_defs""" % (kwargs["number"] * 1000000 + 500000)
+    else:
+        print "No support for projection %r, yet." % projname
+        print "You need to create projection string by hand..."
+        sys.exit(1)
+    return projstr
 
 
 def project(latc, lonc, projstr, inverse=False):

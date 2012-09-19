@@ -14,22 +14,37 @@
 Raw Data I/O
 ^^^^^^^^^^^^
 
+Please have a look at the tutorial :doc:`tutorial_supported_formats` for an introduction
+on how to deal with different file formats.
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
 
-   getDXTimestamp
    readDX
    writePolygon2Text
    read_EDGE_netcdf
+   read_BUFR
+   read_OPERA_hdf5
+   read_GAMIC_hdf5
+   read_RADOLAN_composite
 
 """
 
+# standard libraries
+
+import sys
 import re
-import numpy as np
-import netCDF4 as nc
 import datetime as dt
 import pytz
+
+# site packages
+import h5py
+import numpy as np
+import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+
+# wradib modules
+import wradlib.bufr as bufr
 
 
 # current DWD file naming pattern (2008) for example:
@@ -46,8 +61,7 @@ def _getTimestampFromFilename(filename):
 
 
 def getDXTimestamp(name, tz=pytz.utc):
-    """converts a dx-timestamp (as part of a dx-product filename) to a python
-    datetime.object.
+    """Converts a dx-timestamp (as part of a dx-product filename) to a python datetime.object.
 
     Parameters
     ----------
@@ -336,9 +350,417 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
 
     return data, attrs
 
+def read_BUFR(buffile):
+    """Main BUFR interface: Decodes BUFR file and returns metadata and values
+
+    The actual function refererence is contained in :doc:`wradlib.bufr.decodebufr`.
+
+    """
+    return bufr.decodebufr(buffile)
+
+
+def parse_DWD_quant_composite_header(header):
+    """Parses the ASCII header of a DWD quantitative composite file
+
+    Parameters
+    ----------
+    header : string (ASCII header)
+
+    Returns
+    -------
+    output : dictionary of metadata retreived from file header
+
+    """
+    # empty container
+    out = {}
+    # RADOLAN product type def
+    out["producttype"] = header[0:2]
+    # file time stamp as Python datetime object
+    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00", "%d%H%M%y%m%S")
+    # radar location ID (always 10000 for composites)
+    out["radarid"] = header[8:13]
+    pos_VS = header.find("VS")
+    pos_SW = header.find("SW")
+    pos_PR = header.find("PR")
+    pos_INT = header.find("INT")
+    pos_GP = header.find("GP")
+    pos_MS = header.find("MS")
+    if pos_VS > -1:
+        out["maxrange"] = {0:"100 km and 128 km (mixed)", 1: "100 km", 2:"128 km" }[int(header[(pos_VS+2):pos_SW])]
+    else:
+        out["maxrange"] = "100 km"
+    out["radolanversion"] = header[(pos_SW+2):pos_PR]
+    out["intervalseconds"] = int(header[(pos_INT+3):pos_GP])*60
+    dimstrings = header[(pos_GP+2):pos_MS].strip().split("x")
+    out["nrow"] = int(dimstrings[0])
+    out["ncol"] = int(dimstrings[1])
+    locationstring = header[(pos_MS+2):].strip().split("<")[1].strip().strip(">")
+    out["radarlocations"] = locationstring.split(",")
+    return out
+
+
+def read_RADOLAN_composite(fname):
+    """Read quantitative radar composite format of the German Weather Service
+
+    The quantitative composite format of the DWD (German Weather Service) was
+    established in the course of the `RADOLAN project <http://www.dwd.de/radolan>`
+    and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG and
+    many, many more (see format description on the project homepage, [DWD2009).
+
+    At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
+    resolution and in polar-stereographic projection.
+
+    Parameters
+    ----------
+    fname : path to the composite file
+
+    Returns
+    -------
+    output : tuple of two items (data, attrs)
+        - data : numpy array of shape (number of rows, number of columns)
+        - attrs : dictionary of metadata information from the file header
+
+    References
+    ----------
+
+    .. [DWD2009] Germany Weather Service (DWD), 2009: RADLOAN/RADVO-OP -
+        Beschreibung des Kompositformats, Version 2.2.1. Offenbach, Germany,
+        URL: http://dwd.de/radolan (in German)
+
+    """
+    result = []
+    mask = 4095 # max value integer
+    NODATA = -9999
+    header = '' # header string for later processing
+    # open file handle
+    f = open(fname, 'rb')
+    # read header
+    while True :
+        mychar = f.read(1)
+        if mychar == chr(3) :
+            break
+        header = header + mychar
+    attrs = parse_DWD_quant_composite_header(header)
+    attrs["nodataflag"] = -9999
+    if not attrs["radarid"]=="10000":
+        print "WARNING: You are using this function for a non composite file"
+        print "It might work...but please check the validity of the results"
+    if attrs["producttype"] == "RX":
+        # NOT TESTED, YET
+        # read the actual data
+        indat = f.read(attrs["nrow"]*attrs["ncol"])
+        # convert to 16-bit integers
+        arr = np.frombuffer(indat, np.int8)
+        arr = np.where(arr==250,NODATA,arr)
+        clutter = np.where(arr==249)[0]
+    else:
+        # read the actual data
+        indat = f.read(attrs["nrow"]*attrs["ncol"]*2)
+        # convert to 16-bit integers
+        arr = np.frombuffer(indat, np.int16)
+        # evaluate bits 14, 15 and 16
+        nodata   = np.where(arr & int("10000000000000",2))
+        negative = np.where(arr & int("100000000000000",2))
+        clutter  = np.where(arr & int("1000000000000000",2))
+        # mask out the last 4 bits
+        arr = arr & mask
+        # consider negative flag if product is RD (differences from adjustment)
+        if attrs["producttype"]=="RD":
+            # NOT TESTED, YET
+            arr[negative] = -arr[negative]
+        # convert no data to NaN
+        ### This is the old way
+        ##arr = np.where(arr==2500,np.nan,arr)
+        arr[nodata] = NODATA
+    # bring it into shape
+    arr = arr.reshape( (attrs["nrow"], attrs["ncol"]) )
+##    arr = np.flipud(arr)
+    # append clutter mask
+    attrs['cluttermask'] = clutter
+
+    return arr, attrs
+
+def browse_hdf5_group(grp):
+    """Browses one hdf5 file level
+    """
+    pass
+
+
+def read_OPERA_hdf5(fname):
+    """Reads hdf5 files according to OPERA conventions
+
+    Please refer to the `OPERA data model documentation <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
+    in order to understand how an hdf5 file is organized that conforms to the OPERA
+    ODIM_H5 conventions.
+
+    In contrast to other file readers under wradlib.io, this function will *not* return
+    a two item tuple with (data, metadata). Instead, this function returns ONE
+    dictionary that contains all the file contents - both data and metadata. The keys
+    of the output dictionary conform to the Group/Subgroup directory branches of
+    the original file. If the end member of a branch (or path) is "data", then the
+    corresponding item of output dictionary is a numpy array with actual data. Any other
+    end member (either *how*, *where*, and *what*) will contain the meta information
+    applying to the coresponding level of the file hierarchy.
+
+    Parameters
+    ----------
+    fname : string (a hdf5 file path)
+
+    Returns
+    -------
+    output : a dictionary that contains both data and metadata according to the
+              original hdf5 file structure
+
+    """
+    f = h5py.File(fname, "r")
+    # try verify OPERA conventions
+    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
+        print "File is not organized according to OPERA conventions (ODIM_H5)..."
+        print "Expected the upper level subgroups to be: dataset1, how, what', where"
+        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
+        sys.exit(1)
+
+    # now we browse through all Groups and Datasets and store the info in one dictionary
+    fcontent = {}
+    def filldict(x, y):
+        if isinstance(y, h5py.Group):
+            if len(y.attrs) > 0:
+                fcontent[x] = dict(y.attrs)
+        elif isinstance(y, h5py.Dataset):
+            fcontent[x] = np.array(y)
+    f.visititems(filldict)
+
+    f.close()
+
+    return fcontent
+
+
+def read_gamic_scan_attributes(scan, scan_type, range_lim):
+    """Read attributes from one particular scan from a GAMIC hdf5 file
+
+    Provided by courtesy of Kai Muehlbauer (University of Bonn).
+
+    Parameters
+    ----------
+    scan : scan object from hdf5 file
+    scan_type : string
+        "PPI" (plain position indicator) or "RHI" (radial height indicator)
+    range_lim : float
+        range limitation (meters) of the returned radar data
+
+    Returns
+    -------
+    sattrs  : dictionary of scan attributes
+
+    """
+
+    # placeholder for attributes
+    sattrs = {}
+
+    # link to scans 'how' hdf5 group
+    sg1 = scan['how']
+
+    # get scan attributes
+    for attrname in list(sg1.attrs):
+        sattrs[attrname] = sg1.attrs.get(attrname)
+    sattrs['bin_range'] = sattrs['range_step'] * sattrs['range_samples']
+
+    # get scan header
+    ray_header = scan['ray_header']
+
+    # az, el, zero_index for PPI scans
+    if scan_type == 'PVOL':
+        azi_start = ray_header['azimuth_start']
+        azi_stop = ray_header['azimuth_stop']
+         # Azimuth corresponding to 1st ray
+        zero_index = np.where(azi_stop < azi_start)
+        azi_stop[zero_index[0]] += 360
+        zero_index = zero_index[0] + 1
+        az = (azi_start+azi_stop)/2
+        az = np.roll(az,-zero_index, axis=0)
+        az = np.round(az, 1)
+        el = sg1.attrs.get('elevation')
+
+    # az, el, zero_index for RHI scans
+    if scan_type == 'RHI':
+        ele_start = ray_header['elevation_start']
+        ele_stop = ray_header['elevation_stop']
+        # Elevation corresponding to 1st ray
+        zero_index = np.where(ele_stop > ele_start)
+        zero_index = zero_index[0] - 1
+        el = (ele_start+ele_stop)/2
+        el = np.round(el, 1)
+        el = el[zero_index[0]:]
+        az = sg1.attrs.get('azimuth')
+
+    # save zero_index (first ray) to scan attributes
+    sattrs['zero_index'] = zero_index[0]
+
+    # create range array
+    r = np.arange(sattrs['bin_range'], sattrs['bin_range']*sattrs['bin_count']+sattrs['bin_range'], sattrs['bin_range'])
+    if range_lim and range_lim / sattrs['bin_range'] <= r.shape[0]:
+        r = r[:range_lim / sattrs['bin_range']]
+
+    # save variables to scan attributes
+    sattrs['az'] = az
+    sattrs['el'] = el
+    sattrs['r']  = r
+    sattrs['Time'] = sattrs.pop('timestamp')
+    sattrs['max_range'] = r[-1]
+
+    return sattrs
+
+
+def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
+    """Read data from one particular scan from GAMIC hdf5 file
+
+    Provided by courtesy of Kai Muehlbauer (University of Bonn).
+
+    Parameters
+    ----------
+    scan : scan object from hdf5 file
+    scan_type : string
+        "PPI" (plain position indicator) or "RHI" (radial height indicator)
+    wanted_moments  : sequence of strings containing upper case names of moment to be returned
+    range_lim : float
+        range limitation (meters) of the returned radar data
+
+    Returns
+    -------
+    data : dictionary of moment data (numpy arrays)
+    sattrs : dictionary of scan attributes
+
+    """
+
+
+    # placeholder for data and attrs
+    data = {}
+    sattrs =  {}
+
+    # try to read wanted moments
+    for mom in list(scan):
+        if 'moment' in mom:
+            sg2 = scan[mom]
+            #sg2_attr = list(sg2.attrs)
+            #print(sg2_attr)
+            actual_moment = sg2.attrs.get('moment').upper()
+            if actual_moment in wanted_moments or wanted_moments == 'all':
+                # read attributes only once
+                if not sattrs:
+                    sattrs = read_gamic_scan_attributes(scan, scan_type, range_lim)
+                mdata = sg2[...]
+                #print(data.size)
+                dyn_range_max = sg2.attrs.get('dyn_range_max')
+                dyn_range_min = sg2.attrs.get('dyn_range_min')
+                bin_format = sg2.attrs.get('format')
+                if bin_format == 'UV8':
+                    div = 256.0
+                else:
+                    div = 65536.0
+                mdata = dyn_range_min + mdata*(dyn_range_max-dyn_range_min)/div
+
+                if scan_type == 'PVOL':
+                    # rotate accordingly
+                    mdata = np.roll(mdata,-1 * sattrs['zero_index'], axis=0)
+
+                if scan_type == 'RHI':
+                    # remove first zero angles
+                    mdata = mdata[sattrs['zero_index']:,:]
+
+                # Limiting the returned range according to range_lim
+                if range_lim and range_lim / sattrs['bin_range'] <= mdata.shape[1]:
+                    mdata = mdata[:,:range_lim / sattrs['bin_range']]
+
+                data[actual_moment] = mdata
+                #data.append(mdata)
+
+    return data, sattrs
+
+
+def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wanted_moments = 'UH'):
+    """Data reader for hdf5 files produced by the commercial GAMIC Enigma V3 MURAN software
+
+    Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
+    homepage for further info (http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3).
+
+    Parameters
+    ----------
+    filename : path of the gamic hdf5 file
+    scan_type : string
+        "PPI" (plain position indicator) or "RHI" (radial height indicator)
+    range_lim : float
+        range limitation (meters) of the returned radar data (100000. by default)
+    elevation_angle : sequence of strings of elevation_angle(s) of scan (only needed for PPI)
+    moments : sequence of strings of moment name(s)
+
+    Returns
+    -------
+    data : dictionary of scan and moment data (numpy arrays)
+    attrs : dictionary of attributes
+
+    """
+
+    # read the data from file
+    f = h5py.File(filename,'r')
+
+    # placeholder for attributes and data
+    attrs =  {}
+    vattrs = {}
+    data = {}
+
+    #get scan_type (PVOL or RHI)
+    scan_type = f['what'].attrs.get('object')
+
+    # single or volume scan
+    if scan_type == 'PVOL':
+        # loop over 'main' hdf5 groups (how, scanX, what, where)
+        for n in list(f):
+            if 'scan' in n:
+                g = f[n]
+                sg1 = g['how']
+
+                # get scan elevation
+                el = sg1.attrs.get('elevation')
+                el = str(round(el,2))
+
+                # try to read scan data and attrs if wanted elevations are found
+                if (el in wanted_elevations) or (wanted_elevations == 'all'):
+                    sdata, sattrs = read_gamic_scan(scan = g, scan_type = scan_type, wanted_moments = wanted_moments, range_lim = range_lim)
+                    if sdata:
+                        data[n.upper()] = sdata
+                    if sattrs:
+                        attrs[n.upper()] = sattrs
+
+    # single rhi scan
+    elif scan_type == 'RHI':
+        # loop over 'main' hdf5 groups (how, scanX, what, where)
+	for n in list(f):
+            if 'scan' in n:
+                g = f[n]
+                # try to read scan data and attrs
+                sdata, sattrs = read_gamic_scan(scan = g, scan_type = scan_type, wanted_moments = wanted_moments, range_lim = range_lim)
+                if sdata:
+                    data[n.upper()] = sdata
+                if sattrs:
+                    attrs[n.upper()] = sattrs
+
+    # collect volume attributes if wanted data is available
+    if data:
+        vattrs['Latitude'] = f['where'].attrs.get('lat')
+        vattrs['Longitude'] = f['where'].attrs.get('lon')
+        vattrs['Height'] = f['where'].attrs.get('height')
+        # check wether its useful to implement that feature
+        #vattrs['sitecoords'] = (vattrs['Latitude'], vattrs['Longitude'], vattrs['Height'])
+        attrs['VOL'] = vattrs
+
+    f.close()
+
+    return data, attrs
+
 
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
+
     import doctest
     doctest.testmod()
