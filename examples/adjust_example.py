@@ -112,6 +112,6 @@ if __name__ == '__main__':
     pl.title('Scatter plot adjusted vs. obs')
 
     pl.show()
-    pl.close()
+
 
 
