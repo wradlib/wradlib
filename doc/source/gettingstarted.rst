@@ -4,7 +4,7 @@ Getting Started
 Installing Python
 -----------------
 
-In order to run *wradlib*, you need to have a Python interpreter installed on your local computer. *wradlib* will be guaranteed to work with a particular Python version, however, we will not guarantee upward or downward compatibility at the moment. **The current version of wradlib is designed to be used Python 2.7, but most features are also known to work under Python 2.6**.
+In order to run *wradlib*, you need to have a Python interpreter installed on your local computer. *wradlib* will be guaranteed to work with a particular Python version, however, we will not guarantee upward or downward compatibility at the moment. **The current version of wradlib is designed to be used with Python 2.7, but most features are also known to work under Python 2.6**.
 
 *wradlib* was not designed to be a self-contained library. Besides extensive use of Numpy and Scipy, you *might* need to install additional libraries before you can use *wradlib*. See `Dependencies`_ for a full list of dependencies. Under **Linux**, the Python interpreter is usually pre-installed and installation of additional packages as well as dependency management is supposed to be easy. 
 
@@ -56,6 +56,8 @@ For Windows users: If possible, we will link binary installer files for the libr
    python setup.py install
 
 - basemap (*): Download installer at http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.2/
+
+- h5py
 
 - matplotlib
 

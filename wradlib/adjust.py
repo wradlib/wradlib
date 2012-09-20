@@ -45,6 +45,7 @@ from scipy.spatial import cKDTree
 
 # wradlib modules
 import wradlib.ipol as ipol
+import wradlib.util as util
 
 
 class AdjustBase(ipol.IpolBase):
@@ -182,7 +183,7 @@ class AdjustAdd(AdjustBase):
         # radar values at gage locations
         rawatobs = self.get_raw_at_obs(raw, obs)
         # check where both gage and radar observations are valid
-        ix = np.intersect1d( _idvalid(obs),  _idvalid(rawatobs))
+        ix = np.intersect1d( util._idvalid(obs),  util._idvalid(rawatobs))
         # check whether enough gages remain for adjustment
         if len(ix)<=self.mingages:
             # no adjustment
@@ -302,7 +303,7 @@ class AdjustMultiply(AdjustBase):
         # radar values at gage locations
         rawatobs = self.get_raw_at_obs(raw, obs)
         # check where both gage and radar observations are valid
-        ix = np.intersect1d( _idvalid(obs, minval=minval),  _idvalid(rawatobs, minval=minval))
+        ix = np.intersect1d( util._idvalid(obs, minval=minval),  util._idvalid(rawatobs, minval=minval))
         # check whether enough gages remain for adjustment
         if len(ix)<=self.mingages:
             # no adjustment
@@ -409,7 +410,7 @@ class AdjustMFB(AdjustBase):
         # computing the multiplicative error for points of significant rainfall
         rawatobs = self.get_raw_at_obs(raw, obs)
         # check where both gage and radar observations are valid
-        ix = np.intersect1d( _idvalid(obs, minval=minval),  _idvalid(rawatobs, minval=minval))
+        ix = np.intersect1d( util._idvalid(obs, minval=minval),  util._idvalid(rawatobs, minval=minval))
         # check if there are enough remaining gages for adjustment
         if len(ix)<=self.mingages:
             # no adjustment
@@ -425,29 +426,6 @@ class AdjustMFB(AdjustBase):
             corrfact = 1
         # return adjusted data
         return corrfact*raw
-
-
-def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None):
-    """Identifies valid entries in an array and returns the corresponding indices
-
-    Invalid values are NaN and Inf. Other invalid values can be passed using the
-    isinvalid keyword argument.
-
-    Parameters
-    ----------
-    data : array of floats
-    invalid : list of what is considered an invalid value
-
-    """
-    ix = np.ma.masked_invalid(data).mask
-    for el in isinvalid:
-        ix = np.logical_or(ix, np.ma.masked_where(data==el, data).mask)
-    if not minval==None:
-        ix = np.logical_or(ix, np.ma.masked_less(data, minval).mask)
-    if not maxval==None:
-        ix = np.logical_or(ix, np.ma.masked_greater(data, maxval).mask)
-
-    return np.where(np.logical_not(ix))[0]
 
 
 class Raw_at_obs():

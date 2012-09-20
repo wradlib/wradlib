@@ -155,6 +155,28 @@ def from_to(tstart, tend, tdelta):
     return tsteps
 
 
+def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None):
+    """Identifies valid entries in an array and returns the corresponding indices
+
+    Invalid values are NaN and Inf. Other invalid values can be passed using the
+    isinvalid keyword argument.
+
+    Parameters
+    ----------
+    data : array of floats
+    invalid : list of what is considered an invalid value
+
+    """
+    ix = np.ma.masked_invalid(data).mask
+    for el in isinvalid:
+        ix = np.logical_or(ix, np.ma.masked_where(data==el, data).mask)
+    if not minval==None:
+        ix = np.logical_or(ix, np.ma.masked_less(data, minval).mask)
+    if not maxval==None:
+        ix = np.logical_or(ix, np.ma.masked_greater(data, maxval).mask)
+
+    return np.where(np.logical_not(ix))[0]
+
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
