@@ -186,6 +186,7 @@ class AdjustAdd(AdjustBase):
         # check whether enough gages remain for adjustment
         if len(ix)<=self.mingages:
             # no adjustment
+            print "Not enough gages for adjustment...returning unadjusted data."
             return raw
         # computing the error
         error = obs[ix] - rawatobs[ix]
@@ -305,6 +306,7 @@ class AdjustMultiply(AdjustBase):
         # check whether enough gages remain for adjustment
         if len(ix)<=self.mingages:
             # no adjustment
+            print "Not enough gages for adjustment...returning unadjusted data."
             return raw
         # computing the error
         error = obs[ix] / rawatobs[ix]
@@ -411,6 +413,7 @@ class AdjustMFB(AdjustBase):
         # check if there are enough remaining gages for adjustment
         if len(ix)<=self.mingages:
             # no adjustment
+            print "Not enough gages for adjustment...returning unadjusted data."
             return raw
         ratios = obs[ix] / rawatobs[ix]
         # compute adjustment factor
