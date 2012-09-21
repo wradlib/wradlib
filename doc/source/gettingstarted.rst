@@ -69,7 +69,7 @@ For Windows users: If possible, we will link binary installer files for the libr
 
 - pylab
 
-- pyproj (*): Download installer at code.google.com/p/pyproj/downloads
+- pyproj (*): Download installer at http://code.google.com/p/pyproj/downloads
 
 - scipy
 
