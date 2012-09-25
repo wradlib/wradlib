@@ -37,8 +37,8 @@ if __name__ == '__main__':
 ##        # This should be used if the shared BUFR library is functional
 ##        sub.call("mingw32-make -f makefile_mingw.gcc dll")
     elif "linux" in os.sys.platform:
-        retval = sub.call("make -f makefile.gcc clean")
-        retval = sub.call("make -f makefile.gcc decbufr")
+        retval = sub.call(["make", "-f", "makefile.gcc", "clean"])
+        retval = sub.call(["make", "-f", "makefile.gcc", "decbufr"])
 ##        # This should be used if the shared BUFR library is functional
 ##        sub.call("make -f makefile.gcc shlib")
     else:
