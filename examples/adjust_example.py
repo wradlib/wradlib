@@ -11,11 +11,13 @@
 #!/usr/bin/env python
 
 import wradlib.adjust as adjust
+import wradlib.verify as verify
 
 if __name__ == '__main__':
 
     import numpy as np
     import pylab as pl
+
 
     # 1-d example including all available adjustment methods
     # --------------------------------------------------------------------------
@@ -23,35 +25,66 @@ if __name__ == '__main__':
     obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
     radar_coords = np.arange(0,101)
     # true rainfall
-    truth = np.abs(np.sin(0.1*radar_coords))
+    truth = np.abs(1.5+np.sin(0.075*radar_coords)) + np.random.uniform(-0.1,0.1,len(radar_coords))
     # radar error
-    erroradd = np.random.uniform(0,0.5,len(radar_coords))
-    errormult= 1.1
+    erroradd = 0.7*np.sin(0.2*radar_coords+10.)
+    errormult = 0.75 + 0.015*radar_coords
+    noise = np.random.uniform(-0.05,0.05,len(radar_coords))
     # radar observation
-    radar = errormult*truth + erroradd
+    radar = errormult*truth + erroradd + noise
     # gage observations are assumed to be perfect
     obs = truth[obs_coords]
     # add a missing value to observations (just for testing)
     obs[1] = np.nan
+    # number of neighbours to be used
+    nnear_raws=3
     # adjust the radar observation by additive model
-    add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
+    add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=nnear_raws)
     add_adjusted = add_adjuster(obs, radar)
     # adjust the radar observation by multiplicative model
-    mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
+    mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=nnear_raws)
     mult_adjusted = mult_adjuster(obs, radar,0.)
     # adjust the radar observation by MFB
-    mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
+    mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=nnear_raws)
     mfb_adjusted = mfb_adjuster(obs, radar,0.)
     # adjust the radar observation by AdjustMixed
-    mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=1)
+    mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=nnear_raws)
     mixed_adjusted = mixed_adjuster(obs, radar)
-    line1 = pl.plot(radar_coords, radar, 'k-', label="raw radar")
-    line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
-    line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
-    line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
-    line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="adjusted by AdjustMixed")
-    pl.legend()
+    # plotting
+    line0 = pl.plot(radar_coords, radar, 'k-', label="Unadjusted radar", linewidth=2., linestyle="dashed")
+    pl.xlabel("Distance (km)")
+    pl.ylabel("Rainfall intensity (mm/h)")
+    line1 = pl.plot(radar_coords, truth, 'k-', label="True rainfall", linewidth=2.)
+    line2 = pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0, markerfacecolor="grey")
+    line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="Additive adjustment")
+    line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="Multiplicative adjustment")
+##    line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
+    line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="Mixed (mult./add.) adjustment")
+    pl.legend(prop={'size':12})
+    pl.show()
+
+    # Verification for this example
+
+    rawerror  = verify.ErrorMetrics(truth, radar)
+    mfberror  = verify.ErrorMetrics(truth, mfb_adjusted)
+    adderror  = verify.ErrorMetrics(truth, add_adjusted)
+    multerror = verify.ErrorMetrics(truth, mult_adjusted)
+    mixerror  = verify.ErrorMetrics(truth, mixed_adjusted)
+
+    maxval = 4.
+    fig = pl.figure(figsize=(10,10))
+    ax = fig.add_subplot(221)
+    rawerror.report(ax=ax, unit="mm", maxval=maxval)
+    ax.text(0.2, 0.9*maxval, "Unadjusted radar")
+    ax = fig.add_subplot(222)
+    adderror.report(ax=ax, unit="mm", maxval=maxval)
+    ax.text(0.2, 0.9*maxval, "Additive adjustment")
+    ax = fig.add_subplot(223)
+    multerror.report(ax=ax, unit="mm", maxval=maxval)
+    ax.text(0.2, 0.9*maxval, "Multiplicative adjustment")
+    ax = fig.add_subplot(224)
+    mixerror.report(ax=ax, unit="mm", maxval=maxval)
+    ax.text(0.2, 0.9*maxval, "Mixed (mult./add.) adjustment")
     pl.show()
 
 
