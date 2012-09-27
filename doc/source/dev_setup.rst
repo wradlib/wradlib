@@ -17,5 +17,5 @@ There are a few things that need to be done in order for the documentation to be
 
 The documentation tool is `Sphinx <http://sphinx.pocoo.org/>`_. We oriented ourselves at the Numpy/Scipy documentation concerning docstrings. This implies using `numpydoc <http://pypi.python.org/pypi/numpydoc>`_ to enable Sphinx to understand the formatting of those docstrings. If you installed Python(x,y) Enthought Python, Sphinx is already installed. In order to install numpydoc, simply open a console window and type ``easy_install numpydoc``.
 
-Now you can open a console window in the folder wradlib/doc and execute ``make html``. This will give you the latest documentation under the wradlib\doc\build\html directory. Simply open the index.html file to view the documentation.
+Now you can open a console window in the folder wradlib/doc and execute ``make html``. This will give you the latest documentation under the wradlib/doc/build/html directory. Simply open the index.html file to view the documentation.
 
