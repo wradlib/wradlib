@@ -20,10 +20,12 @@ Georeferencing
    :toctree: generated/
 
    polar2latlon
+   polar2latlonalt
    polar2centroids
    polar2polyvert
    centroid2polyvert
    project
+   create_projstr
    projected_bincoords_from_radarspecs
 
 """
@@ -544,17 +546,24 @@ def _get_azimuth_resolution(x):
 
 
 def create_projstr(projname, **kwargs):
-    """Supports the constrution of proj.4 projection strings
+    """Conveniently supports the construction of proj.4 projection strings
 
-    Currently, the following projection names are supported:
+    Currently, the following projection names (argument *projname*) are supported:
 
     **"aeqd": Azimuthal Equidistant**
-    needs the following keyword arguments: *lat_0*=Latitude at projection center,
-    *lon_0*=Longitude at projection center, *x_0*=False Easting (also known as x-offset),
-    *y_0*=False Northing (also known as y-offset)
+
+    needs the following keyword arguments: *lat_0* (latitude at projection center),
+    *lon_0* (longitude at projection center), *x_0* (false Easting, also known as x-offset),
+    *y_0* (false Northing, also known as y-offset)
 
     **"gk" : Gauss-Krueger (for Germany)**
-    only needs keyword argument *number* (number of the Gauss-Krueger strip)
+
+    only needs keyword argument *zone* (number of the Gauss-Krueger strip)
+
+    **"utm" : Universal Transmercator**
+
+    needs keyword arguments *zone* (integer) and optionally *hemisphere* (accepted values: "south", "north")
+    see `Wikipedia entry <http://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system>`_ for UTM zones.
 
     Parameters
     ----------
@@ -567,8 +576,12 @@ def create_projstr(projname, **kwargs):
 
     Examples
     --------
-    # Gauss-Krueger 2nd strip
-    print create_projstr("gk", number=2)
+    >>> # Gauss-Krueger 2nd strip
+    >>> print create_projstr("gk", zone=2)
+    >>> # UTM zone 51 (northern hemisphere)
+    >>> print create_projstr("utm", zone=51)
+    >>> # UTM zone 51 (southern hemisphere)
+    >>> print create_projstr("utm", zone=51, hemisphere="south")
 
     """
     if projname=="aeqd":
@@ -577,14 +590,29 @@ def create_projstr(projname, **kwargs):
                   % (kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"])
     elif projname=="gk":
         # Gauss-Krueger
-        if kwargs.has_key("number"):
+        if kwargs.has_key("zone"):
             projstr = """+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=%d +y_0=0
             +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7
-            +units=m +no_defs""" % (kwargs["number"] * 1000000 + 500000)
+            +units=m +no_defs""" % (kwargs["zone"] * 1000000 + 500000)
+    elif projname=="utm":
+        # Universal Transmercator
+        if kwargs.has_key("hemisphere"):
+            if kwargs["hemisphere"]=="south":
+                hemisphere = " +south"
+            elif kwargs["hemisphere"]=="north":
+                hemisphere = ""
+            else:
+                print "Value %s for keyword argument hemisphere in function create_projstr is not valid. Value must be either north or south!" % kwargs["hemisphere"]
+                exit(1)
+        try:
+            projstr = "+proj=utm +zone=%d +ellps=WGS84%s" % (kwargs["zone"], hemisphere)
+        except:
+            print "Cannot create projection string for projname %s. Maybe keyword argument zone was not passed?" % s
+            exit(1)
     else:
         print "No support for projection %r, yet." % projname
         print "You need to create projection string by hand..."
-        sys.exit(1)
+        exit(1)
     return projstr
 
 
@@ -599,8 +627,11 @@ def project(latc, lonc, projstr, inverse=False):
     See http://www.remotesensing.org/geotiff/proj_list for examples of key/value
     pairs defining different map projections.
 
-    The main challenge is to formulate an appropriate proj.4 projection string
-    for the target projection. See the Examples section for a quick start.
+    You can use :doc:`wradlib.georef.create_projstr` in order to create projection
+    strings to be passed with argument *projstr*. However, the choice is still
+    rather limited. Alternatively, you have to create or look up projection strings by yourself.
+
+    See the Examples section for a quick start.
 
     Parameters
     ----------
@@ -609,7 +640,8 @@ def project(latc, lonc, projstr, inverse=False):
     lonc : array of floats
         longitude coordinates based on WGS84
     projstr : string
-        proj.4 projection string
+        proj.4 projection string. Can be conveniently created by using function
+        :doc:`wradlib.georef.create_projstr`
 
     Returns
     -------
@@ -633,10 +665,7 @@ def project(latc, lonc, projstr, inverse=False):
 
     >>> import wradlib.georef as georef
     >>> # This is Gauss-Krueger Zone 3 (aka DHDN 3 aka Germany Zone 3)
-    >>> gk3 = '''
-    >>> +proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
-    >>> +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs
-    >>> '''
+    >>> gk3 = create_projstr("gk", zone=3)
     >>> latc = [54.5, 55.5]
     >>> lonc = [9.5, 9.8]
     >>> gk3_x, gk3_y = georef.project(latc, lonc, gk3)
