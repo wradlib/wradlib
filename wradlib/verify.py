@@ -174,7 +174,7 @@ class ErrorMetrics():
     def nash(self):
         """Nash-Sutcliffe Efficiency
         """
-        return 1 - ( self.mse() / np.var(self.obs) )
+        return np.round(1. - ( self.mse() / np.var(self.obs) ), 2)
     def sse(self):
         """Sum of Squared Errors
         """
@@ -214,7 +214,7 @@ class ErrorMetrics():
         out["meanerr"]  = self.meanerr()
         out["ratio"]    = self.ratio()
         return out
-    def plot(self, ax=None, unit=""):
+    def plot(self, ax=None, unit="", maxval=None):
         """Scatter plot of estimates vs observations
 
         Parameters
@@ -231,7 +231,10 @@ class ErrorMetrics():
             ax  = fig.add_subplot(111, aspect=1.)
             doplot = True
         ax.plot(self.obs, self.est, "bo")
-        maxval = np.max(np.append(self.obs, self.est))
+        pl.xlim(xmax=maxval)
+        pl.ylim(ymax=maxval)
+        if maxval==None:
+            maxval = np.max(np.append(self.obs, self.est))
         ax.plot([0,maxval], [0,maxval], "-", color="grey")
         pl.xlabel("Observations (%s)" % unit)
         pl.ylabel("Estimates (%s)" % unit)
@@ -242,7 +245,7 @@ class ErrorMetrics():
         """Pretty prints a summary of error metrics
         """
         pprint( self.all() )
-    def report(self, metrics=["rmse","r2","meanerr"], ax=None, unit=""):
+    def report(self, metrics=["rmse","nash","meanerr"], ax=None, unit="", maxval=None):
         """Pretty prints selected error metrics over a scatter plot
 
         Parameters
@@ -256,16 +259,20 @@ class ErrorMetrics():
            measurement unit of the observations / estimates
 
         """
+        doplot = False
         if ax==None:
             fig = pl.figure()
             ax  = fig.add_subplot(111, aspect=1.)
-        ax = self.plot(ax=ax, unit=unit)
-        xtext = 0.7 * self.obs.max()
-        ytext = ( 0.2 + np.arange(0,len(metrics),0.1) )  * self.est.max()
+            doplot = True
+        ax = self.plot(ax=ax, unit=unit, maxval=maxval)
+        if maxval==None:
+            maxval = np.max(np.append(self.obs, self.est))
+        xtext = 0.6 * maxval
+        ytext = ( 0.1 + np.arange(0,len(metrics),0.1) )  * maxval
         mymetrics = self.all()
         for i,metric in enumerate(metrics):
             pl.text(xtext, ytext[i], "%s: %s" % (metric,mymetrics[metric]) )
-        if not pl.isinteractive():
+        if not pl.isinteractive() and doplot:
             pl.show()
 
 
