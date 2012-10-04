@@ -599,9 +599,10 @@ def create_projstr(projname, **kwargs):
     elif projname=="gk":
         # Gauss-Krueger
         if kwargs.has_key("zone"):
-            projstr = """+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=%d +y_0=0
+            projstr = """+proj=tmerc +lat_0=0 +lon_0=%d +k=1 +x_0=%d +y_0=0
             +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7
-            +units=m +no_defs""" % (kwargs["zone"] * 1000000 + 500000)
+            +units=m +no_defs""" % (kwargs["zone"]*3,
+                                    kwargs["zone"] * 1000000 + 500000)
     elif projname=="utm":
         # Universal Transmercator
         if kwargs.has_key("hemisphere"):
