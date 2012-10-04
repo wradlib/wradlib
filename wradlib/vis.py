@@ -520,7 +520,7 @@ class Grid2Basemap():
 
     This class allows to plot gridded data (e.g. PPIs, CAPPIs, composites) on a background.
     The background map (Basemap) can include country borders, coastlines, meridians
-    as well as user-defined shapefiles. The plot fill appear as filled contours.
+    as well as user-defined shapefiles. The plot will appear as filled contours.
 
     In order to plot user defined backgroud data such as points or shapefiles,
     these have to be provided in "geographical projection", i.e. in lat/lon coordinates
