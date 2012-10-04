@@ -565,6 +565,14 @@ def create_projstr(projname, **kwargs):
     needs keyword arguments *zone* (integer) and optionally *hemisphere* (accepted values: "south", "north")
     see `Wikipedia entry <http://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system>`_ for UTM zones.
 
+    **"dwd-radolan" : RADOLAN Composite Coordinate System**
+
+    no additional arguments needed.
+
+    Polar stereographic projection used by the German Weather Service (DWD)
+    for all Radar composite products. See the final report on the RADOLAN
+    project (available at http://www.dwd.de/RADOLAN) for details.
+
     Parameters
     ----------
     projname : string (proj.4 projection acronym)
@@ -609,6 +617,12 @@ def create_projstr(projname, **kwargs):
         except:
             print "Cannot create projection string for projname %s. Maybe keyword argument zone was not passed?" % s
             exit(1)
+
+    elif projname=="dwd-radolan":
+        # DWD-RADOLAN polar stereographic projection
+        scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
+        projstr = ('+proj=stere +lat_0=90 +lon_0=10 +k_0={0:10.8f} '+
+                   '+ellps=sphere +a=6370040.000 +es=0.0').format(scale)
     else:
         print "No support for projection %r, yet." % projname
         print "You need to create projection string by hand..."
