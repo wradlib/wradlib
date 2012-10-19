@@ -191,7 +191,7 @@ htmlhelp_basename = 'wradlibdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'wradlib.tex', u'wradlib Documentation',
-   u'Stefan Jacobi, Maik Heistermann, Thomas Pfaff', 'manual'),
+   u'Maik Heistermann, Stefan Jacobi, Thomas Pfaff', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
