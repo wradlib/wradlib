@@ -12,6 +12,7 @@
 
 import wradlib.adjust as adjust
 import wradlib.verify as verify
+import wradlib.ipol as ipol
 
 if __name__ == '__main__':
 
@@ -43,10 +44,10 @@ if __name__ == '__main__':
     add_adjusted = add_adjuster(obs, radar)
     # adjust the radar observation by multiplicative model
     mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=nnear_raws)
-    mult_adjusted = mult_adjuster(obs, radar,0.)
+    mult_adjusted = mult_adjuster(obs, radar)
     # adjust the radar observation by MFB
     mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=nnear_raws)
-    mfb_adjusted = mfb_adjuster(obs, radar,0.)
+    mfb_adjusted = mfb_adjuster(obs, radar)
     # adjust the radar observation by AdjustMixed
     mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=nnear_raws)
     mixed_adjusted = mixed_adjuster(obs, radar)

@@ -14,19 +14,66 @@
 Adjustment
 ^^^^^^^^^^
 
-Adjusting remotely sensed spatial data by ground truth (gage observations)
+Adjusting remotely sensed spatial data by ground truth (gage observations).
 
-The main objective of this module is the adjustment of radar-based QPE
-by rain gage observations. However, this module can also be applied to adjust
+The objective of this module is the adjustment of radar-based rainfall estimates
+by rain gage observations. However, this module could also be applied to adjust
 satellite rainfall by rain gage observations, remotely sensed soil moisture
-patterns by ground truthing moisture sensors or any spatial point pattern
-which could be adjusted by selected point measurements (ground truth).
+patterns by ground truthing moisture sensors, or any dense spatial point pattern
+which could be adjusted by sparse point measurements (ground truth).
 
 Basically, we only need two data sources:
 
 - point observations (e.g. rain gage observations)
 
 - set of (potentially irregular) unadjusted point values (e.g. remotely sensed rainfall)
+
+[GoudenhooftdandDelobbe2009]_ provide an excellent overview of adjustment procedures.
+The general idea is that we quantify the error of the remotely sensed rainfall
+at the rain gage locations, assuming the rain gage observation to be accurate.
+The error can be assumed to be purely additive (AdjustAdd), purely multiplicative
+(AdjustMultiply, AdjustMFB) or a mixture of both (AdjustMixed). If the error is
+assumed to heterogeneous in space (AdjustAdd, AdjustMultiply, AdjustMixed), the
+error at the rain gage locations is interpolated to the radar bin locations and
+then used to adjust (correct) the raw radar rainfall estimates. In case of the
+AdjustMFB approach, though, the multiplicative error is assumed to be homogenoues
+in space.
+
+The basic procedure consists of creating an adjustment object from the class you
+want to use for adjustment. After that, you can call the object with the actual
+data that is to be adjusted. The following example is using the additive error
+model and only default settings. ``obs_coords`` and ``raw_coords`` are arrays with
+coordinate pairs for the gage observations and the radar bins, ``obs`` and ``raw``
+are arrays containing the actual data.
+
+>>> adjuster = AdjustAdd(obs_coords, raw_coords)
+>>> adjusted = adjuster(obs, raw)
+
+The user can specify the approach that should be used to interpolate the error
+in space, as well as the keyword arguments which control the behaviour of the
+interpolation approach. For this purpose, all interpolation classes from the
+wradlib.ipol module are available and can be passed by using the ``Ipclass``
+argument. The default interpolation class is Inverse Distance Weighting
+(wradlib.ipol.Idw). If you want to use e.g. linear interpolation by
+
+>>> import wradlib.ipol as ipol
+>>> adjuster = AdjustAdd(obs_coords, raw_coords, Ipclass=ipol.Linear)
+>>> adjusted = adjuster(obs, raw)
+
+Another helpful feature is an easy-to-use method for `leave-one-out cross-validation
+<http://en.wikipedia.org/wiki/Cross-validation_%28statistics%29>`_. Cross validation
+is a standard procedure for verifying rain gage adjustment or interpolation procedures.
+You can start the cross validation in the same way as you start the actual adjustment,
+however, you call the ``xvalidate`` method instead. The result of the cross validation
+are pairs of vlaid observations and the corresponding adjustment result at the
+observation locations. Using the wradlib.verify module, you can compute error metrics
+for the cross validation results.
+
+>>> adjuster = AdjustAdd(obs_coords, raw_coords)
+>>> observed, estimated = adjuster.xvalidate(obs, raw)
+>>> from wradlib.verify import ErrorMetrics
+>>> metrics = ErrorMetrics(observed, estimated)
+>>> metrics.report()
 
 .. autosummary::
    :nosignatures:
@@ -37,6 +84,15 @@ Basically, we only need two data sources:
    AdjustAdd
    AdjustMixed
    Raw_at_obs
+
+
+References
+----------
+
+.. [GoudenhooftdandDelobbe2009] Goudenhoofdt, E., and L. Delobbe, 2009.
+    Evaluation of radar-gauge merging methods for quantitative
+    precipitation estimates. HESS, 13, 195-203. URL: http://www.hydrol-earth-syst-sci.net/13/195/2009/hess-13-195-2009.pdf
+
 
 """
 
@@ -51,7 +107,9 @@ import wradlib.util as util
 
 class AdjustBase(ipol.IpolBase):
     """
-    The basic adjustment class
+    The basic adjustment class that inherits to all other classes
+
+    All methods except the ``__call__`` method are inherited to the following adjustment classes.
 
     Parameters
     ----------
@@ -63,33 +121,124 @@ class AdjustBase(ipol.IpolBase):
         defaults to 9
     stat : string
         defaults to 'median'
-    nnear_idw : integer
-        defaults to 6
-    p_idw : float
-        defaults to 2.
     mingages : integer
         minimum number of gages which are required for an adjustment
+    minval : float
+        If the gage or radar observation is below this threshold, the location
+        will not be used for adjustment. For additive adjustment, this value
+        should be set to zero (default value).
+    Ipclass : an interpolation class from wradib.ipol
+        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+    ipargs : keyword arguments to create an instance of Ipclass
+        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
 
     """
-    def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', nnear_idw=6, p_idw=2., mingages=5):
-        self.obs_coords = self._make_coord_arrays(obs_coords)
-        self.raw_coords = self._make_coord_arrays(raw_coords)
-        self.nnear_raws = nnear_raws
-        self.stat       = stat
-        self.nnear_idw  = nnear_idw
-        self.p_idw      = p_idw
-        self.mingages   = mingages
+    def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', mingages=5, minval=0., Ipclass=ipol.Idw, **ipargs):
+        # These are the coordinates of the rain gage locations and the radar bin locations
+        self.obs_coords     = self._make_coord_arrays(obs_coords)
+        self.raw_coords     = self._make_coord_arrays(raw_coords)
+        # These are the general control parameters for all adjustment procedures
+        self.nnear_raws     = nnear_raws
+        self.stat           = stat
+        self.mingages       = mingages
+        self.minval         = minval
+        # This method will quickly retrieve the actual radar values at the gage locations
         self.get_raw_at_obs = Raw_at_obs(self.obs_coords,  self.raw_coords, nnear=nnear_raws, stat=stat)
-        self.ip = ipol.Idw(src=self.obs_coords, trg=self.raw_coords, nnearest=nnear_idw, p=p_idw)
-    def _check_shape(self, obs, raw):
+        # remember the interpolation class and its keyword arguments as attributes
+        self.Ipclass        = Ipclass
+        self.ipargs         = ipargs
+        # create a default instance of interpolator
+        self.ip             = Ipclass(src=self.obs_coords, trg=self.raw_coords, **ipargs)
+    def _checkip(self, ix, targets):
+        """INTERNAL: Return a revised instance of the Interpolator class.
+
+        When an instance of an Adjust... class is created, an instance of the desired
+        Interpolation class (argument Ipclass) is created as attribute *self.ip*). However,
+        this instance is only valid in case all observation points (attribute *self.obs_coords*)
+        have valid obsservation-radar pairs. In case points are missing (or in case the
+        instance is called in the sourse of cross validation), a new instance has to
+        be created which consideres the new constellation of observation-radar pairs.
+        This method computes and returns this new instance.
+
+        Parameters
+        ----------
+        ix : array of integers
+            These are the indices of observation points with valid observation-radar pairs
+        targets : array of floats of shape (number of target points, 2)
+            Target coordinates for the interpolation
+
+        Returns
+        -------
+        output : an instance of a class that inherited from wradlib.ipol.IpolBase
+
         """
-        Check consistency of the input data obs and raw with the shapes of the coordinates
+        #    first, set interpolation targets (default: the radar coordinates)
+        targets_default = False
+        if targets==None:
+            targets = self.raw_coords
+            targets_default = True
+        #    second, compute inverse distance neighbours
+        if (not len(ix)==len(self.obs_coords)) or (not targets_default):
+            return self.Ipclass(self.obs_coords[ix], targets, **self.ipargs)
+        else:
+            return self.ip
+    def __call__(self, obs, raw, targets=None):
+        """Empty prototype
+        """
+        pass
+    def _check_shape(self, obs, raw):
+        """INTERNAL: Check consistency of the input data obs and raw with the shapes of the coordinates
         """
         print 'TODO WARNING: fill in _check_shape method'
+    def _get_valid_pairs(self, obs, raw):
+        """INTERNAL: Helper method to identify valid obs-raw pairs
+        """
+        # checking input shape consistency
+        self._check_shape(obs, raw)
+        # radar values at gage locations
+        rawatobs = self.get_raw_at_obs(raw, obs)
+        # check where both gage and radar observations are valid
+        ix = np.intersect1d( util._idvalid(obs, minval=self.minval),  util._idvalid(rawatobs, minval=self.minval))
+        return rawatobs, ix
+    def xvalidate(self, obs, raw):
+        """Leave-One-Out Cross Validation, applicable to all gage adjustment classes.
+
+        This method will be inherited to other Adjust classes. It should thus be
+        applicable to all adjustment procedures without any modification. This way,
+        the actual adjustment procedure has only to be defined *once* in the __call__ method.
+
+        The output of this method can be evaluated by using the `verify.ErrorMetrics` class.
+
+        Parameters
+        ----------
+        obs : array of floats
+        raw : array of floats
+
+        Returns
+        -------
+        obs : array of floats
+            valid observations at those locations which have a valid radar observation
+        estatobs : array of floats
+            estimated values at the valid observation locations
+
+        """
+        rawatobs, ix = self._get_valid_pairs(obs, raw)
+        # Container for estimation results at the observation location
+        estatobs = np.array([])
+        # check whether enough gages remain for adjustment
+        if len(ix)<=(self.mingages-1):
+            # not enough gages for cross validation: return empty arrays
+            return np.array([]), estatobs
+        # Now iterate over valid pairs
+        for i in ix:
+            # Pass all valid pairs except ONE which you pass as target
+            ix_adjust = np.setdiff1d(ix, [i])
+            estatobs = np.append(estatobs, self.__call__(obs, rawatobs[i], self.obs_coords[i], rawatobs, ix_adjust)).ravel()
+        return obs[ix], estatobs
 
 
 class AdjustAdd(AdjustBase):
-    """Gage adjustment using an additive error model
+    """Gage adjustment using an additive error model.
 
     First, an instance of AdjustAdd has to be created. Calling this instance then
     does the actual adjustment. The motivation behind this performance. In case
@@ -112,12 +261,16 @@ class AdjustAdd(AdjustBase):
         defaults to 9
     stat : string
         defaults to 'median'
-    nnear_idw : integer
-        defaults to 6
-    p_idw : float
-        defaults to 2.
     mingages : integer
         minimum number of gages which are required for an adjustment
+    minval : float
+        If the gage or radar observation is below this threshold, the location
+        will not be used for adjustment. For additive adjustment, this value
+        should be set to zero (default value).
+    Ipclass : an interpolation class from wradib.ipol
+        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+    ipargs : keyword arguments to create an instance of Ipclass
+        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
 
     Returns
     -------
@@ -171,41 +324,43 @@ class AdjustAdd(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
         """
-        Return the field of raw values adjusted by obs
+        Return the field of *raw* values adjusted by *obs*.
 
         Parameters
         ----------
-        obs : array of float
-            observations
-        raw : array of float
-            raw unadjusted field
+        obs : array of floats
+            Gage observations
+        raw : array of floats
+            Raw unadjusted radar rainfall
+        targets : (INTERNAL) array of floats
+            Coordinate pairs for locations on which the final adjustment product is interpolated
+            Defaults to None. In this case, the output locations will be identical to the radar coordinates
+        rawatobs : (INTERNAL) array of floats
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+        ix : (INTERNAL) array of integers
+            For internal use from AdjustBase.xvalidate only (defaults to None)
 
         """
-        # checking input shape consistency
-        self._check_shape(obs, raw)
-        # radar values at gage locations
-        rawatobs = self.get_raw_at_obs(raw, obs)
-        # check where both gage and radar observations are valid
-        ix = np.intersect1d( util._idvalid(obs),  util._idvalid(rawatobs))
-        # check whether enough gages remain for adjustment
+        # ----------------GENERIC PART FOR MOST __call__ methods----------------
+        if None in [ix, rawatobs]:
+            # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
+            rawatobs, ix = self._get_valid_pairs(obs, raw)
         if len(ix)<=self.mingages:
-            # no adjustment
-            print "Not enough gages for adjustment...returning unadjusted data."
+            # Not enough valid gages for adjustment? - return unadjusted data
             return raw
-        # computing the error
+        # Get new Interpolator instance if necessary
+        ip = self._checkip(ix, targets)
+
+        # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
+        # The error is a difference
         error = obs[ix] - rawatobs[ix]
-        # if not all locations have valid values, we need to recalculate the inverse distance neighbours
-        if not len(ix)==len(obs):
-            print "Missing values: Need to recalculate inverse distance weights..."
-            ip = ipol.Idw(src=self.obs_coords[ix], trg=self.raw_coords, nnearest=self.nnear_idw, p=self.p_idw)
-        else:
-            ip = self.ip
-        # interpolate error field
+        # interpolate the error field
         iperror = ip(error)
-        # add error field to raw and cut negatives to zero
+        # add error field to raw and make sure no negatives occur
         return np.where( (raw + iperror)<0., 0., raw + iperror)
+
 
 
 class AdjustMultiply(AdjustBase):
@@ -233,12 +388,16 @@ class AdjustMultiply(AdjustBase):
         defaults to 9
     stat : string
         defaults to 'median'
-    nnear_idw : integer
-        defaults to 6
-    p_idw : float
-        defaults to 2.
     mingages : integer
         minimum number of gages which are required for an adjustment
+    minval : float
+        If the gage or radar observation is below this threshold, the location
+        will not be used for adjustment. For additive adjustment, this value
+        should be set to zero (default value).
+    Ipclass : an interpolation class from wradib.ipol
+        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+    ipargs : keyword arguments to create an instance of Ipclass
+        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
 
     Returns
     -------
@@ -292,39 +451,38 @@ class AdjustMultiply(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, minval):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
         """
-        Returns the field of raw values adjusted by obs
+        Return the field of *raw* values adjusted by *obs*.
 
         Parameters
         ----------
-        obs : array of float
-            observations
-        raw : array of float
-            raw unadjusted field
-        minval : float
-            if the gage or radar observation is below this threshold, the location
-            will not be used for adjustment in order to avoid extreme ratios
+        obs : array of floats
+            Gage observations
+        raw : array of floats
+            Raw unadjusted radar rainfall
+        targets : (INTERNAL) array of floats
+            Coordinate pairs for locations on which the final adjustment product is interpolated
+            Defaults to None. In this case, the output locations will be identical to the radar coordinates
+        rawatobs : (INTERNAL) array of floats
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+        ix : (INTERNAL) array of integers
+            For internal use from AdjustBase.xvalidate only (defaults to None)
 
         """
-        # checking input shape consistency
-        self._check_shape(obs, raw)
-        # radar values at gage locations
-        rawatobs = self.get_raw_at_obs(raw, obs)
-        # check where both gage and radar observations are valid
-        ix = np.intersect1d( util._idvalid(obs, minval=minval),  util._idvalid(rawatobs, minval=minval))
-        # check whether enough gages remain for adjustment
+        # ----------------GENERIC PART FOR MOST __call__ methods----------------
+        if None in [ix, rawatobs]:
+            # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
+            rawatobs, ix = self._get_valid_pairs(obs, raw)
         if len(ix)<=self.mingages:
-            # no adjustment
-            print "Not enough gages for adjustment...returning unadjusted data."
+            # Not enough valid gages for adjustment? - return unadjusted data
             return raw
+        # Get new Interpolator instance if necessary
+        ip = self._checkip(ix, targets)
+
+        # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
         # computing the error
         error = obs[ix] / rawatobs[ix]
-        # if not all locations have valid values, we need to recalculate the inverse distance neighbours
-        if not len(ix)==len(obs):
-            ip = ipol.Idw(src=self.obs_coords[ix], trg=self.raw_coords, nnearest=self.nnear_idw, p=self.p_idw)
-        else:
-            ip = self.ip
         # interpolate error field
         iperror = ip(error)
         # multiply error field with raw
@@ -372,12 +530,16 @@ class AdjustMixed(AdjustBase):
         defaults to 9
     stat : string
         defaults to 'median'
-    nnear_idw : integer
-        defaults to 6
-    p_idw : float
-        defaults to 2.
     mingages : integer
         minimum number of gages which are required for an adjustment
+    minval : float
+        If the gage or radar observation is below this threshold, the location
+        will not be used for adjustment. For additive adjustment, this value
+        should be set to zero (default value).
+    Ipclass : an interpolation class from wradib.ipol
+        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+    ipargs : keyword arguments to create an instance of Ipclass
+        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
 
     Returns
     -------
@@ -437,37 +599,39 @@ class AdjustMixed(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
         """
-        Returns the field of raw values adjusted by obs
+        Return the field of *raw* values adjusted by *obs*.
 
         Parameters
         ----------
-        obs : array of float
-            observations
-        raw : array of float
-            raw unadjusted field
+        obs : array of floats
+            Gage observations
+        raw : array of floats
+            Raw unadjusted radar rainfall
+        targets : (INTERNAL) array of floats
+            Coordinate pairs for locations on which the final adjustment product is interpolated
+            Defaults to None. In this case, the output locations will be identical to the radar coordinates
+        rawatobs : (INTERNAL) array of floats
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+        ix : (INTERNAL) array of integers
+            For internal use from AdjustBase.xvalidate only (defaults to None)
 
         """
-        # checking input shape consistency
-        self._check_shape(obs, raw)
-        # radar values at gage locations
-        rawatobs = self.get_raw_at_obs(raw, obs)
-        # check where both gage and radar observations are valid
-        ix = np.intersect1d( util._idvalid(obs),  util._idvalid(rawatobs))
-        # check whether enough gages remain for adjustment
+        # ----------------GENERIC PART FOR MOST __call__ methods----------------
+        if None in [ix, rawatobs]:
+            # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
+            rawatobs, ix = self._get_valid_pairs(obs, raw)
         if len(ix)<=self.mingages:
-            # no adjustment
-            print "Not enough gages for adjustment...returning unadjusted data."
+            # Not enough valid gages for adjustment? - return unadjusted data
             return raw
+        # Get new Interpolator instance if necessary
+        ip = self._checkip(ix, targets)
+
+        # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
         # computing epsilon and delta from least squares
         epsilon = (obs[ix] - rawatobs[ix]) / (rawatobs[ix]**2 + 1.)
         delta   = ( (obs[ix] - epsilon) / rawatobs[ix] ) - 1.
-        # if not all locations have valid values, we need to recalculate the inverse distance neighbours
-        if not len(ix)==len(obs):
-            ip = ipol.Idw(src=self.obs_coords[ix], trg=self.raw_coords, nnearest=self.nnear_idw, p=self.p_idw)
-        else:
-            ip = self.ip
         # interpolate error fields
         ipepsilon = ip(epsilon)
         ipdelta = ip(delta)
@@ -494,6 +658,14 @@ class AdjustMFB(AdjustBase):
         defaults to 'median'
     mingages : integer
         minimum number of gages which are required for an adjustment
+    minval : float
+        If the gage or radar observation is below this threshold, the location
+        will not be used for adjustment. For additive adjustment, this value
+        should be set to zero (default value).
+    Ipclass : an interpolation class from wradib.ipol
+        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+    ipargs : keyword arguments to create an instance of Ipclass
+        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
 
     Returns
     -------
@@ -547,32 +719,37 @@ class AdjustMFB(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, minval):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
         """
-        Return the field of raw values adjusted by obs
+        Return the field of *raw* values adjusted by *obs*.
 
         Parameters
         ----------
-        obs : array of float
-            observations
-        raw : array of float
-            raw unadjusted field
-        minval : float
-            if the gage or radar observation is below this threshold, the location
-            will not be used for calculating the mean field bias
+        obs : array of floats
+            Gage observations
+        raw : array of floats
+            Raw unadjusted radar rainfall
+        targets : (INTERNAL) array of floats
+            Coordinate pairs for locations on which the final adjustment product is interpolated
+            Defaults to None. In this case, the output locations will be identical to the radar coordinates
+        rawatobs : (INTERNAL) array of floats
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+        ix : (INTERNAL) array of integers
+            For internal use from AdjustBase.xvalidate only (defaults to None)
 
         """
-        # checking input shape consistency
-        self._check_shape(obs, raw)
-        # computing the multiplicative error for points of significant rainfall
-        rawatobs = self.get_raw_at_obs(raw, obs)
-        # check where both gage and radar observations are valid
-        ix = np.intersect1d( util._idvalid(obs, minval=minval),  util._idvalid(rawatobs, minval=minval))
-        # check if there are enough remaining gages for adjustment
+        # ----------------GENERIC PART FOR MOST __call__ methods----------------
+        if None in [ix, rawatobs]:
+            # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
+            rawatobs, ix = self._get_valid_pairs(obs, raw)
         if len(ix)<=self.mingages:
-            # no adjustment
-            print "Not enough gages for adjustment...returning unadjusted data."
+            # Not enough valid gages for adjustment? - return unadjusted data
             return raw
+##        # Get new Interpolator instance if necessary
+##        ip = self._checkip(ix, targets)
+
+        # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
+        # compute ratios for each valid observation point
         ratios = obs[ix] / rawatobs[ix]
         # compute adjustment factor
         thesum = np.nansum(ratios)
