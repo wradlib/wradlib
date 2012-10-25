@@ -11,10 +11,11 @@
 #!/usr/bin/env python
 
 """
-Adjustment
-^^^^^^^^^^
+Gage adjustment
+^^^^^^^^^^^^^^^
 
-Adjusting remotely sensed spatial data by ground truth (gage observations).
+Concept
+-------
 
 The objective of this module is the adjustment of radar-based rainfall estimates
 by rain gage observations. However, this module could also be applied to adjust
@@ -39,12 +40,15 @@ then used to adjust (correct) the raw radar rainfall estimates. In case of the
 AdjustMFB approach, though, the multiplicative error is assumed to be homogenoues
 in space.
 
+Quick start
+-----------
+
 The basic procedure consists of creating an adjustment object from the class you
 want to use for adjustment. After that, you can call the object with the actual
 data that is to be adjusted. The following example is using the additive error
-model and only default settings. ``obs_coords`` and ``raw_coords`` are arrays with
-coordinate pairs for the gage observations and the radar bins, ``obs`` and ``raw``
-are arrays containing the actual data.
+model with default settings. ``obs_coords`` and ``raw_coords`` represent arrays with
+coordinate pairs for the gage observations and the radar bins, respectively. ``obs``
+ and ``raw`` are arrays containing the actual data.
 
 >>> adjuster = AdjustAdd(obs_coords, raw_coords)
 >>> adjusted = adjuster(obs, raw)
@@ -54,20 +58,23 @@ in space, as well as the keyword arguments which control the behaviour of the
 interpolation approach. For this purpose, all interpolation classes from the
 wradlib.ipol module are available and can be passed by using the ``Ipclass``
 argument. The default interpolation class is Inverse Distance Weighting
-(wradlib.ipol.Idw). If you want to use e.g. linear interpolation by
+(wradlib.ipol.Idw). If you want to use e.g. linear barycentric interpolation:
 
 >>> import wradlib.ipol as ipol
 >>> adjuster = AdjustAdd(obs_coords, raw_coords, Ipclass=ipol.Linear)
 >>> adjusted = adjuster(obs, raw)
+
+Cross validation
+----------------
 
 Another helpful feature is an easy-to-use method for `leave-one-out cross-validation
 <http://en.wikipedia.org/wiki/Cross-validation_%28statistics%29>`_. Cross validation
 is a standard procedure for verifying rain gage adjustment or interpolation procedures.
 You can start the cross validation in the same way as you start the actual adjustment,
 however, you call the ``xvalidate`` method instead. The result of the cross validation
-are pairs of vlaid observations and the corresponding adjustment result at the
-observation locations. Using the wradlib.verify module, you can compute error metrics
-for the cross validation results.
+are pairs of observation and the corresponding adjustment result at the observation
+location. Using the wradlib.verify module, you can compute error metrics for the
+cross validation results.
 
 >>> adjuster = AdjustAdd(obs_coords, raw_coords)
 >>> observed, estimated = adjuster.xvalidate(obs, raw)
@@ -79,6 +86,7 @@ for the cross validation results.
    :nosignatures:
    :toctree: generated/
 
+   AdjustBase
    AdjustMFB
    AdjustMultiply
    AdjustAdd
