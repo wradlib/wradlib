@@ -19,7 +19,6 @@ if __name__ == '__main__':
     import numpy as np
     import pylab as pl
 
-
     # 1-d example including all available adjustment methods
     # --------------------------------------------------------------------------
     # gage and radar coordinates
@@ -59,33 +58,37 @@ if __name__ == '__main__':
     line2 = pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0, markerfacecolor="grey")
     line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="Additive adjustment")
     line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="Multiplicative adjustment")
-##    line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
+    line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="Mean Field Bias adjustment")
     line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="Mixed (mult./add.) adjustment")
     pl.legend(prop={'size':12})
     pl.show()
 
     # Verification for this example
-
     rawerror  = verify.ErrorMetrics(truth, radar)
     mfberror  = verify.ErrorMetrics(truth, mfb_adjusted)
     adderror  = verify.ErrorMetrics(truth, add_adjusted)
     multerror = verify.ErrorMetrics(truth, mult_adjusted)
     mixerror  = verify.ErrorMetrics(truth, mixed_adjusted)
 
+    # Verification reports
     maxval = 4.
-    fig = pl.figure(figsize=(10,10))
-    ax = fig.add_subplot(221)
+    fig = pl.figure(figsize=(14,8))
+    ax = fig.add_subplot(231, aspect=1.)
     rawerror.report(ax=ax, unit="mm", maxval=maxval)
     ax.text(0.2, 0.9*maxval, "Unadjusted radar")
-    ax = fig.add_subplot(222)
+    ax = fig.add_subplot(232, aspect=1.)
     adderror.report(ax=ax, unit="mm", maxval=maxval)
     ax.text(0.2, 0.9*maxval, "Additive adjustment")
-    ax = fig.add_subplot(223)
+    ax = fig.add_subplot(233, aspect=1.)
     multerror.report(ax=ax, unit="mm", maxval=maxval)
     ax.text(0.2, 0.9*maxval, "Multiplicative adjustment")
-    ax = fig.add_subplot(224)
+    ax = fig.add_subplot(234, aspect=1.)
     mixerror.report(ax=ax, unit="mm", maxval=maxval)
     ax.text(0.2, 0.9*maxval, "Mixed (mult./add.) adjustment")
+    mixerror.report(ax=ax, unit="mm", maxval=maxval)
+    ax = fig.add_subplot(235, aspect=1.)
+    mfberror.report(ax=ax, unit="mm", maxval=maxval)
+    ax.text(0.2, 0.9*maxval, "Mean Field Bias adjustment")
     pl.show()
 
 
@@ -112,7 +115,7 @@ if __name__ == '__main__':
 ##    #---------------------------------------------------------------------------
 ##    # Gage adjustment
 ##    #---------------------------------------------------------------------------
-##    adjuster = adjust.AdjustAdd(obs_coords, raw_coords, stat='median', p_idw=2.)
+##    adjuster = adjust.AdjustAdd(obs_coords, raw_coords, stat='median', Ipclass=ipol.Nearest)
 ##    result = adjuster(obs, raw)
 ##
 ##    #---------------------------------------------------------------------------
