@@ -53,6 +53,15 @@ if __name__ == '__main__':
     # projection to Gauss Krueger zone 3
     gk3 = wradlib.georef.create_projstr("gk", zone=3)
     x, y = wradlib.georef.project(lat, lon, gk3)
+    xy = np.vstack((x, y)).transpose()
+    # transfer the north-east sector to a 1kmx1km grid
+    xgrid = np.arange(x.mean(), x.max(), 1000.)
+    ygrid = np.arange(y.mean(), y.max(), 1000.)
+    grid_xy = np.meshgrid(xgrid, ygrid)
+    grid_xy = np.vstack((grid_coords[0].ravel(), grid_coords[1].ravel())).transpose()
+    gridded = wradlib.comp.togrid(xy, grid_xy, 128000., [x.mean(), y.mean()],depth, wradlib.ipol.Nearest)
+    wradlib.vis.cartesian_plot(gridded)
+
 
 
 
