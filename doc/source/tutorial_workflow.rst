@@ -120,11 +120,13 @@ In order to define the horizontal and vertical position of the radar bins, we ne
 
 Gridding
 --------
-*No content, yet.*
+Assume you would like to transfer the rainfall intensity from the above example (`Conversion of reflectivity into rainfall`_) from polar coordinates to a Cartesian grid, or to an arbitrary set of irregular points in space (e.g. centroids of sub-catchments). You already retrieved the Cartesian coordinates of the radar bins in the previous section (`Georeferencing and projection`_). Now you only need to define the target coordinates (e.g. a grid) and apply the ``togrid`` function of the ``wradlib.comp`` module. In this example, we want our grid only to represent the North-East sector of our radar circle:
+
+*To be continued...*   
 
 
-Composition of different radar observations
--------------------------------------------
+Composition of different radar circles
+--------------------------------------
 *No content, yet.*
 
 
