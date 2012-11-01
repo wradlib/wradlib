@@ -28,6 +28,9 @@ to the other modules
 """
 import numpy as np
 import datetime as dt
+from time import mktime
+from scipy import interpolate
+from scipy.spatial import cKDTree
 
 
 def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
@@ -100,6 +103,185 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     return trg
 
 
+
+def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
+    """Aggregate time series data to a coarser temporal resolution.
+
+    Parameters
+    ----------
+
+    src : array of shape (..., original number of time steps,...)
+        This is the time series data which should be aggregated. The position
+        of the time dimension is indicated by the *taxis* argument. The number
+        of time steps corresponds to the length of the time dimension.
+
+    taxis : integer
+        This is the position of the time dimension in array *src*.
+
+    dt_src : array of datetime objects
+        Must be of length *original number of time steps + 1* because dt_src
+        defines the limits of the intervals corresponding to the time steps.
+        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is the
+        upper limit of time step 1 and the lower limit of time step 2 and so on.
+
+    dt_trg : array of datetime objects
+        Must be of length *number of output time steps + 1* analogously to dt_src.
+        This means: dt_trg[0] is the lower limit of output time step 1, dt_trg[1]
+        is the upper limit of output time step 1 and the lower limit of output
+        time step 2 and so on.
+
+    func : numpy function name, e.g. 'sum', 'mean'
+        Defines the way the data should be aggregated. The string must correspond
+        to a valid numpy function, e.g. 'sum', 'mean', 'min', 'max'.
+
+    Returns
+    -------
+
+    output : array of shape (..., len(dt_trg) - 1, ...)
+        The length of the time dimension of the output array depends on the array
+        *dt_trg* which defines the limits of the output time step intervals.
+
+    Examples
+    --------
+    >>> src = np.arange(8*4).reshape( (8,4) )
+    >>> print 'source time series:'
+    >>> print src
+    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
+    >>> print 'source time interval limits:'
+    >>> for tim in dt_src: print tim
+    >>> print 'target time interval limits:'
+    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
+    >>> for tim in dt_trg: print tim
+    >>> print 'target time series'
+    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
+
+
+    """
+    # Convert input time steps to numpy arrays
+    dt_src, dt_trg = np.array(dt_src), np.array(dt_trg)
+    # Create a new container for the target data
+    trg_shape = list(src.shape)
+    trg_shape[0] = len(dt_trg)-1
+    trg = np.repeat(np.nan, _shape2size(trg_shape)).reshape(trg_shape)
+    for i in range(len(dt_trg)-1):
+        # width of window
+        width = float(_tdelta2seconds( dt_trg[i+1] - dt_trg[i] ))
+        # These are the intervals completely INSIDE the target time window
+        src_ix = np.where(np.logical_and(dt_src > dt_trg[i], dt_src < dt_trg[i+1]))[0]
+        intervals = dt_src[src_ix[1:]] - dt_src[src_ix[:-1]]
+        # check left edge
+        intervals = np.insert(intervals, 0, dt_src[src_ix[0]] - dt_trg[i])
+        if src_ix[0]>0:
+            src_ix = np.insert(src_ix, 0, src_ix[0]-1)
+        # check right edge
+        intervals = np.append(intervals, dt_trg[i+1] - dt_src[src_ix[-1]])
+        if src_ix[-1]>(len(dt_src)-1):
+            src_ix = np.append(src_ix, src_ix[-1]+1)
+        # convert to seconds
+        intervals = np.array([_tdelta2seconds(interval) for interval in intervals])
+        # compute weights
+        weights = intervals / width
+        # compute weighted mean
+        trg[i] = np.dot(np.transpose(src[src_ix]), weights)
+    return trg
+
+
+def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval=300, **ipargs):
+    """Computes the average of a time series over given time windows.
+
+    This function computes the average values of an irregular time series ``src``
+    within given time windows ``dt_trg``. The datetimes of the original time series
+    are given by ``dt_src``. The idea of this function is to create regular helper
+    timesteps at an interval length given by ``helper_interval``. The values of
+    ``src`` are then interpolated to these helper time steps, and the resulting
+    helper values are finally averaged over the given target time windows.
+
+
+    Parameters
+    ----------
+
+    src : array of shape (..., original number of time steps,...)
+        This is the time series data which should be aggregated. The position
+        of the time dimension is indicated by the *taxis* argument. The number
+        of time steps corresponds to the length of the time dimension.
+
+    taxis : integer
+        This is the position of the time dimension in array *src*.
+
+    dt_src : array of datetime objects
+        Must be of length *original number of time steps + 1* because dt_src
+        defines the limits of the intervals corresponding to the time steps.
+        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is the
+        upper limit of time step 1 and the lower limit of time step 2 and so on.
+
+    dt_trg : array of datetime objects
+        Must be of length *number of output time steps + 1* analogously to dt_src.
+        This means: dt_trg[0] is the lower limit of output time step 1, dt_trg[1]
+        is the upper limit of output time step 1 and the lower limit of output
+        time step 2 and so on.
+
+    func : numpy function name, e.g. 'sum', 'mean'
+        Defines the way the data should be aggregated. The string must correspond
+        to a valid numpy function, e.g. 'sum', 'mean', 'min', 'max'.
+
+    Returns
+    -------
+
+    output : array of shape (..., len(dt_trg) - 1, ...)
+        The length of the time dimension of the output array depends on the array
+        *dt_trg* which defines the limits of the output time step intervals.
+
+    Examples
+    --------
+    >>> src = np.arange(8*4).reshape( (8,4) )
+    >>> print 'source time series:'
+    >>> print src
+    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
+    >>> print 'source time interval limits:'
+    >>> for tim in dt_src: print tim
+    >>> print 'target time interval limits:'
+    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
+    >>> for tim in dt_trg: print tim
+    >>> print 'target time series'
+    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
+
+
+    """
+    # Convert input time steps to numpy arrays
+    dt_src, dt_trg = np.array(dt_src), np.array(dt_trg)
+
+    trg_secs = np.array([mktime(tstep.timetuple()) for tstep in dt_trg])
+    src_secs = np.array([mktime(tstep.timetuple()) for tstep in dt_src])
+    helper_secs = np.arange(trg_secs[0],trg_secs[-1],helper_interval)
+
+    # Interpolate to target points
+    f = interpolate.interp1d(src_secs, src, axis=0, bounds_error=False)
+    helpers = f(helper_secs)
+
+    # Mask those values as invalid which are more than maxdist from the next source point
+    tree = cKDTree(src_secs.reshape((-1,1)))
+    dists, ix = tree.query(helper_secs.reshape((-1,1)), k=1)
+    # deal with edges (in case of extrapolation, we apply nearest neighbour)
+    np.where(np.isnan(helpers), src[ix], helpers)
+    # mask out points which are to far from the next source point
+    helpers[np.where(dists>maxdist)[0]] = np.nan
+
+    # Create a new container for the target data
+    trg_shape = list(src.shape)
+    trg_shape[0] = len(dt_trg)-1
+    trg = np.repeat(np.nan, _shape2size(trg_shape)).reshape(trg_shape)
+
+    for i in range(len(dt_trg)-1):
+        # width of window
+        width = float(_tdelta2seconds( dt_trg[i+1] - dt_trg[i] ))
+        # These are the intervals completely INSIDE the target time window
+        helper_ix = np.where(np.logical_and(dt_src >= dt_trg[i], dt_src <= dt_trg[i+1]))[0]
+        trg[i] = np.mean(helpers[helper_ix], axis=0)
+
+    return trg
+
+
+
 def _get_func(funcname):
     """
     Retrieve the numpy function with name <funcname>
@@ -154,6 +336,17 @@ def from_to(tstart, tend, tdelta):
             tsteps.append(tmptime)
     return tsteps
 
+def _tdelta2seconds(tdelta):
+    """
+    Convert a dt.timedelta object to seconds
+
+    Parameters
+    ----------
+    tdelta : a dt.timedelta object
+
+    """
+    return tdelta.days * 86400 + tdelta.seconds
+
 
 def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None):
     """Identifies valid entries in an array and returns the corresponding indices
@@ -180,3 +373,12 @@ def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
+    import datetime as dt
+    dt_trg = from_to("2012-10-26 00:00:00", "2012-10-26 01:00:00", 3600)
+    dt_src = ["2012-10-26 00:05:00", "2012-10-26 00:15:00", "2012-10-26 00:30:00", "2012-10-26 01:00:00"]
+    dt_src = [dt.datetime.strptime(tstep, "%Y-%m-%d %H:%M:%S") for tstep in dt_src]
+    src = np.array([[1,1,1,1],[2,2,2,2],[3,3,3,3], [4,4,4,4]])
+    print average_over_time_windows(src, dt_src, dt_trg)
+
+
+
