@@ -10,7 +10,7 @@ These are just some steps that might be necessary in order to make radar data us
 
 If you have trouble with that import, please head back to the :doc:`gettingstarted` section.
 
-.. note:: The code used in this tutorial can be found in the ``wradib/examples`` folder of the wradlib distribution. The corresponding example data is stored in ``wradlib/examples/data``. 
+.. note:: The code used in this tutorial can be found in the file ``wradib/examples/typical_workflow.py`` of the wradlib distribution. The corresponding example data is stored in ``wradlib/examples/data``. 
 
 .. warning:: Be aware that applying an algorithm for error correction does not guarantee that the error is totally removed. Error correction procedures are suceptible to errors, too. Not only might they fail to *remove* the error. They might also introduce *new* errors. The trade-off between costs (introduction of new errors) and benefits (error reduction) can turn out differently for different locations, different points in time, or different rainfall situations.
 
@@ -21,6 +21,7 @@ The binary encoding of many radar products is a major obstacle for many potentia
 The basic data type used in *wradlib* is a multi-dimensional array, the numpy.ndarray. Such an array might e.g. represent a polar or Cartesian grid, or a series of rain gage observations. Metadata are normally managed as Python dictionaries. In order to read the content of a data file into a numpy array, you would normally use the ``wradib.io`` module. In the following example, a local PPI from the German Weather Service, a DX file, is read::
 
 >>> data, metadata = wradlib.io.readDX("DX_sample_file")
+>>> wradlib.vis.polar_plot(data) # simple diagnostic plot
 
 The ``metadata`` object can be inspected via keywords. The ``data`` object contains the actual data, in this case a polar grid with 360 azimuth angles and 128 range bins.
 
@@ -32,6 +33,7 @@ Clutter removal
 Clutter are non-precipitation echos. They are caused by the radar beam hitting objects on the earth's surface (e.g. mountain or hill tops, houses, wind turbines) or in the air (e.g. airplanes, birds). These objects can potentially cause high reflectivities due large scattering cross sections. Static clutter, if not efficiently removed by Doppler filters, can cause permanent echos which could introduce severe bias in quantitative applications. Thus, an efficient identification and removal of clutter is mandatory e.g. for hydrological studies. Clutter removal can be based on static maps or dynamic filters. Normally, static clutter becomes visible more clearly in rainfall accumulation maps over periods of weeks or months. We recommend such accumulations to create static clutter maps which can in turn be used to remove the static clutter from an image and fill the resulting gaps by interpolation. In the following example, the clutter filter published by Gabella and Notarpietro ([Gabella2002]_) is applied to the single radar sweep of the above example.  
 
 >>> clutter = wradlib.clutter.filter_gabella(data, tr1=12, n_p=6, tr2=1.1)
+>>> wradlib.vis.polar_plot(clutter,title='Clutter Map',colormap=pl.cm.gray)
 
 The resulting Boolean array ``clutter`` indicates the position of clutter. It can be used to interpolate the values at those positons from non-clutter values, as shown in the following line:
 
@@ -104,11 +106,13 @@ Georeferencing and projection
 -----------------------------
 In order to define the horizontal and vertical position of the radar bins, we need to retrieve the corresponding 3-dimensional coordinates in terms of latitude, longitude and altitude. This information is required e.g. if the positions should be plotted on a map. It is also required for constructing `CAPPIs <http://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_. The position of a radar bin in 3-dimensional space depends on the position of the radar device, the elevation angle of the radar beam, as well as the azimuth angle and the range of a bin. For the sample data used above, the posiiton of the radar device is the Feldberg in Germany (47.8744, 8.005, 1517): 
 
+>>> import numpy as np
 >>> radar_location = (47.8744, 8.005, 1517) # (lat, lon, alt) in decimal degree and meters
 >>> elevation = 0.5 # in degree
 >>> azimuths = np.arange(0,360) # in degrees
 >>> ranges = np.arange(0, 128000., 1000.) # in meters
->>> lat, lon, alt = wradlib.georef.polar2latlonalt(ranges, azimuths, elevation, radar_location)
+>>> polargrid = np.meshgrid(ranges, azimuths)
+>>> lat, lon, alt = wradlib.georef.polar2latlonalt(polargrid[0], polargrid[1], elevation, radar_location)
 
 *wradlib* supports the projection of geographical coordinates (lat/lon) to a Cartesian reference system. Basically, you have to provide a string which represents the projection - based on the `proj.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3): 
 
@@ -120,31 +124,121 @@ In order to define the horizontal and vertical position of the radar bins, we ne
 
 Gridding
 --------
-Assume you would like to transfer the rainfall intensity from the above example (`Conversion of reflectivity into rainfall`_) from polar coordinates to a Cartesian grid, or to an arbitrary set of irregular points in space (e.g. centroids of sub-catchments). You already retrieved the Cartesian coordinates of the radar bins in the previous section (`Georeferencing and projection`_). Now you only need to define the target coordinates (e.g. a grid) and apply the ``togrid`` function of the ``wradlib.comp`` module. In this example, we want our grid only to represent the North-East sector of our radar circle:
+Assume you would like to transfer the rainfall intensity from the above example (`Conversion of reflectivity into rainfall`_) from polar coordinates to a Cartesian grid, or to an arbitrary set of irregular points in space (e.g. centroids of sub-catchments). You already retrieved the Cartesian coordinates of the radar bins in the previous section (`Georeferencing and projection`_). Now you only need to define the target coordinates (e.g. a grid) and apply the ``togrid`` function of the ``wradlib.comp`` module. In this example, we want our grid only to represent the South-West sector of our radar circle on a 100 x 100 grid. First, we define the target grid coordinates (these must be an array of 100x100 rows with one coordinate pair each):
 
-*To be continued...*   
+>>> xgrid = np.linspace(x.min(), x.mean(), 100)
+>>> ygrid = np.linspace(y.min(), y.mean(), 100)
+>>> grid_xy = np.meshgrid(xgrid, ygrid)
+>>> grid_xy = np.vstack((grid_xy[0].ravel(), grid_xy[1].ravel())).transpose()
 
+Now we transfer the polar data to the grid and mask out invalid values for plotting (values outside the radar circle receive NaN):
 
-Composition of different radar circles
---------------------------------------
-*No content, yet.*
+>>> gridded = wradlib.comp.togrid(xy, grid_xy, 128000., np.array([x.mean(), y.mean()]), data.ravel(), wradlib.ipol.Nearest)
+>>> gridded = np.ma.masked_invalid(gridded).reshape((len(xgrid), len(ygrid)))
+>>> wradlib.vis.cartesian_plot(gridded, x=xgrid, y=ygrid, classes=range(0,70,5), unit="dBZ")
+
+.. seealso:: Get more info about the function :doc:`generated/wradlib.comp.togrid`.
 
 
 Adjustment by rain gage observations
 ------------------------------------
-*No content, yet.*
+Adjustment normally refers to using rain ggage observations on the ground to correct for errors in the radar-based rainfall estimatin. Goudenhooftd and Delobbe [Goudenhoofdt2009]_ provide an excellent overview of adjustment procedures. A typical approach is to quantify the error of the radar-based rainfall estimate *at* the rain gage locations, assuming the rain gage observation to be accurate. The error can be assumed to be additive, multiplicative, or a mixture of both. Most approaches assume the error to be heterogeneous in space. Hence, the error at the rain gage locations will be interpolated to the radar bin (or grid) locations and then used to adjust (correct) the raw radar rainfall estimates.
+
+In the following example, we will use an illustrative one-dimensional example with synthetic data (just imagine radar rainfall estimates and rain gage observations along one radar beam). 
+
+First, we create the synthetic "true" rainfall (``truth``). 
+
+>>> import numpy as np
+>>> radar_coords = np.arange(0,101)
+>>> truth = np.abs(1.5+np.sin(0.075*radar_coords)) + np.random.uniform(-0.1,0.1,len(radar_coords))
+
+The radar rainfall estimate ``radar`` is then computed by imprinting a multiplicative ``error`` on ``truth`` and adding some noise. 
+
+>>> error = 0.75 + 0.015*radar_coords
+>>> radar = error * truth + np.random.uniform(-0.1,0.1,len(radar_coords))
+
+Synthetic gage observations ``obs`` are then created by selecting arbitrary "true" values.
+
+>>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
+>>> obs = truth[obs_coords]
+
+Now we adjust the ``radar`` rainfall estimate by using the gage observations. First, you create an "adjustment object" from the approach you
+want to use for adjustment. After that, you can call the object with the actual data that is to be adjusted. Here, we use a multiplicative error model with spatially heterogenous error (see :doc:`generated/wradlib.adjust.AdjustMultiply`).
+
+>>> adjuster = wradlib.adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=3)
+>>> adjusted = adjuster(obs, radar)
+
+Let's compare the ``truth``, the ``radar`` rainfall estimate and the ``adjusted`` product:
+
+>>> import pylab as pl
+>>> pl.plot(radar_coords, truth, 'k-', label="True rainfall", linewidth=2.)
+>>> pl.xlabel("Distance (km)")
+>>> pl.ylabel("Rainfall intensity (mm/h)")
+>>> pl.plot(radar_coords, radar, 'k-', label="Raw radar rainfall", linewidth=2., linestyle="dashed")
+>>> pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0, markerfacecolor="grey")
+>>> pl.plot(radar_coords, adjusted, '-', color="green", label="Multiplicative adjustment", linewidth=2., )
+>>> pl.legend(prop={'size':12})
+>>> pl.show()
+
+.. seealso:: Get more info in the library reference section :doc:`adjust`. There, you will also learn how to use the built-in *cross-validation* in order to evaluate the performance of the adjustment approach.
+
 
 Verification and quality control
 --------------------------------
-*No content, yet.*
+Typically, radar-based precipitation estimation and the effectiveness of the underlying correction and adjustment methods are verified by comparing the results against rain gauge observations on the ground. wradlib.verify provides procedures not only to extract the radar values at specific gauge locations, but also a set of error metrics which are computed from gage observations and the corresponding radar-based precipitation estimates (including standard metrics such as RMSE, mean error, Nash-Sutcliffe Efficiency). In the following, we will illustrate the usage of error metrics by comparing the "true" rainfall against the raw and adjusted radar rainfall estimates from the above example:
+
+>>> raw_error  = wradlib.verify.ErrorMetrics(truth, radar)
+>>> adj_error  = wradlib.verify.ErrorMetrics(truth, adjusted)
+
+Error metrics can be reported e.g. as follows:
+
+>>> raw_error.report()
+>>> adj_error.report()
+
+.. seealso:: Get more info in the library reference section :doc:`verify`.
+
 
 Visualisation and mapping
 -------------------------
-*No content, yet.*
+In the above sections `Reading the data`_, `Clutter removal`_, and `Gridding`_ you already saw examples of the wradlib's plotting capabilities.
+
+.. seealso:: Get more info in the library reference section :doc:`vis`.
+
 
 Data export to other applications
 ---------------------------------
-*No content, yet.*
+Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or spupport a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <http://code.google.com/p/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://code.google.com/p/h5py/>`_ or `PyTables <http://www.pytables.org/moin>`_ to write hdf5 files. At a later stage of development, *wradlib* might support a standardized data export by using the OPERA's BUFR or hdf5 data model (see :doc:`tutorial_supported_formats`). Of course, you can also export data as images. See :doc:`vis` for some options.
+
+Export your data array as a text file:
+
+>>> np.savetxt("mydata.txt", data)
+
+Or as a gzip-compressed text file:
+
+>>> np.savetxt("mydata.gz", data)   
+
+Or as a NetCDF file:
+
+>>> import netCDF4
+>>> rootgrp = netCDF4.Dataset('test.nc', 'w', format='NETCDF4')
+>>> sweep_xy = rootgrp.createGroup('sweep_xy')
+>>> dim_azimuth = sweep_xy.createDimension('azimuth', None)
+>>> dim_range = sweep_xy.createDimension('range', None)
+>>> azimuths_var = sweep_xy.createVariable('azimuths','i4',('azimuth',))
+>>> ranges_var = sweep_xy.createVariable('ranges','f4',('range',))
+>>> dBZ_var = sweep_xy.createVariable('dBZ','f4',('azimuth','range',))
+>>> azimuths_var[:] = np.arange(0,360)
+>>> ranges_var[:] = np.arange(0, 128000., 1000.)
+>>> dBZ_var[:] = data
+
+You can easily add metadata to the NetCDF file on different group levels:
+
+>>> rootgrp.bandwith = "C-Band"
+>>> sweep_xy.datetime = "2012-11-02 10:15:00"
+>>> rootgrp.close()
+
+.. note:: An example for hdf5 export will follow.
+
 
 
 References
@@ -152,6 +246,9 @@ References
 .. [Gabella2002] Gabella, M. & Notarpietro, R., 2002. Ground clutter characterization and elimination in mountainous terrain.
 	In Proceedings of ERAD. Delft: Copernicus GmbH, pp. 305-311. URL: http://www.copernicus.org/erad/online/erad-305.pdf
 	[Accessed Oct 25, 2012].
+
+.. [Goudenhoofdt2009] Goudenhoofdt, E., and L. Delobbe, 2009. Evaluation of radar-gauge merging methods for quantitative
+    precipitation estimates. HESS, 13, 195-203. URL: http://www.hydrol-earth-syst-sci.net/13/195/2009/hess-13-195-2009.pdf
 
 .. [Hitschfeld1954] Hitschfeld, W. & Bordan, J., 1954. Errors Inherent in the Radar Measurement of Rainfall at Attenuating
 	Wavelengths. Journal of the Atmospheric Sciences, 11(1), p.58-67. DOI: 10.1175/1520-0469(1954)011<0058:EIITRM>2.0.CO;2
