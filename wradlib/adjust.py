@@ -47,8 +47,8 @@ The basic procedure consists of creating an adjustment object from the class you
 want to use for adjustment. After that, you can call the object with the actual
 data that is to be adjusted. The following example is using the additive error
 model with default settings. ``obs_coords`` and ``raw_coords`` represent arrays with
-coordinate pairs for the gage observations and the radar bins, respectively. ``obs``
- and ``raw`` are arrays containing the actual data.
+coordinate pairs for the gage observations and the radar bins, respectively.
+``obs`` and ``raw`` are arrays containing the actual data.
 
 >>> adjuster = AdjustAdd(obs_coords, raw_coords)
 >>> adjusted = adjuster(obs, raw)
