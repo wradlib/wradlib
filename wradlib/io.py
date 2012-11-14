@@ -37,6 +37,7 @@ import sys
 import re
 import datetime as dt
 import pytz
+import cPickle as pickle
 
 # site packages
 import h5py
@@ -756,6 +757,24 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
     f.close()
 
     return data, attrs
+
+
+def to_pickle(fpath, obj):
+    """Pickle object <obj> to file <fpath>
+    """
+    output = open(fpath, 'wb')
+    pickle.dump(obj, output)
+    output.close()
+
+
+def from_pickle(fpath):
+    """Return pickled object from file <fpath>
+    """
+    pkl_file = open(fpath, 'rb')
+    obj = pickle.load(pkl_file)
+    pkl_file.close()
+    return obj
+
 
 
 
