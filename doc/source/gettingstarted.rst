@@ -51,9 +51,9 @@ Dependencies
 
 *wradlib* was not designed to be a self-contained library. Besides extensive use of Numpy and Scipy, *wradlib* uses additional libraries, which you will need to install before you can use *wradlib*. Note that all libraries marked with a (*) are *not* contained in the Python(x,y) distribution and thus have to be definitely installed manually.
 
-For Windows users: If possible, we will link binary installer files for the libraries below. However, installers are not always available. In this case, you have to install from source. For pure Python packages, this is easy. Just extract the source, open a console window on the same level that contains the ``setup.py`` file and execute::
+For Windows users: If possible, we will link binary installer files for the libraries below. However, installers are not always available. In this case, you have to install from source. For pure Python packages listed in PyPI, this is easy. Just open a console window and type::
 
-   python setup.py install
+    easy_install *package_name* 
 
 - basemap (*): Download installer at http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits/basemap-1.0.2/
 
@@ -65,7 +65,7 @@ For Windows users: If possible, we will link binary installer files for the libr
 
 - numpy
 
-- numpydoc (*): Download source at http://pypi.python.org/pypi/numpydoc and install via *python setup.py install*
+- numpydoc (*): Install via ``easy_install numpydoc``
 
 - pylab
 
