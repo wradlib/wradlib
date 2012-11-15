@@ -39,6 +39,7 @@ from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
 from mpl_toolkits.axisartist import SubplotHost, ParasiteAxesAuxTrans, GridHelperCurveLinear
 from mpl_toolkits.axisartist.grid_finder import FixedLocator
 import mpl_toolkits.axisartist.angle_helper as angle_helper
+from matplotlib.ticker import NullFormatter, FuncFormatter
 
 # wradlib modules
 import wradlib.georef as georef
@@ -371,6 +372,103 @@ def cartesian_plot(data, x=None, y=None, title='', unit='', saveto='', fig=None,
         if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
             pl.savefig(saveto)
             pl.close()
+
+
+def plot_plan_and_vert(x, y, z, dataxy, dataxz, datazy, unit="", title="", saveto="", **kwargs):
+    """Plot 2-D plan view of <dataxy> together with vertical sections <dataxz> and <datazy>
+
+    Parameters
+    ----------
+    x : array of x-axis coordinates
+    y : array of y-axis coordinates
+    z : array of z-axis coordinates
+    dataxy : 2d array of shape (len(x), len(y))
+    datazx : 2d array of shape (len(z), len(x))
+    datazy : 2d array of shape (len(z), len(y))
+    unit : string (unit of data arrays)
+    title: string
+    saveto : file path if figure should be saved
+    **kwargs : other kwargs which can be passed to pylab.contourf
+
+    """
+
+    fig = pl.figure(figsize=(10, 10))
+
+    # define axes
+    left, bottom, width, height = 0.1, 0.1, 0.6, 0.2
+    ax_xy = pl.axes((left, bottom, width, width))
+    ax_x  = pl.axes((left, bottom+width, width, height))
+    ax_y  = pl.axes((left+width, bottom, height, width))
+    ax_cb  = pl.axes((left+width+height+0.02, bottom, 0.02, width))
+
+    # set axis label formatters
+    ax_x.xaxis.set_major_formatter(NullFormatter())
+    ax_y.yaxis.set_major_formatter(NullFormatter())
+
+    # draw CAPPI
+    pl.axes(ax_xy)
+    xy = pl.contourf(x,y,dataxy, **kwargs)
+
+    # draw colorbar
+    cb = pl.colorbar(xy, cax=ax_cb)
+    cb.set_label("(%s)" % unit)
+
+    # draw upper vertical profil
+    ax_x.contourf(x, z, datazx.transpose(), **kwargs)
+
+    # draw right vertical profil
+    ax_y.contourf(z, y, datazy, **kwargs)
+
+    # label axes
+    ax_xy.set_xlabel('x (km)')
+    ax_xy.set_ylabel('y (km)')
+    ax_x.set_xlabel('')
+    ax_x.set_ylabel('z (km)')
+    ax_y.set_ylabel('')
+    ax_y.set_xlabel('z (km)')
+
+    def xycoords(x,pos):
+        'The two args are the value and tick position'
+        return "%d" % (x/1000.)
+
+    xyformatter = FuncFormatter(xycoords)
+
+    def zcoords(x,pos):
+        'The two args are the value and tick position'
+        return ( "%.1f" % (x/1000.) ).rstrip('0').rstrip('.')
+
+    zformatter = FuncFormatter(zcoords)
+
+    ax_xy.xaxis.set_major_formatter(xyformatter)
+    ax_xy.yaxis.set_major_formatter(xyformatter)
+    ax_x.yaxis.set_major_formatter(zformatter)
+    ax_y.xaxis.set_major_formatter(zformatter)
+
+    if not title=="":
+        # add a title - here, we have to create a new axes object which will be invisible
+        # then the invisble axes will get a title
+        tax = pl.axes((left, bottom+width+height+0.01, width+height, 0.01), frameon=False, axisbg="none")
+        tax.get_xaxis().set_visible(False)
+        tax.get_yaxis().set_visible(False)
+        pl.title(title)
+    if saveto=='':
+        # show plot
+        pl.show()
+        if not pl.isinteractive():
+            # close figure eplicitely if pylab is not in interactive mode
+            pl.close()
+    else:
+        # save plot to file
+        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+            pl.savefig(saveto)
+            pl.close()
+
+
+def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs):
+    """Plot according to <plot_plan_and_vert> with the maximum values along the three axes of <data>
+    """
+    plot_plan_and_vert(x, y, z, np.max(data,axis=2), np.max(data, axis=0), np.max(data, axis=1), unit, title, saveto, **kwargs)
+
 
 
 ##class PolarBasemap():
