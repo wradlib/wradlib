@@ -40,6 +40,7 @@ import pytz
 import cPickle as pickle
 
 # site packages
+import tables as tb
 import h5py
 import numpy as np
 import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
@@ -776,6 +777,47 @@ def from_pickle(fpath):
     return obj
 
 
+# in case PytTables hdf5 compression is used
+filters = tb.Filters(complib='blosc', complevel=5)
+
+def to_hdf5(fpath, data, metadata={}, dtype="float32"):
+    """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
+
+    This is more efficient than pickle, cPickle or numpy.save. The data is stored in
+    a subgroup named ``data`` (i.e. hdf5file.root.data).
+
+    Parameters
+    ----------
+    fpath : string (path to the hdf5 file)
+    data : numpy array
+    metadata : dictionary
+
+    """
+    hdf = tb.openFile(fpath, "w")
+    # save the data
+    atom = tb.Atom.from_dtype(np.dtype(dtype))
+    hdata = hdf.createCArray(hdf.root, "data", atom, data.shape, filters=filters)
+    hdata[:] = data
+    # save the metadata
+    for key in metadata.keys():
+        hdf.setAttr(key, metadata[key])
+    hdf.close()
+    return 0
+
+
+def from_hdf5(fpath):
+    """Loading data from hdf5 files that was stored by <wradlib.io.to_hdf5>
+
+    Parameters
+    ----------
+    fpath : string (path to the hdf5 file)
+
+    """
+    hdf = tb.openFile(fpath, "r")
+    metadata = hdf.root.data.attrs
+    data = np.array(hdf.root.data[:])
+    hdf.close()
+    return data, metadata
 
 
 if __name__ == '__main__':
