@@ -49,6 +49,8 @@ class NorthPolarAxes(PolarAxes):
     '''
     A variant of PolarAxes where theta starts pointing north and goes
     clockwise.
+    Obsolete since matplotlib version 1.1.0, where the same behaviour may
+    be achieved with a reconfigured standard PolarAxes object.
     '''
     name = 'northpolar'
 
@@ -111,7 +113,14 @@ class PolarPlot(object):
                 # crate a new figure object
                 fig = pl.figure(**kwargs)
             # plot on the axes object which was passed to this function
-            ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
+            try: # version working before matplotlib 1.1.0. may be removed some time
+                ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
+            except AttributeError: # happens in new versions of matplotlib (v.1.1 and newer due to changes to the transforms api)
+                # but then again, we have new functionality obsolescing the old
+                # northpolar axes object
+                ax = fig.add_subplot(axpos, projection="polar", aspect=1.)
+                ax.set_theta_direction(-1)
+                ax.set_theta_zero_location("N")
 
         self.fig = fig
         self.ax = ax
@@ -234,10 +243,24 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
     if fig==None:
         # crate a new figure object
         fig = pl.figure(figsize=(8,8))
-        ax = fig.add_subplot(111, projection="northpolar", aspect=1.)
+        try: # version working before matplotlib 1.1.0. may be removed some time
+            ax = fig.add_subplot(111, projection="northpolar", aspect=1.)
+        except AttributeError: # happens in new versions of matplotlib (v.1.1 and newer due to changes to the transforms api)
+            # but then again, we have new functionality obsolescing the old
+            # northpolar axes object
+            ax = fig.add_subplot(111, projection="polar", aspect=1.)
+            ax.set_theta_direction(-1)
+            ax.set_theta_zero_location("N")
     else:
         # plot on the axes object which was passed to this function
-        ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
+        try: # version working before matplotlib 1.1.0. may be removed some time
+            ax = fig.add_subplot(axpos, projection="northpolar", aspect=1.)
+        except AttributeError: # happens in new versions of matplotlib
+            # but then again, we have new functionality obsolescing the old
+            # northpolar axes object
+            ax = fig.add_subplot(axpos, projection="polar", aspect=1.)
+            ax.set_theta_direction(-1)
+            ax.set_theta_zero_location("N")
     if classes==None:
         # automatic color normalization by vmin and vmax (not recommended)
         circle = ax.pcolormesh(theta, r, data,rasterized=True, cmap=colormap, **kwargs)
