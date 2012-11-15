@@ -262,7 +262,7 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
     tree = cKDTree(src_secs.reshape((-1,1)))
     dists, ix = tree.query(helper_secs.reshape((-1,1)), k=1)
     # deal with edges (in case of extrapolation, we apply nearest neighbour)
-    np.where(np.isnan(helpers), src[ix], helpers)
+    p.where(np.isnan(helpers), src[ix], helpers)
     # mask out points which are to far from the next source point
     helpers[np.where(dists>maxdist)[0]] = np.nan
 
@@ -315,7 +315,9 @@ def from_to(tstart, tend, tdelta):
     Parameters
     ----------
     tstart : datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12
+        or datetime object
     tend : datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12
+        or datetime object
     tdelta : integer representing time interval in SECONDS
 
     Returns
@@ -323,8 +325,10 @@ def from_to(tstart, tend, tdelta):
     output : list of datetime.datetime objects
 
     """
-    tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
-    tend   = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
+    if not type(tstart)==dt.datetime:
+        tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
+    if not type(tend)==dt.datetime:
+        tend   = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
     tdelta  = dt.timedelta(seconds=tdelta)
     tsteps = [tstart,]
     tmptime = tstart
@@ -371,14 +375,49 @@ def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None
     return np.where(np.logical_not(ix))[0]
 
 
+def meshgridN(*arrs):
+    """N-dimensional meshgrid
+
+    Just pass sequences of coordinates arrays
+
+    """
+    arrs = tuple(arrs)
+    lens = map(len, arrs)
+    dim = len(arrs)
+
+    sz = 1
+    for s in lens:
+        sz*=s
+
+    ans = []
+    for i, arr in enumerate(arrs):
+        slc = [1]*dim
+        slc[i] = lens[i]
+        arr2 = np.asarray(arr).reshape(slc)
+        for j, sz in enumerate(lens):
+            if j!=i:
+                arr2 = arr2.repeat(sz, axis=j)
+        ans.append(arr2)
+##   return tuple(ans[::-1])
+    return tuple(ans)
+
+def gridaspoints(*arrs):
+    """Creates an N-dimensional grid form arrs and returns grid points sequence of point coordinate pairs
+    """
+    grid = meshgridN(*arrs)
+    grid = tuple([dim.ravel() for dim in grid])
+    return np.vstack(grid).transpose()
+
+
 if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
-    import datetime as dt
-    dt_trg = from_to("2012-10-26 00:00:00", "2012-10-26 01:00:00", 3600)
-    dt_src = ["2012-10-26 00:05:00", "2012-10-26 00:15:00", "2012-10-26 00:30:00", "2012-10-26 01:00:00"]
-    dt_src = [dt.datetime.strptime(tstep, "%Y-%m-%d %H:%M:%S") for tstep in dt_src]
-    src = np.array([[1,1,1,1],[2,2,2,2],[3,3,3,3], [4,4,4,4]])
-    print average_over_time_windows(src, dt_src, dt_trg)
+##    import datetime as dt
+##    dt_trg = from_to("2012-10-26 00:00:00", "2012-10-26 01:00:00", 3600)
+##    dt_src = ["2012-10-26 00:05:00", "2012-10-26 00:15:00", "2012-10-26 00:30:00", "2012-10-26 01:00:00"]
+##    dt_src = [dt.datetime.strptime(tstep, "%Y-%m-%d %H:%M:%S") for tstep in dt_src]
+##    src = np.array([[1,1,1,1],[2,2,2,2],[3,3,3,3], [4,4,4,4]])
+##    print average_over_time_windows(src, dt_src, dt_trg)
+
 
 
 
