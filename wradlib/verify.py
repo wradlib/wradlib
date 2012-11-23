@@ -231,8 +231,8 @@ class ErrorMetrics():
             ax  = fig.add_subplot(111, aspect=1.)
             doplot = True
         ax.plot(self.obs, self.est, "bo")
-        pl.xlim(xmax=maxval)
-        pl.ylim(ymax=maxval)
+        pl.xlim(xmin=0., xmax=maxval)
+        pl.ylim(ymin=0., ymax=maxval)
         if maxval==None:
             maxval = np.max(np.append(self.obs, self.est))
         ax.plot([0,maxval], [0,maxval], "-", color="grey")
