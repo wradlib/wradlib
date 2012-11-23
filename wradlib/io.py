@@ -38,6 +38,7 @@ import re
 import datetime as dt
 import pytz
 import cPickle as pickle
+import os
 
 # site packages
 import tables as tb
@@ -800,7 +801,7 @@ def to_hdf5(fpath, data, metadata={}, dtype="float32"):
     hdata[:] = data
     # save the metadata
     for key in metadata.keys():
-        hdf.setAttr(key, metadata[key])
+        hdf.root.data.setAttr(key, metadata[key])
     hdf.close()
     return 0
 
@@ -813,8 +814,12 @@ def from_hdf5(fpath):
     fpath : string (path to the hdf5 file)
 
     """
+    if not os.path.exists(fpath):
+        raise Exception("Cannot find file: %s" % fpath)
     hdf = tb.openFile(fpath, "r")
-    metadata = hdf.root.data.attrs
+    metadata = {}
+    for attr in hdf.root.data.attrs._f_list():
+        metadata[attr] = hdf.root.data.attrs[attr]
     data = np.array(hdf.root.data[:])
     hdf.close()
     return data, metadata
