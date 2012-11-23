@@ -105,7 +105,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
 
 
 def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
-    """Aggregate time series data to a coarser temporal resolution.
+    """UNDER DEVELOPMENT: Aggregate time series data to a coarser temporal resolution.
 
     Parameters
     ----------
@@ -187,7 +187,7 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
 
 
 def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval=300, **ipargs):
-    """Computes the average of a time series over given time windows.
+    """UNDER DEVELOPMENT: Computes the average of a time series over given time windows.
 
     This function computes the average values of an irregular time series ``src``
     within given time windows ``dt_trg``. The datetimes of the original time series
@@ -262,7 +262,7 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
     tree = cKDTree(src_secs.reshape((-1,1)))
     dists, ix = tree.query(helper_secs.reshape((-1,1)), k=1)
     # deal with edges (in case of extrapolation, we apply nearest neighbour)
-    p.where(np.isnan(helpers), src[ix], helpers)
+    np.where(np.isnan(helpers), src[ix], helpers)
     # mask out points which are to far from the next source point
     helpers[np.where(dists>maxdist)[0]] = np.nan
 
@@ -411,12 +411,7 @@ def gridaspoints(*arrs):
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
-##    import datetime as dt
-##    dt_trg = from_to("2012-10-26 00:00:00", "2012-10-26 01:00:00", 3600)
-##    dt_src = ["2012-10-26 00:05:00", "2012-10-26 00:15:00", "2012-10-26 00:30:00", "2012-10-26 01:00:00"]
-##    dt_src = [dt.datetime.strptime(tstep, "%Y-%m-%d %H:%M:%S") for tstep in dt_src]
-##    src = np.array([[1,1,1,1],[2,2,2,2],[3,3,3,3], [4,4,4,4]])
-##    print average_over_time_windows(src, dt_src, dt_trg)
+
 
 
 
