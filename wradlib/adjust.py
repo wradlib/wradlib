@@ -241,7 +241,7 @@ class AdjustBase(ipol.IpolBase):
         for i in ix:
             # Pass all valid pairs except ONE which you pass as target
             ix_adjust = np.setdiff1d(ix, [i])
-            estatobs = np.append(estatobs, self.__call__(obs, rawatobs[i], self.obs_coords[i], rawatobs, ix_adjust)).ravel()
+            estatobs = np.append(estatobs, self.__call__(obs, rawatobs[i], self.obs_coords[i].reshape((1,-1)), rawatobs, ix_adjust)).ravel()
         return obs[ix], estatobs
 
 
@@ -758,16 +758,157 @@ class AdjustMFB(AdjustBase):
 
         # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
         # compute ratios for each valid observation point
-        ratios = obs[ix] / rawatobs[ix]
-        # compute adjustment factor
-        thesum = np.nansum(ratios)
-        num    = len(ratios) - len(np.where(np.isnan(ratios))[0])
-        if (not np.isnan(thesum)) and (not num==0):
-            corrfact = thesum / num
-        else:
-            corrfact = 1
-        # return adjusted data
+        ratios = np.ma.masked_invalid(obs[ix] / rawatobs[ix])
+        corrfact = np.median(ratios)
+        if type(corrfact)==np.ma.core.MaskedConstant:
+            corrfact = 1.
+        print "corrfact=",corrfact
         return corrfact*raw
+
+
+class AdjustNone(AdjustBase):
+    """
+    Same behaviour as the other adjustment classes, but simply returns the unadjusted data
+
+    Parameters
+    ----------
+    obs_coords : array of float
+        coordinate pairs of observations points
+    raw_coords : array of float
+        coordinate pairs of raw (unadjusted) field
+    nnear_raws : integer
+        defaults to 9
+    stat : string
+        defaults to 'median'
+    mingages : integer
+        minimum number of gages which are required for an adjustment
+    minval : float
+        If the gage or radar observation is below this threshold, the location
+        will not be used for adjustment. For additive adjustment, this value
+        should be set to zero (default value).
+    Ipclass : an interpolation class from wradib.ipol
+        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+    ipargs : keyword arguments to create an instance of Ipclass
+        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+
+    Returns
+    -------
+    output : array of unadjusted radar values
+
+    Notes
+    -----
+    Inherits from AdjustBase
+
+    """
+
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+        """
+        Return the field of *raw* values adjusted by *obs* (here: no adjustment!)
+
+        Parameters
+        ----------
+        obs : array of floats
+            Gage observations
+        raw : array of floats
+            Raw unadjusted radar rainfall
+        targets : (INTERNAL) array of floats
+            Coordinate pairs for locations on which the final adjustment product is interpolated
+            Defaults to None. In this case, the output locations will be identical to the radar coordinates
+        rawatobs : (INTERNAL) array of floats
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+        ix : (INTERNAL) array of integers
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+
+        """
+        # ----------------GENERIC PART FOR MOST __call__ methods----------------
+        if None in [ix, rawatobs]:
+            # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
+            rawatobs, ix = self._get_valid_pairs(obs, raw)
+        if len(ix)<=self.mingages:
+            # Not enough valid gages for adjustment? - return unadjusted data
+            return raw
+        return raw
+
+
+class GageOnly(AdjustBase):
+    """Same behaviour as the other adjustment classes, but returns an interpolation of rain gage observations
+
+    First, an instance of GageOnly has to be created. Calling this instance then
+    does the actual adjustment. The motivation behind this performance. In case
+    the observation points are always the same for different time steps, the computation
+    of neighbours and invserse distance weights only needs to be performed once during
+    initialisation.
+
+    GageOnly automatically takes care of invalid gage or radar observations (e.g.
+    NaN, Inf or other typical missing data flags such as -9999. However, in case
+    e.g. the observation data contain missing values, the computation of the inverse
+    distance weights needs to be repeated in __call__ which is at the expense of
+    performance.
+
+    Parameters
+    ----------
+    obs_coords : array of float
+        coordinate pairs of observations points
+    raw_coords : array of float
+        coordinate pairs of raw (unadjusted) field
+    nnear_raws : integer
+        defaults to 9
+    stat : string
+        defaults to 'median'
+    mingages : integer
+        minimum number of gages which are required for an adjustment
+    minval : float
+        If the gage or radar observation is below this threshold, the location
+        will not be used for adjustment. For additive adjustment, this value
+        should be set to zero (default value).
+    Ipclass : an interpolation class from wradib.ipol
+        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+    ipargs : keyword arguments to create an instance of Ipclass
+        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+
+    Returns
+    -------
+    output : array of adjusted radar values
+
+    Notes
+    -----
+    Inherits from AdjustBase
+
+    """
+
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+        """
+        Return the field of *raw* values adjusted by *obs*.
+
+        Parameters
+        ----------
+        obs : array of floats
+            Gage observations
+        raw : array of floats
+            Raw unadjusted radar rainfall
+        targets : (INTERNAL) array of floats
+            Coordinate pairs for locations on which the final adjustment product is interpolated
+            Defaults to None. In this case, the output locations will be identical to the radar coordinates
+        rawatobs : (INTERNAL) array of floats
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+        ix : (INTERNAL) array of integers
+            For internal use from AdjustBase.xvalidate only (defaults to None)
+
+        """
+        # ----------------GENERIC PART FOR MOST __call__ methods----------------
+        if None in [ix, rawatobs]:
+            # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
+            rawatobs, ix = self._get_valid_pairs(obs, raw)
+        if len(ix)<=self.mingages:
+            # Not enough valid gages for adjustment? - return unadjusted data
+            return raw
+        # Get new Interpolator instance if necessary
+        ip = self._checkip(ix, targets)
+
+        # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
+        # interpolate gage observations
+        return ip(obs[ix])
+
 
 
 class Raw_at_obs():
