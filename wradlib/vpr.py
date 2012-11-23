@@ -43,6 +43,7 @@ import cPickle as pickle
 import os
 
 
+
 class CartesianVolume():
     """Create 3-D regular volume grid in Cartesian coordinates from polar data with multiple elevation angles
 
@@ -62,12 +63,13 @@ class CartesianVolume():
     output : float ndarray of shape (number of levels, number of x coordinates, number of y coordinates)
 
     """
-    def __init__(self, polcoords, cartcoords, polshape, maxrange, maskfile="", Ipclass=ipol.Idw, **ipargs):
+    def __init__(self, polcoords, cartcoords, polshape, maxrange, pseudocappi=False, maskfile="", Ipclass=ipol.Idw, **ipargs):
         self.Ipclass        = Ipclass
         self.ipargs         = ipargs
         # create a default instance of interpolator
         print "Creating 3D interpolator...this is still very slow."
         self.ip             = Ipclass(src=polcoords, trg=cartcoords, **ipargs)
+        self.ispcappi       = pseudocappi
         try:
             # read mask from pickled file
             self.mask = io.from_hdf5(maskfile)[0]
@@ -77,11 +79,12 @@ class CartesianVolume():
             print "Load mask from file <%s>: successful" % maskfile
         except:
             self.mask = self.create_mask(polcoords, cartcoords, polshape, maxrange)
-            try:
-                io.to_hdf5(maskfile, self.mask, dtype="bool")
-                print "Save mask to file <%s>: successful" % maskfile
-            except:
-                pass
+            if not maskfile=="":
+                try:
+                    io.to_hdf5(maskfile, self.mask, dtype="bool")
+                    print "Save mask to file <%s>: successful" % maskfile
+                except:
+                    pass
 
     def __call__(self, data):
         """Interpolates the polar data to 3-dimensional Cartesian coordinates
@@ -102,16 +105,19 @@ class CartesianVolume():
         # Identify voxels beyond the maximum range
         center = np.array([np.mean(polcoords[:,0]), np.mean(polcoords[:,1]), np.min(polcoords[:,2])]).reshape((-1,3))
         in_range = ((cartcoords-center)**2).sum(axis=-1) <= maxrange**2
-        # Identify those grid altitudes above the maximum scanning angle
-        maxelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[-1].ravel(),polcoords[:,1].reshape(polshape)[-1].ravel(),polcoords[:,2].reshape(polshape)[-1].ravel())).transpose()
-        alt_interpolator = ipol.Nearest(maxelevcoords, cartcoords)
-        maxalt = alt_interpolator(maxelevcoords[:,2])
-        # Identify those grid altitudes below the minimum scanning angle
-        minelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[0].ravel(),polcoords[:,1].reshape(polshape)[0].ravel(),polcoords[:,2].reshape(polshape)[0].ravel())).transpose()
-        alt_interpolator = ipol.Nearest(minelevcoords, cartcoords)
-        minalt = alt_interpolator(minelevcoords[:,2])
-        # mask those values above the maximum and below the minimum scanning angle
-        return np.logical_not( np.logical_and(np.logical_and(cartcoords[:,2]<=maxalt, cartcoords[:,2]>=minalt), in_range) )
+        if not self.ispcappi:
+            # Identify those grid altitudes above the maximum scanning angle
+            maxelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[-1].ravel(),polcoords[:,1].reshape(polshape)[-1].ravel(),polcoords[:,2].reshape(polshape)[-1].ravel())).transpose()
+            alt_interpolator = ipol.Nearest(maxelevcoords, cartcoords)
+            maxalt = alt_interpolator(maxelevcoords[:,2])
+            # Identify those grid altitudes below the minimum scanning angle
+            minelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[0].ravel(),polcoords[:,1].reshape(polshape)[0].ravel(),polcoords[:,2].reshape(polshape)[0].ravel())).transpose()
+            alt_interpolator = ipol.Nearest(minelevcoords, cartcoords)
+            minalt = alt_interpolator(minelevcoords[:,2])
+            # mask those values above the maximum and below the minimum scanning angle
+            return np.logical_not( np.logical_and(np.logical_and(cartcoords[:,2]<=maxalt, cartcoords[:,2]>=minalt), in_range) )
+        else:
+            return np.logical_not( in_range )
 
 
 def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
