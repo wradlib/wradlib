@@ -40,9 +40,11 @@ from mpl_toolkits.axisartist import SubplotHost, ParasiteAxesAuxTrans, GridHelpe
 from mpl_toolkits.axisartist.grid_finder import FixedLocator
 import mpl_toolkits.axisartist.angle_helper as angle_helper
 from matplotlib.ticker import NullFormatter, FuncFormatter
+import matplotlib.dates as mdates
 
 # wradlib modules
 import wradlib.georef as georef
+import wradlib.util as util
 
 
 class NorthPolarAxes(PolarAxes):
@@ -372,103 +374,6 @@ def cartesian_plot(data, x=None, y=None, title='', unit='', saveto='', fig=None,
         if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
             pl.savefig(saveto)
             pl.close()
-
-
-def plot_plan_and_vert(x, y, z, dataxy, dataxz, datazy, unit="", title="", saveto="", **kwargs):
-    """Plot 2-D plan view of <dataxy> together with vertical sections <dataxz> and <datazy>
-
-    Parameters
-    ----------
-    x : array of x-axis coordinates
-    y : array of y-axis coordinates
-    z : array of z-axis coordinates
-    dataxy : 2d array of shape (len(x), len(y))
-    datazx : 2d array of shape (len(z), len(x))
-    datazy : 2d array of shape (len(z), len(y))
-    unit : string (unit of data arrays)
-    title: string
-    saveto : file path if figure should be saved
-    **kwargs : other kwargs which can be passed to pylab.contourf
-
-    """
-
-    fig = pl.figure(figsize=(10, 10))
-
-    # define axes
-    left, bottom, width, height = 0.1, 0.1, 0.6, 0.2
-    ax_xy = pl.axes((left, bottom, width, width))
-    ax_x  = pl.axes((left, bottom+width, width, height))
-    ax_y  = pl.axes((left+width, bottom, height, width))
-    ax_cb  = pl.axes((left+width+height+0.02, bottom, 0.02, width))
-
-    # set axis label formatters
-    ax_x.xaxis.set_major_formatter(NullFormatter())
-    ax_y.yaxis.set_major_formatter(NullFormatter())
-
-    # draw CAPPI
-    pl.axes(ax_xy)
-    xy = pl.contourf(x,y,dataxy, **kwargs)
-
-    # draw colorbar
-    cb = pl.colorbar(xy, cax=ax_cb)
-    cb.set_label("(%s)" % unit)
-
-    # draw upper vertical profil
-    ax_x.contourf(x, z, datazx.transpose(), **kwargs)
-
-    # draw right vertical profil
-    ax_y.contourf(z, y, datazy, **kwargs)
-
-    # label axes
-    ax_xy.set_xlabel('x (km)')
-    ax_xy.set_ylabel('y (km)')
-    ax_x.set_xlabel('')
-    ax_x.set_ylabel('z (km)')
-    ax_y.set_ylabel('')
-    ax_y.set_xlabel('z (km)')
-
-    def xycoords(x,pos):
-        'The two args are the value and tick position'
-        return "%d" % (x/1000.)
-
-    xyformatter = FuncFormatter(xycoords)
-
-    def zcoords(x,pos):
-        'The two args are the value and tick position'
-        return ( "%.1f" % (x/1000.) ).rstrip('0').rstrip('.')
-
-    zformatter = FuncFormatter(zcoords)
-
-    ax_xy.xaxis.set_major_formatter(xyformatter)
-    ax_xy.yaxis.set_major_formatter(xyformatter)
-    ax_x.yaxis.set_major_formatter(zformatter)
-    ax_y.xaxis.set_major_formatter(zformatter)
-
-    if not title=="":
-        # add a title - here, we have to create a new axes object which will be invisible
-        # then the invisble axes will get a title
-        tax = pl.axes((left, bottom+width+height+0.01, width+height, 0.01), frameon=False, axisbg="none")
-        tax.get_xaxis().set_visible(False)
-        tax.get_yaxis().set_visible(False)
-        pl.title(title)
-    if saveto=='':
-        # show plot
-        pl.show()
-        if not pl.isinteractive():
-            # close figure eplicitely if pylab is not in interactive mode
-            pl.close()
-    else:
-        # save plot to file
-        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
-            pl.savefig(saveto)
-            pl.close()
-
-
-def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs):
-    """Plot according to <plot_plan_and_vert> with the maximum values along the three axes of <data>
-    """
-    plot_plan_and_vert(x, y, z, np.max(data,axis=2), np.max(data, axis=0), np.max(data, axis=1), unit, title, saveto, **kwargs)
-
 
 
 ##class PolarBasemap():
@@ -1087,6 +992,205 @@ def rhi_plot(data, **kwargs):
 
     return fig, pl
 
+
+def plot_scan_strategy(ranges, elevs, vert_res=500., maxalt=10000., radaralt=0., ax=None):
+    """Plot the vertical scanning strategy
+
+    Parameters
+    ----------
+    ranges : array of ranges
+    elevs : array of elevation angles
+
+    """
+    # just a dummy
+    az=np.array([90.])
+
+    polc = util.meshgridN(ranges, az, elevs)
+
+    # get mean height over radar
+    lat, lon, alt = georef.polar2latlonalt(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), (14.910948,120.259666, radaralt))
+    alt = alt.reshape(len(ranges), len(elevs))
+    r = polc[0].reshape(len(ranges), len(elevs))
+
+    if ax==None:
+        returnax = False
+        fig = pl.figure()
+        ax = fig.add_subplot(111)
+    else:
+        returnax = True
+    # actual plotting
+    for y in np.arange(0,10000.,vert_res):
+        ax.axhline(y=y, color="grey")
+    for x in ranges:
+        ax.axvline(x=x, color="grey")
+    for i in range(len(elevs)):
+        ax.plot(r[:,i].ravel(), alt[:,i].ravel(), lw=2, color="black")
+    pl.ylim(ymax=maxalt)
+    ax.tick_params(labelsize="large")
+    pl.xlabel("Range (m)", size="large")
+    pl.ylabel("Height over radar (m)", size="large")
+    for i, elev in enumerate(elevs):
+        x = r[:,i].ravel()[-1]+1500.
+        y = alt[:,i].ravel()[-1]
+        if  y > maxalt:
+            ix = np.where(alt[:,i].ravel()<maxalt)[0][-1]
+            x = r[:,i].ravel()[ix]
+            y = maxalt+100.
+        pl.text(x, y, str(elev), fontsize="large")
+
+    if returnax:
+        return ax
+    pl.show()
+
+
+def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", saveto="", **kwargs):
+    """Plot 2-D plan view of <dataxy> together with vertical sections <dataxz> and <datazy>
+
+    Parameters
+    ----------
+    x : array of x-axis coordinates
+    y : array of y-axis coordinates
+    z : array of z-axis coordinates
+    dataxy : 2d array of shape (len(x), len(y))
+    datazx : 2d array of shape (len(z), len(x))
+    datazy : 2d array of shape (len(z), len(y))
+    unit : string (unit of data arrays)
+    title: string
+    saveto : file path if figure should be saved
+    **kwargs : other kwargs which can be passed to pylab.contourf
+
+    """
+
+    fig = pl.figure(figsize=(10, 10))
+
+    # define axes
+    left, bottom, width, height = 0.1, 0.1, 0.6, 0.2
+    ax_xy = pl.axes((left, bottom, width, width))
+    ax_x  = pl.axes((left, bottom+width, width, height))
+    ax_y  = pl.axes((left+width, bottom, height, width))
+    ax_cb  = pl.axes((left+width+height+0.02, bottom, 0.02, width))
+
+    # set axis label formatters
+    ax_x.xaxis.set_major_formatter(NullFormatter())
+    ax_y.yaxis.set_major_formatter(NullFormatter())
+
+    # draw CAPPI
+    pl.axes(ax_xy)
+    xy = pl.contourf(x,y,dataxy, **kwargs)
+    pl.grid(color="grey", lw=1.5)
+
+    # draw colorbar
+    cb = pl.colorbar(xy, cax=ax_cb)
+    cb.set_label("(%s)" % unit)
+
+    # draw upper vertical profil
+    ax_x.contourf(x, z, datazx.transpose(), **kwargs)
+
+    # draw right vertical profil
+    ax_y.contourf(z, y, datazy, **kwargs)
+
+    # label axes
+    ax_xy.set_xlabel('x (km)')
+    ax_xy.set_ylabel('y (km)')
+    ax_x.set_xlabel('')
+    ax_x.set_ylabel('z (km)')
+    ax_y.set_ylabel('')
+    ax_y.set_xlabel('z (km)')
+
+    def xycoords(x,pos):
+        'The two args are the value and tick position'
+        return "%d" % (x/1000.)
+
+    xyformatter = FuncFormatter(xycoords)
+
+    def zcoords(x,pos):
+        'The two args are the value and tick position'
+        return ( "%.1f" % (x/1000.) ).rstrip('0').rstrip('.')
+
+    zformatter = FuncFormatter(zcoords)
+
+    ax_xy.xaxis.set_major_formatter(xyformatter)
+    ax_xy.yaxis.set_major_formatter(xyformatter)
+    ax_x.yaxis.set_major_formatter(zformatter)
+    ax_y.xaxis.set_major_formatter(zformatter)
+
+    if not title=="":
+        # add a title - here, we have to create a new axes object which will be invisible
+        # then the invisble axes will get a title
+        tax = pl.axes((left, bottom+width+height+0.01, width+height, 0.01), frameon=False, axisbg="none")
+        tax.get_xaxis().set_visible(False)
+        tax.get_yaxis().set_visible(False)
+        pl.title(title)
+    if saveto=='':
+        # show plot
+        pl.show()
+        if not pl.isinteractive():
+            # close figure eplicitely if pylab is not in interactive mode
+            pl.close()
+    else:
+        # save plot to file
+        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+            pl.savefig(saveto)
+            pl.close()
+
+
+def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs):
+    """Plot according to <plot_plan_and_vert> with the maximum values along the three axes of <data>
+    """
+    plot_plan_and_vert(x, y, z, np.max(data,axis=2), np.max(data, axis=0), np.max(data, axis=1), unit, title, saveto, **kwargs)
+
+
+def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', colors=None, ylabel="", title="", fontsize="medium", saveto="", **kwargs):
+    """Plot time series data (e.g. gage recordings)
+
+    Parameters
+    ----------
+    dtimes : array of datetime objects (time steps)
+    data : 2D array of shape ( num time steps, num data series )
+    labels : list of strings (names of data series)
+    title : string
+    kwargs : keyword arguments related to pylab.plot
+
+    """
+    if ax==None:
+        returnax = False
+        fig = pl.figure()
+        ax  = fig.add_subplot(1,1,1,  title=title)
+    else:
+        returnax = True
+##    if labels==None:
+##        labels = ["series%d"%i for i in range(1, data.shape[1]+1)]
+##    for i, label in enumerate(labels):
+##        ax.plot_date(mpl.dates.date2num(dtimes),data[:,i],label=label, color=colors[i], **kwargs)
+    ax.plot_date(mpl.dates.date2num(dtimes), data, **kwargs)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter(datefmt))
+    pl.setp(ax.get_xticklabels(), visible=True)
+    pl.setp(ax.get_xticklabels(), rotation=-30, horizontalalignment='left')
+    ax.set_ylabel(ylabel, size=fontsize)
+    ax = set_ticklabel_size(ax,fontsize)
+    ax.legend(loc='best')
+
+    if returnax:
+        return ax
+
+    if saveto=="":
+        # show plot
+        pl.show()
+        if not pl.isinteractive():
+            # close figure eplicitely if pylab is not in interactive mode
+            pl.close()
+    else:
+        # save plot to file
+        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+            pl.savefig(saveto)
+            pl.close()
+
+def set_ticklabel_size(ax, size):
+    """
+    """
+    for label in ax.get_xticklabels() + ax.get_yticklabels():
+        label.set_fontsize(size)
+    return ax
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <vis> as main...'
