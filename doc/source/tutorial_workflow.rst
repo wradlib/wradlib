@@ -61,12 +61,15 @@ The first line computes the path integrated attenuation ``pia`` for each radar b
 >>> pl.legend()
 >>> pl.show()
 
-.. seealso:: Get more info in the library reference section :doc:`atten`. Here you will learn to know the algorithms available for attenuation correction and how to manipulate their behaviour by using additonal keyword arguments.   
+.. seealso:: Get more info in the library reference section :doc:`atten`. There you will learn to know the algorithms available for attenuation correction and how to manipulate their behaviour by using additonal keyword arguments.   
 
 
 Vertical Profile of Reflectivity
 --------------------------------
-*Not yet available - implementation is ongoing.*
+Precipitation is 3-dimensional in space. The vertical distribution of precipitation (and thus reflectivity) is typically non-uniform. As the height of the radar beam increases with the distance from the radar location (beam elevation, earth curvature), one sweep samples from different heights. The effects of the non-uniform VPR and the different sampling heights need to be accounted for if we are interested in the precipiation near the ground or in defined altitudes.
+
+.. seealso:: Get more info in the library reference section :doc:`vpr`. There you will learn how to reference polar volume data, to create CAPPIs and Pseudo CAPPIs, to inspect vertical profiles of reflectivity (UNDER DEVELOPMENT), and to use these for correction (UNDER DEVELOPMENT).   
+
 
 
 Conversion of reflectivity into rainfall
