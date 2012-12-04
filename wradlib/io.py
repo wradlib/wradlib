@@ -305,14 +305,24 @@ def writePolygon2Text(fname, polygons):
         f.write('END\n')
 
 
-def read_EDGE_netcdf(filename, range_lim = 200000.):
+def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
     """Data reader for netCDF files exported by the EDGE radar software
+
+    The corresponding NetCDF files from the EDGE software typically contain only
+    one variable (e.g. reflectivity) for one elevation angle (sweep). The elevation
+    angle is specified in the attributes keyword "Elevation".
+
+    Please note that the radar might not return data with equidistant azimuth angles.
+    In case you need equidistant azimuth angles, please set enforce_equidist to True.
 
     Parameters
     ----------
     filename : path of the netCDF file
     range_lim : range limitation [m] of the returned radar data
                 (200000 per default)
+    enforce_equidist : boolean
+        Set True if the values of the azimuth angles should be forced to be equidistant
+        default value is False
 
     Returns
     -------
@@ -322,16 +332,18 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     # read the data from file
     dset = nc.Dataset(filename)
     data = dset.variables[dset.TypeName][:]
-    # Azimuth corresponding to 1st slice
-    theta0 = int(round(dset.variables['Azimuth'][0]))
-    # rotate accordingly
-    data = np.roll(data, theta0, axis=0)
-#    data = np.flipud(data)
-    data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
-    # Azimuth
+    # Check azimuth angles and rotate image
     az = dset.variables['Azimuth'][:]
-    az = np.round(az, 0)
-    az = np.roll(az, theta0)
+    # These are the indices of the minimum and maximum azimuth angle
+    ix_minaz = np.argmin(az)
+    ix_maxaz = np.argmax(az)
+    if enforce_equidist:
+        az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
+    else:
+        az = np.roll(az, -ix_minaz)
+    # rotate accordingly
+    data = np.roll(data, -ix_minaz, axis=0)
+    data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
     # Ranges
     binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
     r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
@@ -343,7 +355,7 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     if range_lim and range_lim / binwidth <= data.shape[1]:
         data = data[:,:range_lim / binwidth]
         r = r[:range_lim / binwidth]
-
+    # Set additional metadata attributes
     attrs['az'] = az
     attrs['r']  = r
     attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
@@ -352,6 +364,7 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     dset.close()
 
     return data, attrs
+
 
 def read_BUFR(buffile):
     """Main BUFR interface: Decodes BUFR file and returns metadata and values
