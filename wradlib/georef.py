@@ -47,6 +47,7 @@ from numpy import sin, cos, arcsin, pi
 import numpy as np
 import pyproj
 from sys import exit
+import warnings
 
 
 def hor2aeq(a, h, phi):
@@ -508,8 +509,9 @@ def _check_polar_coords(r, az):
             print 'Invalid polar coordinates: Azimuth array is not sorted clockwise.'
             exit()
     if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1]))>1:
-        print 'Invalid polar coordinates: Azimuth angles are not equidistant.'
-        exit()
+        warnings.warn("The azimuth angles of the current dataset are not equidistant.", UserWarning)
+##        print 'Invalid polar coordinates: Azimuth angles are not equidistant.'
+##        exit()
     return r, az
 
 
