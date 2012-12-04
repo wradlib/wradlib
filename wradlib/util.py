@@ -102,6 +102,28 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
             trg[trg_slice] = _get_func(func)(src[tuple(src_slice)], axis=taxis)
     return trg
 
+def sum_over_time_windows(src, dt_src, dt_trg, minpercvalid):
+    """Returns the sums of time series <src> within the time windows dt_trg
+    """
+    assert len(src)+1==len(dt_src), "Length of time series array <src> must be one less than datetime array <dt_src>."
+    try:
+        dt_src = [dt.datetime.strptime(dtime, "%Y-%m-%d %H:%M:%S") for dtime in dt_src]
+    except TypeError:
+        pass
+    try:
+        dt_trg = [dt.datetime.strptime(dtime, "%Y-%m-%d %H:%M:%S") for dtime in dt_trg]
+    except TypeError:
+        pass
+
+    accum = np.repeat(np.nan, len(dt_trg)-1)
+
+    for i, tstart in enumerate(dt_trg[:-1]):
+        tend = dt_trg[i+1]
+        # accumulate gage data to target time windows
+        ix = np.where((dt_src>tstart) & (dt_src <= tend))[0] - 1
+        if len(np.where(np.isnan( src[ix] ))[0]) * 100./ len(src[ix]) < minpercvalid:
+            accum[i] = np.nansum( src[ix] )
+    return accum
 
 
 def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
@@ -350,6 +372,19 @@ def _tdelta2seconds(tdelta):
 
     """
     return tdelta.days * 86400 + tdelta.seconds
+
+def _get_tdelta(tstart, tend, as_secs=False):
+    """Returns the difference between two datetimes
+    """
+    if not type(tstart)==dt.datetime:
+        tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
+    if not type(tend)==dt.datetime:
+        tend   = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
+    if not as_secs:
+        return tend-tstart
+    else:
+        return _tdelta2seconds(tend-tstart)
+
 
 
 def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None):
