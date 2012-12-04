@@ -36,7 +36,7 @@ refer to the elements in a three dimensional Cartesian grid as *voxels*. In wrad
 you can create :doc:`CAPPIs <generated/wradlib.vpr.CAPPI>` (and :doc:`Pseudo CAPPIs
 <generated/wradlib.vpr.PseudoCAPPI>`) for different altitudes at once.
 
-Here's an example how a set of CAPPI can be created from synthetic polar volume data::
+Here's an example how a set of CAPPIs can be created from synthetic polar volume data::
 
     import wradlib
     import numpy as np
