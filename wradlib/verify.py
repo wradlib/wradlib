@@ -153,6 +153,8 @@ class ErrorMetrics():
 
     """
     def __init__(self, obs, est, minval=None):
+        # Check input
+        assert len(obs)==len(est), "obs and est need to have the same length. len(obs)=%d, len(est)=%d" % (len(obs, len(est)))
         # only remember those entries which have both valid observations AND estimates
         ix = np.intersect1d( util._idvalid(obs, minval=minval),  util._idvalid(est, minval=minval))
         self.obs    = obs[ix]
