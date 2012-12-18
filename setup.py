@@ -1,4 +1,6 @@
 import os
+import sys
+import site
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't
 # properly update it when the contents of directories change.
@@ -50,7 +52,10 @@ if __name__ == '__main__':
 
 
     # targets and List of files which need to be copied to the site packages installation directory
-    sitepackdir = get_python_lib()
+    if "--user" in sys.argv:
+        sitepackdir = site.USER_SITE
+    else:
+        sitepackdir = get_python_lib()
     # BUFR
     bufr_trg_dir = os.path.join(sitepackdir, bufr_dir)
     bufr_files = []
