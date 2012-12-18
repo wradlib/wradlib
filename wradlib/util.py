@@ -121,7 +121,9 @@ def sum_over_time_windows(src, dt_src, dt_trg, minpercvalid):
         tend = dt_trg[i+1]
         # accumulate gage data to target time windows
         ix = np.where((dt_src>tstart) & (dt_src <= tend))[0] - 1
-        if len(np.where(np.isnan( src[ix] ))[0]) * 100./ len(src[ix]) < minpercvalid:
+        if len(src[ix])==0:
+            continue
+        elif len(np.where(np.isnan( src[ix] ))[0]) / len(src[ix]) < minpercvalid/100.:
             accum[i] = np.nansum( src[ix] )
     return accum
 
