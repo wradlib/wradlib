@@ -73,6 +73,8 @@ For Windows users: If possible, we will link binary installer files for the libr
 
 - scipy
 
+- PyTables (tables)
+
 
 Community
 ---------
