@@ -530,11 +530,11 @@ def read_OPERA_hdf5(fname):
     """
     f = h5py.File(fname, "r")
     # try verify OPERA conventions
-    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
-        print "File is not organized according to OPERA conventions (ODIM_H5)..."
-        print "Expected the upper level subgroups to be: dataset1, how, what', where"
-        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
-        sys.exit(1)
+##    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
+##        print "File is not organized according to OPERA conventions (ODIM_H5)..."
+##        print "Expected the upper level subgroups to be: dataset1, how, what', where"
+##        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
+##        sys.exit(1)
 
     # now we browse through all Groups and Datasets and store the info in one dictionary
     fcontent = {}
