@@ -1,5 +1,5 @@
-Team
-====
+Community
+=========
 
 Developers
 ----------
@@ -13,10 +13,12 @@ Developers
 `Thomas Pfaff <http://www.iws.uni-stuttgart.de/institut/mitarbeiter/person.php?name=1109>`_ (based at the `University of Stuttgart <http://www.iws.uni-stuttgart.de>`_)
 
 
-Contributers
-------------
+How to contribute to wradlib?
+-----------------------------
 
-Do you want to help in enhancing the capabilities of wradlib? You can join the team of `developers`_! But you can also contribute code (in any programming language) or documentations of specific algorithms you consider useful so that we can include these in wradlib.
+We need your help to enhance the capabilities of wradlib! Is there an algorithm you would consider useful? Please provide code (in any programming language) or documentation to the `developers`_. We will it a try to integrate this algorithm in wradlib. 
+
+*However, there is an even better way!* **(Step 1)** `Fork <http://bitbucket.org/wradlib/wradlib/fork>`_ your own wradlib repository from the `main wradlib repo <http://bitbucket.org/wradlib/wradlib>`_. **(Step 2)** Implement your changes into the forked repository. Test your code. **(Step 3)** Now you want to feed these changes back into the main wradlib development branch? Start a `Pull Request <http://confluence.atlassian.com/display/BITBUCKET/Fork+a+Repo,+Compare+Code,+and+Create+a+Pull+Request>`_! The `developers`_ will review your changes. On approval, they will merge your fork back into the main wradlib branch. Now everyone can benefit from your improvements. A step-by-step tutorial for a pull request can be found `here <http://confluence.atlassian.com/display/BITBUCKET/Fork+a+Repo,+Compare+Code,+and+Create+a+Pull+Request>`_.    
 
 
 Users

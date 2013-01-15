@@ -24,9 +24,10 @@ This documentation is under steady development. It provides a complete library r
    
    gettingstarted   
    tutorials
+   recipes
    reference
    dev_setup
-   team
+   community
 
 Indices and tables
 ==================
