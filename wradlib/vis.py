@@ -619,10 +619,10 @@ class Grid2Basemap():
             shp_info = self.m.readshapefile(shp, "name", linewidth=1.5, color="orange")
 
         # draw points
-        markers = ['wo',"w+"]
+        markers = ['wo',"ws"]
         for i,name in enumerate(points.keys()):
             x, y =self.m(points[name]["lon"], points[name]["lat"])
-            pl.plot(x,y,markers[i], markersize=6)
+            pl.plot(x,y,markers[i], markersize=7)
             try:
                 for j, locname in enumerate(points[name]["names"]):
                     if (x[j]>self.m.llcrnrx) and (x[j]<self.m.urcrnrx) and (y[j]>self.m.llcrnry) and (y[j]<self.m.urcrnry):
