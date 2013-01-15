@@ -446,6 +446,20 @@ def gridaspoints(*arrs):
     return np.vstack(grid).transpose()
 
 
+def issequence(x):
+    """Test whether x is a sequence of numbers
+    """
+    out = True
+    try:
+        # can we get a length on the object
+        length = len(x)
+    except:
+        return(False)
+    # is the object not a string?
+    out = np.all( np.isreal(x) )
+    return out
+
+
 if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
 
