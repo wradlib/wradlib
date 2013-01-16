@@ -31,7 +31,7 @@ This recipe shows a workflow to process radar data provided by the German Weathe
    :scale: 40%
    :target: _images/recipe1_fig1.png
    
-``(click image to enhance)``
+``(click image to enlarge)``
    
 
 `Download source <http://bitbucket.org/wradlib/wradlib/src/default/examples/recipe1_clutter_attenuation_composition.py>`_
@@ -50,7 +50,7 @@ This recipe shows how extract the polar volume data from an ODIM_H5 hdf5 file (K
    :scale: 30%
    :target: _images/recipe2_fig1.png
    
-``(click image to enhance)``
+``(click image to enlarge)``
 
 `Download source <http://bitbucket.org/wradlib/wradlib/src/default/examples/recipe2_polar_volume_example.py>`_
 
