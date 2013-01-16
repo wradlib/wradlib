@@ -10,13 +10,18 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
+
+
 import wradlib
 import numpy as np
 import pylab as pl
 import glob
+import os
 
 if __name__ == '__main__':
 
+    # set working directory
+    os.chdir("recipe1_data")
     # preparations for loading a couple of files
     tur_files = glob.glob('raa*tur*bin')
     tur_data = np.empty((25,360,128))
