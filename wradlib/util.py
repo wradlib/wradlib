@@ -438,9 +438,16 @@ def meshgridN(*arrs):
 ##   return tuple(ans[::-1])
     return tuple(ans)
 
+
 def gridaspoints(*arrs):
     """Creates an N-dimensional grid form arrs and returns grid points sequence of point coordinate pairs
     """
+    # 2-D grid
+    if len(arrs)==2:
+        grid = np.meshgrid(arrs[0], arrs[1])
+        grid = np.vstack((grid[0].ravel(), grid[1].ravel())).transpose()
+        return grid
+    # for more than 2 dimensions
     grid = meshgridN(*arrs)
     grid = tuple([dim.ravel() for dim in grid])
     return np.vstack(grid).transpose()
