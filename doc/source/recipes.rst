@@ -36,6 +36,20 @@ This recipe shows a workflow to process radar data provided by the German Weathe
 .. note:: In order to run the recipe code, you need to place the extract the sample data into a directory ``/recipe1_data/`` relative to the location of the recipe script. 
 
 
+Recipe #2: Reading and visualizing an ODIM_H5 polar volume
+----------------------------------------------------------
+
+This recipe shows how extract the polar volume data from an ODIM_H5 hdf5 file (KNMI example file from OPERA), contruct a 3-dimensional Cartesian volume and produce a diagnostic plot. The challenge for this file is that for each elevation angle, the scan strategy is different.
+
+.. image:: images/recipe2_fig1.png
+
+`Download source <http://bitbucket.org/wradlib/wradlib/src/default/examples/recipe1_clutter_attenuation_composition.py>`_
+
+`Download required data <http://bitbucket.org/wradlib/wradlib/src/default/examples/data/knmi_polar_volume.h5>`_
+
+.. note:: In order to run the recipe code, you need to place the extract the sample data into a directory ``/recipe1_data/`` relative to the location of the recipe script. 
+
+
 
 
 
