@@ -13,6 +13,7 @@
 import wradlib
 import numpy as np
 import pylab as pl
+import datetime as dt
 
 if __name__ == '__main__':
 
@@ -40,17 +41,27 @@ if __name__ == '__main__':
         data_ = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(i+1)]
         # transfer to containers
         xyz, data = np.vstack( (xyz, xyz_) ), np.append(data, data_.ravel())
-    # define regular Cartesian target coordinates
-    trgx = np.linspace(xyz[:,0].min(), xyz[:,0].max(), 200)
-    trgy = np.linspace(xyz[:,1].min(), xyz[:,1].max(), 200)
-    trgz = np.arange(0,8000.,500.)
-    trgxyz = wradlib.util.gridaspoints(trgx, trgy, trgz)
-    cappishape = (len(trgx), len(trgy), len(trgz))
-    # interpolate to Cartesian volume
-    gridder = wradlib.vpr.CartesianVolume(xyz, trgxyz)
-    cartvol = np.ma.masked_invalid( gridder(data).reshape(cappishape) )
+
+    # generate 3-D Cartesian target grid coordinates
+    maxrange  = 200000.
+    minelev   = 0.1
+    maxelev   = 25.
+    maxalt    = 5000.
+    horiz_res = 1000.
+    vert_res  = 250.
+    trgxyz, trgshape = wradlib.vpr.make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res)
+
+    # interpolate to Cartesian 3-D volume grid
+    tstart = dt.datetime.now()
+    gridder = wradlib.vpr.CAPPI(xyz, trgxyz, trgshape, maxrange, minelev, maxelev)
+    vol = np.ma.masked_invalid( gridder(data).reshape(trgshape) )
+    print "3-D interpolation took:", dt.datetime.now() - tstart
+
     # diagnostic plot
-    wradlib.vis.plot_max_plan_and_vert(trgx, trgy, trgz, cartvol, unit="dBZH", levels=range(-32,67))
+    trgx = trgxyz[:,0].reshape(trgshape)[:,0,0]
+    trgy = trgxyz[:,1].reshape(trgshape)[0,:,0]
+    trgz = trgxyz[:,2].reshape(trgshape)[0,0,:]
+    wradlib.vis.plot_max_plan_and_vert(trgx, trgy, trgz, vol, unit="dBZH", levels=range(-32,60))
 
 
 
