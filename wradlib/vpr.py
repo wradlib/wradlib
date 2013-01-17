@@ -62,7 +62,7 @@ Here's an example how a set of CAPPIs can be created from synthetic polar volume
     gridshape = (len(x), len(y), len(z))
 
     # create an instance of the CAPPI class and use it to create a series of CAPPIs
-    gridder = wradlib.vpr.CAPPI(polxyz, xyz, maxrange=ranges.max(), polshape=polshape, Ipclass=wradlib.ipol.Idw)
+    gridder = wradlib.vpr.CAPPI(polxyz, xyz, maxrange=ranges.max(), gridshape=gridshape, Ipclass=wradlib.ipol.Idw)
     gridded = np.ma.masked_invalid( gridder(poldata) ).reshape(gridshape)
 
     # plot results
@@ -85,85 +85,10 @@ import wradlib.georef as georef
 import wradlib.ipol as ipol
 import wradlib.util as util
 import wradlib.io as io
+import wradlib.qual as qual
 from scipy.spatial import cKDTree
 import os
 
-
-
-##class CartesianVolume():
-##    """Create 3-D regular volume grid in Cartesian coordinates from polar data with multiple elevation angles
-##
-##    Parameters
-##    ----------
-##    polcoords : array of shape (number of bins, 3)
-##    cartcoords : array of shape (number of voxels, 3)
-##    polshape : shape of the original volume (num elevation angles, num azimuth angles, num range bins)
-##        size must correspond to length of polcoords
-##    maskfile : path to an hdf5 file (default: empty string)
-##        File should contain a boolean array which masks the "blind" areas of the volume scan
-##    Ipclass : an interpolation class from wradlib.ipol
-##    ipargs : keyword arguments corresponding to Ipclass
-##
-##    Returns
-##    -------
-##    output : float ndarray of shape (number of levels, number of x coordinates, number of y coordinates)
-##
-##    """
-##    def __init__(self, polcoords, cartcoords, polshape, maxrange, pseudocappi=False, maskfile="", Ipclass=ipol.Idw, **ipargs):
-##        self.Ipclass        = Ipclass
-##        self.ipargs         = ipargs
-##        # create a default instance of interpolator
-##        print "Creating 3D interpolator...this is still very slow."
-##        self.ip             = Ipclass(src=polcoords, trg=cartcoords, **ipargs)
-##        self.ispcappi       = pseudocappi
-##        try:
-##            # read mask from pickled file
-##            self.mask = io.from_hdf5(maskfile)[0]
-##            # check whether mask is consistent with the data
-##            if not len(self.mask)==len(cartcoords):
-##                raise Exception()
-##            print "Load mask from file <%s>: successful" % maskfile
-##        except:
-##            self.mask = self.create_mask(polcoords, cartcoords, polshape, maxrange)
-##            if not maskfile=="":
-##                try:
-##                    io.to_hdf5(maskfile, self.mask, dtype="bool")
-##                    print "Save mask to file <%s>: successful" % maskfile
-##                except:
-##                    pass
-##
-##    def __call__(self, data):
-##        """Interpolates the polar data to 3-dimensional Cartesian coordinates
-##
-##        Parameters
-##        ----------
-##        data : 1-d array of length (num voxels,)
-##
-##        """
-##        ipdata = self.ip(data)
-##        ipdata[self.mask] = np.nan
-##        return ipdata
-##
-##    def create_mask(self, polcoords, cartcoords, polshape, maxrange):
-##        """Identifies all the "blind" voxels of a Cartesian 3D-volume grid
-##        """
-##        print "Creating volume mask from scratch...this is still very slow."
-##        # Identify voxels beyond the maximum range
-##        center = np.array([np.mean(polcoords[:,0]), np.mean(polcoords[:,1]), np.min(polcoords[:,2])]).reshape((-1,3))
-##        in_range = ((cartcoords-center)**2).sum(axis=-1) <= maxrange**2
-##        if not self.ispcappi:
-##            # Identify those grid altitudes above the maximum scanning angle
-##            maxelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[-1].ravel(),polcoords[:,1].reshape(polshape)[-1].ravel(),polcoords[:,2].reshape(polshape)[-1].ravel())).transpose()
-##            alt_interpolator = ipol.Nearest(maxelevcoords, cartcoords)
-##            maxalt = alt_interpolator(maxelevcoords[:,2])
-##            # Identify those grid altitudes below the minimum scanning angle
-##            minelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[0].ravel(),polcoords[:,1].reshape(polshape)[0].ravel(),polcoords[:,2].reshape(polshape)[0].ravel())).transpose()
-##            alt_interpolator = ipol.Nearest(minelevcoords, cartcoords)
-##            minalt = alt_interpolator(minelevcoords[:,2])
-##            # mask those values above the maximum and below the minimum scanning angle
-##            return np.logical_not( np.logical_and(np.logical_and(cartcoords[:,2]<=maxalt, cartcoords[:,2]>=minalt), in_range) )
-##        else:
-##            return np.logical_not( in_range )
 
 
 class CartesianVolume():
@@ -172,13 +97,10 @@ class CartesianVolume():
     Parameters
     ----------
     polcoords : array of shape (num bins, 3)
-    cartcoords : array of shape (num voxels, 3)
-    polshape : shape of the original volume (num elevation angles, num azimuth angles, num range bins)
-        size must correspond to length of polcoords
+    gridcoords : array of shape (num voxels, 3)
+    gridshape : shape of the Cartesian grid (num x, num y, num z)
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    maskfile : path to an hdf5 file (default: empty string) which has been created by the self._set_mask method.
-        File should contain a boolean array which masks the "blind" areas of the volume scan
     Ipclass : an interpolation class from wradlib.ipol
     ipargs : keyword arguments corresponding to Ipclass
 
@@ -187,11 +109,14 @@ class CartesianVolume():
     output : float ndarray of shape (num levels, num x coordinates, num y coordinates)
 
     """
-    def __init__(self, polcoords, cartcoords, polshape=None, maxrange=None, maskfile="", Ipclass=ipol.Idw, **ipargs):
-        # create an instance of the Interpolation class
-        self.ip             = Ipclass(src=polcoords, trg=cartcoords, **ipargs)
+    def __init__(self, polcoords, gridcoords, gridshape=None, maxrange=None, minelev=None, maxelev=None, Ipclass=ipol.Idw, **ipargs):
+        # radar location in Cartesian coordinates
+        self.radloc = np.array([np.mean(polcoords[:,0]), np.mean(polcoords[:,1]), np.min(polcoords[:,2])]).reshape((-1,3))
         # Set the mask which masks the blind voxels of the 3-D volume grid
-        self._set_mask(cartcoords, polcoords, polshape, maxrange, maskfile)
+        self.mask = self._get_mask(gridcoords, polcoords, gridshape, maxrange, minelev, maxelev)
+        # create an instance of the Interpolation class
+        self.trgix = np.where(np.logical_not(self.mask))
+        self.ip = Ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
 
     def __call__(self, data):
         """Interpolates the polar data to 3-dimensional Cartesian coordinates
@@ -207,61 +132,21 @@ class CartesianVolume():
 
         """
         # Interpolate data in 3-D
-        ipdata = self.ip(data)
-        # Mask the "blind" voxels with NaN
-        ipdata[self.mask] = np.nan
+        ipdata = np.repeat(np.nan, len(self.mask))
+        ipdata[self.trgix] = self.ip(data)
 
         return ipdata
 
-    def _set_mask(self, cartcoords, polcoords=None, polshape=None, maxrange=None, maskfile=""):
-        """Sets the mask which masks blind voxels in the volume grid
-
-        Computing the mask can still be time consuming, particularly from CAPPIs.
-        Thus, if possible, the mask will be loaded from a file given by *maskfile*.
-        Otherwise, the mask will be computed by the *_get_mask* method. The *_get_mask*
-        method is typically not inherited but has to be defined for a specific product.
-        Examples are given in the CAPPI._get_mask and PseudoCAPPI._get_mask.
-
-        Parameters
-        ----------
-        cartcoords :
-        polcoords :
-        polshape :
-        maxrange :
-        maskfile :
-
-        """
-        if maskfile=="":
-            self.mask = self._get_mask(cartcoords, polcoords, polshape, maxrange, maskfile)
-            print ""
-        else:
-            try:
-                # read mask from pickled file
-                self.mask = io.from_hdf5(maskfile)[0]
-                # check whether mask is consistent with the data
-                if not len(self.mask)==len(cartcoords):
-                    raise Exception()
-                print "Load mask from file <%s>: successful" % maskfile
-            except:
-                print "Creating mask from sratch...this might still be slow."
-                self.mask = self._get_mask(cartcoords, polcoords, polshape, maxrange, maskfile)
-                if not maskfile=="":
-                    try:
-                        io.to_hdf5(maskfile, self.mask, dtype="bool")
-                        print "Save mask to file <%s>: successful" % maskfile
-                    except:
-                        print "Cannot save mask to file..."
-                        raise Exception()
-    def _get_mask(self, cartcoords, polcoords=None, polshape=None, maxrange=None, maskfile=None):
+    def _get_mask(self, gridcoords, polcoords=None, gridshape=None, maxrange=None, minelev=None, maxelev=None):
         """Returns a mask (the base class only contains a dummy function which masks nothing)
 
-        This method needs to be replaced for inherited classes such as CAPPI or PseudoCAPPI
+        This method needs to be replaced for inherited classes such as CAPPI or PseudoCAPPI.
 
         Parameters
         ----------
-        cartcoords :
+        gridcoords :
         polcoords :
-        polshape :
+        gridshape :
         maxrange :
 
         Returns
@@ -269,7 +154,7 @@ class CartesianVolume():
         output : Boolean array of length (num voxels,)
 
         """
-        return np.repeat(False, len(cartcoords))
+        return np.repeat(False, len(gridcoords))
 
 
 
@@ -287,26 +172,21 @@ class CAPPI(CartesianVolume):
     ----------
     polcoords : coordinate array of shape (num bins, 3)
         Represents the 3-D coordinates of the orginal radar bins
-    cartcoords : coordinate array of shape (num voxels, 3)
+    gridcoords : coordinate array of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    polshape : shape of the original polar volume (num elevation angles, num azimuth angles, num range bins)
+    gridshape : shape of the original polar volume (num elevation angles, num azimuth angles, num range bins)
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    maskfile : path to an hdf5 file (default: empty string) which has been created by the self._set_mask method.
-        File should contain a boolean array which masks the "blind" areas of the volume scan
     Ipclass : an interpolation class from wradlib.ipol
     ipargs : keyword arguments corresponding to Ipclass
 
     """
-    def _get_mask(self, cartcoords, polcoords, polshape, maxrange, maskfile):
+    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
         """
-        return np.logical_not(
-              np.logical_not( out_of_range(polcoords, cartcoords, maxrange) )
-            & np.logical_not( below_radar(polcoords, cartcoords, polshape)  )
-            & np.logical_not( above_radar(polcoords, cartcoords, polshape)  )
-        )
+        below, above, out_of_range = blindspots(self.radloc, gridcoords, minelev, maxelev, maxrange)
+        return np.logical_not(np.logical_not(out_of_range) & np.logical_not(below) & np.logical_not(above)  )
 
 
 class PseudoCAPPI(CartesianVolume):
@@ -324,88 +204,70 @@ class PseudoCAPPI(CartesianVolume):
     ----------
     polcoords : coordinate array of shape (num bins, 3)
         Represents the 3-D coordinates of the orginal radar bins
-    cartcoords : coordinate array of shape (num voxels, 3)
+    gridcoords : coordinate array of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    polshape : shape of the original polar volume (num elevation angles, num azimuth angles, num range bins)
+    gridshape : shape of the original polar volume (num elevation angles, num azimuth angles, num range bins)
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    maskfile : path to an hdf5 file (default: empty string) which has been created by the self._set_mask method.
-        File should contain a boolean array which masks the "blind" areas of the volume scan
     Ipclass : an interpolation class from wradlib.ipol
     ipargs : keyword arguments corresponding to Ipclass
 
     """
-    def _get_mask(self, cartcoords, polcoords, polshape, maxrange, maskfile):
+    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
         """
-        return np.logical_not(
-            np.logical_not( out_of_range(polcoords, cartcoords, maxrange) ) )
+        return np.logical_not(np.logical_not( out_of_range(self.radloc, gridcoords, maxrange) ) )
 
 
-def out_of_range(polcoords, cartcoords, maxrange):
+def out_of_range(center, gridcoords, maxrange):
     """Flags the region outside the radar range
 
     Paramters
     ---------
-    polcoords : array of 3-D coordinates with shape (num bins, 3)
-    cartcoords : array of 3-D coordinates with shape (num voxels, 3)
+    center : radar location
+    gridcoords : array of 3-D coordinates with shape (num voxels, 3)
     maxrange : maximum range (meters)
 
     Returns
     -------
-    output : 1-D Boolean array of length len(cartcoords)
+    output : 1-D Boolean array of length len(gridcoords)
 
     """
-    center = np.array([np.mean(polcoords[:,0]), np.mean(polcoords[:,1]), np.min(polcoords[:,2])]).reshape((-1,3))
-    return ((cartcoords-center)**2).sum(axis=-1) > maxrange**2
+    return ((gridcoords-center)**2).sum(axis=-1) > maxrange**2
 
 
-def below_radar(polcoords, cartcoords, polshape):
-    """Flags the region below the lowest elevation angle ("below the radar")
 
-    ATTENTION: We need to tune performance here!
+def blindspots(center, gridcoords, minelev, maxelev, maxrange):
+    """Blind regions of the radar, marked on a 3-D grid
 
-    Paramters
-    ---------
-    polcoords : array of 3-D coordinates with shape (num bins, 3)
-    cartcoords : array of 3-D coordinates with shape (num voxels, 3)
-    polshape : original shape of the polar volume (num elevations, num azimuths, num ranges)
+    The radar is blind below the radar, above the radar and beyond the range.
+    The function returns three boolean arrays which indicate whether (1) the grid
+    node is below the radar, (2) the grid node is above the radar, (3) the grid node
+    is beyond the maximum range.
+
+    Parameters
+    ----------
+    center
+    gridcoords
+    minelev
+    maxelev
+    maxrange
 
     Returns
     -------
-    output : 1-D Boolean array of length len(cartcoords)
+    output : tuple of three Boolean arrays each of length (num grid points)
 
     """
-    minelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[0].ravel(),polcoords[:,1].reshape(polshape)[0].ravel(),polcoords[:,2].reshape(polshape)[0].ravel())).transpose()
-    interpolator = ipol.Nearest(minelevcoords, cartcoords)
-    minalt = interpolator(minelevcoords[:,2])
-    return cartcoords[:,2] < minalt
-
-
-def above_radar(polcoords, cartcoords, polshape):
-    """Flags the region above the upper elevation angle (Cone of Silence)
-
-    See also http://www.radartutorial.eu/18.explanations/ex47.en.html for an explanation
-    of the Cone of Silence
-
-    ATTENTION: We need to tune performance here!
-
-    Paramters
-    ---------
-    polcoords : array of 3-D coordinates with shape (num bins, 3)
-    cartcoords : array of 3-D coordinates with shape (num voxels, 3)
-    polshape : original shape of the polar volume (num elevations, num azimuths, num ranges)
-
-    Returns
-    -------
-    output : 1-D Boolean array of length len(cartcoords)
-
-    """
-    maxelevcoords = np.vstack((polcoords[:,0].reshape(polshape)[-1].ravel(),polcoords[:,1].reshape(polshape)[-1].ravel(),polcoords[:,2].reshape(polshape)[-1].ravel())).transpose()
-    interpolator = ipol.Nearest(maxelevcoords, cartcoords)
-    maxalt = interpolator(maxelevcoords[:,2])
-    return cartcoords[:,2] > maxalt
+    # distances of 3-D grid nodes from radar site (center)
+    dist_from_rad = np.sqrt( ((gridcoords-center)**2).sum(axis=-1) )
+    # below the radar
+    below = gridcoords[:,2] < (qual.beam_height_ft(dist_from_rad, minelev)+center[:,2])
+    # above the radar
+    above = gridcoords[:,2] > (qual.beam_height_ft(dist_from_rad, maxelev)+center[:,2])
+    # out of range
+    out_of_range = dist_from_rad > maxrange
+    return below, above, out_of_range
 
 
 
@@ -520,6 +382,35 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     # create standard shape
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
+
+
+def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
+    """Generate Cartesian coordiantes for a regular 3-D grid based on radar specs.
+
+    Parameters
+    ----------
+    sitecoords
+    projstr
+    maxrange
+    maxalt
+    horiz_res
+    vert_res
+
+    Returns
+    -------
+    output : float array of shape (num grid points, 3), a tuple of 3 representing the grid shape
+
+    """
+    center = georef.project(sitecoords[0], sitecoords[1], projstr)
+    minz   = sitecoords[2]
+    llx = center[0] - maxrange
+    lly = center[1] - maxrange
+    x = np.arange(llx, llx+2*maxrange+horiz_res, horiz_res)
+    y = np.arange(lly, lly+2*maxrange+horiz_res, horiz_res)
+    z = np.arange(0.,maxalt+vert_res,vert_res)
+    xyz = util.gridaspoints(x, y, z)
+    shape = (len(x), len(y), len(z))
+    return xyz, shape
 
 
 
