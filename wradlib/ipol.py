@@ -418,10 +418,14 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
 
 
     """
-
-    if not np.any(mask):
-        if type(data) != np.ma.core.MaskedArray: print 'Warning! Neither an explicit mask is assigned nor the data-array is masked.'
+    if mask==None:
+        # no mask assigned: try to get it from masked array
+        if type(data) != np.ma.core.MaskedArray:
+            print 'Warning! Neither an explicit mask is assigned nor the data-array is masked.'
         mask = np.ma.getmaskarray(data)
+    elif not np.any(mask):
+        # mask contains no True values, so there is nothing to fill
+        return data
     clutter_indices = np.where(mask.ravel())
     # construct the ranges for every bin
     ranges = np.tile(np.arange(0.5, data.shape[1] + 0.5), data.shape[0])
