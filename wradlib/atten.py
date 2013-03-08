@@ -359,6 +359,9 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 #    if np.any(np.isnan(gateset)):
 #        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
 #    k = np.zeros(gateset.shape)
+    if not np.all(gateset.shape):
+        # gateset contains empty dimensions, thus no data
+        return np.where(np.isnan(gateset), np.nan, 0.)
     da = (a_max - a_min) / (n - 1)
     ai = a_max + da
 ##  initialize an attenuation array with the same shape as the gateset,
