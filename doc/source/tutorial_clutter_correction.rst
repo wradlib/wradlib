@@ -77,4 +77,4 @@ Now the clutter bins should be substituted by some meaningful values derived by 
    
 As the result you will see the original rain intensity (left) and the image with clutter correction (right)
 
-.. image:: images/cluttercorrection.gif
+``.. image:: images/cluttercorrection.gif``

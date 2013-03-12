@@ -37,8 +37,11 @@ import sys
 import re
 import datetime as dt
 import pytz
+import cPickle as pickle
+import os
 
 # site packages
+import tables as tb
 import h5py
 import numpy as np
 import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
@@ -302,14 +305,24 @@ def writePolygon2Text(fname, polygons):
         f.write('END\n')
 
 
-def read_EDGE_netcdf(filename, range_lim = 200000.):
+def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
     """Data reader for netCDF files exported by the EDGE radar software
+
+    The corresponding NetCDF files from the EDGE software typically contain only
+    one variable (e.g. reflectivity) for one elevation angle (sweep). The elevation
+    angle is specified in the attributes keyword "Elevation".
+
+    Please note that the radar might not return data with equidistant azimuth angles.
+    In case you need equidistant azimuth angles, please set enforce_equidist to True.
 
     Parameters
     ----------
     filename : path of the netCDF file
     range_lim : range limitation [m] of the returned radar data
                 (200000 per default)
+    enforce_equidist : boolean
+        Set True if the values of the azimuth angles should be forced to be equidistant
+        default value is False
 
     Returns
     -------
@@ -319,16 +332,18 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     # read the data from file
     dset = nc.Dataset(filename)
     data = dset.variables[dset.TypeName][:]
-    # Azimuth corresponding to 1st slice
-    theta0 = int(round(dset.variables['Azimuth'][0]))
-    # rotate accordingly
-    data = np.roll(data, theta0, axis=0)
-#    data = np.flipud(data)
-    data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
-    # Azimuth
+    # Check azimuth angles and rotate image
     az = dset.variables['Azimuth'][:]
-    az = np.round(az, 0)
-    az = np.roll(az, theta0)
+    # These are the indices of the minimum and maximum azimuth angle
+    ix_minaz = np.argmin(az)
+    ix_maxaz = np.argmax(az)
+    if enforce_equidist:
+        az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
+    else:
+        az = np.roll(az, -ix_minaz)
+    # rotate accordingly
+    data = np.roll(data, -ix_minaz, axis=0)
+    data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
     # Ranges
     binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
     r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
@@ -340,7 +355,7 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     if range_lim and range_lim / binwidth <= data.shape[1]:
         data = data[:,:range_lim / binwidth]
         r = r[:range_lim / binwidth]
-
+    # Set additional metadata attributes
     attrs['az'] = az
     attrs['r']  = r
     attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
@@ -349,6 +364,7 @@ def read_EDGE_netcdf(filename, range_lim = 200000.):
     dset.close()
 
     return data, attrs
+
 
 def read_BUFR(buffile):
     """Main BUFR interface: Decodes BUFR file and returns metadata and values
@@ -514,11 +530,11 @@ def read_OPERA_hdf5(fname):
     """
     f = h5py.File(fname, "r")
     # try verify OPERA conventions
-    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
-        print "File is not organized according to OPERA conventions (ODIM_H5)..."
-        print "Expected the upper level subgroups to be: dataset1, how, what', where"
-        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
-        sys.exit(1)
+##    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
+##        print "File is not organized according to OPERA conventions (ODIM_H5)..."
+##        print "Expected the upper level subgroups to be: dataset1, how, what', where"
+##        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
+##        sys.exit(1)
 
     # now we browse through all Groups and Datasets and store the info in one dictionary
     fcontent = {}
@@ -757,6 +773,69 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
 
     return data, attrs
 
+
+def to_pickle(fpath, obj):
+    """Pickle object <obj> to file <fpath>
+    """
+    output = open(fpath, 'wb')
+    pickle.dump(obj, output)
+    output.close()
+
+
+def from_pickle(fpath):
+    """Return pickled object from file <fpath>
+    """
+    pkl_file = open(fpath, 'rb')
+    obj = pickle.load(pkl_file)
+    pkl_file.close()
+    return obj
+
+
+# in case PytTables hdf5 compression is used
+filters = tb.Filters(complib='blosc', complevel=5)
+
+def to_hdf5(fpath, data, metadata={}, dtype="float32"):
+    """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
+
+    This is more efficient than pickle, cPickle or numpy.save. The data is stored in
+    a subgroup named ``data`` (i.e. hdf5file.root.data).
+
+    Parameters
+    ----------
+    fpath : string (path to the hdf5 file)
+    data : numpy array
+    metadata : dictionary
+
+    """
+    hdf = tb.openFile(fpath, "w")
+    # save the data
+    atom = tb.Atom.from_dtype(np.dtype(dtype))
+    hdata = hdf.createCArray(hdf.root, "data", atom, data.shape, filters=filters)
+    hdata[:] = data
+    # save the metadata
+    for key in metadata.keys():
+        hdf.root.data.setAttr(key, metadata[key])
+    hdf.close()
+    return 0
+
+
+def from_hdf5(fpath):
+    """Loading data from hdf5 files that was stored by <wradlib.io.to_hdf5>
+
+    Parameters
+    ----------
+    fpath : string (path to the hdf5 file)
+
+    """
+    if not os.path.exists(fpath):
+        raise Exception("Cannot find file: %s" % fpath)
+    hdf = tb.openFile(fpath, "r")
+    metadata = {}
+    for attr in hdf.root.data.attrs._f_list():
+        metadata[attr] = hdf.root.data.attrs[attr]
+    data = np.array(hdf.root.data[:])
+    hdf.close()
+    return data, metadata
 
 
 if __name__ == '__main__':

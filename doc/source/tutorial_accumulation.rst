@@ -88,7 +88,7 @@ Now we have everything we need for the accumulation::
    
 .. image:: images/depth60.jpg
 
-.. image:: images/precip_movie.gif
+``.. image:: images/precip_movie.gif``
 
 
 All raw data is provided by DWD

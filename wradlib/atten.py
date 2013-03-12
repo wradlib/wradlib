@@ -284,11 +284,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     ----------
     gateset : array
         Multidimensional array, where the range gates (over which iteration has
-        to be performed) are supposed to vary along the *last* dimension so,
-        e.g., for a set of `l` radar images stored in polar form with `m`
-        azimuths and `n` range-bins the input array's shape can be either
-        (l,m,n) or (m,l,n).
-
+        to be performed) are supposed to vary along the last array-dimension and
+        the azimuths are supposed to vary along the next to last array-dimension.
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
 
@@ -362,13 +359,16 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 #    if np.any(np.isnan(gateset)):
 #        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
 #    k = np.zeros(gateset.shape)
+    if not np.all(gateset.shape):
+        # gateset contains empty dimensions, thus no data
+        return np.where(np.isnan(gateset), np.nan, 0.)
     da = (a_max - a_min) / (n - 1)
     ai = a_max + da
 ##  initialize an attenuation array with the same shape as the gateset,
 ##  filled with zeros, except that NaNs occuring in the gateset will cause a
 ##  initialization with Nans for the ENTIRE corresponding attenuation beam
     pia = np.where(np.isnan(gateset), np.nan, 0.)
-    pia[np.where(np.isnan(pia))[0]] = np.nan
+    pia[np.where(np.isnan(pia))[:-1]] = np.nan
     # indexing all rows of last dimension (radarbeams) except rows including NaNs
     beams2correct = np.where(np.max(pia, axis=-1) > (-1.))
     # iterate over possible a-parameters
