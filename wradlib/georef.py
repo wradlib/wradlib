@@ -731,5 +731,3 @@ def _doctest_():
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <georef> as main...'
-#    _doctest_()
-
