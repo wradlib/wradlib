@@ -752,6 +752,10 @@ class ExternalDriftKriging(IpolBase):
         trg_d = self._make_2d(trg_drift)
         self._check_shape(src_d)
 
+        # re-initialize weights and variances to ensure that these only reflect
+        # the results of the current call and not any previous call
+        self.weights = []
+        self.estimation_variance = []
 
         # if drifts are constant, we can save time by solving the kriging
         # system once
@@ -772,6 +776,7 @@ class ExternalDriftKriging(IpolBase):
 
                 weights = np.array(wght)
                 ip[:,i] = np.add.reduce(weights[:,:-2]*v[self.ix,i], axis=1)
+                self.weights.append(weights)
                 self.estimation_variance.append(variances)
 
         return ip
