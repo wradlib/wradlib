@@ -31,6 +31,7 @@ This includes for example:
    Idw
    Linear
    OrdinaryKriging
+   ExternalDriftKriging
    interpolate
    interpolate_polar
 
@@ -374,7 +375,10 @@ def _make_cov(func, params):
 
 
 def cov_nug(h, sill, rng):
-    """nugget covariance function"""
+    r"""nugget covariance function
+    :math:`\gamma(h) = s ` for :math:`h \leq r`, 0 otherwise
+    Therefore, usually rng is set to 0
+    """
     h = np.asanyarray(h)
     return np.where(h<=rng, sill, 0.)
 
@@ -444,10 +448,36 @@ def cov_cau(h, sill=1., rng=1., alpha=1., beta=1.0):
 
 
 class OrdinaryKriging(IpolBase):
-    """
+    r"""
     OrdinaryKriging(src, trg, cov='1.0 Exp(10000.)', nnearest=12)
 
-    Ordinary Kriging
+    Interpolate using Ordinary Kriging
+
+    (Co-)Variogram definitions are given in the syntax that ``gstat`` uses.
+    It allows nesting of different basic variogram types using linear
+    combinations.
+    Each basic covariogram is usually defined by
+    Note that, strictly speaking, this implementation doesn't allow Kriging of
+    fields for which the covariance does not exist. While this is mathematically
+    possible, it is rather rare for fields encountered in reality. Therefore,
+    this should not be a severe limitation.
+
+    Most (co-)variograms are characterized by a sill parameter (which is
+    the (co-)variance at separation distance 0) a range parameter (which
+    indicates a separation distance after which the the covariance drops
+    close to zero) an sometimes additional parameters governing the shape
+    of the function. In the following range is given by the variable `r` and the
+    sill by the variable `s`.
+    Currently implemented are:
+
+    - Pure Nugget
+    - Exponential
+    - Spherical
+    - Gaussian
+    - Linear
+    - Matern
+    - Power
+    - Cauchy
 
     Parameters
     ----------
@@ -465,8 +495,16 @@ class OrdinaryKriging(IpolBase):
 
     Notes
     -----
-    After initialization the estimation variance of the system may be
-    retrieved from the attribute `estimation_variance`.
+    The class calculates the Kriging weights during initialization, because
+    these only depend on the configuration of the points.
+
+    The call method is then only used to calculate estimated values at the
+    target points based on those at the source points. Therefore the main
+    computational load is experienced during initialization. This behavior is
+    different from that of the Idw or Nearest Interpolators.
+
+    After initialization the estimation variance at each interpolation target
+    may be retrieved from the attribute `estimation_variance`.
 
     """
     def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12):
@@ -582,10 +620,16 @@ class ExternalDriftKriging(IpolBase):
     trg_drift : ndarray of floats, shape (ntrgpoints,)
         values of the external drift at each target point
 
+    See Also
+    --------
+    OrdinaryKriging
+
     Notes
     -----
-    After initialization the estimation variance of the system may be
-    retrieved from the attribute `estimation_variance`.
+    After calling the object in order to get the interpolated values,
+    the estimation variance of the system may be
+    retrieved from the attribute `estimation_variance`. Accordingly, the
+    interpolation weights can be retrieved from the attribute `weights`
 
     If drift_src or drift_trg are not given on initialization, they must
     be provided when using the __call__ method.

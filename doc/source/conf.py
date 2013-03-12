@@ -33,6 +33,9 @@ extensions = ['sphinx.ext.autodoc',
               'numpydoc',
               ]
 
+pngmath_latex_preamble=r'\usepackage[active]{preview}' # + other custom stuff for inline math, such as non-default math fonts etc.
+pngmath_use_preview=True
+
 autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
