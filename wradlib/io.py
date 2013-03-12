@@ -840,6 +840,3 @@ def from_hdf5(fpath):
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
-
-    import doctest
-    doctest.testmod()
