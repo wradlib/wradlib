@@ -21,8 +21,11 @@ Standard plotting and mapping procedures
    :toctree: generated/
 
    polar_plot
+   cartesian_plot
    rhi_plot
-   Grid2Basemap
+   plot_scan_strategy
+   plot_plan_and_vert
+   plot_tseries
 
 """
 
@@ -33,7 +36,7 @@ import os.path as path
 import numpy as np
 import pylab as pl
 from matplotlib import mpl
-from mpl_toolkits.basemap import Basemap, cm
+#from mpl_toolkits.basemap import Basemap, cm
 from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
 from mpl_toolkits.axisartist import SubplotHost, ParasiteAxesAuxTrans, GridHelperCurveLinear
@@ -539,135 +542,135 @@ def cartesian_plot(data, x=None, y=None, title='', unit='', saveto='', fig=None,
 ##        self.ax.collections.remove(polycoll)
 
 
-class Grid2Basemap():
-    """Plot gridded data on a background map
-
-    *STILL UNDER DEVELOPMENT!!!*
-
-    This class allows to plot gridded data (e.g. PPIs, CAPPIs, composites) on a background.
-    The background map (Basemap) can include country borders, coastlines, meridians
-    as well as user-defined shapefiles. The plot will appear as filled contours.
-
-    In order to plot user defined backgroud data such as points or shapefiles,
-    these have to be provided in "geographical projection", i.e. in lat/lon coordinates
-    based on WGS84. You can use any GIS for this task. Shapefiles are then passed
-    to the constructor by providing a list of file paths in the argument *shpfiles*
-    (see `Parameters`).
-
-    Using Grid2Basemap(...), the background map is plotted. The actual data is plotted
-    by using the ``plot`` method. This procedure allows to repeatedly plot data on
-    a map (e.g. a time series) without each time plotting the background again. This
-    will save a huge amount of processing time if a large number of images is plotted
-    over the same background.
-
-    Parameters
-    ----------
-    bbox : dictionary
-        the bounding box of the entire map in lat/lon
-    classes : list of floats
-        classes of the plotting variable for which colors should be homogenoeous
-    unit : string
-    points : dictionary
-    shpfiles : list of strings
-        paths to shapefiles which will be plotted as map background
-    cmap : name of the default colormap in case no colormap is provided in the config file
-
-    """
-    def __init__(self, bbox, classes, unit='', points={}, cmap=cm.s3pcpn, shpfiles=[], **kwargs):
-
-        # Remember keyword args
-        self.bbox = bbox
-        self.classes = np.array(classes)
-        self.mycmap = cmap
-
-        # define map center
-        lon0=(bbox['llx']+bbox['urx'])/2
-        lat0=(bbox['lly']+bbox['ury'])/2
-
-        fig = pl.figure(figsize=(12,12))
-
-        ax = fig.add_subplot(111)
-
-        # plot the Basemap
-        self.m = Basemap(llcrnrlon=self.bbox['llx'],llcrnrlat=self.bbox['lly'],
-                        urcrnrlon=self.bbox['urx'],urcrnrlat=self.bbox['ury'],
-                    resolution='h',projection='tmerc',lat_0=lat0, lon_0=lon0, ax=ax)
-
-        # draw nice stuff
-        self.m.fillcontinents(color='grey', zorder=0)
-        self.m.drawcoastlines(color="white", linewidth=1.5)
-        self.m.drawparallels(np.linspace(start=np.round(self.bbox['lly']), stop=np.round(self.bbox['ury']), num=3), labels=[1,0,0,0])
-        if "meridians_at" in kwargs.keys():
-            meridians_at = kwargs["meridians_at"]
-        else:
-            meridians_at = np.linspace(start=np.round(self.bbox['llx']), stop=np.round(self.bbox['urx']), num=3)
-        self.m.drawmeridians(meridians_at, labels=[0,0,0,1])
-        # draw map scale
-        #   map scale locations
-        scalelon = self.bbox['urx']-0.2*(self.bbox['urx']-self.bbox['llx'])
-        scalelat = self.bbox['lly']+0.1*(self.bbox['ury']-self.bbox['lly'])
-        #   update map scale locations based on kwargs
-        if "scalelocation" in kwargs.keys():
-            if kwargs["scalelocation"]=="topright":
-                scalelon = self.bbox['urx']-0.2*(self.bbox['urx']-self.bbox['llx'])
-                scalelat = self.bbox['lly']+0.9*(self.bbox['ury']-self.bbox['lly'])
-        #   draw map scale
-        self.m.drawmapscale(lon=scalelon, lat=scalelat, lon0=lon0, lat0=lat0, length=50., units='km', barstyle='fancy', fontsize=11)
-
-        # read the other shapefiles (which are only plotted as lines)
-        for shp in shpfiles:
-            shp_info = self.m.readshapefile(shp, "name", linewidth=1.5, color="orange")
-
-        # draw points
-        markers = ['wo',"ws"]
-        for i,name in enumerate(points.keys()):
-            x, y =self.m(points[name]["lon"], points[name]["lat"])
-            pl.plot(x,y,markers[i], markersize=7)
-            try:
-                for j, locname in enumerate(points[name]["names"]):
-                    if (x[j]>self.m.llcrnrx) and (x[j]<self.m.urcrnrx) and (y[j]>self.m.llcrnry) and (y[j]<self.m.urcrnry):
-                        pl.text(x[j]+1000.,y[j]+1000.,locname, color="white", fontweight="bold")
-            except:
-                pass
-
-        # define colorbar (we use a dummy mappable object via imshow)
-        self.cbar = pl.colorbar(mappable=pl.contourf(np.repeat(self.classes,2).reshape((2,-1)), self.classes, cmap=self.mycmap),
-                    orientation='horizontal', shrink=1., extend='max', fraction=0.05, pad=0.05)
-        self.cbar.set_label('('+unit+')')
-
-
-    def plot(self, lon, lat, data, title='', saveto=None):
-        """Plot the data on the map background
-
-        Parameters
-        ----------
-        lon : array of longitudes
-        lat : array of latitudes
-        data : data array of shape (number of longitudes, number of latitudes)
-        title : figure title
-        saveto : string to a directory where figures should be stored
-
-        """
-        # add title plot
-        pl.title( title)
-        # get map coordinates
-        x, y =self.m(lon, lat)
-        # plot data
-        cs = self.m.contourf(x,y,data,self.classes, cmap=self.mycmap)
-
-        # if no save directory is given, show plot on screen
-        if saveto==None:
-            pl.draw()
-        else:
-            if title=='':
-                fname = "radarfig.png"
-            else:
-                fname    = title.replace(" ", "").replace("\n", "").replace(":","").strip() + '.png'
-            savepath = path.join(saveto, fname)
-            pl.savefig(savepath)
-        # remove data plot from the axis (otherwise the axis object becomes successively overcrowded)
-        for coll in cs.collections:
-            pl.gca().collections.remove(coll)
+##class Grid2Basemap():
+##    """Plot gridded data on a background map
+##
+##    *STILL UNDER DEVELOPMENT!!!*
+##
+##    This class allows to plot gridded data (e.g. PPIs, CAPPIs, composites) on a background.
+##    The background map (Basemap) can include country borders, coastlines, meridians
+##    as well as user-defined shapefiles. The plot will appear as filled contours.
+##
+##    In order to plot user defined backgroud data such as points or shapefiles,
+##    these have to be provided in "geographical projection", i.e. in lat/lon coordinates
+##    based on WGS84. You can use any GIS for this task. Shapefiles are then passed
+##    to the constructor by providing a list of file paths in the argument *shpfiles*
+##    (see `Parameters`).
+##
+##    Using Grid2Basemap(...), the background map is plotted. The actual data is plotted
+##    by using the ``plot`` method. This procedure allows to repeatedly plot data on
+##    a map (e.g. a time series) without each time plotting the background again. This
+##    will save a huge amount of processing time if a large number of images is plotted
+##    over the same background.
+##
+##    Parameters
+##    ----------
+##    bbox : dictionary
+##        the bounding box of the entire map in lat/lon
+##    classes : list of floats
+##        classes of the plotting variable for which colors should be homogenoeous
+##    unit : string
+##    points : dictionary
+##    shpfiles : list of strings
+##        paths to shapefiles which will be plotted as map background
+##    cmap : name of the default colormap in case no colormap is provided in the config file
+##
+##    """
+##    def __init__(self, bbox, classes, unit='', points={}, cmap=cm.s3pcpn, shpfiles=[], **kwargs):
+##
+##        # Remember keyword args
+##        self.bbox = bbox
+##        self.classes = np.array(classes)
+##        self.mycmap = cmap
+##
+##        # define map center
+##        lon0=(bbox['llx']+bbox['urx'])/2
+##        lat0=(bbox['lly']+bbox['ury'])/2
+##
+##        fig = pl.figure(figsize=(12,12))
+##
+##        ax = fig.add_subplot(111)
+##
+##        # plot the Basemap
+##        self.m = Basemap(llcrnrlon=self.bbox['llx'],llcrnrlat=self.bbox['lly'],
+##                        urcrnrlon=self.bbox['urx'],urcrnrlat=self.bbox['ury'],
+##                    resolution='h',projection='tmerc',lat_0=lat0, lon_0=lon0, ax=ax)
+##
+##        # draw nice stuff
+##        self.m.fillcontinents(color='grey', zorder=0)
+##        self.m.drawcoastlines(color="white", linewidth=1.5)
+##        self.m.drawparallels(np.linspace(start=np.round(self.bbox['lly']), stop=np.round(self.bbox['ury']), num=3), labels=[1,0,0,0])
+##        if "meridians_at" in kwargs.keys():
+##            meridians_at = kwargs["meridians_at"]
+##        else:
+##            meridians_at = np.linspace(start=np.round(self.bbox['llx']), stop=np.round(self.bbox['urx']), num=3)
+##        self.m.drawmeridians(meridians_at, labels=[0,0,0,1])
+##        # draw map scale
+##        #   map scale locations
+##        scalelon = self.bbox['urx']-0.2*(self.bbox['urx']-self.bbox['llx'])
+##        scalelat = self.bbox['lly']+0.1*(self.bbox['ury']-self.bbox['lly'])
+##        #   update map scale locations based on kwargs
+##        if "scalelocation" in kwargs.keys():
+##            if kwargs["scalelocation"]=="topright":
+##                scalelon = self.bbox['urx']-0.2*(self.bbox['urx']-self.bbox['llx'])
+##                scalelat = self.bbox['lly']+0.9*(self.bbox['ury']-self.bbox['lly'])
+##        #   draw map scale
+##        self.m.drawmapscale(lon=scalelon, lat=scalelat, lon0=lon0, lat0=lat0, length=50., units='km', barstyle='fancy', fontsize=11)
+##
+##        # read the other shapefiles (which are only plotted as lines)
+##        for shp in shpfiles:
+##            shp_info = self.m.readshapefile(shp, "name", linewidth=1.5, color="orange")
+##
+##        # draw points
+##        markers = ['wo',"ws"]
+##        for i,name in enumerate(points.keys()):
+##            x, y =self.m(points[name]["lon"], points[name]["lat"])
+##            pl.plot(x,y,markers[i], markersize=7)
+##            try:
+##                for j, locname in enumerate(points[name]["names"]):
+##                    if (x[j]>self.m.llcrnrx) and (x[j]<self.m.urcrnrx) and (y[j]>self.m.llcrnry) and (y[j]<self.m.urcrnry):
+##                        pl.text(x[j]+1000.,y[j]+1000.,locname, color="white", fontweight="bold")
+##            except:
+##                pass
+##
+##        # define colorbar (we use a dummy mappable object via imshow)
+##        self.cbar = pl.colorbar(mappable=pl.contourf(np.repeat(self.classes,2).reshape((2,-1)), self.classes, cmap=self.mycmap),
+##                    orientation='horizontal', shrink=1., extend='max', fraction=0.05, pad=0.05)
+##        self.cbar.set_label('('+unit+')')
+##
+##
+##    def plot(self, lon, lat, data, title='', saveto=None):
+##        """Plot the data on the map background
+##
+##        Parameters
+##        ----------
+##        lon : array of longitudes
+##        lat : array of latitudes
+##        data : data array of shape (number of longitudes, number of latitudes)
+##        title : figure title
+##        saveto : string to a directory where figures should be stored
+##
+##        """
+##        # add title plot
+##        pl.title( title)
+##        # get map coordinates
+##        x, y =self.m(lon, lat)
+##        # plot data
+##        cs = self.m.contourf(x,y,data,self.classes, cmap=self.mycmap)
+##
+##        # if no save directory is given, show plot on screen
+##        if saveto==None:
+##            pl.draw()
+##        else:
+##            if title=='':
+##                fname = "radarfig.png"
+##            else:
+##                fname    = title.replace(" ", "").replace("\n", "").replace(":","").strip() + '.png'
+##            savepath = path.join(saveto, fname)
+##            pl.savefig(savepath)
+##        # remove data plot from the axis (otherwise the axis object becomes successively overcrowded)
+##        for coll in cs.collections:
+##            pl.gca().collections.remove(coll)
 
 
 def get_tick_vector(vrange,vres):
