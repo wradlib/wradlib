@@ -108,14 +108,22 @@ if __name__ == '__main__':
         sitepackdir = get_python_lib()
     # BUFR
     bufr_trg_dir = os.path.join(sitepackdir, bufr_dir)
-    bufr_files = []
+    if os.sys.platform=="win32":
+        bufr_files = ["wradlib/bufr_3.1/decbufr.exe"]
+    elif "linux" in os.sys.platform:
+        bufr_files = ["wradlib/bufr_3.1/decbufr"]
+    else:
+        print "ATTENTION: wradlib BUFR module not yet available to OS: %s" % os.sys.platform
+        print "You have to compile the BUFR software for your OS."
+
+
 ##    for f in os.listdir(bufr_dir):
 ##        if ( f.endswith(".csv") ) or ( f=="decbufr.exe") or ( f=="decbufr") or \
 ##        ( f=="decbufr.a") or ( f=="decbufr.dll") or ("zdll" in f) or ("zlib" in f):
 ##            bufr_files.append(os.path.join(bufr_dir, f))
-    for f in os.listdir(bufr_dir):
-        if f.endswith(".exe"):
-            bufr_files.append(os.path.join(bufr_dir, f))
+##    for f in os.listdir(bufr_dir):
+##        if f.endswith(".exe"):
+##            bufr_files.append(os.path.join(bufr_dir, f))
 ##    # EXAMPLES
 ##    example_trg_dir = os.path.join(sitepackdir, "wradlib/examples")
 ##    example_files = []
@@ -149,7 +157,7 @@ clutter or attenuation) and visualising the data.
           download_url='https://bitbucket.org/wradlib/wradlib',
           packages=['wradlib'],
           include_package_data=True, # see MAINFEST.in
-          data_files=[(bufr_trg_dir, ["wradlib/bufr_3.1/decbufr.exe"])],#, (example_trg_dir, example_files),
+          data_files=[(bufr_trg_dir, bufr_files)],#, (example_trg_dir, example_files),
 ##            (data_trg_dir, data_files), (tests_trg_dir, tests_files)],
           cmdclass={'build_py': build_bufr},
           classifiers=[
@@ -161,6 +169,8 @@ clutter or attenuation) and visualising the data.
           'Programming Language :: Python',
           'Topic :: Scientific/Engineering',
           ],
-          install_requires=["numpydoc >= 0.3", "pyproj >= 1.9"]
+          install_requires=["numpydoc >= 0.3", "pyproj >= 1.9",
+                            "netCDF4 >= 1.0", "h5py >= 2.0.1",
+                            "tables >= 2.3.1", "matplotlib >= 1.1.0", "scipy >= 0.10.1", "numpy >= 1.6.1"]
           )
 
