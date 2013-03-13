@@ -1,0 +1,5 @@
+recursive-include * distribute_setup.py
+recursive-include examples *
+recursive-include examples/data *
+recursive-include wradlib/tests *
+recursive-include wradlib/bufr_3.1 *
