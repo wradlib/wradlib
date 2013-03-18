@@ -169,8 +169,8 @@ clutter or attenuation) and visualising the data.
           'Programming Language :: Python',
           'Topic :: Scientific/Engineering',
           ],
-          install_requires=["numpydoc >= 0.3", "pyproj >= 1.9",
+          install_requires=["numpydoc >= 0.3", "pyproj >= 1.8",
                             "netCDF4 >= 1.0", "h5py >= 2.0.1",
-                            "tables >= 2.3.1", "matplotlib >= 1.1.0", "scipy >= 0.10.1", "numpy >= 1.6.1"]
+                            "tables >= 2.3.1", "matplotlib >= 1.1.0", "scipy >= 0.9", "numpy >= 1.6.1"]
           )
 
