@@ -46,7 +46,7 @@ Installation under Linux
 Installing Manually
 ^^^^^^^^^^^^^^^^^^^^
 
-This way no dependency checking is done and you need to make sure that all dependencies (see below) are met, yourself.
+This way no dependency checking is done and you need to make sure yourself that all dependencies (see below) are met.
 
 `Download the source <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_, unpack, go to the directory, where you unpacked the files and run:
 
@@ -70,54 +70,78 @@ Be aware that with easy_install we can only look for python-module dependencies.
 For example the pyproj module itself depends on some other libraries, which need to be present in order for the module to compile properly after being downloaded by easy_install. We have no control over these dependencies and it is rather hard to give a complete overview.
 
 Therefore we recommend trying to satisfy the dependencies using your favorite package management system.
-As an example we give all packages necessary to sucessfully install wradlib on a ubuntu linux 12.04 (thanks to Diego Civera from the wradlib-users mailing list for pioneering this).
+As an example we give all packages necessary to successfully install wradlib on a Ubuntu Linux 12.04 (thanks to Diego Civera from the wradlib-users mailing list for pioneering this).
 
 Satisfying wradlib dependencies using apt-get on Ubuntu 12.04 LTS (precise pangolin)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We will break up the installation into several steps.
+If you want to get started very quickly and are not afraid to use third party repositories, then the following lines should get you going within minutes (the '$' prompt means that these commands should be issued on a terminal)
 
-easy_install::
-
-    sudo apt-get install python-setuptools
-
-Compilers and Make::
-
-    sudo apt-get install gcc make
-
-NumPy SciPy and Matplotlib::
-
-    sudo apt-get install python-numpy python-scipy python-matplotlib
-
-Data Formats HDF5 and NetCDF4::
-
-    sudo apt-get install python-h5py python-tables
-
-the python-netcdf4 module is not in the official ubuntu sources.
-You have two options here.
-You can try a user repository::
-
-    sudo add-apt-repository ppa:adrian-m-benson/ppa
-    sudo apt-get update  
-    sudo apt-get install python-netcdf4
-
-or you just satisfy the source dependencies of python-netcdf4 and let easy_install do the rest::
-
-    sudo apt-get install libnetcdf-dev libhdf5-dev
-    sudo easy_install netcdf4-python
-
-georeferencing:: 
-
-    sudo apt-get install python-pyproj
-
-So, in short you should get up and running with these commands::
-
-    sudo add-apt-repository ppa:adrian-m-benson/ppa                                                                                                                                                                       
-    sudo apt-get update                                                                                                                                                                                                   
-    sudo apt-get install python-setuptools python-numpy python-numpy-doc python-scipy python-matplotlib python-tables python-h5py python-netcdf4 python-pyproj
-    sudo easy_install wradlib
+| ``$ sudo add-apt-repository ppa:adrian-m-benson/ppa``
+| ``$ sudo apt-get update``
+| ``$ sudo apt-get install python-setuptools python-numpy python-scipy python-matplotlib python-tables python-h5py python-netcdf4 python-pyproj``
+| ``$ sudo easy_install wradlib``
 
 
+We will break up the installation into several steps, in case something goes wrong along the way, or you would like to know better, what is happening.
+
+1. Getting easy_install
+"""""""""""""""""""""""
+As there is no wradlib Debian package yet, the python-setuptools package gives you access to easy_install.
+
+``$ sudo apt-get install python-setuptools``
+
+2. Compilers and Make
+"""""""""""""""""""""
+In order to compile the BUFR interface, you'll need a C/C++ compiler and make
+
+``$ sudo apt-get install gcc make``
+
+3. NumPy, SciPy and Matplotlib
+""""""""""""""""""""""""""""""
+NumPy and SciPy are needed for many algorithms and Matplotlib is used for visualization.
+
+``$ sudo apt-get install python-numpy python-scipy python-matplotlib``
+
+4. Data Formats: HDF5 and NetCDF4
+"""""""""""""""""""""""""""""""""
+The two major packages for working with HDF5 files are h5py and PyTables
+
+``$ sudo apt-get install python-h5py python-tables``
+
+For NetCDF4, there are no official Debian Packages for Ubuntu 12.04
+
+| You have two options here.  
+| **EITHER** You can try a user repository:
+
+| ``$ sudo add-apt-repository ppa:adrian-m-benson/ppa``
+| ``$ sudo apt-get update``
+| ``$ sudo apt-get install python-netcdf4``
+
+**OR** you satisfy the source dependencies of python-netcdf4 and let easy_install do the rest:
+
+| ``$ sudo apt-get install libnetcdf-dev libhdf5-dev``
+| ``$ sudo easy_install netCDF4``
+
+5. georeferencing
+"""""""""""""""""
+Projections, which are the main part of georeferencing are handled by the pyproj package
+
+``$ sudo apt-get install python-pyproj``
+
+6. wradlib
+""""""""""
+Finally you can install wradlib. 
+
+``$ sudo easy_install wradlib``
+
+This will install wradlib and all missing dependencies.
+
+**Gotchas under Linux**
+
+As of Ubuntu 12.04 numpydoc, which is needed to build the source documentation of wradlib also does not have a Debian package. This will change in more current versions. As numpydoc seems to be purely written in python, easy_install should be able to install it without problems. However, numpydoc is not needed in order to use wradlib.
+
+.. _ref-dependencies:
 
 Dependencies
 ------------
@@ -128,7 +152,7 @@ Dependencies
 
 - matplotlib, version >= 1.1.0
 
-- scipy, version >= 0.10.1
+- scipy, version >= 0.9
 
 - h5py, version >= 2.0.1
 
