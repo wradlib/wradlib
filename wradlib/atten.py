@@ -148,9 +148,9 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
         if np.any(overflow):
             if mode == 'warn':
                 logger.warning('dB-sum over threshold (%3.1f)'%thrs)
-            if mode == 'nan':
+            elif mode == 'nan':
                 pia[gate,overflow] = np.nan
-            if mode == 'zero':
+            elif mode == 'zero':
                 pia[gate,overflow] = 0.0
             else:
                 raise AttenuationOverflowError
