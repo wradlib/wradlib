@@ -241,7 +241,7 @@ class AdjustBase(ipol.IpolBase):
         for i in ix:
             # Pass all valid pairs except ONE which you pass as target
             ix_adjust = np.setdiff1d(ix, [i])
-            estatobs = np.append(estatobs, self.__call__(obs, rawatobs[i], self.obs_coords[i].reshape((1,-1)), rawatobs, ix_adjust)).ravel()
+            estatobs = np.append(estatobs, self.__call__(obs, raw[self.obs_coords[i]], self.obs_coords[i].reshape((1,-1)), rawatobs, ix_adjust)).ravel()
         return obs[ix], estatobs
 
 
