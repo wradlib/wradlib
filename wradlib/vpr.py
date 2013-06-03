@@ -110,7 +110,9 @@ class CartesianVolume():
 
     """
     def __init__(self, polcoords, gridcoords, gridshape=None, maxrange=None, minelev=None, maxelev=None, Ipclass=ipol.Idw, **ipargs):
+        # TODO: rename Ipclas to ipclass
         # radar location in Cartesian coordinates
+        # TODO: pass projected radar location as argument (allows processing of incomplete polar volumes)
         self.radloc = np.array([np.mean(polcoords[:,0]), np.mean(polcoords[:,1]), np.min(polcoords[:,2])]).reshape((-1,3))
         # Set the mask which masks the blind voxels of the 3-D volume grid
         self.mask = self._get_mask(gridcoords, polcoords, gridshape, maxrange, minelev, maxelev)
@@ -262,6 +264,7 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     # distances of 3-D grid nodes from radar site (center)
     dist_from_rad = np.sqrt( ((gridcoords-center)**2).sum(axis=-1) )
     # below the radar
+    # TODO: use qual.beam_height_ft_doviak
     below = gridcoords[:,2] < (qual.beam_height_ft(dist_from_rad, minelev)+center[:,2])
     # above the radar
     above = gridcoords[:,2] > (qual.beam_height_ft(dist_from_rad, maxelev)+center[:,2])
