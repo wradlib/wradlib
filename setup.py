@@ -56,8 +56,8 @@ class build_bufr(build_py):
         ##        # This should be used if the shared BUFR library is functional
         ##        sub.call("make -f makefile.gcc shlib")
             else:
-                print "ATTENTION: wradlib BUFR module not yet available to OS: %s" % os.sys.platform
-                print "You have to compile the BUFR software for your OS."
+                print "ATTENTION: wradlib BUFR module not yet available to your OS: %s" % os.sys.platform
+                print "You have to compile the BUFR software for your OS if you want to read BUFR files."
             os.chdir('../..')
             # END: BUFR COMPILATION
             #---------------------------------------------------------------------------
@@ -114,7 +114,8 @@ if __name__ == '__main__':
         bufr_files = ["wradlib/bufr_3.1/decbufr"]
     else:
         print "ATTENTION: wradlib BUFR module not yet available to OS: %s" % os.sys.platform
-        print "You have to compile the BUFR software for your OS."
+        print "You have to compile the BUFR software for your OS if you want to read BUFR files."
+        bufr_files = ["wradlib/bufr_3.1/README.txt"]
 
 
 ##    for f in os.listdir(bufr_dir):
