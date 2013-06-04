@@ -112,6 +112,8 @@ if __name__ == '__main__':
         bufr_files = ["wradlib/bufr_3.1/decbufr.exe"]
     elif "linux" in os.sys.platform:
         bufr_files = ["wradlib/bufr_3.1/decbufr"]
+    elif ("os" in os.sys.platform) or (os.sys.platform=="darwin"):
+        bufr_files = ["wradlib/bufr_3.1/decbufr"]
     else:
         print "ATTENTION: wradlib BUFR module not yet available to OS: %s" % os.sys.platform
         print "You have to compile the BUFR software for your OS if you want to read BUFR files."

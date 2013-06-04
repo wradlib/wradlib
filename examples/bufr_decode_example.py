@@ -16,7 +16,6 @@ import wradlib.bufr as bufr
 
 if __name__ == '__main__':
 
-    import numpy as np
     import os
     # This is our test BUFR file
     buffile = os.path.join(os.getcwd(), "data/test.buf")
