@@ -55,6 +55,9 @@ class build_bufr(build_py):
                 retval = sub.call(["make", "-f", "makefile.gcc", "decbufr"])
         ##        # This should be used if the shared BUFR library is functional
         ##        sub.call("make -f makefile.gcc shlib")
+            elif ("os" in os.sys.platform) or (os.sys.platform=="darwin"):
+                retval = sub.call(["make", "-f", "makefile.gcc", "clean"])
+                retval = sub.call(["make", "-f", "makefile.gcc", "decbufr"])
             else:
                 print "ATTENTION: wradlib BUFR module not yet available to your OS: %s" % os.sys.platform
                 print "You have to compile the BUFR software for your OS if you want to read BUFR files."
