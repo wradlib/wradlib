@@ -75,6 +75,7 @@ winshlib = 'bufr2wradlib.dll'
 linuxshlib = 'bufr2wradlib.a'
 winexecutable = 'decbufr.exe'
 linuxexecutable = 'decbufr'
+macexecutable = 'decbufr'
 
 if not os.path.exists(bufrlibdir):
     print ("Cannot find the BUFR library directory under %s." % bufrlibdir)
@@ -358,23 +359,40 @@ def decodebufr(buffile):
     os.chdir(bufrlibdir)
     # read the file by using the C BUFR library
     if os.sys.platform=="win32":
+        # Windows systems
         try:
 ##            retval = decbufr.decbufr2py(C.c_char_p(buffile), C.c_char_p(descfile))
             retval = sub.call([winexecutable, buffile, descfile, imgfile], shell=True)
         except:
             print "Error in calling the external C BUFR decoder."
+            print "Maybe decbufr.exe was not successively built?"
             raise
     elif "linux" in os.sys.platform:
+        # Linux systems
         try:
 ##            retval = decbufr.decbufr2py(C.c_char_p(buffile), C.c_char_p(descfile))
             retval = sub.call([linuxexecutable, buffile, descfile, imgfile], shell=True)
         except:
             print "Error in calling the external C BUFR decoder."
-            print "This might be a Linux issue...code has not yet been tested on Linux."
+            print "Maybe decbufr was not successively built?"
+            print "This might be a Linux issue...code has not yet been excessively tested on Linux."
+            print "Please contact wradlib developers via wradlib-users@googlegroups.com"
+            raise
+    elif ("os" in os.sys.platform) or (os.sys.platform=="darwin"):
+        # Mac systems
+        try:
+            retval = sub.call([macexecutable, buffile, descfile, imgfile], shell=True)
+        except:
+            print "Error in calling the external C BUFR decoder."
+            print "Maybe decbufr was not successively built?"
+            print "This might be a Mac issue...code has not yet been excessively tested on Mac."
             print "Please contact wradlib developers via wradlib-users@googlegroups.com"
             raise
     else:
-        raise Exception("wradlib BUFR module cannot be used on platforms other than Windows and Linux")
+        print "wradlib BUFR module cannot be used on your platform, yet."
+        print "Your platform: %s" % os.sys.platform
+        print "Please request support under wradlib-users@googlegroups.com"
+        raise Exception()
     # This is just a teporary solution: better get a hand on the stderr object
     if not retval==0:
         raise Exception( "An error occured in calling the external C BUFR decoder." )
