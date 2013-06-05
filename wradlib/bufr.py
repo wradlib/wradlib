@@ -371,7 +371,7 @@ def decodebufr(buffile):
         # Linux systems
         try:
 ##            retval = decbufr.decbufr2py(C.c_char_p(buffile), C.c_char_p(descfile))
-            retval = sub.call([linuxexecutable, buffile, descfile, imgfile], shell=True)
+            retval = sub.call([linuxexecutable, buffile, descfile, imgfile], shell=False)
         except:
             print "Error in calling the external C BUFR decoder."
             print "Maybe decbufr was not successively built?"
@@ -381,7 +381,7 @@ def decodebufr(buffile):
     elif ("os" in os.sys.platform) or (os.sys.platform=="darwin"):
         # Mac systems
         try:
-            retval = sub.call([macexecutable, buffile, descfile, imgfile], shell=True)
+            retval = sub.call([macexecutable, buffile, descfile, imgfile], shell=False)
         except:
             print "Error in calling the external C BUFR decoder."
             print "Maybe decbufr was not successively built?"
