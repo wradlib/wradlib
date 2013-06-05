@@ -74,8 +74,8 @@ bufrlibdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bufr_3.1"
 winshlib = 'bufr2wradlib.dll'
 linuxshlib = 'bufr2wradlib.a'
 winexecutable = 'decbufr.exe'
-linuxexecutable = 'decbufr'
-macexecutable = 'decbufr'
+linuxexecutable = './decbufr'
+macexecutable = './decbufr'
 
 if not os.path.exists(bufrlibdir):
     print ("Cannot find the BUFR library directory under %s." % bufrlibdir)
