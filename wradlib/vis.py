@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #-------------------------------------------------------------------------------
 # Name:        vis
 # Purpose:
@@ -1025,7 +1026,7 @@ def rhi_plot(data, **kwargs):
 class cg_plot(object):
     def __init__(self, ind=None, ax=None, fig=None, **kwargs):
         """Class for plotting curvilinear axes
-            PPI (Plan Position Indicator) and RHI (Range Height Indicator) supported.
+        PPI (Plan Position Indicator) and RHI (Range Height Indicator) supported.
 
         For RHI:
             The data must be an array of shape (number of azimuth angles, number of range bins).
@@ -1039,86 +1040,86 @@ class cg_plot(object):
             The azimuth angle of 90 degrees corresponds to y-axis = 0 (east direction)
             The azimuth angles are counted clock-wise forward.
             
-	Additional `myargs` are extracted from `kwargs`, processed and/or passed
-	to the create_curvilinear_axes routine
+        Additional `myargs` are extracted from `kwargs`, processed and/or passed
+        to the create_curvilinear_axes routine
 
-	Additional remaining `kwargs` will be passed to the pcolormesh routine displaying
-	the data. Be careful!
+        Additional remaining `kwargs` will be passed to the pcolormesh routine displaying
+        the data. Be careful!
 
-	Parameters
-	----------
-	ind : string
-            RHI or PPI indicating wanted product
+        Parameters
+        ----------
+        ind : string
+                RHI or PPI indicating wanted product
 
-        ax : actual axes
-        
-        fig : figure to plot on
+            ax : actual axes
+
+            fig : figure to plot on
 
 
-	Keyword arguments:
+        Keyword arguments:
 
-	x_range :   tuple of array of float and unit string
-                    [display min range, display max range, data max range}, unit string
-                    defaults to [0, data.shape range, data.shape range], empty string
-	y_range :   array of array float and unit string
-                    [display min height, display max height], unit string
-                    defaults to [0,data.shape range ], empty string
-	theta_range: float array
-                     theta range (min, max) used to display data
-        radial_range: float array
-                     radial range (min, max) used to display data             
-	data_range: float array
-                    radial range (min, max) of the raw data array
-                    
-	x_res : float array of range (x) tick resolution (empty, single value, multiple values)
-	y_res : float array of height (y) tick resolution (empty, single value, multiple values)
-	z_res : float array of colorbar (z) tick resolution (empty, single value, multiple values)
-	a_res : float array of angle gridlines and labels, defaults to 8, wich means 10 deg resolution
+        x_range :   tuple of array of float and unit string
+                        [display min range, display max range, data max range}, unit string
+                        defaults to [0, data.shape range, data.shape range], empty string
+        y_range :   array of array float and unit string
+                        [display min height, display max height], unit string
+                        defaults to [0,data.shape range ], empty string
+        theta_range: float array
+                        theta range (min, max) used to display data
+            radial_range: float array
+                        radial range (min, max) used to display data
+        data_range: float array
+                        radial range (min, max) of the raw data array
 
-        faxis : float
-            if polar grid, angle where the first floating axis points to
-	    
-        ftitle : string
-	    a title of the plot, defaults to None
-	xtitle : string
-	    x-axis label
-	    defaults to None
-	ytitle : string
-	    y-axis label
-	    defaults to None
-	atitle : string
-	    angle-axis label, not used at the moment, due to inconvenient placing
-	    defaults to '$Angle$')# ($^{\circ}$)'
-	saveto : string - path of the file in which the figure should be saved
-	    if string is empty, no figure will be saved and the plot will be
-	    sent to screen
-	fig : matplotlib axis object
-	    if None, a new matplotlib figure will be created, otherwise we plot
-	    on given figure
-	figsize : width , hight tuple in inches
-	    defaults to (10,6)
-	axpos : an integer or a string
-	    correponds to the positional argument of mpl_toolkits.axisartist.SubplotHost
-	    defaults to '111'
-	    TODO: if multiple plots are used, position and size of labels have to be corrected
-	    in source code
-	colormap :  string
-	    choose the colormap ("Paired" per default)
-	classes :   sequence of numerical values
-	    class boundaries for plotting
-	[x,y,z]unit : string
-	    the unit of the data which is plotted
-	extend :    string
-	    determines the behaviour of the colorbar: default value 'neither' produces
-	    a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
-	    maximum end, respectively, and 'both' produces an arrow at both ends. If
-	    you use class boundaries for plotting, you should typically use 'both'.
+        x_res : float array of range (x) tick resolution (empty, single value, multiple values)
+        y_res : float array of height (y) tick resolution (empty, single value, multiple values)
+        z_res : float array of colorbar (z) tick resolution (empty, single value, multiple values)
+        a_res : float array of angle gridlines and labels, defaults to 8, wich means 10 deg resolution
 
-	Returns
-	----------
-	class object
+            faxis : float
+                if polar grid, angle where the first floating axis points to
 
-	"""
+            ftitle : string
+            a title of the plot, defaults to None
+        xtitle : string
+            x-axis label
+            defaults to None
+        ytitle : string
+            y-axis label
+            defaults to None
+        atitle : string
+            angle-axis label, not used at the moment, due to inconvenient placing
+            defaults to '$Angle$')# ($^{\circ}$)'
+        saveto : string - path of the file in which the figure should be saved
+            if string is empty, no figure will be saved and the plot will be
+            sent to screen
+        fig : matplotlib axis object
+            if None, a new matplotlib figure will be created, otherwise we plot
+            on given figure
+        figsize : width , hight tuple in inches
+            defaults to (10,6)
+        axpos : an integer or a string
+            correponds to the positional argument of mpl_toolkits.axisartist.SubplotHost
+            defaults to '111'
+            TODO: if multiple plots are used, position and size of labels have to be corrected
+            in source code
+        colormap :  string
+            choose the colormap ("Paired" per default)
+        classes :   sequence of numerical values
+            class boundaries for plotting
+        [x,y,z]unit : string
+            the unit of the data which is plotted
+        extend :    string
+            determines the behaviour of the colorbar: default value 'neither' produces
+            a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
+            maximum end, respectively, and 'both' produces an arrow at both ends. If
+            you use class boundaries for plotting, you should typically use 'both'.
+
+        Returns
+        ----------
+        class object
+
+        """
 
         self.ind = ind
         self.ax = ax
@@ -1126,37 +1127,37 @@ class cg_plot(object):
         self.mdpi = 80.0
 
         # process kwargs
-	if kwargs:
-	    key = kwargs.keys()
-	    value = kwargs.values()
-	    myargs = dict(zip(key, value))
-	else:
-	    myargs = {}
+        if kwargs:
+            key = kwargs.keys()
+            value = kwargs.values()
+            myargs = dict(zip(key, value))
+        else:
+            myargs = {}
 
         # process myargs
-	self.x_range = myargs.pop('x_range',None)
-	self.y_range = myargs.pop('y_range',None)
-      	self.theta_range = myargs.pop('theta_range', None)
-      	self.radial_range = myargs.pop('radial_range',None)
-	self.data_range = myargs.pop('data_range', None)
+        self.x_range = myargs.pop('x_range',None)
+        self.y_range = myargs.pop('y_range',None)
+        self.theta_range = myargs.pop('theta_range', None)
+        self.radial_range = myargs.pop('radial_range',None)
+        self.data_range = myargs.pop('data_range', None)
 
-	self.float_axis = myargs.pop('faxis',45)
+        self.float_axis = myargs.pop('faxis',45)
 
-       	self.xunit = myargs.pop('xunit',None)
-	self.yunit = myargs.pop('yunit',None)
-	self.zunit = myargs.pop('zunit',None)
-	self.xtitle = None
-	self.ytitle = None
-	self.ztitle = None
-	
-	self.fsize = "5%"
-	
-	self.axpos = myargs.pop('axpos', '111')
-	self.extend = myargs.pop('extend', None)
-	self.classes = myargs.pop('classes', None)
+        self.xunit = myargs.pop('xunit',None)
+        self.yunit = myargs.pop('yunit',None)
+        self.zunit = myargs.pop('zunit',None)
+        self.xtitle = None
+        self.ytitle = None
+        self.ztitle = None
 
-	self.saveto = myargs.pop('saveto',None)
-	self.colormap = myargs.pop('colormap','jet')
+        self.fsize = "5%"
+
+        self.axpos = myargs.pop('axpos', '111')
+        self.extend = myargs.pop('extend', None)
+        self.classes = myargs.pop('classes', None)
+
+        self.saveto = myargs.pop('saveto',None)
+        self.colormap = myargs.pop('colormap','jet')
 
 
         if ind == 'PPI':
@@ -1174,11 +1175,11 @@ class cg_plot(object):
             self.cbp = "5%"
             self.cbw = "3%"
 
-	self.x_res = np.array(kwargs.get('x_res', None))
+        self.x_res = np.array(kwargs.get('x_res', None))
         self.y_res = np.array(kwargs.get('y_res', None))
-	self.z_res = np.array(kwargs.get('z_res', None))
-	self.a_res = np.array(kwargs.get('a_res', None))
-	
+        self.z_res = np.array(kwargs.get('z_res', None))
+        self.a_res = np.array(kwargs.get('a_res', None))
+        
 
     def get_tick_vector(self, vrange, vres):
         """Calculates Vector for tickmarks.
@@ -1313,7 +1314,7 @@ class cg_plot(object):
                 ax1.axis["lon"] = axis = ax1.new_floating_axis(0, self.float_axis)
                 ax1.axis["lon"].set_visible(False)
                 ax1.axis["lon"].major_ticklabels.set_visible(False)
-            # and also set tickmarklength to zero for better presentation
+                # and also set tickmarklength to zero for better presentation
                 ax1.axis["lon"].major_ticks.set_ticksize(0)
 
 ##            # this is only for special plots with an "annulus"
@@ -1363,8 +1364,8 @@ class cg_plot(object):
         Parameters
         ----------
         data : 2-d array
-	     polar grid data to be plotted
-	    1st dimension must be azimuth angles, 2nd must be ranges!
+            polar grid data to be plotted
+            1st dimension must be azimuth angles, 2nd must be ranges!
         
 
         Returns
@@ -1372,7 +1373,7 @@ class cg_plot(object):
         circle : plot object
 
         """
-	n_theta, n_r = data.shape
+        n_theta, n_r = data.shape
 
         if self.ind == 'PPI':
             self.x_range = kwargs.pop('x_range',[-n_r, n_r])
@@ -1383,57 +1384,57 @@ class cg_plot(object):
 
         self.y_range = kwargs.pop('y_range',[self.x_range[0], self.x_range[1]])
             
-	self.xunit = kwargs.pop('xunit', None)
-	self.yunit = kwargs.pop('yunit', None)
-	self.x_res = np.array(kwargs.pop('x_res', self.x_res))
-	self.y_res = np.array(kwargs.pop('y_res', self.y_res))
-	self.a_res = kwargs.pop('a_res', 10.)
-	self.float_axis = kwargs.pop('faxis', 30.)
-	
-	self.xtitle = kwargs.pop('xtitle', None)
-	self.ytitle = kwargs.pop('ytitle', None)
-	self.ftitle = kwargs.pop('ftitle', None)
-	self.data_range = kwargs.pop('data_range',[0,self.x_range[1]])
-	self.radial_range = kwargs.pop('radial_range',[0,self.x_range[1]])
-	self.theta_range = kwargs.pop('theta_range',self.theta_range)
-	
+        self.xunit = kwargs.pop('xunit', None)
+        self.yunit = kwargs.pop('yunit', None)
+        self.x_res = np.array(kwargs.pop('x_res', self.x_res))
+        self.y_res = np.array(kwargs.pop('y_res', self.y_res))
+        self.a_res = kwargs.pop('a_res', 10.)
+        self.float_axis = kwargs.pop('faxis', 30.)
 
-	self.aspect = kwargs.pop('aspect', self.aspect)
+        self.xtitle = kwargs.pop('xtitle', None)
+        self.ytitle = kwargs.pop('ytitle', None)
+        self.ftitle = kwargs.pop('ftitle', None)
+        self.data_range = kwargs.pop('data_range',[0,self.x_range[1]])
+        self.radial_range = kwargs.pop('radial_range',[0,self.x_range[1]])
+        self.theta_range = kwargs.pop('theta_range',self.theta_range)
 
-	#print('Data-Shape:',data.shape)
 
-	# remove existing myargs from kwargs
-	# remaining kwargs are for pccolormesh routine
-	key = ['x_range','y_range','x_res','y_res', 'a_res', 'z_res', 'xtitle', \
-	      'ytitle', 'atitle', 'title', 'ztitle', 'figsize', \
-	      'theta_range','data_range', 'fig', 'zunit', \
-	      'saveto','colormap', 'axpos', 'xunit', 'yunit', 'extend']
+        self.aspect = kwargs.pop('aspect', self.aspect)
 
-	if kwargs:
-	    for k in key:
-		if k in kwargs:
-		    kwargs.pop(k)
+        #print('Data-Shape:',data.shape)
 
-	# setup theta and range vectors
-	theta = np.linspace( 0, np.pi/180 * self.ndeg , n_theta) 
+        # remove existing myargs from kwargs
+        # remaining kwargs are for pccolormesh routine
+        key = ['x_range','y_range','x_res','y_res', 'a_res', 'z_res', 'xtitle', \
+            'ytitle', 'atitle', 'title', 'ztitle', 'figsize', \
+            'theta_range','data_range', 'fig', 'zunit', \
+            'saveto','colormap', 'axpos', 'xunit', 'yunit', 'extend']
+
+        if kwargs:
+            for k in key:
+                if k in kwargs:
+                    kwargs.pop(k)
+
+        # setup theta and range vectors
+        theta = np.linspace( 0, np.pi/180 * self.ndeg , n_theta)
         r = np.linspace(0., self.data_range[1], n_r)
-	theta = theta * 180. / np.pi
-	data = np.transpose(data)
+        theta = theta * 180. / np.pi
+        data = np.transpose(data)
 
-	#calculate indices for data range to be plotted
-	ind_start = np.where(theta >= self.theta_range[0])
-	ind_stop = np.where(theta <= self.theta_range[1])
-	ind_start1 = ind_start[0][0]
-	ind_stop1 = ind_stop[0][-1]
-	ind_start = np.where(r >= self.radial_range[0])
-	ind_stop = np.where(r <= self.radial_range[1])
-	ind_start2 = ind_start[0][0]
-	ind_stop2 = ind_stop[0][-1]
+        #calculate indices for data range to be plotted
+        ind_start = np.where(theta >= self.theta_range[0])
+        ind_stop = np.where(theta <= self.theta_range[1])
+        ind_start1 = ind_start[0][0]
+        ind_stop1 = ind_stop[0][-1]
+        ind_start = np.where(r >= self.radial_range[0])
+        ind_stop = np.where(r <= self.radial_range[1])
+        ind_start2 = ind_start[0][0]
+        ind_stop2 = ind_stop[0][-1]
 
-	# apply data ranges to arrays
-	theta = theta[ind_start1:ind_stop1+1] # +1 is to close the gap to 360deg
-	r = r[ind_start2:ind_stop2]
-	data = data[ind_start2:ind_stop2,ind_start1:ind_stop1]
+        # apply data ranges to arrays
+        theta = theta[ind_start1:ind_stop1+1] # +1 is to close the gap to 360deg
+        r = r[ind_start2:ind_stop2]
+        data = data[ind_start2:ind_stop2,ind_start1:ind_stop1]
 
         # gets vmin, vmax from raw data
         self.vmin = np.min(data)
@@ -1452,14 +1453,14 @@ class cg_plot(object):
         self.hgt = self.get_tick_vector(self.y_range, self.y_res)
 
         if self.ax is None:
-	    # create figure, and setup curvilienar grid etc
-	    if self.fig is None:
-		# create a new figure object
-		self.fig = pl.figure(figsize=(8,8),dpi=150)
-		self.ax, self.ax2 = self.create_curvilinear_axes()
-	    else:
-		# plot on the figure object which was passed to this function
-		self.ax, self.ax2 = self.create_curvilinear_axes()
+            # create figure, and setup curvilienar grid etc
+            if self.fig is None:
+                # create a new figure object
+                self.fig = pl.figure(figsize=(8,8),dpi=150)
+                self.ax, self.ax2 = self.create_curvilinear_axes()
+            else:
+                # plot on the figure object which was passed to this function
+                self.ax, self.ax2 = self.create_curvilinear_axes()
 
         #get dpi of fig, needed for automatic calculation of fontsize
         self.dpi = self.fig.get_dpi()
@@ -1491,21 +1492,21 @@ class cg_plot(object):
         if self.ftitle:
             self.title(self.ftitle, ha="left", x = 0)
         
-	# create rectangular meshgrid for polar data
-	X,Y = np.meshgrid(theta,r)
+        # create rectangular meshgrid for polar data
+        X,Y = np.meshgrid(theta,r)
 
-	# plot data to parasite axis
-	if self.classes==None:
-	    # automatic color normalization by vmin and vmax (not recommended) shading='flat', edgecolors='None'
-	    self.circle = self.ax2.pcolormesh(X, Y, data, rasterized=True, cmap=self.colormap, antialiased=False, **kwargs)
-	else:
-	    # colors are assigned according to class boundaries and colormap argument
-	    mycmap = pl.get_cmap(self.colormap, lut=len(self.classes))
-	    mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(self.classes)-1) ))
-	    norm   = mpl.colors.BoundaryNorm(self.classes, mycmap.N)
-	    self.circle = self.ax2.pcolormesh(X, Y, data, rasterized=True, cmap=mycmap, norm=norm, **kwargs)
-	
-	return self.circle
+        # plot data to parasite axis
+        if self.classes==None:
+            # automatic color normalization by vmin and vmax (not recommended) shading='flat', edgecolors='None'
+            self.circle = self.ax2.pcolormesh(X, Y, data, rasterized=True, cmap=self.colormap, antialiased=False, **kwargs)
+        else:
+            # colors are assigned according to class boundaries and colormap argument
+            mycmap = pl.get_cmap(self.colormap, lut=len(self.classes))
+            mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(self.classes)-1) ))
+            norm   = mpl.colors.BoundaryNorm(self.classes, mycmap.N)
+            self.circle = self.ax2.pcolormesh(X, Y, data, rasterized=True, cmap=mycmap, norm=norm, **kwargs)
+
+        return self.circle
 
     def get_fontsize(self, s, *args, **kwargs):
         """ gets fontsize according to given percentage and to actual axis size
@@ -2063,7 +2064,7 @@ class cg_plot(object):
         self.p_copy = self.ax.text(self.x_range[0]- padx, - pady + self.y_range[0],text,fontsize=fsize, va='center', ha='left')
         
     def colorbar(self, *args, **kwargs):
-	""" plot colorbar, vertical, right side
+        """ plot colorbar, vertical, right side
 
         Keyword args
         ----------
@@ -2085,20 +2086,20 @@ class cg_plot(object):
         key = ['vmin', 'vmax', 'z_res', 'ztitle', 'zunit']
         key1 = ['cbp', 'fsize', 'cbw']
         
-	if kwargs:
+        if kwargs:
             for k in key:
                 if k in kwargs:
                     setattr(self, k, np.array(kwargs[k]))
-		    kwargs.pop(k)
-	    for k in key1:
+                    kwargs.pop(k)
+            for k in key1:
                 if k in kwargs:
                     setattr(self, k, kwargs[k])
-		    kwargs.pop(k)
+                    kwargs.pop(k)
 
         # get axis, create and add colorbar-cax, 
         divider = make_axes_locatable(self.ax)
         cax = divider.append_axes("right", size="0%", axes_class=mpl.axes.Axes)
-	cbp = Size.from_any(self.cbp, fraction_ref=Size.Fraction(1/self.aspect, Size.AxesX(self.ax)))
+        cbp = Size.from_any(self.cbp, fraction_ref=Size.Fraction(1/self.aspect, Size.AxesX(self.ax)))
         cbw = Size.from_any(self.cbw, fraction_ref=Size.Fraction(1/self.aspect, Size.AxesX(self.ax)))
 
         h = [# main axes
@@ -2115,10 +2116,10 @@ class cg_plot(object):
         self.ax.set_axes_locator(divider.new_locator(nx=0, ny=0))
         cax.set_axes_locator(divider.new_locator(nx=2, ny=0))
 
-    	self.fig.add_axes(cax)
+        self.fig.add_axes(cax)
 
         # set z_range and plot-clims
-	self.z_range = [self.vmin,self.vmax]
+        self.z_range = [self.vmin,self.vmax]
         args[0].set_clim(vmin=self.vmin, vmax=self.vmax)
 
         # get ticks
@@ -2135,19 +2136,19 @@ class cg_plot(object):
         # set font and size
         fsize = self.get_fontsize(self.fsize)[0]
         font = fm.FontProperties()
-	font.set_family('sans-serif')
-	font.set_size(fsize)
+        font.set_family('sans-serif')
+        font.set_size(fsize)
 
         # plot colorbar title and ticks
-	if self.ztitle:
+        if self.ztitle:
             ztitle = str(self.ztitle)
             if self.zunit:
                 ztitle = ztitle +' ('+ str(self.zunit) + ')'
             self.cbar.set_label(ztitle, fontsize=fsize)
         z_ticks1 = [str(np.int(i)) for i in z_ticks]
         self.cbar.ax.set_yticklabels(z_ticks1, fontsize=fsize)
-	
-	return self.cbar
+        
+        return self.cbar
 
 
 
