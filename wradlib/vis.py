@@ -31,6 +31,7 @@ Standard plotting and mapping procedures
 
 # standard libraries
 import os.path as path
+import math
 
 # site packages
 import numpy as np
@@ -41,9 +42,12 @@ from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
 from mpl_toolkits.axisartist import SubplotHost, ParasiteAxesAuxTrans, GridHelperCurveLinear
 from mpl_toolkits.axisartist.grid_finder import FixedLocator
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1 import axes_size as Size
 import mpl_toolkits.axisartist.angle_helper as angle_helper
 from matplotlib.ticker import NullFormatter, FuncFormatter
 import matplotlib.dates as mdates
+import matplotlib.font_manager as fm
 
 # wradlib modules
 import wradlib.georef as georef
@@ -1017,6 +1021,1134 @@ def rhi_plot(data, **kwargs):
             pl.close()
 
     return fig, pl
+
+class cg_plot(object):
+    def __init__(self, ind=None, ax=None, fig=None, **kwargs):
+        """Class for plotting curvilinear axes
+            PPI (Plan Position Indicator) and RHI (Range Height Indicator) supported.
+
+        For RHI:
+            The data must be an array of shape (number of azimuth angles, number of range bins).
+            The azimuth angle of 0 degrees corresponds to y-axis = 0 (east direction)
+            The azimuth angle of 90 degrees corresponds to x-axis = 0 (north direction)
+            The azimuth the angles are counted counter-clock-wise forward.
+            
+        For PPI:
+            The data must be an array of shape (number of azimuth angles, number of range bins).
+            The azimuth angle of 0 degrees corresponds to x-axis = 0 (north direction)
+            The azimuth angle of 90 degrees corresponds to y-axis = 0 (east direction)
+            The azimuth angles are counted clock-wise forward.
+            
+	Additional `myargs` are extracted from `kwargs`, processed and/or passed
+	to the create_curvilinear_axes routine
+
+	Additional remaining `kwargs` will be passed to the pcolormesh routine displaying
+	the data. Be careful!
+
+	Parameters
+	----------
+	ind : string
+            RHI or PPI indicating wanted product
+
+        ax : actual axes
+        
+        fig : figure to plot on
+
+
+	Keyword arguments:
+
+	x_range :   tuple of array of float and unit string
+                    [display min range, display max range, data max range}, unit string
+                    defaults to [0, data.shape range, data.shape range], empty string
+	y_range :   array of array float and unit string
+                    [display min height, display max height], unit string
+                    defaults to [0,data.shape range ], empty string
+	theta_range: float array
+                     theta range (min, max) used to display data
+        radial_range: float array
+                     radial range (min, max) used to display data             
+	data_range: float array
+                    radial range (min, max) of the raw data array
+                    
+	x_res : float array of range (x) tick resolution (empty, single value, multiple values)
+	y_res : float array of height (y) tick resolution (empty, single value, multiple values)
+	z_res : float array of colorbar (z) tick resolution (empty, single value, multiple values)
+	a_res : float array of angle gridlines and labels, defaults to 8, wich means 10 deg resolution
+
+        faxis : float
+            if polar grid, angle where the first floating axis points to
+	    
+        ftitle : string
+	    a title of the plot, defaults to None
+	xtitle : string
+	    x-axis label
+	    defaults to None
+	ytitle : string
+	    y-axis label
+	    defaults to None
+	atitle : string
+	    angle-axis label, not used at the moment, due to inconvenient placing
+	    defaults to '$Angle$')# ($^{\circ}$)'
+	saveto : string - path of the file in which the figure should be saved
+	    if string is empty, no figure will be saved and the plot will be
+	    sent to screen
+	fig : matplotlib axis object
+	    if None, a new matplotlib figure will be created, otherwise we plot
+	    on given figure
+	figsize : width , hight tuple in inches
+	    defaults to (10,6)
+	axpos : an integer or a string
+	    correponds to the positional argument of mpl_toolkits.axisartist.SubplotHost
+	    defaults to '111'
+	    TODO: if multiple plots are used, position and size of labels have to be corrected
+	    in source code
+	colormap :  string
+	    choose the colormap ("Paired" per default)
+	classes :   sequence of numerical values
+	    class boundaries for plotting
+	[x,y,z]unit : string
+	    the unit of the data which is plotted
+	extend :    string
+	    determines the behaviour of the colorbar: default value 'neither' produces
+	    a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
+	    maximum end, respectively, and 'both' produces an arrow at both ends. If
+	    you use class boundaries for plotting, you should typically use 'both'.
+
+	Returns
+	----------
+	class object
+
+	"""
+
+        self.ind = ind
+        self.ax = ax
+        self.fig = fig
+        self.mdpi = 80.0
+
+        # process kwargs
+	if kwargs:
+	    key = kwargs.keys()
+	    value = kwargs.values()
+	    myargs = dict(zip(key, value))
+	else:
+	    myargs = {}
+
+        # process myargs
+	self.x_range = myargs.pop('x_range',None)
+	self.y_range = myargs.pop('y_range',None)
+      	self.theta_range = myargs.pop('theta_range', None)
+      	self.radial_range = myargs.pop('radial_range',None)
+	self.data_range = myargs.pop('data_range', None)
+
+	self.float_axis = myargs.pop('faxis',45)
+
+       	self.xunit = myargs.pop('xunit',None)
+	self.yunit = myargs.pop('yunit',None)
+	self.zunit = myargs.pop('zunit',None)
+	self.xtitle = None
+	self.ytitle = None
+	self.ztitle = None
+	
+	self.fsize = "5%"
+	
+	self.axpos = myargs.pop('axpos', '111')
+	self.extend = myargs.pop('extend', None)
+	self.classes = myargs.pop('classes', None)
+
+	self.saveto = myargs.pop('saveto',None)
+	self.colormap = myargs.pop('colormap','jet')
+
+
+        if ind == 'PPI':
+            self.ndeg = 360.
+            self.theta_range = [0, 360]
+            self.figsize = (8,8)
+            self.aspect = 1.
+            self.cbp = "5%"
+            self.cbw = "5%"
+        if ind == 'RHI':    
+            self.ndeg = 90.
+            self.theta_range = [0, 90]
+            self.figsize = (10,6)
+            self.aspect = 0.
+            self.cbp = "5%"
+            self.cbw = "3%"
+
+	self.x_res = np.array(kwargs.get('x_res', None))
+        self.y_res = np.array(kwargs.get('y_res', None))
+	self.z_res = np.array(kwargs.get('z_res', None))
+	self.a_res = np.array(kwargs.get('a_res', None))
+	
+
+    def get_tick_vector(self, vrange, vres):
+        """Calculates Vector for tickmarks.
+
+        Calculates tickmarks according to value range and wanted resolution. If no resolution is given,
+        standard values [100., 50., 25., 20., 10., 5., 2.5, 2., 1., 0.5, 0.25, 0.2] are used.
+        The number of tickmarks is normally between 5 and 10.
+
+        Parameters
+        ----------
+        vrange : value range (first and last tickmark)
+        vres : array of tick resolution (empty list, single value, multiple values)
+
+        Returns
+        ----------
+        output : array of tickmarks
+
+        """
+
+        x = vrange[1]- vrange[0]
+
+        if not vres:
+            for div in [200.,100.,50.,20.,10.,5.,2.5,2.,1.,0.5,0.25,0.2]:
+                cnt = x/div
+                if cnt >= 5:
+                    rem = np.mod(x,div)
+                    break
+        else:
+            if vres.size > 1:
+                for div in vres:
+                    cnt = x/div
+                    if cnt >= 5:
+                        rem = np.mod(x,div)
+                        break
+            elif vres.size == 1:
+                cnt = x/vres
+                rem = np.mod(x,vres)
+
+        return np.linspace(vrange[0],vrange[1]-rem,num=cnt+1)
+
+    def create_curvilinear_axes(self):
+        """Creates Curvilinear Axes.
+
+        All needed parameters are calculated in the init() and plot() routines. Normally called from plot().
+
+        RHI - uses PolarAxes.PolarTransform
+        PPI - uses NorthPolarAxes.NorthPolarTransform
+
+        Parameters
+        ----------
+        None
+        
+
+        Returns
+        ----------
+        ax1 : axes object, 
+        ax2 : axes object, axes object, where polar data is plotted
+
+        """
+
+        if self.ind == 'RHI':
+            tr = Affine2D().scale(np.pi/180, 1.) + PolarAxes.PolarTransform()
+            # build up curvilinear grid
+            extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
+                                                         lon_cycle = 100,
+                                                         lat_cycle = None,
+                                                         lon_minmax = None,
+                                                         lat_minmax = (0, np.inf),
+                                                         )
+            #grid_locator1 = angle_helper.LocatorD(self.a_res)
+            if isinstance(self.a_res, int):
+                grid_locator1 = FixedLocator([i for i in np.arange(0,91,self.a_res)])
+            else:
+                grid_locator1 = FixedLocator(self.a_res)
+            tick_formatter1 = angle_helper.FormatterDMS()
+            grid_locator2 = FixedLocator([i for i in self.rad])
+            grid_helper = GridHelperCurveLinear(tr,
+                                            extreme_finder=extreme_finder,
+                                            grid_locator1=grid_locator1,
+                                            grid_locator2=grid_locator2,
+                                            tick_formatter1=tick_formatter1,
+                                            tick_formatter2=None,
+                                            )
+
+            # generate Axis
+            ax1 = SubplotHost(self.fig, self.axpos , grid_helper=grid_helper)
+            # add axis to figure
+            self.fig.add_subplot(ax1, aspect=self.aspect)
+            ax1.set_aspect(self.aspect, adjustable='box-forced')
+            
+            # make ticklabels of right and top axis visible.
+            ax1.axis["right"].major_ticklabels.set_visible(True)
+            ax1.axis["top"].major_ticklabels.set_visible(True)
+            # but set tickmarklength to zero for better presentation
+            ax1.axis["right"].major_ticks.set_ticksize(0)
+            ax1.axis["top"].major_ticks.set_ticksize(0)
+            # let right and top axis shows ticklabels for 1st coordinate (angle)
+            ax1.axis["right"].get_helper().nth_coord_ticks=0
+            ax1.axis["top"].get_helper().nth_coord_ticks=0
+
+        elif self.ind == 'PPI':
+            
+            tr = Affine2D().scale(np.pi/180, 1.) + NorthPolarAxes.NorthPolarTransform()
+            # build up curvilinear grid
+            extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
+                                                         lon_cycle = 360.,
+                                                         lat_cycle = None,
+                                                         lon_minmax = (360.,0.),
+                                                         lat_minmax = (0,self.radial_range[1]),
+                                                         )
+            if isinstance(self.a_res, int):
+                grid_locator1 = FixedLocator([i for i in np.arange(0,359,self.a_res)])
+            else:
+                grid_locator1 = FixedLocator(self.a_res)
+            tick_formatter1 = angle_helper.FormatterDMS()
+            grid_locator2 = FixedLocator([i for i in self.rad])
+            grid_helper = GridHelperCurveLinear(tr,
+                                            extreme_finder=extreme_finder,
+                                            grid_locator1=grid_locator1,
+                                            grid_locator2=grid_locator2,
+                                            tick_formatter1=tick_formatter1,
+                                            tick_formatter2=None,
+                                            )
+
+            # generate Axis
+            ax1 = SubplotHost(self.fig, self.axpos , grid_helper=grid_helper)
+            # add axis to figure
+            self.fig.add_subplot(ax1, aspect=self.aspect)
+            ax1.set_aspect(self.aspect, adjustable='box-forced')
+            #create floating axis,
+            if self.float_axis:
+                ax1.axis["lon"] = axis = ax1.new_floating_axis(0, self.float_axis)
+                ax1.axis["lon"].set_visible(False)
+                ax1.axis["lon"].major_ticklabels.set_visible(False)
+            # and also set tickmarklength to zero for better presentation
+                ax1.axis["lon"].major_ticks.set_ticksize(0)
+
+##            # this is only for special plots with an "annulus"
+##            ax1.axis["lon1"] = axis2 = ax1.new_floating_axis(1, self.data_range[0])
+##            ax1.axis["lon1"].major_ticklabels.set_visible(False)
+##            # and also set tickmarklength to zero for better presentation
+##            ax1.axis["lon1"].major_ticks.set_ticksize(0)
+
+            # this is in fact the outermost thick "ring"
+            ax1.axis["lon2"] = axis = ax1.new_floating_axis(1, self.radial_range[1])
+            ax1.axis["lon2"].major_ticklabels.set_visible(False)
+            # and also set tickmarklength to zero for better presentation
+            ax1.axis["lon2"].major_ticks.set_ticksize(0)
+
+            # make ticklabels of right and bottom axis unvisible,
+            # because we are drawing them
+            ax1.axis["right"].major_ticklabels.set_visible(False)
+            ax1.axis["top"].major_ticklabels.set_visible(False)
+        
+            # and also set tickmarklength to zero for better presentation
+            ax1.axis["right"].major_ticks.set_ticksize(0)
+            ax1.axis["top"].major_ticks.set_ticksize(0)
+      
+        # make ticklabels of left and bottom axis unvisible,
+        # because we are drawing them
+        ax1.axis["left"].major_ticklabels.set_visible(False)
+        ax1.axis["bottom"].major_ticklabels.set_visible(False)
+        
+        # and also set tickmarklength to zero for better presentation
+        ax1.axis["left"].major_ticks.set_ticksize(0)
+        ax1.axis["bottom"].major_ticks.set_ticksize(0)
+
+        # generate and add parasite axes with given transform
+        ax2 = ParasiteAxesAuxTrans(ax1, tr, "equal")
+        # note that ax2.transData == tr + ax1.transData
+        # Anthing you draw in ax2 will match the ticks and grids of ax1.
+        ax1.parasites.append(ax2)
+
+        if self.ind == 'RHI':
+            ax1.grid(True)
+
+        return ax1, ax2
+
+    def plot(self, data, **kwargs):
+        """ plot data
+
+        Parameters
+        ----------
+        data : 2-d array
+	     polar grid data to be plotted
+	    1st dimension must be azimuth angles, 2nd must be ranges!
+        
+
+        Returns
+        ----------
+        circle : plot object
+
+        """
+	n_theta, n_r = data.shape
+
+        if self.ind == 'PPI':
+            self.x_range = kwargs.pop('x_range',[-n_r, n_r])
+            
+        if self.ind == 'RHI':
+            self.x_range = kwargs.pop('x_range',[0, n_r])
+            
+
+        self.y_range = kwargs.pop('y_range',[self.x_range[0], self.x_range[1]])
+            
+	self.xunit = kwargs.pop('xunit', None)
+	self.yunit = kwargs.pop('yunit', None)
+	self.x_res = np.array(kwargs.pop('x_res', self.x_res))
+	self.y_res = np.array(kwargs.pop('y_res', self.y_res))
+	self.a_res = kwargs.pop('a_res', 10.)
+	self.float_axis = kwargs.pop('faxis', 30.)
+	
+	self.xtitle = kwargs.pop('xtitle', None)
+	self.ytitle = kwargs.pop('ytitle', None)
+	self.ftitle = kwargs.pop('ftitle', None)
+	self.data_range = kwargs.pop('data_range',[0,self.x_range[1]])
+	self.radial_range = kwargs.pop('radial_range',[0,self.x_range[1]])
+	self.theta_range = kwargs.pop('theta_range',self.theta_range)
+	
+
+	self.aspect = kwargs.pop('aspect', self.aspect)
+
+	#print('Data-Shape:',data.shape)
+
+	# remove existing myargs from kwargs
+	# remaining kwargs are for pccolormesh routine
+	key = ['x_range','y_range','x_res','y_res', 'a_res', 'z_res', 'xtitle', \
+	      'ytitle', 'atitle', 'title', 'ztitle', 'figsize', \
+	      'theta_range','data_range', 'fig', 'zunit', \
+	      'saveto','colormap', 'axpos', 'xunit', 'yunit', 'extend']
+
+	if kwargs:
+	    for k in key:
+		if k in kwargs:
+		    kwargs.pop(k)
+
+	# setup theta and range vectors
+	theta = np.linspace( 0, np.pi/180 * self.ndeg , n_theta) 
+        r = np.linspace(0., self.data_range[1], n_r)
+	theta = theta * 180. / np.pi
+	data = np.transpose(data)
+
+	#calculate indices for data range to be plotted
+	ind_start = np.where(theta >= self.theta_range[0])
+	ind_stop = np.where(theta <= self.theta_range[1])
+	ind_start1 = ind_start[0][0]
+	ind_stop1 = ind_stop[0][-1]
+	ind_start = np.where(r >= self.radial_range[0])
+	ind_stop = np.where(r <= self.radial_range[1])
+	ind_start2 = ind_start[0][0]
+	ind_stop2 = ind_stop[0][-1]
+
+	# apply data ranges to arrays
+	theta = theta[ind_start1:ind_stop1+1] # +1 is to close the gap to 360deg
+	r = r[ind_start2:ind_stop2]
+	data = data[ind_start2:ind_stop2,ind_start1:ind_stop1]
+
+        # gets vmin, vmax from raw data
+        self.vmin = np.min(data)
+        self.vmax = np.max(data)
+
+        # gets dynamic of xrange and yrange
+        self.xd = self.x_range[1]-self.x_range[0]
+        self.yd = self.y_range[1]-self.y_range[0]
+        xd = self.xd
+        yd = self.yd
+        x_range = self.x_range
+        y_range = self.y_range
+
+        # get range and hight (x and y) tick vectors
+        self.rad = self.get_tick_vector(self.x_range, self.x_res)
+        self.hgt = self.get_tick_vector(self.y_range, self.y_res)
+
+        if self.ax is None:
+	    # create figure, and setup curvilienar grid etc
+	    if self.fig is None:
+		# create a new figure object
+		self.fig = pl.figure(figsize=(8,8),dpi=150)
+		self.ax, self.ax2 = self.create_curvilinear_axes()
+	    else:
+		# plot on the figure object which was passed to this function
+		self.ax, self.ax2 = self.create_curvilinear_axes()
+
+        #get dpi of fig, needed for automatic calculation of fontsize
+        self.dpi = self.fig.get_dpi()
+        #print("DPI:", self.dpi)
+        
+        
+        # set x and y ax-limits
+        self.ax.set_xlim(self.x_range[0], self.x_range[1])
+        self.ax.set_ylim(self.y_range[0], self.y_range[1])        
+
+        # draw grid, tickmarks and ticklabes for left (y) and bottom (x) axis
+        # left that out, user should use grid routines to draw ticks
+        #self.xticks(self.x_res)
+        #self.yticks(self.y_res)
+
+        # plot xy-axis labels and title if already "published"
+        if self.ytitle:
+            ytitle = self.ytitle
+            if self.yunit:
+                ytitle = ytitle + ' ('+ self.yunit + ')'
+            self.y_title(ytitle)
+        if self.xtitle:
+            xtitle = self.xtitle
+            if self.xunit:
+                xtitle = xtitle + ' ('+ self.xunit + ')'
+            self.x_title(xtitle)
+            # there is no "convenient" position for the "angle" label, maybe we dont need it at all
+            # self.ax1.text(x_range[1],y_range[1] + yd/21.,self.atitle, va='top', ha='right')
+        if self.ftitle:
+            self.title(self.ftitle, ha="left", x = 0)
+        
+	# create rectangular meshgrid for polar data
+	X,Y = np.meshgrid(theta,r)
+
+	# plot data to parasite axis
+	if self.classes==None:
+	    # automatic color normalization by vmin and vmax (not recommended) shading='flat', edgecolors='None'
+	    self.circle = self.ax2.pcolormesh(X, Y, data, rasterized=True, cmap=self.colormap, antialiased=False, **kwargs)
+	else:
+	    # colors are assigned according to class boundaries and colormap argument
+	    mycmap = pl.get_cmap(self.colormap, lut=len(self.classes))
+	    mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(self.classes)-1) ))
+	    norm   = mpl.colors.BoundaryNorm(self.classes, mycmap.N)
+	    self.circle = self.ax2.pcolormesh(X, Y, data, rasterized=True, cmap=mycmap, norm=norm, **kwargs)
+	
+	return self.circle
+
+    def get_fontsize(self, s, *args, **kwargs):
+        """ gets fontsize according to given percentage and to actual axis size
+            takes dpi of figure into account
+
+        Parameters
+        ----------
+        s : string
+            wanted "fontsize" in percentage of axis size
+              
+        Returns
+        ----------
+        fontsize in points
+        
+        """
+        if s:
+            if not isinstance(s, Size._Base):
+                fsize = Size.from_any(s,
+                                    fraction_ref=Size.AxesX(self.ax))
+        else:
+            s="5%"
+            if not isinstance(s, Size._Base):
+                fsize = Size.from_any(s,
+                                    fraction_ref=Size.AxesX(self.ax))
+        
+        fs = self.ax.transData.transform((fsize.get_size(self.ax)[0],0))- self.ax.transData.transform((0,0))
+        return  fs/(self.dpi/self.mdpi)
+
+    def xticks(self, s, *args, **kwargs):
+        """ turns xticks on/off
+
+        Parameters
+        ----------
+        s : boolean
+            True or False
+              
+        Returns
+        ----------
+        None
+
+        """
+
+        fsize = kwargs.pop('fsize','1.5%')
+        ticklen = kwargs.pop('ticklen','1%')
+        labelpad = kwargs.pop('labelpad','2%')
+        
+        if s == False:
+            if hasattr(self, 'p_xticks'):
+                if self.p_xticks:
+                    for item in self.p_xticks:
+                        item.remove()
+                self.p_xticks = None
+        else:
+            if hasattr(self, 'p_xticks'):
+                if self.p_xticks:
+                    for item in self.p_xticks:
+                        item.remove()
+            self.p_xticks = []
+            self.rad = self.get_tick_vector(self.x_range, np.array(s))
+            
+            fsize = self.get_fontsize(fsize)[0]
+            ticklen = self.get_ypadding(ticklen, self.ax)
+            labelpad = self.get_ypadding(labelpad, self.ax)
+            
+            for xmaj in self.rad:
+                if np.equal(np.mod(xmaj, 1), 0):
+                    xmaj = np.int(xmaj)
+                text = self.ax.text(xmaj,-labelpad+self.y_range[0],str(xmaj), va='top', ha='center', fontsize=fsize)
+                self.p_xticks.append(text)
+                line = mpl.lines.Line2D([xmaj,xmaj],[-ticklen+self.y_range[0], self.y_range[0]], color='k')
+                line.set_clip_on(False)
+                self.ax.add_line(line)
+                self.p_xticks.append(line)
+            self.xgrid('update')
+
+    def yticks(self, s, *args, **kwargs):
+        """ turns yticks on/off
+
+        Parameters
+        ----------
+        s : boolean
+            True or False
+              
+        Returns
+        ----------
+        None
+
+        """
+
+        fsize = kwargs.pop('fsize','1.5%')
+        ticklen = kwargs.pop('ticklen','1%')
+        labelpad = kwargs.pop('labelpad','2%')
+        
+        if s == False:
+            if hasattr(self, 'p_yticks'):
+                if self.p_yticks:
+                    for item in self.p_yticks:
+                        item.remove()
+                self.p_yticks = None
+        else:
+            if hasattr(self, 'p_yticks'):
+                if self.p_yticks:
+                    for item in self.p_yticks:
+                        item.remove()
+            self.p_yticks = []
+            self.hgt = self.get_tick_vector(self.y_range, np.array(s))
+
+            fsize = self.get_fontsize(fsize)[0]
+            ticklen = self.get_xpadding(ticklen, self.ax)
+            labelpad = self.get_xpadding(labelpad, self.ax)
+            
+            for ymaj in self.hgt:
+                if np.equal(np.mod(ymaj, 1), 0):
+                    ymaj = np.int(ymaj)
+                text = self.ax.text(-labelpad+self.x_range[0],ymaj,str(ymaj).rjust(4), va='center', ha='right', fontsize=fsize)
+                self.p_yticks.append(text)
+                line = mpl.lines.Line2D([-ticklen+self.x_range[0],self.x_range[0]],[ymaj, ymaj], color='k')
+                line.set_clip_on(False)
+                self.ax.add_line(line)
+                self.p_yticks.append(line)
+            self.ygrid('update')
+
+    def cartticks(self, s, *args, **kwargs):
+        """ turns cartesian ticks on/off (xticks, yticks)
+
+        Parameters
+        ----------
+        s : boolean
+            True or False
+              
+        Returns
+        ----------
+        None
+
+        """
+        self.yticks(s)
+        self.xticks(s)
+
+    def polticks(self, s, *args, **kwargs):
+        """ turns polar ticks on/off (lon, lon2)
+
+        Parameters
+        ----------
+        s : boolean, string
+            True or False, 'on' or 'off'
+              
+        Returns
+        ----------
+        None
+
+        """
+
+        fsize = kwargs.pop('fsize',"2.0%")
+        fsize = self.get_fontsize(fsize)[0]
+        font = fm.FontProperties()
+        font.set_size(fsize)
+
+        if s == 'on' or s == True:
+            if self.float_axis:
+                self.ax.axis["lon"].set_visible(True)
+                self.ax.axis["lon"].major_ticklabels.set_visible(True)
+                self.ax.axis["lon"].major_ticks.set_ticksize(5)
+                self.ax.axis["lon"].invert_ticklabel_direction()
+                self.ax.axis["lon"].major_ticklabels.set_fontproperties(font)
+                
+            #if self.ind == "PPI":
+            self.ax.axis["lon2"].major_ticklabels.set_visible(True)
+            self.ax.axis["lon2"].major_ticks.set_ticksize(5)
+            self.ax.axis["lon2"].invert_ticklabel_direction()
+            self.ax.axis["lon2"].major_ticklabels.set_fontproperties(font)
+     
+            if abs(self.x_range[0]) < self.radial_range[1]:                
+                left = True
+                vert1 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.x_range[0],2)))+abs(self.y_range[0]))/self.yd
+                vert2 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.x_range[0],2)))+abs(self.y_range[1]))/self.yd
+                path = self.ax.axis["left"].line.get_path()
+                vert = path.vertices
+                vert[0][1] = 0 if vert2 > 1 else 1 - vert2
+                vert[1][1] = 1 if vert1 > 1 else vert1
+                self.ax.axis["left"].line.set_path(mpl.path.Path(vert))
+                
+            else:
+                left =False
+
+            if abs(self.x_range[1]) < abs(self.radial_range[1]):
+                right = True
+                vert1 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.x_range[1],2))) + abs(self.y_range[0]))/self.yd
+                vert2 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.x_range[1],2))) + abs(self.y_range[1]))/self.yd
+                path = self.ax.axis["right"].line.get_path()
+                vert = path.vertices
+                vert[1][1] = 1 if vert1 > 1 else vert1
+                vert[0][1] = 0 if vert2 > 1 else 1 - vert2
+                self.ax.axis["right"].line.set_path(mpl.path.Path(vert))
+                
+            else:
+                right = False
+
+            if abs(self.y_range[0]) < abs(self.radial_range[1]):                
+                bottom = True
+                vert1 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[0],2)))+abs(self.x_range[0]))/self.xd
+                vert2 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[0],2)))+abs(self.x_range[1]))/self.xd
+                path = self.ax.axis["bottom"].line.get_path()
+                vert = path.vertices
+                vert[1][0] = 1 if vert1 > 1 else vert1
+                vert[0][0] = 0 if vert2 > 1 else 1 - vert2
+                self.ax.axis["bottom"].line.set_path(mpl.path.Path(vert))
+                
+            else:
+                bottom =False
+
+            if abs(self.y_range[1]) < abs(self.radial_range[1]):                    
+                top = True
+                vert1 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[1],2)))+abs(self.x_range[0]))/self.xd
+                vert2 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[1],2)))+abs(self.x_range[1]))/self.xd
+                path = self.ax.axis["top"].line.get_path()
+                vert = path.vertices
+                vert[0][0] = 0 if vert2 > 1 else 1 - vert2
+                vert[1][0] = 1 if vert1 > 1 else vert1
+                self.ax.axis["top"].line.set_path(mpl.path.Path(vert))
+            else:    
+                top = False
+
+            self.ax.axis["top"].major_ticklabels.set_fontproperties(font)
+            self.ax.axis["bottom"].major_ticklabels.set_fontproperties(font)
+            self.ax.axis["right"].major_ticklabels.set_fontproperties(font)
+            self.ax.axis["left"].major_ticklabels.set_fontproperties(font)
+             
+            
+            self.ax.axis["left"].set_visible(left)
+            self.ax.axis["right"].set_visible(right)
+            self.ax.axis["bottom"].set_visible(bottom)
+            self.ax.axis["top"].set_visible(top)
+            # make ticklabels of left and bottom axis visible.
+            self.ax.axis["left"].major_ticklabels.set_visible(left)
+            self.ax.axis["bottom"].major_ticklabels.set_visible(bottom)
+            # but set tickmarklength to zero for better presentation
+            self.ax.axis["left"].major_ticks.set_ticksize(5)
+            self.ax.axis["bottom"].major_ticks.set_ticksize(5)
+            # let right and top axis shows ticklabels for 1st coordinate (angle)
+            self.ax.axis["left"].get_helper().nth_coord_ticks=0
+            self.ax.axis["bottom"].get_helper().nth_coord_ticks=0
+
+            # make ticklabels of right and top axis visible.
+            self.ax.axis["right"].major_ticklabels.set_visible(right)
+            self.ax.axis["top"].major_ticklabels.set_visible(top)
+            # but set tickmarklength to zero for better presentation
+            self.ax.axis["right"].major_ticks.set_ticksize(5)
+            self.ax.axis["top"].major_ticks.set_ticksize(5)
+            # let right and top axis shows ticklabels for 1st coordinate (angle)
+            self.ax.axis["right"].get_helper().nth_coord_ticks=0
+            self.ax.axis["top"].get_helper().nth_coord_ticks=0
+
+        elif s == 'off' or s == False:
+            if self.float_axis:
+                self.ax.axis["lon"].major_ticklabels.set_visible(False)
+                self.ax.axis["lon"].major_ticks.set_ticksize(0)
+            #if self.ind == "PPI":    
+            self.ax.axis["lon2"].major_ticklabels.set_visible(False)
+            self.ax.axis["lon2"].major_ticks.set_ticksize(0)
+
+    def cartgrid(self,s, *args, **kwargs):
+        """ turns cartesian grid/axis on/off (x, y)
+
+        Parameters
+        ----------
+        s : boolean
+            True or False
+              
+        Returns
+        ----------
+        None
+
+        """
+        self.ax.axis["right"].set_visible(s)
+        self.ax.axis["bottom"].set_visible(s)
+        self.ax.axis["left"].set_visible(s)
+        self.ax.axis["top"].set_visible(s)
+        self.xgrid(s)
+        self.ygrid(s)
+
+    def polgrid(self,s, *args, **kwargs):
+        """ turns polar grid on/off 
+
+        Parameters
+        ----------
+        s : boolean
+            True or False
+              
+        Returns
+        ----------
+        None
+
+        """
+        if s == 'on' or s == True:
+            self.ax.grid(True)
+        elif s == 'off' or s == False:
+            self.ax.grid(False)
+        
+    def xgrid(self, s, *args, **kwargs):
+        """ turns xgrid on/off 
+
+        Parameters
+        ----------
+        s : boolean
+            True or False
+              
+        Returns
+        ----------
+        None
+
+        """
+        if s == 'on' or s == True:
+            if hasattr(self, 'p_xgrid'):
+                if self.p_xgrid:
+                    for item in self.p_xgrid:
+                        item.remove()
+            self.p_xgrid = []
+            for xmaj in self.rad:
+                line = self.ax.axvline(x=xmaj,color='k', ls=':')
+                self.p_xgrid.append(line) 
+        elif s == 'off' or s == False:
+            if hasattr(self, 'p_xgrid'):
+                if self.p_xgrid:
+                    for item in self.p_xgrid:
+                        item.remove()
+                self.p_xgrid = None
+                #self.remove(p_xgrid)
+        elif s == 'update':
+            self.xgrid('on')
+        else:
+            self.xgrid('on')
+            self.xgrid('off')
+
+
+    def ygrid(self, s, *args, **kwargs):
+        """ turns xgrid on/off 
+
+        Parameters
+        ----------
+        s : boolean
+            True or False
+              
+        Returns
+        ----------
+        None
+
+        """
+        if s == 'on' or s == True:
+            if hasattr(self, 'p_ygrid'):
+                if self.p_ygrid:
+                    for item in self.p_ygrid:
+                        item.remove()
+            self.p_ygrid = []
+            for ymaj in self.hgt:
+                line = self.ax.axhline(y=ymaj,color='k', ls=':')
+                self.p_ygrid.append(line)
+        elif s == 'off' or s == False:
+            if hasattr(self, 'p_ygrid'):
+                if self.p_ygrid:
+                    for item in self.p_ygrid:
+                        item.remove()
+                self.p_ygrid = None
+        elif s == 'update':
+            self.ygrid('on')
+        else:
+            self.ygrid('on')
+            self.ygrid('off')
+
+    def get_ypadding(self, pad, ax, *args, **kwargs):
+        """ calculates labelpadding in direction of y-axis (e.g. x-label)
+
+        Parameters
+        ----------
+        pad : string
+                padding in percent of ax
+        ax : relevant axis
+            
+              
+        Returns
+        ----------
+        padding in axis values
+
+        """
+        
+        if not isinstance(pad, Size._Base):
+                padding = Size.from_any(pad,
+                                    fraction_ref=Size.AxesY(ax))
+
+
+        p = (self.xd/self.yd) / self.aspect
+        return padding.get_size(ax)[0]*p
+
+    def get_xpadding(self, pad, ax, *args, **kwargs):
+        """ calculates labelpadding in direction of x-axis (e.g. y-label)
+
+        Parameters
+        ----------
+        pad : string
+                padding in percent of ax
+        ax : relevant axis
+            
+        Returns
+        ----------
+        padding in axis values
+
+        """
+        if not isinstance(pad, Size._Base):
+                padding = Size.from_any(pad,
+                                    fraction_ref=Size.AxesX(ax))
+        p = (self.yd/self.xd) * self.aspect                
+        return padding.get_size(ax)[0]
+
+    def title(self, s, *args, **kwargs):
+        """ plots figure title
+
+        Parameters
+        ----------
+        s : string
+                Title String
+
+        Keyword args
+        ----------
+        fsize : fontsize in percent of axis size
+        pad : string
+                padding in percent of axis size
+            
+        Returns
+        ----------
+        None
+
+        """
+        fsize = kwargs.pop('fsize',"2%")
+        pad = kwargs.pop('pad',"2%")
+        labelpad = self.get_ypadding(pad=pad, ax = self.ax)
+        fsize = self.get_fontsize(fsize)[0]
+
+        if hasattr(self, 'p_title'):
+            if self.p_title:
+                self.p_title.remove()
+
+        self.p_title = self.ax.text(self.x_range[0],labelpad + self.y_range[1],s, fontsize = fsize, va='center', ha='left')
+
+    def x_title(self, s, *args, **kwargs):
+        """ plots x axis title
+
+        Parameters
+        ----------
+        s : string
+                Title String
+
+        Keyword args
+        ----------
+        fsize : fontsize in percent of axis size
+        pad : string
+                padding in percent of axis size
+            
+        Returns
+        ----------
+        None
+
+        """
+        fsize = kwargs.pop('fsize',"2%")
+        pad = kwargs.pop('pad',"2%")
+        
+        if hasattr(self, 'p_xtitle'):
+            if self.p_xtitle:
+                self.p_xtitle.remove()
+
+        labelpad = self.get_ypadding(pad=pad, ax = self.ax)
+        fsize = self.get_fontsize(fsize)[0]
+
+        self.p_xtitle = self.ax.text(self.xd/2.+self.x_range[0],-labelpad+self.y_range[0],s, fontsize = fsize, va='center', ha='center')
+
+    def y_title(self, s, *args, **kwargs):
+        """ plots y axis title
+
+        Parameters
+        ----------
+        s : string
+                Title String
+
+        Keyword args
+        ----------
+        fsize : fontsize in percent of axis size
+        pad : string
+                padding in percent of axis size
+            
+        Returns
+        ----------
+        None
+
+        """
+        fsize = kwargs.pop('fsize',"2%")
+        pad = kwargs.pop('pad',"2%")
+        
+        if hasattr(self, 'p_ytitle'):
+            if self.p_ytitle:
+                self.p_ytitle.remove()
+
+        labelpad = self.get_xpadding(pad=pad, ax = self.ax)
+        fsize = self.get_fontsize(fsize)[0]
+
+        self.p_ytitle = self.ax.text(-labelpad + self.x_range[0],self.yd/2.+ self.y_range[0],s, fontsize = fsize, va='center', ha='left', rotation='vertical')
+
+    def z_title(self, s, *args, **kwargs):
+        """ plots colorbar title if colorbar is defined
+
+        Returns
+        ----------
+        None
+
+        """
+
+        fsize = kwargs.pop('fsize',"2%")
+        pad = kwargs.pop('pad',"2%")
+
+        labelpad = self.get_xpadding(pad=pad, ax = self.ax)
+        fsize = self.get_fontsize(fsize)[0]
+        
+        if hasattr(self, 'cbar'):
+            self.cbar.set_label(s, size = fsize, *args, **kwargs)
+                
+    def copy_right(self, *args, **kwargs):
+        """ plot copyright in lower left corner
+            check position, its in plot coordinates not figure coordinates
+
+        Keyword args
+        ----------
+        fsize : fontsize in percent of axis size
+        text : string
+                Copyright String
+        padx : string
+                padding in percent of axis size
+        pady : string
+                padding in percent of axis size                
+            
+        Returns
+        ----------
+        None
+        """
+
+        fsize = kwargs.pop('fsize',"1%")
+        text = kwargs.pop('text',r"""$\copyright\/2013\/ created with WRADLIB$""")
+        padx = kwargs.pop('padx',"2%")
+        pady = kwargs.pop('pady',"2%")
+        
+        padx = self.get_xpadding(padx,self.ax)
+        pady = self.get_ypadding(pady,self.ax)
+        fsize = self.get_fontsize(fsize)[0]
+        
+        if hasattr(self, 'p_copy'):
+            if self.p_copy:
+                self.p_copy.remove()
+                        
+        self.p_copy = self.ax.text(self.x_range[0]- padx, - pady + self.y_range[0],text,fontsize=fsize, va='center', ha='left')
+        
+    def colorbar(self, *args, **kwargs):
+	""" plot colorbar, vertical, right side
+
+        Keyword args
+        ----------
+        vmin : plot minimum
+        vmax : plot maximum
+        z_res : colorbar tick resolution
+        z_unit : string
+                unit
+        cbp : string
+               padding in percent of axis size
+        cbw : string
+                width in percent of axis size                
+            
+        Returns
+        ----------
+        cbar : colorbar object
+        """
+
+        key = ['vmin', 'vmax', 'z_res', 'ztitle', 'zunit']
+        key1 = ['cbp', 'fsize', 'cbw']
+        
+	if kwargs:
+            for k in key:
+                if k in kwargs:
+                    setattr(self, k, np.array(kwargs[k]))
+		    kwargs.pop(k)
+	    for k in key1:
+                if k in kwargs:
+                    setattr(self, k, kwargs[k])
+		    kwargs.pop(k)
+
+        # get axis, create and add colorbar-cax, 
+        divider = make_axes_locatable(self.ax)
+        cax = divider.append_axes("right", size="0%", axes_class=mpl.axes.Axes)
+	cbp = Size.from_any(self.cbp, fraction_ref=Size.Fraction(1/self.aspect, Size.AxesX(self.ax)))
+        cbw = Size.from_any(self.cbw, fraction_ref=Size.Fraction(1/self.aspect, Size.AxesX(self.ax)))
+
+        h = [# main axes
+             Size.Fraction(1/self.aspect, Size.AxesX(self.ax)),
+             cbp,
+             cbw,
+             ]
+
+        v = [Size.AxesY(self.ax)]
+
+        divider.set_horizontal(h)
+        divider.set_vertical(v)
+
+        self.ax.set_axes_locator(divider.new_locator(nx=0, ny=0))
+        cax.set_axes_locator(divider.new_locator(nx=2, ny=0))
+
+    	self.fig.add_axes(cax)
+
+        # set z_range and plot-clims
+	self.z_range = [self.vmin,self.vmax]
+        args[0].set_clim(vmin=self.vmin, vmax=self.vmax)
+
+        # get ticks
+        z_ticks = get_tick_vector(self.z_range,self.z_res)
+
+        # plot colorbar
+        if kwargs:
+            if 'ticks' in kwargs:
+                self.cbar = self.fig.colorbar(*args, cax=cax, **kwargs)
+                z_ticks = kwargs['ticks']
+            else:
+                self.cbar = self.fig.colorbar(*args, cax=cax, ticks=z_ticks, **kwargs)
+
+        # set font and size
+        fsize = self.get_fontsize(self.fsize)[0]
+        font = fm.FontProperties()
+	font.set_family('sans-serif')
+	font.set_size(fsize)
+
+        # plot colorbar title and ticks
+	if self.ztitle:
+            ztitle = str(self.ztitle)
+            if self.zunit:
+                ztitle = ztitle +' ('+ str(self.zunit) + ')'
+            self.cbar.set_label(ztitle, fontsize=fsize)
+        z_ticks1 = [str(np.int(i)) for i in z_ticks]
+        self.cbar.ax.set_yticklabels(z_ticks1, fontsize=fsize)
+	
+	return self.cbar
+
 
 
 def plot_scan_strategy(ranges, elevs, vert_res=500., maxalt=10000., radaralt=0., ax=None):
