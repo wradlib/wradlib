@@ -30,7 +30,7 @@ def demo_plot_ppi_01(argv1, argv2):
     # get the scan data for this elevation
     #   here, you can do all the processing on the 2-D polar level
     #   e.g. clutter elimination, attenuation correction, ...
-    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data/data"%(1)]
+    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(1)]
     print("Data:", data.shape, np.max(data), np.mean(data))
 
     #cut off noise, use 0dBZ as threshold
@@ -98,13 +98,13 @@ def demo_plot_ppi_01(argv1, argv2):
 
 def demo_plot_ppi_02(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
     r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
-    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data/data"%(1)]
-    
+    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(1)]
+
     noise_indices = np.where(data <= 0.0)
     data[noise_indices] = np.nan
     cmap = mpl.cm.jet
@@ -161,13 +161,13 @@ def demo_plot_ppi_02(argv1, argv2):
 
 def demo_plot_ppi_03(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
     r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
-    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data/data"%(1)]
-    
+    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(1)]
+
     noise_indices = np.where(data <= 0.0)
     data[noise_indices] = np.nan
     cmap = mpl.cm.jet
@@ -229,13 +229,13 @@ def demo_plot_ppi_03(argv1, argv2):
 
 def demo_plot_ppi_04(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
     r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
-    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data/data"%(1)]
-    
+    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(1)]
+
     noise_indices = np.where(data <= 0.0)
     data[noise_indices] = np.nan
     cmap = mpl.cm.jet
@@ -292,13 +292,13 @@ def demo_plot_ppi_04(argv1, argv2):
 
 def demo_plot_ppi_05(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
     r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
-    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data/data"%(1)]
-    
+    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(1)]
+
     noise_indices = np.where(data <= 0.0)
     data[noise_indices] = np.nan
     cmap = mpl.cm.jet
@@ -360,13 +360,13 @@ def demo_plot_ppi_05(argv1, argv2):
 
 def demo_plot_rhi_01(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
     r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
-    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data/data"%(1)]
-    
+    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(1)]
+
     noise_indices = np.where(data <= 0.0)
     data[noise_indices] = np.nan
     cmap = mpl.cm.jet
@@ -428,13 +428,13 @@ def demo_plot_rhi_01(argv1, argv2):
 
 def demo_plot_rhi_02(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
     r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
-    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data/data"%(1)]
-    
+    data = what["offset"] + what["gain"] * raw["dataset%d/data1/data"%(1)]
+
     noise_indices = np.where(data <= 0.0)
     data[noise_indices] = np.nan
     cmap = mpl.cm.jet
