@@ -37,6 +37,7 @@ import math
 # site packages
 import numpy as np
 import pylab as pl
+import matplotlib
 from matplotlib import mpl
 #from mpl_toolkits.basemap import Basemap, cm
 from matplotlib.projections import PolarAxes, register_projection
@@ -1686,8 +1687,8 @@ class cg_plot(object):
                 vert = path.vertices
                 vert[0][1] = 0 if vert2 > 1 else 1 - vert2
                 vert[1][1] = 1 if vert1 > 1 else vert1
-                self.ax.axis["left"].line.set_path(mpl.path.Path(vert))
-                
+                self.ax.axis["left"].line.set_path(matplotlib.path.Path(vert))
+
             else:
                 left =False
 
@@ -1699,8 +1700,8 @@ class cg_plot(object):
                 vert = path.vertices
                 vert[1][1] = 1 if vert1 > 1 else vert1
                 vert[0][1] = 0 if vert2 > 1 else 1 - vert2
-                self.ax.axis["right"].line.set_path(mpl.path.Path(vert))
-                
+                self.ax.axis["right"].line.set_path(matplotlib.path.Path(vert))
+
             else:
                 right = False
 
@@ -1712,8 +1713,8 @@ class cg_plot(object):
                 vert = path.vertices
                 vert[1][0] = 1 if vert1 > 1 else vert1
                 vert[0][0] = 0 if vert2 > 1 else 1 - vert2
-                self.ax.axis["bottom"].line.set_path(mpl.path.Path(vert))
-                
+                self.ax.axis["bottom"].line.set_path(matplotlib.path.Path(vert))
+
             else:
                 bottom =False
 
@@ -1725,8 +1726,8 @@ class cg_plot(object):
                 vert = path.vertices
                 vert[0][0] = 0 if vert2 > 1 else 1 - vert2
                 vert[1][0] = 1 if vert1 > 1 else vert1
-                self.ax.axis["top"].line.set_path(mpl.path.Path(vert))
-            else:    
+                self.ax.axis["top"].line.set_path(matplotlib.path.Path(vert))
+            else:
                 top = False
 
             self.ax.axis["top"].major_ticklabels.set_fontproperties(font)
