@@ -1033,13 +1033,13 @@ class cg_plot(object):
             The azimuth angle of 0 degrees corresponds to y-axis = 0 (east direction)
             The azimuth angle of 90 degrees corresponds to x-axis = 0 (north direction)
             The azimuth the angles are counted counter-clock-wise forward.
-            
+
         For PPI:
             The data must be an array of shape (number of azimuth angles, number of range bins).
             The azimuth angle of 0 degrees corresponds to x-axis = 0 (north direction)
             The azimuth angle of 90 degrees corresponds to y-axis = 0 (east direction)
             The azimuth angles are counted clock-wise forward.
-            
+
         Additional `myargs` are extracted from `kwargs`, processed and/or passed
         to the create_curvilinear_axes routine
 
@@ -1167,7 +1167,7 @@ class cg_plot(object):
             self.aspect = 1.
             self.cbp = "5%"
             self.cbw = "5%"
-        if ind == 'RHI':    
+        if ind == 'RHI':
             self.ndeg = 90.
             self.theta_range = [0, 90]
             self.figsize = (10,6)
@@ -1179,7 +1179,7 @@ class cg_plot(object):
         self.y_res = np.array(kwargs.get('y_res', None))
         self.z_res = np.array(kwargs.get('z_res', None))
         self.a_res = np.array(kwargs.get('a_res', None))
-        
+
 
     def get_tick_vector(self, vrange, vres):
         """Calculates Vector for tickmarks.
@@ -1231,11 +1231,11 @@ class cg_plot(object):
         Parameters
         ----------
         None
-        
+
 
         Returns
         ----------
-        ax1 : axes object, 
+        ax1 : axes object,
         ax2 : axes object, axes object, where polar data is plotted
 
         """
@@ -1269,7 +1269,7 @@ class cg_plot(object):
             # add axis to figure
             self.fig.add_subplot(ax1, aspect=self.aspect)
             ax1.set_aspect(self.aspect, adjustable='box-forced')
-            
+
             # make ticklabels of right and top axis visible.
             ax1.axis["right"].major_ticklabels.set_visible(True)
             ax1.axis["top"].major_ticklabels.set_visible(True)
@@ -1281,7 +1281,7 @@ class cg_plot(object):
             ax1.axis["top"].get_helper().nth_coord_ticks=0
 
         elif self.ind == 'PPI':
-            
+
             tr = Affine2D().scale(np.pi/180, 1.) + NorthPolarAxes.NorthPolarTransform()
             # build up curvilinear grid
             extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
@@ -1333,16 +1333,16 @@ class cg_plot(object):
             # because we are drawing them
             ax1.axis["right"].major_ticklabels.set_visible(False)
             ax1.axis["top"].major_ticklabels.set_visible(False)
-        
+
             # and also set tickmarklength to zero for better presentation
             ax1.axis["right"].major_ticks.set_ticksize(0)
             ax1.axis["top"].major_ticks.set_ticksize(0)
-      
+
         # make ticklabels of left and bottom axis unvisible,
         # because we are drawing them
         ax1.axis["left"].major_ticklabels.set_visible(False)
         ax1.axis["bottom"].major_ticklabels.set_visible(False)
-        
+
         # and also set tickmarklength to zero for better presentation
         ax1.axis["left"].major_ticks.set_ticksize(0)
         ax1.axis["bottom"].major_ticks.set_ticksize(0)
@@ -1366,7 +1366,7 @@ class cg_plot(object):
         data : 2-d array
             polar grid data to be plotted
             1st dimension must be azimuth angles, 2nd must be ranges!
-        
+
 
         Returns
         ----------
@@ -1377,13 +1377,13 @@ class cg_plot(object):
 
         if self.ind == 'PPI':
             self.x_range = kwargs.pop('x_range',[-n_r, n_r])
-            
+
         if self.ind == 'RHI':
             self.x_range = kwargs.pop('x_range',[0, n_r])
-            
+
 
         self.y_range = kwargs.pop('y_range',[self.x_range[0], self.x_range[1]])
-            
+
         self.xunit = kwargs.pop('xunit', None)
         self.yunit = kwargs.pop('yunit', None)
         self.x_res = np.array(kwargs.pop('x_res', self.x_res))
@@ -1465,11 +1465,11 @@ class cg_plot(object):
         #get dpi of fig, needed for automatic calculation of fontsize
         self.dpi = self.fig.get_dpi()
         #print("DPI:", self.dpi)
-        
-        
+
+
         # set x and y ax-limits
         self.ax.set_xlim(self.x_range[0], self.x_range[1])
-        self.ax.set_ylim(self.y_range[0], self.y_range[1])        
+        self.ax.set_ylim(self.y_range[0], self.y_range[1])
 
         # draw grid, tickmarks and ticklabes for left (y) and bottom (x) axis
         # left that out, user should use grid routines to draw ticks
@@ -1491,7 +1491,7 @@ class cg_plot(object):
             # self.ax1.text(x_range[1],y_range[1] + yd/21.,self.atitle, va='top', ha='right')
         if self.ftitle:
             self.title(self.ftitle, ha="left", x = 0)
-        
+
         # create rectangular meshgrid for polar data
         X,Y = np.meshgrid(theta,r)
 
@@ -1516,11 +1516,11 @@ class cg_plot(object):
         ----------
         s : string
             wanted "fontsize" in percentage of axis size
-              
+
         Returns
         ----------
         fontsize in points
-        
+
         """
         if s:
             if not isinstance(s, Size._Base):
@@ -1531,7 +1531,7 @@ class cg_plot(object):
             if not isinstance(s, Size._Base):
                 fsize = Size.from_any(s,
                                     fraction_ref=Size.AxesX(self.ax))
-        
+
         fs = self.ax.transData.transform((fsize.get_size(self.ax)[0],0))- self.ax.transData.transform((0,0))
         return  fs/(self.dpi/self.mdpi)
 
@@ -1542,7 +1542,7 @@ class cg_plot(object):
         ----------
         s : boolean
             True or False
-              
+
         Returns
         ----------
         None
@@ -1552,7 +1552,7 @@ class cg_plot(object):
         fsize = kwargs.pop('fsize','1.5%')
         ticklen = kwargs.pop('ticklen','1%')
         labelpad = kwargs.pop('labelpad','2%')
-        
+
         if s == False:
             if hasattr(self, 'p_xticks'):
                 if self.p_xticks:
@@ -1566,11 +1566,11 @@ class cg_plot(object):
                         item.remove()
             self.p_xticks = []
             self.rad = self.get_tick_vector(self.x_range, np.array(s))
-            
+
             fsize = self.get_fontsize(fsize)[0]
             ticklen = self.get_ypadding(ticklen, self.ax)
             labelpad = self.get_ypadding(labelpad, self.ax)
-            
+
             for xmaj in self.rad:
                 if np.equal(np.mod(xmaj, 1), 0):
                     xmaj = np.int(xmaj)
@@ -1589,7 +1589,7 @@ class cg_plot(object):
         ----------
         s : boolean
             True or False
-              
+
         Returns
         ----------
         None
@@ -1599,7 +1599,7 @@ class cg_plot(object):
         fsize = kwargs.pop('fsize','1.5%')
         ticklen = kwargs.pop('ticklen','1%')
         labelpad = kwargs.pop('labelpad','2%')
-        
+
         if s == False:
             if hasattr(self, 'p_yticks'):
                 if self.p_yticks:
@@ -1617,7 +1617,7 @@ class cg_plot(object):
             fsize = self.get_fontsize(fsize)[0]
             ticklen = self.get_xpadding(ticklen, self.ax)
             labelpad = self.get_xpadding(labelpad, self.ax)
-            
+
             for ymaj in self.hgt:
                 if np.equal(np.mod(ymaj, 1), 0):
                     ymaj = np.int(ymaj)
@@ -1636,7 +1636,7 @@ class cg_plot(object):
         ----------
         s : boolean
             True or False
-              
+
         Returns
         ----------
         None
@@ -1652,7 +1652,7 @@ class cg_plot(object):
         ----------
         s : boolean, string
             True or False, 'on' or 'off'
-              
+
         Returns
         ----------
         None
@@ -1671,14 +1671,14 @@ class cg_plot(object):
                 self.ax.axis["lon"].major_ticks.set_ticksize(5)
                 self.ax.axis["lon"].invert_ticklabel_direction()
                 self.ax.axis["lon"].major_ticklabels.set_fontproperties(font)
-                
+
             #if self.ind == "PPI":
             self.ax.axis["lon2"].major_ticklabels.set_visible(True)
             self.ax.axis["lon2"].major_ticks.set_ticksize(5)
             self.ax.axis["lon2"].invert_ticklabel_direction()
             self.ax.axis["lon2"].major_ticklabels.set_fontproperties(font)
-     
-            if abs(self.x_range[0]) < self.radial_range[1]:                
+
+            if abs(self.x_range[0]) < self.radial_range[1]:
                 left = True
                 vert1 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.x_range[0],2)))+abs(self.y_range[0]))/self.yd
                 vert2 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.x_range[0],2)))+abs(self.y_range[1]))/self.yd
@@ -1704,7 +1704,7 @@ class cg_plot(object):
             else:
                 right = False
 
-            if abs(self.y_range[0]) < abs(self.radial_range[1]):                
+            if abs(self.y_range[0]) < abs(self.radial_range[1]):
                 bottom = True
                 vert1 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[0],2)))+abs(self.x_range[0]))/self.xd
                 vert2 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[0],2)))+abs(self.x_range[1]))/self.xd
@@ -1717,7 +1717,7 @@ class cg_plot(object):
             else:
                 bottom =False
 
-            if abs(self.y_range[1]) < abs(self.radial_range[1]):                    
+            if abs(self.y_range[1]) < abs(self.radial_range[1]):
                 top = True
                 vert1 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[1],2)))+abs(self.x_range[0]))/self.xd
                 vert2 = (math.sqrt(abs(pow(self.radial_range[1],2) - pow(self.y_range[1],2)))+abs(self.x_range[1]))/self.xd
@@ -1733,8 +1733,8 @@ class cg_plot(object):
             self.ax.axis["bottom"].major_ticklabels.set_fontproperties(font)
             self.ax.axis["right"].major_ticklabels.set_fontproperties(font)
             self.ax.axis["left"].major_ticklabels.set_fontproperties(font)
-             
-            
+
+
             self.ax.axis["left"].set_visible(left)
             self.ax.axis["right"].set_visible(right)
             self.ax.axis["bottom"].set_visible(bottom)
@@ -1763,7 +1763,7 @@ class cg_plot(object):
             if self.float_axis:
                 self.ax.axis["lon"].major_ticklabels.set_visible(False)
                 self.ax.axis["lon"].major_ticks.set_ticksize(0)
-            #if self.ind == "PPI":    
+            #if self.ind == "PPI":
             self.ax.axis["lon2"].major_ticklabels.set_visible(False)
             self.ax.axis["lon2"].major_ticks.set_ticksize(0)
 
@@ -1774,7 +1774,7 @@ class cg_plot(object):
         ----------
         s : boolean
             True or False
-              
+
         Returns
         ----------
         None
@@ -1788,13 +1788,13 @@ class cg_plot(object):
         self.ygrid(s)
 
     def polgrid(self,s, *args, **kwargs):
-        """ turns polar grid on/off 
+        """ turns polar grid on/off
 
         Parameters
         ----------
         s : boolean
             True or False
-              
+
         Returns
         ----------
         None
@@ -1804,15 +1804,15 @@ class cg_plot(object):
             self.ax.grid(True)
         elif s == 'off' or s == False:
             self.ax.grid(False)
-        
+
     def xgrid(self, s, *args, **kwargs):
-        """ turns xgrid on/off 
+        """ turns xgrid on/off
 
         Parameters
         ----------
         s : boolean
             True or False
-              
+
         Returns
         ----------
         None
@@ -1826,7 +1826,7 @@ class cg_plot(object):
             self.p_xgrid = []
             for xmaj in self.rad:
                 line = self.ax.axvline(x=xmaj,color='k', ls=':')
-                self.p_xgrid.append(line) 
+                self.p_xgrid.append(line)
         elif s == 'off' or s == False:
             if hasattr(self, 'p_xgrid'):
                 if self.p_xgrid:
@@ -1842,13 +1842,13 @@ class cg_plot(object):
 
 
     def ygrid(self, s, *args, **kwargs):
-        """ turns xgrid on/off 
+        """ turns xgrid on/off
 
         Parameters
         ----------
         s : boolean
             True or False
-              
+
         Returns
         ----------
         None
@@ -1883,14 +1883,14 @@ class cg_plot(object):
         pad : string
                 padding in percent of ax
         ax : relevant axis
-            
-              
+
+
         Returns
         ----------
         padding in axis values
 
         """
-        
+
         if not isinstance(pad, Size._Base):
                 padding = Size.from_any(pad,
                                     fraction_ref=Size.AxesY(ax))
@@ -1907,7 +1907,7 @@ class cg_plot(object):
         pad : string
                 padding in percent of ax
         ax : relevant axis
-            
+
         Returns
         ----------
         padding in axis values
@@ -1916,7 +1916,7 @@ class cg_plot(object):
         if not isinstance(pad, Size._Base):
                 padding = Size.from_any(pad,
                                     fraction_ref=Size.AxesX(ax))
-        p = (self.yd/self.xd) * self.aspect                
+        p = (self.yd/self.xd) * self.aspect
         return padding.get_size(ax)[0]
 
     def title(self, s, *args, **kwargs):
@@ -1932,7 +1932,7 @@ class cg_plot(object):
         fsize : fontsize in percent of axis size
         pad : string
                 padding in percent of axis size
-            
+
         Returns
         ----------
         None
@@ -1962,7 +1962,7 @@ class cg_plot(object):
         fsize : fontsize in percent of axis size
         pad : string
                 padding in percent of axis size
-            
+
         Returns
         ----------
         None
@@ -1970,7 +1970,7 @@ class cg_plot(object):
         """
         fsize = kwargs.pop('fsize',"2%")
         pad = kwargs.pop('pad',"2%")
-        
+
         if hasattr(self, 'p_xtitle'):
             if self.p_xtitle:
                 self.p_xtitle.remove()
@@ -1993,7 +1993,7 @@ class cg_plot(object):
         fsize : fontsize in percent of axis size
         pad : string
                 padding in percent of axis size
-            
+
         Returns
         ----------
         None
@@ -2001,7 +2001,7 @@ class cg_plot(object):
         """
         fsize = kwargs.pop('fsize',"2%")
         pad = kwargs.pop('pad',"2%")
-        
+
         if hasattr(self, 'p_ytitle'):
             if self.p_ytitle:
                 self.p_ytitle.remove()
@@ -2025,10 +2025,10 @@ class cg_plot(object):
 
         labelpad = self.get_xpadding(pad=pad, ax = self.ax)
         fsize = self.get_fontsize(fsize)[0]
-        
+
         if hasattr(self, 'cbar'):
             self.cbar.set_label(s, size = fsize, *args, **kwargs)
-                
+
     def copy_right(self, *args, **kwargs):
         """ plot copyright in lower left corner
             check position, its in plot coordinates not figure coordinates
@@ -2041,8 +2041,8 @@ class cg_plot(object):
         padx : string
                 padding in percent of axis size
         pady : string
-                padding in percent of axis size                
-            
+                padding in percent of axis size
+
         Returns
         ----------
         None
@@ -2052,17 +2052,17 @@ class cg_plot(object):
         text = kwargs.pop('text',r"""$\copyright\/2013\/ created with WRADLIB$""")
         padx = kwargs.pop('padx',"2%")
         pady = kwargs.pop('pady',"2%")
-        
+
         padx = self.get_xpadding(padx,self.ax)
         pady = self.get_ypadding(pady,self.ax)
         fsize = self.get_fontsize(fsize)[0]
-        
+
         if hasattr(self, 'p_copy'):
             if self.p_copy:
                 self.p_copy.remove()
-                        
+
         self.p_copy = self.ax.text(self.x_range[0]- padx, - pady + self.y_range[0],text,fontsize=fsize, va='center', ha='left')
-        
+
     def colorbar(self, *args, **kwargs):
         """ plot colorbar, vertical, right side
 
@@ -2076,8 +2076,8 @@ class cg_plot(object):
         cbp : string
                padding in percent of axis size
         cbw : string
-                width in percent of axis size                
-            
+                width in percent of axis size
+
         Returns
         ----------
         cbar : colorbar object
@@ -2085,7 +2085,7 @@ class cg_plot(object):
 
         key = ['vmin', 'vmax', 'z_res', 'ztitle', 'zunit']
         key1 = ['cbp', 'fsize', 'cbw']
-        
+
         if kwargs:
             for k in key:
                 if k in kwargs:
@@ -2096,7 +2096,7 @@ class cg_plot(object):
                     setattr(self, k, kwargs[k])
                     kwargs.pop(k)
 
-        # get axis, create and add colorbar-cax, 
+        # get axis, create and add colorbar-cax,
         divider = make_axes_locatable(self.ax)
         cax = divider.append_axes("right", size="0%", axes_class=mpl.axes.Axes)
         cbp = Size.from_any(self.cbp, fraction_ref=Size.Fraction(1/self.aspect, Size.AxesX(self.ax)))
@@ -2147,7 +2147,7 @@ class cg_plot(object):
             self.cbar.set_label(ztitle, fontsize=fsize)
         z_ticks1 = [str(np.int(i)) for i in z_ticks]
         self.cbar.ax.set_yticklabels(z_ticks1, fontsize=fsize)
-        
+
         return self.cbar
 
 
