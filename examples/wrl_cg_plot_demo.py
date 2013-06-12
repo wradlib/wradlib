@@ -10,7 +10,7 @@ import numpy as np
 # Name:        Reading polar volume data
 # Purpose:
 #
-# Author:      
+# Author:
 #
 # Created:     10.06.2013
 # Copyright:   (c) kai_muehlbauer 2013
@@ -47,10 +47,10 @@ def demo_plot_ppi_01(argv1, argv2):
     fig0 = p.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
-    
+
     #create cg_plot instance as ppi
     ppi = wrl.vis.cg_plot(ind='PPI',fig=fig0)
-    
+
     #plot data, set ranges accordingly
     circle = ppi.plot(masked_array, \
                       # range of the raw data in radial direction
@@ -63,7 +63,7 @@ def demo_plot_ppi_01(argv1, argv2):
                       y_range=[-320,320], y_res = 40., \
                       # range of the raw data to plot
                       radial_range = [0.,320.], \
-                      # azimutal tick resolution  
+                      # azimutal tick resolution
                       a_res = 10, \
                       # aspect, should be 1 for ppi
                       aspect=1.0, \
@@ -79,7 +79,7 @@ def demo_plot_ppi_01(argv1, argv2):
     # pad - padding, percent of x-axis
     # fsize - fontsize, approx. percent of x-axis
     ppi.z_title("Reflectivity (dBZ)", fsize="2%", pad="1%")
-    
+
     # plot cartesian grids and ticks
     ppi.xticks(ppi.x_res, fsize="1.5%")
     ppi.yticks(ppi.y_res, fsize="1.5%")
@@ -95,7 +95,7 @@ def demo_plot_ppi_01(argv1, argv2):
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
     fig0.savefig("demo_ppi_01.png", dpi=pdpi, bbox_inches=0)
-    
+
 def demo_plot_ppi_02(argv1, argv2):
 
     raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
@@ -116,9 +116,9 @@ def demo_plot_ppi_02(argv1, argv2):
     fig0 = p.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
-    
+
     ppi = wrl.vis.cg_plot(ind='PPI',fig=fig0)
-    
+
     #plot data, set ranges accordingly
     circle = ppi.plot(masked_array, \
                       # range of the raw data in radial direction
@@ -131,7 +131,7 @@ def demo_plot_ppi_02(argv1, argv2):
                       y_range=[-320,320], y_res = 40., \
                       # range of the raw data to plot
                       radial_range = [0.,320.], \
-                      # azimutal tick resolution  
+                      # azimutal tick resolution
                       a_res = 10, \
                       # aspect, should be 1 for ppi
                       aspect=1.0, \
@@ -147,14 +147,14 @@ def demo_plot_ppi_02(argv1, argv2):
     # pad - padding, percent of x-axis
     # fsize - fontsize, approx. percent of x-axis
     ppi.z_title("Reflectivity (dBZ)", fsize="2%", pad="1%")
-    
+
     # plot polar ticks and grid
     ppi.polgrid(True)
     ppi.polticks(True)
-    
+
     # plot Title
     ppi.title("PPI Curvilinear Grid Demonstration 02", pad="7%", fsize="3%" , ha="left")
-    
+
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
     fig0.savefig("demo_ppi_02.png", dpi=pdpi, bbox_inches=0)
@@ -179,9 +179,9 @@ def demo_plot_ppi_03(argv1, argv2):
     fig0 = p.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
-    
+
     ppi = wrl.vis.cg_plot(ind='PPI',fig=fig0)
-    
+
     #plot data, set ranges accordingly
     circle = ppi.plot(masked_array, \
                       # range of the raw data in radial direction
@@ -210,7 +210,7 @@ def demo_plot_ppi_03(argv1, argv2):
     # pad - padding, percent of x-axis
     # fsize - fontsize, approx. percent of x-axis
     ppi.z_title("Reflectivity (dBZ)", fsize="2%", pad="1%")
-    
+
     # plot polar grid and ticks
     ppi.polgrid(True)
     ppi.polticks(True)
@@ -219,7 +219,7 @@ def demo_plot_ppi_03(argv1, argv2):
     ppi.xticks(ppi.x_res, fsize="1.5%")
     ppi.yticks(ppi.y_res, fsize="1.5%")
     ppi.cartgrid(True)
-    
+
     # plot Title
     ppi.title("PPI Curvilinear Grid Demonstration 03", pad="7%", fsize="3%" , ha="left")
 
@@ -247,9 +247,9 @@ def demo_plot_ppi_04(argv1, argv2):
     fig0 = p.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
-    
+
     ppi = wrl.vis.cg_plot(ind='PPI',fig=fig0)
-    
+
     #plot data, set ranges accordingly
     circle = ppi.plot(masked_array, \
                       # range of the raw data in radial direction
@@ -278,18 +278,18 @@ def demo_plot_ppi_04(argv1, argv2):
     # pad - padding, percent of x-axis
     # fsize - fontsize, approx. percent of x-axis
     ppi.z_title("Reflectivity (dBZ)", fsize="2%", pad="1%")
-    
+
     # plot polar grid and ticks
     ppi.polticks(True)
     ppi.polgrid(True)
-    
+
     # plot Title
     ppi.title("PPI Curvilinear Grid Demonstration 04", pad="7%", fsize="3%" , ha="left")
 
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_ppi_04.png", dpi=pdpi, bbox_inches=0)        
-    
+    fig0.savefig("demo_ppi_04.png", dpi=pdpi, bbox_inches=0)
+
 def demo_plot_ppi_05(argv1, argv2):
 
     raw = wrl.io.read_OPERA_hdf5("knmi_polar_volume.h5")
@@ -310,9 +310,9 @@ def demo_plot_ppi_05(argv1, argv2):
     fig0 = p.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
-    
+
     ppi = wrl.vis.cg_plot(ind='PPI',fig=fig0)
-    
+
     #plot data, set ranges accordingly
     circle = ppi.plot(masked_array, \
                       # range of the raw data in radial direction
@@ -341,7 +341,7 @@ def demo_plot_ppi_05(argv1, argv2):
     # pad - padding, percent of x-axis
     # fsize - fontsize, approx. percent of x-axis
     ppi.z_title("Reflectivity (dBZ)", fsize="2%", pad="1%")
-    
+
     # plot cartesian grids and ticks
     ppi.xticks(ppi.x_res, fsize="1.5%")
     ppi.yticks(ppi.y_res, fsize="1.5%")
@@ -378,9 +378,9 @@ def demo_plot_rhi_01(argv1, argv2):
     fig0 = p.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
-    
+
     rhi = wrl.vis.cg_plot(ind='RHI',fig=fig0)
-    
+
     #plot data, set ranges accordingly
     circle = rhi.plot(masked_array, \
                       # range of the raw data in radial direction
@@ -409,7 +409,7 @@ def demo_plot_rhi_01(argv1, argv2):
     # pad - padding, percent of x-axis
     # fsize - fontsize, approx. percent of x-axis
     rhi.z_title("Reflectivity (dBZ)", fsize="2%", pad="1%")
-    
+
     # plot cartesian grids and ticks
     rhi.xticks(rhi.x_res, fsize="1.5%")
     rhi.yticks(rhi.y_res, fsize="1.5%")
@@ -446,9 +446,9 @@ def demo_plot_rhi_02(argv1, argv2):
     fig0 = p.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
-    
+
     rhi = wrl.vis.cg_plot(ind='RHI',fig=fig0)
-    
+
     #plot data, set ranges accordingly
     circle = rhi.plot(masked_array, \
                       # range of the raw data in radial direction
@@ -477,7 +477,7 @@ def demo_plot_rhi_02(argv1, argv2):
     # pad - padding, percent of x-axis
     # fsize - fontsize, approx. percent of x-axis
     rhi.z_title("Reflectivity (dBZ)", fsize="2%", pad="1%")
-    
+
     # plot cartesian grids and ticks
     rhi.xticks(rhi.x_res, fsize="1.5%")
     rhi.yticks(rhi.y_res, fsize="1.5%")
@@ -492,10 +492,10 @@ def demo_plot_rhi_02(argv1, argv2):
 
     rhi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_rhi_02.png", dpi=pdpi, bbox_inches=0)            
-    
+    fig0.savefig("demo_rhi_02.png", dpi=pdpi, bbox_inches=0)
+
 if __name__ == '__main__':
-    
+
     demo_plot_ppi_01("sys.argv[1]", "sys.argv[2]")
     demo_plot_ppi_02("sys.argv[1]", "sys.argv[2]")
     demo_plot_ppi_03("sys.argv[1]", "sys.argv[2]")
@@ -503,4 +503,4 @@ if __name__ == '__main__':
     demo_plot_ppi_05("sys.argv[1]", "sys.argv[2]")
     demo_plot_rhi_01("sys.argv[1]", "sys.argv[2]")
     demo_plot_rhi_02("sys.argv[1]", "sys.argv[2]")
-    
+
