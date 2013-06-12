@@ -1026,14 +1026,15 @@ def rhi_plot(data, **kwargs):
     return fig, pl
 
 class cg_plot(object):
-    """Class for plotting curvilinear axes
-    PPI (Plan Position Indicator) and RHI (Range Height Indicator) supported.
+    """Class for plotting curvilinear axes.
+
+    PPI (Plan Position Indicator) and RHI (Range Height Indicator) are supported.
 
     For RHI:
         The data must be an array of shape (number of azimuth angles, number of range bins).
         The azimuth angle of 0 degrees corresponds to y-axis = 0 (east direction)
         The azimuth angle of 90 degrees corresponds to x-axis = 0 (north direction)
-        The azimuth the angles are counted counter-clock-wise forward.
+        The azimuth angles are counted counter-clock-wise forward.
 
     For PPI:
         The data must be an array of shape (number of azimuth angles, number of range bins).
