@@ -24,6 +24,7 @@ Standard plotting and mapping procedures
    polar_plot
    cartesian_plot
    rhi_plot
+   cg_plot
    plot_scan_strategy
    plot_plan_and_vert
    plot_tseries
@@ -1025,103 +1026,117 @@ def rhi_plot(data, **kwargs):
     return fig, pl
 
 class cg_plot(object):
-    def __init__(self, ind=None, ax=None, fig=None, **kwargs):
-        """Class for plotting curvilinear axes
-        PPI (Plan Position Indicator) and RHI (Range Height Indicator) supported.
+    """Class for plotting curvilinear axes
+    PPI (Plan Position Indicator) and RHI (Range Height Indicator) supported.
 
-        For RHI:
-            The data must be an array of shape (number of azimuth angles, number of range bins).
-            The azimuth angle of 0 degrees corresponds to y-axis = 0 (east direction)
-            The azimuth angle of 90 degrees corresponds to x-axis = 0 (north direction)
-            The azimuth the angles are counted counter-clock-wise forward.
+    For RHI:
+        The data must be an array of shape (number of azimuth angles, number of range bins).
+        The azimuth angle of 0 degrees corresponds to y-axis = 0 (east direction)
+        The azimuth angle of 90 degrees corresponds to x-axis = 0 (north direction)
+        The azimuth the angles are counted counter-clock-wise forward.
 
-        For PPI:
-            The data must be an array of shape (number of azimuth angles, number of range bins).
-            The azimuth angle of 0 degrees corresponds to x-axis = 0 (north direction)
-            The azimuth angle of 90 degrees corresponds to y-axis = 0 (east direction)
-            The azimuth angles are counted clock-wise forward.
+    For PPI:
+        The data must be an array of shape (number of azimuth angles, number of range bins).
+        The azimuth angle of 0 degrees corresponds to x-axis = 0 (north direction)
+        The azimuth angle of 90 degrees corresponds to y-axis = 0 (east direction)
+        The azimuth angles are counted clock-wise forward.
 
-        Additional `myargs` are extracted from `kwargs`, processed and/or passed
-        to the create_curvilinear_axes routine
+    Additional `myargs` are extracted from `kwargs`, processed and/or passed
+    to the create_curvilinear_axes routine
 
-        Additional remaining `kwargs` will be passed to the pcolormesh routine displaying
-        the data. Be careful!
+    Additional remaining `kwargs` will be passed to the pcolormesh routine displaying
+    the data. Be careful!
 
-        Parameters
-        ----------
-        ind : string
-                RHI or PPI indicating wanted product
+    Parameters
+    ----------
+    ind : string
+            RHI or PPI indicating wanted product
 
-            ax : actual axes
+    ax : actual axes
 
-            fig : figure to plot on
+    fig : figure to plot on
 
+    x_range :   tuple of an array of floats and a unit string
+                    [display min range, display max range, data max range}, unit string
+                    defaults to [0, data.shape range, data.shape range], empty string
 
-        Keyword arguments:
+    y_range :   tuple of an array floats and a unit string
+                    [display min height, display max height], unit string
+                    defaults to [0,data.shape range ], empty string
 
-        x_range :   tuple of array of float and unit string
-                        [display min range, display max range, data max range}, unit string
-                        defaults to [0, data.shape range, data.shape range], empty string
-        y_range :   array of array float and unit string
-                        [display min height, display max height], unit string
-                        defaults to [0,data.shape range ], empty string
-        theta_range: float array
-                        theta range (min, max) used to display data
-            radial_range: float array
-                        radial range (min, max) used to display data
-        data_range: float array
-                        radial range (min, max) of the raw data array
+    theta_range: float array
+                    theta range (min, max) used to display data
 
-        x_res : float array of range (x) tick resolution (empty, single value, multiple values)
-        y_res : float array of height (y) tick resolution (empty, single value, multiple values)
-        z_res : float array of colorbar (z) tick resolution (empty, single value, multiple values)
-        a_res : float array of angle gridlines and labels, defaults to 8, wich means 10 deg resolution
+    radial_range: float array
+                    radial range (min, max) used to display data
 
-            faxis : float
-                if polar grid, angle where the first floating axis points to
+    data_range: float array
+                    radial range (min, max) of the raw data array
 
-            ftitle : string
-            a title of the plot, defaults to None
-        xtitle : string
-            x-axis label
-            defaults to None
-        ytitle : string
-            y-axis label
-            defaults to None
-        atitle : string
-            angle-axis label, not used at the moment, due to inconvenient placing
-            defaults to '$Angle$')# ($^{\circ}$)'
-        saveto : string - path of the file in which the figure should be saved
-            if string is empty, no figure will be saved and the plot will be
-            sent to screen
-        fig : matplotlib axis object
-            if None, a new matplotlib figure will be created, otherwise we plot
-            on given figure
-        figsize : width , hight tuple in inches
-            defaults to (10,6)
-        axpos : an integer or a string
-            correponds to the positional argument of mpl_toolkits.axisartist.SubplotHost
-            defaults to '111'
-            TODO: if multiple plots are used, position and size of labels have to be corrected
-            in source code
-        colormap :  string
-            choose the colormap ("Paired" per default)
-        classes :   sequence of numerical values
-            class boundaries for plotting
-        [x,y,z]unit : string
-            the unit of the data which is plotted
-        extend :    string
-            determines the behaviour of the colorbar: default value 'neither' produces
-            a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
-            maximum end, respectively, and 'both' produces an arrow at both ends. If
-            you use class boundaries for plotting, you should typically use 'both'.
+    x_res : float array of range (x) tick resolution (empty, single value, multiple values)
 
-        Returns
-        ----------
-        class object
+    y_res : float array of height (y) tick resolution (empty, single value, multiple values)
 
-        """
+    z_res : float array of colorbar (z) tick resolution (empty, single value, multiple values)
 
+    a_res : float array of angle gridlines and labels, defaults to 8, wich means 10 deg resolution
+
+    faxis : float
+        if polar grid, angle where the first floating axis points to
+
+    ftitle : string
+        a title of the plot, defaults to None
+
+    xtitle : string
+        x-axis label
+        defaults to None
+
+    ytitle : string
+        y-axis label
+        defaults to None
+
+    atitle : string
+        angle-axis label, not used at the moment, due to inconvenient placing
+        defaults to 'Angle$^{\circ}$'
+
+    saveto : string - path of the file in which the figure should be saved
+        if string is empty, no figure will be saved and the plot will be
+        sent to screen
+
+    fig : matplotlib axis object
+        if None, a new matplotlib figure will be created, otherwise we plot
+        on given figure
+
+    figsize : width , height tuple in inches
+        defaults to (10,6)
+
+    axpos : an integer or a string
+        correponds to the positional argument of mpl_toolkits.axisartist.SubplotHost
+        defaults to '111'
+        TODO: if multiple plots are used, position and size of labels have to be corrected
+        in source code
+
+    colormap :  string
+        choose the colormap ("Paired" per default)
+
+    classes :   sequence of numerical values
+        class boundaries for plotting
+
+    [x,y,z]unit : string
+        the unit of the data which is plotted
+
+    extend :    string
+        determines the behaviour of the colorbar: default value 'neither' produces
+        a standard colorbar, 'min' and 'max' produces an arrow at the minimum or
+        maximum end, respectively, and 'both' produces an arrow at both ends. If
+        you use class boundaries for plotting, you should typically use 'both'.
+
+    Returns
+    ----------
+    class object
+
+    """
+    def __init__(self, ind='PPI', ax=None, fig=None, **kwargs):
         self.ind = ind
         self.ax = ax
         self.fig = fig
