@@ -13,7 +13,7 @@ In a first step you need an radar-image with an representative accumulation time
 With the accumulation data as an input histo_cut returns an mask array with ones where clutter is detected::
 
    import wradlib as wrl
-   accumulation_array = np.loadtxt('d:/Stephan/Arbeit/PROGRESS/Daten/Philipines_s-band/netcdf/addition/prec_sum.txt')
+   accumulation_array = np.loadtxt('D:/My/Directory/prec_sum.txt'')
    cluttermask = wrl.clutter.histo_cut(accumulation_array)
    
 .. image:: images/phil_mask.jpg

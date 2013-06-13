@@ -23,7 +23,7 @@ Here, ``data`` is a two dimensional array of shape (number of azimuth angles, nu
 
 German Weather Service: RADOLAN (quantitative) composit
 -------------------------------------------------------
-The quantitative composite format of the DWD (German Weather Service) was established in the course of the `RADOLAN project <http://www.dwd.de/radolan>`_. Most quantitative composite products from the DWD are distributed in this format, e.g. the R-series (RX, RY, RH, RW, ...), the S-series (SQ, SH, SF, ...), and the E-series (European quantitative composite, e.g. EZ, EH, EB). Please see the `composite format description <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Wasserwirtschaft/en/Unsere__Leistungen__en/Radarniederschlagsprodukte__en/RADOLAN__en/RADOLAN__RADVOR__OP__Komposit__format__2__2__1__pdf,templateId=raw,property=publicationFile.pdf/RADOLAN_RADVOR_OP_Komposit_format_2_2_1_pdf.pdf>`_ for a full reference and a full table of products (unfortunately only in German language).
+The quantitative composite format of the DWD (German Weather Service) was established in the course of the `RADOLAN project <http://www.dwd.de/RADOLAN>`_. Most quantitative composite products from the DWD are distributed in this format, e.g. the R-series (RX, RY, RH, RW, ...), the S-series (SQ, SH, SF, ...), and the E-series (European quantitative composite, e.g. EZ, EH, EB). Please see the `composite format description <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Wasserwirtschaft/en/Unsere__Leistungen__en/Radarniederschlagsprodukte__en/RADOLAN__en/RADOLAN__RADVOR__OP__Komposit__format__2__2__1__pdf,templateId=raw,property=publicationFile.pdf/RADOLAN_RADVOR_OP_Komposit_format_2_2_1_pdf.pdf>`_ for a full reference and a full table of products (unfortunately only in German language).
 
 Currently, the RADOLAN composites have a spatial resolution of 1km x 1km, with the national composits (R- and S-series) being 900 x 900 grids, and the European composits 1500 x 1400 grids. The projection is polar-stereographic. The products can be read by the following function::
 
@@ -32,7 +32,7 @@ Currently, the RADOLAN composites have a spatial resolution of 1km x 1km, with t
 Here, ``data`` is a two dimensional integer array of shape (number of rows, number of columns). Different product types might need different levels of postprocessing, e.g. if the product contains rain rates or accumulations, you will normally have to divide data by factor 10. ``metadata`` is again a dictionary which provides metadata from the files header section, e.g. using the keys *producttype*, *datetime*, *intervalseconds*, *nodataflag*. Masking the NoData (or missing) values can be done by::
 	
 	import numpy as np
-	maskeddata = np.ma.masked_equal(data, attrs["nodataflag"])
+	maskeddata = np.ma.masked_equal(data, metadata["nodataflag"])
 	
 
 OPERA BUFR

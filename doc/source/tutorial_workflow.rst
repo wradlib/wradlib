@@ -32,6 +32,7 @@ Clutter removal
 ---------------
 Clutter are non-precipitation echos. They are caused by the radar beam hitting objects on the earth's surface (e.g. mountain or hill tops, houses, wind turbines) or in the air (e.g. airplanes, birds). These objects can potentially cause high reflectivities due large scattering cross sections. Static clutter, if not efficiently removed by Doppler filters, can cause permanent echos which could introduce severe bias in quantitative applications. Thus, an efficient identification and removal of clutter is mandatory e.g. for hydrological studies. Clutter removal can be based on static maps or dynamic filters. Normally, static clutter becomes visible more clearly in rainfall accumulation maps over periods of weeks or months. We recommend such accumulations to create static clutter maps which can in turn be used to remove the static clutter from an image and fill the resulting gaps by interpolation. In the following example, the clutter filter published by Gabella and Notarpietro ([Gabella2002]_) is applied to the single radar sweep of the above example.  
 
+>>> import pylab as pl
 >>> clutter = wradlib.clutter.filter_gabella(data, tr1=12, n_p=6, tr2=1.1)
 >>> wradlib.vis.polar_plot(clutter,title='Clutter Map',colormap=pl.cm.gray)
 
@@ -136,6 +137,7 @@ Assume you would like to transfer the rainfall intensity from the above example 
 
 Now we transfer the polar data to the grid and mask out invalid values for plotting (values outside the radar circle receive NaN):
 
+>>> xy=np.concatenate([x.ravel()[:,None],y.ravel()[:,None]], axis=1)
 >>> gridded = wradlib.comp.togrid(xy, grid_xy, 128000., np.array([x.mean(), y.mean()]), data.ravel(), wradlib.ipol.Nearest)
 >>> gridded = np.ma.masked_invalid(gridded).reshape((len(xgrid), len(ygrid)))
 >>> wradlib.vis.cartesian_plot(gridded, x=xgrid, y=ygrid, classes=range(0,70,5), unit="dBZ")
@@ -145,7 +147,7 @@ Now we transfer the polar data to the grid and mask out invalid values for plott
 
 Adjustment by rain gage observations
 ------------------------------------
-Adjustment normally refers to using rain ggage observations on the ground to correct for errors in the radar-based rainfall estimatin. Goudenhooftd and Delobbe [Goudenhoofdt2009]_ provide an excellent overview of adjustment procedures. A typical approach is to quantify the error of the radar-based rainfall estimate *at* the rain gage locations, assuming the rain gage observation to be accurate. The error can be assumed to be additive, multiplicative, or a mixture of both. Most approaches assume the error to be heterogeneous in space. Hence, the error at the rain gage locations will be interpolated to the radar bin (or grid) locations and then used to adjust (correct) the raw radar rainfall estimates.
+Adjustment normally refers to using rain gage observations on the ground to correct for errors in the radar-based rainfall estimatin. Goudenhooftd and Delobbe [Goudenhoofdt2009]_ provide an excellent overview of adjustment procedures. A typical approach is to quantify the error of the radar-based rainfall estimate *at* the rain gage locations, assuming the rain gage observation to be accurate. The error can be assumed to be additive, multiplicative, or a mixture of both. Most approaches assume the error to be heterogeneous in space. Hence, the error at the rain gage locations will be interpolated to the radar bin (or grid) locations and then used to adjust (correct) the raw radar rainfall estimates.
 
 In the following example, we will use an illustrative one-dimensional example with synthetic data (just imagine radar rainfall estimates and rain gage observations along one radar beam). 
 
@@ -188,7 +190,7 @@ Let's compare the ``truth``, the ``radar`` rainfall estimate and the ``adjusted`
 
 Verification and quality control
 --------------------------------
-Typically, radar-based precipitation estimation and the effectiveness of the underlying correction and adjustment methods are verified by comparing the results against rain gauge observations on the ground. wradlib.verify provides procedures not only to extract the radar values at specific gauge locations, but also a set of error metrics which are computed from gage observations and the corresponding radar-based precipitation estimates (including standard metrics such as RMSE, mean error, Nash-Sutcliffe Efficiency). In the following, we will illustrate the usage of error metrics by comparing the "true" rainfall against the raw and adjusted radar rainfall estimates from the above example:
+Typically, radar-based precipitation estimation and the effectiveness of the underlying correction and adjustment methods are verified by comparing the results against rain gage observations on the ground. wradlib.verify provides procedures not only to extract the radar values at specific gauge locations, but also a set of error metrics which are computed from gage observations and the corresponding radar-based precipitation estimates (including standard metrics such as RMSE, mean error, Nash-Sutcliffe Efficiency). In the following, we will illustrate the usage of error metrics by comparing the "true" rainfall against the raw and adjusted radar rainfall estimates from the above example:
 
 >>> raw_error  = wradlib.verify.ErrorMetrics(truth, radar)
 >>> adj_error  = wradlib.verify.ErrorMetrics(truth, adjusted)
@@ -210,7 +212,7 @@ In the above sections `Reading the data`_, `Clutter removal`_, and `Gridding`_ y
 
 Data export to other applications
 ---------------------------------
-Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or spupport a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <http://code.google.com/p/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://code.google.com/p/h5py/>`_ or `PyTables <http://www.pytables.org/moin>`_ to write hdf5 files. At a later stage of development, *wradlib* might support a standardized data export by using the OPERA's BUFR or hdf5 data model (see :doc:`tutorial_supported_formats`). Of course, you can also export data as images. See :doc:`vis` for some options.
+Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or support a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <http://code.google.com/p/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://code.google.com/p/h5py/>`_ or `PyTables <http://www.pytables.org/moin>`_ to write hdf5 files. At a later stage of development, *wradlib* might support a standardized data export by using the OPERA's BUFR or hdf5 data model (see :doc:`tutorial_supported_formats`). Of course, you can also export data as images. See :doc:`vis` for some options.
 
 Export your data array as a text file:
 

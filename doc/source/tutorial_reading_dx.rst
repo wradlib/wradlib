@@ -21,7 +21,7 @@ Suppose we want to read a radar-scan for a defined time step::
    import wradlib as wrl
    # set the location of your data
    datadir = 'D:/THIS/IS/MY/DATA/DIRECTORY/'
-   singular_data, attributes = wrl.io.readDX(datadir + 'raa00-dx_10908-200608281420-fbg---bin')
+   singular_data, attributes = wrl.io.readDX(datadir + 'raa00-dx_10908-0806021740-fbg---bin')
    
 Since the readDX function returns two variables, the scan values and the elevation/azimuth information, the function is assigned to two variables.
 
@@ -31,14 +31,14 @@ First we should create an empty array with the shape of the desired dimensions. 
 
    import numpy as np
    multiple_data = np.empty((2,360,128))
-   multiple_data[0] = wrl.io.readDX(datadir + 'raa00-dx_10908-200608180225-fbg---bin')[0]
-   multiple_data[1] = wrl.io.readDX(datadir + 'raa00-dx_10908-200608180230-fbg---bin')[0]
+   multiple_data[0] = wrl.io.readDX(datadir + 'raa00-dx_10908-0806021740-fbg---bin')[0]
+   multiple_data[1] = wrl.io.readDX(datadir + 'raa00-dx_10908-0806021745-fbg---bin')[0]
    
 
 Visualizing dBZ values
 ----------------------
 
-Now we want to plot the results of the sinular scan in a polar plot.
+Now we want to plot the results of the singular scan in a polar plot.
 
 The quick solution::
 
