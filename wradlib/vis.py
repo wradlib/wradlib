@@ -1143,38 +1143,31 @@ class cg_plot(object):
         self.fig = fig
         self.mdpi = 80.0
 
-        # process kwargs
-        if kwargs:
-            key = kwargs.keys()
-            value = kwargs.values()
-            myargs = dict(zip(key, value))
-        else:
-            myargs = {}
-
         # process myargs
-        self.x_range = myargs.pop('x_range',None)
-        self.y_range = myargs.pop('y_range',None)
-        self.theta_range = myargs.pop('theta_range', None)
-        self.radial_range = myargs.pop('radial_range',None)
-        self.data_range = myargs.pop('data_range', None)
+        self.x_range = kwargs.get('x_range',None)
+        self.y_range = kwargs.get('y_range',None)
+        self.theta_range = kwargs.get('theta_range', None)
+        self.radial_range = kwargs.get('radial_range',None)
+        self.data_range = kwargs.get('data_range', None)
 
-        self.float_axis = myargs.pop('faxis',45)
+        self.float_axis = kwargs.get('faxis',45)
 
-        self.xunit = myargs.pop('xunit',None)
-        self.yunit = myargs.pop('yunit',None)
-        self.zunit = myargs.pop('zunit',None)
-        self.xtitle = None
-        self.ytitle = None
-        self.ztitle = None
+        self.xunit = kwargs.get('xunit',None)
+        self.yunit = kwargs.get('yunit',None)
+        self.zunit = kwargs.get('zunit',None)
+        self.xtitle = kwargs.get('xtitle',None)
+        self.ytitle = kwargs.get('ytitle',None)
+        self.ztitle = kwargs.get('ztitle',None)
+        self.ftitle = kwargs.pop('ftitle', None)
 
         self.fsize = "5%"
 
-        self.axpos = myargs.pop('axpos', '111')
-        self.extend = myargs.pop('extend', None)
-        self.classes = myargs.pop('classes', None)
+        self.axpos = kwargs.get('axpos', '111')
+        self.extend = kwargs.get('extend', None)
+        self.classes = kwargs.get('classes', None)
 
-        self.saveto = myargs.pop('saveto',None)
-        self.colormap = myargs.pop('colormap','jet')
+        self.saveto = kwargs.get('saveto',None)
+        self.colormap = kwargs.get('colormap','jet')
 
 
         if ind == 'PPI':
@@ -1399,18 +1392,18 @@ class cg_plot(object):
             self.x_range = kwargs.pop('x_range',[0, n_r])
 
 
-        self.y_range = kwargs.pop('y_range',[self.x_range[0], self.x_range[1]])
+        self.y_range = kwargs.pop('y_range', self.x_range)
 
-        self.xunit = kwargs.pop('xunit', None)
-        self.yunit = kwargs.pop('yunit', None)
+        self.xunit = kwargs.pop('xunit', self.xunit)
+        self.yunit = kwargs.pop('yunit', self.yunit)
         self.x_res = np.array(kwargs.pop('x_res', self.x_res))
         self.y_res = np.array(kwargs.pop('y_res', self.y_res))
-        self.a_res = kwargs.pop('a_res', 10.)
-        self.float_axis = kwargs.pop('faxis', 30.)
+        self.a_res = kwargs.pop('a_res', self.a_res)
+        self.float_axis = kwargs.pop('faxis', self.float_axis)
 
-        self.xtitle = kwargs.pop('xtitle', None)
-        self.ytitle = kwargs.pop('ytitle', None)
-        self.ftitle = kwargs.pop('ftitle', None)
+        self.xtitle = kwargs.pop('xtitle', self.xtitle)
+        self.ytitle = kwargs.pop('ytitle', self.ytitle)
+        self.ftitle = kwargs.pop('ftitle', self.ftitle)
         self.data_range = kwargs.pop('data_range',[0,self.x_range[1]])
         self.radial_range = kwargs.pop('radial_range',[0,self.x_range[1]])
         self.theta_range = kwargs.pop('theta_range',self.theta_range)
@@ -1525,7 +1518,7 @@ class cg_plot(object):
 
         return self.circle
 
-    def get_fontsize(self, s, *args, **kwargs):
+    def get_fontsize(self, s=None, *args, **kwargs):
         """ gets fontsize according to given percentage and to actual axis size
             takes dpi of figure into account
 
