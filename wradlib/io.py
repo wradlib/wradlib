@@ -41,10 +41,10 @@ import cPickle as pickle
 import os
 
 # site packages
-import tables as tb
 import h5py
 import numpy as np
 import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+import tables as tb  # ATTENTION: Needs to be imported AFTER netcdf4, otherwise ungraceful crash
 
 # wradib modules
 import wradlib.bufr as bufr
