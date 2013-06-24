@@ -158,8 +158,6 @@ Dependencies
 
 - netCDF4, version >= 1.0
 
-- PyTables (tables), version >= 2.3.1
-
 - numpydoc (*), version >= 0.3, install via ``easy_install numpydoc``
 
 - pyproj (*), version >= 1.8.9, install via ``easy_install pyproj``
