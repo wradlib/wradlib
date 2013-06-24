@@ -44,7 +44,6 @@ import os
 import h5py
 import numpy as np
 import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
-import tables as tb  # ATTENTION: Needs to be imported AFTER netcdf4, otherwise ungraceful crash
 
 # wradib modules
 import wradlib.bufr as bufr
@@ -791,50 +790,51 @@ def from_pickle(fpath):
     return obj
 
 
-# in case PytTables hdf5 compression is used
-filters = tb.Filters(complib='blosc', complevel=5)
-
-def to_hdf5(fpath, data, metadata={}, dtype="float32"):
+def to_hdf5(fpath, data, metadata={}, dataset="data", compression="gzip"):
     """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
 
     This is more efficient than pickle, cPickle or numpy.save. The data is stored in
-    a subgroup named ``data`` (i.e. hdf5file.root.data).
+    a subgroup named ``data`` (i.e. hdf5file["data").
 
     Parameters
     ----------
     fpath : string (path to the hdf5 file)
     data : numpy array
     metadata : dictionary
+    dtype : a numpy dtype string
+    compression : h5py comression type {"gzip"|"szip"|"lzf"}, see h5py documentation for details
 
     """
-    hdf = tb.openFile(fpath, "w")
-    # save the data
-    atom = tb.Atom.from_dtype(np.dtype(dtype))
-    hdata = hdf.createCArray(hdf.root, "data", atom, data.shape, filters=filters)
-    hdata[:] = data
-    # save the metadata
+    f = h5py.File(fpath, mode="w")
+    dset = f.create_dataset(dataset, data=data, compression=compression)
+    # store metadata
     for key in metadata.keys():
-        hdf.root.data.setAttr(key, metadata[key])
-    hdf.close()
-    return 0
+        dset.attrs[key] = metadata[key]
+    # close hdf5 file
+    f.close()
 
 
-def from_hdf5(fpath):
+def from_hdf5(fpath, dataset="data"):
     """Loading data from hdf5 files that was stored by <wradlib.io.to_hdf5>
 
     Parameters
     ----------
     fpath : string (path to the hdf5 file)
+    dataset : name of the Dataset in which the data is stored
 
     """
-    if not os.path.exists(fpath):
-        raise Exception("Cannot find file: %s" % fpath)
-    hdf = tb.openFile(fpath, "r")
+    f = h5py.File(fpath, mode="r")
+    # Check whether Dataset exists
+    if not dataset in f.keys():
+        print("Cannot read Dataset <%s> from hdf5 file <%s>" % (dataset, f))
+        f.close()
+        sys.exit()
+    data = np.array(f[dataset][:])
+    # get metadata
     metadata = {}
-    for attr in hdf.root.data.attrs._f_list():
-        metadata[attr] = hdf.root.data.attrs[attr]
-    data = np.array(hdf.root.data[:])
-    hdf.close()
+    for key in f[dataset].attrs.keys():
+        metadata[key] = f[dataset].attrs[key]
+    f.close()
     return data, metadata
 
 
