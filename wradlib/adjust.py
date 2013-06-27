@@ -231,6 +231,9 @@ class AdjustBase(ipol.IpolBase):
 
         """
         rawatobs, ix = self._get_valid_pairs(obs, raw)
+        self.get_raws_directly_at_obs = Raw_at_obs(self.obs_coords,  self.raw_coords, nnear=1)
+        raws_directly_at_obs = self.get_raws_directly_at_obs(raw)
+        ix = np.intersect1d( ix,  util._idvalid(raws_directly_at_obs, minval=self.minval))
         # Container for estimation results at the observation location
         estatobs = np.array([])
         # check whether enough gages remain for adjustment
@@ -241,7 +244,7 @@ class AdjustBase(ipol.IpolBase):
         for i in ix:
             # Pass all valid pairs except ONE which you pass as target
             ix_adjust = np.setdiff1d(ix, [i])
-            estatobs = np.append(estatobs, self.__call__(obs, raw[self.obs_coords[i]], self.obs_coords[i].reshape((1,-1)), rawatobs, ix_adjust)).ravel()
+            estatobs = np.append(estatobs, self.__call__(obs, raws_directly_at_obs[i], self.obs_coords[i].reshape((1,-1)), rawatobs, ix_adjust)).ravel()
         return obs[ix], estatobs
 
 
