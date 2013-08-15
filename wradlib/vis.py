@@ -182,7 +182,7 @@ class PolarPlot(object):
         return ret
 
 
-def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', **kwargs):
+def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', show=True, **kwargs):
     pp = PolarPlot(fig=fig, axpos=axpos, figsize=(8,8))
     pp.set_cmap(colormap, classes=classes)
     circle = pp.plot(data, R=R, theta0=theta0, **kwargs)
@@ -192,8 +192,9 @@ def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., t
     pp.title(title)
     if saveto=='':
         # show plot
-        pl.show()
-        if not pl.isinteractive():
+        if show:
+            pl.show()
+        if (not pl.isinteractive() ) and show:
             # close figure eplicitely if pylab is not in interactive mode
             pl.close()
     else:
