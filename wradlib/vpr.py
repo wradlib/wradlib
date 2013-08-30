@@ -87,6 +87,7 @@ import wradlib.util as util
 import wradlib.io as io
 import wradlib.qual as qual
 from scipy.spatial import cKDTree
+from scipy import stats
 import os
 
 
@@ -427,6 +428,33 @@ def synthetic_polar_volume(coords):
     out = out * 100./ out.max()
     return out
 
+
+def vpr_interpolator(data, heights, method='linear'):
+    """"""
+    if method.lower() == 'linear':
+        return scipy.interpolate.interp1d(heights, data, kind='linear')
+    if method.lower() == 'nearest':
+        return scipy.interpolate.interp1d(heights, data,
+                                          kind='nearest',
+                                          bounds_error=False,
+                                          fill_value=data[0])
+    else:
+        raise NotImplementedError, 'Method: {0:s} unkown'.format(method)
+
+
+def correct_vpr(data, heights, vpr, target_height=0.):
+    """"""
+    return (data * vpr(target_height)) / vpr(heights)
+
+
+def mean_norm_vpr_from_volume(volume, reference_idx):
+    """"""
+    return norm_vpr_stats(volume, reference_idx, stats.mstats.mean)
+
+
+def norm_vpr_stats(volume, reference_idx, stat, **kwargs):
+    tmp = volume / volume[...,reference_idx]
+    return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), **kwargs)
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <vpr> as main...'
