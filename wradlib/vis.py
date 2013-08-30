@@ -2254,10 +2254,10 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
     cb.set_label("(%s)" % unit)
 
     # draw upper vertical profil
-    ax_x.contourf(x, z, datazx.transpose(), **kwargs)
+    ax_x.contourf(x, z, datazx, **kwargs)
 
     # draw right vertical profil
-    ax_y.contourf(z, y, datazy, **kwargs)
+    ax_y.contourf(z, y, datazy.T, **kwargs)
 
     # label axes
     ax_xy.set_xlabel('x (km)')
@@ -2307,7 +2307,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
 def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs):
     """Plot according to <plot_plan_and_vert> with the maximum values along the three axes of <data>
     """
-    plot_plan_and_vert(x, y, z, np.max(data,axis=2), np.max(data, axis=0), np.max(data, axis=1), unit, title, saveto, **kwargs)
+    plot_plan_and_vert(x, y, z, np.max(data,axis=-3), np.max(data, axis=-2), np.max(data, axis=-1), unit, title, saveto, **kwargs)
 
 
 def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', colors=None, ylabel="", title="", fontsize="medium", saveto="", **kwargs):

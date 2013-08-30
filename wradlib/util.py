@@ -442,14 +442,17 @@ def meshgridN(*arrs):
 def gridaspoints(*arrs):
     """Creates an N-dimensional grid form arrs and returns grid points sequence of point coordinate pairs
     """
-    # 2-D grid
-    if len(arrs)==2:
-        grid = np.meshgrid(arrs[0], arrs[1])
-        grid = np.vstack((grid[0].ravel(), grid[1].ravel())).transpose()
-        return grid
-    # for more than 2 dimensions
-    grid = meshgridN(*arrs)
-    grid = tuple([dim.ravel() for dim in grid])
+    # there is a small gotcha here.
+    # with the convention following the 2013-08-30 sprint in Potsdam it was
+    # agreed upon that arrays should have shapes (...,z,y,x) similar to the
+    # convention that polar data should be (...,time,scan,azimuth,range)
+    #
+    # Still coordinate tuples are given in the order (x,y,z) [and hopefully not
+    # more dimensions]. Therefore np.meshgrid must be fed the axis coordinates
+    # in shape order (z,y,x) and the result needs to be reversed in order
+    # for everything to work out.
+    grid = tuple([dim.ravel()
+                  for dim in reversed(np.meshgrid(*arrs, indexing='ij'))])
     return np.vstack(grid).transpose()
 
 

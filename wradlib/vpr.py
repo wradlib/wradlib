@@ -75,6 +75,8 @@ Here's an example how a set of CAPPIs can be created from synthetic polar volume
    :toctree: generated/
 
    volcoords_from_polar
+   make_3D_grid
+   CartesianVolume
    CAPPI
    PseudoCAPPI
 
@@ -412,8 +414,8 @@ def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
     x = np.arange(llx, llx+2*maxrange+horiz_res, horiz_res)
     y = np.arange(lly, lly+2*maxrange+horiz_res, horiz_res)
     z = np.arange(0.,maxalt+vert_res,vert_res)
-    xyz = util.gridaspoints(x, y, z)
-    shape = (len(x), len(y), len(z))
+    xyz = util.gridaspoints(z, y, x)
+    shape = (len(z), len(y), len(x))
     return xyz, shape
 
 
