@@ -25,6 +25,7 @@ Attenuation Correction
     correctAttenuationConstrained
     constraint_dBZ
     constraint_PIA
+    correctRadomeAttenuationEmpirical
 
 """
 import numpy as np
@@ -34,6 +35,7 @@ import os, sys
 import math
 import logging
 from .trafo import idecibel
+from .zr import z2r
 
 logger = logging.getLogger('attcorr')
 
@@ -776,6 +778,74 @@ def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, 
 
     return k.reshape(gateset.shape)
 
+
+def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
+                                      hydrophobicity=0.165, n_r=2,
+                                      stat=np.mean):
+    """Empirical model to estimate two-way wet radome losses as a function of
+    frequency and rainfall rate for both standard and hydrophobic radomes based
+    on Francis J. Merceret and Jennifer G. Ward [Merceret2002]_.
+
+
+
+    Parameters
+    ----------
+    gateset : array
+        Multidimensional array, where the range gates (over which iteration has
+        to be performed) are supposed to vary along the last array-dimension and
+        the azimuths are supposed to vary along the next to last array-dimension.
+        Data has to be provided in decibel representation of reflectivity
+        [dBZ].
+
+    frequency : float
+        Radar-frequency [GHz]
+            Standard frequencies in S-band range between 8.0 and 12.0 GHz,
+            Standard frequencies in C-band range between 4.0 and 8.0 GHz,
+            Standard frequencies in X-band range between 2.0 and 4.0 GHz.
+            Per default set to 5.64 as used by the German Weather Service radars.
+
+    hydrophobicity : float
+        Empirical parameter based on the hydrophobicity of the radome material.
+            0.165 for standard radomes,
+            0.0575 for hydrophobic radomes.
+            Per default set to 0.165.
+
+    stat : class
+        A name of a numpy function for statistical aggregation of the central
+        rangebins.
+        Potential options: np.mean, np.median, np.max, np.min.
+
+    Returns
+    -------
+    k : array
+        Array with the same shape as ``gateset`` containing the calculated
+        two-way transmission loss [dB] for each range gate. In case the input array (gateset)
+        contains NaNs the corresponding beams of the output array (k) will be
+        set as NaN, too.
+
+    References
+    ----------
+    .. [Merceret2002] Merceret, F. J. & Ward, J. G., 2000.
+        Attenuation of Weather Radar Signals Due to Wetting of the Radome
+        by Rainwater or Incomplete Filling of the Beam Volume.
+        NASA/TM-2002-211171, NASA/YA-D, Kennedy Space Center, FL, 32899, 16 pp.
+        Available at: http://www.c-esolutions.com/repository/NASA%20paper%20on%20effect%20of%20radome%20wetting.pdf
+        [Accessed Sep 5, 2013].
+
+    """
+
+    # select rangebins inside the defined center-range n_r
+    center = gateset[...,:n_r].reshape(-1, n_r * gateset.shape[-2])
+    # mask nan-rangebins
+    center_m = np.ma.masked_array(center, np.isnan(center))
+    # calculate rainrate in the center-range based on statistical method stat and with standard ZR-relation
+    rain_over_radome = z2r(idecibel(stat(center_m, axis = -1)))
+    # empirical two-way transmission loss due to radome-attenuation
+    k = 2 * hydrophobicity * rain_over_radome * np.tanh(frequency / 10.)**2
+    # reshape the result to gateset-shape
+    k = np.repeat(k, gateset.shape[-1] * gateset.shape[-2]).reshape(gateset.shape)
+
+    return k
 
 
 if __name__ == '__main__':
