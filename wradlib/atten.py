@@ -784,7 +784,7 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
                                       stat=np.mean):
     """Empirical model to estimate two-way wet radome losses as a function of
     frequency and rainfall rate for both standard and hydrophobic radomes based
-    on Francis J. Merceret and Jennifer G. Ward [Merceret2002]_.
+    on the approach of Francis J. Merceret and Jennifer G. Ward [Merceret2002]_.
 
 
 
