@@ -202,10 +202,10 @@ def filter_gabella(img, nn=2, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=Tru
         f_good[f_good == 0] = 1e-10
         ntr1 = ntr1/f_good
         ntr1[bad] = n_p
-    clutter1 = ntr1 < n_p
+    clutter1 = (ntr1 < n_p) 
     ratio = filter_gabella_b(img, thrsnorain)
-    clutter2 = np.abs(ratio) < tr2
-    return ( clutter1 | clutter2 )
+    clutter2 = ( np.abs(ratio) < tr2 )
+    return ( clutter1 | clutter2 ) & ( img > 10 )
 
 def histo_cut(prec_accum):
     r"""Histogram based clutter identification.
