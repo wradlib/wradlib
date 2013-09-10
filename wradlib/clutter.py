@@ -193,14 +193,16 @@ def filter_gabella(img, nn=2, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=Tru
     b
 
     """
+    bad = np.isnan(img)
     if rm_nans:
-        img[np.isnan(img)] = np.Inf
-        img[np.isnan(img)] = 100
+        img[bad] = np.Inf
     ntr1 = filter_gabella_a(img, nn=nn, tr1=tr1)
-    good = ~(np.isnan(img))
-    f_good = ndi.filters.uniform_filter(good.astype(float),size=2*nn+1)
-    f_good[f_good == 0] = 1e-10
-    clutter1 = ( ntr1/f_good < n_p ) 
+    if not rm_nans:
+        f_good = ndi.filters.uniform_filter((~bad).astype(float),size=2*nn+1)
+        f_good[f_good == 0] = 1e-10
+        ntr1 = ntr1/f_good
+        ntr1[bad] = n_p
+    clutter1 = ntr1 < n_p
     ratio = filter_gabella_b(img, thrsnorain)
     clutter2 = np.abs(ratio) < tr2
     return ( clutter1 | clutter2 )
