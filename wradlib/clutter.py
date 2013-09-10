@@ -51,11 +51,68 @@ def _filter_gabella_a(windowdata, tr1=6.):
 
     """
     center = windowdata.shape[0] // 2
-
     return ((windowdata[center] - windowdata) < tr1).sum()-1
 
+def filter_gabella_a2(img, nn, tr1, cartesian=False, radial=False):
+    r"""First part of the Gabella filter looking for large reflectivity
+    gradients.
 
-def filter_gabella_a(img, wsize, tr1):
+    This function checks for each pixel in `img` how many pixels surrounding
+    it in a window of `wsize` are by `tr1` smaller than the central pixel.
+
+    Parameters
+    ----------
+    img : array_like
+        radar image to which the filter is to be applied
+    nn : int
+        Number of neighbouring bins/pixels
+    tr1 : float
+        Threshold value
+    cartesian : boolean
+        Specify if the input grid is Cartesian or not
+    radial : boolean
+        Specify if only radial information should be used 
+
+    Returns
+    -------
+    output : array_like
+        an array with the same shape as `img`, containing the filter's results.
+
+    See Also
+    --------
+    filter_gabella_b : the second part of the filter
+    filter_gabella : the complete filter
+
+    Examples
+    --------
+    TODO: provide a correct example here
+
+    >>> a=[1,2,3]
+    >>> print [x + 3 for x in a]
+    :w
+[4, 5, 6]
+    >>> print "a\n\nb"
+    a
+    b
+
+    """
+    count = -np.ones(img.shape,dtype=int)
+    range_shift = range(-nn,nn+1)
+    azimuth_shift = range(-nn,nn+1)
+    if radial:
+        azimuth_shift = [0]
+    for sr in range_shift:
+        for sa in azimuth_shift:
+            ref = np.roll(np.roll(img,sa,axis=0),sr,axis=1)
+            count += ( img - ref < tr1 )
+    count[:,0:nn] = 1e3
+    count[:,-nn:] = 1e3
+    if cartesian :
+        count[0:nn,:] = 1e3
+        count[-nn:,:] = 1e3
+    return(count)
+
+def filter_gabella_a(img, wsize, tr1, use_ndi=True, radial = False):
     r"""First part of the Gabella filter looking for large reflectivity
     gradients.
 
@@ -88,19 +145,40 @@ def filter_gabella_a(img, wsize, tr1):
 
     >>> a=[1,2,3]
     >>> print [x + 3 for x in a]
-    [4, 5, 6]
+    :w
+[4, 5, 6]
     >>> print "a\n\nb"
     a
     b
 
     """
-    return ndi.filters.generic_filter(img,
+    if use_ndi:
+        return ndi.filters.generic_filter(img,
                                       _filter_gabella_a,
                                       size=wsize,
                                       mode='wrap',
                                       extra_keywords={'tr1':tr1}
                                       )
-
+    count = np.ones(img.shape,dtype=int)*img.size
+    center = wsize // 2
+    ridx = slice(center,-center)
+    count[ridx,ridx] = -1
+    ridx2 = [];
+    for i in range(0,wsize-1):
+        ridx2.append(slice(i,-wsize+i+1))
+        #ridx2[wsize-1] = slice(wsize-1,-0)
+    shift = range(-center,center+1)
+    if radial:
+        shift = [0]
+    for s in shift:
+        for i in ridx2:
+            ref = np.roll(img[:,i],s,axis=0)
+            test = img[:,ridx] - ref < tr1
+            count[:,ridx] += test
+        ref = np.roll(img[:,wsize-1:],s,axis=0)
+        test = img[:,ridx] - ref < tr1
+        count[:,ridx] += test
+    return(count)
 
 def filter_gabella_b(img, thrs=0.):
     r"""Second part of the Gabella filter comparing area to circumference of
@@ -164,8 +242,7 @@ def filter_gabella_b(img, thrs=0.):
 
     return result
 
-
-def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=8, tr2=1.3):
+def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=False, use_ndi=True, radial = False):
     r"""Clutter identification filter developed by Gabella [Gabella2002]_ .
 
     This is a two-part identification algorithm using echo continuity and
@@ -212,10 +289,15 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=8, tr2=1.3):
 
     """
     assert wsize % 2 == 1
-
-    ntr1 = filter_gabella_a(img, wsize, tr1)
-    clutter1 = ntr1 < n_p
-
+    if rm_nans:
+        img[np.isnan(img)] = np.Inf
+    if True:
+        ntr1 = filter_gabella_a2(img, nn=2, tr1=tr1)
+    else:
+        ntr1 = filter_gabella_a(img, wsize, tr1, use_ndi=use_ndi, radial = radial)
+    f_good = ndi.filters.uniform_filter((~np.isnan(img)).astype(float),size=wsize)
+    f_good[f_good == 0] = 1e-10
+    clutter1 = ( ntr1/f_good < n_p ) & ( img > 10 )
     ratio = filter_gabella_b(img, thrsnorain)
     clutter2 = np.abs(ratio) < tr2
 
