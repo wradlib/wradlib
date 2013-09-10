@@ -195,14 +195,15 @@ def filter_gabella(img, nn=2, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=Tru
     """
     if rm_nans:
         img[np.isnan(img)] = np.Inf
+        img[np.isnan(img)] = 100
     ntr1 = filter_gabella_a(img, nn=nn, tr1=tr1)
-    f_good = ndi.filters.uniform_filter((~np.isnan(img)).astype(float),size=2*nn+1)
+    good = ~(np.isnan(img))
+    f_good = ndi.filters.uniform_filter(good.astype(float),size=2*nn+1)
     f_good[f_good == 0] = 1e-10
-    clutter1 = ( ntr1/f_good < n_p ) & ( img > thrsnorain )
+    clutter1 = ( ntr1/f_good < n_p ) 
     ratio = filter_gabella_b(img, thrsnorain)
     clutter2 = np.abs(ratio) < tr2
-
-    return clutter1 | clutter2
+    return ( clutter1 | clutter2 )
 
 def histo_cut(prec_accum):
     r"""Histogram based clutter identification.
