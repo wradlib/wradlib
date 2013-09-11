@@ -177,6 +177,6 @@ clutter or attenuation) and visualising the data.
           ],
           install_requires=["numpydoc >= 0.3", "pyproj >= 1.8",
                             "netCDF4 >= 1.0", "h5py >= 2.0.1",
-                            "matplotlib >= 1.1.0", "scipy >= 0.9", "numpy >= 1.6.1"]
+                            "matplotlib >= 1.1.0", "scipy >= 0.9", "numpy >= 1.7.0"]
           )
 
