@@ -76,10 +76,10 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     if radial:
         azimuth_shift = [0]
     for sa in azimuth_shift:
-        ref = np.roll(img,sa,axis=0)
+        refa = np.roll(img,sa,axis=0)
         for sr in range_shift:
-            ref = np.roll(ref,sr,axis=1)
-            count += ( img - ref < tr1 )
+            refr = np.roll(refa,sr,axis=1)
+            count += ( img - refr < tr1 )
     count[:,0:nn] = wsize**2
     count[:,-nn:] = wsize**2
     if cartesian :
