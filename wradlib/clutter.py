@@ -26,7 +26,7 @@ Clutter Identification
 import numpy as np
 import scipy.ndimage as ndi
 
-def filter_gabella_a(img, nn, tr1, cartesian=False, radial=False):
+def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     r"""First part of the Gabella filter looking for large reflectivity
     gradients.
 
@@ -37,8 +37,8 @@ def filter_gabella_a(img, nn, tr1, cartesian=False, radial=False):
     ----------
     img : array_like
         radar image to which the filter is to be applied
-    nn : int
-        Number of neighbouring bins/pixels
+    wsize : int
+        Size of the window surrounding the central pixel
     tr1 : float
         Threshold value
     cartesian : boolean
@@ -69,20 +69,22 @@ def filter_gabella_a(img, nn, tr1, cartesian=False, radial=False):
     b
 
     """
+    nn = wsize // 2
     count = -np.ones(img.shape,dtype=int)
     range_shift = range(-nn,nn+1)
     azimuth_shift = range(-nn,nn+1)
     if radial:
         azimuth_shift = [0]
-    for sr in range_shift:
-        for sa in azimuth_shift:
-            ref = np.roll(np.roll(img,sa,axis=0),sr,axis=1)
+    for sa in azimuth_shift:
+        ref = np.roll(img,sa,axis=0)
+        for sr in range_shift:
+            ref = np.roll(ref,sr,axis=1)
             count += ( img - ref < tr1 )
-    count[:,0:nn] = 1e3
-    count[:,-nn:] = 1e3
+    count[:,0:nn] = wsize**2
+    count[:,-nn:] = wsize**2
     if cartesian :
-        count[0:nn,:] = 1e3
-        count[-nn:,:] = 1e3
+        count[0:nn,:] = wsize**2
+        count[-nn:,:] = wsize**2
     return(count)
 
 def filter_gabella_b(img, thrs=0.):
@@ -147,7 +149,7 @@ def filter_gabella_b(img, thrs=0.):
 
     return result
 
-def filter_gabella(img, nn=2, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=True, radial = False):
+def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=True, radial = False, cartesian = False):
     r"""Clutter identification filter developed by Gabella [Gabella2002]_ .
 
     This is a two-part identification algorithm using echo continuity and
@@ -157,11 +159,19 @@ def filter_gabella(img, nn=2, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=Tru
     Parameters
     ----------
     img : array_like
-    nn : int
+    wsize : int
+        Size of the window surrounding the central pixel
     thrsnorain : float
     tr1 : float
     n_p : int
     thr2 : float
+    rm_nans : boolean
+        True replaces nans with Inf
+        False takes nans into acount
+    radial : boolean
+        True to use radial information only in filter_gabella_a.
+    cartesian : boolean
+        True if cartesian data are used, polar assumed if False.
 
     Returns
     -------
@@ -196,9 +206,9 @@ def filter_gabella(img, nn=2, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=Tru
     bad = np.isnan(img)
     if rm_nans:
         img[bad] = np.Inf
-    ntr1 = filter_gabella_a(img, nn=nn, tr1=tr1)
+    ntr1 = filter_gabella_a(img, wsize, tr1, cartesian, radial)
     if not rm_nans:
-        f_good = ndi.filters.uniform_filter((~bad).astype(float),size=2*nn+1)
+        f_good = ndi.filters.uniform_filter((~bad).astype(float),size=wsize)
         f_good[f_good == 0] = 1e-10
         ntr1 = ntr1/f_good
         ntr1[bad] = n_p
