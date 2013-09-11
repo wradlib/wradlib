@@ -802,6 +802,8 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
             Standard frequencies in S-band range between 8.0 and 12.0 GHz,
             Standard frequencies in C-band range between 4.0 and 8.0 GHz,
             Standard frequencies in X-band range between 2.0 and 4.0 GHz.
+            Be aware that the empirical fit of the formula was just done for C-
+            and S-band. The use for X-band is probably an undue extrapolation.
             Per default set to 5.64 as used by the German Weather Service radars.
 
     hydrophobicity : float
@@ -810,9 +812,13 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
             0.0575 for hydrophobic radomes.
             Per default set to 0.165.
 
+    n_r : integer
+        The radius of rangebins within the rain-intensity is statistically evaluated as
+        the representative rain-intensity over radome.
+
     stat : class
         A name of a numpy function for statistical aggregation of the central
-        rangebins.
+        rangebins defined by n_r.
         Potential options: np.mean, np.median, np.max, np.min.
 
     Returns
