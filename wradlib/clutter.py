@@ -44,7 +44,7 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     cartesian : boolean
         Specify if the input grid is Cartesian or polar
     radial : boolean
-        Specify if only radial information should be used 
+        Specify if only radial information should be used
 
     Returns
     -------
@@ -205,6 +205,7 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=
     """
     bad = np.isnan(img)
     if rm_nans:
+        img = img.copy()
         img[bad] = np.Inf
     ntr1 = filter_gabella_a(img, wsize, tr1, cartesian, radial)
     if not rm_nans:
@@ -212,7 +213,7 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=
         f_good[f_good == 0] = 1e-10
         ntr1 = ntr1/f_good
         ntr1[bad] = n_p
-    clutter1 = (ntr1 < n_p) 
+    clutter1 = (ntr1 < n_p)
     ratio = filter_gabella_b(img, thrsnorain)
     clutter2 = ( np.abs(ratio) < tr2 )
     return ( clutter1 | clutter2 )
