@@ -36,4 +36,5 @@ import zr
 from zr import *
 import util
 from util import *
-
+import speedup
+from speedup import *
