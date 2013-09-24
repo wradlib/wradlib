@@ -21,10 +21,13 @@ Clutter Identification
    filter_gabella_a
    filter_gabella_b
    histo_cut
+   classify_echo_fuzzy
 
 """
 import numpy as np
 import scipy.ndimage as ndi
+import wradlib.dp as dp
+import wradlib.util as util
 
 def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     r"""First part of the Gabella filter looking for large reflectivity
@@ -286,6 +289,121 @@ def histo_cut(prec_accum):
         upper_bound = bins[j + 1]
 
     return np.isnan(prec_accum_masked)
+
+
+def classify_echo_fuzzy(dat,
+                        weights = {"zdr":0.4, "rho":0.4, "phi":0.4, "dop":0.3, "map":0.5},
+                        trpz    = {"zdr":[0.7,1.0,9999,9999],
+                                   "rho":[0.1,0.15,9999,9999],
+                                   "phi":[15,20,10000,10000],
+                                   "dop":[-0.2,-0.1,0.1,0.2],
+                                   "map":[1,1,9999,9999]},
+                        thresh  = 0.5):
+    """Fuzzy echo classification and clutter identification based on polarimetric moments.
+
+    The implementation is based on [Vulpiani2012]_. At the moment, it only distinguishes
+    between metorological and non-meteorological echos.
+
+    For each decision variable and radar bin, the algorithm uses trapezoidal
+    functions in order to define the membership to the non-meteorological echo class.
+    Based on pre-defined weights, a linear combination of the different degrees
+    of membership is computed. The echo is assumed to be non-meteorological in case
+    the linear comination exceeds a threshold.
+
+    At the moment, the following decision variables are required:
+
+        - Differential reflectivity (zdr)
+
+        - Correlation coefficient (rho)
+
+        - Differential phase (phidp)
+
+        - Doppler velocity (dop)
+
+        - Static clutter map (map)
+
+    Parameters
+    ----------
+    dat : dictionary of arrays
+       Contains the data of the decision variables. The shapes of the arrays should
+       be (..., number of beams, number of gates) and the shapes need to be identical.
+    weights : dictionary of floats
+       Defines the weights of the decision variables.
+    trpz : dictionary of lists of floats
+       Contains the arguments of the trapezoidal membership functions for ecah decision variable
+    thresh : float
+       Threshold below which membership in non-meteorological membership class is assumed.
+
+    Returns
+    -------
+    output : boolean array of same shape input arrays marking the occurence of non-meteorological echos.
+
+    References
+    ----------
+    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
+       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
+       for Operational Rainfall Retrieval in Mountainous Areas.
+       J. Appl. Meteor. Climatol., 51, 405-425.
+
+    """
+    # Check the inputs
+    keys = ("zdr","rho","phi","dop","map")
+    assert keys==tuple(dat.keys()), "Argument dat of classify_echo_fuzzy must be a dictionary with keywords %r." % keys
+    assert keys==tuple(weights.keys()), "Argument weights of classify_echo_fuzzy must be a dictionary with keywords %r." % keys
+    shape = None
+    for key in keys:
+        if not dat[key]==None:
+            if shape==None:
+                shape==dat[key].shape
+            else:
+                assert dat[keys].shape==shape, "Arrays of the decision variables have an inconsistent shape."
+        else:
+            print "WARNING: Missing decision variable: %s" % key
+
+    # Replace missing data by NaN
+    dummy = np.zeros(shape)*np.nan
+    for key in dat.keys():
+        if dat[key]==None:
+            dat[key] = dummy
+
+    # membership in meteorological class for each variable
+    q_dop = 1. - util.trapezoid(dat["dop"]            , trpz["dop"][0], trpz["dop"][1], trpz["dop"][2], trpz["dop"][3])
+    q_zdr = 1. - util.trapezoid(dp.texture(dat["zdr"]), trpz["zdr"][0], trpz["zdr"][1], trpz["zdr"][2], trpz["zdr"][3])
+    q_rho = 1. - util.trapezoid(dp.texture(dat["phi"]), trpz["phi"][0], trpz["phi"][1], trpz["phi"][2], trpz["phi"][3])
+    q_phi = 1. - util.trapezoid(dp.texture(dat["rho"]), trpz["rho"][0], trpz["rho"][1], trpz["rho"][2], trpz["rho"][3])
+    q_map = 1. - util.trapezoid(dat["map"]            , trpz["map"][0], trpz["map"][1], trpz["map"][2], trpz["map"][3])
+
+    # create weight arrays which are zero where the data is NaN
+    # This way, each pixel "adapts" to the local data availability
+    w_dop = _weight_array(q_dop, weights["dop"])
+    w_zdr = _weight_array(q_zdr, weights["zdr"])
+    w_rho = _weight_array(q_rho, weights["rho"])
+    w_phi = _weight_array(q_phi, weights["phi"])
+    w_map = _weight_array(q_map, weights["map"])
+
+    # remove NaNs from data
+    q_dop = np.nan_to_num(q_dop)
+    q_zdr = np.nan_to_num(q_zdr)
+    q_rho = np.nan_to_num(q_rho)
+    q_phi = np.nan_to_num(q_phi)
+    q_map = np.nan_to_num(q_map)
+
+    # Membership in meteorological class after combining all variables
+    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_Tphi * w_Tphi)) \
+        / (w_map + w_dop + w_zdr + w_rho + w_phi)
+
+    # flag low quality
+    return np.where(Q < thresh, True, False)
+
+
+def _weight_array(data, weight):
+    """
+    Generates weight array where valid values have the weight value and NaNs have 0 weight value.
+    """
+    w_array = weight * np.ones(np.shape(data))
+    w_array[np.isnan(data)] = 0.
+    return w_array
+
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <clutter> as main...'
