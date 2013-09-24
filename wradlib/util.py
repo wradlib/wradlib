@@ -33,6 +33,7 @@ from scipy import interpolate
 from scipy.spatial import cKDTree
 
 
+
 def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     """Aggregate time series data to a coarser temporal resolution.
 
@@ -468,6 +469,43 @@ def issequence(x):
     # is the object not a string?
     out = np.all( np.isreal(x) )
     return out
+
+
+def trapezoid(data, x1, x2, x3, x4):
+    """
+    Applied the trapezoidal function described in Vulpiani et al, 2012 to determine
+    the degree of membership in the non-meteorological target class.
+
+    Parameters
+    ----------
+    data : array
+        Array contaning the data
+    x1 : float
+        x-value of the first vertex of the trapezoid
+    x2 : float
+        x-value of the second vertex of the trapezoid
+    x3 : float
+        x-value of the third vertex of the trapezoid
+    x4 : float
+        x-value of the fourth vertex of the trapezoid
+
+    Returns
+    -------
+    d : array
+        Array of values describing degree of membership in nonmeteorological target class.
+
+    """
+
+    d = np.ones(np.shape(data))
+    d[np.logical_or(data <= x1, data >= x4)] = 0
+    d[np.logical_and(data >= x2, data <= x3)] = 1
+    d[np.logical_and(data > x1, data < x2)] = (data[np.logical_and(data > x1, data < x2)] - x1)/float((x2-x1))
+    d[np.logical_and(data > x3, data < x4)] = (x4 - data[np.logical_and(data > x3, data < x4)])/float((x4-x3))
+
+    d[np.isnan(data)] = np.nan
+
+    return d
+
 
 
 if __name__ == '__main__':
