@@ -13,6 +13,7 @@ Library Reference
    qual
    comp
    clutter
+   dp
    fill
    vpr
    atten
