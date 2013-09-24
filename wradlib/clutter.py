@@ -348,8 +348,8 @@ def classify_echo_fuzzy(dat,
     """
     # Check the inputs
     keys = ("zdr","rho","phi","dop","map")
-    assert keys==tuple(dat.keys()), "Argument dat of classify_echo_fuzzy must be a dictionary with keywords %r." % keys
-    assert keys==tuple(weights.keys()), "Argument weights of classify_echo_fuzzy must be a dictionary with keywords %r." % keys
+    assert keys==tuple(dat.keys()), "Argument dat of classify_echo_fuzzy must be a dictionary with keywords %r." % (keys,)
+    assert keys==tuple(weights.keys()), "Argument weights of classify_echo_fuzzy must be a dictionary with keywords %r." % (keys,)
     shape = None
     for key in keys:
         if not dat[key]==None:
