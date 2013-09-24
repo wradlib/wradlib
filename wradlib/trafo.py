@@ -26,6 +26,7 @@ to dBZ-values to Z-values and vice versa.
    decibel
    idecibel
    r2depth
+   kdp2r
 
 """
 import numpy as np
@@ -83,6 +84,50 @@ def r2depth(x, interval):
 
     """
     return x * interval / 3600.
+
+
+def kdp2r(kdp, f, a=129., b=0.85):
+    """Estimating rainfall intensity directly from specific differential phase.
+
+    The general power law expression has been suggested by [Ryzhkov2005]_.
+
+    The default parameters have been set according to [BringiChandrasekar2001]_.
+
+    **Please note that this way, rainfall intensities can become negative.** This is
+    an intended behaviour in order to account for noisy Kdp values.
+
+    Parameters
+    ----------
+    kdp : Kdp as array of floats
+
+    f : radar frequency [GHz]
+
+       Standard frequencies in S-band range between 8.0 and 12.0 GHz,
+
+       Standard frequencies in C-band range between 4.0 and 8.0 GHz,
+
+       Standard frequencies in X-band range between 2.0 and 4.0 GHz.
+
+    a : linear coefficient of the power law
+
+    b : exponent of the power law
+
+    Returns
+    -------
+    output : array of rainfall intensity
+
+    References
+    ----------
+    .. [BringiChandrasekar2001] Bringi, V. N., and V. Chandrasekar, 2001:
+       Polarimetric Doppler Weather Radar. Cambridge University Press, 636 pp.
+
+    .. [Ryzhkov2005] Ryzhkov, A. V., S. Giangrande, and T. J. Schuur, 2005: Rainfall
+       estimation with a polarimetric prototype of WSR-88D. J. Appl. Meteor., 44, 502-515.
+
+    """
+    return np.sign(Kdp) * a * (np.abs(kdp) / f)**b
+
+
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <trafo> as main...'
