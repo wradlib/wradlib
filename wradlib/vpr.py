@@ -86,7 +86,6 @@ import numpy as np
 import wradlib.georef as georef
 import wradlib.ipol as ipol
 import wradlib.util as util
-import wradlib.io as io
 import wradlib.qual as qual
 from scipy.spatial import cKDTree
 from scipy import stats
