@@ -414,28 +414,28 @@ def fill_phidp(data):
     return data.reshape(shape)
 
 
-def texture(array):
+def texture(data):
     """
     Compute the texture of the data by comparing values with a 3x3 neighborhood (based on Gourley, 2007).
     NaN values in the original array have NaN textures.
 
     Parameters
     ----------
-    data : 2-D data array
+    data : multi-dimensional array with shape (..., number of beams, number of range bins)
 
     Returns
     ------
-    texture : 2-D array of textures
+    texture : array of textures with the same shape as data
 
     """
-    x1 = np.roll(array,1,0) # center:2
-    x2 = np.roll(array,1,1) # 4
-    x3 = np.roll(array,-1,0) # 8
-    x4 = np.roll(array,-1,1) # 6
-    x5 = np.roll(x1,1,1) # 1
-    x6 = np.roll(x4,1,0) # 3
-    x7 = np.roll(x3,-1,1) # 9
-    x8 = np.roll(x2,-1,0) # 7
+    x1 = np.roll(data,1,-2) # center:2
+    x2 = np.roll(data,1,-1) # 4
+    x3 = np.roll(data,-1,-2) # 8
+    x4 = np.roll(data,-1,-1) # 6
+    x5 = np.roll(x1,1,-1) # 1
+    x6 = np.roll(x4,1,-2) # 3
+    x7 = np.roll(x3,-1,-1) # 9
+    x8 = np.roll(x2,-1,-2) # 7
 
     xa = np.array([x1, x2, x3, x4, x5, x6, x7, x8]) # at least one NaN would give a sum of NaN
 
@@ -444,15 +444,15 @@ def texture(array):
     xa_valid[np.isnan(xa)] = 0
     xa_valid_count = np.sum(xa_valid, axis = 0) # count number of valid neighbors
 
-    num = np.zeros(np.shape(array))
+    num = np.zeros(data.shape)
     for xarr in xa:
-        diff = array - xarr
+        diff = data - xarr
         # difference of NaNs will be converted to zero (to not affect the summation)
         diff[np.isnan(diff)] = 0
         # only those with valid values are considered in the summation
         num += diff**2
 
-    num[np.isnan(array)] = np.nan # reinforce that NaN values should have NaN textures
+    num[np.isnan(data)] = np.nan # reinforce that NaN values should have NaN textures
 
     texture = np.sqrt(num / xa_valid_count)
 
