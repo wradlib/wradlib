@@ -26,6 +26,7 @@ Attenuation Correction
     constraint_dBZ
     constraint_PIA
     correctRadomeAttenuationEmpirical
+    pia_from_kdp
 
 """
 import numpy as np
@@ -856,6 +857,35 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
     k = np.repeat(k, gateset.shape[-1] * gateset.shape[-2]).reshape(gateset.shape)
 
     return k
+
+
+def pia_from_kdp(kdp, gamma=0.08):
+    """Retrieving path integrated attenuation from specific differential phase (Kdp).
+
+    The default value of gamma is based on [Carey2002]_.
+
+    Parameters
+    ----------
+    kdp : array specific differential phase
+       Range dimension must be the last dimension.
+    gamma : float
+       linear coefficient (default value: 0.08) in the relation between Kdp phase and specific attenuation (alpha)
+
+    Returns
+    -------
+    output : array of same shape as kdp containing the path integrated attenuation
+
+    References
+    ----------
+    .. [Carey2002] Carey, L. D., S. A. Rutledge, and D. A. Ahijevych, 2000:
+       Correcting propagation effects in C-band polarimetric radar observations
+       of tropical convection using differential propagation phase.
+       J. Appl. Meteor., 39, 1405–1433.
+
+    """
+    alpha = gamma * kdp
+    return 2*np.cumsum(alpha, axis=-1)
+
 
 
 if __name__ == '__main__':
