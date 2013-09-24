@@ -127,14 +127,14 @@ def kdp_from_phidp(phidp, L=7):
     data : multi-dimensional array
         Note that the range dimension must be the last dimension of the input array.
 
-    N : integer
+    L : integer
         Width of the window
 
     copy : Boolean
         If True, the input array will remain unchanged.
 
     """
-    assert (N % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+    assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
     kdp = np.zeros(phidp.shape)
     for r in xrange(L/2, phidp.shape[-1]-L/2):
         kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / (2*L)
@@ -396,7 +396,7 @@ def fill_phidp(data):
     """
     shape = data.shape
     data  = data.reshape((-1,shape[-1]))
-    zeros = np.zeros(data.shape[1], dtpye="f4")
+    zeros = np.zeros(data.shape[1], dtype="f4")
     x = np.arange(data.shape[1])
     valids = np.logical_not(np.isnan(data))
 
@@ -407,9 +407,9 @@ def fill_phidp(data):
         # interpolate
         ix = np.where(valids[i])[0]
         f = interp1d(ix, data[i,ix], copy=False, bounds_error=False)
-        data = f(x)
+        data[i] = f(x)
         # find and replace remaining NaNs
-        data[i, :ix[0]]  = data[i, ix[0]]
+        data[i, 0:ix[0]]  = data[i, ix[0]]
         data[i, ix[-1]:] = data[i, ix[-1]]
     return data.reshape(shape)
 
@@ -464,5 +464,6 @@ def texture(data):
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <dp> as main...'
+
 
 

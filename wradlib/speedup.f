@@ -33,12 +33,14 @@ C        Determine location where meaningful phidpDP profile begins
                   count2 = count2 + 1
                ENDIF
             ENDDO
-            print *, count1, count2
+C            print *, count1, count2
             IF ((count1==w) .AND. (count2==w)) THEN
                EXIT
             ENDIF
          ENDDO
-         PRINT *, "start at:", j, "in beam:", beam
+         IF (j > (rs-w_)) THEN
+            j = rs-w_
+         ENDIF
 
 C       Now start to check for phase folding
         ref = SUM( phidp(beam,j:j+w_) ) / w
@@ -66,17 +68,3 @@ C       Now start to check for phase folding
       ENDDO
       END
 
-
-
-C FILE: FORTRAN_HELPERS.F
-      SUBROUTINE TEST(PHIDP, BEAMS, RS, RHO)
-C
-C     Phase unfolding
-C
-      INTEGER beams, rs
-      REAL*4 phidp(beams,rs)
-      REAL*4 rho(beams,rs)
-Cf2py intent(in) :: beams, rs, rho
-Cf2py intent(in,out) :: phidp
-      phidp(1,1)=99.
-      END

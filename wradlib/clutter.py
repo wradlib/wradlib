@@ -354,9 +354,9 @@ def classify_echo_fuzzy(dat,
     for key in keys:
         if not dat[key]==None:
             if shape==None:
-                shape==dat[key].shape
+                shape=dat[key].shape
             else:
-                assert dat[keys].shape==shape, "Arrays of the decision variables have an inconsistent shape."
+                assert dat[key].shape==shape, "Arrays of the decision variables have an inconsistent shape."
         else:
             print "WARNING: Missing decision variable: %s" % key
 
@@ -389,7 +389,7 @@ def classify_echo_fuzzy(dat,
     q_map = np.nan_to_num(q_map)
 
     # Membership in meteorological class after combining all variables
-    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_Tphi * w_Tphi)) \
+    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_phi * w_phi)) \
         / (w_map + w_dop + w_zdr + w_rho + w_phi)
 
     # flag low quality
