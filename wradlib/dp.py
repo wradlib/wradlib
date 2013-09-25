@@ -404,6 +404,7 @@ def fill_phidp(data):
         # return zeros of there are no valid phidp values
         if np.all(np.isnan(data[i])):
             data[i] = zeros
+            continue
         # interpolate
         ix = np.where(valids[i])[0]
         f = interp1d(ix, data[i,ix], copy=False, bounds_error=False)
