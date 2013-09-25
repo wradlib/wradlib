@@ -326,7 +326,7 @@ def classify_echo_fuzzy(dat,
     ----------
     dat : dictionary of arrays
        Contains the data of the decision variables. The shapes of the arrays should
-       be (..., number of beams, number of gates) and the shapes need to be identical.
+       be (..., number of beams, number of gates) and the shapes need to be identical or be broadcastable.
     weights : dictionary of floats
        Defines the weights of the decision variables.
     trpz : dictionary of lists of floats
@@ -356,7 +356,7 @@ def classify_echo_fuzzy(dat,
             if shape==None:
                 shape=dat[key].shape
             else:
-                assert dat[key].shape==shape, "Arrays of the decision variables have an inconsistent shape."
+                assert dat[key].shape[-2:]==shape[-2:], "Arrays of the decision variables have inconsistent shapes: %r vs. %r" % (dat[key].shape, shape)
         else:
             print "WARNING: Missing decision variable: %s" % key
 
