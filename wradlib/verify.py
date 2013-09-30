@@ -157,10 +157,15 @@ class ErrorMetrics():
         assert len(obs)==len(est), "obs and est need to have the same length. len(obs)=%d, len(est)=%d" % (len(obs, len(est)))
         # only remember those entries which have both valid observations AND estimates
         ix = np.intersect1d( util._idvalid(obs, minval=minval),  util._idvalid(est, minval=minval))
-        self.obs    = obs[ix]
-        self.est    = est[ix]
-        self.resids = self.est - self.obs
         self.n      = len(ix)
+        if self.n==0:
+            print "WARNING: No valid pairs of observed and estimated available for ErrorMetrics!"
+            self.obs = np.array([])
+            self.est = np.array([])
+        else:
+            self.obs    = obs[ix]
+            self.est    = est[ix]
+        self.resids = self.est - self.obs
     def corr(self):
         """Correlation coefficient
         """
