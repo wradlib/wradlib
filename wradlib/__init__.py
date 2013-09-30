@@ -36,5 +36,9 @@ import zr
 from zr import *
 import util
 from util import *
-import speedup
-from speedup import *
+try:
+    import speedup
+    from speedup import *
+except ImportError:
+    print "WARNING: To increase performance of differential phase processing, you should try to build module <speedup>."
+    print "See module documentation for details."
