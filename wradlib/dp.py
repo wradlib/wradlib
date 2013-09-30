@@ -118,8 +118,15 @@ def process_raw_phidp(phidp, rho, copy=False):
 def kdp_from_phidp(phidp, L=7):
     """Retrieves Kdp from PhiDP by applying a moving window range derivative.
 
-    ATTENTION: Function is designed to speed up performance by allowing to process
-    multiple dimension in one step. For this purpose, the RANGE dimension needs
+    See [Vulpiani2012]_ for details about the moving window approach.
+
+    Please note that the moving window size *L* is specified as the number of range
+    gates. Thus, this argument might need adjustment in case the range resolution changes.
+    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    a range resolution of 1km.
+
+    ATTENTION: The function is designed for speed by allowing to process
+    multiple dimensions in one step. For this purpose, the RANGE dimension needs
     to be the LAST dimension of the input array.
 
     Parameters
@@ -128,13 +135,22 @@ def kdp_from_phidp(phidp, L=7):
         Note that the range dimension must be the last dimension of the input array.
 
     L : integer
-        Width of the window
+        Width of the window (as number of range gates)
 
     copy : Boolean
         If True, the input array will remain unchanged.
 
+    References
+    ----------
+    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
+       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
+       for Operational Rainfall Retrieval in Mountainous Areas.
+       J. Appl. Meteor. Climatol., 51, 405-425.
+
     """
     assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+    # Make really sure L is an integer
+    L = int(L)
     kdp = np.zeros(phidp.shape)
     for r in xrange(L/2, phidp.shape[-1]-L/2):
         kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / (2*L)
