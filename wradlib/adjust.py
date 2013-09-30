@@ -235,17 +235,17 @@ class AdjustBase(ipol.IpolBase):
         raws_directly_at_obs = self.get_raws_directly_at_obs(raw)
         ix = np.intersect1d( ix,  util._idvalid(raws_directly_at_obs, minval=self.minval))
         # Container for estimation results at the observation location
-        estatobs = np.array([])
+        estatobs = np.zeros(obs.shape)*np.nan
         # check whether enough gages remain for adjustment
         if len(ix)<=(self.mingages-1):
             # not enough gages for cross validation: return empty arrays
-            return np.array([]), estatobs
+            return obs, estatobs
         # Now iterate over valid pairs
         for i in ix:
             # Pass all valid pairs except ONE which you pass as target
             ix_adjust = np.setdiff1d(ix, [i])
-            estatobs = np.append(estatobs, self.__call__(obs, raws_directly_at_obs[i], self.obs_coords[i].reshape((1,-1)), rawatobs, ix_adjust)).ravel()
-        return obs[ix], estatobs
+            estatobs[i] = self.__call__(obs, raws_directly_at_obs[i], self.obs_coords[i].reshape((1,-1)), rawatobs, ix_adjust)
+        return obs, estatobs
 
 
 class AdjustAdd(AdjustBase):
