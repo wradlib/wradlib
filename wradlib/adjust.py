@@ -730,7 +730,7 @@ class AdjustMFB(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None, biasby="mean"):
         """
         Return the field of *raw* values adjusted by *obs*.
 
@@ -762,7 +762,13 @@ class AdjustMFB(AdjustBase):
         # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
         # compute ratios for each valid observation point
         ratios = np.ma.masked_invalid(obs[ix] / rawatobs[ix])
-        corrfact = np.median(ratios)
+        if biasby=="mean":
+            corrfact = np.mean(ratios)
+        elif biasby=="median":
+            corrfact = np.median(ratios)
+        else:
+            print("WARNING: Invalid <biasby> argument value for AdjustMFB: %s" % biasby)
+            print("         Using default value biasby='mean' instead.")
         if type(corrfact)==np.ma.core.MaskedConstant:
             corrfact = 1.
         print "corrfact=",corrfact
