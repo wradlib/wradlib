@@ -125,7 +125,7 @@ def kdp2r(kdp, f, a=129., b=0.85):
        estimation with a polarimetric prototype of WSR-88D. J. Appl. Meteor., 44, 502-515.
 
     """
-    return np.sign(Kdp) * a * (np.abs(kdp) / f)**b
+    return np.sign(kdp) * a * (np.abs(kdp) / f)**b
 
 
 
