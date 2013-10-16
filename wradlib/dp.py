@@ -66,7 +66,7 @@ module directory and execute on the system console:
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import medfilt
-from scipy.stats import nanmean
+from scipy.stats import nanmedian, nanmean
 
 # Check whether fast Fortran implementation is available
 speedupexists = True
@@ -432,19 +432,22 @@ def linear_despeckle(data, N=3, copy=False):
 ##    return data.reshape(shape)
 
 
-def fill_phidp(data, margin=3):
+def fill_phidp(data, margin=4):
     """Fills in missing PhiDP.
 
-    Contiguous NaN regions are filled by the average
-    of the values of the margins that surround the NaN region. At the left and
-    right margins of the array, these averages are extrapolated to the end. Using the
-    average over the margins takes into account noisy PhiDP.
+    Contiguous NaN regions are filled by the average of the median of margins
+    that surround the NaN region. At the left and right margins of the array,
+    these medians are extrapolated to the end. As the margin of a contiguous
+    NaN region, we consider *n* bins as given by the *margin* argument. Considering
+    multiple bins at the margins takes into account noisy PhiDP.
 
     As a consequence, a contiguous region of missing PhiDP will be filled by constant
     values determined by the edges of that region. Thus, the derivative (i. e. Kdp) in
     that region will be zero. This bahaviour is more desirable than the behaviour
     produced by linear interpolation because this will cause arbitrary Kdp values
     in case of noisy PhiDP profiles with large portions of missing data.
+
+    One more detail:
 
     Parameters
     ----------
@@ -473,14 +476,14 @@ def fill_phidp(data, margin=3):
         for j in range(len(gaps)):
             if gaps[j,0]==0:
                 # Left margin of the array
-                data[i, 0:gaps[j,1]] = nanmean( data[i, (gaps[j,1]):(gaps[j,1]+margin)] )
+                data[i, 0:gaps[j,1]] = nanmedian( data[i, (gaps[j,1]):(gaps[j,1]+margin)] )
             elif gaps[j,1]==data.shape[1]:
                 # Right margin of the array
-                data[i, gaps[j,0]:] = nanmean( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )
+                data[i, gaps[j,0]:] = nanmedian( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )
             else:
                 # inner parts of the array
-                data[i, gaps[j,0]:gaps[j,1]] = np.mean([nanmean( data[i, (gaps[j,1]):(gaps[j,1]+margin)] ),  \
-                                                        nanmean( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )]  )
+                data[i, gaps[j,0]:gaps[j,1]] = np.mean([nanmedian( data[i, (gaps[j,1]):(gaps[j,1]+margin)] ),  \
+                                                        nanmedian( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )]  )
     return data.reshape(shape)
 
 
