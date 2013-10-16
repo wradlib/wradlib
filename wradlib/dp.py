@@ -460,8 +460,6 @@ def fill_phidp(data, margin=3):
     shape = data.shape
     data  = data.reshape((-1,shape[-1]))
     zeros = np.zeros(data.shape[1], dtype="f4")
-    x = np.arange(data.shape[1])
-    valids = np.logical_not(np.isnan(data))
     invalids = np.isnan(data)
 
     for i in xrange(data.shape[0]):
@@ -470,8 +468,6 @@ def fill_phidp(data, margin=3):
             data[i] = zeros
             continue
         # interpolate using the mean of the values surrounding the gaps
-        for start, stop in contiguous_regions(invalids[i]):
-            pass
         gaps = contiguous_regions(invalids[i])
         # Iterate over the invalid regions of the array
         for j in range(len(gaps)):
