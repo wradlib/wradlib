@@ -66,6 +66,7 @@ module directory and execute on the system console:
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import medfilt
+from scipy.stats import nanmean
 
 # Check whether fast Fortran implementation is available
 speedupexists = True
@@ -396,14 +397,60 @@ def linear_despeckle(data, N=3, copy=False):
 ##    return np.apply_along_axis(func1d=fill_phi1d, axis=0, arr=data)
 
 
-def fill_phidp(data):
-    """
-    Fills in missing PhiDP. The ends are extrapolated by extending the
-    first and last values to the start and end of the range, respectively.
+##def fill_phidp(data):
+##    """
+##    Fills in missing PhiDP. The ends are extrapolated by extending the
+##    first and last values to the start and end of the range, respectively.
+##
+##    Parameters
+##    ----------
+##    data : N-dim array with last dimension representing the range
+##
+##    Returns
+##    -------
+##    out : array of same shape as phi gaps filled
+##
+##    """
+##    shape = data.shape
+##    data  = data.reshape((-1,shape[-1]))
+##    zeros = np.zeros(data.shape[1], dtype="f4")
+##    x = np.arange(data.shape[1])
+##    valids = np.logical_not(np.isnan(data))
+##
+##    for i in xrange(data.shape[0]):
+##        # return zeros of there are no valid phidp values
+##        if np.all(np.isnan(data[i])):
+##            data[i] = zeros
+##            continue
+##        # interpolate
+##        ix = np.where(valids[i])[0]
+##        f = interp1d(ix, data[i,ix], copy=False, bounds_error=False)
+##        data[i] = f(x)
+##        # find and replace remaining NaNs
+##        data[i, 0:ix[0]]  = data[i, ix[0]]
+##        data[i, ix[-1]:] = data[i, ix[-1]]
+##    return data.reshape(shape)
+
+
+def fill_phidp(data, margin=3):
+    """Fills in missing PhiDP.
+
+    Contiguous NaN regions are filled by the average
+    of the values of the margins that surround the NaN region. At the left and
+    right margins of the array, these averages are extrapolated to the end. Using the
+    average over the margins takes into account noisy PhiDP.
+
+    As a consequence, a contiguous region of missing PhiDP will be filled by constant
+    values determined by the edges of that region. Thus, the derivative (i. e. Kdp) in
+    that region will be zero. This bahaviour is more desirable than the behaviour
+    produced by linear interpolation because this will cause arbitrary Kdp values
+    in case of noisy PhiDP profiles with large portions of missing data.
 
     Parameters
     ----------
     data : N-dim array with last dimension representing the range
+    margin : the size of the window which is used to compute the average value
+            at the margins of a contiguous NaN region in the array.
 
     Returns
     -------
@@ -415,20 +462,68 @@ def fill_phidp(data):
     zeros = np.zeros(data.shape[1], dtype="f4")
     x = np.arange(data.shape[1])
     valids = np.logical_not(np.isnan(data))
+    invalids = np.isnan(data)
 
     for i in xrange(data.shape[0]):
         # return zeros of there are no valid phidp values
         if np.all(np.isnan(data[i])):
             data[i] = zeros
             continue
-        # interpolate
-        ix = np.where(valids[i])[0]
-        f = interp1d(ix, data[i,ix], copy=False, bounds_error=False)
-        data[i] = f(x)
-        # find and replace remaining NaNs
-        data[i, 0:ix[0]]  = data[i, ix[0]]
-        data[i, ix[-1]:] = data[i, ix[-1]]
+        # interpolate using the mean of the values surrounding the gaps
+        for start, stop in contiguous_regions(invalids[i]):
+            pass
+        gaps = contiguous_regions(invalids[i])
+        # Iterate over the invalid regions of the array
+        for j in range(len(gaps)):
+            if gaps[j,0]==0:
+                # Left margin of the array
+                data[i, 0:gaps[j,1]] = nanmean( data[i, (gaps[j,1]):(gaps[j,1]+margin)] )
+            elif gaps[j,1]==data.shape[1]:
+                # Right margin of the array
+                data[i, gaps[j,0]:] = nanmean( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )
+            else:
+                # inner parts of the array
+                data[i, gaps[j,0]:gaps[j,1]] = np.mean([nanmean( data[i, (gaps[j,1]):(gaps[j,1]+margin)] ),  \
+                                                        nanmean( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )]  )
     return data.reshape(shape)
+
+
+def contiguous_regions(condition):
+    """Finds contiguous True regions of the boolean array "condition".
+
+    This function was adopted from http://stackoverflow.com/questions/4494404/find-large-number-of-consecutive-values-fulfilling-condition-in-a-numpy-array
+    as proposed by Joe Kington in 2010.
+
+    Parameters
+    ----------
+    condition : 1d boolean array
+
+    Returns
+    -------
+    output : a 2D array where the first column is the start index of the region and the
+             second column is the end index.
+
+    """
+
+    # Find the indicies of changes in "condition"
+    d = np.diff(condition)
+    idx, = d.nonzero()
+
+    # We need to start things after the change in "condition". Therefore,
+    # we'll shift the index by 1 to the right.
+    idx += 1
+
+    if condition[0]:
+        # If the start of condition is True prepend a 0
+        idx = np.r_[0, idx]
+
+    if condition[-1]:
+        # If the end of condition is True, append the length of the array
+        idx = np.r_[idx, condition.size] # Edit
+
+    # Reshape the result into two columns
+    idx.shape = (-1,2)
+    return idx
 
 
 def texture(data):
