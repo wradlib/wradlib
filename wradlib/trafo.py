@@ -102,11 +102,11 @@ def kdp2r(kdp, f, a=129., b=0.85):
 
     f : radar frequency [GHz]
 
-       Standard frequencies in S-band range between 8.0 and 12.0 GHz,
+       Standard frequencies in X-band range between 8.0 and 12.0 GHz,
 
        Standard frequencies in C-band range between 4.0 and 8.0 GHz,
 
-       Standard frequencies in X-band range between 2.0 and 4.0 GHz.
+       Standard frequencies in S-band range between 2.0 and 4.0 GHz.
 
     a : linear coefficient of the power law
 
