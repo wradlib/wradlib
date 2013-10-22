@@ -801,11 +801,11 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
     frequency : float
         Radar-frequency [GHz]:
 
-            Standard frequencies in S-band range between 8.0 and 12.0 GHz,
+            Standard frequencies in X-band range between 8.0 and 12.0 GHz,
 
             Standard frequencies in C-band range between 4.0 and 8.0 GHz,
 
-            Standard frequencies in X-band range between 2.0 and 4.0 GHz.
+            Standard frequencies in S-band range between 2.0 and 4.0 GHz.
 
             Be aware that the empirical fit of the formula was just done for C-
             and S-band. The use for X-band is probably an undue extrapolation.
