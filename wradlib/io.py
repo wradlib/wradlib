@@ -625,8 +625,9 @@ def read_gamic_scan_attributes(scan, scan_type, range_lim):
     if scan_type == 'PVOL':
         azi_start = ray_header['azimuth_start']
         azi_stop = ray_header['azimuth_stop']
-         # Azimuth corresponding to 1st ray
+        # Azimuth corresponding to 1st ray
         zero_index = np.where(azi_stop < azi_start)
+        # TODO: we need the azimutal resolution here, 360 is hardcoded
         azi_stop[zero_index[0]] += 360
         zero_index = zero_index[0] + 1
         az = (azi_start+azi_stop)/2
@@ -636,14 +637,20 @@ def read_gamic_scan_attributes(scan, scan_type, range_lim):
 
     # az, el, zero_index for RHI scans
     if scan_type == 'RHI':
-        ele_start = ray_header['elevation_start']
-        ele_stop = ray_header['elevation_stop']
+        ele_start = np.round(ray_header['elevation_start'],1)
+        ele_stop = np.round(ray_header['elevation_stop'],1)
+        angle_step = np.round(sattrs['angle_step'],1)
+        angle_step = np.round(sattrs['ele_stop'],1) / angle_step
         # Elevation corresponding to 1st ray
+        if ele_start[0] < 0:
+            ele_start = ele_start[1:]
+            ele_stop = ele_stop[1:]
         zero_index = np.where(ele_stop > ele_start)
-        zero_index = zero_index[0] - 1
+        zero_index = zero_index[0]# - 1
         el = (ele_start+ele_stop)/2
         el = np.round(el, 1)
-        el = el[zero_index[0]:]
+        el = el[-angle_step:]
+
         az = sg1.attrs.get('azimuth')
 
     # save zero_index (first ray) to scan attributes
@@ -693,6 +700,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
     # try to read wanted moments
     for mom in list(scan):
         if 'moment' in mom:
+            data1 = {}
             sg2 = scan[mom]
             #sg2_attr = list(sg2.attrs)
             #print(sg2_attr)
@@ -718,13 +726,17 @@ def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
 
                 if scan_type == 'RHI':
                     # remove first zero angles
-                    mdata = mdata[sattrs['zero_index']:,:]
+                    sdiff = mdata.shape[0]-sattrs['el'].shape[0]
+                    mdata = mdata[sdiff:,:]
 
                 # Limiting the returned range according to range_lim
                 if range_lim and range_lim / sattrs['bin_range'] <= mdata.shape[1]:
                     mdata = mdata[:,:range_lim / sattrs['bin_range']]
 
-                data[actual_moment] = mdata
+                data1['data'] = mdata
+                data1['dyn_range_max'] = dyn_range_max
+                data1['dyn_range_min'] = dyn_range_min
+                data[actual_moment] = data1
                 #data.append(mdata)
 
     return data, sattrs
