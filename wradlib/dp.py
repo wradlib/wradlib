@@ -343,6 +343,8 @@ def linear_despeckle(data, N=3, copy=False):
         arr_minus2 = np.roll(arr, shift=-2, axis=axis)
         test = arr + arr_plus1 + arr_minus1 + arr_plus2 + arr_minus2
         data[np.logical_and( np.logical_not(np.isnan(data)), test<3)] = np.nan
+    # remove isolated pixels at the first gate
+    data[np.isnan(np.take(data, xrange(1,2), data.ndim-1))] = np.nan
     return data
 
 
@@ -473,17 +475,28 @@ def fill_phidp(data, margin=4):
         # interpolate using the mean of the values surrounding the gaps
         gaps = contiguous_regions(invalids[i])
         # Iterate over the invalid regions of the array
+        if i==245:
+            pass
         for j in range(len(gaps)):
+            # left index of the gap margin
+            left = gaps[j,0]-margin
+            if left<0:
+                left = 0
+            # right index of the right gap margin
+            right = gaps[j,1]+margin
+            # Now fill the gaps
             if gaps[j,0]==0:
                 # Left margin of the array
-                data[i, 0:gaps[j,1]] = nanmedian( data[i, (gaps[j,1]):(gaps[j,1]+margin)] )
+                data[i, 0:gaps[j,1]] = nanmedian( data[i, gaps[j,1]:(gaps[j,1]+margin)] )
             elif gaps[j,1]==data.shape[1]:
                 # Right margin of the array
-                data[i, gaps[j,0]:] = nanmedian( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )
+                data[i, gaps[j,0]:] = nanmedian( data[i, left:gaps[j,0]] )
             else:
                 # inner parts of the array
-                data[i, gaps[j,0]:gaps[j,1]] = np.mean([nanmedian( data[i, (gaps[j,1]):(gaps[j,1]+margin)] ),  \
-                                                        nanmedian( data[i, (gaps[j,0]-margin):(gaps[j,0]+1)] )]  )
+                if right > data.shape[1]:
+                    right = data.shape[1]
+                data[i, gaps[j,0]:gaps[j,1]] = np.mean([nanmedian( data[i, gaps[j,1]:right] ),  \
+                                                        nanmedian( data[i, left:gaps[j,0]] )]  )
     return data.reshape(shape)
 
 
