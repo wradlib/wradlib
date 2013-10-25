@@ -730,7 +730,7 @@ class AdjustMFB(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None, biasby="mean"):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None, biasby="linregr"):
         """
         Return the field of *raw* values adjusted by *obs*.
 
@@ -766,6 +766,16 @@ class AdjustMFB(AdjustBase):
             corrfact = np.mean(ratios)
         elif biasby=="median":
             corrfact = np.median(ratios)
+        elif biasby=="linregr":
+            ix_ = np.where(np.logical_not(ratios.mask))[0]
+            x = obs[ix][ix_]
+            x = x[:,np.newaxis]
+            y = rawatobs[ix][ix_]
+            slope, _,_,_ = np.linalg.lstsq(x,y)
+            if not slope[0]==0:
+                corrfact = 1. / slope[0]
+            else:
+                corrfact = 1.
         else:
             print("WARNING: Invalid <biasby> argument value for AdjustMFB: %s" % biasby)
             print("         Using default value biasby='mean' instead.")
