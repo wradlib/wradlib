@@ -79,7 +79,7 @@ except ImportError:
 
 
 
-def process_raw_phidp(phidp, rho, copy=False):
+def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
     Processing of raw PhiDP data contains the following steps:
@@ -97,6 +97,14 @@ def process_raw_phidp(phidp, rho, copy=False):
     ----------
     phidp : array of shape (n azimuth angles, n range gates)
     rho : array of shape (n azimuth angles, n range gates)
+    N_despeckle : integer
+        *N* parameter of function dp.linear_despeckle
+    N_fillmargin : integer
+        *margin* parameter of function dp.fill_phidp
+    N_unfold : integer
+        *width* parameter of function dp.unfold_phi
+    N_filter : integer
+        *N* parameter of function dp.medfilt_along_axis
     copy : boolean
         leaves the original phidp array untouched
 
@@ -104,15 +112,15 @@ def process_raw_phidp(phidp, rho, copy=False):
     if copy:
         phidp = phidp.copy()
     # despeckle
-    phidp = linear_despeckle(phidp)
-    phidp = fill_phidp(phidp)
+    phidp = linear_despeckle(phidp, N=N_despeckle)
+    phidp = fill_phidp(phidp, margin=N_fillmargin)
     # apply unfolding
     if speedupexists:
-        phidp = unfold_phi(phidp, rho)
+        phidp = unfold_phi(phidp, rho, width=N_unfold)
     else:
-        phidp = unfold_phi_naive(phidp, rho)
+        phidp = unfold_phi_naive(phidp, rho, width=N_unfold)
     # median filter smoothing
-    phidp = medfilt_along_axis(phidp,5)
+    phidp = medfilt_along_axis(phidp, N=N_filter)
     return phidp
 
 
