@@ -206,6 +206,10 @@ class ErrorMetrics():
         """Mean ratio between observed and estimated
         """
         return np.round( np.mean( self.est / self.obs ), 2)
+    def pbias(self):
+        """Percent bias
+        """
+        return np.round( self.meanerr() / np.mean(self.obs), 2)
     def all(self):
         """Returns a dictionary of all error metrics
         """
@@ -220,6 +224,7 @@ class ErrorMetrics():
         out["mas"]      = self.mas()
         out["meanerr"]  = self.meanerr()
         out["ratio"]    = self.ratio()
+        out["pbias"]    = self.pbias()
         return out
     def plot(self, ax=None, unit="", maxval=None):
         """Scatter plot of estimates vs observations
