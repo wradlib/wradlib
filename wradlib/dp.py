@@ -434,7 +434,7 @@ def linear_despeckle(data, N=3, copy=False):
 ##    return data.reshape(shape)
 
 
-def fill_phidp(data, margin=4):
+def fill_phidp(data, margin=3):
     """Fills in missing PhiDP.
 
     Contiguous NaN regions are filled by the average of the median of margins
