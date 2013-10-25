@@ -92,6 +92,7 @@ cross validation results.
    AdjustAdd
    AdjustMixed
    Raw_at_obs
+   GageOnly
 
 
 References
@@ -740,6 +741,10 @@ class AdjustMFB(AdjustBase):
             Gage observations
         raw : array of floats
             Raw unadjusted radar rainfall
+        biasby : string
+            The method which is used to compute the mean field bias. Defaults to
+            "linregr" which fits a regression line through observed and estimated values
+            and than gets the bias from the inverse of the slope.
         targets : (INTERNAL) array of floats
             Coordinate pairs for locations on which the final adjustment product is interpolated
             Defaults to None. In this case, the output locations will be identical to the radar coordinates
