@@ -767,6 +767,9 @@ class AdjustMFB(AdjustBase):
         # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
         # compute ratios for each valid observation point
         ratios = np.ma.masked_invalid(obs[ix] / rawatobs[ix])
+        if len(np.where(np.logical_not(ratios.mask))[0]) < self.mingages:
+            # Not enough valid pairs of raw and obs
+            return raw
         if biasby=="mean":
             corrfact = np.mean(ratios)
         elif biasby=="median":
@@ -776,10 +779,14 @@ class AdjustMFB(AdjustBase):
             x = obs[ix][ix_]
             x = x[:,np.newaxis]
             y = rawatobs[ix][ix_]
-            slope, _,_,_ = np.linalg.lstsq(x,y)
-            if not slope[0]==0:
-                corrfact = 1. / slope[0]
-            else:
+            try:
+                slope, _,_,_ = np.linalg.lstsq(x,y)
+                if not slope[0]==0:
+                    corrfact = 1. / slope[0]
+                else:
+                    corrfact = 1.
+            except:
+                # no correction if linear regression fails
                 corrfact = 1.
         else:
             print("WARNING: Invalid <biasby> argument value for AdjustMFB: %s" % biasby)
