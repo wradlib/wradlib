@@ -29,14 +29,19 @@ Attenuation Correction
     pia_from_kdp
 
 """
-import numpy as np
-import scipy.ndimage as ndi
-import scipy.interpolate as spi
-import os, sys
+
+import os
+import sys
 import math
 import logging
-from .trafo import idecibel
-from .zr import z2r
+
+import numpy as np
+import scipy.ndimage
+import scipy.interpolate
+
+from wradlib.trafo import idecibel
+from wradlib.zr import z2r
+
 
 logger = logging.getLogger('attcorr')
 
@@ -339,7 +344,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     pia : array
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate. In case the input array (gateset)
-        contains NaNs the corresponding beams of the output array (k) will be
+        contains NaNs the corresponding beams of the output array will be
         set as NaN, too.
 
     Raises
@@ -567,30 +572,30 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     return k
 
 
-def constraint_dBZ(gateset, k, thrs_dBZ):
+def constraint_dBZ(gateset, pia, thrs_dBZ):
     """Constraint callback function for correctAttenuationConstrained.
     Selects beams, in which at least one pixel exceeds `thrs_dBZ` [dBZ].
     """
-    return np.max(gateset + k, axis=-1) > thrs_dBZ
+    return np.max(gateset + pia, axis=-1) > thrs_dBZ
 
 
-def constraint_PIA(gateset, k, thrs_PIA):
+def constraint_pia(gateset, pia, thrs_pia):
     """Constraint callback function for correctAttenuationConstrained.
-    Selects beams, in which the path integrated attenuation exceeds `thrs_PIA`.
+    Selects beams, in which the path integrated attenuation exceeds `thrs_pia`.
     """
-    return np.max(k, axis=-1) > thrs_PIA
+    return np.max(pia, axis=-1) > thrs_pia
 
 
 #-------------------------------------------------------------------------------
 # new implementation of Kraemer algorithm
 #-------------------------------------------------------------------------------
-def calc_attenuation_forward(gateset, a, b, l):
+def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
     """Gate-by-Gate forward correction as described in [Kraemer2008]_"""
-    k = np.zeros(gateset.shape)
-    for gate in range(gateset.shape[-1]-1):
-        kn = a * idecibel(gateset[...,gate] + k[...,gate])**b  * 2.0 * l
-        k[...,gate+1] = k[...,gate] + kn
-    return k
+    pia = np.zeros(gateset.shape)
+    for gate in range(gateset.shape[-1] - 1):
+        k = a * idecibel(gateset[..., gate] + pia[..., gate])**b  * 2.0 * l
+        pia[..., gate + 1] = pia[..., gate] + k
+    return pia
 
 
 def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
@@ -619,48 +624,154 @@ def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
 
 
 def bisectReferenceAttenuation(gateset,
-                               a_ref,
-                               a_max=1e-3,
-                               a_min=1e-7,
-                               b=0.7,
-                               l=1,
-                               thrs=0.05,
-                               maxiter=np.inf):
-    """Find the optimal linear coefficient for a gateset to
-    achieve a given reference attenuation using a forward correction algorithm
-    """
-    a_hi = a_max
-    a_lo = a_min
+                               pia_ref,
+                               a_max=1.67e-4,
+                               a_min=2.33e-5,
+                               b_start=0.7,
+                               l=1.0,
+                               mode='difference',
+                               thrs=0.25,
+                               max_iterations=10):
+    """Find the optimal attenuation coefficients for a gateset to achieve a
+    given reference attenuation using a the forward correction algorithm in
+    combination with the bisection method.
 
-    itercount = 0
+    Parameters
+    ----------
+    gateset : array
+        Multidimensional array, where the range gates (over which iteration has
+        to be performed) are supposed to vary along the last array-dimension.
+
+        Data has to be provided in decibel representation of reflectivity
+        [dBZ].
+
+    pia_ref : array
+        Array of the same number of dimensions as ``gateset``, but the size of
+        the last dimension is 1, as it constitutes the reference pia [dB]of the
+        last rangegate of every beam.
+
+    a_max : float
+        Upper bound of the bisection interval within the linear coefficient a of
+        the k-Z relation has to be. ( :math:`k=a*Z^{b}` ).
+
+        Per default set to 1.67e-4.
+
+    a_min : float
+        Lower bound of the bisection interval within the linear coefficient a of
+        the k-Z relation has to be. ( :math:`k=a*Z^{b}` ).
+
+        Per default set to 2.33e-5.
+
+    b_start : float
+        Initial value for exponential coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ). This value will be lowered incremental by 0.01 if
+        no solution was found within the bisection interval of ``a_max`` and
+        ``a_min`` within the number of given iterations ``max_iterations``.
+
+        Per default set to 0.7.
+
+    l : float
+        Radial length of a range gate [km].
+
+        Per default set to 1.0.
+
+    mode : string {‘ratio’ or ‘difference’}
+        Kind of tolerance of calculated pia in relation to reference pia.
+
+        Per default set to 'difference'.
+
+    thrs : float
+        Value of the tolerance to stop bisection iteration successful. It is
+        recommended to choose 0.05 for ratio ``mode`` and 0.25 for difference
+        ``mode``, which means a deviation of 5% or 0.25 dB, respectively.
+
+        Per default set to 0.25.
+
+    max_iterations : integer
+        Number of bisection iteration before the exponantial coefficient b of
+        the k-Z relation will be decreased and the bisection starts again.
+
+        Per default set to 10.
+
+
+    Returns
+    -------
+    pia : array
+        Array with the same shape as ``gateset`` containing the calculated path
+        integrated attenuation [dB] for each range gate.
+    a_mid : array
+        Array with the same shape as ``pia_ref`` containing the finally used
+        linear k-Z relation coefficient a for successful pia calculation.
+    b : array
+        Array with the same shape as ``pia_ref`` containing the finally used
+        exponential k-Z relation coefficient b for successful pia calculation.
+
+    """
+
+
+    # Prepare arrays of initial k-Z relation coefficients for each beam.
+    a_hi = np.repeat(a_max, pia_ref.shape)
+    a_lo = np.repeat(a_min, pia_ref.shape)
+    b = np.repeat(b_start, pia_ref.shape)
+    pia = np.empty_like(gateset)
+    iteration_count = 0
+
+    # Iterate until upper and lower bounds of linear k-Z relation coefficients
+    # for pia calculation are the same.
     while not np.all(a_hi == a_lo):
-        a_mid = (a_hi+a_lo)/2
-        k = calcAttenuationForward(gateset, a_mid, b, l)
-        overshoot = ((k[...,-1] - a_ref)/a_ref) > thrs
-        undershoot = ((k[...,-1] - a_ref)/a_ref) < -thrs
-        hit = (np.abs(k[...,-1] - a_ref)/a_ref) < thrs
+        a_mid = (a_hi + a_lo) / 2
+        pia = calc_attenuation_forward(gateset, a_mid, b, l)
+        # Find indices where calculated and reference pia match sufficiant.
+        if mode == 'difference':
+            overshoot = (pia[..., -1] - pia_ref) > thrs
+            undershoot = (pia[..., -1] - pia_ref) < -thrs
+            hit = (np.abs(pia[..., -1] - pia_ref)) < thrs
+        elif mode == 'ratio':
+            overshoot = ((pia[..., -1] - pia_ref) / pia_ref) > thrs
+            undershoot = ((pia[..., -1] - pia_ref) / pia_ref) < -thrs
+            hit = (np.abs(pia[..., -1] - pia_ref) / pia_ref) < thrs
+        else:
+            raise Exception('Unknown mode type ' + mode + '.')
+        # Define new bounds of linear k-Z relation coefficiant for over- and
+        # undershooting pia calculations.
         a_hi[overshoot] = a_mid[overshoot]
         a_lo[undershoot] = a_mid[undershoot]
         a_hi[hit] = a_mid[hit]
         a_lo[hit] = a_mid[hit]
-        itercount+=1
-        if itercount > maxiter:
-            raise AttenuationIterationError
+        iteration_count += 1
+        # Change exponential k-Z relation coefficient in case of maximum
+        # iterations for linear k-Z relation coefficient are reached.
+        if iteration_count > max_iterations:
+            b[overshoot] -= 0.01
+            b[undershoot] += 0.01
+    return pia, a_mid, b
 
-    return k, a_hi
 
+def _sector_filter(mask, min_sector_size):
+    """Claculate an array of same shape as mask, which is set to 1 in case of at
+    least min_sector_size adjacent values, otherwise it is set to 0.
 
-def sector_filter(mask, min_sector_size, axis=-1):
-    """"""
-    kernel = np.ones((min_sector_size,))
-    forward_origin = -(min_sector_size - (min_sector_size // 2)) + min_sector_size%2
+    """
+
+    kernela = np.ones([1] * (mask.ndim - 1) + [min_sector_size])
+    kernelb = np.ones((min_sector_size,))
+    forward_origin = (-(min_sector_size - (min_sector_size //2)) +
+                      min_sector_size % 2)
     backward_origin = (min_sector_size - (min_sector_size // 2)) - 1
-    forward_sum = ndi.correlate1d(mask, kernel, axis=-1, mode='wrap', origin=forward_origin)
-    backward_sum = ndi.correlate1d(mask, kernel, axis=-1, mode='wrap', origin=backward_origin)
+    forward_sum = scipy.ndimage.correlate1d(mask.astype(np.int), kernelb,
+                    axis=-1, mode='wrap', origin=forward_origin)
+    backward_sum = scipy.ndimage.correlate1d(mask.astype(np.int), kernelb,
+                    axis=-1, mode='wrap', origin=backward_origin)
     forward_corners = (forward_sum == min_sector_size)
     backward_corners = (backward_sum == min_sector_size)
-    forward_large_sectors = ndi.morphology.binary_dilation(forward_corners, kernel, origin=forward_origin).astype(int)
-    backward_large_sectors = ndi.morphology.binary_dilation(backward_corners, kernel, origin=backward_origin).astype(int)
+    forward_large_sectors = np.zeros_like(mask)
+    backward_large_sectors = np.zeros_like(mask)
+    for iii in range(mask.shape[0]):
+        forward_large_sectors[iii] = scipy.ndimage.morphology.binary_dilation(
+            forward_corners[iii], kernela[0], origin=forward_origin).astype(int)
+        backward_large_sectors[iii] = scipy.ndimage.morphology.binary_dilation(
+            backward_corners[iii], kernela[0],
+            origin=backward_origin).astype(int)
 
     return (forward_large_sectors | backward_large_sectors)
 
@@ -694,109 +805,224 @@ def nd_pad(data, pad, axis=-1, mode='wrap'):
     return new_data
 
 
-def interp_atten(k, invalidbeams):
-    """"""
-    x = np.arange(3*k.shape[1])
+def _interp_atten(pia, invalidbeams):
+    """Interpolate reference pia of most distant rangebin of small invalid
+    sectors as a prerequisite for the backward calculation of attenuation.
+    """
+    # Build an spatial equidistant array for interpolation of the ahead and
+    # behind extended temporary pia-array for handling invalid sectors
+    # overlapping the seam of the radarcircle.
+    x = np.arange(3*pia.shape[1])
 
-    for i in range(k.shape[0]):
-        sub_i = invalidbeams[i,:]
-        sub_k = k[i,:,-1]
-        pad_i = np.concatenate([sub_i]*3)
-        pad_k = np.concatenate([sub_k]*3)
-
-        intp = scipy.interpolate.interp1d(x[~pad_i], pad_k[~pad_i], mode='linear')
-
-        k[i,sub_i,-1] = intp(x[k.shape[1]:2*k.shape[1]+1][sub_i])
-
-
-def correctAttenuationConstrained2(gateset, a_max, a_min, na, b_max, b_min, nb, l,
-                                   mode='error', constraints=None,
-                                   thr_sec=10,
-                                   constr_args=None,
-                                   diagnostics={}):
-    """"""
-    if np.any(np.isnan(gateset)):
-        raise Exception('There are not processable NaN in the gateset!')
-
-    if constraints is None:
-        constraints = []
-    if constr_args is None:
-        constr_args = []
-    naz = gateset.shape[-2]
-    nrng = gateset.shape[-1]
-    tmp_gateset = gateset.reshape((-1,naz,nrng))
-
-    k = np.zeros_like(tmp_gateset)
-
-    a_used = np.empty(tmp_gateset.shape[:-1])
-    b_used = np.empty(tmp_gateset.shape[:-1])
-
-    # forward attenuation calculation
-    # indexing all rows of last dimension (radarbeams)
-    beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype=np.bool))
-    invalidbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
-
-    da = (a_max - a_min)/na
-    db = (b_max - b_min)/nb
-
-    # iterate over possible a-parameters
-    for j in range(nb):
-        bi = b_max - db*j
-        for i in range(na):
-            ai = a_max - da*i
-            # subset of beams that have to be corrected and corresponding attenuations
-            sub_gateset = tmp_gateset[beams2correct]
-            sub_k = calc_attenuation_forward(sub_gateset, ai, bi, l)
-            # mark overflow
-            k[beams2correct] = sub_k
-            a_used[beams2correct] = ai
-            b_used[beams2correct] = bi
-            # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
-            incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
-            for constraint, constr_arg in zip(constraints, constr_args):
-                incorrectbeams |= constraint(tmp_gateset, k, *constr_arg)
-
-            # determine sectors larger than thr_sec
-            large_sectors = sector_filter(incorrectbeams, thr_sec)
-            invalidbeams = incorrectbeams & ~large_sectors
-            beams2correct = np.where(large_sectors)
-            if len(k[beams2correct]) == 0: break
-        if len(k[beams2correct]) == 0: break
-
-    # interpolate the reference attenuations to invalid sectors
-    interp_atten(k, invalidbeams)
-    # do reference bisections over invalid sectors
-    tmp_k, tmp_a = bisectReferenceAttenuation(gateset[invalidbeams,:],
-                                        k[invalidbeams, -1],
-                                        a_max=1e-3,
-                                        a_min=1e-7,
-                                        b=0.7,
-                                        l=1,
-                                        thrs=0.05,
-                                        maxiter=np.inf)
-    k[invalidbeams,:] = tmp_k
-    a_used[invalidbeams] = tmp_a
-
-    return k.reshape(gateset.shape)
+    for i in range(pia.shape[0]):
+        sub_invalid = invalidbeams[i,:]
+        sub_pia = pia[i,:,-1]
+        # Build the extended bool-array with the invalid sectors.
+        extended_invalid = np.concatenate([sub_invalid]*3)
+        # Build the extended pia-array.
+        extended_pia = np.concatenate([sub_pia]*3)
+        # Build interpolation class.
+        intp = scipy.interpolate.interp1d(x[~extended_invalid],
+            extended_pia[~extended_invalid], kind='linear')
+        # Interpolate where sectors are invalid.
+        pia[i,sub_invalid,-1] = intp(x[pia.shape[1]:2 * pia.shape[1] +
+            1][sub_invalid])
 
 
-def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
-                                      hydrophobicity=0.165, n_r=2,
-                                      stat=np.mean):
-    """Empirical model to estimate two-way wet radome losses as a function of
-    frequency and rainfall rate for both standard and hydrophobic radomes based
-    on the approach of Francis J. Merceret and Jennifer G. Ward [Merceret2002]_.
-
-
+def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
+                                   b_max=0.7, b_min=0.65, n_b=6, l=1.,
+                                   constraints=None, constraint_args=None,
+                                   sector_thr=10):
+    """Gate-by-Gate attenuation correction based on the iterative approach of
+    Stefan Kraemer [Kraemer2008]_ with a generalized and scalable number of
+    constraints. Differing from the original approach, the method for
+    recalculating constraint breaching small sectors is based on a bisection
+    forward calculating method, and not on backwards attenuation calculation.
 
     Parameters
     ----------
     gateset : array
         Multidimensional array, where the range gates (over which iteration has
         to be performed) are supposed to vary along the last array-dimension and
-        the azimuths are supposed to vary along the next to last array-dimension.
+        the azimuths are supposed to vary along the next to last
+        array-dimension.
+
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
+
+    a_max : float
+        Initial value for linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ).
+
+        Per default set to 1.67e-4.
+
+    a_min : float
+        Minimal allowed linear coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ) in the downwards iteration of 'a' in case
+        of breaching one of thresholds ``constr_args`` of the optional
+        conditions ``constraints``.
+
+        Per default set to 2.33e-5.
+
+    n_a : integer
+        Number of iterations from ``a_max`` to ``a_min``.
+
+        Per default set to 4.
+
+    b_max : float
+        Initial value for exponential coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ).
+
+        Per default set to 0.7.
+
+    b_min : float
+        Minimal allowed exponential coefficient of the k-Z relation
+        ( :math:`k=a*Z^{b}` ) in the downwards iteration of 'b' in case
+        of breaching one of thresholds ``constr_args`` of the optional
+        conditions ``constraints`` and the linear coefficient 'a' has already
+        reached the lower limit ``a_min``.
+
+        Per default set to 0.65.
+
+    n_b : integer
+        Number of iterations from ``b_max`` to ``b_min``.
+
+        Per default set to 6.
+
+    l : float
+        Radial length of a range gate [km].
+
+        Per default set to 1.0.
+
+    constraints : list
+        List of constraint functions. The signature of these functions has to be
+        constraint_function(`gateset`, `k`, \*`constr_args`). Their return value
+        must be a boolean array of shape gateset.shape[:-1] set to True for
+        beams, which do not fulfill the constraint.
+
+    constraint_args : list
+        List of lists, which are to be passed to the individual constraint
+        functions using the \*args mechanism
+        (len(constr_args) == len(constraints)).
+
+    sector_thr : integer
+        Number of adjacent beams, for which in case of breaching the constraints
+        the attenuation with downward iterated ``a`` and ``b`` - parameters is
+        recalculated. For more narrow sectors the integrated attenuation of the
+        last gate is interpolated and used as reference for the recalculation.
+
+
+    Returns
+    -------
+    pia : array
+        Array with the same shape as ``gateset`` containing the calculated path
+        integrated attenuation [dB] for each range gate.
+
+    Examples
+    --------
+    >>> # Implementing the original Hitschfeld & Bordan (1954) algorithm with
+    >>> # otherwise default parameters
+    >>> pia = correctAttenuationConstrained2(gateset)
+    >>> # Implementing the basic Kraemer algorithm
+    >>> k = correctAttenuationConstrained(gateset,
+    ...                                   constraints=[constraint_dBZ],
+    ...                                   constraint_args=[[59.0]])
+
+    >>> # Implementing the PIA algorithm by Jacobi et al.
+    >>> k = correctAttenuationConstrained(gateset,
+    ...                                   constraints=[constraint_dBZ,
+    ...                                                constraint_PIA],
+    ...                                   constraint_args=[[59.0],
+    ...                                               [20.0]])
+
+    """
+
+    # todo: überlauf darf so hoch sein, wie die urspruenglichen messwerte
+    if constraints is None:
+        constraints = []
+    if constraint_args is None:
+        constraint_args = []
+    n_az = gateset.shape[-2]
+    n_rng = gateset.shape[-1]
+    tmp_gateset = gateset.reshape((-1, n_az, n_rng))
+
+    pia = np.zeros_like(tmp_gateset)
+
+    a_used = np.empty(tmp_gateset.shape[:-1])
+    b_used = np.empty(tmp_gateset.shape[:-1])
+
+    # Calculate attenuation forward.
+    # Indexing all rows of last dimension (radarbeams).
+    beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype = np.bool))
+    invalidbeams = np.zeros(tmp_gateset.shape[:-1], dtype = np.bool)
+
+    delta_a = (a_max - a_min) / (n_a - 1)
+    delta_b = (b_max - b_min) / (n_b - 1)
+
+    # Iterate over possible b-parameters.
+    for j in range(n_b):
+        b = b_max - delta_b * j
+        # Iterate over possible a-parameters.
+        for i in range(n_a):
+            a = a_max - delta_a * i
+            # Generate subset of beams that have to be corrected.
+            sub_gateset = tmp_gateset[beams2correct]
+            sub_pia = calc_attenuation_forward(sub_gateset, a, b, l)
+            pia[beams2correct] = sub_pia
+            a_used[beams2correct] = a
+            b_used[beams2correct] = b
+            # Indexing threshold exceeding beams.
+            incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
+            for constraint, constraint_arg in zip(constraints, constraint_args):
+                incorrectbeams = np.logical_or(incorrectbeams,
+                constraint(tmp_gateset, pia, *constraint_arg))
+            # Determine incorrect sectors larger than sector_thr.
+            large_sectors = _sector_filter(incorrectbeams, sector_thr)
+            # Determine incorrect sectors smaller than sector_thr.
+            invalidbeams = np.logical_or(invalidbeams,
+                                         (incorrectbeams & ~large_sectors))
+            beams2correct = np.where(large_sectors)
+            if len(pia[beams2correct]) == 0: break
+        if len(pia[beams2correct]) == 0: break
+
+    # Interpolate reference pia of most distant rangebin of invalid sectors.
+    _interp_atten(pia, invalidbeams)
+    # Calculate attenuation forward by achieving reference attenuation based on
+    # bisection-method.
+    tmp_pia, tmp_a, tmp_b = bisectReferenceAttenuation(tmp_gateset[invalidbeams,:],
+                                        pia[invalidbeams, -1],
+                                        a_max=a_max,
+                                        a_min=a_min,
+                                        b_start=b_max,
+                                        l=l,
+                                        mode='difference',
+                                        thrs=0.25,
+                                        max_iterations=10)
+    pia[invalidbeams,:] = tmp_pia
+    a_used[invalidbeams] = tmp_a
+    b_used[invalidbeams] = tmp_b
+
+    return pia.reshape(gateset.shape)
+
+
+def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
+                                      hydrophobicity=0.165, n_r=2,
+                                      stat=np.mean):
+    """Estimate two-way wet radome losses as an empirical
+    function of frequency and rainfall rate for both standard and
+    hydrophobic radomes based on the approach of Francis J. Merceret
+    and Jennifer G. Ward [Merceret2002]_.
+
+
+
+    Parameters
+    ----------
+    gateset : array
+        Multidimensional array, where the range gates (over which
+        iteration has to be performed) are supposed to vary along the
+        last array-dimension and the azimuths are supposed to vary
+        along the next to last array-dimension. Data has to be provided
+        in decibel representation of reflectivity [dBZ].
 
     frequency : float
         Radar-frequency [GHz]:
@@ -807,54 +1033,67 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
 
             Standard frequencies in S-band range between 2.0 and 4.0 GHz.
 
-            Be aware that the empirical fit of the formula was just done for C-
-            and S-band. The use for X-band is probably an undue extrapolation.
-            Per default set to 5.64 as used by the German Weather Service radars.
+            Be aware that the empirical fit of the formula was just
+            done for C- and S-band. The use for X-band is probably an
+            undue extrapolation.
+
+            Per default set to 5.64 as used by the German Weather
+            Service radars.
 
     hydrophobicity : float
-        Empirical parameter based on the hydrophobicity of the radome material.
+        Empirical parameter based on the hydrophobicity of the radome
+        material.
+
             0.165 for standard radomes,
+
             0.0575 for hydrophobic radomes.
+
             Per default set to 0.165.
 
     n_r : integer
-        The radius of rangebins within the rain-intensity is statistically evaluated as
-        the representative rain-intensity over radome.
+        The radius of rangebins within the rain-intensity is
+        statistically evaluated as the representative rain-intensity
+        over radome.
 
     stat : class
-        A name of a numpy function for statistical aggregation of the central
-        rangebins defined by n_r.
+        A name of a numpy function for statistical aggregation of the
+        central rangebins defined by n_r.
+
         Potential options: np.mean, np.median, np.max, np.min.
 
     Returns
     -------
     k : array
-        Array with the same shape as ``gateset`` containing the calculated
-        two-way transmission loss [dB] for each range gate. In case the input array (gateset)
-        contains NaNs the corresponding beams of the output array (k) will be
-        set as NaN, too.
+        Array with the same shape as ``gateset`` containing the
+        calculated two-way transmission loss [dB] for each range gate.
+        In case the input array (gateset) contains NaNs the
+        corresponding beams of the output array (k) will be set as NaN,
+        too.
 
     References
     ----------
     .. [Merceret2002] Merceret, F. J. & Ward, J. G., 2000.
-        Attenuation of Weather Radar Signals Due to Wetting of the Radome
-        by Rainwater or Incomplete Filling of the Beam Volume.
-        NASA/TM-2002-211171, NASA/YA-D, Kennedy Space Center, FL, 32899, 16 pp.
+        Attenuation of Weather Radar Signals Due to Wetting of the
+        Radome by Rainwater or Incomplete Filling of the Beam Volume.
+        NASA/TM-2002-211171, NASA/YA-D, Kennedy Space Center, FL,
+        32899, 16 pp.
         Available at: http://www.c-esolutions.com/repository/NASA%20paper%20on%20effect%20of%20radome%20wetting.pdf
         [Accessed Sep 5, 2013].
 
     """
 
-    # select rangebins inside the defined center-range n_r
+    # Select rangebins inside the defined center-range n_r.
     center = gateset[...,:n_r].reshape(-1, n_r * gateset.shape[-2])
-    # mask nan-rangebins
     center_m = np.ma.masked_array(center, np.isnan(center))
-    # calculate rainrate in the center-range based on statistical method stat and with standard ZR-relation
+    # Calculate rainrate in the center-range based on statistical method stat
+    # and with standard ZR-relation.
     rain_over_radome = z2r(idecibel(stat(center_m, axis = -1)))
-    # empirical two-way transmission loss due to radome-attenuation
+    # Estimate the empirical two-way transmission loss due to
+    # radome-attenuation.
     k = 2 * hydrophobicity * rain_over_radome * np.tanh(frequency / 10.)**2
-    # reshape the result to gateset-shape
-    k = np.repeat(k, gateset.shape[-1] * gateset.shape[-2]).reshape(gateset.shape)
+    # Reshape the result to gateset-shape.
+    k = np.repeat(k, gateset.shape[-1] *
+        gateset.shape[-2]).reshape(gateset.shape)
 
     return k
 
