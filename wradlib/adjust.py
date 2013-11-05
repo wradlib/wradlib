@@ -92,6 +92,7 @@ cross validation results.
    AdjustAdd
    AdjustMixed
    Raw_at_obs
+   GageOnly
 
 
 References
@@ -730,7 +731,7 @@ class AdjustMFB(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None, biasby="mean"):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None, biasby="linregr"):
         """
         Return the field of *raw* values adjusted by *obs*.
 
@@ -740,6 +741,10 @@ class AdjustMFB(AdjustBase):
             Gage observations
         raw : array of floats
             Raw unadjusted radar rainfall
+        biasby : string
+            The method which is used to compute the mean field bias. Defaults to
+            "linregr" which fits a regression line through observed and estimated values
+            and than gets the bias from the inverse of the slope.
         targets : (INTERNAL) array of floats
             Coordinate pairs for locations on which the final adjustment product is interpolated
             Defaults to None. In this case, the output locations will be identical to the radar coordinates
@@ -762,10 +767,27 @@ class AdjustMFB(AdjustBase):
         # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
         # compute ratios for each valid observation point
         ratios = np.ma.masked_invalid(obs[ix] / rawatobs[ix])
+        if len(np.where(np.logical_not(ratios.mask))[0]) < self.mingages:
+            # Not enough valid pairs of raw and obs
+            return raw
         if biasby=="mean":
             corrfact = np.mean(ratios)
         elif biasby=="median":
             corrfact = np.median(ratios)
+        elif biasby=="linregr":
+            ix_ = np.where(np.logical_not(ratios.mask))[0]
+            x = obs[ix][ix_]
+            x = x[:,np.newaxis]
+            y = rawatobs[ix][ix_]
+            try:
+                slope, _,_,_ = np.linalg.lstsq(x,y)
+                if not slope[0]==0:
+                    corrfact = 1. / slope[0]
+                else:
+                    corrfact = 1.
+            except:
+                # no correction if linear regression fails
+                corrfact = 1.
         else:
             print("WARNING: Invalid <biasby> argument value for AdjustMFB: %s" % biasby)
             print("         Using default value biasby='mean' instead.")
