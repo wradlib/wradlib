@@ -89,6 +89,7 @@ import wradlib.util as util
 import wradlib.qual as qual
 from scipy.spatial import cKDTree
 from scipy import stats
+import scipy
 import os
 
 
@@ -450,11 +451,12 @@ def correct_vpr(data, heights, vpr, target_height=0.):
 
 def mean_norm_vpr_from_volume(volume, reference_idx):
     """"""
-    return norm_vpr_stats(volume, reference_idx, stats.mstats.mean)
+    return norm_vpr_stats(volume, reference_idx, np.mean)
 
 
 def norm_vpr_stats(volume, reference_idx, stat, **kwargs):
-    tmp = volume / volume[...,reference_idx]
+##    tmp = volume / volume[...,reference_idx]
+    tmp = volume / volume[reference_idx]
     return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), **kwargs)
 
 if __name__ == '__main__':
