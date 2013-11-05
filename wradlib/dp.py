@@ -66,7 +66,7 @@ module directory and execute on the system console:
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import medfilt
-from scipy.stats import nanmedian, nanmean
+from scipy.stats import nanmedian, nanmean, linregress
 
 # Check whether fast Fortran implementation is available
 speedupexists = True
@@ -79,7 +79,7 @@ except ImportError:
 
 
 
-def process_raw_phidp(phidp, rho, copy=False):
+def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
     Processing of raw PhiDP data contains the following steps:
@@ -97,6 +97,14 @@ def process_raw_phidp(phidp, rho, copy=False):
     ----------
     phidp : array of shape (n azimuth angles, n range gates)
     rho : array of shape (n azimuth angles, n range gates)
+    N_despeckle : integer
+        *N* parameter of function dp.linear_despeckle
+    N_fillmargin : integer
+        *margin* parameter of function dp.fill_phidp
+    N_unfold : integer
+        *width* parameter of function dp.unfold_phi
+    N_filter : integer
+        *N* parameter of function dp.medfilt_along_axis
     copy : boolean
         leaves the original phidp array untouched
 
@@ -104,15 +112,15 @@ def process_raw_phidp(phidp, rho, copy=False):
     if copy:
         phidp = phidp.copy()
     # despeckle
-    phidp = linear_despeckle(phidp)
-    phidp = fill_phidp(phidp)
+    phidp = linear_despeckle(phidp, N=N_despeckle)
+    phidp = fill_phidp(phidp, margin=N_fillmargin)
     # apply unfolding
     if speedupexists:
-        phidp = unfold_phi(phidp, rho)
+        phidp = unfold_phi(phidp, rho, width=N_unfold)
     else:
-        phidp = unfold_phi_naive(phidp, rho)
+        phidp = unfold_phi_naive(phidp, rho, width=N_unfold)
     # median filter smoothing
-    phidp = medfilt_along_axis(phidp,5)
+    phidp = medfilt_along_axis(phidp, N=N_filter)
     return phidp
 
 
@@ -138,8 +146,6 @@ def kdp_from_phidp(phidp, L=7):
     L : integer
         Width of the window (as number of range gates)
 
-    copy : Boolean
-        If True, the input array will remain unchanged.
 
     References
     ----------
@@ -156,6 +162,73 @@ def kdp_from_phidp(phidp, L=7):
     for r in xrange(L/2, phidp.shape[-1]-L/2):
         kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / (2*L)
     return kdp
+
+
+def kdp_from_phidp2(phidp, L=7):
+    """Alternative Kdp from PhiDP by applying a moving window linear regression.
+
+    Please note that the moving window size *L* is specified as the number of range
+    gates. Thus, this argument might need adjustment in case the range resolution changes.
+    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    a range resolution of 1km.
+
+    ATTENTION: The function is designed for speed by allowing to process
+    multiple dimensions in one step. For this purpose, the RANGE dimension needs
+    to be the LAST dimension of the input array.
+
+    Parameters
+    ----------
+    data : multi-dimensional array
+        Note that the range dimension must be the last dimension of the input array.
+
+    L : integer
+        Width of the window (as number of range gates)
+
+    Examples
+    --------
+    >>> import wradlib
+    >>> import numpy as np
+    >>> import pylab as pl
+
+    >>> pl.interactive(True)
+
+    >>> kdp_true   = np.sin(3*np.arange(0,10,0.1))
+    >>> phidp_true = np.cumsum(kdp_true)
+    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_orig))
+    >>> gaps       = np.concatenate([ range(10,20),range(30,40),range(60,80) ])
+    >>> phidp_raw[gaps] = np.nan
+
+    >>> kdp_re = wradib.dp.kdp_from_phidp2(phidp_raw)
+
+    >>> pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
+    >>> pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> pl.plot(kdp_true, "g-", label="kdp_true")
+    >>> pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
+    >>> pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+
+    """
+    assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+
+    shape = phidp.shape
+    phidp = phidp.reshape((-1,shape[-1]))
+
+    # Make really sure L is an integer
+    L = int(L)
+
+    x = np.arange(phidp.shape[-1])
+    valids = ~np.isnan(phidp)
+    kdp = np.zeros(phidp.shape) * np.nan
+
+    for beam in xrange(len(phidp)):
+        for r in xrange(L/2, phidp.shape[-1]-L/2):
+            # iterate over gates
+            ix = np.arange(r-L/2, r+L/2+1)
+            if np.sum(valids[beam, ix]) < L/2:
+                # not enough valid values inside our window
+                continue
+            kdp[beam, r] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+    return kdp.reshape(shape)
+
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):
@@ -434,7 +507,7 @@ def linear_despeckle(data, N=3, copy=False):
 ##    return data.reshape(shape)
 
 
-def fill_phidp(data, margin=4):
+def fill_phidp(data, margin=3):
     """Fills in missing PhiDP.
 
     Contiguous NaN regions are filled by the average of the median of margins
