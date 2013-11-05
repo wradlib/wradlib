@@ -66,7 +66,7 @@ module directory and execute on the system console:
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import medfilt
-from scipy.stats import nanmedian, nanmean
+from scipy.stats import nanmedian, nanmean, linregress
 
 # Check whether fast Fortran implementation is available
 speedupexists = True
@@ -146,8 +146,6 @@ def kdp_from_phidp(phidp, L=7):
     L : integer
         Width of the window (as number of range gates)
 
-    copy : Boolean
-        If True, the input array will remain unchanged.
 
     References
     ----------
@@ -164,6 +162,73 @@ def kdp_from_phidp(phidp, L=7):
     for r in xrange(L/2, phidp.shape[-1]-L/2):
         kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / (2*L)
     return kdp
+
+
+def kdp_from_phidp2(phidp, L=7):
+    """Alternative Kdp from PhiDP by applying a moving window linear regression.
+
+    Please note that the moving window size *L* is specified as the number of range
+    gates. Thus, this argument might need adjustment in case the range resolution changes.
+    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    a range resolution of 1km.
+
+    ATTENTION: The function is designed for speed by allowing to process
+    multiple dimensions in one step. For this purpose, the RANGE dimension needs
+    to be the LAST dimension of the input array.
+
+    Parameters
+    ----------
+    data : multi-dimensional array
+        Note that the range dimension must be the last dimension of the input array.
+
+    L : integer
+        Width of the window (as number of range gates)
+
+    Examples
+    --------
+    >>> import wradlib
+    >>> import numpy as np
+    >>> import pylab as pl
+
+    >>> pl.interactive(True)
+
+    >>> kdp_true   = np.sin(3*np.arange(0,10,0.1))
+    >>> phidp_true = np.cumsum(kdp_true)
+    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_orig))
+    >>> gaps       = np.concatenate([ range(10,20),range(30,40),range(60,80) ])
+    >>> phidp_raw[gaps] = np.nan
+
+    >>> kdp_re = wradib.dp.kdp_from_phidp2(phidp_raw)
+
+    >>> pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
+    >>> pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> pl.plot(kdp_true, "g-", label="kdp_true")
+    >>> pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
+    >>> pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+
+    """
+    assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+
+    shape = phidp.shape
+    phidp = phidp.reshape((-1,shape[-1]))
+
+    # Make really sure L is an integer
+    L = int(L)
+
+    x = np.arange(phidp.shape[-1])
+    valids = ~np.isnan(phidp)
+    kdp = np.zeros(phidp.shape) * np.nan
+
+    for beam in xrange(len(phidp)):
+        for r in xrange(L/2, phidp.shape[-1]-L/2):
+            # iterate over gates
+            ix = np.arange(r-L/2, r+L/2+1)
+            if np.sum(valids[beam, ix]) < L/2:
+                # not enough valid values inside our window
+                continue
+            kdp[beam, r] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+    return kdp.reshape(shape)
+
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):
