@@ -227,6 +227,16 @@ def kdp_from_phidp2(phidp, L=7):
                 # not enough valid values inside our window
                 continue
             kdp[beam, r] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+        # take care of the start and end of the beam
+        #   start
+        ix = np.arange(0, L)
+        if np.sum(valids[beam, ix]) >= L/2:
+            kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+        #   end
+        if np.sum(valids[beam, ix]) >= L/2:
+            ix = np.arange(shape[-1]-L, shape[-1])
+        kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+
     return kdp.reshape(shape)
 
 
