@@ -146,6 +146,8 @@ def kdp_from_phidp(phidp, L=7):
     L : integer
         Width of the window (as number of range gates)
 
+    dr : gate length in km
+
 
     References
     ----------
@@ -160,8 +162,8 @@ def kdp_from_phidp(phidp, L=7):
     L = int(L)
     kdp = np.zeros(phidp.shape)
     for r in xrange(L/2, phidp.shape[-1]-L/2):
-        kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / (2*L)
-    return kdp / dr
+        kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / L
+    return kdp / 2. / dr
 
 
 def kdp_from_phidp2(phidp, L=7, dr=1.):
@@ -183,6 +185,8 @@ def kdp_from_phidp2(phidp, L=7, dr=1.):
 
     L : integer
         Width of the window (as number of range gates)
+
+    dr : gate length in km
 
     Examples
     --------
@@ -233,21 +237,24 @@ def kdp_from_phidp2(phidp, L=7, dr=1.):
         if np.sum(valids[beam, ix]) >= L/2:
             kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
         #   end
+        ix = np.arange(shape[-1]-L, shape[-1])
         if np.sum(valids[beam, ix]) >= L/2:
-            ix = np.arange(shape[-1]-L, shape[-1])
-        kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+            kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
 
-    return kdp.reshape(shape) / dr
+    # accounting for forward/backward propagation AND gate length
+    return kdp.reshape(shape) / 2. / dr
 
 
 def kdp_from_phidp3(phidp, L=7, dr=1.):
-    """Alternative Kdp from PhiDP by applying a sobel filter.
+    """Alternative Kdp from PhiDP by applying a sobel filter where possible and linear regression otherwise.
 
     The results are quite similar to the moving window linear regression, but this
-    is much faster. However, it cannot account for missing data, yet. This means: if
-    one gate in the window is NaN, then the result for the central gate is NaN, too.
+    is much faster, depending on the percentage of NaN values in the bema, though.
+    The Sobel filter is applied everywhere but will return NaNs in case only
+    one value in the moving window is NaN. The remaining NaN values are then
+    dealt with by using local linear regression (see kdp_from_phidp2).
 
-    This solution has been taken from:
+    This Sobel filter solution has been provided by Scott Collis at:
 
     http://stackoverflow.com/questions/7288125/performing-a-moving-linear-fit-to-1d-data-in-python
 
@@ -326,8 +333,18 @@ def kdp_from_phidp3(phidp, L=7, dr=1.):
                 # not enough valid values inside our window
                 continue
             kdp[beam, r] = linregress(x[ix][validphidp[beam,ix]], phidp[beam, ix[validphidp[beam,ix]] ])[0]
+        # take care of the start and end of the beam
+        #   start
+        ix = np.arange(0, L)
+        if np.sum(validphidp[beam, ix]) >= L/2:
+            kdp[beam, ix] = linregress(x[ix][validphidp[beam,ix]], phidp[beam, ix[validphidp[beam,ix]] ])[0]
+        #   end
+        ix = np.arange(shape[-1]-L, shape[-1])
+        if np.sum(validphidp[beam, ix]) >= L/2:
+            kdp[beam, ix] = linregress(x[ix][validphidp[beam,ix]], phidp[beam, ix[validphidp[beam,ix]] ])[0]
 
-    return kdp.reshape(shape) / dr
+    # accounting for forward/backward propagation AND gate length
+    return kdp.reshape(shape) / 2. / dr
 
 
 def sobel(x,window_len=7):
