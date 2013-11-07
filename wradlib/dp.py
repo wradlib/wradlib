@@ -161,10 +161,10 @@ def kdp_from_phidp(phidp, L=7):
     kdp = np.zeros(phidp.shape)
     for r in xrange(L/2, phidp.shape[-1]-L/2):
         kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / (2*L)
-    return kdp
+    return kdp / dr
 
 
-def kdp_from_phidp2(phidp, L=7):
+def kdp_from_phidp2(phidp, L=7, dr=1.):
     """Alternative Kdp from PhiDP by applying a moving window linear regression.
 
     Please note that the moving window size *L* is specified as the number of range
@@ -227,7 +227,127 @@ def kdp_from_phidp2(phidp, L=7):
                 # not enough valid values inside our window
                 continue
             kdp[beam, r] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
-    return kdp.reshape(shape)
+        # take care of the start and end of the beam
+        #   start
+        ix = np.arange(0, L)
+        if np.sum(valids[beam, ix]) >= L/2:
+            kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+        #   end
+        if np.sum(valids[beam, ix]) >= L/2:
+            ix = np.arange(shape[-1]-L, shape[-1])
+        kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
+
+    return kdp.reshape(shape) / dr
+
+
+def kdp_from_phidp3(phidp, L=7, dr=1.):
+    """Alternative Kdp from PhiDP by applying a sobel filter.
+
+    The results are quite similar to the moving window linear regression, but this
+    is much faster. However, it cannot account for missing data, yet. This means: if
+    one gate in the window is NaN, then the result for the central gate is NaN, too.
+
+    This solution has been taken from:
+
+    http://stackoverflow.com/questions/7288125/performing-a-moving-linear-fit-to-1d-data-in-python
+
+    Please note that the moving window size *L* is specified as the number of range
+    gates. Thus, this argument might need adjustment in case the range resolution changes.
+    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    a range resolution of 1km.
+
+    ATTENTION: The function is designed for speed by allowing to process
+    multiple dimensions in one step. For this purpose, the RANGE dimension needs
+    to be the LAST dimension of the input array.
+
+    Parameters
+    ----------
+    data : multi-dimensional array
+        Note that the range dimension must be the last dimension of the input array.
+
+    L : integer
+        Width of the window (as number of range gates)
+
+    dr : gate length in km
+
+    Examples
+    --------
+    >>> import wradlib
+    >>> import numpy as np
+    >>> import pylab as pl
+
+    >>> pl.interactive(True)
+
+    >>> kdp_true   = np.sin(3*np.arange(0,10,0.1))
+    >>> phidp_true = np.cumsum(kdp_true)
+    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_orig))
+    >>> gaps       = np.concatenate([ range(10,20),range(30,40),range(60,80) ])
+    >>> phidp_raw[gaps] = np.nan
+
+    >>> kdp_re = wradib.dp.kdp_from_phidp2(phidp_raw)
+
+    >>> pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
+    >>> pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> pl.plot(kdp_true, "g-", label="kdp_true")
+    >>> pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
+    >>> pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+
+    """
+    assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+
+    shape = phidp.shape
+    phidp = phidp.reshape((-1,shape[-1]))
+
+    # Make really sure L is an integer
+    L = int(L)
+
+    kdp = np.zeros(phidp.shape) * np.nan
+
+    # do it fast using the sobel filter
+    for beam in xrange(len(phidp)):
+        kdp[beam, :] = sobel(phidp[beam,:], window_len=L)
+
+    # find remaining NaN values with valid neighbours
+    x = np.arange(phidp.shape[-1])
+    invalidkdp = np.isnan(kdp)
+    validphidp = ~np.isnan(phidp)
+    kernel = np.ones(L, dtype="i4")
+    # and do the slow moving window linear regression
+    for beam in xrange(len(phidp)):
+        # number of valid neighbours around one gate
+        nvalid = np.convolve(validphidp[beam], kernel, "same") > L/2
+        # find those gates which have invalid Kdp AND enough valid neighbours
+        nangates = np.where(invalidkdp[beam] & nvalid)[0]
+        # now iterate over those
+        for r in nangates:
+            ix = np.arange(r-L/2, r+L/2+1)
+            # check again (just to make sure...)
+            if np.sum(validphidp[beam, ix]) < L/2:
+                # not enough valid values inside our window
+                continue
+            kdp[beam, r] = linregress(x[ix][validphidp[beam,ix]], phidp[beam, ix[validphidp[beam,ix]] ])[0]
+
+    return kdp.reshape(shape) / dr
+
+
+def sobel(x,window_len=7):
+    """Sobel differential filter for calculating KDP.
+
+    This solution has been taken from:
+
+    http://stackoverflow.com/questions/7288125/performing-a-moving-linear-fit-to-1d-data-in-python
+
+    Returns
+    -------
+        output : differential signal (unscaled for gate spacing)
+
+    """
+    s=np.r_[x[window_len-1:0:-1],x,x[-1:-window_len:-1]]
+    w=2.0*np.arange(window_len)/(window_len-1.0) -1.0
+    w=w/(abs(w).sum())
+    y=np.convolve(w,s,mode='valid')
+    return -1.0*y[window_len/2:len(x)+window_len/2]/(window_len/3.0)
+
 
 
 
