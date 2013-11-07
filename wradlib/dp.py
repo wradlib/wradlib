@@ -126,7 +126,7 @@ def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_f
     return phidp
 
 
-def kdp_from_phidp(phidp, L=7):
+def kdp_from_phidp(phidp, L=7, dr=1.):
     """Retrieves Kdp from PhiDP by applying a moving window range derivative.
 
     See [Vulpiani2012]_ for details about the moving window approach.
