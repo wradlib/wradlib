@@ -237,7 +237,8 @@ def kdp_from_phidp2(phidp, L=7, dr=1.):
             ix = np.arange(shape[-1]-L, shape[-1])
         kdp[beam, ix] = linregress(x[ix][valids[beam,ix]], phidp[beam, ix[valids[beam,ix]] ])[0]
 
-    return kdp.reshape(shape) / dr
+    # accounting for forward/backward propagation AND gate length
+    return kdp.reshape(shape) / 2 / dr
 
 
 def kdp_from_phidp3(phidp, L=7, dr=1.):
@@ -327,7 +328,8 @@ def kdp_from_phidp3(phidp, L=7, dr=1.):
                 continue
             kdp[beam, r] = linregress(x[ix][validphidp[beam,ix]], phidp[beam, ix[validphidp[beam,ix]] ])[0]
 
-    return kdp.reshape(shape) / dr
+    # accounting for forward/backward propagation AND gate length
+    return kdp.reshape(shape) / 2. / dr
 
 
 def sobel(x,window_len=7):
