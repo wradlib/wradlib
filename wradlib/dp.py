@@ -81,6 +81,70 @@ except ImportError:
 
 
 
+
+
+def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, copy=False):
+    """Establish consistent PhiDP profiles from raw data.
+
+    This approach is based on [Vulpiani2012]_ and involves a two step procedure
+    of PhiDP reconstruction.
+
+    Processing of raw PhiDP data contains the following steps:
+
+        - Despeckle
+
+        - Phase unfolding
+
+    Parameters
+    ----------
+    phidp : array of shape (n azimuth angles, n range gates)
+    rho : array of shape (n azimuth angles, n range gates)
+    N_despeckle : integer
+        *N* parameter of function dp.linear_despeckle
+    copy : boolean
+        leaves the original phidp array untouched
+
+
+    References
+    ----------
+    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
+       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
+       for Operational Rainfall Retrieval in Mountainous Areas.
+       J. Appl. Meteor. Climatol., 51, 405-425.
+
+
+    """
+    if copy:
+        phidp = phidp.copy()
+
+    # despeckle
+    phidp = linear_despeckle(phidp,N_despeckle)
+    # kdp retrieval first guess
+    kdp1 = kdp_from_phidp4(phidp)
+    # remove extreme values
+    kdp1[kdp1>20] = 0
+    kdp1[np.logical_and(kdp1<-2,kdp1>-20)] = 0
+
+    # unfold the phidp
+    phidp = unfold_phi_2(phidp, kdp1)
+
+    # clean up unfolded PhiDP
+    phidp[phidp>360] = np.nan
+    kdp2 = kdp_from_phidp4(phidp)
+    kdp2 = np.nan_to_num(kdp2)
+
+    # remove extreme values
+    kdp2[kdp2>20] = 0
+    kdp2[kdp2<-2] = 0
+
+    # reconstruct phidp
+    phidp_recon = 2*np.cumsum(kdp2, axis=-1)*dr
+
+    return phidp_recon
+
+
+
+
 def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
@@ -126,7 +190,7 @@ def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_f
     return phidp
 
 
-def kdp_from_phidp(phidp, L=7):
+def kdp_from_phidp(phidp, L=7, dr=1.):
     """Retrieves Kdp from PhiDP by applying a moving window range derivative.
 
     See [Vulpiani2012]_ for details about the moving window approach.
@@ -329,7 +393,7 @@ def kdp_from_phidp3(phidp, L=7, dr=1.):
         nangates = np.where(invalidkdp[beam] & nvalid)[0]
         # now iterate over those
         for r in nangates:
-            ix = np.arange(r-L/2, r+L/2+1)
+            ix = np.arange(min(0,r-L/2), max(shape[-1],r+L/2+1))
             # check again (just to make sure...)
             if np.sum(validphidp[beam, ix]) < L/2:
                 # not enough valid values inside our window
@@ -418,9 +482,9 @@ def kdp_from_phidp4(phidp, L=7, dr=1.):
 
     # find remaining NaN values with valid neighbours
     invalidkdp = np.isnan(kdp)
-    if np.where(invalidkdp.ravel()):
+    if not np.any(invalidkdp.ravel()):
         # No NaN? Return KdP
-        return kdp / dr / 2.
+        return kdp.reshape(shape) / 2. / dr
 
     # Otherwise continue
     x = np.arange(phidp.shape[-1])
@@ -434,7 +498,7 @@ def kdp_from_phidp4(phidp, L=7, dr=1.):
         nangates = np.where(invalidkdp[beam] & nvalid)[0]
         # now iterate over those
         for r in nangates:
-            ix = np.arange(r-L/2, r+L/2+1)
+            ix = np.arange(max(0,r-L/2), min(r+L/2+1, shape[-1]))
             # check again (just to make sure...)
             if np.sum(validphidp[beam, ix]) < L/2:
                 # not enough valid values inside our window
@@ -582,6 +646,41 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
                     phidp[beam,k] += 360
     return phidp
 
+
+def unfold_phi_2(phidp, kdp):
+    """Alternative phase unfolding which completely relies on Kdp.
+
+    This unfolding should be used in oder to iteratively reconstruct
+    phidp and Kdp (see Vulpiani[2012]_).
+
+    Parameters
+    ----------
+    phidp : array of floats
+    kdp : array of floats
+
+    References
+    ----------
+    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
+       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
+       for Operational Rainfall Retrieval in Mountainous Areas.
+       J. Appl. Meteor. Climatol., 51, 405-425.
+
+
+    """
+    # unfold phidp
+    shape = phidp.shape
+    phidp = phidp.reshape((-1,shape[-1]))
+    kdp   = kdp.reshape((-1,shape[-1]))
+
+    for beam in xrange(len(phidp)):
+        below_th3 = kdp[beam]<-20
+        try:
+            idx1 = np.where(below_th3)[0][2]
+            phidp[beam,idx1:] += 360
+        except:
+            pass
+
+    return phidp.reshape(shape)
 
 
 ##def smooth_and_gradient1d(x):
