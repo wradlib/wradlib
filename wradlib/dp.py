@@ -120,7 +120,7 @@ def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, copy=False):
     # despeckle
     phidp = linear_despeckle(phidp,N_despeckle)
     # kdp retrieval first guess
-    kdp1 = kdp_from_phidp4(phidp)
+    kdp1 = kdp_from_phidp4(phidp, dr=dr)
     # remove extreme values
     kdp1[kdp1>20] = 0
     kdp1[np.logical_and(kdp1<-2,kdp1>-20)] = 0
@@ -130,7 +130,7 @@ def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, copy=False):
 
     # clean up unfolded PhiDP
     phidp[phidp>360] = np.nan
-    kdp2 = kdp_from_phidp4(phidp)
+    kdp2 = kdp_from_phidp4(phidp, dr=dr)
     kdp2 = np.nan_to_num(kdp2)
 
     # remove extreme values
