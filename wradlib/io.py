@@ -328,39 +328,43 @@ def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
     output : numpy array of image data (dBZ), dictionary of attributes
 
     """
-    # read the data from file
-    dset = nc.Dataset(filename)
-    data = dset.variables[dset.TypeName][:]
-    # Check azimuth angles and rotate image
-    az = dset.variables['Azimuth'][:]
-    # These are the indices of the minimum and maximum azimuth angle
-    ix_minaz = np.argmin(az)
-    ix_maxaz = np.argmax(az)
-    if enforce_equidist:
-        az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
-    else:
-        az = np.roll(az, -ix_minaz)
-    # rotate accordingly
-    data = np.roll(data, -ix_minaz, axis=0)
-    data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
-    # Ranges
-    binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
-    r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
-    # collect attributes
-    attrs =  {}
-    for attrname in dset.ncattrs():
-        attrs[attrname] = dset.getncattr(attrname)
-    # Limiting the returned range
-    if range_lim and range_lim / binwidth <= data.shape[1]:
-        data = data[:,:range_lim / binwidth]
-        r = r[:range_lim / binwidth]
-    # Set additional metadata attributes
-    attrs['az'] = az
-    attrs['r']  = r
-    attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
-    attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
-    attrs['max_range'] = data.shape[1] * binwidth
-    dset.close()
+    try:
+        # read the data from file
+        dset = nc.Dataset(filename)
+        data = dset.variables[dset.TypeName][:]
+        # Check azimuth angles and rotate image
+        az = dset.variables['Azimuth'][:]
+        # These are the indices of the minimum and maximum azimuth angle
+        ix_minaz = np.argmin(az)
+        ix_maxaz = np.argmax(az)
+        if enforce_equidist:
+            az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
+        else:
+            az = np.roll(az, -ix_minaz)
+        # rotate accordingly
+        data = np.roll(data, -ix_minaz, axis=0)
+        data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
+        # Ranges
+        binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
+        r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
+        # collect attributes
+        attrs =  {}
+        for attrname in dset.ncattrs():
+            attrs[attrname] = dset.getncattr(attrname)
+        # Limiting the returned range
+        if range_lim and range_lim / binwidth <= data.shape[1]:
+            data = data[:,:range_lim / binwidth]
+            r = r[:range_lim / binwidth]
+        # Set additional metadata attributes
+        attrs['az'] = az
+        attrs['r']  = r
+        attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
+        attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
+        attrs['max_range'] = data.shape[1] * binwidth
+    except:
+        raise
+    finally:
+        dset.close()
 
     return data, attrs
 
