@@ -304,7 +304,7 @@ def writePolygon2Text(fname, polygons):
         f.write('END\n')
 
 
-def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
+def read_EDGE_netcdf(filename, enforce_equidist=False):
     """Data reader for netCDF files exported by the EDGE radar software
 
     The corresponding NetCDF files from the EDGE software typically contain only
@@ -317,8 +317,6 @@ def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
     Parameters
     ----------
     filename : path of the netCDF file
-    range_lim : range limitation [m] of the returned radar data
-                (200000 per default)
     enforce_equidist : boolean
         Set True if the values of the azimuth angles should be forced to be equidistant
         default value is False
@@ -351,10 +349,10 @@ def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
         attrs =  {}
         for attrname in dset.ncattrs():
             attrs[attrname] = dset.getncattr(attrname)
-        # Limiting the returned range
-        if range_lim and range_lim / binwidth <= data.shape[1]:
-            data = data[:,:range_lim / binwidth]
-            r = r[:range_lim / binwidth]
+##        # Limiting the returned range
+##        if range_lim and range_lim / binwidth <= data.shape[1]:
+##            data = data[:,:range_lim / binwidth]
+##            r = r[:range_lim / binwidth]
         # Set additional metadata attributes
         attrs['az'] = az
         attrs['r']  = r
