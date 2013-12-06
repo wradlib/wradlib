@@ -393,7 +393,7 @@ def parse_DWD_quant_composite_header(header):
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00", "%d%H%M%y%m%S")
+    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00", "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
     pos_VS = header.find("VS")
@@ -403,7 +403,7 @@ def parse_DWD_quant_composite_header(header):
     pos_GP = header.find("GP")
     pos_MS = header.find("MS")
     if pos_VS > -1:
-        out["maxrange"] = {0:"100 km and 128 km (mixed)", 1: "100 km", 2:"128 km" }[int(header[(pos_VS+2):pos_SW])]
+        out["maxrange"] = {0:"100 km and 128 km (mixed)", 1: "100 km", 2:"128 km", 3:"150 km" }[int(header[(pos_VS+2):pos_SW])]
     else:
         out["maxrange"] = "100 km"
     out["radolanversion"] = header[(pos_SW+2):pos_PR]
