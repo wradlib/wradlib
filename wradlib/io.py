@@ -463,11 +463,11 @@ def read_RADOLAN_composite(fname):
         print "WARNING: You are using this function for a non composite file"
         print "It might work...but please check the validity of the results"
     if attrs["producttype"] == "RX":
-        # NOT TESTED, YET
         # read the actual data
         indat = f.read(attrs["nrow"]*attrs["ncol"])
-        # convert to 16-bit integers
-        arr = np.frombuffer(indat, np.int8)
+        # convert from 8-bit integers
+        # and upgrade to 32-bit ints, so that nodata values may be inserted
+        arr = np.frombuffer(indat, np.uint8).astype(np.int)
         arr = np.where(arr==250,NODATA,arr)
         clutter = np.where(arr==249)[0]
     else:
