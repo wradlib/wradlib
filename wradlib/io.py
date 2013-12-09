@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Name:         clutter
+# Name:         io
 # Purpose:
 #
 # Authors:      Maik Heistermann, Stephan Jacobi and Thomas Pfaff
@@ -422,7 +422,7 @@ def read_RADOLAN_composite(fname):
     The quantitative composite format of the DWD (German Weather Service) was
     established in the course of the `RADOLAN project <http://www.dwd.de/radolan>`
     and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG and
-    many, many more (see format description on the project homepage, [DWD2009).
+    many, many more (see format description on the project homepage, [DWD2009]).
 
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
     resolution and in polar-stereographic projection.
