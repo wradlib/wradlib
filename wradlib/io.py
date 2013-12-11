@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Name:         clutter
+# Name:         io
 # Purpose:
 #
 # Authors:      Maik Heistermann, Stephan Jacobi and Thomas Pfaff
@@ -304,7 +304,7 @@ def writePolygon2Text(fname, polygons):
         f.write('END\n')
 
 
-def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
+def read_EDGE_netcdf(filename, enforce_equidist=False):
     """Data reader for netCDF files exported by the EDGE radar software
 
     The corresponding NetCDF files from the EDGE software typically contain only
@@ -317,8 +317,6 @@ def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
     Parameters
     ----------
     filename : path of the netCDF file
-    range_lim : range limitation [m] of the returned radar data
-                (200000 per default)
     enforce_equidist : boolean
         Set True if the values of the azimuth angles should be forced to be equidistant
         default value is False
@@ -328,39 +326,43 @@ def read_EDGE_netcdf(filename, range_lim = 200000., enforce_equidist=False):
     output : numpy array of image data (dBZ), dictionary of attributes
 
     """
-    # read the data from file
-    dset = nc.Dataset(filename)
-    data = dset.variables[dset.TypeName][:]
-    # Check azimuth angles and rotate image
-    az = dset.variables['Azimuth'][:]
-    # These are the indices of the minimum and maximum azimuth angle
-    ix_minaz = np.argmin(az)
-    ix_maxaz = np.argmax(az)
-    if enforce_equidist:
-        az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
-    else:
-        az = np.roll(az, -ix_minaz)
-    # rotate accordingly
-    data = np.roll(data, -ix_minaz, axis=0)
-    data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
-    # Ranges
-    binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
-    r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
-    # collect attributes
-    attrs =  {}
-    for attrname in dset.ncattrs():
-        attrs[attrname] = dset.getncattr(attrname)
-    # Limiting the returned range
-    if range_lim and range_lim / binwidth <= data.shape[1]:
-        data = data[:,:range_lim / binwidth]
-        r = r[:range_lim / binwidth]
-    # Set additional metadata attributes
-    attrs['az'] = az
-    attrs['r']  = r
-    attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
-    attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
-    attrs['max_range'] = data.shape[1] * binwidth
-    dset.close()
+    try:
+        # read the data from file
+        dset = nc.Dataset(filename)
+        data = dset.variables[dset.TypeName][:]
+        # Check azimuth angles and rotate image
+        az = dset.variables['Azimuth'][:]
+        # These are the indices of the minimum and maximum azimuth angle
+        ix_minaz = np.argmin(az)
+        ix_maxaz = np.argmax(az)
+        if enforce_equidist:
+            az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
+        else:
+            az = np.roll(az, -ix_minaz)
+        # rotate accordingly
+        data = np.roll(data, -ix_minaz, axis=0)
+        data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
+        # Ranges
+        binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
+        r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
+        # collect attributes
+        attrs =  {}
+        for attrname in dset.ncattrs():
+            attrs[attrname] = dset.getncattr(attrname)
+##        # Limiting the returned range
+##        if range_lim and range_lim / binwidth <= data.shape[1]:
+##            data = data[:,:range_lim / binwidth]
+##            r = r[:range_lim / binwidth]
+        # Set additional metadata attributes
+        attrs['az'] = az
+        attrs['r']  = r
+        attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
+        attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
+        attrs['max_range'] = data.shape[1] * binwidth
+    except:
+        raise
+    finally:
+        dset.close()
 
     return data, attrs
 
@@ -391,7 +393,7 @@ def parse_DWD_quant_composite_header(header):
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00", "%d%H%M%y%m%S")
+    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00", "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
     pos_VS = header.find("VS")
@@ -401,7 +403,7 @@ def parse_DWD_quant_composite_header(header):
     pos_GP = header.find("GP")
     pos_MS = header.find("MS")
     if pos_VS > -1:
-        out["maxrange"] = {0:"100 km and 128 km (mixed)", 1: "100 km", 2:"128 km" }[int(header[(pos_VS+2):pos_SW])]
+        out["maxrange"] = {0:"100 km and 128 km (mixed)", 1: "100 km", 2:"128 km", 3:"150 km" }[int(header[(pos_VS+2):pos_SW])]
     else:
         out["maxrange"] = "100 km"
     out["radolanversion"] = header[(pos_SW+2):pos_PR]
@@ -420,7 +422,7 @@ def read_RADOLAN_composite(fname):
     The quantitative composite format of the DWD (German Weather Service) was
     established in the course of the `RADOLAN project <http://www.dwd.de/radolan>`
     and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG and
-    many, many more (see format description on the project homepage, [DWD2009).
+    many, many more (see format description on the project homepage, [DWD2009]).
 
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
     resolution and in polar-stereographic projection.
@@ -461,11 +463,11 @@ def read_RADOLAN_composite(fname):
         print "WARNING: You are using this function for a non composite file"
         print "It might work...but please check the validity of the results"
     if attrs["producttype"] == "RX":
-        # NOT TESTED, YET
         # read the actual data
         indat = f.read(attrs["nrow"]*attrs["ncol"])
-        # convert to 16-bit integers
-        arr = np.frombuffer(indat, np.int8)
+        # convert from 8-bit integers
+        # and upgrade to 32-bit ints, so that nodata values may be inserted
+        arr = np.frombuffer(indat, np.uint8).astype(np.int)
         arr = np.where(arr==250,NODATA,arr)
         clutter = np.where(arr==249)[0]
     else:
