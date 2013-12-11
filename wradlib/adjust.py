@@ -108,6 +108,7 @@ References
 # site packages
 import numpy as np
 from scipy.spatial import cKDTree
+from scipy.stats import linregress
 
 # wradlib modules
 import wradlib.ipol as ipol
@@ -777,17 +778,25 @@ class AdjustMFB(AdjustBase):
         elif biasby=="linregr":
             ix_ = np.where(np.logical_not(ratios.mask))[0]
             x = obs[ix][ix_]
-            x = x[:,np.newaxis]
             y = rawatobs[ix][ix_]
+            # check whether we should adjust or not
             try:
-                slope, _,_,_ = np.linalg.lstsq(x,y)
-                if not slope[0]==0:
-                    corrfact = 1. / slope[0]
-                else:
-                    corrfact = 1.
+                slope,intercept,r,p,stderr=linregress(x,y)
             except:
-                # no correction if linear regression fails
-                corrfact = 1.
+                slope, r, p = 0, 0, np.inf
+            if slope > 0.1 and r > 0.5 and p < 0.01:
+                x = x[:,np.newaxis]
+                try:
+                    slope, _,_,_ = np.linalg.lstsq(x,y)
+                    if not slope[0]==0:
+                        corrfact = 1. / slope[0]
+                    else:
+                        corrfact = 1.
+                except:
+                    # no correction if linear regression fails
+                    corrfact = 1.
+            else:
+                corrfact=1.
         else:
             print("WARNING: Invalid <biasby> argument value for AdjustMFB: %s" % biasby)
             print("         Using default value biasby='mean' instead.")
