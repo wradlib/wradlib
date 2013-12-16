@@ -458,7 +458,7 @@ def polar2latlonalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     # local earth radius
     re = re + centalt
 
-    alt = beam_height_n(r, elev, re, ke)
+    alt = beam_height_n(r, elev, re, ke) + centalt
 
     a   = np.deg2rad(-(180. + az))
     h   =  0.5*np.pi - arc_distance_n(r, elev, re, ke)/re
