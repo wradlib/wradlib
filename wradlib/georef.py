@@ -233,6 +233,23 @@ def polar2latlonalt(r, az, elev, sitecoords, re=6370040.):
     -------
     output : a tuple of three arrays (latitudes, longitudes, altitudes)
 
+    Example
+    -------
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
+    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
+    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
+    >>> csite = (48.0, 9.0)
+    >>> lat1, lon1, alt1 = polar2latlonalt_n(r, az, th, csite)
+    >>> for x, y, z in zip(lat1, lon1, alt1):
+    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...
+    48.0000,  9.0000,  0.0000
+    48.0000,  9.0000,  0.0000
+    48.9983,  9.0000, 967.0320
+    48.0000, 10.4919, 967.0320
+    47.0017,  9.0000, 967.0320
+    48.0000,  7.5084, 1935.4568
+
     """
     centlat = sitecoords[0]
     centlon = sitecoords[1]
@@ -414,15 +431,16 @@ def polar2latlonalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
     >>> csite = (48.0, 9.0)
-    >>> lat1, lon1, alt1 = polar2latlonalt(r, az, th, csite)
+    >>> lat1, lon1, alt1 = polar2latlonalt_n(r, az, th, csite)
     >>> for x, y, z in zip(lat1, lon1, alt1):
-    ...     print '{0:6.2f}, {1:6.2f}, {2:6.2f}'.format(x, y, z)
-     48.00,   9.00,   0.00
-     48.00,   9.00,   0.00
-     49.00,   9.00, 725.30
-     47.99,  10.49, 725.30
-     47.00,   9.00, 725.30
-     47.99,   7.51, 1693.81
+    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...
+    48.0000,  9.0000,  0.0000
+    48.0000,  9.0000,  0.0000
+    48.9983,  9.0000, 725.2981
+    47.9903, 10.4918, 725.2981
+    47.0017,  9.0000, 725.2981
+    47.9903,  7.5084, 1693.8056
 
     Here, the coordinates of the east and west directions won't come to lie on
     the latitude of the site because the beam doesn't travel along the latitude
