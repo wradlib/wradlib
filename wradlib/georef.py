@@ -353,7 +353,7 @@ def arc_distance_n(r, theta, re=6370040., ke=4./3.):
                              (ke*re + height_n(r, theta, re, ke)))
 
 
-def polar2latlonalt_n(r, az, th, sitecoords, re=6370040., ke=4./3.):
+def polar2latlonalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     """Transforms polar coordinates (of a PPI) to latitude/longitude \
     coordinates taking elevation angle and refractivity into account.
 
@@ -432,11 +432,18 @@ def polar2latlonalt_n(r, az, th, sitecoords, re=6370040., ke=4./3.):
     """
     phi = np.deg2rad(sitecoords[0])
     lam = np.deg2rad(sitecoords[1])
+    try:
+        centalt = sitecoords[2]
+    except:
+        centalt = 0.
 
-    alt = height_n(r, th, re, ke)
+    # local earth radius
+    re = re + centalt
+
+    alt = beam_height_n(r, elev, re, ke)
 
     a   = np.deg2rad(-(180. + az))
-    h   =  0.5*np.pi - arc_distance_n(r, th, re, ke)/re
+    h   =  0.5*np.pi - arc_distance_n(r, elev, re, ke)/re
 
     delta, tau = hor2aeq(a, h, phi)
     latc = np.rad2deg(delta)
