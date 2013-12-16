@@ -350,7 +350,7 @@ def arc_distance_n(r, theta, re=6370040., ke=4./3.):
 
     """
     return ke*re * np.arcsin((r*np.cos(np.radians(theta)))/
-                             (ke*re + height_n(r, theta, re, ke)))
+                             (ke*re + beam_height_n(r, theta, re, ke)))
 
 
 def polar2latlonalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
