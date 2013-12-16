@@ -309,7 +309,7 @@ def beam_height_n(r, theta, re=6370040., ke=4./3.):
     .. [Doviak1993] Doviak R.J., Zrnic D.S, Doppler Radar and Weather
         Observations, Academic Press, 562pp, 1993, ISBN 0-12-221422-6
     """
-    return np.sqrt( r**2 + (ke*re)**2 + 2*r*ke*re*np.sin(theta) ) - ke*re
+    return np.sqrt( r**2 + (ke*re)**2 + 2*r*ke*re*np.sin(np.radians(theta)) ) - ke*re
 
 
 def arc_distance_n(r, theta, re=6370040., ke=4./3.):
@@ -349,7 +349,8 @@ def arc_distance_n(r, theta, re=6370040., ke=4./3.):
     beam_height_n
 
     """
-    return ke*re * np.arcsin((r*np.cos(theta))/(ke*re + height_n(r, theta, re, ke)))
+    return ke*re * np.arcsin((r*np.cos(np.radians(theta)))/
+                             (ke*re + height_n(r, theta, re, ke)))
 
 
 def polar2latlonalt_n(r, az, th, sitecoords, re=6370040., ke=4./3.):
@@ -432,10 +433,10 @@ def polar2latlonalt_n(r, az, th, sitecoords, re=6370040., ke=4./3.):
     phi = np.deg2rad(sitecoords[0])
     lam = np.deg2rad(sitecoords[1])
 
-    alt = height_n(r, np.deg2rad(th), re, ke)
+    alt = height_n(r, th, re, ke)
 
     a   = np.deg2rad(-(180. + az))
-    h   =  0.5*np.pi - arc_distance_n(r, np.deg2rad(th), re, ke)/re
+    h   =  0.5*np.pi - arc_distance_n(r, th, re, ke)/re
 
     delta, tau = hor2aeq(a, h, phi)
     latc = np.rad2deg(delta)
