@@ -453,7 +453,6 @@ def read_RADOLAN_composite(fname, missing=-9999):
         URL: http://dwd.de/radolan (in German)
 
     """
-    result = []
     mask = 4095 # max value integer
     NODATA = missing
     header = '' # header string for later processing
