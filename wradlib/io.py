@@ -496,9 +496,9 @@ def read_RADOLAN_composite(fname, missing=-9999):
         if attrs["producttype"]=="RD":
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
-        # convert no data to NaN
-        ### This is the old way
-        ##arr = np.where(arr==2500,np.nan,arr)
+        # apply precision factor
+        arr *= attrs["precision"]
+        # set nodata value
         arr[nodata] = NODATA
     # bring it into shape
     arr = arr.reshape( (attrs["nrow"], attrs["ncol"]) )
