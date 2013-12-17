@@ -422,7 +422,7 @@ def parse_DWD_quant_composite_header(header):
     return out
 
 
-def read_RADOLAN_composite(fname):
+def read_RADOLAN_composite(fname, missing=-9999):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
@@ -436,6 +436,8 @@ def read_RADOLAN_composite(fname):
     Parameters
     ----------
     fname : path to the composite file
+
+    missing : value assigned to no-data cells
 
     Returns
     -------
@@ -453,7 +455,7 @@ def read_RADOLAN_composite(fname):
     """
     result = []
     mask = 4095 # max value integer
-    NODATA = -9999
+    NODATA = missing
     header = '' # header string for later processing
     # open file handle
     f = open(fname, 'rb')
@@ -464,7 +466,7 @@ def read_RADOLAN_composite(fname):
             break
         header = header + mychar
     attrs = parse_DWD_quant_composite_header(header)
-    attrs["nodataflag"] = -9999
+    attrs["nodataflag"] = NODATA
     if not attrs["radarid"]=="10000":
         warnings.warn("WARNING: You are using function e" +
                       "wradlib.io.read_RADOLAN_composit for a non " +
