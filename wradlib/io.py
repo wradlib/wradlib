@@ -411,9 +411,10 @@ def parse_DWD_quant_composite_header(header):
                            3:"150 km" }[int(header[(pos_VS+2):pos_VS+4])]
     else:
         out["maxrange"] = "100 km"
-    out["radolanversion"] = header[(pos_SW+2):pos_PR]
-    out["intervalseconds"] = int(header[(pos_INT+3):pos_GP])*60
-    dimstrings = header[(pos_GP+2):pos_MS].strip().split("x")
+    out["radolanversion"] = header[(pos_SW+2):pos_SW+11]
+    out["precision"] = 10**int(header[pos_PR+4:pos_PR+7])
+    out["intervalseconds"] = int(header[(pos_INT+3):pos_INT+7])*60
+    dimstrings = header[(pos_GP+2):pos_GP+11].strip().split("x")
     out["nrow"] = int(dimstrings[0])
     out["ncol"] = int(dimstrings[1])
     locationstring = header[(pos_MS+2):].strip().split("<")[1].strip().strip(">")
