@@ -506,6 +506,9 @@ def read_RADOLAN_composite(fname, missing=-9999):
     # append clutter mask
     attrs['cluttermask'] = clutter
 
+    # close the file
+    f.close()
+
     return arr, attrs
 
 def browse_hdf5_group(grp):
