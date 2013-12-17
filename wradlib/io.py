@@ -39,6 +39,7 @@ import datetime as dt
 import pytz
 import cPickle as pickle
 import os
+import warnings
 
 # site packages
 import h5py
@@ -460,8 +461,11 @@ def read_RADOLAN_composite(fname):
     attrs = parse_DWD_quant_composite_header(header)
     attrs["nodataflag"] = -9999
     if not attrs["radarid"]=="10000":
-        print "WARNING: You are using this function for a non composite file"
-        print "It might work...but please check the validity of the results"
+        warnings.warn("WARNING: You are using function e" +
+                      "wradlib.io.read_RADOLAN_composit for a non " +
+                      "composite file.\n " +
+                      "This might work...but please check the validity " +
+                      "of the results")
     if attrs["producttype"] == "RX":
         # read the actual data
         indat = f.read(attrs["nrow"]*attrs["ncol"])
