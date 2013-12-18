@@ -83,7 +83,7 @@ except ImportError:
 
 
 
-def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, copy=False):
+def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, L=7, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
     This approach is based on [Vulpiani2012]_ and involves a two step procedure
@@ -101,6 +101,8 @@ def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, copy=False):
     rho : array of shape (n azimuth angles, n range gates)
     N_despeckle : integer
         *N* parameter of function dp.linear_despeckle
+    L : integer
+        *L* parameter of dp.kdp_from_phidp4
     copy : boolean
         leaves the original phidp array untouched
 
@@ -120,7 +122,7 @@ def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, copy=False):
     # despeckle
     phidp = linear_despeckle(phidp,N_despeckle)
     # kdp retrieval first guess
-    kdp1 = kdp_from_phidp4(phidp, dr=dr)
+    kdp1 = kdp_from_phidp4(phidp, dr=dr, L=L)
     # remove extreme values
     kdp1[kdp1>20] = 0
     kdp1[np.logical_and(kdp1<-2,kdp1>-20)] = 0
@@ -130,7 +132,7 @@ def process_raw_phidp2(phidp, rho, dr, N_despeckle=5, copy=False):
 
     # clean up unfolded PhiDP
     phidp[phidp>360] = np.nan
-    kdp2 = kdp_from_phidp4(phidp, dr=dr)
+    kdp2 = kdp_from_phidp4(phidp, dr=dr, L=L)
     kdp2 = np.nan_to_num(kdp2)
 
     # remove extreme values
