@@ -515,7 +515,45 @@ def browse_hdf5_group(grp):
     """
     pass
 
+def read_generic_hdf5(fname):
+    """Reads hdf5 files according to their structure
 
+    In contrast to other file readers under wradlib.io, this function will *not* return
+    a two item tuple with (data, metadata). Instead, this function returns ONE
+    dictionary that contains all the file contents - both data and metadata. The keys
+    of the output dictionary conform to the Group/Subgroup directory branches of
+    the original file.
+
+    Parameters
+    ----------
+    fname : string (a hdf5 file path)
+
+    Returns
+    -------
+    output : a dictionary that contains both data and metadata according to the
+              original hdf5 file structure
+    
+    """
+    f = h5py.File(fname, "r")
+    fcontent = {}
+    def filldict(x, y):
+        # create a new container
+        tmp = {}
+        # add attributes if present
+        if len(y.attrs) > 0:
+            tmp['attrs'] = dict(y.attrs)
+        # add data if it is a dataset
+        if isinstance(y, h5py.Dataset):
+            tmp['data'] = np.array(y)
+        # only add to the dictionary, if we have something meaningful to add
+        if tmp != {}:
+            fcontent[x] = tmp
+    f.visititems(filldict)
+
+    f.close()
+
+    return fcontent
+    
 def read_OPERA_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
