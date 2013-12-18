@@ -389,6 +389,73 @@ def _get_tdelta(tstart, tend, as_secs=False):
         return _tdelta2seconds(tend-tstart)
 
 
+def iso2datetime(iso):
+    """Converts an ISO formatted time string to a datetime object."""
+    try:
+        return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%f")
+    except (ValueError, TypeError):
+        return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S")
+
+
+def timestamp2index(ts, delta, refts, **kwargs):
+    """Calculates the array index for a certain time in an equidistant
+    time-series given the reference time (where the index would be 0)
+    and the time discretization.
+    If any of the input parameters contains timezone information, all others
+    also need to contain timezone information.
+
+    Parameters
+    ----------
+    ts        : str or datetime-object
+                The timestamp to determine the index for
+                If it is a string, it will be converted to datetime using the
+                function iso2datetime
+
+    delta     : str or timedelta object
+                The discretization of the time series (the amount of time that
+                elapsed between indices)
+                If used as a string, it needs to be given in the format
+                "keyword1=value1,keyword2=value2". Keywords must be understood
+                by the timedelta constructor (like days, hours,
+                minutes, seconds) and the values may only be integers.
+
+    refts     : str or datetime-object
+                The timestamp to determine the index for
+                If it is a string, it will be converted to datetime using the
+                function iso2datetime
+
+    Returns
+    -------
+    index    : integer
+               The index of a discrete time series array of the given
+               parameters
+
+    Example
+    -------
+    >>> timestr1, timestr2 = '2008-06-01T00:00:00', '2007-01-01T00:00:00'
+    >>> timestamp2index(timestr1, 'minutes=5', timestr2)
+    148896
+    >>> timestamp2index(timestr1, 'hours=1,minutes=5',timestr2)
+    11453
+    >>> timestamp2index(timestr1, timedelta(hours=1, minutes=5), timestr2)
+    11453
+    """
+    if not isinstance(ts, dt.datetime):
+        _ts = iso2datetime(ts, **kwargs)
+    else:
+        _ts = ts
+    if not isinstance(refts, dt.datetime):
+        _refts = iso2datetime(refts, **kwargs)
+    else:
+        _refts = refts
+    if not isinstance(delta, dt.timedelta):
+        kwargs = dict([(sp[0], int(sp[1]))
+                       for sp in [item.split('=') for item in delta.split(',')]])
+        _dt = dt.timedelta(**kwargs)
+    else:
+        _dt = delta
+    return int(_tdelta2seconds(_ts - _refts) / _tdelta2seconds(_dt))
+
 
 def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None):
     """Identifies valid entries in an array and returns the corresponding indices
