@@ -209,7 +209,7 @@ class ErrorMetrics():
     def pbias(self):
         """Percent bias
         """
-        return np.round( self.meanerr() / np.mean(self.obs), 2)
+        return np.round( self.meanerr() * 100./ np.mean(self.obs), 1)
     def all(self):
         """Returns a dictionary of all error metrics
         """
@@ -237,12 +237,15 @@ class ErrorMetrics():
            measurement unit of the observations / estimates
 
         """
+        if self.n == 0:
+            print "No valid data, no plot."
+            return None
         doplot = False
         if ax==None:
             fig = pl.figure()
             ax  = fig.add_subplot(111, aspect=1.)
             doplot = True
-        ax.plot(self.obs, self.est, "bo")
+        ax.plot(self.obs, self.est, mfc="None", mec="black", marker="o", lw=0)
         pl.xlim(xmin=0., xmax=maxval)
         pl.ylim(ymin=0., ymax=maxval)
         if maxval==None:
@@ -257,7 +260,7 @@ class ErrorMetrics():
         """Pretty prints a summary of error metrics
         """
         pprint( self.all() )
-    def report(self, metrics=["rmse","nash","meanerr"], ax=None, unit="", maxval=None):
+    def report(self, metrics=["rmse","nash","pbias"], ax=None, unit="", maxval=None):
         """Pretty prints selected error metrics over a scatter plot
 
         Parameters
@@ -271,6 +274,9 @@ class ErrorMetrics():
            measurement unit of the observations / estimates
 
         """
+        if self.n == 0:
+            print "No valid data, no report."
+            return None
         doplot = False
         if ax==None:
             fig = pl.figure()
