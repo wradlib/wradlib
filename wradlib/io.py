@@ -39,6 +39,7 @@ import datetime as dt
 import pytz
 import cPickle as pickle
 import os
+import warnings
 
 # site packages
 import h5py
@@ -393,7 +394,8 @@ def parse_DWD_quant_composite_header(header):
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00", "%d%H%M%m%y%S")
+    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00",
+                                           "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
     pos_VS = header.find("VS")
@@ -403,12 +405,16 @@ def parse_DWD_quant_composite_header(header):
     pos_GP = header.find("GP")
     pos_MS = header.find("MS")
     if pos_VS > -1:
-        out["maxrange"] = {0:"100 km and 128 km (mixed)", 1: "100 km", 2:"128 km", 3:"150 km" }[int(header[(pos_VS+2):pos_SW])]
+        out["maxrange"] = {0:"100 km and 128 km (mixed)",
+                           1: "100 km",
+                           2:"128 km",
+                           3:"150 km" }[int(header[(pos_VS+2):pos_VS+4])]
     else:
         out["maxrange"] = "100 km"
-    out["radolanversion"] = header[(pos_SW+2):pos_PR]
-    out["intervalseconds"] = int(header[(pos_INT+3):pos_GP])*60
-    dimstrings = header[(pos_GP+2):pos_MS].strip().split("x")
+    out["radolanversion"] = header[(pos_SW+2):pos_SW+11]
+    out["precision"] = 10**int(header[pos_PR+4:pos_PR+7])
+    out["intervalseconds"] = int(header[(pos_INT+3):pos_INT+7])*60
+    dimstrings = header[(pos_GP+2):pos_GP+11].strip().split("x")
     out["nrow"] = int(dimstrings[0])
     out["ncol"] = int(dimstrings[1])
     locationstring = header[(pos_MS+2):].strip().split("<")[1].strip().strip(">")
@@ -416,7 +422,7 @@ def parse_DWD_quant_composite_header(header):
     return out
 
 
-def read_RADOLAN_composite(fname):
+def read_RADOLAN_composite(fname, missing=-9999):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
@@ -430,6 +436,8 @@ def read_RADOLAN_composite(fname):
     Parameters
     ----------
     fname : path to the composite file
+
+    missing : value assigned to no-data cells
 
     Returns
     -------
@@ -445,9 +453,8 @@ def read_RADOLAN_composite(fname):
         URL: http://dwd.de/radolan (in German)
 
     """
-    result = []
     mask = 4095 # max value integer
-    NODATA = -9999
+    NODATA = missing
     header = '' # header string for later processing
     # open file handle
     f = open(fname, 'rb')
@@ -458,10 +465,13 @@ def read_RADOLAN_composite(fname):
             break
         header = header + mychar
     attrs = parse_DWD_quant_composite_header(header)
-    attrs["nodataflag"] = -9999
+    attrs["nodataflag"] = NODATA
     if not attrs["radarid"]=="10000":
-        print "WARNING: You are using this function for a non composite file"
-        print "It might work...but please check the validity of the results"
+        warnings.warn("WARNING: You are using function e" +
+                      "wradlib.io.read_RADOLAN_composit for a non " +
+                      "composite file.\n " +
+                      "This might work...but please check the validity " +
+                      "of the results")
     if attrs["producttype"] == "RX":
         # read the actual data
         indat = f.read(attrs["nrow"]*attrs["ncol"])
@@ -485,15 +495,18 @@ def read_RADOLAN_composite(fname):
         if attrs["producttype"]=="RD":
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
-        # convert no data to NaN
-        ### This is the old way
-        ##arr = np.where(arr==2500,np.nan,arr)
+        # apply precision factor
+        arr *= attrs["precision"]
+        # set nodata value
         arr[nodata] = NODATA
     # bring it into shape
     arr = arr.reshape( (attrs["nrow"], attrs["ncol"]) )
-##    arr = np.flipud(arr)
+
     # append clutter mask
     attrs['cluttermask'] = clutter
+
+    # close the file
+    f.close()
 
     return arr, attrs
 
