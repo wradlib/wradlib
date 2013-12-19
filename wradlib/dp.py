@@ -136,35 +136,35 @@ def process_raw_phidp_vulpiani(phidp, rho, dr, N_despeckle=5, L=7, niter=2, copy
     # despeckle
     phidp = linear_despeckle(phidp,N_despeckle)
     # kdp retrieval first guess
-    kdp1 = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
+    kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
     # remove extreme values
-    kdp1[kdp1>20] = 0
-    kdp1[np.logical_and(kdp1<-2,kdp1>-20)] = 0
+    kdp[kdp>20] = 0
+    kdp[np.logical_and(kdp<-2,kdp>-20)] = 0
 
     # unfold phidp
-    phidp = unfold_phi_vulpiani(phidp, kdp1)
+    phidp = unfold_phi_vulpiani(phidp, kdp)
 
     # clean up unfolded PhiDP
     phidp[phidp>360] = np.nan
 
     # kdp retrieval second guess
-    kdp2 = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
-    kdp2 = np.nan_to_num(kdp2)
+    kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
+    kdp = np.nan_to_num(kdp)
 
     # remove remaining extreme values
-    kdp2[kdp2>20] = 0
-    kdp2[kdp2<-2] = 0
+    kdp[kdp>20] = 0
+    kdp[kdp<-2] = 0
 
     # start the actual phidp/kdp iteration
     for i in xrange(niter):
         # phidp from kdop through integration
         phidp = 2 * np.cumsum(kdp, axis=-1) * dr
         # kdp from phidp by convolution
-        kdp = wradlib.dp.kdp_from_phidp_convolution(phidp, dr=0.5, L=kwargs["winsize"])
+        kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
         # convert all NaNs to zeros (normally, this line can be assumed to be redundant)
         kdp = np.nan_to_num(kdp)
 
-    return phidp
+    return phidp, kdp
 
 
 def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
