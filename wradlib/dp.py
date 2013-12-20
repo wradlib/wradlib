@@ -157,7 +157,7 @@ def process_raw_phidp_vulpiani(phidp, rho, dr, N_despeckle=5, L=7, niter=2, copy
 
     # start the actual phidp/kdp iteration
     for i in xrange(niter):
-        # phidp from kdop through integration
+        # phidp from kdp through integration
         phidp = 2 * np.cumsum(kdp, axis=-1) * dr
         # kdp from phidp by convolution
         kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
@@ -250,7 +250,7 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
     L = int(L)
     kdp = np.zeros(phidp.shape)
     for r in xrange(L/2, phidp.shape[-1]-L/2):
-        kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / L
+        kdp[...,r] = (phidp[...,r+L/2] - phidp[...,r-L/2]) / (L-1)
     return kdp / 2. / dr
 
 
