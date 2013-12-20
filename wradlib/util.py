@@ -31,6 +31,118 @@ import datetime as dt
 from time import mktime
 from scipy import interpolate
 from scipy.spatial import cKDTree
+from scipy.stats import nanmean
+
+
+def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, src, method="sum", minpercvalid=100.):
+    """Aggregates an equidistant time series to equidistant target time windows.
+
+    This function aggregates time series data under the assumption that the source
+    and the target time series are equidistant, and that the source time steps
+    regularly fit into the target time steps (no shifts at the boundaries).
+    This is the most trivial aggregation scenario.
+
+    However, the function allows for gaps in the source data. This means, we assume the
+    data to be equidistant (each item represents a time step with the same length),
+    but it does not need to be contiguous. NaN values in the source data are allowed,
+    too.
+
+    The output, though, will be a contiguous time series. This series will have NaN
+    values for those target time steps which were not sufficiently supported by source
+    data. The decision whether the support was "sufficient" is based on the argument
+    *minpercvalid*. This argument specifies the minimum percentage of valid source
+    time steps inside one target time step (valid meaning not NaN and not missing) which
+    is required to compute an aggregate. The default value of minpercvalid is 100 percent.
+    This means no gaps are allowed, and a target time step will be NaN if only one source
+    time step is missing.
+
+    Aggregation methods at the moment are "sum" and "mean" of the source data.
+
+    Parameters
+    ----------
+    tstart : isostring or datetime object
+        start of the target time series
+    tend : isostring or datetime object
+        end of the target time series
+    tdelta : integer
+        resolution of the target time series (seconds)
+    tends_src : sequence of isostrings or datetime objects
+        timestamps which define the END of the source time steps
+    tdelta_src : integer
+        resolution of the source data (seconds)
+    src : 1-d array of floats
+        source values
+
+    Returns
+    -------
+    tstarts : array of datetime objects
+        array of timestamps which defines the start of each target time step/window
+    tends : array of datetime objects
+        array of timestamps which defines the end of each target time step/window
+    agg : array of aggregated values
+        aggregated values for each target time step
+
+    Example
+    -------
+    >>> tstart = "2000-01-01 00:00:00"
+    >>> tend   = "2000-01-02 00:00:00"
+    >>> tdelta = 3600*6
+    >>> tends_src = ["2000-01-01 02:00:00","2000-01-01 03:00:00","2000-01-01 04:00:00","2000-01-01 05:00:00","2000-01-01 12:00:00"]
+    >>> tdelta_src = 3600
+    >>> src = [1,1,1,1,1]
+    >>> tstarts, tends, agg = aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, src, minpercvalid=50.)
+    >>> print agg
+    [  4.  nan  nan  nan]
+
+    """
+    # Check arguments and make sure they have the right type
+    src = np.array(src)
+    tstart = iso2datetime(tstart)
+    tend = iso2datetime(tend)
+    tends_src = np.array([iso2datetime(item) for item in tends_src])
+    twins = np.array(from_to(tstart, tend, tdelta))
+    tstarts = twins[:-1]
+    tends   = twins[1:]
+    tends_src_expected = np.array(from_to(tstart, tend, tdelta_src)[1:])
+
+    # Check consistency of timestamps and data
+    assert len(tends_src)==len(src), "Length of source timestamps tends_src must equal length of source data src."
+
+    # number of expected source time steps per target timestep
+    assert tdelta % tdelta_src == 0, "Target resolution %d is not a multiple of source resolution %d." % (tdelta, tdelta_src)
+    nexpected = tdelta / tdelta_src
+
+    # pre-select source data that is between tstart and tend
+    ixinside = (tends_src > tstart) & (tends_src <= tend)
+
+    # This is the source array sized as if it had no gaps
+    srcfull = np.repeat(np.nan, len(tends_src_expected))
+
+    # These are the indices of srcfull which actually have data accoridng to src
+    validix = np.where(np.in1d(tends_src_expected, tends_src[ixinside]))[0]
+    assert len(validix)==len(src[ixinside]), "Source and target time information as given by the arguments are not consistent."
+    srcfull[validix] = src[ixinside]
+
+    # results container
+    agg = np.repeat(np.nan, len(tstarts))
+
+    # iterate over target time windows
+    for i, begin in enumerate(tstarts):
+        end = tends[i]
+        ix = np.where((tends_src_expected>begin) & (tends_src_expected <= end))[0]
+        # valid source values found in target time window
+        nvalid = len(np.where(~np.isnan( srcfull[ix] ))[0])
+        if float(nvalid) / float(nexpected) >= minpercvalid/100.:
+            if method=="sum":
+                agg[i] = np.nansum( srcfull[ix] )
+            elif method=="mean":
+                agg[i] = nanmean( srcfull[ix] )
+            else:
+                print "Aggregation method not known, yet."
+                raise Exception()
+
+    return tstarts, tends, agg
+
 
 
 
@@ -388,6 +500,81 @@ def _get_tdelta(tstart, tend, as_secs=False):
     else:
         return _tdelta2seconds(tend-tstart)
 
+
+def iso2datetime(iso):
+    """Converts an ISO formatted time string to a datetime object."""
+    # in case the argument has been parsed to datetime before
+    if type(iso)==dt.datetime:
+        return iso
+    # sometimes isoformat seperates date and time by a white space
+    iso = iso.replace(" ", "T")
+    try:
+        return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%f")
+    except (ValueError, TypeError):
+        return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S")
+    except:
+        print("Could not convert argument <%r> to datetime. Probably not an isostring. See following traceback:" % iso)
+        raise
+
+
+def timestamp2index(ts, delta, refts, **kwargs):
+    """Calculates the array index for a certain time in an equidistant
+    time-series given the reference time (where the index would be 0)
+    and the time discretization.
+    If any of the input parameters contains timezone information, all others
+    also need to contain timezone information.
+
+    Parameters
+    ----------
+    ts        : str or datetime-object
+                The timestamp to determine the index for
+                If it is a string, it will be converted to datetime using the
+                function iso2datetime
+
+    delta     : str or timedelta object
+                The discretization of the time series (the amount of time that
+                elapsed between indices)
+                If used as a string, it needs to be given in the format
+                "keyword1=value1,keyword2=value2". Keywords must be understood
+                by the timedelta constructor (like days, hours,
+                minutes, seconds) and the values may only be integers.
+
+    refts     : str or datetime-object
+                The timestamp to determine the index for
+                If it is a string, it will be converted to datetime using the
+                function iso2datetime
+
+    Returns
+    -------
+    index    : integer
+               The index of a discrete time series array of the given
+               parameters
+
+    Example
+    -------
+    >>> timestr1, timestr2 = '2008-06-01T00:00:00', '2007-01-01T00:00:00'
+    >>> timestamp2index(timestr1, 'minutes=5', timestr2)
+    148896
+    >>> timestamp2index(timestr1, 'hours=1,minutes=5',timestr2)
+    11453
+    >>> timestamp2index(timestr1, timedelta(hours=1, minutes=5), timestr2)
+    11453
+    """
+    if not isinstance(ts, dt.datetime):
+        _ts = iso2datetime(ts, **kwargs)
+    else:
+        _ts = ts
+    if not isinstance(refts, dt.datetime):
+        _refts = iso2datetime(refts, **kwargs)
+    else:
+        _refts = refts
+    if not isinstance(delta, dt.timedelta):
+        kwargs = dict([(sp[0], int(sp[1]))
+                       for sp in [item.split('=') for item in delta.split(',')]])
+        _dt = dt.timedelta(**kwargs)
+    else:
+        _dt = delta
+    return int(_tdelta2seconds(_ts - _refts) / _tdelta2seconds(_dt))
 
 
 def _idvalid(data, isinvalid=[-99., 99, -9999., -9999], minval=None, maxval=None):
