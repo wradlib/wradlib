@@ -83,7 +83,7 @@ except ImportError:
 
 
 
-def process_raw_phidp_vulpiani(phidp, rho, dr, N_despeckle=5, L=7, niter=2, copy=False):
+def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
     This approach is based on [Vulpiani2012]_ and involves a two step procedure
@@ -104,7 +104,6 @@ def process_raw_phidp_vulpiani(phidp, rho, dr, N_despeckle=5, L=7, niter=2, copy
     Parameters
     ----------
     phidp : array of shape (n azimuth angles, n range gates)
-    rho : array of shape (n azimuth angles, n range gates)
     N_despeckle : integer
         *N* parameter of function dp.linear_despeckle
     L : integer
@@ -149,7 +148,7 @@ def process_raw_phidp_vulpiani(phidp, rho, dr, N_despeckle=5, L=7, niter=2, copy
 
     # kdp retrieval second guess
     kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
-    kdp = np.nan_to_num(kdp)
+    kdp = _fill_sweep(kdp)
 
     # remove remaining extreme values
     kdp[kdp>20] = 0
@@ -162,9 +161,42 @@ def process_raw_phidp_vulpiani(phidp, rho, dr, N_despeckle=5, L=7, niter=2, copy
         # kdp from phidp by convolution
         kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
         # convert all NaNs to zeros (normally, this line can be assumed to be redundant)
-        kdp = np.nan_to_num(kdp)
+        kdp = _fill_sweep(kdp)
 
     return phidp, kdp
+
+
+def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
+    """Fills missing data in a 1d profile
+
+    Parameters
+    ----------
+    dat : array of shape (n azimuth angles, n range gates)
+    kind : string
+        Defines how the filling is done.
+    fill_value : float
+        Fill value in areas of extrapolation.
+
+    """
+    if kind=="nan_to_num":
+        return np.nan_to_num(dat)
+
+    if not np.any( np.isnan(dat) ):
+        return dat
+
+    shape = dat.shape
+    dat = dat.reshape((-1,shape[-1]))
+
+    for beam in xrange(len(dat)):
+        invalid = np.isnan(dat[beam])
+        validx = np.where(~invalid)[0]
+        if len(validx)<2:
+            dat[beam,invalid] = 0.
+            continue
+        f = interp1d(validx, dat[beam,validx], kind=kind, bounds_error=False, fill_value=fill_value)
+        invalidx = np.where(invalid)[0]
+        dat[beam, invalidx] = f(invalidx)
+    return dat.reshape(shape)
 
 
 def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
