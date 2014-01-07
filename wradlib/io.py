@@ -484,7 +484,7 @@ def read_RADOLAN_composite(fname, missing=-9999):
         # read the actual data
         indat = f.read(attrs["nrow"]*attrs["ncol"]*2)
         # convert to 16-bit integers
-        arr = np.frombuffer(indat, np.int16)
+        arr = np.frombuffer(indat, np.uint16).astype(np.int)
         # evaluate bits 14, 15 and 16
         nodata   = np.where(arr & int("10000000000000",2))
         negative = np.where(arr & int("100000000000000",2))
