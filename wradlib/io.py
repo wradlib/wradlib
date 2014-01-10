@@ -133,12 +133,61 @@ def unpackDX(raw):
     return np.array(beam)
 
 
-def readDX(filename):
-    r"""Data reader for German Weather Service DX raw radar data files
-    developed by Thomas Pfaff.
+def parse_DX_header(header):
+    """Internal function to retrieve and interpret the ASCII header of a DWD
+    DX product file."""
+    # empty container
+    out = {}
+    # RADOLAN product type def
+    out["producttype"] = header[0:2]
+    # file time stamp as Python datetime object
+    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00",
+                                           "%d%H%M%m%y%S")
+    # radar location ID (always 10000 for composites)
+    out["radarid"] = header[8:13]
+    pos_BY = header.find("BY")
+    pos_VS = header.find("VS")
+    pos_CO = header.find("CO")
+    pos_CD = header.find("CD")
+    pos_CS = header.find("CS")
+    pos_EP = header.find("EP")
+    pos_MS = header.find("MS")
 
-    The algorith basically unpacks the zeroes and returns a regular array of
-    360 x 128 data values.
+    out['bytes'] = int(header[pos_BY+2:pos_BY+7])
+    out['version'] = header[pos_VS+2:pos_VS+4]
+    out['cluttermap'] = int(header[pos_CO+2:pos_CO+3])
+    out['dopplerfilter'] = int(header[pos_CD+2:pos_CD+3])
+    out['statfilter'] = int(header[pos_CS+2:pos_CS+3])
+    out['elevprofile'] = [float(header[pos_EP+2+3*i:pos_EP+2+3*(i+1)]) for i in range(8)]
+    out['message'] = header[pos_MS+5:pos_MS+5+int(header[pos_MS+2:pos_MS+5])]
+
+    return out
+
+
+def readDX(filename):
+    r"""Data reader for German Weather Service DX product raw radar data files.
+
+    This product uses a simple algorithm to compress zero values to reduce data
+    file size.
+
+    Notes
+    -----
+    While the format appears to be well defined, there have been reports on DX-
+    files that seem to produce errors. e.g. while one file usually contains a
+    360 degree by 128 1km range bins, there are files, that contain 361 beams.
+
+    Also, while usually azimuths are stored monotonously in ascending order,
+    this is not guaranteed by the format. This routine does not (yet) check
+    for this and directly returns the data in the order found in the file.
+    If you are in doubt, check the 'azim' attribute.
+
+    Be aware that this function does no extensive checking on its output.
+    If e.g. beams contain different numbers of range bins, the resulting data
+    will not be a 2-D array but a 1-D array of objects, which will most probably
+    break calling code. It was decided to leave the handling of these
+    (hopefully) rare events to the user, who might still be able to retrieve
+    some reasonable data, instead of raising an exception, making it impossible
+    to get any data from a file containing errors.
 
     Parameters
     ----------
@@ -154,6 +203,18 @@ def readDX(filename):
         - 'elev' - elevations (1 per azimuth); np.array of shape (360,)
         - 'clutter' - clutter mask; boolean array of same shape as `data`;
             corresponds to bit 15 set in each dataset.
+        - 'bytes'- the total product length (including header). Apparently,
+            this value may be off by one byte for unknown reasons
+        - 'version'- a product version string - use unknown
+        - 'cluttermap' - number of the (DWD internal) cluttermap used
+        - 'dopplerfilter' - number of the dopplerfilter used (DWD internal)
+        - 'statfilter' - number of a statistical filter used (DWD internal)
+        - 'elevprofile' - as stated in the format description, this list
+            indicates the elevations in the eight 45 degree sectors. These
+            sectors need not start at 0 degrees north, so it is advised to
+            explicitly evaluate the `elev` attribute, if elevation information
+            is needed.
+        - 'message' - additional text stored in the header.
     """
 
     azimuthbitmask = 2**(14-1)
@@ -166,41 +227,44 @@ def readDX(filename):
     else:
         f = open(filename, 'rb')
 
-    # the static part of the DX Header is 68 bytes long
-    # after that a variable message part is appended, which apparently can
-    # become quite long. Therefore we do it the dynamic way.
-    staticheadlen = 68
-    statichead = f.read(staticheadlen)
+    # header string for later processing
+    header = ''
+    atend = False
+    # read header
+    while True :
+        mychar = f.read(1)
+        # 0x03 signals the end of the header but sometimes there might be
+        # an additional 0x03 char after that
+        if (mychar == chr(3)):
+            atend=True
+        if mychar != chr(3) and atend:
+            break
+        header = header + mychar
 
-    # find MS and extract following number
-    msre = re.compile('MS([ 0-9]{3})')
-    mslen = int(msre.search(statichead).group(1))
-    # add to headlength and read that
-    headlen = staticheadlen + mslen + 1
+    attrs = parse_DX_header(header)
 
-    # this is now our first header length guess
-    # however, some files have an additional 0x03 byte after the first one
-    # (older files or those from the Uni Hannover don't, newer have it, if
-    # the header would end after an uneven number of bytes)
-    #headlen = headend
-    f.seek(headlen)
-    # so we read one more byte
-    void = f.read(1)
-    # and check if this is also a 0x03 character
-    if void == chr(3):
-        headlen = headlen + 1
+    # position file at end of header
+    f.seek(len(header))
 
-    # rewind the file
-    f.seek(0)
+    # read number of bytes as declared in the header
+    # intermediate fix:
+    # if product length is uneven but header is even (e.g. because it has two
+    # chr(3) at the end, read one byte less
+    buflen = attrs['bytes'] - len(header)
+    if (buflen % 2) !=0:
+        # make sure that this is consistent with our assumption
+        # i.e. contact DWD again, if DX files show up with uneven byte lengths
+        # *and* only one 0x03 character
+        assert header[-2] == chr(3)
+        buflen -= 1
 
-    # read the actual header
-    header = f.read(headlen)
-
+    buf = f.read(buflen)
     # we can interpret the rest directly as a 1-D array of 16 bit unsigned ints
-    raw = np.fromfile(f, dtype='uint16')
+    raw = np.frombuffer(buf, dtype='uint16')
 
-    # reading finished, close file.
-    f.close()
+    # reading finished, close file, but only if we opened it.
+    if type(filename)!=file:
+        f.close()
 
     # a new ray/beam starts with bit 14 set
     # careful! where always returns its results in a tuple, so in order to get
@@ -222,15 +286,13 @@ def readDX(filename):
     for i in range(newazimuths.size-1):
         # unpack zeros
         beam = unpackDX(raw[newazimuths[i]+3:newazimuths[i+1]])
-        # the beam may regularly only contain 128 bins, so we
-        # explicitly cut that here to get a rectangular data array
-        beams.append(beam[0:128])
+        beams.append(beam)
         elevs.append((raw[newazimuths[i]+2] & databitmask)/10.)
         azims.append((raw[newazimuths[i]+1] & databitmask)/10.)
 
     beams = np.array(beams)
 
-    attrs =  {}
+    #attrs =  {}
     attrs['elev']  = np.array(elevs)
     attrs['azim'] = np.array(azims)
     attrs['clutter'] = (beams & clutterflag) != 0
@@ -532,7 +594,7 @@ def read_generic_hdf5(fname):
     -------
     output : a dictionary that contains both data and metadata according to the
               original hdf5 file structure
-    
+
     """
     f = h5py.File(fname, "r")
     fcontent = {}
@@ -553,7 +615,7 @@ def read_generic_hdf5(fname):
     f.close()
 
     return fcontent
-    
+
 def read_OPERA_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
