@@ -21,6 +21,9 @@ Georeferencing
 
    polar2latlon
    polar2latlonalt
+   beam_height_n
+   arc_distance_n
+   polar2latlonalt_n
    polar2centroids
    polar2polyvert
    centroid2polyvert
@@ -230,6 +233,23 @@ def polar2latlonalt(r, az, elev, sitecoords, re=6370040.):
     -------
     output : a tuple of three arrays (latitudes, longitudes, altitudes)
 
+    Example
+    -------
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
+    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
+    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
+    >>> csite = (48.0, 9.0)
+    >>> lat1, lon1, alt1 = polar2latlonalt_n(r, az, th, csite)
+    >>> for x, y, z in zip(lat1, lon1, alt1):
+    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...
+    48.0000,  9.0000,  0.0000
+    48.0000,  9.0000,  0.0000
+    48.9983,  9.0000, 967.0320
+    48.0000, 10.4919, 967.0320
+    47.0017,  9.0000, 967.0320
+    48.0000,  7.5084, 1935.4568
+
     """
     centlat = sitecoords[0]
     centlon = sitecoords[1]
@@ -268,6 +288,186 @@ def _lonscale(lat, re=6370040.):
     """Return meters per degree longitude assuming spherical earth
     """
     return (2*np.pi*re / 360.) * np.cos( np.deg2rad(lat) )
+
+
+def beam_height_n(r, theta, re=6370040., ke=4./3.):
+    r"""Calculates the height of a radar beam taking the refractivity of the
+    atmosphere into account.
+
+    Based on [Doviak1993]_ the beam height is calculated as
+
+    .. math::
+
+        h = \sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \sin\theta} - k_e r_e
+
+
+    Parameters
+    ----------
+    r : array
+        array of ranges [m]
+    theta : scalar or array broadcastable to the shape of r
+        elevation angles in degrees with 0° at horizontal and +90°
+        pointing vertically upwards from the radar
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths
+
+    Returns
+    -------
+    height : float
+        height of the beam in [m]
+
+    References
+    ----------
+    .. [Doviak1993] Doviak R.J., Zrnic D.S, Doppler Radar and Weather
+        Observations, Academic Press, 562pp, 1993, ISBN 0-12-221422-6
+    """
+    return np.sqrt( r**2 + (ke*re)**2 + 2*r*ke*re*np.sin(np.radians(theta)) ) - ke*re
+
+
+def arc_distance_n(r, theta, re=6370040., ke=4./3.):
+    r"""Calculates the great circle distance of a radar beam over a sphere,
+    taking the refractivity of the atmosphere into account.
+
+    Based on [Doviak1993]_ the arc distance may be calculated as
+
+    .. math::
+
+        s = k_e r_e \arcsin\left(\frac{r \cos\theta}{k_e r_e + h_n(r, \theta, r_e, k_e)}\right)
+
+    where :math:`h_n` would be provided by beam_height_n
+
+    Parameters
+    ----------
+    r : array
+        array of ranges [m]
+    theta : scalar or array broadcastable to the shape of r
+        elevation angles in degrees with 0° at horizontal and +90°
+        pointing vertically upwards from the radar
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths
+
+    Returns
+    -------
+    distance : float
+        great circle arc distance [m]
+
+    See Also
+    --------
+    beam_height_n
+
+    """
+    return ke*re * np.arcsin((r*np.cos(np.radians(theta)))/
+                             (ke*re + beam_height_n(r, theta, re, ke)))
+
+
+def polar2latlonalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
+    """Transforms polar coordinates (of a PPI) to latitude/longitude \
+    coordinates taking elevation angle and refractivity into account.
+
+    This function assumes that the transformation from the polar radar
+    coordinate system to the earth's spherical coordinate system may be done
+    in the same way as astronomical observations are transformed from the
+    horizon's coordinate system to the equatorial coordinate system.
+
+    The conversion formulas used were taken from
+    http://de.wikipedia.org/wiki/Nautisches_Dreieck [accessed 2001-11-02]
+
+    It is based on polar2latlon but takes the shortening of the great circle
+    distance by increasing the elevation angle as well as the resulting
+    increase in height into account.
+
+    Parameters
+    ----------
+    r : array
+        array of ranges [m]
+    az : array
+        array of azimuth angles containing values between 0 and 360°.
+        These are assumed to start with 0° pointing north and counted
+        positive clockwise!
+    th : scalar or array of the same shape as az
+        elevation angles in degrees starting with 0° at horizontal to 90°
+        pointing vertically upwards from the radar
+    sitecoords : a sequence of two floats
+        the lat / lon coordinates of the radar location
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths
+
+    Returns
+    -------
+    lat, lon, alt : tuple of arrays
+        three arrays containing the spherical latitude and longitude coordinates
+        as well as the altitude of the beam.
+
+    Notes
+    -----
+    Be aware that the coordinates returned by this function are valid for
+    a sphere. When using them in GIS make sure to distinguish that from
+    the usually assumed WGS coordinate systems where the coordinates are based
+    on a more complex ellipsoid.
+
+    Examples
+    --------
+
+    A few standard directions (North, South, North, East, South, West) with
+    different distances (amounting to roughly 1°) from a site
+    located at 48°N 9°E
+
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
+    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
+    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
+    >>> csite = (48.0, 9.0)
+    >>> lat1, lon1, alt1 = polar2latlonalt_n(r, az, th, csite)
+    >>> for x, y, z in zip(lat1, lon1, alt1):
+    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...
+    48.0000,  9.0000,  0.0000
+    48.0000,  9.0000,  0.0000
+    48.9983,  9.0000, 725.2981
+    47.9903, 10.4918, 725.2981
+    47.0017,  9.0000, 725.2981
+    47.9903,  7.5084, 1693.8056
+
+    Here, the coordinates of the east and west directions won't come to lie on
+    the latitude of the site because the beam doesn't travel along the latitude
+    circle but along a great circle.
+
+
+    """
+    phi = np.deg2rad(sitecoords[0])
+    lam = np.deg2rad(sitecoords[1])
+    try:
+        centalt = sitecoords[2]
+    except:
+        centalt = 0.
+
+    # local earth radius
+    re = re + centalt
+
+    alt = beam_height_n(r, elev, re, ke) + centalt
+
+    a   = np.deg2rad(-(180. + az))
+    h   =  0.5*np.pi - arc_distance_n(r, elev, re, ke)/re
+
+    delta, tau = hor2aeq(a, h, phi)
+    latc = np.rad2deg(delta)
+    lonc = np.rad2deg(lam + tau)
+
+    return latc, lonc, alt
 
 
 def centroid2polyvert(centroid, delta):
