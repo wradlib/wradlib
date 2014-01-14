@@ -2156,7 +2156,12 @@ class cg_plot(object):
             if self.zunit:
                 ztitle = ztitle +' ('+ str(self.zunit) + ')'
             self.cbar.set_label(ztitle, fontsize=fsize)
-        z_ticks1 = [str(np.int(i)) for i in z_ticks]
+
+        # test for integer and account for annotation with decimal place
+        if np.equal(np.mod(np.array(z_ticks), 1), 0).all():
+            z_ticks1 = [str(np.int(i)) for i in z_ticks]
+        else:
+            z_ticks1 = [str(i) for i in z_ticks]
         self.cbar.ax.set_yticklabels(z_ticks1, fontsize=fsize)
 
         return self.cbar
