@@ -300,7 +300,10 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
             pl.close()
 
 
-def plot_ppi(data, r=None, az=None, autoext=True, ax=None, **kwargs):
+def plot_ppi(data, r=None, az=None, autoext=True,
+             site=(0,0), proj=None, elev=0.,
+             ax=None,
+             **kwargs):
     """Plots a Plan Position Indicator (PPI).
 
     The implementation of this plot routine is in cartesian axes and does all
@@ -308,13 +311,18 @@ def plot_ppi(data, r=None, az=None, autoext=True, ax=None, **kwargs):
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    Notes
-    -----
-    Currently, this method calculates the cartesian coordinates using simple
-    plane trigonometry. Neither earth's curvature nor propagation conditions
-    nor the elevation angle at which the scan was taken are considered.
-    This may change in a later version, but for the time, please be aware of
-    this restriction
+    `**kwargs` may be used to try to influence the matplotlib.pcolormesh and
+    wradlib.georef.polar2latlonalt_n routines under the hood.
+
+    There is one major caveat concerning the values of `r` and `az`.
+    Due to the way matplotlib.pcolormesh works, `r` should give the location
+    of the start of each range bin, while `az` should give the angle also at
+    the begin (i.e. 'leftmost') of the beam. This might be in contrast to
+    other conventions, which might define ranges and angles at the center of
+    bin and beam.
+    This affects especially the default values set for `r` and `az`, but ìt
+    should be possible to accommodate all other conventions by setting `r` and
+    `az` properly.
 
     Parameters
     ----------
@@ -331,11 +339,32 @@ def plot_ppi(data, r=None, az=None, autoext=True, ax=None, **kwargs):
     autoext : True | False
         This routine uses matplotlib.pyplot.pcolormesh to draw the bins.
         As this function needs one set of coordinates more than would usually
-        provided by `r` and `az`, setting ´autoext´ to True automatically
+        be provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
+    site : tuple
+        Tuple of coordinates of the radar site.
+        If `proj` is not used, this simply becomes the offset for the origin
+        of the coordinate system.
+        If `proj` is used, values must be given as (latitude, longitude)
+        tuple of geographical coordinates.
+    proj : str
+        PROJ.4 compatible projection string
+        If this parameter is not None, `site` must be set. Then the function
+        will attempt to georeference the radar bins and display the PPI in the
+        coordinate system defined by the projection string.
+    elev : float or array of same shape as az
+        Elevation angle of the scan or individual azimuths.
+        May improve georeferencing coordinates for larger elevation angles.
     ax : matplotlib Axes object
         If given, the PPI will be plotted into this axes object. If None a
         new axes object will be created
+
+    See also
+    --------
+    wradlib.georef.project - for information on projection strings
+    wradlib.georef.create_projstr - routine to generate pre-defined projection
+        strings
+
 
     Returns
     -------
@@ -362,20 +391,28 @@ def plot_ppi(data, r=None, az=None, autoext=True, ax=None, **kwargs):
         y = d2
 
     xx, yy = np.meshgrid(x, y)
-
-    xxx = xx * np.cos(np.radians(90.-yy))
-    yy = xx * np.sin(np.radians(90.-yy))
-    xx = xxx
+  
+    if proj is None:
+        xxx = xx * np.cos(np.radians(90.-yy)) + site[0]
+        yy = xx * np.sin(np.radians(90.-yy))  + site[1]
+        xx = xxx
+    else:
+        if r is None:
+            # get from km to m
+            xx *= 1000
+        lat, lon, alt = georef.polar2latlonalt_n(xx, yy, elev, site, **kwargs)
+        xx, yy = georef.project(lat, lon, proj)
 
     if ax is None:
         ax = pl.axes()
 
-    pm = ax.pcolormesh(xx, yy, data)
+    pm = ax.pcolormesh(xx, yy, data, **kwargs)
 
     return ax, pm
 
 
-def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, ax=None, refrac=True, **kwargs):
+def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
+             ax=None, **kwargs):
     """Plots a Range Height Indicator (RHI).
 
     The implementation of this plot routine is in cartesian axes and does all
@@ -405,9 +442,6 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, ax=None, refrac=T
         As this function needs one set of coordinates more than would usually
         provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
-    ax : matplotlib Axes object
-        If given, the RHI will be plotted into this axes object. If None a
-        new axes object will be created.
     refrac : True | False
         If True, the effect of refractivity of the earth's atmosphere on the
         beam propagation will be taken into account. If False, simple
@@ -416,6 +450,9 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, ax=None, refrac=T
         wradlib.georef.arc_distance_n and wradlib.georef.beam_height_n, which
         assume distances to be given in meters. Therefore, if `refrac` is True,
         `r` must be given in meters.
+    ax : matplotlib Axes object
+        If given, the RHI will be plotted into this axes object. If None a
+        new axes object will be created.
 
     Returns
     -------
