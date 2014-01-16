@@ -23,6 +23,7 @@ Standard plotting and mapping procedures
 
    polar_plot
    plot_ppi
+   plot_ppi_crosshair
    plot_rhi
    cartesian_plot
    rhi_plot
@@ -431,6 +432,119 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # return the axes and the colormesh object
     # so that the user may add colorbars etc.
     return ax, pm
+
+
+def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
+                       proj=None, elev=0., ax=None, kwds={}):
+    """Plots a Crosshair for a Plan Position Indicator (PPI).
+
+    Parameters
+    ----------
+    site : tuple
+        Tuple of coordinates of the radar site.
+        If `proj` is not used, this simply becomes the offset for the origin
+        of the coordinate system.
+        If `proj` is used, values must be given as (latitude, longitude)
+        tuple of geographical coordinates.
+    ranges : list
+        List of ranges, for which range circles should be drawn.
+        If `proj` is None arbitrary units may be used (such that they fit with
+        the underlying PPI plot. Otherwise the ranges must be given in meters.
+    angles : list
+        List of angles (in degrees) for which straight lines should be drawn.
+        These lines will be drawn starting from the center and until the largest
+        range.
+    proj : str
+        PROJ.4 compatible projection string
+        The function will calculate lines and circles according to
+        georeferenced coordinates taking beam propagation, earth's curvature
+        and scale effects due to projection into account.
+        Depending on the projection, crosshair lines might not be straight and
+        range circles might appear elliptical (also check if the aspect of the
+        axes might not also be responsible for this).
+    elev : float or array of same shape as az
+        Elevation angle of the scan or individual azimuths.
+        May improve georeferencing coordinates for larger elevation angles.
+    ax : matplotlib Axes object
+        If given, the crosshair will be plotted into this axes object. If None
+        matplotlib's current axes (function gca()) concept will be used to
+        determine the axes.
+    kwds : dictionary
+        Dictionary of settings to alter the appearance of lines and range
+        circles. With the key 'line', you may pass a dictionary, which will be
+        passed to the line objects using the standard keyword inheritance
+        mechanism.
+        With the key 'circle' you may do the same for the range circles.
+        If not given defaults will be used.
+        See the file plot_ppi_example.py in the examples folder for examples on
+        how this works.
+
+    See also
+    --------
+    wradlib.vis.plot_ppi - plotting a PPI in cartesian coordinates
+    wradlib.georef.create_projstr - routine to generate pre-defined projection
+        strings
+
+
+    Returns
+    -------
+    ax : matplotlib Axes object
+        The axes object into which the PPI was plotted
+
+    """
+    # if we didn't get an axes object, find the current one
+    if ax is None:
+        ax = pl.gca()
+
+    # set default line keywords
+    linekw = dict(color='gray', linestyle='dashed')
+    # update with user settings
+    linekw.update(kwds.get('line', {}))
+
+    # set default circle keywords
+    circkw = dict(edgecolor='gray', linestyle='dashed', facecolor='none')
+    # update with user settings
+    circkw.update(kwds.get('circle', {}))
+
+    # determine coordinates for 'straight' lines
+    if proj:
+        # projected
+        # project the site coordinates
+        psite = georef.project(*site, projstr=proj)
+        # these lines might not be straigt so we approximate them with 10
+        # segments. Produce polar coordinates
+        rr, az = np.meshgrid(np.linspace(0,ranges[-1],10), angles)
+        # and project using polar2latlonalt to convert from polar to geographic
+        nsewx, nsewy = georef.project(*georef.polar2latlonalt_n(rr, az, elev,
+                                                                site)[:2],
+                                      projstr=proj)
+    else:
+        # no projection
+        psite = site
+        rr, az = np.meshgrid(np.linspace(0,ranges[-1],2), angles)
+        # use simple trigonometry to calculate coordinates
+        nsewx, nsewy = (psite[0]+rr*np.cos(np.radians(az)),
+                        psite[1]+rr*np.sin(np.radians(az)))
+
+    # mark the site, just in case nothing else would be drawn
+    ax.plot(*psite, marker='+', **linekw)
+
+    # draw the lines
+    for i in range(len(angles)):
+        ax.add_line(mpl.lines.Line2D(nsewx[i,:], nsewy[i,:], **linekw))
+
+    # draw the range circles
+    for r in ranges:
+        if proj:
+            # produce an approximation of the circle
+            x, y = georef.project(*georef.polar2latlonalt_n(r, np.arange(360), elev, site)[:2], projstr=proj)
+            ax.add_patch(mpl.patches.Polygon(np.concatenate([x[:,None], y[:,None]], axis=1), **circkw))
+        else:
+            # in the unprojected case, we may use 'true' circles.
+            ax.add_patch(mpl.patches.Circle(psite, r, **circkw))
+
+    # return the axes object for later use
+    return ax
 
 
 def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
