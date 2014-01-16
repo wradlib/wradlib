@@ -300,6 +300,178 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
             pl.close()
 
 
+def plot_ppi(data, r=None, az=None, autoext=True, ax=None, **kwargs):
+    """Plots a Plan Position Indicator (PPI).
+
+    The implementation of this plot routine is in cartesian axes and does all
+    coordinate transforms beforehand. This allows zooming into the data as well
+    as making it easier to plot additional data (like gauge locations) without
+    having to convert them to the radar's polar coordinate system.
+
+    Notes
+    -----
+    Currently, this method calculates the cartesian coordinates using simple
+    plane trigonometry. Neither earth's curvature nor propagation conditions
+    nor the elevation angle at which the scan was taken are considered.
+    This may change in a later version, but for the time, please be aware of
+    this restriction
+
+    Parameters
+    ----------
+    data : np.array
+        The data to be plotted. It is assumed that the first dimension is over
+        the azimuth angles, while the second dimension is over the range bins
+    r : np.array
+        The ranges. Units may be chosen arbitrarily, unless proj is set. In that
+        case the units must be meters. If None, a default is
+        calculated from the dimensions of `data`.
+    az : np.array
+        The azimuth angles in degrees. If None, a default is
+        calculated from the dimensions of `data`.
+    autoext : True | False
+        This routine uses matplotlib.pyplot.pcolormesh to draw the bins.
+        As this function needs one set of coordinates more than would usually
+        provided by `r` and `az`, setting ´autoext´ to True automatically
+        extends r and az so that all of `data` will be plotted.
+    ax : matplotlib Axes object
+        If given, the PPI will be plotted into this axes object. If None a
+        new axes object will be created
+
+    Returns
+    -------
+    ax : matplotlib Axes object
+        The axes object into which the PPI was plotted
+    pm : matplotlib QuadMesh object
+        The result of the pcolormesh operation. Necessary, if you want to
+        add a colorbar to the plot.
+
+    """
+    d1 = r
+    d2 = az
+
+    if d1 is None:
+        d1 = np.arange(data.shape[1], dtype=np.float)
+    if d2 is None:
+        d2 = np.arange(data.shape[0], dtype=np.float)
+
+    if autoext:
+        x = np.append(d1, d1[-1]+(d1[-1]-d1[-2]))
+        y = np.append(d2, d2[0])
+    else:
+        x = d1
+        y = d2
+
+    xx, yy = np.meshgrid(x, y)
+
+    xxx = xx * np.cos(np.radians(90.-yy))
+    yy = xx * np.sin(np.radians(90.-yy))
+    xx = xxx
+
+    if ax is None:
+        ax = pl.axes()
+
+    pm = ax.pcolormesh(xx, yy, data)
+
+    return ax, pm
+
+
+def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, ax=None, refrac=True, **kwargs):
+    """Plots a Range Height Indicator (RHI).
+
+    The implementation of this plot routine is in cartesian axes and does all
+    coordinate transforms beforehand. This allows zooming into the data as well
+    as making it easier to plot additional data (like gauge locations) without
+    having to convert them to the radar's polar coordinate system.
+
+    Parameters
+    ----------
+    data : np.array
+        The data to be plotted. It is assumed that the first dimension is over
+        the elevation angles, while the second dimension is over the range bins
+    r : np.array
+        The ranges. Units may be chosen arbitrarily. If None, a default is
+        calculated from the dimensions of `data`.
+    th : np.array
+        The elevation angles in degrees. If None, a default is
+        calculated from the dimensions of `data`.
+    th_res : float or np.array of same shape as `th`
+        In RHI's it happens that the elevation angles are spaced wider than
+        the beam width. If this beam width (in degrees) is given in `th_res`,
+        plot_rhi will plot the beams accordingly. Otherwise the behavior of
+        matplotlib.pyplot.pcolormesh assumes all beams to be adjacent to each
+        other, which might lead to unexpected results.
+    autoext : True | False
+        This routine uses matplotlib.pyplot.pcolormesh to draw the bins.
+        As this function needs one set of coordinates more than would usually
+        provided by `r` and `az`, setting ´autoext´ to True automatically
+        extends r and az so that all of `data` will be plotted.
+    ax : matplotlib Axes object
+        If given, the RHI will be plotted into this axes object. If None a
+        new axes object will be created.
+    refrac : True | False
+        If True, the effect of refractivity of the earth's atmosphere on the
+        beam propagation will be taken into account. If False, simple
+        trigonometry will be used to calculate beam propagation.
+        Functionality for this will be provided by functions
+        wradlib.georef.arc_distance_n and wradlib.georef.beam_height_n, which
+        assume distances to be given in meters. Therefore, if `refrac` is True,
+        `r` must be given in meters.
+
+    Returns
+    -------
+    ax : matplotlib Axes object
+        The axes object into which the RHI was plotted
+    pm : matplotlib QuadMesh object
+        The result of the pcolormesh operation. Necessary, if you want to
+        add a colorbar to the plot.
+
+    """
+    if r is None:
+        d1 = np.arange(data.shape[1], dtype=np.float)
+    else:
+        d1 = np.asanyarray(r)
+    if th is None:
+        d2 = np.arange(data.shape[0], dtype=np.float)
+    else:
+        d2 = np.asanyarray(th)
+
+    if autoext:
+        x = np.append(d1, d1[-1]+d1[-1]-d1[-2])
+        y = np.append(d2, d2[-1]+d2[-1]-d2[-2])
+    else:
+        x = d1
+        y = d2
+
+    if th_res is not None:
+        img = np.ma.empty((data.shape[0], data.shape[1]*2))
+        img.mask = np.ma.masked
+        img[:,:data.shape[1]] = data
+        img = img.reshape((-1, data.shape[1]))
+        #img = np.concatenate([img, img[None,-1,:]], axis=0)
+        yl = d2-th_res*0.5
+        yu = d2+th_res*0.5
+        y = np.concatenate([yl[None,:], yu[None,:]], axis=0).T.ravel()
+    else:
+        img=data
+
+    xx, yy = np.meshgrid(x, y)
+
+    if refrac:
+        xxx = georef.arc_distance_n(xx, yy)
+        yy = georef.beam_height_n(xx, yy)
+    else:
+        xxx = xx * np.cos(np.radians(yy))
+        yy = xx * np.sin(np.radians(yy))
+    xx = xxx
+
+    if ax is None:
+        ax = pl.axes()
+
+    pm = ax.pcolormesh(xx, yy, img)
+
+    return ax, pm
+
+
 class CartesianPlot(object):
     def __init__(self, ax=None, fig=None, axpos=111, **kwargs):
         if ax is None:
