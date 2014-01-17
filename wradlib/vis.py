@@ -22,6 +22,8 @@ Standard plotting and mapping procedures
    :toctree: generated/
 
    polar_plot
+   plot_ppi
+   plot_rhi
    cartesian_plot
    rhi_plot
    cg_plot
@@ -375,39 +377,59 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         add a colorbar to the plot.
 
     """
+    # this may seem odd at first, but d1 and d2 are also used in plot_rhi
+    # and thus it may be easier to compare the two functions
     d1 = r
     d2 = az
 
+    # providing 'reasonable defaults', based on the data's shape
     if d1 is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
     if d2 is None:
         d2 = np.arange(data.shape[0], dtype=np.float)
 
     if autoext:
+        # the ranges need to go 'one bin further', assuming some regularity
+        # we extend by the distance between the preceding bins.
         x = np.append(d1, d1[-1]+(d1[-1]-d1[-2]))
+        # the angular dimension is supposed to be cyclic, so we just add the
+        # first element
         y = np.append(d2, d2[0])
     else:
+        # no autoext basically is only useful, if the user supplied the correct
+        # dimensions himself.
         x = d1
         y = d2
 
+    # coordinates for all vertices
     xx, yy = np.meshgrid(x, y)
   
     if proj is None:
+        # no georeferencing -> simple trigonometry
         xxx = xx * np.cos(np.radians(90.-yy)) + site[0]
         yy = xx * np.sin(np.radians(90.-yy))  + site[1]
         xx = xxx
     else:
+        # with georeferencing
         if r is None:
-            # get from km to m
+            # if we produced a default, this one is still in 'kilometers'
+            # therefore we need to get from km to m
             xx *= 1000
+        # latitude longitudes from the polar data still stored in xx and yy
         lat, lon, alt = georef.polar2latlonalt_n(xx, yy, elev, site, **kwargs)
+        # projected to the final coordinate system
         xx, yy = georef.project(lat, lon, proj)
 
+    # get the current axes.
+    # this creates one, if there is none
     if ax is None:
-        ax = pl.axes()
+        ax = pl.gca()
 
+    # plot the colormesh
     pm = ax.pcolormesh(xx, yy, data, **kwargs)
 
+    # return the axes and the colormesh object
+    # so that the user may add colorbars etc.
     return ax, pm
 
 
@@ -463,49 +485,74 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         add a colorbar to the plot.
 
     """
+    # autogenerate axis dimensions
     if r is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
     else:
         d1 = np.asanyarray(r)
+
     if th is None:
         d2 = np.arange(data.shape[0], dtype=np.float)
     else:
         d2 = np.asanyarray(th)
 
     if autoext:
+        # extend the range by the delta of the two last bins
         x = np.append(d1, d1[-1]+d1[-1]-d1[-2])
+        # RHIs usually aren't cyclic, so we best guess a regular extension
+        # here as well
         y = np.append(d2, d2[-1]+d2[-1]-d2[-2])
     else:
+        # hopefully, the user supplied everything correctly...
         x = d1
         y = d2
 
     if th_res is not None:
+        # we are given a beam resolution and thus may not just glue each
+        # beam to its neighbor
+        # solving this still with the efficient pcolormesh but interlacing
+        # the data with masked values, simulating the gap between beams
+        # make a temporary data array with one dimension twice the size of
+        # the original
         img = np.ma.empty((data.shape[0], data.shape[1]*2))
+        # mask everything
         img.mask = np.ma.masked
+        # set the data in the first half of the temporary array
+        # this automatically unsets the mask
         img[:,:data.shape[1]] = data
+        # reshape so that data and masked lines interlace each other
         img = img.reshape((-1, data.shape[1]))
-        #img = np.concatenate([img, img[None,-1,:]], axis=0)
+        # produce lower and upper y coordinates for the actual data
         yl = d2-th_res*0.5
         yu = d2+th_res*0.5
+        # glue them together to achieve the proper dimensions for the
+        # interlaced array
         y = np.concatenate([yl[None,:], yu[None,:]], axis=0).T.ravel()
     else:
         img=data
 
+    # coordinates for all vertices
     xx, yy = np.meshgrid(x, y)
 
     if refrac:
+        # observing air refractivity, so ground distances and beam height
+        # must be calculated specially
         xxx = georef.arc_distance_n(xx, yy)
         yy = georef.beam_height_n(xx, yy)
     else:
+        # otherwise plane trigonometry will do
         xxx = xx * np.cos(np.radians(yy))
         yy = xx * np.sin(np.radians(yy))
     xx = xxx
 
+    # get current axes if not given
     if ax is None:
-        ax = pl.axes()
+        ax = pl.gca()
 
+    # plot the stuff
     pm = ax.pcolormesh(xx, yy, img)
 
+    # return references to important and eventually new objects
     return ax, pm
 
 
