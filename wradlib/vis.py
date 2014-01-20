@@ -404,7 +404,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     # coordinates for all vertices
     xx, yy = np.meshgrid(x, y)
-  
+
     if proj is None:
         # no georeferencing -> simple trigonometry
         xxx = xx * np.cos(np.radians(90.-yy)) + site[0]
@@ -537,8 +537,15 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     for r in ranges:
         if proj:
             # produce an approximation of the circle
-            x, y = georef.project(*georef.polar2latlonalt_n(r, np.arange(360), elev, site)[:2], projstr=proj)
-            ax.add_patch(mpl.patches.Polygon(np.concatenate([x[:,None], y[:,None]], axis=1), **circkw))
+            x, y = georef.project(*georef.polar2latlonalt_n(r,
+                                                            np.arange(360),
+                                                            elev,
+                                                            site)[:2],
+                                  projstr=proj)
+            ax.add_patch(mpl.patches.Polygon(np.concatenate([x[:,None],
+                                                             y[:,None]],
+                                                             axis=1),
+                                             **circkw))
         else:
             # in the unprojected case, we may use 'true' circles.
             ax.add_patch(mpl.patches.Circle(psite, r, **circkw))
