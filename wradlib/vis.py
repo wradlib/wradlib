@@ -550,6 +550,9 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
             # in the unprojected case, we may use 'true' circles.
             ax.add_patch(mpl.patches.Circle(psite, r, **circkw))
 
+    # there should be not much wrong, setting the axes aspect to equal by default
+    ax.set_aspect('equal')
+
     # return the axes object for later use
     return ax
 
