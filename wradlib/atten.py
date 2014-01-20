@@ -25,6 +25,7 @@ Attenuation Correction
     correctAttenuationConstrained
     constraint_dBZ
     constraint_PIA
+    correctAttenuationConstrained2
     correctRadomeAttenuationEmpirical
     pia_from_kdp
 
@@ -511,7 +512,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     >>> k = correctAttenuationConstrained(gateset,
     ...                                   mode='nan',
     ...                                   constraints=[constraint_dBZ,
-    ...                                                constraint_PIA],
+    ...                                                constraint_pia],
     ...                                   constr_args=[[59.0],
     ...                                               [20.0]])
 
@@ -683,7 +684,8 @@ def bisectReferenceAttenuation(gateset,
     thrs : float
         Value of the tolerance to stop bisection iteration successful. It is
         recommended to choose 0.05 for ratio ``mode`` and 0.25 for difference
-        ``mode``, which means a deviation of 5% or 0.25 dB, respectively.
+        ``mode``, which means a deviation tolerance of 5% or 0.25 dB,
+        respectively.
 
         Per default set to 0.25.
 
@@ -920,20 +922,20 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
 
     Examples
     --------
+    >>> import wradlib as wrl
     >>> # Implementing the original Hitschfeld & Bordan (1954) algorithm with
     >>> # otherwise default parameters
-    >>> pia = correctAttenuationConstrained2(gateset)
+    >>> pia = wrl.atten.correctAttenuationConstrained2(gateset)
     >>> # Implementing the basic Kraemer algorithm
     >>> k = correctAttenuationConstrained(gateset,
-    ...                                   constraints=[constraint_dBZ],
-    ...                                   constraint_args=[[59.0]])
-
+    ...                                  constraints=[wrl.atten.constraint_dBZ],
+    ...                                  constraint_args=[[59.0]])
     >>> # Implementing the PIA algorithm by Jacobi et al.
-    >>> k = correctAttenuationConstrained(gateset,
-    ...                                   constraints=[constraint_dBZ,
-    ...                                                constraint_PIA],
-    ...                                   constraint_args=[[59.0],
-    ...                                               [20.0]])
+    >>> k = wrl.atten.correctAttenuationConstrained(gateset,
+    ...                                  constraints=[wrl.atten.constraint_dBZ,
+    ...                                               wrl.atten.constraint_pia],
+    ...                                  constraint_args=[[59.0],
+    ...                                                   [20.0]])
 
     """
 
@@ -954,7 +956,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
     # Calculate attenuation forward.
     # Indexing all rows of last dimension (radarbeams).
     beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype = np.bool))
-    invalidbeams = np.zeros(tmp_gateset.shape[:-1], dtype = np.bool)
+    small_sectors = np.zeros(tmp_gateset.shape[:-1], dtype = np.bool)
 
     delta_a = (a_max - a_min) / (n_a - 1)
     delta_b = (b_max - b_min) / (n_b - 1)
@@ -979,28 +981,28 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
             # Determine incorrect sectors larger than sector_thr.
             large_sectors = _sector_filter(incorrectbeams, sector_thr)
             # Determine incorrect sectors smaller than sector_thr.
-            invalidbeams = np.logical_or(invalidbeams,
+            small_sectors = np.logical_or(small_sectors,
                                          (incorrectbeams & ~large_sectors))
             beams2correct = np.where(large_sectors)
             if len(pia[beams2correct]) == 0: break
         if len(pia[beams2correct]) == 0: break
-
-    # Interpolate reference pia of most distant rangebin of invalid sectors.
-    _interp_atten(pia, invalidbeams)
-    # Calculate attenuation forward by achieving reference attenuation based on
-    # bisection-method.
-    tmp_pia, tmp_a, tmp_b = bisectReferenceAttenuation(tmp_gateset[invalidbeams,:],
-                                        pia[invalidbeams, -1],
-                                        a_max=a_max,
-                                        a_min=a_min,
-                                        b_start=b_max,
-                                        l=l,
-                                        mode='difference',
-                                        thrs=0.25,
-                                        max_iterations=10)
-    pia[invalidbeams,:] = tmp_pia
-    a_used[invalidbeams] = tmp_a
-    b_used[invalidbeams] = tmp_b
+    if np.any(small_sectors):
+        # Interpolate reference pia of most distant rangebin of invalid sectors.
+        _interp_atten(pia, small_sectors)
+        # Calculate attenuation forward by achieving reference attenuation based on
+        # bisection-method.
+        tmp_pia, tmp_a, tmp_b = bisectReferenceAttenuation(tmp_gateset[small_sectors,:],
+                                            pia[small_sectors, -1],
+                                            a_max=a_max,
+                                            a_min=a_min,
+                                            b_start=b_max,
+                                            l=l,
+                                            mode='difference',
+                                            thrs=0.25,
+                                            max_iterations=10)
+        pia[small_sectors,:] = tmp_pia
+        a_used[small_sectors] = tmp_a
+        b_used[small_sectors] = tmp_b
 
     return pia.reshape(gateset.shape)
 
