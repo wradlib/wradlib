@@ -1100,7 +1100,7 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
     return k
 
 
-def pia_from_kdp(kdp, gamma=0.08):
+def pia_from_kdp(kdp, dr, gamma=0.08):
     """Retrieving path integrated attenuation from specific differential phase (Kdp).
 
     The default value of gamma is based on [Carey2002]_.
@@ -1109,6 +1109,7 @@ def pia_from_kdp(kdp, gamma=0.08):
     ----------
     kdp : array specific differential phase
        Range dimension must be the last dimension.
+    dr : gate length (km)
     gamma : float
        linear coefficient (default value: 0.08) in the relation between Kdp phase and specific attenuation (alpha)
 
@@ -1125,7 +1126,7 @@ def pia_from_kdp(kdp, gamma=0.08):
 
     """
     alpha = gamma * kdp
-    return 2*np.cumsum(alpha, axis=-1)
+    return 2*np.cumsum(alpha, axis=-1)*dr
 
 
 
