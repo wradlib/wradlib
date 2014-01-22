@@ -255,7 +255,7 @@ def readDX(filename):
         # make sure that this is consistent with our assumption
         # i.e. contact DWD again, if DX files show up with uneven byte lengths
         # *and* only one 0x03 character
-        assert header[-2] == chr(3)
+        #assert header[-2] == chr(3)
         buflen -= 1
 
     buf = f.read(buflen)
