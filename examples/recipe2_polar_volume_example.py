@@ -58,9 +58,9 @@ if __name__ == '__main__':
     print "3-D interpolation took:", dt.datetime.now() - tstart
 
     # diagnostic plot
-    trgx = trgxyz[:,0].reshape(trgshape)[:,0,0]
+    trgx = trgxyz[:,0].reshape(trgshape)[0,0,:]
     trgy = trgxyz[:,1].reshape(trgshape)[0,:,0]
-    trgz = trgxyz[:,2].reshape(trgshape)[0,0,:]
+    trgz = trgxyz[:,2].reshape(trgshape)[:,0,0]
     wradlib.vis.plot_max_plan_and_vert(trgx, trgy, trgz, vol, unit="dBZH", levels=range(-32,60))
 
 
