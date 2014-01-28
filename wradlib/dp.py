@@ -15,6 +15,9 @@
 Dual-Pol and Differential Phase
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Overview
+--------
+
 This module provides algorithms to process polarimentric radar moments,
 namely the differential phase, PhiDP, and, based on successful PhiDP retrieval,
 also the specific differential phase, KDP. Please note that the actual application
@@ -27,8 +30,9 @@ of polarimetric moments is implemented in the corresponding wradlib modules, e.g
     - direct precipitation retrieval from Kdp (:doc:`kdp2r <generated/wradlib.trafo.kdp2r>`)
 
 Establishing a valid PhiDP profile for Kdp retrieval involves despeckling (linear_despeckle),
-gap filling (fill_phidp), phase unfolding and smoothing. For convenience, these
-steps have been combined in the function :doc:`process_raw_phidp <generated/wradlib.dp.process_raw_phidp>`.
+gap filling (fill_phidp), phase unfolding and smoothing. The main workflow and
+its single steps is based on a publication by [Vulpiani2012]_. For convenience, the
+entire workflow has been put together in the function :doc:`process_raw_phidp <generated/wradlib.dp.process_raw_phidp_vulpiani>`.
 
 Once a valid PhiDP profile has been established, :doc:`kdp_from_phidp <generated/wradlib.dp.kdp_from_phidp>`
 can be used to retrieve Kdp.
@@ -48,6 +52,12 @@ module directory and execute on the system console:
 
    ``f2py.py -c -m speedup speedup.f``
 
+References
+----------
+.. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
+   P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
+   for Operational Rainfall Retrieval in Mountainous Areas.
+   J. Appl. Meteor. Climatol., 51, 405-425.
 
 
 .. autosummary::
@@ -99,7 +109,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=Fals
 
         - Phase unfolding
 
-        - PhiDP reconstruction integrating KDP
+        - PhiDP reconstruction using iterative estimation of KDP
 
     Parameters
     ----------
@@ -166,6 +176,42 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=Fals
     return phidp, kdp
 
 
+def unfold_phi_vulpiani(phidp, kdp):
+    """Alternative phase unfolding which completely relies on Kdp.
+
+    This unfolding should be used in oder to iteratively reconstruct
+    phidp and Kdp (see Vulpiani[2012]_).
+
+    Parameters
+    ----------
+    phidp : array of floats
+    kdp : array of floats
+
+    References
+    ----------
+    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
+       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
+       for Operational Rainfall Retrieval in Mountainous Areas.
+       J. Appl. Meteor. Climatol., 51, 405-425.
+
+
+    """
+    # unfold phidp
+    shape = phidp.shape
+    phidp = phidp.reshape((-1,shape[-1]))
+    kdp   = kdp.reshape((-1,shape[-1]))
+
+    for beam in xrange(len(phidp)):
+        below_th3 = kdp[beam]<-20
+        try:
+            idx1 = np.where(below_th3)[0][2]
+            phidp[beam,idx1:] += 360
+        except:
+            pass
+
+    return phidp.reshape(shape)
+
+
 def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
     """Fills missing data in a 1d profile
 
@@ -197,51 +243,6 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
         invalidx = np.where(invalid)[0]
         dat[beam, invalidx] = f(invalidx)
     return dat.reshape(shape)
-
-
-def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
-    """Establish consistent PhiDP profiles from raw data.
-
-    Processing of raw PhiDP data contains the following steps:
-
-        - Despeckle
-
-        - Fill missing data
-          (general asssumption: PhiDP is monotonically increasing along the beam)
-
-        - Phase unfolding
-
-        - Smoothing
-
-    Parameters
-    ----------
-    phidp : array of shape (n azimuth angles, n range gates)
-    rho : array of shape (n azimuth angles, n range gates)
-    N_despeckle : integer
-        *N* parameter of function dp.linear_despeckle
-    N_fillmargin : integer
-        *margin* parameter of function dp.fill_phidp
-    N_unfold : integer
-        *width* parameter of function dp.unfold_phi
-    N_filter : integer
-        *N* parameter of function dp.medfilt_along_axis
-    copy : boolean
-        leaves the original phidp array untouched
-
-    """
-    if copy:
-        phidp = phidp.copy()
-    # despeckle
-    phidp = linear_despeckle(phidp, N=N_despeckle)
-    phidp = fill_phidp(phidp, margin=N_fillmargin)
-    # apply unfolding
-    if speedupexists:
-        phidp = unfold_phi(phidp, rho, width=N_unfold)
-    else:
-        phidp = unfold_phi_naive(phidp, rho, width=N_unfold)
-    # median filter smoothing
-    phidp = medfilt_along_axis(phidp, N=N_filter)
-    return phidp
 
 
 def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
@@ -467,6 +468,25 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
     return kdp.reshape(shape) / 2. / dr
 
 
+def sobel(x,window_len=7):
+    """Sobel differential filter for calculating KDP.
+
+    This solution has been taken from:
+
+    http://stackoverflow.com/questions/7288125/performing-a-moving-linear-fit-to-1d-data-in-python
+
+    Returns
+    -------
+        output : differential signal (unscaled for gate spacing)
+
+    """
+    s=np.r_[x[window_len-1:0:-1],x,x[-1:-window_len:-1]]
+    w=2.0*np.arange(window_len)/(window_len-1.0) -1.0
+    w=w/(abs(w).sum())
+    y=np.convolve(w,s,mode='valid')
+    return -1.0*y[window_len/2:len(x)+window_len/2]/(window_len/3.0)
+
+
 def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     """Alternative Kdp from PhiDP by applying a convolution filter where possible and linear regression otherwise.
 
@@ -570,26 +590,6 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
 
     # accounting for forward/backward propagation AND gate length
     return kdp.reshape(shape) / 2. / dr
-
-
-def sobel(x,window_len=7):
-    """Sobel differential filter for calculating KDP.
-
-    This solution has been taken from:
-
-    http://stackoverflow.com/questions/7288125/performing-a-moving-linear-fit-to-1d-data-in-python
-
-    Returns
-    -------
-        output : differential signal (unscaled for gate spacing)
-
-    """
-    s=np.r_[x[window_len-1:0:-1],x,x[-1:-window_len:-1]]
-    w=2.0*np.arange(window_len)/(window_len-1.0) -1.0
-    w=w/(abs(w).sum())
-    y=np.convolve(w,s,mode='valid')
-    return -1.0*y[window_len/2:len(x)+window_len/2]/(window_len/3.0)
-
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):
@@ -701,82 +701,6 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     return phidp
 
 
-def unfold_phi_vulpiani(phidp, kdp):
-    """Alternative phase unfolding which completely relies on Kdp.
-
-    This unfolding should be used in oder to iteratively reconstruct
-    phidp and Kdp (see Vulpiani[2012]_).
-
-    Parameters
-    ----------
-    phidp : array of floats
-    kdp : array of floats
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
-
-
-    """
-    # unfold phidp
-    shape = phidp.shape
-    phidp = phidp.reshape((-1,shape[-1]))
-    kdp   = kdp.reshape((-1,shape[-1]))
-
-    for beam in xrange(len(phidp)):
-        below_th3 = kdp[beam]<-20
-        try:
-            idx1 = np.where(below_th3)[0][2]
-            phidp[beam,idx1:] += 360
-        except:
-            pass
-
-    return phidp.reshape(shape)
-
-
-##def smooth_and_gradient1d(x):
-##    """
-##    """
-##    return np.gradient(medfilt(x, kernel_size=5)).astype("f4")
-##
-##
-##def smooth_and_gradient2d(x):
-##    """
-##    """
-##    return np.apply_along_axis(func1d=smooth_and_gradient1d, axis=0, arr=x)
-
-# TO UTILS
-def medfilt_along_axis(x, N, axis=-1):
-    """Applies median filter smoothing on one axis of an N-dimensional array.
-    """
-    kernel_size = np.array(x.shape)
-    kernel_size[:] = 1
-    kernel_size[axis] = N
-    return medfilt(x, kernel_size)
-
-# TO UTILS
-def gradient_along_axis(x):
-    """Computes gradient along last axis of an N-dimensional array
-    """
-    axis=-1
-    newshape = np.array(x.shape)
-    newshape[axis] = 1
-    diff_begin = ( x[...,1] - x[...,0] ).reshape(newshape)
-    diff_end = ( x[...,-1] - x[...,-2] ).reshape(newshape)
-    diffs = ( (x - np.roll(x, 2, axis) ) / 2. )
-    diffs = np.append(diffs[...,2:], diff_end, axis=axis)
-    return np.insert(diffs, 0, diff_begin, axis=axis)
-
-# TO UTILS
-def gradient_from_smoothed(x, N=5):
-    """Computes gradient of smoothed data along final axis of an array
-    """
-    return gradient_along_axis(medfilt_along_axis(x, N)).astype("f4")
-
-
 def linear_despeckle(data, N=3, copy=False):
     """Remove floating pixels in between NaNs in a multi-dimensional array.
 
@@ -817,90 +741,50 @@ def linear_despeckle(data, N=3, copy=False):
     return data
 
 
-##def fill_phi1d(data):
-##    """
-##    Fills in missing PhiDP in a 1d array. The ends are extrapolated by extending the
-##    first and last values to the start and end of the range, respectively.
-##
-##    Parameters
-##    ----------
-##    data : 1d array
-##
-##    Returns
-##    -------
-##    data_filled : 1d array
-##        array with filled gaps and extrapolated ends
-##
-##    """
-##    rs = len(data)
-##
-##    # return zeros of there are no valid phidp values
-##    if np.all(np.isnan(data)):
-##        return np.zeros(rs, dtpye="f4")
-##
-##    # get last value and extend to end of range
-##    valid_ix = np.where(np.logical_not(np.isnan(data)))[0]
-##    data[0:valid_ix[0]] = data[valid_ix[0]]
-##    data[valid_ix[-1]:len(data)] = data[valid_ix[-1]]
-##    valid_ix = np.where(np.logical_not(np.isnan(data)))[0]
-##
-##    # interpolate
-##    f = scipy.interpolate.interp1d(valid_ix, data[valid_ix], copy=False)
-##    data = f(np.arange(rs))
-##    return data
-##
-##def fill_phi2d(data):
-##    """
-##    Fills in missing PhiDP beam-wise in a 2D array. The ends are extrapolated by extending the
-##    first and last values to the start and end of the range, respectively.
-##
-##    Parameters
-##    ----------
-##    data : array
-##        array representing polar radar data
-##
-##    Returns
-##    -------
-##    data_filled : array
-##        array with filled gaps and extrapolated ends
-##
-##    """
-##    return np.apply_along_axis(func1d=fill_phi1d, axis=0, arr=data)
+def texture(data):
+    """
+    Compute the texture of the data by comparing values with a 3x3 neighborhood (based on Gourley, 2007).
+    NaN values in the original array have NaN textures.
 
+    Parameters
+    ----------
+    data : multi-dimensional array with shape (..., number of beams, number of range bins)
 
-##def fill_phidp(data):
-##    """
-##    Fills in missing PhiDP. The ends are extrapolated by extending the
-##    first and last values to the start and end of the range, respectively.
-##
-##    Parameters
-##    ----------
-##    data : N-dim array with last dimension representing the range
-##
-##    Returns
-##    -------
-##    out : array of same shape as phi gaps filled
-##
-##    """
-##    shape = data.shape
-##    data  = data.reshape((-1,shape[-1]))
-##    zeros = np.zeros(data.shape[1], dtype="f4")
-##    x = np.arange(data.shape[1])
-##    valids = np.logical_not(np.isnan(data))
-##
-##    for i in xrange(data.shape[0]):
-##        # return zeros of there are no valid phidp values
-##        if np.all(np.isnan(data[i])):
-##            data[i] = zeros
-##            continue
-##        # interpolate
-##        ix = np.where(valids[i])[0]
-##        f = interp1d(ix, data[i,ix], copy=False, bounds_error=False)
-##        data[i] = f(x)
-##        # find and replace remaining NaNs
-##        data[i, 0:ix[0]]  = data[i, ix[0]]
-##        data[i, ix[-1]:] = data[i, ix[-1]]
-##    return data.reshape(shape)
+    Returns
+    ------
+    texture : array of textures with the same shape as data
+
+    """
+    x1 = np.roll(data,1,-2) # center:2
+    x2 = np.roll(data,1,-1) # 4
+    x3 = np.roll(data,-1,-2) # 8
+    x4 = np.roll(data,-1,-1) # 6
+    x5 = np.roll(x1,1,-1) # 1
+    x6 = np.roll(x4,1,-2) # 3
+    x7 = np.roll(x3,-1,-1) # 9
+    x8 = np.roll(x2,-1,-2) # 7
+
+    xa = np.array([x1, x2, x3, x4, x5, x6, x7, x8]) # at least one NaN would give a sum of NaN
+
+    # get count of valid neighboring pixels
+    xa_valid = np.ones(np.shape(xa))
+    xa_valid[np.isnan(xa)] = 0
+    xa_valid_count = np.sum(xa_valid, axis = 0) # count number of valid neighbors
+
+    num = np.zeros(data.shape)
+    for xarr in xa:
+        diff = data - xarr
+        # difference of NaNs will be converted to zero (to not affect the summation)
+        diff[np.isnan(diff)] = 0
+        # only those with valid values are considered in the summation
+        num += diff**2
+
+    num[np.isnan(data)] = np.nan # reinforce that NaN values should have NaN textures
+
+    texture = np.sqrt(num / xa_valid_count)
+
+    return texture
+
 
 
 def fill_phidp(data, margin=3):
@@ -1007,50 +891,81 @@ def contiguous_regions(condition):
     return idx
 
 
-def texture(data):
+# TO UTILS
+def medfilt_along_axis(x, N, axis=-1):
+    """Applies median filter smoothing on one axis of an N-dimensional array.
     """
-    Compute the texture of the data by comparing values with a 3x3 neighborhood (based on Gourley, 2007).
-    NaN values in the original array have NaN textures.
+    kernel_size = np.array(x.shape)
+    kernel_size[:] = 1
+    kernel_size[axis] = N
+    return medfilt(x, kernel_size)
+
+
+# TO UTILS
+def gradient_along_axis(x):
+    """Computes gradient along last axis of an N-dimensional array
+    """
+    axis=-1
+    newshape = np.array(x.shape)
+    newshape[axis] = 1
+    diff_begin = ( x[...,1] - x[...,0] ).reshape(newshape)
+    diff_end = ( x[...,-1] - x[...,-2] ).reshape(newshape)
+    diffs = ( (x - np.roll(x, 2, axis) ) / 2. )
+    diffs = np.append(diffs[...,2:], diff_end, axis=axis)
+    return np.insert(diffs, 0, diff_begin, axis=axis)
+
+
+# TO UTILS
+def gradient_from_smoothed(x, N=5):
+    """Computes gradient of smoothed data along final axis of an array
+    """
+    return gradient_along_axis(medfilt_along_axis(x, N)).astype("f4")
+
+
+@deprecated
+def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
+    """Establish consistent PhiDP profiles from raw data.
+
+    Processing of raw PhiDP data contains the following steps:
+
+        - Despeckle
+
+        - Fill missing data
+          (general asssumption: PhiDP is monotonically increasing along the beam)
+
+        - Phase unfolding
+
+        - Smoothing
 
     Parameters
     ----------
-    data : multi-dimensional array with shape (..., number of beams, number of range bins)
-
-    Returns
-    ------
-    texture : array of textures with the same shape as data
+    phidp : array of shape (n azimuth angles, n range gates)
+    rho : array of shape (n azimuth angles, n range gates)
+    N_despeckle : integer
+        *N* parameter of function dp.linear_despeckle
+    N_fillmargin : integer
+        *margin* parameter of function dp.fill_phidp
+    N_unfold : integer
+        *width* parameter of function dp.unfold_phi
+    N_filter : integer
+        *N* parameter of function dp.medfilt_along_axis
+    copy : boolean
+        leaves the original phidp array untouched
 
     """
-    x1 = np.roll(data,1,-2) # center:2
-    x2 = np.roll(data,1,-1) # 4
-    x3 = np.roll(data,-1,-2) # 8
-    x4 = np.roll(data,-1,-1) # 6
-    x5 = np.roll(x1,1,-1) # 1
-    x6 = np.roll(x4,1,-2) # 3
-    x7 = np.roll(x3,-1,-1) # 9
-    x8 = np.roll(x2,-1,-2) # 7
-
-    xa = np.array([x1, x2, x3, x4, x5, x6, x7, x8]) # at least one NaN would give a sum of NaN
-
-    # get count of valid neighboring pixels
-    xa_valid = np.ones(np.shape(xa))
-    xa_valid[np.isnan(xa)] = 0
-    xa_valid_count = np.sum(xa_valid, axis = 0) # count number of valid neighbors
-
-    num = np.zeros(data.shape)
-    for xarr in xa:
-        diff = data - xarr
-        # difference of NaNs will be converted to zero (to not affect the summation)
-        diff[np.isnan(diff)] = 0
-        # only those with valid values are considered in the summation
-        num += diff**2
-
-    num[np.isnan(data)] = np.nan # reinforce that NaN values should have NaN textures
-
-    texture = np.sqrt(num / xa_valid_count)
-
-    return texture
-
+    if copy:
+        phidp = phidp.copy()
+    # despeckle
+    phidp = linear_despeckle(phidp, N=N_despeckle)
+    phidp = fill_phidp(phidp, margin=N_fillmargin)
+    # apply unfolding
+    if speedupexists:
+        phidp = unfold_phi(phidp, rho, width=N_unfold)
+    else:
+        phidp = unfold_phi_naive(phidp, rho, width=N_unfold)
+    # median filter smoothing
+    phidp = medfilt_along_axis(phidp, N=N_filter)
+    return phidp
 
 
 
