@@ -32,6 +32,21 @@ from time import mktime
 from scipy import interpolate
 from scipy.spatial import cKDTree
 from scipy.stats import nanmean
+import importlib
+
+
+
+def import_optional(module):
+    """Allowing for lazy loading of optional wradlib modules or dependencies
+
+    """
+    try:
+        mod = importlib.import_module(module)
+    except ImportError:
+        raise ImportError, 'wradlib optional module "%s" not '%(module,)+ \
+        'found. please see http://wradlib.bitbucket.org/opt.html on hints '+\
+        'how to solve this problem.'
+    return mod
 
 
 def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, src, method="sum", minpercvalid=100.):
