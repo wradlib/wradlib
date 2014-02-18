@@ -45,9 +45,7 @@ import warnings
 import h5py
 import numpy as np
 import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
-
-# wradib modules
-import wradlib.bufr as bufr
+import util
 
 
 # current DWD file naming pattern (2008) for example:
@@ -436,6 +434,8 @@ def read_BUFR(buffile):
     The actual function refererence is contained in :doc:`wradlib.bufr.decodebufr`.
 
     """
+    # wradib modules
+    bufr = util.import_optional("wradlib.bufr")
     return bufr.decodebufr(buffile)
 
 
