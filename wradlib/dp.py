@@ -608,7 +608,7 @@ def unfold_phi(phidp, rho, width=5, copy=False):
 
     """
     # Check whether fast Fortran implementation is available
-    speedup = util.optional_import(wradlib.speedup)
+    speedup = util.import_optional("wradlib.speedup")
 
     shape = phidp.shape
     assert rho.shape==shape, "rho and phidp must have the same shape."
