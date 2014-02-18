@@ -82,6 +82,8 @@ from scipy.stats import nanmedian, nanmean, linregress
 from scipy.ndimage.filters import convolve1d
 import util
 
+from util import deprecated
+
 
 def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=False):
     """Establish consistent PhiDP profiles from raw data.
@@ -779,7 +781,7 @@ def texture(data):
     return texture
 
 
-# DEPRECATED
+@deprecated()
 def fill_phidp(data, margin=3):
     """Fills in missing PhiDP.
 
@@ -915,7 +917,7 @@ def gradient_from_smoothed(x, N=5):
     return gradient_along_axis(medfilt_along_axis(x, N)).astype("f4")
 
 
-# DEPRECATED
+@deprecated(process_raw_phidp_vulpiani)
 def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
