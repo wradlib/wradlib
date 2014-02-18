@@ -80,19 +80,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import medfilt
 from scipy.stats import nanmedian, nanmean, linregress
 from scipy.ndimage.filters import convolve1d
-
-
-# Check whether fast Fortran implementation is available
-speedupexists = True
-try:
-    from wradlib.speedup import f_unfold_phi
-except ImportError:
-    print "WARNING: To increase performance, you should try to build module <speedup>."
-    print "See module documentation for details."
-    speedupexists = False
-
-
-
+import util
 
 
 def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=False):
@@ -619,6 +607,9 @@ def unfold_phi(phidp, rho, width=5, copy=False):
        of the Specific Differential Phase. J. Atmos. Oceanic Technol., 26, 2565-2578.
 
     """
+    # Check whether fast Fortran implementation is available
+    speedup = util.optional_import(wradlib.speedup)
+
     shape = phidp.shape
     assert rho.shape==shape, "rho and phidp must have the same shape."
 
@@ -635,7 +626,7 @@ def unfold_phi(phidp, rho, width=5, copy=False):
     for r in xrange(rs-9):
         stdarr[...,r] = np.std(phidp[...,r:r+9],-1)
 
-    phidp = f_unfold_phi(phidp=phidp.astype("f4"), rho=rho.astype("f4"), gradphi=gradphi.astype("f4"), stdarr=stdarr.astype("f4"), beams=beams, rs=rs, w=width)
+    phidp = speedup.f_unfold_phi(phidp=phidp.astype("f4"), rho=rho.astype("f4"), gradphi=gradphi.astype("f4"), stdarr=stdarr.astype("f4"), beams=beams, rs=rs, w=width)
 
     return phidp.reshape(shape)
 
