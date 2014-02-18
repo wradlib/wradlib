@@ -30,9 +30,10 @@ of polarimetric moments is implemented in the corresponding wradlib modules, e.g
     - direct precipitation retrieval from Kdp (:doc:`kdp2r <generated/wradlib.trafo.kdp2r>`)
 
 Establishing a valid PhiDP profile for Kdp retrieval involves despeckling (linear_despeckle),
-gap filling (fill_phidp), phase unfolding and smoothing. The main workflow and
+phase unfolding, and iterative retrieval of PhiDP form KDP. The main workflow and
 its single steps is based on a publication by [Vulpiani2012]_. For convenience, the
-entire workflow has been put together in the function :doc:`process_raw_phidp <generated/wradlib.dp.process_raw_phidp_vulpiani>`.
+entire workflow has been put together in the function
+:doc:`process_raw_phidp <generated/wradlib.dp.process_raw_phidp_vulpiani>`.
 
 Once a valid PhiDP profile has been established, :doc:`kdp_from_phidp <generated/wradlib.dp.kdp_from_phidp>`
 can be used to retrieve Kdp.
@@ -42,15 +43,6 @@ performance. This was mainly achieved by allowing the simultaneous application
 of functions over multiple array dimensions. The only requirement to apply these
 function is that the **range dimension must be the last dimension** of all input arrays.
 
-Another increase in performance was achieved by replacing the naive (Python/numpy)
-implementation of the phase unfolding by a Fortan implementation using f2py
-(http://cens.ioc.ee/projects/f2py2e/). f2py usually ships with numpy and should
-be available via the command line. To test whether f2py is available on your
-system, execute ``f2py`` on the system console. Or, alternatively, ``f2py.py``. If it is
-available, you should get a bunch of help instructions. Now change to the wradlib
-module directory and execute on the system console:
-
-   ``f2py.py -c -m speedup speedup.f``
 
 .. autosummary::
    :nosignatures:
