@@ -57,6 +57,8 @@ import matplotlib.font_manager as fm
 import wradlib.georef as georef
 import wradlib.util as util
 
+from util import deprecated
+
 
 class NorthPolarAxes(PolarAxes):
     '''
@@ -119,7 +121,7 @@ class NorthPolarAxes(PolarAxes):
 register_projection(NorthPolarAxes)
 
 
-@deprecated()
+@deprecated("plot_ppi")
 class PolarPlot(object):
     def __init__(self, ax=None, fig=None, axpos=111, **kwargs):
         if ax is None:
@@ -184,7 +186,7 @@ class PolarPlot(object):
         return ret
 
 
-@deprecated(plot_ppi)
+@deprecated("plot_ppi")
 def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', show=True, **kwargs):
     pp = PolarPlot(fig=fig, axpos=axpos, figsize=(8,8))
     pp.set_cmap(colormap, classes=classes)
@@ -207,7 +209,7 @@ def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., t
             pl.close()
 
 
-@deprecated(plot_ppi)
+@deprecated("plot_ppi")
 def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', **kwargs):
     """Plots data from a polar grid.
 
@@ -679,6 +681,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
 
     # return references to important and eventually new objects
     return ax, pm
+
 
 @deprecated()
 class CartesianPlot(object):

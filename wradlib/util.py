@@ -72,11 +72,9 @@ def deprecated(replacement=None):
     >>>
     """
     def outer(fun):
-        msg = "psutil.%s is deprecated" % fun.__name__
+        msg = "%s.%s is deprecated" % (fun.__module__,fun.__name__)
         if replacement is not None:
             msg += "; use %s instead" % replacement
-        if fun.__doc__ is None:
-            fun.__doc__ = msg
 
         @functools.wraps(fun)
         def inner(*args, **kwargs):

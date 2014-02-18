@@ -909,7 +909,7 @@ def gradient_from_smoothed(x, N=5):
     return gradient_along_axis(medfilt_along_axis(x, N)).astype("f4")
 
 
-@deprecated(process_raw_phidp_vulpiani)
+@deprecated("process_raw_phidp_vulpiani")
 def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
