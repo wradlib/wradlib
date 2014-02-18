@@ -52,14 +52,6 @@ module directory and execute on the system console:
 
    ``f2py.py -c -m speedup speedup.f``
 
-References
-----------
-.. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-   P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-   for Operational Rainfall Retrieval in Mountainous Areas.
-   J. Appl. Meteor. Climatol., 51, 405-425.
-
-
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -70,6 +62,16 @@ References
     unfold_phi_vulpiani
     linear_despeckle
     texture
+
+
+
+References
+----------
+.. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
+   P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
+   for Operational Rainfall Retrieval in Mountainous Areas.
+   J. Appl. Meteor. Climatol., 51, 405-425.
+
 
 """
 
