@@ -21,11 +21,9 @@ Standard plotting and mapping procedures
    :nosignatures:
    :toctree: generated/
 
-   polar_plot
    plot_ppi
    plot_ppi_crosshair
    plot_rhi
-   cartesian_plot
    rhi_plot
    cg_plot
    plot_scan_strategy
@@ -121,6 +119,7 @@ class NorthPolarAxes(PolarAxes):
 register_projection(NorthPolarAxes)
 
 
+@deprecated()
 class PolarPlot(object):
     def __init__(self, ax=None, fig=None, axpos=111, **kwargs):
         if ax is None:
@@ -185,6 +184,7 @@ class PolarPlot(object):
         return ret
 
 
+@deprecated(plot_ppi)
 def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', show=True, **kwargs):
     pp = PolarPlot(fig=fig, axpos=axpos, figsize=(8,8))
     pp.set_cmap(colormap, classes=classes)
@@ -207,6 +207,7 @@ def polar_plot2(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., t
             pl.close()
 
 
+@deprecated(plot_ppi)
 def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., theta0=0, colormap='jet', classes=None, extend='neither', **kwargs):
     """Plots data from a polar grid.
 
@@ -679,7 +680,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     # return references to important and eventually new objects
     return ax, pm
 
-
+@deprecated()
 class CartesianPlot(object):
     def __init__(self, ax=None, fig=None, axpos=111, **kwargs):
         if ax is None:
@@ -731,7 +732,7 @@ class CartesianPlot(object):
         return ret
 
 
-
+@deprecated()
 def cartesian_plot(data, x=None, y=None, title='', unit='', saveto='', fig=None, axpos=111, colormap='jet', classes=None, extend='neither', **kwargs):
     """Plots data from a cartesian grid.
 
@@ -788,277 +789,6 @@ def cartesian_plot(data, x=None, y=None, title='', unit='', saveto='', fig=None,
         if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
             pl.savefig(saveto)
             pl.close()
-
-
-##class PolarBasemap():
-##    '''
-##    Plot a spatial points dataset as a map (or a time series of maps)
-##
-##    *STILL UNDER DEVLOPMENT!!!*
-##
-##    Parameters
-##    ----------
-##    data    : Dataset which should be plotted
-##                if <dset> contains different time steps, one map will be generated for each time step
-##    conf    : a config object
-##    title   : a base title - other elements will be appended to this base title
-##    bbox    : the bounding box of the entire map in lat/lon; if None, the specs will be read from the config file key 'bbox_map'
-##    ncolors : number of colors in the colomap lookup table - will be overridden by the classes argument
-##    classes : classes of the plotting variable for which colors should be homogenoeous - overrides ncolors!
-##    cmap    : name of the default colormap in case no colormap is provided in the config file
-##    ensstat : in case dset contains an ensemble Dimension, the statistic function with name <ensstat> will be used to remove the ensemble Dimension by applying ensstat along the ens Dimension
-##                <ensstat> should be contained in numpy and be retrived by getattr(numpy, ensstat) and it should have an axis argument
-##    saveto  : if None, the plots are shown on the screen - otherwise the figures are saved to directory <saveto>
-##    '''
-##    def __init__(self, polygons, sitecoords, r, az, title='', bbox=None, ncolors=10, classes=None, cmap='jet'):
-##
-##        # Georeferencing the radar data
-##        polygons = georef.polar2polyvert(r, az, sitecoords)
-##
-##        # define spatial bounding box of the Basemap
-##        if bbox==None:
-##            self.bbox={'llcrnrlon':np.min(polygons[:,:,0]),
-##                  'llcrnrlat':np.min(polygons[:,:,1]),
-##                  'urcrnrlon':np.max(polygons[:,:,0]),
-##                  'urcrnrlat':np.max(polygons[:,:,1])}
-##        else:
-##            self.bbox = bbox
-##
-##        # define class boundaries for plotting
-##        if classes!=None:
-##            self.classes = np.array(classes)
-##        else:
-##            self.classes = np.array([-100, 10, 20, 30, 40, 50, 60, 70])
-##        self.ncolors = len(self.classes)
-##
-##        # define map center
-##        lon0=sitecoords[1]
-##        lat0=sitecoords[0]
-##
-##        # plot the Basemap
-##        self.m = Basemap(llcrnrlon=self.bbox['llcrnrlon'],llcrnrlat=self.bbox['llcrnrlat'],
-##                        urcrnrlon=self.bbox['urcrnrlon'],urcrnrlat=self.bbox['urcrnrlat'],
-##                    resolution='i',projection='tmerc',lat_0=lat0, lon_0=lon0)
-##
-##        # draw parallels and meridians
-####        self.m.drawmapboundary(fill_color='aqua')
-##        # fill continents, set lake color same as ocean color.
-####        self.m.fillcontinents(color='coral',lake_color='aqua')
-##        self.m.drawcoastlines(color='white')
-##        self.m.drawparallels(np.linspace(start=np.round(self.bbox['llcrnrlat']), stop=np.round(self.bbox['urcrnrlat']), num=3), labels=[1,0,0,0])
-##        self.m.drawmeridians(np.linspace(start=np.round(self.bbox['llcrnrlon']), stop=np.round(self.bbox['urcrnrlon']), num=3), labels=[0,0,0,1])
-##        # draw map scale
-##        self.m.drawmapscale(lon=self.bbox['urcrnrlon']-0.2*(self.bbox['urcrnrlon']-self.bbox['llcrnrlon']), lat=self.bbox['llcrnrlat']+0.1*(self.bbox['urcrnrlat']-self.bbox['llcrnrlat']), lon0=lon0, lat0=lat0, length=50., units='km', barstyle='fancy')
-##
-##        polygons[:,:,0], polygons[:,:,1] = self.m(polygons[:,:,0], polygons[:,:,1])
-##        self.polygons = polygons
-##    ##    # read shapefile which defines the plotting locations as polygons
-##    ##    s = m.readshapefile(conf['shapefile_locations'], 'datashp', drawbounds=False)
-##    ##
-##    ##    # read the other shapefiles (which are only plotted as lines)
-##    ##    if conf.has_key('shapefiles_extra'):
-##    ##        oshps = {}
-##    ##        for key in conf['shapefiles_extra'].keys():
-##    ##            oshps[key] = m.readshapefile(conf['shapefiles_extra'][key], key, linewidth=conf['shapefiles_lwds'][key], color=conf['shapefiles_colors'][key])
-##
-##        # define plotting colormap and normalization
-##
-##        #   the color map needs one entry less than class boundaries!
-####        if unit=='p':
-####            mycmap = pl.get_cmap(cmap, lut=len(classes)-2)
-####            myclist= mycmap( np.arange(mycmap.N) ).tolist()
-####            myclist.insert(0,(0,0,0))
-####            self.mycmap = mpl.colors.ListedColormap(myclist)
-####        else:
-####            mycmap = pl.get_cmap(cmap, lut=len(classes))
-####            self.mycmap = mpl.colors.ListedColormap(mycmap( np.arange(len(classes)-1) ))
-##        self.mycmap = pl.get_cmap(cmap, lut=len(self.classes))
-##        self.mycmap = mpl.colors.ListedColormap(self.mycmap( np.arange(len(self.classes)-1) ))
-##
-##        norm   = mpl.colors.BoundaryNorm(self.classes, self.mycmap.N)
-##
-##        # define colorbar (we use a dummy mappable object via imshow)
-##        self.cbar = pl.colorbar(mappable=pl.imshow(np.repeat(self.classes,2).reshape((2,-1)),
-##                    cmap=self.mycmap, norm = norm), orientation='vertical', shrink=0.8, extend='max')
-####        self.cbar.set_label('('+unit+')')
-##
-##        # get current axes instance
-##        self.ax = pl.gca()
-##
-##
-####        plot_data_on_map(ax=ax, data=data.ravel(), dtime='', mycmap=mycmap,
-####                    polygons=polygons, classes=classes, bbox=bbox, name=var, saveto=None)
-####
-####        pl.close()
-##
-##    def __call__(self, data, dtime='', varname='', varunit='', saveto=None):
-##        '''
-##        Takes care of the actual data plot for each time step (plotting coloured polygons)
-##        ---
-##        ax      : matplotlib axes instance on which to plot the polygons
-##        data    : a data array which must be consistent with the number of polygons as given by polygons
-##        dtime   : the datetime which defines the end of the period represented by data
-##        mycmap  : a colormap as defined in the calling function
-##        polygons: a numpay ndarray of shape (number of polygons, number of polygon corners)
-##        bbox    : the map's bounding box
-##        name    : the name of the dataset (normally a parameter such as <p> or <wc>)
-##        dsettype: the dsettype of the Dataset the data comes from
-##        saveto  : if None, the map will be pplotted to the screen, otherwise it will be saved to directory <saveto>
-##        '''
-##        # give each polygon of the shapefile <datashp> a fillcolor based on its value
-##        facecolors = np.repeat(self.mycmap(0)[0:3], len(self.polygons) ).reshape((-1,3),order='F')
-##
-##        for i,classval in enumerate(self.classes[1:]):
-##            colidx = np.where(data.ravel()>=classval)[0]
-##            facecolors[colidx,:] = np.array(self.mycmap(i+1)[0:3])
-##
-##        # plot polygons using matplotlib PolyCollection
-##        polycoll = mpl.collections.PolyCollection(self.polygons,closed=True, facecolors=facecolors,edgecolors=facecolors)
-##        mainplot = self.ax.add_collection(polycoll, autolim=True)
-##
-##        # add title to plot
-##    ##    pl.title( get_map_title(name, dsettype, dtime) )
-##
-##        # if no save directory is given, show plot on screen
-##        if saveto==None:
-##            pl.show()
-##        else:
-##            fname    = name + '_' + dtime.strftime('%Y%m%d%H%M%S') + '.png'
-##            savepath = path.join(saveto, fname)
-##            pl.savefig(savepath)
-##        # remove the PolygonCollection from the axis (otherwise the axis object becomes successively overcrowded)
-##        self.ax.collections.remove(polycoll)
-
-
-##class Grid2Basemap():
-##    """Plot gridded data on a background map
-##
-##    *STILL UNDER DEVELOPMENT!!!*
-##
-##    This class allows to plot gridded data (e.g. PPIs, CAPPIs, composites) on a background.
-##    The background map (Basemap) can include country borders, coastlines, meridians
-##    as well as user-defined shapefiles. The plot will appear as filled contours.
-##
-##    In order to plot user defined backgroud data such as points or shapefiles,
-##    these have to be provided in "geographical projection", i.e. in lat/lon coordinates
-##    based on WGS84. You can use any GIS for this task. Shapefiles are then passed
-##    to the constructor by providing a list of file paths in the argument *shpfiles*
-##    (see `Parameters`).
-##
-##    Using Grid2Basemap(...), the background map is plotted. The actual data is plotted
-##    by using the ``plot`` method. This procedure allows to repeatedly plot data on
-##    a map (e.g. a time series) without each time plotting the background again. This
-##    will save a huge amount of processing time if a large number of images is plotted
-##    over the same background.
-##
-##    Parameters
-##    ----------
-##    bbox : dictionary
-##        the bounding box of the entire map in lat/lon
-##    classes : list of floats
-##        classes of the plotting variable for which colors should be homogenoeous
-##    unit : string
-##    points : dictionary
-##    shpfiles : list of strings
-##        paths to shapefiles which will be plotted as map background
-##    cmap : name of the default colormap in case no colormap is provided in the config file
-##
-##    """
-##    def __init__(self, bbox, classes, unit='', points={}, cmap=cm.s3pcpn, shpfiles=[], **kwargs):
-##
-##        # Remember keyword args
-##        self.bbox = bbox
-##        self.classes = np.array(classes)
-##        self.mycmap = cmap
-##
-##        # define map center
-##        lon0=(bbox['llx']+bbox['urx'])/2
-##        lat0=(bbox['lly']+bbox['ury'])/2
-##
-##        fig = pl.figure(figsize=(12,12))
-##
-##        ax = fig.add_subplot(111)
-##
-##        # plot the Basemap
-##        self.m = Basemap(llcrnrlon=self.bbox['llx'],llcrnrlat=self.bbox['lly'],
-##                        urcrnrlon=self.bbox['urx'],urcrnrlat=self.bbox['ury'],
-##                    resolution='h',projection='tmerc',lat_0=lat0, lon_0=lon0, ax=ax)
-##
-##        # draw nice stuff
-##        self.m.fillcontinents(color='grey', zorder=0)
-##        self.m.drawcoastlines(color="white", linewidth=1.5)
-##        self.m.drawparallels(np.linspace(start=np.round(self.bbox['lly']), stop=np.round(self.bbox['ury']), num=3), labels=[1,0,0,0])
-##        if "meridians_at" in kwargs.keys():
-##            meridians_at = kwargs["meridians_at"]
-##        else:
-##            meridians_at = np.linspace(start=np.round(self.bbox['llx']), stop=np.round(self.bbox['urx']), num=3)
-##        self.m.drawmeridians(meridians_at, labels=[0,0,0,1])
-##        # draw map scale
-##        #   map scale locations
-##        scalelon = self.bbox['urx']-0.2*(self.bbox['urx']-self.bbox['llx'])
-##        scalelat = self.bbox['lly']+0.1*(self.bbox['ury']-self.bbox['lly'])
-##        #   update map scale locations based on kwargs
-##        if "scalelocation" in kwargs.keys():
-##            if kwargs["scalelocation"]=="topright":
-##                scalelon = self.bbox['urx']-0.2*(self.bbox['urx']-self.bbox['llx'])
-##                scalelat = self.bbox['lly']+0.9*(self.bbox['ury']-self.bbox['lly'])
-##        #   draw map scale
-##        self.m.drawmapscale(lon=scalelon, lat=scalelat, lon0=lon0, lat0=lat0, length=50., units='km', barstyle='fancy', fontsize=11)
-##
-##        # read the other shapefiles (which are only plotted as lines)
-##        for shp in shpfiles:
-##            shp_info = self.m.readshapefile(shp, "name", linewidth=1.5, color="orange")
-##
-##        # draw points
-##        markers = ['wo',"ws"]
-##        for i,name in enumerate(points.keys()):
-##            x, y =self.m(points[name]["lon"], points[name]["lat"])
-##            pl.plot(x,y,markers[i], markersize=7)
-##            try:
-##                for j, locname in enumerate(points[name]["names"]):
-##                    if (x[j]>self.m.llcrnrx) and (x[j]<self.m.urcrnrx) and (y[j]>self.m.llcrnry) and (y[j]<self.m.urcrnry):
-##                        pl.text(x[j]+1000.,y[j]+1000.,locname, color="white", fontweight="bold")
-##            except:
-##                pass
-##
-##        # define colorbar (we use a dummy mappable object via imshow)
-##        self.cbar = pl.colorbar(mappable=pl.contourf(np.repeat(self.classes,2).reshape((2,-1)), self.classes, cmap=self.mycmap),
-##                    orientation='horizontal', shrink=1., extend='max', fraction=0.05, pad=0.05)
-##        self.cbar.set_label('('+unit+')')
-##
-##
-##    def plot(self, lon, lat, data, title='', saveto=None):
-##        """Plot the data on the map background
-##
-##        Parameters
-##        ----------
-##        lon : array of longitudes
-##        lat : array of latitudes
-##        data : data array of shape (number of longitudes, number of latitudes)
-##        title : figure title
-##        saveto : string to a directory where figures should be stored
-##
-##        """
-##        # add title plot
-##        pl.title( title)
-##        # get map coordinates
-##        x, y =self.m(lon, lat)
-##        # plot data
-##        cs = self.m.contourf(x,y,data,self.classes, cmap=self.mycmap)
-##
-##        # if no save directory is given, show plot on screen
-##        if saveto==None:
-##            pl.draw()
-##        else:
-##            if title=='':
-##                fname = "radarfig.png"
-##            else:
-##                fname    = title.replace(" ", "").replace("\n", "").replace(":","").strip() + '.png'
-##            savepath = path.join(saveto, fname)
-##            pl.savefig(savepath)
-##        # remove data plot from the axis (otherwise the axis object becomes successively overcrowded)
-##        for coll in cs.collections:
-##            pl.gca().collections.remove(coll)
 
 
 def get_tick_vector(vrange,vres):
@@ -1405,6 +1135,7 @@ def rhi_plot(data, **kwargs):
             pl.close()
 
     return fig, pl
+
 
 class cg_plot(object):
     """Class for plotting curvilinear axes.
