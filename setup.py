@@ -18,10 +18,15 @@ from distutils.sysconfig import get_python_lib
 
 import subprocess as sub
 
-MAJOR               = 0
-MINOR               = 1
-MICRO               = 1
-VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+# get current version from file
+with open("version") as f:
+    VERSION = f.read()
+    VERSION = VERSION.strip()
+
+##MAJOR               = 0
+##MINOR               = 1
+##MICRO               = 1
+##VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
 if __name__ == '__main__':
