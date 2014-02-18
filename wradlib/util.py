@@ -72,6 +72,14 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, s
         resolution of the source data (seconds)
     src : 1-d array of floats
         source values
+    method : string
+        Method of aggregation (either "sum" or "mean")
+    minpercvalid : float
+        Minimum percentage of valid source values within target interval that are
+        required to compute an aggregate target value. If set to 100 percent,
+        the target value wil be NaN if only one source value is missing or NaN.
+        If set to 90 percent, target value will be NaN if more than 10 percent of
+        the source values are missing or NaN.
 
     Returns
     -------
@@ -103,46 +111,58 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, s
     twins = np.array(from_to(tstart, tend, tdelta))
     tstarts = twins[:-1]
     tends   = twins[1:]
-    tends_src_expected = np.array(from_to(tstart, tend, tdelta_src)[1:])
 
     # Check consistency of timestamps and data
     assert len(tends_src)==len(src), "Length of source timestamps tends_src must equal length of source data src."
+
+    # Check that source time steps are sorted correctly
+    assert np.all( np.sort(tends_src)==tends_src ), "The source time steps are not in chronological order."
 
     # number of expected source time steps per target timestep
     assert tdelta % tdelta_src == 0, "Target resolution %d is not a multiple of source resolution %d." % (tdelta, tdelta_src)
     nexpected = tdelta / tdelta_src
 
-    # pre-select source data that is between tstart and tend
-    ixinside = (tends_src > tstart) & (tends_src <= tend)
-
-    # This is the source array sized as if it had no gaps
-    srcfull = np.repeat(np.nan, len(tends_src_expected))
-
-    # These are the indices of srcfull which actually have data accoridng to src
-    validix = np.where(np.in1d(tends_src_expected, tends_src[ixinside]))[0]
-    assert len(validix)==len(src[ixinside]), "Source and target time information as given by the arguments are not consistent."
-    srcfull[validix] = src[ixinside]
-
     # results container
     agg = np.repeat(np.nan, len(tstarts))
 
+    inconsistencies=0
     # iterate over target time windows
     for i, begin in enumerate(tstarts):
         end = tends[i]
-        ix = np.where((tends_src_expected>begin) & (tends_src_expected <= end))[0]
+        # select source data that is between start and end of this interval
+        ixinside = np.where( (tends_src > begin) & (tends_src <= end) )[0]
+        # Time steps and array shape in that interval sized as if it had no gaps
+        tends_src_expected = np.array(from_to(begin, end, tdelta_src)[1:])
+        srcfull = np.repeat(np.nan, len(tends_src_expected))
+        # These are the indices of srcfull which actually have data according to src
+        validix = np.where(np.in1d(tends_src_expected, tends_src[ixinside]))[0]
+        if not len(validix)==len(ixinside):
+            # If we find time stamps in tends_src[ixinside] that are not
+            #   contained in the expected cintiguous time steps (tends_src_expected),
+            #   we assume that the data is corrupt (can have multiple reasons,
+            #   e.g. wrong increment)
+            inconsistencies += 1
+            continue
+        srcfull[validix] = src[ixinside]
         # valid source values found in target time window
-        nvalid = len(np.where(~np.isnan( srcfull[ix] ))[0])
+        nvalid = len(np.where(~np.isnan( srcfull ))[0])
+        if nvalid > nexpected:
+            # If we have more source time steps in target interval than expected
+            # something must be wrong.
+            inconsistencies += 1
+            continue
         if float(nvalid) / float(nexpected) >= minpercvalid/100.:
             if method=="sum":
-                agg[i] = np.nansum( srcfull[ix] )
+                agg[i] = np.nansum( srcfull )
             elif method=="mean":
-                agg[i] = nanmean( srcfull[ix] )
+                agg[i] = nanmean( srcfull )
             else:
                 print "Aggregation method not known, yet."
                 raise Exception()
+    if inconsistencies>0:
+        print "WARNING: Inconsistent source times in %d target time intervals." % inconsistencies
 
     return tstarts, tends, agg
-
 
 
 
