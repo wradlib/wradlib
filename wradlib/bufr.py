@@ -77,13 +77,58 @@ winexecutable = 'decbufr.exe'
 linuxexecutable = './decbufr'
 macexecutable = './decbufr'
 
-if not os.path.exists(bufrlibdir):
-    print ("Cannot find the BUFR library directory under %s." % bufrlibdir)
-    print ("Check your wradlib installation directory.")
-    print ("BUFR decoding is not operational for this wradlib installation!")
 
 # remember where you are
 myhome = os.path.abspath( os.getcwd() )
+
+
+# Check availability of BUFR directory
+if not os.path.exists(bufrlibdir):
+    print ("Cannot find the BUFR library directory under %s." % bufrlibdir)
+    print ("BUFR decoding is not operational for this wradlib installation!")
+    raise ImportError
+
+# CHECK WHETHER BUFR SOFTWARE IS OPERATIONAL.
+#    Change to BUFR directory
+os.chdir(bufrlibdir)
+#   Make a test call to decbufr
+bufr_is_operational = False
+if os.sys.platform=="win32":
+    # Windows systems
+    try:
+        retval = sub.call([winexecutable])
+    except:
+        pass
+    else:
+        bufr_is_operational = True
+elif "linux" in os.sys.platform:
+    # Linux systems
+    try:
+        retval = sub.call([linuxexecutable])
+    except:
+        pass
+    else:
+        bufr_is_operational = True
+elif ("os" in os.sys.platform) or (os.sys.platform=="darwin"):
+    # Mac systems
+    try:
+        retval = sub.call([macexecutable])
+    except:
+        pass
+    else:
+        bufr_is_operational = True
+else:
+    print "wradlib BUFR module cannot be used on your platform, yet."
+    print "Your platform: %s" % os.sys.platform
+    print "Please request support under wradlib-users@googlegroups.com"
+#    Change back to where you were.
+os.chdir(myhome)
+
+# Now you know whether BUFR software is operational on your system.
+if not bufr_is_operational:
+    print "Test call to decbufr excutable was not successful."
+    print ("BUFR decoding is not operational for this wradlib installation.")
+    raise ImportError
 
 #-------------------------------------------------------------------------------
 # THE FOLLOWING SECTIONS WILL BE USED IN CASE THE SHARED LIBRARY FROM BUFR WILL WORK
