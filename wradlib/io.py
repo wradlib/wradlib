@@ -495,6 +495,12 @@ def read_RADOLAN_composite(fname, missing=-9999):
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
     resolution and in polar-stereographic projection.
 
+    **Beware**: This function already evaluates and applies the so-called PR factor which is
+    specified in the header section of the RADOLAN files. The raw values in an RY file
+    are in the unit 0.01 mm/5min, while read_RADOLAN_composite returns values
+    in mm/5min (i. e. factor 100 higher). The factor is also returned as part of
+    attrs dictionary under keyword "precision".
+
     Parameters
     ----------
     fname : path to the composite file
