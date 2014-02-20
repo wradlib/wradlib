@@ -55,7 +55,7 @@ class AttenuationIterationError(Exception):
     pass
 
 
-def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), mode='',
+def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), mode='except',
                          thrs=59.0):
     """Gate-by-Gate attenuation correction according to Hitschfeld & Bordan
     [Hitschfeld1954]_
@@ -92,7 +92,8 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
         execution
         'zero' : set offending gates to 0.0
         'nan' : set offending gates to nan
-        Any other mode and default setting will raise an Exception.
+        'except': raise an AttenuationOverflowError exception
+        Any other mode will also raise the Exception.
 
     thrs : float
         threshold, for the sum of attenuation and signal, which is deemed
