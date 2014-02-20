@@ -4,9 +4,9 @@ Getting Started
 Installation under Windows
 --------------------------
 
-In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_) and MinGW. We strongly recommend to install Python(x,y). It installs Python, a number of required packages, and other useful tools (e.g. MinGW).
+In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We strongly recommend to install Python(x,y). It installs Python, a number of required packages, and other useful tools (e.g. MinGW).
 
-Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. Download the latest distribution (currently **Python(x,y)-2.7.2.3.exe** and install it. We recommend to use the full installation mode. Make sure you choose "All Users" under the "Install for" menu component! Make sure you choose "All Users" under the "Install for" menu component (in case you have administrative privileges)!
+Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. Download the latest distribution (currently **Python(x,y)-2.7.6.0.exe** and install it. We recommend to use the full installation mode. Make sure you choose "All Users" under the "Install for" menu component! Make sure you choose "All Users" under the "Install for" menu component (in case you have administrative privileges)!
 
 If you Python installation is working, the following command (in a DOS console) should work:
 
@@ -27,13 +27,9 @@ ImportError: No module named wradlib
 
 **Gotchas under Windows**
 
-If you do not install Python(x,y), you will need to make sure by yourself that everything is there: The Python interpreter (version 2.7), MinGW, and all `Dependencies`_. You can test the availability of the required tools by opening a DOS console and requesting the versions of the required software. For Python, it is important that the version is 2.7.x, for the other tools, the version number is not so important, but rather checks whether the software is available at all:
+If you do not install Python(x,y), you will need to make sure by yourself that everything is there: The Python interpreter (version 2.7) and all `Dependencies`_. You can test the availability of the required tools by opening a DOS console and requesting the versions of the required software. For Python, it is important that the version is 2.7.x, for the other tools, the version number is not so important, but rather checks whether the software is available at all:
 
 ``> python --version``
-
-``> mingw32-make --version``
-
-``> gcc --version``
 
 Ideally, all installations should be done with administrative privileges. In case you do not have administrative privileges, you can instll wradib via:
 
@@ -52,7 +48,7 @@ This way no dependency checking is done and you need to make sure yourself that 
 
 ``$ python setup.py install``
 
-This will compile the bufr components and install wradlib to your site-packages or dist-packages folder.
+This will install wradlib to your site-packages or dist-packages folder.
 
 Installing via easy_install
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -91,19 +87,13 @@ As there is no wradlib Debian package yet, the python-setuptools package gives y
 
 ``$ sudo apt-get install python-setuptools``
 
-2. Compilers and Make
-"""""""""""""""""""""
-In order to compile the BUFR interface, you'll need a C/C++ compiler and make
-
-``$ sudo apt-get install gcc make``
-
-3. NumPy, SciPy and Matplotlib
+2. NumPy, SciPy and Matplotlib
 """"""""""""""""""""""""""""""
 NumPy and SciPy are needed for many algorithms and Matplotlib is used for visualization.
 
 ``$ sudo apt-get install python-numpy python-scipy python-matplotlib``
 
-4. Data Formats: HDF5 and NetCDF4
+3. Data Formats: HDF5 and NetCDF4
 """""""""""""""""""""""""""""""""
 The two major packages for working with HDF5 files are h5py and PyTables
 
@@ -123,13 +113,13 @@ For NetCDF4, there are no official Debian Packages for Ubuntu 12.04
 | ``$ sudo apt-get install libnetcdf-dev libhdf5-dev``
 | ``$ sudo easy_install netCDF4``
 
-5. georeferencing
+4. georeferencing
 """""""""""""""""
 Projections, which are the main part of georeferencing are handled by the pyproj package
 
 ``$ sudo apt-get install python-pyproj``
 
-6. wradlib
+5. wradlib
 """"""""""
 Finally you can install wradlib. 
 
