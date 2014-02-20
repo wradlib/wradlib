@@ -177,6 +177,29 @@ some version number
 The version number should be consistent with the above `Dependencies`_.
 
 
+Optional Dependencies
+---------------------
+
+Apart from the obligatory `Dependencies`_, some dependencies in wradlib are optional. This is because the installation of these dependencies can be somewhat tedious while many wradlib users will not need them anyway. In case users use a wradlib function that requires an optional dependency, and this dependency is not satisfied in the local environment, wradlib will raise an exception.
+
+As for now, the following dependencies are defined as optional:
+
+**BUFR software**
+
+The *bufr* module requires the installation of the OPERA BUFR software.
+
+*TODO:* Insert instructions for installing the BUFR software.
+
+**The speedup module**
+
+The speedup module is intended as a collection of Fortran code in order to speed up specific wradlib function that are critical for performance.
+In order to build the speedup module as a shared library, you need to use f2py (http://cens.ioc.ee/projects/f2py2e/). f2py usually ships with numpy and should be available via the command line. To test whether f2py is available on your system, execute ``f2py`` on the system console. Or, alternatively, ``f2py.py``. If it is available, you should get a bunch of help instructions. Now change to the wradlib module directory and execute on the system console:
+
+``f2py.py -c -m speedup speedup.f``
+
+Now the speedup module shoudl be availble.
+ 
+
 Community
 ---------
 
