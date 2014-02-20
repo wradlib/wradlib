@@ -153,14 +153,14 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
 
         pia[...,gate+1] = ksum
         # stop-criterion, if corrected reflectivity is larger than 59 dBZ
-        overflow = (gateset[...,gate] + ksum) > thrs
+        overflow = (gateset[...,gate+1] + ksum) > thrs
         if np.any(overflow):
             if mode == 'warn':
                 logger.warning('dB-sum over threshold (%3.1f)'%thrs)
             elif mode == 'nan':
-                pia[gate,overflow] = np.nan
+                pia[...,gate+1][overflow] = np.nan
             elif mode == 'zero':
-                pia[gate,overflow] = 0.0
+                pia[...,gate+1][overflow] = 0.0
             else:
                 raise AttenuationOverflowError
 
