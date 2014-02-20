@@ -197,7 +197,7 @@ In order to build the speedup module as a shared library, you need to use f2py (
 
 ``f2py.py -c -m speedup speedup.f``
 
-Now the speedup module shoudl be availble.
+Now the speedup module should be availble.
  
 
 Community
