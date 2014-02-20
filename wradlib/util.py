@@ -101,7 +101,9 @@ class OptionalModuleStub(object):
                            'You tried to access function/module/attribute "' +
                             name + '"\nfrom module "' + self.name + '".\nThis '+
                             'module is optional right now in wradlib.\n' +
-                            'You need to separately install this dependency.'
+                            'You need to separately install this dependency.' +
+                            'Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies' +
+                            'for further instructions.'
                             )
 
 
