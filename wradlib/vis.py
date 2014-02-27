@@ -1210,7 +1210,7 @@ def cartesian_plot(data, x=None, y=None, title='', unit='', saveto='', fig=None,
             pl.savefig(saveto)
             pl.close()
 
-
+@deprecated()
 def get_tick_vector(vrange,vres):
     """Calculates Vector for tickmarks for function create_curvilinear_axes.
 
@@ -1250,6 +1250,7 @@ def get_tick_vector(vrange,vres):
 
     return np.linspace(vrange[0],vrange[1]-rem,num=cnt+1)
 
+@deprecated("create_cg")
 def create_curvilinear_axes(fig, **kwargs):
     """Creates Axis with Parasite Axis for curvilinear grid.
 
@@ -1371,7 +1372,7 @@ def create_curvilinear_axes(fig, **kwargs):
 
     return ax1, ax2
 
-
+@deprecated("plot_cg_rhi")
 def rhi_plot(data, **kwargs):
     """Returns figure and pylab object of plotted data from a polar grid as an RHI (Range Height Indicator).
 
@@ -1556,7 +1557,7 @@ def rhi_plot(data, **kwargs):
 
     return fig, pl
 
-
+@deprecated("plot_cg_ppi, plot_cg_rhi")
 class cg_plot(object):
     """Class for plotting curvilinear axes.
 
