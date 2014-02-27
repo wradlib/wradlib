@@ -6,7 +6,7 @@
 # Author:      Kai Muehlbauer
 #
 # Created:     25.02.2014
-# Copyright:   (c) Kai Muehlbaier 2014
+# Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
 #-------------------------------------------------------------------------------
 import numpy as np
@@ -29,7 +29,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # the positions of title and text annotation need adjustment
 subplot1 = [111, 111, 111]
 subplot2 = [311, 312, 313]
-subplot = subplot1
+subplot = subplot2
 
 # the simplest call, plot cg rhi in new window
 # cgax - curvilienar grid axis

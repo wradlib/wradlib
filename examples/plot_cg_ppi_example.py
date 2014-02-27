@@ -5,7 +5,7 @@
 # Author:      Kai Muehlbauer
 #
 # Created:     25.02.2014
-# Copyright:   (c) Kai Muehlbaier 2014
+# Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
 #-------------------------------------------------------------------------------
 import numpy as np
@@ -29,7 +29,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # colorbar etc may need adjustment
 subplot1 = [111, 111, 111, 111]
 subplot2 = [221, 222, 223, 224]
-subplot = subplot1
+subplot = subplot2
 
 # plot simple CG PPI
 wradlib.vis.plot_cg_ppi(ma, subplot=subplot[0])
