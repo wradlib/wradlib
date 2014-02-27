@@ -724,7 +724,7 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
     fig : matplotlib Figure object
-        If given, the RHI will be plotted into this figure object. Axes are
+        If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None a new figure object will be created or
         current figure will be used, depending on "subplot".
     subplot : matplotlib grid definition
