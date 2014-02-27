@@ -868,6 +868,7 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         Cartesian Axes (x-y-grid) for plotting cartesian data
     paax : matplotlib Axes object
         The parasite axes object for plotting polar data
+        all data in polar format must be plottet to this axis
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
@@ -942,8 +943,8 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     does all coordinate transforms beforehand.
 
     This allows zooming into the data as well as making it easier to plot
-    additional cartesian data (like gauge locations) without having to convert
-    them to the radar's polar coordinate system.
+    additional cartesian data (like certain special points) without having to
+    convert them to the radar's polar coordinate system.
 
     Plotting in the radar's polar coordinate system is possible as well.
 
@@ -1001,7 +1002,7 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         Cartesian Axes (x-y-grid) for plotting cartesian data
     paax : matplotlib Axes object
         The parasite axes object for plotting polar data
-
+        All data in polar format must be plottet to this axis
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
