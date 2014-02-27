@@ -29,7 +29,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # the positions of title and text annotation need adjustment
 subplot1 = [111, 111, 111]
 subplot2 = [311, 312, 313]
-subplot = subplot2
+subplot = subplot1
 
 # the simplest call, plot cg rhi in new window
 # cgax - curvilienar grid axis

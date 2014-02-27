@@ -684,6 +684,135 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     # return references to important and eventually new objects
     return ax, pm
     
+def create_cg(st, fig=None, subplot=111):
+    """ Helper function to create curvilinear grid
+
+    Parameters
+    ----------
+    st : scan type, 'PPI' or 'RHI'
+    fig : matplotlib Figure object
+        If given, the PPI will be plotted into this figure object. Axes are
+        created as needed. If None a new figure object will be created or
+        current figure will be used, depending on "subplot".
+    subplot : matplotlib grid definition
+        nrows/ncols/plotnumber
+        defaults to '111', only one subplot
+
+    Returns
+    -------
+    cgax : matplotlib Axes object
+        Curvilinear Axes (r-theta-grid)
+    caax : matplotlib Axes object
+        Cartesian Axes (x-y-grid) for plotting cartesian data
+    paax : matplotlib Axes object
+        The parasite axes object for plotting polar data
+    """
+
+    if st == 'RHI':
+        # create transformation
+        tr = Affine2D().scale(np.pi / 180, 1.) + PolarAxes.PolarTransform()
+
+        # build up curvilinear grid
+        extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
+                                                     lon_cycle=100,
+                                                     lat_cycle=None,
+                                                     lon_minmax=(0, np.inf),
+                                                     lat_minmax=(0, np.inf),
+                                                     )
+
+        # locator and formatter for angular annotation
+        grid_locator1 = angle_helper.LocatorD(10.)
+        tick_formatter1 = angle_helper.FormatterDMS()
+
+        # grid_helper for curvilinear grid
+        grid_helper = GridHelperCurveLinear(tr,
+                                        extreme_finder=extreme_finder,
+                                        grid_locator1=grid_locator1,
+                                        grid_locator2=None,
+                                        tick_formatter1=tick_formatter1,
+                                        tick_formatter2=None,
+                                        )
+
+        # try to set nice locations for range gridlines
+        grid_helper.grid_finder.grid_locator2._nbins = 30.0
+        grid_helper.grid_finder.grid_locator2._steps = [0, 1, 1.5, 2, 2.5, 5, 10]
+        
+    if st == 'PPI':
+        # create transformation
+        tr = (Affine2D().scale(np.pi / 180, 1.) +
+              NorthPolarAxes.NorthPolarTransform())
+
+        # build up curvilinear grid
+        extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
+                                                     lon_cycle=360.,
+                                                     lat_cycle=None,
+                                                     lon_minmax=(360., 0.),
+                                                     lat_minmax=(0, np.inf),
+                                                     )
+
+        # locator and formatter for angle annotation
+        grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
+        tick_formatter1 = angle_helper.FormatterDMS()
+
+        # grid_helper for curvilinear grid
+        grid_helper = GridHelperCurveLinear(tr,
+                                        extreme_finder=extreme_finder,
+                                        grid_locator1=grid_locator1,
+                                        grid_locator2=None,
+                                        tick_formatter1=tick_formatter1,
+                                        tick_formatter2=None,
+                                        )
+
+    # if there is no figure object given
+    if fig is None:
+        # create new figure if there is only one subplot
+        if subplot is 111:
+            fig = pl.figure()
+        # otherwise get current figure or create new figure
+        else:
+            fig = pl.gcf()
+
+    # generate Axis
+    cgax = SubplotHost(fig, subplot, grid_helper=grid_helper)
+
+    fig.add_axes(cgax)
+
+    # PPIs always plottetd with equal aspect
+    if st == 'PPI':
+        cgax.set_aspect('equal', adjustable='box-forced')
+
+    # get twin axis for cartesian grid
+    caax = cgax.twin()
+    # move axis annotation from right to left and top to bottom
+    caax.toggle_axisline()
+
+    # make ticklabels of right and top axis visible,
+    cgax.axis["right"].major_ticklabels.set_visible(True)
+    cgax.axis["top"].major_ticklabels.set_visible(True)
+    cgax.axis["right"].get_helper().nth_coord_ticks = 0
+    cgax.axis["top"].get_helper().nth_coord_ticks = 0
+
+    # and also set tickmarklength to zero for better presentation
+    cgax.axis["right"].major_ticks.set_ticksize(0)
+    cgax.axis["top"].major_ticks.set_ticksize(0)
+
+    # make ticklabels of left and bottom axis unvisible,
+    # because we are drawing them
+    cgax.axis["left"].major_ticklabels.set_visible(False)
+    cgax.axis["bottom"].major_ticklabels.set_visible(False)
+
+    # and also set tickmarklength to zero for better presentation
+    cgax.axis["left"].major_ticks.set_ticksize(0)
+    cgax.axis["bottom"].major_ticks.set_ticksize(0)
+
+    # generate and add parasite axes with given transform
+    paax = ParasiteAxesAuxTrans(cgax, tr, "equal")
+    # note that paax.transData == tr + cgax.transData
+    # Anthing you draw in paax will match the ticks and grids of cgax.
+    cgax.parasites.append(paax)
+
+    return cgax, caax, paax
+    
 
 def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
              refrac=True, elev=0., fig=None, subplot=111,
@@ -773,81 +902,15 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         # with refraction correction, significant at higher elevations
         # calculate new range values
         x = georef.arc_distance_n(x, elev)
-    # create transformation
-    tr = (Affine2D().scale(np.pi / 180, 1.) +
-          NorthPolarAxes.NorthPolarTransform())
 
-    # build up curvilinear grid
-    extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
-                                                 lon_cycle=360.,
-                                                 lat_cycle=None,
-                                                 lon_minmax=(360., 0.),
-                                                 lat_minmax=(0, np.inf),
-                                                 )
-
-    # locator and formatter for angle annotation
-    grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
-    tick_formatter1 = angle_helper.FormatterDMS()
-
-    # grid_helper for curvilinear grid
-    grid_helper = GridHelperCurveLinear(tr,
-                                    extreme_finder=extreme_finder,
-                                    grid_locator1=grid_locator1,
-                                    grid_locator2=None,
-                                    tick_formatter1=tick_formatter1,
-                                    tick_formatter2=None,
-                                    )
-
-    # if there is no figure object given
-    if fig is None:
-        # create new figure if there is only one subplot
-        if subplot is 111:
-            fig = pl.figure()
-        # otherwise get current figure or create new figure
-        else:
-            fig = pl.gcf()
-
-    # generate Axis
-    cgax = SubplotHost(fig, subplot, grid_helper=grid_helper)
-
-    fig.add_axes(cgax)
-    cgax.set_aspect('equal', adjustable='box-forced')
-
-    # get twin axis for cartesian grid
-    caax = cgax.twin()
-    # move axis annotation from right to left and top to bottom
-    caax.toggle_axisline()
+    # create curvilinear axes     
+    cgax, caax, paax = create_cg('PPI', fig, subplot)
 
     # this is in fact the outermost thick "ring"
     cgax.axis["lon"] = cgax.new_floating_axis(1, np.max(x) / rf)
     cgax.axis["lon"].major_ticklabels.set_visible(False)
     # and also set tickmarklength to zero for better presentation
     cgax.axis["lon"].major_ticks.set_ticksize(0)
-
-    # make ticklabels of right and top axis visible,
-    cgax.axis["right"].major_ticklabels.set_visible(True)
-    cgax.axis["top"].major_ticklabels.set_visible(True)
-    cgax.axis["right"].get_helper().nth_coord_ticks = 0
-    cgax.axis["top"].get_helper().nth_coord_ticks = 0
-
-    # and also set tickmarklength to zero for better presentation
-    cgax.axis["right"].major_ticks.set_ticksize(0)
-    cgax.axis["top"].major_ticks.set_ticksize(0)
-
-    # make ticklabels of left and bottom axis unvisible,
-    # because we are drawing them
-    cgax.axis["left"].major_ticklabels.set_visible(False)
-    cgax.axis["bottom"].major_ticklabels.set_visible(False)
-
-    # and also set tickmarklength to zero for better presentation
-    cgax.axis["left"].major_ticks.set_ticksize(0)
-    cgax.axis["bottom"].major_ticks.set_ticksize(0)
-
-    # generate and add parasite axes with given transform
-    paax = ParasiteAxesAuxTrans(cgax, tr, "equal")
-    # note that ax2.transData == tr + ax1.transData
-    # Anthing you draw in ax2 will match the ticks and grids of ax1.
-    cgax.parasites.append(paax)
 
     xx, yy = np.meshgrid(y, x)
     # set bounds to min/max
@@ -992,87 +1055,14 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     else:
         img = data
 
-    # create transformation
-    tr = Affine2D().scale(np.pi / 180, 1.) + PolarAxes.PolarTransform()
-
-    # build up curvilinear grid
-    extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
-                                                 lon_cycle=100,
-                                                 lat_cycle=None,
-                                                 lon_minmax=(0, np.inf),
-                                                 lat_minmax=(0, np.inf),
-                                                 )
-
-    # locator and formatter for angular annotation
-    grid_locator1 = angle_helper.LocatorD(10.)
-    tick_formatter1 = angle_helper.FormatterDMS()
-
-    # grid_helper for curvilinear grid
-    grid_helper = GridHelperCurveLinear(tr,
-                                    extreme_finder=extreme_finder,
-                                    grid_locator1=grid_locator1,
-                                    grid_locator2=None,
-                                    tick_formatter1=tick_formatter1,
-                                    tick_formatter2=None,
-                                    )
-
-    # try to set nice locations for range gridlines
-    grid_helper.grid_finder.grid_locator2._nbins = 30.0
-    grid_helper.grid_finder.grid_locator2._steps = [0, 1, 1.5, 2, 2.5, 5, 10]
-
-    # if there is no figure object given
-    if fig is None:
-        # create new figure if there is only one subplot
-        if subplot is 111:
-            fig = pl.figure()
-        # otherwise get current figure or create new figure
-        else:
-            fig = pl.gcf()
-
-    # configure subplot
-    cgax = SubplotHost(fig, subplot, grid_helper=grid_helper)
-    # add axis to figure
-    fig.add_subplot(cgax)
-
-    # get twin axis for cartesian grid
-    caax = cgax.twin()
-    # move axis annotation from right to left and top to bottom
-    caax.toggle_axisline()
-
-    # right and top axis (theta-axis)
-    # make ticklabels of right and top axis visible.
-    cgax.axis["right"].major_ticklabels.set_visible(True)
-    cgax.axis["top"].major_ticklabels.set_visible(True)
-    # but set tickmarklength to zero for better presentation
-    cgax.axis["right"].major_ticks.set_ticksize(5)
-    cgax.axis["top"].major_ticks.set_ticksize(5)
-    # let right and top axis shows ticklabels for 1st coordinate (angle)
-    cgax.axis["right"].get_helper().nth_coord_ticks = 0
-    cgax.axis["top"].get_helper().nth_coord_ticks = 0
+    # create curvilinear axes
+    cgax, caax, paax = create_cg('RHI', fig, subplot)
 
     # this is in fact the outermost thick "ring" aka max_range
     cgax.axis["lon"] = cgax.new_floating_axis(1, np.max(x) / rf)
     cgax.axis["lon"].major_ticklabels.set_visible(False)
     # and also set tickmarklength to zero for better presentation
     cgax.axis["lon"].major_ticks.set_ticksize(0)
-
-    # left and bottom (range-height-axis)
-    # make ticklabels of left and bottom axis unvisible,
-    # because we use twin-axis for that
-    cgax.axis["left"].major_ticklabels.set_visible(False)
-    cgax.axis["bottom"].major_ticklabels.set_visible(False)
-    # and also set tickmarklength to zero for better presentation
-    cgax.axis["left"].major_ticks.set_ticksize(0)
-    cgax.axis["bottom"].major_ticks.set_ticksize(0)
-    # let left and bottom axis shows ticklabels for 2nd coordinate (range)
-    cgax.axis["left"].get_helper().nth_coord_ticks = 1
-    cgax.axis["bottom"].get_helper().nth_coord_ticks = 1
-
-    # generate and add parasite axes with given transform
-    paax = ParasiteAxesAuxTrans(cgax, tr, "equal")
-    # note that paax.transData == tr + cgax.transData
-    # Anthing you draw in paax will match the ticks and grids of ax1.
-    cgax.parasites.append(paax)
 
     if refrac:
         # observing air refractivity, so ground distances and beam height

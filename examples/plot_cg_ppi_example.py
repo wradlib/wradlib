@@ -29,7 +29,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # colorbar etc may need adjustment
 subplot1 = [111, 111, 111, 111]
 subplot2 = [221, 222, 223, 224]
-subplot = subplot2
+subplot = subplot1
 
 # plot simple CG PPI
 wradlib.vis.plot_cg_ppi(ma, subplot=subplot[0])
