@@ -196,5 +196,56 @@ axHistY.hist(y, orientation='horizontal')
 t = pl.gcf().suptitle('AxesDivider CG Example')
 pl.tight_layout()
 
+#----------------------------------------------------------------
+# figure #7
+# compare plots with refraction True and refarction False
+pl.figure()
+# figure #7-1
+# check how refraction is doing
+# and plot some annotation and colorbar
+cgax, caax, paax, pm = wradlib.vis.plot_cg_rhi(ma, r, th,
+                                               rf=1e3, autoext=True,
+                                               refrac=True, subplot=211)
+t = pl.title('CG RHI refrac=True')
+t.set_y(1.05)
+cbar = pl.gcf().colorbar(pm)
+caax.set_xlabel('range [m]')
+caax.set_ylabel('height [m]')
+pl.text(1.0, 1.05, 'elevation', transform=caax.transAxes,
+        va='bottom', ha='right')
+cbar.set_label('reflectivity [dBZ]')
+# zoom 
+cgax.set_xlim(35, 45)
+cgax.set_ylim(10, 12)
+# plot additional data point ((theta, range)
+paax.plot(15, 42, 'bo', label="paax")
+caax. plot(40,11,'ro', label="caax")
+cgax.legend()
+pl.tight_layout()
+
+# figure #7-1
+# check how refraction is doing
+# and plot some annotation and colorbar
+cgax, caax, paax, pm = wradlib.vis.plot_cg_rhi(ma, r, th,
+                                               rf=1e3, autoext=True,
+                                               refrac=False, subplot=212)
+t = pl.title('CG RHI refrac=False')
+t.set_y(1.05)
+cbar = pl.gcf().colorbar(pm)
+caax.set_xlabel('range [m]')
+caax.set_ylabel('height [m]')
+pl.text(1.0, 1.05, 'elevation', transform=caax.transAxes,
+        va='bottom', ha='right')
+cbar.set_label('reflectivity [dBZ]')
+# zoom 
+cgax.set_xlim(35, 45)
+cgax.set_ylim(10, 12)
+# plot additional data point ((theta, range)
+paax.plot(15, 42, 'bo', label="paax")
+caax. plot(40,11,'ro', label="caax")
+cgax.legend()
+pl.tight_layout()
+
+
 # show the plots
 pl.show()
