@@ -30,7 +30,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # Main axis
 
 # caax - twin cartesian axis
-# secondary axis for cartesian coordiantes (plotting, labeling etc.)
+# secondary axis for cartesian coordinates (plotting, labeling etc.)
 
 # paax - polar axis for plotting
 # here all plotting in polar data is done
@@ -46,7 +46,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 #----------------------------------------------------------------
 # First, creation of four simple figures
 # figure #1
-# the simplest call, plot cg rhi in new window
+# the simplest call, plot cg ppi in new window
 # plot simple CG PPI
 wradlib.vis.plot_cg_ppi(ma, refrac=False)
 t = pl.title('Simple CG PPI')
@@ -88,7 +88,7 @@ cgax.legend()
 # and plot some annotation and colorbar
 cgax, caax, paax, pm = wradlib.vis.plot_cg_ppi(ma, r, az, autoext=True,
                                                refrac=False)
-t = pl.title('Decorated CG RHI')
+t = pl.title('Decorated CG PPI')
 t.set_y(1.05)
 cbar = pl.gcf().colorbar(pm, pad=0.075)
 caax.set_xlabel('x_range [km]')
@@ -127,7 +127,7 @@ pl.tight_layout()
 # plot figure #1-4 in one figure 2x2 grid
 pl.figure()
 # figure #5-1
-# the simplest call, plot cg rhi in new window
+# the simplest call, plot cg ppi in new window
 # plot simple CG PPI
 wradlib.vis.plot_cg_ppi(ma, refrac=False, subplot=221)
 t = pl.title('Simple CG PPI')
@@ -155,7 +155,7 @@ pl.tight_layout()
 # and plot some annotation and colorbar
 cgax, caax, paax, pm = wradlib.vis.plot_cg_ppi(ma, r, az, autoext=True,
                                                refrac=False, subplot=223)
-t = pl.title('Decorated CG RHI')
+t = pl.title('Decorated CG PPI')
 t.set_y(1.05)
 cbar = pl.gcf().colorbar(pm, pad=0.075)
 caax.set_xlabel('x_range [km]')

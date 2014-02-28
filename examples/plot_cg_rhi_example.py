@@ -31,7 +31,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # Main axis
 
 # caax - twin cartesian axis
-# secondary axis for cartesian coordiantes (plotting, labeling etc.)
+# secondary axis for cartesian coordinates (plotting, labeling etc.)
 
 # paax - polar axis for plotting
 # here all plotting in polar data is done
@@ -138,7 +138,6 @@ pl.text(1.0, 1.05, 'elevation', transform=caax.transAxes,
 cbar.set_label('reflectivity [dBZ]')
 pl.tight_layout()
 
-
 # figure #4-3
 # now lets zoom into the data and apply our range_factor (to km)
 # and plot some annotation and colorbar
@@ -155,7 +154,6 @@ pl.text(1.0, 1.05, 'elevation', transform=caax.transAxes,
         va='bottom', ha='right')
 cbar.set_label('reflectivity [dBZ]')
 pl.tight_layout()
-
 
 #----------------------------------------------------------------
 # figure #5
@@ -176,7 +174,6 @@ pl.tight_layout()
 t = pl.gcf().suptitle('GridSpec CG Example')
 pl.tight_layout()
 
-
 #----------------------------------------------------------------
 # figure #6
 # create figure with co-located x and y-axis
@@ -193,7 +190,6 @@ axHistX.hist(x)
 axHistY.hist(y, orientation='horizontal')
 t = pl.gcf().suptitle('AxesDivider CG Example')
 pl.tight_layout()
-
 
 # show the plots
 pl.show()
