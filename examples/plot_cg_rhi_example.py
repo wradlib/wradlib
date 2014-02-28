@@ -45,7 +45,7 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # may need adjustment
 
 # Remark #2:
-# This examples makes eavy use of new matlotlib functionality. See 
+# This examples makes heavy use of new matlotlib functionality. See 
 # function help for more information.
 
 #----------------------------------------------------------------
