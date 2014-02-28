@@ -26,7 +26,7 @@ mask_ind = np.where(data <= np.nanmin(data))
 data[mask_ind] = np.nan
 ma = np.ma.array(data, mask=np.isnan(data))
 
-# cgax - curvilinear grid axis
+# cgax - curvelinear grid axis
 # Main axis
 
 # caax - twin cartesian axis
@@ -38,10 +38,14 @@ ma = np.ma.array(data, mask=np.isnan(data))
 # pm - pcolormesh
 # actual plot mappable
 
-# Remark:
+# Remark #1:
 # The tight_layout function is great, but may not lead to
 # satisfactory results in the first place. So labels, annotations
 # and/or axes may need adjustment
+
+# Remark #2:
+# This examples makes eavy use of new matlotlib functionality. See 
+# function help for more information.
 
 #----------------------------------------------------------------
 # First, creation of four simple figures
@@ -210,6 +214,7 @@ pl.tight_layout()
 #----------------------------------------------------------------
 # figure #7
 # create figure with co-located x and y-axis
+# using axesgrid1 toolkit
 x = np.random.randn(ma.shape[1])
 y = np.random.randn(ma.shape[1])
 cgax, caax, paax, cgpm = wradlib.vis.plot_cg_ppi(ma, refrac=False, )
