@@ -232,8 +232,8 @@ cgax, caax, paax, pm = wradlib.vis.plot_cg_rhi(ma, r, th,
 t = pl.title('CG RHI refrac=False')
 t.set_y(1.05)
 cbar = pl.gcf().colorbar(pm)
-caax.set_xlabel('range [m]')
-caax.set_ylabel('height [m]')
+caax.set_xlabel('range [km]')
+caax.set_ylabel('height [km]')
 pl.text(1.0, 1.05, 'elevation', transform=caax.transAxes,
         va='bottom', ha='right')
 cbar.set_label('reflectivity [dBZ]')
