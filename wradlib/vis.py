@@ -683,9 +683,19 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
 
     # return references to important and eventually new objects
     return ax, pm
-    
+
+
 def create_cg(st, fig=None, subplot=111):
-    """ Helper function to create curvilinear grid
+    """ Helper function to create curvelinear grid
+
+    The function makes use of the Matplotlib AXISARTIST namespace
+    http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+
+    Here are some limitations to normal Matplotlib Axes. While using the
+    Matplotlib AxesGrid Toolkit
+    http://matplotlib.org/mpl_toolkits/axes_grid/index.html
+    most of the limitations can be overcome.
+    See http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html.
 
     Parameters
     ----------
@@ -694,17 +704,17 @@ def create_cg(st, fig=None, subplot=111):
         If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None a new figure object will be created or
         current figure will be used, depending on "subplot".
-    subplot : matplotlib grid definition
-        nrows/ncols/plotnumber
+    subplot : matplotlib grid definition, gridspec definition
+        nrows/ncols/plotnumber, see examples section
         defaults to '111', only one subplot
 
     Returns
     -------
-    cgax : matplotlib Axes object
-        Curvilinear Axes (r-theta-grid)
-    caax : matplotlib Axes object
+    cgax : matplotlib toolkit axisartist Axes object
+        curvelinear Axes (r-theta-grid)
+    caax : matplotlib Axes object (twin to cgax)
         Cartesian Axes (x-y-grid) for plotting cartesian data
-    paax : matplotlib Axes object
+    paax : matplotlib Axes object (parasite to cgax)
         The parasite axes object for plotting polar data
     """
 
@@ -712,7 +722,7 @@ def create_cg(st, fig=None, subplot=111):
         # create transformation
         tr = Affine2D().scale(np.pi / 180, 1.) + PolarAxes.PolarTransform()
 
-        # build up curvilinear grid
+        # build up curvelinear grid
         extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
                                                      lon_cycle=100,
                                                      lat_cycle=None,
@@ -724,7 +734,7 @@ def create_cg(st, fig=None, subplot=111):
         grid_locator1 = angle_helper.LocatorD(10.)
         tick_formatter1 = angle_helper.FormatterDMS()
 
-        # grid_helper for curvilinear grid
+        # grid_helper for curvelinear grid
         grid_helper = GridHelperCurveLinear(tr,
                                         extreme_finder=extreme_finder,
                                         grid_locator1=grid_locator1,
@@ -735,14 +745,15 @@ def create_cg(st, fig=None, subplot=111):
 
         # try to set nice locations for range gridlines
         grid_helper.grid_finder.grid_locator2._nbins = 30.0
-        grid_helper.grid_finder.grid_locator2._steps = [0, 1, 1.5, 2, 2.5, 5, 10]
-        
+        grid_helper.grid_finder.grid_locator2._steps = [0, 1, 1.5,
+                                                        2, 2.5, 5, 10]
+
     if st == 'PPI':
         # create transformation
         tr = (Affine2D().scale(np.pi / 180, 1.) +
               NorthPolarAxes.NorthPolarTransform())
 
-        # build up curvilinear grid
+        # build up curvelinear grid
         extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
                                                      lon_cycle=360.,
                                                      lat_cycle=None,
@@ -754,7 +765,7 @@ def create_cg(st, fig=None, subplot=111):
         grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
         tick_formatter1 = angle_helper.FormatterDMS()
 
-        # grid_helper for curvilinear grid
+        # grid_helper for curvelinear grid
         grid_helper = GridHelperCurveLinear(tr,
                                         extreme_finder=extreme_finder,
                                         grid_locator1=grid_locator1,
@@ -812,20 +823,29 @@ def create_cg(st, fig=None, subplot=111):
     cgax.parasites.append(paax)
 
     return cgax, caax, paax
-    
+
 
 def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
              refrac=True, elev=0., fig=None, subplot=111,
              **kwargs):
-    """Plots a Plan Position Indicator (PPI) on a curvilinear grid.
+    """Plots a Plan Position Indicator (PPI) on a curvelinear grid.
 
-    The implementation of this plot routine is in curvilinear grid axes and
+    The implementation of this plot routine is in curvelinear grid axes and
     does all coordinate transforms beforehand. This allows zooming into the
     data as well as making it easier to plot additional data (like gauge
     locations).
 
     Additional data can be plottet in polar coordinates or cartesian
     coordinates depending which axes object is used.
+
+    The function uses create_cg wich uses the Matplotlib AXISARTIST namespace
+    http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+
+    Here are some limitations to normal Matplotlib Axes. While using the
+    Matplotlib AxesGrid Toolkit
+    http://matplotlib.org/mpl_toolkits/axes_grid/index.html
+    most of the limitations can be overcome.
+    See http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html.
 
     `**kwargs` may be used to try to influence the matplotlib.pcolormesh
     routine under the hood.
@@ -856,19 +876,24 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None a new figure object will be created or
         current figure will be used, depending on "subplot".
-    subplot : matplotlib grid definition
-        nrows/ncols/plotnumber
+   subplot : matplotlib grid definition, gridspec definition
+        nrows/ncols/plotnumber, see examples section
         defaults to '111', only one subplot
+
+    See also
+    --------
+    create_cg : creation of curvelinear grid axes objects
 
     Returns
     -------
-    cgax : matplotlib Axes object
-        Curvilinear Axes (r-theta-grid)
-    caax : matplotlib Axes object
+    cgax : matplotlib toolkit axisartist Axes object
+        Curvelinear Axes (r-theta-grid)
+    caax : matplotlib Axes object (twin to cgax)
         Cartesian Axes (x-y-grid) for plotting cartesian data
-    paax : matplotlib Axes object
+    paax : matplotlib Axes object (parasite to cgax)
         The parasite axes object for plotting polar data
         all data in polar format must be plottet to this axis
+
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
@@ -904,7 +929,7 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         # calculate new range values
         x = georef.arc_distance_n(x, elev)
 
-    # create curvilinear axes     
+    # create curvelinear axes
     cgax, caax, paax = create_cg('PPI', fig, subplot)
 
     # this is in fact the outermost thick "ring"
@@ -917,15 +942,15 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
     # set bounds to min/max
     xa = yy * np.sin(np.radians(xx))
     ya = yy * np.cos(np.radians(xx))
-    cgax.set_ylim(np.min(ya) , np.max(ya))
-    cgax.set_xlim(np.min(xa) , np.max(xa))
+    cgax.set_ylim(np.min(ya), np.max(ya))
+    cgax.set_xlim(np.min(xa), np.max(xa))
     yy = yy / rf
     data = data.transpose()
-    
+
     # plot the stuff
     pm = paax.pcolormesh(xx, yy, data, **kwargs)
 
-    # show curvilinear and cartesian grids
+    # show curvelinear and cartesian grids
     # makes no sense not to plot, if we made such a fuss to get that handled
     cgax.grid(True)
     caax.grid(True)
@@ -937,9 +962,9 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
 
 def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
              rf=1., fig=None, subplot=111, **kwargs):
-    """Plots a Range Height Indicator (RHI) on a curvilinear grid.
+    """Plots a Range Height Indicator (RHI) on a curvelinear grid.
 
-    The implementation of this plot routine is in a curvilinear grid axes and
+    The implementation of this plot routine is in a curvelinear grid axes and
     does all coordinate transforms beforehand.
 
     This allows zooming into the data as well as making it easier to plot
@@ -947,6 +972,15 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     convert them to the radar's polar coordinate system.
 
     Plotting in the radar's polar coordinate system is possible as well.
+
+    The function uses create_cg wich uses the Matplotlib AXISARTIST namespace
+    http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+
+    Here are some limitations to normal Matplotlib Axes. While using the
+    Matplotlib AxesGrid Toolkit
+    http://matplotlib.org/mpl_toolkits/axes_grid/index.html
+    most of the limitations can be overcome.
+    See http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html.
 
     `**kwargs` may be used to try to influence the matplotlib.pcolormesh
     routine under the hood.
@@ -983,7 +1017,7 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         Functionality for this will be provided by functions
         wradlib.georef.arc_distance_n and wradlib.georef.beam_height_n, which
         assume distances to be given in meters. Therefore, if `refrac` is True,
-        `r` must be given in meters.
+        `r` must be given in meters. Cartesian Axis caax ist used for plotting.
         If False, PolarAxes.PolarTransform will be used to calculate
         beam propagation.
     fig : matplotlib Figure object
@@ -994,10 +1028,14 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         nrows/ncols/plotnumber
         defaults to '111', only one subplot
 
+    See also
+    --------
+    create_cg : creation of curvelinear grid axes objects
+
     Returns
     -------
     cgax : matplotlib Axes object
-        Curvilinear Axes (r-theta-grid)
+        curvelinear Axes (r-theta-grid)
     caax : matplotlib Axes object
         Cartesian Axes (x-y-grid) for plotting cartesian data
     paax : matplotlib Axes object
@@ -1056,7 +1094,7 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     else:
         img = data
 
-    # create curvilinear axes
+    # create curvelinear axes
     cgax, caax, paax = create_cg('RHI', fig, subplot)
 
     # this is in fact the outermost thick "ring" aka max_range
