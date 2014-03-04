@@ -680,13 +680,15 @@ def read_gamic_scan_attributes(scan, scan_type):
     ----------
     scan : scan object from hdf5 file
     scan_type : string
-        "PPI" (plain position indicator) or "RHI" (radial height indicator)
+        "PVOL" (plan position indicator) or "RHI" (range height indicator)
 
     Returns
     -------
     sattrs  : dictionary of scan attributes
 
     """
+
+    global zero_index, el, az
 
     # placeholder for attributes
     sattrs = {}
@@ -708,7 +710,6 @@ def read_gamic_scan_attributes(scan, scan_type):
         azi_stop = ray_header['azimuth_stop']
         # Azimuth corresponding to 1st ray
         zero_index = np.where(azi_stop < azi_start)
-        # TODO: we need the azimuthal resolution here, 360 is hardcoded
         azi_stop[zero_index[0]] += 360
         zero_index = zero_index[0] + 1
         az = (azi_start+azi_stop)/2
@@ -757,11 +758,10 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
 
     Parameters
     ----------
-    :rtype : object
     scan : scan object from hdf5 file
     scan_type : string
-        "PPI" (plain position indicator) or "RHI" (radial height indicator)
-    wanted_moments  : sequence of strings containing upper case names of moment to be returned
+        "PVOL" (plan position indicator) or "RHI" (range height indicator)
+    wanted_moments  : sequence of strings containing upper case names of moment(s) to be returned
 
     Returns
     -------
@@ -779,15 +779,12 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
         if 'moment' in mom:
             data1 = {}
             sg2 = scan[mom]
-            #sg2_attr = list(sg2.attrs)
-            #print(sg2_attr)
             actual_moment = sg2.attrs.get('moment').upper()
             if actual_moment in wanted_moments or wanted_moments == 'all':
                 # read attributes only once
                 if not sattrs:
                     sattrs = read_gamic_scan_attributes(scan, scan_type)
                 mdata = sg2[...]
-                #print(data.size)
                 dyn_range_max = sg2.attrs.get('dyn_range_max')
                 dyn_range_min = sg2.attrs.get('dyn_range_min')
                 bin_format = sg2.attrs.get('format')
@@ -810,22 +807,24 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
                 data1['dyn_range_max'] = dyn_range_max
                 data1['dyn_range_min'] = dyn_range_min
                 data[actual_moment] = data1
-                #data.append(mdata)
 
     return data, sattrs
 
 
-def read_GAMIC_hdf5(filename, wanted_elevations='1.5', wanted_moments='UH'):
+def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
     """Data reader for hdf5 files produced by the commercial GAMIC Enigma V3 MURAN software
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
+    :param filename:
+    :param wanted_elevations:
+    :param wanted_moments:
     homepage for further info (http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3).
 
     Parameters
     ----------
     filename : path of the gamic hdf5 file
     scan_type : string
-        "PPI" (plain position indicator) or "RHI" (radial height indicator)
+        "PVOL" (plan position indicator) or "RHI" (range height indicator)
     elevation_angle : sequence of strings of elevation_angle(s) of scan (only needed for PPI)
     moments : sequence of strings of moment name(s)
 
@@ -836,6 +835,14 @@ def read_GAMIC_hdf5(filename, wanted_elevations='1.5', wanted_moments='UH'):
 
     """
 
+    # check elevations
+    if wanted_elevations is None:
+        wanted_elevations = 'all'
+
+    # check wanted_moments
+    if wanted_moments is None:
+        wanted_moments = 'all'
+
     # read the data from file
     f = h5py.File(filename, 'r')
 
@@ -844,7 +851,14 @@ def read_GAMIC_hdf5(filename, wanted_elevations='1.5', wanted_moments='UH'):
     vattrs = {}
     data = {}
 
-    #get scan_type (PVOL or RHI)
+    # check if GAMIC file and
+    try:
+        swver = f['how'].attrs.get('software')
+    except KeyError:
+        print("WRADLIB: File is no GAMIC hdf5!")
+        raise
+
+    # get scan_type (PVOL or RHI)
     scan_type = f['what'].attrs.get('object')
 
     # single or volume scan
@@ -859,7 +873,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations='1.5', wanted_moments='UH'):
                 el = sg1.attrs.get('elevation')
                 el = str(round(el, 2))
 
-                # try to read scan data and attrs if wanted elevations are found
+                # try to read scan data and attrs if wanted_elevations are found
                 if (el in wanted_elevations) or (wanted_elevations == 'all'):
                     sdata, sattrs = read_gamic_scan(scan=g, scan_type=scan_type,
                                                     wanted_moments=wanted_moments)
