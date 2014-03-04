@@ -924,7 +924,7 @@ def from_pickle(fpath):
     return obj
 
 
-def to_hdf5(fpath, data, metadata={}, dataset="data", compression="gzip"):
+def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="gzip"):
     """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
 
     This is more efficient than pickle, cPickle or numpy.save. The data is stored in
@@ -934,16 +934,18 @@ def to_hdf5(fpath, data, metadata={}, dataset="data", compression="gzip"):
     ----------
     fpath : string (path to the hdf5 file)
     data : numpy array
-    metadata : dictionary
-    dtype : a numpy dtype string
-    compression : h5py comression type {"gzip"|"szip"|"lzf"}, see h5py documentation for details
+    mode : string, file open mode, defaults to "w" (create, truncate if exists)
+    metadata : dictionary of data's attributes
+    dataset : a numpy string
+    compression : h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation for details
 
     """
-    f = h5py.File(fpath, mode="w")
+    f = h5py.File(fpath, mode=mode)
     dset = f.create_dataset(dataset, data=data, compression=compression)
     # store metadata
-    for key in metadata.keys():
-        dset.attrs[key] = metadata[key]
+    if metadata:
+        for key in metadata.keys():
+            dset.attrs[key] = metadata[key]
     # close hdf5 file
     f.close()
 
