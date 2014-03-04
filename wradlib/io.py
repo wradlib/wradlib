@@ -671,7 +671,7 @@ def read_OPERA_hdf5(fname):
     return fcontent
 
 
-def read_gamic_scan_attributes(scan, scan_type, range_lim):
+def read_gamic_scan_attributes(scan, scan_type):
     """Read attributes from one particular scan from a GAMIC hdf5 file
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn).
@@ -681,8 +681,6 @@ def read_gamic_scan_attributes(scan, scan_type, range_lim):
     scan : scan object from hdf5 file
     scan_type : string
         "PPI" (plain position indicator) or "RHI" (radial height indicator)
-    range_lim : float
-        range limitation (meters) of the returned radar data
 
     Returns
     -------
@@ -710,26 +708,26 @@ def read_gamic_scan_attributes(scan, scan_type, range_lim):
         azi_stop = ray_header['azimuth_stop']
         # Azimuth corresponding to 1st ray
         zero_index = np.where(azi_stop < azi_start)
-        # TODO: we need the azimutal resolution here, 360 is hardcoded
+        # TODO: we need the azimuthal resolution here, 360 is hardcoded
         azi_stop[zero_index[0]] += 360
         zero_index = zero_index[0] + 1
         az = (azi_start+azi_stop)/2
-        az = np.roll(az,-zero_index, axis=0)
+        az = np.roll(az, -zero_index, axis=0)
         az = np.round(az, 1)
         el = sg1.attrs.get('elevation')
 
     # az, el, zero_index for RHI scans
     if scan_type == 'RHI':
-        ele_start = np.round(ray_header['elevation_start'],1)
-        ele_stop = np.round(ray_header['elevation_stop'],1)
-        angle_step = np.round(sattrs['angle_step'],1)
-        angle_step = np.round(sattrs['ele_stop'],1) / angle_step
+        ele_start = np.round(ray_header['elevation_start'], 1)
+        ele_stop = np.round(ray_header['elevation_stop'], 1)
+        angle_step = np.round(sattrs['angle_step'], 1)
+        angle_step = np.round(sattrs['ele_stop'], 1) / angle_step
         # Elevation corresponding to 1st ray
         if ele_start[0] < 0:
             ele_start = ele_start[1:]
             ele_stop = ele_stop[1:]
         zero_index = np.where(ele_stop > ele_start)
-        zero_index = zero_index[0]# - 1
+        zero_index = zero_index[0]  # - 1
         el = (ele_start+ele_stop)/2
         el = np.round(el, 1)
         el = el[-angle_step:]
@@ -741,32 +739,29 @@ def read_gamic_scan_attributes(scan, scan_type, range_lim):
 
     # create range array
     r = np.arange(sattrs['bin_range'], sattrs['bin_range']*sattrs['bin_count']+sattrs['bin_range'], sattrs['bin_range'])
-    if range_lim and range_lim / sattrs['bin_range'] <= r.shape[0]:
-        r = r[:range_lim / sattrs['bin_range']]
 
     # save variables to scan attributes
     sattrs['az'] = az
     sattrs['el'] = el
-    sattrs['r']  = r
+    sattrs['r'] = r
     sattrs['Time'] = sattrs.pop('timestamp')
     sattrs['max_range'] = r[-1]
 
     return sattrs
 
 
-def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
+def read_gamic_scan(scan, scan_type, wanted_moments):
     """Read data from one particular scan from GAMIC hdf5 file
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn).
 
     Parameters
     ----------
+    :rtype : object
     scan : scan object from hdf5 file
     scan_type : string
         "PPI" (plain position indicator) or "RHI" (radial height indicator)
     wanted_moments  : sequence of strings containing upper case names of moment to be returned
-    range_lim : float
-        range limitation (meters) of the returned radar data
 
     Returns
     -------
@@ -775,10 +770,9 @@ def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
 
     """
 
-
     # placeholder for data and attrs
     data = {}
-    sattrs =  {}
+    sattrs = {}
 
     # try to read wanted moments
     for mom in list(scan):
@@ -791,7 +785,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
             if actual_moment in wanted_moments or wanted_moments == 'all':
                 # read attributes only once
                 if not sattrs:
-                    sattrs = read_gamic_scan_attributes(scan, scan_type, range_lim)
+                    sattrs = read_gamic_scan_attributes(scan, scan_type)
                 mdata = sg2[...]
                 #print(data.size)
                 dyn_range_max = sg2.attrs.get('dyn_range_max')
@@ -805,16 +799,12 @@ def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
 
                 if scan_type == 'PVOL':
                     # rotate accordingly
-                    mdata = np.roll(mdata,-1 * sattrs['zero_index'], axis=0)
+                    mdata = np.roll(mdata, -1 * sattrs['zero_index'], axis=0)
 
                 if scan_type == 'RHI':
                     # remove first zero angles
                     sdiff = mdata.shape[0]-sattrs['el'].shape[0]
-                    mdata = mdata[sdiff:,:]
-
-                # Limiting the returned range according to range_lim
-                if range_lim and range_lim / sattrs['bin_range'] <= mdata.shape[1]:
-                    mdata = mdata[:,:range_lim / sattrs['bin_range']]
+                    mdata = mdata[sdiff:, :]
 
                 data1['data'] = mdata
                 data1['dyn_range_max'] = dyn_range_max
@@ -825,7 +815,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments, range_lim):
     return data, sattrs
 
 
-def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wanted_moments = 'UH'):
+def read_GAMIC_hdf5(filename, wanted_elevations='1.5', wanted_moments='UH'):
     """Data reader for hdf5 files produced by the commercial GAMIC Enigma V3 MURAN software
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
@@ -836,8 +826,6 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
     filename : path of the gamic hdf5 file
     scan_type : string
         "PPI" (plain position indicator) or "RHI" (radial height indicator)
-    range_lim : float
-        range limitation (meters) of the returned radar data (100000. by default)
     elevation_angle : sequence of strings of elevation_angle(s) of scan (only needed for PPI)
     moments : sequence of strings of moment name(s)
 
@@ -849,10 +837,10 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
     """
 
     # read the data from file
-    f = h5py.File(filename,'r')
+    f = h5py.File(filename, 'r')
 
     # placeholder for attributes and data
-    attrs =  {}
+    attrs = {}
     vattrs = {}
     data = {}
 
@@ -869,11 +857,12 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
 
                 # get scan elevation
                 el = sg1.attrs.get('elevation')
-                el = str(round(el,2))
+                el = str(round(el, 2))
 
                 # try to read scan data and attrs if wanted elevations are found
                 if (el in wanted_elevations) or (wanted_elevations == 'all'):
-                    sdata, sattrs = read_gamic_scan(scan = g, scan_type = scan_type, wanted_moments = wanted_moments, range_lim = range_lim)
+                    sdata, sattrs = read_gamic_scan(scan=g, scan_type=scan_type,
+                                                    wanted_moments=wanted_moments)
                     if sdata:
                         data[n.upper()] = sdata
                     if sattrs:
@@ -882,11 +871,12 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
     # single rhi scan
     elif scan_type == 'RHI':
         # loop over 'main' hdf5 groups (how, scanX, what, where)
-	for n in list(f):
+        for n in list(f):
             if 'scan' in n:
                 g = f[n]
                 # try to read scan data and attrs
-                sdata, sattrs = read_gamic_scan(scan = g, scan_type = scan_type, wanted_moments = wanted_moments, range_lim = range_lim)
+                sdata, sattrs = read_gamic_scan(scan=g, scan_type=scan_type,
+                                                wanted_moments=wanted_moments)
                 if sdata:
                     data[n.upper()] = sdata
                 if sattrs:
@@ -897,7 +887,7 @@ def read_GAMIC_hdf5(filename, range_lim = 100000., wanted_elevations = '1.5', wa
         vattrs['Latitude'] = f['where'].attrs.get('lat')
         vattrs['Longitude'] = f['where'].attrs.get('lon')
         vattrs['Height'] = f['where'].attrs.get('height')
-        # check wether its useful to implement that feature
+        # check whether its useful to implement that feature
         #vattrs['sitecoords'] = (vattrs['Latitude'], vattrs['Longitude'], vattrs['Height'])
         attrs['VOL'] = vattrs
 
