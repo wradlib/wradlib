@@ -198,7 +198,7 @@ pl.tight_layout()
 
 #----------------------------------------------------------------
 # figure #7
-# compare plots with refraction True and refarction False
+# compare plots with refraction True and refraction False
 pl.figure()
 # figure #7-1
 # check how refraction is doing
@@ -219,7 +219,7 @@ cgax.set_xlim(35, 45)
 cgax.set_ylim(10, 12)
 # plot additional data point ((theta, range)
 paax.plot(15, 42, 'bo', label="paax")
-caax. plot(40,11,'ro', label="caax")
+caax. plot(40, 11, 'ro', label="caax")
 cgax.legend()
 pl.tight_layout()
 pl.subplots_adjust(hspace=0.4)
@@ -244,7 +244,7 @@ cgax.set_xlim(35, 45)
 cgax.set_ylim(10, 12)
 # plot additional data point ((theta, range)
 paax.plot(15, 42, 'bo', label="paax")
-caax. plot(40,11,'ro', label="caax")
+caax. plot(40, 11, 'ro', label="caax")
 cgax.legend()
 pl.tight_layout()
 
