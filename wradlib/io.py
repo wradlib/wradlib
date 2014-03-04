@@ -936,7 +936,7 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
     data : numpy array
     mode : string, file open mode, defaults to "w" (create, truncate if exists)
     metadata : dictionary of data's attributes
-    dataset : a numpy string
+    dataset : string describing dataset
     compression : h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation for details
 
     """
