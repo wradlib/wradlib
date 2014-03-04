@@ -815,9 +815,6 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
     """Data reader for hdf5 files produced by the commercial GAMIC Enigma V3 MURAN software
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
-    :param filename:
-    :param wanted_elevations:
-    :param wanted_moments:
     homepage for further info (http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3).
 
     Parameters
