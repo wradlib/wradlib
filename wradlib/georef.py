@@ -46,6 +46,9 @@ Georeferencing
 ## a - azimuth (von süden aus gezählt)
 ## h - Höhe über Horizont
 
+import math
+
+from osgeo import gdal,osr
 from numpy import sin, cos, arcsin, pi
 import numpy as np
 import pyproj
@@ -920,6 +923,226 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
     cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
     x, y = project(cent_lat, cent_lon, projstr)
     return x.ravel(), y.ravel()
+
+
+def pixel_coordinates(nx,ny,mode="centers"):
+    """Get pixel coordinates from a regular grid with dimension nx by ny.
+    
+    Parameters
+    ----------     
+    nx : int
+        xsize
+    ny : int
+        ysize
+    mode : string
+        `centers` or `centroids` to return the pixel centers coordinates
+        otherwise the pixel edges coordinates will be returned        
+    Returns
+    -------
+    coordinates : np array
+         array of shape (ny,nx) with pixel coordinates (x,y)
+
+    """
+    if mode == "centroids":
+        mode = "centers"
+    x = np.linspace(0,nx,num=nx+1)
+    y = np.linspace(0,ny,num=ny+1)
+    if  mode == "centers":
+        x = x + 0.5
+        y = y + 0.5
+        x = np.delete(x,-1)
+        y = np.delete(y,-1)
+    X,Y = np.meshgrid(x,y)
+    coordinates = np.empty(X.shape + (2,))
+    coordinates[:,:,0] = X
+    coordinates[:,:,1] = Y
+    return (coordinates)
+
+
+def pixel_to_map(geotransform,coordinates):
+    """Apply a geographical transformation to return map coordinates from pixel coodinates.
+    
+    Parameters
+    ----------
+    geotransform : np array
+        geographical transformation vector:
+            geotransform[0] = East/West location of Upper Left corner
+            geotransform[1] = X pixel size
+            geotransform[2] = X pixel rotation
+            geotransform[3] = North/South location of Upper Left corner
+            geotransform[4] = Y pixel rotation
+            geotransform[5] = Y pixel size 
+    coordinates : 2d array
+        array of pixel coordinates
+
+    Returns
+    -------
+    coordinates_map : np array
+        3d array with map coordinates x,y
+    """
+    coordinates_map = np.empty(coordinates.shape)
+    coordinates_map[...,0] = geotransform[0] + geotransform[1] * coordinates[...,0] + geotransform[2] * coordinates[...,1]
+    coordinates_map[...,1] = geotransform[3] + geotransform[4] * coordinates[...,0] + geotransform[5] * coordinates[...,1]
+    return(coordinates_map)
+
+
+def pixel_to_map3d(geotransform,coordinates):
+    """Apply a geographical transformation to return 3D map coordinates from pixel coodinates.
+       Heights are set to 0
+    
+    Parameters
+    ----------
+    geotransform : np array
+        geographical transformation vector (see pixel_to_map())
+    coordinates : 2d array
+        array of pixel coordinates;
+
+    Returns
+    -------
+    coordinates_map : 4d array
+        4d array with map coordinates x,y,z
+
+    """
+
+    coordinates_map = np.empty(coordinates.shape[:-1] + (3,))
+    coordinates_map[...,0:2] = pixel_to_map(geotransform, coordinates)
+    coordinates_map[...,2] = np.zeros(coordinates.shape[:-1])
+    return(coordinates_map)
+
+
+def read_gdal_coordinates(dataset,mode='centers',z=True):
+    """Get the projected coordinates from a GDAL dataset.
+    
+    Parameters
+    ----------     
+    dataset : gdal object
+        raster image with georeferencing
+    mode : string
+        either 'centers' or 'borders'
+    z : boolean
+        True to get height coordinates (zero).
+
+    Returns
+    -------
+    coordinates : 3D np array
+        projected coordinates (x,y,z)
+    """
+    coordinates_pixel = pixel_coordinates(dataset.RasterXSize,dataset.RasterYSize,mode)
+    geotransform = dataset.GetGeoTransform()
+    if z:
+        coordinates = pixel_to_map3d(geotransform,coordinates_pixel)
+    else:
+        coordinates = pixel_to_map(geotransform,coordinates_pixel)    
+    return(coordinates)
+
+
+def read_gdal_projection(dset):
+    """Get a projection (OSR object) from a GDAL dataset.
+
+    Parameters
+    ----------
+    dset : gdal dataset object
+
+    Returns
+    -------
+    srs : OSR object
+        dataset projection
+    """
+    proj4 = dset.GetProjection()
+    srs = osr.SpatialReference()
+    srs.ImportFromProj4(proj4)
+    src = None
+    return(srs)
+
+
+def read_gdal_values(data=None,nodata=False):
+    """Read values from a gdal object.
+
+    Parameters
+    ----------
+    data : gdal object
+    nodata : boolean
+        option to deal with nodata values replacing it with nans.
+
+    Returns
+    -------
+    values : 2d array
+        array with values
+    """
+
+    b1 = data.GetRasterBand(1)
+    values = b1.ReadAsArray()
+    if nodata:
+        nodata = b1.GetNoDataValue()
+        values = values.astype('float')
+        values[values==nodata] = np.nan
+    return(values)
+
+
+def reproject(coordinates_source,projection_source,projection_target):
+    """Transform a nd array of 3D coordinates from a source projection to a target projection.
+    
+    Parameters
+    ----------     
+    coordinates_source : np array
+        array of shape (...,3) with coordinates
+    projection_source : osr object
+    projection_target : osr object
+
+    Returns
+    -------
+    coordinates_target : nd array
+        array of reprojected coordinates (x,y,z)
+    """
+    ct = osr.CoordinateTransformation(projection_source,projection_target)
+    temp = coordinates_source.reshape((-1,3))
+    coordinates_target = np.array(ct.TransformPoints(temp));
+    coordinates_target = coordinates_target.reshape(coordinates_source.shape)
+    return(coordinates_target)
+
+
+def sweep_centroids(nrays,rscale,nbins,elangle):
+    """Construct sweep centroids native coordinates.
+
+    Parameters
+    ----------
+    nrays : int
+        number of rays
+    rscale : float
+        length [m] of a range bin
+    nbins : int
+        number of range bins
+    elangle : float
+        elevation angle [radians]
+    
+    Returns
+    -------
+    coordinates : 3d array
+        array of shape (nrays,nbins,3) containing native centroid radar coordinates (slant range, azimuth, elevation) 
+    """
+    ascale = math.pi/nrays
+    azimuths = ascale/2 + np.linspace(0,2*math.pi,nrays,endpoint=False)
+    ranges = np.arange(nbins)*rscale + rscale/2
+    coordinates = np.empty((nrays,nbins,3),dtype=float)
+    coordinates[:,:,0] = np.tile(ranges,(nrays,1))
+    coordinates[:,:,1] = np.transpose(np.tile(azimuths,(nbins,1)))
+    coordinates[:,:,2] = elangle
+    return(coordinates)
+
+
+def proj4_to_osr(proj4str):
+    """Transform a proj4 string to an osr spatial reference object"""
+    proj = osr.SpatialReference()
+    proj.ImportFromProj4(proj4str)
+    return(proj)
+
+
+def get_radar_projection(latitude_radar,longitude_radar):
+    """Construct the native projection (osr object) of a weather radar"""
+    proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(latitude_radar,longitude_radar)
+    projection = proj4_to_osr(proj4str)
+    return(projection)
+
 
 
 def _doctest_():
