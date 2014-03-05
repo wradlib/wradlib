@@ -842,8 +842,8 @@ if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
 
 
-def filter_window_polar(img,wsize,fun,scale):
-    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`. This method is faster than filter_radius_polar()
+def filter_window_polar(img,wsize,fun,scale,random=True):
+    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
     Parameters
     ----------
@@ -855,6 +855,8 @@ def filter_window_polar(img,wsize,fun,scale):
         name of the 1d filter from scipy.ndimage.filters
     scale : tuple of 2 floats
         range [m] and azimutal [radians] scale of the polar grid 
+    random: bool
+        True to use random azimutal size to avoid long-term biases. 
 
     Returns
     -------
@@ -868,7 +870,10 @@ def filter_window_polar(img,wsize,fun,scale):
     nbins = img.shape[-1]
     ranges = np.arange(nbins)*rscale + rscale/2
     asize = ranges*ascale
-    na = np.around(wsize/asize).astype(int)
+    if random:
+        na = prob_round(wsize/asize).astype(int)
+    else:
+        na = np.around(wsize/asize).astype(int)
     na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance  
     for n in np.unique(na):
         index = ( na == n )
@@ -878,6 +883,15 @@ def filter_window_polar(img,wsize,fun,scale):
     nr = np.around(wsize/rscale).astype(int)
     data_filtered = fun(data_filtered,size=2*nr+1,axis=1)
     return(data_filtered)
+
+
+def prob_round(x, prec = 0):
+    """Round the float number `x` to the lower or higher integer randomly following a binomial distribution """
+    fixup = np.sign(x) * 10**prec
+    x *= fixup
+    intx = x.astype(int)
+    round_func = intx + np.random.binomial(1,x-intx)
+    return round_func/fixup
 
 
 def filter_window_cartesian(img,wsize,fun,scale):
