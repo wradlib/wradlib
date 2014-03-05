@@ -1,5 +1,5 @@
 *************************************
-automate image generation with sphinx
+Automate image generation with sphinx
 *************************************
 
 With active version control it is often undesirable to bundle images with the documentation.
