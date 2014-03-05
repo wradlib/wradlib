@@ -45,6 +45,7 @@ import warnings
 import h5py
 import numpy as np
 import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+from osgeo import gdal
 import util
 
 
@@ -969,6 +970,34 @@ def from_hdf5(fpath, dataset="data"):
         metadata[key] = f[dataset].attrs[key]
     f.close()
     return data, metadata
+
+
+def read_safnwc(filename):
+    """Read MSG SAFNWC hdf5 file into a gdal georeferenced object
+    
+    Parameters
+    ----------
+    filename : satellite file name
+
+    Returns
+    -------
+    ds : gdal dataset with satellite data
+
+    """
+
+    root = gdal.Open(filename)
+    ds = gdal.Open('HDF5:'+filename+'://CT')
+    name = os.path.basename(filename)[7:11]
+    try:
+        proj = root.GetMetadata()["PROJECTION"];
+    except Exception as error:
+        raise NameError("No metadata for satellite file %s" %(filename))
+    geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",");
+    geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"];
+    geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"];
+    ds.SetProjection(proj)
+    ds.SetGeoTransform([float(x) for x in geotransform])
+    return(ds)
 
 
 if __name__ == '__main__':
