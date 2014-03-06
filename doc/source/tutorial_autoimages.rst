@@ -108,7 +108,7 @@ The above statement looks like this in the final documentation:
 
 .. plot:: pyplots/plot_cg_rhi_example.py
 
-This plot_directive is very convenient, if you just want to add plots to your documentation at compile time.
+This plot_directive is very convenient if you just want to add plots to your documentation at compile time.
 If you want to learn more about matplotlib and documentation, take a look at the `Matplotlib Sampledoc <http://matplotlib.org/sampledoc/extensions.html/>`_.
 A deeper insight into all magic behind plot_directive and much more you can find at `Documenting Matplotlib <http://matplotlib.org/devel/documenting_mpl.html/>`_.
 Have fun!
