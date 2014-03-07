@@ -986,16 +986,19 @@ def pixel_to_map(geotransform,coordinates):
     return(coordinates_map)
 
 
-def pixel_to_map3d(geotransform,coordinates):
+def pixel_to_map3d(geotransform,coordinates,z=None):
     """Apply a geographical transformation to return 3D map coordinates from pixel coodinates.
-       Heights are set to 0
-    
+
     Parameters
     ----------
     geotransform : np array
         geographical transformation vector (see pixel_to_map())
     coordinates : 2d array
         array of pixel coordinates;
+    z : string
+        method to compute the z coordinates (height above ellipsoid) :
+            None : default, z equals zero 
+            srtm : not available yet 
 
     Returns
     -------
@@ -1137,12 +1140,11 @@ def proj4_to_osr(proj4str):
     return(proj)
 
 
-def get_radar_projection(latitude_radar,longitude_radar):
+def get_azeq_projection(latitude,longitude):
     """Construct the native projection (osr object) of a weather radar"""
-    proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(latitude_radar,longitude_radar)
+    proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(latitude,longitude)
     projection = proj4_to_osr(proj4str)
     return(projection)
-
 
 
 def _doctest_():
