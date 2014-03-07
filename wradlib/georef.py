@@ -799,8 +799,12 @@ def create_projstr(projname, **kwargs):
     """
     if projname=="aeqd":
         # Azimuthal Equidistant
-        projstr = """+proj=aeqd  +lat_0=%s +lon_0=%s +x_0=%s +y_0=%s""" \
+        if "x_0" in kwargs:
+            projstr = """+proj=aeqd  +lat_0=%f +lon_0=%f +x_0=%f +y_0=%f""" \
                   % (kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"])
+        else:
+            projstr = """+proj=aeqd  +lat_0=%f +lon_0=%f""" \
+                  % (kwargs["lat_0"], kwargs["lon_0"])
     elif projname=="gk":
         # Gauss-Krueger
         if kwargs.has_key("zone"):
@@ -891,8 +895,13 @@ def project(latc, lonc, projstr, inverse=False):
     >>> gk3_x, gk3_y = georef.project(latc, lonc, gk3)
 
     """
-    myproj = pyproj.Proj(projstr)
-    x, y = myproj(lonc, latc, inverse=inverse)
+    coord_geo = np.zeros(lonc.shape + (3,))
+    coord_geo[...,0] = lonc 
+    coord_geo[...,1] = latc 
+    proj = proj4_to_osr(projstr)
+    coord_map = reproject(coord_geo,projection_target = proj)
+    x = coord_map[...,0]
+    y = coord_map[...,1]
     return x, y
 
 
@@ -923,6 +932,30 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
     cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
     x, y = project(cent_lat, cent_lon, projstr)
     return x.ravel(), y.ravel()
+
+
+def get_earth_radius(latitude, sr= None):
+    """Get the radius of the Earth (in km) for a given Spheroid model (sr) at a given position
+       R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 ).
+    
+    Parameters
+    ----------     
+        sr : osr object
+            spatial reference;
+        latitude : float
+            geodetic latitude in degrees;
+
+    Returns:
+        radius : float
+            earth radius in meter
+    """
+    if sr is None:
+        sr = get_default_projection()
+    RADIUS_E = sr.GetSemiMajor()
+    RADIUS_P = sr.GetSemiMinor()
+    latitude = math.radians(latitude)
+    radius = math.sqrt((math.pow(RADIUS_E,4) * math.pow(math.cos(latitude),2) + math.pow(RADIUS_P,4) * math.pow(math.sin(latitude),2) ) / ( math.pow(RADIUS_E,2) * math.pow(math.cos(latitude),2) +  math.pow(RADIUS_P,2) * math.pow(math.sin(latitude),2) ))
+    return(radius)
 
 
 def pixel_coordinates(nx,ny,mode="centers"):
@@ -1082,7 +1115,7 @@ def read_gdal_values(data=None,nodata=False):
     return(values)
 
 
-def reproject(coordinates_source,projection_source,projection_target):
+def reproject(coordinates_source,projection_source=None,projection_target=None):
     """Transform a nd array of 3D coordinates from a source projection to a target projection.
     
     Parameters
@@ -1097,11 +1130,22 @@ def reproject(coordinates_source,projection_source,projection_target):
     coordinates_target : nd array
         array of reprojected coordinates (x,y,z)
     """
+    if projection_source is None:
+        projection_source = get_default_projection()
+    if projection_target is None:
+        projection_target = get_default_projection()
     ct = osr.CoordinateTransformation(projection_source,projection_target)
     temp = coordinates_source.reshape((-1,3))
     coordinates_target = np.array(ct.TransformPoints(temp));
     coordinates_target = coordinates_target.reshape(coordinates_source.shape)
     return(coordinates_target)
+
+
+def get_default_projection():
+    """Create a default projection object (wgs84)"""
+    proj = osr.SpatialReference()
+    proj.ImportFromEPSG(4326)
+    return(proj)
 
 
 def sweep_centroids(nrays,rscale,nbins,elangle):
@@ -1138,13 +1182,6 @@ def proj4_to_osr(proj4str):
     proj = osr.SpatialReference()
     proj.ImportFromProj4(proj4str)
     return(proj)
-
-
-def get_azeq_projection(latitude,longitude):
-    """Construct the native projection (osr object) of a weather radar"""
-    proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(latitude,longitude)
-    projection = proj4_to_osr(proj4str)
-    return(projection)
 
 
 def _doctest_():
