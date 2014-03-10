@@ -47,7 +47,9 @@ if __name__ == '__main__':
     sitecoords = (pvol["where"]["lat"],pvol["where"]["lon"],pvol["where"]["height"])
     proj_radar = georef.proj4_to_osr(georef.create_projstr("aeqd",lat_0=pvol["where"]["lat"],lon_0=pvol["where"]["lon"]))
     radius = georef.get_earth_radius(pvol["where"]["lat"],proj_radar)
+    
     lat, lon, height = georef.polar2latlonalt_n(coord[...,0], np.degrees(coord[...,1]), coord[...,2], sitecoords, re=radius, ke=4./3.)
+    
     proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(pvol["where"]["lat"],pvol["where"]["lon"])
     x, y = georef.project(lat, lon, proj4str)
 
