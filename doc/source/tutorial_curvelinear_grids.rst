@@ -791,62 +791,138 @@ Here the capabilities of `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolki
 We make a **PPI** now, it matches much better. Just plot your **PPI** data and create an axes divider::
 
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    divider = make_axes_locatable(cgax)
-
-Now you can easily append more axes to plot some other things::
-
-    axHistX = divider.append_axes("top", size=1.2, pad=0.25)
-    axHistY = divider.append_axes("right", size=1.2, pad=0.35)
-    # make some labels invisible
-    axHistX.xaxis.set_major_formatter(NullFormatter())
-    axHistY.yaxis.set_major_formatter(NullFormatter())
-    # create some data and plot
-    x = np.random.randn(ma.shape[1])
-    y = np.random.randn(ma.shape[1])
-    axHistX.hist(x, , bins=ma.shape[1])
-    axHistY.hist(y, bins=ma.shape[1], orientation='horizontal')
-    t = plt.gcf().suptitle('AxesDivider CG Example')
-    plt.draw()
-    plt.show()
-
-.. plot::
-
-    import matplotlib.pyplot as plt
-    import numpy as np
-    # well, it's a wradlib example
-    import wradlib
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    from matplotlib.ticker import NullFormatter
-    # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
-    r = np.arange(0, data.shape[1])
-    az = np.arange(0, data.shape[0])
-    # mask data array for better presentation
-    mask_ind = np.where(data <= np.nanmin(data))
-    data[mask_ind] = np.nan
-    ma = np.ma.array(data, mask=np.isnan(data))
-    #----------------------------------------------------------------
-    # the simplest call, plot cg rhi in new window
-    cgax, caax, paax, pm = wradlib.vis.plot_cg_ppi(ma, refrac=False)
+    from matplotlib.ticker import NullFormatter, FuncFormatter, MaxNLocator
     divider = make_axes_locatable(cgax)
-    caax.set_xlabel('x_range [km]')
-    caax.set_ylabel('y_range [km]')
-    axHistX = divider.append_axes("top", size=1.2, pad=0.1)
-    axHistY = divider.append_axes("right", size=1.2, pad=0.1)
+
+Now you can easily append more axes to plot some other things, eg a maximum intensity projection::
+
+    axMipX = divider.append_axes("top", size=1.2, pad=0.1, sharex=cgax))
+    axMipY = divider.append_axes("right", size=1.2, pad=0.1, sharey=cgax))
+
+We need to set some locators and formatters::
+
     # make some labels invisible
     cgax.axis["right"].major_ticklabels.set_visible(False)
     cgax.axis["top"].major_ticklabels.set_visible(False)
-    axHistX.xaxis.set_major_formatter(NullFormatter())
-    axHistY.yaxis.set_major_formatter(NullFormatter())
-    # create some data and plot
-    x = np.random.randn(ma.shape[1])
-    y = np.random.randn(ma.shape[1])
-    axHistX.hist(x, bins=ma.shape[1])
-    axHistY.hist(y, bins=ma.shape[1], orientation='horizontal')
-    t = plt.gcf().suptitle('AxesDivider CG Example')
+    axMipX.xaxis.set_major_formatter(NullFormatter())
+    axMipX.yaxis.set_major_formatter(FuncFormatter(mip_formatter))
+    axMipX.yaxis.set_major_locator(MaxNLocator(5))
+    axMipY.yaxis.set_major_formatter(NullFormatter())
+    axMipY.xaxis.set_major_formatter(FuncFormatter(mip_formatter))
+    axMipY.xaxis.set_major_locator(MaxNLocator(5)
+
+OK, the mip data is missing, we use the :func:`wradlib.util.maximum_intensity_projection`::
+
+    # set angle of cut and scan elevation
+    angle = 0.0
+    elev = 0.0
+    # first is for x-axis, second one is for y-axis
+    xs, ys, mip1 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=angle, elev=elev)
+    xs, ys, mip2 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=90+angle, elev=elev)
+
+We may also need a new formatter::
+
+    def mip_formatter(x, pos):
+        x = x / 1000.
+        fmt_str = '{:g}'.format(x)
+        if np.abs(x) > 0 and np.abs(x) < 1:
+            return fmt_str.replace("0", "", 1)
+        else:
+            return fmt_str
+
+Now let's finalize the whole thing::
+
+    ma = np.ma.array(mip1, mask=np.isnan(mip1))
+    axMipX.pcolormesh(xs, ys, ma)
+    axMipX.set_xlim(-np.max(d1),np.max(d1))
+    axMipX.set_ylim(0, wradlib.georef.beam_height_n(d1[-2], elev))
+    ma = np.ma.array(mip2, mask=np.isnan(mip2))
+    axMipY.pcolormesh(ys.T, xs.T, ma.T)
+    axMipY.set_ylim(-np.max(d1),np.max(d1))
+    axMipY.set_xlim(0, wradlib.georef.beam_height_n(d1[-2], elev))
+    axMipX.set_ylabel('height [km]')
+    axMipY.set_xlabel('height [km]')
+    axMipX.grid(True)
+    axMipY.grid(True)
+    t = plt.gcf().suptitle('AxesDivider CG-MIP Example')
     plt.draw()
     plt.show()
 
-.. note:: The additional histogram plots are just examples and have nothing to do with the plottet **PPI**.
+And this looks actually very nice:
+
+.. plot::
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import wradlib
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    from matplotlib.ticker import NullFormatter, FuncFormatter, MaxNLocator
+
+    def mip_formatter(x, pos):
+        x = x / 1000.
+        fmt_str = '{:g}'.format(x)
+        if np.abs(x) > 0 and np.abs(x) < 1:
+            return fmt_str.replace("0", "", 1)
+        else:
+            return fmt_str
+
+    # angle of *cut* through ppi and scan elev.
+    angle = 0.0
+    elev = 0.0
+
+    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    # we need to have meter here for the georef function inside mip
+    d1 = np.arange(data.shape[1], dtype=np.float) * 1000
+    d2 = np.arange(data.shape[0], dtype=np.float)
+    data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
+
+    # calculate max intensity proj
+    xs, ys, mip1 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=angle, elev=elev)
+    xs, ys, mip2 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=90+angle, elev=elev)
+
+    # normal cg plot
+    cgax, caax, paax, pm = wradlib.vis.plot_cg_ppi(data, r=d1, az=d2, refrac=True)
+    cgax.set_xlim(-np.max(d1),np.max(d1))
+    cgax.set_ylim(-np.max(d1),np.max(d1))
+    caax.xaxis.set_major_formatter(FuncFormatter(mip_formatter))
+    caax.yaxis.set_major_formatter(FuncFormatter(mip_formatter))
+    caax.set_xlabel('x_range [km]')
+    caax.set_ylabel('y_range [km]')
+
+    # axes divider section
+    divider = make_axes_locatable(cgax)
+    axMipX = divider.append_axes("top", size=1.2, pad=0.1, sharex=cgax)
+    axMipY = divider.append_axes("right", size=1.2, pad=0.1, sharey=cgax)
+
+    # special handling for labels etc.
+    cgax.axis["right"].major_ticklabels.set_visible(False)
+    cgax.axis["top"].major_ticklabels.set_visible(False)
+    axMipX.xaxis.set_major_formatter(NullFormatter())
+    axMipX.yaxis.set_major_formatter(FuncFormatter(mip_formatter))
+    axMipX.yaxis.set_major_locator(MaxNLocator(5))
+    axMipY.yaxis.set_major_formatter(NullFormatter())
+    axMipY.xaxis.set_major_formatter(FuncFormatter(mip_formatter))
+    axMipY.xaxis.set_major_locator(MaxNLocator(5))
+
+    # plot max intensity proj
+    ma = np.ma.array(mip1, mask=np.isnan(mip1))
+    axMipX.pcolormesh(xs, ys, ma)
+    ma = np.ma.array(mip2, mask=np.isnan(mip2))
+    axMipY.pcolormesh(ys.T, xs.T, ma.T)
+
+    # set labels, limits etc
+    axMipX.set_xlim(-np.max(d1),np.max(d1))
+    axMipX.set_ylim(0, wradlib.georef.beam_height_n(d1[-2], elev))
+    axMipY.set_xlim(0, wradlib.georef.beam_height_n(d1[-2], elev))
+    axMipY.set_ylim(-np.max(d1),np.max(d1))
+    axMipX.set_ylabel('height [km]')
+    axMipY.set_xlabel('height [km]')
+    axMipX.grid(True)
+    axMipY.grid(True)
+    t = plt.gcf().suptitle('AxesDivider CG-MIP Example')
+
+    plt.draw()
+    plt.show()
 
 .. seealso:: `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.htm#axes-grid1/>`_
