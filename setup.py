@@ -1,7 +1,7 @@
 import os
 import sys
 import site
-
+#toggle1
 ### BEFORE importing distutils, remove MANIFEST. distutils doesn't
 ### properly update it when the contents of directories change.
 ##if os.path.exists('MANIFEST'): os.remove('MANIFEST')
