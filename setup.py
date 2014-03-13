@@ -1,9 +1,3 @@
-# distribute_setup module will automatically download a matching version
-#   of setuptools from PyPI, if it isn't present on the target system.
-#import distribute_setup
-#distribute_setup.use_setuptools()
-
-
 import os
 import sys
 import site
@@ -13,10 +7,6 @@ import site
 ##if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
 from distutils.core import setup
-#from setuptools import setup
-#from distutils.sysconfig import get_python_lib
-
-#import subprocess as sub
 
 # get current version from file
 with open("version") as f:
