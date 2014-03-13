@@ -31,12 +31,6 @@ with open("version") as f:
 
 if __name__ == '__main__':
 
-    # targets and List of files which need to be copied to the site packages installation directory
-    if "--user" in sys.argv:
-        sitepackdir = site.USER_SITE
-    else:
-        sitepackdir = get_python_lib()
-
     setup(name='wradlib',
           version=VERSION,
           description='Open Source Library for Weather Radar Data Processing',
