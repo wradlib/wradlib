@@ -51,9 +51,8 @@ clutter or attenuation) and visualising the data.
           'Programming Language :: Python',
           'Topic :: Scientific/Engineering',
           ],
-          install_requires=["numpy >= 1.7.0", "scipy >= 0.9",
-                            "matplotlib >= 1.1.0",
-                            "numpydoc >= 0.3", "pyproj >= 1.8",
-                            "netCDF4 >= 1.0", "h5py >= 2.0.1"]
+          install_requires=["numpydoc >= 0.3", "pyproj >= 1.8",
+                            "netCDF4 >= 1.0", "h5py >= 2.0.1",
+                            "matplotlib >= 1.1.0", "scipy >= 0.9", "numpy >= 1.7.0"]
           )
 
