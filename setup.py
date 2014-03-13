@@ -5,8 +5,10 @@ import site
 ### BEFORE importing distutils, remove MANIFEST. distutils doesn't
 ### properly update it when the contents of directories change.
 ##if os.path.exists('MANIFEST'): os.remove('MANIFEST')
-
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 # get current version from file
 with open("version") as f:
