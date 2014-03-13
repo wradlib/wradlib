@@ -12,11 +12,11 @@ import site
 ### properly update it when the contents of directories change.
 ##if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-##from distutils.core import setup
-from setuptools import setup
-from distutils.sysconfig import get_python_lib
+from distutils.core import setup
+#from setuptools import setup
+#from distutils.sysconfig import get_python_lib
 
-import subprocess as sub
+#import subprocess as sub
 
 # get current version from file
 with open("version") as f:
@@ -56,9 +56,6 @@ clutter or attenuation) and visualising the data.
           download_url='https://bitbucket.org/wradlib/wradlib',
           packages=['wradlib'],
           include_package_data=True, # see MAINFEST.in
-##          data_files=[(bufr_trg_dir, bufr_files)],#, (example_trg_dir, example_files),
-##            (data_trg_dir, data_files), (tests_trg_dir, tests_files)],
-##          cmdclass={'build_py': build_bufr},
           classifiers=[
           'Development Status :: 4 - Beta',
           'License :: OSI Approved :: BSD License',
