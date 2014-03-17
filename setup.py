@@ -1,6 +1,5 @@
 import os
 import sys
-import warnings
 
 # if setuptools not present bootstrap it
 try:
@@ -45,29 +44,33 @@ def query_yes_quit(question, default="quit"):
             sys.stdout.write("Please respond with 'yes' or 'quit'.\n")
 
 # package requires (dependencies)
-requires = ["numpydoc >= 0.3", "pyproj >= 1.8", "netCDF4 >= 1.0", "h5py >= 2.0.1",
-            "matplotlib >= 1.1.0", "scipy >= 0.9", "numpy >= 1.7.0"]
+with open('requirements.txt') as f:
+    requires = f.read().splitlines()
 missing = []
 
 for sample in requires:
-    modulestr, op, ver = sample.split()
+    samplesplit = sample.split()
+    modulestr = samplesplit[0]
     try:
         module = __import__(modulestr)
-        mver = get_distribution(modulestr).version
-        if parse_version(mver) < parse_version(ver):
-            warnings.warn("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
-            missing.append(sample)
+        # if dependency has version constraints
+        if len(samplesplit) >= 3:
+            ver = samplesplit[2]
+            mver = get_distribution(modulestr).version
+            if parse_version(mver) < parse_version(ver):
+                print("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
+                missing.append(sample)
     except ImportError:
-        warnings.warn("Dependency %s not installed." % modulestr)
+        print("Dependency %s not installed." % modulestr)
         missing.append(sample)
 
-question = "Dependencies %s are missing or version mismatch! \nShould setup.py try to install/update the missing  " \
-        "packages? (Not recommended!) \nOtherwise `Quit` and install via package manager or any other means!" % missing
-
-answer = query_yes_quit(question)
-
-if answer == 'quit':
-    sys.exit('User quit setup.py')
+# just run if missing/version mismatch dependencies are detected
+if missing:
+    question = "Dependencies %s are missing or version mismatch! \nShould setup.py try to install/update the missing " \
+               "packages? (Not recommended! See documentation for information!) \nOtherwise `Quit` and install via package manager or any other means!" % missing
+    answer = query_yes_quit(question)
+    if answer == 'quit':
+        sys.exit('User quit setup.py')
 
 # get current version from file
 with open("version") as f:
