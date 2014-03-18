@@ -19,12 +19,15 @@ import os
 import datetime as dt
 
 
+
 def process_polar_level_data(radarname):
     """Reading and processing polar level data (DX) for radar <radarname>
     """
     print "Polar level processing for radar %s..." % radarname
     # preparations for loading sample data in source directory
     files = glob.glob('raa*%s*bin'%radarname)
+    if len(files)==0:
+        raise SystemExit("No data files found - maybe you did not extract the data from data/recipe1_data.zip?")
     data  = np.empty((len(files),360,128))
     # loading the data (two hours of 5-minute images)
     for i, f in enumerate(files):
@@ -97,7 +100,7 @@ if __name__ == '__main__':
     xmin, xmax, ymin, ymax = bbox(tur_coord, fbg_coord)
     x = np.linspace(xmin,xmax+1000.,1000.)
     y = np.linspace(ymin,ymax+1000.,1000.)
-    grid_coords = wradlib.util.gridaspoints(x, y)
+    grid_coords = wradlib.util.gridaspoints(y,x)
 
     # derive quality information - in this case, the pulse volume
     pulse_volumes = np.tile(wradlib.qual.pulse_volume(r, 1000., 1.),360)
