@@ -31,7 +31,7 @@ if __name__ == '__main__':
         where = raw["dataset%d/where"%(i+1)]
         what  = raw["dataset%d/data1/what"%(i+1)]
         # define arrays of polar coordinate arrays (azimuth and range)
-        az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
+        az = np.arange(0.,360.,360./where["nrays"])
         r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
         # derive 3-D Cartesian coordinate tuples
         xyz_ = wradlib.vpr.volcoords_from_polar(sitecoords, where["elangle"], az, r, projstr)
