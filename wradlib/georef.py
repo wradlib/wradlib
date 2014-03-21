@@ -46,8 +46,6 @@ Georeferencing
 ## a - azimuth (von süden aus gezählt)
 ## h - Höhe über Horizont
 
-import math
-
 from osgeo import gdal,osr
 from numpy import sin, cos, arcsin, pi
 import numpy as np
@@ -953,8 +951,8 @@ def get_earth_radius(latitude, sr= None):
         sr = get_default_projection()
     RADIUS_E = sr.GetSemiMajor()
     RADIUS_P = sr.GetSemiMinor()
-    latitude = math.radians(latitude)
-    radius = math.sqrt((math.pow(RADIUS_E,4) * math.pow(math.cos(latitude),2) + math.pow(RADIUS_P,4) * math.pow(math.sin(latitude),2) ) / ( math.pow(RADIUS_E,2) * math.pow(math.cos(latitude),2) +  math.pow(RADIUS_P,2) * math.pow(math.sin(latitude),2) ))
+    latitude = np.radians(latitude)
+    radius = np.sqrt((np.power(RADIUS_E,4) * np.power(np.cos(latitude),2) + np.power(RADIUS_P,4) * np.power(np.sin(latitude),2) ) / ( np.power(RADIUS_E,2) * np.power(np.cos(latitude),2) +  np.power(RADIUS_P,2) * np.power(np.sin(latitude),2) ))
     return(radius)
 
 
@@ -1167,8 +1165,8 @@ def sweep_centroids(nrays,rscale,nbins,elangle):
     coordinates : 3d array
         array of shape (nrays,nbins,3) containing native centroid radar coordinates (slant range, azimuth, elevation) 
     """
-    ascale = math.pi/nrays
-    azimuths = ascale/2 + np.linspace(0,2*math.pi,nrays,endpoint=False)
+    ascale = np.pi/nrays
+    azimuths = ascale/2 + np.linspace(0,2*np.pi,nrays,endpoint=False)
     ranges = np.arange(nbins)*rscale + rscale/2
     coordinates = np.empty((nrays,nbins,3),dtype=float)
     coordinates[:,:,0] = np.tile(ranges,(nrays,1))
