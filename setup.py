@@ -1,7 +1,7 @@
 # distribute_setup module will automatically download a matching version
 #   of setuptools from PyPI, if it isn't present on the target system.
 import distribute_setup
-#distribute_setup.use_setuptools()
+distribute_setup.use_setuptools()
 
 
 import os
