@@ -31,7 +31,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.pngmath',
               'sphinx.ext.autosummary',
               'numpydoc',
+              'matplotlib.sphinxext.plot_directive',
               ]
+
+# just generate normal png
+plot_formats = ['png']
 
 pngmath_latex_preamble=r'\usepackage[active]{preview}' # + other custom stuff for inline math, such as non-default math fonts etc.
 pngmath_use_preview=True
