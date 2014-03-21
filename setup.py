@@ -1,41 +1,84 @@
-# distribute_setup module will automatically download a matching version
-#   of setuptools from PyPI, if it isn't present on the target system.
-import distribute_setup
-distribute_setup.use_setuptools()
-
-
 import os
 import sys
-import site
 
-### BEFORE importing distutils, remove MANIFEST. distutils doesn't
-### properly update it when the contents of directories change.
-##if os.path.exists('MANIFEST'): os.remove('MANIFEST')
+# if setuptools not present bootstrap it
+try:
+    from setuptools import setup
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
+    from setuptools import setup
 
-##from distutils.core import setup
-from setuptools import setup
-from distutils.sysconfig import get_python_lib
+# import pkg_resources for version checking
+from pkg_resources import get_distribution, parse_version
 
-import subprocess as sub
+
+def query_yes_quit(question, default="quit"):
+    """Ask a yes/quit question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" or "quit" (the default).
+
+    The "answer" return value is one of "yes" or "quit".
+    """
+    valid = {"yes":"yes",   "y":"yes",    "ye":"yes",
+             "quit":"quit", "qui":"quit", "qu":"quit", "q":"quit"}
+    if default == None:
+        prompt = " [y/q] "
+    elif default == "yes":
+        prompt = " [Y/q] "
+    elif default == "quit":
+        prompt = " [y/Q] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while 1:
+        sys.stdout.write(question + prompt)
+        choice = raw_input().lower()
+        if default is not None and choice == '':
+            return default
+        elif choice in valid.keys():
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'quit'.\n")
+
+# package requires (dependencies)
+with open('requirements.txt') as f:
+    requires = f.read().splitlines()
+missing = []
+
+for sample in requires:
+    samplesplit = sample.split()
+    modulestr = samplesplit[0]
+    try:
+        module = __import__(modulestr)
+        # if dependency has version constraints
+        if len(samplesplit) >= 3:
+            ver = samplesplit[2]
+            mver = get_distribution(modulestr).version
+            if parse_version(mver) < parse_version(ver):
+                print("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
+                missing.append(sample)
+    except ImportError:
+        print("Dependency %s not installed." % modulestr)
+        missing.append(sample)
+
+# just run if missing/version mismatch dependencies are detected
+if missing:
+    question = "Dependencies %s are missing or version mismatch! \nShould setup.py try to install/update the missing " \
+               "packages? (Not recommended! See documentation for information!) \nOtherwise `Quit` and install via package manager or any other means!" % missing
+    answer = query_yes_quit(question)
+    if answer == 'quit':
+        sys.exit('User quit setup.py')
 
 # get current version from file
 with open("version") as f:
     VERSION = f.read()
     VERSION = VERSION.strip()
 
-##MAJOR               = 0
-##MINOR               = 1
-##MICRO               = 1
-##VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
-
 
 if __name__ == '__main__':
-
-    # targets and List of files which need to be copied to the site packages installation directory
-    if "--user" in sys.argv:
-        sitepackdir = site.USER_SITE
-    else:
-        sitepackdir = get_python_lib()
 
     setup(name='wradlib',
           version=VERSION,
@@ -56,9 +99,6 @@ clutter or attenuation) and visualising the data.
           download_url='https://bitbucket.org/wradlib/wradlib',
           packages=['wradlib'],
           include_package_data=True, # see MAINFEST.in
-##          data_files=[(bufr_trg_dir, bufr_files)],#, (example_trg_dir, example_files),
-##            (data_trg_dir, data_files), (tests_trg_dir, tests_files)],
-##          cmdclass={'build_py': build_bufr},
           classifiers=[
           'Development Status :: 4 - Beta',
           'License :: OSI Approved :: BSD License',
@@ -68,8 +108,6 @@ clutter or attenuation) and visualising the data.
           'Programming Language :: Python',
           'Topic :: Scientific/Engineering',
           ],
-          install_requires=["numpydoc >= 0.3", "pyproj >= 1.8",
-                            "netCDF4 >= 1.0", "h5py >= 2.0.1",
-                            "matplotlib >= 1.1.0", "scipy >= 0.9", "numpy >= 1.7.0"]
+          install_requires=missing
           )
 

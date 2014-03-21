@@ -1,4 +1,6 @@
-include distribute_setup.py
+include ez_setup.py
+include version
+include requirements.txt
 recursive-include examples *
 recursive-include examples/data *
 recursive-include wradlib/tests *
