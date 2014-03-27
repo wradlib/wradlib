@@ -52,6 +52,8 @@ import numpy as np
 from sys import exit
 import warnings
 
+from util import deprecated
+
 
 def hor2aeq(a, h, phi):
     """"""
@@ -836,7 +838,7 @@ def create_projstr(projname, **kwargs):
         exit(1)
     return projstr
 
-
+@deprecated("reproject")
 def project(latc, lonc, projstr, inverse=False):
     """
     Convert from latitude,longitude (based on WGS84) to coordinates in map projection
