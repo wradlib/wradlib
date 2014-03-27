@@ -49,7 +49,6 @@ Georeferencing
 from osgeo import gdal,osr
 from numpy import sin, cos, arcsin, pi
 import numpy as np
-import pyproj
 from sys import exit
 import warnings
 
@@ -842,32 +841,33 @@ def project(latc, lonc, projstr, inverse=False):
     """
     Convert from latitude,longitude (based on WGS84) to coordinates in map projection
 
-    This mainly serves as a convenience function to use proj.4 via pyproj.
-    For proj.4 documentation visit http://proj.maptools.org.
-    For pyproj documentation visit http://code.google.com/p/pyproj.
+    This mainly servers as a convenience function for backward compatibility and uses
+    the new gdal/ogr/osr-based :doc:`wradlib.georef.reproject` function under the hood.
 
     See http://www.remotesensing.org/geotiff/proj_list for examples of key/value
     pairs defining different map projections.
 
     You can use :doc:`wradlib.georef.create_projstr` in order to create projection
     strings to be passed with argument *projstr*. However, the choice is still
-    rather limited. Alternatively, you have to create or look up projection strings by yourself.
+    rather limited. Alternatively, you have to create or look up projection strings by
+    yourself.
 
     See the Examples section for a quick start.
 
     Parameters
     ----------
     latc : array of floats
-        latitude coordinates based on WGS84
+        latitude coordinates based on WGS84, if inverse=True projections y value
     lonc : array of floats
-        longitude coordinates based on WGS84
+        longitude coordinates based on WGS84, if inverse=True projections x value
     projstr : string
         proj.4 projection string. Can be conveniently created by using function
         :doc:`wradlib.georef.create_projstr`
 
     Returns
     -------
-    output : a tuple of 2 arrays (x and y coordinates)
+    output : a tuple of 2 arrays (x and y coordinates), if inverse=True lon,lat based
+    on WGS84
 
     Examples
     --------
@@ -893,13 +893,22 @@ def project(latc, lonc, projstr, inverse=False):
     >>> gk3_x, gk3_y = georef.project(latc, lonc, gk3)
 
     """
+    if inverse:
+        src = proj4_to_osr(projstr)
+        dest = get_default_projection()
+    else:
+        src = get_default_projection()
+        dest = proj4_to_osr(projstr)
     coord_geo = np.zeros(lonc.shape + (3,))
     coord_geo[...,0] = lonc 
     coord_geo[...,1] = latc 
-    proj = proj4_to_osr(projstr)
-    coord_map = reproject(coord_geo,projection_target = proj)
-    x = coord_map[...,0]
-    y = coord_map[...,1]
+    coord_map = reproject(coord_geo, projection_source=src, projection_target=dest)
+    if inverse:
+        y = coord_map[...,0]
+        x = coord_map[...,1]
+    else:
+        x = coord_map[...,0]
+        y = coord_map[...,1]
     return x, y
 
 
