@@ -405,5 +405,49 @@ def _weight_array(data, weight):
     return w_array
 
 
+def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothing=None,grid="polar",scale=None):
+    r"""Identification of non-meteorological echoes based on cloud type.
+
+    Parameters
+    ----------
+    img : array_like
+        radar image to which the filter is to be applied
+    cloud : array_like
+        image with collocated cloud value from MSG SAFNWC PGE02 product
+    thrs : float
+        Threshold above which to identify clutter
+    snow : boolean
+        Swith to use PGE02 class "land/sea snow" for clutter identification 
+    low : boolean
+        Swith to use PGE02 class "low/very low stratus/cumulus" for clutter identification
+    cirrus : boolean
+        Swith to use PGE02 class "very thin cirrus" and "fractional clouds" for clutter identification
+    smoothing : float
+        Size [m] of the smoothing window used to take into account various localisation errors (e.g. advection, parallax)
+    grid : string
+        "polar" or "cartesian"
+    scale : tuple of 2 floats
+        range and azimutal scale for polar grid
+        x and y scale for cartesian grid
+
+    Returns
+    -------
+    output : array_like
+        a boolean array containing TRUE where clutter has been identified.
+
+    """
+    noprecip = (cloud == 1) | (cloud == 2)
+    if snow:
+        noprecip = noprecip | (cloud == 3) | (cloud == 4)
+    if low:
+        noprecip = noprecip | (cloud >= 4) | (cloud <= 7)
+    if cirrus:
+        noprecip = noprecip | (cloud == 14) | (cloud == 18)
+    if smoothing is not None:
+        noprecip = util.filter_window_polar(noprecip,smoothing,"minimum",scale)
+    clutter = noprecip & (img > thrs)
+    return(clutter)
+
+
 if __name__ == '__main__':
     print 'wradlib: Calling module <clutter> as main...'
