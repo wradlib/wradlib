@@ -63,7 +63,7 @@ easy_install will then fetch the source distribution from the Python Package Ind
 Afterwards it will check for any dependencies not met, yet.
 
 Be aware that with easy_install we can only look for python-module dependencies.
-For example the pyproj module itself depends on some other libraries, which need to be present in order for the module to compile properly after being downloaded by easy_install. We have no control over these dependencies and it is rather hard to give a complete overview.
+For example the numpy module itself depends on some other libraries, which need to be present in order for the module to compile properly after being downloaded by easy_install. We have no control over these dependencies and it is rather hard to give a complete overview.
 
 Therefore we recommend trying to satisfy the dependencies using your favorite package management system.
 As an example we give all packages necessary to successfully install wradlib on a Ubuntu Linux 12.04 (thanks to Diego Civera from the wradlib-users mailing list for pioneering this).
@@ -75,7 +75,7 @@ If you want to get started very quickly and are not afraid to use third party re
 
 | ``$ sudo add-apt-repository ppa:adrian-m-benson/ppa``
 | ``$ sudo apt-get update``
-| ``$ sudo apt-get install python-setuptools python-numpy python-scipy python-matplotlib python-tables python-h5py python-netcdf4 python-pyproj``
+| ``$ sudo apt-get install python-setuptools python-numpy python-scipy python-matplotlib python-tables python-h5py python-netcdf4 python-gdal``
 | ``$ sudo easy_install wradlib``
 
 
@@ -115,9 +115,9 @@ For NetCDF4, there are no official Debian Packages for Ubuntu 12.04
 
 4. georeferencing
 """""""""""""""""
-Projections, which are the main part of georeferencing are handled by the pyproj package
+Projections, which are the main part of georeferencing are handled by the gdal package
 
-``$ sudo apt-get install python-pyproj``
+``$ sudo apt-get install python-gdal``
 
 5. wradlib
 """"""""""
@@ -150,7 +150,7 @@ Dependencies
 
 - numpydoc (*), version >= 0.3, install via ``easy_install numpydoc``
 
-- pyproj (*), version >= 1.8.9, install via ``easy_install pyproj``
+- gdal (*), install via ``easy_install gdal``
 
 You can check whether the required `Dependencies`_ are available on your computer by opening a Python console and enter:
 
