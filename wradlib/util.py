@@ -30,6 +30,7 @@ import numpy as np
 import datetime as dt
 from time import mktime
 from scipy import interpolate
+from scipy.ndimage import filters
 from scipy.spatial import cKDTree
 from scipy.stats import nanmean
 import importlib
@@ -984,6 +985,81 @@ if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
 
 
+def filter_window_polar(img,wsize,fun,scale,random=False):
+    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
+    Parameters
+    ----------
+    img : 2d array
+        Array of values to which the filter is to be applied
+    wsize : float
+        Half size of the window centred on the pixel [m] 
+    fun : string
+        name of the 1d filter from scipy.ndimage.filters
+    scale : tuple of 2 floats
+        range [m] and azimutal [radians] scale of the polar grid 
+    random: bool
+        True to use random azimutal size to avoid long-term biases. 
+
+    Returns
+    -------
+    output : array_like
+        an array with the same shape as `img`, containing the filter's results.
+
+    """
+    rscale,ascale = scale
+    data_filtered = np.empty(img.shape,dtype=img.dtype)
+    fun = getattr(filters,"%s_filter1d" %(fun))
+    nbins = img.shape[-1]
+    ranges = np.arange(nbins)*rscale + rscale/2
+    asize = ranges*ascale
+    if random:
+        na = prob_round(wsize/asize).astype(int)
+    else:
+        na = np.fix(wsize/asize+0.5).astype(int)
+    na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance  
+    for n in np.unique(na):
+        index = ( na == n )
+        if n == 0:
+            data_filtered[:,index] = img[:,index]
+        data_filtered[:,index] = fun(img[:,index],size=2*n+1,mode='wrap',axis=0)
+    nr = np.fix(wsize/rscale+0.5).astype(int)
+    data_filtered = fun(data_filtered,size=2*nr+1,axis=1)
+    return(data_filtered)
+
+
+def prob_round(x, prec = 0):
+    """Round the float number `x` to the lower or higher integer randomly following a binomial distribution """
+    fixup = np.sign(x) * 10**prec
+    x *= fixup
+    intx = x.astype(int)
+    round_func = intx + np.random.binomial(1,x-intx)
+    return round_func/fixup
+
+
+def filter_window_cartesian(img,wsize,fun,scale):
+    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`. This method is faster than filter_radius_polar()
+
+    Parameters
+    ----------
+    img : 2d array
+        Array of values to which the filter is to be applied
+    wsize : float
+        Half size of the window centred on the pixel [m] 
+    fun : string
+        name of the 2d filter from scipy.ndimage.filters
+    scale : tuple of 2 floats
+        x and y scale of the cartesian grid [m]
+
+    Returns
+    -------
+    output : array_like
+        an array with the same shape as `img`, containing the filter's results.
+
+    """
+    fun = getattr(filters,"%s_filter" %(fun))
+    size = np.fix(wsize/scale+0.5).astype(int)
+    data_filtered = fun(data_filtered,size)
+    return(data_filtered)
 
 
