@@ -42,7 +42,7 @@ import math
 import numpy as np
 import pylab as pl
 import matplotlib
-from matplotlib import mpl
+import matplotlib as mpl
 #from mpl_toolkits.basemap import Basemap, cm
 from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
