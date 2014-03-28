@@ -5,10 +5,7 @@ In the future, each release of wradlib will be guaranteed to work with a certain
 
 However, at the moment you will need to install the following packages beyond python(x,y):
 
-- pyproj: Performs cartographic transformations and geodetic computations. Visit http://code.google.com/p/pyproj/ and download the package installer.
-
-- basemap: The matplotlib basemap toolkit is a library for plotting 2D data on maps. Find documentation on http://matplotlib.org/basemap and `download the latest basemap installer <http://sourceforge.net/projects/matplotlib/files/matplotlib-toolkits>`_.
-
+- all mandatory packages are listet in the requirements.txt file in wradlib root folder
 
 Documentation Setup
 -------------------
