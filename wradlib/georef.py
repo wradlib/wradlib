@@ -51,8 +51,7 @@ from numpy import sin, cos, arcsin, pi
 import numpy as np
 from sys import exit
 import warnings
-
-from util import deprecated
+from wradlib.util import deprecated
 
 
 def hor2aeq(a, h, phi):

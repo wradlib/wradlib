@@ -14,10 +14,10 @@ import comp
 ##from comp import *
 import fill
 ##from fill import *
-import georef
-##from georef import *
 import io
 ##from io import *
+import georef
+##from georef import *
 import ipol
 ##from ipol import *
 import qual

@@ -42,7 +42,7 @@ import math
 import numpy as np
 import pylab as pl
 import matplotlib
-from matplotlib import mpl
+import matplotlib as mpl
 #from mpl_toolkits.basemap import Basemap, cm
 from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
@@ -383,6 +383,13 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         add a colorbar to the plot.
 
     """
+    # kwargs handling
+    kw_polar2latlonalt_n = {}
+    if 're' in kwargs:
+        kw_polar2latlonalt_n.update({'re': kwargs.pop('re')})
+    if 'ke' in kwargs:
+        kw_polar2latlonalt_n.update({'ke': kwargs.pop('ke')})
+
     # this may seem odd at first, but d1 and d2 are also used in plot_rhi
     # and thus it may be easier to compare the two functions
     d1 = r
@@ -422,7 +429,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
             # therefore we need to get from km to m
             xx *= 1000
         # latitude longitudes from the polar data still stored in xx and yy
-        lat, lon, alt = georef.polar2latlonalt_n(xx, yy, elev, site, **kwargs)
+        lat, lon, alt = georef.polar2latlonalt_n(xx, yy, elev, site, **kw_polar2latlonalt_n)
         # projected to the final coordinate system
         xx, yy = georef.project(lat, lon, proj)
 

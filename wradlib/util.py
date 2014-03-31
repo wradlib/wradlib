@@ -39,11 +39,6 @@ import warnings
 import functools
 warnings.simplefilter('once', DeprecationWarning)
 
-# wradlib modules
-import wradlib.georef as georef
-
-
-
 def deprecated(replacement=None):
     """A decorator which can be used to mark functions as deprecated.
     replacement is a callable that will be called with the same args
@@ -873,6 +868,8 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
 
     """
 
+    from wradlib.georef import beam_height_n as beam_height_n
+
     # this may seem odd at first, but d1 and d2 are also used in several plotting
     # functions and thus it may be easier to compare the functions
     d1 = r
@@ -914,7 +911,7 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
     # get height values from polar data and build cartesian height array
     # add delta to last element to compensate for open bound (np.digitize)
     hp = np.zeros((y.shape[0], x.shape[0]))
-    hc = georef.beam_height_n(x, elev)
+    hc = beam_height_n(x, elev)
     hp[:] = hc
     hc[-1] += 0.0001
 
