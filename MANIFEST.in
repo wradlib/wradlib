@@ -4,4 +4,3 @@ include requirements.txt
 recursive-include examples *
 recursive-include examples/data *
 recursive-include wradlib/tests *
-recursive-include wradlib/bufr_3.1 *

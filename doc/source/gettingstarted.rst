@@ -176,10 +176,12 @@ As for now, the following dependencies are defined as optional:
 
 **BUFR software**
 
-The *bufr* module requires the installation of the OPERA BUFR software.
+wradlib's *bufr* module requires the installation of the OPERA BUFR software. On the `OPERA software download page <http://www.eumetnet.eu/opera-software>`_, you will find precompiled binaries for `Windows <http://www.eumetnet.eu/sites/default/files/bufr_3.2_win32.zip>`_ and `Linux <http://www.eumetnet.eu/sites/default/files/bufr_3.2_linux.tar_.gz>`_. If you wanted, you could also download the source and build the software yourself. 
 
-*TODO:* Insert instructions for installing the BUFR software.
+Extract the *full* content of the packages to *any* directory on your computer. Then create an environment variable called ``BUFRLIB`` and set the value of this variable to the path where you extracted the bufr software.
 
+In order to check the functionality of wradlib BUFR module, open a Python console and try ``import wradlib.bufr``.
+   
 **The speedup module**
 
 The speedup module is intended as a collection of Fortran code in order to speed up specific wradlib function that are critical for performance.
