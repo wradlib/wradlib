@@ -386,9 +386,9 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # kwargs handling
     kw_polar2latlonalt_n = {}
     if 're' in kwargs:
-        kw_polar2latlonalt_n.append(kwargs.pop('re'))
+        kw_polar2latlonalt_n.update({'re': kwargs.pop('re')})
     if 'ke' in kwargs:
-        kw_polar2latlonalt_n.append(kwargs.pop('ke'))
+        kw_polar2latlonalt_n.update({'ke': kwargs.pop('ke')})
 
     # this may seem odd at first, but d1 and d2 are also used in plot_rhi
     # and thus it may be easier to compare the two functions
