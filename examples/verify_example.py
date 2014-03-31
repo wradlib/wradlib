@@ -16,7 +16,7 @@ import wradlib.verify as verify
 if __name__ == '__main__':
     import numpy as np
     import pylab as pl
-    from matplotlib import mpl
+    import matplotlib as mpl
 
     # ------------------------------------------------------------------------------
     # EXAMPLE 1: Extract bin values of a polar radar data set at rain gage locations

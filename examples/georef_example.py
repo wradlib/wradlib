@@ -18,7 +18,7 @@ import wradlib.georef as georef
 if __name__ == '__main__':
     import numpy as np
     import pylab as pl
-    from matplotlib import mpl
+    import matplotlib as mpl
 
     # --------------------------------------------------------------------------
     # EXAMPLE 1: Full workflow for georeferencing radar data

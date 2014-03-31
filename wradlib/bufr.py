@@ -67,8 +67,28 @@ Based on BUFR software description, p. 22,
 see http://www.knmi.nl/opera/bufr/doc/bufr_sw_desc.pdf
 """
 
-# BUFR library directory location
-bufrlibdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bufr_3.1")
+
+bufr_error_msg = """
+   Test call to decbufr was not successful.
+   BUFR decoding is not operational for this wradlib installation.
+   See http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies for guidance on how to install the BUFR software.
+"""
+
+
+# Get and check BUFR library directory
+try:
+    bufrlibdir = os.environ["BUFRLIB"]
+    if not os.path.exists(bufrlibdir):
+        print "Your environment variable BUFRLIB points to a directory that does not exist:"
+        print (bufrlibdir)
+        print bufr_error_msg
+        raise ImportError
+except KeyError:
+    print "You need to create an environment variable BUFRLIB which points to \
+    the directory which contains the BUFR software and tables."
+    print bufr_error_msg
+    raise ImportError
+
 
 # external file names for shared libraries and executables
 winshlib = 'bufr2wradlib.dll'
@@ -81,12 +101,6 @@ macexecutable = './decbufr'
 # remember where you are
 myhome = os.path.abspath( os.getcwd() )
 
-
-# Check availability of BUFR directory
-if not os.path.exists(bufrlibdir):
-    print ("Cannot find the BUFR library directory under %s." % bufrlibdir)
-    print ("BUFR decoding is not operational for this wradlib installation!")
-    raise ImportError
 
 # CHECK WHETHER BUFR SOFTWARE IS OPERATIONAL.
 #    Change to BUFR directory
@@ -121,14 +135,16 @@ else:
     print "wradlib BUFR module cannot be used on your platform, yet."
     print "Your platform: %s" % os.sys.platform
     print "Please request support under wradlib-users@googlegroups.com"
+
 #    Change back to where you were.
 os.chdir(myhome)
 
 # Now you know whether BUFR software is operational on your system.
 if not bufr_is_operational:
-    print "Test call to decbufr excutable was not successful."
-    print ("BUFR decoding is not operational for this wradlib installation.")
+    print bufr_error_msg
     raise ImportError
+else:
+    print ("BUFR decoding is available.")
 
 #-------------------------------------------------------------------------------
 # THE FOLLOWING SECTIONS WILL BE USED IN CASE THE SHARED LIBRARY FROM BUFR WILL WORK
@@ -238,14 +254,12 @@ def parse_desctable(fpath):
     descs = []
     vals  = []
     names = []
-    try:
-        f = open(fpath, "r")
-    except:
-        print "Could not open file for reading: %s" % (fpath,)
-        raise
-    lines = f.readlines()
-    f.close()
+    # read the decriptor file
+    with open(fpath) as f:
+        lines = f.readlines()
+
     # iterate over all lines and organize table entries in lists
+    # TODO: WE NEED TO ADDRESS CHANGES IN THE FIXED WIDTH FORMAT WITH DIFFERENT BUFR VERSIONS
     for i, line in enumerate(lines):
         if line.strip()=="":
             continue
@@ -253,15 +267,16 @@ def parse_desctable(fpath):
         if ldesc==(3,21,193):
             pass
         try:
-            vals.append(eval(line[10:26].strip()))
+            vals.append(eval(line[10:28].strip()))
         except:
-            vals.append(line[10:26].strip())
-        rdesc = parse_desc(line[26:35])
-        names.append(line[35:].strip())
+            vals.append(line[10:28].strip())
+        rdesc = parse_desc(line[28:37])
+        names.append(line[37:].strip())
         if not rdesc==():
             descs.append(rdesc)
         else:
             descs.append(ldesc)
+
     # now mapping descriptors to descriptor names and names to descriptor values
     for i in range(0, len(descs)):
         # just an ordinary assignment
