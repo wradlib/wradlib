@@ -1122,32 +1122,6 @@ def read_gdal_values(data=None,nodata=False):
         values[values==nodata] = np.nan
     return(values)
 
-
-# def reproject(coordinates_source,projection_source=None,projection_target=None):
-#     """Transform a nd array of 3D coordinates from a source projection to a target projection.
-#
-#     Parameters
-#     ----------
-#     coordinates_source : np array
-#         array of shape (...,3) with coordinates
-#     projection_source : osr object
-#     projection_target : osr object
-#
-#     Returns
-#     -------
-#     coordinates_target : nd array
-#         array of reprojected coordinates (x,y,z)
-#     """
-#     if projection_source is None:
-#         projection_source = get_default_projection()
-#     if projection_target is None:
-#         projection_target = get_default_projection()
-#     ct = osr.CoordinateTransformation(projection_source,projection_target)
-#     temp = coordinates_source.reshape((-1,3))
-#     coordinates_target = np.array(ct.TransformPoints(temp))
-#     coordinates_target = coordinates_target.reshape(coordinates_source.shape)
-#     return(coordinates_target)
-
 def reproject(*args, **kwargs):
     """Transform coordinates from a source projection to a target projection.
 
