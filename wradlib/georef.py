@@ -59,8 +59,8 @@ from wradlib.util import deprecated
 
 def hor2aeq(a, h, phi):
     """"""
-    delta = arcsin(-cos(h)*cos(a)*cos(phi) + sin(h)*sin(phi))
-    tau = arcsin(cos(h)*sin(a)/cos(delta))
+    delta = np.arcsin(-np.cos(h)*np.cos(a)*np.cos(phi) + np.sin(h)*np.sin(phi))
+    tau = np.arcsin(np.cos(h)*np.sin(a)/np.cos(delta))
     return delta, tau
 
 
@@ -68,6 +68,7 @@ def aeq2hor(tau, delta, phi):
     """"""
     h = arcsin(cos(delta)*cos(tau)*cos(phi) + sin(delta)*sin(phi))
     a = arcsin(cos(delta)*sin(tau)/cos(h))
+    return a, h
 
 @deprecated('polar2lonlat')
 def polar2latlon(r, az, sitecoords, re=6370040):
@@ -155,6 +156,7 @@ def polar2latlon(r, az, sitecoords, re=6370040):
 
     return latc, lonc
 
+
 def polar2lonlat(r, az, sitecoords, re=6370040):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates.
@@ -209,8 +211,9 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> csite = (9.0, 48.0)
-    >>> lat1, lon1= __pol2llonlat(r, az, csite)
-    >>> for x, y in zip(lon, lat):
+    >>> csite = (0.0, 0.0)
+    >>> lon1, lat1= polar2lonlat(r, az, csite)
+    >>> for x, y in zip(lon1, lat1):
     ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
      9.00, 48.00
      9.00, 48.00
@@ -231,8 +234,8 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     phi = np.deg2rad(sitecoords[0])
     lam = np.deg2rad(sitecoords[1])
 
-    a   = np.deg2rad(-(180. + az))
-    h   =  0.5*pi - r/re
+    a = np.deg2rad(-(180. + az))
+    h =  0.5*np.pi - r/re
 
     delta, tau = hor2aeq(a, h, phi)
     latc = np.rad2deg(delta)
@@ -240,7 +243,7 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     return lonc, latc
 
-@deprecated('__polar2lonlat')
+@deprecated('__pol2lonlat')
 def __pol2latlon(rng, az, sitecoords, re=6370040):
     """Alternative implementation using spherical geometry only.
 
@@ -288,6 +291,7 @@ def __pol2latlon(rng, az, sitecoords, re=6370040):
 
     return 90.-np.rad2deg(m), thea+np.rad2deg(np.where(easterly,g,-g))
 
+
 def __pol2lonlat(rng, az, sitecoords, re=6370040):
     """Alternative implementation using spherical geometry only.
 
@@ -305,8 +309,8 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> csite = (9.0, 48.0)
-    >>> lat1, lon1= __pol2llonlat(r, az, csite)
-    >>> for x, y in zip(lon, lat):
+    >>> lon1, lat1= __pol2lonlat(r, az, csite)
+    >>> for x, y in zip(lon1, lat1):
     ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
      9.00, 48.00
      9.00, 48.00
@@ -320,8 +324,8 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     along a great circle.
 
     """
-    phia = sitecoords[0]
-    thea = sitecoords[1]
+    phia = sitecoords[1]
+    thea = sitecoords[0]
 
     l = np.deg2rad(90.-phia)
     r = rng/re
@@ -375,7 +379,7 @@ def polar2latlonalt(r, az, elev, sitecoords, re=6370040.):
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
     >>> csite = (48.0, 9.0)
-    >>> lat1, lon1, alt1 = polar2latlonalt_n(r, az, th, csite)
+    >>> lat1, lon1, alt1 = polar2latlonalt(r, az, th, csite)
     >>> for x, y, z in zip(lat1, lon1, alt1):
     ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
     ...
@@ -412,6 +416,7 @@ def polar2latlonalt(r, az, elev, sitecoords, re=6370040.):
     lons = centlon + sinaz * radp / _lonscale(centlat)
 
     return lats, lons, alts
+
 
 def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     """Transforms polar coordinates to lon/lat/altitude coordinates.
@@ -451,16 +456,16 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
     >>> csite = (9.0, 48.0)
-    >>> lon1, lat1, alt1 = polar2lonlatalt_n(r, az, th, csite)
+    >>> lon1, lat1, alt1 = polar2lonlatalt(r, az, th, csite)
     >>> for x, y, z in zip(lon1, lat1, alt1):
     ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
     ...
-    9.0000, 48.0000, 0.0000
-    9.0000, 48.0000, 0.0000
-    9.0000, 48.9983, 967.0320
+     9.0000, 48.0000,  0.0000
+     9.0000, 48.0000,  0.0000
     10.4919, 48.0000, 967.0320
-    9.0000, 47.0017, 967.0320
-    7.5084, 48.0000, 1935.4568
+     9.0000, 48.9983, 967.0320
+     7.5081, 48.0000, 967.0320
+     9.0000, 47.0019, 1935.4568
 
     """
     centlon = sitecoords[0]
@@ -484,8 +489,11 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 
     angle = np.arcsin(coselev * r / rp) # really sin(elev+90)
     radp = re * angle
-    lats = centlat + cosaz * radp / _latscale()
-    lons = centlon + sinaz * radp / _lonscale(centlat)
+    # TODO: had to change cosaz/sinaz to get same results as before
+    #lats = centlat + cosaz * radp / _latscale()
+    #lons = centlon + sinaz * radp / _lonscale(centlat)
+    lats = centlat + sinaz * radp / _latscale()
+    lons = centlon + cosaz * radp / _lonscale(centlat)
 
     return lons, lats, alts
 
@@ -745,20 +753,18 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     >>> csite = (9.0, 48.0)
     >>> lon1, lat1, alt1 = polar2lonlatalt_n(r, az, th, csite)
     >>> for x, y, z in zip(lon1, lat1, alt1):
-    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...     print '{1:7.4f}, {0:7.4f}, {2:7.4f}'.format(x, y, z)
     ...
-    9.0000, 48.0000, 0.0000
-    9.0000, 48.0000, 0.0000
-    9.0000, 48.9983, 967.0320
-    10.4919, 48.0000, 967.0320
-    9.0000, 47.0017, 967.0320
-    7.5084, 48.0000, 1935.4568
+     9.0000, 48.0000,  0.0000
+     9.0000, 48.0000,  0.0000
+     9.0000, 48.9983, 725.2981
+    10.4918, 47.9903, 725.2981
+     9.0000, 47.0017, 725.2981
+     7.5084, 47.9903, 1693.8056
 
     Here, the coordinates of the east and west directions won't come to lie on
     the latitude of the site because the beam doesn't travel along the latitude
     circle but along a great circle.
-
-
     """
     phi = np.deg2rad(sitecoords[1])
     lam = np.deg2rad(sitecoords[0])
@@ -776,8 +782,8 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     h   =  0.5*np.pi - arc_distance_n(r, elev, re, ke)/re
 
     delta, tau = hor2aeq(a, h, phi)
-    latc = np.rad2deg(delta)
-    lonc = np.rad2deg(lam + tau)
+    lonc = np.rad2deg(delta)
+    latc = np.rad2deg(lam + tau)
 
     return lonc, latc, alt
 
@@ -1100,10 +1106,15 @@ def create_projstr(projname, **kwargs):
     --------
     >>> # Gauss-Krueger 2nd strip
     >>> print create_projstr("gk", zone=2)
+    +proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=2500000 +y_0=0
+                +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7
+                +units=m +no_defs
     >>> # UTM zone 51 (northern hemisphere)
     >>> print create_projstr("utm", zone=51)
+    +proj=utm +zone=51 +ellps=WGS84
     >>> # UTM zone 51 (southern hemisphere)
     >>> print create_projstr("utm", zone=51, hemisphere="south")
+    +proj=utm +zone=51 +ellps=WGS84 +south
 
     """
     if projname=="aeqd":
@@ -1131,6 +1142,8 @@ def create_projstr(projname, **kwargs):
             else:
                 print "Value %s for keyword argument hemisphere in function create_projstr is not valid. Value must be either north or south!" % kwargs["hemisphere"]
                 exit(1)
+        else:
+            hemisphere = ""
         try:
             projstr = "+proj=utm +zone=%d +ellps=WGS84%s" % (kwargs["zone"], hemisphere)
         except:
