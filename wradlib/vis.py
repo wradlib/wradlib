@@ -320,7 +320,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     having to convert them to the radar's polar coordinate system.
 
     `**kwargs` may be used to try to influence the matplotlib.pcolormesh and
-    wradlib.georef.polar2latlonalt_n routines under the hood.
+    wradlib.georef.polar2lonlatalt_n routines under the hood.
 
     There is one major caveat concerning the values of `r` and `az`.
     Due to the way matplotlib.pcolormesh works, `r` should give the location
@@ -353,7 +353,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         Tuple of coordinates of the radar site.
         If `proj` is not used, this simply becomes the offset for the origin
         of the coordinate system.
-        If `proj` is used, values must be given as (latitude, longitude)
+        If `proj` is used, values must be given as (longitude, latitude)
         tuple of geographical coordinates.
     projstr : str
         PROJ.4 compatible projection string
@@ -384,11 +384,11 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     """
     # kwargs handling
-    kw_polar2latlonalt_n = {}
+    kw_polar2lonlatalt_n = {}
     if 're' in kwargs:
-        kw_polar2latlonalt_n.append(kwargs.pop('re'))
+        kw_polar2lonlatalt_n.append(kwargs.pop('re'))
     if 'ke' in kwargs:
-        kw_polar2latlonalt_n.append(kwargs.pop('ke'))
+        kw_polar2lonlatalt_n.append(kwargs.pop('ke'))
 
     # this may seem odd at first, but d1 and d2 are also used in plot_rhi
     # and thus it may be easier to compare the two functions
@@ -429,7 +429,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
             # therefore we need to get from km to m
             xx *= 1000
         # latitude longitudes from the polar data still stored in xx and yy
-        lat, lon, alt = georef.polar2latlonalt_n(xx, yy, elev, site, **kw_polar2latlonalt_n)
+        lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site, **kw_polar2lonlatalt_n)
         # projected to the final coordinate system
         osr_proj = proj4_to_osr(projstr)
         xx, yy = georef.reproject(lon, lat, projection_target=osr_proj)
@@ -457,7 +457,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         Tuple of coordinates of the radar site.
         If `proj` is not used, this simply becomes the offset for the origin
         of the coordinate system.
-        If `proj` is used, values must be given as (latitude, longitude)
+        If `proj` is used, values must be given as (longitude, latitude)
         tuple of geographical coordinates.
     ranges : list
         List of ranges, for which range circles should be drawn.
@@ -528,8 +528,8 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         # these lines might not be straigt so we approximate them with 10
         # segments. Produce polar coordinates
         rr, az = np.meshgrid(np.linspace(0,ranges[-1],10), angles)
-        # and reproject using polar2latlonalt to convert from polar to geographic
-        nsewx, nsewy = georef.reproject(*georef.polar2latlonalt_n(rr, az, elev,
+        # and reproject using polar2lonlatalt to convert from polar to geographic
+        nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr, az, elev,
                                                                 site)[:2],
                                       projection_target=osr_proj)
     else:
@@ -551,7 +551,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     for r in ranges:
         if projstr:
             # produce an approximation of the circle
-            x, y = georef.reproject(*georef.polar2latlonalt_n(r,
+            x, y = georef.reproject(*georef.polar2lonlatalt_n(r,
                                                             np.arange(360),
                                                             elev,
                                                             site)[:2],
@@ -2763,7 +2763,8 @@ def plot_scan_strategy(ranges, elevs, vert_res=500., maxalt=10000., radaralt=0.,
     polc = util.meshgridN(ranges, az, elevs)
 
     # get mean height over radar
-    lat, lon, alt = georef.polar2latlonalt(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), (14.910948,120.259666, radaralt))
+    # TODO: why are those sitecoords given here?
+    lat, lon, alt = georef.polar2lonlatalt(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), (14.910948,120.259666, radaralt))
     alt = alt.reshape(len(ranges), len(elevs))
     r = polc[0].reshape(len(ranges), len(elevs))
 

@@ -45,12 +45,12 @@ if __name__ == '__main__':
     hours        = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-27 00:00:00", 3600)
     depths_hourly= wradlib.util.aggregate_in_time(depths_5min, sweep_times, hours, func='sum')
     # Georeferencing
-    radar_location = (47.8744, 8.005, 1517) # (lat, lon, alt) in decimal degree and meters
+    radar_location = (8.005, 47.8744, 1517) # (lon, lat, alt) in decimal degree and meters
     elevation = 0.5 # in degree
     azimuths = np.arange(0,360) # in degrees
     ranges = np.arange(0, 128000., 1000.) # in meters
     polargrid = np.meshgrid(ranges, azimuths)
-    lat, lon, alt = wradlib.georef.polar2latlonalt(polargrid[0], polargrid[1], elevation, radar_location)
+    lon, lat, alt = wradlib.georef.polar2lonlatalt(polargrid[0], polargrid[1], elevation, radar_location)
     # projection to Gauss Krueger zone 3
     gk3 = wradlib.georef.create_projstr("gk", zone=3)
     proj_gk3 = wradlib.georef.proj4_to_osr(gk3)

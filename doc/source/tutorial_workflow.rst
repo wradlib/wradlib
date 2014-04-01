@@ -108,7 +108,7 @@ Check the shape and values of your resulting array for plausibility:
 
 Georeferencing and projection
 -----------------------------
-In order to define the horizontal and vertical position of the radar bins, we need to retrieve the corresponding 3-dimensional coordinates in terms of latitude, longitude and altitude. This information is required e.g. if the positions should be plotted on a map. It is also required for constructing `CAPPIs <http://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_. The position of a radar bin in 3-dimensional space depends on the position of the radar device, the elevation angle of the radar beam, as well as the azimuth angle and the range of a bin. For the sample data used above, the posiiton of the radar device is the Feldberg in Germany (47.8744, 8.005, 1517): 
+In order to define the horizontal and vertical position of the radar bins, we need to retrieve the corresponding 3-dimensional coordinates in terms of longitude, latitude and altitude. This information is required e.g. if the positions should be plotted on a map. It is also required for constructing `CAPPIs <http://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_. The position of a radar bin in 3-dimensional space depends on the position of the radar device, the elevation angle of the radar beam, as well as the azimuth angle and the range of a bin. For the sample data used above, the posiiton of the radar device is the Feldberg in Germany (47.8744, 8.005, 1517):
 
 >>> import numpy as np
 >>> radar_location = (47.8744, 8.005, 1517) # (lat, lon, alt) in decimal degree and meters
@@ -116,7 +116,7 @@ In order to define the horizontal and vertical position of the radar bins, we ne
 >>> azimuths = np.arange(0,360) # in degrees
 >>> ranges = np.arange(0, 128000., 1000.) # in meters
 >>> polargrid = np.meshgrid(ranges, azimuths)
->>> lat, lon, alt = wradlib.georef.polar2latlonalt(polargrid[0], polargrid[1], elevation, radar_location)
+>>> lon, lat, alt = wradlib.georef.polar2lonlatalt(polargrid[0], polargrid[1], elevation, radar_location)
 
 *wradlib* supports the projection of geographical coordinates (lat/lon) to a Cartesian reference system. Basically, you have to provide a string which represents the projection - based on the `proj.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3): 
 

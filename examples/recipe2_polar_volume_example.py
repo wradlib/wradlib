@@ -19,8 +19,8 @@ if __name__ == '__main__':
 
     # read the data (sample file in wradlib/examples/data)
     raw = wradlib.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
-    # this is the radar position tuple (latitude, longitude, altitude)
-    sitecoords = (raw["where"]["lat"], raw["where"]["lon"],raw["where"]["height"])
+    # this is the radar position tuple (longitude, latitude, altitude)
+    sitecoords = (raw["where"]["lon"], raw["where"]["lat"],raw["where"]["height"])
     # define your cartesian reference system
     projstr = wradlib.georef.create_projstr("utm",zone=32, hemisphere="north")
     # containers to hold Cartesian bin coordinates and data
