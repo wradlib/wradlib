@@ -418,7 +418,7 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
         # Set additional metadata attributes
         attrs['az'] = az
         attrs['r']  = r
-        attrs['sitecoords'] = (attrs['Latitude'], attrs['Longitude'], attrs['Height'])
+        attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'], attrs['Height'])
         attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
         attrs['max_range'] = data.shape[1] * binwidth
     except:
@@ -900,7 +900,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
         vattrs['Longitude'] = f['where'].attrs.get('lon')
         vattrs['Height'] = f['where'].attrs.get('height')
         # check whether its useful to implement that feature
-        #vattrs['sitecoords'] = (vattrs['Latitude'], vattrs['Longitude'], vattrs['Height'])
+        #vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'], vattrs['Height'])
         attrs['VOL'] = vattrs
 
     f.close()
