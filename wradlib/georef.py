@@ -938,7 +938,8 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
 
     """
     cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
-    x, y = project(cent_lat, cent_lon, projstr)
+    osr_proj = proj4_to_osr(projstr)
+    x, y = reproject(cent_lon, cent_lat, projection_target = osr_proj)
     return x.ravel(), y.ravel()
 
 
@@ -1132,7 +1133,7 @@ def reproject(*args, **kwargs):
         reproject(X, Y, Z, **kwargs)
 
     *C* is the np array of source coordinates.
-    *X*, *Y* and *Z*, specify arrays of x, y, and z coordinate values
+    *X*, *Y* and *Z* specify arrays of x, y, and z coordinate values
 
     Parameters
     ----------
@@ -1140,11 +1141,11 @@ def reproject(*args, **kwargs):
     C : multidimensional np array
         array of shape (...,2) or (...,3) with coordinates (x,y) or (x,y,z)
         respectively
-    X : 1d np array
+    X : nd array
         array of x coordinates
-    Y : 1d np array
+    Y : nd array
         array of y coordinates
-    Z : 1d np array
+    Z : nd array
         array of z coordinates
 
     Keyword arguments:
@@ -1154,10 +1155,12 @@ def reproject(*args, **kwargs):
     Returns
     -------
     trans : nd array
-        array of reprojected coordinates x,y (...,2) or x,y,z (...,3) depending
-        on input array
-    X, Y : 1d np arrays of reprojected x,y coordinates
-    X, Y, Z: 1d np arrays of reprojected x,y,z coordinates
+        array of reprojected coordinates x,y (...,2) or x,y,z (...,3)
+        depending on input array
+    X, Y : nd arrays
+        arrays of reprojected x,y coordinates, shape depending on input array
+    X, Y, Z: nd arrays
+        arrays of reprojected x,y,z coordinates, shape depending on input array
     """
     if len(args) == 1:
         C = args[0]
@@ -1172,21 +1175,19 @@ def reproject(*args, **kwargs):
             numCols = 2
         if len(args) == 3:
             X, Y, Z = args
+            zshape = Z.shape
             numCols = 3
         else:
             raise TypeError('Illegal arguments to %s' % ('reproject'))
 
-        if len(X.shape) != 1:
-            raise TypeError('X array dimension mismatch to %s' % ('reproject'))
-        if len(Y.shape) != 1:
-            raise TypeError('Y array dimension mismatch to %s' % ('reproject'))
-        if X.shape != Y.shape:
+        xshape = X.shape
+        yshape = Y.shape
+
+        if xshape != yshape:
             raise TypeError('Incompatible X, Y inputs to %s' % ('reproject'))
 
         if 'Z' in locals():
-            if len(Z.shape) != 1:
-                raise TypeError('Z array dimension mismatch to %s' % ('reproject'))
-            if X.shape != Z.shape:
+            if xshape != zshape:
                 raise TypeError('Incompatible Z input to %s' % ('reproject'))
             C = zip(X,Y,Z)
         else:
@@ -1205,12 +1206,12 @@ def reproject(*args, **kwargs):
         trans = np.array(zip(*trans)[0:numCols]).reshape(cshape)
         return(trans)
     else:
-        X = np.array(zip(*trans)[0])
-        Y = np.array(zip(*trans)[1])
+        X = np.array(zip(*trans)[0]).reshape(xshape)
+        Y = np.array(zip(*trans)[1]).reshape(yshape)
         if len(args) == 2:
             return X, Y
         if len(args) == 3:
-            Z = np.array(zip(*trans)[2])
+            Z = np.array(zip(*trans)[2]).reshape(zshape)
             return X, Y, Z
 
 def get_default_projection():
@@ -1251,8 +1252,11 @@ def sweep_centroids(nrays,rscale,nbins,elangle):
 
 def proj4_to_osr(proj4str):
     """Transform a proj4 string to an osr spatial reference object"""
-    proj = osr.SpatialReference()
-    proj.ImportFromProj4(proj4str)
+    if proj4str:
+        proj = osr.SpatialReference()
+        proj.ImportFromProj4(proj4str)
+    else:
+        proj = get_default_projection()
     return(proj)
 
 
