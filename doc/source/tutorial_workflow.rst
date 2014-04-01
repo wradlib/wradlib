@@ -52,7 +52,7 @@ Attenuation by wet radome and by heavy rainfall can cause serious underestimatio
 >>> pia = wradlib.atten.correctAttenuationKraemer(data_no_clutter)
 >>> data_attcorr = data_no_clutter + pia
 
-The first line computes the path integrated attenuation ``pia`` for each radar bin. The second line line uses ``pia`` to correct the reflectivity values. Let's inspect the effect of attenuation correction for an azimuth angle of 65°:
+The first line computes the path integrated attenuation ``pia`` for each radar bin. The second line line uses ``pia`` to correct the reflectivity values. Let's inspect the effect of attenuation correction for an azimuth angle of 65ï¿½:
 
 >>> import pylab as pl
 >>> pl.plot(data_attcorr[65], label="attcorr")
@@ -120,8 +120,9 @@ In order to define the horizontal and vertical position of the radar bins, we ne
 
 *wradlib* supports the projection of geographical coordinates (lat/lon) to a Cartesian reference system. Basically, you have to provide a string which represents the projection - based on the `proj.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3): 
 
->>> gk3 = wradlib.georef.create_projstr("gk", zone=3)
->>> x, y = wradlib.georef.project(lat, lon, gk3)
+>>> projstr = wradlib.georef.create_projstr("gk", zone=3)
+>>> gk3 = proj4_to_osr(proj4str)
+>>> x, y = wradlib.georef.reproject(lon, lat, projection_target=gk3)
 
 .. seealso:: Get more info in the library reference section :doc:`georef`.
 

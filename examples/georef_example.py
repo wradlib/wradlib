@@ -48,14 +48,15 @@ if __name__ == '__main__':
     pl.show()
 
 
-    # 2nd step: project the centroid coordinates to Gauss-Krueger Zone 3
+    # 2nd step: reproject the centroid coordinates to Gauss-Krueger Zone 3
     #   this is the proj.4 projection string
     gk3 = '''
     +proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
     +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs
     '''
     # use it for projecting the centroids to Gauss-Krueger 3
-    x, y = georef.project(cent_lat, cent_lon, gk3)
+    proj_gk3 = georef.proj4_to_osr(gk3)
+    x, y = georef.reproject(cent_lon, cent_lat, projection_targe=proj_gk3)
 
     # export the projected centroid coordinates
     f = open('centroids.tab', 'w')

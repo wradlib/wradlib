@@ -88,12 +88,13 @@ if __name__ == '__main__':
 
     # derive Gauss-Krueger Zone 3 coordinates of range-bin centroids
     #   for Tuerkheim radar
+    proj_gk3 = wradlib.georef.proj4_to_osr(gk3)
     tur_cent_lon, tur_cent_lat = wradlib.georef.polar2centroids(r, az, tur_sitecoords)
-    tur_x, tur_y = wradlib.georef.project(tur_cent_lat, tur_cent_lon, gk3)
+    tur_x, tur_y = wradlib.georef.reproject(tur_cent_lon, tur_cent_lat, projection_target=proj_gk3)
     tur_coord = np.array([tur_x.ravel(),tur_y.ravel()]).transpose()
     #    for Feldberg radar
     fbg_cent_lon, fbg_cent_lat = wradlib.georef.polar2centroids(r, az, fbg_sitecoords)
-    fbg_x, fbg_y = wradlib.georef.project(fbg_cent_lat, fbg_cent_lon, gk3)
+    fbg_x, fbg_y = wradlib.georef.reproject(fbg_cent_lon, fbg_cent_lat, projection_target=proj_gk3)
     fbg_coord = np.array([fbg_x.ravel(),fbg_y.ravel()]).transpose()
 
     # define target grid for composition

@@ -50,8 +50,8 @@ if __name__ == '__main__':
     
     lat, lon, height = georef.polar2latlonalt_n(coord[...,0], np.degrees(coord[...,1]), coord[...,2], sitecoords, re=radius, ke=4./3.)
     
-    proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(pvol["where"]["lat"],pvol["where"]["lon"])
-    x, y = georef.project(lat, lon, proj4str)
+    #proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(pvol["where"]["lat"],pvol["where"]["lon"])
+    x, y = georef.reproject(lon, lat, projection_target=proj_radar)
 
     test = x[0,90,0:960:60]
     print(test)

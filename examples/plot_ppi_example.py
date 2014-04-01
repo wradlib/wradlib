@@ -54,7 +54,7 @@ pl.title('Offset and Custom Crosshair')
 pl.figure()
 # using the proj keyword we tell the function to:
 # - interpret the site coordinates as latitude/longitude
-# - project the coordinates to the dwd-radolan composite coordinate system
+# - reproject the coordinates to the dwd-radolan composite coordinate system
 wradlib.vis.plot_ppi(img, site=(45., 10.),
                      proj=wradlib.georef.create_projstr('dwd-radolan'))
 # now the crosshair must also observe the projection

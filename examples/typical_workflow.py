@@ -53,7 +53,8 @@ if __name__ == '__main__':
     lat, lon, alt = wradlib.georef.polar2latlonalt(polargrid[0], polargrid[1], elevation, radar_location)
     # projection to Gauss Krueger zone 3
     gk3 = wradlib.georef.create_projstr("gk", zone=3)
-    x, y = wradlib.georef.project(lat, lon, gk3)
+    proj_gk3 = wradlib.georef.proj4_to_osr(gk3)
+    x, y = wradlib.georef.reproject(lon, lat, projection_target=proj_gk3)
     xy = np.vstack((x.ravel(), y.ravel())).transpose()
     # transfer the north-east sector to a 1kmx1km grid
     xgrid = np.linspace(x.min(), x.mean(), 100)
