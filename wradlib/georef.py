@@ -1123,31 +1123,121 @@ def read_gdal_values(data=None,nodata=False):
     return(values)
 
 
-def reproject(coordinates_source,projection_source=None,projection_target=None):
-    """Transform a nd array of 3D coordinates from a source projection to a target projection.
-    
+# def reproject(coordinates_source,projection_source=None,projection_target=None):
+#     """Transform a nd array of 3D coordinates from a source projection to a target projection.
+#
+#     Parameters
+#     ----------
+#     coordinates_source : np array
+#         array of shape (...,3) with coordinates
+#     projection_source : osr object
+#     projection_target : osr object
+#
+#     Returns
+#     -------
+#     coordinates_target : nd array
+#         array of reprojected coordinates (x,y,z)
+#     """
+#     if projection_source is None:
+#         projection_source = get_default_projection()
+#     if projection_target is None:
+#         projection_target = get_default_projection()
+#     ct = osr.CoordinateTransformation(projection_source,projection_target)
+#     temp = coordinates_source.reshape((-1,3))
+#     coordinates_target = np.array(ct.TransformPoints(temp))
+#     coordinates_target = coordinates_target.reshape(coordinates_source.shape)
+#     return(coordinates_target)
+
+def reproject(*args, **kwargs):
+    """Transform coordinates from a source projection to a target projection.
+
+    Call signatures::
+
+        reproject(C, **kwargs)
+        reproject(X, Y, **kwargs)
+        reproject(X, Y, Z, **kwargs)
+
+    *C* is the np array of source coordinates.
+    *X*, *Y* and *Z*, specify arrays of x, y, and z coordinate values
+
     Parameters
-    ----------     
-    coordinates_source : np array
-        array of shape (...,3) with coordinates
-    projection_source : osr object
-    projection_target : osr object
+    ----------
+
+    C : multidimensional np array
+        array of shape (...,2) or (...,3) with coordinates (x,y) or (x,y,z)
+        respectively
+    X : 1d np array
+        array of x coordinates
+    Y : 1d np array
+        array of y coordinates
+    Z : 1d np array
+        array of z coordinates
+
+    Keyword arguments:
+    projection_source : osr object (defaults to EPSG(4326)
+    projection_target : osr object (defaults to EPSG(4326)
 
     Returns
     -------
-    coordinates_target : nd array
-        array of reprojected coordinates (x,y,z)
+    trans : nd array
+        array of reprojected coordinates x,y (...,2) or x,y,z (...,3) depending
+        on input array
+    X, Y : 1d np arrays of reprojected x,y coordinates
+    X, Y, Z: 1d np arrays of reprojected x,y,z coordinates
     """
-    if projection_source is None:
-        projection_source = get_default_projection()
-    if projection_target is None:
-        projection_target = get_default_projection()
-    ct = osr.CoordinateTransformation(projection_source,projection_target)
-    temp = coordinates_source.reshape((-1,3))
-    coordinates_target = np.array(ct.TransformPoints(temp));
-    coordinates_target = coordinates_target.reshape(coordinates_source.shape)
-    return(coordinates_target)
+    if len(args) == 1:
+        C = args[0]
+        cshape =  C.shape
+        numCols = C.shape[-1]
+        C = C.reshape(-1,numCols)
+        if numCols < 2 and numCols > 3:
+            raise TypeError('Input Array column mismatch to %s' % ('reproject'))
+    else:
+        if len(args) == 2:
+            X, Y = args
+            numCols = 2
+        if len(args) == 3:
+            X, Y, Z = args
+            numCols = 3
+        else:
+            raise TypeError('Illegal arguments to %s' % ('reproject'))
 
+        if len(X.shape) != 1:
+            raise TypeError('X array dimension mismatch to %s' % ('reproject'))
+        if len(Y.shape) != 1:
+            raise TypeError('Y array dimension mismatch to %s' % ('reproject'))
+        if X.shape != Y.shape:
+            raise TypeError('Incompatible X, Y inputs to %s' % ('reproject'))
+
+        if 'Z' in locals():
+            if len(Z.shape) != 1:
+                raise TypeError('Z array dimension mismatch to %s' % ('reproject'))
+            if X.shape != Z.shape:
+                raise TypeError('Incompatible Z input to %s' % ('reproject'))
+            C = zip(X,Y,Z)
+        else:
+            C = zip(X,Y)
+
+    projection_source = kwargs.get('projection_source', get_default_projection())
+    projection_target = kwargs.get('projection_target', get_default_projection())
+
+    ct = osr.CoordinateTransformation(projection_source,projection_target)
+    trans = ct.TransformPoints(C)
+
+    if len(args) == 1:
+        # here we could do this one
+        #return(np.array(ct.TransformPoints(C))[...,0:numCols]))
+        # or this one
+        trans = np.array(zip(*trans)[0:numCols]).reshape(cshape)
+        return(trans)
+    else:
+        X = np.array(zip(*trans)[0])
+        Y = np.array(zip(*trans)[1])
+        if len(args) == 2:
+            return X, Y
+        if len(args) == 3:
+            Z = np.array(zip(*trans)[2])
+            return X, Y, Z
 
 def get_default_projection():
     """Create a default projection object (wgs84)"""
