@@ -61,12 +61,12 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
 
     Examples
     --------
-    TODO: provide a correct example here
 
+    >>> # TODO: provide a correct example here
     >>> a=[1,2,3]
     >>> print [x + 3 for x in a]
     :w
-[4, 5, 6]
+    [4, 5, 6]
     >>> print "a\n\nb"
     a
     b
@@ -115,8 +115,8 @@ def filter_gabella_b(img, thrs=0.):
 
     Examples
     --------
-    TODO: provide a correct example here
 
+    >>> # TODO: provide a correct example here
     >>> a=[1,2,3]
     >>> print [x + 3 for x in a]
     [4, 5, 6]
@@ -196,8 +196,8 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=
 
     Examples
     --------
-    TODO: provide a correct example here
 
+    >>> # TODO: provide a correct example here
     >>> a=[1,2,3]
     >>> print [x + 3 for x in a]
     [4, 5, 6]
