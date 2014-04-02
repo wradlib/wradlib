@@ -56,7 +56,7 @@ pl.figure()
 # - interpret the site coordinates as longitude/latitude
 # - reproject the coordinates to the dwd-radolan composite coordinate system
 wradlib.vis.plot_ppi(img, site=(10., 45.),
-                     proj=wradlib.georef.create_projstr('dwd-radolan'))
+                     projstr=wradlib.georef.create_projstr('dwd-radolan'))
 # now the crosshair must also observe the projection
 # in addition the ranges must now be given in meters
 # we now also change the circles to a different color and linestyle
@@ -68,7 +68,7 @@ wradlib.vis.plot_ppi_crosshair(site=(10., 45.),
                                      'circle':{'edgecolor':'blue',
                                                'linestyle':'dotted'},
                                     },
-                               proj=wradlib.georef.create_projstr('dwd-radolan')
+                               projstr=wradlib.georef.create_projstr('dwd-radolan')
                                )
 pl.title('Georeferenced/Projected PPI')
 
@@ -78,7 +78,7 @@ pl.figure()
 # of the projection (which is 10 degrees east)
 # Due north now does not point straight upwards on the map
 wradlib.vis.plot_ppi(img, site=(45., 7.),
-                     proj=wradlib.georef.create_projstr('dwd-radolan'))
+                     projstr=wradlib.georef.create_projstr('dwd-radolan'))
 # The crosshair shows this.
 # for the case that the lines should actually become curved, they are
 # implemented as a piecewise linear curve with 10 vertices
@@ -89,7 +89,7 @@ wradlib.vis.plot_ppi_crosshair(site=(45., 7.),
                                      'circle':{'edgecolor':'darkgray',
                                                'linestyle':'dotted'},
                                     },
-                               proj=wradlib.georef.create_projstr('dwd-radolan')
+                               projstr=wradlib.georef.create_projstr('dwd-radolan')
                                )
 pl.title('Projection Side Effects')
 

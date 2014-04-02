@@ -97,6 +97,8 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
         the data that should be transferred to composite
     interpol : an interpolation class name from wradlib.ipol - e.g. Nearest or
        Idw
+    *args : arguments of Interpolator (see class documentation)
+    **kwargs : keyword arguments of Interpolator (see class documentation)
 
     Returns
     -------

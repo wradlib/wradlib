@@ -74,8 +74,8 @@ if __name__ == '__main__':
     # set scan geometry and radar coordinates
     r               = np.arange(500.,128500.,1000.)
     az              = np.arange(0,360)
-    tur_sitecoords  = (48.5861, 9.7839)
-    fbg_sitecoords  = (47.8744, 8.005)
+    tur_sitecoords  = (9.7839, 48.5861)
+    fbg_sitecoords  = (8.005, 47.8744)
 
     # PROJ.4 style projection string for target reference system
     gk3 = wradlib.georef.create_projstr("gk", zone=3)

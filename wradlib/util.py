@@ -685,6 +685,8 @@ def timestamp2index(ts, delta, refts, **kwargs):
                 If it is a string, it will be converted to datetime using the
                 function iso2datetime
 
+    **kwargs : keyword arguments for time functions (see their documentation)
+
     Returns
     -------
     index    : integer
