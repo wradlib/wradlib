@@ -61,9 +61,7 @@ def hor2aeq(a, h, phi):
     """"""
     delta = np.arcsin(np.sin(h)*np.sin(phi) - np.cos(h)*np.cos(a)*np.cos(phi))
     tau = np.arcsin(np.cos(h)*np.sin(a)/np.cos(delta))
-    #tau = np.arctan(np.sin(a)/(np.sin(phi)*np.cos(a) + np.cos(phi)*np.tan(h)))
     return delta, tau
-
 
 def aeq2hor(tau, delta, phi):
     """"""
