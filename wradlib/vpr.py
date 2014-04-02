@@ -393,7 +393,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
 
 
 def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
-    """Generate Cartesian coordiantes for a regular 3-D grid based on radar specs.
+    """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
 
     Parameters
     ----------
