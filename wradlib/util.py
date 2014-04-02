@@ -338,7 +338,6 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     >>> print 'target time series'
     >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
 
-
     """
 ##    src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
     dt_src, dt_trg = np.array(dt_src), np.array(dt_trg)
