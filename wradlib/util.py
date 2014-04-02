@@ -46,28 +46,25 @@ def deprecated(replacement=None):
 
     Author: Giampaolo Rodola' <g.rodola [AT] gmail [DOT] com>
     License: MIT
-
+    >>> # Todo: warnings are sent to stderr instead of stdout
+    >>> # so they are not seen here
+    >>> from wradlib.util import deprecated
     >>> @deprecated()
     ... def foo(x):
     ...     return x
-    ...
     >>> ret = foo(1)
-    DeprecationWarning: foo is deprecated
-    >>> ret
+    >>> #DeprecationWarning: foo is deprecated
+    >>> print ret
     1
-    >>>
-    >>>
     >>> def newfun(x):
     ...     return 0
-    ...
     >>> @deprecated(newfun)
     ... def foo(x):
     ...     return x
-    ...
     >>> ret = foo(1)
-    DeprecationWarning: foo is deprecated; use newfun instead
-    >>> ret
-    0
+    >>> #DeprecationWarning: foo is deprecated; use newfun instead
+    >>> print ret
+    1
     >>>
     """
     def outer(fun):
@@ -100,8 +97,8 @@ class OptionalModuleStub(object):
                            'You tried to access function/module/attribute "' +
                             name + '"\nfrom module "' + self.name + '".\nThis '+
                             'module is optional right now in wradlib.\n' +
-                            'You need to separately install this dependency.' +
-                            'Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies' +
+                            'You need to separately install this dependency.\n' +
+                            'Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies\n' +
                             'for further instructions.'
                             )
 
@@ -141,11 +138,13 @@ def import_optional(module):
     Traceback (most recent call last):
     ...
     AttributeError: Module "nonexistentmodule" is not installed.
-
+    <BLANKLINE>
     You tried to access function/module/attribute "log10"
     from module "nonexistentmodule".
     This module is optional right now in wradlib.
     You need to separately install this dependency.
+    Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies
+    for further instructions.
     """
     try:
         mod = importlib.import_module(module)
@@ -327,17 +326,43 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     Examples
     --------
     >>> src = np.arange(8*4).reshape( (8,4) )
-    >>> print 'source time series:'
+    >>> print 'source time series:' # doctest: +SKIP
     >>> print src
+    [[ 0  1  2  3]
+     [ 4  5  6  7]
+     [ 8  9 10 11]
+     [12 13 14 15]
+     [16 17 18 19]
+     [20 21 22 23]
+     [24 25 26 27]
+     [28 29 30 31]]
+
     >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
-    >>> print 'source time interval limits:'
+    >>> print 'source time interval limits:' # doctest: +SKIP
     >>> for tim in dt_src: print tim
-    >>> print 'target time interval limits:'
+    2008-06-02 00:00:00
+    2008-06-02 01:00:00
+    2008-06-02 02:00:00
+    2008-06-02 03:00:00
+    2008-06-02 04:00:00
+    2008-06-02 05:00:00
+    2008-06-02 06:00:00
+    2008-06-02 07:00:00
+    2008-06-02 08:00:00
+
+    >>> print 'target time interval limits:' # doctest: +SKIP
     >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
     >>> for tim in dt_trg: print tim
-    >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
+    2008-06-02 00:00:00
+    2008-06-02 04:00:00
+    2008-06-02 08:00:00
+    2008-06-02 12:00:00
 
+    >>> print 'target time series' # doctest: +SKIP
+    >>> print aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum')
+    [[  24.   28.   32.   36.]
+     [  88.   92.   96.  100.]
+     [  nan   nan   nan   nan]]
 
     """
 ##    src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
@@ -421,6 +446,7 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
 
     Examples
     --------
+    >>> # TODO: put an example here for `mean_over_time_windows`
     >>> src = np.arange(8*4).reshape( (8,4) )
     >>> print 'source time series:'
     >>> print src
@@ -511,6 +537,7 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
 
     Examples
     --------
+    >>> # TODO: put an example here for `average_over_time_windows`
     >>> src = np.arange(8*4).reshape( (8,4) )
     >>> print 'source time series:'
     >>> print src
@@ -693,12 +720,13 @@ def timestamp2index(ts, delta, refts, **kwargs):
 
     Example
     -------
+    >>> import datetime as dt
     >>> timestr1, timestr2 = '2008-06-01T00:00:00', '2007-01-01T00:00:00'
     >>> timestamp2index(timestr1, 'minutes=5', timestr2)
     148896
     >>> timestamp2index(timestr1, 'hours=1,minutes=5',timestr2)
     11453
-    >>> timestamp2index(timestr1, timedelta(hours=1, minutes=5), timestr2)
+    >>> timestamp2index(timestr1, dt.timedelta(hours=1, minutes=5), timestr2)
     11453
     """
     if not isinstance(ts, dt.datetime):
