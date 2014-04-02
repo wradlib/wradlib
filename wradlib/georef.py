@@ -50,7 +50,7 @@ Georeferencing
 ## h - Höhe über Horizont
 
 from osgeo import gdal,osr
-from numpy import sin, cos, arcsin, pi
+#from numpy import sin, cos, arcsin, pi
 import numpy as np
 from sys import exit
 import warnings
@@ -59,15 +59,16 @@ from wradlib.util import deprecated
 
 def hor2aeq(a, h, phi):
     """"""
-    delta = np.arcsin(-np.cos(h)*np.cos(a)*np.cos(phi) + np.sin(h)*np.sin(phi))
+    delta = np.arcsin(np.sin(h)*np.sin(phi) - np.cos(h)*np.cos(a)*np.cos(phi))
     tau = np.arcsin(np.cos(h)*np.sin(a)/np.cos(delta))
+    #tau = np.arctan(np.sin(a)/(np.sin(phi)*np.cos(a) + np.cos(phi)*np.tan(h)))
     return delta, tau
 
 
 def aeq2hor(tau, delta, phi):
     """"""
-    h = arcsin(cos(delta)*cos(tau)*cos(phi) + sin(delta)*sin(phi))
-    a = arcsin(cos(delta)*sin(tau)/cos(h))
+    h = np.arcsin(np.cos(delta)*np.cos(tau)*np.cos(phi) + np.sin(delta)*np.sin(phi))
+    a = np.arcsin(np.cos(delta)*np.sin(tau)/np.cos(h))
     return a, h
 
 @deprecated('polar2lonlat')
@@ -122,7 +123,7 @@ def polar2latlon(r, az, sitecoords, re=6370040):
     different distances (amounting to roughly 1°) from a site
     located at 48°N 9°E
 
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,]) * 1000
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> csite = (48.0, 9.0)
     >>> lat1, lon1= __pol2latlon(r, az, csite)
@@ -208,19 +209,19 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     different distances (amounting to roughly 1°) from a site
     located at 48°N 9°E
 
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> csite = (9.0, 48.0)
-    >>> csite = (0.0, 0.0)
+    >>> # csite = (0.0, 0.0)
     >>> lon1, lat1= polar2lonlat(r, az, csite)
     >>> for x, y in zip(lon1, lat1):
     ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
-     9.00, 48.00
-     9.00, 48.00
-     9.00, 49.00
-     10.49, 47.99
-     9.00, 47.00
-     7.51, 47.99
+      9.00,  48.00
+      9.00,  48.00
+      9.00,  49.00
+     10.49,  47.99
+      9.00,  47.00
+      7.51,  47.99
 
     The coordinates of the east and west directions won't come to lie on the
     latitude of the site because doesn't travel along the latitude circle but
@@ -231,8 +232,8 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     #phi = 48.58611111 * pi/180.  # drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
     #lon = 9.783888889 * pi/180.  # drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778
-    phi = np.deg2rad(sitecoords[0])
-    lam = np.deg2rad(sitecoords[1])
+    phi = np.deg2rad(sitecoords[1])
+    lam = np.deg2rad(sitecoords[0])
 
     a = np.deg2rad(-(180. + az))
     h =  0.5*np.pi - r/re
@@ -258,7 +259,7 @@ def __pol2latlon(rng, az, sitecoords, re=6370040):
     different distances (amounting to roughly 1°) from a site
     located at 48°N 9°E
 
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,]) *1000
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> csite = (48.0, 9.0)
     >>> lat1, lon1= __pol2latlon(r, az, csite)
@@ -306,18 +307,18 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     different distances (amounting to roughly 1°) from a site
     located at 48°N 9°E
 
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,]) * 1000
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> csite = (9.0, 48.0)
     >>> lon1, lat1= __pol2lonlat(r, az, csite)
     >>> for x, y in zip(lon1, lat1):
     ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
-     9.00, 48.00
-     9.00, 48.00
-     9.00, 49.00
-     10.49, 47.99
-     9.00, 47.00
-     7.51, 47.99
+      9.00,  48.00
+      9.00,  48.00
+      9.00,  49.00
+     10.49,  47.99
+      9.00,  47.00
+      7.51,  47.99
 
     The coordinates of the east and west directions won't come to lie on the
     latitude of the site because doesn't travel along the latitude circle but
@@ -891,20 +892,24 @@ def polar2polyvert(r, az, sitecoords):
 
     Examples
     --------
-    >>> import numpy as pl
-    >>> import pylab as pl
+    >>> import numpy as np
     >>> import matplotlib as mpl
+    >>> import matplotlib.pyplot as pl
+    >>> #pl.interactive(True)
     >>> # define the polar coordinates and the site coordinates in lat/lon
     >>> r = np.array([50., 100., 150., 200.])
-    >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
+    >>> # _check_polar_coords fails in next line
+    >>> # az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
+    >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
     >>> sitecoords = (9.0, 48.0)
     >>> polygons = polar2polyvert(r, az, sitecoords)
     >>> # plot the resulting mesh
     >>> fig = pl.figure()
     >>> ax = fig.add_subplot(111)
-    >>> polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
-    >>> ax.add_collection(polycoll, autolim=True)
-    >>> pl.axis('tight')
+    >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
+    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors=None)
+    >>> ret = ax.add_collection(polycoll, autolim=True)
+    >>> #pl.axis('tight')
     >>> pl.show()
 
     """
@@ -998,25 +1003,25 @@ def _check_polar_coords(r, az):
     az = np.array(az, 'f4')
     az[az==360.] = 0.
     if 0. in r:
-        print 'Invalid polar coordinates: 0 is not a valid range gate specification (the centroid of a range gate must be positive).'
+        print('Invalid polar coordinates: 0 is not a valid range gate specification (the centroid of a range gate must be positive).')
         exit()
     if len(np.unique(r))!=len(r):
-        print 'Invalid polar coordinates: Range gate specification contains duplicate entries.'
+        print('Invalid polar coordinates: Range gate specification contains duplicate entries.')
         exit()
     if len(np.unique(az))!=len(az):
-        print 'Invalid polar coordinates: Azimuth specification contains duplicate entries.'
+        print('Invalid polar coordinates: Azimuth specification contains duplicate entries.')
         exit()
     if len(np.unique(az))!=len(az):
-        print 'Invalid polar coordinates: Azimuth specification contains duplicate entries.'
+        print('Invalid polar coordinates: Azimuth specification contains duplicate entries.')
         exit()
     if not _is_sorted(r):
-        print 'Invalid polar coordinates: Range array must be sorted.'
+        print('Invalid polar coordinates: Range array must be sorted.')
         exit()
     if len(np.unique(r[1:]-r[:-1]))>1:
-        print 'Invalid polar coordinates: Range gates are not equidistant.'
+        print('Invalid polar coordinates: Range gates are not equidistant.')
         exit()
     if len(np.where(az>=360.)[0])>0:
-        print 'Invalid polar coordinates: Azimuth angles must not be greater than or equal to 360 deg.'
+        print('Invalid polar coordinates: Azimuth angles must not be greater than or equal to 360 deg.')
         exit()
     if not _is_sorted(az):
         # it is ok if the azimuth angle array is not sorted, but it has to be
@@ -1024,7 +1029,7 @@ def _check_polar_coords(r, az):
         az_right = az[np.where(np.logical_and(az<=360, az>=az[0]))[0]]
         az_left = az[np.where(az<az[0])]
         if ( not _is_sorted(az_right) ) or ( not _is_sorted(az_left) ):
-            print 'Invalid polar coordinates: Azimuth array is not sorted clockwise.'
+            print('Invalid polar coordinates: Azimuth array is not sorted clockwise.')
             exit()
     if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1]))>1:
         warnings.warn("The azimuth angles of the current dataset are not equidistant.", UserWarning)
@@ -1211,10 +1216,11 @@ def project(latc, lonc, projstr, inverse=False):
         *"+proj=utm +zone=51 +ellps=WGS84 +south"*
 
     >>> import wradlib.georef as georef
+    >>> import numpy as np
     >>> # This is Gauss-Krueger Zone 3 (aka DHDN 3 aka Germany Zone 3)
     >>> gk3 = create_projstr("gk", zone=3)
-    >>> latc = [54.5, 55.5]
-    >>> lonc = [9.5, 9.8]
+    >>> latc = np.array([54.5, 55.5])
+    >>> lonc = np.array([9.5, 9.8])
     >>> gk3_x, gk3_y = georef.project(latc, lonc, gk3)
 
     """

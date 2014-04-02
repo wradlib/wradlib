@@ -295,6 +295,7 @@ class AdjustAdd(AdjustBase):
     >>> import wradlib.adjust as adjust
     >>> import numpy as np
     >>> import pylab as pl
+    >>> pl.interactive(True)
     >>> # 1-d example including all available adjustment methods
     >>> # --------------------------------------------------------------------------
     >>> # gage and radar coordinates
@@ -422,6 +423,7 @@ class AdjustMultiply(AdjustBase):
     >>> import wradlib.adjust as adjust
     >>> import numpy as np
     >>> import pylab as pl
+    >>> pl.interactive(True)
     >>> # 1-d example including all available adjustment methods
     >>> # --------------------------------------------------------------------------
     >>> # gage and radar coordinates
@@ -564,6 +566,7 @@ class AdjustMixed(AdjustBase):
     >>> import wradlib.adjust as adjust
     >>> import numpy as np
     >>> import pylab as pl
+    >>> pl.interactive(True)
     >>> # 1-d example including all available adjustment methods
     >>> # --------------------------------------------------------------------------
     >>> # gage and radar coordinates
@@ -690,6 +693,7 @@ class AdjustMFB(AdjustBase):
     >>> import wradlib.adjust as adjust
     >>> import numpy as np
     >>> import pylab as pl
+    >>> pl.interactive(True)
     >>> # 1-d example including all available adjustment methods
     >>> # --------------------------------------------------------------------------
     >>> # gage and radar coordinates
