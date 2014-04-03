@@ -10,15 +10,14 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-import wradlib.vis as vis
-import wradlib.bufr as bufr
 
 
-if __name__ == '__main__':
-
+def ex_bufr_decode():
+    import wradlib.vis as vis
+    import wradlib.bufr as bufr
     import os
     # This is our test BUFR file
-    buffile = os.path.join(os.getcwd(), "data/test.buf")
+    buffile = os.path.dirname(__file__) + '/data/test.buf'
     # decode BUFR file
     data, metadata = bufr.decodebufr(buffile)
     # print the BUFR descriptor dictionaries
@@ -27,3 +26,6 @@ if __name__ == '__main__':
     # plot the image
     classes = [-32, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 70]
     vis.cartesian_plot(data, title='Reflectivity', unit='dBZ', colormap='spectral', classes=classes, extend='max')
+
+#if __name__ == '__main__':
+    #ex_bufr_decode()

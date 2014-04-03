@@ -14,7 +14,7 @@ import wradlib.adjust as adjust
 import wradlib.verify as verify
 import wradlib.ipol as ipol
 
-if __name__ == '__main__':
+def ex_adjust():
 
     import numpy as np
     import pylab as pl
@@ -154,5 +154,6 @@ if __name__ == '__main__':
 ##
 ##    pl.show()
 
-
+if __name__ == '__main__':
+    ex_adjust()
 
