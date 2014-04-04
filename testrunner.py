@@ -194,7 +194,6 @@ def err_exit(message, rc=2):
     sys.exit(rc)
 
 if __name__ == '__main__':
-    print(sys.argv[1:])
     main(sys.argv[1:])
 
 
