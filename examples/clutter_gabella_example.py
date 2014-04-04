@@ -12,13 +12,14 @@
 import wradlib.vis as vis
 import wradlib.clutter as clutter
 import os
-print os.getcwd()
+import pylab as pl
+# just making sure that the plots immediately pop up
+pl.interactive(True)
 
-
-if __name__ == '__main__':
+def ex_clutter_gabella():
     # load the example data
     import numpy as np
-    testdata = np.loadtxt('data/polar_dBZ.dat')
+    testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ.dat')
 
     # calculate the clutter map
     clmap = clutter.filter_gabella(testdata,
@@ -32,3 +33,6 @@ if __name__ == '__main__':
     vis.polar_plot(clmap,
                    title='cluttermap',
                    saveto='./clutter_gabella_example.png')
+
+if __name__ == '__main__':
+    ex_clutter_gabella()

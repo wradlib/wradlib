@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     ### Using wradlib ###
 
-    pvol = io.read_OPERA_hdf5('data/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
+    pvol = io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + 'data/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
     
     # Count the number of dataset
 

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import matplotlib as mpl
-mpl.use('Agg')
 import wradlib as wrl
-import pylab as p
+import pylab as pl
+# just making sure that the plots immediately pop up
+pl.interactive(True)
 import numpy as np
 
 #-------------------------------------------------------------------------------
@@ -21,7 +22,7 @@ import numpy as np
 def demo_plot_ppi_01(argv1, argv2):
 
     # read the data (sample file in wradlib/examples/data)
-    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     # define arrays of polar coordinate arrays (azimuth and range)
@@ -44,7 +45,7 @@ def demo_plot_ppi_01(argv1, argv2):
     pdpi = 150
 
     #create figure
-    fig0 = p.figure(figsize=(8,8), dpi=pdpi)
+    fig0 = pl.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
 
@@ -98,7 +99,7 @@ def demo_plot_ppi_01(argv1, argv2):
 
 def demo_plot_ppi_02(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
@@ -113,7 +114,7 @@ def demo_plot_ppi_02(argv1, argv2):
 
     pdpi = 150
 
-    fig0 = p.figure(figsize=(8,8), dpi=pdpi)
+    fig0 = pl.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
 
@@ -161,7 +162,7 @@ def demo_plot_ppi_02(argv1, argv2):
 
 def demo_plot_ppi_03(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
@@ -176,7 +177,7 @@ def demo_plot_ppi_03(argv1, argv2):
 
     pdpi = 300
 
-    fig0 = p.figure(figsize=(8,8), dpi=pdpi)
+    fig0 = pl.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
 
@@ -229,7 +230,7 @@ def demo_plot_ppi_03(argv1, argv2):
 
 def demo_plot_ppi_04(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
@@ -244,7 +245,7 @@ def demo_plot_ppi_04(argv1, argv2):
 
     pdpi = 300
 
-    fig0 = p.figure(figsize=(8,8), dpi=pdpi)
+    fig0 = pl.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
 
@@ -292,7 +293,7 @@ def demo_plot_ppi_04(argv1, argv2):
 
 def demo_plot_ppi_05(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
@@ -307,7 +308,7 @@ def demo_plot_ppi_05(argv1, argv2):
 
     pdpi = 300
 
-    fig0 = p.figure(figsize=(8,8), dpi=pdpi)
+    fig0 = pl.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
 
@@ -360,7 +361,7 @@ def demo_plot_ppi_05(argv1, argv2):
 
 def demo_plot_rhi_01(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
@@ -375,7 +376,7 @@ def demo_plot_rhi_01(argv1, argv2):
 
     pdpi = 300
 
-    fig0 = p.figure(figsize=(8,8), dpi=pdpi)
+    fig0 = pl.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
 
@@ -428,7 +429,7 @@ def demo_plot_rhi_01(argv1, argv2):
 
 def demo_plot_rhi_02(argv1, argv2):
 
-    raw = wrl.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
     what  = raw["dataset%d/data1/what"%(1)]
     az = np.roll(np.arange(0.,360.,360./where["nrays"]), -where["a1gate"])
@@ -443,7 +444,7 @@ def demo_plot_rhi_02(argv1, argv2):
 
     pdpi = 300
 
-    fig0 = p.figure(figsize=(8,8), dpi=pdpi)
+    fig0 = pl.figure(figsize=(8,8), dpi=pdpi)
     fig0.patch.set_facecolor(None)
     fig0.patch.set_alpha(0)
 

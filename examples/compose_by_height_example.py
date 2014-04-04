@@ -14,17 +14,22 @@
 import wradlib.ipol as ipol
 import wradlib.qual as qual
 import wradlib.comp as comp
+import os
 
 
-if __name__ == '__main__':
+def ex_compose_by_height():
+
     import numpy as np
     import pylab as pl
+    # just making sure that the plots immediately pop up
+    pl.interactive(True)
 
     #---------------------------------------------------------------------------
     # load the data for the first radar
     #---------------------------------------------------------------------------
-    rad1 = np.loadtxt('data/polar_dBZ_tur.gz').ravel()
-    rad1coords = np.loadtxt('data/bin_coords_tur.gz')
+    path = os.path.dirname(__file__) + '/'
+    rad1 = np.loadtxt(path + 'data/polar_dBZ_tur.gz').ravel()
+    rad1coords = np.loadtxt(path + 'data/bin_coords_tur.gz')
     center1 = rad1coords.mean(axis=0)
     radius1 = 128000.
 
@@ -39,8 +44,8 @@ if __name__ == '__main__':
     #---------------------------------------------------------------------------
     # load the data for the second radar
     #---------------------------------------------------------------------------
-    rad2 = np.loadtxt('data/polar_dBZ_fbg.gz').ravel()
-    rad2coords = np.loadtxt('data/bin_coords_fbg.gz')
+    rad2 = np.loadtxt(path + 'data/polar_dBZ_fbg.gz').ravel()
+    rad2coords = np.loadtxt(path + 'data/bin_coords_fbg.gz')
     center2 = rad2coords.mean(axis=0)
     radius2 = 128000.
 
@@ -102,3 +107,6 @@ if __name__ == '__main__':
     pl.figure()
     pl.imshow(heights2_gridded.reshape(gridshape), interpolation='nearest', origin='lower')
     pl.show()
+
+if __name__ == '__main__':
+    ex_compose_by_height()

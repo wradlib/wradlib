@@ -32,14 +32,16 @@ for root, _, filenames in os.walk(root_dir):
         files.append(f)
 import inspect
 suite = unittest.TestSuite()
-for module in files:
+for idx, module in enumerate(files):
     module1, func = module.split('.')
     module = __import__(module)
     func = getattr(module, func)
+    print(idx, dir(func))
     funcs = inspect.getmembers(func, inspect.isfunction)
+    print(idx, funcs)
     [suite.addTest(unittest.FunctionTestCase(v)) for k,v in funcs if k.startswith("ex_") ]
 
-testSuite.append(unittest.TestSuite(suite))
+#testSuite.append(unittest.TestSuite(suite))
 
 # doctest
 root_dir = 'wradlib/'
