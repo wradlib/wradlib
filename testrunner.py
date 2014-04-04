@@ -87,6 +87,7 @@ def create_unittest_testsuite():
             f = f.replace('/', '.')
             f = f[:-3]
             files.append(f)
+            print(f)
     suite = [unittest.defaultTestLoader.loadTestsFromName(str) for str in files]
     return suite
 
@@ -165,6 +166,11 @@ def main(args):
     if not(test_all or test_examples or test_docs or test_units):
         err_exit('must specify one of: -a -e -d -u')
 
+    # change to main package path, where testrunner.py lives
+    path = os.path.dirname(__file__)
+    if path:
+        os.chdir(path)
+
     testSuite = []
 
     if test_all:
@@ -188,6 +194,7 @@ def err_exit(message, rc=2):
     sys.exit(rc)
 
 if __name__ == '__main__':
+    print(sys.argv[1:])
     main(sys.argv[1:])
 
 
