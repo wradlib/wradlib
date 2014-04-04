@@ -19,6 +19,7 @@ pl.interactive(True)
 def ex_clutter_gabella():
     # load the example data
     import numpy as np
+    # Todo: link right data set
     testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ.dat')
 
     # calculate the clutter map
@@ -31,8 +32,7 @@ def ex_clutter_gabella():
 
     # visualize the result
     vis.polar_plot(clmap,
-                   title='cluttermap',
-                   saveto='./clutter_gabella_example.png')
+                   title='cluttermap')
 
 if __name__ == '__main__':
     ex_clutter_gabella()

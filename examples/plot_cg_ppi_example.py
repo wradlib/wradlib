@@ -24,7 +24,7 @@ def ex_plot_cg_ppi():
 
     pl.interactive(True)
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt(os.path.dirname(__file__) + '/data/polar_dBZ_tur.gz')
+    data = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_tur.gz')
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation

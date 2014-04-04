@@ -12,10 +12,13 @@
 #!/usr/bin/env python
 
 import wradlib.verify as verify
+import os
 
-if __name__ == '__main__':
+def ex_verify():
     import numpy as np
     import pylab as pl
+    # just making sure that the plots immediately pop up
+    pl.interactive(True)
     import matplotlib as mpl
 
     # ------------------------------------------------------------------------------
@@ -26,7 +29,7 @@ if __name__ == '__main__':
     az = np.linspace(0,360,361)[0:-1]
     sitecoords = (48.5861, 9.7839)
     # import the polar example radar dataset
-    testdata = np.loadtxt('data/polar_R_tur.gz')
+    testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_R_tur.gz')
     # the rain gages are in Gauss-Krueger Zone 3 coordinates, so we need the
     #   corresponding proj.4 projection string
     projstr = '''
@@ -57,3 +60,6 @@ if __name__ == '__main__':
     pl.show()
 
     print 'Exit.'
+
+if __name__ == '__main__':
+    ex_verify()

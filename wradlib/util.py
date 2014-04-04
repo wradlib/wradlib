@@ -457,7 +457,7 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
     >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
     >>> for tim in dt_trg: print tim
     >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
+    >>> print aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum')
 
 
     """

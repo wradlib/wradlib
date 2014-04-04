@@ -23,7 +23,7 @@ import os
 def ex_plot_cg_rhi():
 
     # reading in data, range and theta arrays from special rhi hdf5 file
-    filename = os.path.dirname(__file__) + '/data/polar_rhi_dBZ_bonn.h5'
+    filename = os.path.dirname(__file__) + '/' + 'data/polar_rhi_dBZ_bonn.h5'
     data, meta = wradlib.io.from_hdf5(filename, dataset='data')
     r, meta = wradlib.io.from_hdf5(filename, dataset='range')
     th, meta = wradlib.io.from_hdf5(filename, dataset='theta')

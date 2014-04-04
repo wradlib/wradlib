@@ -19,8 +19,7 @@ import wradlib.georef as georef
 import wradlib.io as io
 import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
-
+def ex_coord():
     ### Using wradlib ###
 
     pvol = io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + 'data/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
@@ -56,3 +55,7 @@ if __name__ == '__main__':
     test = x[0,90,0:960:60]
     print(test)
 
+if __name__ == '__main__':
+    import sys
+    print("sysargv",sys.argv)
+    ex_coord()

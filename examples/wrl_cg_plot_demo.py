@@ -1,12 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-import matplotlib as mpl
-import wradlib as wrl
-import pylab as pl
-# just making sure that the plots immediately pop up
-pl.interactive(True)
-import numpy as np
-
 #-------------------------------------------------------------------------------
 # Name:        Reading polar volume data
 # Purpose:
@@ -19,7 +11,16 @@ import numpy as np
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-def demo_plot_ppi_01(argv1, argv2):
+from __future__ import print_function
+import matplotlib as mpl
+import wradlib as wrl
+import pylab as pl
+# just making sure that the plots immediately pop up
+pl.interactive(True)
+import numpy as np
+import os
+
+def demo_plot_ppi_01():
 
     # read the data (sample file in wradlib/examples/data)
     raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
@@ -95,9 +96,9 @@ def demo_plot_ppi_01(argv1, argv2):
 
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_ppi_01.png", dpi=pdpi, bbox_inches=0)
+    #fig0.savefig("demo_ppi_01.png", dpi=pdpi, bbox_inches=0)
 
-def demo_plot_ppi_02(argv1, argv2):
+def demo_plot_ppi_02():
 
     raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
@@ -158,9 +159,9 @@ def demo_plot_ppi_02(argv1, argv2):
 
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_ppi_02.png", dpi=pdpi, bbox_inches=0)
+    #fig0.savefig("demo_ppi_02.png", dpi=pdpi, bbox_inches=0)
 
-def demo_plot_ppi_03(argv1, argv2):
+def demo_plot_ppi_03():
 
     raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
@@ -226,9 +227,9 @@ def demo_plot_ppi_03(argv1, argv2):
 
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_ppi_03.png", dpi=pdpi, bbox_inches=0)
+    #fig0.savefig("demo_ppi_03.png", dpi=pdpi, bbox_inches=0)
 
-def demo_plot_ppi_04(argv1, argv2):
+def demo_plot_ppi_04():
 
     raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
@@ -289,9 +290,9 @@ def demo_plot_ppi_04(argv1, argv2):
 
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_ppi_04.png", dpi=pdpi, bbox_inches=0)
+    #fig0.savefig("demo_ppi_04.png", dpi=pdpi, bbox_inches=0)
 
-def demo_plot_ppi_05(argv1, argv2):
+def demo_plot_ppi_05():
 
     raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
@@ -357,9 +358,9 @@ def demo_plot_ppi_05(argv1, argv2):
 
     ppi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_ppi_05.png", dpi=pdpi, bbox_inches=0)
+    #fig0.savefig("demo_ppi_05.png", dpi=pdpi, bbox_inches=0)
 
-def demo_plot_rhi_01(argv1, argv2):
+def demo_plot_rhi_01():
 
     raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
@@ -425,9 +426,9 @@ def demo_plot_rhi_01(argv1, argv2):
 
     rhi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_rhi_01.png", dpi=pdpi, bbox_inches=0)
+    #fig0.savefig("demo_rhi_01.png", dpi=pdpi, bbox_inches=0)
 
-def demo_plot_rhi_02(argv1, argv2):
+def demo_plot_rhi_02():
 
     raw = wrl.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     where = raw["dataset%d/where"%(1)]
@@ -493,15 +494,17 @@ def demo_plot_rhi_02(argv1, argv2):
 
     rhi.copy_right(text=r"$\copyright$ 2013 created with WRADLIB", padx="7%", pady="7%", fsize="1.5%")
 
-    fig0.savefig("demo_rhi_02.png", dpi=pdpi, bbox_inches=0)
+    #fig0.savefig("demo_rhi_02.png", dpi=pdpi, bbox_inches=0)
+
+def ex_cg_plot():
+    demo_plot_ppi_01()
+    demo_plot_ppi_02()
+    demo_plot_ppi_03()
+    demo_plot_ppi_04()
+    demo_plot_ppi_05()
+    demo_plot_rhi_01()
+    demo_plot_rhi_02()
 
 if __name__ == '__main__':
-
-    demo_plot_ppi_01("sys.argv[1]", "sys.argv[2]")
-    demo_plot_ppi_02("sys.argv[1]", "sys.argv[2]")
-    demo_plot_ppi_03("sys.argv[1]", "sys.argv[2]")
-    demo_plot_ppi_04("sys.argv[1]", "sys.argv[2]")
-    demo_plot_ppi_05("sys.argv[1]", "sys.argv[2]")
-    demo_plot_rhi_01("sys.argv[1]", "sys.argv[2]")
-    demo_plot_rhi_02("sys.argv[1]", "sys.argv[2]")
+    ex_cg_plot()
 

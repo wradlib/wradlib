@@ -14,8 +14,8 @@
 
 import wradlib.georef as georef
 
+def ex_georef():
 
-if __name__ == '__main__':
     import numpy as np
     import pylab as pl
     import matplotlib as mpl
@@ -64,3 +64,6 @@ if __name__ == '__main__':
     f.close()
 
     print 'Exit.'
+
+if __name__ == '__main__':
+    ex_georef()

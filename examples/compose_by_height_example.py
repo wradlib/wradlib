@@ -16,7 +16,6 @@ import wradlib.qual as qual
 import wradlib.comp as comp
 import os
 
-
 def ex_compose_by_height():
 
     import numpy as np
