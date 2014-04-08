@@ -1495,13 +1495,13 @@ def reproject(*args, **kwargs):
         cshape =  C.shape
         numCols = C.shape[-1]
         C = C.reshape(-1,numCols)
-        if numCols < 2 and numCols > 3:
+        if numCols < 2 or numCols > 3:
             raise TypeError('Input Array column mismatch to %s' % ('reproject'))
     else:
         if len(args) == 2:
             X, Y = args
             numCols = 2
-        if len(args) == 3:
+        elif len(args) == 3:
             X, Y, Z = args
             zshape = Z.shape
             numCols = 3
@@ -1517,29 +1517,32 @@ def reproject(*args, **kwargs):
         if 'Z' in locals():
             if xshape != zshape:
                 raise TypeError('Incompatible Z input to %s' % ('reproject'))
-            C = zip(X,Y,Z)
+            C = np.concatenate([X.ravel()[:,None],
+                                Y.ravel()[:,None],
+                                Z.ravel()[:,None]], axis=1)
         else:
-            C = zip(X,Y)
+            C = np.concatenate([X.ravel()[:,None],
+                                Y.ravel()[:,None]], axis=1)
 
     projection_source = kwargs.get('projection_source', get_default_projection())
     projection_target = kwargs.get('projection_target', get_default_projection())
 
     ct = osr.CoordinateTransformation(projection_source,projection_target)
-    trans = ct.TransformPoints(C)
+    trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
         # here we could do this one
         #return(np.array(ct.TransformPoints(C))[...,0:numCols]))
         # or this one
-        trans = np.array(zip(*trans)[0:numCols]).reshape(cshape)
-        return(trans)
+        trans = np.array(trans[:,0:numCols]).reshape(cshape)
+        return trans
     else:
-        X = np.array(zip(*trans)[0]).reshape(xshape)
-        Y = np.array(zip(*trans)[1]).reshape(yshape)
+        X = np.array(trans[:,0]).reshape(xshape)
+        Y = np.array(trans[:,1]).reshape(yshape)
         if len(args) == 2:
             return X, Y
         if len(args) == 3:
-            Z = np.array(zip(*trans)[2]).reshape(zshape)
+            Z = np.array(trans[:,2]).reshape(zshape)
             return X, Y, Z
 
 def get_default_projection():
