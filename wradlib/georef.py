@@ -1534,15 +1534,15 @@ def reproject(*args, **kwargs):
         # here we could do this one
         #return(np.array(ct.TransformPoints(C))[...,0:numCols]))
         # or this one
-        trans = np.array(trans[:,0:numCols]).reshape(cshape)
+        trans = trans[:,0:numCols].reshape(cshape)
         return trans
     else:
-        X = np.array(trans[:,0]).reshape(xshape)
-        Y = np.array(trans[:,1]).reshape(yshape)
+        X = trans[:,0].reshape(xshape)
+        Y = trans[:,1].reshape(yshape)
         if len(args) == 2:
             return X, Y
         if len(args) == 3:
-            Z = np.array(trans[:,2]).reshape(zshape)
+            Z = trans[:,2].reshape(zshape)
             return X, Y, Z
 
 def get_default_projection():
