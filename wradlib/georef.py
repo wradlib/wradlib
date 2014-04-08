@@ -752,7 +752,7 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     >>> csite = (9.0, 48.0)
     >>> lon1, lat1, alt1 = polar2lonlatalt_n(r, az, th, csite)
     >>> for x, y, z in zip(lon1, lat1, alt1):
-    ...     print '{1:7.4f}, {0:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
     ...
      9.0000, 48.0000,  0.0000
      9.0000, 48.0000,  0.0000
@@ -781,8 +781,8 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     h   =  0.5*np.pi - arc_distance_n(r, elev, re, ke)/re
 
     delta, tau = hor2aeq(a, h, phi)
-    lonc = np.rad2deg(delta)
-    latc = np.rad2deg(lam + tau)
+    latc = np.rad2deg(delta)
+    lonc = np.rad2deg(lam + tau)
 
     return lonc, latc, alt
 
@@ -1229,8 +1229,8 @@ def project(latc, lonc, projstr, inverse=False):
         src = get_default_projection()
         dest = proj4_to_osr(projstr)
     coord_geo = np.zeros(lonc.shape + (3,))
-    coord_geo[...,0] = lonc 
-    coord_geo[...,1] = latc 
+    coord_geo[...,0] = lonc
+    coord_geo[...,1] = latc
     coord_map = reproject(coord_geo, projection_source=src, projection_target=dest)
     if inverse:
         y = coord_map[...,0]
@@ -1274,9 +1274,9 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
 def get_earth_radius(latitude, sr= None):
     """Get the radius of the Earth (in km) for a given Spheroid model (sr) at a given position
        R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 ).
-    
+
     Parameters
-    ----------     
+    ----------
         sr : osr object
             spatial reference;
         latitude : float
@@ -1297,16 +1297,16 @@ def get_earth_radius(latitude, sr= None):
 
 def pixel_coordinates(nx,ny,mode="centers"):
     """Get pixel coordinates from a regular grid with dimension nx by ny.
-    
+
     Parameters
-    ----------     
+    ----------
     nx : int
         xsize
     ny : int
         ysize
     mode : string
         `centers` or `centroids` to return the pixel centers coordinates
-        otherwise the pixel edges coordinates will be returned        
+        otherwise the pixel edges coordinates will be returned
     Returns
     -------
     coordinates : np array
@@ -1331,7 +1331,7 @@ def pixel_coordinates(nx,ny,mode="centers"):
 
 def pixel_to_map(geotransform,coordinates):
     """Apply a geographical transformation to return map coordinates from pixel coordinates.
-    
+
     Parameters
     ----------
     geotransform : np array
@@ -1341,7 +1341,7 @@ def pixel_to_map(geotransform,coordinates):
             geotransform[2] = X pixel rotation
             geotransform[3] = North/South location of Upper Left corner
             geotransform[4] = Y pixel rotation
-            geotransform[5] = Y pixel size 
+            geotransform[5] = Y pixel size
     coordinates : 2d array
         array of pixel coordinates
 
@@ -1367,8 +1367,8 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
         array of pixel coordinates;
     z : string
         method to compute the z coordinates (height above ellipsoid) :
-            None : default, z equals zero 
-            srtm : not available yet 
+            None : default, z equals zero
+            srtm : not available yet
 
     Returns
     -------
@@ -1385,9 +1385,9 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
 
 def read_gdal_coordinates(dataset,mode='centers',z=True):
     """Get the projected coordinates from a GDAL dataset.
-    
+
     Parameters
-    ----------     
+    ----------
     dataset : gdal object
         raster image with georeferencing
     mode : string
@@ -1405,7 +1405,7 @@ def read_gdal_coordinates(dataset,mode='centers',z=True):
     if z:
         coordinates = pixel_to_map3d(geotransform,coordinates_pixel)
     else:
-        coordinates = pixel_to_map(geotransform,coordinates_pixel)    
+        coordinates = pixel_to_map(geotransform,coordinates_pixel)
     return(coordinates)
 
 
@@ -1565,11 +1565,11 @@ def sweep_centroids(nrays,rscale,nbins,elangle):
         number of range bins
     elangle : float
         elevation angle [radians]
-    
+
     Returns
     -------
     coordinates : 3d array
-        array of shape (nrays,nbins,3) containing native centroid radar coordinates (slant range, azimuth, elevation) 
+        array of shape (nrays,nbins,3) containing native centroid radar coordinates (slant range, azimuth, elevation)
     """
     ascale = np.pi/nrays
     azimuths = ascale/2 + np.linspace(0,2*np.pi,nrays,endpoint=False)
