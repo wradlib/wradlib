@@ -689,7 +689,7 @@ def polar2latlonalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
 
     return latc, lonc, alt
 
-def polar2lonlatalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
+def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates taking elevation angle and refractivity into account.
 
@@ -719,7 +719,9 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
     sitecoords : a sequence of two floats
         the lon / lat coordinates of the radar location
     re : float
-        earth's radius [m]
+        earth's radius [m], if None, `get_earth_radius` will be used to
+        determine the equivalent radius of the WGS84 ellipsoid for the
+        latitude given in sitecoords.
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
@@ -771,6 +773,11 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
         centalt = sitecoords[2]
     except:
         centalt = 0.
+
+    # if no radius is given, get the approximate radius of the WGS84
+    # ellipsoid for the site's latitude
+    if re is None:
+        re = get_earth_radius(sitecoords[1])
 
     # local earth radius
     re = re + centalt
