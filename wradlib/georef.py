@@ -767,8 +767,7 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     the latitude of the site because the beam doesn't travel along the latitude
     circle but along a great circle.
     """
-    phi = np.deg2rad(sitecoords[1])
-    lam = np.deg2rad(sitecoords[0])
+    # if site altitude is present, use it, else assume it to be zero
     try:
         centalt = sitecoords[2]
     except:
@@ -782,16 +781,29 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     # local earth radius
     re = re + centalt
 
+    # altitude is calculated using the formulas of Doviak
     alt = beam_height_n(r, elev, re, ke) + centalt
+    # same goes for the on-ground distance
+    arc = arc_distance_n(r, elev, re, ke)
 
-    a   = np.deg2rad(-(180. + az))
-    h   =  0.5*np.pi - arc_distance_n(r, elev, re, ke)/re
+    # define the two projections
+    # for the radar it's azimuthal equidistant projection
+    rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={re:f} ' +
+                       '+b={re:f}').format(lon=sitecoords[0],
+                                        lat=sitecoords[1],
+                                        re=re))
+    # for output we'd like to have spherical coordinates
+    sph = proj4_to_osr('+proj=latlong +a={re:f} +b={re:f}'.format(re=re))
 
-    delta, tau = hor2aeq(a, h, phi)
-    latc = np.rad2deg(delta)
-    lonc = np.rad2deg(lam + tau)
+    # projected coordinates such as aeqd must be passed as x,y cartesian
+    # coordinates and thus we have to convert the polar ones
+    x = arc * np.cos(np.radians(90-az))
+    y = arc * np.sin(np.radians(90-az))
 
-    return lonc, latc, alt
+    # then it's just a matter of invoking reproject
+    lon, lat = reproject(x, y, projection_source=rad, projection_target=sph)
+
+    return lon, lat, alt
 
 
 def centroid2polyvert(centroid, delta):
