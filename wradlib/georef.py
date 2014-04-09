@@ -693,16 +693,8 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates taking elevation angle and refractivity into account.
 
-    This function assumes that the transformation from the polar radar
-    coordinate system to the earth's spherical coordinate system may be done
-    in the same way as astronomical observations are transformed from the
-    horizon's coordinate system to the equatorial coordinate system.
-
-    The conversion formulas used were taken from
-    http://de.wikipedia.org/wiki/Nautisches_Dreieck [accessed 2001-11-02]
-
-    It is based on polar2lonlat but takes the shortening of the great circle
-    distance by increasing the elevation angle as well as the resulting
+    It takes the shortening of the great circle
+    distance with increasing  elevation angle as well as the resulting
     increase in height into account.
 
     Parameters
@@ -716,8 +708,10 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     th : scalar or array of the same shape as az
         elevation angles in degrees starting with 0° at horizontal to 90°
         pointing vertically upwards from the radar
-    sitecoords : a sequence of two floats
-        the lon / lat coordinates of the radar location
+    sitecoords : a sequence of two or three floats
+        the lon / lat coordinates of the radar location, the third value,
+        if present, will be interpreted as the height of the site above the
+        geoid (i.e. sphere)
     re : float
         earth's radius [m], if None, `get_earth_radius` will be used to
         determine the equivalent radius of the WGS84 ellipsoid for the
@@ -736,10 +730,12 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
 
     Notes
     -----
-    Be aware that the coordinates returned by this function are valid for
-    a sphere. When using them in GIS make sure to distinguish that from
-    the usually assumed WGS coordinate systems where the coordinates are based
-    on a more complex ellipsoid.
+    The function uses osgeo/gdal functionality to reproject from azimuthal
+    equidistant projection to spherical geographical coordinates.
+    The earth model for this conversion is therefore spherical.
+    This should not introduce too much error for common radar coverages, but
+    you should be aware of this, when trying to do high resolution spatial
+    analyses.
 
     Examples
     --------
@@ -758,10 +754,10 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     ...
      9.0000, 48.0000,  0.0000
      9.0000, 48.0000,  0.0000
-     9.0000, 48.9983, 725.2981
-    10.4918, 47.9903, 725.2981
-     9.0000, 47.0017, 725.2981
-     7.5084, 47.9903, 1693.8056
+     9.0000, 48.9989, 725.7160
+    10.4927, 47.9903, 725.7160
+     9.0000, 47.0011, 725.7160
+     7.5076, 47.9903, 1694.2234
 
     Here, the coordinates of the east and west directions won't come to lie on
     the latitude of the site because the beam doesn't travel along the latitude
