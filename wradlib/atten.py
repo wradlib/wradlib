@@ -331,6 +331,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 
         'nan' : set offending gates to nan
 
+        'cap' : set offending gates to maximum allowable PIA (max_PIA)
+
         Per default set to 'zero'. Any other mode will raise an Exception.
 
     thrs_dBZ : float
@@ -363,6 +365,12 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         flood forecasting.
         Proceedings of the Weather Radar and Hydrology symposium, Exeter, UK,
         April 2011, IAHS Publ. 3XX, 2011.
+
+    Examples
+    --------
+    >>> # Setup due to the Harrison, D.L., Driscoll, S.J., Kitchen, M. (2000)
+    >>> k = correctAttenuationHJ(gateset, a_max = 4.565e-5, b = 0.73125, n=1,
+    ...                          mode = 'cap', thrs_dBZ = 100.0, max_PIA = 4.82)
 
     """
 
@@ -402,6 +410,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         if mode == 'warn': logger.warning('threshold exceeded (corrected dBZ or PIA) even for lowest a')
         elif mode == 'nan':  pia[beams2correct] = np.nan
         elif mode == 'zero': pia[beams2correct] = 0.0
+        elif mode == 'cap': pia[beams2correct] = np.where(pia[beams2correct] > max_PIA, max_PIA, pia[beams2correct])
         else: raise AttenuationOverflowError
 
     return pia
