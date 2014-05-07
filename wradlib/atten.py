@@ -157,7 +157,7 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
         overflow = (gateset[...,gate+1] + ksum) > thrs
         if np.any(overflow):
             if mode == 'warn':
-                logger.warning('dB-sum over threshold (%3.1f)'%thrs)
+                logger.warning('corrected signal over threshold (%3.1f)'%thrs)
             elif mode == 'nan':
                 pia[...,gate+1][overflow] = np.nan
             elif mode == 'zero':
@@ -251,15 +251,15 @@ def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
 
     if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
 
-    da = (a_max - a_min) / (n - 1)
-    ai = a_max + da
+    if n != 1: da = (a_max - a_min) / (n - 1)
+    else: da = 0.
     pia = np.zeros(gateset.shape)
     pia[...,0] = 0.0
     # indexing all rows of last dimension (radarbeams)
     beams2correct = np.where(np.max(pia, axis = pia.ndim - 1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
-        ai = ai - da
+        ai = a_max - i*da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
         sub_pia = pia[beams2correct]
@@ -362,7 +362,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         improvement of C-band radar attenuation correction for operational flash
         flood forecasting.
         Proceedings of the Weather Radar and Hydrology symposium, Exeter, UK,
-        April 2011, IAHS Publ. 3XX, 2011, in review.
+        April 2011, IAHS Publ. 3XX, 2011.
 
     """
 
@@ -372,8 +372,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     if not np.all(gateset.shape):
         # gateset contains empty dimensions, thus no data
         return np.where(np.isnan(gateset), np.nan, 0.)
-    da = (a_max - a_min) / (n - 1)
-    ai = a_max + da
+    if n != 1: da = (a_max - a_min) / (n - 1)
+    else: da = 0.
 ##  initialize an attenuation array with the same shape as the gateset,
 ##  filled with zeros, except that NaNs occuring in the gateset will cause a
 ##  initialization with Nans for the ENTIRE corresponding attenuation beam
@@ -383,7 +383,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     beams2correct = np.where(np.max(pia, axis=-1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
-        ai = ai - da
+        ai = a_max - i*da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
         sub_pia = pia[beams2correct]
@@ -530,10 +530,11 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     a_used = np.empty(gateset.shape[:-1])
     b_used = np.empty(gateset.shape[:-1])
 
-    da = (a_max - a_min) / (na - 1)
-    ai = a_max + da
+    if na != 1: da = (a_max - a_min) / (na - 1)
+    else: da = 0.
     k = np.zeros(gateset.shape)
-    db = (b_max - b_min) / (nb - 1)
+    if nb != 1: db = (b_max - b_min) / (nb - 1)
+    else: db = 0.
 
     # indexing all rows of last dimension (radarbeams)
     beams2correct = np.where(np.max(k, axis=-1) > (-1.))
@@ -959,8 +960,10 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
     beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype = np.bool))
     small_sectors = np.zeros(tmp_gateset.shape[:-1], dtype = np.bool)
 
-    delta_a = (a_max - a_min) / (n_a - 1)
-    delta_b = (b_max - b_min) / (n_b - 1)
+    if n_a != 1: delta_a = (a_max - a_min) / (n_a - 1)
+    else: delta_a = 0.
+    if n_b != 1: delta_b = (b_max - b_min) / (n_b - 1)
+    else: delta_b = 0.
 
     # Iterate over possible b-parameters.
     for j in range(n_b):
