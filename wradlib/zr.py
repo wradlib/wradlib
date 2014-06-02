@@ -128,10 +128,10 @@ def _z2rEnhanced(z):
     # if the reflectivity is larger than 44dBZ, then there is no need to
     # calculate the shower index
     gt44 = np.where(db > 44.)
-    r[gt44] = z2r(db[gt44], a=77, b=1.9)
+    r[gt44] = z2r(z[gt44], a=77., b=1.9)
     # the same is true for values between 36.5 and 44 dBZ
     bt3644 = np.where(np.logical_and(db >= 36.5, db<= 44.))
-    r[bt3644] = z2r(db[bt3644], a=200, b=1.6)
+    r[bt3644] = z2r(z[bt3644], a=200., b=1.6)
 
     # now iterate over the array and look for the remaining values
     # TODO : this could be a starting point for further optimization, if we
@@ -163,11 +163,11 @@ def _z2rEnhanced(z):
                       / (diffxcut.size + diffycut.size)
                 # apply the three different Z/R relations
                 if mn < 3.5:
-                    r[i,j] = z2r(z[i,j], a=125, b=1.4)
+                    r[i,j] = z2r(z[i,j], a=125., b=1.4)
                 elif mn <= 7.5:
-                    r[i,j] = z2r(z[i,j], a=200, b=1.6)
+                    r[i,j] = z2r(z[i,j], a=200., b=1.6)
                 else:
-                    r[i,j] = z2r(z[i,j], a=320, b=1.4)
+                    r[i,j] = z2r(z[i,j], a=320., b=1.4)
                 # save the shower index
                 si[i,j] = mn
     # return the results
