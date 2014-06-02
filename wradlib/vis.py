@@ -441,6 +441,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # plot the colormesh
     pm = ax.pcolormesh(xx, yy, data, **kwargs)
 
+    ax.set_aspect('equal')
+
     # return the axes and the colormesh object
     # so that the user may add colorbars etc.
     return ax, pm
