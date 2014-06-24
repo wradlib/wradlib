@@ -1506,7 +1506,7 @@ def reproject(*args, **kwargs):
         arrays of reprojected x,y,z coordinates, shape depending on input array
     """
     if len(args) == 1:
-        C = args[0]
+        C = np.asanyarray(args[0])
         cshape =  C.shape
         numCols = C.shape[-1]
         C = C.reshape(-1,numCols)
@@ -1514,10 +1514,10 @@ def reproject(*args, **kwargs):
             raise TypeError('Input Array column mismatch to %s' % ('reproject'))
     else:
         if len(args) == 2:
-            X, Y = args
+            X, Y = (np.asanyarray(arg) for arg in args)
             numCols = 2
         elif len(args) == 3:
-            X, Y, Z = args
+            X, Y, Z = (np.asanyarray(arg) for arg in args)
             zshape = Z.shape
             numCols = 3
         else:
