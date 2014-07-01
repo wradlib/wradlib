@@ -417,7 +417,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # coordinates for all vertices
     xx, yy = np.meshgrid(x, y)
 
-    if proj is None:
+    if projstr is None:
         # no georeferencing -> simple trigonometry
         xxx = xx * np.cos(np.radians(90.-yy)) + site[0]
         yy = xx * np.sin(np.radians(90.-yy))  + site[1]
@@ -431,7 +431,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         # latitude longitudes from the polar data still stored in xx and yy
         lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site, **kw_polar2lonlatalt_n)
         # projected to the final coordinate system
-        osr_proj = proj4_to_osr(projstr)
+        osr_proj = georef.proj4_to_osr(projstr)
         xx, yy = georef.reproject(lon, lat, projection_target=osr_proj)
 
     # get the current axes.
