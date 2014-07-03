@@ -19,20 +19,26 @@ Georeferencing
    :nosignatures:
    :toctree: generated/
 
-   polar2latlon
-   polar2latlonalt
-   polar2lonlat
-   polar2lonlatalt
    beam_height_n
    arc_distance_n
-   polar2latlonalt_n
+   polar2lonlat
+   polar2lonlatalt
    polar2lonlatalt_n
    polar2centroids
    polar2polyvert
    centroid2polyvert
-   project
+   reproject
    create_projstr
+   proj4_to_osr
    projected_bincoords_from_radarspecs
+   sweep_centroids
+   read_gdal_values
+   read_gdal_projection
+   read_gdal_coordinates
+   pixel_to_map3d
+   pixel_to_map
+   pixel_coordinates
+   get_earth_radius
 
 """
 
