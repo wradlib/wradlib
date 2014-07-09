@@ -2748,14 +2748,14 @@ class cg_plot(object):
 
 
 
-def plot_scan_strategy(ranges, elevs, vert_res=500., maxalt=10000., radaralt=0., ax=None):
+def plot_scan_strategy(ranges, elevs, site, vert_res=500., maxalt=10000., ax=None):
     """Plot the vertical scanning strategy
 
     Parameters
     ----------
     ranges : array of ranges
     elevs : array of elevation angles
-
+    site : tuple of site coordinates (longitude, latitude, altitude)
     """
     # just a dummy
     az=np.array([90.])
@@ -2763,8 +2763,7 @@ def plot_scan_strategy(ranges, elevs, vert_res=500., maxalt=10000., radaralt=0.,
     polc = util.meshgridN(ranges, az, elevs)
 
     # get mean height over radar
-    # TODO: why are those sitecoords given here?
-    lat, lon, alt = georef.polar2lonlatalt(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), (14.910948,120.259666, radaralt))
+    lon, lat, alt = georef.polar2lonlatalt_n(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), site)
     alt = alt.reshape(len(ranges), len(elevs))
     r = polc[0].reshape(len(ranges), len(elevs))
 
