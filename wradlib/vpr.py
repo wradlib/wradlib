@@ -299,7 +299,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     # create polar grid
     el, az, r = util.meshgridN(elevs, azimuths, ranges)
     # get geographical coordinates
-    lons, lats, z = georef.polar2lonlatalt(r, az, el, sitecoords, re=6370040.)
+    lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
     osr_proj = georef.proj4_to_osr(projstr)
     x, y = georef.reproject(lons, lats, projection_target=osr_proj)
@@ -383,7 +383,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
         az = np.append(az, az_tmp.ravel())
         r  = np.append(r,  r_tmp.ravel())
     # get geographical coordinates
-    lons, lats, z = georef.polar2lonlatalt(r, az, el, sitecoords, re=6370040.)
+    lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
     osr_proj = georef.proj4_to_osr(projstr)
     x, y = georef.reproject(lons, lats, projection_target=osr_proj)
