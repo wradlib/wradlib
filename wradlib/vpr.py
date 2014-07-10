@@ -283,7 +283,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     Parameters
     ----------
     sitecoords : sequence of three floats indicating the radar position
-       (latitude in decimal degrees, longitude in decimal degrees, height a.s.l. in meters)
+       (longitude in decimal degrees, latitude in decimal degrees, height a.s.l. in meters)
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
@@ -299,9 +299,10 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     # create polar grid
     el, az, r = util.meshgridN(elevs, azimuths, ranges)
     # get geographical coordinates
-    lats, lons, z = georef.polar2latlonalt(r, az, el, sitecoords, re=6370040.)
+    lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
-    x, y = georef.project(lats, lons, projstr)
+    osr_proj = georef.proj4_to_osr(projstr)
+    x, y = georef.reproject(lons, lats, projection_target=osr_proj)
     # create standard shape
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
@@ -313,7 +314,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     Parameters
     ----------
     sitecoords : sequence of three floats indicating the radar position
-       (latitude in decimal degrees, longitude in decimal degrees, height a.s.l. in meters)
+       (longitude in decimal degrees, latitude in decimal degrees, height a.s.l. in meters)
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
@@ -382,16 +383,17 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
         az = np.append(az, az_tmp.ravel())
         r  = np.append(r,  r_tmp.ravel())
     # get geographical coordinates
-    lats, lons, z = georef.polar2latlonalt(r, az, el, sitecoords, re=6370040.)
+    lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
-    x, y = georef.project(lats, lons, projstr)
+    osr_proj = georef.proj4_to_osr(projstr)
+    x, y = georef.reproject(lons, lats, projection_target=osr_proj)
     # create standard shape
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
 
 def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
-    """Generate Cartesian coordiantes for a regular 3-D grid based on radar specs.
+    """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
 
     Parameters
     ----------
@@ -407,7 +409,8 @@ def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
     output : float array of shape (num grid points, 3), a tuple of 3 representing the grid shape
 
     """
-    center = georef.project(sitecoords[0], sitecoords[1], projstr)
+    osr_proj = georef.proj4_to_osr(projstr)
+    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=osr_proj)
     minz   = sitecoords[2]
     llx = center[0] - maxrange
     lly = center[1] - maxrange
