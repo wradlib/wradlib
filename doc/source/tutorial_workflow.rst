@@ -52,7 +52,7 @@ Attenuation by wet radome and by heavy rainfall can cause serious underestimatio
 >>> pia = wradlib.atten.correctAttenuationKraemer(data_no_clutter)
 >>> data_attcorr = data_no_clutter + pia
 
-The first line computes the path integrated attenuation ``pia`` for each radar bin. The second line line uses ``pia`` to correct the reflectivity values. Let's inspect the effect of attenuation correction for an azimuth angle of 65°:
+The first line computes the path integrated attenuation ``pia`` for each radar bin. The second line line uses ``pia`` to correct the reflectivity values. Let's inspect the effect of attenuation correction for an azimuth angle of 65ï¿½:
 
 >>> import pylab as pl
 >>> pl.plot(data_attcorr[65], label="attcorr")
@@ -108,20 +108,21 @@ Check the shape and values of your resulting array for plausibility:
 
 Georeferencing and projection
 -----------------------------
-In order to define the horizontal and vertical position of the radar bins, we need to retrieve the corresponding 3-dimensional coordinates in terms of latitude, longitude and altitude. This information is required e.g. if the positions should be plotted on a map. It is also required for constructing `CAPPIs <http://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_. The position of a radar bin in 3-dimensional space depends on the position of the radar device, the elevation angle of the radar beam, as well as the azimuth angle and the range of a bin. For the sample data used above, the posiiton of the radar device is the Feldberg in Germany (47.8744, 8.005, 1517): 
+In order to define the horizontal and vertical position of the radar bins, we need to retrieve the corresponding 3-dimensional coordinates in terms of longitude, latitude and altitude. This information is required e.g. if the positions should be plotted on a map. It is also required for constructing `CAPPIs <http://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_. The position of a radar bin in 3-dimensional space depends on the position of the radar device, the elevation angle of the radar beam, as well as the azimuth angle and the range of a bin. For the sample data used above, the posiiton of the radar device is the Feldberg in Germany (8.005, 47.8744, 1517):
 
 >>> import numpy as np
->>> radar_location = (47.8744, 8.005, 1517) # (lat, lon, alt) in decimal degree and meters
+>>> radar_location = (8.005, 47.8744, 1517) # (lon, lat, alt) in decimal degree and meters
 >>> elevation = 0.5 # in degree
 >>> azimuths = np.arange(0,360) # in degrees
 >>> ranges = np.arange(0, 128000., 1000.) # in meters
 >>> polargrid = np.meshgrid(ranges, azimuths)
->>> lat, lon, alt = wradlib.georef.polar2latlonalt(polargrid[0], polargrid[1], elevation, radar_location)
+>>> lon, lat, alt = wradlib.georef.polar2lonlatalt(polargrid[0], polargrid[1], elevation, radar_location)
 
-*wradlib* supports the projection of geographical coordinates (lat/lon) to a Cartesian reference system. Basically, you have to provide a string which represents the projection - based on the `proj.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3): 
+*wradlib* supports the projection of geographical coordinates (lon/lat) to a Cartesian reference system. Basically, you have to provide a string which represents the projection - based on the `proj.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3):
 
->>> gk3 = wradlib.georef.create_projstr("gk", zone=3)
->>> x, y = wradlib.georef.project(lat, lon, gk3)
+>>> projstr = wradlib.georef.create_projstr("gk", zone=3)
+>>> gk3 = proj4_to_osr(proj4str)
+>>> x, y = wradlib.georef.reproject(lon, lat, projection_target=gk3)
 
 .. seealso:: Get more info in the library reference section :doc:`georef`.
 

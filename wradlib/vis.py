@@ -309,7 +309,7 @@ def polar_plot(data, title='', unit='', saveto='', fig=None, axpos=111, R=1., th
 
 
 def plot_ppi(data, r=None, az=None, autoext=True,
-             site=(0,0), proj=None, elev=0.,
+             site=(0,0), projstr=None, elev=0.,
              ax=None,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
@@ -320,7 +320,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     having to convert them to the radar's polar coordinate system.
 
     `**kwargs` may be used to try to influence the matplotlib.pcolormesh and
-    wradlib.georef.polar2latlonalt_n routines under the hood.
+    wradlib.georef.polar2lonlatalt_n routines under the hood.
 
     There is one major caveat concerning the values of `r` and `az`.
     Due to the way matplotlib.pcolormesh works, `r` should give the location
@@ -353,9 +353,9 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         Tuple of coordinates of the radar site.
         If `proj` is not used, this simply becomes the offset for the origin
         of the coordinate system.
-        If `proj` is used, values must be given as (latitude, longitude)
+        If `proj` is used, values must be given as (longitude, latitude)
         tuple of geographical coordinates.
-    proj : str
+    projstr : str
         PROJ.4 compatible projection string
         If this parameter is not None, `site` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
@@ -369,7 +369,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     See also
     --------
-    wradlib.georef.project - for information on projection strings
+    wradlib.georef.reproject - for information on projection strings
     wradlib.georef.create_projstr - routine to generate pre-defined projection
         strings
 
@@ -384,11 +384,11 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     """
     # kwargs handling
-    kw_polar2latlonalt_n = {}
+    kw_polar2lonlatalt_n = {}
     if 're' in kwargs:
-        kw_polar2latlonalt_n.update({'re': kwargs.pop('re')})
+        kw_polar2lonlatalt_n.append(kwargs.pop('re'))
     if 'ke' in kwargs:
-        kw_polar2latlonalt_n.update({'ke': kwargs.pop('ke')})
+        kw_polar2lonlatalt_n.append(kwargs.pop('ke'))
 
     # this may seem odd at first, but d1 and d2 are also used in plot_rhi
     # and thus it may be easier to compare the two functions
@@ -417,7 +417,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # coordinates for all vertices
     xx, yy = np.meshgrid(x, y)
 
-    if proj is None:
+    if projstr is None:
         # no georeferencing -> simple trigonometry
         xxx = xx * np.cos(np.radians(90.-yy)) + site[0]
         yy = xx * np.sin(np.radians(90.-yy))  + site[1]
@@ -429,9 +429,10 @@ def plot_ppi(data, r=None, az=None, autoext=True,
             # therefore we need to get from km to m
             xx *= 1000
         # latitude longitudes from the polar data still stored in xx and yy
-        lat, lon, alt = georef.polar2latlonalt_n(xx, yy, elev, site, **kw_polar2latlonalt_n)
+        lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site, **kw_polar2lonlatalt_n)
         # projected to the final coordinate system
-        xx, yy = georef.project(lat, lon, proj)
+        osr_proj = georef.proj4_to_osr(projstr)
+        xx, yy = georef.reproject(lon, lat, projection_target=osr_proj)
 
     # get the current axes.
     # this creates one, if there is none
@@ -449,7 +450,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
 
 def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
-                       proj=None, elev=0., ax=None, kwds={}):
+                       projstr=None, elev=0., ax=None, kwds={}):
     """Plots a Crosshair for a Plan Position Indicator (PPI).
 
     Parameters
@@ -458,7 +459,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         Tuple of coordinates of the radar site.
         If `proj` is not used, this simply becomes the offset for the origin
         of the coordinate system.
-        If `proj` is used, values must be given as (latitude, longitude)
+        If `proj` is used, values must be given as (longitude, latitude)
         tuple of geographical coordinates.
     ranges : list
         List of ranges, for which range circles should be drawn.
@@ -468,7 +469,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         List of angles (in degrees) for which straight lines should be drawn.
         These lines will be drawn starting from the center and until the largest
         range.
-    proj : str
+    projstr : str
         PROJ.4 compatible projection string
         The function will calculate lines and circles according to
         georeferenced coordinates taking beam propagation, earth's curvature
@@ -521,17 +522,18 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     circkw.update(kwds.get('circle', {}))
 
     # determine coordinates for 'straight' lines
-    if proj:
+    if projstr:
         # projected
-        # project the site coordinates
-        psite = georef.project(*site, projstr=proj)
+        # reproject the site coordinates
+        osr_proj = proj4_to_osr(projstr)
+        psite = georef.reproject(*site, projection_target=osr_proj)
         # these lines might not be straigt so we approximate them with 10
         # segments. Produce polar coordinates
         rr, az = np.meshgrid(np.linspace(0,ranges[-1],10), angles)
-        # and project using polar2latlonalt to convert from polar to geographic
-        nsewx, nsewy = georef.project(*georef.polar2latlonalt_n(rr, az, elev,
+        # and reproject using polar2lonlatalt to convert from polar to geographic
+        nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr, az, elev,
                                                                 site)[:2],
-                                      projstr=proj)
+                                      projection_target=osr_proj)
     else:
         # no projection
         psite = site
@@ -549,13 +551,13 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
 
     # draw the range circles
     for r in ranges:
-        if proj:
+        if projstr:
             # produce an approximation of the circle
-            x, y = georef.project(*georef.polar2latlonalt_n(r,
+            x, y = georef.reproject(*georef.polar2lonlatalt_n(r,
                                                             np.arange(360),
                                                             elev,
                                                             site)[:2],
-                                  projstr=proj)
+                                  projection_target=osr_proj)
             ax.add_patch(mpl.patches.Polygon(np.concatenate([x[:,None],
                                                              y[:,None]],
                                                              axis=1),
@@ -2748,14 +2750,14 @@ class cg_plot(object):
 
 
 
-def plot_scan_strategy(ranges, elevs, vert_res=500., maxalt=10000., radaralt=0., ax=None):
+def plot_scan_strategy(ranges, elevs, site, vert_res=500., maxalt=10000., ax=None):
     """Plot the vertical scanning strategy
 
     Parameters
     ----------
     ranges : array of ranges
     elevs : array of elevation angles
-
+    site : tuple of site coordinates (longitude, latitude, altitude)
     """
     # just a dummy
     az=np.array([90.])
@@ -2763,7 +2765,7 @@ def plot_scan_strategy(ranges, elevs, vert_res=500., maxalt=10000., radaralt=0.,
     polc = util.meshgridN(ranges, az, elevs)
 
     # get mean height over radar
-    lat, lon, alt = georef.polar2latlonalt(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), (14.910948,120.259666, radaralt))
+    lon, lat, alt = georef.polar2lonlatalt_n(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), site)
     alt = alt.reshape(len(ranges), len(elevs))
     r = polc[0].reshape(len(ranges), len(elevs))
 

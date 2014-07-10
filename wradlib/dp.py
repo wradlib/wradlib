@@ -507,17 +507,13 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     >>> import wradlib
     >>> import numpy as np
     >>> import pylab as pl
-
     >>> pl.interactive(True)
-
     >>> kdp_true   = np.sin(3*np.arange(0,10,0.1))
     >>> phidp_true = np.cumsum(kdp_true)
     >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_orig))
     >>> gaps       = np.concatenate([ range(10,20),range(30,40),range(60,80) ])
     >>> phidp_raw[gaps] = np.nan
-
-    >>> kdp_re = wradib.dp.kdp_from_phidp_linregress(phidp_raw)
-
+    >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
     >>> pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
     >>> pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
     >>> pl.plot(kdp_true, "g-", label="kdp_true")

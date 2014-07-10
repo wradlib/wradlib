@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # define the polar coordinates and the site coordinates in lat/lon
     r = np.arange(1,129)
     az = np.linspace(0,360,361)[0:-1]
-    sitecoords = (48.5861, 9.7839)
+    sitecoords = (9.7839, 48.5861)
     # import the polar example radar dataset
     testdata = np.loadtxt('data/polar_R_tur.gz')
     # the rain gages are in Gauss-Krueger Zone 3 coordinates, so we need the

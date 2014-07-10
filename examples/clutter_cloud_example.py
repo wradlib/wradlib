@@ -58,11 +58,11 @@ if __name__ == '__main__':
         elangle = pvol["dataset%d/where" %(t+1)]["elangle"]
         coord[t,...] = georef.sweep_centroids(nrays,rscale,nbins,elangle)
     ascale = math.pi/nrays
-    sitecoords = (pvol["where"]["lat"],pvol["where"]["lon"],pvol["where"]["height"])
+    sitecoords = (pvol["where"]["lon"],pvol["where"]["lat"],pvol["where"]["height"])
     proj_radar = georef.proj4_to_osr(georef.create_projstr("aeqd",lat_0=pvol["where"]["lat"],lon_0=pvol["where"]["lon"]))
-    coord[...,0], coord[...,1], coord[...,2] = georef.polar2latlonalt_n(coord[...,0], np.degrees(coord[...,1]), coord[...,2], sitecoords, re=6370040., ke=4./3.)
-    proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(pvol["where"]["lat"],pvol["where"]["lon"])
-    coord[...,0], coord[...,1] = georef.project(coord[...,0], coord[...,1],proj4str)
+    coord[...,0], coord[...,1], coord[...,2] = georef.polar2lonlatalt_n(coord[...,0], np.degrees(coord[...,1]), coord[...,2], sitecoords, re=6370040., ke=4./3.)
+    #proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(pvol["where"]["lat"],pvol["where"]["lon"])
+    coord = georef.reproject(coord, projection_target=proj_radar)
 
     # Construct collocated satellite data 
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     val_sat = georef.read_gdal_values(sat_gdal)
     coord_sat = georef.read_gdal_coordinates(sat_gdal)
     proj_sat = georef.read_gdal_projection(sat_gdal)
-    coord_sat = georef.reproject(coord_sat,proj_sat,proj_radar)
+    coord_sat = georef.reproject(coord_sat, projection_source=proj_sat, projection_target=proj_radar)
     coord_radar = coord
     interp = ipol.Nearest(coord_sat[...,0:2].reshape(-1,2),coord_radar[...,0:2].reshape(-1,2))
     val_sat = interp(val_sat.ravel()).reshape(val.shape)

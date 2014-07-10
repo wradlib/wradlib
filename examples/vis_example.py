@@ -44,7 +44,7 @@ if __name__ == '__main__':
     az = np.round(np.array(testdata.variables['Azimuth']),0)
     #   drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
     #   drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778
-    sitecoords = (testdata.Latitude, testdata.Longitude)
+    sitecoords = (testdata.Longitude,testdata.Latitude)
     polygons = georef.polar2polyvert(r, az, sitecoords)
     baseplot = vis.PolarBasemap(polygons, sitecoords, r, az)
 ##    data = np.array(testdata.variables[testdata.TypeName])
