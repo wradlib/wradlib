@@ -366,12 +366,26 @@ def classify_echo_fuzzy(dat,
         if dat[key]==None:
             dat[key] = dummy
 
+    # DEBUG CODE!!!!
+##    weights = {"zdr":0.4, "rho":0.4, "phi":0.4, "dop":0.0, "map":0.5}
+##               , "rho2":0.4}
+##    trpz    = {"zdr":[0.7,1.0,9999,9999],
+##               "rho":[0.1,0.15,9999,9999],
+##               "phi":[15,20,9999,9999],
+##               "dop":[-0.2,-0.1,0.1,0.2],
+##               "map":[1,1,9999,9999]
+##               ,"rho2":[-9999,-9999,0.9,0.95]
+##               }
+##    thresh  = 0.5
+
+
     # membership in meteorological class for each variable
     q_dop = 1. - util.trapezoid(dat["dop"]            , trpz["dop"][0], trpz["dop"][1], trpz["dop"][2], trpz["dop"][3])
     q_zdr = 1. - util.trapezoid(dp.texture(dat["zdr"]), trpz["zdr"][0], trpz["zdr"][1], trpz["zdr"][2], trpz["zdr"][3])
-    q_rho = 1. - util.trapezoid(dp.texture(dat["phi"]), trpz["phi"][0], trpz["phi"][1], trpz["phi"][2], trpz["phi"][3])
-    q_phi = 1. - util.trapezoid(dp.texture(dat["rho"]), trpz["rho"][0], trpz["rho"][1], trpz["rho"][2], trpz["rho"][3])
+    q_phi = 1. - util.trapezoid(dp.texture(dat["phi"]), trpz["phi"][0], trpz["phi"][1], trpz["phi"][2], trpz["phi"][3])
+    q_rho = 1. - util.trapezoid(dp.texture(dat["rho"]), trpz["rho"][0], trpz["rho"][1], trpz["rho"][2], trpz["rho"][3])
     q_map = 1. - util.trapezoid(dat["map"]            , trpz["map"][0], trpz["map"][1], trpz["map"][2], trpz["map"][3])
+##    q_rho2 = 1.- util.trapezoid(dat["rho"]            , trpz["rho2"][0], trpz["rho2"][1], trpz["rho2"][2], trpz["rho2"][3])
 
     # create weight arrays which are zero where the data is NaN
     # This way, each pixel "adapts" to the local data availability
@@ -380,6 +394,7 @@ def classify_echo_fuzzy(dat,
     w_rho = _weight_array(q_rho, weights["rho"])
     w_phi = _weight_array(q_phi, weights["phi"])
     w_map = _weight_array(q_map, weights["map"])
+##    w_rho2= _weight_array(q_rho2, weights["rho2"])
 
     # remove NaNs from data
     q_dop = np.nan_to_num(q_dop)
@@ -387,10 +402,14 @@ def classify_echo_fuzzy(dat,
     q_rho = np.nan_to_num(q_rho)
     q_phi = np.nan_to_num(q_phi)
     q_map = np.nan_to_num(q_map)
+##    q_rho2= np.nan_to_num(q_rho2)
 
     # Membership in meteorological class after combining all variables
     Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_phi * w_phi)) \
         / (w_map + w_dop + w_zdr + w_rho + w_phi)
+##    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_phi * w_phi) + (q_rho2 * w_rho2)) \
+##        / (w_map + w_dop + w_zdr + w_rho + w_phi + w_rho2)
+
 
     # flag low quality
     return np.where(Q < thresh, True, False)
@@ -417,7 +436,7 @@ def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothin
     thrs : float
         Threshold above which to identify clutter
     snow : boolean
-        Swith to use PGE02 class "land/sea snow" for clutter identification 
+        Swith to use PGE02 class "land/sea snow" for clutter identification
     low : boolean
         Swith to use PGE02 class "low/very low stratus/cumulus" for clutter identification
     cirrus : boolean
