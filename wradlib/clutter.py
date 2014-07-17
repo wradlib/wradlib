@@ -292,9 +292,10 @@ def histo_cut(prec_accum):
 
 
 def classify_echo_fuzzy(dat,
-                        weights = {"zdr":0.4, "rho":0.4, "phi":0.4, "dop":0.3, "map":0.5},
+                        weights = {"zdr":0.4, "rho":0.4, "rho2":0.4, "phi":0, "dop":0, "map":1.},
                         trpz    = {"zdr":[0.7,1.0,9999,9999],
                                    "rho":[0.1,0.15,9999,9999],
+                                   "rho2":[-9999,-9999,0.9,0.95],
                                    "phi":[15,20,10000,10000],
                                    "dop":[-0.2,-0.1,0.1,0.2],
                                    "map":[1,1,9999,9999]},
@@ -310,13 +311,15 @@ def classify_echo_fuzzy(dat,
     of membership is computed. The echo is assumed to be non-meteorological in case
     the linear comination exceeds a threshold.
 
-    At the moment, the following decision variables are required:
+    At the moment, the following decision variables are considered:
 
-        - Differential reflectivity (zdr)
+        - Texture of differential reflectivity (zdr)
 
-        - Correlation coefficient (rho)
+        - Texture of correlation coefficient (rho)
 
-        - Differential phase (phidp)
+        - Correlation coefficient (rho2)
+
+        - Texture of differential propagation phase (phidp)
 
         - Doppler velocity (dop)
 
@@ -336,7 +339,11 @@ def classify_echo_fuzzy(dat,
 
     Returns
     -------
-    output : boolean array of same shape input arrays marking the occurence of non-meteorological echos.
+    output : a tuple of two boolean arrays of same shape as the input arrays
+             The first array boolean array indicates non-meteorological echos based on the fuzzy classification.
+             The second boolean array indicates where all the polarimetric moments
+             had missing values which could be used as an additional information
+             criterion.
 
     References
     ----------
@@ -350,6 +357,7 @@ def classify_echo_fuzzy(dat,
     keys = ["zdr","rho","phi","dop","map"]
     assert np.all(np.in1d(keys, dat.keys()    )), "Argument dat of classify_echo_fuzzy must be a dictionary with keywords %r." % (keys,)
     assert np.all(np.in1d(keys, weights.keys())), "Argument weights of classify_echo_fuzzy must be a dictionary with keywords %r." % (keys,)
+    assert np.all(np.in1d(keys, trpz.keys())),    "Argument trpz of classify_echo_fuzzy must be a dictionary with keywords %r." % (keys,)
     shape = None
     for key in keys:
         if not dat[key]==None:
@@ -360,23 +368,18 @@ def classify_echo_fuzzy(dat,
         else:
             print "WARNING: Missing decision variable: %s" % key
 
+    # If all moments are NaN, can we assume that and echo is non-meteorological?
+    #    Successively identify those bins where all moments are NaN
+    nan_mask = np.isnan(dat["rho"])
+    nan_mask = nan_mask & np.isnan(dat["zdr"])
+    nan_mask = nan_mask & np.isnan(dat["phi"])
+    nan_mask = nan_mask & np.isnan(dat["dop"])
+
     # Replace missing data by NaN
     dummy = np.zeros(shape)*np.nan
     for key in dat.keys():
         if dat[key]==None:
             dat[key] = dummy
-
-    # DEBUG CODE!!!!
-##    weights = {"zdr":0.4, "rho":0.4, "phi":0.4, "dop":0.0, "map":0.5}
-##               , "rho2":0.4}
-##    trpz    = {"zdr":[0.7,1.0,9999,9999],
-##               "rho":[0.1,0.15,9999,9999],
-##               "phi":[15,20,9999,9999],
-##               "dop":[-0.2,-0.1,0.1,0.2],
-##               "map":[1,1,9999,9999]
-##               ,"rho2":[-9999,-9999,0.9,0.95]
-##               }
-##    thresh  = 0.5
 
 
     # membership in meteorological class for each variable
@@ -385,7 +388,7 @@ def classify_echo_fuzzy(dat,
     q_phi = 1. - util.trapezoid(dp.texture(dat["phi"]), trpz["phi"][0], trpz["phi"][1], trpz["phi"][2], trpz["phi"][3])
     q_rho = 1. - util.trapezoid(dp.texture(dat["rho"]), trpz["rho"][0], trpz["rho"][1], trpz["rho"][2], trpz["rho"][3])
     q_map = 1. - util.trapezoid(dat["map"]            , trpz["map"][0], trpz["map"][1], trpz["map"][2], trpz["map"][3])
-##    q_rho2 = 1.- util.trapezoid(dat["rho"]            , trpz["rho2"][0], trpz["rho2"][1], trpz["rho2"][2], trpz["rho2"][3])
+    q_rho2 = 1.- util.trapezoid(dat["rho"]            , trpz["rho2"][0], trpz["rho2"][1], trpz["rho2"][2], trpz["rho2"][3])
 
     # create weight arrays which are zero where the data is NaN
     # This way, each pixel "adapts" to the local data availability
@@ -394,7 +397,7 @@ def classify_echo_fuzzy(dat,
     w_rho = _weight_array(q_rho, weights["rho"])
     w_phi = _weight_array(q_phi, weights["phi"])
     w_map = _weight_array(q_map, weights["map"])
-##    w_rho2= _weight_array(q_rho2, weights["rho2"])
+    w_rho2= _weight_array(q_rho2, weights["rho2"])
 
     # remove NaNs from data
     q_dop = np.nan_to_num(q_dop)
@@ -402,17 +405,15 @@ def classify_echo_fuzzy(dat,
     q_rho = np.nan_to_num(q_rho)
     q_phi = np.nan_to_num(q_phi)
     q_map = np.nan_to_num(q_map)
-##    q_rho2= np.nan_to_num(q_rho2)
+    q_rho2= np.nan_to_num(q_rho2)
 
     # Membership in meteorological class after combining all variables
-    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_phi * w_phi)) \
-        / (w_map + w_dop + w_zdr + w_rho + w_phi)
-##    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_phi * w_phi) + (q_rho2 * w_rho2)) \
-##        / (w_map + w_dop + w_zdr + w_rho + w_phi + w_rho2)
+    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_phi * w_phi) + (q_rho2 * w_rho2)) \
+        / (w_map + w_dop + w_zdr + w_rho + w_phi + w_rho2)
 
 
     # flag low quality
-    return np.where(Q < thresh, True, False)
+    return np.where(Q < thresh, True, False), nan_mask
 
 
 def _weight_array(data, weight):
