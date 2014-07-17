@@ -525,7 +525,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     if proj:
         # projected
         # reproject the site coordinates
-        osr_proj = proj4_to_osr(proj)
+        osr_proj = georef.proj4_to_osr(proj)
         psite = georef.reproject(*site, projection_target=osr_proj)
         # these lines might not be straigt so we approximate them with 10
         # segments. Produce polar coordinates
@@ -551,7 +551,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
 
     # draw the range circles
     for r in ranges:
-        if projstr:
+        if proj:
             # produce an approximation of the circle
             x, y = georef.reproject(*georef.polar2lonlatalt_n(r,
                                                             np.arange(360),
