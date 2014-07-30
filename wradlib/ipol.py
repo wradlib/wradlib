@@ -835,8 +835,8 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     >>> ipol_result = interpolate(src, trg, vals, Idw, nnearest=2)
     >>> # plot if you like
     >>> import pylab as pl
-    >>> pl.plot(trg, ipol_result, 'b+')
-    >>> pl.plot(src, vals, 'ro')
+    >>> line1 = pl.plot(trg, ipol_result, 'b+')
+    >>> line2 = pl.plot(src, vals, 'ro')
     >>> pl.show()
 
 
