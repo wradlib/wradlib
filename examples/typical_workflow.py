@@ -12,16 +12,21 @@
 
 import wradlib
 import numpy as np
-import pylab as pl
+import matplotlib as mpl
+import os
 
-if __name__ == '__main__':
+def ex_typical_workflow():
+
+    import matplotlib.pylab as pl
+    # just making sure that the plots immediately pop up
+    pl.interactive(True)
 
     # read the data
-    data, metadata = wradlib.io.readDX("data/sample.dx")
+    data, metadata = wradlib.io.readDX(os.path.dirname(__file__) + '/' + "data/sample.dx")
     wradlib.vis.polar_plot(data)
     # identify and visualise clutters
     clutter = wradlib.clutter.filter_gabella(data, tr1=12, n_p=6, tr2=1.1)
-    wradlib.vis.polar_plot(clutter,title='Clutter Map',colormap=pl.cm.gray)
+    wradlib.vis.polar_plot(clutter,title='Clutter Map',colormap=mpl.cm.gray)
     # Remove and fill clutter
     data_no_clutter = wradlib.ipol.interpolate_polar(data, clutter)
     # Attenuation correction according to Kraemer
@@ -118,7 +123,8 @@ if __name__ == '__main__':
 
     rootgrp.close()
 
-
+if __name__ == '__main__':
+    ex_typical_workflow()
 
 
 

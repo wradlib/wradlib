@@ -12,14 +12,16 @@
 
 import wradlib.vis as vis
 import wradlib.georef as georef
+import pylab as pl
+import os
 
 
-if __name__ == '__main__':
+def ex_vis():
 
     import numpy as np
 
     # EXAMPLE 1: Simple polar plot of e.g. reflectivity
-    testdata = np.loadtxt('data/polar_dBZ_tur.gz')
+    testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_tur.gz')
     classes = [0, 20, 30, 40, 50, 55, 60, 65]
     vis.polar_plot(testdata, title='Reflectivity', unit='dBZ', colormap='spectral', classes=classes, extend='max')
 
@@ -37,6 +39,7 @@ if __name__ == '__main__':
     # EXAMPLE 3: Trying the same for the Philippines
     import netCDF4 as nc
     #   specify file path
+    # Todo: put example data in data folder
     fname='E:/data/philippines/radar/Netcdf 0926_2011_00H/SUB-20110926-000549-01-Z.nc'
     #   read the data from file
     testdata = nc.Dataset(fname)
@@ -52,5 +55,7 @@ if __name__ == '__main__':
     data = np.ma.masked_values(testdata.variables[testdata.TypeName], testdata.MissingData)
     baseplot(data)
 
+if __name__ == '__main__':
+    ex_vis()
 
 

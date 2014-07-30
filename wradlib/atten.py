@@ -509,22 +509,27 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Examples
     --------
-    >>> # Implementing the original Hitschfeld & Bordan (1954) algorithm with
-    >>> # otherwise default parameters
-    >>> k = correctAttenuationConstrained(gateset, n=1, mode='nan')
-    >>> # Implementing the basic Kraemer algorithm
-    >>> k = correctAttenuationConstrained(gateset,
-    ...                                   mode='nan',
-    ...                                   constraints=[constraint_dBZ],
-    ...                                   constr_args=[[59.0]])
 
-    >>> # Implementing the PIA algorithm by Jacobi et al.
-    >>> k = correctAttenuationConstrained(gateset,
-    ...                                   mode='nan',
-    ...                                   constraints=[constraint_dBZ,
-    ...                                                constraint_pia],
-    ...                                   constr_args=[[59.0],
-    ...                                               [20.0]])
+    Implementing the original Hitschfeld & Bordan (1954) algorithm with
+    otherwise default parameters::
+
+        k = correctAttenuationConstrained(gateset, n=1, mode='nan')
+
+    Implementing the basic Kraemer algorithm::
+
+        k = correctAttenuationConstrained(gateset,
+                                          mode='nan',
+                                          constraints=[constraint_dBZ],
+                                          constr_args=[[59.0]])
+
+    Implementing the PIA algorithm by Jacobi et al.::
+
+        k = correctAttenuationConstrained(gateset,
+                                          mode='nan',
+                                          constraints=[constraint_dBZ,
+                                                       constraint_pia],
+                                          constr_args=[[59.0],
+                                                      [20.0]])
 
     """
 
@@ -933,20 +938,28 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
 
     Examples
     --------
-    >>> import wradlib as wrl
-    >>> # Implementing the original Hitschfeld & Bordan (1954) algorithm with
-    >>> # otherwise default parameters
-    >>> pia = wrl.atten.correctAttenuationConstrained2(gateset)
-    >>> # Implementing the basic Kraemer algorithm
-    >>> k = correctAttenuationConstrained(gateset,
-    ...                                  constraints=[wrl.atten.constraint_dBZ],
-    ...                                  constraint_args=[[59.0]])
-    >>> # Implementing the PIA algorithm by Jacobi et al.
-    >>> k = wrl.atten.correctAttenuationConstrained(gateset,
-    ...                                  constraints=[wrl.atten.constraint_dBZ,
-    ...                                               wrl.atten.constraint_pia],
-    ...                                  constraint_args=[[59.0],
-    ...                                                   [20.0]])
+
+    Implementing the original Hitschfeld & Bordan (1954) algorithm with
+    otherwise default parameters::
+
+        import wradlib as wrl
+        k = wrl.atten.correctAttenuationConstrained2(gateset, n=1, mode='nan')
+
+    Implementing the basic Kraemer algorithm::
+
+        k = wrl.atten.correctAttenuationConstrained2(gateset,
+                                          mode='nan',
+                                          constraints=[wrl.atten.constraint_dBZ],
+                                          constr_args=[[59.0]])
+
+    Implementing the PIA algorithm by Jacobi et al.::
+
+        k = wrl.atten.correctAttenuationConstrained2(gateset,
+                                          mode='nan',
+                                          constraints=[wrl.atten.constraint_dBZ,
+                                                       wrl.atten.constraint_pia],
+                                          constr_args=[[59.0],
+                                                      [20.0]])
 
     """
 
