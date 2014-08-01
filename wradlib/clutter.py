@@ -292,10 +292,10 @@ def histo_cut(prec_accum):
 
 
 def classify_echo_fuzzy(dat,
-                        weights = {"zdr":0.4, "rho":0.4, "rho2":0.4, "phi":0, "dop":0, "map":1.},
+                        weights = {"zdr":0.4, "rho":0.4, "rho2":0.4, "phi":0.1, "dop":0.1, "map":0.5},
                         trpz    = {"zdr":[0.7,1.0,9999,9999],
                                    "rho":[0.1,0.15,9999,9999],
-                                   "rho2":[-9999,-9999,0.9,0.95],
+                                   "rho2":[-9999,-9999,0.95,0.98],
                                    "phi":[15,20,10000,10000],
                                    "dop":[-0.2,-0.1,0.1,0.2],
                                    "map":[1,1,9999,9999]},
@@ -368,12 +368,12 @@ def classify_echo_fuzzy(dat,
         else:
             print "WARNING: Missing decision variable: %s" % key
 
-    # If all moments are NaN, can we assume that and echo is non-meteorological?
+    # If all dual-pol moments are NaN, can we assume that and echo is non-meteorological?
     #    Successively identify those bins where all moments are NaN
     nan_mask = np.isnan(dat["rho"])
     nan_mask = nan_mask & np.isnan(dat["zdr"])
     nan_mask = nan_mask & np.isnan(dat["phi"])
-    nan_mask = nan_mask & np.isnan(dat["dop"])
+#    nan_mask = nan_mask & np.isnan(dat["dop"])
 
     # Replace missing data by NaN
     dummy = np.zeros(shape)*np.nan
