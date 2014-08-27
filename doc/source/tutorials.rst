@@ -14,7 +14,6 @@ also consider to have look at the code examples distributed with the source code
    tutorial_conversion
    tutorial_accumulation
    tutorial_clutter_correction
-   tutorial_attenuation_correction
    tutorial_autoimages
    tutorial_curvelinear_grids
 
