@@ -1,29 +1,8 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Fork of wradlib
 
-### What is this repository for? ###
+# Status #
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+[ ![Codeship Status for kaimuehlbauer/wradlib_miub](https://www.codeship.io/projects/44dfe340-8cee-0131-4080-525e9acc70f7/status?branch=master)](https://www.codeship.io/projects/15959)
 
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
