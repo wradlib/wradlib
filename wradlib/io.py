@@ -908,6 +908,339 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
     return data, attrs
 
 
+class RainbowBLOB:
+    tagBLOBID      = "blobid"
+    tagCOMPRESSION = "compression"
+    tagSIZE        = "size"
+
+    def __init__(self):
+        self.id     = None
+        self.cmpr   = None
+        self.data   = None
+        self.dataWidth  = None
+        self.dataDepth = None
+
+    def _findTag( self, line, tag ):
+        start = line.find( tag ) + len( tag ) + 2
+        end   = line.find( '"', start )
+        return line[start:end]
+
+    def loadFromFile( self, file):
+        """
+        Read BLOB data and store it in self.data as an array of 8 bit values
+        """
+        line = file.readline()
+        if len( line ) < 1:
+            return
+
+        self.id   = self._findTag( line, self.tagBLOBID )
+        self.cmpr = self._findTag( line, self.tagCOMPRESSION )
+        nbyte = int( self._findTag( line, self.tagSIZE ) )
+        self.data = file.read( nbyte ) # read blob data to string
+        file.readline()                # read final line end
+        file.readline()                # read line </BLOB>
+        if self.cmpr == "qt":
+            self.data = zlib.decompress( self.data[4:] )
+            self.cmpr = "none"
+            self.data = array.array( 'B', self.data )
+        self.dataWidth = None
+        self.dataDepth = 8
+
+    def setDataWidth( self, width ):
+        """
+        Set self.dataWidth if width is a divisor of the array length
+        """
+        self.dataWidth = width
+        # if len( self.data ) % width != 0:
+        #     print "BLOB %s: Width %d not suitable for array of size %d." % ( self.id, width, len( self.data ) )
+
+    def setDataDepth( self, depth ):
+        """
+        Convert self.data to given depth i.e. 8, 16 or 32 bit values
+        """
+        if self.dataDepth == depth:
+            return
+        self.dataDepth = depth
+        if depth not in ( 8, 16, 32 ):
+            # print "BLOB %s: Depth is %d. Auto conversion only for depth 8, 16, 32" % ( self.id, depth )
+            return
+        if sys.byteorder != 'big':
+            self.data.byteswap()
+        self.data = self.data.tostring()
+        if depth == 8:
+            self.data = array.array( 'B', self.data )
+        elif depth == 16:
+            self.data = array.array( 'H', self.data )
+        else:
+            self.data = array.array( 'L', self.data )
+
+        if sys.byteorder != 'big':
+            self.data.byteswap()
+
+    def __str__(self):
+        if self.dataWidth != None:
+            width = self.dataWidth
+            height = len( self.data ) / width
+        else:
+            width = len( self.data )
+            height = 1
+
+        res = "BLOB %s: depth %2d width %4d height %4d size %6d\n" % \
+              ( self.id, self.dataDepth, width, height, len( self.data ) )
+        return res
+
+
+# =======================================================
+class RainbowDom:
+    """
+    Container class for XML tags etc
+    """
+    NodeTypeStr = [ "", \
+            "ELEMENT_NODE",\
+            "ATTRIBUTE_NODE",\
+            "TEXT_NODE",\
+            "CDATA_SECTION_NODE",\
+            "ENTITY_NODE",\
+            "PROCESSING_INSTRUCTION_NODE",\
+            "COMMENT_NODE, DOCUMENT_NODE",
+            "DOCUMENT_TYPE_NODE",\
+            "NOTATION_NODE" ]
+
+
+# =======================================================
+class RainbowDomNode( RainbowDom ):
+    """
+    Recursively contains a complete node with attributes and children
+    """
+
+    def __init__(self):
+        self.level      = 0
+        self.name       = ""
+        self.value      = ""
+        self.attrMap    = {} # attr name vs attr value
+        self.childMap   = {} # node name vs list of child nodes with this name
+
+    def floatValue(self):
+        return float( self.value )
+
+    def intValue(self):
+        return int( self.value )
+
+    def attr(self, tag):
+        """
+        Return a value from this nodes attributes
+        Return None if attribute does not exist
+        """
+        if tag in self.attrMap:
+            return self.attrMap[ tag ]
+        else:
+            return None
+
+    def hasAttr(self, tag ):
+        """
+        Return True if specified attribute exists, else False.
+        """
+        val = self.attr( tag )
+        return (val != None)
+
+    def floatAttr(self, tag):
+        try:
+            v = float( self.attr( tag ) )
+        except:
+            return None
+        return v
+
+    def intAttr(self, tag):
+        try:
+            v = int( self.attr( tag ) )
+        except:
+            return None
+        return v
+
+    def _splitTag(self, tag ):
+        attr = None
+        attrVal = None
+        if "@" in tag:
+            tag, attr = tag.split( "@" )
+            if "=" in attr:
+                attr, attrVal = attr.split( "=" )
+        return (tag, attr, attrVal)
+
+    def nodeList(self, path):
+        """
+        Search along a path starting from self
+        Path has the format "name@attr=val/name@attr=val/name@attr=val..."
+        where @attr=val is an optional part.
+        If several nodes match a name@attr=val the first node is taken.
+        Return a list of all nodes that match the final pattern.
+        """
+        tagList = path.split( "/" )
+        curNode = self
+        nodeList = []
+        for tag in tagList:
+            tag, attr, attrVal = self._splitTag( tag )
+            if not tag in curNode.childMap:
+                return []
+            nodeList = curNode.childMap[ tag ]
+            if attr != None:
+                if attrVal != None:
+                    nodeList = [ n for n in nodeList if n.attr( attr ) == attrVal ]
+                else:
+                    nodeList = [ n for n in nodeList if n.hasAttr( attr ) ]
+            if len( nodeList ) == 0:
+                break
+            curNode = nodeList[0]
+        return nodeList
+
+    def node(self, path):
+        nodeList = self.nodeList( path )
+        if len( nodeList ):
+            return nodeList[0]
+        else:
+            return None
+
+    def hasNode(self, path ):
+        """
+        Return True if specified node exists, else False.
+        """
+        node = self.node( path )
+        return (node == None)
+
+    def loadFromDomNode(self, level, domNode):
+        """
+        Recursively load this node and all its children from domNode.
+        """
+        self.__init__()
+        self.level = level
+        self.name = domNode.nodeName
+
+        if domNode.hasAttributes:
+            for i in range( 0, domNode.attributes.length ):
+                attr = domNode.attributes.item( i )
+                self.attrMap[ attr.name ] = attr.value
+
+        for childNode in domNode.childNodes:
+            if childNode.nodeType == Node.ELEMENT_NODE:
+                child = RainbowDomNode()
+                child.loadFromDomNode( self.level + 1, childNode  )
+                if not child.name in self.childMap:
+                    self.childMap[ child.name ] = []
+                self.childMap[ child.name ].append( child )
+            elif childNode.nodeType == Node.TEXT_NODE:
+                self.value = self.value + childNode.nodeValue.strip()
+            else:
+                print "Unexpected node type", self.NodeTypeStr[ childNode.nodeType ]
+
+    def _blobInfoMap( self, infoMap ):
+        """
+        Recursively add BLOB related attributes to infoMap.
+        Used internally to convert byte arrays to 2,4,8 byte integers.
+        """
+        if "blobid" in self.attrMap:
+            blobId = self.attrMap[ "blobid" ]
+            depth = None
+            width = None
+            if "depth" in self.attrMap:
+                depth = int( self.attrMap[ "depth" ] )
+            if "bins" in self.attrMap:
+                width = int( self.attrMap[ "bins" ] )
+            if "columns" in self.attrMap:
+                width = int( self.attrMap[ "columns" ] )
+            infoMap[ blobId ] = ( depth, width )
+
+        for tag in self.childMap:
+            nodeList = self.childMap[ tag ]
+            for node in nodeList:
+                infoMap = node._blobInfoMap( infoMap )
+
+        return infoMap
+
+    def __str__(self):
+        """
+        Recursively return a printed version of this node and all its children.
+        """
+        indent = "+  " * self.level
+        # put name and value on a single line
+        if len( self.value ) == 0:
+            res = indent + self.name + "\n"
+        else:
+            res = indent + self.name + " = " + self.value + "\n"
+        # one line for each attribute
+        for a in self.attrMap.keys():
+            res = res + indent + "   @" + a + " = " + self.attrMap[ a ] + "\n"
+        # recursively append the children
+        for tag in self.childMap:
+            nodeList = self.childMap[ tag ]
+            for node in nodeList:
+                res = res + node.__str__()
+        return res
+
+# =======================================================
+
+class RainbowDomFile:
+    def __init__(self):
+        self.EndXMLMarker = "<!-- END XML -->"
+        self.root         = RainbowDomNode()
+        self.blobMap      = {}  # int blobid : RbBlob
+        self.blobInfoMap  = {}  # int blobid : ( depth, width )
+
+    def load(self, filepath):
+        self.__init__()
+
+        # open the file
+        try:
+            f=open( filepath, "rb" )
+        except:
+            print "Error opening file", filepath
+            return False
+
+        # load the header lines, i.e. the XML part
+        header = ""
+        line = ""
+        hasBlobs = True
+        while not line.startswith( self.EndXMLMarker ):
+            header = header + line[:-1]
+            line = f.readline()
+            if len( line ) == 0:
+                hasBlobs = False
+                break
+
+        dom = parseString( header )
+        self.root.loadFromDomNode( 0, dom.documentElement )
+        self.blobInfoMap = self.root._blobInfoMap( {} )
+
+        # load the BLOBS
+        while hasBlobs:
+            blob = RainbowBLOB()
+            blob.loadFromFile( f )
+            if blob.id == None:
+                break
+            else:
+                self.blobMap[ blob.id ] = blob
+
+        # convert BLOBs to proper data length
+        for blobId in self.blobInfoMap.keys():
+            if blobId in self.blobMap:
+                depth, width = self.blobInfoMap[ blobId ]
+                if depth != None:
+                    self.blobMap[ blobId ].setDataDepth( depth )
+                if width != None:
+                   self.blobMap[ blobId ].setDataWidth( width )
+
+        return True
+
+    def __str__( self ):
+        res = self.root.__str__()
+        return res
+
+    def blobDesc( self ):
+        res = ""
+        for key in self.blobMap:
+           res = res + self.blobMap[ key ].__str__()
+        return res
+
+
+
 def to_pickle(fpath, obj):
     """Pickle object <obj> to file <fpath>
     """
