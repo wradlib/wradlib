@@ -61,6 +61,7 @@ for sample in requires:
                 print("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
                 missing.append(sample)
     except ImportError:
+        raise
         print("Dependency %s not installed." % modulestr)
         missing.append(sample)
 
