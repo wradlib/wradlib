@@ -907,6 +907,250 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     return data, attrs
 
+def findKey(key, dictionary):
+    """Searches for given key in given (nested) dictionary.
+
+    Returns all found parent dictionaries in a list.
+
+    Parameters
+    ----------
+    key : string
+	    the key to be searched for in the nested dict
+    dictionary : dict
+	    the dictionary to be searched
+
+    Returns
+    -------
+    output : a dictionary or list of dictionaries
+
+    """
+    for k, v in dictionary.iteritems():
+        if k == key:
+            yield dictionary
+        elif isinstance(v, dict):
+            for result in findKey(key, v):
+                yield result
+        elif isinstance(v, list):
+            for d in v:
+                for result in findKey(key, d):
+                    yield result
+
+
+def decompress(data):
+    """Decompression of data
+
+    Parameters
+    ----------
+    data : string (from xml)
+        data string containing compressed data.
+    """
+
+    return zlib.decompress(data)
+
+def getRBDataLayout(dataDepth):
+    """Calculates DataWidth and DataType from given DataDepth of RAINBOW radar data
+
+    Parameters
+    ----------
+    dataDepth : int
+        DataDepth as read from the Rainbow xml metadata.
+
+    Returns
+    -------
+    dataWidth : int
+        Width in Byte of data
+
+    dataType : string
+        conversion string .
+
+    """
+    if sys.byteorder != 'big':
+        byteOrder = '>'
+    else:
+        byteOrder = '<'
+
+    dataWidth = dataDepth / 8
+
+    if dataWidth in [1,2,4]:
+        dataType = byteOrder + 'u' + str(dataWidth)
+    else:
+        print("Wrong DataWidth")
+        return False
+
+    return dataWidth, dataType
+
+def getRBDataAttribute(blob, attr):
+
+    try:
+        sattr = int(blob['@'+attr])
+    except:
+        if attr == 'bins':
+            sattr = None
+        else:
+            print('Attribute @' + attr + ' is missing from Blob Description')
+            print('There may be some problems with your file')
+            return
+
+    return sattr
+
+def getRBBlobAttribute(xmlDict, attr):
+
+    return xmlDict['BLOB']['@' + attr]
+
+def getRBBlobData(s, blobid):
+
+    start = 0
+    searchString = r'<BLOB blobid="{}"'.format(blobid)
+    start = s.find(searchString, start)
+    end = s.find('>',start)
+    xmlString = s[start:end+1]
+    print("T", start, type(xmlString))
+    if len(xmlString) < 1:
+        return None
+
+    # cheat the xml parser by making xml well-known
+    xmlDict = xmltodict.parse(xmlString + '</BLOB>')
+    cmpr = getRBBlobAttribute(xmlDict, 'compression')
+    size = int(getRBBlobAttribute(xmlDict, 'size'))
+    data = s[end+2:end+2+size] # read blob data to string
+
+    # decompress if necessary
+    # the first 4 bytes are neglected for an unknown reason
+    if cmpr == "qt":
+        data = decompress( data[4:] )
+
+    return data
+
+
+def mapRBData(data, dataDepth):
+
+    dataWidth, dataType = getRBDataLayout(dataDepth)
+
+    # import from data buffer well aligned to data array
+    data = np.ndarray(shape=(len(data)/dataWidth,), dtype=dataType, buffer=data)
+
+    return data
+
+
+def loadRBBlobFromString(dataString, blobDict):
+    """
+    Read BLOB data from file and return it with correct
+    dataWidth and shape
+    """
+
+    blobid = getRBDataAttribute(blobDict, 'blobid')
+    data = getRBBlobData(dataString, blobid)
+
+    # map data to correct datatype and width
+    dataDepth = getRBDataAttribute(blobDict, 'depth')
+    data = mapRBData(data, dataDepth)
+
+    # reshape data
+    bins = getRBDataAttribute(blobDict, 'bins')
+    if bins:
+        rays = getRBDataAttribute(blobDict, 'rays')
+        data.shape = (rays, bins)
+
+    return data
+
+def loadRBBlobFromFile(fileName, blobDict):
+    """
+    Read BLOB data from file and return it with correct
+    dataWidth and shape
+    """
+    try:
+        fid = open(fileName, "rb" )
+    except:
+        print "Error opening file", fileName
+        return False
+
+    s = fid.read()
+    fid.close()
+
+    data = loadRBBlobFromString(s, blobDict)
+
+    return data
+
+
+def loadRBFile(fileName):
+
+    try:
+        fid = open(fileName, "rb" )
+    except:
+        print "Error opening file", fileName
+        return False
+
+    s = fid.read()
+    fid.close()
+
+    return s
+
+
+def loadRBBlobsFromFile(fileName, rbDict):
+    """Read all BLOBS found in given nested dict and add it at the appropriate
+    position.
+    """
+
+    blobs = list(findKey('@blobid', rbDict))
+
+    dataString = loadRBFile(fileName)
+    for blob in blobs:
+        data = loadRBBlobFromString(dataString, blob)
+        blob['data'] = data
+
+    return rbDict
+
+def loadRBHeader(fileName):
+
+    try:
+        fid = open(fileName, "rb" )
+    except:
+        print "Error opening file", fileName
+        return False
+
+    # load the header lines, i.e. the XML part
+    EndXMLMarker = "<!-- END XML -->"
+    header = ""
+    line = ""
+    hasBlobs = True
+    while not line.startswith( EndXMLMarker ):
+        header = header + line[:-1]
+        line = fid.readline()
+        if len( line ) == 0:
+            hasBlobs = False
+            break
+
+    fid.close()
+
+    return xmltodict.parse(header), hasBlobs
+
+def loadRainbow(fileName, loadData=True):
+    """"Reads Rainbow files files according to their structure
+
+    In contrast to other file readers under wradlib.io, this function will *not* return
+    a two item tuple with (data, metadata). Instead, this function returns ONE
+    dictionary that contains all the file contents - both data and metadata. The keys
+    of the output dictionary conform to the XML outline in the original data file.
+
+    The radar data will be extracted from the data blobs, converted and added to the
+    dict with key 'data' at the place where the @blobid was pointing from.
+
+    Parameters
+    ----------
+    f : string (a rainbow file path)
+
+    Returns
+    -------
+    rbDict : a dictionary that contains both data and metadata according to the
+              original rainbow file structure
+    """
+
+    rbDict, hasBlobs = loadRBHeader(fileName)
+
+    if hasBlobs and loadData:
+        rbDict = loadRBBlobsFromFile(fileName, rbDict)
+
+    return rbDict
 
 class RainbowBLOB:
     tagBLOBID      = "blobid"
