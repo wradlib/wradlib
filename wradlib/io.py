@@ -44,7 +44,7 @@ import warnings
 # site packages
 import h5py
 import numpy as np
-import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+import netCDF4 as nc  # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
 from osgeo import gdal
 import util
 
@@ -90,14 +90,14 @@ def unpackDX(raw):
 
     beam = []
 
-##    # naive version
-##    # 49193 function calls in 0.772 CPU seconds
-##    # 20234 function calls in 0.581 CPU seconds
-##    for item in raw:
-##        if item & flag:
-##            beam.extend([0]* (item & data))
-##        else:
-##            beam.append(item & data)
+    ##    # naive version
+    ##    # 49193 function calls in 0.772 CPU seconds
+    ##    # 20234 function calls in 0.581 CPU seconds
+    ##    for item in raw:
+    ##        if item & flag:
+    ##            beam.extend([0]* (item & data))
+    ##        else:
+    ##            beam.append(item & data)
 
     # performance version - hopefully
     # 6204 function calls in 0.149 CPU seconds
@@ -114,19 +114,19 @@ def unpackDX(raw):
     beam.extend(raw[0:flagged[0]])
 
     # iterate over all flags except the last one
-    for this, next in zip(flagged[:-1],flagged[1:]):
+    for this, next in zip(flagged[:-1], flagged[1:]):
         # create as many zeros as there are given within the flagged
         # byte's data part
-        beam.extend([0]* (raw[this] & data))
+        beam.extend([0] * (raw[this] & data))
         # append the data until the next flag
-        beam.extend(raw[this+1:next])
+        beam.extend(raw[this + 1:next])
 
     # process the last flag
     # add zeroes
-    beam.extend([0]* (raw[flagged[-1]] & data))
+    beam.extend([0] * (raw[flagged[-1]] & data))
 
     # add remaining data
-    beam.extend(raw[flagged[-1]+1:])
+    beam.extend(raw[flagged[-1] + 1:])
 
     # return the data
     return np.array(beam)
@@ -140,7 +140,7 @@ def parse_DX_header(header):
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00",
+    out["datetime"] = dt.datetime.strptime(header[2:8] + header[13:17] + "00",
                                            "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
@@ -152,13 +152,13 @@ def parse_DX_header(header):
     pos_EP = header.find("EP")
     pos_MS = header.find("MS")
 
-    out['bytes'] = int(header[pos_BY+2:pos_BY+7])
-    out['version'] = header[pos_VS+2:pos_VS+4]
-    out['cluttermap'] = int(header[pos_CO+2:pos_CO+3])
-    out['dopplerfilter'] = int(header[pos_CD+2:pos_CD+3])
-    out['statfilter'] = int(header[pos_CS+2:pos_CS+3])
-    out['elevprofile'] = [float(header[pos_EP+2+3*i:pos_EP+2+3*(i+1)]) for i in range(8)]
-    out['message'] = header[pos_MS+5:pos_MS+5+int(header[pos_MS+2:pos_MS+5])]
+    out['bytes'] = int(header[pos_BY + 2:pos_BY + 7])
+    out['version'] = header[pos_VS + 2:pos_VS + 4]
+    out['cluttermap'] = int(header[pos_CO + 2:pos_CO + 3])
+    out['dopplerfilter'] = int(header[pos_CD + 2:pos_CD + 3])
+    out['statfilter'] = int(header[pos_CS + 2:pos_CS + 3])
+    out['elevprofile'] = [float(header[pos_EP + 2 + 3 * i:pos_EP + 2 + 3 * (i + 1)]) for i in range(8)]
+    out['message'] = header[pos_MS + 5:pos_MS + 5 + int(header[pos_MS + 2:pos_MS + 5])]
 
     return out
 
@@ -216,10 +216,10 @@ def readDX(filename):
         - 'message' - additional text stored in the header.
     """
 
-    azimuthbitmask = 2**(14-1)
-    databitmask = 2**(13-1) - 1
-    clutterflag = 2**15
-    dataflag = 2**13 -1
+    azimuthbitmask = 2 ** (14 - 1)
+    databitmask = 2 ** (13 - 1) - 1
+    clutterflag = 2 ** 15
+    dataflag = 2 ** 13 - 1
     # open the DX file in binary mode for reading
     if type(filename) == file:
         f = filename
@@ -230,12 +230,12 @@ def readDX(filename):
     header = ''
     atend = False
     # read header
-    while True :
+    while True:
         mychar = f.read(1)
         # 0x03 signals the end of the header but sometimes there might be
         # an additional 0x03 char after that
         if (mychar == chr(3)):
-            atend=True
+            atend = True
         if mychar != chr(3) and atend:
             break
         header = header + mychar
@@ -250,7 +250,7 @@ def readDX(filename):
     # if product length is uneven but header is even (e.g. because it has two
     # chr(3) at the end, read one byte less
     buflen = attrs['bytes'] - len(header)
-    if (buflen % 2) !=0:
+    if (buflen % 2) != 0:
         # make sure that this is consistent with our assumption
         # i.e. contact DWD again, if DX files show up with uneven byte lengths
         # *and* only one 0x03 character
@@ -262,17 +262,17 @@ def readDX(filename):
     raw = np.frombuffer(buf, dtype='uint16')
 
     # reading finished, close file, but only if we opened it.
-    if type(filename)!=file:
+    if type(filename) != file:
         f.close()
 
     # a new ray/beam starts with bit 14 set
     # careful! where always returns its results in a tuple, so in order to get
     # the indices we have to retrieve element 0 of this tuple
-    newazimuths = np.where( raw == azimuthbitmask )[0]  ###Thomas kontaktieren!!!!!!!!!!!!!!!!!!!
+    newazimuths = np.where(raw == azimuthbitmask)[0]  # Thomas kontaktieren!!!!!!!!!!!!!!!!!!!
 
     # for the following calculations it is necessary to have the end of the data
     # as the last index
-    newazimuths = np.append(newazimuths,len(raw))
+    newazimuths = np.append(newazimuths, len(raw))
 
     # initialize our list of rays/beams
     beams = []
@@ -282,17 +282,17 @@ def readDX(filename):
     azims = []
 
     # iterate over all beams
-    for i in range(newazimuths.size-1):
+    for i in range(newazimuths.size - 1):
         # unpack zeros
-        beam = unpackDX(raw[newazimuths[i]+3:newazimuths[i+1]])
+        beam = unpackDX(raw[newazimuths[i] + 3:newazimuths[i + 1]])
         beams.append(beam)
-        elevs.append((raw[newazimuths[i]+2] & databitmask)/10.)
-        azims.append((raw[newazimuths[i]+1] & databitmask)/10.)
+        elevs.append((raw[newazimuths[i] + 2] & databitmask) / 10.)
+        azims.append((raw[newazimuths[i] + 1] & databitmask) / 10.)
 
     beams = np.array(beams)
 
     #attrs =  {}
-    attrs['elev']  = np.array(elevs)
+    attrs['elev'] = np.array(elevs)
     attrs['azim'] = np.array(azims)
     attrs['clutter'] = (beams & clutterflag) != 0
 
@@ -301,9 +301,9 @@ def readDX(filename):
 
 
 def _write_polygon2txt(f, idx, vertices):
-    f.write('%i %i\n'%idx)
+    f.write('%i %i\n' % idx)
     for i, vert in enumerate(vertices):
-        f.write('%i '%(i,))
+        f.write('%i ' % (i,))
         f.write('%f %f %f %f\n' % tuple(vert))
 
 
@@ -398,26 +398,26 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
         ix_minaz = np.argmin(az)
         ix_maxaz = np.argmax(az)
         if enforce_equidist:
-            az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
+            az = np.linspace(np.round(az[ix_minaz], 2), np.round(az[ix_maxaz], 2), len(az))
         else:
             az = np.roll(az, -ix_minaz)
         # rotate accordingly
         data = np.roll(data, -ix_minaz, axis=0)
-        data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
+        data = np.where(data == dset.getncattr('MissingData'), np.nan, data)
         # Ranges
         binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
         r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
         # collect attributes
-        attrs =  {}
+        attrs = {}
         for attrname in dset.ncattrs():
             attrs[attrname] = dset.getncattr(attrname)
-##        # Limiting the returned range
-##        if range_lim and range_lim / binwidth <= data.shape[1]:
-##            data = data[:,:range_lim / binwidth]
-##            r = r[:range_lim / binwidth]
+        ##        # Limiting the returned range
+        ##        if range_lim and range_lim / binwidth <= data.shape[1]:
+        ##            data = data[:,:range_lim / binwidth]
+        ##            r = r[:range_lim / binwidth]
         # Set additional metadata attributes
         attrs['az'] = az
-        attrs['r']  = r
+        attrs['r'] = r
         attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'], attrs['Height'])
         attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
         attrs['max_range'] = data.shape[1] * binwidth
@@ -455,12 +455,8 @@ def parse_DWD_quant_composite_header(header):
     # empty container
     out = {}
     # RADOLAN product type def
-    out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00",
-                                           "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
-    out["radarid"] = header[8:13]
     pos_VS = header.find("VS")
     pos_SW = header.find("SW")
     pos_PR = header.find("PR")
@@ -468,19 +464,19 @@ def parse_DWD_quant_composite_header(header):
     pos_GP = header.find("GP")
     pos_MS = header.find("MS")
     if pos_VS > -1:
-        out["maxrange"] = {0:"100 km and 128 km (mixed)",
+        out["maxrange"] = {0: "100 km and 128 km (mixed)",
                            1: "100 km",
-                           2:"128 km",
-                           3:"150 km" }[int(header[(pos_VS+2):pos_VS+4])]
+                           2: "128 km",
+                           3: "150 km"}[int(header[(pos_VS + 2):pos_VS + 4])]
     else:
         out["maxrange"] = "100 km"
-    out["radolanversion"] = header[(pos_SW+2):pos_SW+11]
-    out["precision"] = 10**int(header[pos_PR+4:pos_PR+7])
-    out["intervalseconds"] = int(header[(pos_INT+3):pos_INT+7])*60
-    dimstrings = header[(pos_GP+2):pos_GP+11].strip().split("x")
+    out["radolanversion"] = header[(pos_SW + 2):pos_SW + 11]
+    out["precision"] = 10 ** int(header[pos_PR + 4:pos_PR + 7])
+    out["intervalseconds"] = int(header[(pos_INT + 3):pos_INT + 7]) * 60
+    dimstrings = header[(pos_GP + 2):pos_GP + 11].strip().split("x")
     out["nrow"] = int(dimstrings[0])
     out["ncol"] = int(dimstrings[1])
-    locationstring = header[(pos_MS+2):].strip().split("<")[1].strip().strip(">")
+    locationstring = header[(pos_MS + 2):].strip().split("<")[1].strip().strip(">")
     out["radarlocations"] = locationstring.split(",")
     return out
 
@@ -522,20 +518,20 @@ def read_RADOLAN_composite(fname, missing=-9999):
         URL: http://dwd.de/radolan (in German)
 
     """
-    mask = 4095 # max value integer
+    mask = 4095  # max value integer
     NODATA = missing
-    header = '' # header string for later processing
+    header = ''  # header string for later processing
     # open file handle
     f = open(fname, 'rb')
     # read header
-    while True :
+    while True:
         mychar = f.read(1)
-        if mychar == chr(3) :
+        if mychar == chr(3):
             break
         header = header + mychar
     attrs = parse_DWD_quant_composite_header(header)
     attrs["nodataflag"] = NODATA
-    if not attrs["radarid"]=="10000":
+    if not attrs["radarid"] == "10000":
         warnings.warn("WARNING: You are using function e" +
                       "wradlib.io.read_RADOLAN_composit for a non " +
                       "composite file.\n " +
@@ -543,25 +539,25 @@ def read_RADOLAN_composite(fname, missing=-9999):
                       "of the results")
     if attrs["producttype"] == "RX":
         # read the actual data
-        indat = f.read(attrs["nrow"]*attrs["ncol"])
+        indat = f.read(attrs["nrow"] * attrs["ncol"])
         # convert from 8-bit integers
         # and upgrade to 32-bit ints, so that nodata values may be inserted
         arr = np.frombuffer(indat, np.uint8).astype(np.int)
-        arr = np.where(arr==250,NODATA,arr)
-        clutter = np.where(arr==249)[0]
+        arr = np.where(arr == 250, NODATA, arr)
+        clutter = np.where(arr == 249)[0]
     else:
         # read the actual data
-        indat = f.read(attrs["nrow"]*attrs["ncol"]*2)
+        indat = f.read(attrs["nrow"] * attrs["ncol"] * 2)
         # convert to 16-bit integers
         arr = np.frombuffer(indat, np.uint16).astype(np.int)
         # evaluate bits 14, 15 and 16
-        nodata   = np.where(arr & int("10000000000000",2))
-        negative = np.where(arr & int("100000000000000",2))
-        clutter  = np.where(arr & int("1000000000000000",2))
+        nodata = np.where(arr & int("10000000000000", 2))
+        negative = np.where(arr & int("100000000000000", 2))
+        clutter = np.where(arr & int("1000000000000000", 2))
         # mask out the last 4 bits
         arr = arr & mask
         # consider negative flag if product is RD (differences from adjustment)
-        if attrs["producttype"]=="RD":
+        if attrs["producttype"] == "RD":
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
         # apply precision factor
@@ -569,7 +565,7 @@ def read_RADOLAN_composite(fname, missing=-9999):
         # set nodata value
         arr[nodata] = NODATA
     # bring it into shape
-    arr = arr.reshape( (attrs["nrow"], attrs["ncol"]) )
+    arr = arr.reshape((attrs["nrow"], attrs["ncol"]))
 
     # append clutter mask
     attrs['cluttermask'] = clutter
@@ -579,10 +575,12 @@ def read_RADOLAN_composite(fname, missing=-9999):
 
     return arr, attrs
 
+
 def browse_hdf5_group(grp):
     """Browses one hdf5 file level
     """
     pass
+
 
 def read_generic_hdf5(fname):
     """Reads hdf5 files according to their structure
@@ -605,6 +603,7 @@ def read_generic_hdf5(fname):
     """
     f = h5py.File(fname, "r")
     fcontent = {}
+
     def filldict(x, y):
         # create a new container
         tmp = {}
@@ -617,16 +616,19 @@ def read_generic_hdf5(fname):
         # only add to the dictionary, if we have something meaningful to add
         if tmp != {}:
             fcontent[x] = tmp
+
     f.visititems(filldict)
 
     f.close()
 
     return fcontent
 
+
 def read_OPERA_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
-    Please refer to the `OPERA data model documentation <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
+    Please refer to the `OPERA data model documentation
+    <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
     in order to understand how an hdf5 file is organized that conforms to the OPERA
     ODIM_H5 conventions.
 
@@ -651,20 +653,22 @@ def read_OPERA_hdf5(fname):
     """
     f = h5py.File(fname, "r")
     # try verify OPERA conventions
-##    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
-##        print "File is not organized according to OPERA conventions (ODIM_H5)..."
-##        print "Expected the upper level subgroups to be: dataset1, how, what', where"
-##        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
-##        sys.exit(1)
+    ##    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
+    ##        print "File is not organized according to OPERA conventions (ODIM_H5)..."
+    ##        print "Expected the upper level subgroups to be: dataset1, how, what', where"
+    ##        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
+    ##        sys.exit(1)
 
     # now we browse through all Groups and Datasets and store the info in one dictionary
     fcontent = {}
+
     def filldict(x, y):
         if isinstance(y, h5py.Group):
             if len(y.attrs) > 0:
                 fcontent[x] = dict(y.attrs)
         elif isinstance(y, h5py.Dataset):
             fcontent[x] = np.array(y)
+
     f.visititems(filldict)
 
     f.close()
@@ -713,7 +717,7 @@ def read_gamic_scan_attributes(scan, scan_type):
         zero_index = np.where(azi_stop < azi_start)
         azi_stop[zero_index[0]] += 360
         zero_index = zero_index[0] + 1
-        az = (azi_start+azi_stop)/2
+        az = (azi_start + azi_stop) / 2
         az = np.roll(az, -zero_index, axis=0)
         az = np.round(az, 1)
         el = sg1.attrs.get('elevation')
@@ -730,7 +734,7 @@ def read_gamic_scan_attributes(scan, scan_type):
             ele_stop = ele_stop[1:]
         zero_index = np.where(ele_stop > ele_start)
         zero_index = zero_index[0]  # - 1
-        el = (ele_start+ele_stop)/2
+        el = (ele_start + ele_stop) / 2
         el = np.round(el, 1)
         el = el[-angle_step:]
 
@@ -740,7 +744,8 @@ def read_gamic_scan_attributes(scan, scan_type):
     sattrs['zero_index'] = zero_index[0]
 
     # create range array
-    r = np.arange(sattrs['bin_range'], sattrs['bin_range']*sattrs['bin_count']+sattrs['bin_range'], sattrs['bin_range'])
+    r = np.arange(sattrs['bin_range'], sattrs['bin_range'] * sattrs['bin_count'] + sattrs['bin_range'],
+                  sattrs['bin_range'])
 
     # save variables to scan attributes
     sattrs['az'] = az
@@ -793,7 +798,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
                     div = 256.0
                 else:
                     div = 65536.0
-                mdata = dyn_range_min + mdata*(dyn_range_max-dyn_range_min)/div
+                mdata = dyn_range_min + mdata * (dyn_range_max - dyn_range_min) / div
 
                 if scan_type == 'PVOL':
                     # rotate accordingly
@@ -801,7 +806,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
 
                 if scan_type == 'RHI':
                     # remove first zero angles
-                    sdiff = mdata.shape[0]-sattrs['el'].shape[0]
+                    sdiff = mdata.shape[0] - sattrs['el'].shape[0]
                     mdata = mdata[sdiff:, :]
 
                 data1['data'] = mdata
@@ -944,7 +949,7 @@ def decompress(data):
     data : string (from xml)
         data string containing compressed data.
     """
-
+    zlib = util.import_optional('zlib')
     return zlib.decompress(data)
 
 def getRBDataLayout(dataDepth):
@@ -971,7 +976,7 @@ def getRBDataLayout(dataDepth):
 
     dataWidth = dataDepth / 8
 
-    if dataWidth in [1,2,4]:
+    if dataWidth in [1, 2, 4]:
         dataType = byteOrder + 'u' + str(dataWidth)
     else:
         print("Wrong DataWidth")
@@ -979,32 +984,78 @@ def getRBDataLayout(dataDepth):
 
     return dataWidth, dataType
 
-def getRBDataAttribute(blob, attr):
+def getRBDataAttribute(xmlDict, attr):
+    """Get Attribute `attr` from dict `xmlDict`
+
+    Parameters
+    ----------
+    xmlDict : dict
+        Blob Description Dictionary
+
+    attr : string
+        Attribute key
+
+    Returns
+    -------
+    sattr : int
+        Attribute Values
+
+    """
 
     try:
-        sattr = int(blob['@'+attr])
+        sattr = int(xmlDict['@'+attr])
     except:
         if attr == 'bins':
             sattr = None
         else:
             print('Attribute @' + attr + ' is missing from Blob Description')
             print('There may be some problems with your file')
-            return
+            return False
 
     return sattr
 
-def getRBBlobAttribute(xmlDict, attr):
+def getRBBlobAttribute(blobDict, attr):
+    """Get Attribute `attr` from dict `blobDict`
 
-    return xmlDict['BLOB']['@' + attr]
+    Parameters
+    ----------
+    blobDict : dict
+        Blob Description Dictionary
 
-def getRBBlobData(s, blobid):
+    attr : string
+        Attribute key
+
+    Returns
+    -------
+        Attribute Value
+
+    """
+    return blobDict['BLOB']['@' + attr]
+
+def getRBBlobData(dataString, blobId):
+    """ Read BLOB data from dataString and return it
+
+    Parameters
+    ----------
+    dataString : dict
+        Blob Description Dictionary
+
+    blobId : int
+        Number of requested blob
+
+    Returns
+    -------
+    data : string
+        Content of blob
+
+    """
+    import xmltodict
 
     start = 0
-    searchString = r'<BLOB blobid="{}"'.format(blobid)
-    start = s.find(searchString, start)
-    end = s.find('>',start)
-    xmlString = s[start:end+1]
-    print("T", start, type(xmlString))
+    searchString = r'<BLOB blobid="{}"'.format(blobId)
+    start = dataString.find(searchString, start)
+    end = dataString.find('>',start)
+    xmlString = dataString[start:end+1]
     if len(xmlString) < 1:
         return None
 
@@ -1012,7 +1063,7 @@ def getRBBlobData(s, blobid):
     xmlDict = xmltodict.parse(xmlString + '</BLOB>')
     cmpr = getRBBlobAttribute(xmlDict, 'compression')
     size = int(getRBBlobAttribute(xmlDict, 'size'))
-    data = s[end+2:end+2+size] # read blob data to string
+    data = dataString[end+2:end+2+size] # read blob data to string
 
     # decompress if necessary
     # the first 4 bytes are neglected for an unknown reason
@@ -1023,7 +1074,22 @@ def getRBBlobData(s, blobid):
 
 
 def mapRBData(data, dataDepth):
+    """ Map BLOB data to correct DataWidth and Type and convert it to numpy array
 
+    Parameters
+    ----------
+    data : string
+        Blob Data
+
+    dataDepth : int
+        bit depth of Blob data
+
+    Returns
+    -------
+    data : numpy array
+        Content of blob
+
+    """
     dataWidth, dataType = getRBDataLayout(dataDepth)
 
     # import from data buffer well aligned to data array
@@ -1032,10 +1098,24 @@ def mapRBData(data, dataDepth):
     return data
 
 
-def loadRBBlobFromString(dataString, blobDict):
+def getRBBlobFromString(dataString, blobDict):
     """
-    Read BLOB data from file and return it with correct
+    Read BLOB data from dataString and return it as numpy array with correct
     dataWidth and shape
+
+    Parameters
+    ----------
+    dataString : dict
+        Blob Description Dictionary
+
+    blobDict : dict
+        Blob Dict
+
+    Returns
+    -------
+    data : numpy array
+        Content of blob as numpy array
+
     """
 
     blobid = getRBDataAttribute(blobDict, 'blobid')
@@ -1053,10 +1133,24 @@ def loadRBBlobFromString(dataString, blobDict):
 
     return data
 
-def loadRBBlobFromFile(fileName, blobDict):
+def getRBBlobFromFile(fileName, blobDict):
     """
     Read BLOB data from file and return it with correct
     dataWidth and shape
+
+    Parameters
+    ----------
+    fileName : string
+        Filename of Data File
+
+    blobDict : dict
+        Blob Dict
+
+    Returns
+    -------
+    data : numpy array
+        Content of blob as numpy array
+
     """
     try:
         fid = open(fileName, "rb" )
@@ -1064,44 +1158,81 @@ def loadRBBlobFromFile(fileName, blobDict):
         print "Error opening file", fileName
         return False
 
-    s = fid.read()
+    dataString = fid.read()
     fid.close()
 
-    data = loadRBBlobFromString(s, blobDict)
+    data = getRBBlobFromString(dataString, blobDict)
 
     return data
 
 
-def loadRBFile(fileName):
+def getRBFileAsString(fileName):
+    """ Read Rainbow File Contents in dataString
 
+    Parameters
+    ----------
+    fileName : string
+        Filename of Data File
+
+    Returns
+    -------
+    dataString : string
+        File Contents as dataString
+
+    """
     try:
         fid = open(fileName, "rb" )
     except:
         print "Error opening file", fileName
         return False
 
-    s = fid.read()
+    dataString = fid.read()
     fid.close()
 
-    return s
+    return dataString
 
 
-def loadRBBlobsFromFile(fileName, rbDict):
-    """Read all BLOBS found in given nested dict and add it at the appropriate
-    position.
+def getRBBlobsFromFile(fileName, rbDict):
+    """Read all BLOBS found in given nested dict, loads them from file
+    given by fileName and add them to the dict at the appropriate position.
+
+    Parameters
+    ----------
+    fileName : string
+        Filename of Data File
+    rbDict : dict
+        Rainbow file Contents
+
+    Returns
+    -------
+    rbDict : dictionary
+        Rainbow File Contents
+
     """
 
     blobs = list(findKey('@blobid', rbDict))
 
-    dataString = loadRBFile(fileName)
+    dataString = getRBFileAsString(fileName)
     for blob in blobs:
-        data = loadRBBlobFromString(dataString, blob)
+        data = getRBBlobFromString(dataString, blob)
         blob['data'] = data
 
     return rbDict
 
-def loadRBHeader(fileName):
+def getRBHeader(fileName):
+    """Read Rainbow Header from fileName, converts it to a dict and resturns it
 
+    Parameters
+    ----------
+    fileName : string
+        Filename of Data File
+
+    Returns
+    -------
+    rbDict : dictionary
+        Rainbow File Contents
+
+    """
     try:
         fid = open(fileName, "rb" )
     except:
@@ -1117,14 +1248,16 @@ def loadRBHeader(fileName):
         header = header + line[:-1]
         line = fid.readline()
         if len( line ) == 0:
-            hasBlobs = False
+            #hasBlobs = False
             break
 
     fid.close()
 
-    return xmltodict.parse(header), hasBlobs
+    xmltodict = util.import_optional('xmltodict')
 
-def loadRainbow(fileName, loadData=True):
+    return xmltodict.parse(header)#, hasBlobs
+
+def readRainbow(fileName, loadData=True):
     """"Reads Rainbow files files according to their structure
 
     In contrast to other file readers under wradlib.io, this function will *not* return
@@ -1137,7 +1270,7 @@ def loadRainbow(fileName, loadData=True):
 
     Parameters
     ----------
-    f : string (a rainbow file path)
+    fileName : string (a rainbow file path)
 
     Returns
     -------
@@ -1145,52 +1278,52 @@ def loadRainbow(fileName, loadData=True):
               original rainbow file structure
     """
 
-    rbDict, hasBlobs = loadRBHeader(fileName)
+    rbDict = getRBHeader(fileName)
 
-    if hasBlobs and loadData:
-        rbDict = loadRBBlobsFromFile(fileName, rbDict)
+    if loadData:
+        rbDict = getRBBlobsFromFile(fileName, rbDict)
 
     return rbDict
 
 class RainbowBLOB:
-    tagBLOBID      = "blobid"
+    tagBLOBID = "blobid"
     tagCOMPRESSION = "compression"
-    tagSIZE        = "size"
+    tagSIZE = "size"
 
     def __init__(self):
-        self.id     = None
-        self.cmpr   = None
-        self.data   = None
-        self.dataWidth  = None
+        self.id = None
+        self.cmpr = None
+        self.data = None
+        self.dataWidth = None
         self.dataDepth = None
 
-    def _findTag( self, line, tag ):
-        start = line.find( tag ) + len( tag ) + 2
-        end   = line.find( '"', start )
+    def _findTag(self, line, tag):
+        start = line.find(tag) + len(tag) + 2
+        end = line.find('"', start)
         return line[start:end]
 
-    def loadFromFile( self, file):
+    def loadFromFile(self, file):
         """
         Read BLOB data and store it in self.data as an array of 8 bit values
         """
         line = file.readline()
-        if len( line ) < 1:
+        if len(line) < 1:
             return
 
-        self.id   = self._findTag( line, self.tagBLOBID )
-        self.cmpr = self._findTag( line, self.tagCOMPRESSION )
-        nbyte = int( self._findTag( line, self.tagSIZE ) )
-        self.data = file.read( nbyte ) # read blob data to string
-        file.readline()                # read final line end
-        file.readline()                # read line </BLOB>
+        self.id = self._findTag(line, self.tagBLOBID)
+        self.cmpr = self._findTag(line, self.tagCOMPRESSION)
+        nbyte = int(self._findTag(line, self.tagSIZE))
+        self.data = file.read(nbyte)  # read blob data to string
+        file.readline()  # read final line end
+        file.readline()  # read line </BLOB>
         if self.cmpr == "qt":
-            self.data = zlib.decompress( self.data[4:] )
+            self.data = zlib.decompress(self.data[4:])
             self.cmpr = "none"
-            self.data = array.array( 'B', self.data )
+            self.data = array.array('B', self.data)
         self.dataWidth = None
         self.dataDepth = 8
 
-    def setDataWidth( self, width ):
+    def setDataWidth(self, width):
         """
         Set self.dataWidth if width is a divisor of the array length
         """
@@ -1198,7 +1331,7 @@ class RainbowBLOB:
         # if len( self.data ) % width != 0:
         #     print "BLOB %s: Width %d not suitable for array of size %d." % ( self.id, width, len( self.data ) )
 
-    def setDataDepth( self, depth ):
+    def setDataDepth(self, depth):
         """
         Convert self.data to given depth i.e. 8, 16 or 32 bit values
         """
@@ -1212,11 +1345,11 @@ class RainbowBLOB:
             self.data.byteswap()
         self.data = self.data.tostring()
         if depth == 8:
-            self.data = array.array( 'B', self.data )
+            self.data = array.array('B', self.data)
         elif depth == 16:
-            self.data = array.array( 'H', self.data )
+            self.data = array.array('H', self.data)
         else:
-            self.data = array.array( 'L', self.data )
+            self.data = array.array('L', self.data)
 
         if sys.byteorder != 'big':
             self.data.byteswap()
@@ -1224,13 +1357,13 @@ class RainbowBLOB:
     def __str__(self):
         if self.dataWidth != None:
             width = self.dataWidth
-            height = len( self.data ) / width
+            height = len(self.data) / width
         else:
-            width = len( self.data )
+            width = len(self.data)
             height = 1
 
         res = "BLOB %s: depth %2d width %4d height %4d size %6d\n" % \
-              ( self.id, self.dataDepth, width, height, len( self.data ) )
+              ( self.id, self.dataDepth, width, height, len(self.data) )
         return res
 
 
@@ -1239,36 +1372,36 @@ class RainbowDom:
     """
     Container class for XML tags etc
     """
-    NodeTypeStr = [ "", \
-            "ELEMENT_NODE",\
-            "ATTRIBUTE_NODE",\
-            "TEXT_NODE",\
-            "CDATA_SECTION_NODE",\
-            "ENTITY_NODE",\
-            "PROCESSING_INSTRUCTION_NODE",\
-            "COMMENT_NODE, DOCUMENT_NODE",
-            "DOCUMENT_TYPE_NODE",\
-            "NOTATION_NODE" ]
+    NodeTypeStr = ["", \
+                   "ELEMENT_NODE", \
+                   "ATTRIBUTE_NODE", \
+                   "TEXT_NODE", \
+                   "CDATA_SECTION_NODE", \
+                   "ENTITY_NODE", \
+                   "PROCESSING_INSTRUCTION_NODE", \
+                   "COMMENT_NODE, DOCUMENT_NODE",
+                   "DOCUMENT_TYPE_NODE", \
+                   "NOTATION_NODE"]
 
 
 # =======================================================
-class RainbowDomNode( RainbowDom ):
+class RainbowDomNode(RainbowDom):
     """
     Recursively contains a complete node with attributes and children
     """
 
     def __init__(self):
-        self.level      = 0
-        self.name       = ""
-        self.value      = ""
-        self.attrMap    = {} # attr name vs attr value
-        self.childMap   = {} # node name vs list of child nodes with this name
+        self.level = 0
+        self.name = ""
+        self.value = ""
+        self.attrMap = {}  # attr name vs attr value
+        self.childMap = {}  # node name vs list of child nodes with this name
 
     def floatValue(self):
-        return float( self.value )
+        return float(self.value)
 
     def intValue(self):
-        return int( self.value )
+        return int(self.value)
 
     def attr(self, tag):
         """
@@ -1276,38 +1409,38 @@ class RainbowDomNode( RainbowDom ):
         Return None if attribute does not exist
         """
         if tag in self.attrMap:
-            return self.attrMap[ tag ]
+            return self.attrMap[tag]
         else:
             return None
 
-    def hasAttr(self, tag ):
+    def hasAttr(self, tag):
         """
         Return True if specified attribute exists, else False.
         """
-        val = self.attr( tag )
+        val = self.attr(tag)
         return (val != None)
 
     def floatAttr(self, tag):
         try:
-            v = float( self.attr( tag ) )
+            v = float(self.attr(tag))
         except:
             return None
         return v
 
     def intAttr(self, tag):
         try:
-            v = int( self.attr( tag ) )
+            v = int(self.attr(tag))
         except:
             return None
         return v
 
-    def _splitTag(self, tag ):
+    def _splitTag(self, tag):
         attr = None
         attrVal = None
         if "@" in tag:
-            tag, attr = tag.split( "@" )
+            tag, attr = tag.split("@")
             if "=" in attr:
-                attr, attrVal = attr.split( "=" )
+                attr, attrVal = attr.split("=")
         return (tag, attr, attrVal)
 
     def nodeList(self, path):
@@ -1318,36 +1451,36 @@ class RainbowDomNode( RainbowDom ):
         If several nodes match a name@attr=val the first node is taken.
         Return a list of all nodes that match the final pattern.
         """
-        tagList = path.split( "/" )
+        tagList = path.split("/")
         curNode = self
         nodeList = []
         for tag in tagList:
-            tag, attr, attrVal = self._splitTag( tag )
+            tag, attr, attrVal = self._splitTag(tag)
             if not tag in curNode.childMap:
                 return []
-            nodeList = curNode.childMap[ tag ]
+            nodeList = curNode.childMap[tag]
             if attr != None:
                 if attrVal != None:
-                    nodeList = [ n for n in nodeList if n.attr( attr ) == attrVal ]
+                    nodeList = [n for n in nodeList if n.attr(attr) == attrVal]
                 else:
-                    nodeList = [ n for n in nodeList if n.hasAttr( attr ) ]
-            if len( nodeList ) == 0:
+                    nodeList = [n for n in nodeList if n.hasAttr(attr)]
+            if len(nodeList) == 0:
                 break
             curNode = nodeList[0]
         return nodeList
 
     def node(self, path):
-        nodeList = self.nodeList( path )
-        if len( nodeList ):
+        nodeList = self.nodeList(path)
+        if len(nodeList):
             return nodeList[0]
         else:
             return None
 
-    def hasNode(self, path ):
+    def hasNode(self, path):
         """
         Return True if specified node exists, else False.
         """
-        node = self.node( path )
+        node = self.node(path)
         return (node == None)
 
     def loadFromDomNode(self, level, domNode):
@@ -1359,43 +1492,43 @@ class RainbowDomNode( RainbowDom ):
         self.name = domNode.nodeName
 
         if domNode.hasAttributes:
-            for i in range( 0, domNode.attributes.length ):
-                attr = domNode.attributes.item( i )
-                self.attrMap[ attr.name ] = attr.value
+            for i in range(0, domNode.attributes.length):
+                attr = domNode.attributes.item(i)
+                self.attrMap[attr.name] = attr.value
 
         for childNode in domNode.childNodes:
             if childNode.nodeType == Node.ELEMENT_NODE:
                 child = RainbowDomNode()
-                child.loadFromDomNode( self.level + 1, childNode  )
+                child.loadFromDomNode(self.level + 1, childNode)
                 if not child.name in self.childMap:
-                    self.childMap[ child.name ] = []
-                self.childMap[ child.name ].append( child )
+                    self.childMap[child.name] = []
+                self.childMap[child.name].append(child)
             elif childNode.nodeType == Node.TEXT_NODE:
                 self.value = self.value + childNode.nodeValue.strip()
             else:
-                print "Unexpected node type", self.NodeTypeStr[ childNode.nodeType ]
+                print "Unexpected node type", self.NodeTypeStr[childNode.nodeType]
 
-    def _blobInfoMap( self, infoMap ):
+    def _blobInfoMap(self, infoMap):
         """
         Recursively add BLOB related attributes to infoMap.
         Used internally to convert byte arrays to 2,4,8 byte integers.
         """
         if "blobid" in self.attrMap:
-            blobId = self.attrMap[ "blobid" ]
+            blobId = self.attrMap["blobid"]
             depth = None
             width = None
             if "depth" in self.attrMap:
-                depth = int( self.attrMap[ "depth" ] )
+                depth = int(self.attrMap["depth"])
             if "bins" in self.attrMap:
-                width = int( self.attrMap[ "bins" ] )
+                width = int(self.attrMap["bins"])
             if "columns" in self.attrMap:
-                width = int( self.attrMap[ "columns" ] )
-            infoMap[ blobId ] = ( depth, width )
+                width = int(self.attrMap["columns"])
+            infoMap[blobId] = ( depth, width )
 
         for tag in self.childMap:
-            nodeList = self.childMap[ tag ]
+            nodeList = self.childMap[tag]
             for node in nodeList:
-                infoMap = node._blobInfoMap( infoMap )
+                infoMap = node._blobInfoMap(infoMap)
 
         return infoMap
 
@@ -1405,35 +1538,36 @@ class RainbowDomNode( RainbowDom ):
         """
         indent = "+  " * self.level
         # put name and value on a single line
-        if len( self.value ) == 0:
+        if len(self.value) == 0:
             res = indent + self.name + "\n"
         else:
             res = indent + self.name + " = " + self.value + "\n"
         # one line for each attribute
         for a in self.attrMap.keys():
-            res = res + indent + "   @" + a + " = " + self.attrMap[ a ] + "\n"
+            res = res + indent + "   @" + a + " = " + self.attrMap[a] + "\n"
         # recursively append the children
         for tag in self.childMap:
-            nodeList = self.childMap[ tag ]
+            nodeList = self.childMap[tag]
             for node in nodeList:
                 res = res + node.__str__()
         return res
+
 
 # =======================================================
 
 class RainbowDomFile:
     def __init__(self):
         self.EndXMLMarker = "<!-- END XML -->"
-        self.root         = RainbowDomNode()
-        self.blobMap      = {}  # int blobid : RbBlob
-        self.blobInfoMap  = {}  # int blobid : ( depth, width )
+        self.root = RainbowDomNode()
+        self.blobMap = {}  # int blobid : RbBlob
+        self.blobInfoMap = {}  # int blobid : ( depth, width )
 
     def load(self, filepath):
         self.__init__()
 
         # open the file
         try:
-            f=open( filepath, "rb" )
+            f = open(filepath, "rb")
         except:
             print "Error opening file", filepath
             return False
@@ -1442,47 +1576,46 @@ class RainbowDomFile:
         header = ""
         line = ""
         hasBlobs = True
-        while not line.startswith( self.EndXMLMarker ):
+        while not line.startswith(self.EndXMLMarker):
             header = header + line[:-1]
             line = f.readline()
-            if len( line ) == 0:
+            if len(line) == 0:
                 hasBlobs = False
                 break
 
-        dom = parseString( header )
-        self.root.loadFromDomNode( 0, dom.documentElement )
-        self.blobInfoMap = self.root._blobInfoMap( {} )
+        dom = parseString(header)
+        self.root.loadFromDomNode(0, dom.documentElement)
+        self.blobInfoMap = self.root._blobInfoMap({})
 
         # load the BLOBS
         while hasBlobs:
             blob = RainbowBLOB()
-            blob.loadFromFile( f )
+            blob.loadFromFile(f)
             if blob.id == None:
                 break
             else:
-                self.blobMap[ blob.id ] = blob
+                self.blobMap[blob.id] = blob
 
         # convert BLOBs to proper data length
         for blobId in self.blobInfoMap.keys():
             if blobId in self.blobMap:
-                depth, width = self.blobInfoMap[ blobId ]
+                depth, width = self.blobInfoMap[blobId]
                 if depth != None:
-                    self.blobMap[ blobId ].setDataDepth( depth )
+                    self.blobMap[blobId].setDataDepth(depth)
                 if width != None:
-                   self.blobMap[ blobId ].setDataWidth( width )
+                    self.blobMap[blobId].setDataWidth(width)
 
         return True
 
-    def __str__( self ):
+    def __str__(self):
         res = self.root.__str__()
         return res
 
-    def blobDesc( self ):
+    def blobDesc(self):
         res = ""
         for key in self.blobMap:
-           res = res + self.blobMap[ key ].__str__()
+            res = res + self.blobMap[key].__str__()
         return res
-
 
 
 def to_pickle(fpath, obj):
@@ -1566,18 +1699,18 @@ def read_safnwc(filename):
     """
 
     root = gdal.Open(filename)
-    ds = gdal.Open('HDF5:'+filename+'://CT')
+    ds = gdal.Open('HDF5:' + filename + '://CT')
     name = os.path.basename(filename)[7:11]
     try:
-        proj = root.GetMetadata()["PROJECTION"];
+        proj = root.GetMetadata()["PROJECTION"]
     except Exception as error:
-        raise NameError("No metadata for satellite file %s" %(filename))
-    geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",");
-    geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"];
-    geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"];
+        raise NameError("No metadata for satellite file %s" % (filename))
+    geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
+    geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
+    geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"]
     ds.SetProjection(proj)
     ds.SetGeoTransform([float(x) for x in geotransform])
-    return(ds)
+    return (ds)
 
 
 if __name__ == '__main__':
