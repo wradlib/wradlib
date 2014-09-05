@@ -60,8 +60,9 @@ for sample in requires:
             if parse_version(mver) < parse_version(ver):
                 print("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
                 missing.append(sample)
-    except ImportError:
+    except ImportError, e:
         print("Dependency %s not installed." % modulestr)
+        print("The following exception occured: %s" % e)
         missing.append(sample)
 
 # just run if missing/version mismatch dependencies are detected
