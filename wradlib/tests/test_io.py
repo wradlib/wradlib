@@ -2,7 +2,7 @@
 
 import unittest
 import wradlib.io as io
-import xmltodict
+import wradlib.util as util
 import numpy as np
 import zlib
 
@@ -22,7 +22,6 @@ class IOTest(unittest.TestCase):
         pass
 
 class RainbowTest(unittest.TestCase):
-
     def test_read_rainbow(self):
         pass
     def test_find_key(self):
@@ -43,10 +42,11 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(io.get_RB_data_layout(32),  (4 , '>u4'))
         self.assertRaises(ValueError, lambda: io.get_RB_data_layout(128))
     def test_get_RB_data_attribute(self):
+        xmltodict = util.import_optional('xmltodict')
         data = xmltodict.parse('<slicedata time="13:30:05" date="2013-04-26"> \
-        <rayinfo refid="startangle" blobid="0" rays="361" depth="16"/> \
-        <rawdata blobid="1" rays="361" type="dBuZ" bins="400" min="-31.5" max="95.5" depth="8"/> \
-        </slicedata>')
+        #<rayinfo refid="startangle" blobid="0" rays="361" depth="16"/> \
+        #<rawdata blobid="1" rays="361" type="dBuZ" bins="400" min="-31.5" max="95.5" depth="8"/> \
+        #</slicedata>')
         data = list(io.find_key('@blobid', data))
         self.assertEqual(io.get_RB_data_attribute(data[0], 'blobid'), 0)
         self.assertEqual(io.get_RB_data_attribute(data[1], 'blobid'), 1)
@@ -57,6 +57,7 @@ class RainbowTest(unittest.TestCase):
         self.assertRaises(KeyError, lambda: io.get_RB_data_attribute(data[0], 'Nonsense'))
         self.assertEqual(io.get_RB_data_attribute(data[0], 'depth'), 16)
     def test_get_RB_blob_attribute(self):
+        xmltodict = util.import_optional('xmltodict')
         xmldict = xmltodict.parse('<BLOB blobid="0" size="737" compression="qt"></BLOB>')
         self.assertEqual(io.get_RB_blob_attribute(xmldict, 'compression'), 'qt')
         self.assertEqual(io.get_RB_blob_attribute(xmldict, 'size'), '737')
