@@ -912,7 +912,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     return data, attrs
 
-def findKey(key, dictionary):
+def find_key(key, dictionary):
     """Searches for given key in given (nested) dictionary.
 
     Returns all found parent dictionaries in a list.
@@ -933,11 +933,11 @@ def findKey(key, dictionary):
         if k == key:
             yield dictionary
         elif isinstance(v, dict):
-            for result in findKey(key, v):
+            for result in find_key(key, v):
                 yield result
         elif isinstance(v, list):
             for d in v:
-                for result in findKey(key, d):
+                for result in find_key(key, d):
                     yield result
 
 
@@ -952,44 +952,45 @@ def decompress(data):
     zlib = util.import_optional('zlib')
     return zlib.decompress(data)
 
-def getRBDataLayout(dataDepth):
+def get_RB_data_layout(datadepth):
     """Calculates DataWidth and DataType from given DataDepth of RAINBOW radar data
 
     Parameters
     ----------
-    dataDepth : int
+    datadepth : int
         DataDepth as read from the Rainbow xml metadata.
 
     Returns
     -------
-    dataWidth : int
+    datawidth : int
         Width in Byte of data
 
-    dataType : string
+    datatype : string
         conversion string .
 
     """
+
+
     if sys.byteorder != 'big':
-        byteOrder = '>'
+        byteorder = '>'
     else:
-        byteOrder = '<'
+        byteorder = '<'
 
-    dataWidth = dataDepth / 8
+    datawidth = datadepth / 8
 
-    if dataWidth in [1, 2, 4]:
-        dataType = byteOrder + 'u' + str(dataWidth)
+    if datawidth in [1, 2, 4]:
+        datatype = byteorder + 'u' + str(datawidth)
     else:
-        print("Wrong DataWidth")
-        return False
+        raise ValueError("Wrong DataDepth: %d. Conversion only for depth 8, 16, 32" % (datadepth))
 
-    return dataWidth, dataType
+    return (datawidth, datatype)
 
-def getRBDataAttribute(xmlDict, attr):
-    """Get Attribute `attr` from dict `xmlDict`
+def get_RB_data_attribute(xmldict, attr):
+    """Get Attribute `attr` from dict `xmldict`
 
     Parameters
     ----------
-    xmlDict : dict
+    xmldict : dict
         Blob Description Dictionary
 
     attr : string
@@ -1003,23 +1004,22 @@ def getRBDataAttribute(xmlDict, attr):
     """
 
     try:
-        sattr = int(xmlDict['@'+attr])
+        sattr = int(xmldict['@'+attr])
     except:
         if attr == 'bins':
             sattr = None
         else:
-            print('Attribute @' + attr + ' is missing from Blob Description')
-            print('There may be some problems with your file')
-            return False
+            raise KeyError('Attribute @' + attr + ' is missing from Blob Description' \
+            'There may be some problems with your file')
 
     return sattr
 
-def getRBBlobAttribute(blobDict, attr):
-    """Get Attribute `attr` from dict `blobDict`
+def get_RB_blob_attribute(blobdict, attr):
+    """Get Attribute `attr` from dict `blobdict`
 
     Parameters
     ----------
-    blobDict : dict
+    blobdict : dict
         Blob Description Dictionary
 
     attr : string
@@ -1030,17 +1030,23 @@ def getRBBlobAttribute(blobDict, attr):
         Attribute Value
 
     """
-    return blobDict['BLOB']['@' + attr]
+    try:
+        value = blobdict['BLOB']['@' + attr]
+    except KeyError:
+        raise KeyError('Attribute @' + attr + ' is missing from Blob' \
+            'There may be some problems with your file')
 
-def getRBBlobData(dataString, blobId):
-    """ Read BLOB data from dataString and return it
+    return value
+
+def get_RB_blob_data(datastring, blobid):
+    """ Read BLOB data from datastring and return it
 
     Parameters
     ----------
-    dataString : dict
+    datastring : dict
         Blob Description Dictionary
 
-    blobId : int
+    blobid : int
         Number of requested blob
 
     Returns
@@ -1052,18 +1058,18 @@ def getRBBlobData(dataString, blobId):
     import xmltodict
 
     start = 0
-    searchString = r'<BLOB blobid="{}"'.format(blobId)
-    start = dataString.find(searchString, start)
-    end = dataString.find('>',start)
-    xmlString = dataString[start:end+1]
-    if len(xmlString) < 1:
-        return None
+    searchString = r'<BLOB blobid="{}"'.format(blobid)
+    start = datastring.find(searchString, start)
+    if start == -1:
+        raise EOFError('Blob ID {} not found!'.format(blobid))
+    end = datastring.find('>',start)
+    xmlstring = datastring[start:end+1]
 
     # cheat the xml parser by making xml well-known
-    xmlDict = xmltodict.parse(xmlString + '</BLOB>')
-    cmpr = getRBBlobAttribute(xmlDict, 'compression')
-    size = int(getRBBlobAttribute(xmlDict, 'size'))
-    data = dataString[end+2:end+2+size] # read blob data to string
+    xmldict = xmltodict.parse(xmlstring + '</BLOB>')
+    cmpr = get_RB_blob_attribute(xmldict, 'compression')
+    size = int(get_RB_blob_attribute(xmldict, 'size'))
+    data = datastring[end+2:end+2+size] # read blob data to string
 
     # decompress if necessary
     # the first 4 bytes are neglected for an unknown reason
@@ -1073,7 +1079,7 @@ def getRBBlobData(dataString, blobId):
     return data
 
 
-def mapRBData(data, dataDepth):
+def map_RB_data(data, datadepth):
     """ Map BLOB data to correct DataWidth and Type and convert it to numpy array
 
     Parameters
@@ -1081,7 +1087,7 @@ def mapRBData(data, dataDepth):
     data : string
         Blob Data
 
-    dataDepth : int
+    datadepth : int
         bit depth of Blob data
 
     Returns
@@ -1090,25 +1096,25 @@ def mapRBData(data, dataDepth):
         Content of blob
 
     """
-    dataWidth, dataType = getRBDataLayout(dataDepth)
+    datawidth, datatype = get_RB_data_layout(datadepth)
 
     # import from data buffer well aligned to data array
-    data = np.ndarray(shape=(len(data)/dataWidth,), dtype=dataType, buffer=data)
+    data = np.ndarray(shape=(len(data)/datawidth,), dtype=datatype, buffer=data)
 
     return data
 
 
-def getRBBlobFromString(dataString, blobDict):
+def get_RB_blob_from_string(datastring, blobdict):
     """
-    Read BLOB data from dataString and return it as numpy array with correct
+    Read BLOB data from datastring and return it as numpy array with correct
     dataWidth and shape
 
     Parameters
     ----------
-    dataString : dict
+    datastring : dict
         Blob Description Dictionary
 
-    blobDict : dict
+    blobdict : dict
         Blob Dict
 
     Returns
@@ -1118,32 +1124,32 @@ def getRBBlobFromString(dataString, blobDict):
 
     """
 
-    blobid = getRBDataAttribute(blobDict, 'blobid')
-    data = getRBBlobData(dataString, blobid)
+    blobid = get_RB_data_attribute(blobdict, 'blobid')
+    data = get_RB_blob_data(datastring, blobid)
 
     # map data to correct datatype and width
-    dataDepth = getRBDataAttribute(blobDict, 'depth')
-    data = mapRBData(data, dataDepth)
+    datadepth = get_RB_data_attribute(blobdict, 'depth')
+    data = map_RB_data(data, datadepth)
 
     # reshape data
-    bins = getRBDataAttribute(blobDict, 'bins')
+    bins = get_RB_data_attribute(blobdict, 'bins')
     if bins:
-        rays = getRBDataAttribute(blobDict, 'rays')
+        rays = get_RB_data_attribute(blobdict, 'rays')
         data.shape = (rays, bins)
 
     return data
 
-def getRBBlobFromFile(fileName, blobDict):
+def get_RB_blob_from_file(filename, blobdict):
     """
     Read BLOB data from file and return it with correct
     dataWidth and shape
 
     Parameters
     ----------
-    fileName : string
+    filename : string
         Filename of Data File
 
-    blobDict : dict
+    blobdict : dict
         Blob Dict
 
     Returns
@@ -1153,25 +1159,25 @@ def getRBBlobFromFile(fileName, blobDict):
 
     """
     try:
-        fid = open(fileName, "rb" )
+        fid = open(filename, "rb" )
     except:
-        print "Error opening file", fileName
+        print "Error opening file", filename
         return False
 
-    dataString = fid.read()
+    datastring = fid.read()
     fid.close()
 
-    data = getRBBlobFromString(dataString, blobDict)
+    data = get_RB_blob_from_string(datastring, blobdict)
 
     return data
 
 
-def getRBFileAsString(fileName):
+def get_RB_file_as_string(filename):
     """ Read Rainbow File Contents in dataString
 
     Parameters
     ----------
-    fileName : string
+    filename : string
         Filename of Data File
 
     Returns
@@ -1181,9 +1187,9 @@ def getRBFileAsString(fileName):
 
     """
     try:
-        fid = open(fileName, "rb" )
+        fid = open(filename, "rb" )
     except:
-        print "Error opening file", fileName
+        print "Error opening file", filename
         return False
 
     dataString = fid.read()
@@ -1192,59 +1198,59 @@ def getRBFileAsString(fileName):
     return dataString
 
 
-def getRBBlobsFromFile(fileName, rbDict):
+def get_RB_blobs_from_file(filename, rbdict):
     """Read all BLOBS found in given nested dict, loads them from file
-    given by fileName and add them to the dict at the appropriate position.
+    given by filename and add them to the dict at the appropriate position.
 
     Parameters
     ----------
-    fileName : string
-        Filename of Data File
-    rbDict : dict
+    :param filename: string
+        Filename of Data File 
+    :param rbdict: dict
         Rainbow file Contents
 
     Returns
     -------
-    rbDict : dictionary
+    :rtype : dict
         Rainbow File Contents
 
     """
 
-    blobs = list(findKey('@blobid', rbDict))
+    blobs = list(find_key('@blobid', rbdict))
 
-    dataString = getRBFileAsString(fileName)
+    datastring = get_RB_file_as_string(filename)
     for blob in blobs:
-        data = getRBBlobFromString(dataString, blob)
+        data = get_RB_blob_from_string(datastring, blob)
         blob['data'] = data
 
-    return rbDict
+    return rbdict
 
-def getRBHeader(fileName):
-    """Read Rainbow Header from fileName, converts it to a dict and resturns it
+def get_RB_header(filename):
+    """Read Rainbow Header from filename, converts it to a dict and returns it
 
     Parameters
     ----------
-    fileName : string
+    filename : string
         Filename of Data File
 
     Returns
     -------
-    rbDict : dictionary
+    object : dictionary
         Rainbow File Contents
 
     """
     try:
-        fid = open(fileName, "rb" )
+        fid = open(filename, "rb" )
     except:
-        print "Error opening file", fileName
+        print "Error opening file", filename
         return False
 
     # load the header lines, i.e. the XML part
-    EndXMLMarker = "<!-- END XML -->"
+    endXMLmarker = "<!-- END XML -->"
     header = ""
     line = ""
     hasBlobs = True
-    while not line.startswith( EndXMLMarker ):
+    while not line.startswith( endXMLmarker ):
         header = header + line[:-1]
         line = fid.readline()
         if len( line ) == 0:
@@ -1257,7 +1263,7 @@ def getRBHeader(fileName):
 
     return xmltodict.parse(header)#, hasBlobs
 
-def readRainbow(fileName, loadData=True):
+def read_Rainbow(filename, loaddata=True):
     """"Reads Rainbow files files according to their structure
 
     In contrast to other file readers under wradlib.io, this function will *not* return
@@ -1270,20 +1276,20 @@ def readRainbow(fileName, loadData=True):
 
     Parameters
     ----------
-    fileName : string (a rainbow file path)
+    filename : string (a rainbow file path)
 
     Returns
     -------
-    rbDict : a dictionary that contains both data and metadata according to the
+    rbdict : a dictionary that contains both data and metadata according to the
               original rainbow file structure
     """
 
-    rbDict = getRBHeader(fileName)
+    rbdict = get_RB_header(filename)
 
-    if loadData:
-        rbDict = getRBBlobsFromFile(fileName, rbDict)
+    if loaddata:
+        rbdict = get_RB_blobs_from_file(filename, rbdict)
 
-    return rbDict
+    return rbdict
 
 class RainbowBLOB:
     tagBLOBID = "blobid"
