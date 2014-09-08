@@ -119,4 +119,4 @@ The user should inspect the output obtained from his or her Rainbow file in orde
     import pprint as pp
     pp.pprint(fcontent)
 
-You can check this :download:`example script <../../examples/load_rainbow.py>` for getting a first impression.
+You can check this :download:`example script <../../examples/load_rainbow_example.py>` for getting a first impression.

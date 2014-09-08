@@ -1,3 +1,14 @@
+#------------------------------------------------------------------------------
+# Name:        load_rainbow_example.py
+# Purpose:     show how to load and work with Gematronik Rainbow5 format
+#
+# Author:      Kai Muehlbauer
+#
+# Created:     08.09.2014
+# Copyright:   (c) Kai Muehlbauer 2014
+# Licence:     The MIT License
+#------------------------------------------------------------------------------
+
 import wradlib as wrl
 import matplotlib.pyplot as pl
 import numpy as np
