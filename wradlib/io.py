@@ -1055,7 +1055,7 @@ def get_RB_blob_data(datastring, blobid):
         Content of blob
 
     """
-    import xmltodict
+    xmltodict = util.import_optional('xmltodict')
 
     start = 0
     searchString = r'<BLOB blobid="{}"'.format(blobid)

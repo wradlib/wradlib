@@ -190,6 +190,10 @@ In order to build the speedup module as a shared library, you need to use f2py (
 ``f2py.py -c -m speedup speedup.f``
 
 Now the speedup module should be availble.
+
+**xmltodict**
+
+We use xmltodict to convert the Rainbow Data Files (which have an metadata XML header) to an ordered dict.
  
 
 Community
