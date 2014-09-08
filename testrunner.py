@@ -18,6 +18,11 @@ import doctest
 import glob
 import inspect
 
+# This import has to be done in order to return correct exit codes
+# see http://stackoverflow.com/questions/14354496/python-returns-wrong-exit-code
+#    for details on this weird fix
+import scipy.weave
+
 VERBOSE = 2
 
 def create_examples_testsuite():
@@ -184,10 +189,17 @@ def main(args):
     elif test_units:
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
 
+    all_success = 1
     for ts in testSuite:
-        unittest.TextTestRunner(verbosity=verbosity).run(ts)
+        result = unittest.TextTestRunner(verbosity=verbosity).run(ts)
+        # if any test suite was not successful, all_success should be 0 in the end
+        all_success = all_success & result.wasSuccessful()
 
-    sys.exit(0)
+    if all_success:
+        sys.exit(0)
+    else:
+        # This will retrun exit code 1
+        sys.exit("At least one test hase failed. Please see test report for details.")
 
 def err_exit(message, rc=2):
     sys.stderr.write("\n%s\n" % message)
