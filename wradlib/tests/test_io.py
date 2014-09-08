@@ -56,7 +56,6 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(io.get_RB_data_attribute(data[1], 'bins'), 400)
         self.assertRaises(KeyError, lambda: io.get_RB_data_attribute(data[0], 'Nonsense'))
         self.assertEqual(io.get_RB_data_attribute(data[0], 'depth'), 16)
-        pass
     def test_get_RB_blob_attribute(self):
         xmldict = xmltodict.parse('<BLOB blobid="0" size="737" compression="qt"></BLOB>')
         self.assertEqual(io.get_RB_blob_attribute(xmldict, 'compression'), 'qt')
