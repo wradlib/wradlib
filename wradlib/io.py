@@ -912,6 +912,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     return data, attrs
 
+
 def find_key(key, dictionary):
     """Searches for given key in given (nested) dictionary.
 
@@ -920,9 +921,9 @@ def find_key(key, dictionary):
     Parameters
     ----------
     key : string
-	    the key to be searched for in the nested dict
+        the key to be searched for in the nested dict
     dictionary : dict
-	    the dictionary to be searched
+        the dictionary to be searched
 
     Returns
     -------
@@ -952,6 +953,7 @@ def decompress(data):
     zlib = util.import_optional('zlib')
     return zlib.decompress(data)
 
+
 def get_RB_data_layout(datadepth):
     """Calculates DataWidth and DataType from given DataDepth of RAINBOW radar data
 
@@ -970,7 +972,6 @@ def get_RB_data_layout(datadepth):
 
     """
 
-
     if sys.byteorder != 'big':
         byteorder = '>'
     else:
@@ -981,9 +982,10 @@ def get_RB_data_layout(datadepth):
     if datawidth in [1, 2, 4]:
         datatype = byteorder + 'u' + str(datawidth)
     else:
-        raise ValueError("Wrong DataDepth: %d. Conversion only for depth 8, 16, 32" % (datadepth))
+        raise ValueError("Wrong DataDepth: %d. Conversion only for depth 8, 16, 32" % datadepth)
 
-    return (datawidth, datatype)
+    return datawidth, datatype
+
 
 def get_RB_data_attribute(xmldict, attr):
     """Get Attribute `attr` from dict `xmldict`
@@ -1004,15 +1006,15 @@ def get_RB_data_attribute(xmldict, attr):
     """
 
     try:
-        sattr = int(xmldict['@'+attr])
-    except:
+        sattr = int(xmldict['@' + attr])
+    except KeyError:
         if attr == 'bins':
             sattr = None
         else:
-            raise KeyError('Attribute @' + attr + ' is missing from Blob Description' \
-            'There may be some problems with your file')
-
+            raise KeyError('Attribute @' + attr + ' is missing from Blob Description'
+                                                  'There may be some problems with your file')
     return sattr
+
 
 def get_RB_blob_attribute(blobdict, attr):
     """Get Attribute `attr` from dict `blobdict`
@@ -1033,10 +1035,11 @@ def get_RB_blob_attribute(blobdict, attr):
     try:
         value = blobdict['BLOB']['@' + attr]
     except KeyError:
-        raise KeyError('Attribute @' + attr + ' is missing from Blob' \
-            'There may be some problems with your file')
+        raise KeyError('Attribute @' + attr + ' is missing from Blob.' +
+                                              'There may be some problems with your file')
 
     return value
+
 
 def get_RB_blob_data(datastring, blobid):
     """ Read BLOB data from datastring and return it
@@ -1062,19 +1065,19 @@ def get_RB_blob_data(datastring, blobid):
     start = datastring.find(searchString, start)
     if start == -1:
         raise EOFError('Blob ID {} not found!'.format(blobid))
-    end = datastring.find('>',start)
-    xmlstring = datastring[start:end+1]
+    end = datastring.find('>', start)
+    xmlstring = datastring[start:end + 1]
 
     # cheat the xml parser by making xml well-known
     xmldict = xmltodict.parse(xmlstring + '</BLOB>')
     cmpr = get_RB_blob_attribute(xmldict, 'compression')
     size = int(get_RB_blob_attribute(xmldict, 'size'))
-    data = datastring[end+2:end+2+size] # read blob data to string
+    data = datastring[end + 2:end + 2 + size]  # read blob data to string
 
     # decompress if necessary
     # the first 4 bytes are neglected for an unknown reason
     if cmpr == "qt":
-        data = decompress( data[4:] )
+        data = decompress(data[4:])
 
     return data
 
@@ -1099,7 +1102,7 @@ def map_RB_data(data, datadepth):
     datawidth, datatype = get_RB_data_layout(datadepth)
 
     # import from data buffer well aligned to data array
-    data = np.ndarray(shape=(len(data)/datawidth,), dtype=datatype, buffer=data)
+    data = np.ndarray(shape=(len(data) / datawidth,), dtype=datatype, buffer=data)
 
     return data
 
@@ -1139,6 +1142,7 @@ def get_RB_blob_from_string(datastring, blobdict):
 
     return data
 
+
 def get_RB_blob_from_file(filename, blobdict):
     """
     Read BLOB data from file and return it with correct
@@ -1159,10 +1163,10 @@ def get_RB_blob_from_file(filename, blobdict):
 
     """
     try:
-        fid = open(filename, "rb" )
-    except:
-        print "Error opening file", filename
-        return False
+        fid = open(filename, "rb")
+    except IOError:
+        print "WRADLIB: Error opening Rainbow file ", filename
+        raise IOError
 
     datastring = fid.read()
     fid.close()
@@ -1187,10 +1191,10 @@ def get_RB_file_as_string(filename):
 
     """
     try:
-        fid = open(filename, "rb" )
-    except:
-        print "Error opening file", filename
-        return False
+        fid = open(filename, "rb")
+    except IOError:
+        print "WRADLIB: Error opening Rainbow file ", filename
+        raise IOError
 
     dataString = fid.read()
     fid.close()
@@ -1225,6 +1229,7 @@ def get_RB_blobs_from_file(filename, rbdict):
 
     return rbdict
 
+
 def get_RB_header(filename):
     """Read Rainbow Header from filename, converts it to a dict and returns it
 
@@ -1240,28 +1245,27 @@ def get_RB_header(filename):
 
     """
     try:
-        fid = open(filename, "rb" )
-    except:
-        print "Error opening file", filename
-        return False
+        fid = open(filename, "rb")
+    except IOError:
+        print "WRADLIB: Error opening Rainbow file ", filename
+        raise IOError
 
     # load the header lines, i.e. the XML part
     endXMLmarker = "<!-- END XML -->"
     header = ""
     line = ""
-    hasBlobs = True
-    while not line.startswith( endXMLmarker ):
-        header = header + line[:-1]
+    while not line.startswith(endXMLmarker):
+        header += line[:-1]
         line = fid.readline()
-        if len( line ) == 0:
-            #hasBlobs = False
+        if len(line) == 0:
             break
 
     fid.close()
 
     xmltodict = util.import_optional('xmltodict')
 
-    return xmltodict.parse(header)#, hasBlobs
+    return xmltodict.parse(header)
+
 
 def read_Rainbow(filename, loaddata=True):
     """"Reads Rainbow files files according to their structure
