@@ -37,6 +37,7 @@ class TestClutter(unittest.TestCase):
 
     def test_filter_gabella_a_polar(self):
         self.filter_setup()
+        self.img[15:17,5:7] = np.nan # nans
         clutter = self.img.copy()
         clutter[self.img > 0] = 1
         clutter[self.img == 11] = 0
