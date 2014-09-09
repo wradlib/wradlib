@@ -194,7 +194,36 @@ Now the speedup module should be availble.
 **xmltodict**
 
 We use xmltodict to convert the Rainbow Data Files (which have an metadata XML header) to an ordered dict.
- 
+
+.. _ref-problems:
+
+Installation Problems
+---------------------
+
+Depending on your OS and installation method you may encounter different problems. Here are some guidelines for attacking them.
+
+Generally it is a good idea to use your systems package manager to install the dependencies. This will also take account for other needed bindings, libs etc. Windows user should install one of the (scientific) python packages to resolve the problems there.
+
+You may install the requirements via pip for all requirements::
+
+    pip install -r requirements.txt
+
+or for any requirement itself::
+
+    pip install 'numpy>=1.7.1'
+
+If you are installing wradlib and the missing dependencies via pip or setup.py there may be missing some libraries and/or include ('header') files. The only solutions to this is to install the missing libraries via packet manager or compile them from scratch (windows user using the python packages should not encounter such problems).
+
+If you are installing wradlib and the missing dependencies via pip or setup.py there also may be version conflicts between the packages, some libraries and/or include ('header') files. I encountered a problem with gdal. The newest available gdal-devel libraries which come with my system are version 1.10.0, but gdal version downloaded from PyPI is 1.11.0, which gets an error at compile time. Solution was to explicitely declare the gdal version::
+
+    pip install 'gdal==1.10.0'
+
+This may also be an issue with other dependencies which are relying on libraries.
+
+If you are crazy enough to install everything from scratch, or if you are setting up a clean virtual environment, or, or, or... you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables that libraries and includes can be found.
+
+If all this doesn't help, check on your favorite search engine or create an issue `here <https://bitbucket.org/wradlib/wradlib/issues?status=new&status=open>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
+
 
 Community
 ---------
