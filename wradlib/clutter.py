@@ -469,5 +469,71 @@ def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothin
     return(clutter)
 
 
+def filter_gabella_a_polar(img, rscale, fsize, tr1=7):
+    r"""2d filter looking for large reflectivity
+    gradients.
+
+    This function counts for each bin in `img` the percentage of surrounding bins
+    in a window of half size `fsize` which are not `tr1` smaller than the central bin.
+
+    Parameters
+    ----------
+    img : array_like
+        2d polar data to which the filter is to be applied
+    rscale : float
+        range [m] scale of the polar grid 
+    fsize : int
+        Half-size [m] of the square window surrounding the central pixel
+    tr1 : float
+        Threshold value
+
+    Returns
+    -------
+    output : array_like
+        an array with the same shape as `img`, containing the filter's results.
+
+    See Also
+    --------
+    filter_gabella_a : Orignial version of the filter valid for cartesian data.
+    filter_gabella_b : filter using a echo area
+
+    """
+    ascale = 2*np.pi/img.shape[0]
+    count = np.ones(img.shape,dtype=int)
+    similar = np.zeros(img.shape,dtype=float)
+    good = np.ones(img.shape,dtype=float)
+    valid = (~np.isnan(img))
+    hole = np.sum(~valid) > 0
+    nr = int(round(fsize/rscale))
+    range_shift = range(-nr,nr+1)
+    r = np.arange(img.shape[1])*rscale + rscale/2
+    ascale = r*ascale
+    na = np.around(fsize/ascale).astype(int)
+    max_na = img.shape[0]/8
+    sa = 0
+    while sa < max_na:
+        imax = np.where(na >= sa)[0][-1] + 1
+        refa1 = np.roll(img,sa,axis=0)
+        refa2 = np.roll(img,-sa,axis=0)
+        for sr in range_shift:
+            refr1 = np.roll(refa1,sr,axis=1)
+            similar[:, 0 : imax] += ( img[:, 0 : imax] - refr1[:, 0 : imax] < tr1 )
+            if sa > 0:
+                refr2 = np.roll(refa2,sr,axis=1)
+                similar[:, 0 : imax] += ( img[:, 0 : imax] - refr2[:, 0 : imax] < tr1 )
+        count[:,0:imax] = 2*sa+1
+        sa += 1
+    count = count*(2*nr+1)
+    if hole:
+        good = util.filter_window_polar(valid.astype(float),fsize,"uniform",rscale)
+        count = count*good
+    	count[count == 0] = 1
+    similar = similar/count
+    similar[~valid] = 0
+    similar[:,0:nr] = 1
+    similar[:,-nr:] = 1
+    return(similar)
+
+
 if __name__ == '__main__':
     print 'wradlib: Calling module <clutter> as main...'
