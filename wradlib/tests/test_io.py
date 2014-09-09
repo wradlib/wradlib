@@ -1,5 +1,3 @@
-
-
 import unittest
 import wradlib.io as io
 import wradlib.util as util
@@ -21,26 +19,30 @@ class IOTest(unittest.TestCase):
     def test_readDX(self):
         pass
 
+
 class RainbowTest(unittest.TestCase):
     def test_read_rainbow(self):
         pass
+
     def test_find_key(self):
-        inDict = {'A': {'AA': {'AAA': 0, 'X': 1},
-                       'AB': {'ABA': 2, 'X': 3},
+        indict = {'A': {'AA': {'AAA': 0, 'X': 1},
+                        'AB': {'ABA': 2, 'X': 3},
                         'AC': {'ACA': 4, 'X': 5}}}
-        outDict = [{'X': 1, 'AAA': 0}, {'X': 5, 'ACA': 4}, {'ABA': 2, 'X': 3}]
-        self.assertEqual(list(io.find_key('X', inDict)), outDict)
-        self.assertEqual(list(io.find_key('Y', inDict)), [])
+        outdict = [{'X': 1, 'AAA': 0}, {'X': 5, 'ACA': 4}, {'ABA': 2, 'X': 3}]
+        self.assertEqual(list(io.find_key('X', indict)), outdict)
+        self.assertEqual(list(io.find_key('Y', indict)), [])
+
     def test_decompress(self):
-        dString = 'very special compressed string'
-        cString = zlib.compress(dString)
-        self.assertEqual(io.decompress(cString), dString)
+        dstring = 'very special compressed string'
+        cstring = zlib.compress(dstring)
+        self.assertEqual(io.decompress(cstring), dstring)
 
     def test_get_RB_data_layout(self):
         self.assertEqual(io.get_RB_data_layout(8), (1, '>u1'))
         self.assertEqual(io.get_RB_data_layout(16), (2, '>u2'))
-        self.assertEqual(io.get_RB_data_layout(32),  (4 , '>u4'))
+        self.assertEqual(io.get_RB_data_layout(32), (4, '>u4'))
         self.assertRaises(ValueError, lambda: io.get_RB_data_layout(128))
+
     def test_get_RB_data_attribute(self):
         xmltodict = util.import_optional('xmltodict')
         data = xmltodict.parse('<slicedata time="13:30:05" date="2013-04-26"> \
@@ -56,6 +58,7 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(io.get_RB_data_attribute(data[1], 'bins'), 400)
         self.assertRaises(KeyError, lambda: io.get_RB_data_attribute(data[0], 'Nonsense'))
         self.assertEqual(io.get_RB_data_attribute(data[0], 'depth'), 16)
+
     def test_get_RB_blob_attribute(self):
         xmltodict = util.import_optional('xmltodict')
         xmldict = xmltodict.parse('<BLOB blobid="0" size="737" compression="qt"></BLOB>')
@@ -63,14 +66,16 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(io.get_RB_blob_attribute(xmldict, 'size'), '737')
         self.assertEqual(io.get_RB_blob_attribute(xmldict, 'blobid'), '0')
         self.assertRaises(KeyError, lambda: io.get_RB_blob_attribute(xmldict, 'Nonsense'))
+
     def test_map_RB_data(self):
-        inData='0123456789'
-        outData8 = np.array([48, 49, 50, 51, 52, 53, 54, 55, 56, 57], dtype=np.uint8)
-        outData16 = np.array([12337, 12851, 13365, 13879, 14393], dtype=np.uint16)
-        outData32 = np.array([808530483, 875902519], dtype=np.uint32)
-        self.assertTrue(np.allclose(io.map_RB_data(inData, 8), outData8))
-        self.assertTrue(np.allclose(io.map_RB_data(inData, 16), outData16))
-        self.assertTrue(np.allclose(io.map_RB_data(inData, 32), outData32))
+        indata = '0123456789'
+        outdata8 = np.array([48, 49, 50, 51, 52, 53, 54, 55, 56, 57], dtype=np.uint8)
+        outdata16 = np.array([12337, 12851, 13365, 13879, 14393], dtype=np.uint16)
+        outdata32 = np.array([808530483, 875902519], dtype=np.uint32)
+        self.assertTrue(np.allclose(io.map_RB_data(indata, 8), outdata8))
+        self.assertTrue(np.allclose(io.map_RB_data(indata, 16), outdata16))
+        self.assertTrue(np.allclose(io.map_RB_data(indata, 32), outdata32))
+
     def test_get_RB_blob_data(self):
         datastring = '<BLOB blobid="0" size="737" compression="qt"></BLOB>'
         self.assertRaises(EOFError, lambda: io.get_RB_blob_data(datastring, 1))
