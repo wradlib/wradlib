@@ -195,10 +195,10 @@ Now the speedup module should be availble.
 
 We use xmltodict to convert the Rainbow Data Files (which have an metadata XML header) to an ordered dict.
 
-.. _ref-problems:
+.. _ref-knownissues:
 
-Installation Problems
----------------------
+Known Issues
+------------
 
 Depending on your OS and installation method you may encounter different problems. Here are some guidelines for attacking them.
 
