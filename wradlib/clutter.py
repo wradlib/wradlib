@@ -507,8 +507,8 @@ def filter_gabella_a_polar(img, rscale, fsize, tr1=7):
     nr = int(round(fsize/rscale))
     range_shift = range(-nr,nr+1)
     r = np.arange(img.shape[1])*rscale + rscale/2
-    ascale = r*ascale
-    na = np.around(fsize/ascale).astype(int)
+    adist = r*ascale
+    na = np.around(fsize/adist).astype(int)
     max_na = img.shape[0]/8
     sa = 0
     while sa < max_na:
@@ -525,7 +525,7 @@ def filter_gabella_a_polar(img, rscale, fsize, tr1=7):
         sa += 1
     count = count*(2*nr+1)
     if hole:
-        good = util.filter_window_polar(valid.astype(float),fsize,"uniform",rscale)
+        good = util.filter_window_polar(valid.astype(float),fsize,"uniform",(rscale,ascale))
         count = count*good
     	count[count == 0] = 1
     similar = similar/count
