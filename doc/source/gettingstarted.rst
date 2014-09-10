@@ -214,13 +214,13 @@ or for any requirement itself::
 
 If you are installing wradlib and the missing dependencies via pip or setup.py there may be missing some libraries and/or include ('header') files. The only solutions to this is to install the missing libraries via packet manager or compile them from scratch (windows user using the python packages should not encounter such problems).
 
-If you are installing wradlib and the missing dependencies via pip or setup.py there also may be version conflicts between the packages, some libraries and/or include ('header') files. I encountered a problem with gdal. The newest available gdal-devel libraries which come with my system are version 1.10.0, but gdal version downloaded from PyPI is 1.11.0, which gets an error at compile time. Solution was to explicitely declare the gdal version::
+If you are installing wradlib and the missing dependencies via pip or setup.py there also may be version conflicts between the packages, some libraries and/or include ('header') files. If, for instance, the newest available gdal-devel libraries which come with your system are version 1.10.0, but gdal version downloaded from PyPI is 1.11.0, then this may have an error at compile time as a result. Solution is to explicitely declare the gdal version::
 
     pip install 'gdal==1.10.0'
 
 This may also be an issue with other dependencies which are relying on libraries.
 
-If you are crazy enough to install everything from scratch, or if you are setting up a clean virtual environment, or, or, or... you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables that libraries and includes can be found.
+If you are in need to install everything from scratch, or if you are setting up a clean virtual environment, or, or, or... you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables that libraries and includes can be found.
 
 If all this doesn't help, check on your favorite search engine or create an issue `here <https://bitbucket.org/wradlib/wradlib/issues?status=new&status=open>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
 
