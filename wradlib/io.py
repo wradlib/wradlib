@@ -24,7 +24,6 @@ on how to deal with different file formats.
    readDX
    writePolygon2Text
    read_EDGE_netcdf
-   read_BUFR
    read_OPERA_hdf5
    read_GAMIC_hdf5
    read_RADOLAN_composite
@@ -427,17 +426,6 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
         dset.close()
 
     return data, attrs
-
-
-def read_BUFR(buffile):
-    """Main BUFR interface: Decodes BUFR file and returns metadata and values
-
-    The actual function refererence is contained in :doc:`wradlib.bufr.decodebufr`.
-
-    """
-    # wradib modules
-    bufr = util.import_optional("wradlib.bufr")
-    return bufr.decodebufr(buffile)
 
 
 def parse_DWD_quant_composite_header(header):
@@ -1209,7 +1197,7 @@ def get_RB_blobs_from_file(filename, rbdict):
     Parameters
     ----------
     :param filename: string
-        Filename of Data File 
+        Filename of Data File
     :param rbdict: dict
         Rainbow file Contents
 
@@ -1365,7 +1353,7 @@ def from_hdf5(fpath, dataset="data"):
 
 def read_safnwc(filename):
     """Read MSG SAFNWC hdf5 file into a gdal georeferenced object
-    
+
     Parameters
     ----------
     filename : satellite file name

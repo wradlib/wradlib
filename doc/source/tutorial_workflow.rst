@@ -220,7 +220,9 @@ In the above sections `Reading the data`_, `Clutter removal`_, and `Gridding`_ y
 
 Data export to other applications
 ---------------------------------
-Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or support a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <http://code.google.com/p/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://code.google.com/p/h5py/>`_ or `PyTables <http://www.pytables.org/moin>`_ to write hdf5 files. At a later stage of development, *wradlib* might support a standardized data export by using the OPERA's BUFR or hdf5 data model (see :doc:`tutorial_supported_formats`). Of course, you can also export data as images. See :doc:`vis` for some options.
+Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or support a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <http://code.google.com/p/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://code.google.com/p/h5py/>`_ or `PyTables <http://www.pytables.org/moin>`_ to write hdf5 files. 
+At a later stage of development, *wradlib* might support a standardized data export by using the OPERA's ODIM_H5 data model 
+(see :doc:`tutorial_supported_formats`). Of course, you can also export data as images. See :doc:`vis` for some options.
 
 Export your data array as a text file:
 
