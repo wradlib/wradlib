@@ -6,9 +6,14 @@ Installation under Windows
 
 In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We strongly recommend to install Python(x,y). It installs Python, a number of required packages, and other useful tools (e.g. MinGW).
 
-Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. Download the latest distribution (currently **Python(x,y)-2.7.6.0.exe** and install it. We recommend to use the full installation mode. Make sure you choose "All Users" under the "Install for" menu component! Make sure you choose "All Users" under the "Install for" menu component (in case you have administrative privileges)!
+Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. 
+Download the latest distribution (currently **Python(x,y)-2.7.6.0.exe** and install it. 
+We recommend to use the full installation mode, because this will install all packages. 
+Otherwise you have to make sure that all prerequisites mentioned below will be installed, which may not be the case with a standard installation. 
+If you have administrative privileges, make sure you choose "All Users" under the "Install for" menu component.
+Installation for the current user only, may work, but may also produce all kinds of unexpected behavior.
 
-If you Python installation is working, the following command (in a DOS console) should work:
+If your Python installation is working, the following command (in a DOS console) should work:
 
 ``> python --version``
 
@@ -220,7 +225,7 @@ If you are installing wradlib and the missing dependencies via pip or setup.py t
 
 This may also be an issue with other dependencies which are relying on libraries.
 
-If you are in need to install everything from scratch, or if you are setting up a clean virtual environment, or, or, or... you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables that libraries and includes can be found.
+If you are in need to install everything from scratch, or if you are setting up a clean virtual environment, etc., you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables so that libraries and includes can be found.
 
 If all this doesn't help, check on your favorite search engine or create an issue `here <https://bitbucket.org/wradlib/wradlib/issues?status=new&status=open>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
 
