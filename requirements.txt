@@ -8,3 +8,4 @@ netCDF4 >= 1.0
 gdal
 pytz
 xmltodict
+importlib
