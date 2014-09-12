@@ -454,9 +454,15 @@ def parse_DWD_quant_composite_header(header):
     """
     # empty container
     out = {}
+
     # RADOLAN product type def
+    out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
+    out["datetime"] = dt.datetime.strptime(header[2:8] + header[13:17] + "00",
+                                           "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
+    out["radarid"] = header[8:13]
+
     pos_VS = header.find("VS")
     pos_SW = header.find("SW")
     pos_PR = header.find("PR")
@@ -518,12 +524,21 @@ def read_RADOLAN_composite(fname, missing=-9999):
         URL: http://dwd.de/radolan (in German)
 
     """
+    gzip = util.import_optional('gzip')
+
     mask = 4095  # max value integer
     NODATA = missing
     header = ''  # header string for later processing
     # open file handle
-    f = open(fname, 'rb')
+    try:
+        f = gzip.open(fname, 'rb')
+        mychar = f.read(1)
+    except IOError:
+        f = open(fname, 'rb')
+        mychar = f.read(1)
+
     # read header
+    header = header + mychar
     while True:
         mychar = f.read(1)
         if mychar == chr(3):
