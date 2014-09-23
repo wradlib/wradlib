@@ -35,26 +35,6 @@ Here, ``data`` is a two dimensional integer array of shape (number of rows, numb
     maskeddata = np.ma.masked_equal(data, metadata["nodataflag"])
 
 
-OPERA BUFR
-----------
-The Binary Universal Form for the Representation of meteorological data (BUFR) is a binary data format maintained by the World Meteorological Organization (WMO). The BUFR format was adopted by the OPERA program for the representation of weather radar data. This module provides a wrapper around the OPERA BUFR software, currently only for decoding BUFR files. If you intend to work with BUFR data, we recommend reading `OPERA's BUFR software documentation <http://www.knmi.nl/opera/bufr/doc/bufr_sw_desc.pdf>`_. Please note that the way the BUFR software is wrapped has to be considered very preliminary. Due to yet unsolved problems with the BUFR software API, wradlib simply calls the executable for BUFR deoding (decbufr) and read and parses corresponding the file output. This is of course inefficient from a computational perpective. we hope to come up with a new solution in the near future. However, the wradlib BUFR interface is plain simple::
-
-   data, metadata = io.read_BUFR("mydrive:/path/to/my/file/filename")
-   
-Basically, a BUFR file consists of a set of *descriptors* which contain all the relevant metadata and a data section. The *descriptors* are identified as a tuple of three integers. The meaning of these tupels is described in the BUFR tables which come with the software. There are generic BUFR tables provided by the WMO, but it is also possible to define so called *local tables* - which was done by the OPERA consortium for the purpose of radar data representation.
-
-:doc:`wradlib.io.read_BUFR` returns a two element tuple. The first element (``data``) of the return tuple is the actual data array. It is a multi-dimensional numpy array of which the shape depends on the descriptor specifications (mostly it will be 2-dimensional). The second element (``metadata``) is a tuple of two dictionaries (descnames, descvals). *descnames* relates the *descriptor identifiers* to comprehensible *descriptor names*. *descvals* relates the *descriptor names* to *descriptor values*. E.g. if the *descriptor identifier* was (0, 30, 21), the *descriptor name* would be 'Number of pixels per row' and the *descriptor value* could be an integer which actually specifies the number of rows of a grid. Just try::
-
-    # Gives the descriptor name for each descriptor ID tuple
-    print metadata[0]
-    # Gives the descriptor value for each descriptor name
-    print metadata[1]
-    # Gives the descriptor value for a particular descriptor ID tuple, in this case (0, 30, 21)
-    print metadata[1][ metadata[0][(0, 30, 21)] ]
-
-**Gotchas**: At the moment, the BUFR implementation in wradlib has the potential to give you some trouble. It has only been tested on Windows 7 under Python 2.6, yet. The key is that the BUFR software has to be successfully compiled in the course of wradlib installation (via *python setup.py install*). Compilation requires *gcc* and *make*. Both is pre-installed on most Linux machines, and can be installed on Windows using the `MinGW compiler suite <http://www.mingw.org/wiki/Getting_Started>`_. **If you are using Python(x,y)**, gcc and make should already be available on your machine! You can check this by opening a console window and typing ``gcc --version`` and ``mingw32-make --version``. For **Linux**, the makefile is available and we hope that the installation process works. But we never tested it! Please give us your feedback how it works under Linux by sending an e-mail to wradlib-users@googlegroups.com or by `raising an issue <https://bitbucket.org/wradlib/wradlib/issues/new>`_.
-
-
 OPERA HDF5 (ODIM_H5)
 --------------------
 `HDF5 <http://www.hdfgroup.org/HDF5/>`_ is a data model, library, and file format for storing and managing data. The `OPERA 3 program <http://www.knmi.nl/opera>`_ developed a convention (or information model) on how to store and exchange radar data in hdf5 format. It is based on the work of `COST Action 717 <http://www.smhi.se/hfa_coord/cost717>`_ and is used e.g. in real-time operations in the Nordic European countries. The OPERA Data and Information Model (ODIM) is documented e.g. in this `report <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_ and in a `UML representation <http://www.knmi.nl/opera/opera3/OPERA_2008_18_WP2.1b_ODIM_UML.pdf>`_. Make use of these documents in order to understand the organization of OPERA hdf5 files!
@@ -84,6 +64,7 @@ The user should inspect the output obtained from his or her hdf5 file in order t
 
 Please note that in order to experiment with such datasets, you can download hdf5 sample data from the `Odyssey page <http://www.knmi.nl/opera/odc.html>`_ of the `OPERA 3 homepage <http://www.knmi.nl/opera>`_.
 
+
 GAMIC HDF5
 ----------
 GAMIC refers to the commercial `GAMIC Enigma V3 MURAN software <http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3>`_ which exports data in hdf5 format. The concept is quite similar to the above `OPERA HDF5 (ODIM_H5)`_ format. Such a file (typical ending: *.mvol*) can be read by::
@@ -102,6 +83,7 @@ EDGE is a commercial software for radar control and data analysis provided by th
 
    data, metadata = io.read_EDGE_netcdf("mydrive:/path/to/my/file/filename") 
 
+   
 Gematronik Rainbow
 ------------------
 Rainbow refers to the commercial `RAINBOW®5 APPLICATION SOFTWARE <http://www.gematronik.com/products/radar-components/rainbowR-5/>`_ which exports data in an XML flavour, which due to binary data blobs violates XML standard. Gematronik provided python code for implementing this reader in wradlib, which is very much appreciated.
@@ -120,3 +102,27 @@ The user should inspect the output obtained from his or her Rainbow file in orde
     pp.pprint(fcontent)
 
 You can check this :download:`example script <../../examples/load_rainbow_example.py>` for getting a first impression.
+
+
+OPERA BUFR
+----------
+
+.. warning:: wradlib does not support the BUFR format anymore!
+
+The Binary Universal Form for the Representation of meteorological data (BUFR) 
+is a binary data format maintained by the World Meteorological Organization (WMO).
+
+The BUFR format was adopted by `OPERA <http://www.eumetnet.eu/opera`_ for the representation of weather radar data.
+A BUFR file consists of a set of *descriptors* which contain all the relevant metadata and a data section. 
+The *descriptors* are identified as a tuple of three integers. The meaning of these tupels is described in the so-called BUFR 
+tables. There are generic BUFR tables provided by the WMO, but it is also possible to define so called *local tables* 
+- which was done by the OPERA consortium for the purpose of radar data representation.
+ 
+In previous revisions, wradlib supported reading OPERA BUFR files via ``io.read_BUFR``. This support is no longer maintained.
+
+If you want to use BUFR files together with wradlib, we recommend that you check out the OPERA software webpage at
+ http://www.eumetnet.eu/opera-software where you will find software for BUFR decoding. In particular, you might want to check out 
+`this tool <http://www.eumetnet.eu/sites/default/files/bufr-opera-mf-1.21.tar_.gz>`_ which seems to support the conversion of
+OPERA BUFR files to ODIM_H5 (which is supported by wradlib). However, you have to build it yourself.
+
+It would be great if someone could add a tutorial on how to use OPERA BUFR software together with wradlib!
