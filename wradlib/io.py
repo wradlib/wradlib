@@ -515,7 +515,7 @@ def parse_DWD_quant_composite_header(header):
             if k == 'SW':
                 out["radolanversion"] = header[v[0]:v[1]].strip()
             if k == 'PR':
-                out["precision"] = float('0'+header[v[0]:v[1]].strip())
+                out["precision"] = float('1'+header[v[0]:v[1]].strip())
             if k == 'INT':
                 out["intervalseconds"] = int(header[v[0]:v[1]]) * 60
             if k == 'GP':
