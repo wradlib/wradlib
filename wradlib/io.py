@@ -608,7 +608,8 @@ def read_radolan_runlength_array(fid, attrs):
         arr[row,0:len(line)] = line
         row += 1
         line = read_radolan_runlength_line(fid)
-    return arr
+    # return upside down because first line read is top line
+    return np.flipud(arr)
 
 
 def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
@@ -655,6 +656,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     mask = 4095  # max value integer
     NODATA = missing
     header = ''  # header string for later processing
+    clutter = None # clutter var
     # open file handle
     try:
         f = gzip.open(fname, 'rb')
@@ -702,7 +704,6 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         clutter = np.where(arr == 249)[0]
     elif attrs['producttype'] in ["PG", "PC"]:
         arr = read_radolan_runlength_array(f, attrs)
-        clutter = None
     else:
         # read the actual data
         indat = f.read(attrs["nrow"] * attrs["ncol"] * 2)
