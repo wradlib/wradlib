@@ -537,27 +537,18 @@ def parse_DWD_quant_composite_header(header):
 
     return out
 
-
-def read_radolan_runlength_line(fid):
-    """Reads one line of runlength coded binary data of DWD
+def decode_radolan_runlength_line(line):
+    """Decodes one line of runlength coded binary data of DWD
     composite file and returns decoded array
 
     Parameters
     ----------
-    fid: file id
+    line: numpy array of byte values
 
     Returns
     -------
     arr:  numpy array of decoded values
     """
-    line = fid.readline()
-
-    # check if eot
-    if line == '\x04':
-        return None
-
-    # convert input buffer to np.uint8 array
-    line = np.frombuffer(line, np.uint8).astype(np.uint8)
     lo = 1
 
     byte = line[lo]
@@ -588,6 +579,30 @@ def read_radolan_runlength_line(fid):
     return arr
 
 
+def read_radolan_runlength_line(fid):
+    """Reads one line of runlength coded binary data of DWD
+    composite file and returns it as numpy array
+
+    Parameters
+    ----------
+    fid: file id
+
+    Returns
+    -------
+    line:  numpy array of coded values
+    """
+    line = fid.readline()
+
+    # check if eot
+    if line == '\x04':
+        return None
+
+    # convert input buffer to np.uint8 array
+    line = np.frombuffer(line, np.uint8).astype(np.uint8)
+
+    return line
+
+
 def read_radolan_runlength_array(fid, attrs):
     """Read the binary runlength coded section from DWD composite
     file and return decoded numpy array with correct shape
@@ -605,7 +620,8 @@ def read_radolan_runlength_array(fid, attrs):
     line = read_radolan_runlength_line(fid)
     row = 0
     while line is not None:
-        arr[row,0:len(line)] = line
+        dline = decode_radolan_runlength_line(line)
+        arr[row,0:len(dline)] = dline
         row += 1
         line = read_radolan_runlength_line(fid)
     # return upside down because first line read is top line
