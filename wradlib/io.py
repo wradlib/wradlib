@@ -33,12 +33,15 @@ on how to deal with different file formats.
 # standard libraries
 
 import sys
-import re
 import datetime as dt
-import pytz
 import cPickle as pickle
+import StringIO
+
+import re
+import pytz
 import os
 import warnings
+
 
 # site packages
 import h5py
@@ -507,6 +510,8 @@ def parse_DWD_quant_composite_header(header):
     # iterate over token and fill output dict accordingly
     for k, v in head.iteritems():
         if v:
+            if k == 'BY':
+                out['datasize'] = int(header[v[0]:v[1]])-len(header)-1
             if k == 'VS':
                 out["maxrange"] = {0: "100 km and 128 km (mixed)",
                                    1: "100 km",
@@ -603,7 +608,7 @@ def read_radolan_runlength_line(fid):
     return line
 
 
-def read_radolan_runlength_array(fid, attrs):
+def read_radolan_runlength_array(binarr, attrs):
     """Read the binary runlength coded section from DWD composite
     file and return decoded numpy array with correct shape
 
@@ -617,15 +622,54 @@ def read_radolan_runlength_array(fid, attrs):
     arr: numpy array of decoded values
     """
     arr = np.zeros((attrs["nrow"], attrs["ncol"]))
-    line = read_radolan_runlength_line(fid)
+    buf = StringIO.StringIO(binarr)
+    line = read_radolan_runlength_line(buf)
     row = 0
     while line is not None:
         dline = decode_radolan_runlength_line(line)
         arr[row,0:len(dline)] = dline
         row += 1
-        line = read_radolan_runlength_line(fid)
+        line = read_radolan_runlength_line(buf)
     # return upside down because first line read is top line
     return np.flipud(arr)
+
+
+def read_radolan_binary_array(fid,size):
+    binarr = fid.read(size)
+    fid.close()
+    if len(binarr) != size:
+        # file obviously corruptet, should we raise an error here?
+        return None
+    return binarr
+
+def get_radolan_filehandle(fname):
+
+    gzip = util.import_optional('gzip')
+
+    header = ''  # header string for later processing
+
+    # open file handle
+    try:
+        f = gzip.open(fname, 'rb')
+        f.read(1)
+    except IOError:
+        f = open(fname, 'rb')
+        f.read(1)
+
+    f.seek(0,0)
+
+    return f
+
+def read_radolan_header(fid):
+
+    header = ''
+    while True:
+        mychar = fid.read(1)
+        if mychar == chr(3):
+            break
+        header = header + mychar
+
+    return header
 
 
 def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
@@ -667,47 +711,34 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         URL: http://dwd.de/radolan (in German)
 
     """
-    gzip = util.import_optional('gzip')
 
-    mask = 4095  # max value integer
     NODATA = missing
-    header = ''  # header string for later processing
+    mask = 0xFFF  # max value integer
     clutter = None # clutter var
-    # open file handle
-    try:
-        f = gzip.open(fname, 'rb')
-        mychar = f.read(1)
-    except IOError:
-        f = open(fname, 'rb')
-        mychar = f.read(1)
+    secondary = None
 
-    # read header
-    header = header + mychar
-    while True:
-        mychar = f.read(1)
-        if mychar == chr(3):
-            break
-        header = header + mychar
+    f = get_radolan_filehandle(fname)
+
+    header = read_radolan_header(f)
+
     attrs = parse_DWD_quant_composite_header(header)
 
     if not loaddata:
         return attrs
 
     attrs["nodataflag"] = NODATA
+
     if not attrs["radarid"] == "10000":
         warnings.warn("WARNING: You are using function e" +
                       "wradlib.io.read_RADOLAN_composit for a non " +
                       "composite file.\n " +
                       "This might work...but please check the validity " +
                       "of the results")
+
+    # read the actual data
+    indat = read_radolan_binary_array(f, attrs['datasize'])
+
     if attrs["producttype"] == "RX":
-        # read the actual data
-        indat = f.read(attrs["nrow"] * attrs["ncol"])
-        # if the file is truncated close and return gracefully
-        # we could think about raising a warning or error here
-        if len(indat) != attrs["nrow"] * attrs["ncol"]:
-            f.close()
-            return None, attrs
         # convert from 8-bit integers and keep 8-bit if missing is
         # also 8-bit
         if NODATA == np.uint8(NODATA):
@@ -719,16 +750,16 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         arr = np.where(arr == 250, NODATA, arr)
         clutter = np.where(arr == 249)[0]
     elif attrs['producttype'] in ["PG", "PC"]:
-        arr = read_radolan_runlength_array(f, attrs)
+        arr = read_radolan_runlength_array(indat, attrs)
     else:
-        # read the actual data
-        indat = f.read(attrs["nrow"] * attrs["ncol"] * 2)
         # convert to 16-bit integers
         arr = np.frombuffer(indat, np.uint16).astype(np.int)
-        # evaluate bits 14, 15 and 16
-        nodata = np.where(arr & int("10000000000000", 2))
-        negative = np.where(arr & int("100000000000000", 2))
-        clutter = np.where(arr & int("1000000000000000", 2))
+        print("after frombuffer")
+        # evaluate bits 13, 14, 15 and 16
+        secondary = np.where(arr & 0x1000)
+        nodata = np.where(arr &  0x2000)
+        negative = np.where(arr & 0x4000)
+        clutter = np.where(arr &  0x8000)
         # mask out the last 4 bits
         arr = arr & mask
         # consider negative flag if product is RD (differences from adjustment)
@@ -736,18 +767,19 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
         # apply precision factor
-        arr *= attrs["precision"]
+        arr =  arr * attrs["precision"]
         # set nodata value
         arr[nodata] = NODATA
-    # bring it into shape
+
+    # anyway, bring it into right shape
     arr = arr.reshape((attrs["nrow"], attrs["ncol"]))
 
     # append clutter mask if available
     if clutter:
         attrs['cluttermask'] = clutter
-
-    # close the file
-    f.close()
+    # append secondary mask if available
+    if secondary:
+        attrs['secondary'] = secondary
 
     return arr, attrs
 
