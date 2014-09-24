@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------
-# Name:        load_rainbow_example.py
-# Purpose:     show how to load and work with Gematronik Rainbow5 format
+# Name:        load_radolan_example.py
+# Purpose:     show how to load radolan composites
 #
 # Author:      Kai Muehlbauer
 #
@@ -14,8 +14,7 @@ import matplotlib.pyplot as pl
 import numpy as np
 import matplotlib as mpl
 import os
-#import datetime
- 
+
 
 def ex_load_radolan():
 
