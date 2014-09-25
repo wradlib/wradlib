@@ -27,6 +27,7 @@ on how to deal with different file formats.
    read_OPERA_hdf5
    read_GAMIC_hdf5
    read_RADOLAN_composite
+   read_rainbow
 
 """
 
@@ -236,7 +237,7 @@ def readDX(filename):
         mychar = f.read(1)
         # 0x03 signals the end of the header but sometimes there might be
         # an additional 0x03 char after that
-        if (mychar == chr(3)):
+        if mychar == chr(3):
             atend = True
         if mychar != chr(3) and atend:
             break
@@ -440,11 +441,11 @@ def get_radolan_header_token():
     """
     head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
             'INT': None, 'GP': None, 'MS': None, 'LV': None,
-            'CS': None, 'MX': None, 'BG':None}
+            'CS': None, 'MX': None, 'BG': None}
     return head
 
 
-def get_token_position(header):
+def get_radolan_header_token_pos(header):
     """Get Token and positions from DWD radolan header
 
     Parameters
@@ -462,11 +463,11 @@ def get_token_position(header):
     for token in head_dict.keys():
         d = header.rfind(token)
         if d > -1:
-            head_dict[token] =  d
+            head_dict[token] = d
 
     head = {}
 
-    for k,v in head_dict.iteritems():
+    for k, v in head_dict.iteritems():
         if v is not None:
             start = v + len(k)
             filt = filter(lambda x: x > v, head_dict.values())
@@ -490,7 +491,7 @@ def parse_DWD_quant_composite_header(header):
 
     Returns
     -------
-    output : dictionary of metadata retreived from file header
+    output : dictionary of metadata retrieved from file header
 
     """
     # empty container
@@ -505,22 +506,22 @@ def parse_DWD_quant_composite_header(header):
     out["radarid"] = header[8:13]
 
     # get dict of header token with positions
-    head = get_token_position(header)
+    head = get_radolan_header_token_pos(header)
 
     # iterate over token and fill output dict accordingly
     for k, v in head.iteritems():
         if v:
             if k == 'BY':
-                out['datasize'] = int(header[v[0]:v[1]])-len(header)-1
+                out['datasize'] = int(header[v[0]:v[1]]) - len(header) - 1
             if k == 'VS':
                 out["maxrange"] = {0: "100 km and 128 km (mixed)",
                                    1: "100 km",
                                    2: "128 km",
-                                   3: "150 km"}.get(int(header[v[0]:v[1]]),"100 km")
+                                   3: "150 km"}.get(int(header[v[0]:v[1]]), "100 km")
             if k == 'SW':
                 out["radolanversion"] = header[v[0]:v[1]].strip()
             if k == 'PR':
-                out["precision"] = float('1'+header[v[0]:v[1]].strip())
+                out["precision"] = float('1' + header[v[0]:v[1]].strip())
             if k == 'INT':
                 out["intervalseconds"] = int(header[v[0]:v[1]]) * 60
             if k == 'GP':
@@ -529,7 +530,7 @@ def parse_DWD_quant_composite_header(header):
                 out["ncol"] = int(dimstrings[1])
             if k == 'BG':
                 dimstrings = header[v[0]:v[1]]
-                dimstrings = dimstrings[:len(dimstrings)/2],dimstrings[len(dimstrings)/2:]
+                dimstrings = dimstrings[:len(dimstrings) / 2], dimstrings[len(dimstrings) / 2:]
                 out["nrow"] = int(dimstrings[0])
                 out["ncol"] = int(dimstrings[1])
             if k == 'LV':
@@ -539,10 +540,16 @@ def parse_DWD_quant_composite_header(header):
             if k == 'MS':
                 locationstring = header[v[0]:].strip().split("<")[1].split(">")[0]
                 out["radarlocations"] = locationstring.split(",")
-
+            if k == 'CS':
+                out['indicator'] = {0: "near ground level",
+                                    1: "maximum",
+                                    2: "tops"}.get(int(header[v[0]:v[1]]))
+            if k == 'MX':
+                out['imagecount'] = int(header[v[0]:v[1]])
     return out
 
-def decode_radolan_runlength_line(line):
+
+def decode_radolan_runlength_line(line, attrs):
     """Decodes one line of runlength coded binary data of DWD
     composite file and returns decoded array
 
@@ -554,9 +561,13 @@ def decode_radolan_runlength_line(line):
     -------
     arr:  numpy array of decoded values
     """
+    # byte '0' is line number, we don't need it
+    # so we start with offset byte,
     lo = 1
-
     byte = line[lo]
+    # line empty condition, lf directly behind line number
+    if byte == 10:
+        return np.ones(attrs['ncol'], dtype=np.uint8) * attrs['nodataflag']
     offset = byte - 16
 
     # check if offset byte is 255 and take next byte(s)
@@ -566,20 +577,27 @@ def decode_radolan_runlength_line(line):
         byte = line[lo]
         offset += byte - 16
 
-    arr = np.zeros(offset)
-
-    lo += 1
+    # just take the rest
+    dline = line[lo + 1:]
 
     # this could be optimized
-    # run through array until lf (10) is reached
-    while True:#lo <= len(line):
-        if line[lo] == 10:
+    # iterate over line string, until lf (10) is reached
+    for lo, byte in enumerate(dline):
+        if byte == 10:
             break
-        byte = line[lo]
         width = (byte & 0xF0) >> 4
         val = byte & 0x0F
-        arr = np.append(arr,np.ones(width)*val)
-        lo += 1
+        # the "offset pixel" are "not measured" values
+        # so we set them to 'nodata'
+        if lo == 0:
+            arr = np.ones(offset, dtype=np.uint8) * attrs['nodataflag']
+        arr = np.append(arr, np.ones(width, dtype=np.uint8) * val)
+
+    trailing = attrs['ncol'] - len(arr)
+    if trailing > 0:
+        arr = np.append(arr, np.ones(trailing, dtype=np.uint8) * attrs['nodataflag'])
+    elif trailing < 0:
+        arr = dline[:trailing]
 
     return arr
 
@@ -590,7 +608,7 @@ def read_radolan_runlength_line(fid):
 
     Parameters
     ----------
-    fid: file id
+    fid: file/buffer id
 
     Returns
     -------
@@ -608,45 +626,69 @@ def read_radolan_runlength_line(fid):
     return line
 
 
-def read_radolan_runlength_array(binarr, attrs):
-    """Read the binary runlength coded section from DWD composite
+def decode_radolan_runlength_array(binarr, attrs):
+    """Decodes the binary runlength coded section from DWD composite
     file and return decoded numpy array with correct shape
 
     Parameters
     ----------
-    fid:    File Handle
+    binarr:    string Buffer
     attrs:  Attribute dict of file header
 
     Returns
     -------
     arr: numpy array of decoded values
     """
-    arr = np.zeros((attrs["nrow"], attrs["ncol"]))
     buf = StringIO.StringIO(binarr)
+
+    # read and decode first line
     line = read_radolan_runlength_line(buf)
-    row = 0
+    arr = decode_radolan_runlength_line(line, attrs)
+
+    # read following lines
+    line = read_radolan_runlength_line(buf)
+
     while line is not None:
-        dline = decode_radolan_runlength_line(line)
-        arr[row,0:len(dline)] = dline
-        row += 1
+        dline = decode_radolan_runlength_line(line, attrs)
+        arr = np.vstack((arr, dline))
         line = read_radolan_runlength_line(buf)
     # return upside down because first line read is top line
     return np.flipud(arr)
 
 
-def read_radolan_binary_array(fid,size):
+def read_radolan_binary_array(fid, size):
+    """Read binary data from file given by filehandle
+
+    Parameters
+    ----------
+    fid: file handle
+    size: number of bytes to read
+
+    Returns
+    -------
+    binarr: string array of binary data
+    """
     binarr = fid.read(size)
     fid.close()
     if len(binarr) != size:
-        # file obviously corruptet, should we raise an error here?
-        return None
+        raise IOError('{0}: File corruption while reading {1}! '
+                      '\nCould not read enough data!'.format(__name__, fid.name))
     return binarr
 
+
 def get_radolan_filehandle(fname):
+    """Opens radolan file and returns file handle
+
+    Parameters
+    ----------
+    fname: filename
+
+    Returns
+    -------
+    f: filehandle
+    """
 
     gzip = util.import_optional('gzip')
-
-    header = ''  # header string for later processing
 
     # open file handle
     try:
@@ -656,11 +698,25 @@ def get_radolan_filehandle(fname):
         f = open(fname, 'rb')
         f.read(1)
 
-    f.seek(0,0)
+    # rewind file
+    f.seek(0, 0)
 
     return f
 
+
 def read_radolan_header(fid):
+    """Reads radolan ASCII header and returns it as string
+
+    Parameters
+    ----------
+    fid: file handle
+
+    Returns
+    -------
+    header: string
+    """
+    # rewind, just in case...
+    fid.seek(0, 0)
 
     header = ''
     while True:
@@ -714,8 +770,6 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
 
     NODATA = missing
     mask = 0xFFF  # max value integer
-    clutter = None # clutter var
-    secondary = None
 
     f = get_radolan_filehandle(fname)
 
@@ -724,7 +778,8 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     attrs = parse_DWD_quant_composite_header(header)
 
     if not loaddata:
-        return attrs
+        f.close()
+        return None, attrs
 
     attrs["nodataflag"] = NODATA
 
@@ -739,27 +794,21 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     indat = read_radolan_binary_array(f, attrs['datasize'])
 
     if attrs["producttype"] == "RX":
-        # convert from 8-bit integers and keep 8-bit if missing is
-        # also 8-bit
-        if NODATA == np.uint8(NODATA):
-            arr = np.frombuffer(indat, np.uint8)
-        # or upgrade to 32-bit ints, so that other nodata values
-        # may be inserted
-        else:
-            arr = np.frombuffer(indat, np.uint8).astype(np.int)
+        #convert to 8bit interger
+        arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
         arr = np.where(arr == 250, NODATA, arr)
-        clutter = np.where(arr == 249)[0]
+        attrs['cluttermask'] = np.where(arr == 249)[0]
+
     elif attrs['producttype'] in ["PG", "PC"]:
-        arr = read_radolan_runlength_array(indat, attrs)
+        arr = decode_radolan_runlength_array(indat, attrs)
     else:
         # convert to 16-bit integers
-        arr = np.frombuffer(indat, np.uint16).astype(np.int)
-        print("after frombuffer")
+        arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
         # evaluate bits 13, 14, 15 and 16
-        secondary = np.where(arr & 0x1000)
-        nodata = np.where(arr &  0x2000)
-        negative = np.where(arr & 0x4000)
-        clutter = np.where(arr &  0x8000)
+        attrs['secondary'] = np.where(arr & 0x1000)[0]
+        nodata = np.where(arr & 0x2000)[0]
+        negative = np.where(arr & 0x4000)[0]
+        attrs['cluttermask'] = np.where(arr & 0x8000)[0]
         # mask out the last 4 bits
         arr = arr & mask
         # consider negative flag if product is RD (differences from adjustment)
@@ -767,19 +816,13 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
         # apply precision factor
-        arr =  arr * attrs["precision"]
+        # this promotes arr to float if precision is float
+        arr = arr * attrs["precision"]
         # set nodata value
         arr[nodata] = NODATA
 
     # anyway, bring it into right shape
     arr = arr.reshape((attrs["nrow"], attrs["ncol"]))
-
-    # append clutter mask if available
-    if clutter:
-        attrs['cluttermask'] = clutter
-    # append secondary mask if available
-    if secondary:
-        attrs['secondary'] = secondary
 
     return arr, attrs
 
@@ -1244,7 +1287,7 @@ def get_RB_blob_attribute(blobdict, attr):
         value = blobdict['BLOB']['@' + attr]
     except KeyError:
         raise KeyError('Attribute @' + attr + ' is missing from Blob.' +
-                                              'There may be some problems with your file')
+                       'There may be some problems with your file')
 
     return value
 
