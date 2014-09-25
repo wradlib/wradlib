@@ -17,41 +17,59 @@ import os
 
 
 def ex_load_radolan():
-
     pg_filename = os.path.dirname(__file__) + '/' + 'data/raa00-pc_10015-1408030905-dwd---bin.gz'
     rw_filename = os.path.dirname(__file__) + '/' + 'data/raa01-rw_10000-1408030950-dwd---bin.gz'
 
     # load radolan files
-    pgdata, pgattrs = wrl.io.read_RADOLAN_composite(pg_filename)
+    pgdata, pgattrs = wrl.io.read_RADOLAN_composite(pg_filename, missing=255)
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
 
     # print the available attributes
     print("PG Attributes:", pgattrs)
     print("RW Attributes:", rwattrs)
 
+    # do some masking
+    pgdata = np.ma.masked_equal(pgdata, 255)
+    sec = rwattrs['secondary']
+    rwdata.flat[sec] = -9999
+    rwdata = np.ma.masked_equal(rwdata, -9999)
+
     # plot the images side by side
     pl.subplot(121, aspect='equal')
-    x = np.arange(0,pgdata.shape[0]+1,1)
-    y = np.arange(0,pgdata.shape[1]+1,1)
-    X,Y = np.meshgrid(x,y)
-    cmap = pl.cm.jet
-    bounds = [0,1,2,3,4,5,6,9]
+    x = np.arange(0, pgdata.shape[0] + 1, 1)
+    y = np.arange(0, pgdata.shape[1] + 1, 1)
+    X, Y = np.meshgrid(x, y)
+    # color-scheme taken from DWD "legend_radar_products_pc.pdf"
+    colors = ['lightgrey', 'yellow', 'lightblue', 'magenta', 'green', 'red', 'darkblue', 'darkred']
+    cmap = mpl.colors.ListedColormap(colors, name=u'DWD-pc-scheme')
+    bounds = np.arange(len(colors) + 1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     pl.pcolormesh(X, Y, pgdata, cmap=cmap, norm=norm)
-    pl.xlim(0,max(x))
-    pl.ylim(0,max(y))
-    pl.colorbar(shrink=0.5)
+    pl.xlim(0, max(x))
+    pl.ylim(0, max(y))
+
+    # add colorbar and do some magic for proper visualisation
+    cb = pl.colorbar(shrink=0.5, norm=norm, boundaries=bounds)
+    loc = bounds + .5
+    cb.set_ticks(loc)
+    labels = bounds[:-1]
+    cb.set_ticklabels(labels)
+    cl = cb.ax.get_yticklabels()
+    cl[-1].set_text('9')
+    cb.ax.set_yticklabels([elem.get_text() for elem in cl])
+
     pl.title('RADOLAN PG Product \n' + pgattrs['datetime'].isoformat())
 
     pl.subplot(122, aspect='equal')
-    x = np.arange(0,rwdata.shape[0]+1,1)
-    y = np.arange(0,rwdata.shape[1]+1,1)
-    X,Y = np.meshgrid(x,y)
+    x = np.arange(0, rwdata.shape[0] + 1, 1)
+    y = np.arange(0, rwdata.shape[1] + 1, 1)
+    X, Y = np.meshgrid(x, y)
+    cmap = pl.cm.jet
     bounds = np.linspace(0, np.max(rwdata))
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     pl.pcolormesh(X, Y, rwdata, cmap=cmap, norm=norm, vmax=np.max(rwdata), vmin=0)
-    pl.xlim(0,max(x))
-    pl.ylim(0,max(y))
+    pl.xlim(0, max(x))
+    pl.ylim(0, max(y))
     pl.colorbar(shrink=0.5)
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat())
     pl.tight_layout()
