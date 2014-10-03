@@ -494,11 +494,8 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 
     angle = np.arcsin(coselev * r / rp) # really sin(elev+90)
     radp = re * angle
-    # TODO: had to change cosaz/sinaz to get same results as before
-    #lats = centlat + cosaz * radp / _latscale()
-    #lons = centlon + sinaz * radp / _lonscale(centlat)
-    lats = centlat + sinaz * radp / _latscale()
-    lons = centlon + cosaz * radp / _lonscale(centlat)
+    lats = centlat + cosaz * radp / _latscale()
+    lons = centlon + sinaz * radp / _lonscale(centlat)
 
     return lons, lats, alts
 
