@@ -1087,4 +1087,37 @@ def filter_window_cartesian(img,wsize,fun,scale):
     data_filtered = fun(data_filtered,size)
     return(data_filtered)
 
+def roll2d_polar(img,shift=1,axis=0):
+    r"""Roll a 2D polar array [azimuth,range] by a given `shift` for the given `axis`
 
+    Parameters
+    ----------
+    shift : int
+        shift to apply to the array
+    axis : int
+        axis which will be shifted
+    Returns
+    -------
+    out: new array with shifted values
+    
+    """
+    if shift == 0:
+        return img
+    else:
+        out = np.empty(img.shape)
+    n = img.shape[axis]
+    if axis == 0:
+        if shift > 0:
+            out[shift:,:] = img[:-shift,:] 
+            out[:shift,:] = img[n-shift:,:]
+        else:
+            out[:shift,:] = img[-shift:,:] 
+            out[n+shift:,:] = img[:-shift:,:]
+    else:
+        if shift > 0:
+            out[:,shift:] = img[:,:-shift] 
+            out[:,:shift] = np.nan
+        else:
+            out[:,:shift] = img[:,-shift:] 
+            out[:,n+shift:] = np.nan
+    return(out)
