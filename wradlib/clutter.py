@@ -469,7 +469,7 @@ def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothin
     return(clutter)
 
 
-def filter_gabella_a_polar(img, rscale, fsize, tr1=7):
+def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7, thrsnorain=5):
     r"""2d filter looking for large reflectivity
     gradients.
 
@@ -486,6 +486,8 @@ def filter_gabella_a_polar(img, rscale, fsize, tr1=7):
         Half-size [m] of the square window surrounding the central pixel
     tr1 : float
         Threshold value
+    thrsnorain : float
+        Threshold value for valid precipitation [dBZ].
 
     Returns
     -------
@@ -498,9 +500,12 @@ def filter_gabella_a_polar(img, rscale, fsize, tr1=7):
     filter_gabella_b : filter using a echo area
 
     """
+    img = np.copy(img)
+    img[np.isneginf(img)] = -32
+    img[img<thrsnorain] = -32
     ascale = 2*np.pi/img.shape[0]
     count = np.ones(img.shape,dtype=int)
-    similar = np.zeros(img.shape,dtype=float)
+    similar = -np.ones(img.shape,dtype=float)
     good = np.ones(img.shape,dtype=float)
     valid = (~np.isnan(img))
     hole = np.sum(~valid) > 0
@@ -509,27 +514,30 @@ def filter_gabella_a_polar(img, rscale, fsize, tr1=7):
     r = np.arange(img.shape[1])*rscale + rscale/2
     adist = r*ascale
     na = np.around(fsize/adist).astype(int)
-    max_na = img.shape[0]/8
+    max_na = img.shape[0]/10
     sa = 0
     while sa < max_na:
         imax = np.where(na >= sa)[0][-1] + 1
-        refa1 = np.roll(img,sa,axis=0)
-        refa2 = np.roll(img,-sa,axis=0)
+        refa1 = util.roll2d_polar(img,sa,axis=0)
+        refa2 = util.roll2d_polar(img,-sa,axis=0)
         for sr in range_shift:
-            refr1 = np.roll(refa1,sr,axis=1)
+            refr1 = util.roll2d_polar(refa1,sr,axis=1)
             similar[:, 0 : imax] += ( img[:, 0 : imax] - refr1[:, 0 : imax] < tr1 )
             if sa > 0:
-                refr2 = np.roll(refa2,sr,axis=1)
+                refr2 = util.roll2d_polar(refa2,sr,axis=1)
                 similar[:, 0 : imax] += ( img[:, 0 : imax] - refr2[:, 0 : imax] < tr1 )
         count[:,0:imax] = 2*sa+1
         sa += 1
-    count = count*(2*nr+1)
+    similar[~valid] = np.nan
+    count[:,nr:-nr+1] = count[:,nr:-nr+1]*(2*nr+1)
+    for i in range(0,nr):
+        count[:,i] = count[:,i]*(nr+1+i)
+        count[:,-i-1] = count[:,-i-1]*(nr+1+i)
     if hole:
-        good = util.filter_window_polar(valid.astype(float),fsize,"uniform",(rscale,ascale))
+        good = wradlib.util.filter_window_polar(valid.astype(float),fsize,"uniform",(rscale,ascale))
         count = count*good
     	count[count == 0] = 1
     similar = similar/count
-    similar[~valid] = 0
     similar[:,0:nr] = 1
     similar[:,-nr:] = 1
     return(similar)
