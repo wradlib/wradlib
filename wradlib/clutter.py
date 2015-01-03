@@ -505,7 +505,7 @@ def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7, thrsnorain=5):
     img[img<thrsnorain] = -32
     ascale = 2*np.pi/img.shape[0]
     count = np.ones(img.shape,dtype=int)
-    similar = -np.ones(img.shape,dtype=float)
+    similar = np.zeros(img.shape,dtype=float)
     good = np.ones(img.shape,dtype=float)
     valid = (~np.isnan(img))
     hole = np.sum(~valid) > 0
@@ -529,17 +529,18 @@ def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7, thrsnorain=5):
         count[:,0:imax] = 2*sa+1
         sa += 1
     similar[~valid] = np.nan
-    count[:,nr:-nr+1] = count[:,nr:-nr+1]*(2*nr+1)
+    count[~valid] = -1
+    count[:,nr:-nr] = count[:,nr:-nr]*(2*nr+1)
     for i in range(0,nr):
         count[:,i] = count[:,i]*(nr+1+i)
         count[:,-i-1] = count[:,-i-1]*(nr+1+i)
     if hole:
-        good = wradlib.util.filter_window_polar(valid.astype(float),fsize,"uniform",(rscale,ascale))
+        good = util.filter_window_polar(valid.astype(float),fsize,"uniform",(rscale,ascale))
         count = count*good
     	count[count == 0] = 1
+    similar = similar - 1
+    count = count - 1
     similar = similar/count
-    similar[:,0:nr] = 1
-    similar[:,-nr:] = 1
     return(similar)
 
 

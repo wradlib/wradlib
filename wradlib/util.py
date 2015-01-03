@@ -1010,6 +1010,51 @@ if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
 
 
+def filter_window_polar_test(img,wsize,fun,scale,random=False):
+    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
+
+    Parameters
+    ----------
+    img : 2d array
+        Array of values to which the filter is to be applied
+    wsize : float
+        Half size of the window centred on the pixel [m] 
+    fun : string
+        name of the 1d filter from scipy.ndimage.filters
+    scale : tuple of 2 floats
+        range [m] and azimutal [radians] scale of the polar grid 
+    random: bool
+        True to use random azimutal size to avoid long-term biases. 
+
+    Returns
+    -------
+    output : array_like
+        an array with the same shape as `img`, containing the filter's results.
+
+    """
+    rscale,ascale = scale
+    data_filtered = np.empty(img.shape,dtype=img.dtype)
+    fun = getattr(filters,"%s_filter1d" %(fun))
+    nbins = img.shape[-1]
+    ranges = np.arange(nbins)*rscale + rscale/2
+    asize = ranges*ascale
+    if random:
+        na = prob_round(wsize/asize).astype(int)
+    else:
+        na = np.fix(wsize/asize+0.5).astype(int)
+    na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance  
+    for sa in np.unique(na):
+        imax = np.where(na >= sa)[0][-1] + 1 + nr
+        imin = np.where(na > sa)[0][-1] + 1 -nr
+        index = ( na == n )
+        if n == 0:
+            data_filtered[:,index] = img[:,index]        
+        data_filtered[:,index] = fun(img[:,index],size=2*n+1,mode='wrap',axis=0)
+    nr = np.fix(wsize/rscale+0.5).astype(int)
+    data_filtered = fun(data_filtered,size=2*nr+1,axis=1)
+    return(data_filtered)
+
+
 def filter_window_polar(img,wsize,fun,scale,random=False):
     r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
@@ -1043,13 +1088,20 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
     else:
         na = np.fix(wsize/asize+0.5).astype(int)
     na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance  
-    for n in np.unique(na):
-        index = ( na == n )
-        if n == 0:
-            data_filtered[:,index] = img[:,index]
-        data_filtered[:,index] = fun(img[:,index],size=2*n+1,mode='wrap',axis=0)
-    nr = np.fix(wsize/rscale+0.5).astype(int)
-    data_filtered = fun(data_filtered,size=2*nr+1,axis=1)
+    sr = np.fix(wsize/rscale+0.5).astype(int)
+    for sa in np.unique(na):
+        imax = np.where(na >= sa)[0][-1] + 1
+        imin = np.where(na <= sa)[0][0]
+        if sa == 0:
+            data_filtered[:,imin:imax] = img[:,imin:imax]
+        imin2 = max(imin-sr,0)
+        imax2 = min(imax+sr,nbins)
+        temp = img[:,imin2:imax2]
+        temp = fun(temp,size=2*sa+1,mode='wrap',axis=0)
+        temp = fun(temp,size=2*sr+1,axis=1)
+        imin3 = imin-imin2
+        imax3 = imin3 + imax - imin
+        data_filtered[:,imin:imax] = temp[:,imin3:imax3]
     return(data_filtered)
 
 
