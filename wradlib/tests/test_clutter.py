@@ -39,12 +39,12 @@ class TestClutter(unittest.TestCase):
         self.filter_setup()
         self.img[15:17,5:7] = np.nan # nans
         clutter = self.img.copy()
-        clutter[self.img > 0] = 1
-        clutter[self.img == 11] = 0
-        clutter[:,0:2] = 0
-        clutter[:,-2:] = 0
+        clutter[self.img > 0] = True
+        clutter[self.img == 11] = False
+        clutter[np.isnan(self.img)] = False
+        np.set_printoptions(precision=2)
         rscale = 250
         similar = cl.filter_gabella_a_polar(self.img,rscale,fsize=300,tr1=4)
-        result = similar < 0.4
+        result = similar < 0.3
         np.set_printoptions(precision=3)
-        self.assertTrue((result == clutter).all)
+        self.assertTrue((result == clutter).all())
