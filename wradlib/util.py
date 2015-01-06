@@ -1070,7 +1070,7 @@ def prob_round(x, prec = 0):
 
 
 def filter_window_cartesian(img,wsize,fun,scale):
-    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`. This method is faster than filter_radius_polar()
+    r"""Apply a filter of square window size `fsize` on a given cartesian image `img`.
 
     Parameters
     ----------
@@ -1093,6 +1093,7 @@ def filter_window_cartesian(img,wsize,fun,scale):
     size = np.fix(wsize/scale+0.5).astype(int)
     data_filtered = fun(data_filtered,size)
     return(data_filtered)
+
 
 def roll2d_polar(img,shift=1,axis=0):
     r"""Roll a 2D polar array [azimuth,range] by a given `shift` for the given `axis`
