@@ -469,7 +469,7 @@ def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothin
     return(clutter)
 
 
-def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7, thrsnorain=5):
+def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7):
     r"""2d filter looking for large reflectivity
     gradients.
 
@@ -486,8 +486,6 @@ def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7, thrsnorain=5):
         Half-size [m] of the square window surrounding the central pixel
     tr1 : float
         Threshold value
-    thrsnorain : float
-        Threshold value for valid precipitation [dBZ].
 
     Returns
     -------
@@ -500,9 +498,6 @@ def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7, thrsnorain=5):
     filter_gabella_b : filter using a echo area
 
     """
-    img = np.copy(img)
-    img[np.isneginf(img)] = -32
-    img[img<thrsnorain] = -32
     ascale = 2*np.pi/img.shape[0]
     count = np.ones(img.shape,dtype=int)
     similar = np.zeros(img.shape,dtype=float)
