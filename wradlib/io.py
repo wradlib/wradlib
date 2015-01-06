@@ -27,7 +27,7 @@ on how to deal with different file formats.
    read_OPERA_hdf5
    read_GAMIC_hdf5
    read_RADOLAN_composite
-   read_rainbow
+   read_Rainbow
 
 """
 
@@ -1460,7 +1460,7 @@ def get_RB_blobs_from_file(filename, rbdict):
     Parameters
     ----------
     :param filename: string
-        Filename of Data File 
+        Filename of Data File
     :param rbdict: dict
         Rainbow file Contents
 
@@ -1616,7 +1616,7 @@ def from_hdf5(fpath, dataset="data"):
 
 def read_safnwc(filename):
     """Read MSG SAFNWC hdf5 file into a gdal georeferenced object
-    
+
     Parameters
     ----------
     filename : satellite file name
