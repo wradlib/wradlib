@@ -1,6 +1,18 @@
 Getting Started
 ===============
 
+Bleeding edge code
+------------------
+
+.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might seriously lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://bitbucket.org/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
+
+`Download the source <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_, unzip, and run:
+
+``$ python setup.py install``
+
+Alternatively, you can add the wradlib directory to your environment variable ``PYTHONPATH``.
+  
+
 Installation under Windows
 --------------------------
 
