@@ -6,7 +6,7 @@ Bleeding edge code
 
 .. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might seriously lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://bitbucket.org/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
 
-`Download the source <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_, unzip, and run:
+`Download <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_ the source, unzip, and run:
 
 ``$ python setup.py install``
 
@@ -16,10 +16,10 @@ Alternatively, you can add the wradlib directory to your environment variable ``
 Installation under Windows
 --------------------------
 
-In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We strongly recommend to install Python(x,y). It installs Python, a number of required packages, and other useful tools (e.g. MinGW).
+In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We recommend to install `Python(x,y) <http://code.google.com/p/pythonxy>`_ as it installs Python, a number of required packages, and other useful tools (e.g. MinGW).
 
-Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. 
-Download the latest distribution (currently **Python(x,y)-2.7.6.0.exe** and install it. 
+Download and install the latest Python(x,y) distribution from http://code.google.com/p/pythonxy. 
+The latest distribution tested by us is **Python(x,y)-2.7.9.0.exe**. 
 We recommend to use the full installation mode, because this will install all packages. 
 Otherwise you have to make sure that all prerequisites mentioned below will be installed, which may not be the case with a standard installation. 
 If you have administrative privileges, make sure you choose "All Users" under the "Install for" menu component.
@@ -32,6 +32,8 @@ If your Python installation is working, the following command (in a DOS console)
 Now you can install wradlib. Open a DOS console window and type:
 
 ``> easy_install wradlib``
+
+Alternatively, you can install the `Bleeding edge code`_.
 
 Test the integrity of your wradlib installation by opening a console window and typing ``>python``. The Python prompt should appear. Then type
 
