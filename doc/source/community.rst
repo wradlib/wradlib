@@ -1,18 +1,6 @@
 Community
 =========
 
-Developers
-----------
-
-*wradlib* is under continuous development. This is the current team of developers (in alphabetical order):
- 
-`Maik Heistermann <http://www.geo.uni-potsdam.de/mitarbeiterdetails-678/show/166/Maik_Heistermann.html>`_ (`University of Potsdam <http://www.geo.uni-potsdam.de>`_)
-
-`Stephan Jacobi <http://www.geo.uni-potsdam.de/mitarbeiterdetails-678/show/168/Stephan_Jacobi.html>`_ (`University of Potsdam <http://www.geo.uni-potsdam.de>`_)
-
-`Thomas Pfaff <http://www.iws.uni-stuttgart.de/institut/mitarbeiter/person.php?name=1109>`_ (`University of Stuttgart <http://www.iws.uni-stuttgart.de>`_)
-
-
 How to contribute to wradlib?
 -----------------------------
 
