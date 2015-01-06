@@ -464,7 +464,8 @@ def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothin
     if cirrus:
         noprecip = noprecip | (cloud == 14) | (cloud == 18)
     if smoothing is not None:
-        noprecip = util.filter_window_polar(noprecip,smoothing,"minimum",scale)
+        myfilter = getattr(util,"filter_window_%s" %(grid))
+        noprecip = myfilter(noprecip,smoothing,"minimum",scale)
     clutter = noprecip & (img > thrs)
     return(clutter)
 
