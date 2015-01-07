@@ -1010,7 +1010,7 @@ if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
 
 
-def filter_window_polar(img,wsize,fun,scale,random=False):
+def filter_window_polar(img,wsize,fun,rscale,random=False):
     r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
     Parameters
@@ -1021,8 +1021,8 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
         Half size of the window centred on the pixel [m] 
     fun : string
         name of the 1d filter from scipy.ndimage.filters
-    scale : tuple of 2 floats
-        range [m] and azimutal [radians] scale of the polar grid 
+    rscale : float
+        range [m] scale of the polar grid 
     random: bool
         True to use random azimutal size to avoid long-term biases. 
 
@@ -1032,7 +1032,7 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
         an array with the same shape as `img`, containing the filter's results.
 
     """
-    rscale,ascale = scale
+    ascale = 2*np.pi/img.shape[0]
     data_filtered = np.empty(img.shape,dtype=img.dtype)
     fun = getattr(filters,"%s_filter1d" %(fun))
     nbins = img.shape[-1]
