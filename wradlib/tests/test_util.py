@@ -23,7 +23,7 @@ class TestUtil(unittest.TestCase):
         rscale = 250
         nrays, nbins = self.img.shape
         ascale = 2*np.pi/self.img.shape[0]
-        mean = util.filter_window_polar(self.img,300,"maximum",(rscale,ascale))
+        mean = util.filter_window_polar(self.img,300,"maximum",rscale)
         correct = np.array([[ 0.,  1.,  1.,  1.,  0.,  0.,  0.,  0.,  0.,  0.],
                    [ 0.,  1.,  1.,  1.,  0.,  0.,  0.,  0.,  0.,  0.],
                           [ 0.,  1.,  1.,  1.,  0.,  0.,  0.,  0.,  0.,  0.],

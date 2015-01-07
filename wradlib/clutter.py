@@ -446,9 +446,9 @@ def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothin
         Size [m] of the smoothing window used to take into account various localisation errors (e.g. advection, parallax)
     grid : string
         "polar" or "cartesian"
-    scale : tuple of 2 floats
-        range and azimutal scale for polar grid
-        x and y scale for cartesian grid
+    scale : float or tuple of 2 floats
+        range [m] scale for polar grid
+        x[m] and y[m] scale for cartesian grid
 
     Returns
     -------
@@ -531,7 +531,7 @@ def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7):
         count[:,i] = count[:,i]*(nr+1+i)
         count[:,-i-1] = count[:,-i-1]*(nr+1+i)
     if hole:
-        good = util.filter_window_polar(valid.astype(float),fsize,"uniform",(rscale,ascale))
+        good = util.filter_window_polar(valid.astype(float),fsize,"uniform",rscale)
         count = count*good
     	count[count == 0] = 1
     similar = similar - 1
