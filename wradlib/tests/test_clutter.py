@@ -35,7 +35,7 @@ class TestClutter(unittest.TestCase):
     def test_filter_gabella_a(self):
         pass
 
-    def test_filter_gabella_a_polar(self):
+    def test_filter_window_distance(self):
         self.filter_setup()
         self.img[15:17,5:7] = np.nan # nans
         clutter = self.img.copy()
@@ -44,7 +44,7 @@ class TestClutter(unittest.TestCase):
         clutter[np.isnan(self.img)] = False
         np.set_printoptions(precision=2)
         rscale = 250
-        similar = cl.filter_gabella_a_polar(self.img,rscale,fsize=300,tr1=4)
+        similar = cl.filter_window_distance(self.img,rscale,fsize=300,tr1=4)
         result = similar < 0.3
         np.set_printoptions(precision=3)
         self.assertTrue((result == clutter).all())
