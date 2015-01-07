@@ -470,12 +470,13 @@ def filter_cloudtype(img,cloud,thrs=0,snow=False,low=False,cirrus=False,smoothin
     return(clutter)
 
 
-def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7):
+def filter_window_distance(img, rscale, fsize = 1500, tr1=7):
     r"""2d filter looking for large reflectivity
     gradients.
 
     This function counts for each bin in `img` the percentage of surrounding bins
     in a window of half size `fsize` which are not `tr1` smaller than the central bin.
+    The window is defined using geometrical distance.
 
     Parameters
     ----------
@@ -495,7 +496,7 @@ def filter_gabella_a_polar(img, rscale, fsize = 1500, tr1=7):
 
     See Also
     --------
-    filter_gabella_a : Orignial version of the filter valid for cartesian data.
+    filter_gabella_a : Original version of the filter
     filter_gabella_b : filter using a echo area
 
     """
