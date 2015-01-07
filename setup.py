@@ -52,7 +52,14 @@ for sample in requires:
     samplesplit = sample.split()
     modulestr = samplesplit[0]
     try:
-        module = __import__(modulestr)
+        if modulestr=="gdal":
+            # We need to try two ways because the import command for gdal has changed
+            try:
+                module = __import__("gdal")
+            except:
+                module = __import__("osgeo")
+        else:
+            module = __import__(modulestr)
         # if dependency has version constraints
         if len(samplesplit) >= 3:
             ver = samplesplit[2]
