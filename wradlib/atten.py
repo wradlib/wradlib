@@ -20,11 +20,8 @@ Attenuation Correction
    :toctree: generated/
 
     correctAttenuationHB
-    correctAttenuationKraemer
-    correctAttenuationHJ
-    correctAttenuationConstrained
     constraint_dBZ
-    constraint_PIA
+    constraint_pia
     correctAttenuationConstrained2
     correctRadomeAttenuationEmpirical
     pia_from_kdp
