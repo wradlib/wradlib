@@ -1010,7 +1010,7 @@ if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
 
 
-def filter_window_polar(img,wsize,fun,scale,random=False):
+def filter_window_polar(img,wsize,fun,rscale,random=False):
     r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
     Parameters
@@ -1021,8 +1021,8 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
         Half size of the window centred on the pixel [m] 
     fun : string
         name of the 1d filter from scipy.ndimage.filters
-    scale : tuple of 2 floats
-        range [m] and azimutal [radians] scale of the polar grid 
+    rscale : float
+        range [m] scale of the polar grid 
     random: bool
         True to use random azimutal size to avoid long-term biases. 
 
@@ -1032,7 +1032,7 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
         an array with the same shape as `img`, containing the filter's results.
 
     """
-    rscale,ascale = scale
+    ascale = 2*np.pi/img.shape[0]
     data_filtered = np.empty(img.shape,dtype=img.dtype)
     fun = getattr(filters,"%s_filter1d" %(fun))
     nbins = img.shape[-1]
@@ -1043,13 +1043,20 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
     else:
         na = np.fix(wsize/asize+0.5).astype(int)
     na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance  
-    for n in np.unique(na):
-        index = ( na == n )
-        if n == 0:
-            data_filtered[:,index] = img[:,index]
-        data_filtered[:,index] = fun(img[:,index],size=2*n+1,mode='wrap',axis=0)
-    nr = np.fix(wsize/rscale+0.5).astype(int)
-    data_filtered = fun(data_filtered,size=2*nr+1,axis=1)
+    sr = np.fix(wsize/rscale+0.5).astype(int)
+    for sa in np.unique(na):
+        imax = np.where(na >= sa)[0][-1] + 1
+        imin = np.where(na <= sa)[0][0]
+        if sa == 0:
+            data_filtered[:,imin:imax] = img[:,imin:imax]
+        imin2 = max(imin-sr,0)
+        imax2 = min(imax+sr,nbins)
+        temp = img[:,imin2:imax2]
+        temp = fun(temp,size=2*sa+1,mode='wrap',axis=0)
+        temp = fun(temp,size=2*sr+1,axis=1)
+        imin3 = imin-imin2
+        imax3 = imin3 + imax - imin
+        data_filtered[:,imin:imax] = temp[:,imin3:imax3]
     return(data_filtered)
 
 
@@ -1063,7 +1070,7 @@ def prob_round(x, prec = 0):
 
 
 def filter_window_cartesian(img,wsize,fun,scale):
-    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`. This method is faster than filter_radius_polar()
+    r"""Apply a filter of square window size `fsize` on a given cartesian image `img`.
 
     Parameters
     ----------
@@ -1088,3 +1095,37 @@ def filter_window_cartesian(img,wsize,fun,scale):
     return(data_filtered)
 
 
+def roll2d_polar(img,shift=1,axis=0):
+    r"""Roll a 2D polar array [azimuth,range] by a given `shift` for the given `axis`
+
+    Parameters
+    ----------
+    shift : int
+        shift to apply to the array
+    axis : int
+        axis which will be shifted
+    Returns
+    -------
+    out: new array with shifted values
+    
+    """
+    if shift == 0:
+        return img
+    else:
+        out = np.empty(img.shape)
+    n = img.shape[axis]
+    if axis == 0:
+        if shift > 0:
+            out[shift:,:] = img[:-shift,:] 
+            out[:shift,:] = img[n-shift:,:]
+        else:
+            out[:shift,:] = img[-shift:,:] 
+            out[n+shift:,:] = img[:-shift:,:]
+    else:
+        if shift > 0:
+            out[:,shift:] = img[:,:-shift] 
+            out[:,:shift] = np.nan
+        else:
+            out[:,:shift] = img[:,-shift:] 
+            out[:,n+shift:] = np.nan
+    return(out)
