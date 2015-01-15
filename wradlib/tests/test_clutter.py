@@ -24,12 +24,27 @@ class TestClutter(unittest.TestCase):
     # testing the first part of the filter
     #-------------------------------------------------------------------------------
     def filter_setup(self):
-        img = np.zeros((10,10), dtype=np.float32)
+        img = np.zeros((36,10), dtype=np.float32)
         img[2,2] = 10    # isolated pixel
-        img[3,8:10] = 10 # line
-        img[5,:] = 5     # spike
-        img[7:9,7:9] = 5 # precip field
+        img[5,6:8] = 10 # line
+        img[20,:] = 5     # spike
+        img[9:12,4:7] = 11 # precip field
+        self.img = img
         pass
 
     def test_filter_gabella_a(self):
         pass
+
+    def test_filter_window_distance(self):
+        self.filter_setup()
+        self.img[15:17,5:7] = np.nan # nans
+        clutter = self.img.copy()
+        clutter[self.img > 0] = True
+        clutter[self.img == 11] = False
+        clutter[np.isnan(self.img)] = False
+        np.set_printoptions(precision=2)
+        rscale = 250
+        similar = cl.filter_window_distance(self.img,rscale,fsize=300,tr1=4)
+        result = similar < 0.3
+        np.set_printoptions(precision=3)
+        self.assertTrue((result == clutter).all())
