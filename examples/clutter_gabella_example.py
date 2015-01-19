@@ -20,7 +20,7 @@ def ex_clutter_gabella():
     # load the example data
     import numpy as np
     # Todo: link right data set
-    testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ.dat')
+    testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_fbg.gz')
 
     # calculate the clutter map
     clmap = clutter.filter_gabella(testdata,
