@@ -197,7 +197,13 @@ def ex_plot_cg_rhi():
     axHistX.xaxis.set_major_formatter(NullFormatter())
     axHistY.yaxis.set_major_formatter(NullFormatter())
     axHistX.hist(x)
-    axHistY.hist(y, orientation='horizontal')
+    if not pl.matplotlib.__version__=="1.2.1":
+        # There is a bug in matplotlib 1.2.1,
+        # see https://github.com/matplotlib/matplotlib/pull/1985
+        axHistY.hist(y, orientation='horizontal')
+    else:
+        axHistY.text(0.5, 0.5, "Does not work with\nmatplotlib 1.2.1",
+        horizontalalignment="center", rotation=90, fontsize=15, color="red")
     t = pl.gcf().suptitle('AxesDivider CG Example')
     pl.tight_layout()
 
