@@ -29,7 +29,7 @@ def process_polar_level_data(radarname):
     # preparations for loading sample data in source directory
     files = glob.glob(os.path.dirname(__file__) + '/' + 'raa*%s*bin'%radarname)
     if len(files)==0:
-        raise SystemExit("No data files found - maybe you did not extract the data from data/recipe1_data.zip?")
+        print "WARNING: No data files found - maybe you did not extract the data from data/recipe1_data.zip?"
     data  = np.empty((len(files),360,128))
     # loading the data (two hours of 5-minute images)
     for i, f in enumerate(files):
