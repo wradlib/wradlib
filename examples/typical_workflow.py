@@ -55,9 +55,9 @@ def ex_typical_workflow():
     depth = wradlib.trafo.r2depth(R, 300)
 
     # example for rainfall accumulation in case we have a series of sweeps (here: random numbers)
-    sweep_times  = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-27 00:00:00", 300)
+    sweep_times  = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 300)
     depths_5min  = np.random.uniform(size=(len(sweep_times)-1, 360, 128))
-    hours        = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-27 00:00:00", 3600)
+    hours        = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 3600)
     depths_hourly= wradlib.util.aggregate_in_time(depths_5min, sweep_times, hours, func='sum')
 
     # Georeferencing
