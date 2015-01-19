@@ -58,7 +58,7 @@ def ex_plot_ppi():
     # - interpret the site coordinates as longitude/latitude
     # - reproject the coordinates to the dwd-radolan composite coordinate system
     wradlib.vis.plot_ppi(img, site=(10., 45.),
-                         projstr=wradlib.georef.create_projstr('dwd-radolan'))
+                         proj=wradlib.georef.create_projstr('dwd-radolan'))
     # now the crosshair must also observe the projection
     # in addition the ranges must now be given in meters
     # we now also change the circles to a different color and linestyle
@@ -70,7 +70,7 @@ def ex_plot_ppi():
                                          'circle':{'edgecolor':'blue',
                                                    'linestyle':'dotted'},
                                         },
-                                   projstr=wradlib.georef.create_projstr('dwd-radolan')
+                                   proj=wradlib.georef.create_projstr('dwd-radolan')
                                    )
     pl.title('Georeferenced/Projected PPI')
 
@@ -80,7 +80,7 @@ def ex_plot_ppi():
     # of the projection (which is 10 degrees east)
     # Due north now does not point straight upwards on the map
     wradlib.vis.plot_ppi(img, site=(45., 7.),
-                         projstr=wradlib.georef.create_projstr('dwd-radolan'))
+                         proj=wradlib.georef.create_projstr('dwd-radolan'))
     # The crosshair shows this.
     # for the case that the lines should actually become curved, they are
     # implemented as a piecewise linear curve with 10 vertices
@@ -91,7 +91,7 @@ def ex_plot_ppi():
                                          'circle':{'edgecolor':'darkgray',
                                                    'linestyle':'dotted'},
                                         },
-                                   projstr=wradlib.georef.create_projstr('dwd-radolan')
+                                   proj=wradlib.georef.create_projstr('dwd-radolan')
                                    )
     pl.title('Projection Side Effects')
 
