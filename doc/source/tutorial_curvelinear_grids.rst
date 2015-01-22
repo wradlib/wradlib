@@ -786,7 +786,7 @@ Some padding has to be adjusted to get a nice plot.
 The AxesDivider Method
 ----------------------
 
-Here the capabilities of `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.htm#axes-grid1/>`_ are used.
+Here the capabilities of `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.html#axes-grid1/>`_ are used.
 
 We make a **PPI** now, it matches much better. Just plot your **PPI** data and create an axes divider::
 
@@ -925,4 +925,4 @@ And this looks actually very nice:
     plt.draw()
     plt.show()
 
-.. seealso:: `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.htm#axes-grid1/>`_
+.. seealso:: `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.html#axes-grid1/>`_
