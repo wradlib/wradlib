@@ -336,7 +336,6 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
      [20 21 22 23]
      [24 25 26 27]
      [28 29 30 31]]
-
     >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
     >>> print 'source time interval limits:' # doctest: +SKIP
     >>> for tim in dt_src: print tim
@@ -349,7 +348,6 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     2008-06-02 06:00:00
     2008-06-02 07:00:00
     2008-06-02 08:00:00
-
     >>> print 'target time interval limits:' # doctest: +SKIP
     >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
     >>> for tim in dt_trg: print tim
@@ -357,7 +355,6 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     2008-06-02 04:00:00
     2008-06-02 08:00:00
     2008-06-02 12:00:00
-
     >>> print 'target time series' # doctest: +SKIP
     >>> print aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum')
     [[  24.   28.   32.   36.]
@@ -447,18 +444,6 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
     Examples
     --------
     >>> # TODO: put an example here for `mean_over_time_windows`
-    >>> src = np.arange(8*4).reshape( (8,4) )
-    >>> print 'source time series:'
-    >>> print src
-    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
-    >>> print 'source time interval limits:'
-    >>> for tim in dt_src: print tim
-    >>> print 'target time interval limits:'
-    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
-    >>> for tim in dt_trg: print tim
-    >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum')
-
 
     """
     # Convert input time steps to numpy arrays
@@ -538,18 +523,6 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
     Examples
     --------
     >>> # TODO: put an example here for `average_over_time_windows`
-    >>> src = np.arange(8*4).reshape( (8,4) )
-    >>> print 'source time series:'
-    >>> print src
-    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
-    >>> print 'source time interval limits:'
-    >>> for tim in dt_src: print tim
-    >>> print 'target time interval limits:'
-    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
-    >>> for tim in dt_trg: print tim
-    >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
-
 
     """
     # Convert input time steps to numpy arrays
@@ -1018,13 +991,13 @@ def filter_window_polar(img,wsize,fun,rscale,random=False):
     img : 2d array
         Array of values to which the filter is to be applied
     wsize : float
-        Half size of the window centred on the pixel [m] 
+        Half size of the window centred on the pixel [m]
     fun : string
         name of the 1d filter from scipy.ndimage.filters
     rscale : float
-        range [m] scale of the polar grid 
+        range [m] scale of the polar grid
     random: bool
-        True to use random azimutal size to avoid long-term biases. 
+        True to use random azimutal size to avoid long-term biases.
 
     Returns
     -------
@@ -1042,7 +1015,7 @@ def filter_window_polar(img,wsize,fun,rscale,random=False):
         na = prob_round(wsize/asize).astype(int)
     else:
         na = np.fix(wsize/asize+0.5).astype(int)
-    na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance  
+    na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance
     sr = np.fix(wsize/rscale+0.5).astype(int)
     for sa in np.unique(na):
         imax = np.where(na >= sa)[0][-1] + 1
@@ -1077,7 +1050,7 @@ def filter_window_cartesian(img,wsize,fun,scale):
     img : 2d array
         Array of values to which the filter is to be applied
     wsize : float
-        Half size of the window centred on the pixel [m] 
+        Half size of the window centred on the pixel [m]
     fun : string
         name of the 2d filter from scipy.ndimage.filters
     scale : tuple of 2 floats
@@ -1107,7 +1080,7 @@ def roll2d_polar(img,shift=1,axis=0):
     Returns
     -------
     out: new array with shifted values
-    
+
     """
     if shift == 0:
         return img
@@ -1116,16 +1089,16 @@ def roll2d_polar(img,shift=1,axis=0):
     n = img.shape[axis]
     if axis == 0:
         if shift > 0:
-            out[shift:,:] = img[:-shift,:] 
+            out[shift:,:] = img[:-shift,:]
             out[:shift,:] = img[n-shift:,:]
         else:
-            out[:shift,:] = img[-shift:,:] 
+            out[:shift,:] = img[-shift:,:]
             out[n+shift:,:] = img[:-shift:,:]
     else:
         if shift > 0:
-            out[:,shift:] = img[:,:-shift] 
+            out[:,shift:] = img[:,:-shift]
             out[:,:shift] = np.nan
         else:
-            out[:,:shift] = img[:,-shift:] 
+            out[:,:shift] = img[:,-shift:]
             out[:,n+shift:] = np.nan
     return(out)
