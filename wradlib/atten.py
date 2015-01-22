@@ -365,7 +365,10 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 
     Examples
     --------
-    >>> # Setup due to the Harrison, D.L., Driscoll, S.J., Kitchen, M. (2000)
+    >>> from wradlib.io import readDX
+    >>> # example data from DWD radar Feldberg
+    >>> gateset, attrs = readDX("examples/data/raa00-dx_10908-0806021655-fbg---bin")
+    >>> # Set this up according to Harrison, D.L., Driscoll, S.J., Kitchen, M. (2000)
     >>> k = correctAttenuationHJ(gateset, a_max = 4.565e-5, b = 0.73125, n=1,
     ...                          mode = 'cap', thrs_dBZ = 100.0, max_PIA = 4.82)
 
