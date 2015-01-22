@@ -117,12 +117,6 @@ def filter_gabella_b(img, thrs=0.):
     --------
 
     >>> # TODO: provide a correct example here
-    >>> a=[1,2,3]
-    >>> print [x + 3 for x in a]
-    [4, 5, 6]
-    >>> print "a\n\nb"
-    a
-    b
 
     """
     conn = np.ones((3,3))
@@ -483,7 +477,7 @@ def filter_window_distance(img, rscale, fsize = 1500, tr1=7):
     img : array_like
         2d polar data to which the filter is to be applied
     rscale : float
-        range [m] scale of the polar grid 
+        range [m] scale of the polar grid
     fsize : int
         Half-size [m] of the square window surrounding the central pixel
     tr1 : float
