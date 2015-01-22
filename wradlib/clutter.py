@@ -63,13 +63,6 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     --------
 
     >>> # TODO: provide a correct example here
-    >>> a=[1,2,3]
-    >>> print [x + 3 for x in a]
-    :w
-    [4, 5, 6]
-    >>> print "a\n\nb"
-    a
-    b
 
     """
     nn = wsize // 2
@@ -192,12 +185,6 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=
     --------
 
     >>> # TODO: provide a correct example here
-    >>> a=[1,2,3]
-    >>> print [x + 3 for x in a]
-    [4, 5, 6]
-    >>> print "a\n\nb"
-    a
-    b
 
     """
     bad = np.isnan(img)
