@@ -833,12 +833,10 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     >>> # here we introduce missing values only in the second dimension
     >>> vals[3:5,1] = np.nan
     >>> ipol_result = interpolate(src, trg, vals, Idw, nnearest=2)
-    >>> # plot if you like
-    >>> import pylab as pl
-    >>> line1 = pl.plot(trg, ipol_result, 'b+')
-    >>> line2 = pl.plot(src, vals, 'ro')
-    >>> pl.show()
-
+    >>> import matplotlib.pyplot as plt
+    >>> plt.interactive(True)
+    >>> line1 = plt.plot(trg, ipol_result, 'b+')
+    >>> line2 = plt.plot(src, vals, 'ro')
 
     """
     if vals.ndim==1:
