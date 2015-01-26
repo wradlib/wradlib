@@ -895,11 +895,11 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
     >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
     >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)
-    >>> wrl.vis.plot_ppi(filled_a)
+    >>> ax, pm = wrl.vis.plot_ppi(filled_a)
     >>> # the same result can be achieved by using an masked array instead of an explicit mask
     >>> mdata = np.ma.array(data, mask = masked_values)
     >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)
-    >>> wrl.vis.plot_ppi(filled_b)
+    >>> ax, pm = wrl.vis.plot_ppi(filled_b)
 
 
     """
