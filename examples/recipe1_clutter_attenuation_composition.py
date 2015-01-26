@@ -122,10 +122,11 @@ def recipe_clutter_attenuation():
 
     print "Processing took:", dt.datetime.now()-start
 
-    # Plotting rainfall mop with the following class boundaries
-    classes = [0,5,10,20,30,40,50,75,100,125,150,200]
-    #TODO: rewrite plotfunction
-    #wradlib.vis.cartesian_plot(composite.reshape((len(x),len(y))), x=x, y=y, unit="mm", colormap="spectral", classes=classes)
+    # Plotting rainfall map
+    ax = pl.subplot(111, aspect="equal")
+    pm = pl.pcolormesh(x, y, composite.reshape((len(x),len(y))), cmap="spectral")
+    pl.grid()
+    pl.colorbar(pm)
 
 if __name__ == '__main__':
     recipe_clutter_attenuation()
