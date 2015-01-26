@@ -75,13 +75,25 @@ While metadata represents the usual dictionary of metadata, the data variable is
 
 NetCDF
 ------
-The NetCDF format also claims to be self-describing. However, as for all such formats, the developers of netCDF also admit that "[...] the mere use of netCDF is not sufficient to make data self-describing and meaningful to both humans and machines [...]". The program that reads the data needs to know about the expected content. Different radar operators or data distributors will use different naming conventions and data hierarchies. Even though Python provides a decent netCDF library (netcdf4), wradlib will need to provide different interfaces to netCDF files offered by different distributors.
+The NetCDF format also claims to be self-describing. However, as for all such formats, the developers of netCDF also admit that "[...] the mere use of netCDF is not sufficient to make data self-describing and meaningful to both humans and machines [...]" (see `here <http://www.unidata.ucar.edu/software/netcdf/docs/creating_self.html>`_). Different radar operators or data distributors will use different naming conventions and data hierarchies (i.e. "data models") that the reading program might need to know about.  
+
+*wradlib* provides two solutions to address this challenge. The first one ignores the concept of data models and just pulls all data and metadata from a NetCDF file (``read_generic_netcdf``). The second is designed for a specific data model used by the EDGE software (``read_EDGE_netcdf``).
+
+**Generic NetCDF reader (includes CfRadial)**
+
+*wradlib* provides a function that will virtually read any NetCDF file irrespective of the data model: :doc:`generated/wradlib.io.read_generic_netcdf`. It is built upon Python's `netcdf4 <http://netcdf4-python.googlecode.com/svn/trunk/docs/netCDF4-module.html>`_ library. ``read_generic_netcdf`` will return only one object, a dictionary, that contains all the contents of the NetCDF file corresponding to the original file structure. This includes all the metadata, as well as the so called "dimensions" (describing the dimensions of the actual data arrays) and the "variables" which will contains the actual data. Users can use this dictionary at will in order to query data and metadata; however, they should make sure to consider the documentation of the corresponding data model. ``read_generic_netcdf`` has been shown to work with a lot of different data models, most notably **CfRadial** (see `here <http://www.ral.ucar.edu/projects/titan/docs/radial_formats/cfradial.html>`_ for details). A typical call to ``read_generic_netcdf`` would look like::
+
+   outdict = wradlib.io.read_generic_netcdf("mydrive:/path/to/my/file/filename")
+   for key in outdict.keys():
+      print key
+
+Please see `this example file <https://bitbucket.org/wradlib/wradlib/src/default/examples/generic_netcdf_example.py>`_	to get started.
 
 **NetCDF files exported by the EDGE software**
 
-EDGE is a commercial software for radar control and data analysis provided by the Enterprise Electronics Corporation. It allows for netCDF data export. The resulting files can be read by::
+EDGE is a commercial software for radar control and data analysis provided by the Enterprise Electronics Corporation. It allows for netCDF data export. The resulting files can be read by :doc:`generated/wradlib.io.read_generic_netcdf`, but *wradlib* also provides a specific function,  :doc:`generated/wradlib.io.read_EDGE_netcdf` to return metadata and data as seperate objects::
 
-   data, metadata = io.read_EDGE_netcdf("mydrive:/path/to/my/file/filename") 
+   data, metadata = io.read_EDGE_netcdf("mydrive:/path/to/my/file/filename")   
 
    
 Gematronik Rainbow
