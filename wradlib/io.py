@@ -28,6 +28,7 @@ on how to deal with different file formats.
    read_GAMIC_hdf5
    read_RADOLAN_composite
    read_Rainbow
+   read_generic_netcdf
 
 """
 
