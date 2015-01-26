@@ -1,12 +1,12 @@
 #-------------------------------------------------------------------------------
-# Name:        generic_netcdf_example
+# Name:        generic_netcdf_example.py
 # Purpose:
 #
-# Author:      heistermann
+# Author:      Maik Heistermann
 #
 # Created:     16/01/2015
-# Copyright:   (c) heistermann 2015
-# Licence:     <your licence>
+# Copyright:   (c) Maik Heistermann 2015
+# Licence:     The MIT License
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
