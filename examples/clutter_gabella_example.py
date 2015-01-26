@@ -9,12 +9,14 @@
 # Licence:     The MIT License
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
-import wradlib.vis as vis
-import wradlib.clutter as clutter
-import os
+
 import pylab as pl
 # just making sure that the plots immediately pop up
 pl.interactive(True)
+import wradlib.vis as vis
+import wradlib.clutter as clutter
+import os
+
 
 def ex_clutter_gabella():
     # load the example data
@@ -31,8 +33,9 @@ def ex_clutter_gabella():
                                    tr2=1.3)
 
     # visualize the result
-    vis.polar_plot(clmap,
-                   title='cluttermap')
+    ax, pm = vis.plot_ppi(clmap)
+    ax.set_title('cluttermap')
+    pl.show()
 
 if __name__ == '__main__':
     ex_clutter_gabella()

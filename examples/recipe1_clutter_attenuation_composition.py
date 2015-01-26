@@ -27,7 +27,7 @@ def process_polar_level_data(radarname):
     """
     print "Polar level processing for radar %s..." % radarname
     # preparations for loading sample data in source directory
-    files = glob.glob(os.path.dirname(__file__) + '/' + 'raa*%s*bin'%radarname)
+    files = glob.glob(os.path.dirname(__file__) + '/' + 'data/raa*%s*bin'%radarname)
     if len(files)==0:
         print "WARNING: No data files found - maybe you did not extract the data from data/recipe1_data.zip?"
     data  = np.empty((len(files),360,128))
