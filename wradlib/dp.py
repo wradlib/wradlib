@@ -74,8 +74,6 @@ from scipy.stats import nanmedian, nanmean, linregress
 from scipy.ndimage.filters import convolve1d
 import util
 
-from util import deprecated
-
 
 def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=False):
     """Establish consistent PhiDP profiles from raw data.
@@ -762,73 +760,6 @@ def texture(data):
     return texture
 
 
-@deprecated()
-def fill_phidp(data, margin=3):
-    """Fills in missing PhiDP.
-
-    Contiguous NaN regions are filled by the average of the median of margins
-    that surround the NaN region. At the left and right margins of the array,
-    these medians are extrapolated to the end. As the margin of a contiguous
-    NaN region, we consider *n* bins as given by the *margin* argument. Considering
-    multiple bins at the margins takes into account noisy PhiDP.
-
-    As a consequence, a contiguous region of missing PhiDP will be filled by constant
-    values determined by the edges of that region. Thus, the derivative (i. e. Kdp) in
-    that region will be zero. This bahaviour is more desirable than the behaviour
-    produced by linear interpolation because this will cause arbitrary Kdp values
-    in case of noisy PhiDP profiles with large portions of missing data.
-
-    One more detail:
-
-    Parameters
-    ----------
-    data : N-dim array with last dimension representing the range
-    margin : the size of the window which is used to compute the average value
-            at the margins of a contiguous NaN region in the array.
-
-    Returns
-    -------
-    out : array of same shape as phi gaps filled
-
-    """
-    shape = data.shape
-    data  = data.reshape((-1,shape[-1]))
-    zeros = np.zeros(data.shape[1], dtype="f4")
-    invalids = np.isnan(data)
-
-    for i in xrange(data.shape[0]):
-        # return zeros of there are no valid phidp values
-        if np.all(np.isnan(data[i])):
-            data[i] = zeros
-            continue
-        # interpolate using the mean of the values surrounding the gaps
-        gaps = contiguous_regions(invalids[i])
-        # Iterate over the invalid regions of the array
-        if i==245:
-            pass
-        for j in range(len(gaps)):
-            # left index of the gap margin
-            left = gaps[j,0]-margin
-            if left<0:
-                left = 0
-            # right index of the right gap margin
-            right = gaps[j,1]+margin
-            # Now fill the gaps
-            if gaps[j,0]==0:
-                # Left margin of the array
-                data[i, 0:gaps[j,1]] = nanmedian( data[i, gaps[j,1]:(gaps[j,1]+margin)] )
-            elif gaps[j,1]==data.shape[1]:
-                # Right margin of the array
-                data[i, gaps[j,0]:] = nanmedian( data[i, left:gaps[j,0]] )
-            else:
-                # inner parts of the array
-                if right > data.shape[1]:
-                    right = data.shape[1]
-                data[i, gaps[j,0]:gaps[j,1]] = np.mean([nanmedian( data[i, gaps[j,1]:right] ),  \
-                                                        nanmedian( data[i, left:gaps[j,0]] )]  )
-    return data.reshape(shape)
-
-
 def contiguous_regions(condition):
     """Finds contiguous True regions of the boolean array "condition".
 
@@ -896,55 +827,6 @@ def gradient_from_smoothed(x, N=5):
     """Computes gradient of smoothed data along final axis of an array
     """
     return gradient_along_axis(medfilt_along_axis(x, N)).astype("f4")
-
-
-@deprecated("process_raw_phidp_vulpiani")
-def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
-    """Establish consistent PhiDP profiles from raw data.
-
-    Processing of raw PhiDP data contains the following steps:
-
-        - Despeckle
-
-        - Fill missing data
-          (general asssumption: PhiDP is monotonically increasing along the beam)
-
-        - Phase unfolding
-
-        - Smoothing
-
-    Parameters
-    ----------
-    phidp : array of shape (n azimuth angles, n range gates)
-    rho : array of shape (n azimuth angles, n range gates)
-    N_despeckle : integer
-        *N* parameter of function dp.linear_despeckle
-    N_fillmargin : integer
-        *margin* parameter of function dp.fill_phidp
-    N_unfold : integer
-        *width* parameter of function dp.unfold_phi
-    N_filter : integer
-        *N* parameter of function dp.medfilt_along_axis
-    copy : boolean
-        leaves the original phidp array untouched
-
-    """
-    if copy:
-        phidp = phidp.copy()
-    # despeckle
-    phidp = linear_despeckle(phidp, N=N_despeckle)
-    phidp = fill_phidp(phidp, margin=N_fillmargin)
-    # apply unfolding
-    if speedupexists:
-        phidp = unfold_phi(phidp, rho, width=N_unfold)
-    else:
-        phidp = unfold_phi_naive(phidp, rho, width=N_unfold)
-    # median filter smoothing
-    phidp = medfilt_along_axis(phidp, N=N_filter)
-    return phidp
-
-
-
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <dp> as main...'
