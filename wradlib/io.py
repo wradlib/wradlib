@@ -37,6 +37,7 @@ import sys
 import datetime as dt
 import cPickle as pickle
 import StringIO
+from collections import OrderedDict
 
 import re
 import pytz
@@ -1640,6 +1641,116 @@ def read_safnwc(filename):
     ds.SetProjection(proj)
     ds.SetGeoTransform([float(x) for x in geotransform])
     return (ds)
+
+
+def read_generic_netcdf(fname):
+    """Reads netcdf files and returns a dictionary with correspinding structure.
+
+    In contrast to other file readers under wradlib.io, this function will *not* return
+    a two item tuple with (data, metadata). Instead, this function returns ONE
+    dictionary that contains all the file contents - both data and metadata. The keys
+    of the output dictionary conform to the Group/Subgroup directory branches of
+    the original file.
+
+    Please see the `Examples`_ below on how to browse through a return object. The
+    most important keys are the "dimensions" which define the shape of the data
+    arrays, and the "variables" which contain the actual data and typically also
+    the data that define the dimensions (e.g. sweeps, azimuths, ranges). These keys
+    should be present in any netcdf file.
+
+    Note
+    ----
+    The returned dictionary could be quite big, depending on the content of the file.
+
+    Parameters
+    ----------
+    fname : string (a netcdf file path)
+
+    Returns
+    -------
+    out : an ordered dictionary that contains both data and metadata according to the
+              original netcdf file structure
+
+    """
+    try:
+        ncid = nc.Dataset(fname, 'r')
+    except:
+        print("wradlib: Could not read " % fname)
+        print("Check whether file exists, and whether it is a netCDF file.")
+        print("Raising exception...")
+        raise
+
+    if ncid.groups:
+        # To be implemented if necessary, all netcdf files
+        # I got my hands on have just one group/Dataset
+        print("Groups", ncid.groups)
+
+
+    out = OrderedDict()
+
+    # get file format (should be NETCDF3 or NETCDF4)
+    try:
+        out["file_format"] = ncid.file_format
+    except:
+        pass
+
+    # global attributes
+    for k, v in ncid.__dict__.iteritems():
+        out[k] = v
+
+    # dimensions
+    dimids = np.array([])
+    if ncid.dimensions:
+        dim = OrderedDict()
+        for k, v in ncid.dimensions.iteritems():
+            tmp = OrderedDict()
+            try:
+                tmp['data_model'] =  v._data_model
+            except:
+                pass
+            try:
+                tmp['size'] = v.__len__()
+            except:
+                pass
+            tmp['dimid'] = v._dimid
+            dimids = np.append(dimids,v._dimid)
+            tmp['grpid'] = v._grpid
+            tmp['isunlimited'] = v.isunlimited()
+            dim[k] = tmp
+        # Usually, the dimensions should be ordered by dimid automatically in case netcdf used OrderedDict
+        # However, we should double check
+        if np.array_equal(dimids, np.sort(dimids)):
+            # is already sorted
+            out['dimensions'] = dim
+        else:
+            # need to sort
+            dim2 = OrderedDict()
+            keys = dim.keys()
+            for dimid in np.sort(dimids):
+                dim2[keys[dimid]] = dim[keys[dimid]]
+            out["dimensions"] = dim2
+
+
+    # variables
+    if ncid.variables:
+        var = OrderedDict()
+        for k, v in ncid.variables.iteritems():
+            if isinstance(v.__dict__, dict):
+                tmp = OrderedDict()
+                for k1, v1 in v.__dict__.iteritems():
+                    tmp[k1] = v1
+                if v[:].dtype == 'S1':
+                    tmp['data'] = v[:].compressed().tostring()
+                else:
+                    tmp['data'] = v[:]
+                var[k] = tmp
+            else:
+                var[k] = v
+        out['variables'] = var
+
+    ncid.close()
+
+    return out
 
 
 if __name__ == '__main__':
