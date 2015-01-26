@@ -124,7 +124,8 @@ def recipe_clutter_attenuation():
 
     # Plotting rainfall mop with the following class boundaries
     classes = [0,5,10,20,30,40,50,75,100,125,150,200]
-    wradlib.vis.cartesian_plot(composite.reshape((len(x),len(y))), x=x, y=y, unit="mm", colormap="spectral", classes=classes)
+    #TODO: rewrite plotfunction
+    #wradlib.vis.cartesian_plot(composite.reshape((len(x),len(y))), x=x, y=y, unit="mm", colormap="spectral", classes=classes)
 
 if __name__ == '__main__':
     recipe_clutter_attenuation()
