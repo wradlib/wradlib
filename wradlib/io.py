@@ -1644,7 +1644,7 @@ def read_safnwc(filename):
 
 
 def read_generic_netcdf(fname):
-    """Reads netcdf files and returns a dictionary with correspinding structure.
+    """Reads netcdf files and returns a dictionary with corresponding structure.
 
     In contrast to other file readers under wradlib.io, this function will *not* return
     a two item tuple with (data, metadata). Instead, this function returns ONE
