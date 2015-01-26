@@ -26,8 +26,6 @@ Standard plotting and mapping procedures
    plot_rhi
    plot_cg_ppi
    plot_cg_rhi
-   rhi_plot
-   cg_plot
    plot_scan_strategy
    plot_plan_and_vert
    plot_tseries
