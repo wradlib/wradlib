@@ -700,7 +700,7 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None a new figure object will be created or
         current figure will be used, depending on "subplot".
-   subplot : matplotlib grid definition, gridspec definition
+    subplot : matplotlib grid definition, gridspec definition
         nrows/ncols/plotnumber, see examples section
         defaults to '111', only one subplot
 
@@ -721,8 +721,8 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
-
     """
+
     # this may seem odd at first, but d1 and d2 are also used in plot_rhi
     # and thus it may be easier to compare the two functions
     d1 = r
@@ -868,8 +868,8 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
-
     """
+
     # autogenerate axis dimensions
     if r is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
