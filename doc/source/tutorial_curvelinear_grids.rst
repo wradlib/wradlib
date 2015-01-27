@@ -778,7 +778,7 @@ Then you can take the GridSpec object as an input to the parameter ``subplot``::
 
 Some padding has to be adjusted to get a nice plot.
 
-.. sealso:: Anyway, there is further potential to customize your plots using the methods described in
+.. seealso:: Anyway, there is further potential to customize your plots using the methods described in
  `Matplotlib GridSpec <http://matplotlib.org/users/gridspec.html/>`_
 
 .. _mp-axesdivider:
