@@ -11,9 +11,7 @@ also consider to have look at the code examples distributed with the source code
    tutorial_workflow
    tutorial_supported_formats
    tutorial_reading_dx
-   tutorial_conversion
-   tutorial_accumulation
-   tutorial_clutter_correction
+   tutorial_get_rainfall
    tutorial_autoimages
    tutorial_curvelinear_grids
    tutorial_attenuation
