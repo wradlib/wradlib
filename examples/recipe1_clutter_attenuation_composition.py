@@ -74,8 +74,10 @@ def recipe_clutter_attenuation():
     # set timer
     start = dt.datetime.now()
     # unzip data
-    with zipfile.ZipFile('data/recipe1_data.zip', 'r') as z:
-        z.extractall("data/recipe1_data")
+    filename = os.path.dirname(__file__) + '/' + 'data/recipe1_data.zip'
+    targetdir = os.path.dirname(__file__) + '/' + 'data/recipe1_data'
+    with zipfile.ZipFile(filename, 'r') as z:
+        z.extractall(targetdir)
 
     # set scan geometry and radar coordinates
     r               = np.arange(500.,128500.,1000.)
@@ -92,10 +94,10 @@ def recipe_clutter_attenuation():
     #   Feldberg
     fbg_accum = process_polar_level_data("fbg")
 
-    # remove zipfiles
-    if os.path.exists("data/recipe1_data"):
+    # remove unzipped files
+    if os.path.exists(targetdir):
         try:
-            shutil.rmtree("data/recipe1_data")
+            shutil.rmtree(targetdir)
         except:
             print "WARNING: Could not remove directory data/recipe1_data"
 
