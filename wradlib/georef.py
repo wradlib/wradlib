@@ -86,13 +86,10 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     The conversion formulas used were taken from
     http://de.wikipedia.org/wiki/Nautisches_Dreieck [accessed 2001-11-02] and
-    are
-    only valid as long as the radar's elevation angle is small, as one main
+    are only valid as long as the radar's elevation angle is small, as one main
     assumption of this method is, that the 'zenith-star'-side of the nautic
-    triangle
-    can be described by the radar range divided by the earths radius.
-    For lager elevation angles, this side
-    would have to be reduced.
+    triangle can be described by the radar range divided by the earths radius.
+    For lager elevation angles, this side     would have to be reduced.
 
     Parameters
     ----------
@@ -303,7 +300,7 @@ def beam_height_n(r, theta, re=6370040., ke=4./3.):
     r"""Calculates the height of a radar beam taking the refractivity of the
     atmosphere into account.
 
-    Based on [Doviak1993]_ the beam height is calculated as
+    Based on Doviak :cite:`Doviak1993` the beam height is calculated as
 
     .. math::
 
@@ -330,10 +327,6 @@ def beam_height_n(r, theta, re=6370040., ke=4./3.):
     height : float
         height of the beam in [m]
 
-    References
-    ----------
-    .. [Doviak1993] Doviak R.J., Zrnic D.S, Doppler Radar and Weather
-        Observations, Academic Press, 562pp, 1993, ISBN 0-12-221422-6
     """
     return np.sqrt( r**2 + (ke*re)**2 + 2*r*ke*re*np.sin(np.radians(theta)) ) - ke*re
 
@@ -342,7 +335,7 @@ def arc_distance_n(r, theta, re=6370040., ke=4./3.):
     r"""Calculates the great circle distance of a radar beam over a sphere,
     taking the refractivity of the atmosphere into account.
 
-    Based on [Doviak1993]_ the arc distance may be calculated as
+    Based on Doviak :cite:`Doviak1993` the arc distance may be calculated as
 
     .. math::
 
@@ -914,6 +907,7 @@ def get_earth_radius(latitude, sr= None):
     Returns:
         radius : float
             earth radius in meter
+
     """
     if sr is None:
         sr = get_default_projection()
@@ -986,7 +980,7 @@ def pixel_to_map(geotransform,coordinates):
 
 
 def pixel_to_map3d(geotransform, coordinates, z=None):
-    """Apply a geographical transformation to return 3D map coordinates from pixel coodinates.
+    """Apply a geographical transformation to return 3D map coordinates from pixel coordinates.
 
     Parameters
     ----------

@@ -631,7 +631,7 @@ def create_cg(st, fig=None, subplot=111):
     cgax.axis["right"].major_ticks.set_ticksize(0)
     cgax.axis["top"].major_ticks.set_ticksize(0)
 
-    # make ticklabels of left and bottom axis unvisible,
+    # make ticklabels of left and bottom axis invisible,
     # because we are drawing them
     cgax.axis["left"].major_ticklabels.set_visible(False)
     cgax.axis["bottom"].major_ticklabels.set_visible(False)
@@ -643,7 +643,7 @@ def create_cg(st, fig=None, subplot=111):
     # generate and add parasite axes with given transform
     paax = ParasiteAxesAuxTrans(cgax, tr, "equal")
     # note that paax.transData == tr + cgax.transData
-    # Anthing you draw in paax will match the ticks and grids of cgax.
+    # Anything you draw in paax will match the ticks and grids of cgax.
     cgax.parasites.append(paax)
 
     return cgax, caax, paax
@@ -659,10 +659,10 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
     data as well as making it easier to plot additional data (like gauge
     locations).
 
-    Additional data can be plottet in polar coordinates or cartesian
+    Additional data can be plotted in polar coordinates or cartesian
     coordinates depending which axes object is used.
 
-    The function uses create_cg wich uses the Matplotlib AXISARTIST namespace
+    The function uses create_cg which uses the Matplotlib AXISARTIST namespace
     http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
 
     Here are some limitations to normal Matplotlib Axes. While using the
@@ -716,7 +716,7 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         Cartesian Axes (x-y-grid) for plotting cartesian data
     paax : matplotlib Axes object (parasite to cgax)
         The parasite axes object for plotting polar data
-        all data in polar format must be plottet to this axis
+        all data in polar format must be plotted to this axis
 
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
@@ -1086,7 +1086,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
 
     if not title=="":
         # add a title - here, we have to create a new axes object which will be invisible
-        # then the invisble axes will get a title
+        # then the invisible axes will get a title
         tax = pl.axes((left, bottom+width+height+0.01, width+height, 0.01), frameon=False, axisbg="none")
         tax.get_xaxis().set_visible(False)
         tax.get_yaxis().set_visible(False)
@@ -1147,7 +1147,7 @@ def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', col
         # show plot
         pl.show()
         if not pl.isinteractive():
-            # close figure eplicitely if pylab is not in interactive mode
+            # close figure explicitely if pylab is not in interactive mode
             pl.close()
     else:
         # save plot to file

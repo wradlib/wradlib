@@ -734,10 +734,10 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
-    established in the course of the `RADOLAN project <http://www.dwd.de/radolan>`
+    established in the course of the `RADOLAN project <http://www.dwd.de/RADOLAN>`
     and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG, PC,
     PG and many, many more.
-    (see format description on the project homepage, [DWD2009]).
+    (see format description on the RADOLAN project homepage :cite:`DWD2009`).
 
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
     resolution and in polar-stereographic projection. There are other grid resolutions
@@ -760,13 +760,6 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     output : tuple of two items (data, attrs)
         - data : numpy array of shape (number of rows, number of columns)
         - attrs : dictionary of metadata information from the file header
-
-    References
-    ----------
-
-    .. [DWD2009] Germany Weather Service (DWD), 2009: RADLOAN/RADVO-OP -
-        Beschreibung des Kompositformats, Version 2.2.1. Offenbach, Germany,
-        URL: http://dwd.de/radolan (in German)
 
     """
 
@@ -796,7 +789,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     indat = read_radolan_binary_array(f, attrs['datasize'])
 
     if attrs["producttype"] == "RX":
-        #convert to 8bit interger
+        #convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
         arr = np.where(arr == 250, NODATA, arr)
         attrs['cluttermask'] = np.where(arr == 249)[0]
@@ -892,7 +885,7 @@ def read_OPERA_hdf5(fname):
     the original file. If the end member of a branch (or path) is "data", then the
     corresponding item of output dictionary is a numpy array with actual data. Any other
     end member (either *how*, *where*, and *what*) will contain the meta information
-    applying to the coresponding level of the file hierarchy.
+    applying to the corresponding level of the file hierarchy.
 
     Parameters
     ----------
