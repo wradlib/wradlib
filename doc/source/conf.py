@@ -30,6 +30,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.coverage',
               'sphinx.ext.pngmath',
               'sphinx.ext.autosummary',
+              'sphinxcontrib.bibtex',
               'numpydoc',
               'matplotlib.sphinxext.plot_directive',
               ]
