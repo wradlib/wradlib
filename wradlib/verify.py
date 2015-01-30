@@ -115,7 +115,7 @@ class PolarNeighbours():
         return self.binx, self.biny
     def get_bincoords_at_points(self):
         """
-        Returns bin coordinates only in the neighbourshood of points
+        Returns bin coordinates only in the neighbourhood of points
 
         Returns
         -------

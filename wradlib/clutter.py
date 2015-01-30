@@ -140,7 +140,7 @@ def filter_gabella_b(img, thrs=0.):
     return result
 
 def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=True, radial = False, cartesian = False):
-    r"""Clutter identification filter developed by Gabella [Gabella2002]_ .
+    r"""Clutter identification filter developed by Gabella :cite:`Gabella2002`.
 
     This is a two-part identification algorithm using echo continuity and
     minimum echo area to distinguish between meteorological (rain) and non-
@@ -172,14 +172,6 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=
     --------
     filter_gabella_a : the first part of the filter
     filter_gabella_b : the second part of the filter
-
-    References
-    ----------
-    .. [Gabella2002] Gabella, M. & Notarpietro, R., 2002.
-        Ground clutter characterization and elimination in mountainous terrain.
-        In Proceedings of ERAD. Delft: Copernicus GmbH, pp. 305-311.
-        Available at: http://www.copernicus.org/erad/online/erad-305.pdf
-        [Accessed Oct 27, 2010].
 
     Examples
     --------
@@ -283,14 +275,14 @@ def classify_echo_fuzzy(dat,
                         thresh  = 0.5):
     """Fuzzy echo classification and clutter identification based on polarimetric moments.
 
-    The implementation is based on [Vulpiani2012]_. At the moment, it only distinguishes
-    between metorological and non-meteorological echos.
+    The implementation is based on Vulpiani et al. :cite:`Vulpiani2012`. At the moment, it only distinguishes
+    between meteorological and non-meteorological echos.
 
     For each decision variable and radar bin, the algorithm uses trapezoidal
     functions in order to define the membership to the non-meteorological echo class.
     Based on pre-defined weights, a linear combination of the different degrees
     of membership is computed. The echo is assumed to be non-meteorological in case
-    the linear comination exceeds a threshold.
+    the linear combination exceeds a threshold.
 
     At the moment, the following decision variables are considered:
 
@@ -314,7 +306,7 @@ def classify_echo_fuzzy(dat,
     weights : dictionary of floats
        Defines the weights of the decision variables.
     trpz : dictionary of lists of floats
-       Contains the arguments of the trapezoidal membership functions for ecah decision variable
+       Contains the arguments of the trapezoidal membership functions for each decision variable
     thresh : float
        Threshold below which membership in non-meteorological membership class is assumed.
 
@@ -325,13 +317,6 @@ def classify_echo_fuzzy(dat,
              The second boolean array indicates where all the polarimetric moments
              had missing values which could be used as an additional information
              criterion.
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
 
     """
     # Check the inputs

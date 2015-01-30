@@ -22,7 +22,7 @@ def ex_load_rainbow():
     # load rainbow file contents to dict
     rbdict = wrl.io.read_Rainbow(filename)
 
-    # get azimutal data
+    # get azimuthal data
     azi = rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['data']
     azidepth =  float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@depth'])
     azirange = float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@rays'])

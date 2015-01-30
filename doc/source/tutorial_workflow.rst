@@ -23,7 +23,7 @@ The basic data type used in *wradlib* is a multi-dimensional array, the numpy.nd
 >>> import pylab as pl
 >>> data, metadata = wradlib.io.readDX("DX_sample_file")
 >>> ax, pm = wradlib.vis.plot_ppi(data) # simple diagnostic plot
->>> cmap = pl.colormap(pm, shrink=0.75)
+>>> cbar = pl.colorbar(pm, shrink=0.75)
 
 The ``metadata`` object can be inspected via keywords. The ``data`` object contains the actual data, in this case a polar grid with 360 azimuth angles and 128 range bins.
 
@@ -32,12 +32,12 @@ The ``metadata`` object can be inspected via keywords. The ``data`` object conta
 
 Clutter removal
 ---------------
-Clutter are non-meteorological echos. They are caused by the radar beam hitting objects on the earth's surface (e.g. mountain or hill tops, houses, wind turbines) or in the air (e.g. airplanes, birds). These objects can potentially cause high reflectivities due large scattering cross sections. Static clutter, if not efficiently removed by Doppler filters, can cause permanent echos which could introduce severe bias in quantitative applications. Thus, an efficient identification and removal of clutter is mandatory e.g. for hydrological studies. Clutter removal can be based on static maps or dynamic filters. Normally, static clutter becomes visible more clearly in rainfall accumulation maps over periods of weeks or months. We recommend such accumulations to create static clutter maps which can in turn be used to remove the static clutter from an image and fill the resulting gaps by interpolation. In the following example, the clutter filter published by Gabella and Notarpietro ([Gabella2002]_) is applied to the single radar sweep of the above example.  
+Clutter are non-meteorological echos. They are caused by the radar beam hitting objects on the earth's surface (e.g. mountain or hill tops, houses, wind turbines) or in the air (e.g. airplanes, birds). These objects can potentially cause high reflectivities due large scattering cross sections. Static clutter, if not efficiently removed by Doppler filters, can cause permanent echos which could introduce severe bias in quantitative applications. Thus, an efficient identification and removal of clutter is mandatory e.g. for hydrological studies. Clutter removal can be based on static maps or dynamic filters. Normally, static clutter becomes visible more clearly in rainfall accumulation maps over periods of weeks or months. We recommend such accumulations to create static clutter maps which can in turn be used to remove the static clutter from an image and fill the resulting gaps by interpolation. In the following example, the clutter filter published by Gabella and Notarpietro :cite:`Gabella2002` is applied to the single radar sweep of the above example.
 
 >>> clutter = wradlib.clutter.filter_gabella(data, tr1=12, n_p=6, tr2=1.1)
 >>> ax, pm = wradlib.vis.plot_ppi(clutter, cmap=pl.cm.gray)
 >>> pl.title('Clutter Map')
->>> cmap = pl.colormap(pm, shrink=0.75)
+>>> cbar = pl.colorbar(pm, shrink=0.75)
 
 The resulting Boolean array ``clutter`` indicates the position of clutter. It can be used to interpolate the values at those positons from non-clutter values, as shown in the following line:
 
@@ -45,12 +45,12 @@ The resulting Boolean array ``clutter`` indicates the position of clutter. It ca
 
 It is generally recommended to remove the clutter before e.g. gridding the data. Otherwise the clutter signal might be "smeared" over multiple grid cells, resulting into a decrease in detectability.
 
-.. seealso:: Get more info in the section :doc:`tutorial_clutter_correction` and in the library reference section :doc:`clutter`.  
+.. seealso:: Get more info in the library reference section :doc:`clutter`.
 
 
 Attenuation correction
 ----------------------
-Attenuation by wet radome and by heavy rainfall can cause serious underestimation of rainfall for `C-Band and X-Band <http://www.everythingweather.com/weather-radar/bands.shtml>`_ devices. For such radar devices, situations with heavy rainfall require a correction of attenuation effects. The general approach with single-polarized radars is to use a recursive gate-by-gate approach. See Kraemer and Verworn ([Kraemer2008]_) for an introduction to this concept. Basically, the specific attenuation ``k`` of the first range gate is computed via a so-called ``k-Z`` relationship. Based on ``k``, the reflectivity of the second range gate is corrected and then used to compute the specific attenuation for the second range gate (and so on). The concept was first introduced by Hitchfeld and Bordan ([Hitschfeld1954]_). Its main drawback is its suceptibility to instable behaviour. *wradlib* provides different implementations which address this problem. One example is the algorithm published by Kraemer and Verworn ([Kraemer2008]_):
+Attenuation by wet radome and by heavy rainfall can cause serious underestimation of rainfall for `C-Band and X-Band <http://www.everythingweather.com/weather-radar/bands.shtml>`_ devices. For such radar devices, situations with heavy rainfall require a correction of attenuation effects. The general approach with single-polarized radars is to use a recursive gate-by-gate approach. See Kraemer and Verworn :cite:`Kraemer2008` for an introduction to this concept. Basically, the specific attenuation ``k`` of the first range gate is computed via a so-called ``k-Z`` relationship. Based on ``k``, the reflectivity of the second range gate is corrected and then used to compute the specific attenuation for the second range gate (and so on). The concept was first introduced by Hitchfeld and Bordan :cite:`Hitschfeld1954`. Its main drawback is its suceptibility to instable behaviour. *wradlib* provides different implementations which address this problem. One example is the algorithm published by Kraemer and Verworn :cite:`Kraemer2008`:
 
 >>> pia = wradlib.atten.correctAttenuationKraemer(data_no_clutter)
 >>> data_attcorr = data_no_clutter + pia
@@ -85,7 +85,7 @@ The above line uses the default parameters parameters ``a=200`` and ``b=1.6`` fo
 
 >>> depth = wradlib.trafo.r2depth(R, 300)
 
-.. seealso:: Get more info in the section :doc:`tutorial_conversion` and in the library reference sections :doc:`zr` and :doc:`trafo`. Here you will learn about the effects of the Z-R parameters ``a`` and ``b``.
+.. seealso:: Get more info in the section :doc:`tutorial_get_rainfall` and in the library reference sections :doc:`zr` and :doc:`trafo`. Here you will learn about the effects of the Z-R parameters ``a`` and ``b``.
 
 
 Rainfall accumulation
@@ -156,7 +156,7 @@ Now we transfer the polar data to the grid and mask out invalid values for plott
 
 Adjustment by rain gage observations
 ------------------------------------
-Adjustment normally refers to using rain gage observations on the ground to correct for errors in the radar-based rainfall estimatin. Goudenhooftd and Delobbe [Goudenhoofdt2009]_ provide an excellent overview of adjustment procedures. A typical approach is to quantify the error of the radar-based rainfall estimate *at* the rain gage locations, assuming the rain gage observation to be accurate. The error can be assumed to be additive, multiplicative, or a mixture of both. Most approaches assume the error to be heterogeneous in space. Hence, the error at the rain gage locations will be interpolated to the radar bin (or grid) locations and then used to adjust (correct) the raw radar rainfall estimates.
+Adjustment normally refers to using rain gage observations on the ground to correct for errors in the radar-based rainfall estimatin. Goudenhoofdt and Delobbe :cite:`Goudenhoofdt2009` provide an excellent overview of adjustment procedures. A typical approach is to quantify the error of the radar-based rainfall estimate *at* the rain gage locations, assuming the rain gage observation to be accurate. The error can be assumed to be additive, multiplicative, or a mixture of both. Most approaches assume the error to be heterogeneous in space. Hence, the error at the rain gage locations will be interpolated to the radar bin (or grid) locations and then used to adjust (correct) the raw radar rainfall estimates.
 
 In the following example, we will use an illustrative one-dimensional example with synthetic data (just imagine radar rainfall estimates and rain gage observations along one radar beam). 
 
@@ -253,22 +253,3 @@ You can easily add metadata to the NetCDF file on different group levels:
 >>> rootgrp.close()
 
 .. note:: An example for hdf5 export will follow.
-
-
-
-References
-----------
-.. [Gabella2002] Gabella, M. & Notarpietro, R., 2002. Ground clutter characterization and elimination in mountainous terrain.
-	In Proceedings of ERAD. Delft: Copernicus GmbH, pp. 305-311. URL: http://www.copernicus.org/erad/online/erad-305.pdf
-	[Accessed Oct 25, 2012].
-
-.. [Goudenhoofdt2009] Goudenhoofdt, E., and L. Delobbe, 2009. Evaluation of radar-gauge merging methods for quantitative
-    precipitation estimates. HESS, 13, 195-203. URL: http://www.hydrol-earth-syst-sci.net/13/195/2009/hess-13-195-2009.pdf
-
-.. [Hitschfeld1954] Hitschfeld, W. & Bordan, J., 1954. Errors Inherent in the Radar Measurement of Rainfall at Attenuating
-	Wavelengths. Journal of the Atmospheric Sciences, 11(1), p.58-67. DOI: 10.1175/1520-0469(1954)011<0058:EIITRM>2.0.CO;2
-
-.. [Kraemer2008] Kraemer, S., H. R. Verworn, 2008: Improved C-band radar data processing for real time control of
-    urban drainage systems. 11th International Conference on Urban Drainage, Edinburgh, Scotland, UK, 2008. URL: http://web.sbe.hw.ac.uk/staffprofiles/bdgsa/11th_International_Conference_on_Urban_Drainage_CD/ICUD08/pdfs/105.pdf [Accessed Oct 25, 2012].
-
-

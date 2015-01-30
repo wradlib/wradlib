@@ -647,7 +647,7 @@ def iso2datetime(iso):
     # in case the argument has been parsed to datetime before
     if type(iso)==dt.datetime:
         return iso
-    # sometimes isoformat seperates date and time by a white space
+    # sometimes isoformat separates date and time by a white space
     iso = iso.replace(" ", "T")
     try:
         return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%f")
@@ -802,13 +802,13 @@ def issequence(x):
 
 def trapezoid(data, x1, x2, x3, x4):
     """
-    Applied the trapezoidal function described in Vulpiani et al, 2012 to determine
+    Applied the trapezoidal function described in Vulpiani et al, 2012 :cite:`Vulpiani` to determine
     the degree of membership in the non-meteorological target class.
 
     Parameters
     ----------
     data : array
-        Array contaning the data
+        Array containing the data
     x1 : float
         x-value of the first vertex of the trapezoid
     x2 : float
@@ -997,7 +997,7 @@ def filter_window_polar(img,wsize,fun,rscale,random=False):
     rscale : float
         range [m] scale of the polar grid
     random: bool
-        True to use random azimutal size to avoid long-term biases.
+        True to use random azimuthal size to avoid long-term biases.
 
     Returns
     -------

@@ -2,7 +2,7 @@
 Attenuation correction
 **********************
 
-Rainfall-induced attenuation is a major source of underestimation for radar-based precipitation estimation at C-band and X-band. Unconstrained forward gate-by-gate correction is known to be inherently unstable and thus not suited for unsupervised quality control procedures. Ideally, reference measurements (e.g. from microwave links) should be used to constrain gate-by-gate procedures. However, such attenuation references are ususally not available. *wradlib* provides a pragmatic approach to constrain gate-by-gate correction procedures, inspired by the work of [Kraemer2008]_. It turned out that these procedures can effectively reduce the error introduced by attenuation, and, at the same time, minimize instability issues [Jacobi2015]_.
+Rainfall-induced attenuation is a major source of underestimation for radar-based precipitation estimation at C-band and X-band. Unconstrained forward gate-by-gate correction is known to be inherently unstable and thus not suited for unsupervised quality control procedures. Ideally, reference measurements (e.g. from microwave links) should be used to constrain gate-by-gate procedures. However, such attenuation references are usually not available. *wradlib* provides a pragmatic approach to constrain gate-by-gate correction procedures, inspired by the work of Kraemer2008 :cite:`Kraemer2008`. It turned out that these procedures can effectively reduce the error introduced by attenuation, and, at the same time, minimize instability issues (Jacobi2015 :cite:`Jacobi2015`).
 
 The example event
 =================
@@ -63,7 +63,7 @@ We will now examine the behaviour of different attenuation correction procedures
 Hitschfeld and Bordan
 =====================
 
-First, we examine the behaviour of the "classical" unconstrained forward correction which is typically referred to Hitchfeld and Bordan ([Hitschfeld1954]_), although Hitschfeld and Bordan themselves rejected this approach. The Path Integrated Attenuation (PIA) according to this approach can be obtained as follows::
+First, we examine the behaviour of the "classical" unconstrained forward correction which is typically referred to Hitschfeld and Bordan :cite:`Hitschfeld1954`, although Hitschfeld and Bordan themselves rejected this approach. The Path Integrated Attenuation (PIA) according to this approach can be obtained as follows::
 
    pia_hibo = wradlib.atten.correctAttenuationHB(data, coefficients = dict(a=8.e-5, b=0.731, l=1.0), mode="warn", thrs=59.)
 
@@ -115,7 +115,7 @@ Apparently, slight differences in the reflectivity profile can cause a dramatic 
 Harrison
 ========
 
-Harrison et al. [Harrison2000]_ suggested to simply cap PIA in case it would cause a correction of rainfall intensity by more than a factor of two. Depending on the parameters of the Z(R) relationship, that would correpond to PIA values between 4 and 5 dB (4.8 dB if we assume exponent b=1.6). 
+Harrison et al. :cite:`Harrison2002` suggested to simply cap PIA in case it would cause a correction of rainfall intensity by more than a factor of two. Depending on the parameters of the Z(R) relationship, that would correpond to PIA values between 4 and 5 dB (4.8 dB if we assume exponent b=1.6).
 
 One way to implement this approach would be the following::
 
@@ -167,7 +167,7 @@ And the results would look like this:
 Kraemer
 =======
 
-[Kraemer2008]_ suggested to iteratively determine the power law parameters of the A(Z). In particular, the power law coefficient is interatively decreased until the attenuation correction does not lead to reflectivity values above a given threshold (Kraemer suggested 59 dBZ). Using wradlib, this would be called by using the function :doc:`generated/wradlib.atten.correctAttenuationConstrained2` with a specific ``constraints`` argument::
+Kraemer :cite:`Kraemer2008` suggested to iteratively determine the power law parameters of the A(Z). In particular, the power law coefficient is interatively decreased until the attenuation correction does not lead to reflectivity values above a given threshold (Kraemer suggested 59 dBZ). Using wradlib, this would be called by using the function :doc:`generated/wradlib.atten.correctAttenuationConstrained2` with a specific ``constraints`` argument::
 
    pia_kraemer = wradlib.atten.correctAttenuationConstrained2(
 					data,
@@ -220,7 +220,7 @@ In brief, this call specifies ranges of the power parameters a and b of the A(Z)
 Modified Kraemer
 ================
 
-The function :doc:`generated/wradlib.atten.correctAttenuationConstrained2` allows us to pass any kind of constraint function or lists of constraint functions via the argument ``constraints``. The arguments of these functions are passed via a nested list as argument ``constraint_args``. For example, [Jacobi2015]_ suggested to constrain *both* the corrected reflectivity (by a maximum of 59 dBZ) *and* the resulting path-intgrated attenuation PIA (by a maximun of 20 dB):: 
+The function :doc:`generated/wradlib.atten.correctAttenuationConstrained2` allows us to pass any kind of constraint function or lists of constraint functions via the argument ``constraints``. The arguments of these functions are passed via a nested list as argument ``constraint_args``. For example, Jacobi :cite:`Jacobi2015` suggested to constrain *both* the corrected reflectivity (by a maximum of 59 dBZ) *and* the resulting path-intgrated attenuation PIA (by a maximun of 20 dB)::
 
    pia_mKraemer = wradlib.atten.correctAttenuationConstrained2(
 					data,
@@ -272,7 +272,7 @@ The function :doc:`generated/wradlib.atten.correctAttenuationConstrained2` allow
 Comparison of all methods
 =========================
 
-Plotting all of the above methods (`Hitschfeld and Bordan`_, `Harrison`_, `Kraemer`_, `Modified Kraemer`_) allows for a better comparison of their behaviour. Please refer to [Jacobi2015]_ for an in-depth discussion of this example.
+Plotting all of the above methods (`Hitschfeld and Bordan`_, `Harrison`_, `Kraemer`_, `Modified Kraemer`_) allows for a better comparison of their behaviour. Please refer to Jacobi :cite:`Jacobi2015` for an in-depth discussion of this example.
 
 .. plot::
 
@@ -347,19 +347,3 @@ Plotting all of the above methods (`Hitschfeld and Bordan`_, `Harrison`_, `Kraem
 	plt.xlim(0,128)
 	
 	plt.show()
-
-
-
-
-References
-==========
-
-.. [Harrison2000] Harrison, D. L., Driscoll, S. J., and Kitchen, M. (2000) Improving precipitation estimates from weather radar using quality control and correction techniques. Meteorol. Appl. 6:135-144.
-
-.. [Hitschfeld1954] Hitschfeld, W. and Bordan, J. (1954) Errors inherent in the radar measurement of rainfall at attenuating wavelengths. J. Meteor. 11:58-67.
-
-.. [Jacobi2015] Jacobi, S., and M. Heistermann, 2015: Benchmarking attenuation correction procedures for six years of single-polarised C-band weather radar observations in South-West Germany. Submitted to *Nat. Haz.*
-
-.. [Kraemer2008] Kraemer, S., H. R. Verworn, 2008: Improved C-band radar data processing for real time control of
-    urban drainage systems. 11th International Conference on Urban Drainage, Edinburgh, Scotland, UK, 2008. URL: http://web.sbe.hw.ac.uk/staffprofiles/bdgsa/11th_International_Conference_on_Urban_Drainage_CD/ICUD08/pdfs/105.pdf
-	

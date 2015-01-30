@@ -18,7 +18,7 @@ Dual-Pol and Differential Phase
 Overview
 --------
 
-This module provides algorithms to process polarimentric radar moments,
+This module provides algorithms to process polarimetric radar moments,
 namely the differential phase, PhiDP, and, based on successful PhiDP retrieval,
 also the specific differential phase, KDP. Please note that the actual application
 of polarimetric moments is implemented in the corresponding wradlib modules, e.g.:
@@ -31,7 +31,7 @@ of polarimetric moments is implemented in the corresponding wradlib modules, e.g
 
 Establishing a valid PhiDP profile for Kdp retrieval involves despeckling (linear_despeckle),
 phase unfolding, and iterative retrieval of PhiDP form KDP. The main workflow and
-its single steps is based on a publication by [Vulpiani2012]_. For convenience, the
+its single steps is based on a publication by Vulpiani :cite:`Vulpiani2012`. For convenience, the
 entire workflow has been put together in the function
 :doc:`process_raw_phidp <generated/wradlib.dp.process_raw_phidp_vulpiani>`.
 
@@ -52,18 +52,9 @@ function is that the **range dimension must be the last dimension** of all input
     kdp_from_phidp_finitediff
     kdp_from_phidp_convolution
     unfold_phi_vulpiani
+    unfold_phi
     linear_despeckle
     texture
-
-
-
-References
-----------
-.. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-   P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-   for Operational Rainfall Retrieval in Mountainous Areas.
-   J. Appl. Meteor. Climatol., 51, 405-425.
-
 
 """
 
@@ -78,7 +69,7 @@ import util
 def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
-    This approach is based on [Vulpiani2012]_ and involves a two step procedure
+    This approach is based on Vulpiani :cite:`Vulpiani2012` and involves a two step procedure
     of PhiDP reconstruction.
 
     Processing of raw PhiDP data contains the following steps:
@@ -101,7 +92,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=Fals
     L : integer
         *L* parameter of dp.kdp_from_phidp_convolution
     niter : integer
-        Number of iterations in which phidp is retreived from kdp and vice versa
+        Number of iterations in which phidp is retrieved from kdp and vice versa
     copy : boolean
         if True, the original phidp array will remain unchanged
 
@@ -111,14 +102,6 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=Fals
         reconstructed phidp
     kdp : array of shape (n azimuth angles, n range gates)
         kdp estimate corresponding to phidp output
-
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
 
     """
     if copy:
@@ -162,20 +145,12 @@ def unfold_phi_vulpiani(phidp, kdp):
     """Alternative phase unfolding which completely relies on Kdp.
 
     This unfolding should be used in oder to iteratively reconstruct
-    phidp and Kdp (see Vulpiani[2012]_).
+    phidp and Kdp (see Vulpiani :cite:`Vulpiani2012`).
 
     Parameters
     ----------
     phidp : array of floats
     kdp : array of floats
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
-
 
     """
     # unfold phidp
@@ -230,11 +205,11 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
 def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
     """Retrieves Kdp from PhiDP by applying a moving window range finite difference derivative.
 
-    See [Vulpiani2012]_ for details about this approach.
+    See Vulpiani :cite:Vulpiani2012` for details about this approach.
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (:cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -251,14 +226,6 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
 
     dr : gate length in km
 
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
-
     """
     assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
     # Make really sure L is an integer
@@ -274,7 +241,7 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -359,7 +326,7 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -475,7 +442,7 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -571,7 +538,7 @@ def unfold_phi(phidp, rho, width=5, copy=False):
 
     This is the fast Fortran-based implementation (RECOMMENDED).
 
-    The algorithm is based on the paper of [Wang2009]_.
+    The algorithm is based on the paper of Wang :cite:`Wang2009`.
 
     Parameters
     ----------
@@ -581,11 +548,6 @@ def unfold_phi(phidp, rho, width=5, copy=False):
        Width of the analysis window
     copy : boolean
        Leaves original phidp array unchanged if set to True (default: False)
-
-    References
-    ----------
-    .. [Wang2009] Wang, Yanting, V. Chandrasekar, 2009: Algorithm for Estimation
-       of the Specific Differential Phase. J. Atmos. Oceanic Technol., 26, 2565-2578.
 
     """
     # Check whether fast Fortran implementation is available
@@ -620,6 +582,8 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
 
     This is the slow Python-based implementation (NOT RECOMMENDED).
 
+    The algorithm is based on the paper of Wang :cite:`Wang2009`.
+
     Parameters
     ----------
     phidp : array of shape (...,nr) with nr being the number of range bins
@@ -628,11 +592,6 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
        Width of the analysis window
     copy : boolean
        Leaves original phidp array unchanged if set to True (default: False)
-
-    References
-    ----------
-    .. [Wang2009] Wang, Yanting, V. Chandrasekar, 2009: Algorithm for Estimation
-       of the Specific Differential Phase. J. Atmos. Oceanic Technol., 26, 2565-2578.
 
     """
     shape = phidp.shape
@@ -717,7 +676,7 @@ def linear_despeckle(data, N=3, copy=False):
 
 def texture(data):
     """
-    Compute the texture of the data by comparing values with a 3x3 neighborhood (based on Gourley, 2007).
+    Compute the texture of the data by comparing values with a 3x3 neighborhood (based on Gourley, 2007, :cite:`Gourley2007`).
     NaN values in the original array have NaN textures.
 
     Parameters
@@ -777,7 +736,7 @@ def contiguous_regions(condition):
 
     """
 
-    # Find the indicies of changes in "condition"
+    # Find the indices of changes in "condition"
     d = np.diff(condition)
     idx, = d.nonzero()
 

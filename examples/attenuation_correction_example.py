@@ -2,7 +2,7 @@
 # Name:        attenuation_correction_example.py
 # Purpose:     Examplify different attenuation correction procedures
 #
-# Author:      Maik HEistermann
+# Author:      Maik Heistermann
 #
 # Created:     10.01.2015
 # Copyright:   (c) Maik Heistermann 2015
@@ -35,7 +35,7 @@ def ex_attenuation():
     plt.show()
     plt.close()
 
-    # Hitchfeld and Bordan
+    # Hitschfeld and Bordan
     pia_hibo = wradlib.atten.correctAttenuationHB(data, coefficients = dict(a=8.e-5, b=0.731, l=1.0), mode="warn", thrs=59.)
 
     # Harrison
@@ -93,7 +93,7 @@ def ex_attenuation():
     plt.grid()
     plt.ylim(0,30)
     plt.ylabel("PIA (dB)", fontsize="large")
-    plt.text(0.01, 0.88, "PIA according to Hitchfeld and Bordan", transform = ax.transAxes, fontsize="large")
+    plt.text(0.01, 0.88, "PIA according to Hitschfeld and Bordan", transform = ax.transAxes, fontsize="large")
     ax.tick_params(axis='x', labelsize=labelsize)
     ax.tick_params(axis='y', labelsize=labelsize)
     plt.xlim(0,128)
