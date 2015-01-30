@@ -51,6 +51,9 @@ missing = []
 for sample in requires:
     samplesplit = sample.split()
     modulestr = samplesplit[0]
+    # check if sphinxcontrib
+    if 'sphinxcontrib' in modulestr:
+        modulestr = modulestr.replace("-",".")
     try:
         if modulestr=="gdal":
             # We need to try two ways because the import command for gdal has changed
