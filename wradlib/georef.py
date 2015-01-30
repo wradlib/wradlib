@@ -218,7 +218,7 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 
     VisAD code has been translated to Python from Java.
 
-    Nomenclature tries to stick to VisAD code for the sake of comparibility, hwoever, names of
+    Nomenclature tries to stick to VisAD code for the sake of comparibility, however, names of
     arguments are the same as for polar2lonlat...
 
     Parameters
@@ -239,8 +239,8 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     -------
     output : a tuple of three arrays (longitudes, latitudes,  altitudes)
 
-    Example
-    -------
+    Examples
+    --------
     >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
@@ -894,19 +894,22 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
 
 
 def get_earth_radius(latitude, sr= None):
-    """Get the radius of the Earth (in km) for a given Spheroid model (sr) at a given position
-       R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 ).
+    """
+    Get the radius of the Earth (in km) for a given Spheroid model (sr) at a given position
+
+    R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 ).
 
     Parameters
     ----------
-        sr : osr object
-            spatial reference;
-        latitude : float
-            geodetic latitude in degrees;
+    sr : osr object
+        spatial reference;
+    latitude : float
+        geodetic latitude in degrees;
 
-    Returns:
-        radius : float
-            earth radius in meter
+    Returns
+    -------
+    radius : float
+        earth radius in meter
 
     """
     if sr is None:

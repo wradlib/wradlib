@@ -24,11 +24,11 @@ on how to deal with different file formats.
    readDX
    writePolygon2Text
    read_EDGE_netcdf
+   read_generic_netcdf
    read_OPERA_hdf5
    read_GAMIC_hdf5
    read_RADOLAN_composite
    read_Rainbow
-   read_generic_netcdf
 
 """
 
@@ -1646,14 +1646,14 @@ def read_generic_netcdf(fname):
     of the output dictionary conform to the Group/Subgroup directory branches of
     the original file.
 
-    Please see the `Examples`_ below on how to browse through a return object. The
+    Please see the examples below on how to browse through a return object. The
     most important keys are the "dimensions" which define the shape of the data
     arrays, and the "variables" which contain the actual data and typically also
     the data that define the dimensions (e.g. sweeps, azimuths, ranges). These keys
     should be present in any netcdf file.
 
-    Note
-    ----
+    Notes
+    -----
     The returned dictionary could be quite big, depending on the content of the file.
 
     Parameters
@@ -1664,6 +1664,13 @@ def read_generic_netcdf(fname):
     -------
     out : an ordered dictionary that contains both data and metadata according to the
               original netcdf file structure
+
+    Examples
+    --------
+    See :download:`generic_netcdf_example.py script <../../../examples/generic_netcdf_example.py>`.
+
+    .. literalinclude:: ../../../examples/generic_netcdf_example.py
+
 
     """
     try:

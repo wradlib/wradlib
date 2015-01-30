@@ -35,7 +35,7 @@ its single steps is based on a publication by Vulpiani :cite:`Vulpiani2012`. For
 entire workflow has been put together in the function
 :doc:`process_raw_phidp <generated/wradlib.dp.process_raw_phidp_vulpiani>`.
 
-Once a valid PhiDP profile has been established, :doc:`kdp_from_phidp <generated/wradlib.dp.kdp_from_phidp>`
+Once a valid PhiDP profile has been established, the `kdp_from_phidp` functions
 can be used to retrieve Kdp.
 
 Please note that so far, the functions in this module were designed to increase
