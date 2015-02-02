@@ -20,6 +20,8 @@ Clutter Identification
    filter_gabella
    filter_gabella_a
    filter_gabella_b
+   filter_cloudtype
+   filter_window_distance
    histo_cut
    classify_echo_fuzzy
 
