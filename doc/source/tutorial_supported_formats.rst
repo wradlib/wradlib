@@ -37,7 +37,7 @@ Here, ``data`` is a two dimensional integer array of shape (number of rows, numb
 
 OPERA HDF5 (ODIM_H5)
 --------------------
-`HDF5 <http://www.hdfgroup.org/HDF5/>`_ is a data model, library, and file format for storing and managing data. The `OPERA 3 program <http://www.knmi.nl/opera>`_ developed a convention (or information model) on how to store and exchange radar data in hdf5 format. It is based on the work of `COST Action 717 <http://www.smhi.se/hfa_coord/cost717>`_ and is used e.g. in real-time operations in the Nordic European countries. The OPERA Data and Information Model (ODIM) is documented e.g. in this `report <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_ and in a `UML representation <http://www.knmi.nl/opera/opera3/OPERA_2008_18_WP2.1b_ODIM_UML.pdf>`_. Make use of these documents in order to understand the organization of OPERA hdf5 files!
+`HDF5 <http://www.hdfgroup.org/HDF5/>`_ is a data model, library, and file format for storing and managing data. The `OPERA 3 program <http://www.eumetnet.eu/opera>`_ developed a convention (or information model) on how to store and exchange radar data in hdf5 format. It is based on the work of `COST Action 717 <http://www.smhi.se/hfa_coord/cost717>`_ and is used e.g. in real-time operations in the Nordic European countries. The OPERA Data and Information Model (ODIM) is documented e.g. in this `report <http://www.eol.ucar.edu/system/files/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_ and in a `UML representation <http://www.eumetnet.eu/sites/default/files/OPERA_2008_18_WP2.1b_ODIM_UML.pdf>`_. Make use of these documents in order to understand the organization of OPERA hdf5 files!
 
 The hierarchical nature of HDF5 can be described as being similar to directories, files, and links on a hard-drive. Actual metadata are stored as so-called *attributes*, and these attributes are organized together in so-called *groups*. Binary data are stored as so-called *datasets*. As for ODIM_H5, the ``root`` (or top level) group contains three groups of metadata: these are called ``what`` (object, information model version, and date/time information), ``where`` (geographical information), and ``how`` (quality and optional/recommended metadata). For a very simple product, e.g. a CAPPI, the data is organized in a group called ``dataset1`` which contains another group called ``data1`` where the actual binary data are found in ``data``. In analogy with a file system on a hard-disk, the HDF5 file containing this simple product is organized like this::
 
@@ -62,12 +62,12 @@ The user should inspect the output obtained from his or her hdf5 file in order t
     import pprint as pp
     pp.pprint(fcontent)
 
-Please note that in order to experiment with such datasets, you can download hdf5 sample data from the `Odyssey page <http://www.knmi.nl/opera/odc.html>`_ of the `OPERA 3 homepage <http://www.knmi.nl/opera>`_.
+Please note that in order to experiment with such datasets, you can download hdf5 sample data from the `Odyssey page <http://www.eumetnet.eu/odyssey-opera-data-centre>`_ of the `OPERA 3 homepage <http://www.eumetnet.eu/opera>`_.
 
 
 GAMIC HDF5
 ----------
-GAMIC refers to the commercial `GAMIC Enigma V3 MURAN software <http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3>`_ which exports data in hdf5 format. The concept is quite similar to the above `OPERA HDF5 (ODIM_H5)`_ format. Such a file (typical ending: *.mvol*) can be read by::
+GAMIC refers to the commercial `GAMIC Enigma V3 MURAN software <http://www.gamic.com>`_ which exports data in hdf5 format. The concept is quite similar to the above `OPERA HDF5 (ODIM_H5)`_ format. Such a file (typical ending: *.mvol*) can be read by::
 
     data, metadata = io.read_GAMIC_hdf5("mydrive:/path/to/my/file/filename")
 
@@ -124,7 +124,7 @@ OPERA BUFR
 The Binary Universal Form for the Representation of meteorological data (BUFR) 
 is a binary data format maintained by the World Meteorological Organization (WMO).
 
-The BUFR format was adopted by `OPERA <http://www.eumetnet.eu/opera`_ for the representation of weather radar data.
+The BUFR format was adopted by `OPERA <http://www.eumetnet.eu/opera>`_ for the representation of weather radar data.
 A BUFR file consists of a set of *descriptors* which contain all the relevant metadata and a data section. 
 The *descriptors* are identified as a tuple of three integers. The meaning of these tupels is described in the so-called BUFR 
 tables. There are generic BUFR tables provided by the WMO, but it is also possible to define so called *local tables* 

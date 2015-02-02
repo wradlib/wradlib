@@ -52,9 +52,9 @@ For plotting actual polar data two functions exist, depending on whether your da
 
  If you want to learn more about the matplotlib features used with :func:`wradlib.vis.create_cg`, have a look into
 
- * `Matplotlib AXISARTIST namespace <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html/>`_
- * `Matplotlib AxesGrid Toolkit <http://matplotlib.org/mpl_toolkits/axes_grid/index.html/>`_
- * `The Matplotlib AxesGrid Toolkit User’s Guide <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html/>`_
+ * `Matplotlib AXISARTIST namespace <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_
+ * `Matplotlib AxesGrid Toolkit <http://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
+ * `The Matplotlib AxesGrid Toolkit User’s Guide <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_
 
 ==============
 Plotting on CG
@@ -712,7 +712,7 @@ in one figure on a regular grid::
 The GridSpec Method
 -------------------
 
-Here the abilities of `Matplotlib GridSpec <http://matplotlib.org/users/gridspec.html/>`_ are used.
+Here the abilities of `Matplotlib GridSpec <http://matplotlib.org/users/gridspec.html>`_ are used.
 Now we can also plot on irregular grids. Just create your grid as follows::
 
     import matplotlib.gridspec as gridspec
@@ -779,14 +779,14 @@ Then you can take the GridSpec object as an input to the parameter ``subplot``::
 Some padding has to be adjusted to get a nice plot.
 
 .. seealso:: Anyway, there is further potential to customize your plots using the methods described in
- `Matplotlib GridSpec <http://matplotlib.org/users/gridspec.html/>`_
+ `Matplotlib GridSpec <http://matplotlib.org/users/gridspec.html>`_
 
 .. _mp-axesdivider:
 
 The AxesDivider Method
 ----------------------
 
-Here the capabilities of `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.html#axes-grid1/>`_ are used.
+Here the capabilities of `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.html#axes-grid1>`_ are used.
 
 We make a **PPI** now, it matches much better. Just plot your **PPI** data and create an axes divider::
 
@@ -925,4 +925,5 @@ And this looks actually very nice:
     plt.draw()
     plt.show()
 
-.. seealso:: `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.html#axes-grid1/>`_
+
+.. seealso:: `Matplotlib AxesGrid1 <http://matplotlib.org/mpl_toolkits/axes_grid/users/overview.html#axes-grid1>`_
