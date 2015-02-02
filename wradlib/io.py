@@ -24,6 +24,7 @@ on how to deal with different file formats.
    readDX
    writePolygon2Text
    read_EDGE_netcdf
+   read_generic_hdf5
    read_generic_netcdf
    read_OPERA_hdf5
    read_GAMIC_hdf5
