@@ -875,7 +875,7 @@ def read_OPERA_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
     Please refer to the `OPERA data model documentation
-    <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
+    <https://www.eol.ucar.edu/system/files/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
     in order to understand how an hdf5 file is organized that conforms to the OPERA
     ODIM_H5 conventions.
 
@@ -1068,7 +1068,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
     """Data reader for hdf5 files produced by the commercial GAMIC Enigma V3 MURAN software
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
-    homepage for further info (http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3).
+    homepage for further info (http://www.gamic.com).
 
     Parameters
     ----------
