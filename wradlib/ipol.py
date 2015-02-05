@@ -833,12 +833,10 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     >>> # here we introduce missing values only in the second dimension
     >>> vals[3:5,1] = np.nan
     >>> ipol_result = interpolate(src, trg, vals, Idw, nnearest=2)
-    >>> # plot if you like
-    >>> import pylab as pl
-    >>> pl.plot(trg, ipol_result, 'b+')
-    >>> pl.plot(src, vals, 'ro')
-    >>> pl.show()
-
+    >>> import matplotlib.pyplot as plt
+    >>> plt.interactive(True)
+    >>> line1 = plt.plot(trg, ipol_result, 'b+')
+    >>> line2 = plt.plot(src, vals, 'ro')
 
     """
     if vals.ndim==1:
@@ -897,11 +895,11 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
     >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
     >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)
-    >>> wrl.vis.polar_plot(filled_a)
+    >>> ax, pm = wrl.vis.plot_ppi(filled_a)
     >>> # the same result can be achieved by using an masked array instead of an explicit mask
     >>> mdata = np.ma.array(data, mask = masked_values)
     >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)
-    >>> wrl.vis.polar_plot(filled_b)
+    >>> ax, pm = wrl.vis.plot_ppi(filled_b)
 
 
     """

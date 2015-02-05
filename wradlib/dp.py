@@ -18,7 +18,7 @@ Dual-Pol and Differential Phase
 Overview
 --------
 
-This module provides algorithms to process polarimentric radar moments,
+This module provides algorithms to process polarimetric radar moments,
 namely the differential phase, PhiDP, and, based on successful PhiDP retrieval,
 also the specific differential phase, KDP. Please note that the actual application
 of polarimetric moments is implemented in the corresponding wradlib modules, e.g.:
@@ -31,11 +31,11 @@ of polarimetric moments is implemented in the corresponding wradlib modules, e.g
 
 Establishing a valid PhiDP profile for Kdp retrieval involves despeckling (linear_despeckle),
 phase unfolding, and iterative retrieval of PhiDP form KDP. The main workflow and
-its single steps is based on a publication by [Vulpiani2012]_. For convenience, the
+its single steps is based on a publication by Vulpiani :cite:`Vulpiani2012`. For convenience, the
 entire workflow has been put together in the function
 :doc:`process_raw_phidp <generated/wradlib.dp.process_raw_phidp_vulpiani>`.
 
-Once a valid PhiDP profile has been established, :doc:`kdp_from_phidp <generated/wradlib.dp.kdp_from_phidp>`
+Once a valid PhiDP profile has been established, the `kdp_from_phidp` functions
 can be used to retrieve Kdp.
 
 Please note that so far, the functions in this module were designed to increase
@@ -52,18 +52,9 @@ function is that the **range dimension must be the last dimension** of all input
     kdp_from_phidp_finitediff
     kdp_from_phidp_convolution
     unfold_phi_vulpiani
+    unfold_phi
     linear_despeckle
     texture
-
-
-
-References
-----------
-.. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-   P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-   for Operational Rainfall Retrieval in Mountainous Areas.
-   J. Appl. Meteor. Climatol., 51, 405-425.
-
 
 """
 
@@ -74,13 +65,11 @@ from scipy.stats import nanmedian, nanmean, linregress
 from scipy.ndimage.filters import convolve1d
 import util
 
-from util import deprecated
-
 
 def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
-    This approach is based on [Vulpiani2012]_ and involves a two step procedure
+    This approach is based on Vulpiani :cite:`Vulpiani2012` and involves a two step procedure
     of PhiDP reconstruction.
 
     Processing of raw PhiDP data contains the following steps:
@@ -103,7 +92,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=Fals
     L : integer
         *L* parameter of dp.kdp_from_phidp_convolution
     niter : integer
-        Number of iterations in which phidp is retreived from kdp and vice versa
+        Number of iterations in which phidp is retrieved from kdp and vice versa
     copy : boolean
         if True, the original phidp array will remain unchanged
 
@@ -113,14 +102,6 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7, niter=2, copy=Fals
         reconstructed phidp
     kdp : array of shape (n azimuth angles, n range gates)
         kdp estimate corresponding to phidp output
-
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
 
     """
     if copy:
@@ -164,20 +145,12 @@ def unfold_phi_vulpiani(phidp, kdp):
     """Alternative phase unfolding which completely relies on Kdp.
 
     This unfolding should be used in oder to iteratively reconstruct
-    phidp and Kdp (see Vulpiani[2012]_).
+    phidp and Kdp (see Vulpiani :cite:`Vulpiani2012`).
 
     Parameters
     ----------
     phidp : array of floats
     kdp : array of floats
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
-
 
     """
     # unfold phidp
@@ -232,11 +205,11 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
 def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
     """Retrieves Kdp from PhiDP by applying a moving window range finite difference derivative.
 
-    See [Vulpiani2012]_ for details about this approach.
+    See Vulpiani :cite:Vulpiani2012` for details about this approach.
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (:cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -253,14 +226,6 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
 
     dr : gate length in km
 
-
-    References
-    ----------
-    .. [Vulpiani2012] Vulpiani, G., M. Montopoli, L. D. Passeri, A. G. Gioia,
-       P. Giordano, F. S. Marzano, 2012: On the Use of Dual-Polarized C-Band Radar
-       for Operational Rainfall Retrieval in Mountainous Areas.
-       J. Appl. Meteor. Climatol., 51, 405-425.
-
     """
     assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
     # Make really sure L is an integer
@@ -276,7 +241,7 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -298,22 +263,18 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
     >>> import wradlib
     >>> import numpy as np
     >>> import pylab as pl
-
     >>> pl.interactive(True)
-
     >>> kdp_true   = np.sin(3*np.arange(0,10,0.1))
     >>> phidp_true = np.cumsum(kdp_true)
-    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_orig))
+    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_true))
     >>> gaps       = np.concatenate([ range(10,20),range(30,40),range(60,80) ])
     >>> phidp_raw[gaps] = np.nan
-
-    >>> kdp_re = wradib.dp.kdp_from_phidp_linregress(phidp_raw)
-
-    >>> pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
-    >>> pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
-    >>> pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
-    >>> pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
+    >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
+    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
+    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
+    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
 
     """
     assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
@@ -365,7 +326,7 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -387,22 +348,18 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
     >>> import wradlib
     >>> import numpy as np
     >>> import pylab as pl
-
     >>> pl.interactive(True)
-
     >>> kdp_true   = np.sin(3*np.arange(0,10,0.1))
     >>> phidp_true = np.cumsum(kdp_true)
-    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_orig))
+    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_true))
     >>> gaps       = np.concatenate([ range(10,20),range(30,40),range(60,80) ])
     >>> phidp_raw[gaps] = np.nan
-
-    >>> kdp_re = wradib.dp.kdp_from_phidp_linregress(phidp_raw)
-
-    >>> pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
-    >>> pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
-    >>> pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
-    >>> pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
+    >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
+    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
+    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
+    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
 
     """
     assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
@@ -485,7 +442,7 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
 
     Please note that the moving window size *L* is specified as the number of range
     gates. Thus, this argument might need adjustment in case the range resolution changes.
-    In the original publication ([Vulpiani2012]_), the value L=7 was chosen for
+    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7 was chosen for
     a range resolution of 1km.
 
     ATTENTION: The function is designed for speed by allowing to process
@@ -510,15 +467,16 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     >>> pl.interactive(True)
     >>> kdp_true   = np.sin(3*np.arange(0,10,0.1))
     >>> phidp_true = np.cumsum(kdp_true)
-    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_orig))
+    >>> phidp_raw  = phidp_true + np.random.uniform(-1,1,len(phidp_true))
     >>> gaps       = np.concatenate([ range(10,20),range(30,40),range(60,80) ])
     >>> phidp_raw[gaps] = np.nan
     >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
-    >>> pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
-    >>> pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
-    >>> pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
-    >>> pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
+    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
+    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
+    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    >>> pl.show()
 
     """
     assert (L % 2) == 1, "Window size N for function kdp_from_phidp must be an odd number."
@@ -580,7 +538,7 @@ def unfold_phi(phidp, rho, width=5, copy=False):
 
     This is the fast Fortran-based implementation (RECOMMENDED).
 
-    The algorithm is based on the paper of [Wang2009]_.
+    The algorithm is based on the paper of Wang :cite:`Wang2009`.
 
     Parameters
     ----------
@@ -590,11 +548,6 @@ def unfold_phi(phidp, rho, width=5, copy=False):
        Width of the analysis window
     copy : boolean
        Leaves original phidp array unchanged if set to True (default: False)
-
-    References
-    ----------
-    .. [Wang2009] Wang, Yanting, V. Chandrasekar, 2009: Algorithm for Estimation
-       of the Specific Differential Phase. J. Atmos. Oceanic Technol., 26, 2565-2578.
 
     """
     # Check whether fast Fortran implementation is available
@@ -629,6 +582,8 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
 
     This is the slow Python-based implementation (NOT RECOMMENDED).
 
+    The algorithm is based on the paper of Wang :cite:`Wang2009`.
+
     Parameters
     ----------
     phidp : array of shape (...,nr) with nr being the number of range bins
@@ -637,11 +592,6 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
        Width of the analysis window
     copy : boolean
        Leaves original phidp array unchanged if set to True (default: False)
-
-    References
-    ----------
-    .. [Wang2009] Wang, Yanting, V. Chandrasekar, 2009: Algorithm for Estimation
-       of the Specific Differential Phase. J. Atmos. Oceanic Technol., 26, 2565-2578.
 
     """
     shape = phidp.shape
@@ -726,7 +676,7 @@ def linear_despeckle(data, N=3, copy=False):
 
 def texture(data):
     """
-    Compute the texture of the data by comparing values with a 3x3 neighborhood (based on Gourley, 2007).
+    Compute the texture of the data by comparing values with a 3x3 neighborhood (based on Gourley, 2007, :cite:`Gourley2007`).
     NaN values in the original array have NaN textures.
 
     Parameters
@@ -769,73 +719,6 @@ def texture(data):
     return texture
 
 
-@deprecated()
-def fill_phidp(data, margin=3):
-    """Fills in missing PhiDP.
-
-    Contiguous NaN regions are filled by the average of the median of margins
-    that surround the NaN region. At the left and right margins of the array,
-    these medians are extrapolated to the end. As the margin of a contiguous
-    NaN region, we consider *n* bins as given by the *margin* argument. Considering
-    multiple bins at the margins takes into account noisy PhiDP.
-
-    As a consequence, a contiguous region of missing PhiDP will be filled by constant
-    values determined by the edges of that region. Thus, the derivative (i. e. Kdp) in
-    that region will be zero. This bahaviour is more desirable than the behaviour
-    produced by linear interpolation because this will cause arbitrary Kdp values
-    in case of noisy PhiDP profiles with large portions of missing data.
-
-    One more detail:
-
-    Parameters
-    ----------
-    data : N-dim array with last dimension representing the range
-    margin : the size of the window which is used to compute the average value
-            at the margins of a contiguous NaN region in the array.
-
-    Returns
-    -------
-    out : array of same shape as phi gaps filled
-
-    """
-    shape = data.shape
-    data  = data.reshape((-1,shape[-1]))
-    zeros = np.zeros(data.shape[1], dtype="f4")
-    invalids = np.isnan(data)
-
-    for i in xrange(data.shape[0]):
-        # return zeros of there are no valid phidp values
-        if np.all(np.isnan(data[i])):
-            data[i] = zeros
-            continue
-        # interpolate using the mean of the values surrounding the gaps
-        gaps = contiguous_regions(invalids[i])
-        # Iterate over the invalid regions of the array
-        if i==245:
-            pass
-        for j in range(len(gaps)):
-            # left index of the gap margin
-            left = gaps[j,0]-margin
-            if left<0:
-                left = 0
-            # right index of the right gap margin
-            right = gaps[j,1]+margin
-            # Now fill the gaps
-            if gaps[j,0]==0:
-                # Left margin of the array
-                data[i, 0:gaps[j,1]] = nanmedian( data[i, gaps[j,1]:(gaps[j,1]+margin)] )
-            elif gaps[j,1]==data.shape[1]:
-                # Right margin of the array
-                data[i, gaps[j,0]:] = nanmedian( data[i, left:gaps[j,0]] )
-            else:
-                # inner parts of the array
-                if right > data.shape[1]:
-                    right = data.shape[1]
-                data[i, gaps[j,0]:gaps[j,1]] = np.mean([nanmedian( data[i, gaps[j,1]:right] ),  \
-                                                        nanmedian( data[i, left:gaps[j,0]] )]  )
-    return data.reshape(shape)
-
-
 def contiguous_regions(condition):
     """Finds contiguous True regions of the boolean array "condition".
 
@@ -853,7 +736,7 @@ def contiguous_regions(condition):
 
     """
 
-    # Find the indicies of changes in "condition"
+    # Find the indices of changes in "condition"
     d = np.diff(condition)
     idx, = d.nonzero()
 
@@ -903,55 +786,6 @@ def gradient_from_smoothed(x, N=5):
     """Computes gradient of smoothed data along final axis of an array
     """
     return gradient_along_axis(medfilt_along_axis(x, N)).astype("f4")
-
-
-@deprecated("process_raw_phidp_vulpiani")
-def process_raw_phidp(phidp, rho, N_despeckle=3, N_fillmargin=3, N_unfold=5, N_filter=5, copy=False):
-    """Establish consistent PhiDP profiles from raw data.
-
-    Processing of raw PhiDP data contains the following steps:
-
-        - Despeckle
-
-        - Fill missing data
-          (general asssumption: PhiDP is monotonically increasing along the beam)
-
-        - Phase unfolding
-
-        - Smoothing
-
-    Parameters
-    ----------
-    phidp : array of shape (n azimuth angles, n range gates)
-    rho : array of shape (n azimuth angles, n range gates)
-    N_despeckle : integer
-        *N* parameter of function dp.linear_despeckle
-    N_fillmargin : integer
-        *margin* parameter of function dp.fill_phidp
-    N_unfold : integer
-        *width* parameter of function dp.unfold_phi
-    N_filter : integer
-        *N* parameter of function dp.medfilt_along_axis
-    copy : boolean
-        leaves the original phidp array untouched
-
-    """
-    if copy:
-        phidp = phidp.copy()
-    # despeckle
-    phidp = linear_despeckle(phidp, N=N_despeckle)
-    phidp = fill_phidp(phidp, margin=N_fillmargin)
-    # apply unfolding
-    if speedupexists:
-        phidp = unfold_phi(phidp, rho, width=N_unfold)
-    else:
-        phidp = unfold_phi_naive(phidp, rho, width=N_unfold)
-    # median filter smoothing
-    phidp = medfilt_along_axis(phidp, N=N_filter)
-    return phidp
-
-
-
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <dp> as main...'

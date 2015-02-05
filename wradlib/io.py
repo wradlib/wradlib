@@ -24,27 +24,33 @@ on how to deal with different file formats.
    readDX
    writePolygon2Text
    read_EDGE_netcdf
-   read_BUFR
+   read_generic_hdf5
+   read_generic_netcdf
    read_OPERA_hdf5
    read_GAMIC_hdf5
    read_RADOLAN_composite
+   read_Rainbow
 
 """
 
 # standard libraries
 
 import sys
-import re
 import datetime as dt
-import pytz
 import cPickle as pickle
+import StringIO
+from collections import OrderedDict
+
+import re
+import pytz
 import os
 import warnings
+
 
 # site packages
 import h5py
 import numpy as np
-import netCDF4 as nc # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+import netCDF4 as nc  # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
 from osgeo import gdal
 import util
 
@@ -90,14 +96,14 @@ def unpackDX(raw):
 
     beam = []
 
-##    # naive version
-##    # 49193 function calls in 0.772 CPU seconds
-##    # 20234 function calls in 0.581 CPU seconds
-##    for item in raw:
-##        if item & flag:
-##            beam.extend([0]* (item & data))
-##        else:
-##            beam.append(item & data)
+    ##    # naive version
+    ##    # 49193 function calls in 0.772 CPU seconds
+    ##    # 20234 function calls in 0.581 CPU seconds
+    ##    for item in raw:
+    ##        if item & flag:
+    ##            beam.extend([0]* (item & data))
+    ##        else:
+    ##            beam.append(item & data)
 
     # performance version - hopefully
     # 6204 function calls in 0.149 CPU seconds
@@ -114,19 +120,19 @@ def unpackDX(raw):
     beam.extend(raw[0:flagged[0]])
 
     # iterate over all flags except the last one
-    for this, next in zip(flagged[:-1],flagged[1:]):
+    for this, next in zip(flagged[:-1], flagged[1:]):
         # create as many zeros as there are given within the flagged
         # byte's data part
-        beam.extend([0]* (raw[this] & data))
+        beam.extend([0] * (raw[this] & data))
         # append the data until the next flag
-        beam.extend(raw[this+1:next])
+        beam.extend(raw[this + 1:next])
 
     # process the last flag
     # add zeroes
-    beam.extend([0]* (raw[flagged[-1]] & data))
+    beam.extend([0] * (raw[flagged[-1]] & data))
 
     # add remaining data
-    beam.extend(raw[flagged[-1]+1:])
+    beam.extend(raw[flagged[-1] + 1:])
 
     # return the data
     return np.array(beam)
@@ -140,7 +146,7 @@ def parse_DX_header(header):
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00",
+    out["datetime"] = dt.datetime.strptime(header[2:8] + header[13:17] + "00",
                                            "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
@@ -152,13 +158,13 @@ def parse_DX_header(header):
     pos_EP = header.find("EP")
     pos_MS = header.find("MS")
 
-    out['bytes'] = int(header[pos_BY+2:pos_BY+7])
-    out['version'] = header[pos_VS+2:pos_VS+4]
-    out['cluttermap'] = int(header[pos_CO+2:pos_CO+3])
-    out['dopplerfilter'] = int(header[pos_CD+2:pos_CD+3])
-    out['statfilter'] = int(header[pos_CS+2:pos_CS+3])
-    out['elevprofile'] = [float(header[pos_EP+2+3*i:pos_EP+2+3*(i+1)]) for i in range(8)]
-    out['message'] = header[pos_MS+5:pos_MS+5+int(header[pos_MS+2:pos_MS+5])]
+    out['bytes'] = int(header[pos_BY + 2:pos_BY + 7])
+    out['version'] = header[pos_VS + 2:pos_VS + 4]
+    out['cluttermap'] = int(header[pos_CO + 2:pos_CO + 3])
+    out['dopplerfilter'] = int(header[pos_CD + 2:pos_CD + 3])
+    out['statfilter'] = int(header[pos_CS + 2:pos_CS + 3])
+    out['elevprofile'] = [float(header[pos_EP + 2 + 3 * i:pos_EP + 2 + 3 * (i + 1)]) for i in range(8)]
+    out['message'] = header[pos_MS + 5:pos_MS + 5 + int(header[pos_MS + 2:pos_MS + 5])]
 
     return out
 
@@ -216,10 +222,10 @@ def readDX(filename):
         - 'message' - additional text stored in the header.
     """
 
-    azimuthbitmask = 2**(14-1)
-    databitmask = 2**(13-1) - 1
-    clutterflag = 2**15
-    dataflag = 2**13 -1
+    azimuthbitmask = 2 ** (14 - 1)
+    databitmask = 2 ** (13 - 1) - 1
+    clutterflag = 2 ** 15
+    dataflag = 2 ** 13 - 1
     # open the DX file in binary mode for reading
     if type(filename) == file:
         f = filename
@@ -230,12 +236,12 @@ def readDX(filename):
     header = ''
     atend = False
     # read header
-    while True :
+    while True:
         mychar = f.read(1)
         # 0x03 signals the end of the header but sometimes there might be
         # an additional 0x03 char after that
-        if (mychar == chr(3)):
-            atend=True
+        if mychar == chr(3):
+            atend = True
         if mychar != chr(3) and atend:
             break
         header = header + mychar
@@ -250,7 +256,7 @@ def readDX(filename):
     # if product length is uneven but header is even (e.g. because it has two
     # chr(3) at the end, read one byte less
     buflen = attrs['bytes'] - len(header)
-    if (buflen % 2) !=0:
+    if (buflen % 2) != 0:
         # make sure that this is consistent with our assumption
         # i.e. contact DWD again, if DX files show up with uneven byte lengths
         # *and* only one 0x03 character
@@ -262,17 +268,17 @@ def readDX(filename):
     raw = np.frombuffer(buf, dtype='uint16')
 
     # reading finished, close file, but only if we opened it.
-    if type(filename)!=file:
+    if type(filename) != file:
         f.close()
 
     # a new ray/beam starts with bit 14 set
     # careful! where always returns its results in a tuple, so in order to get
     # the indices we have to retrieve element 0 of this tuple
-    newazimuths = np.where( raw == azimuthbitmask )[0]  ###Thomas kontaktieren!!!!!!!!!!!!!!!!!!!
+    newazimuths = np.where(raw == azimuthbitmask)[0]  # Thomas kontaktieren!!!!!!!!!!!!!!!!!!!
 
     # for the following calculations it is necessary to have the end of the data
     # as the last index
-    newazimuths = np.append(newazimuths,len(raw))
+    newazimuths = np.append(newazimuths, len(raw))
 
     # initialize our list of rays/beams
     beams = []
@@ -282,17 +288,17 @@ def readDX(filename):
     azims = []
 
     # iterate over all beams
-    for i in range(newazimuths.size-1):
+    for i in range(newazimuths.size - 1):
         # unpack zeros
-        beam = unpackDX(raw[newazimuths[i]+3:newazimuths[i+1]])
+        beam = unpackDX(raw[newazimuths[i] + 3:newazimuths[i + 1]])
         beams.append(beam)
-        elevs.append((raw[newazimuths[i]+2] & databitmask)/10.)
-        azims.append((raw[newazimuths[i]+1] & databitmask)/10.)
+        elevs.append((raw[newazimuths[i] + 2] & databitmask) / 10.)
+        azims.append((raw[newazimuths[i] + 1] & databitmask) / 10.)
 
     beams = np.array(beams)
 
     #attrs =  {}
-    attrs['elev']  = np.array(elevs)
+    attrs['elev'] = np.array(elevs)
     attrs['azim'] = np.array(azims)
     attrs['clutter'] = (beams & clutterflag) != 0
 
@@ -301,9 +307,9 @@ def readDX(filename):
 
 
 def _write_polygon2txt(f, idx, vertices):
-    f.write('%i %i\n'%idx)
+    f.write('%i %i\n' % idx)
     for i, vert in enumerate(vertices):
-        f.write('%i '%(i,))
+        f.write('%i ' % (i,))
         f.write('%f %f %f %f\n' % tuple(vert))
 
 
@@ -398,26 +404,26 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
         ix_minaz = np.argmin(az)
         ix_maxaz = np.argmax(az)
         if enforce_equidist:
-            az = np.linspace(np.round(az[ix_minaz],2), np.round(az[ix_maxaz],2), len(az))
+            az = np.linspace(np.round(az[ix_minaz], 2), np.round(az[ix_maxaz], 2), len(az))
         else:
             az = np.roll(az, -ix_minaz)
         # rotate accordingly
         data = np.roll(data, -ix_minaz, axis=0)
-        data = np.where(data==dset.getncattr('MissingData'), np.nan, data)
+        data = np.where(data == dset.getncattr('MissingData'), np.nan, data)
         # Ranges
         binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
         r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
         # collect attributes
-        attrs =  {}
+        attrs = {}
         for attrname in dset.ncattrs():
             attrs[attrname] = dset.getncattr(attrname)
-##        # Limiting the returned range
-##        if range_lim and range_lim / binwidth <= data.shape[1]:
-##            data = data[:,:range_lim / binwidth]
-##            r = r[:range_lim / binwidth]
+        ##        # Limiting the returned range
+        ##        if range_lim and range_lim / binwidth <= data.shape[1]:
+        ##            data = data[:,:range_lim / binwidth]
+        ##            r = r[:range_lim / binwidth]
         # Set additional metadata attributes
         attrs['az'] = az
-        attrs['r']  = r
+        attrs['r'] = r
         attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'], attrs['Height'])
         attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
         attrs['max_range'] = data.shape[1] * binwidth
@@ -429,15 +435,54 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
     return data, attrs
 
 
-def read_BUFR(buffile):
-    """Main BUFR interface: Decodes BUFR file and returns metadata and values
+def get_radolan_header_token():
+    """Return array with known header token of radolan composites
 
-    The actual function refererence is contained in :doc:`wradlib.bufr.decodebufr`.
+    Returns
+    -------
+    head:   dict with known header token, value set to None
+    """
+    head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
+            'INT': None, 'GP': None, 'MS': None, 'LV': None,
+            'CS': None, 'MX': None, 'BG': None}
+    return head
+
+
+def get_radolan_header_token_pos(header):
+    """Get Token and positions from DWD radolan header
+
+    Parameters
+    ----------
+    header: string (ASCII header)
+
+    Returns
+    -------
+    head: dictionary with found header tokens and positions
 
     """
-    # wradib modules
-    bufr = util.import_optional("wradlib.bufr")
-    return bufr.decodebufr(buffile)
+
+    head_dict = get_radolan_header_token()
+
+    for token in head_dict.keys():
+        d = header.rfind(token)
+        if d > -1:
+            head_dict[token] = d
+
+    head = {}
+
+    for k, v in head_dict.iteritems():
+        if v is not None:
+            start = v + len(k)
+            filt = filter(lambda x: x > v, head_dict.values())
+            if filt:
+                stop = min(filt)
+            else:
+                stop = None
+            head[k] = (start, stop)
+        else:
+            head[k] = v
+
+    return head
 
 
 def parse_DWD_quant_composite_header(header):
@@ -449,52 +494,255 @@ def parse_DWD_quant_composite_header(header):
 
     Returns
     -------
-    output : dictionary of metadata retreived from file header
+    output : dictionary of metadata retrieved from file header
 
     """
     # empty container
     out = {}
+
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8]+header[13:17]+"00",
+    out["datetime"] = dt.datetime.strptime(header[2:8] + header[13:17] + "00",
                                            "%d%H%M%m%y%S")
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
-    pos_VS = header.find("VS")
-    pos_SW = header.find("SW")
-    pos_PR = header.find("PR")
-    pos_INT = header.find("INT")
-    pos_GP = header.find("GP")
-    pos_MS = header.find("MS")
-    if pos_VS > -1:
-        out["maxrange"] = {0:"100 km and 128 km (mixed)",
-                           1: "100 km",
-                           2:"128 km",
-                           3:"150 km" }[int(header[(pos_VS+2):pos_VS+4])]
-    else:
-        out["maxrange"] = "100 km"
-    out["radolanversion"] = header[(pos_SW+2):pos_SW+11]
-    out["precision"] = 10**int(header[pos_PR+4:pos_PR+7])
-    out["intervalseconds"] = int(header[(pos_INT+3):pos_INT+7])*60
-    dimstrings = header[(pos_GP+2):pos_GP+11].strip().split("x")
-    out["nrow"] = int(dimstrings[0])
-    out["ncol"] = int(dimstrings[1])
-    locationstring = header[(pos_MS+2):].strip().split("<")[1].strip().strip(">")
-    out["radarlocations"] = locationstring.split(",")
+
+    # get dict of header token with positions
+    head = get_radolan_header_token_pos(header)
+
+    # iterate over token and fill output dict accordingly
+    for k, v in head.iteritems():
+        if v:
+            if k == 'BY':
+                out['datasize'] = int(header[v[0]:v[1]]) - len(header) - 1
+            if k == 'VS':
+                out["maxrange"] = {0: "100 km and 128 km (mixed)",
+                                   1: "100 km",
+                                   2: "128 km",
+                                   3: "150 km"}.get(int(header[v[0]:v[1]]), "100 km")
+            if k == 'SW':
+                out["radolanversion"] = header[v[0]:v[1]].strip()
+            if k == 'PR':
+                out["precision"] = float('1' + header[v[0]:v[1]].strip())
+            if k == 'INT':
+                out["intervalseconds"] = int(header[v[0]:v[1]]) * 60
+            if k == 'GP':
+                dimstrings = header[v[0]:v[1]].strip().split("x")
+                out["nrow"] = int(dimstrings[0])
+                out["ncol"] = int(dimstrings[1])
+            if k == 'BG':
+                dimstrings = header[v[0]:v[1]]
+                dimstrings = dimstrings[:len(dimstrings) / 2], dimstrings[len(dimstrings) / 2:]
+                out["nrow"] = int(dimstrings[0])
+                out["ncol"] = int(dimstrings[1])
+            if k == 'LV':
+                lv = header[v[0]:v[1]].split()
+                out['nlevel'] = np.int(lv[0])
+                out['level'] = np.array(lv[1:]).astype('float')
+            if k == 'MS':
+                locationstring = header[v[0]:].strip().split("<")[1].split(">")[0]
+                out["radarlocations"] = locationstring.split(",")
+            if k == 'CS':
+                out['indicator'] = {0: "near ground level",
+                                    1: "maximum",
+                                    2: "tops"}.get(int(header[v[0]:v[1]]))
+            if k == 'MX':
+                out['imagecount'] = int(header[v[0]:v[1]])
     return out
 
 
-def read_RADOLAN_composite(fname, missing=-9999):
+def decode_radolan_runlength_line(line, attrs):
+    """Decodes one line of runlength coded binary data of DWD
+    composite file and returns decoded array
+
+    Parameters
+    ----------
+    line: numpy array of byte values
+
+    Returns
+    -------
+    arr:  numpy array of decoded values
+    """
+    # byte '0' is line number, we don't need it
+    # so we start with offset byte,
+    lo = 1
+    byte = line[lo]
+    # line empty condition, lf directly behind line number
+    if byte == 10:
+        return np.ones(attrs['ncol'], dtype=np.uint8) * attrs['nodataflag']
+    offset = byte - 16
+
+    # check if offset byte is 255 and take next byte(s)
+    # also for the offset
+    while byte == 255:
+        lo += 1
+        byte = line[lo]
+        offset += byte - 16
+
+    # just take the rest
+    dline = line[lo + 1:]
+
+    # this could be optimized
+    # iterate over line string, until lf (10) is reached
+    for lo, byte in enumerate(dline):
+        if byte == 10:
+            break
+        width = (byte & 0xF0) >> 4
+        val = byte & 0x0F
+        # the "offset pixel" are "not measured" values
+        # so we set them to 'nodata'
+        if lo == 0:
+            arr = np.ones(offset, dtype=np.uint8) * attrs['nodataflag']
+        arr = np.append(arr, np.ones(width, dtype=np.uint8) * val)
+
+    trailing = attrs['ncol'] - len(arr)
+    if trailing > 0:
+        arr = np.append(arr, np.ones(trailing, dtype=np.uint8) * attrs['nodataflag'])
+    elif trailing < 0:
+        arr = dline[:trailing]
+
+    return arr
+
+
+def read_radolan_runlength_line(fid):
+    """Reads one line of runlength coded binary data of DWD
+    composite file and returns it as numpy array
+
+    Parameters
+    ----------
+    fid: file/buffer id
+
+    Returns
+    -------
+    line:  numpy array of coded values
+    """
+    line = fid.readline()
+
+    # check if eot
+    if line == '\x04':
+        return None
+
+    # convert input buffer to np.uint8 array
+    line = np.frombuffer(line, np.uint8).astype(np.uint8)
+
+    return line
+
+
+def decode_radolan_runlength_array(binarr, attrs):
+    """Decodes the binary runlength coded section from DWD composite
+    file and return decoded numpy array with correct shape
+
+    Parameters
+    ----------
+    binarr:    string Buffer
+    attrs:  Attribute dict of file header
+
+    Returns
+    -------
+    arr: numpy array of decoded values
+    """
+    buf = StringIO.StringIO(binarr)
+
+    # read and decode first line
+    line = read_radolan_runlength_line(buf)
+    arr = decode_radolan_runlength_line(line, attrs)
+
+    # read following lines
+    line = read_radolan_runlength_line(buf)
+
+    while line is not None:
+        dline = decode_radolan_runlength_line(line, attrs)
+        arr = np.vstack((arr, dline))
+        line = read_radolan_runlength_line(buf)
+    # return upside down because first line read is top line
+    return np.flipud(arr)
+
+
+def read_radolan_binary_array(fid, size):
+    """Read binary data from file given by filehandle
+
+    Parameters
+    ----------
+    fid: file handle
+    size: number of bytes to read
+
+    Returns
+    -------
+    binarr: string array of binary data
+    """
+    binarr = fid.read(size)
+    fid.close()
+    if len(binarr) != size:
+        raise IOError('{0}: File corruption while reading {1}! '
+                      '\nCould not read enough data!'.format(__name__, fid.name))
+    return binarr
+
+
+def get_radolan_filehandle(fname):
+    """Opens radolan file and returns file handle
+
+    Parameters
+    ----------
+    fname: filename
+
+    Returns
+    -------
+    f: filehandle
+    """
+
+    gzip = util.import_optional('gzip')
+
+    # open file handle
+    try:
+        f = gzip.open(fname, 'rb')
+        f.read(1)
+    except IOError:
+        f = open(fname, 'rb')
+        f.read(1)
+
+    # rewind file
+    f.seek(0, 0)
+
+    return f
+
+
+def read_radolan_header(fid):
+    """Reads radolan ASCII header and returns it as string
+
+    Parameters
+    ----------
+    fid: file handle
+
+    Returns
+    -------
+    header: string
+    """
+    # rewind, just in case...
+    fid.seek(0, 0)
+
+    header = ''
+    while True:
+        mychar = fid.read(1)
+        if mychar == chr(3):
+            break
+        header = header + mychar
+
+    return header
+
+
+def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
-    established in the course of the `RADOLAN project <http://www.dwd.de/radolan>`
-    and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG and
-    many, many more (see format description on the project homepage, [DWD2009]).
+    established in the course of the `RADOLAN project <http://www.dwd.de/RADOLAN>`
+    and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG, PC,
+    PG and many, many more.
+    (see format description on the RADOLAN project homepage :cite:`DWD2009`).
 
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
-    resolution and in polar-stereographic projection.
+    resolution and in polar-stereographic projection. There are other grid resolutions
+    for different composites (eg. PC, PG)
 
     **Beware**: This function already evaluates and applies the so-called PR factor which is
     specified in the header section of the RADOLAN files. The raw values in an RY file
@@ -514,75 +762,72 @@ def read_RADOLAN_composite(fname, missing=-9999):
         - data : numpy array of shape (number of rows, number of columns)
         - attrs : dictionary of metadata information from the file header
 
-    References
-    ----------
-
-    .. [DWD2009] Germany Weather Service (DWD), 2009: RADLOAN/RADVO-OP -
-        Beschreibung des Kompositformats, Version 2.2.1. Offenbach, Germany,
-        URL: http://dwd.de/radolan (in German)
-
     """
-    mask = 4095 # max value integer
+
     NODATA = missing
-    header = '' # header string for later processing
-    # open file handle
-    f = open(fname, 'rb')
-    # read header
-    while True :
-        mychar = f.read(1)
-        if mychar == chr(3) :
-            break
-        header = header + mychar
+    mask = 0xFFF  # max value integer
+
+    f = get_radolan_filehandle(fname)
+
+    header = read_radolan_header(f)
+
     attrs = parse_DWD_quant_composite_header(header)
+
+    if not loaddata:
+        f.close()
+        return None, attrs
+
     attrs["nodataflag"] = NODATA
-    if not attrs["radarid"]=="10000":
+
+    if not attrs["radarid"] == "10000":
         warnings.warn("WARNING: You are using function e" +
                       "wradlib.io.read_RADOLAN_composit for a non " +
                       "composite file.\n " +
                       "This might work...but please check the validity " +
                       "of the results")
+
+    # read the actual data
+    indat = read_radolan_binary_array(f, attrs['datasize'])
+
     if attrs["producttype"] == "RX":
-        # read the actual data
-        indat = f.read(attrs["nrow"]*attrs["ncol"])
-        # convert from 8-bit integers
-        # and upgrade to 32-bit ints, so that nodata values may be inserted
-        arr = np.frombuffer(indat, np.uint8).astype(np.int)
-        arr = np.where(arr==250,NODATA,arr)
-        clutter = np.where(arr==249)[0]
+        #convert to 8bit integer
+        arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
+        arr = np.where(arr == 250, NODATA, arr)
+        attrs['cluttermask'] = np.where(arr == 249)[0]
+
+    elif attrs['producttype'] in ["PG", "PC"]:
+        arr = decode_radolan_runlength_array(indat, attrs)
     else:
-        # read the actual data
-        indat = f.read(attrs["nrow"]*attrs["ncol"]*2)
         # convert to 16-bit integers
-        arr = np.frombuffer(indat, np.uint16).astype(np.int)
-        # evaluate bits 14, 15 and 16
-        nodata   = np.where(arr & int("10000000000000",2))
-        negative = np.where(arr & int("100000000000000",2))
-        clutter  = np.where(arr & int("1000000000000000",2))
+        arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
+        # evaluate bits 13, 14, 15 and 16
+        attrs['secondary'] = np.where(arr & 0x1000)[0]
+        nodata = np.where(arr & 0x2000)[0]
+        negative = np.where(arr & 0x4000)[0]
+        attrs['cluttermask'] = np.where(arr & 0x8000)[0]
         # mask out the last 4 bits
         arr = arr & mask
         # consider negative flag if product is RD (differences from adjustment)
-        if attrs["producttype"]=="RD":
+        if attrs["producttype"] == "RD":
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
         # apply precision factor
-        arr *= attrs["precision"]
+        # this promotes arr to float if precision is float
+        arr = arr * attrs["precision"]
         # set nodata value
         arr[nodata] = NODATA
-    # bring it into shape
-    arr = arr.reshape( (attrs["nrow"], attrs["ncol"]) )
 
-    # append clutter mask
-    attrs['cluttermask'] = clutter
-
-    # close the file
-    f.close()
+    # anyway, bring it into right shape
+    arr = arr.reshape((attrs["nrow"], attrs["ncol"]))
 
     return arr, attrs
+
 
 def browse_hdf5_group(grp):
     """Browses one hdf5 file level
     """
     pass
+
 
 def read_generic_hdf5(fname):
     """Reads hdf5 files according to their structure
@@ -605,6 +850,7 @@ def read_generic_hdf5(fname):
     """
     f = h5py.File(fname, "r")
     fcontent = {}
+
     def filldict(x, y):
         # create a new container
         tmp = {}
@@ -617,16 +863,19 @@ def read_generic_hdf5(fname):
         # only add to the dictionary, if we have something meaningful to add
         if tmp != {}:
             fcontent[x] = tmp
+
     f.visititems(filldict)
 
     f.close()
 
     return fcontent
 
+
 def read_OPERA_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
-    Please refer to the `OPERA data model documentation <http://www.knmi.nl/opera/opera3/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
+    Please refer to the `OPERA data model documentation
+    <https://www.eol.ucar.edu/system/files/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
     in order to understand how an hdf5 file is organized that conforms to the OPERA
     ODIM_H5 conventions.
 
@@ -637,7 +886,7 @@ def read_OPERA_hdf5(fname):
     the original file. If the end member of a branch (or path) is "data", then the
     corresponding item of output dictionary is a numpy array with actual data. Any other
     end member (either *how*, *where*, and *what*) will contain the meta information
-    applying to the coresponding level of the file hierarchy.
+    applying to the corresponding level of the file hierarchy.
 
     Parameters
     ----------
@@ -651,20 +900,22 @@ def read_OPERA_hdf5(fname):
     """
     f = h5py.File(fname, "r")
     # try verify OPERA conventions
-##    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
-##        print "File is not organized according to OPERA conventions (ODIM_H5)..."
-##        print "Expected the upper level subgroups to be: dataset1, how, what', where"
-##        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
-##        sys.exit(1)
+    ##    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
+    ##        print "File is not organized according to OPERA conventions (ODIM_H5)..."
+    ##        print "Expected the upper level subgroups to be: dataset1, how, what', where"
+    ##        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
+    ##        sys.exit(1)
 
     # now we browse through all Groups and Datasets and store the info in one dictionary
     fcontent = {}
+
     def filldict(x, y):
         if isinstance(y, h5py.Group):
             if len(y.attrs) > 0:
                 fcontent[x] = dict(y.attrs)
         elif isinstance(y, h5py.Dataset):
             fcontent[x] = np.array(y)
+
     f.visititems(filldict)
 
     f.close()
@@ -713,7 +964,7 @@ def read_gamic_scan_attributes(scan, scan_type):
         zero_index = np.where(azi_stop < azi_start)
         azi_stop[zero_index[0]] += 360
         zero_index = zero_index[0] + 1
-        az = (azi_start+azi_stop)/2
+        az = (azi_start + azi_stop) / 2
         az = np.roll(az, -zero_index, axis=0)
         az = np.round(az, 1)
         el = sg1.attrs.get('elevation')
@@ -730,7 +981,7 @@ def read_gamic_scan_attributes(scan, scan_type):
             ele_stop = ele_stop[1:]
         zero_index = np.where(ele_stop > ele_start)
         zero_index = zero_index[0]  # - 1
-        el = (ele_start+ele_stop)/2
+        el = (ele_start + ele_stop) / 2
         el = np.round(el, 1)
         el = el[-angle_step:]
 
@@ -740,7 +991,8 @@ def read_gamic_scan_attributes(scan, scan_type):
     sattrs['zero_index'] = zero_index[0]
 
     # create range array
-    r = np.arange(sattrs['bin_range'], sattrs['bin_range']*sattrs['bin_count']+sattrs['bin_range'], sattrs['bin_range'])
+    r = np.arange(sattrs['bin_range'], sattrs['bin_range'] * sattrs['bin_count'] + sattrs['bin_range'],
+                  sattrs['bin_range'])
 
     # save variables to scan attributes
     sattrs['az'] = az
@@ -793,7 +1045,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
                     div = 256.0
                 else:
                     div = 65536.0
-                mdata = dyn_range_min + mdata*(dyn_range_max-dyn_range_min)/div
+                mdata = dyn_range_min + mdata * (dyn_range_max - dyn_range_min) / div
 
                 if scan_type == 'PVOL':
                     # rotate accordingly
@@ -801,7 +1053,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
 
                 if scan_type == 'RHI':
                     # remove first zero angles
-                    sdiff = mdata.shape[0]-sattrs['el'].shape[0]
+                    sdiff = mdata.shape[0] - sattrs['el'].shape[0]
                     mdata = mdata[sdiff:, :]
 
                 data1['data'] = mdata
@@ -816,7 +1068,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
     """Data reader for hdf5 files produced by the commercial GAMIC Enigma V3 MURAN software
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
-    homepage for further info (http://www.gamic.com/cgi-bin/info.pl?link=softwarebrowser3).
+    homepage for further info (http://www.gamic.com).
 
     Parameters
     ----------
@@ -908,6 +1160,389 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
     return data, attrs
 
 
+def find_key(key, dictionary):
+    """Searches for given key in given (nested) dictionary.
+
+    Returns all found parent dictionaries in a list.
+
+    Parameters
+    ----------
+    key : string
+        the key to be searched for in the nested dict
+    dictionary : dict
+        the dictionary to be searched
+
+    Returns
+    -------
+    output : a dictionary or list of dictionaries
+
+    """
+    for k, v in dictionary.iteritems():
+        if k == key:
+            yield dictionary
+        elif isinstance(v, dict):
+            for result in find_key(key, v):
+                yield result
+        elif isinstance(v, list):
+            for d in v:
+                for result in find_key(key, d):
+                    yield result
+
+
+def decompress(data):
+    """Decompression of data
+
+    Parameters
+    ----------
+    data : string (from xml)
+        data string containing compressed data.
+    """
+    zlib = util.import_optional('zlib')
+    return zlib.decompress(data)
+
+
+def get_RB_data_layout(datadepth):
+    """Calculates DataWidth and DataType from given DataDepth of RAINBOW radar data
+
+    Parameters
+    ----------
+    datadepth : int
+        DataDepth as read from the Rainbow xml metadata.
+
+    Returns
+    -------
+    datawidth : int
+        Width in Byte of data
+
+    datatype : string
+        conversion string .
+
+    """
+
+    if sys.byteorder != 'big':
+        byteorder = '>'
+    else:
+        byteorder = '<'
+
+    datawidth = datadepth / 8
+
+    if datawidth in [1, 2, 4]:
+        datatype = byteorder + 'u' + str(datawidth)
+    else:
+        raise ValueError("Wrong DataDepth: %d. Conversion only for depth 8, 16, 32" % datadepth)
+
+    return datawidth, datatype
+
+
+def get_RB_data_attribute(xmldict, attr):
+    """Get Attribute `attr` from dict `xmldict`
+
+    Parameters
+    ----------
+    xmldict : dict
+        Blob Description Dictionary
+
+    attr : string
+        Attribute key
+
+    Returns
+    -------
+    sattr : int
+        Attribute Values
+
+    """
+
+    try:
+        sattr = int(xmldict['@' + attr])
+    except KeyError:
+        if attr == 'bins':
+            sattr = None
+        else:
+            raise KeyError('Attribute @' + attr + ' is missing from Blob Description'
+                                                  'There may be some problems with your file')
+    return sattr
+
+
+def get_RB_blob_attribute(blobdict, attr):
+    """Get Attribute `attr` from dict `blobdict`
+
+    Parameters
+    ----------
+    blobdict : dict
+        Blob Description Dictionary
+
+    attr : string
+        Attribute key
+
+    Returns
+    -------
+        Attribute Value
+
+    """
+    try:
+        value = blobdict['BLOB']['@' + attr]
+    except KeyError:
+        raise KeyError('Attribute @' + attr + ' is missing from Blob.' +
+                       'There may be some problems with your file')
+
+    return value
+
+
+def get_RB_blob_data(datastring, blobid):
+    """ Read BLOB data from datastring and return it
+
+    Parameters
+    ----------
+    datastring : dict
+        Blob Description Dictionary
+
+    blobid : int
+        Number of requested blob
+
+    Returns
+    -------
+    data : string
+        Content of blob
+
+    """
+    xmltodict = util.import_optional('xmltodict')
+
+    start = 0
+    searchString = r'<BLOB blobid="{}"'.format(blobid)
+    start = datastring.find(searchString, start)
+    if start == -1:
+        raise EOFError('Blob ID {} not found!'.format(blobid))
+    end = datastring.find('>', start)
+    xmlstring = datastring[start:end + 1]
+
+    # cheat the xml parser by making xml well-known
+    xmldict = xmltodict.parse(xmlstring + '</BLOB>')
+    cmpr = get_RB_blob_attribute(xmldict, 'compression')
+    size = int(get_RB_blob_attribute(xmldict, 'size'))
+    data = datastring[end + 2:end + 2 + size]  # read blob data to string
+
+    # decompress if necessary
+    # the first 4 bytes are neglected for an unknown reason
+    if cmpr == "qt":
+        data = decompress(data[4:])
+
+    return data
+
+
+def map_RB_data(data, datadepth):
+    """ Map BLOB data to correct DataWidth and Type and convert it to numpy array
+
+    Parameters
+    ----------
+    data : string
+        Blob Data
+
+    datadepth : int
+        bit depth of Blob data
+
+    Returns
+    -------
+    data : numpy array
+        Content of blob
+
+    """
+    datawidth, datatype = get_RB_data_layout(datadepth)
+
+    # import from data buffer well aligned to data array
+    data = np.ndarray(shape=(len(data) / datawidth,), dtype=datatype, buffer=data)
+
+    return data
+
+
+def get_RB_blob_from_string(datastring, blobdict):
+    """
+    Read BLOB data from datastring and return it as numpy array with correct
+    dataWidth and shape
+
+    Parameters
+    ----------
+    datastring : dict
+        Blob Description Dictionary
+
+    blobdict : dict
+        Blob Dict
+
+    Returns
+    -------
+    data : numpy array
+        Content of blob as numpy array
+
+    """
+
+    blobid = get_RB_data_attribute(blobdict, 'blobid')
+    data = get_RB_blob_data(datastring, blobid)
+
+    # map data to correct datatype and width
+    datadepth = get_RB_data_attribute(blobdict, 'depth')
+    data = map_RB_data(data, datadepth)
+
+    # reshape data
+    bins = get_RB_data_attribute(blobdict, 'bins')
+    if bins:
+        rays = get_RB_data_attribute(blobdict, 'rays')
+        data.shape = (rays, bins)
+
+    return data
+
+
+def get_RB_blob_from_file(filename, blobdict):
+    """
+    Read BLOB data from file and return it with correct
+    dataWidth and shape
+
+    Parameters
+    ----------
+    filename : string
+        Filename of Data File
+
+    blobdict : dict
+        Blob Dict
+
+    Returns
+    -------
+    data : numpy array
+        Content of blob as numpy array
+
+    """
+    try:
+        fid = open(filename, "rb")
+    except IOError:
+        print "WRADLIB: Error opening Rainbow file ", filename
+        raise IOError
+
+    datastring = fid.read()
+    fid.close()
+
+    data = get_RB_blob_from_string(datastring, blobdict)
+
+    return data
+
+
+def get_RB_file_as_string(filename):
+    """ Read Rainbow File Contents in dataString
+
+    Parameters
+    ----------
+    filename : string
+        Filename of Data File
+
+    Returns
+    -------
+    dataString : string
+        File Contents as dataString
+
+    """
+    try:
+        fid = open(filename, "rb")
+    except IOError:
+        print "WRADLIB: Error opening Rainbow file ", filename
+        raise IOError
+
+    dataString = fid.read()
+    fid.close()
+
+    return dataString
+
+
+def get_RB_blobs_from_file(filename, rbdict):
+    """Read all BLOBS found in given nested dict, loads them from file
+    given by filename and add them to the dict at the appropriate position.
+
+    Parameters
+    ----------
+    :param filename: string
+        Filename of Data File
+    :param rbdict: dict
+        Rainbow file Contents
+
+    Returns
+    -------
+    :rtype : dict
+        Rainbow File Contents
+
+    """
+
+    blobs = list(find_key('@blobid', rbdict))
+
+    datastring = get_RB_file_as_string(filename)
+    for blob in blobs:
+        data = get_RB_blob_from_string(datastring, blob)
+        blob['data'] = data
+
+    return rbdict
+
+
+def get_RB_header(filename):
+    """Read Rainbow Header from filename, converts it to a dict and returns it
+
+    Parameters
+    ----------
+    filename : string
+        Filename of Data File
+
+    Returns
+    -------
+    object : dictionary
+        Rainbow File Contents
+
+    """
+    try:
+        fid = open(filename, "rb")
+    except IOError:
+        print "WRADLIB: Error opening Rainbow file ", filename
+        raise IOError
+
+    # load the header lines, i.e. the XML part
+    endXMLmarker = "<!-- END XML -->"
+    header = ""
+    line = ""
+    while not line.startswith(endXMLmarker):
+        header += line[:-1]
+        line = fid.readline()
+        if len(line) == 0:
+            break
+
+    fid.close()
+
+    xmltodict = util.import_optional('xmltodict')
+
+    return xmltodict.parse(header)
+
+
+def read_Rainbow(filename, loaddata=True):
+    """"Reads Rainbow files files according to their structure
+
+    In contrast to other file readers under wradlib.io, this function will *not* return
+    a two item tuple with (data, metadata). Instead, this function returns ONE
+    dictionary that contains all the file contents - both data and metadata. The keys
+    of the output dictionary conform to the XML outline in the original data file.
+
+    The radar data will be extracted from the data blobs, converted and added to the
+    dict with key 'data' at the place where the @blobid was pointing from.
+
+    Parameters
+    ----------
+    filename : string (a rainbow file path)
+
+    Returns
+    -------
+    rbdict : a dictionary that contains both data and metadata according to the
+              original rainbow file structure
+    """
+
+    rbdict = get_RB_header(filename)
+
+    if loaddata:
+        rbdict = get_RB_blobs_from_file(filename, rbdict)
+
+    return rbdict
+
+
 def to_pickle(fpath, obj):
     """Pickle object <obj> to file <fpath>
     """
@@ -977,7 +1612,7 @@ def from_hdf5(fpath, dataset="data"):
 
 def read_safnwc(filename):
     """Read MSG SAFNWC hdf5 file into a gdal georeferenced object
-    
+
     Parameters
     ----------
     filename : satellite file name
@@ -989,18 +1624,135 @@ def read_safnwc(filename):
     """
 
     root = gdal.Open(filename)
-    ds = gdal.Open('HDF5:'+filename+'://CT')
+    ds = gdal.Open('HDF5:' + filename + '://CT')
     name = os.path.basename(filename)[7:11]
     try:
-        proj = root.GetMetadata()["PROJECTION"];
+        proj = root.GetMetadata()["PROJECTION"]
     except Exception as error:
-        raise NameError("No metadata for satellite file %s" %(filename))
-    geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",");
-    geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"];
-    geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"];
+        raise NameError("No metadata for satellite file %s" % (filename))
+    geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
+    geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
+    geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"]
     ds.SetProjection(proj)
     ds.SetGeoTransform([float(x) for x in geotransform])
-    return(ds)
+    return (ds)
+
+
+def read_generic_netcdf(fname):
+    """Reads netcdf files and returns a dictionary with corresponding structure.
+
+    In contrast to other file readers under wradlib.io, this function will *not* return
+    a two item tuple with (data, metadata). Instead, this function returns ONE
+    dictionary that contains all the file contents - both data and metadata. The keys
+    of the output dictionary conform to the Group/Subgroup directory branches of
+    the original file.
+
+    Please see the examples below on how to browse through a return object. The
+    most important keys are the "dimensions" which define the shape of the data
+    arrays, and the "variables" which contain the actual data and typically also
+    the data that define the dimensions (e.g. sweeps, azimuths, ranges). These keys
+    should be present in any netcdf file.
+
+    Notes
+    -----
+    The returned dictionary could be quite big, depending on the content of the file.
+
+    Parameters
+    ----------
+    fname : string (a netcdf file path)
+
+    Returns
+    -------
+    out : an ordered dictionary that contains both data and metadata according to the
+              original netcdf file structure
+
+    Examples
+    --------
+    See :download:`generic_netcdf_example.py script <../../../examples/generic_netcdf_example.py>`.
+
+    .. literalinclude:: ../../../examples/generic_netcdf_example.py
+
+
+    """
+    try:
+        ncid = nc.Dataset(fname, 'r')
+    except:
+        print("wradlib: Could not read " % fname)
+        print("Check whether file exists, and whether it is a netCDF file.")
+        print("Raising exception...")
+        raise
+
+    if ncid.groups:
+        # To be implemented if necessary, all netcdf files
+        # I got my hands on have just one group/Dataset
+        print("Groups", ncid.groups)
+
+
+    out = OrderedDict()
+
+    # get file format (should be NETCDF3 or NETCDF4)
+    try:
+        out["file_format"] = ncid.file_format
+    except:
+        pass
+
+    # global attributes
+    for k, v in ncid.__dict__.iteritems():
+        out[k] = v
+
+    # dimensions
+    dimids = np.array([])
+    if ncid.dimensions:
+        dim = OrderedDict()
+        for k, v in ncid.dimensions.iteritems():
+            tmp = OrderedDict()
+            try:
+                tmp['data_model'] =  v._data_model
+            except:
+                pass
+            try:
+                tmp['size'] = v.__len__()
+            except:
+                pass
+            tmp['dimid'] = v._dimid
+            dimids = np.append(dimids,v._dimid)
+            tmp['grpid'] = v._grpid
+            tmp['isunlimited'] = v.isunlimited()
+            dim[k] = tmp
+        # Usually, the dimensions should be ordered by dimid automatically in case netcdf used OrderedDict
+        # However, we should double check
+        if np.array_equal(dimids, np.sort(dimids)):
+            # is already sorted
+            out['dimensions'] = dim
+        else:
+            # need to sort
+            dim2 = OrderedDict()
+            keys = dim.keys()
+            for dimid in np.sort(dimids):
+                dim2[keys[dimid]] = dim[keys[dimid]]
+            out["dimensions"] = dim2
+
+
+    # variables
+    if ncid.variables:
+        var = OrderedDict()
+        for k, v in ncid.variables.iteritems():
+            if isinstance(v.__dict__, dict):
+                tmp = OrderedDict()
+                for k1, v1 in v.__dict__.iteritems():
+                    tmp[k1] = v1
+                if v[:].dtype == 'S1':
+                    tmp['data'] = v[:].compressed().tostring()
+                else:
+                    tmp['data'] = v[:]
+                var[k] = tmp
+            else:
+                var[k] = v
+        out['variables'] = var
+
+    ncid.close()
+
+    return out
 
 
 if __name__ == '__main__':

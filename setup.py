@@ -51,8 +51,18 @@ missing = []
 for sample in requires:
     samplesplit = sample.split()
     modulestr = samplesplit[0]
+    # check if sphinxcontrib
+    if 'sphinxcontrib' in modulestr:
+        modulestr = modulestr.replace("-",".")
     try:
-        module = __import__(modulestr)
+        if modulestr=="gdal":
+            # We need to try two ways because the import command for gdal has changed
+            try:
+                module = __import__("gdal")
+            except:
+                module = __import__("osgeo")
+        else:
+            module = __import__(modulestr)
         # if dependency has version constraints
         if len(samplesplit) >= 3:
             ver = samplesplit[2]
@@ -60,8 +70,9 @@ for sample in requires:
             if parse_version(mver) < parse_version(ver):
                 print("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
                 missing.append(sample)
-    except ImportError:
+    except ImportError, e:
         print("Dependency %s not installed." % modulestr)
+        print("The following exception occured: %s" % e)
         missing.append(sample)
 
 # just run if missing/version mismatch dependencies are detected

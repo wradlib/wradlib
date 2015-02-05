@@ -43,7 +43,7 @@ import numpy as np
 def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     """Calculates the height of a radar beam above the antenna according to
     the 4/3 (four-thirds -> ft) effective Earth radius model.
-    The formula was taken from [Collier1996]_.
+    The formula was taken from Collier :cite:`Collier1996`.
 
     Parameters
     ----------
@@ -71,12 +71,6 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     broadcasting rules will apply and the shape of `output` will be that of
     the broadcast arrays. See the numpy documentation on how broadcasting works.
 
-    References
-    ----------
-    .. [Collier1996] Collier, C.G., 1996.
-        Applications of weather radar systems: A guide to uses of radar data in
-        meteorology and hydrology 2nd edition, New York: John Wiley and Sons.
-
     """
     if degrees:
         elev = np.deg2rad(elevations)
@@ -89,7 +83,7 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
 def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     """Calculates the height of a radar beam above the antenna according to \
     the 4/3 (four-thirds -> ft) effective Earth radius model.
-    The formula was taken from [Doviak1993]_.
+    The formula was taken from Doviak :cite:`Doviak1993`.
 
     Parameters
     ----------
@@ -117,13 +111,6 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     The shape of `elevations` and `ranges` may differ in which case numpy's
     broadcasting rules will apply and the shape of `output` will be that of
     the broadcast arrays. See the numpy documentation on how broadcasting works.
-
-    References
-    ----------
-
-    .. [Doviak1993] Doviak, R.J. & Zrnic, D.S., 1993.
-        Doppler radar and weather observations 2nd ed.,
-        San Diego: Academic Press.
 
     """
     if degrees:

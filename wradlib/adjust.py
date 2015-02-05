@@ -29,7 +29,7 @@ Basically, we only need two data sources:
 
 - set of (potentially irregular) unadjusted point values (e.g. remotely sensed rainfall)
 
-[GoudenhooftdandDelobbe2009]_ provide an excellent overview of adjustment procedures.
+Goudenhoofdt :cite:`Goudenhoofdt2009` provide an excellent overview of adjustment procedures.
 The general idea is that we quantify the error of the remotely sensed rainfall
 at the rain gage locations, assuming the rain gage observation to be accurate.
 The error can be assumed to be purely additive (AdjustAdd), purely multiplicative
@@ -37,7 +37,7 @@ The error can be assumed to be purely additive (AdjustAdd), purely multiplicativ
 assumed to heterogeneous in space (AdjustAdd, AdjustMultiply, AdjustMixed), the
 error at the rain gage locations is interpolated to the radar bin locations and
 then used to adjust (correct) the raw radar rainfall estimates. In case of the
-AdjustMFB approach, though, the multiplicative error is assumed to be homogenoues
+AdjustMFB approach, though, the multiplicative error is assumed to be homogeneous
 in space.
 
 Quick start
@@ -48,21 +48,21 @@ want to use for adjustment. After that, you can call the object with the actual
 data that is to be adjusted. The following example is using the additive error
 model with default settings. ``obs_coords`` and ``raw_coords`` represent arrays with
 coordinate pairs for the gage observations and the radar bins, respectively.
-``obs`` and ``raw`` are arrays containing the actual data.
+``obs`` and ``raw`` are arrays containing the actual data::
 
->>> adjuster = AdjustAdd(obs_coords, raw_coords)
->>> adjusted = adjuster(obs, raw)
+    adjuster = AdjustAdd(obs_coords, raw_coords)
+    adjusted = adjuster(obs, raw)
 
 The user can specify the approach that should be used to interpolate the error
 in space, as well as the keyword arguments which control the behaviour of the
 interpolation approach. For this purpose, all interpolation classes from the
 wradlib.ipol module are available and can be passed by using the ``Ipclass``
 argument. The default interpolation class is Inverse Distance Weighting
-(wradlib.ipol.Idw). If you want to use e.g. linear barycentric interpolation:
+(wradlib.ipol.Idw). If you want to use e.g. linear barycentric interpolation::
 
->>> import wradlib.ipol as ipol
->>> adjuster = AdjustAdd(obs_coords, raw_coords, Ipclass=ipol.Linear)
->>> adjusted = adjuster(obs, raw)
+    import wradlib.ipol as ipol
+    adjuster = AdjustAdd(obs_coords, raw_coords, Ipclass=ipol.Linear)
+    adjusted = adjuster(obs, raw)
 
 Cross validation
 ----------------
@@ -74,13 +74,13 @@ You can start the cross validation in the same way as you start the actual adjus
 however, you call the ``xvalidate`` method instead. The result of the cross validation
 are pairs of observation and the corresponding adjustment result at the observation
 location. Using the wradlib.verify module, you can compute error metrics for the
-cross validation results.
+cross validation results::
 
->>> adjuster = AdjustAdd(obs_coords, raw_coords)
->>> observed, estimated = adjuster.xvalidate(obs, raw)
->>> from wradlib.verify import ErrorMetrics
->>> metrics = ErrorMetrics(observed, estimated)
->>> metrics.report()
+    adjuster = AdjustAdd(obs_coords, raw_coords)
+    observed, estimated = adjuster.xvalidate(obs, raw)
+    from wradlib.verify import ErrorMetrics
+    metrics = ErrorMetrics(observed, estimated)
+    metrics.report()
 
 .. autosummary::
    :nosignatures:
@@ -93,15 +93,6 @@ cross validation results.
    AdjustMixed
    Raw_at_obs
    GageOnly
-
-
-References
-----------
-
-.. [GoudenhooftdandDelobbe2009] Goudenhoofdt, E., and L. Delobbe, 2009.
-    Evaluation of radar-gauge merging methods for quantitative
-    precipitation estimates. HESS, 13, 195-203. URL: http://www.hydrol-earth-syst-sci.net/13/195/2009/hess-13-195-2009.pdf
-
 
 """
 
@@ -141,6 +132,51 @@ class AdjustBase(ipol.IpolBase):
         Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
     ipargs : keyword arguments to create an instance of Ipclass
         For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+
+    Examples
+    --------
+    >>> import wradlib.adjust as adjust
+    >>> import numpy as np
+    >>> import pylab as pl
+    >>> pl.interactive(True)
+    >>> # 1-d example including all available adjustment methods
+    >>> # --------------------------------------------------------------------------
+    >>> # gage and radar coordinates
+    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
+    >>> radar_coords = np.arange(0,101)
+    >>> # true rainfall
+    >>> truth = np.abs(np.sin(0.1*radar_coords))
+    >>> # radar error
+    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
+    >>> errormult= 1.1
+    >>> # radar observation
+    >>> radar = errormult*truth + erroradd
+    >>> # gage observations are assumed to be perfect
+    >>> obs = truth[obs_coords]
+    >>> # add a missing value to observations (just for testing)
+    >>> obs[1] = np.nan
+    >>> # adjust the radar observation by additive model
+    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
+    >>> add_adjusted = add_adjuster(obs, radar)
+    >>> # adjust the radar observation by multiplicative model
+    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
+    >>> # TODO: had to strip argument 3
+    >>> # mult_adjusted = mult_adjuster(obs, radar, 0.)
+    >>> mult_adjusted = mult_adjuster(obs, radar)
+    >>> # adjust the radar observation by MFB
+    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
+    >>> mfb_adjusted = mfb_adjuster(obs, radar, 0.)
+    >>> # adjust the radar observation by AdjustMixed
+    >>> mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=1)
+    >>> mixed_adjusted = mixed_adjuster(obs, radar)
+    >>> line1 = pl.plot(radar_coords, radar, 'k-', label="raw radar")
+    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
+    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
+    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
+    >>> line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
+    >>> line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="adjusted by AdjustMixed")
+    >>> lgnd = pl.legend()
+    >>> pl.show()
 
     """
     def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', mingages=5, minval=0., Ipclass=ipol.Idw, **ipargs):
@@ -257,7 +293,7 @@ class AdjustAdd(AdjustBase):
     First, an instance of AdjustAdd has to be created. Calling this instance then
     does the actual adjustment. The motivation behind this performance. In case
     the observation points are always the same for different time steps, the computation
-    of neighbours and invserse distance weights only needs to be performed once.
+    of neighbours and inverse distance weights only needs to be performed once.
 
     AdjustAdd automatically takes care of invalid gage or radar observations (e.g.
     NaN, Inf or other typical missing data flags such as -9999. However, in case
@@ -289,49 +325,6 @@ class AdjustAdd(AdjustBase):
     Returns
     -------
     output : array of adjusted radar values
-
-    Examples
-    --------
-    >>> import wradlib.adjust as adjust
-    >>> import numpy as np
-    >>> import pylab as pl
-    >>> pl.interactive(True)
-    >>> # 1-d example including all available adjustment methods
-    >>> # --------------------------------------------------------------------------
-    >>> # gage and radar coordinates
-    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
-    >>> radar_coords = np.arange(0,101)
-    >>> # true rainfall
-    >>> truth = np.abs(np.sin(0.1*radar_coords))
-    >>> # radar error
-    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
-    >>> errormult= 1.1
-    >>> # radar observation
-    >>> radar = errormult*truth + erroradd
-    >>> # gage observations are assumed to be perfect
-    >>> obs = truth[obs_coords]
-    >>> # add a missing value to observations (just for testing)
-    >>> obs[1] = np.nan
-    >>> # adjust the radar observation by additive model
-    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
-    >>> add_adjusted = add_adjuster(obs, radar)
-    >>> # adjust the radar observation by multiplicative model
-    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
-    >>> mult_adjusted = mult_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by MFB
-    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
-    >>> mfb_adjusted = mfb_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by AdjustMixed
-    >>> mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=1)
-    >>> mixed_adjusted = mixed_adjuster(obs, radar)
-    >>> line1 = pl.plot(radar_coords, radar, 'k-', label="raw radar")
-    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
-    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
-    >>> line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
-    >>> line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="adjusted by AdjustMixed")
-    >>> pl.legend()
-    >>> pl.show()
 
     Notes
     -----
@@ -384,7 +377,7 @@ class AdjustMultiply(AdjustBase):
     First, an instance of AdjustMultiply has to be created. Calling this instance then
     does the actual adjustment. The motivation behind this performance. In case
     the observation points are always the same for different time steps, the computation
-    of neighbours and invserse distance weights only needs to be performed once during
+    of neighbours and inverse distance weights only needs to be performed once during
     initialisation.
 
     AdjustMultiply automatically takes care of invalid gage or radar observations (e.g.
@@ -409,57 +402,14 @@ class AdjustMultiply(AdjustBase):
         If the gage or radar observation is below this threshold, the location
         will not be used for adjustment. For additive adjustment, this value
         should be set to zero (default value).
-    Ipclass : an interpolation class from wradib.ipol
+    Ipclass : an interpolation class from wradlib.ipol
         Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
     ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
 
     Returns
     -------
     output : array of adjusted radar values
-
-    Examples
-    --------
-    >>> import wradlib.adjust as adjust
-    >>> import numpy as np
-    >>> import pylab as pl
-    >>> pl.interactive(True)
-    >>> # 1-d example including all available adjustment methods
-    >>> # --------------------------------------------------------------------------
-    >>> # gage and radar coordinates
-    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
-    >>> radar_coords = np.arange(0,101)
-    >>> # true rainfall
-    >>> truth = np.abs(np.sin(0.1*radar_coords))
-    >>> # radar error
-    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
-    >>> errormult= 1.1
-    >>> # radar observation
-    >>> radar = errormult*truth + erroradd
-    >>> # gage observations are assumed to be perfect
-    >>> obs = truth[obs_coords]
-    >>> # add a missing value to observations (just for testing)
-    >>> obs[1] = np.nan
-    >>> # adjust the radar observation by additive model
-    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
-    >>> add_adjusted = add_adjuster(obs, radar)
-    >>> # adjust the radar observation by multiplicative model
-    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
-    >>> mult_adjusted = mult_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by MFB
-    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
-    >>> mfb_adjusted = mfb_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by AdjustMixed
-    >>> mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=1)
-    >>> mixed_adjusted = mixed_adjuster(obs, radar)
-    >>> line1 = pl.plot(radar_coords, radar, 'k-', label="raw radar")
-    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
-    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
-    >>> line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
-    >>> line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="adjusted by AdjustMixed")
-    >>> pl.legend()
-    >>> pl.show()
 
     Notes
     -----
@@ -511,7 +461,7 @@ class AdjustMixed(AdjustBase):
     The mixed error model assumes that you have both a multiplicative and an
     additive error term. The intention is to overcome the drawbacks of the purely
     additive and multiplicative approaches (see AdjustAdd and AdjustMultiply). The
-    formal reprentation of the error model according to [Pfaff2010]_ is:
+    formal representation of the error model according to Pfaff :cite:`Pfaff2010` is:
 
     R(gage) = R(radar) * (1+delta) + epsilon
 
@@ -527,7 +477,7 @@ class AdjustMixed(AdjustBase):
     **Usage**: First, an instance of AdjustMMixed has to be created. Calling this instance then
     does the actual adjustment. The motivation behind this is performance. In case
     the observation points are always the same for different time steps, the computation
-    of neighbours and invserse distance weights only needs to be performed once during
+    of neighbours and inverse distance weights only needs to be performed once during
     initialisation.
 
     AdjustMixed automatically takes care of invalid gage or radar observations (e.g.
@@ -552,67 +502,18 @@ class AdjustMixed(AdjustBase):
         If the gage or radar observation is below this threshold, the location
         will not be used for adjustment. For additive adjustment, this value
         should be set to zero (default value).
-    Ipclass : an interpolation class from wradib.ipol
+    Ipclass : an interpolation class from wradlib.ipol
         Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
     ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
 
     Returns
     -------
     output : array of adjusted radar values
 
-    Examples
-    --------
-    >>> import wradlib.adjust as adjust
-    >>> import numpy as np
-    >>> import pylab as pl
-    >>> pl.interactive(True)
-    >>> # 1-d example including all available adjustment methods
-    >>> # --------------------------------------------------------------------------
-    >>> # gage and radar coordinates
-    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
-    >>> radar_coords = np.arange(0,101)
-    >>> # true rainfall
-    >>> truth = np.abs(np.sin(0.1*radar_coords))
-    >>> # radar error
-    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
-    >>> errormult= 1.1
-    >>> # radar observation
-    >>> radar = errormult*truth + erroradd
-    >>> # gage observations are assumed to be perfect
-    >>> obs = truth[obs_coords]
-    >>> # add a missing value to observations (just for testing)
-    >>> obs[1] = np.nan
-    >>> # adjust the radar observation by additive model
-    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
-    >>> add_adjusted = add_adjuster(obs, radar)
-    >>> # adjust the radar observation by multiplicative model
-    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
-    >>> mult_adjusted = mult_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by MFB
-    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
-    >>> mfb_adjusted = mfb_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by AdjustMixed
-    >>> mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=1)
-    >>> mixed_adjusted = mixed_adjuster(obs, radar)
-    >>> line1 = pl.plot(radar_coords, radar, 'k-', label="raw radar")
-    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
-    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
-    >>> line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
-    >>> line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="adjusted by AdjustMixed")
-    >>> pl.legend()
-    >>> pl.show()
-
     Notes
     -----
     Inherits from AdjustBase
-
-    References
-    ----------
-    .. [Pfaff2010] Pfaff, T., 2010. Radargestuetzte Schaetzung von Niederschlagsensembles (in German).
-        In: Bronstert et al. (Eds.). Operationelle Abfluss- und Hochwasservorhersage in Quellgebieten.
-        Final Project Report, pp. 113-118. URL: http://www.rimax-hochwasser.de/fileadmin/user_uploads/RIMAX_PUB_22_0015_Abschlussbericht%20OPAQUE_final.pdf.
 
     """
 
@@ -679,57 +580,14 @@ class AdjustMFB(AdjustBase):
         If the gage or radar observation is below this threshold, the location
         will not be used for adjustment. For additive adjustment, this value
         should be set to zero (default value).
-    Ipclass : an interpolation class from wradib.ipol
+    Ipclass : an interpolation class from wradlib.ipol
         Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
     ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
 
     Returns
     -------
     output : array of adjusted radar values
-
-    Examples
-    --------
-    >>> import wradlib.adjust as adjust
-    >>> import numpy as np
-    >>> import pylab as pl
-    >>> pl.interactive(True)
-    >>> # 1-d example including all available adjustment methods
-    >>> # --------------------------------------------------------------------------
-    >>> # gage and radar coordinates
-    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
-    >>> radar_coords = np.arange(0,101)
-    >>> # true rainfall
-    >>> truth = np.abs(np.sin(0.1*radar_coords))
-    >>> # radar error
-    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
-    >>> errormult= 1.1
-    >>> # radar observation
-    >>> radar = errormult*truth + erroradd
-    >>> # gage observations are assumed to be perfect
-    >>> obs = truth[obs_coords]
-    >>> # add a missing value to observations (just for testing)
-    >>> obs[1] = np.nan
-    >>> # adjust the radar observation by additive model
-    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
-    >>> add_adjusted = add_adjuster(obs, radar)
-    >>> # adjust the radar observation by multiplicative model
-    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
-    >>> mult_adjusted = mult_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by MFB
-    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
-    >>> mfb_adjusted = mfb_adjuster(obs, radar,0.)
-    >>> # adjust the radar observation by AdjustMixed
-    >>> mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=1)
-    >>> mixed_adjusted = mixed_adjuster(obs, radar)
-    >>> line1 = pl.plot(radar_coords, radar, 'k-', label="raw radar")
-    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
-    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
-    >>> line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
-    >>> line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="adjusted by AdjustMixed")
-    >>> pl.legend()
-    >>> pl.show()
 
     Notes
     -----
@@ -807,7 +665,8 @@ class AdjustMFB(AdjustBase):
             print("         Using default value biasby='mean' instead.")
         if type(corrfact)==np.ma.core.MaskedConstant:
             corrfact = 1.
-        print "corrfact=",corrfact
+        # TODO: commented out, remove if not necessary
+        # print "corrfact=",corrfact
         return corrfact*raw
 
 
@@ -831,10 +690,10 @@ class AdjustNone(AdjustBase):
         If the gage or radar observation is below this threshold, the location
         will not be used for adjustment. For additive adjustment, this value
         should be set to zero (default value).
-    Ipclass : an interpolation class from wradib.ipol
+    Ipclass : an interpolation class from wradlib.ipol
         Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
     ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
 
     Returns
     -------
@@ -881,7 +740,7 @@ class GageOnly(AdjustBase):
     First, an instance of GageOnly has to be created. Calling this instance then
     does the actual adjustment. The motivation behind this performance. In case
     the observation points are always the same for different time steps, the computation
-    of neighbours and invserse distance weights only needs to be performed once during
+    of neighbours and inverse distance weights only needs to be performed once during
     initialisation.
 
     GageOnly automatically takes care of invalid gage or radar observations (e.g.
@@ -909,7 +768,7 @@ class GageOnly(AdjustBase):
     Ipclass : an interpolation class from wradib.ipol
         Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
     ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
 
     Returns
     -------
@@ -989,7 +848,7 @@ class Raw_at_obs():
         # get the values of the raw neighbours of obs
         raw_neighbs = raw[self.raw_ix]
         # and summarize the values of these neighbours by using a statistics option
-        # (only needed in case nnear > 1, i.e. multiple neighnours per observation location)
+        # (only needed in case nnear > 1, i.e. multiple neighbours per observation location)
         if raw_neighbs.ndim > 1:
             return self.statfunc(obs, raw_neighbs)
         else:
@@ -1063,7 +922,7 @@ def _get_statfunc(funcname):
                 newfunc=best
         except:
             # if no function can be found, raise an Exception
-            raise NameError('Unkown function name option: '+funcname)
+            raise NameError('Unknown function name option: '+funcname)
     return newfunc
 
 
@@ -1108,9 +967,9 @@ def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
 
     obs_coords :
 
-    raw: Datset of raw values (which shall be adjusted by obs)
+    raw: Dataset of raw values (which shall be adjusted by obs)
     nnear: number of neighbours which should be considered in the vicinity of each point in obs
-    stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourshood of obs
+    stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourhood of obs
 
     """
     # get the values of the raw neighbours of obs
