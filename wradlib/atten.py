@@ -20,11 +20,8 @@ Attenuation Correction
    :toctree: generated/
 
     correctAttenuationHB
-    correctAttenuationKraemer
-    correctAttenuationHJ
-    correctAttenuationConstrained
     constraint_dBZ
-    constraint_PIA
+    constraint_pia
     correctAttenuationConstrained2
     correctRadomeAttenuationEmpirical
     pia_from_kdp
@@ -57,8 +54,7 @@ class AttenuationIterationError(Exception):
 
 def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), mode='except',
                          thrs=59.0):
-    """Gate-by-Gate attenuation correction according to Hitschfeld & Bordan
-    [Hitschfeld1954]_
+    """Gate-by-Gate attenuation correction according to Hitschfeld & Bordan :cite:`Hitschfeld1954`
 
 
 
@@ -111,14 +107,6 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
         Exception, if attenuation exceeds ``thrs`` and no handling ``mode`` is
         set.
 
-    References
-    ----------
-
-    .. [Hitschfeld1954] Hitschfeld, W. & Bordan, J., 1954.
-        Errors Inherent in the Radar Measurement of Rainfall at Attenuating
-        Wavelengths. Journal of the Atmospheric Sciences, 11(1), p.58-67.
-        DOI: 10.1175/1520-0469(1954)011<0058:EIITRM>2.0.CO;2
-
     .. comment
         _[1] Krämer2008 - Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
         für die Niederschlagsvorhersage und die Siedlungsentwässerung,
@@ -157,7 +145,7 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
         overflow = (gateset[...,gate+1] + ksum) > thrs
         if np.any(overflow):
             if mode == 'warn':
-                logger.warning('dB-sum over threshold (%3.1f)'%thrs)
+                logger.warning('corrected signal over threshold (%3.1f)'%thrs)
             elif mode == 'nan':
                 pia[...,gate+1][overflow] = np.nan
             elif mode == 'zero':
@@ -171,9 +159,7 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
 def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
                               b = 0.7, n = 30, l = 1.0, mode = 'zero',
                               thrs_dBZ = 59.0):
-    """Gate-by-Gate attenuation correction according to Stefan Kraemer
-    [Kraemer2008]_.
-
+    """Gate-by-Gate attenuation correction according to Stefan Kraemer :cite:`Kraemer2008`.
 
 
     Parameters
@@ -238,28 +224,19 @@ def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
         Exception, if attenuation exceeds ``thrs`` even with smallest possible
         linear coefficient (a_min) and no handling ``mode`` is set.
 
-    References
-    ----------
-
-    .. [Kraemer2008] Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
-        für die Niederschlagsvorhersage und die Siedlungsentwässerung,
-        Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
-        Landwirtschaftlichen Wasserbau
-        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
-
     """
 
     if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
 
-    da = (a_max - a_min) / (n - 1)
-    ai = a_max + da
+    if n != 1: da = (a_max - a_min) / (n - 1)
+    else: da = 0.
     pia = np.zeros(gateset.shape)
     pia[...,0] = 0.0
     # indexing all rows of last dimension (radarbeams)
     beams2correct = np.where(np.max(pia, axis = pia.ndim - 1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
-        ai = ai - da
+        ai = a_max - i*da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
         sub_pia = pia[beams2correct]
@@ -285,8 +262,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
                          n = 30, l = 1.0, mode = 'zero', thrs_dBZ = 59.0,
                          max_PIA = 20.0):
     """Gate-by-Gate attenuation correction based on Stefan Kraemer
-    [Kraemer2008]_, expanded by Stephan Jacobi, Maik Heistermann and
-    Thomas Pfaff [Jacobi2011]_.
+    :cite:`Kraemer2008, expanded by Stephan Jacobi, Maik Heistermann and
+    Thomas Pfaff :cite:`Jacobi2012`.
 
 
 
@@ -331,6 +308,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 
         'nan' : set offending gates to nan
 
+        'cap' : set offending gates to maximum allowable PIA (max_PIA)
+
         Per default set to 'zero'. Any other mode will raise an Exception.
 
     thrs_dBZ : float
@@ -355,14 +334,14 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         Exception, if attenuation exceeds ``thrs`` even with smallest possible
         linear coefficient (a_min) and no handling ``mode`` is set.
 
-    References
-    ----------
-
-    .. [Jacobi2011] Jacobi, S., Heistermann, M., Pfaff, T. 2011: Evaluation and
-        improvement of C-band radar attenuation correction for operational flash
-        flood forecasting.
-        Proceedings of the Weather Radar and Hydrology symposium, Exeter, UK,
-        April 2011, IAHS Publ. 3XX, 2011, in review.
+    Examples
+    --------
+    >>> from wradlib.io import readDX
+    >>> # example data from DWD radar Feldberg
+    >>> gateset, attrs = readDX("examples/data/raa00-dx_10908-0806021655-fbg---bin")
+    >>> # Set this up according to Harrison, D.L., Driscoll, S.J., Kitchen, M. (2000)
+    >>> k = correctAttenuationHJ(gateset, a_max = 4.565e-5, b = 0.73125, n=1,
+    ...                          mode = 'cap', thrs_dBZ = 100.0, max_PIA = 4.82)
 
     """
 
@@ -372,8 +351,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     if not np.all(gateset.shape):
         # gateset contains empty dimensions, thus no data
         return np.where(np.isnan(gateset), np.nan, 0.)
-    da = (a_max - a_min) / (n - 1)
-    ai = a_max + da
+    if n != 1: da = (a_max - a_min) / (n - 1)
+    else: da = 0.
 ##  initialize an attenuation array with the same shape as the gateset,
 ##  filled with zeros, except that NaNs occuring in the gateset will cause a
 ##  initialization with Nans for the ENTIRE corresponding attenuation beam
@@ -383,7 +362,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
     beams2correct = np.where(np.max(pia, axis=-1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
-        ai = ai - da
+        ai = a_max - i*da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
         sub_pia = pia[beams2correct]
@@ -402,6 +381,7 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         if mode == 'warn': logger.warning('threshold exceeded (corrected dBZ or PIA) even for lowest a')
         elif mode == 'nan':  pia[beams2correct] = np.nan
         elif mode == 'zero': pia[beams2correct] = 0.0
+        elif mode == 'cap': pia[beams2correct] = np.where(pia[beams2correct] > max_PIA, max_PIA, pia[beams2correct])
         else: raise AttenuationOverflowError
 
     return pia
@@ -413,7 +393,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
                                 constraints=None, constr_args=None,
                                 diagnostics={}):
     """Gate-by-Gate attenuation correction based on the iterative approach of
-    Stefan Kraemer [Kraemer2008]_ with a generalized and arbitrary number of
+    Stefan Kraemer :cite:`Kraemer2008` with a generalized and arbitrary number of
     constraints.
 
     Parameters
@@ -500,22 +480,27 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Examples
     --------
-    >>> # Implementing the original Hitschfeld & Bordan (1954) algorithm with
-    >>> # otherwise default parameters
-    >>> k = correctAttenuationConstrained(gateset, n=1, mode='nan')
-    >>> # Implementing the basic Kraemer algorithm
-    >>> k = correctAttenuationConstrained(gateset,
-    ...                                   mode='nan',
-    ...                                   constraints=[constraint_dBZ],
-    ...                                   constr_args=[[59.0]])
 
-    >>> # Implementing the PIA algorithm by Jacobi et al.
-    >>> k = correctAttenuationConstrained(gateset,
-    ...                                   mode='nan',
-    ...                                   constraints=[constraint_dBZ,
-    ...                                                constraint_pia],
-    ...                                   constr_args=[[59.0],
-    ...                                               [20.0]])
+    Implementing the original Hitschfeld & Bordan (1954) algorithm with
+    otherwise default parameters::
+
+        k = correctAttenuationConstrained(gateset, n=1, mode='nan')
+
+    Implementing the basic Kraemer algorithm::
+
+        k = correctAttenuationConstrained(gateset,
+                                          mode='nan',
+                                          constraints=[constraint_dBZ],
+                                          constr_args=[[59.0]])
+
+    Implementing the PIA algorithm by Jacobi et al.::
+
+        k = correctAttenuationConstrained(gateset,
+                                          mode='nan',
+                                          constraints=[constraint_dBZ,
+                                                       constraint_pia],
+                                          constr_args=[[59.0],
+                                                      [20.0]])
 
     """
 
@@ -530,10 +515,11 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     a_used = np.empty(gateset.shape[:-1])
     b_used = np.empty(gateset.shape[:-1])
 
-    da = (a_max - a_min) / (na - 1)
-    ai = a_max + da
+    if na != 1: da = (a_max - a_min) / (na - 1)
+    else: da = 0.
     k = np.zeros(gateset.shape)
-    db = (b_max - b_min) / (nb - 1)
+    if nb != 1: db = (b_max - b_min) / (nb - 1)
+    else: db = 0.
 
     # indexing all rows of last dimension (radarbeams)
     beams2correct = np.where(np.max(k, axis=-1) > (-1.))
@@ -592,7 +578,7 @@ def constraint_pia(gateset, pia, thrs_pia):
 # new implementation of Kraemer algorithm
 #-------------------------------------------------------------------------------
 def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
-    """Gate-by-Gate forward correction as described in [Kraemer2008]_"""
+    """Gate-by-Gate forward correction as described in Kraemer :cite:`Kraemer2008`"""
     pia = np.zeros(gateset.shape)
     for gate in range(gateset.shape[-1] - 1):
         k = a * idecibel(gateset[..., gate] + pia[..., gate])**b  * 2.0 * l
@@ -601,7 +587,7 @@ def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
 
 
 def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
-    """Gate-by-Gate backward correction as described in [Kraemer2008]_"""
+    """Gate-by-Gate backward correction as described in Kraemer :cite:`Kraemer2008`"""
     k = np.zeros(gateset.shape)
     k[...,-1] = a_ref
     for gate in range(gateset.shape[-1]-2, 0, -1):
@@ -691,7 +677,7 @@ def bisectReferenceAttenuation(gateset,
         Per default set to 0.25.
 
     max_iterations : integer
-        Number of bisection iteration before the exponantial coefficient b of
+        Number of bisection iteration before the exponential coefficient b of
         the k-Z relation will be decreased and the bisection starts again.
 
         Per default set to 10.
@@ -724,7 +710,7 @@ def bisectReferenceAttenuation(gateset,
     while not np.all(a_hi == a_lo):
         a_mid = (a_hi + a_lo) / 2
         pia = calc_attenuation_forward(gateset, a_mid, b, l)
-        # Find indices where calculated and reference pia match sufficiant.
+        # Find indices where calculated and reference pia match sufficient.
         if mode == 'difference':
             overshoot = (pia[..., -1] - pia_ref) > thrs
             undershoot = (pia[..., -1] - pia_ref) < -thrs
@@ -735,7 +721,7 @@ def bisectReferenceAttenuation(gateset,
             hit = (np.abs(pia[..., -1] - pia_ref) / pia_ref) < thrs
         else:
             raise Exception('Unknown mode type ' + mode + '.')
-        # Define new bounds of linear k-Z relation coefficiant for over- and
+        # Define new bounds of linear k-Z relation coefficient for over- and
         # undershooting pia calculations.
         a_hi[overshoot] = a_mid[overshoot]
         a_lo[undershoot] = a_mid[undershoot]
@@ -751,7 +737,7 @@ def bisectReferenceAttenuation(gateset,
 
 
 def _sector_filter(mask, min_sector_size):
-    """Claculate an array of same shape as mask, which is set to 1 in case of at
+    """Calculate an array of same shape as mask, which is set to 1 in case of at
     least min_sector_size adjacent values, otherwise it is set to 0.
 
     """
@@ -837,7 +823,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
                                    constraints=None, constraint_args=None,
                                    sector_thr=10):
     """Gate-by-Gate attenuation correction based on the iterative approach of
-    Stefan Kraemer [Kraemer2008]_ with a generalized and scalable number of
+    Stefan Kraemer :cite:`Kraemer2008` with a generalized and scalable number of
     constraints. Differing from the original approach, the method for
     recalculating constraint breaching small sectors is based on a bisection
     forward calculating method, and not on backwards attenuation calculation.
@@ -923,20 +909,28 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
 
     Examples
     --------
-    >>> import wradlib as wrl
-    >>> # Implementing the original Hitschfeld & Bordan (1954) algorithm with
-    >>> # otherwise default parameters
-    >>> pia = wrl.atten.correctAttenuationConstrained2(gateset)
-    >>> # Implementing the basic Kraemer algorithm
-    >>> k = correctAttenuationConstrained(gateset,
-    ...                                  constraints=[wrl.atten.constraint_dBZ],
-    ...                                  constraint_args=[[59.0]])
-    >>> # Implementing the PIA algorithm by Jacobi et al.
-    >>> k = wrl.atten.correctAttenuationConstrained(gateset,
-    ...                                  constraints=[wrl.atten.constraint_dBZ,
-    ...                                               wrl.atten.constraint_pia],
-    ...                                  constraint_args=[[59.0],
-    ...                                                   [20.0]])
+
+    Implementing the original Hitschfeld & Bordan (1954) algorithm with
+    otherwise default parameters::
+
+        import wradlib as wrl
+        k = wrl.atten.correctAttenuationConstrained2(gateset, n=1, mode='nan')
+
+    Implementing the basic Kraemer algorithm::
+
+        k = wrl.atten.correctAttenuationConstrained2(gateset,
+                                          mode='nan',
+                                          constraints=[wrl.atten.constraint_dBZ],
+                                          constr_args=[[59.0]])
+
+    Implementing the PIA algorithm by Jacobi et al.::
+
+        k = wrl.atten.correctAttenuationConstrained2(gateset,
+                                          mode='nan',
+                                          constraints=[wrl.atten.constraint_dBZ,
+                                                       wrl.atten.constraint_pia],
+                                          constr_args=[[59.0],
+                                                      [20.0]])
 
     """
 
@@ -959,8 +953,10 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
     beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype = np.bool))
     small_sectors = np.zeros(tmp_gateset.shape[:-1], dtype = np.bool)
 
-    delta_a = (a_max - a_min) / (n_a - 1)
-    delta_b = (b_max - b_min) / (n_b - 1)
+    if n_a != 1: delta_a = (a_max - a_min) / (n_a - 1)
+    else: delta_a = 0.
+    if n_b != 1: delta_b = (b_max - b_min) / (n_b - 1)
+    else: delta_b = 0.
 
     # Iterate over possible b-parameters.
     for j in range(n_b):
@@ -1014,7 +1010,7 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
     """Estimate two-way wet radome losses as an empirical
     function of frequency and rainfall rate for both standard and
     hydrophobic radomes based on the approach of Francis J. Merceret
-    and Jennifer G. Ward [Merceret2002]_.
+    and Jennifer G. Ward :cite:`Merceret2000`.
 
 
 
@@ -1073,16 +1069,6 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
         corresponding beams of the output array (k) will be set as NaN,
         too.
 
-    References
-    ----------
-    .. [Merceret2002] Merceret, F. J. & Ward, J. G., 2000.
-        Attenuation of Weather Radar Signals Due to Wetting of the
-        Radome by Rainwater or Incomplete Filling of the Beam Volume.
-        NASA/TM-2002-211171, NASA/YA-D, Kennedy Space Center, FL,
-        32899, 16 pp.
-        Available at: http://www.c-esolutions.com/repository/NASA%20paper%20on%20effect%20of%20radome%20wetting.pdf
-        [Accessed Sep 5, 2013].
-
     """
 
     # Select rangebins inside the defined center-range n_r.
@@ -1104,7 +1090,7 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
 def pia_from_kdp(kdp, dr, gamma=0.08):
     """Retrieving path integrated attenuation from specific differential phase (Kdp).
 
-    The default value of gamma is based on [Carey2002]_.
+    The default value of gamma is based on Carey :cite:`Carey2000`.
 
     Parameters
     ----------
@@ -1117,13 +1103,6 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
     Returns
     -------
     output : array of same shape as kdp containing the path integrated attenuation
-
-    References
-    ----------
-    .. [Carey2002] Carey, L. D., S. A. Rutledge, and D. A. Ahijevych, 2000:
-       Correcting propagation effects in C-band polarimetric radar observations
-       of tropical convection using differential propagation phase.
-       J. Appl. Meteor., 39, 1405–1433.
 
     """
     alpha = gamma * kdp

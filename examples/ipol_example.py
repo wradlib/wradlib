@@ -11,18 +11,20 @@
 #!/usr/bin/env python
 
 from wradlib.ipol import *
+import os
 
-if __name__ == '__main__':
+def ex_ipol():
 
     import datetime as dt
     import pylab as pl
+    pl.interactive(True)
     import numpy as np
 
-    xsrc = np.loadtxt('data/bin_coords_tur.gz')
+    xsrc = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/bin_coords_tur.gz')
 #    xtrg = np.loadtxt('../examples/data/target_coords.dat')
     xtrg = np.meshgrid(np.linspace(3300000.0, 3300000.0+900000,100), np.linspace(5200000.0, 5200000.0+900000.,100))
 #    xtrg = np.transpose(np.vstack((xtrg[0].ravel(), xtrg[1].ravel())))
-    vals = np.loadtxt('data/polar_R_tur.gz').ravel()
+    vals = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_R_tur.gz').ravel()
 
     print 'Building our object takes:'
     t0 = dt.datetime.now()
@@ -103,5 +105,5 @@ if __name__ == '__main__':
     plotall(ax, trg, src, result_with_nan[:,1], vals_with_nan[:,1], '2nd dim: two NaN')
     pl.show()
 
-
-
+if __name__ == '__main__':
+    ex_ipol()

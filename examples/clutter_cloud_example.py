@@ -22,12 +22,12 @@ import wradlib.ipol as ipol
 import wradlib.io as io
 import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
+def ex_clutter_cloud():
 
     # read the radar volume scan
+    path = os.path.dirname(__file__) + '/'
+    pvol = io.read_OPERA_hdf5(path + 'data/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
 
-    pvol = io.read_OPERA_hdf5('data/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
-    
     # Count the number of dataset
 
     ntilt=1
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     gain = float(pvol["dataset1/data1/what"]["gain"])
     offset = float(pvol["dataset1/data1/what"]["offset"])
     val = val*gain + offset
-    
+
     # Construct radar coordinates
 
     rscale = int(pvol["dataset1/where"]["rscale"])
@@ -64,9 +64,9 @@ if __name__ == '__main__':
     #proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(pvol["where"]["lat"],pvol["where"]["lon"])
     coord = georef.reproject(coord, projection_target=proj_radar)
 
-    # Construct collocated satellite data 
+    # Construct collocated satellite data
 
-    sat_gdal = io.read_safnwc('data/SAFNWC_MSG3_CT___201304290415_BEL_________.h5')
+    sat_gdal = io.read_safnwc(path + 'data/SAFNWC_MSG3_CT___201304290415_BEL_________.h5')
     val_sat = georef.read_gdal_values(sat_gdal)
     coord_sat = georef.read_gdal_coordinates(sat_gdal)
     proj_sat = georef.read_gdal_projection(sat_gdal)
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     error=np.absolute(timelag)*wind
 
     # Identify clutter based on collocated cloudtype
-    clutter = cl.filter_cloudtype(val[0,...],val_sat[0,...],scale=(rscale,ascale),smoothing=error)
+    clutter = cl.filter_cloudtype(val[0,...],val_sat[0,...],scale=rscale,smoothing=error)
 
     # visualize the result
     vis.plot_ppi(clutter)
@@ -92,3 +92,6 @@ if __name__ == '__main__':
     vis.plot_ppi(val_sat[0,...])
     plt.suptitle('satellite')
     plt.savefig('clutter_cloud_example_2.png')
+
+if __name__ == '__main__':
+    ex_clutter_cloud()

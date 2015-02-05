@@ -60,7 +60,6 @@ from osgeo import gdal,osr
 import numpy as np
 from sys import exit
 import warnings
-from wradlib.util import deprecated
 
 
 def hor2aeq(a, h, phi):
@@ -75,92 +74,6 @@ def aeq2hor(tau, delta, phi):
     a = np.arcsin(np.cos(delta)*np.sin(tau)/np.cos(h))
     return a, h
 
-@deprecated('polar2lonlat')
-def polar2latlon(r, az, sitecoords, re=6370040):
-    """Transforms polar coordinates (of a PPI) to latitude/longitude \
-    coordinates.
-
-    This function assumes that the transformation from the polar radar
-    coordinate system to the earth's spherical coordinate system may be done
-    in the same way as astronomical observations are transformed from the
-    horizon's coordinate system to the equatorial coordinate system.
-
-    The conversion formulas used were taken from
-    http://de.wikipedia.org/wiki/Nautisches_Dreieck [accessed 2001-11-02] and
-    are
-    only valid as long as the radar's elevation angle is small, as one main
-    assumption of this method is, that the 'zenith-star'-side of the nautic
-    triangle
-    can be described by the radar range divided by the earths radius.
-    For lager elevation angles, this side
-    would have to be reduced.
-
-    Parameters
-    ----------
-    r : array
-        array of ranges [m]
-    az : array
-        array of azimuth angles containing values between 0° and 360°.
-        These are assumed to start with 0° pointing north and counted positive
-        clockwise!
-    sitecoords : a sequence of two floats
-        the lat / lon coordinates of the radar location
-    re : float
-        earth's radius [m]
-
-    Returns
-    -------
-    lat, lon : tuple of arrays
-        two arrays containing the spherical latitude and longitude coordinates
-
-    Notes
-    -----
-    Be aware that the coordinates returned by this function are valid for
-    a sphere. When using them in GIS make sure to distinguish that from
-    the usually assumed WGS coordinate systems where the coordinates are based
-    on a more complex ellipsoid.
-
-    Examples
-    --------
-
-    A few standard directions (North, South, North, East, South, West) with
-    different distances (amounting to roughly 1°) from a site
-    located at 48°N 9°E
-
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,]) * 1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> csite = (48.0, 9.0)
-    >>> lat1, lon1= __pol2latlon(r, az, csite)
-    >>> for x, y in zip(lat1, lon1):
-    ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
-     48.00,   9.00
-     48.00,   9.00
-     49.00,   9.00
-     47.99,  10.49
-     47.00,   9.00
-     47.99,   7.51
-
-    The coordinates of the east and west directions won't come to lie on the
-    latitude of the site because doesn't travel along the latitude circle but
-    along a great circle.
-
-
-    """
-
-    #phi = 48.58611111 * pi/180.  # drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
-    #lon = 9.783888889 * pi/180.  # drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778
-    phi = np.deg2rad(sitecoords[0])
-    lam = np.deg2rad(sitecoords[1])
-
-    a   = np.deg2rad(-(180. + az))
-    h   =  0.5*pi - r/re
-
-    delta, tau = hor2aeq(a, h, phi)
-    latc = np.rad2deg(delta)
-    lonc = np.rad2deg(lam + tau)
-
-    return latc, lonc
-
 
 def polar2lonlat(r, az, sitecoords, re=6370040):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
@@ -173,13 +86,10 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     The conversion formulas used were taken from
     http://de.wikipedia.org/wiki/Nautisches_Dreieck [accessed 2001-11-02] and
-    are
-    only valid as long as the radar's elevation angle is small, as one main
+    are only valid as long as the radar's elevation angle is small, as one main
     assumption of this method is, that the 'zenith-star'-side of the nautic
-    triangle
-    can be described by the radar range divided by the earths radius.
-    For lager elevation angles, this side
-    would have to be reduced.
+    triangle can be described by the radar range divided by the earths radius.
+    For lager elevation angles, this side     would have to be reduced.
 
     Parameters
     ----------
@@ -248,54 +158,6 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     return lonc, latc
 
-@deprecated('__pol2lonlat')
-def __pol2latlon(rng, az, sitecoords, re=6370040):
-    """Alternative implementation using spherical geometry only.
-
-    apparently it produces the same results as polar2latlon.
-    I wrote it because I suddenly doubted that the assumptions of the nautic
-    triangle were wrong. I leave it here, in case someone might find it useful.
-
-    Examples
-    --------
-
-    A few standard directions (North, South, North, East, South, West) with
-    different distances (amounting to roughly 1°) from a site
-    located at 48°N 9°E
-
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,]) *1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> csite = (48.0, 9.0)
-    >>> lat1, lon1= __pol2latlon(r, az, csite)
-    >>> for x, y in zip(lat1, lon1):
-    ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
-     48.00,   9.00
-     48.00,   9.00
-     49.00,   9.00
-     47.99,  10.49
-     47.00,   9.00
-     47.99,   7.51
-
-    The coordinates of the east and west directions won't come to lie on the
-    latitude of the site because doesn't travel along the latitude circle but
-    along a great circle.
-
-    """
-    phia = sitecoords[0]
-    thea = sitecoords[1]
-
-    l = np.deg2rad(90.-phia)
-    r = rng/re
-
-    easterly = az<=180.
-    westerly = ~easterly
-    a = np.deg2rad(np.where(easterly,az,az-180.))
-
-    m = np.arccos(np.cos(r)*np.cos(l) + np.sin(r)*np.sin(l)*np.cos(a))
-    g = np.arcsin((np.sin(r)*np.sin(a))/(np.sin(m)))
-
-    return 90.-np.rad2deg(m), thea+np.rad2deg(np.where(easterly,g,-g))
-
 
 def __pol2lonlat(rng, az, sitecoords, re=6370040):
     """Alternative implementation using spherical geometry only.
@@ -345,84 +207,6 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     return thea+np.rad2deg(np.where(easterly,g,-g)), 90.-np.rad2deg(m)
 
 
-@deprecated('polar2lonlatalt')
-def polar2latlonalt(r, az, elev, sitecoords, re=6370040.):
-    """Transforms polar coordinates to lat/lon/altitude coordinates.
-
-    Explicitely accounts for the beam's elevation angle and for the altitude of the radar location.
-
-    This is an alternative implementation based on VisAD code (see
-    http://www.ssec.wisc.edu/visad-docs/javadoc/visad/bom/Radar3DCoordinateSystem.html#toReference%28float[][]%29 and
-    http://www.ssec.wisc.edu/~billh/visad.html ).
-
-    VisAD code has been translated to Python from Java.
-
-    Nomenclature tries to stick to VisAD code for the sake of comparibility, hwoever, names of
-    arguments are the same as for polar2latlon...
-
-    Parameters
-    ----------
-    r : array
-        array of ranges [m]
-    az : array
-        array of azimuth angles containing values between 0° and 360°.
-        These are assumed to start with 0° pointing north and counted positive
-        clockwise!
-    sitecoords : a sequence of three floats
-        the lat / lon coordinates of the radar location and its altitude a.m.s.l. (in meters)
-        if sitecoords is of length two, altitude is assumed to be zero
-    re : float
-        earth's radius [m]
-
-    Returns
-    -------
-    output : a tuple of three arrays (latitudes, longitudes, altitudes)
-
-    Example
-    -------
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
-    >>> csite = (48.0, 9.0)
-    >>> lat1, lon1, alt1 = polar2latlonalt(r, az, th, csite)
-    >>> for x, y, z in zip(lat1, lon1, alt1):
-    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
-    ...
-    48.0000,  9.0000,  0.0000
-    48.0000,  9.0000,  0.0000
-    48.9983,  9.0000, 967.0320
-    48.0000, 10.4919, 967.0320
-    47.0017,  9.0000, 967.0320
-    48.0000,  7.5084, 1935.4568
-
-    """
-    centlat = sitecoords[0]
-    centlon = sitecoords[1]
-    try:
-        centalt = sitecoords[2]
-    except:
-        centalt = 0.
-    # local earth radius
-    re = re + centalt
-
-    cosaz = np.cos( np.deg2rad(az) )
-    sinaz = np.sin( np.deg2rad(az) )
-    # assume azimuth = 0 at north, then clockwise
-    coselev = np.cos( np.deg2rad(elev) )
-    sinelev = np.sin( np.deg2rad(elev) )
-    rp = np.sqrt(re * re + r * r + 2.0 * sinelev * re * r)
-
-    # altitudes
-    alts = rp - re + centalt
-
-    angle = np.arcsin(coselev * r / rp) # really sin(elev+90)
-    radp = re * angle
-    lats = centlat + cosaz * radp / _latscale()
-    lons = centlon + sinaz * radp / _lonscale(centlat)
-
-    return lats, lons, alts
-
-
 def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     """Transforms polar coordinates to lon/lat/altitude coordinates.
 
@@ -434,7 +218,7 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 
     VisAD code has been translated to Python from Java.
 
-    Nomenclature tries to stick to VisAD code for the sake of comparibility, hwoever, names of
+    Nomenclature tries to stick to VisAD code for the sake of comparibility, however, names of
     arguments are the same as for polar2lonlat...
 
     Parameters
@@ -455,8 +239,8 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     -------
     output : a tuple of three arrays (longitudes, latitudes,  altitudes)
 
-    Example
-    -------
+    Examples
+    --------
     >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
     >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
     >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
@@ -467,10 +251,10 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     ...
      9.0000, 48.0000,  0.0000
      9.0000, 48.0000,  0.0000
-    10.4919, 48.0000, 967.0320
      9.0000, 48.9983, 967.0320
-     7.5081, 48.0000, 967.0320
-     9.0000, 47.0019, 1935.4568
+    10.4919, 48.0000, 967.0320
+     9.0000, 47.0017, 967.0320
+     7.5084, 48.0000, 1935.4568
 
     """
     centlon = sitecoords[0]
@@ -494,11 +278,8 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 
     angle = np.arcsin(coselev * r / rp) # really sin(elev+90)
     radp = re * angle
-    # TODO: had to change cosaz/sinaz to get same results as before
-    #lats = centlat + cosaz * radp / _latscale()
-    #lons = centlon + sinaz * radp / _lonscale(centlat)
-    lats = centlat + sinaz * radp / _latscale()
-    lons = centlon + cosaz * radp / _lonscale(centlat)
+    lats = centlat + cosaz * radp / _latscale()
+    lons = centlon + sinaz * radp / _lonscale(centlat)
 
     return lons, lats, alts
 
@@ -519,7 +300,7 @@ def beam_height_n(r, theta, re=6370040., ke=4./3.):
     r"""Calculates the height of a radar beam taking the refractivity of the
     atmosphere into account.
 
-    Based on [Doviak1993]_ the beam height is calculated as
+    Based on Doviak :cite:`Doviak1993` the beam height is calculated as
 
     .. math::
 
@@ -546,10 +327,6 @@ def beam_height_n(r, theta, re=6370040., ke=4./3.):
     height : float
         height of the beam in [m]
 
-    References
-    ----------
-    .. [Doviak1993] Doviak R.J., Zrnic D.S, Doppler Radar and Weather
-        Observations, Academic Press, 562pp, 1993, ISBN 0-12-221422-6
     """
     return np.sqrt( r**2 + (ke*re)**2 + 2*r*ke*re*np.sin(np.radians(theta)) ) - ke*re
 
@@ -558,7 +335,7 @@ def arc_distance_n(r, theta, re=6370040., ke=4./3.):
     r"""Calculates the great circle distance of a radar beam over a sphere,
     taking the refractivity of the atmosphere into account.
 
-    Based on [Doviak1993]_ the arc distance may be calculated as
+    Based on Doviak :cite:`Doviak1993` the arc distance may be calculated as
 
     .. math::
 
@@ -594,106 +371,6 @@ def arc_distance_n(r, theta, re=6370040., ke=4./3.):
     return ke*re * np.arcsin((r*np.cos(np.radians(theta)))/
                              (ke*re + beam_height_n(r, theta, re, ke)))
 
-
-@deprecated('polar2lonlatalt_n')
-def polar2latlonalt_n(r, az, elev, sitecoords, re=6370040., ke=4./3.):
-    """Transforms polar coordinates (of a PPI) to latitude/longitude \
-    coordinates taking elevation angle and refractivity into account.
-
-    This function assumes that the transformation from the polar radar
-    coordinate system to the earth's spherical coordinate system may be done
-    in the same way as astronomical observations are transformed from the
-    horizon's coordinate system to the equatorial coordinate system.
-
-    The conversion formulas used were taken from
-    http://de.wikipedia.org/wiki/Nautisches_Dreieck [accessed 2001-11-02]
-
-    It is based on polar2latlon but takes the shortening of the great circle
-    distance by increasing the elevation angle as well as the resulting
-    increase in height into account.
-
-    Parameters
-    ----------
-    r : array
-        array of ranges [m]
-    az : array
-        array of azimuth angles containing values between 0 and 360°.
-        These are assumed to start with 0° pointing north and counted
-        positive clockwise!
-    th : scalar or array of the same shape as az
-        elevation angles in degrees starting with 0° at horizontal to 90°
-        pointing vertically upwards from the radar
-    sitecoords : a sequence of two floats
-        the lat / lon coordinates of the radar location
-    re : float
-        earth's radius [m]
-    ke : float
-        adjustment factor to account for the refractivity gradient that
-        affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
-        weather radar wavelengths
-
-    Returns
-    -------
-    lat, lon, alt : tuple of arrays
-        three arrays containing the spherical latitude and longitude coordinates
-        as well as the altitude of the beam.
-
-    Notes
-    -----
-    Be aware that the coordinates returned by this function are valid for
-    a sphere. When using them in GIS make sure to distinguish that from
-    the usually assumed WGS coordinate systems where the coordinates are based
-    on a more complex ellipsoid.
-
-    Examples
-    --------
-
-    A few standard directions (North, South, North, East, South, West) with
-    different distances (amounting to roughly 1°) from a site
-    located at 48°N 9°E
-
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
-    >>> csite = (48.0, 9.0)
-    >>> lat1, lon1, alt1 = polar2latlonalt_n(r, az, th, csite)
-    >>> for x, y, z in zip(lat1, lon1, alt1):
-    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
-    ...
-    48.0000,  9.0000,  0.0000
-    48.0000,  9.0000,  0.0000
-    48.9983,  9.0000, 725.2981
-    47.9903, 10.4918, 725.2981
-    47.0017,  9.0000, 725.2981
-    47.9903,  7.5084, 1693.8056
-
-    Here, the coordinates of the east and west directions won't come to lie on
-    the latitude of the site because the beam doesn't travel along the latitude
-    circle but along a great circle.
-
-
-    """
-    phi = np.deg2rad(sitecoords[0])
-    lam = np.deg2rad(sitecoords[1])
-    try:
-        centalt = sitecoords[2]
-    except:
-        centalt = 0.
-
-    # local earth radius
-    re = re + centalt
-
-    alt = beam_height_n(r, elev, re, ke) + centalt
-
-    a   = np.deg2rad(-(180. + az))
-    h   =  0.5*np.pi - arc_distance_n(r, elev, re, ke)/re
-
-    delta, tau = hor2aeq(a, h, phi)
-    latc = np.rad2deg(delta)
-    lonc = np.rad2deg(lam + tau)
-
-    return latc, lonc, alt
 
 def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
@@ -1177,89 +854,13 @@ def create_projstr(projname, **kwargs):
     elif projname=="dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
         scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
-        projstr = ('+proj=stere +lat_0=90 +lon_0=10 +k_0={0:10.8f} '+
-                   '+a=6370040.000 +es=0.0').format(scale)
+        projstr = ('+proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k={0:10.8f} '
+                   '+x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs').format(scale)
     else:
         print "No support for projection %r, yet." % projname
         print "You need to create projection string by hand..."
         exit(1)
     return projstr
-
-@deprecated("reproject")
-def project(latc, lonc, projstr, inverse=False):
-    """
-    Convert from latitude,longitude (based on WGS84) to coordinates in map projection
-
-    This mainly servers as a convenience function for backward compatibility and uses
-    the new gdal/ogr/osr-based :doc:`wradlib.georef.reproject` function under the hood.
-
-    See http://www.remotesensing.org/geotiff/proj_list for examples of key/value
-    pairs defining different map projections.
-
-    You can use :doc:`wradlib.georef.create_projstr` in order to create projection
-    strings to be passed with argument *projstr*. However, the choice is still
-    rather limited. Alternatively, you have to create or look up projection strings by
-    yourself.
-
-    See the Examples section for a quick start.
-
-    Parameters
-    ----------
-    latc : array of floats
-        latitude coordinates based on WGS84, if inverse=True projections y value
-    lonc : array of floats
-        longitude coordinates based on WGS84, if inverse=True projections x value
-    projstr : string
-        proj.4 projection string. Can be conveniently created by using function
-        :doc:`wradlib.georef.create_projstr`
-
-    Returns
-    -------
-    output : a tuple of 2 arrays (x and y coordinates), if inverse=True lon,lat based
-    on WGS84
-
-    Examples
-    --------
-    Gauss-Krueger Zone 2:
-        *"+proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=2500000 +y_0=0 +ellps=bessel
-        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"*
-
-    Gauss-Krueger Zone 3:
-        *"+proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
-        +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs"*
-
-    UTM Zone 51 on the Northern Hemishpere
-        *"+proj=utm +zone=51 +ellps=WGS84"*
-
-    UTM Zone 51 on the Southern Hemishpere
-        *"+proj=utm +zone=51 +ellps=WGS84 +south"*
-
-    >>> import wradlib.georef as georef
-    >>> import numpy as np
-    >>> # This is Gauss-Krueger Zone 3 (aka DHDN 3 aka Germany Zone 3)
-    >>> gk3 = create_projstr("gk", zone=3)
-    >>> latc = np.array([54.5, 55.5])
-    >>> lonc = np.array([9.5, 9.8])
-    >>> gk3_x, gk3_y = georef.project(latc, lonc, gk3)
-
-    """
-    if inverse:
-        src = proj4_to_osr(projstr)
-        dest = get_default_projection()
-    else:
-        src = get_default_projection()
-        dest = proj4_to_osr(projstr)
-    coord_geo = np.zeros(lonc.shape + (3,))
-    coord_geo[...,0] = lonc
-    coord_geo[...,1] = latc
-    coord_map = reproject(coord_geo, projection_source=src, projection_target=dest)
-    if inverse:
-        y = coord_map[...,0]
-        x = coord_map[...,1]
-    else:
-        x = coord_map[...,0]
-        y = coord_map[...,1]
-    return x, y
 
 
 def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = None):
@@ -1293,19 +894,23 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
 
 
 def get_earth_radius(latitude, sr= None):
-    """Get the radius of the Earth (in km) for a given Spheroid model (sr) at a given position
-       R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 ).
+    """
+    Get the radius of the Earth (in km) for a given Spheroid model (sr) at a given position
+
+    R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 ).
 
     Parameters
     ----------
-        sr : osr object
-            spatial reference;
-        latitude : float
-            geodetic latitude in degrees;
+    sr : osr object
+        spatial reference;
+    latitude : float
+        geodetic latitude in degrees;
 
-    Returns:
-        radius : float
-            earth radius in meter
+    Returns
+    -------
+    radius : float
+        earth radius in meter
+
     """
     if sr is None:
         sr = get_default_projection()
@@ -1378,7 +983,7 @@ def pixel_to_map(geotransform,coordinates):
 
 
 def pixel_to_map3d(geotransform, coordinates, z=None):
-    """Apply a geographical transformation to return 3D map coordinates from pixel coodinates.
+    """Apply a geographical transformation to return 3D map coordinates from pixel coordinates.
 
     Parameters
     ----------

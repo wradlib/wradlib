@@ -115,7 +115,7 @@ class PolarNeighbours():
         return self.binx, self.biny
     def get_bincoords_at_points(self):
         """
-        Returns bin coordinates only in the neighbourshood of points
+        Returns bin coordinates only in the neighbourhood of points
 
         Returns
         -------
@@ -147,10 +147,10 @@ class ErrorMetrics():
     >>> obs = np.random.uniform(0,10,100)
     >>> est = np.random.uniform(0,10,100)
     >>> metrics = ErrorMetrics(obs,est)
-    >>> metrics.all()
-    >>> metrics.pprint()
-    >>> metrics.plot()
-    >>> metrics.report()
+    >>> metrics.all() # doctest: +SKIP
+    >>> metrics.pprint() # doctest: +SKIP
+    >>> ax = metrics.plot() # doctest: +SKIP
+    >>> metrics.report() # doctest: +SKIP
 
     """
     def __init__(self, obs, est, minval=None):

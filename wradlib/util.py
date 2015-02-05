@@ -46,28 +46,25 @@ def deprecated(replacement=None):
 
     Author: Giampaolo Rodola' <g.rodola [AT] gmail [DOT] com>
     License: MIT
-
+    >>> # Todo: warnings are sent to stderr instead of stdout
+    >>> # so they are not seen here
+    >>> from wradlib.util import deprecated
     >>> @deprecated()
     ... def foo(x):
     ...     return x
-    ...
     >>> ret = foo(1)
-    DeprecationWarning: foo is deprecated
-    >>> ret
+    >>> #DeprecationWarning: foo is deprecated
+    >>> print ret
     1
-    >>>
-    >>>
     >>> def newfun(x):
     ...     return 0
-    ...
     >>> @deprecated(newfun)
     ... def foo(x):
     ...     return x
-    ...
     >>> ret = foo(1)
-    DeprecationWarning: foo is deprecated; use newfun instead
-    >>> ret
-    0
+    >>> #DeprecationWarning: foo is deprecated; use newfun instead
+    >>> print ret
+    1
     >>>
     """
     def outer(fun):
@@ -100,8 +97,8 @@ class OptionalModuleStub(object):
                            'You tried to access function/module/attribute "' +
                             name + '"\nfrom module "' + self.name + '".\nThis '+
                             'module is optional right now in wradlib.\n' +
-                            'You need to separately install this dependency.' +
-                            'Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies' +
+                            'You need to separately install this dependency.\n' +
+                            'Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies\n' +
                             'for further instructions.'
                             )
 
@@ -141,11 +138,13 @@ def import_optional(module):
     Traceback (most recent call last):
     ...
     AttributeError: Module "nonexistentmodule" is not installed.
-
+    <BLANKLINE>
     You tried to access function/module/attribute "log10"
     from module "nonexistentmodule".
     This module is optional right now in wradlib.
     You need to separately install this dependency.
+    Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies
+    for further instructions.
     """
     try:
         mod = importlib.import_module(module)
@@ -327,17 +326,40 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     Examples
     --------
     >>> src = np.arange(8*4).reshape( (8,4) )
-    >>> print 'source time series:'
+    >>> print 'source time series:' # doctest: +SKIP
     >>> print src
+    [[ 0  1  2  3]
+     [ 4  5  6  7]
+     [ 8  9 10 11]
+     [12 13 14 15]
+     [16 17 18 19]
+     [20 21 22 23]
+     [24 25 26 27]
+     [28 29 30 31]]
     >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
-    >>> print 'source time interval limits:'
+    >>> print 'source time interval limits:' # doctest: +SKIP
     >>> for tim in dt_src: print tim
-    >>> print 'target time interval limits:'
+    2008-06-02 00:00:00
+    2008-06-02 01:00:00
+    2008-06-02 02:00:00
+    2008-06-02 03:00:00
+    2008-06-02 04:00:00
+    2008-06-02 05:00:00
+    2008-06-02 06:00:00
+    2008-06-02 07:00:00
+    2008-06-02 08:00:00
+    >>> print 'target time interval limits:' # doctest: +SKIP
     >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
     >>> for tim in dt_trg: print tim
-    >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
-
+    2008-06-02 00:00:00
+    2008-06-02 04:00:00
+    2008-06-02 08:00:00
+    2008-06-02 12:00:00
+    >>> print 'target time series' # doctest: +SKIP
+    >>> print aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum')
+    [[  24.   28.   32.   36.]
+     [  88.   92.   96.  100.]
+     [  nan   nan   nan   nan]]
 
     """
 ##    src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
@@ -421,18 +443,7 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
 
     Examples
     --------
-    >>> src = np.arange(8*4).reshape( (8,4) )
-    >>> print 'source time series:'
-    >>> print src
-    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
-    >>> print 'source time interval limits:'
-    >>> for tim in dt_src: print tim
-    >>> print 'target time interval limits:'
-    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
-    >>> for tim in dt_trg: print tim
-    >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
-
+    >>> # TODO: put an example here for `mean_over_time_windows`
 
     """
     # Convert input time steps to numpy arrays
@@ -511,18 +522,7 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
 
     Examples
     --------
-    >>> src = np.arange(8*4).reshape( (8,4) )
-    >>> print 'source time series:'
-    >>> print src
-    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9) ]
-    >>> print 'source time interval limits:'
-    >>> for tim in dt_src: print tim
-    >>> print 'target time interval limits:'
-    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4) ]
-    >>> for tim in dt_trg: print tim
-    >>> print 'target time series'
-    >>> print aggregate_in_time(src, dt_src, dt_trg, axis=0, func='sum')
-
+    >>> # TODO: put an example here for `average_over_time_windows`
 
     """
     # Convert input time steps to numpy arrays
@@ -647,7 +647,7 @@ def iso2datetime(iso):
     # in case the argument has been parsed to datetime before
     if type(iso)==dt.datetime:
         return iso
-    # sometimes isoformat seperates date and time by a white space
+    # sometimes isoformat separates date and time by a white space
     iso = iso.replace(" ", "T")
     try:
         return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%f")
@@ -693,12 +693,13 @@ def timestamp2index(ts, delta, refts, **kwargs):
 
     Example
     -------
+    >>> import datetime as dt
     >>> timestr1, timestr2 = '2008-06-01T00:00:00', '2007-01-01T00:00:00'
     >>> timestamp2index(timestr1, 'minutes=5', timestr2)
     148896
     >>> timestamp2index(timestr1, 'hours=1,minutes=5',timestr2)
     11453
-    >>> timestamp2index(timestr1, timedelta(hours=1, minutes=5), timestr2)
+    >>> timestamp2index(timestr1, dt.timedelta(hours=1, minutes=5), timestr2)
     11453
     """
     if not isinstance(ts, dt.datetime):
@@ -801,13 +802,13 @@ def issequence(x):
 
 def trapezoid(data, x1, x2, x3, x4):
     """
-    Applied the trapezoidal function described in Vulpiani et al, 2012 to determine
+    Applied the trapezoidal function described in Vulpiani et al, 2012 :cite:`Vulpiani` to determine
     the degree of membership in the non-meteorological target class.
 
     Parameters
     ----------
     data : array
-        Array contaning the data
+        Array containing the data
     x1 : float
         x-value of the first vertex of the trapezoid
     x2 : float
@@ -982,7 +983,7 @@ if __name__ == '__main__':
     print 'wradlib: Calling module <util> as main...'
 
 
-def filter_window_polar(img,wsize,fun,scale,random=False):
+def filter_window_polar(img,wsize,fun,rscale,random=False):
     r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
     Parameters
@@ -990,13 +991,13 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
     img : 2d array
         Array of values to which the filter is to be applied
     wsize : float
-        Half size of the window centred on the pixel [m] 
+        Half size of the window centred on the pixel [m]
     fun : string
         name of the 1d filter from scipy.ndimage.filters
-    scale : tuple of 2 floats
-        range [m] and azimutal [radians] scale of the polar grid 
+    rscale : float
+        range [m] scale of the polar grid
     random: bool
-        True to use random azimutal size to avoid long-term biases. 
+        True to use random azimuthal size to avoid long-term biases.
 
     Returns
     -------
@@ -1004,7 +1005,7 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
         an array with the same shape as `img`, containing the filter's results.
 
     """
-    rscale,ascale = scale
+    ascale = 2*np.pi/img.shape[0]
     data_filtered = np.empty(img.shape,dtype=img.dtype)
     fun = getattr(filters,"%s_filter1d" %(fun))
     nbins = img.shape[-1]
@@ -1014,14 +1015,21 @@ def filter_window_polar(img,wsize,fun,scale,random=False):
         na = prob_round(wsize/asize).astype(int)
     else:
         na = np.fix(wsize/asize+0.5).astype(int)
-    na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance  
-    for n in np.unique(na):
-        index = ( na == n )
-        if n == 0:
-            data_filtered[:,index] = img[:,index]
-        data_filtered[:,index] = fun(img[:,index],size=2*n+1,mode='wrap',axis=0)
-    nr = np.fix(wsize/rscale+0.5).astype(int)
-    data_filtered = fun(data_filtered,size=2*nr+1,axis=1)
+    na[na>20] = 20 # Maximum of adjacent azimuths (higher close to the origin) to increase performance
+    sr = np.fix(wsize/rscale+0.5).astype(int)
+    for sa in np.unique(na):
+        imax = np.where(na >= sa)[0][-1] + 1
+        imin = np.where(na <= sa)[0][0]
+        if sa == 0:
+            data_filtered[:,imin:imax] = img[:,imin:imax]
+        imin2 = max(imin-sr,0)
+        imax2 = min(imax+sr,nbins)
+        temp = img[:,imin2:imax2]
+        temp = fun(temp,size=2*sa+1,mode='wrap',axis=0)
+        temp = fun(temp,size=2*sr+1,axis=1)
+        imin3 = imin-imin2
+        imax3 = imin3 + imax - imin
+        data_filtered[:,imin:imax] = temp[:,imin3:imax3]
     return(data_filtered)
 
 
@@ -1035,14 +1043,14 @@ def prob_round(x, prec = 0):
 
 
 def filter_window_cartesian(img,wsize,fun,scale):
-    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`. This method is faster than filter_radius_polar()
+    r"""Apply a filter of square window size `fsize` on a given cartesian image `img`.
 
     Parameters
     ----------
     img : 2d array
         Array of values to which the filter is to be applied
     wsize : float
-        Half size of the window centred on the pixel [m] 
+        Half size of the window centred on the pixel [m]
     fun : string
         name of the 2d filter from scipy.ndimage.filters
     scale : tuple of 2 floats
@@ -1060,3 +1068,37 @@ def filter_window_cartesian(img,wsize,fun,scale):
     return(data_filtered)
 
 
+def roll2d_polar(img,shift=1,axis=0):
+    r"""Roll a 2D polar array [azimuth,range] by a given `shift` for the given `axis`
+
+    Parameters
+    ----------
+    shift : int
+        shift to apply to the array
+    axis : int
+        axis which will be shifted
+    Returns
+    -------
+    out: new array with shifted values
+
+    """
+    if shift == 0:
+        return img
+    else:
+        out = np.empty(img.shape)
+    n = img.shape[axis]
+    if axis == 0:
+        if shift > 0:
+            out[shift:,:] = img[:-shift,:]
+            out[:shift,:] = img[n-shift:,:]
+        else:
+            out[:shift,:] = img[-shift:,:]
+            out[n+shift:,:] = img[:-shift:,:]
+    else:
+        if shift > 0:
+            out[:,shift:] = img[:,:-shift]
+            out[:,:shift] = np.nan
+        else:
+            out[:,:shift] = img[:,-shift:]
+            out[:,n+shift:] = np.nan
+    return(out)

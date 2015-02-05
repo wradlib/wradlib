@@ -19,7 +19,7 @@ Precipitation is 3-dimensional in space. The vertical distribution of precipitat
 increases with the distance from the radar location (beam elevation, earth curvature),
 one sweep samples from different heights. The effects of the non-uniform VPR and
 the different sampling heights need to be accounted for if we are interested in
-the precipiation near the ground or in defined heights. This module is intended
+the precipitation near the ground or in defined heights. This module is intended
 to provide a set of tools to account for these effects.
 
 The first step will normally be to reference the polar volume data in a 3-dimensional

@@ -7,15 +7,18 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-import wradlib.clutter  as clutter
+import wradlib.clutter as clutter
+import numpy as np
+import pylab as pl
+# just making sure that the plots immediately pop up
+pl.interactive(True)
+import os
 
-if __name__ == '__main__':
 
-    import numpy            as np
-    import pylab            as pl
+def ex_histo_cut():
 
     # load annual rainfall radar array
-    yearsum = np.loadtxt('d:\\Stephan\\Arbeit\\PROGRESS\\python\\RADAR\\wradlib\\examples\\data\\annual_rainfall_fbg.gz')
+    yearsum = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/annual_rainfall_fbg.gz')
 
     # get boolean array for clutter and shading
     mask = clutter.histo_cut(yearsum)
@@ -52,3 +55,6 @@ if __name__ == '__main__':
     pl.colorbar(shrink = 0.7)
     pl.title('Annual rainfall clutter masked [mm]')
     pl.show()
+
+if __name__ == '__main__':
+    ex_histo_cut()

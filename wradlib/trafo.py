@@ -89,9 +89,9 @@ def r2depth(x, interval):
 def kdp2r(kdp, f, a=129., b=0.85):
     """Estimating rainfall intensity directly from specific differential phase.
 
-    The general power law expression has been suggested by [Ryzhkov2005]_.
+    The general power law expression has been suggested by Ryzhkov et al. :cite:`Ryzhkov2005`.
 
-    The default parameters have been set according to [BringiChandrasekar2001]_.
+    The default parameters have been set according to Bringi and Chandrasekar :cite:`Bringi2001`.
 
     **Please note that this way, rainfall intensities can become negative.** This is
     an intended behaviour in order to account for noisy Kdp values.
@@ -115,14 +115,6 @@ def kdp2r(kdp, f, a=129., b=0.85):
     Returns
     -------
     output : array of rainfall intensity
-
-    References
-    ----------
-    .. [BringiChandrasekar2001] Bringi, V. N., and V. Chandrasekar, 2001:
-       Polarimetric Doppler Weather Radar. Cambridge University Press, 636 pp.
-
-    .. [Ryzhkov2005] Ryzhkov, A. V., S. Giangrande, and T. J. Schuur, 2005: Rainfall
-       estimation with a polarimetric prototype of WSR-88D. J. Appl. Meteor., 44, 502-515.
 
     """
     return np.sign(kdp) * a * (np.abs(kdp) / f)**b

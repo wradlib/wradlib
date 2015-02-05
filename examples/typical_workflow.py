@@ -10,52 +10,70 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
-import wradlib
-import numpy as np
-import pylab as pl
 
-if __name__ == '__main__':
+def ex_typical_workflow():
 
+    import wradlib
+    import numpy as np
+    import pylab as pl
+    import os
+    pl.interactive(True)
     # read the data
-    data, metadata = wradlib.io.readDX("data/sample.dx")
-    wradlib.vis.polar_plot(data)
+    data, metadata = wradlib.io.readDX(os.path.join( os.path.dirname(__file__), "data/sample.dx") )
+    fig = pl.figure()
+    ax = pl.subplot(111)
+    ax, pm = wradlib.vis.plot_ppi(data, ax=ax)
+    cmap = pl.colorbar(pm, shrink=0.75)
+
     # identify and visualise clutters
     clutter = wradlib.clutter.filter_gabella(data, tr1=12, n_p=6, tr2=1.1)
-    wradlib.vis.polar_plot(clutter,title='Clutter Map',colormap=pl.cm.gray)
+    fig = pl.figure()
+    ax = pl.subplot(111)
+    ax, pm = wradlib.vis.plot_ppi(clutter, ax=ax, cmap=pl.cm.gray)
+    pl.title('Clutter Map')
+    cmap = pl.colorbar(pm, shrink=0.75)
+
     # Remove and fill clutter
     data_no_clutter = wradlib.ipol.interpolate_polar(data, clutter)
+
     # Attenuation correction according to Kraemer
     pia = wradlib.atten.correctAttenuationKraemer(data_no_clutter)
     data_attcorr = data_no_clutter + pia
     # compare reflectivity with and without attenuation correction for one beam
+    fig = pl.figure()
+    ax = pl.subplot(111)
     pl.plot(data_attcorr[240], label="attcorr")
     pl.plot(data_no_clutter[240], label="no attcorr")
     pl.xlabel("km")
     pl.ylabel("dBZ")
     pl.legend()
-    pl.show()
+#    pl.savefig("_test_ppi_attcorr.png")
+
     # converting to rainfall intensity
     R = wradlib.zr.z2r( wradlib.trafo.idecibel(data_attcorr) )
     # and then to rainfall depth over 5 minutes
     depth = wradlib.trafo.r2depth(R, 300)
+
     # example for rainfall accumulation in case we have a series of sweeps (here: random numbers)
-    import numpy as np
-    sweep_times  = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-27 00:00:00", 300)
+    sweep_times  = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 300)
     depths_5min  = np.random.uniform(size=(len(sweep_times)-1, 360, 128))
-    hours        = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-27 00:00:00", 3600)
+    hours        = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 3600)
     depths_hourly= wradlib.util.aggregate_in_time(depths_5min, sweep_times, hours, func='sum')
+
     # Georeferencing
     radar_location = (8.005, 47.8744, 1517) # (lon, lat, alt) in decimal degree and meters
     elevation = 0.5 # in degree
     azimuths = np.arange(0,360) # in degrees
     ranges = np.arange(0, 128000., 1000.) # in meters
     polargrid = np.meshgrid(ranges, azimuths)
-    lon, lat, alt = wradlib.georef.polar2lonlatalt(polargrid[0], polargrid[1], elevation, radar_location)
+    lon, lat, alt = wradlib.georef.polar2lonlatalt_n(polargrid[0], polargrid[1], elevation, radar_location)
+
     # projection to Gauss Krueger zone 3
     gk3 = wradlib.georef.create_projstr("gk", zone=3)
     proj_gk3 = wradlib.georef.proj4_to_osr(gk3)
     x, y = wradlib.georef.reproject(lon, lat, projection_target=proj_gk3)
     xy = np.vstack((x.ravel(), y.ravel())).transpose()
+
     # transfer the north-east sector to a 1kmx1km grid
     xgrid = np.linspace(x.min(), x.mean(), 100)
     ygrid = np.linspace(y.min(), y.mean(), 100)
@@ -63,7 +81,13 @@ if __name__ == '__main__':
     grid_xy = np.vstack((grid_xy[0].ravel(), grid_xy[1].ravel())).transpose()
     gridded = wradlib.comp.togrid(xy, grid_xy, 128000., np.array([x.mean(), y.mean()]), data.ravel(), wradlib.ipol.Idw)
     gridded = np.ma.masked_invalid(gridded).reshape((len(xgrid), len(ygrid)))
-    wradlib.vis.cartesian_plot(gridded, x=xgrid, y=ygrid, classes=range(0,70,5), unit="dBZ")
+
+    fig = pl.figure(figsize=(10,8))
+    ax = pl.subplot(111, aspect="equal")
+    pm = pl.pcolormesh(xgrid, ygrid, gridded)
+    pl.colorbar(pm, shrink=0.75)
+    pl.xlabel("Easting (m)")
+    pl.ylabel("Northing (m)")
 
     # Adjustment example
     radar_coords = np.arange(0,101)
@@ -79,7 +103,8 @@ if __name__ == '__main__':
     adjuster = wradlib.adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=3)
     adjusted = adjuster(obs, radar)
     #Let's compare the ``truth``, the ``radar`` rainfall estimate and the ``adjusted`` product:
-    import pylab as pl
+    fig = pl.figure()
+    ax = pl.subplot(111)
     pl.plot(radar_coords, truth, 'k-', label="True rainfall", linewidth=2.)
     pl.xlabel("Distance (km)")
     pl.ylabel("Rainfall intensity (mm/h)")
@@ -87,7 +112,6 @@ if __name__ == '__main__':
     pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0, markerfacecolor="grey")
     pl.plot(radar_coords, adjusted, '-', color="green", label="Multiplicative adjustment", linewidth=2., )
     pl.legend(prop={'size':12})
-    pl.show()
 
     # Verification
     raw_error  = wradlib.verify.ErrorMetrics(truth, radar)
@@ -118,6 +142,9 @@ if __name__ == '__main__':
 
     rootgrp.close()
 
+if __name__ == '__main__':
+
+    ex_typical_workflow()
 
 
 

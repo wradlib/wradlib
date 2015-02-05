@@ -1,20 +1,39 @@
 Getting Started
 ===============
 
+Bleeding edge code
+------------------
+
+.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might seriously lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://bitbucket.org/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
+
+`Download <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_ the source, unzip, and run:
+
+``$ python setup.py install``
+
+Alternatively, you can add the wradlib directory to your environment variable ``PYTHONPATH``.
+  
+
 Installation under Windows
 --------------------------
 
-In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We strongly recommend to install Python(x,y). It installs Python, a number of required packages, and other useful tools (e.g. MinGW).
+In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We recommend to install `Python(x,y) <http://code.google.com/p/pythonxy>`_ as it installs Python, a number of required packages, and other useful tools (e.g. MinGW).
 
-Go to http://code.google.com/p/pythonxy/wiki/Downloads, and select one of the Mirrors. Download the latest distribution (currently **Python(x,y)-2.7.6.0.exe** and install it. We recommend to use the full installation mode. Make sure you choose "All Users" under the "Install for" menu component! Make sure you choose "All Users" under the "Install for" menu component (in case you have administrative privileges)!
+Download and install the latest Python(x,y) distribution from http://code.google.com/p/pythonxy. 
+The latest distribution tested by us is **Python(x,y)-2.7.9.0.exe**. 
+We recommend to use the full installation mode, because this will install all packages. 
+Otherwise you have to make sure that all prerequisites mentioned below will be installed, which may not be the case with a standard installation. 
+If you have administrative privileges, make sure you choose "All Users" under the "Install for" menu component.
+Installation for the current user only, may work, but may also produce all kinds of unexpected behavior.
 
-If you Python installation is working, the following command (in a DOS console) should work:
+If your Python installation is working, the following command (in a DOS console) should work:
 
 ``> python --version``
 
 Now you can install wradlib. Open a DOS console window and type:
 
 ``> easy_install wradlib``
+
+Alternatively, you can install the `Bleeding edge code`_.
 
 Test the integrity of your wradlib installation by opening a console window and typing ``>python``. The Python prompt should appear. Then type
 
@@ -174,14 +193,6 @@ Apart from the obligatory `Dependencies`_, some dependencies in wradlib are opti
 
 As for now, the following dependencies are defined as optional:
 
-**BUFR software**
-
-wradlib's *bufr* module requires the installation of the OPERA BUFR software. On the `OPERA software download page <http://www.eumetnet.eu/opera-software>`_, you will find precompiled binaries for `Windows <http://www.eumetnet.eu/sites/default/files/bufr_3.2_win32.zip>`_ and `Linux <http://www.eumetnet.eu/sites/default/files/bufr_3.2_linux.tar_.gz>`_. If you wanted, you could also download the source and build the software yourself. 
-
-Extract the *full* content of the packages to *any* directory on your computer. Then create an environment variable called ``BUFRLIB`` and set the value of this variable to the path where you extracted the bufr software.
-
-In order to check the functionality of wradlib BUFR module, open a Python console and try ``import wradlib.bufr``.
-   
 **The speedup module**
 
 The speedup module is intended as a collection of Fortran code in order to speed up specific wradlib function that are critical for performance.
@@ -190,7 +201,40 @@ In order to build the speedup module as a shared library, you need to use f2py (
 ``f2py.py -c -m speedup speedup.f``
 
 Now the speedup module should be availble.
- 
+
+**xmltodict**
+
+We use xmltodict to convert the Rainbow Data Files (which have an metadata XML header) to an ordered dict.
+
+.. _ref-knownissues:
+
+Known Issues
+------------
+
+Depending on your OS and installation method you may encounter different problems. Here are some guidelines for attacking them.
+
+Generally it is a good idea to use your systems package manager to install the dependencies. This will also take account for other needed bindings, libs etc. Windows user should install one of the (scientific) python packages to resolve the problems there.
+
+You may install the requirements via pip for all requirements::
+
+    pip install -r requirements.txt
+
+or for any requirement itself::
+
+    pip install 'numpy>=1.7.1'
+
+If you are installing wradlib and the missing dependencies via pip or setup.py there may be missing some libraries and/or include ('header') files. The only solutions to this is to install the missing libraries via packet manager or compile them from scratch (windows user using the python packages should not encounter such problems).
+
+If you are installing wradlib and the missing dependencies via pip or setup.py there also may be version conflicts between the packages, some libraries and/or include ('header') files. If, for instance, the newest available gdal-devel libraries which come with your system are version 1.10.0, but gdal version downloaded from PyPI is 1.11.0, then this may have an error at compile time as a result. Solution is to explicitely declare the gdal version::
+
+    pip install 'gdal==1.10.0'
+
+This may also be an issue with other dependencies which are relying on libraries.
+
+If you are in need to install everything from scratch, or if you are setting up a clean virtual environment, etc., you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables so that libraries and includes can be found.
+
+If all this doesn't help, check on your favorite search engine or create an issue `here <https://bitbucket.org/wradlib/wradlib/issues?status=new&status=open>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
+
 
 Community
 ---------

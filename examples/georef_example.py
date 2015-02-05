@@ -11,14 +11,12 @@
 #-------------------------------------------------------------------------------
 #!/usr/bin/env python
 
+import wradlib.georef as georef
+import numpy as np
+import pylab as pl
+import matplotlib as mpl
 
-if __name__ == '__main__':
-
-    import wradlib.georef as georef
-    import numpy as np
-    import pylab as pl
-    import matplotlib as mpl
-
+def ex_georef():
     # --------------------------------------------------------------------------
     # EXAMPLE 1: Full workflow for georeferencing radar data
 
@@ -63,4 +61,7 @@ if __name__ == '__main__':
     np.savetxt(f, np.hstack( (x.reshape((-1,1)),y.reshape((-1,1))) ), fmt='%.2f', delimiter='\t')
     f.close()
 
-    print('Exit.')
+    print 'Exit.'
+
+if __name__ == '__main__':
+    ex_georef()

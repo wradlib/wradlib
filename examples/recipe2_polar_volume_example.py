@@ -13,14 +13,16 @@
 import wradlib
 import numpy as np
 import pylab as pl
+# just making sure that the plots immediately pop up
+pl.interactive(True)
 import datetime as dt
+import os
 
-if __name__ == '__main__':
-
+def recipe_polar_volume_example():
     # read the data (sample file in wradlib/examples/data)
-    raw = wradlib.io.read_OPERA_hdf5("data/knmi_polar_volume.h5")
+    raw = wradlib.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
     # this is the radar position tuple (longitude, latitude, altitude)
-    sitecoords = (raw["where"]["lon"], raw["where"]["lat"],raw["where"]["height"])
+    sitecoords = (raw["where"]["lon"][0], raw["where"]["lat"][0],raw["where"]["height"][0])
     # define your cartesian reference system
     projstr = wradlib.georef.create_projstr("utm",zone=32, hemisphere="north")
     # containers to hold Cartesian bin coordinates and data
@@ -63,6 +65,8 @@ if __name__ == '__main__':
     trgz = trgxyz[:,2].reshape(trgshape)[:,0,0]
     wradlib.vis.plot_max_plan_and_vert(trgx, trgy, trgz, vol, unit="dBZH", levels=range(-32,60))
 
+if __name__ == '__main__':
 
+    recipe_polar_volume_example()
 
 

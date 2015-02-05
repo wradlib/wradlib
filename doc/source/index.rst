@@ -28,6 +28,7 @@ This documentation is under steady development. It provides a complete library r
    reference
    dev_setup
    community
+   zreferences
 
 Indices and tables
 ==================

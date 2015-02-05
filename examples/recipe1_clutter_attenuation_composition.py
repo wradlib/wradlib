@@ -14,9 +14,13 @@
 import wradlib
 import numpy as np
 import pylab as pl
+# just making sure that the plots immediately pop up
+pl.interactive(True)
 import glob
 import os
 import datetime as dt
+import zipfile
+import shutil
 
 
 
@@ -25,9 +29,11 @@ def process_polar_level_data(radarname):
     """
     print "Polar level processing for radar %s..." % radarname
     # preparations for loading sample data in source directory
-    files = glob.glob('raa*%s*bin'%radarname)
+    #files = glob.glob(os.path.dirname(__file__) + '/' + 'data/raa*%s*bin'%radarname)
+    files = glob.glob(os.path.dirname(__file__) + '/' + 'data/recipe1_data/raa*%s*bin'%radarname)
+
     if len(files)==0:
-        raise SystemExit("No data files found - maybe you did not extract the data from data/recipe1_data.zip?")
+        print "WARNING: No data files found - maybe you did not extract the data from data/recipe1_data.zip?"
     data  = np.empty((len(files),360,128))
     # loading the data (two hours of 5-minute images)
     for i, f in enumerate(files):
@@ -63,13 +69,15 @@ def bbox(*args):
 
     return xmin, xmax, ymin, ymax
 
-
-if __name__ == '__main__':
+def recipe_clutter_attenuation():
 
     # set timer
     start = dt.datetime.now()
-    # set working directory
-    os.chdir("data")
+    # unzip data
+    filename = os.path.dirname(__file__) + '/' + 'data/recipe1_data.zip'
+    targetdir = os.path.dirname(__file__) + '/' + 'data/recipe1_data'
+    with zipfile.ZipFile(filename, 'r') as z:
+        z.extractall(targetdir)
 
     # set scan geometry and radar coordinates
     r               = np.arange(500.,128500.,1000.)
@@ -85,6 +93,13 @@ if __name__ == '__main__':
     tur_accum = process_polar_level_data("tur")
     #   Feldberg
     fbg_accum = process_polar_level_data("fbg")
+
+    # remove unzipped files
+    if os.path.exists(targetdir):
+        try:
+            shutil.rmtree(targetdir)
+        except:
+            print "WARNING: Could not remove directory data/recipe1_data"
 
     # derive Gauss-Krueger Zone 3 coordinates of range-bin centroids
     #   for Tuerkheim radar
@@ -121,6 +136,11 @@ if __name__ == '__main__':
 
     print "Processing took:", dt.datetime.now()-start
 
-    # Plotting rainfall mop with the following class boundaries
-    classes = [0,5,10,20,30,40,50,75,100,125,150,200]
-    wradlib.vis.cartesian_plot(composite.reshape((len(x),len(y))), x=x, y=y, unit="mm", colormap="spectral", classes=classes)
+    # Plotting rainfall map
+    ax = pl.subplot(111, aspect="equal")
+    pm = pl.pcolormesh(x, y, composite.reshape((len(x),len(y))), cmap="spectral")
+    pl.grid()
+    pl.colorbar(pm)
+
+if __name__ == '__main__':
+    recipe_clutter_attenuation()
