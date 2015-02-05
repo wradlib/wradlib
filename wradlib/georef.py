@@ -855,7 +855,7 @@ def create_projstr(projname, **kwargs):
         # DWD-RADOLAN polar stereographic projection
         scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
         projstr = ('+proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k={0:10.8f} '
-                   '+x_0=0 +y_0=0 +a=6370.040 +b=6370.040 +units=km +no_defs').format(scale)
+                   '+x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs').format(scale)
     else:
         print "No support for projection %r, yet." % projname
         print "You need to create projection string by hand..."
