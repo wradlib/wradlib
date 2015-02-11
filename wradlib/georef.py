@@ -39,6 +39,7 @@ Georeferencing
    pixel_to_map
    pixel_coordinates
    get_earth_radius
+   get_radolan_grid
 
 """
 
@@ -1215,6 +1216,127 @@ def proj4_to_osr(proj4str):
     else:
         proj = get_default_projection()
     return(proj)
+
+
+def get_radolan_grid(nrows=None, ncols=None, wgs84=False):
+    """Calculates x/y coordinates of radolan grid of the German Weather Service
+
+    Returns the x,y coordinates of the radolan grid positions
+    (lower left corner of every pixel). The radolan grid is a polarstereographic
+    projection, the projection information was taken from RADOLAN-RADVOR-OP
+    Kompositformat_2.2.2
+
+    .. table:: Coordinates for 900km x 900km grid
+
+        +------------+-----------+------------+-----------+-----------+
+        | Coordinate |   lon     |     lat    |     x     |     y     |
+        +============+===========+============+===========+===========+
+        | LowerLeft  |  3.5889E  |  46.9526N  | -523.4622 | -4658.645 |
+        +------------+-----------+------------+-----------+-----------+
+        | LowerRight | 14.6209E  |  47.0705N  |  376.5378 | -4658.645 |
+        +------------+-----------+------------+-----------+-----------+
+        | UpperRight | 15.7208E  |  54.7405N  |  376.5378 | -3758.645 |
+        +------------+-----------+------------+-----------+-----------+
+        | UpperLeft  |  2.0715E  |  54.5877N  | -523.4622 | -3758.645 |
+        +------------+-----------+------------+-----------+-----------+
+
+    .. table:: Coordinates for 1500km x 1400km grid
+
+        +------------+-----------+------------+-----------+-----------+
+        | Coordinate |   lon     |     lat    |     x     |     y     |
+        +============+===========+============+===========+===========+
+        | LowerLeft  |  2.3419E  |  43.9336N  | -673.4622 | -5008.645 |
+        +------------+-----------+------------+-----------+-----------+
+
+    Parameters
+    ----------
+    nrows : int
+        number of rows (900 by default, 1500 possible)
+    ncols : int
+        number of columnss (900 by default, 1400 possible)
+    wgs84 : boolean
+        if True, output coordinates are in wgs84 lonlat format (default: False)
+
+    Returns
+    -------
+    radolan_grid : numpy ndarray (rows, cols, 2)
+                   xy- or lonlat-grid
+
+    References
+    ----------
+
+    .. [DWD2009] German Weather Service (DWD), 2011: RADOLAN_RADVOR-OP -
+        Beschreibung des Kompositformats, Version 2.2.2. Offenbach, Germany,
+        URL: http://dwd.de/RADOLAN (in German)
+
+    """
+    # check for dimensions and type
+    if nrows and ncols:
+        if not (isinstance(nrows, int) and isinstance(ncols, int)):
+            raise TypeError("wradlib.georef: Integer parameter *rows* and *cols* needed")
+    else:
+        nrows = 900
+        ncols = 900
+        #raise TypeError("wradlib.georef: Input Parameter Missing")
+
+    # small, normal or extended grid, quick'n'dirty check
+    # reference point changes according to radolan composit format
+    if (nrows + ncols) < 1000:
+        j_0 = 460
+        i_0 = 460
+        res = 2
+    elif (nrows + ncols) < 2000:
+        j_0 = 450
+        i_0 = 450
+        res = 1
+    elif (nrows +  ncols) < 3000:
+        j_0 = 600
+        i_0 = 800
+        res = 1
+    else:
+        print("{0} rows and {1} columns is no correct format").format(nrows, ncols)
+        raise ValueError("wradlib.georef: Parameter *rows* and *cols* mismatch.")
+
+    # calculation of x_0 and y_0 coordinates of radolan grid
+    phi_0 = np.radians(60)
+    phi_m = np.radians(51)
+    lam_0 = 10
+    lam_m = 9
+    lam = np.radians(lam_m - lam_0)
+    er = 6370.040
+    m_phi = (1 + np.sin(phi_0)) / (1 + np.sin(phi_m))
+    x_0 = er * m_phi * np.cos(phi_m) * np.sin(lam)
+    y_0 = - er * m_phi * np.cos(phi_m) * np.cos(lam)
+
+    # there is a minor bug in the radolan composit format description
+    # which pops up only in the extended version (1500x1400)
+    # in the functions for calculation of projection x and y coordinates
+    # indices i and j are erroneously swapped
+
+    # x-values
+    row_arr = x_0 + (np.arange(0, ncols*res, res) - j_0)
+    # y-values
+    col_arr = y_0 + (np.arange(0, nrows*res, res) - i_0)
+
+    # promote row_arr and col_arr to 2d-arrays
+    x = np.tile(row_arr, (nrows ,1))
+    y = np.tile(col_arr[:, np.newaxis], (1, ncols))
+
+    radolan_grid = np.dstack((x,y))
+
+    if wgs84:
+        # inverse projection
+        lon0 = 10.   # central meridian of projection
+        lat0 = 60.   # standard parallel of projection
+
+        sinlat0 = np.sin(np.radians(lat0))
+
+        fac = (6370.040**2.) * ((1.+sinlat0) **2.)
+        lon = np.degrees(np.arctan((-x/y))) + lon0
+        lat = np.degrees(np.arcsin((fac -(x**2. + y**2.) )/(fac + (x**2. + y**2.)  ) ))
+        radolan_grid = np.dstack((lon,lat))
+
+    return radolan_grid
 
 
 def _doctest_():
