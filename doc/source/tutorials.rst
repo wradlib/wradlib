@@ -15,4 +15,5 @@ also consider to have look at the code examples distributed with the source code
    tutorial_autoimages
    tutorial_curvelinear_grids
    tutorial_attenuation
+   tutorial_radolan_format
 
