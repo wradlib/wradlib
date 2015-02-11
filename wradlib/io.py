@@ -789,7 +789,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     # read the actual data
     indat = read_radolan_binary_array(f, attrs['datasize'])
 
-    if attrs["producttype"] == "RX":
+    if attrs["producttype"] in ["RX", "EX"]:
         #convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
         arr = np.where(arr == 250, NODATA, arr)
