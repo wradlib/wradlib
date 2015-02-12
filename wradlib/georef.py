@@ -1218,7 +1218,7 @@ def proj4_to_osr(proj4str):
     return(proj)
 
 
-def get_radolan_grid(nrows=None, ncols=None, wgs84=False):
+def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
 
     Returns the x,y coordinates of the radolan grid positions
@@ -1254,6 +1254,8 @@ def get_radolan_grid(nrows=None, ncols=None, wgs84=False):
         number of rows (900 by default, 1500 possible)
     ncols : int
         number of columnss (900 by default, 1400 possible)
+    grid : string
+        can be set to 'small', 'normal' or 'extended' if `nrows` and `ncols` are not standard
     wgs84 : boolean
         if True, output coordinates are in wgs84 lonlat format (default: False)
 
@@ -1262,40 +1264,70 @@ def get_radolan_grid(nrows=None, ncols=None, wgs84=False):
     radolan_grid : numpy ndarray (rows, cols, 2)
                    xy- or lonlat-grid
 
+    Examples
+    --------
+
+        >>> import wradlib.georef as georef
+        >>> radolan_grid = georef.get_radolan_grid()
+        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
+        ((900, 900, 2), array([ -523.46216692, -4658.64472427]))
+
+        >>> import wradlib.georef as georef
+        >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
+        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
+        ((1500, 1400, 2), array([ -673.46216692, -5008.64472427]))
+
+        >>> import wradlib.georef as georef
+        >>> radolan_grid = georef.get_radolan_grid(1501, 1401, grid='extended')
+        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
+        ((1501, 1401, 2), array([ -673.46216692, -5008.64472427]))
+
+        >>> import wradlib.georef as georef
+        >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
+        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
+        ((900, 900, 2), array([  3.58892995,  46.95258041]))
+
+    Raises
+    ------
+        TypeError, ValueError
+
     References
     ----------
 
-    .. [DWD2009] German Weather Service (DWD), 2011: RADOLAN_RADVOR-OP -
-        Beschreibung des Kompositformats, Version 2.2.2. Offenbach, Germany,
-        URL: http://dwd.de/RADOLAN (in German)
+        RADOLAN/RADVOR-OP Beschreibung des Kompositformats Version 2.2.1 :cite:`DWD2009`
 
     """
-    # check for dimensions and type
+
+    # setup default parameters in dicts
+    small = {'j_0': 460, 'i_0': 460, 'res': 2}
+    normal = {'j_0': 450, 'i_0': 450, 'res': 1}
+    extended = {'j_0': 600, 'i_0': 800, 'res': 1}
+    griddict = {(460,460): 'small', (900,900): 'normal', (1500,1400): 'extended'}
+    griddefs = {'small': small, 'normal': normal, 'extended': extended}
+
+    # type and value checking
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
-            raise TypeError("wradlib.georef: Integer parameter *rows* and *cols* needed")
+            raise TypeError("wradlib.georef: Parameter *nrows* and *ncols* expected to be integer")
+        if (nrows,ncols) in griddict.iterkeys():
+            if not grid:
+                grid = griddict[(nrows,ncols)]
+        else:
+            if not grid:
+                raise ValueError("wradlib.georef: Parameter *nrows* and *ncols* mismatch or parameter *grid* missing.")
     else:
+        if grid:
+            raise ValueError("wradlib.georef: Parameter *grid* requires parameter *nrows* and *ncols*.")
+        # fallback for call without parameters
         nrows = 900
         ncols = 900
-        #raise TypeError("wradlib.georef: Input Parameter Missing")
+        grid = griddict[(nrows,ncols)]
 
-    # small, normal or extended grid, quick'n'dirty check
+    # small, normal or extended grid check
     # reference point changes according to radolan composit format
-    if (nrows + ncols) < 1000:
-        j_0 = 460
-        i_0 = 460
-        res = 2
-    elif (nrows + ncols) < 2000:
-        j_0 = 450
-        i_0 = 450
-        res = 1
-    elif (nrows +  ncols) < 3000:
-        j_0 = 600
-        i_0 = 800
-        res = 1
-    else:
-        print("{0} rows and {1} columns is no correct format").format(nrows, ncols)
-        raise ValueError("wradlib.georef: Parameter *rows* and *cols* mismatch.")
+    j_0 = griddefs[grid]['j_0']
+    i_0 = griddefs[grid]['i_0']
+    res = griddefs[grid]['res']
 
     # calculation of x_0 and y_0 coordinates of radolan grid
     phi_0 = np.radians(60)
