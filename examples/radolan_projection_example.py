@@ -19,7 +19,7 @@ def ex_radolan_projection():
 
     # create radolan grid coordinates
     # add 1 to each dimension to get upper left corner coordinates
-    radolan_grid_xy = wrl.georef.get_radolan_grid(901,901)
+    radolan_grid_xy = wrl.georef.get_radolan_grid(900,900)
 
     # create radolan projection osr object
     dwd_string = wrl.georef.create_projstr("dwd-radolan")
