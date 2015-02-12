@@ -1217,24 +1217,30 @@ def proj4_to_osr(proj4str):
         proj = get_default_projection()
     return(proj)
 
-def get_radolan_center(trig=False):
-    """Calculates x,y center coordinate of radolan grid 9°E, 51°N
+def get_radolan_coords(lon=9., lat=51., trig=False):
+    """
+    Calculates x,y coordinates of radolan grid from lon, lat
+    defaults to radolan center coordinate (9°E, 51°N)
 
     Parameters
     ----------
 
+    lon :   float, array of floats
+        longitude
+    lat :   float, array of floats
+        latitude
     trig : boolean
         if True, uses trigonometric formulas for calculation, otherwise osr transformations
 
     """
 
-    if trig:
+    if trig == True:
         # calculation of x_0 and y_0 coordinates of radolan grid
         # as described in the format description
         phi_0 = np.radians(60)
-        phi_m = np.radians(51)
+        phi_m = np.radians(lat)
         lam_0 = 10
-        lam_m = 9
+        lam_m = lon
         lam = np.radians(lam_m - lam_0)
         er = 6370.040
         m_phi = (1 + np.sin(phi_0)) / (1 + np.sin(phi_m))
@@ -1249,7 +1255,7 @@ def get_radolan_center(trig=False):
         proj_wgs = osr.SpatialReference()
         proj_wgs.ImportFromEPSG(4326)
 
-        x, y = reproject(9, 51, projection_source=proj_wgs, projection_target=proj_stereo)
+        x, y = reproject(lon, lat, projection_source=proj_wgs, projection_target=proj_stereo)
 
     return x, y
 
@@ -1346,7 +1352,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     i_0 = griddefs[(nrows,ncols)]['i_0']
     res = griddefs[(nrows,ncols)]['res']
 
-    x_0, y_0 = get_radolan_center(trig)
+    x_0, y_0 = get_radolan_coords(trig=trig)
 
     x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols, res)
     y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows, res)
