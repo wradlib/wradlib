@@ -20,8 +20,8 @@ class GetGridsTest(unittest.TestCase):
 
     def setUp(self):
         # calculate xy and lonlat grids with georef function
-        self.radolan_grid_xy = georef.get_radolan_grid(900,900)
-        self.radolan_grid_ll = georef.get_radolan_grid(900,900, wgs84=True)
+        self.radolan_grid_xy = georef.get_radolan_grid(900,900, trig=True)
+        self.radolan_grid_ll = georef.get_radolan_grid(900,900, trig=True, wgs84=True)
 
     def test_get_radolan_grid_equality(self):
 
