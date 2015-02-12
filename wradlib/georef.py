@@ -1224,7 +1224,7 @@ def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
     Returns the x,y coordinates of the radolan grid positions
     (lower left corner of every pixel). The radolan grid is a polarstereographic
     projection, the projection information was taken from RADOLAN-RADVOR-OP
-    Kompositformat_2.2.2
+    Kompositformat_2.2.2  :cite:`DWD2009`
 
     .. table:: Coordinates for 900km x 900km grid
 
@@ -1251,11 +1251,9 @@ def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
     Parameters
     ----------
     nrows : int
-        number of rows (900 by default, 1500 possible)
+        number of rows (460, 900 by default, 1500)
     ncols : int
-        number of columnss (900 by default, 1400 possible)
-    grid : string
-        can be set to 'small', 'normal' or 'extended' if `nrows` and `ncols` are not standard
+        number of columnss (460, 900 by default, 1400)
     wgs84 : boolean
         if True, output coordinates are in wgs84 lonlat format (default: False)
 
@@ -1278,11 +1276,6 @@ def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
         ((1500, 1400, 2), array([ -673.46216692, -5008.64472427]))
 
         >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(1501, 1401, grid='extended')
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((1501, 1401, 2), array([ -673.46216692, -5008.64472427]))
-
-        >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
         >>> print(radolan_grid.shape, radolan_grid[0,0,:])
         ((900, 900, 2), array([  3.58892995,  46.95258041]))
@@ -1291,43 +1284,30 @@ def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
     ------
         TypeError, ValueError
 
-    References
-    ----------
-
-        RADOLAN/RADVOR-OP Beschreibung des Kompositformats Version 2.2.1 :cite:`DWD2009`
-
     """
 
     # setup default parameters in dicts
     small = {'j_0': 460, 'i_0': 460, 'res': 2}
     normal = {'j_0': 450, 'i_0': 450, 'res': 1}
     extended = {'j_0': 600, 'i_0': 800, 'res': 1}
-    griddict = {(460,460): 'small', (900,900): 'normal', (1500,1400): 'extended'}
-    griddefs = {'small': small, 'normal': normal, 'extended': extended}
+    griddefs = {(460,460): small, (900,900): normal, (1500,1400): extended}
 
     # type and value checking
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
-            raise TypeError("wradlib.georef: Parameter *nrows* and *ncols* expected to be integer")
-        if (nrows,ncols) in griddict.iterkeys():
-            if not grid:
-                grid = griddict[(nrows,ncols)]
-        else:
-            if not grid:
-                raise ValueError("wradlib.georef: Parameter *nrows* and *ncols* mismatch or parameter *grid* missing.")
+            raise TypeError("wradlib.georef: Parameter *nrows* and *ncols* not integer")
+        if (nrows,ncols) not in griddefs.iterkeys():
+            raise ValueError("wradlib.georef: Parameter *nrows* and *ncols* mismatch.")
     else:
-        if grid:
-            raise ValueError("wradlib.georef: Parameter *grid* requires parameter *nrows* and *ncols*.")
         # fallback for call without parameters
         nrows = 900
         ncols = 900
-        grid = griddict[(nrows,ncols)]
 
     # small, normal or extended grid check
     # reference point changes according to radolan composit format
-    j_0 = griddefs[grid]['j_0']
-    i_0 = griddefs[grid]['i_0']
-    res = griddefs[grid]['res']
+    j_0 = griddefs[(nrows,ncols)]['j_0']
+    i_0 = griddefs[(nrows,ncols)]['i_0']
+    res = griddefs[(nrows,ncols)]['res']
 
     # calculation of x_0 and y_0 coordinates of radolan grid
     phi_0 = np.radians(60)
