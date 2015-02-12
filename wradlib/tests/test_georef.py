@@ -47,7 +47,6 @@ class GetGridsTest(unittest.TestCase):
     def test_get_radolan_grid_raises(self):
         self.assertRaises(TypeError, lambda: georef.get_radolan_grid('900','900'))
         self.assertRaises(ValueError, lambda: georef.get_radolan_grid(2000, 2000))
-        self.assertRaises(ValueError, lambda: georef.get_radolan_grid(grid='normal'))
 
     def test_get_radolan_grid_shape(self):
         radolan_grid_xy = georef.get_radolan_grid()
