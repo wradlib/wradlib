@@ -1217,8 +1217,43 @@ def proj4_to_osr(proj4str):
         proj = get_default_projection()
     return(proj)
 
+def get_radolan_center(trig=False):
+    """Calculates x,y center coordinate of radolan grid 9°E, 51°N
 
-def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
+    Parameters
+    ----------
+
+    trig : boolean
+        if True, uses trigonometric formulas for calculation, otherwise osr transformations
+
+    """
+
+    if trig:
+        # calculation of x_0 and y_0 coordinates of radolan grid
+        # as described in the format description
+        phi_0 = np.radians(60)
+        phi_m = np.radians(51)
+        lam_0 = 10
+        lam_m = 9
+        lam = np.radians(lam_m - lam_0)
+        er = 6370.040
+        m_phi = (1 + np.sin(phi_0)) / (1 + np.sin(phi_m))
+        x = er * m_phi * np.cos(phi_m) * np.sin(lam)
+        y = - er * m_phi * np.cos(phi_m) * np.cos(lam)
+    else:
+        # create radolan projection osr object
+        dwd_string = create_projstr("dwd-radolan")
+        proj_stereo = proj4_to_osr(dwd_string)
+
+        # create wgs84 projection osr object
+        proj_wgs = osr.SpatialReference()
+        proj_wgs.ImportFromEPSG(4326)
+
+        x, y = reproject(9, 51, projection_source=proj_wgs, projection_target=proj_stereo)
+
+    return x, y
+
+def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
 
     Returns the x,y coordinates of the radolan grid positions
@@ -1253,7 +1288,9 @@ def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
     nrows : int
         number of rows (460, 900 by default, 1500)
     ncols : int
-        number of columnss (460, 900 by default, 1400)
+        number of columns (460, 900 by default, 1400)
+    trig : boolean
+        if True, uses trigonometric formulas for calculation, otherwise osr transformations
     wgs84 : boolean
         if True, output coordinates are in wgs84 lonlat format (default: False)
 
@@ -1309,44 +1346,37 @@ def get_radolan_grid(nrows=None, ncols=None, grid=None, wgs84=False):
     i_0 = griddefs[(nrows,ncols)]['i_0']
     res = griddefs[(nrows,ncols)]['res']
 
-    # calculation of x_0 and y_0 coordinates of radolan grid
-    phi_0 = np.radians(60)
-    phi_m = np.radians(51)
-    lam_0 = 10
-    lam_m = 9
-    lam = np.radians(lam_m - lam_0)
-    er = 6370.040
-    m_phi = (1 + np.sin(phi_0)) / (1 + np.sin(phi_m))
-    x_0 = er * m_phi * np.cos(phi_m) * np.sin(lam)
-    y_0 = - er * m_phi * np.cos(phi_m) * np.cos(lam)
+    x_0, y_0 = get_radolan_center(trig)
 
-    # there is a minor bug in the radolan composit format description
-    # which pops up only in the extended version (1500x1400)
-    # in the functions for calculation of projection x and y coordinates
-    # indices i and j are erroneously swapped
-
-    # x-values
-    row_arr = x_0 + (np.arange(0, ncols*res, res) - j_0)
-    # y-values
-    col_arr = y_0 + (np.arange(0, nrows*res, res) - i_0)
-
-    # promote row_arr and col_arr to 2d-arrays
-    x = np.tile(row_arr, (nrows ,1))
-    y = np.tile(col_arr[:, np.newaxis], (1, ncols))
+    x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols, res)
+    y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows, res)
+    x, y = np.meshgrid(x_arr,y_arr)
 
     radolan_grid = np.dstack((x,y))
 
     if wgs84:
-        # inverse projection
-        lon0 = 10.   # central meridian of projection
-        lat0 = 60.   # standard parallel of projection
 
-        sinlat0 = np.sin(np.radians(lat0))
+        if trig:
+            # inverse projection
+            lon0 = 10.   # central meridian of projection
+            lat0 = 60.   # standard parallel of projection
 
-        fac = (6370.040**2.) * ((1.+sinlat0) **2.)
-        lon = np.degrees(np.arctan((-x/y))) + lon0
-        lat = np.degrees(np.arcsin((fac -(x**2. + y**2.) )/(fac + (x**2. + y**2.)  ) ))
-        radolan_grid = np.dstack((lon,lat))
+            sinlat0 = np.sin(np.radians(lat0))
+
+            fac = (6370.040**2.) * ((1.+sinlat0) **2.)
+            lon = np.degrees(np.arctan((-x/y))) + lon0
+            lat = np.degrees(np.arcsin((fac -(x**2. + y**2.) )/(fac + (x**2. + y**2.)  ) ))
+            radolan_grid = np.dstack((lon,lat))
+        else:
+            # create radolan projection osr object
+            dwd_string = create_projstr("dwd-radolan")
+            proj_stereo = proj4_to_osr(dwd_string)
+
+            # create wgs84 projection osr object
+            proj_wgs = osr.SpatialReference()
+            proj_wgs.ImportFromEPSG(4326)
+
+            radolan_grid = reproject(radolan_grid, projection_source=proj_stereo, projection_target=proj_wgs)
 
     return radolan_grid
 
