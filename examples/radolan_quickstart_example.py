@@ -37,7 +37,8 @@ def ex_radolan_quickstart():
     # plot data
     pl.pcolormesh(x, y, rwdata, cmap="spectral")
     # add colorbar and title
-    pl.colorbar(shrink=0.5)
+    cb = pl.colorbar(shrink=0.75)
+    cb.set_label("mm/h")
     pl.title('RADOLAN RW Product Polar Stereo \n' + rwattrs['datetime'].isoformat())
 
     pl.show()

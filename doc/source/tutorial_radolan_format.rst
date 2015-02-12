@@ -15,11 +15,11 @@ All RADOLAN composite products can be read by the following function::
 
    data, metadata = io.read_RADOLAN_composite("mydrive:/path/to/my/file/filename")
 
-Here, ``data`` is a two dimensional integer array of shape (number of rows, number of columns). ``metadata`` is a dictionary which provides metadata from the files header section, e.g. using the keys *producttype*, *datetime*, *intervalseconds*, *nodataflag*.
+Here, ``data`` is a two dimensional integer or float array of shape (number of rows, number of columns). ``metadata`` is a dictionary which provides metadata from the files header section, e.g. using the keys *producttype*, *datetime*, *intervalseconds*, *nodataflag*.
 
 The :ref:`radolan_grid` coordinates can be calculated with :func:`wradlib.georef.get_radolan_grid()`.
 
-In :download:`the following short example <../../examples/radolan_quickstart_example.py>` the RW-product is shown in the RADOLAN :ref:`polar_stereo_projection`::
+In `the following short example <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_quickstart_example.py>`_ the RW-product is shown in the RADOLAN :ref:`polar_stereo_projection`::
 
     # import section
     import wradlib as wrl
@@ -45,7 +45,8 @@ In :download:`the following short example <../../examples/radolan_quickstart_exa
 
     # create quick plot with colorbar and title
     pl.pcolormesh(x, y, rwdata, cmap="spectral")
-    cb = pl.colorbar(shrink=0.5)
+    cb = pl.colorbar(shrink=0.75)
+    cb.set_label("mm/h")
     pl.title('RADOLAN RW Product Polar Stereo \n' + rwattrs['datetime'].isoformat())
 
 
@@ -69,7 +70,8 @@ In :download:`the following short example <../../examples/radolan_quickstart_exa
     y = radolan_grid_xy[:,:,1]
     pl.pcolormesh(x, y, rwdata, cmap="spectral")
     # add colorbar and title
-    cb = pl.colorbar(shrink=0.5)
+    cb = pl.colorbar(shrink=0.75)
+    cb.set_label("mm/h")
     pl.title('RADOLAN RW Product Polar Stereo \n' + rwattrs['datetime'].isoformat())
 
 A much more comprehensive section using several RADOLAN composites is shown in chapter :ref:`radolan_examples`.
@@ -97,7 +99,7 @@ Currently, most of the RADOLAN composites have a spatial resolution of 1km x 1km
 National Composits
 ------------------
 
-The common germanwide national products with a range of 900 km by 900 km are presented in the following table:
+The common national products (across Germany) with a range of 900 km by 900 km are presented in the following table:
 
 .. tabularcolumns:: |L|L|L|L|L]
 
@@ -176,6 +178,119 @@ The common central european products with a range of 1500 km by 1400 km are pres
 |    |       |       | | YYMMDDhhmm-dwd---bin | | 1 h summation                     |
 +----+-------+-------+------------------------+-------------------------------------+
 
+
+.. _radolan_grid:
+
+RADOLAN Grid
+============
+
+.. _polar_stereo_projection:
+
+Polar Stereographic Projection
+------------------------------
+
+The projected composite raster is equidistant with a grid-spacing of 1.0 km in most cases. There are composites which have 2.0 km grid-spacing (e.g. PC).
+
+There are three different grid sizes, the well-known 900 rows by 900 columns (normal), 1500 rows by 1400 columns (extended, european) and 460 rows by 460 columns (small).
+
+Common to all is that the plane of projection intersects the earth sphere at :math:`\phi_0` = 60.0 :math:`^{\circ}` N. The cartesian co-ordinate system is aligned parallel to the :math:`\lambda_0` = 10.0 :math:`^{\circ}` E meridian.
+
+The reference point ( :math:`\lambda_m` , :math:`\phi_m` ) is 9.0 :math:`^{\circ}` E and 51.0 :math:`^{\circ}` N, which is the center of the two smaller grids. The extended grid has an offset in respect to this reference point of 350km by 150km.
+
+The earth as sphere with an radius of 6370.04 km is used for all calculations.
+
+With formulas (1), (2) and (3) the geographic reference points (lambda, phi) can be converted to projected cartesian coordinates. The calculated (x y) is the distance vector to the origign of the cartesian coordinate system (north pole).
+
+.. math::  .\quad x = R * M(\phi) * cos(\phi) * sin(\lambda - \lambda_0)
+   :label: f1
+
+.. math::  .\quad y = -R * M(\phi) * cos(\phi) * cos(\lambda - \lambda_0)
+   :label: f2
+
+.. math::  .\quad M(\phi) =  \frac {1 + sin(\phi_0)} {1 + sin(\phi)}
+   :label: f3
+
+
+Assumed the point (10.0 :math:`^{\circ}` E, 90.0 :math:`^{\circ}` N) is defined as coordinate system origin. Then all ccordinates can be calculated with the known grid-spacing d as:
+
+.. math:: .\quad x = x_0 + d * (j - j_0)
+   :label: f4
+
+.. math:: .\quad y = y_0 + d * (i - i_0)
+   :label: f5
+
+with i, j as cartesian indices.
+
+wradlib provides the convenience function `util.get_radolan_grid` which returns the radolan grid for further processing. It takes an (nrows, ncols)-tuple and returns the projected cartesian coordinates or the wgs84 coordinates (keyword arg wgs84=True) as numpy ndarray (nrows x ncols x 2).
+
+Inverse Polar Stereographic Projection
+--------------------------------------
+
+The geographic coordinates of specific datapoints can be calculated by using the cartesian coordinates (x,y) and the following formulas:
+
+.. math::  .\quad \lambda = \arctan\left(\frac {-x} {y}\right) + \lambda_0
+   :label: f6
+
+.. math::  .\quad \phi = \arcsin\left(\frac {R^2 * \left(1 + \sin\phi_0\right)^2 - \left(x^2 + y^2\right)} {R^2 * \left(1 + \sin\phi_0\right)^2 + \left(x^2 + y^2\right)}\right)
+   :label: f7
+
+Within *wradlib* the `georef.reproject` function can be used to convert the radolan grid data from xy-space to lonlat-space and back.
+
+Radolan-projection in various standard formats
+----------------------------------------------
+
+WKT-String
+^^^^^^^^^^
+
+The German Weather Service provides a `WKT-string <https://kunden.dwd.de/geoserver/web/?wicket:bookmarkablePage=:org.geoserver.web.demo.SRSDescriptionPage&code=EPSG:1000001>`_. This WKT (well known text) is used to create the osr-object representation of the radolan projection.
+
+For the scale_factor the intersection of the projection plane with the earth sphere at 60.0 :math:`^{\circ}` N has to be taken into account:
+
+.. math::  .\quad scale\_factor = \frac {1 + \sin\left(60.^{\circ}\right)} {1 + \sin\left(90.^{\circ}\right)} = 0.93301270189
+   :label: f8
+
+Also, the PROJECTION["Stereographic_North_Pole"] isn't known within GDAL/OSR. It has to be changed to the known PROJECTION["polar_stereographic"].
+
+Finally we yield the Radolan Projection as WKT-string::
+
+    PROJCS["Radolan projection",
+      GEOGCS["Radolan Coordinate System",
+        DATUM["Radolan Kugel",
+          SPHEROID["Erdkugel", 6370040.0, 0.0]],
+        PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],
+        UNIT["degree", 0.017453292519943295],
+        AXIS["Longitude", EAST],
+        AXIS["Latitude", NORTH]],
+      PROJECTION["polar_stereographic"],
+      PARAMETER["central_meridian", 10.0],
+      PARAMETER["Standard_Parallel_1", 60.0],
+      PARAMETER["scale_factor", 0.93301270189],
+      PARAMETER["false_easting", 0.0],
+      PARAMETER["false_northing", 0.0],
+      UNIT["m*1000.0", 1000.0],
+      AXIS["X", EAST],
+      AXIS["Y", NORTH],
+      AUTHORITY["EPSG","1000001"]]
+
+
+PROJ.4
+^^^^^^
+
+Using the above WKT-String the PROJ.4 representation can be derived as:
+
+PROJ.4-String::
+
+    +proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189
+    +x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs
+
+PROJ.4-String (problems with units)::
+
+    +proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189
+    +x_0=0 +y_0=0 +a=6370040 +b=6370040 +units=km +no_defs
+
+The first string is used within *wradlib* at the moment to create the osr-object, the latter is also valid, but lead to problems with correct units-representation when importing into osr-object.
+
+
 .. _radolan_examples:
 
 Examples
@@ -200,7 +315,7 @@ Attention is paid to:
 DWD-Radar Network
 -----------------
 
-In :download:`this example script <../../examples/radolan_radarloc_example.py>` the RW-product is shown in WGS84 and the RADOLAN :ref:`polar_stereo_projection`. All for the compositing process used radars are extracted from the metadata and plotted with their respective maximum range rings and location information.
+In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_radarloc_example.py>`_ the RW-product is shown in WGS84 and the RADOLAN :ref:`polar_stereo_projection`. All for the compositing process used radars are extracted from the metadata and plotted with their respective maximum range rings and location information.
 
 .. plot::
 
@@ -396,7 +511,8 @@ In :download:`this example script <../../examples/radolan_radarloc_example.py>` 
         fig1 = pl.figure()
         ax1 = fig1.add_subplot(111, aspect='equal')
         pm = ax1.pcolormesh(lon1, lat1, rwdata, cmap='spectral')
-        fig1.colorbar(pm, shrink=0.75)
+        cb = fig1.colorbar(pm, shrink=0.75)
+        cb.set_label("mm/h")
         pl.xlabel("Longitude ")
         pl.ylabel("Latitude")
         pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n WGS84')
@@ -406,7 +522,8 @@ In :download:`this example script <../../examples/radolan_radarloc_example.py>` 
         fig2 = pl.figure()
         ax2 = fig2.add_subplot(111, aspect='equal')
         pm = ax2.pcolormesh(x1, y1, rwdata, cmap='spectral')
-        fig2.colorbar(pm, shrink=0.75)
+        cb = fig2.colorbar(pm, shrink=0.75)
+        cb.set_label("mm/h")
         pl.xlabel("x [km]")
         pl.ylabel("y [km]")
         pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n Polar Stereographic Projection')
@@ -463,12 +580,13 @@ In :download:`this example script <../../examples/radolan_radarloc_example.py>` 
     if __name__ == '__main__':
         ex_radolan_radarloc()
 
+
 .. _ex_radolan_header:
 
 RADOLAN composite header
 ------------------------
 
-In :download:`this example script <../../examples/radolan_header_example.py>` we extract and show header information from several RADOLAN-products. First we load data and metadata of RX,EX,RW and SF-products::
+In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_header_example.py>`_ we extract and show header information from several RADOLAN-products. First we load data and metadata of RX,EX,RW and SF-products::
 
     import wradlib as wrl
     import os
@@ -582,7 +700,7 @@ The metadata information reflects the different measurement time intervals, the 
 RADOLAN Projection
 ------------------
 
-In :download:`this example script <../../examples/radolan_projection_example.py>` we calculate the RADOLAN Grid and print their bounding box coordinates in different projections::
+In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_projection_example.py>`_ we calculate the RADOLAN Grid and print their bounding box coordinates in different projections::
 
     import wradlib as wrl
     from osgeo import osr
@@ -674,7 +792,7 @@ Output::
 RADOLAN products showcase
 -------------------------
 
-In :download:`this example script <../../examples/radolan_products_example.py>` we show several RADOLAN products:
+In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/examples/radolan_products_example.py>`_ we show several RADOLAN products:
 
 .. plot::
 
@@ -712,7 +830,8 @@ In :download:`this example script <../../examples/radolan_products_example.py>` 
     fig = pl.figure()
     ax = fig.add_subplot(111, aspect='equal')
     pm = ax.pcolormesh(x, y, rxdata, cmap='spectral')
-    fig.colorbar(pm, shrink=0.75)
+    cb = fig.colorbar(pm, shrink=0.75)
+    cb.set_label("dBZ")
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RX Product single scan\n' + rxattrs['datetime'].isoformat())
@@ -723,7 +842,8 @@ In :download:`this example script <../../examples/radolan_products_example.py>` 
     fig = pl.figure()
     ax = fig.add_subplot(111, aspect='equal')
     pm = ax.pcolormesh(xe, ye, exdata, cmap='spectral')
-    fig.colorbar(pm, shrink=0.75)
+    cb = fig.colorbar(pm, shrink=0.75)
+    cb.set_label("dBZ")
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('EX Product single scan - extended grid\n' + exattrs['datetime'].isoformat())
@@ -734,7 +854,8 @@ In :download:`this example script <../../examples/radolan_products_example.py>` 
     fig = pl.figure()
     ax = fig.add_subplot(111, aspect='equal')
     pm = ax.pcolormesh(x, y, rwdata, cmap='spectral')
-    fig.colorbar(pm, shrink=0.75)
+    cb = fig.colorbar(pm, shrink=0.75)
+    cb.set_label("mm/h")
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RW Product 1h rain accumulation\n' + rwattrs['datetime'].isoformat())
@@ -745,7 +866,8 @@ In :download:`this example script <../../examples/radolan_products_example.py>` 
     fig = pl.figure()
     ax = fig.add_subplot(111, aspect='equal')
     pm = ax.pcolormesh(x, y, sfdata, cmap='spectral')
-    fig.colorbar(pm, shrink=0.75)
+    cb = fig.colorbar(pm, shrink=0.75)
+    cb.set_label("mm / 24h")
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('SF Product 24h rain accumulation\n' + sfattrs['datetime'].isoformat())
@@ -788,118 +910,6 @@ Export to NetCDF
 ----------------
 
 Example follows soon...
-
-
-.. _radolan_grid:
-
-RADOLAN Grid
-============
-
-.. _polar_stereo_projection:
-
-Polar Stereographic Projection
-------------------------------
-
-The projected composite raster is equidistant with a grid-spacing of 1.0 km in most cases. There are composites which have 2.0 km grid-spacing (e.g. PC).
-
-There are three different grid sizes, the well-known 900 rows by 900 columns (normal), 1500 rows by 1400 columns (extended, european) and 460 rows by 460 columns (small).
-
-Common to all is that the plane of projection intersects the earth sphere at :math:`\phi_0` = 60.0 :math:`^{\circ}` N. The cartesian co-ordinate system is aligned parallel to the :math:`\lambda_0` = 10.0 :math:`^{\circ}` E meridian.
-
-The reference point ( :math:`\lambda_m` , :math:`\phi_m` ) is 9.0 :math:`^{\circ}` E and 51.0 :math:`^{\circ}` N, which is the center of the two smaller grids. The extended grid has an offset in respect to this reference point of 350km by 150km.
-
-The earth as sphere with an radius of 6370.04 km is used for all calculations.
-
-With formulas (1), (2) and (3) the geographic reference points (lambda, phi) can be converted to projected cartesian coordinates. The calculated (x y) is the distance vector to the origign of the cartesian coordinate system (north pole).
-
-.. math::  .\quad x = R * M(\phi) * cos(\phi) * sin(\lambda - \lambda_0)
-   :label: f1
-
-.. math::  .\quad y = -R * M(\phi) * cos(\phi) * cos(\lambda - \lambda_0)
-   :label: f2
-
-.. math::  .\quad M(\phi) =  \frac {1 + sin(\phi_0)} {1 + sin(\phi)}
-   :label: f3
-
-
-Assumed the point (10.0 :math:`^{\circ}` E, 90.0 :math:`^{\circ}` N) is defined as coordinate system origin. Then all ccordinates can be calculated with the known grid-spacing d as:
-
-.. math:: .\quad x = x_0 + d * (j - j_0)
-   :label: f4
-
-.. math:: .\quad y = y_0 + d * (i - i_0)
-   :label: f5
-
-with i, j as cartesian indices.
-
-wradlib provides the convenience function `util.get_radolan_grid` which returns the radolan grid for further processing. It takes an (nrows, ncols)-tuple and returns the projected cartesian coordinates or the wgs84 coordinates (keyword arg wgs84=True) as numpy ndarray (nrows x ncols x 2).
-
-Inverse Polar Stereographic Projection
---------------------------------------
-
-The geographic coordinates of specific datapoints can be calculated by using the cartesian coordinates (x,y) and the following formulas:
-
-.. math::  .\quad \lambda = \arctan\left(\frac {-x} {y}\right) + \lambda_0
-   :label: f6
-
-.. math::  .\quad \phi = \arcsin\left(\frac {R^2 * \left(1 + \sin\phi_0\right)^2 - \left(x^2 + y^2\right)} {R^2 * \left(1 + \sin\phi_0\right)^2 + \left(x^2 + y^2\right)}\right)
-   :label: f7
-
-Within *wradlib* the `georef.reproject` function can be used to convert the radolan grid data from xy-space to lonlat-space and back.
-
-Radolan-projection in various standard formats
-----------------------------------------------
-
-WKT-String
-^^^^^^^^^^
-
-The German Weather Service provides a `WKT-string <https://kunden.dwd.de/geoserver/web/?wicket:bookmarkablePage=:org.geoserver.web.demo.SRSDescriptionPage&code=EPSG:1000001>`_. This WKT (well known text) is used to create the osr-object representation of the radolan projection.
-
-For the scale_factor the intersection of the projection plane with the earth sphere at 60.0 :math:`^{\circ}` N has to be taken into account:
-
-.. math::  .\quad scale\_factor = \frac {1 + \sin\left(60.^{\circ}\right)} {1 + \sin\left(90.^{\circ}\right)} = 0.93301270189
-   :label: f8
-
-Also, the PROJECTION["Stereographic_North_Pole"] isn't known within GDAL/OSR. It has to be changed to the known PROJECTION["polar_stereographic"].
-
-Finally we yield the Radolan Projection as WKT-string::
-
-    PROJCS["Radolan projection",
-      GEOGCS["Radolan Coordinate System",
-        DATUM["Radolan Kugel",
-          SPHEROID["Erdkugel", 6370040.0, 0.0]],
-        PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],
-        UNIT["degree", 0.017453292519943295],
-        AXIS["Longitude", EAST],
-        AXIS["Latitude", NORTH]],
-      PROJECTION["polar_stereographic"],
-      PARAMETER["central_meridian", 10.0],
-      PARAMETER["Standard_Parallel_1", 60.0],
-      PARAMETER["scale_factor", 0.93301270189],
-      PARAMETER["false_easting", 0.0],
-      PARAMETER["false_northing", 0.0],
-      UNIT["m*1000.0", 1000.0],
-      AXIS["X", EAST],
-      AXIS["Y", NORTH],
-      AUTHORITY["EPSG","1000001"]]
-
-
-PROJ.4
-^^^^^^
-
-Using the above WKT-String the PROJ.4 representation can be derived as:
-
-PROJ.4-String::
-
-    +proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189
-    +x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs
-
-PROJ.4-String (problems with units)::
-
-    +proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189
-    +x_0=0 +y_0=0 +a=6370040 +b=6370040 +units=km +no_defs
-
-The first string is used within *wradlib* at the moment to create the osr-object, the latter is also valid, but lead to problems with correct units-representation when importing into osr-object.
 
 
 Acknowledgements
