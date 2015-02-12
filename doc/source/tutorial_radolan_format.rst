@@ -48,6 +48,7 @@ In `the following short example <https://bitbucket.org/kaimuehlbauer/wradlib_miu
     cb = pl.colorbar(shrink=0.75)
     cb.set_label("mm/h")
     pl.title('RADOLAN RW Product Polar Stereo \n' + rwattrs['datetime'].isoformat())
+    pl.grid(color='r')
 
 
 .. plot::
@@ -73,6 +74,7 @@ In `the following short example <https://bitbucket.org/kaimuehlbauer/wradlib_miu
     cb = pl.colorbar(shrink=0.75)
     cb.set_label("mm/h")
     pl.title('RADOLAN RW Product Polar Stereo \n' + rwattrs['datetime'].isoformat())
+    pl.grid(color='r')
 
 A much more comprehensive section using several RADOLAN composites is shown in chapter :ref:`radolan_examples`.
 
@@ -518,6 +520,7 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
         pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n WGS84')
         pl.xlim((lon1[0,0],lon1[-1,-1]))
         pl.ylim((lat1[0,0],lat1[-1,-1]))
+        pl.grid(color='r')
 
         fig2 = pl.figure()
         ax2 = fig2.add_subplot(111, aspect='equal')
@@ -529,6 +532,7 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
         pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n Polar Stereographic Projection')
         pl.xlim((x1[0,0],x1[-1,-1]))
         pl.ylim((y1[0,0],y1[-1,-1]))
+        pl.grid(color='r')
 
         # range array 150 km
         print("Max Range: ", rwattrs['maxrange'])
@@ -812,6 +816,12 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
     sfdata, sfattrs = wrl.io.read_RADOLAN_composite(sf_filename)
 
+    # mask invalid values
+    sec = rwattrs['secondary']
+    rwdata.flat[sec] = -9999
+    sec = sfattrs['secondary']
+    sfdata.flat[sec] = -9999
+
     rxdata = np.ma.masked_equal(rxdata, -9999) / 2 - 32.5
     exdata = np.ma.masked_equal(exdata, -9999) / 2 - 32.5
     rwdata = np.ma.masked_equal(rwdata, -9999)
@@ -837,6 +847,7 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
     pl.title('RX Product single scan\n' + rxattrs['datetime'].isoformat())
     pl.xlim((x[0,0],x[-1,-1]))
     pl.ylim((y[0,0],y[-1,-1]))
+    pl.grid(color='r')
 
     # plot EX product
     fig = pl.figure()
@@ -849,6 +860,7 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
     pl.title('EX Product single scan - extended grid\n' + exattrs['datetime'].isoformat())
     pl.xlim((xe[0,0],xe[-1,-1]))
     pl.ylim((ye[0,0],ye[-1,-1]))
+    pl.grid(color='r')
 
     # plot RW product
     fig = pl.figure()
@@ -861,6 +873,7 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
     pl.title('RW Product 1h rain accumulation\n' + rwattrs['datetime'].isoformat())
     pl.xlim((x[0,0],x[-1,-1]))
     pl.ylim((y[0,0],y[-1,-1]))
+    pl.grid(color='r')
 
     # plot SF product
     fig = pl.figure()
@@ -873,6 +886,7 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
     pl.title('SF Product 24h rain accumulation\n' + sfattrs['datetime'].isoformat())
     pl.xlim((x[0,0],x[-1,-1]))
     pl.ylim((y[0,0],y[-1,-1]))
+    pl.grid(color='r')
 
 This example will be extended if more products are available.
 

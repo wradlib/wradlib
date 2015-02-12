@@ -28,6 +28,12 @@ def ex_radolan_products():
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
     sfdata, sfattrs = wrl.io.read_RADOLAN_composite(sf_filename)
 
+     # mask invalid values
+    sec = rwattrs['secondary']
+    rwdata.flat[sec] = -9999
+    sec = sfattrs['secondary']
+    sfdata.flat[sec] = -9999
+
     rxdata = np.ma.masked_equal(rxdata, -9999) / 2 - 32.5
     exdata = np.ma.masked_equal(exdata, -9999) / 2 - 32.5
     rwdata = np.ma.masked_equal(rwdata, -9999)
@@ -55,6 +61,7 @@ def ex_radolan_products():
     pl.title('RADOLAN RX Product \n' + rxattrs['datetime'].isoformat())
     pl.xlim((x[0,0],x[-1,-1]))
     pl.ylim((y[0,0],y[-1,-1]))
+    pl.grid(color='r')
 
     # plot EX product
     fig = pl.figure()
@@ -67,6 +74,7 @@ def ex_radolan_products():
     pl.title('RADOLAN EX Product \n' + exattrs['datetime'].isoformat())
     pl.xlim((xe[0,0],xe[-1,-1]))
     pl.ylim((ye[0,0],ye[-1,-1]))
+    pl.grid(color='r')
 
     # plot RW product
     fig = pl.figure()
@@ -79,6 +87,7 @@ def ex_radolan_products():
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat())
     pl.xlim((x[0,0],x[-1,-1]))
     pl.ylim((y[0,0],y[-1,-1]))
+    pl.grid(color='r')
 
     # plot SF product
     fig = pl.figure()
@@ -91,6 +100,7 @@ def ex_radolan_products():
     pl.title('RADOLAN SF Product \n' + sfattrs['datetime'].isoformat())
     pl.xlim((x[0,0],x[-1,-1]))
     pl.ylim((y[0,0],y[-1,-1]))
+    pl.grid(color='r')
 
     pl.show()
 

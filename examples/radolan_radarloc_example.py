@@ -210,6 +210,7 @@ def ex_radolan_radarloc():
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n WGS84')
     pl.xlim((lon1[0,0],lon1[-1,-1]))
     pl.ylim((lat1[0,0],lat1[-1,-1]))
+    pl.grid(color='r')
 
     fig2 = pl.figure()
     ax2 = fig2.add_subplot(111, aspect='equal')
@@ -221,6 +222,7 @@ def ex_radolan_radarloc():
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n Polar Stereographic Projection')
     pl.xlim((x1[0,0],x1[-1,-1]))
     pl.ylim((y1[0,0],y1[-1,-1]))
+    pl.grid(color='r')
 
     # range array 150 km
     print("Max Range: ", rwattrs['maxrange'])
