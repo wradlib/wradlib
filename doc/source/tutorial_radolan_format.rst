@@ -223,7 +223,7 @@ Assumed the point (10.0 :math:`^{\circ}` E, 90.0 :math:`^{\circ}` N) is defined 
 
 with i, j as cartesian indices.
 
-wradlib provides the convenience function `util.get_radolan_grid` which returns the radolan grid for further processing. It takes an (nrows, ncols)-tuple and returns the projected cartesian coordinates or the wgs84 coordinates (keyword arg wgs84=True) as numpy ndarray (nrows x ncols x 2).
+*wradlib* provides the convenience function :func:`wradlib.georef.get_radolan_grid` which returns the radolan grid for further processing. It takes `nrows` and `ncols` as parameters and returns the projected cartesian coordinates or the wgs84 coordinates (keyword arg wgs84=True) as numpy ndarray (nrows x ncols x 2).
 
 Inverse Polar Stereographic Projection
 --------------------------------------
