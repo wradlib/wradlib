@@ -1,18 +1,42 @@
-Development Setup
-=================
+For Developers
+==============
 
-In the future, each release of wradlib will be guaranteed to work with a certain version of python(x,y) under MS Windows. The current version is 2.7.2.3. On other operating systems, the library should work, if similar versions of the required packages are installed.
+Setup
+-----
+The section :doc:`gettingstarted` will provide you with detailed guidance on how to install wradlib and the required dependencies for different operating systems (MS Windows, Linux, Mac OS). On MS Windows, each release of wradlib should work with a certain version of Python(x,y). wradlib 0.3.0 has been tested with Python(x,y) 2.7.9.0.
 
-However, at the moment you will need to install the following packages beyond python(x,y):
+As a developer, though, you should rather link into wradlib's version control. This way, it will be easier for you to track chagnes and to contribute your changes to wradlib's main respository (see next section). Just install `Mercurial <http://mercurial.selenic.com/>`_, then clone the wradlib repository to your local system by executing the following command in your shell: ``hg clone https://bitbucket.org/wradlib/wradlib``. Do not forget to set the ``PYTHONPATH`` to point to the corresponding directory. 
 
-- all mandatory packages are listet in the requirements.txt file in wradlib root folder
 
-Documentation Setup
--------------------
+Contributing to wradlib
+-----------------------
+Everyone can contribute to the developement of wradlib by using the Fork and Pull model. For this purpose, you need to set up Mercurial (see section `Setup`_). Then see section :doc:`community` for further instructions on how to create a Pull Request.  
 
-There are a few things that need to be done in order for the documentation to be built properly.
 
-The documentation tool is `Sphinx <http://sphinx.pocoo.org/>`_. We oriented ourselves at the Numpy/Scipy documentation concerning docstrings. This implies using `numpydoc <http://pypi.python.org/pypi/numpydoc>`_ to enable Sphinx to understand the formatting of those docstrings. If you installed Python(x,y) Enthought Python, Sphinx is already installed. In order to install numpydoc, simply open a console window and type ``easy_install numpydoc``.
+Building the docs
+-----------------
+In order to build the documentation, you need to satisfy a few more dependencies which are mainly related to Sphinx. These are specified in the `requirements.txt <https://bitbucket.org/wradlib/wradlib/src/default/requirements.txt>`_.
 
-Now you can open a console window in the folder wradlib/doc and execute ``make html``. This will give you the latest documentation under the wradlib/doc/build/html directory. Simply open the index.html file to view the documentation.
+Once these requirements are met, you can open a console window in the folder wradlib/doc and execute ``make html``. This will give you the latest documentation under the wradlib/doc/build/html directory. Simply open the index.html file to view the documentation.
+
+
+Testing
+-------
+wradlib uses the `unittest <http://pythontesting.net/framework/unittest/unittest-introduction/>`_ framework. New functions should come with corresponding unittests in the ``wradlib/wradlib/tests`` directory. Just have a look at `available tests <https://bitbucket.org/wradlib/wradlib/src/default/wradlib/tests>`_ to get an idea. In addition, examples and docstrings are a good way to compine testing and documentation. Have a look at the `examples <https://bitbucket.org/wradlib/wradlib/src/default/examples>`_ in order to get an idea on how to set these up correctly. In the docstrings, the ``Examples`` section will be tested by our testing framework. This could look like this::
+
+	def foo(a):
+		"""Docstring to be evaluated by doctest
+
+		Examples
+		--------
+		>>> from wradlib.some_module import foo
+		>>> print(foo(3))
+		4
+		"""
+		return a + 1	   
+
+
+Continuous Integration
+----------------------
+We use `Codeship <http://www.codeship.io>`_ for Continuous Integration (CI). CI means, in our case, that each commit pushed to wradlib's main repository will trigger the test suites on Codeship. If all tests pass successfully, a new documentation will be built and published on http://wradlib.bitbucket.org. In case a new release tag is associated with a commit, a new release will be distributed via `PyPI <https://pypi.python.org/pypi/wradlib>`_. 
 
