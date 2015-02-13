@@ -2,7 +2,7 @@
 RADOLAN
 *******
 
-RADOLAN is abbrevated from the german **RA**\ dar-\ **O**\ n\ **L**\ ine-\ **AN**\ eichung, which means Radar-Online-Adjustment.
+RADOLAN is abbreviated from the german **RA**\ dar-\ **O**\ n\ **L**\ ine-\ **AN**\ eichung, which means Radar-Online-Adjustment.
 
 Using it's `network of 17 weather radar <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Oeffentlichkeit/TI/TI2/Downloads/Standorttabelle,templateId=raw,property=publicationFile.pdf/Standorttabelle.pdf>`_ the German Weather Service provides many products for high resolution precipitation analysis and forecast. A comprehensive product list can be found in chapter :ref:`radolan_composite_products`.
 
@@ -203,22 +203,22 @@ The earth as sphere with an radius of 6370.04 km is used for all calculations.
 
 With formulas (1), (2) and (3) the geographic reference points (lambda, phi) can be converted to projected cartesian coordinates. The calculated (x y) is the distance vector to the origign of the cartesian coordinate system (north pole).
 
-.. math::  .\quad x = R * M(\phi) * cos(\phi) * sin(\lambda - \lambda_0)
+.. math::  x = R * M(\phi) * cos(\phi) * sin(\lambda - \lambda_0)
    :label: f1
 
-.. math::  .\quad y = -R * M(\phi) * cos(\phi) * cos(\lambda - \lambda_0)
+.. math::  y = -R * M(\phi) * cos(\phi) * cos(\lambda - \lambda_0)
    :label: f2
 
-.. math::  .\quad M(\phi) =  \frac {1 + sin(\phi_0)} {1 + sin(\phi)}
+.. math::  M(\phi) =  \frac {1 + sin(\phi_0)} {1 + sin(\phi)}
    :label: f3
 
 
 Assumed the point (10.0 :math:`^{\circ}` E, 90.0 :math:`^{\circ}` N) is defined as coordinate system origin. Then all ccordinates can be calculated with the known grid-spacing d as:
 
-.. math:: .\quad x = x_0 + d * (j - j_0)
+.. math:: x = x_0 + d * (j - j_0)
    :label: f4
 
-.. math:: .\quad y = y_0 + d * (i - i_0)
+.. math:: y = y_0 + d * (i - i_0)
    :label: f5
 
 with i, j as cartesian indices.
@@ -230,10 +230,10 @@ Inverse Polar Stereographic Projection
 
 The geographic coordinates of specific datapoints can be calculated by using the cartesian coordinates (x,y) and the following formulas:
 
-.. math::  .\quad \lambda = \arctan\left(\frac {-x} {y}\right) + \lambda_0
+.. math:: \lambda = \arctan\left(\frac {-x} {y}\right) + \lambda_0
    :label: f6
 
-.. math::  .\quad \phi = \arcsin\left(\frac {R^2 * \left(1 + \sin\phi_0\right)^2 - \left(x^2 + y^2\right)} {R^2 * \left(1 + \sin\phi_0\right)^2 + \left(x^2 + y^2\right)}\right)
+.. math:: \phi = \arcsin\left(\frac {R^2 * \left(1 + \sin\phi_0\right)^2 - \left(x^2 + y^2\right)} {R^2 * \left(1 + \sin\phi_0\right)^2 + \left(x^2 + y^2\right)}\right)
    :label: f7
 
 Within *wradlib* the `georef.reproject` function can be used to convert the radolan grid data from xy-space to lonlat-space and back.
@@ -248,7 +248,7 @@ The German Weather Service provides a `WKT-string <https://kunden.dwd.de/geoserv
 
 For the scale_factor the intersection of the projection plane with the earth sphere at 60.0 :math:`^{\circ}` N has to be taken into account:
 
-.. math::  .\quad scale\_factor = \frac {1 + \sin\left(60.^{\circ}\right)} {1 + \sin\left(90.^{\circ}\right)} = 0.93301270189
+.. math:: scale\_factor = \frac {1 + \sin\left(60.^{\circ}\right)} {1 + \sin\left(90.^{\circ}\right)} = 0.93301270189
    :label: f8
 
 Also, the PROJECTION["Stereographic_North_Pole"] isn't known within GDAL/OSR. It has to be changed to the known PROJECTION["polar_stereographic"].
