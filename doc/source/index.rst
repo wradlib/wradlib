@@ -26,8 +26,8 @@ This documentation is under steady development. It provides a complete library r
    tutorials
    recipes
    reference
-   dev_setup
    community
+   dev_setup
    zreferences
 
 Indices and tables
