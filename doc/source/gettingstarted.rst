@@ -167,7 +167,7 @@ Dependencies
 
 - netCDF4, version >= 1.0
 
-- gdal (*), install via ``easy_install gdal``
+- gdal, version >= 1.9
 
 You can check whether the required `Dependencies`_ are available on your computer by opening a Python console and enter:
 
