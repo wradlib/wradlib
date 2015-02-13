@@ -167,8 +167,6 @@ Dependencies
 
 - netCDF4, version >= 1.0
 
-- numpydoc (*), version >= 0.3, install via ``easy_install numpydoc``
-
 - gdal (*), install via ``easy_install gdal``
 
 You can check whether the required `Dependencies`_ are available on your computer by opening a Python console and enter:
