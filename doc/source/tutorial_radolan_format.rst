@@ -285,12 +285,11 @@ PROJ.4-String::
     +proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189
     +x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs
 
-PROJ.4-String (problems with units)::
+This PROJ.4-string is used within *wradlib* to create the osr-object by using the two helper-functions :func:`wradlib.georef.create_projstr` and :func:`wradlib.georef.proj4_to_osr`::
 
-    +proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189
-    +x_0=0 +y_0=0 +a=6370040 +b=6370040 +units=km +no_defs
-
-The first string is used within *wradlib* at the moment to create the osr-object, the latter is also valid, but lead to problems with correct units-representation when importing into osr-object.
+    # create radolan projection osr object
+    dwd_string = georef.create_projstr("dwd-radolan")
+    proj_stereo = georef.proj4_to_osr(dwd_string)
 
 
 .. _radolan_examples:
