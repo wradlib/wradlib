@@ -17,6 +17,7 @@ import matplotlib as mpl
 import os
 from osgeo import osr
 
+
 def get_radar_locations():
 
     radars = {}
@@ -190,14 +191,14 @@ def ex_radolan_radarloc():
     proj_wgs.ImportFromEPSG(4326)
 
     # get radolan grid
-    radolan_grid_xy = wrl.georef.get_radolan_grid(900,900)
-    x1 = radolan_grid_xy[:,:,0]
-    y1 = radolan_grid_xy[:,:,1]
+    radolan_grid_xy = wrl.georef.get_radolan_grid(900, 900)
+    x1 = radolan_grid_xy[:, :, 0]
+    y1 = radolan_grid_xy[:, :, 1]
 
     # convert to lonlat
     radolan_grid_ll = wrl.georef.reproject(radolan_grid_xy, projection_source=proj_stereo, projection_target=proj_wgs)
-    lon1 = radolan_grid_ll[:,:,0]
-    lat1 = radolan_grid_ll[:,:,1]
+    lon1 = radolan_grid_ll[:, :, 0]
+    lat1 = radolan_grid_ll[:, :, 1]
 
     # plot two projections side by side
     fig1 = pl.figure()
@@ -208,8 +209,8 @@ def ex_radolan_radarloc():
     pl.xlabel("Longitude ")
     pl.ylabel("Latitude")
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n WGS84')
-    pl.xlim((lon1[0,0],lon1[-1,-1]))
-    pl.ylim((lat1[0,0],lat1[-1,-1]))
+    pl.xlim((lon1[0, 0],lon1[-1, -1]))
+    pl.ylim((lat1[0, 0],lat1[-1, -1]))
     pl.grid(color='r')
 
     fig2 = pl.figure()
@@ -220,33 +221,33 @@ def ex_radolan_radarloc():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n Polar Stereographic Projection')
-    pl.xlim((x1[0,0],x1[-1,-1]))
-    pl.ylim((y1[0,0],y1[-1,-1]))
+    pl.xlim((x1[0, 0],x1[-1, -1]))
+    pl.ylim((y1[0, 0],y1[-1, -1]))
     pl.grid(color='r')
 
     # range array 150 km
     print("Max Range: ", rwattrs['maxrange'])
     r = np.arange(1, 151)*1000
     # azimuth array 1 degree spacing
-    az = np.linspace(0,360,361)[0:-1]
+    az = np.linspace(0, 360, 361)[0:-1]
 
     # get radar dict
     radars = get_radar_locations()
 
     # iterate over all radars in rwattrs
     # plot range rings and radar location for the two projections
-    for id in rwattrs['radarlocations']:
+    for radar_id in rwattrs['radarlocations']:
 
         # get radar coords etc from dict
         # repair Ummendorf ID
-        if id == 'umd':
-            id = 'umm'
-        radar = radars[id.upper()]
+        if radar_id == 'umd':
+            radar_id = 'umm'
+        radar = radars[radar_id.upper()]
 
         # build polygons for maxrange rangering
         polygons = wrl.georef.polar2polyvert(r, az, (radar['lon'], radar['lat']))
         polygons.shape = (len(az), len(r), 5, 2)
-        polygons_ll = polygons[:,-1,:,:]
+        polygons_ll = polygons[:, -1, :, :]
 
         # reproject to radolan polar stereographic projection
         polygons_xy = wrl.georef.reproject(polygons_ll, projection_source=proj_wgs, projection_target=proj_stereo)
@@ -259,13 +260,14 @@ def ex_radolan_radarloc():
 
         # plot radar location and information text
         ax1.plot(radar['lon'], radar['lat'], 'r+')
-        ax1.text(radar['lon'], radar['lat'], id, color='r')
+        ax1.text(radar['lon'], radar['lat'], radar_id, color='r')
 
         # reproject lonlat radar location coordinates to polar stereographic projection
-        x_loc, y_loc = wrl.georef.reproject(radar['lon'], radar['lat'], projection_source=proj_wgs, projection_target=proj_stereo)
+        x_loc, y_loc = wrl.georef.reproject(radar['lon'], radar['lat'], projection_source=proj_wgs,
+                                            projection_target=proj_stereo)
         # plot radar location and information text
         ax2.plot(x_loc, y_loc, 'r+')
-        ax2.text(x_loc, y_loc, id, color='r')
+        ax2.text(x_loc, y_loc, radar_id, color='r')
 
     pl.tight_layout()
     pl.show()

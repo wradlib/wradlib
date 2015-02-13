@@ -849,7 +849,7 @@ def create_projstr(projname, **kwargs):
         try:
             projstr = "+proj=utm +zone=%d +ellps=WGS84%s" % (kwargs["zone"], hemisphere)
         except:
-            print "Cannot create projection string for projname %s. Maybe keyword argument zone was not passed?" % s
+            print "Cannot create projection string for projname %s. Maybe keyword argument zone was not passed?" % projname
             exit(1)
 
     elif projname=="dwd-radolan":
@@ -1235,7 +1235,7 @@ def get_radolan_coords(lon, lat, trig=False):
         to be equivalent.
     """
 
-    if trig == True:
+    if trig:
         # calculation of x_0 and y_0 coordinates of radolan grid
         # as described in the format description
         phi_0 = np.radians(60)
@@ -1259,6 +1259,7 @@ def get_radolan_coords(lon, lat, trig=False):
         x, y = reproject(lon, lat, projection_source=proj_wgs, projection_target=proj_stereo)
 
     return x, y
+
 
 def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
@@ -1346,13 +1347,13 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     small = {'j_0': 460, 'i_0': 460, 'res': 2}
     normal = {'j_0': 450, 'i_0': 450, 'res': 1}
     extended = {'j_0': 600, 'i_0': 800, 'res': 1}
-    griddefs = {(460,460): small, (900,900): normal, (1500,1400): extended}
+    griddefs = {(460, 460): small, (900, 900): normal, (1500, 1400): extended}
 
     # type and value checking
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
             raise TypeError("wradlib.georef: Parameter *nrows* and *ncols* not integer")
-        if (nrows,ncols) not in griddefs.iterkeys():
+        if (nrows, ncols) not in griddefs.iterkeys():
             raise ValueError("wradlib.georef: Parameter *nrows* and *ncols* mismatch.")
     else:
         # fallback for call without parameters
@@ -1361,17 +1362,17 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
 
     # small, normal or extended grid check
     # reference point changes according to radolan composit format
-    j_0 = griddefs[(nrows,ncols)]['j_0']
-    i_0 = griddefs[(nrows,ncols)]['i_0']
-    res = griddefs[(nrows,ncols)]['res']
+    j_0 = griddefs[(nrows, ncols)]['j_0']
+    i_0 = griddefs[(nrows, ncols)]['i_0']
+    res = griddefs[(nrows, ncols)]['res']
 
-    x_0, y_0 = get_radolan_coords(9.0,51.0, trig=trig)
+    x_0, y_0 = get_radolan_coords(9.0, 51.0, trig=trig)
 
     x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols, res)
     y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows, res)
-    x, y = np.meshgrid(x_arr,y_arr)
+    x, y = np.meshgrid(x_arr, y_arr)
 
-    radolan_grid = np.dstack((x,y))
+    radolan_grid = np.dstack((x, y))
 
     if wgs84:
 
@@ -1382,10 +1383,10 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
 
             sinlat0 = np.sin(np.radians(lat0))
 
-            fac = (6370.040**2.) * ((1.+sinlat0) **2.)
+            fac = (6370.040**2.) * ((1.+sinlat0) ** 2.)
             lon = np.degrees(np.arctan((-x/y))) + lon0
-            lat = np.degrees(np.arcsin((fac -(x**2. + y**2.) )/(fac + (x**2. + y**2.)  ) ))
-            radolan_grid = np.dstack((lon,lat))
+            lat = np.degrees(np.arcsin((fac - (x**2. + y**2.))/(fac + (x**2. + y**2.))))
+            radolan_grid = np.dstack((lon, lat))
         else:
             # create radolan projection osr object
             dwd_string = create_projstr("dwd-radolan")

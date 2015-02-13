@@ -14,6 +14,7 @@ import matplotlib.pyplot as pl
 import numpy as np
 import os
 
+
 def ex_radolan_products():
 
     # load radolan file
@@ -22,13 +23,12 @@ def ex_radolan_products():
     rw_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
     sf_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-sf_10000-1408102050-dwd---bin.gz'
 
-
     rxdata, rxattrs = wrl.io.read_RADOLAN_composite(rx_filename)
     exdata, exattrs = wrl.io.read_RADOLAN_composite(ex_filename)
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
     sfdata, sfattrs = wrl.io.read_RADOLAN_composite(sf_filename)
 
-     # mask invalid values
+    # mask invalid values
     sec = rwattrs['secondary']
     rwdata.flat[sec] = -9999
     sec = sfattrs['secondary']
@@ -39,16 +39,15 @@ def ex_radolan_products():
     rwdata = np.ma.masked_equal(rwdata, -9999)
     sfdata = np.ma.masked_equal(sfdata, -9999)
 
-
     # Get coordinates
-    radolan_grid_xy = wrl.georef.get_radolan_grid(900,900)
-    radolan_egrid_xy = wrl.georef.get_radolan_grid(1500,1400)
+    radolan_grid_xy = wrl.georef.get_radolan_grid(900, 900)
+    radolan_egrid_xy = wrl.georef.get_radolan_grid(1500, 1400)
 
-    x = radolan_grid_xy[:,:,0]
-    y = radolan_grid_xy[:,:,1]
+    x = radolan_grid_xy[:, :, 0]
+    y = radolan_grid_xy[:, :, 1]
 
-    xe = radolan_egrid_xy[:,:,0]
-    ye = radolan_egrid_xy[:,:,1]
+    xe = radolan_egrid_xy[:, :, 0]
+    ye = radolan_egrid_xy[:, :, 1]
 
     # plot RX product
     fig = pl.figure()
@@ -59,8 +58,8 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN RX Product \n' + rxattrs['datetime'].isoformat())
-    pl.xlim((x[0,0],x[-1,-1]))
-    pl.ylim((y[0,0],y[-1,-1]))
+    pl.xlim((x[0, 0],x[-1, -1]))
+    pl.ylim((y[0, 0],y[-1, -1]))
     pl.grid(color='r')
 
     # plot EX product
@@ -72,8 +71,8 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN EX Product \n' + exattrs['datetime'].isoformat())
-    pl.xlim((xe[0,0],xe[-1,-1]))
-    pl.ylim((ye[0,0],ye[-1,-1]))
+    pl.xlim((xe[0, 0],xe[-1, -1]))
+    pl.ylim((ye[0, 0],ye[-1, -1]))
     pl.grid(color='r')
 
     # plot RW product
@@ -85,8 +84,8 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat())
-    pl.xlim((x[0,0],x[-1,-1]))
-    pl.ylim((y[0,0],y[-1,-1]))
+    pl.xlim((x[0, 0],x[-1, -1]))
+    pl.ylim((y[0, 0],y[-1, -1]))
     pl.grid(color='r')
 
     # plot SF product
@@ -98,8 +97,8 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN SF Product \n' + sfattrs['datetime'].isoformat())
-    pl.xlim((x[0,0],x[-1,-1]))
-    pl.ylim((y[0,0],y[-1,-1]))
+    pl.xlim((x[0, 0],x[-1, -1]))
+    pl.ylim((y[0, 0],y[-1, -1]))
     pl.grid(color='r')
 
     pl.show()
