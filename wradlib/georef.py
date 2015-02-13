@@ -1217,10 +1217,9 @@ def proj4_to_osr(proj4str):
         proj = get_default_projection()
     return(proj)
 
-def get_radolan_coords(lon=9., lat=51., trig=False):
+def get_radolan_coords(lon, lat, trig=False):
     """
     Calculates x,y coordinates of radolan grid from lon, lat
-    defaults to radolan center coordinate (9°E, 51°N)
 
     Parameters
     ----------
@@ -1231,7 +1230,9 @@ def get_radolan_coords(lon=9., lat=51., trig=False):
         latitude
     trig : boolean
         if True, uses trigonometric formulas for calculation, otherwise osr transformations
-
+        if False, uses osr spatial reference system to transform between projections
+        `trig` is recommended to be False, however, the two ways of computation are expected
+        to be equivalent.
     """
 
     if trig == True:
@@ -1296,7 +1297,10 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     ncols : int
         number of columns (460, 900 by default, 1400)
     trig : boolean
-        if True, uses trigonometric formulas for calculation, otherwise osr transformations
+        if True, uses trigonometric formulas for calculation
+        if False, uses osr spatial reference system to transform between projections
+        `trig` is recommended to be False, however, the two ways of computation are expected
+        to be equivalent.
     wgs84 : boolean
         if True, output coordinates are in wgs84 lonlat format (default: False)
 
@@ -1308,20 +1312,29 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     Examples
     --------
 
+        >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid()
         >>> print(radolan_grid.shape, radolan_grid[0,0,:])
+        ((900, 900, 2), array([ -523.46216677, -4658.64471573]))
+
+        >>> # using pure trigonometric transformations
+        >>> import wradlib.georef as georef
+        >>> radolan_grid = georef.get_radolan_grid(trig=True)
+        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
         ((900, 900, 2), array([ -523.46216692, -4658.64472427]))
 
+        >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
         >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((1500, 1400, 2), array([ -673.46216692, -5008.64472427]))
+        ((1500, 1400, 2), array([ -673.46216677, -5008.64471573]))
 
+        >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
         >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((900, 900, 2), array([  3.58892995,  46.95258041]))
+        ((900, 900, 2), array([  3.58892994,  46.9525804 ]))
 
     Raises
     ------
@@ -1352,7 +1365,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     i_0 = griddefs[(nrows,ncols)]['i_0']
     res = griddefs[(nrows,ncols)]['res']
 
-    x_0, y_0 = get_radolan_coords(trig=trig)
+    x_0, y_0 = get_radolan_coords(9.0,51.0, trig=trig)
 
     x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols, res)
     y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows, res)
