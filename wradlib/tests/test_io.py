@@ -180,7 +180,7 @@ class RadolanTest(unittest.TestCase):
 
         for key, value in attrs.iteritems():
             if type(value) == np.ndarray:
-                self.assertEqual(value.dtype, np.int64)
+                self.assertIn(value.dtype, [np.int32, np.int64])
             else:
                 self.assertEqual(value, test_attrs[key])
 
