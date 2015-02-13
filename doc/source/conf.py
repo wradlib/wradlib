@@ -28,7 +28,8 @@ import sys, os
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.todo',
               'sphinx.ext.coverage',
-              'sphinx.ext.pngmath',
+              #'sphinx.ext.pngmath',
+              'sphinx.ext.mathjax',
               'sphinx.ext.autosummary',
               'sphinxcontrib.bibtex',
               'numpydoc',
@@ -37,6 +38,9 @@ extensions = ['sphinx.ext.autodoc',
 
 # just generate normal png
 plot_formats = ['png']
+
+mathjax_path = ("http://cdn.mathjax.org/mathjax/latest/MathJax.js?"
+"config=TeX-AMS-MML_HTMLorMML")
 
 pngmath_latex_preamble=r'\usepackage[active]{preview}' # + other custom stuff for inline math, such as non-default math fonts etc.
 pngmath_use_preview=True
