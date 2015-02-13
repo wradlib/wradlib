@@ -19,7 +19,7 @@ Here, ``data`` is a two dimensional integer or float array of shape (number of r
 
 The :ref:`radolan_grid` coordinates can be calculated with :func:`wradlib.georef.get_radolan_grid()`.
 
-In `the following short example <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_quickstart_example.py>`_ the RW-product is shown in the RADOLAN :ref:`polar_stereo_projection`::
+In `the following short example <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_quickstart_example.py>`_ the RW-product is shown in the RADOLAN :ref:`polar_stereo_projection`::
 
     # import section
     import wradlib as wrl
@@ -316,7 +316,7 @@ Attention is paid to:
 DWD-Radar Network
 -----------------
 
-In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_radarloc_example.py>`_ the RW-product is shown in WGS84 and the RADOLAN :ref:`polar_stereo_projection`. All for the compositing process used radars are extracted from the metadata and plotted with their respective maximum range rings and location information.
+In `this example script <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_radarloc_example.py>`_ the RW-product is shown in WGS84 and the RADOLAN :ref:`polar_stereo_projection`. All for the compositing process used radars are extracted from the metadata and plotted with their respective maximum range rings and location information.
 
 .. plot::
 
@@ -589,7 +589,7 @@ In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/de
 RADOLAN composite header
 ------------------------
 
-In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_header_example.py>`_ we extract and show header information from several RADOLAN-products. First we load data and metadata of RX,EX,RW and SF-products::
+In `this example script <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_header_example.py>`_ we extract and show header information from several RADOLAN-products. First we load data and metadata of RX,EX,RW and SF-products::
 
     import wradlib as wrl
     import os
@@ -703,7 +703,7 @@ The metadata information reflects the different measurement time intervals, the 
 RADOLAN Projection
 ------------------
 
-In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/radolan_projection_example.py>`_ we calculate the RADOLAN Grid and print their bounding box coordinates in different projections::
+In `this example script <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_projection_example.py>`_ we calculate the RADOLAN Grid and print their bounding box coordinates in different projections::
 
     import wradlib as wrl
     from osgeo import osr
@@ -795,7 +795,7 @@ Output::
 RADOLAN products showcase
 -------------------------
 
-In `this example script <https://bitbucket.org/kaimuehlbauer/wradlib_miub/src/default/examples/examples/radolan_products_example.py>`_ we show several RADOLAN products:
+In `this example script <https://bitbucket.org/wradlib/wradlib/src/default/examples/examples/radolan_products_example.py>`_ we show several RADOLAN products:
 
 .. plot::
 
