@@ -4,7 +4,7 @@ Getting Started
 Bleeding edge code
 ------------------
 
-.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might seriously lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://bitbucket.org/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
+.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://bitbucket.org/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
 
 `Download <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_ the source, unzip, and run:
 
