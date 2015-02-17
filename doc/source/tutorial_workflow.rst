@@ -120,10 +120,16 @@ In order to define the horizontal and vertical position of the radar bins, we ne
 >>> polargrid = np.meshgrid(ranges, azimuths)
 >>> lon, lat, alt = wradlib.georef.polar2lonlatalt_n(polargrid[0], polargrid[1], elevation, radar_location)
 
-*wradlib* supports the projection of geographical coordinates (lon/lat) to a Cartesian reference system. Basically, you have to provide a string which represents the projection - based on the `proj.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3):
+*wradlib* supports the projection of geographical coordinates (lon/lat) to a Cartesian reference system. It uses GDAL/OSR Spatial References Objects as function parameters. Basically, you have to create the OSR-object by using GDAL-capabilities or one of the provided helper functions. We recommend the creation using `EPSG numbers <http://epsg.io/>`_::
+
+>>> # Gauss Krueger Zone 3, EPSG-Number 31467
+>>> gk3 = wradlib.georef.epsg_to_osr(31467)
+>>> x, y = wradlib.georef.reproject(lon, lat, projection_target=gk3)
+
+Second, you can provide a string which represents the projection - based on the `PROJ.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3)::
 
 >>> projstr = wradlib.georef.create_projstr("gk", zone=3)
->>> gk3 = proj4_to_osr(proj4str)
+>>> gk3 = wradlib.georef.proj4_to_osr(proj4str)
 >>> x, y = wradlib.georef.reproject(lon, lat, projection_target=gk3)
 
 .. seealso:: Get more info in the library reference section :doc:`georef`.
