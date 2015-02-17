@@ -56,9 +56,9 @@ def ex_plot_ppi():
     pl.figure()
     # using the proj keyword we tell the function to:
     # - interpret the site coordinates as longitude/latitude
-    # - reproject the coordinates to the dwd-radolan composite coordinate system
-    wradlib.vis.plot_ppi(img, site=(10., 45.),
-                         proj=wradlib.georef.create_projstr('dwd-radolan'))
+    # - reproject the coordinates to the given dwd-radolan composite coordinate system
+    proj_rad = wradlib.georef.proj4_to_osr(wradlib.georef.create_projstr('dwd-radolan'))
+    wradlib.vis.plot_ppi(img, site=(10., 45.), proj=proj_rad)
     # now the crosshair must also observe the projection
     # in addition the ranges must now be given in meters
     # we now also change the circles to a different color and linestyle
@@ -70,7 +70,7 @@ def ex_plot_ppi():
                                          'circle':{'edgecolor':'blue',
                                                    'linestyle':'dotted'},
                                         },
-                                   proj=wradlib.georef.create_projstr('dwd-radolan')
+                                   proj=proj_rad
                                    )
     pl.title('Georeferenced/Projected PPI')
 
@@ -79,8 +79,7 @@ def ex_plot_ppi():
     # Transplanting the radar virtually moves it away from the central meridian
     # of the projection (which is 10 degrees east)
     # Due north now does not point straight upwards on the map
-    wradlib.vis.plot_ppi(img, site=(45., 7.),
-                         proj=wradlib.georef.create_projstr('dwd-radolan'))
+    wradlib.vis.plot_ppi(img, site=(45., 7.), proj=proj_rad)
     # The crosshair shows this.
     # for the case that the lines should actually become curved, they are
     # implemented as a piecewise linear curve with 10 vertices
@@ -91,7 +90,7 @@ def ex_plot_ppi():
                                          'circle':{'edgecolor':'darkgray',
                                                    'linestyle':'dotted'},
                                         },
-                                   proj=wradlib.georef.create_projstr('dwd-radolan')
+                                   proj=proj_rad
                                    )
     pl.title('Projection Side Effects')
 
