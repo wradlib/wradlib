@@ -47,9 +47,10 @@ Here's an example how a set of CAPPIs can be created from synthetic polar volume
     ranges = np.arange(0., 120000., 1000.)
     sitecoords = (14.924218,120.255547,500.)
     projstr = wradlib.georef.create_projstr("utm", zone=51, hemisphere="north")
+    proj = wradlib.georef.proj4_to_osr(projstr)
 
     # create Cartesian coordinates corresponding the location of the polar volume bins
-    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs, azims, ranges, projstr)
+    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs, azims, ranges, proj)
     poldata = wradlib.vpr.synthetic_polar_volume(polxyz)
     # this is the shape of our polar volume
     polshape = (len(elevs),len(azims),len(ranges))
