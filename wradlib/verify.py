@@ -60,9 +60,9 @@ class PolarNeighbours():
         GDAL OSR Spatial Reference Object describing projection
         (see georef for documentation)
     x : array of floats
-        x coordinates of the points in map projection corresponding to projstr
+        x coordinates of the points in map projection corresponding to proj
     y : array of floats
-        y coordinates of the points in map projection corresponding to projstr
+        y coordinates of the points in map projection corresponding to proj
     nnear : int
         number of neighbouring radar bins you would like to find
 

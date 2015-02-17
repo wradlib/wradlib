@@ -590,6 +590,7 @@ def polar2polyvert(r, az, sitecoords):
 
     Examples
     --------
+    >>> import wradlib.georef as georef
     >>> import numpy as np
     >>> import matplotlib as mpl
     >>> import matplotlib.pyplot as pl
@@ -600,14 +601,14 @@ def polar2polyvert(r, az, sitecoords):
     >>> # az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
     >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
     >>> sitecoords = (9.0, 48.0)
-    >>> polygons = polar2polyvert(r, az, sitecoords)
+    >>> polygons = georef.polar2polyvert(r, az, sitecoords)
     >>> # plot the resulting mesh
     >>> fig = pl.figure()
     >>> ax = fig.add_subplot(111)
     >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
-    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors=None)
+    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors='None')
     >>> ret = ax.add_collection(polycoll, autolim=True)
-    >>> #pl.axis('tight')
+    >>> pl.autoscale()
     >>> pl.show()
 
     """
@@ -632,8 +633,6 @@ def polar2polyvert(r, az, sitecoords):
     vertices = np.concatenate((llc, ulc, urc, lrc, llc)).reshape((-1,5,2), order='F')
 
     return vertices
-
-
 
 
 def polar2centroids(r=None, az=None, sitecoords=None, range_res = None):
