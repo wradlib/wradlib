@@ -11,8 +11,29 @@ Bleeding edge
 
 **Highlights**
 
+*Nothing new, yet.*
+
+**New features**
+
+*Nothing new, yet.*
+
+**Deprecated features**
+
+*None.*
+
+**Removed functions**
+
+*None.*
+
+
+Version 0.4.0
+-------------
+
+**Highlights**
+
 - Fixed a broken proj4 string for DWD radolan polarstereographic projection in function ``wradlib.georef.create_projstr``
 - Added RADOLAN tutorial to the documentation. Together with that came new function to retrieve the RADOLAN composite grid.
+- Adding section ``Release notes`` to the documentation.
 
 **New features**
 
@@ -79,7 +100,7 @@ The following functions/classes that were marked as deprecated before have been 
 Version 0.2.0
 -------------
 
-``0.2.0`` is the first new release of wradlib after more than three years of ```0.0.1``. The changes that have accumulated during this time are too many to list them here. Let's just say that from here on, we will keep track of changes in wradlib releases more thoroughly.
+``0.2.0`` is the first new release of wradlib after more than three years of ``0.0.1``. The changes that have accumulated during this time are too many to list them here. Let's just say that from here on, we will keep track of changes in wradlib releases more thoroughly.
 
 
 Version 0.1.1
