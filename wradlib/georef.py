@@ -864,7 +864,7 @@ def create_projstr(projname, **kwargs):
     return projstr
 
 
-def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = None):
+def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = None):
     """
     Convenience function to compute projected bin coordinates directly from
     radar site coordinates and range/azimuth specs
@@ -881,16 +881,15 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
         The first angle can start at any values, but make sure the array is sorted
         continuously positively clockwise and the angles are equidistant. An angle
         if 0 degree is pointing north.
-    projstr : string
-        proj.4 projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
     range_res : float
         range resolution of radar measurement [m] in case it cannot be derived
         from r (single entry in r-array)
 
     """
     cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
-    osr_proj = proj4_to_osr(projstr)
-    x, y = reproject(cent_lon, cent_lat, projection_target = osr_proj)
+    x, y = reproject(cent_lon, cent_lat, projection_target = proj)
     return x.ravel(), y.ravel()
 
 
@@ -1217,9 +1216,12 @@ def proj4_to_osr(proj4str):
         proj = get_default_projection()
     return(proj)
 
+
 def get_radolan_coords(lon, lat, trig=False):
     """
     Calculates x,y coordinates of radolan grid from lon, lat
+
+    .. versionadded:: 0.4.0
 
     Parameters
     ----------
@@ -1263,6 +1265,8 @@ def get_radolan_coords(lon, lat, trig=False):
 
 def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
+
+    .. versionadded:: 0.4.0
 
     Returns the x,y coordinates of the radolan grid positions
     (lower left corner of every pixel). The radolan grid is a polarstereographic
