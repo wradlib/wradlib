@@ -1217,6 +1217,16 @@ def proj4_to_osr(proj4str):
     return(proj)
 
 
+def epsg_to_osr(epsg):
+    """Create osr spatial reference object from EPSG number"""
+    if epsg:
+        proj = osr.SpatialReference()
+        proj.ImportFromEPSG(epsg)
+    else:
+        proj = get_default_projection()
+    return(proj)
+
+
 def get_radolan_coords(lon, lat, trig=False):
     """
     Calculates x,y coordinates of radolan grid from lon, lat
