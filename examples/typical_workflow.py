@@ -69,8 +69,7 @@ def ex_typical_workflow():
     lon, lat, alt = wradlib.georef.polar2lonlatalt_n(polargrid[0], polargrid[1], elevation, radar_location)
 
     # projection to Gauss Krueger zone 3
-    gk3 = wradlib.georef.create_projstr("gk", zone=3)
-    proj_gk3 = wradlib.georef.proj4_to_osr(gk3)
+    proj_gk3 = wradlib.georef.epsg_to_osr(31467)
     x, y = wradlib.georef.reproject(lon, lat, projection_target=proj_gk3)
     xy = np.vstack((x.ravel(), y.ravel())).transpose()
 

@@ -46,13 +46,9 @@ def ex_georef():
 
 
     # 2nd step: reproject the centroid coordinates to Gauss-Krueger Zone 3
-    #   this is the proj.4 projection string
-    gk3 = '''
-    +proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
-    +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs
-    '''
+    #   by using the EPSG-Number 31467
     # use it for projecting the centroids to Gauss-Krueger 3
-    proj_gk3 = georef.proj4_to_osr(gk3)
+    proj_gk3 = georef.epsg_to_osr(31467)
     x, y = georef.reproject(cent_lon, cent_lat, projection_targe=proj_gk3)
 
     # export the projected centroid coordinates

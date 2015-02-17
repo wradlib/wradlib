@@ -85,9 +85,6 @@ def recipe_clutter_attenuation():
     tur_sitecoords  = (9.7839, 48.5861)
     fbg_sitecoords  = (8.005, 47.8744)
 
-    # PROJ.4 style projection string for target reference system
-    gk3 = wradlib.georef.create_projstr("gk", zone=3)
-
     # processing polar level radar data
     #   Tuerkheim
     tur_accum = process_polar_level_data("tur")
@@ -103,7 +100,8 @@ def recipe_clutter_attenuation():
 
     # derive Gauss-Krueger Zone 3 coordinates of range-bin centroids
     #   for Tuerkheim radar
-    proj_gk3 = wradlib.georef.proj4_to_osr(gk3)
+    # create osr projection using epsg number for GK Zone 3
+    proj_gk3 = wradlib.georef.epsg_to_osr(31467)
     tur_cent_lon, tur_cent_lat = wradlib.georef.polar2centroids(r, az, tur_sitecoords)
     tur_x, tur_y = wradlib.georef.reproject(tur_cent_lon, tur_cent_lat, projection_target=proj_gk3)
     tur_coord = np.array([tur_x.ravel(),tur_y.ravel()]).transpose()
