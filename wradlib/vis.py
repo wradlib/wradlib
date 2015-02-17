@@ -168,11 +168,11 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         of the coordinate system.
         If `proj` is used, values must be given as (longitude, latitude)
         tuple of geographical coordinates.
-    proj : str
-        PROJ.4 compatible projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
         If this parameter is not None, `site` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
-        coordinate system defined by the projection string.
+        coordinate system defined by osr object.
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
@@ -183,9 +183,6 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     See also
     --------
     wradlib.georef.reproject - for information on projection strings
-    wradlib.georef.create_projstr - routine to generate pre-defined projection
-        strings
-
 
     Returns
     -------
@@ -244,8 +241,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         # latitude longitudes from the polar data still stored in xx and yy
         lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site, **kw_polar2lonlatalt_n)
         # projected to the final coordinate system
-        osr_proj = georef.proj4_to_osr(proj)
-        xx, yy = georef.reproject(lon, lat, projection_target=osr_proj)
+        #osr_proj = georef.proj4_to_osr(proj)
+        xx, yy = georef.reproject(lon, lat, projection_target=proj)
 
     # get the current axes.
     # this creates one, if there is none
@@ -282,8 +279,8 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         List of angles (in degrees) for which straight lines should be drawn.
         These lines will be drawn starting from the center and until the largest
         range.
-    proj : str
-        PROJ.4 compatible projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
         The function will calculate lines and circles according to
         georeferenced coordinates taking beam propagation, earth's curvature
         and scale effects due to projection into account.
@@ -310,9 +307,6 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     See also
     --------
     wradlib.vis.plot_ppi - plotting a PPI in cartesian coordinates
-    wradlib.georef.create_projstr - routine to generate pre-defined projection
-        strings
-
 
     Returns
     -------
@@ -338,15 +332,14 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     if proj:
         # projected
         # reproject the site coordinates
-        osr_proj = georef.proj4_to_osr(proj)
-        psite = georef.reproject(*site, projection_target=osr_proj)
+        psite = georef.reproject(*site, projection_target=proj)
         # these lines might not be straigt so we approximate them with 10
         # segments. Produce polar coordinates
         rr, az = np.meshgrid(np.linspace(0,ranges[-1],10), angles)
         # and reproject using polar2lonlatalt to convert from polar to geographic
         nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr, az, elev,
                                                                 site)[:2],
-                                      projection_target=osr_proj)
+                                      projection_target=proj)
     else:
         # no projection
         psite = site
@@ -370,7 +363,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
                                                             np.arange(360),
                                                             elev,
                                                             site)[:2],
-                                  projection_target=osr_proj)
+                                  projection_target=proj)
             ax.add_patch(mpl.patches.Polygon(np.concatenate([x[:,None],
                                                              y[:,None]],
                                                              axis=1),

@@ -277,7 +277,7 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
 
 
 
-def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
+def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     """Create Cartesian coordinates for the polar volume bins
 
     Parameters
@@ -287,7 +287,8 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
-    projstr : proj.4 projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
 
     Returns
     -------
@@ -301,14 +302,13 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     # get geographical coordinates
     lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
-    osr_proj = georef.proj4_to_osr(projstr)
-    x, y = georef.reproject(lons, lats, projection_target=osr_proj)
+    x, y = georef.reproject(lons, lats, projection_target=proj)
     # create standard shape
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
 
-def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=None):
+def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
     """Create Cartesian coordinates for the polar volume bins
 
     Parameters
@@ -318,7 +318,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
-    projstr : proj.4 projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
 
     Returns
     -------
@@ -366,7 +367,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
             onerange4all = False
     if oneaz4all and onerange4all:
         # this is the simple way
-        return volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr)
+        return volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj)
     # No simply way, so we need to construct the coordinates arrays for each elevation angle
     #   but first adapt input arrays to this task
     if onerange4all:
@@ -385,20 +386,19 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     # get geographical coordinates
     lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
-    osr_proj = georef.proj4_to_osr(projstr)
-    x, y = georef.reproject(lons, lats, projection_target=osr_proj)
+    x, y = georef.reproject(lons, lats, projection_target=proj)
     # create standard shape
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
 
-def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
+def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
 
     Parameters
     ----------
     sitecoords
-    projstr
+    proj
     maxrange
     maxalt
     horiz_res
@@ -409,8 +409,7 @@ def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
     output : float array of shape (num grid points, 3), a tuple of 3 representing the grid shape
 
     """
-    osr_proj = georef.proj4_to_osr(projstr)
-    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=osr_proj)
+    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=proj)
     minz   = sitecoords[2]
     llx = center[0] - maxrange
     lly = center[1] - maxrange
