@@ -279,7 +279,11 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
 
 
 def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
-    """Create Cartesian coordinates for the polar volume bins
+    """
+    Create Cartesian coordinates for the polar volume bins
+
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
@@ -290,6 +294,9 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     ranges : sequence of ranges
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
+
+        .. versionadded:: 0.5.0
+           using osr objects instead of PROJ.4 strings as parameter
 
     Returns
     -------
@@ -312,6 +319,9 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
 def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
     """Create Cartesian coordinates for the polar volume bins
 
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
+
     Parameters
     ----------
     sitecoords : sequence of three floats indicating the radar position
@@ -321,6 +331,9 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
     ranges : sequence of ranges
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
+
+        .. versionadded:: 0.5.0
+           using osr objects instead of PROJ.4 strings as parameter
 
     Returns
     -------
@@ -395,6 +408,9 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
 
 def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
+
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
