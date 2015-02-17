@@ -39,6 +39,9 @@ import wradlib.util as util
 
 class PolarNeighbours():
     """
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
+
     For a set of projected point coordinates, extract the neighbouring bin values
     from a data set in polar coordinates. Use as follows:
 
@@ -59,6 +62,10 @@ class PolarNeighbours():
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
         (see georef for documentation)
+
+        .. versionadded:: 0.5.0
+           using osr objects instead of PROJ.4 strings as parameter
+
     x : array of floats
         x coordinates of the points in map projection corresponding to proj
     y : array of floats

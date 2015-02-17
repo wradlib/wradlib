@@ -869,6 +869,9 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = Non
     Convenience function to compute projected bin coordinates directly from
     radar site coordinates and range/azimuth specs
 
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings
+
     Parameters
     ----------
     r : array
@@ -883,6 +886,10 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = Non
         if 0 degree is pointing north.
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
+
+        .. versionadded:: 0.5.0
+           using osr objects instead of PROJ.4 strings
+
     range_res : float
         range resolution of radar measurement [m] in case it cannot be derived
         from r (single entry in r-array)
@@ -1218,7 +1225,22 @@ def proj4_to_osr(proj4str):
 
 
 def epsg_to_osr(epsg):
-    """Create osr spatial reference object from EPSG number"""
+    """Create osr spatial reference object from EPSG number
+
+    .. versionadded:: 0.5.0
+
+    Parameters
+    ----------
+    epsg : int
+        EPSG-Number defining the coordinate system
+
+    Returns
+    -------
+    proj : osr spatial reference object
+        GDAL/OSR object defining projection
+
+
+    """
     if epsg:
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(epsg)

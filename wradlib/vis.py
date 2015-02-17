@@ -127,6 +127,9 @@ def plot_ppi(data, r=None, az=None, autoext=True,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
 
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
+
     The implementation of this plot routine is in cartesian axes and does all
     coordinate transforms beforehand. This allows zooming into the data as well
     as making it easier to plot additional data (like gauge locations) without
@@ -173,6 +176,10 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         If this parameter is not None, `site` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
         coordinate system defined by osr object.
+
+        .. versionadded:: 0.5.0
+           using osr objects instead of PROJ.4 strings
+
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
@@ -241,7 +248,6 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         # latitude longitudes from the polar data still stored in xx and yy
         lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site, **kw_polar2lonlatalt_n)
         # projected to the final coordinate system
-        #osr_proj = georef.proj4_to_osr(proj)
         xx, yy = georef.reproject(lon, lat, projection_target=proj)
 
     # get the current axes.
@@ -262,6 +268,9 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
                        proj=None, elev=0., ax=None, kwds={}):
     """Plots a Crosshair for a Plan Position Indicator (PPI).
+
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
@@ -287,6 +296,10 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         Depending on the projection, crosshair lines might not be straight and
         range circles might appear elliptical (also check if the aspect of the
         axes might not also be responsible for this).
+
+        .. versionadded:: 0.5.0
+           using osr objects instead of PROJ.4 strings
+
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
