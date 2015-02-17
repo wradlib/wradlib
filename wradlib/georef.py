@@ -30,6 +30,7 @@ Georeferencing
    reproject
    create_projstr
    proj4_to_osr
+   epsg_to_osr
    projected_bincoords_from_radarspecs
    sweep_centroids
    read_gdal_values
