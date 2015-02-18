@@ -80,6 +80,88 @@ def deprecated(replacement=None):
         return inner
     return outer
 
+
+def apichange(ver, par, typ=None, msg=None, expar=None, exfunc=None):
+    """A decorator to generate an api-change warning.
+
+    .. versionadded:: 0.5.0
+
+    This decorator function generates a DeprecationWarning if a given kwarg
+    is changed/deprecated in a future version.
+
+    The warning is only issued, when the kwarg is actually used in the function call.
+
+    Parameters:
+    -----------
+
+    ver : string
+        Version from when the changes take effect
+    par : string
+        Name of parameter which is affected
+    typ : Python type
+        Data type of parameter which is affected
+    msg : string
+        additional warning message
+    expar : string
+        Name of parameter to be used in future
+    exfunc : function
+        Function which can convert from old to new parameter
+
+    Examples:
+    ---------
+    Parameter Type change:
+    >>> # plot the deprecation message
+    >>> @apichange("0.6.0", par='proj', msg="'proj' will change from proj4-string to osr-object")
+    >>> def plot_ppi(data, r=None, az=None, autoext=True,
+    ...              site=(0,0), proj=None, elev=0.,
+    ...              ax=None, **kwargs):
+
+    >>> # if the api already changed, we can issue warning and try to convert
+    >>> @apichange("0.6.0", par='proj', typ=str, exfunc=georef.proj4_to_osr)
+    >>> def plot_ppi(data, r=None, az=None, autoext=True,
+    ...              site=(0,0), proj=None, elev=0.,
+    ...              ax=None, **kwargs):
+
+    One Parameter replaced by another
+    >>> # plot the deprecation message
+    >>> @apichange("0.6.0", par='projstr', expar='proj')
+    >>> def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
+
+    >>> # if the api already changed, we can issue warning and try to convert
+    >>> @apichange("0.6.0", par='projstr', typ=str, expar='proj', exfunc=georef.proj4_to_osr)
+    >>> def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
+
+    """
+    def outer(func):
+        wmsg = "\nPrevious behaviour of parameter '%s' in function '%s.%s' is deprecated " \
+               "\nand will be changed in version '%s'." % (par, func.__module__,func.__name__, ver)
+        if expar is not None:
+            wmsg += "\nuse parameter %s instead." % expar
+        if msg is not None:
+            wmsg += "\n%s" % msg
+
+        @functools.wraps(func)
+        def inner(*args, **kwargs):
+            para = kwargs.get(par, None)
+            if para:
+                if typ:
+                    if isinstance(para, typ):
+                        warnings.warn(wmsg, category=FutureWarning, stacklevel=2)
+                        if exfunc:
+                            para = exfunc(para)
+                    if expar:
+                        warnings.warn(wmsg, category=FutureWarning, stacklevel=2)
+                        kwargs.pop(par)
+                        kwargs.update({expar: para})
+                    else:
+                        kwargs.update({par: para})
+                else:
+                    warnings.warn(wmsg, category=FutureWarning, stacklevel=2)
+            return func(*args, **kwargs)
+        return inner
+    return outer
+
+
 class OptionalModuleStub(object):
     """Stub class for optional imports.
 
