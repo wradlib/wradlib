@@ -135,8 +135,11 @@ def apichange(ver, par, typ=None, msg=None, expar=None, exfunc=None):
     def outer(func):
         wmsg = "\nPrevious behaviour of parameter '%s' in function '%s.%s' is deprecated " \
                "\nand will be changed in version '%s'." % (par, func.__module__,func.__name__, ver)
+        if exfunc:
+            wmsg += "\nWrong parameter types will be automatically converted by " \
+            "using %s.%s." % (exfunc.__module__, exfunc.func_name)
         if expar is not None:
-            wmsg += "\nuse parameter %s instead." % expar
+            wmsg += "\nUse parameter %s instead." % expar
         if msg is not None:
             wmsg += "\n%s" % msg
 
