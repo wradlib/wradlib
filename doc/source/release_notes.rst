@@ -11,7 +11,7 @@ Bleeding edge
 
 **Highlights**
 
-*Nothing new, yet.*
+- Added ``apichange_kwarg`` decorator in ``wradlib.util`` and example ``apichange_example.py``
 
 **New features**
 
