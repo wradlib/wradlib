@@ -85,7 +85,7 @@ def deprecated(replacement=None):
 def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
     """A decorator to generate a DeprectationWarning.
 
-    .. versionadded:: 0.5.0
+    .. versionadded:: 0.4.1
 
     This decorator function generates a DeprecationWarning if a given kwarg
     is changed/deprecated in a future version.
