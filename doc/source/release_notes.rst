@@ -11,7 +11,7 @@ Bleeding edge
 
 **Highlights**
 
-From now on, wradlib will generate warnings if keyword parameters of wradlib functions will be or have been changed. This is achieved by using ``wradlib.util.apichange_kwargs`` as a decorator (see ``apichange_example.py`` for examples how these warnings might look like). Please take these warnings seriously and adapt your applications before stepping to a new wradlib release.
+*Nothing new, yet.*
 
 **New features**
 
@@ -24,6 +24,14 @@ From now on, wradlib will generate warnings if keyword parameters of wradlib fun
 **Removed functions**
 
 *None.*
+
+
+Version 0.4.1
+-------------
+
+**Highlights**
+
+From now on, wradlib will generate warnings if keyword parameters of wradlib functions will be or have been changed. This is achieved by using ``wradlib.util.apichange_kwargs`` as a decorator (see ``apichange_example.py`` for examples how these warnings might look like). Please take these warnings seriously and adapt your applications before stepping to a new wradlib release.
 
 
 Version 0.4.0
@@ -48,7 +56,6 @@ Version 0.4.0
 **Removed functions**
 
 *None.*
-
 
 
 Version 0.3.0
