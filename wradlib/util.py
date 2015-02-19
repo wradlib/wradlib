@@ -37,7 +37,8 @@ import importlib
 
 import warnings
 import functools
-warnings.simplefilter('once', DeprecationWarning)
+warnings.simplefilter('always', DeprecationWarning)
+#warnings.simplefilter('always', FutureWarning)
 
 def deprecated(replacement=None):
     """A decorator which can be used to mark functions as deprecated.
@@ -77,6 +78,60 @@ def deprecated(replacement=None):
             warnings.warn(msg, category=DeprecationWarning, stacklevel=2)
             return fun(*args, **kwargs)
 
+        return inner
+    return outer
+
+
+def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
+    """A decorator to generate a DeprectationWarning.
+
+    .. versionadded:: 0.4.1
+
+    This decorator function generates a DeprecationWarning if a given kwarg
+    is changed/deprecated in a future version.
+
+    The warning is only issued, when the kwarg is actually used in the function call.
+
+    Parameters:
+    -----------
+
+    ver : string
+        Version from when the changes take effect
+    par : string
+        Name of parameter which is affected
+    typ : Python type
+        Data type of parameter which is affected
+    expar : string
+        Name of parameter to be used in future
+    exfunc : function
+        Function which can convert from old to new parameter
+    msg : string
+        additional warning message
+
+    """
+    def outer(func):
+        @functools.wraps(func)
+        def inner(*args, **kwargs):
+            para = kwargs.pop(par, None)
+            key = par
+            if para:
+                wmsg = "\nPrevious behaviour of parameter '%s' in function '%s.%s' is deprecated " \
+                       "\nand will be changed in version '%s'." % (par, func.__module__,func.__name__, ver)
+                if expar:
+                    wmsg += "\nUse parameter %s instead." % expar
+                if exfunc:
+                    wmsg += "\nWrong parameter types will be automatically converted by " \
+                            "using %s.%s." % (exfunc.__module__, exfunc.func_name)
+                if msg:
+                    wmsg += "\n%s" % msg
+                if isinstance(para, typ):
+                    if exfunc:
+                        para = exfunc(para)
+                    if expar:
+                        key = expar
+                    warnings.warn(wmsg, category=DeprecationWarning, stacklevel=2)
+                kwargs.update({key: para})
+            return func(*args, **kwargs)
         return inner
     return outer
 
