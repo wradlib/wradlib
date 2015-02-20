@@ -11,7 +11,7 @@ Bleeding edge
 
 **Highlights**
 
-*Nothing new, yet.*
+Functions which take a PROJ.4 string in kwarg 'projstr' or 'proj' will issue a deprecation warning.
 
 **New features**
 
