@@ -36,6 +36,7 @@ from pprint import pprint
 # wradlib modules
 import wradlib.georef as georef
 import wradlib.util as util
+from util import apichange_kwarg
 
 class PolarNeighbours():
     """
@@ -66,6 +67,7 @@ class PolarNeighbours():
         number of neighbouring radar bins you would like to find
 
     """
+    @apichange_kwarg("0.6.0", par="projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
     def __init__(self, r, az, sitecoords, projstr, x, y, nnear=9):
         self.nnear = nnear
         self.az = az

@@ -61,6 +61,7 @@ from osgeo import gdal,osr
 import numpy as np
 from sys import exit
 import warnings
+from wradlib.util import apichange_kwarg
 
 
 def hor2aeq(a, h, phi):
@@ -633,8 +634,6 @@ def polar2polyvert(r, az, sitecoords):
     return vertices
 
 
-
-
 def polar2centroids(r=None, az=None, sitecoords=None, range_res = None):
     """
     Computes the lat/lon centroids of the radar bins from the polar coordinates.
@@ -864,6 +863,7 @@ def create_projstr(projname, **kwargs):
     return projstr
 
 
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = None):
     """
     Convenience function to compute projected bin coordinates directly from
