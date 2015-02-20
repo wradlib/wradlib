@@ -188,8 +188,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     See also
     --------
     wradlib.georef.reproject - for information on projection strings
-    wradlib.georef.create_projstr - routine to generate pre-defined projection
-        strings
+    wradlib.georef.create_projstr - routine to generate pre-defined projection strings
 
 
     Returns
@@ -296,7 +295,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         range circles might appear elliptical (also check if the aspect of the
         axes might not also be responsible for this).
 
-        .. warning:: parameter type be change in version 0.6.0
+        .. warning:: parameter type will change in version 0.6.0
 
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
@@ -318,8 +317,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     See also
     --------
     wradlib.vis.plot_ppi - plotting a PPI in cartesian coordinates
-    wradlib.georef.create_projstr - routine to generate pre-defined projection
-        strings
+    wradlib.georef.create_projstr - routine to generate pre-defined projection strings
 
 
     Returns
