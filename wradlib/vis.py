@@ -176,7 +176,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         will attempt to georeference the radar bins and display the PPI in the
         coordinate system defined by the projection string.
 
-        .. warning:: parameter type will change in version 0.6.0
+        .. warning:: parameter type will change in version 0.6.0 to <class 'osgeo.osr.SpatialReference'>
 
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
@@ -295,7 +295,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         range circles might appear elliptical (also check if the aspect of the
         axes might not also be responsible for this).
 
-        .. warning:: parameter type will change in version 0.6.0
+        .. warning:: parameter type will change in version 0.6.0 to <class 'osgeo.osr.SpatialReference'>
 
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
