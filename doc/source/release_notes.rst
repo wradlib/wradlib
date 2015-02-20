@@ -31,12 +31,12 @@ Version 0.5.0
 
 **Highlights**
 
-Functions which take a PROJ.4 string in kwarg 'projstr' or 'proj' will issue a deprecation warning.
+From version ``0.6.0`` on, wradlib functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before using version ``0.6.0``: Any use of proj4 strings will generate a deprecation warning with the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid``.
 
 **New features**
 
 - Two functions exposed documentation library section: :doc:`generated/wradlib.io.read_safnwc` and :doc:`generated/wradlib.vis.plot_max_plan_and_vert`
-- New features, changes and deprecations will be addressed in the documentation in the future. This is by highlighting them as *New in Version X.Y.Z*, *Changed in Version X.Y.Z* or *Deprecated in Version X.Y.Z*
+- New features, changes and deprecations will be addressed in the documentation in the future. This is by highlighting them as *New in Version X.Y.Z*, *Changed in Version X.Y.Z* or *Deprecated since Version X.Y.Z*
 
 **Deprecated features**
 
