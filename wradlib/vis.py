@@ -56,8 +56,9 @@ import matplotlib.font_manager as fm
 # wradlib modules
 import wradlib.georef as georef
 import wradlib.util as util
-
+from util import apichange_kwarg
 from util import deprecated
+
 
 
 class NorthPolarAxes(PolarAxes):
@@ -120,7 +121,7 @@ class NorthPolarAxes(PolarAxes):
 
 register_projection(NorthPolarAxes)
 
-
+@apichange_kwarg("0.6.0", "proj", typ=str, msg="'proj' type will change to <class 'osgeo.osr.SpatialReference'>")
 def plot_ppi(data, r=None, az=None, autoext=True,
              site=(0,0), proj=None, elev=0.,
              ax=None,
@@ -261,7 +262,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # so that the user may add colorbars etc.
     return ax, pm
 
-
+@apichange_kwarg("0.6.0", "proj", typ=str, msg="'proj' type will change to <class 'osgeo.osr.SpatialReference'>")
 def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
                        proj=None, elev=0., ax=None, kwds={}):
     """Plots a Crosshair for a Plan Position Indicator (PPI).

@@ -92,7 +92,7 @@ from scipy import stats
 import scipy
 import os
 
-
+from util import apichange_kwarg
 
 class CartesianVolume():
     """Create 3-D regular volume grid in Cartesian coordinates from polar data with multiple elevation angles
@@ -276,7 +276,7 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     return below, above, out_of_range
 
 
-
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     """Create Cartesian coordinates for the polar volume bins
 
@@ -308,6 +308,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     return coords
 
 
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=None):
     """Create Cartesian coordinates for the polar volume bins
 
@@ -391,7 +392,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
-
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
     """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
 
