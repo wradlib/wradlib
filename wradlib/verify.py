@@ -59,6 +59,9 @@ class PolarNeighbours():
         (see georef for documentation)
     projstr : string
         (see georef for documentation)
+
+        .. deprecated:: 0.6.0
+
     x : array of floats
         x coordinates of the points in map projection corresponding to projstr
     y : array of floats

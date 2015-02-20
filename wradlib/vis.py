@@ -28,6 +28,7 @@ Standard plotting and mapping procedures
    plot_cg_rhi
    plot_scan_strategy
    plot_plan_and_vert
+   plot_max_plan_and_vert
    plot_tseries
 
 """
@@ -174,6 +175,9 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         If this parameter is not None, `site` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
         coordinate system defined by the projection string.
+
+        .. deprecated:: 0.6.0
+
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
@@ -291,6 +295,9 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         Depending on the projection, crosshair lines might not be straight and
         range circles might appear elliptical (also check if the aspect of the
         axes might not also be responsible for this).
+
+        .. deprecated:: 0.6.0
+
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.

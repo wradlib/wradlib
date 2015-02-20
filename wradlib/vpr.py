@@ -289,6 +289,8 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     ranges : sequence of ranges
     projstr : proj.4 projection string
 
+        .. deprecated:: 0.6.0
+
     Returns
     -------
     output : array of shape (num volume bins, 3)
@@ -320,6 +322,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
     projstr : proj.4 projection string
+
+        .. deprecated:: 0.6.0
 
     Returns
     -------
@@ -400,6 +404,9 @@ def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
     ----------
     sitecoords
     projstr
+
+        .. deprecated:: 0.6.0
+
     maxrange
     maxalt
     horiz_res

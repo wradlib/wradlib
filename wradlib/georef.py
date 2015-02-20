@@ -883,6 +883,9 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
         if 0 degree is pointing north.
     projstr : string
         proj.4 projection string
+
+        .. deprecated:: 0.6.0
+
     range_res : float
         range resolution of radar measurement [m] in case it cannot be derived
         from r (single entry in r-array)
