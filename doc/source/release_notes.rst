@@ -6,7 +6,27 @@ Please note that as long as wradlib releases are within the ``0.y.z`` series, th
 You can install the latest wradlib release from PyPI via ``$ pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``.
 
 
-Bleeding edge
+Bleeding Edge
+-------------
+
+**Highlights**
+
+*Nothing, yet.*
+
+**New features**
+
+*Nothing, yet.*
+
+**Deprecated features**
+
+*None.*
+
+**Removed functions**
+
+*None.*
+
+
+Version 0.5.0
 -------------
 
 **Highlights**
@@ -15,7 +35,8 @@ Functions which take a PROJ.4 string in kwarg 'projstr' or 'proj' will issue a d
 
 **New features**
 
-*Nothing new, yet.*
+- Two functions exposed documentation library section: :doc:`generated/wradlib.io.read_safnwc` and :doc:`generated/wradlib.vis.plot_max_plan_and_vert`
+- New features, changes and deprecations will be addressed in the documentation in the future. This is by highlighting them as *New in Version X.Y.Z*, *Changed in Version X.Y.Z* or *Deprecated in Version X.Y.Z*
 
 **Deprecated features**
 
