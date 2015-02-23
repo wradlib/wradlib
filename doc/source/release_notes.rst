@@ -11,7 +11,7 @@ Bleeding Edge
 
 **Highlights**
 
-*Nothing, yet.*
+wradlib functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
 
 **New features**
 
