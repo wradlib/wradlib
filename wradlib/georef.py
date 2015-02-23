@@ -62,6 +62,7 @@ from osgeo import gdal,osr
 import numpy as np
 from sys import exit
 import warnings
+from wradlib.util import apichange_kwarg
 
 
 def hor2aeq(a, h, phi):
@@ -864,12 +865,13 @@ def create_projstr(projname, **kwargs):
     return projstr
 
 
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = None):
     """
     Convenience function to compute projected bin coordinates directly from
     radar site coordinates and range/azimuth specs
 
-    .. versionchanged:: 0.5.0
+    .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings
 
     Parameters
@@ -887,7 +889,7 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = Non
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
 
-        .. versionadded:: 0.5.0
+        .. versionadded:: 0.6.0
            using osr objects instead of PROJ.4 strings
 
     range_res : float
@@ -1227,7 +1229,7 @@ def proj4_to_osr(proj4str):
 def epsg_to_osr(epsg):
     """Create osr spatial reference object from EPSG number
 
-    .. versionadded:: 0.5.0
+    .. versionadded:: 0.6.0
 
     Parameters
     ----------

@@ -93,7 +93,7 @@ from scipy import stats
 import scipy
 import os
 
-
+from util import apichange_kwarg
 
 class CartesianVolume():
     """Create 3-D regular volume grid in Cartesian coordinates from polar data with multiple elevation angles
@@ -277,12 +277,12 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     return below, above, out_of_range
 
 
-
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     """
     Create Cartesian coordinates for the polar volume bins
 
-    .. versionchanged:: 0.5.0
+    .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
@@ -295,7 +295,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
 
-        .. versionadded:: 0.5.0
+        .. versionadded:: 0.6.0
            using osr objects instead of PROJ.4 strings as parameter
 
     Returns
@@ -316,10 +316,11 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     return coords
 
 
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
     """Create Cartesian coordinates for the polar volume bins
 
-    .. versionchanged:: 0.5.0
+    .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
@@ -332,7 +333,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
 
-        .. versionadded:: 0.5.0
+        .. versionadded:: 0.6.0
            using osr objects instead of PROJ.4 strings as parameter
 
     Returns
@@ -405,17 +406,21 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
-
+@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
 def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
 
-    .. versionchanged:: 0.5.0
+    .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
     sitecoords
     proj
+
+        .. versionadded:: 0.6.0
+           using osr objects instead of PROJ.4 strings as parameter
+
     maxrange
     maxalt
     horiz_res

@@ -6,16 +6,16 @@ Please note that as long as wradlib releases are within the ``0.y.z`` series, th
 You can install the latest wradlib release from PyPI via ``$ pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``.
 
 
-Bleeding edge
+Bleeding Edge
 -------------
 
 **Highlights**
 
-*Nothing new, yet.*
+*Nothing, yet.*
 
 **New features**
 
-*Nothing new, yet.*
+*Nothing, yet.*
 
 **Deprecated features**
 
@@ -24,6 +24,35 @@ Bleeding edge
 **Removed functions**
 
 *None.*
+
+
+Version 0.5.0
+-------------
+
+**Highlights**
+
+From version ``0.6.0`` on, wradlib functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before using version ``0.6.0``: Any use of proj4 strings will generate a deprecation warning with the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid``.
+
+**New features**
+
+- Two functions exposed documentation library section: :doc:`generated/wradlib.io.read_safnwc` and :doc:`generated/wradlib.vis.plot_max_plan_and_vert`
+- New features, changes and deprecations will be addressed in the documentation in the future. This is by highlighting them as *New in Version X.Y.Z*, *Changed in Version X.Y.Z* or *Deprecated since Version X.Y.Z*
+
+**Deprecated features**
+
+*None.*
+
+**Removed functions**
+
+*None.*
+
+
+Version 0.4.1
+-------------
+
+**Highlights**
+
+From now on, wradlib will generate warnings if keyword parameters of wradlib functions will be or have been changed. This is achieved by using ``wradlib.util.apichange_kwargs`` as a decorator (see ``apichange_example.py`` for examples how these warnings might look like). Please take these warnings seriously and adapt your applications before stepping to a new wradlib release.
 
 
 Version 0.4.0
@@ -48,7 +77,6 @@ Version 0.4.0
 **Removed functions**
 
 *None.*
-
 
 
 Version 0.3.0
