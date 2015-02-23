@@ -27,6 +27,12 @@ to dBZ-values to Z-values and vice versa.
    idecibel
    r2depth
    kdp2r
+   si2kmh
+   si2mph
+   si2kts
+   kmh2si
+   mph2si
+   kts2si
 
 """
 import numpy as np
@@ -43,6 +49,7 @@ def rvp2dBZ(x):
     """
     return x*0.5-32.5
 
+
 def decibel(x):
     """Calculates the decibel representation of the input values
     dBZ = 10*log10(z)
@@ -53,6 +60,7 @@ def decibel(x):
 
     """
     return 10.*np.log10(x)
+
 
 def idecibel(x):
     """Calculates the inverse of input decibel values
@@ -119,6 +127,178 @@ def kdp2r(kdp, f, a=129., b=0.85):
     """
     return np.sign(kdp) * a * (np.abs(kdp) / f)**b
 
+
+def si2kmh(vals):
+    """Conversion from SI wind speed units to km/hr.
+    
+    Notes
+    -----
+    ..versionadded:: 0.6.0
+    
+    Code was migrated from https://github.com/nguy/PyRadarMet.
+    
+    Parameters
+    ----------
+    vals : float or array of floats
+        Speed in SI units (m/s)
+ 
+    Returns
+    -------
+    output: float or array of floats
+        Speed in km/hr
+    
+    Examples
+    --------
+    >>> from wradlib.trafo import si2kmh
+    >>> print si2kmh(1.)
+    3.6
+    """
+    return vals * 3600. / 1000.
+
+
+def si2mph(vals):
+    """Conversion from SI wind speed units to miles/hr
+
+    Notes
+    -----
+    ..versionadded:: 0.6.0
+    
+    Code was migrated from https://github.com/nguy/PyRadarMet.
+
+    Parameters
+    ----------
+    vals : float or array of floats
+        Speed in SI units (m/s)
+ 
+    Returns
+    -------
+    output: float
+        Speed in miles per hour
+    
+    Examples
+    --------
+    >>> from wradlib.trafo import si2mph
+    >>> print si2mph(1.)
+    2.236932
+
+    """
+    return vals * 0.62137 / 1000. * 3600.
+    
+
+def si2kts(vals):
+    """Conversion from SI wind speed units to knots
+
+    Notes
+    -----
+    ..versionadded:: 0.6.0
+    
+    Code was migrated from https://github.com/nguy/PyRadarMet.
+
+    Parameters
+    ----------
+    vals : float or array of floats
+        Speed in SI units (m/s)
+ 
+    Returns
+    -------
+    output: float
+        Speed in knots
+    
+    Examples
+    --------
+    >>> from wradlib.trafo import si2kts
+    >>> print si2kts(1.)
+    0.51
+
+    """
+    return vals * 0.51
+    
+
+def kmh2si(vals):
+    """Conversion from km/hr to SI wind speed units
+
+    Notes
+    -----
+    ..versionadded:: 0.6.0
+    
+    Code was migrated from https://github.com/nguy/PyRadarMet.
+    
+    Parameters
+    ----------
+    vals: float or array of floats
+        Wind speed in km/hr
+ 
+    Returns
+    -------
+    output: float or array of floats
+        Wind speed in SI units (m/s)
+    
+    Examples
+    --------
+    >>> from wradlib.trafo import kmh2si
+    >>> print np.round( kmh2si(10.), 3 )
+    2.778
+
+    """
+    return vals * 1000. / 3600.
+
+
+def mph2si(vals):
+    """Conversion from miles/hr to SI wind speed units
+
+    Notes
+    -----
+    ..versionadded:: 0.6.0
+    
+    Code was migrated from https://github.com/nguy/PyRadarMet.
+    
+    Parameters
+    ----------
+    vals: float or array of floats
+        Wind speed in miles per hour
+ 
+    Returns
+    -------
+    output: float or array of floats
+        Wind speed in SI units (m/s)
+    
+    Examples
+    --------
+    >>> from wradlib.trafo import mph2si
+    >>> print np.round( mph2si(10.), 2 )
+    4.47
+
+    """
+    return vals * 1000. / (0.62137 * 3600.)
+
+
+def kts2si(vals):
+    """Conversion from knots to SI wind speed units
+
+    Notes
+    -----
+    ..versionadded:: 0.6.0
+    
+    Code was migrated from https://github.com/nguy/PyRadarMet.
+    
+    Parameters
+    ----------
+    vals: float or array of floats
+        Wind speed in knots
+ 
+    Returns
+    -------
+    output: float or array of floats
+        Wind speed in SI units (m/s)
+    
+    Examples
+    --------
+    >>> from wradlib.trafo import kts2si
+    >>> print np.round( kts2si(1.), 2 )
+    1.96
+
+    """
+    return vals / 0.51
 
 
 if __name__ == '__main__':
