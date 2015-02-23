@@ -22,10 +22,10 @@ class TransformationTest(unittest.TestCase):
         self.lin = np.array([1e-4, 1, 1e4])
         self.dec = np.array([-40,0,40])
         self.r = np.array([5., 10., 20.])
-        self.speedsi  = np.array([0., 1.,       50.]) # speed in m/s
-        self.speedkmh = np.array([0., 3.6,      180.]) # speed in km/h
-        self.speedmph = np.array([0., 2.236932, 111.8466]) # speed in miles/h
-        self.speedkts = np.array([0., 0.51,     25.5]) # speed in knots
+        self.speedsi  = np.array([0., 1.,         50.]) # speed in m/s
+        self.speedkmh = np.array([0., 3.6,        180.]) # speed in km/h
+        self.speedmph = np.array([0., 2.23693629, 111.8468146 ]) # speed in miles/h
+        self.speedkts = np.array([0., 1.94384449, 97.19222462]) # speed in knots
 
     def test_rvp2dBZ(self):
         self.assertTrue(np.allclose(trafo.rvp2dBZ(self.rvp), self.dbz))
