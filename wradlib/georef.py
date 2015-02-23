@@ -62,7 +62,8 @@ from osgeo import gdal,osr
 import numpy as np
 from sys import exit
 import warnings
-from wradlib.util import apichange_kwarg
+import wradlib as wrl
+#import wrl.util as util
 
 
 def hor2aeq(a, h, phi):
@@ -865,7 +866,17 @@ def create_projstr(projname, **kwargs):
     return projstr
 
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
+def proj4_to_osr(proj4str):
+    """Transform a proj4 string to an osr spatial reference object"""
+    if proj4str:
+        proj = osr.SpatialReference()
+        proj.ImportFromProj4(proj4str)
+    else:
+        proj = get_default_projection()
+    return(proj)
+
+
+@wrl.util.apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=proj4_to_osr)
 def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = None):
     """
     Convenience function to compute projected bin coordinates directly from
@@ -1216,14 +1227,7 @@ def sweep_centroids(nrays,rscale,nbins,elangle):
     return(coordinates)
 
 
-def proj4_to_osr(proj4str):
-    """Transform a proj4 string to an osr spatial reference object"""
-    if proj4str:
-        proj = osr.SpatialReference()
-        proj.ImportFromProj4(proj4str)
-    else:
-        proj = get_default_projection()
-    return(proj)
+
 
 
 def epsg_to_osr(epsg):

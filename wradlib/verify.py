@@ -71,7 +71,7 @@ class PolarNeighbours():
         number of neighbouring radar bins you would like to find
 
     """
-    @apichange_kwarg("0.6.0", par="projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
+    @apichange_kwarg("0.6.0", par="projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
     def __init__(self, r, az, sitecoords, proj, x, y, nnear=9):
         self.nnear = nnear
         self.az = az

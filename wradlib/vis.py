@@ -122,7 +122,7 @@ class NorthPolarAxes(PolarAxes):
 
 register_projection(NorthPolarAxes)
 
-@apichange_kwarg("0.6.0", "proj", typ=str, msg="'proj' type will change to <class 'osgeo.osr.SpatialReference'>")
+@apichange_kwarg("0.6.0", "proj", typ=str, exfunc=georef.proj4_to_osr)
 def plot_ppi(data, r=None, az=None, autoext=True,
              site=(0,0), proj=None, elev=0.,
              ax=None,
@@ -268,7 +268,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # so that the user may add colorbars etc.
     return ax, pm
 
-@apichange_kwarg("0.6.0", "proj", typ=str, msg="'proj' type will change to <class 'osgeo.osr.SpatialReference'>")
+@apichange_kwarg("0.6.0", "proj", typ=str, exfunc=georef.proj4_to_osr)
 def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
                        proj=None, elev=0., ax=None, kwds={}):
     """Plots a Crosshair for a Plan Position Indicator (PPI).

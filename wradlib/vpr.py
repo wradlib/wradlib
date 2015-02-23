@@ -277,7 +277,7 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     return below, above, out_of_range
 
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
+@apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
 def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     """
     Create Cartesian coordinates for the polar volume bins
@@ -316,7 +316,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     return coords
 
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
+@apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
 def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
     """Create Cartesian coordinates for the polar volume bins
 
@@ -406,7 +406,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
+@apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
 def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
 
