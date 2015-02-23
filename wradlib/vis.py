@@ -28,6 +28,7 @@ Standard plotting and mapping procedures
    plot_cg_rhi
    plot_scan_strategy
    plot_plan_and_vert
+   plot_max_plan_and_vert
    plot_tseries
 
 """
@@ -56,8 +57,9 @@ import matplotlib.font_manager as fm
 # wradlib modules
 import wradlib.georef as georef
 import wradlib.util as util
-
+from util import apichange_kwarg
 from util import deprecated
+
 
 
 class NorthPolarAxes(PolarAxes):
@@ -120,14 +122,14 @@ class NorthPolarAxes(PolarAxes):
 
 register_projection(NorthPolarAxes)
 
-
+@apichange_kwarg("0.6.0", "proj", typ=str, msg="'proj' type will change to <class 'osgeo.osr.SpatialReference'>")
 def plot_ppi(data, r=None, az=None, autoext=True,
              site=(0,0), proj=None, elev=0.,
              ax=None,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
 
-    .. versionchanged:: 0.5.0
+    .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
 
     The implementation of this plot routine is in cartesian axes and does all
@@ -175,10 +177,10 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         GDAL OSR Spatial Reference Object describing projection
         If this parameter is not None, `site` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
-        coordinate system defined by osr object.
+        coordinate system defined by the projection string.
 
-        .. versionadded:: 0.5.0
-           using osr objects instead of PROJ.4 strings
+        .. versionchanged:: 0.6.0
+           using osr objects instead of PROJ.4 strings as parameter
 
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
@@ -190,6 +192,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     See also
     --------
     wradlib.georef.reproject - for information on projection strings
+    wradlib.georef.create_projstr - routine to generate pre-defined projection
+        strings
 
     Returns
     -------
@@ -264,12 +268,12 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # so that the user may add colorbars etc.
     return ax, pm
 
-
+@apichange_kwarg("0.6.0", "proj", typ=str, msg="'proj' type will change to <class 'osgeo.osr.SpatialReference'>")
 def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
                        proj=None, elev=0., ax=None, kwds={}):
     """Plots a Crosshair for a Plan Position Indicator (PPI).
 
-    .. versionchanged:: 0.5.0
+    .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
@@ -297,7 +301,7 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         range circles might appear elliptical (also check if the aspect of the
         axes might not also be responsible for this).
 
-        .. versionadded:: 0.5.0
+        .. versionchanged:: 0.6.0
            using osr objects instead of PROJ.4 strings
 
     elev : float or array of same shape as az
