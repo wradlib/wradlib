@@ -38,6 +38,11 @@ to dBZ-values to Z-values and vice versa.
 import numpy as np
 
 
+# CONSTANTS
+meters_per_mile = 1609.344
+meters_per_nautical_mile  = 1852.
+
+
 def rvp2dBZ(x):
     """Calculates dBZ-values from DWD RVP6 values as given in DX-product
     files.
@@ -178,11 +183,11 @@ def si2mph(vals):
     Examples
     --------
     >>> from wradlib.trafo import si2mph
-    >>> print si2mph(1.)
-    2.236932
+    >>> print np.round( si2mph(1.), 3 )
+    2.237
 
     """
-    return vals * 0.62137 / 1000. * 3600.
+    return vals * 3600. / meters_per_mile
     
 
 def si2kts(vals):
@@ -207,11 +212,11 @@ def si2kts(vals):
     Examples
     --------
     >>> from wradlib.trafo import si2kts
-    >>> print si2kts(1.)
-    0.51
+    >>> print np.round( si2kts(1.), 3 )
+    1.944
 
     """
-    return vals * 0.51
+    return vals * 3600. / meters_per_nautical_mile
     
 
 def kmh2si(vals):
@@ -269,7 +274,7 @@ def mph2si(vals):
     4.47
 
     """
-    return vals * 1000. / (0.62137 * 3600.)
+    return vals * meters_per_mile / 3600.
 
 
 def kts2si(vals):
@@ -294,11 +299,11 @@ def kts2si(vals):
     Examples
     --------
     >>> from wradlib.trafo import kts2si
-    >>> print np.round( kts2si(1.), 2 )
-    1.96
+    >>> print np.round( kts2si(1.), 3 )
+    0.514
 
     """
-    return vals / 0.51
+    return vals * meters_per_nautical_mile / 3600.
 
 
 if __name__ == '__main__':
