@@ -15,11 +15,11 @@ wradlib functions concerned with georeferencing will only use projection informa
 
 **New features**
 
-*Nothing, yet.*
+In georef module a new helper function `create_osr` is added. This function helps to create an osr object for specific projections.
 
 **Deprecated features**
 
-*None.*
+Function `georef.create_projstr` is deprecated.
 
 **Removed functions**
 
