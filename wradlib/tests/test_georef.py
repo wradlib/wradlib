@@ -26,7 +26,9 @@ class GetGridsTest(unittest.TestCase):
     def test_get_radolan_grid_equality(self):
 
         # create radolan projection osr object
-        dwd_string = georef.create_projstr("dwd-radolan")
+        scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
+        dwd_string = ('+proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k={0:10.8f} '
+                   '+x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs').format(scale)
         proj_stereo = georef.proj4_to_osr(dwd_string)
 
         # create wgs84 projection osr object
