@@ -126,11 +126,10 @@ In order to define the horizontal and vertical position of the radar bins, we ne
 >>> gk3 = wradlib.georef.epsg_to_osr(31467)
 >>> x, y = wradlib.georef.reproject(lon, lat, projection_target=gk3)
 
-Second, you can provide a string which represents the projection - based on the `PROJ.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is Gauss-Krueger (zone 3)::
+Second, you can provide a string which represents the projection - based on the `PROJ.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is azimuthal equidistant::
 
->>> projstr = wradlib.georef.create_projstr("gk", zone=3)
->>> gk3 = wradlib.georef.proj4_to_osr(proj4str)
->>> x, y = wradlib.georef.reproject(lon, lat, projection_target=gk3)
+>>> ae = wradlib.georef.create_osr("aeqd", lon_0=radar_location[0], lat_0=radar_location[1])
+>>> x, y = wradlib.georef.reproject(lon, lat, projection_target=ae)
 
 .. seealso:: Get more info in the library reference section :doc:`georef`.
 
