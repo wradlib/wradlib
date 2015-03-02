@@ -28,8 +28,10 @@ Georeferencing
    polar2polyvert
    centroid2polyvert
    reproject
+   create_osr
    create_projstr
    proj4_to_osr
+   epsg_to_osr
    projected_bincoords_from_radarspecs
    sweep_centroids
    read_gdal_values
@@ -61,8 +63,7 @@ from osgeo import gdal,osr
 import numpy as np
 from sys import exit
 import warnings
-from wradlib.util import apichange_kwarg
-
+import wradlib as wrl
 
 def hor2aeq(a, h, phi):
     """"""
@@ -590,6 +591,7 @@ def polar2polyvert(r, az, sitecoords):
 
     Examples
     --------
+    >>> import wradlib.georef as georef
     >>> import numpy as np
     >>> import matplotlib as mpl
     >>> import matplotlib.pyplot as pl
@@ -600,14 +602,14 @@ def polar2polyvert(r, az, sitecoords):
     >>> # az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
     >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
     >>> sitecoords = (9.0, 48.0)
-    >>> polygons = polar2polyvert(r, az, sitecoords)
+    >>> polygons = georef.polar2polyvert(r, az, sitecoords)
     >>> # plot the resulting mesh
     >>> fig = pl.figure()
     >>> ax = fig.add_subplot(111)
     >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
-    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors=None)
+    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors='None')
     >>> ret = ax.add_collection(polycoll, autolim=True)
-    >>> #pl.axis('tight')
+    >>> pl.autoscale()
     >>> pl.show()
 
     """
@@ -766,6 +768,91 @@ def _get_azimuth_resolution(x):
     return res[0]
 
 
+def create_osr(projname, **kwargs):
+    """Conveniently supports the construction of osr spatial reference objects
+
+    .. versionadded:: 0.6.0
+
+    Currently, the following projection names (argument *projname*) are supported:
+
+    **"aeqd": Azimuthal Equidistant**
+
+    needs the following keyword arguments: *lat_0* (latitude at projection center),
+    *lon_0* (longitude at projection center), *x_0* (false Easting, also known as x-offset),
+    *y_0* (false Northing, also known as y-offset)
+
+    **"dwd-radolan" : RADOLAN Composite Coordinate System**
+
+    no additional arguments needed.
+
+    Polar stereographic projection used by the German Weather Service (DWD)
+    for all Radar composite products. See the final report on the RADOLAN
+    project (available at http://www.dwd.de/RADOLAN) for details.
+
+    Parameters
+    ----------
+    projname : string
+    kwargs : depends on projname - see above!
+
+    Returns
+    -------
+    output : osr spatial reference object
+        GDAL/OSR object defining projection
+    """
+
+    aeqd_wkt = 'PROJCS["unnamed",' \
+               'GEOGCS["WGS 84",' \
+               'DATUM["unknown",' \
+               'SPHEROID["WGS84",6378137,298.257223563]],' \
+               'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],' \
+               'PROJECTION["Azimuthal_Equidistant"],' \
+               'PARAMETER["latitude_of_center", {0:-f}],' \
+               'PARAMETER["longitude_of_center", {1:-f}],' \
+               'PARAMETER["false_easting", {2:-f}],' \
+               'PARAMETER["false_northing", {3:-f}]]'
+
+    radolan_wkt = 'PROJCS["Radolan projection",' \
+                  'GEOGCS["Radolan Coordinate System",' \
+                  'DATUM["Radolan Kugel",' \
+                  'SPHEROID["Erdkugel", 6370040.0, 0.0]],' \
+                  'PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],' \
+                  'UNIT["degree", 0.017453292519943295],' \
+                  'AXIS["Longitude", EAST],' \
+                  'AXIS["Latitude", NORTH]],' \
+                  'PROJECTION["polar_stereographic"],' \
+                  'PARAMETER["central_meridian", 10.0],' \
+                  'PARAMETER["Standard_Parallel_1", 60.0],' \
+                  'PARAMETER["scale_factor", {0:8.10f}],' \
+                  'PARAMETER["false_easting", 0.0],' \
+                  'PARAMETER["false_northing", 0.0],' \
+                  'UNIT["m*1000.0", 1000.0],' \
+                  'AXIS["X", EAST],' \
+                  'AXIS["Y", NORTH],' \
+                  'AUTHORITY["EPSG","1000001"]]'
+
+    proj = osr.SpatialReference()
+
+    if projname=="aeqd":
+        # Azimuthal Equidistant
+        if "x_0" in kwargs:
+            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"]))
+        else:
+            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0, 0))
+
+    elif projname=="dwd-radolan":
+        # DWD-RADOLAN polar stereographic projection
+        scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
+        proj.ImportFromWkt(radolan_wkt.format(scale))
+
+    else:
+        print "No convenience support for projection %r, yet." % projname
+        print "You need to create projection by using other means..."
+        exit(1)
+
+    return proj
+
+
+@wrl.util.deprecated("create_osr")
 def create_projstr(projname, **kwargs):
     """Conveniently supports the construction of proj.4 projection strings
 
@@ -863,11 +950,24 @@ def create_projstr(projname, **kwargs):
     return projstr
 
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
-def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = None):
+def proj4_to_osr(proj4str):
+    """Transform a proj4 string to an osr spatial reference object"""
+    if proj4str:
+        proj = osr.SpatialReference()
+        proj.ImportFromProj4(proj4str)
+    else:
+        proj = get_default_projection()
+    return(proj)
+
+
+@wrl.util.apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=proj4_to_osr)
+def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = None):
     """
     Convenience function to compute projected bin coordinates directly from
     radar site coordinates and range/azimuth specs
+
+    .. versionchanged:: 0.6.0
+       using osr objects instead of PROJ.4 strings
 
     Parameters
     ----------
@@ -881,10 +981,11 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
         The first angle can start at any values, but make sure the array is sorted
         continuously positively clockwise and the angles are equidistant. An angle
         if 0 degree is pointing north.
-    projstr : string
-        proj.4 projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
 
-        .. warning:: parameter will be removed in version 0.6.0
+        .. versionadded:: 0.6.0
+           using osr objects instead of PROJ.4 strings
 
     range_res : float
         range resolution of radar measurement [m] in case it cannot be derived
@@ -892,8 +993,7 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, projstr, range_res = 
 
     """
     cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
-    osr_proj = proj4_to_osr(projstr)
-    x, y = reproject(cent_lon, cent_lat, projection_target = osr_proj)
+    x, y = reproject(cent_lon, cent_lat, projection_target = proj)
     return x.ravel(), y.ravel()
 
 
@@ -1211,18 +1311,36 @@ def sweep_centroids(nrays,rscale,nbins,elangle):
     return(coordinates)
 
 
-def proj4_to_osr(proj4str):
-    """Transform a proj4 string to an osr spatial reference object"""
-    if proj4str:
+def epsg_to_osr(epsg):
+    """Create osr spatial reference object from EPSG number
+
+    .. versionadded:: 0.6.0
+
+    Parameters
+    ----------
+    epsg : int
+        EPSG-Number defining the coordinate system
+
+    Returns
+    -------
+    proj : osr spatial reference object
+        GDAL/OSR object defining projection
+
+
+    """
+    if epsg:
         proj = osr.SpatialReference()
-        proj.ImportFromProj4(proj4str)
+        proj.ImportFromEPSG(epsg)
     else:
         proj = get_default_projection()
     return(proj)
 
+
 def get_radolan_coords(lon, lat, trig=False):
     """
     Calculates x,y coordinates of radolan grid from lon, lat
+
+    .. versionadded:: 0.4.0
 
     Parameters
     ----------
@@ -1252,8 +1370,7 @@ def get_radolan_coords(lon, lat, trig=False):
         y = - er * m_phi * np.cos(phi_m) * np.cos(lam)
     else:
         # create radolan projection osr object
-        dwd_string = create_projstr("dwd-radolan")
-        proj_stereo = proj4_to_osr(dwd_string)
+        proj_stereo = create_osr("dwd-radolan")
 
         # create wgs84 projection osr object
         proj_wgs = osr.SpatialReference()
@@ -1266,6 +1383,8 @@ def get_radolan_coords(lon, lat, trig=False):
 
 def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
+
+    .. versionadded:: 0.4.0
 
     Returns the x,y coordinates of the radolan grid positions
     (lower left corner of every pixel). The radolan grid is a polarstereographic
@@ -1319,26 +1438,26 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid()
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((900, 900, 2), array([ -523.46216677, -4658.64471573]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (900, 900, 2), (-523.4622, -4658.6447)
 
         >>> # using pure trigonometric transformations
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(trig=True)
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((900, 900, 2), array([ -523.46216692, -4658.64472427]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (900, 900, 2), (-523.4622, -4658.6447)
 
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((1500, 1400, 2), array([ -673.46216677, -5008.64471573]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (1500, 1400, 2), (-673.4622, -5008.6447)
 
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((900, 900, 2), array([  3.58892994,  46.9525804 ]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (900, 900, 2), (3.5889, 46.9526)
 
     Raises
     ------
@@ -1392,8 +1511,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
             radolan_grid = np.dstack((lon, lat))
         else:
             # create radolan projection osr object
-            dwd_string = create_projstr("dwd-radolan")
-            proj_stereo = proj4_to_osr(dwd_string)
+            proj_stereo = create_osr("dwd-radolan")
 
             # create wgs84 projection osr object
             proj_wgs = osr.SpatialReference()

@@ -40,6 +40,9 @@ from util import apichange_kwarg
 
 class PolarNeighbours():
     """
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
+
     For a set of projected point coordinates, extract the neighbouring bin values
     from a data set in polar coordinates. Use as follows:
 
@@ -57,21 +60,19 @@ class PolarNeighbours():
         (see georef for documentation)
     sitecoords : sequence of floats
         (see georef for documentation)
-    projstr : string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
         (see georef for documentation)
-
-        .. warning:: parameter will be removed in version 0.6.0
-
     x : array of floats
-        x coordinates of the points in map projection corresponding to projstr
+        x coordinates of the points in map projection corresponding to proj
     y : array of floats
-        y coordinates of the points in map projection corresponding to projstr
+        y coordinates of the points in map projection corresponding to proj
     nnear : int
         number of neighbouring radar bins you would like to find
 
     """
-    @apichange_kwarg("0.6.0", par="projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
-    def __init__(self, r, az, sitecoords, projstr, x, y, nnear=9):
+    @apichange_kwarg("0.6.0", par="projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
+    def __init__(self, r, az, sitecoords, proj, x, y, nnear=9):
         self.nnear = nnear
         self.az = az
         self.r = r
@@ -80,8 +81,7 @@ class PolarNeighbours():
         # compute the centroid coordinates in lat/lon
         bin_lon, bin_lat = georef.polar2centroids(r, az, sitecoords)
         # reproject the centroids to cartesian map coordinates
-        osr_proj = georef.proj4_to_osr(projstr)
-        binx, biny = georef.reproject(bin_lon, bin_lat, projection_target=osr_proj)
+        binx, biny = georef.reproject(bin_lon, bin_lat, projection_target=proj)
         self.binx, self.biny = binx.ravel(), biny.ravel()
         # compute the KDTree
         tree = KDTree(zip(self.binx, self.biny))

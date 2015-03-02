@@ -47,9 +47,10 @@ Here's an example how a set of CAPPIs can be created from synthetic polar volume
     ranges = np.arange(0., 120000., 1000.)
     sitecoords = (14.924218,120.255547,500.)
     projstr = wradlib.georef.create_projstr("utm", zone=51, hemisphere="north")
+    proj = wradlib.georef.proj4_to_osr(projstr)
 
     # create Cartesian coordinates corresponding the location of the polar volume bins
-    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs, azims, ranges, projstr)
+    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs, azims, ranges, proj)
     poldata = wradlib.vpr.synthetic_polar_volume(polxyz)
     # this is the shape of our polar volume
     polshape = (len(elevs),len(azims),len(ranges))
@@ -276,9 +277,13 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     return below, above, out_of_range
 
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
-def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
-    """Create Cartesian coordinates for the polar volume bins
+@apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
+def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
+    """
+    Create Cartesian coordinates for the polar volume bins
+
+    .. versionchanged:: 0.6.0
+       using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
@@ -287,9 +292,11 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
-    projstr : proj.4 projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
 
-        .. warning:: parameter will be removed in version 0.6.0
+        .. versionadded:: 0.6.0
+           using osr objects instead of PROJ.4 strings as parameter
 
     Returns
     -------
@@ -303,16 +310,18 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr=None):
     # get geographical coordinates
     lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
-    osr_proj = georef.proj4_to_osr(projstr)
-    x, y = georef.reproject(lons, lats, projection_target=osr_proj)
+    x, y = georef.reproject(lons, lats, projection_target=proj)
     # create standard shape
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
-def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=None):
+@apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
+def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
     """Create Cartesian coordinates for the polar volume bins
+
+    .. versionchanged:: 0.6.0
+       using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
@@ -321,9 +330,11 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
-    projstr : proj.4 projection string
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
 
-        .. warning:: parameter will be removed in version 0.6.0
+        .. versionadded:: 0.6.0
+           using osr objects instead of PROJ.4 strings as parameter
 
     Returns
     -------
@@ -371,7 +382,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
             onerange4all = False
     if oneaz4all and onerange4all:
         # this is the simple way
-        return volcoords_from_polar(sitecoords, elevs, azimuths, ranges, projstr)
+        return volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj)
     # No simply way, so we need to construct the coordinates arrays for each elevation angle
     #   but first adapt input arrays to this task
     if onerange4all:
@@ -390,22 +401,25 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, projstr=
     # get geographical coordinates
     lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
     # get projected horizontal coordinates
-    osr_proj = georef.proj4_to_osr(projstr)
-    x, y = georef.reproject(lons, lats, projection_target=osr_proj)
+    x, y = georef.reproject(lons, lats, projection_target=proj)
     # create standard shape
     coords = np.vstack((x.ravel(),y.ravel(),z.ravel())).transpose()
     return coords
 
-@apichange_kwarg("0.6.0", "projstr", typ=str, msg="new kwarg will be 'proj' of type <class 'osgeo.osr.SpatialReference'>")
-def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
+@apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
+def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
+
+    .. versionchanged:: 0.6.0
+       using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
     sitecoords
-    projstr
+    proj
 
-        .. warning:: parameter will be removed in version 0.6.0
+        .. versionadded:: 0.6.0
+           using osr objects instead of PROJ.4 strings as parameter
 
     maxrange
     maxalt
@@ -417,8 +431,7 @@ def make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res):
     output : float array of shape (num grid points, 3), a tuple of 3 representing the grid shape
 
     """
-    osr_proj = georef.proj4_to_osr(projstr)
-    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=osr_proj)
+    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=proj)
     minz   = sitecoords[2]
     llx = center[0] - maxrange
     lly = center[1] - maxrange
