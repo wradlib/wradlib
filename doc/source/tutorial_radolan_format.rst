@@ -274,6 +274,10 @@ Finally we yield the Radolan Projection as WKT-string::
       AXIS["Y", NORTH],
       AUTHORITY["EPSG","1000001"]]
 
+This WKT-string is used within *wradlib* to create the osr-object by using the helper-function :func:`wradlib.georef.create_osr`::
+
+    proj_stereo = georef.create_osr("dwd-radolan")
+
 
 PROJ.4
 ^^^^^^
@@ -285,10 +289,10 @@ PROJ.4-String::
     +proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189
     +x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs
 
-This PROJ.4-string is used within *wradlib* to create the osr-object by using the two helper-functions :func:`wradlib.georef.create_projstr` and :func:`wradlib.georef.proj4_to_osr`::
+This PROJ.4-string can be used to create the osr-object by using the helper-functions :func:`wradlib.georef.proj4_to_osr`::
 
     # create radolan projection osr object
-    dwd_string = georef.create_projstr("dwd-radolan")
+    dwd_string =  '+proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k=0.93301270189 +x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs'
     proj_stereo = georef.proj4_to_osr(dwd_string)
 
 
@@ -709,12 +713,10 @@ In `this example script <https://bitbucket.org/wradlib/wradlib/src/default/examp
     from osgeo import osr
 
     # create radolan grid coordinates
-    # add 1 to each dimension to get upper left corner coordinates
-    radolan_grid_xy = wrl.georef.get_radolan_grid(901,901)
+    radolan_grid_xy = wrl.georef.get_radolan_grid(900,900)
 
     # create radolan projection osr object
-    dwd_string = wrl.georef.create_projstr("dwd-radolan")
-    proj_stereo = wrl.georef.proj4_to_osr(dwd_string)
+    proj_stereo = wrl.georef.create_osr("dwd-radolan")
 
     # create wgs84 projection osr object
     proj_wgs = osr.SpatialReference()
