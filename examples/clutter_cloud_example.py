@@ -59,9 +59,8 @@ def ex_clutter_cloud():
         coord[t,...] = georef.sweep_centroids(nrays,rscale,nbins,elangle)
     ascale = math.pi/nrays
     sitecoords = (pvol["where"]["lon"],pvol["where"]["lat"],pvol["where"]["height"])
-    proj_radar = georef.proj4_to_osr(georef.create_projstr("aeqd",lat_0=pvol["where"]["lat"],lon_0=pvol["where"]["lon"]))
+    proj_radar = georef.create_osr("aeqd",lat_0=pvol["where"]["lat"],lon_0=pvol["where"]["lon"])
     coord[...,0], coord[...,1], coord[...,2] = georef.polar2lonlatalt_n(coord[...,0], np.degrees(coord[...,1]), coord[...,2], sitecoords, re=6370040., ke=4./3.)
-    #proj4str = "+proj=aeqd  +lat_0=%f +lon_0=%f" %(pvol["where"]["lat"],pvol["where"]["lon"])
     coord = georef.reproject(coord, projection_target=proj_radar)
 
     # Construct collocated satellite data
