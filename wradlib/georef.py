@@ -771,6 +771,8 @@ def _get_azimuth_resolution(x):
 def create_osr(projname, **kwargs):
     """Conveniently supports the construction of osr spatial reference objects
 
+    .. versionadded:: 0.6.0
+
     Currently, the following projection names (argument *projname*) are supported:
 
     **"aeqd": Azimuthal Equidistant**
