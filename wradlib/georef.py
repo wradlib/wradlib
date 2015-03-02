@@ -28,6 +28,7 @@ Georeferencing
    polar2polyvert
    centroid2polyvert
    reproject
+   create_osr
    create_projstr
    proj4_to_osr
    epsg_to_osr
@@ -1367,8 +1368,7 @@ def get_radolan_coords(lon, lat, trig=False):
         y = - er * m_phi * np.cos(phi_m) * np.cos(lam)
     else:
         # create radolan projection osr object
-        dwd_string = create_projstr("dwd-radolan")
-        proj_stereo = proj4_to_osr(dwd_string)
+        proj_stereo = create_osr("dwd-radolan")
 
         # create wgs84 projection osr object
         proj_wgs = osr.SpatialReference()
