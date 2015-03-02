@@ -1511,8 +1511,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
             radolan_grid = np.dstack((lon, lat))
         else:
             # create radolan projection osr object
-            dwd_string = create_projstr("dwd-radolan")
-            proj_stereo = proj4_to_osr(dwd_string)
+            proj_stereo = create_osr("dwd-radolan")
 
             # create wgs84 projection osr object
             proj_wgs = osr.SpatialReference()
