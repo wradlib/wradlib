@@ -1438,26 +1438,26 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid()
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((900, 900, 2), array([ -523.46216677, -4658.64471573]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (900, 900, 2), (-523.4622, -4658.6447)
 
         >>> # using pure trigonometric transformations
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(trig=True)
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((900, 900, 2), array([ -523.46216692, -4658.64472427]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (900, 900, 2), (-523.4622, -4658.6447)
 
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((1500, 1400, 2), array([ -673.46216677, -5008.64471573]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (1500, 1400, 2), (-673.4622, -5008.6447)
 
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
-        >>> print(radolan_grid.shape, radolan_grid[0,0,:])
-        ((900, 900, 2), array([  3.58892994,  46.9525804 ]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        (900, 900, 2), (3.5889, 46.9526)
 
     Raises
     ------
