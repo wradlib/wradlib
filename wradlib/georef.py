@@ -63,8 +63,6 @@ import numpy as np
 from sys import exit
 import warnings
 import wradlib as wrl
-#import wrl.util as util
-
 
 def hor2aeq(a, h, phi):
     """"""
@@ -769,6 +767,89 @@ def _get_azimuth_resolution(x):
     return res[0]
 
 
+def create_osr(projname, **kwargs):
+    """Conveniently supports the construction of osr spatial reference objects
+
+    Currently, the following projection names (argument *projname*) are supported:
+
+    **"aeqd": Azimuthal Equidistant**
+
+    needs the following keyword arguments: *lat_0* (latitude at projection center),
+    *lon_0* (longitude at projection center), *x_0* (false Easting, also known as x-offset),
+    *y_0* (false Northing, also known as y-offset)
+
+    **"dwd-radolan" : RADOLAN Composite Coordinate System**
+
+    no additional arguments needed.
+
+    Polar stereographic projection used by the German Weather Service (DWD)
+    for all Radar composite products. See the final report on the RADOLAN
+    project (available at http://www.dwd.de/RADOLAN) for details.
+
+    Parameters
+    ----------
+    projname : string
+    kwargs : depends on projname - see above!
+
+    Returns
+    -------
+    output : osr spatial reference object
+        GDAL/OSR object defining projection
+    """
+
+    aeqd_wkt = 'PROJCS["unnamed",' \
+               'GEOGCS["WGS 84",' \
+               'DATUM["unknown",' \
+               'SPHEROID["WGS84",6378137,298.257223563]],' \
+               'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],' \
+               'PROJECTION["Azimuthal_Equidistant"],' \
+               'PARAMETER["latitude_of_center", {0:-f}],' \
+               'PARAMETER["longitude_of_center", {1:-f}],' \
+               'PARAMETER["false_easting", {2:-f}],' \
+               'PARAMETER["false_northing", {3:-f}]]'
+
+    radolan_wkt = 'PROJCS["Radolan projection",' \
+                  'GEOGCS["Radolan Coordinate System",' \
+                  'DATUM["Radolan Kugel",' \
+                  'SPHEROID["Erdkugel", 6370040.0, 0.0]],' \
+                  'PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],' \
+                  'UNIT["degree", 0.017453292519943295],' \
+                  'AXIS["Longitude", EAST],' \
+                  'AXIS["Latitude", NORTH]],' \
+                  'PROJECTION["polar_stereographic"],' \
+                  'PARAMETER["central_meridian", 10.0],' \
+                  'PARAMETER["Standard_Parallel_1", 60.0],' \
+                  'PARAMETER["scale_factor", {0:8.10f}],' \
+                  'PARAMETER["false_easting", 0.0],' \
+                  'PARAMETER["false_northing", 0.0],' \
+                  'UNIT["m*1000.0", 1000.0],' \
+                  'AXIS["X", EAST],' \
+                  'AXIS["Y", NORTH],' \
+                  'AUTHORITY["EPSG","1000001"]]'
+
+    proj = osr.SpatialReference()
+
+    if projname=="aeqd":
+        # Azimuthal Equidistant
+        if "x_0" in kwargs:
+            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"]))
+        else:
+            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0, 0))
+
+    elif projname=="dwd-radolan":
+        # DWD-RADOLAN polar stereographic projection
+        scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
+        proj.ImportFromWkt(radolan_wkt.format(scale))
+
+    else:
+        print "No convenience support for projection %r, yet." % projname
+        print "You need to create projection by using other means..."
+        exit(1)
+
+    return proj
+
+
+@wrl.util.deprecated("create_osr")
 def create_projstr(projname, **kwargs):
     """Conveniently supports the construction of proj.4 projection strings
 
@@ -1225,9 +1306,6 @@ def sweep_centroids(nrays,rscale,nbins,elangle):
     coordinates[:,:,1] = np.transpose(np.tile(azimuths,(nbins,1)))
     coordinates[:,:,2] = elangle
     return(coordinates)
-
-
-
 
 
 def epsg_to_osr(epsg):
