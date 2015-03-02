@@ -25,6 +25,7 @@ def recipe_polar_volume_example():
     sitecoords = (raw["where"]["lon"][0], raw["where"]["lat"][0],raw["where"]["height"][0])
     # define your cartesian reference system
     projstr = wradlib.georef.create_projstr("utm",zone=32, hemisphere="north")
+    proj = wradlib.georef.proj4_to_osr(projstr)
     # containers to hold Cartesian bin coordinates and data
     xyz, data = np.array([]).reshape((-1,3)), np.array([])
     # iterate over 14 elevation angles
@@ -36,7 +37,7 @@ def recipe_polar_volume_example():
         az = np.arange(0.,360.,360./where["nrays"])
         r  = np.arange(where["rstart"], where["rstart"]+where["nbins"]*where["rscale"], where["rscale"])
         # derive 3-D Cartesian coordinate tuples
-        xyz_ = wradlib.vpr.volcoords_from_polar(sitecoords, where["elangle"], az, r, projstr)
+        xyz_ = wradlib.vpr.volcoords_from_polar(sitecoords, where["elangle"], az, r, proj)
         # get the scan data for this elevation
         #   here, you can do all the processing on the 2-D polar level
         #   e.g. clutter elimination, attenuation correction, ...
@@ -51,7 +52,7 @@ def recipe_polar_volume_example():
     maxalt    = 5000.
     horiz_res = 1000.
     vert_res  = 250.
-    trgxyz, trgshape = wradlib.vpr.make_3D_grid(sitecoords, projstr, maxrange, maxalt, horiz_res, vert_res)
+    trgxyz, trgshape = wradlib.vpr.make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res)
 
     # interpolate to Cartesian 3-D volume grid
     tstart = dt.datetime.now()

@@ -12,6 +12,7 @@
 #!/usr/bin/env python
 
 import wradlib.verify as verify
+import wradlib.georef as georef
 import os
 
 def ex_verify():
@@ -31,17 +32,14 @@ def ex_verify():
     # import the polar example radar dataset
     testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_R_tur.gz')
     # the rain gages are in Gauss-Krueger Zone 3 coordinates, so we need the
-    #   corresponding proj.4 projection string
-    projstr = '''
-    +proj=tmerc +lat_0=0 +lon_0=9 +k=1 +x_0=3500000 +y_0=0 +ellps=bessel
-    +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7 +units=m +no_defs
-    '''
+    #   corresponding epsg-code
+    proj = georef.epsg_to_osr(31467)
     # these are the coordinates of the rain gages in Gauss-Krueger 3 coordinates
     x, y = np.array([3522175, 3453575, 3456725, 3498590]), np.array([5410600, 5433600, 5437860, 5359710])
     # <nnear> nearest radar bin shall be extracted
     nnear = 9
     # create an instance of PolarNeighbours
-    polarneighbs = verify.PolarNeighbours(r, az, sitecoords, projstr, x, y, nnear)
+    polarneighbs = verify.PolarNeighbours(r, az, sitecoords, proj, x, y, nnear)
     radar_at_gages = polarneighbs.extract(testdata)
     print radar_at_gages
 
