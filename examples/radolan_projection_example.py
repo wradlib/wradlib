@@ -22,8 +22,9 @@ def ex_radolan_projection():
     radolan_grid_xy = wrl.georef.get_radolan_grid(900, 900)
 
     # create radolan projection osr object
-    dwd_string = wrl.georef.create_projstr("dwd-radolan")
-    proj_stereo = wrl.georef.proj4_to_osr(dwd_string)
+    proj_stereo = wrl.georef.create_osr("dwd-radolan")
+    #dwd_string = wrl.georef.create_projstr("dwd-radolan")
+    #proj_stereo = wrl.georef.proj4_to_osr(dwd_string)
 
     # create wgs84 projection osr object
     proj_wgs = osr.SpatialReference()
