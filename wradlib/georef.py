@@ -1368,8 +1368,8 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
 
     x_0, y_0 = get_radolan_coords(9.0, 51.0, trig=trig)
 
-    x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols, res)
-    y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows, res)
+    x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols * res, res)
+    y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows * res, res)
     x, y = np.meshgrid(x_arr, y_arr)
 
     radolan_grid = np.dstack((x, y))
