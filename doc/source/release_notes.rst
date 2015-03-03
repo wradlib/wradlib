@@ -26,6 +26,14 @@ Bleeding Edge
 *None.*
 
 
+Version 0.5.1
+-------------
+
+**Highlights**
+
+Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid`` merged from v0.4.2
+
+
 Version 0.5.0
 -------------
 
@@ -45,6 +53,14 @@ From version ``0.6.0`` on, wradlib functions concerned with georeferencing will 
 **Removed functions**
 
 *None.*
+
+
+Version 0.4.2
+-------------
+
+**Highlights**
+
+Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid``
 
 
 Version 0.4.1
