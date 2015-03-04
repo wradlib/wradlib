@@ -16,6 +16,7 @@ wradlib functions concerned with georeferencing will only use projection informa
 **New features**
 
 In georef module a new helper function `create_osr` is added. This function helps to create an osr object for specific projections.
+Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid`` merged from v0.5.1
 
 **Deprecated features**
 
@@ -24,6 +25,14 @@ Function `georef.create_projstr` is deprecated.
 **Removed functions**
 
 *None.*
+
+
+Version 0.5.1
+-------------
+
+**Highlights**
+
+Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid`` merged from v0.4.2
 
 
 Version 0.5.0
@@ -45,6 +54,14 @@ From version ``0.6.0`` on, wradlib functions concerned with georeferencing will 
 **Removed functions**
 
 *None.*
+
+
+Version 0.4.2
+-------------
+
+**Highlights**
+
+Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid``
 
 
 Version 0.4.1
