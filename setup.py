@@ -35,6 +35,7 @@ def query_yes_quit(question, default="quit"):
 
     while 1:
         sys.stdout.write(question + prompt)
+        sys.stdout.flush()
         choice = raw_input().lower()
         if default is not None and choice == '':
             return default
@@ -42,6 +43,7 @@ def query_yes_quit(question, default="quit"):
             return valid[choice]
         else:
             sys.stdout.write("Please respond with 'yes' or 'quit'.\n")
+            sys.stdout.flush()
 
 # package requires (dependencies)
 with open('requirements.txt') as f:
@@ -69,16 +71,21 @@ for sample in requires:
             mver = get_distribution(modulestr).version
             if parse_version(mver) < parse_version(ver):
                 print("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
+                sys.stdout.flush()
                 missing.append(sample)
     except ImportError, e:
         print("Dependency %s not installed." % modulestr)
         print("The following exception occured: %s" % e)
+        sys.stdout.flush()
         missing.append(sample)
 
 # just run if missing/version mismatch dependencies are detected
 if missing:
-    question = "Dependencies %s are missing or version mismatch! \nShould setup.py try to install/update the missing " \
-               "packages? (Not recommended! See documentation for information!) \nOtherwise `Quit` and install via package manager or any other means!" % missing
+    question = ("\n\nDependencies %s are missing or version mismatch!\n\n" 
+    "See http://wradlib.bitbucket.org on how to install dependencies!\n\n"
+    "Type `yes` if setup.py should try to install/update missing packages\n"
+    "(NOT RECOMMENDED!!!)\n"    
+    "Type `quit` if you want to install via package manager or any other means!\n") % missing
     answer = query_yes_quit(question)
     if answer == 'quit':
         sys.exit('User quit setup.py')
