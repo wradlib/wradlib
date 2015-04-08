@@ -52,7 +52,7 @@ import warnings
 import h5py
 import numpy as np
 import netCDF4 as nc  # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
-from osgeo import gdal
+from osgeo import gdal, osr
 import util
 
 
@@ -1755,6 +1755,103 @@ def read_generic_netcdf(fname):
 
     return out
 
+def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize, 
+               nodata=-9999, proj=None, fmt="%.2f", to_esri=True):
+    """Write a cartesian grid to an Arc/Info ASCII grid file.
+    
+    .. versionadded:: 0.6.0
+
+    The function writes a text file to ``fpath`` that contains the header info and 
+    the grid data passed with the argument ``data``. For details on ESRI grids
+    (or Arc/Info ASCII grids) see e.g. http://en.wikipedia.org/wiki/Esri_grid.
+    This should work for most GIS software systems (tested for QGIS and ESRI ArcGIS).
+    
+    In case a GDAL SpatialReference object (argument ``proj``) is passed, 
+    the function will also try to write an accompanying projection (``.prj``) 
+    file that has the same file name, but a different extension.
+    
+    Please refer to the http://wradlib.bitbucket.org/georef.html to see how to
+    create SpatialReference objects from e.g. :doc:`EPSG codes <generated/wradlib.georef.epsg_to_osr>`,
+    :doc:`proj4 strings <generated/wradlib.georef.proj4_to_osr>`,
+    or :doc:`WKT strings <generated/wradlib.georef.wkt_to_osr>`. Other projections
+    are addressed by the :doc:`create_osr function <generated/wradlib.georef.create_osr>`.
+    
+    Parameters
+    ----------
+    fpath : string (a file path) - must have a ".txt" or ".asc" extension.
+    data : two dimensional numpy array of type integer or float
+    xllcorner : float
+    yllcorner : float
+    cellsize : float
+    nodata : float
+    proj : a SpatialReference either of class 'osr.SpatialReference' or a valid WKT string
+    fmt : format string
+    to_esri : Boolean (set True if the prj file should be made ESRI compatible)
+
+    Notes
+    -----
+    Has been tested with ESRI ArcGIS 9.3 and QGIS 2.8.
+    
+    Examples
+    --------
+    See :download:`gis_export_example.py script <../../../examples/gis_export_example.py>`.
+
+    .. literalinclude:: ../../../examples/gis_export_example.py
+    
+
+    """
+    # Check arguments
+    if not type(data)==np.ndarray:
+        raise Exception("Argument 'data' in wradlib.io.to_AAIGrid has to be of " \
+        "type numpy.ndarray. Found argument of %s instead" % str(type(data)))
+    
+    if not data.ndim==2:
+        raise Exception("Argument 'data' in wradlib.io.to_AAIGrid has to be 2-dimensional. " \
+        "Found %d dimensions instead" % data.ndim)        
+
+    if not os.path.exists( os.path.dirname(fpath) ):
+        raise Exception("Directory does not exist: %s" % os.path.dirname(fpath))
+
+    ext = os.path.splitext( fpath )[-1]
+    if not ext in [".txt", ".asc"]:
+        raise Exception("File name extension should be either '.txt' or '.asc'. " \
+        "Found extension %s instead: %s" % ext)
+    
+    # Define header
+    header="""ncols         %d
+    nrows         %d
+    xllcorner     %.4f
+    yllcorner     %.4f
+    cellsize      %.1f
+    NODATA_value  %.1f
+    """ % (data.shape[0],data.shape[1],xllcorner,yllcorner,cellsize,nodata)
+    
+    # Replace NaNs by NoData
+    data[np.isnan(data)] = nodata
+    
+    # Write grid file
+    with open(fpath, "w") as f:
+        f.write(header)
+        np.savetxt(f, np.flipud(data), fmt="%.1f")
+
+    if proj==None:
+        # No prj file will be written
+        return 0
+    elif not type(proj)== osr.SpatialReference:
+        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', " \
+        "but got %s. See library reference for wradlib.georef on how to create " \
+        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
+        
+    if to_esri:
+        proj.MorphToESRI()
+    
+    # Write projection file
+    prjpath = os.path.splitext(fpath)[0] + ".prj"    
+    with open(prjpath, "w") as f:
+        f.write( proj.ExportToWkt() )
+    
+    return 0
+        
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
