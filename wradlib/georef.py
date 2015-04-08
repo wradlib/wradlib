@@ -827,8 +827,8 @@ def create_osr(projname, **kwargs):
                   'PARAMETER["false_northing", 0.0],' \
                   'UNIT["m*1000.0", 1000.0],' \
                   'AXIS["X", EAST],' \
-                  'AXIS["Y", NORTH],' \
-                  'AUTHORITY["EPSG","1000001"]]'
+                  'AXIS["Y", NORTH]]'
+#                  'AUTHORITY["EPSG","100001"]]'
 
     proj = osr.SpatialReference()
 
