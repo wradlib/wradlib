@@ -15,13 +15,17 @@ def ex_grid_to_gis():
     proj_osr = wradlib.georef.create_osr( "dwd-radolan" )
     
     # Get projected RADOLAN coordinates for corner definition
-    radolan_grid_xy = wradlib.georef.get_radolan_grid(900,900)
-    x = radolan_grid_xy[:,:,0]
-    y = radolan_grid_xy[:,:,1]
+    xy = wradlib.georef.get_radolan_grid(900,900)
     
     # Export to Arc/Info ASCII Grid format (aka ESRI grid)
     # It should be possible to import this to most conventional GIS software.
-    wradlib.io.to_AAIGrid("data/out.asc", data, x[0,0], y[0,0], 1., proj=proj_osr)
+    wradlib.io.to_AAIGrid("data/aaigrid.asc", data, xy[0,0,0], xy[0,0,1], 1., proj=proj_osr)
+    print xy[0,0,0], xy[0,0,1]
+
+    # Export to GeoTIFF format
+    # For RADOLAN grids, this projection will probably not be recognized by ESRI ArcGIS.
+    geotransform = [xy[0,0,0], 1., 0, xy[-1,-1,1], 0, -1.]
+    wradlib.io.to_GeoTIFF("data/geotiff.tif", data, geotransform, proj=proj_osr)
 
 
 # =======================================================
