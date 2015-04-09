@@ -1843,7 +1843,7 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     # Write grid file
     with open(fpath, "w") as f:
         f.write(header)
-        np.savetxt(f, np.flipud(data), fmt="%.1f")
+        np.savetxt(f, np.flipud(data), fmt=fmt)
 
     if proj==None:
         # No prj file will be written
