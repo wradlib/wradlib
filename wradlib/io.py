@@ -1836,6 +1836,8 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     "NODATA_value  %.1f\n" % (data.shape[0],data.shape[1],xllcorner,yllcorner,cellsize,nodata)
     
     # Replace NaNs by NoData
+    # ...but we do not want to manipulate the original array!
+    data = data.copy()
     data[np.isnan(data)] = nodata
     
     # Write grid file
@@ -1890,15 +1892,20 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     map coordinates from grid indices. The list needs to contain the following
     items: top left x, w-e pixel resolution, rotation, top left y, rotation, 
     n-s pixel resolution. The unit of the pixel resolution has to be consistent
-    with the projection information. Since the ``geotransform`` is used to define
-    the grid from the top-left corner, the n-s pixel resolution is usually a negative
-    value. Here is an example of the ``geotransform`` that worked e.g. with
-    RADOLAN grids::
+    with the projection information. **BE CAREFUL**: You need to consider whether
+    your grid coordinates define the corner (typically lower left) or the cenmter of your pixels.
+    And Since the ``geotransform`` is used to define the grid from the top-left corner, 
+    the n-s pixel resolution is usually a negative value.
+    
+    Here is an example of the ``geotransform`` that worked e.g. with RADOLAN grids.
+    Notice that the RADOLAN coordinates returned by wradlib refer to the lower left 
+    pixel corners, so you have to add another pixel unit to the top left y coordinate
+    in order to define the top left corner of the bounding box::
     
         import wradlib
         xy = wradlib.georef.get_radolan_grid(900,900)
         # top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size
-        geotransform = [xy[0,0,0], 1., 0, xy[-1,-1,1], 0, -1.]
+        geotransform = [xy[0,0,0], 1., 0, xy[-1,-1,1]+1., 0, -1.]
     
     Parameters
     ----------
@@ -1961,6 +1968,8 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     ds.SetGeoTransform( geotransform )
 
     # Replace NaNs by NoData
+    # ...but we do not want to manipulate the original array!
+    data = data.copy() 
     data[np.isnan(data)] = nodata
     # and replace them by NoData flag
     ds.GetRasterBand(1).SetNoDataValue(nodata)
