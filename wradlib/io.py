@@ -1789,10 +1789,10 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     file that has the same file name, but a different extension.
     
     Please refer to http://wradlib.bitbucket.org/georef.html to see how to
-    create SpatialReference objects from e.g. :doc:`EPSG codes <generated/wradlib.georef.epsg_to_osr>`,
-    :doc:`proj4 strings <generated/wradlib.georef.proj4_to_osr>`,
-    or :doc:`WKT strings <generated/wradlib.georef.wkt_to_osr>`. Other projections
-    are addressed by the :doc:`create_osr function <generated/wradlib.georef.create_osr>`.
+    create SpatialReference objects from e.g. :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
+    :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
+    or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
+    are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
     
     Parameters
     ----------
@@ -1875,18 +1875,17 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     passed with the argument ``data``. For details on the GeoTIFF format
     see e.g. http://en.wikipedia.org/wiki/GeoTIFF.
     
-    .. warning:: The GeoTIFF files produced by this function might not
-    work with ESRI ArcGIS, depending on the projection. Problems are particularly
-    expected with the RADOLAN projection, due to inconsistencies in the definition of polar
-    stereographic projections between GDAL and ESRI ArcGIS.  
+    .. warning:: The GeoTIFF files produced by this function might not work with ESRI ArcGIS, depending on the projection. Problems are particularly
+                 expected with the RADOLAN projection, due to inconsistencies in the definition of polar
+                 stereographic projections between GDAL and ESRI ArcGIS.  
     
     The projection information (argument ``proj``) needs to be passed as a GDAL 
     SpatialReference object. Refer to http://wradlib.bitbucket.org/georef.html 
     to see how to create SpatialReference objects from e.g. 
-    :doc:`EPSG codes <generated/wradlib.georef.epsg_to_osr>`,
-    :doc:`proj4 strings <generated/wradlib.georef.proj4_to_osr>`,
-    or :doc:`WKT strings <generated/wradlib.georef.wkt_to_osr>`. Other projections
-    are addressed by the :doc:`create_osr function <generated/wradlib.georef.create_osr>`.
+    :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
+    :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
+    or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
+    are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
     
     Writing a GeoTIFF file requires a ``geotransform`` list to define how to compute
     map coordinates from grid indices. The list needs to contain the following
