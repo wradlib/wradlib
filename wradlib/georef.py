@@ -32,6 +32,7 @@ Georeferencing
    create_projstr
    proj4_to_osr
    epsg_to_osr
+   wkt_to_osr
    projected_bincoords_from_radarspecs
    sweep_centroids
    read_gdal_values
@@ -821,14 +822,14 @@ def create_osr(projname, **kwargs):
                   'AXIS["Latitude", NORTH]],' \
                   'PROJECTION["polar_stereographic"],' \
                   'PARAMETER["central_meridian", 10.0],' \
-                  'PARAMETER["Standard_Parallel_1", 60.0],' \
+                  'PARAMETER["latitude_of_origin", 60.0],' \
                   'PARAMETER["scale_factor", {0:8.10f}],' \
                   'PARAMETER["false_easting", 0.0],' \
                   'PARAMETER["false_northing", 0.0],' \
                   'UNIT["m*1000.0", 1000.0],' \
                   'AXIS["X", EAST],' \
                   'AXIS["Y", NORTH]]'
-#                  'AUTHORITY["EPSG","100001"]]'
+#                  'AUTHORITY["USER","100000"]]'
 
     proj = osr.SpatialReference()
 
@@ -1331,6 +1332,30 @@ def epsg_to_osr(epsg):
     if epsg:
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(epsg)
+    else:
+        proj = get_default_projection()
+    return(proj)
+
+
+def wkt_to_osr(wkt):
+    """Create osr spatial reference object from WKT string
+
+    .. versionadded:: 0.6.0
+
+    Parameters
+    ----------
+    wkt : str
+        WTK string defining the coordinate reference system
+
+    Returns
+    -------
+    proj : osr spatial reference object
+        GDAL/OSR object defining projection
+
+    """
+    if wkt:
+        proj = osr.SpatialReference()
+        proj.ImportFromWkt(wkt)
     else:
         proj = get_default_projection()
     return(proj)

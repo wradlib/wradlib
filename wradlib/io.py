@@ -31,6 +31,8 @@ on how to deal with different file formats.
    read_RADOLAN_composite
    read_Rainbow
    read_safnwc
+   to_AAIGrid
+   to_GeoTIFF
 
 """
 
@@ -53,7 +55,7 @@ import pytz
 import h5py
 import numpy as np
 import netCDF4 as nc  # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
-from osgeo import gdal
+from osgeo import gdal, osr
 import util
 
 
@@ -1751,7 +1753,231 @@ def read_generic_netcdf(fname):
     ncid.close()
 
     return out
+    
+def _check_arguments(fpath, data):
+    """Helper function to check input arguments for GIS export function    
+    """
+    # Check arguments
+    if not type(data)==np.ndarray:
+        raise Exception("Argument 'data' in has to be of " \
+        "type numpy.ndarray. Found argument of %s instead" % str(type(data)))
+    
+    if not data.ndim==2:
+        raise Exception("Argument 'data' has to be 2-dimensional. " \
+        "Found %d dimensions instead" % data.ndim)        
 
+    if not os.path.exists( os.path.dirname(fpath) ):
+        raise Exception("Directory does not exist: %s" % os.path.dirname(fpath))
+    
+
+def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize, 
+               nodata=-9999, proj=None, fmt="%.2f", to_esri=True):
+    """Write a cartesian grid to an Arc/Info ASCII grid file.
+    
+    .. versionadded:: 0.6.0
+
+    The function writes a text file to ``fpath`` that contains the header info and 
+    the grid data passed with the argument ``data``. For details on ESRI grids
+    (or Arc/Info ASCII grids) see e.g. http://en.wikipedia.org/wiki/Esri_grid.
+    This should work for most GIS software systems (tested for QGIS and ESRI ArcGIS).
+    
+    In case a GDAL SpatialReference object (argument ``proj``) is passed, 
+    the function will also try to write an accompanying projection (``.prj``) 
+    file that has the same file name, but a different extension.
+    
+    Please refer to http://wradlib.bitbucket.org/georef.html to see how to
+    create SpatialReference objects from e.g. :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
+    :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
+    or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
+    are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
+    
+    Parameters
+    ----------
+    fpath : string (a file path) - must have a ".txt" or ".asc" extension.
+    data : two dimensional numpy array of type integer or float
+    xllcorner : float (x coordinate of the lower left corner of the grid)
+    yllcorner : float (y coordinate of the lower left corner of the grid)
+    cellsize : float (size of the grid cells - needs to be consistent with proj)
+    nodata : float (no data flag)
+    proj : a SpatialReference of class 'osr.SpatialReference'
+    fmt : format string
+    to_esri : Boolean (set True if the prj file should be made ESRI compatible)
+
+    Notes
+    -----
+    Has been tested with ESRI ArcGIS 9.3 and QGIS 2.8.
+    
+    Examples
+    --------
+    See :download:`gis_export_example.py script <../../../examples/gis_export_example.py>`.
+
+    .. literalinclude:: ../../../examples/gis_export_example.py
+    
+
+    """
+    # Check input data
+    _check_arguments(fpath, data)
+
+    ext = os.path.splitext( fpath )[-1]
+    if not ext in [".txt", ".asc"]:
+        raise Exception("File name extension should be either '.txt' or '.asc'. " \
+        "Found extension %s instead: %s" % ext)
+    
+    # Define header
+    header="" \
+    "ncols         %d\n" \
+    "nrows         %d\n" \
+    "xllcorner     %.4f\n" \
+    "yllcorner     %.4f\n" \
+    "cellsize      %.4f\n" \
+    "NODATA_value  %.1f\n" % (data.shape[0],data.shape[1],xllcorner,yllcorner,cellsize,nodata)
+    
+    # Replace NaNs by NoData
+    # ...but we do not want to manipulate the original array!
+    data = data.copy()
+    data[np.isnan(data)] = nodata
+    
+    # Write grid file
+    with open(fpath, "w") as f:
+        f.write(header)
+        np.savetxt(f, np.flipud(data), fmt=fmt)
+
+    if proj==None:
+        # No prj file will be written
+        return 0
+    elif not type(proj)== osr.SpatialReference:
+        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', " \
+        "but got %s. See library reference for wradlib.georef on how to create " \
+        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
+        
+    if to_esri:
+        # Make a copy before manipulation
+        proj = proj.Clone()
+        proj.MorphToESRI()
+    
+    # Write projection file
+    prjpath = os.path.splitext(fpath)[0] + ".prj"    
+    with open(prjpath, "w") as f:
+        f.write( proj.ExportToWkt() )
+    
+    return 0
+    
+
+def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
+    """Write a cartesian grid to a GeoTIFF file.
+    
+    .. versionadded:: 0.6.0
+
+    The function writes a GeoTIFF file to ``fpath`` that contains the grid data 
+    passed with the argument ``data``. For details on the GeoTIFF format
+    see e.g. http://en.wikipedia.org/wiki/GeoTIFF.
+    
+    .. warning:: The GeoTIFF files produced by this function might not work with ESRI ArcGIS, depending on the projection. Problems are particularly
+                 expected with the RADOLAN projection, due to inconsistencies in the definition of polar
+                 stereographic projections between GDAL and ESRI ArcGIS.  
+    
+    The projection information (argument ``proj``) needs to be passed as a GDAL 
+    SpatialReference object. Refer to http://wradlib.bitbucket.org/georef.html 
+    to see how to create SpatialReference objects from e.g. 
+    :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
+    :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
+    or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
+    are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
+    
+    Writing a GeoTIFF file requires a ``geotransform`` list to define how to compute
+    map coordinates from grid indices. The list needs to contain the following
+    items: top left x, w-e pixel resolution, rotation, top left y, rotation, 
+    n-s pixel resolution. The unit of the pixel resolution has to be consistent
+    with the projection information. **BE CAREFUL**: You need to consider whether
+    your grid coordinates define the corner (typically lower left) or the cenmter of your pixels.
+    And Since the ``geotransform`` is used to define the grid from the top-left corner, 
+    the n-s pixel resolution is usually a negative value.
+    
+    Here is an example of the ``geotransform`` that worked e.g. with RADOLAN grids.
+    Notice that the RADOLAN coordinates returned by wradlib refer to the lower left 
+    pixel corners, so you have to add another pixel unit to the top left y coordinate
+    in order to define the top left corner of the bounding box::
+    
+        import wradlib
+        xy = wradlib.georef.get_radolan_grid(900,900)
+        # top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size
+        geotransform = [xy[0,0,0], 1., 0, xy[-1,-1,1]+1., 0, -1.]
+    
+    Parameters
+    ----------
+    fpath : string (a file path) - must have a ".txt" or ".asc" extension.
+    data : two dimensional numpy array of type integer or float
+    geotransform : sequence of length 6 (# top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size)
+    nodata : float (no data flag)
+    proj : a SpatialReference of class 'osr.SpatialReference'
+
+    Notes
+    -----
+    Has been tested with ESRI ArcGIS 9.3 and QGIS 2.8.
+    
+    Examples
+    --------
+    See :download:`gis_export_example.py script <../../../examples/gis_export_example.py>`.
+
+    .. literalinclude:: ../../../examples/gis_export_example.py
+    
+
+    """
+    # Check input data
+    _check_arguments(fpath, data)
+    ext = os.path.splitext( fpath )[-1]
+    if not ext in [".tif", ".tiff"]:
+        raise Exception("File name extension should be either '.tif' or '.tiff'. " \
+        "Found extension %s instead: %s" % ext)
+    
+    # Set up our export object
+    driver = gdal.GetDriverByName( "GTiff" )
+    
+    # Mapping ur data type to GDAL data types
+    if data.dtype=="float64":
+        gdal_dtype = gdal.GDT_Float64
+    elif data.dtype=="float32":
+        gdal_dtype = gdal.GDT_Float32
+    elif data.dtype=="int32":
+        gdal_dtype = gdal.GDT_Int32
+    elif data.dtype=="int16":
+        gdal_dtype = gdal.GDT_Int16
+    else:
+        raise Exception("The data type of your input array data should be one of " \
+        "the following: float64, float32, int32, int16. You can use numpy's 'astype'" \
+        "method to convert your array to the desired data type.")
+        
+    # Creat our export object
+    ds = driver.Create(fpath, data.shape[0], data.shape[1], 1, gdal_dtype )
+    
+    # set the reference info
+    if proj==None:
+        pass
+    elif not type(proj)== osr.SpatialReference:
+        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', " \
+        "but got %s. See library reference for wradlib.georef on how to create " \
+        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
+    else:
+        ds.SetProjection( proj.ExportToWkt() )
+        
+    # top left x, w-e pixel resolution, rotation, top left y, rotation, n-s pixel resolution
+    ds.SetGeoTransform( geotransform )
+
+    # Replace NaNs by NoData
+    # ...but we do not want to manipulate the original array!
+    data = data.copy() 
+    data[np.isnan(data)] = nodata
+    # and replace them by NoData flag
+    ds.GetRasterBand(1).SetNoDataValue(nodata)
+    
+    # Write data
+    ds.GetRasterBand(1).WriteArray( np.flipud(data) )
+    
+    # This is how we close the export file
+    ds = None
+
+
+        
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
