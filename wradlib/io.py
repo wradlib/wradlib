@@ -41,11 +41,12 @@ import datetime as dt
 import cPickle as pickle
 import StringIO
 from collections import OrderedDict
-
 import re
-import pytz
 import os
 import warnings
+
+import pytz
+
 
 
 # site packages
@@ -1733,22 +1734,18 @@ def read_generic_netcdf(fname):
                 dim2[keys[dimid]] = dim[keys[dimid]]
             out["dimensions"] = dim2
 
-
     # variables
     if ncid.variables:
         var = OrderedDict()
         for k, v in ncid.variables.iteritems():
-            if isinstance(v.__dict__, dict):
-                tmp = OrderedDict()
-                for k1, v1 in v.__dict__.iteritems():
-                    tmp[k1] = v1
-                if v[:].dtype == 'S1':
-                    tmp['data'] = v[:].compressed().tostring()
-                else:
-                    tmp['data'] = v[:]
-                var[k] = tmp
+            tmp = OrderedDict()
+            for k1 in v.ncattrs():
+                tmp[k1] = v.getncattr(k1)
+            if v[:].dtype.kind == 'S':
+                tmp['data'] = nc.chartostring(v[:])
             else:
-                var[k] = v
+                tmp['data'] = v[:]
+            var[k] = tmp
         out['variables'] = var
 
     ncid.close()
