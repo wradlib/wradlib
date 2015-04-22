@@ -33,7 +33,6 @@ from scipy import interpolate
 from scipy.ndimage import filters
 from scipy.spatial import cKDTree
 from scipy.stats import nanmean
-import importlib
 
 import warnings
 import functools
