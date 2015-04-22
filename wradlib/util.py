@@ -1157,3 +1157,24 @@ def roll2d_polar(img,shift=1,axis=0):
             out[:,:shift] = img[:,-shift:]
             out[:,n+shift:] = np.nan
     return(out)
+
+
+class UTC(dt.tzinfo):
+    """
+    UTC implementation for tzinfo.
+    
+    See e.g. http://python.active-venture.com/lib/datetime-tzinfo.html
+    
+    Replaces pytz.utc
+    """          
+    def __repr__(self):
+        return "<UTC>"
+
+    def utcoffset(self, dt):
+        return dt.timedelta(0)
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return dt.timedelta(0)
