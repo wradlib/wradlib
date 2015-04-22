@@ -47,8 +47,6 @@ import re
 import os
 import warnings
 
-import pytz
-
 
 
 # site packages
@@ -72,7 +70,7 @@ def _getTimestampFromFilename(filename):
     return dt.datetime.strptime(time, '%Y%m%d%H%M')
 
 
-def getDXTimestamp(name, tz=pytz.utc):
+def getDXTimestamp(name):
     """Converts a dx-timestamp (as part of a dx-product filename) to a python datetime.object.
 
     Parameters
@@ -88,7 +86,7 @@ def getDXTimestamp(name, tz=pytz.utc):
     -------
     time : timezone-aware datetime.datetime object
     """
-    return _getTimestampFromFilename(name).replace(tzinfo=tz)
+    return _getTimestampFromFilename(name).replace(tzinfo=util.UTC())
 
 
 def unpackDX(raw):
@@ -149,9 +147,11 @@ def parse_DX_header(header):
     out = {}
     # RADOLAN product type def
     out["producttype"] = header[0:2]
-    # file time stamp as Python datetime object
+    # time stamp from file header as Python datetime object
     out["datetime"] = dt.datetime.strptime(header[2:8] + header[13:17] + "00",
                                            "%d%H%M%m%y%S")
+    # Make it aware of its time zone (UTC)
+    out["datetime"] = out["datetime"].replace(tzinfo=util.UTC())
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
     pos_BY = header.find("BY")
