@@ -202,7 +202,7 @@ def import_optional(module):
     for further instructions.
     """
     try:
-        mod = importlib.import_module(module)
+        mod = __import__(module)
     except ImportError:
         mod = OptionalModuleStub(module)
 

@@ -5,4 +5,3 @@ h5py >= 2.0.1
 netCDF4 >= 1.0
 gdal
 pytz
-importlib
