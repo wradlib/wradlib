@@ -34,6 +34,7 @@ fields except that they exhibit the numpy ndarray interface.
     beam_height_ft
     beam_height_ft_doviak
     pulse_volume
+    beam_block_frac
 
 """
 
@@ -149,6 +150,57 @@ def pulse_volume(ranges, h, theta):
     """
     return np.pi * h * (ranges**2) * (np.tan( np.radians(theta) ))**2
 
+
+def beam_block_frac(Th, Bh, a):
+    """Partial beam blockage fraction.
+
+    .. versionadded:: 0.6.0
+
+    ported from PyRadarMet
+
+    From Bech et al. (2003), Eqn 2 and Appendix
+
+    Parameters
+    ----------
+    Th : float, array of floats
+        Terrain height [m]
+    Bh : float, array of floats
+        Beam height [m]
+    a : float, array of floats
+        Half power beam radius [m]
+
+    Returns
+    -------
+    PBB : float
+        Partial beam blockage fraction [unitless]
+
+    Examples
+    --------
+    PBB = beam_block_frac(Th,Bh,a)
+
+    Notes
+    ------
+    This procedure uses a simplified interception function where no vertical
+    gradient of refractivity is considered.  Other algorithms treat this
+    more thoroughly.  However, this is accurate in most cases other than
+    the super-refractive case.
+
+    See the the half_power_radius function to calculate variable a
+
+    The heights must be the same units!
+    """
+
+    # First find the difference between the terrain and height of
+    # radar beam (Bech et al. (2003), Fig.3)
+    y = Th - Bh
+
+    Numer = (y * np.sqrt(a**2 - y**2)) + (a**2 * np.arcsin(y/a)) + (np.pi * a**2 /2.)
+
+    Denom = np.pi * a**2
+
+    PBB = Numer / Denom
+
+    return PBB
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <qual> as main...'
