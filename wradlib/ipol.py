@@ -34,6 +34,8 @@ This includes for example:
    ExternalDriftKriging
    interpolate
    interpolate_polar
+   interpolate_cart2polar
+   map_cart2polar
 
 """
 
@@ -41,6 +43,8 @@ import re
 import scipy
 from scipy.spatial import cKDTree
 from scipy.interpolate import LinearNDInterpolator
+from scipy.ndimage.interpolation import map_coordinates
+from scipy.interpolate import griddata
 import numpy as np
 import wradlib.util as util
 
@@ -937,6 +941,103 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
         filling = interpolate(src_coord, trg_coord, values_list, Interpolator = Nearest)
         filled_data[np.where(np.isnan(filled_data))] = filling
     return filled_data.reshape(data.shape[0],data.shape[1])
+
+
+def interpolate_cart2polar(cartgrid, values, polgrid, **kwargs):
+    """
+    Interpolate data from cartesian grid to polar grid
+
+    .. versionadded:: 0.6.0
+
+    Slow for large arrays
+
+    Keyword arguments are fed to
+    scipy.interpolate.griddata function
+
+    Parameters
+    ----------
+    cartgrid : numpy ndarray
+        3 dimensional array (nx, ny, lon/lat) of floats;
+    values : numpy 2d-array
+        2 dimensional array (nx, ny) of data values
+    polgrid : numpy ndarray
+        3 dimensional array (nrays, nbins, lon/lat) of floats;
+
+    Keywords
+    --------
+    See scipy.interpolate.griddata for keyword arguments
+
+    Returns
+    -------
+    interp : numpy 2d-array
+        array with interpolated values of size (nrays, nbins)
+    """
+
+    # TODO: dimension checking
+
+    polshape = polgrid.shape[:-1]
+
+    cart_arr = cartgrid.reshape(-1, cartgrid.shape[-1])
+    pol_arr = polgrid.reshape(-1, polgrid.shape[-1])
+
+    if values.ndim > 1:
+        values = values.ravel()
+
+    interp = griddata(cart_arr, values, pol_arr, **kwargs)
+    interp = interp.reshape(polshape)
+
+    return interp
+
+def map_cart2polar(cartgrid, values, polgrid, **kwargs):
+    """
+    Interpolate data from cartesian grid to polar grid
+
+    .. versionadded:: 0.6.0
+
+    Keyword arguments are fed to
+    scipy.ndimage.interpolation.map_coordinates function
+
+    Parameters
+    ----------
+    cartgrid : numpy ndarray
+        3 dimensional array (nx, ny, lon/lat) of floats;
+    values : numpy 2d-array
+        2 dimensional array (nx, ny) of data values
+    polgrid : numpy ndarray
+        3 dimensional array (nrays, nbins, lon/lat) of floats;
+
+    Keywords
+    --------
+    See scipy.ndimage.interpolation.map_coordinates function
+
+    Returns
+    -------
+    interp : numpy 2d-array
+        array with interpolated values of size (nrays, nbins)
+    """
+
+    # TODO: dimension checking
+
+    polshape = polgrid.shape[:-1]
+
+    xi = polgrid[...,0].ravel()
+    yi = polgrid[...,1].ravel()
+
+    nx = cartgrid.shape[1]
+    ny = cartgrid.shape[0]
+
+    cxmin = np.min(cartgrid[...,0])
+    cxmax = np.max(cartgrid[...,0])
+    cymin = np.min(cartgrid[...,1])
+    cymax = np.max(cartgrid[...,1])
+
+    xi = (nx - 1) * (xi - cxmin) / (cxmax-cxmin)
+    yi = (ny - 1) * (yi - cymin) / (cymax-cymin)
+
+    interp = map_coordinates(values, [yi, xi], **kwargs)
+    interp = interp.reshape(polshape)
+
+    return interp
 
 
 if __name__ == '__main__':
