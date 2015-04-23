@@ -1547,6 +1547,204 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     return radolan_grid
 
 
+def resample_raster_dataset(src_ds, **kwargs):
+    """Resample given dataset according to keyword arguments
+
+    .. versionadded:: 0.6.0
+
+    # function inspired from from github project
+    # https://github.com/profLewis/geogg122
+
+    Parameters
+    ----------
+    src_ds : gdal object
+        raster image with georeferencing (GeoTransform at least)
+
+    Keywords
+    --------
+    spacing : float or tuple of two floats
+        pixel spacing of resampled dataset
+    size : tuple of two ints
+        X/YRasterSize of resampled dataset
+    resample : GDALResampleAlg, defaults to GRA_Bilinear
+        GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2, GRA_CubicSpline = 3,
+        GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6, GRA_Max = 8,
+        GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
+
+    Returns
+    -------
+    dst_ds : resampled raster dataset
+    """
+
+    # checking kwargs
+    spacing = kwargs.pop('spacing', None)
+    size = kwargs.pop('size', None)
+    resample = kwargs.pop('resample', gdal.GRA_Bilinear)
+
+    # Get the GeoTransform vector
+    src_geo = src_ds.GetGeoTransform()
+    x_size = src_ds.RasterXSize
+    y_size = src_ds.RasterYSize
+
+    # calculate cols/rows or xspacing/yspacing
+    if spacing:
+        try:
+            x_ps, y_ps = spacing
+        except TypeError:
+            x_ps = spacing
+            y_ps = spacing
+        cols = int( (x_size * src_geo[1]) / x_ps )
+        rows = int( (y_size * abs(src_geo[5])) / y_ps)
+    elif size:
+        cols, rows = size
+        x_ps = x_size * src_geo[1] / cols
+        y_ps = y_size * abs(src_geo[5]) / rows
+    else:
+        print("whether keyword 'spacing' or 'size' must be given")
+        raise
+
+    # create destination in-memory raster
+    mem_drv = gdal.GetDriverByName('MEM')
+    # and set RasterSize according ro cols/rows
+    dst_ds = mem_drv.Create('', cols, rows, 1, gdal.GDT_Float32)
+
+    # Create the destination GeoTransform with changed x/y spacing
+    dst_geo = (src_geo[0], x_ps, src_geo[2], src_geo[3], src_geo[4], -y_ps)
+
+    # apply GeoTransform to destination dataset
+    dst_ds.SetGeoTransform(dst_geo)
+
+    # resample dataset
+    gdal.ReprojectImage(src_ds, dst_ds, None, None, resample)
+
+    return dst_ds
+
+
+def get_shape_points(geom):
+    """
+    Extract coordinate points from given ogr geometry as generator object
+
+    If geometries are nested, function recurses.
+
+    .. versionadded:: 0.6.0
+
+    Parameters
+    ----------
+    geom : gdal ogr geometry object
+
+    Returns
+    -------
+    result : generator object
+        expands to Nx2 dimensional nested point arrays
+    """
+
+    type = geom.GetGeometryType()
+    if type:
+        # 1D Geometries, LINESTRINGS
+        if type == 2:
+            result = np.array(geom.GetPoints())
+            yield result
+        # RINGS, POLYGONS, MULTIPOLYGONS, MULTILINESTRINGS
+        elif type > 2:
+            # iterate over geometries and recurse
+            for item in geom:
+                for result in get_shape_points(item):
+                    yield result
+    else:
+        print("Unknown Geometry")
+
+
+def transform_geometry(geom, dest_srs):
+    """
+    Perform geotransformation to given destination SpatialReferenceSystem
+
+    It transforms coordinates to a given destination osr spatial reference
+    if a geotransform is neccessary.
+
+    Parameters
+    ----------
+    geom : gdal ogr geometry object
+
+    Keywords
+    --------
+    dest_srs: gdal osr spatial reference object
+        Destination Projection
+
+    Returns
+    -------
+    geom : gdal ogr geometry object
+        Transformed Geometry
+    """
+
+    src_srs = geom.GetSpatialReference()
+    # needed to get EPSG code
+    src_srs.AutoIdentifyEPSG()
+    # transform if not the same spatial reference system
+    if src_srs.GetAuthorityCode(None) != dest_srs.GetAuthorityCode(None):
+        geom.TransformTo(dest_srs)
+
+    return geom
+
+
+def get_shape_coordinates(layer, **kwargs):
+    """
+    Function iterates over gdal ogr layer features and packs extracted shape coordinate points
+    into nested ndarray
+
+    It transforms coordinates to a given destination osr spatial reference if dest_srs is given
+    and a geotransform is neccessary.
+
+    .. versionadded:: 0.6.0
+
+    Parameters
+    ----------
+    layer : gdal ogr layer object
+
+    Keywords
+    --------
+    dest_srs: gdal osr spatial reference object
+        Destination Projection
+    key : string
+        attribute key to extract from layer feature
+
+    Returns
+    -------
+    shp : nested ndarray
+        Dimension of subarrays Nx2
+        extracted shape coordinate points
+    attrs : List of attributes extracted from features
+    """
+
+    shp =  []
+
+    dest_srs = kwargs.get('dest_srs', None)
+    key = kwargs.get('key', None)
+    if key:
+        attrs = []
+    else:
+        attrs = None
+
+    for i in range(layer.GetFeatureCount()):
+        feature = layer.GetNextFeature()
+        if feature:
+            if key:
+                attrs.append(feature[key])
+            geom = feature.GetGeometryRef()
+            if dest_srs:
+                transform_geometry(geom,dest_srs)
+            # get list of xy-coordinates
+            reslist = list(get_shape_points(geom))
+            shp.append(np.array(reslist))
+    shp = np.array(shp)
+    # hack needed since a solitair ndarray looks like (1, N, 2) while
+    # for multiple ndarrays within an array the dimensions are hidden like this (22,)
+    if shp.ndim > 1:
+        shp = np.squeeze(shp, axis=0)
+
+    return shp, attrs
+
+
+
 def _doctest_():
     import doctest
     print 'doctesting'
