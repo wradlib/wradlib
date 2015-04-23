@@ -33,6 +33,8 @@ on how to deal with different file formats.
    read_safnwc
    to_AAIGrid
    to_GeoTIFF
+   read_raster_data
+   open_shape
 
 """
 
@@ -55,9 +57,9 @@ import pytz
 import h5py
 import numpy as np
 import netCDF4 as nc  # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
-from osgeo import gdal, osr
+from osgeo import gdal, ogr, osr
 import util
-
+import georef
 
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
@@ -1977,7 +1979,90 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     ds = None
 
 
-        
+def read_raster_data(filename, driver=None, **kwargs):
+    """Read raster data
 
+    .. versionadded:: 0.6.0
+
+    Resamples data on the fly if special keyword arguments are given
+
+    Parameters
+    ----------
+    filename : string
+        filename of raster file
+    driver : string
+        GDAL Raster Format Code
+        see: http://www.gdal.org/formats_list.html
+        if no driver is given gdal is autodetecting which may fail
+
+    Keywords
+    --------
+    spacing : float or tuple of two floats
+        pixel spacing of resampled dataset
+    size : tuple of two ints
+        X/YRasterSize of resampled dataset
+    resample : GDALResampleAlg, defaults to GRA_Bilinear
+        GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2, GRA_CubicSpline = 3,
+        GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6, GRA_Max = 8,
+        GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
+
+    Returns
+    -------
+    coords : numpy ndarray of raster coordinates
+    values : numpy 2darray of raster values
+    """
+
+    ds = gdal.Open(filename)
+
+    if driver:
+        gdal.GetDriverByName(driver)
+
+    print("Raster:", ds.RasterXSize, ds.RasterYSize, ds.GetGeoTransform())
+
+    if 'spacing' in kwargs or 'size' in kwargs:
+        ds1 = georef.resample_raster_dataset(ds, **kwargs)
+    else:
+        ds1 = ds
+
+    print("Raster:", ds1.RasterXSize, ds1.RasterYSize, ds1.GetGeoTransform())
+
+    # we have to flipud data, because geotiff data is origin "upper left"
+    values = np.flipud(georef.read_gdal_values(ds1))
+    coords = np.flipud(georef.read_gdal_coordinates(ds1, mode='centers', z=False))
+
+    return  coords, values
+
+def open_shape(filename, driver=None):
+    """
+    Open shapefile, return ogr dataset and layer
+
+    .. warning:: dataset and layer have to live in the same context, if dataset is deleted
+                 all layer references will get lost
+
+    Parameters
+    ----------
+    filename : string
+        shapefile name
+    driver : string
+        gdal driver string
+
+    Returns
+    -------
+    dataset : ogr dataset
+        dataset
+    layer : ogr layer
+        layer
+    """
+
+    if driver is None:
+        driver = ogr.GetDriverByName('ESRI Shapefile')
+    dataset = driver.Open(filename)
+    if dataset is None:
+        print('Could not open file')
+        raise IOError
+    layer = dataset.GetLayer()
+    return dataset, layer
+
+        
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
