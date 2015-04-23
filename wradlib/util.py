@@ -39,6 +39,7 @@ from scipy.ndimage import filters
 from scipy.spatial import cKDTree
 from scipy.stats import nanmean
 
+
 warnings.simplefilter('always', DeprecationWarning)
 #warnings.simplefilter('always', FutureWarning)
 
@@ -1155,73 +1156,6 @@ def roll2d_polar(img,shift=1,axis=0):
             out[:,:shift] = img[:,-shift:]
             out[:,n+shift:] = np.nan
     return(out)
-
-def half_power_radius(r, bwhalf):
-    """
-    Half-power radius.
-
-    .. versionadded:: 0.6.0
-
-    ported from PyRadarMet
-
-    Battan (1973),
-
-    Parameters
-    ----------
-    r : float, array of floats
-        Range [m]
-    bwhalf : float
-        Half-power beam width [degrees]
-
-    Returns
-    -------
-    Rhalf : float, array of floats
-        Half-power radius [m]
-
-    Examples
-    --------
-    Rhalf = half_power_radius(r,bwhalf)
-    """
-
-    Rhalf = (r * np.deg2rad(bwhalf)) / 2.
-
-    return Rhalf
-
-
-def clip_array_by_value(coords, values, bbox):
-    """
-    clip coord and value array by bounding box coordinates
-
-    .. versionadded:: 0.6.0
-
-    Parameters
-    ----------
-    coords : numpy ndarray
-        3 dimensional array (nx, ny, lon/lat) of floats
-    values : numpy 2d-array
-        2 dimensional array (nx, ny) of data values
-    bbox : 4-element numpy array, list or tuple of floats
-        (llx,lly,urx,ury)
-
-    Returns
-    -------
-    rcoords : numpy ndarray (nx, ny, lon/lat)
-        clipped coordinate array
-    rvalues : numpy 2d-array
-        clipped value array
-    """
-
-    # apply radar bounding box to raster data
-    llx = np.searchsorted(coords[0,:,0], bbox[0])
-    urx = np.searchsorted(coords[0,:,0], bbox[2])
-    lly = np.searchsorted(coords[:,0,1], bbox[1])
-    ury = np.searchsorted(coords[:,0,1], bbox[3])
-
-    # extend by one element to be sure to have all wanted values
-    rcoords = coords[lly-1:ury+1, llx-1:urx+1, :]
-    rvalues = values[lly-1:ury+1, llx-1:urx+1]
-
-    return rcoords, rvalues
 
 
 if __name__ == '__main__':
