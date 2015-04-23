@@ -24,6 +24,7 @@ to the other modules
 
    aggregate_in_time
    from_to
+   half_power_radius
 
 """
 import numpy as np
@@ -1034,10 +1035,6 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
     return xs, ys, mip
 
 
-if __name__ == '__main__':
-    print 'wradlib: Calling module <util> as main...'
-
-
 def filter_window_polar(img,wsize,fun,rscale,random=False):
     r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
@@ -1157,3 +1154,40 @@ def roll2d_polar(img,shift=1,axis=0):
             out[:,:shift] = img[:,-shift:]
             out[:,n+shift:] = np.nan
     return(out)
+
+def half_power_radius(r, bwhalf):
+    """
+    Half-power radius.
+
+    .. versionadded:: 0.6.0
+
+    ported from PyRadarMet
+
+    Battan (1973),
+
+    Parameters
+    ----------
+    r : float, array of floats
+        Range [m]
+    bwhalf : float
+        Half-power beam width [degrees]
+
+    Returns
+    -------
+    Rhalf : float, array of floats
+        Half-power radius [m]
+
+    Examples
+    --------
+    Rhalf = half_power_radius(r,bwhalf)
+    """
+
+    Rhalf = (r * np.deg2rad(bwhalf)) / 2.
+
+    return Rhalf
+
+
+if __name__ == '__main__':
+    print 'wradlib: Calling module <util> as main...'
+
+
