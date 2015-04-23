@@ -24,7 +24,6 @@ to the other modules
 
    aggregate_in_time
    from_to
-   half_power_radius
 
 """
 import datetime as dt
@@ -1160,7 +1159,3 @@ def roll2d_polar(img,shift=1,axis=0):
             out[:,:shift] = img[:,-shift:]
             out[:,n+shift:] = np.nan
     return(out)
-
-
-
-
