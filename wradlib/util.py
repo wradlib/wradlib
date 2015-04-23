@@ -28,7 +28,6 @@ to the other modules
 """
 import datetime as dt
 from time import mktime
-import importlib
 import warnings
 import functools
 
@@ -37,7 +36,6 @@ from scipy import interpolate
 from scipy.ndimage import filters
 from scipy.spatial import cKDTree
 from scipy.stats import nanmean
-
 
 warnings.simplefilter('always', DeprecationWarning)
 #warnings.simplefilter('always', FutureWarning)
@@ -204,7 +202,7 @@ def import_optional(module):
     for further instructions.
     """
     try:
-        mod = importlib.import_module(module)
+        mod = __import__(module)
     except ImportError:
         mod = OptionalModuleStub(module)
 
@@ -1159,3 +1157,24 @@ def roll2d_polar(img,shift=1,axis=0):
             out[:,:shift] = img[:,-shift:]
             out[:,n+shift:] = np.nan
     return(out)
+
+
+class UTC(dt.tzinfo):
+    """
+    UTC implementation for tzinfo.
+    
+    See e.g. http://python.active-venture.com/lib/datetime-tzinfo.html
+    
+    Replaces pytz.utc
+    """          
+    def __repr__(self):
+        return "<UTC>"
+
+    def utcoffset(self, dt):
+        return dt.timedelta(0)
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return dt.timedelta(0)
