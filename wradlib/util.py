@@ -1037,6 +1037,10 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
     return xs, ys, mip
 
 
+if __name__ == '__main__':
+    print 'wradlib: Calling module <util> as main...'
+
+
 def filter_window_polar(img,wsize,fun,rscale,random=False):
     r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
 
@@ -1158,7 +1162,5 @@ def roll2d_polar(img,shift=1,axis=0):
     return(out)
 
 
-if __name__ == '__main__':
-    print 'wradlib: Calling module <util> as main...'
 
 
