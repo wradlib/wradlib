@@ -53,7 +53,7 @@ def plot_collection(ax, collection, **kwargs):
 def _check_file(filename):
     geo_src = 'https://bitbucket.org/kaimuehlbauer/wradlib_miub/downloads/geo.tar.gz'
     if not os.path.exists(filename):
-        warnings.warn("File does not exist: {0}\nGet data from {1} and extract archive to wradlib/example folder".format(filename, geo_src))
+        warnings.warn("File does not exist: {0}\nGet data from {1} and extract archive to wradlib/example/data folder".format(filename, geo_src))
         exit(0)
 
 def ex_overlay():
