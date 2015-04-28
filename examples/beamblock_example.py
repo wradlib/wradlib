@@ -28,8 +28,13 @@ def _check_file(filename):
 # example function for calculation and visualisation of beam blockage
 # mimics PyRadarMets output
 def ex_beamblock(rasterfile, **kwargs):
+    """
+    Function to calculate and visualize beamblock fraction
+    """
 
+    # check if raster file is available, graceful exit
     _check_file(rasterfile)
+
     # setup radar specs (Bonn Radar)
     sitecoords = (7.071663,50.73052,99.5)
     nrays = 360
@@ -38,12 +43,14 @@ def ex_beamblock(rasterfile, **kwargs):
     bw = 1.0
     range_res = 100
 
+    # create range and beamradius arrays
     r = np.arange(nbins)*range_res
     beamradius = wrl.util.half_power_radius(r, bw)
 
     # calculate radar bin centroids and lat, lon, alt of radar bins
     coord = wrl.georef.sweep_centroids(nrays,range_res,nbins,el)
-    lon, lat, alt = np.array(wrl.georef.polar2lonlatalt_n(coord[...,0], np.degrees(coord[...,1]), coord[...,2], sitecoords))
+    lon, lat, alt = np.array(wrl.georef.polar2lonlatalt_n(coord[...,0], np.degrees(coord[...,1]),
+                                                          coord[...,2], sitecoords))
     polcoords = np.dstack((lon,lat))
     print("lon,lat,alt:", lon.shape, lat.shape, alt.shape)
 
@@ -60,16 +67,19 @@ def ex_beamblock(rasterfile, **kwargs):
 
     # apply radar bounding box to raster data
     # this actually cuts out the interesting box from rasterdata
-    rastercoords, rastervalues = wrl.util.clip_array_by_value(rastercoords, rastervalues, rlimits)
+    #rastercoords, rastervalues = wrl.util.clip_array_by_value(rastercoords, rastervalues, rlimits)
+    ind = wrl.util.find_bbox_indices(rastercoords, rlimits)
+    rastercoords = rastercoords[ind[1]:ind[3],ind[0]:ind[2],...]
+    rastervalues = rastervalues[ind[1]:ind[3],ind[0]:ind[2]]
 
     # map rastervalues to polar grid points
-    polarvalues = wrl.ipol.map_cart2polar(rastercoords, rastervalues, polcoords, order=3, prefilter=False)
+    polarvalues = wrl.ipol.cart2irregular_spline(rastercoords, rastervalues, polcoords, order=3, prefilter=False)
 
-    # calculate beam blockage PBB
+    # calculate partial beam blockage PBB
     PBB = wrl.qual.beam_block_frac(polarvalues, alt, beamradius)
     PBB = np.ma.masked_invalid(PBB)
 
-    # calculate CBB
+    # calculate cumulative beam blockage CBB
     ind = np.nanargmax(PBB, axis=1)
     CBB = np.copy(PBB)
     for ii, index in enumerate(ind):
