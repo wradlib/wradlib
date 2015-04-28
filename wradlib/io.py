@@ -1982,9 +1982,14 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
 def read_raster_data(filename, driver=None, **kwargs):
     """Read raster data
 
-    .. versionadded:: 0.6.0
+    Reads raster data files supported by GDAL. If driver is not given,
+    GDAL tries to autodetect the file format. Works well in most cases.
+
+    .. seealso:: http://www.gdal.org/formats_list.html
 
     Resamples data on the fly if special keyword arguments are given
+
+    .. versionadded:: 0.6.0
 
     Parameters
     ----------
@@ -1994,9 +1999,6 @@ def read_raster_data(filename, driver=None, **kwargs):
         GDAL Raster Format Code
         see: http://www.gdal.org/formats_list.html
         if no driver is given gdal is autodetecting which may fail
-
-    Keywords
-    --------
     spacing : float or tuple of two floats
         pixel spacing of resampled dataset
     size : tuple of two ints
@@ -2017,7 +2019,7 @@ def read_raster_data(filename, driver=None, **kwargs):
     if driver:
         gdal.GetDriverByName(driver)
 
-    print("Raster:", ds.RasterXSize, ds.RasterYSize, ds.GetGeoTransform())
+    #print("Raster:", ds.RasterXSize, ds.RasterYSize, ds.GetGeoTransform())
 
     if 'spacing' in kwargs or 'size' in kwargs:
         ds1 = georef.resample_raster_dataset(ds, **kwargs)
@@ -2026,9 +2028,12 @@ def read_raster_data(filename, driver=None, **kwargs):
 
     print("Raster:", ds1.RasterXSize, ds1.RasterYSize, ds1.GetGeoTransform())
 
-    # we have to flipud data, because geotiff data is origin "upper left"
+    # we have to flipud data, because raster data is origin "upper left"
     values = np.flipud(georef.read_gdal_values(ds1))
     coords = np.flipud(georef.read_gdal_coordinates(ds1, mode='centers', z=False))
+
+    # close dataset
+    ds = None
 
     return  coords, values
 
