@@ -34,8 +34,8 @@ This includes for example:
    ExternalDriftKriging
    interpolate
    interpolate_polar
-   interpolate_cart2polar
-   map_cart2polar
+   cart2irregular_interp
+   cart2irregular_spline
 
 """
 
@@ -943,16 +943,17 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
     return filled_data.reshape(data.shape[0],data.shape[1])
 
 
-def interpolate_cart2polar(cartgrid, values, polgrid, **kwargs):
+def cart2irregular_interp(cartgrid, values, newgrid, **kwargs):
     """
-    Interpolate data from cartesian grid to polar grid
+    Interpolate array values defined by cartesian coordinate array cartgrid
+    to new coordinates defined by newdata using nearest neighbour, linear or
+    cubic interpolation
 
     .. versionadded:: 0.6.0
 
     Slow for large arrays
 
-    Keyword arguments are fed to
-    scipy.interpolate.griddata function
+    Keyword arguments are fed to :func:`scipy:scipy.interpolate.griddata`
 
     Parameters
     ----------
@@ -960,68 +961,66 @@ def interpolate_cart2polar(cartgrid, values, polgrid, **kwargs):
         3 dimensional array (nx, ny, lon/lat) of floats;
     values : numpy 2d-array
         2 dimensional array (nx, ny) of data values
-    polgrid : numpy ndarray
-        3 dimensional array (nrays, nbins, lon/lat) of floats;
+    newgrid : numpy ndarray
+        Nx2 dimensional array (..., lon/lat) of floats
 
-    Keywords
-    --------
-    See scipy.interpolate.griddata for keyword arguments
+    .. seealso::  :func:`scipy:scipy.interpolate.griddata`
 
     Returns
     -------
-    interp : numpy 2d-array
-        array with interpolated values of size (nrays, nbins)
+    interp : numpy ndarray
+        array with interpolated values of size N
     """
 
     # TODO: dimension checking
 
-    polshape = polgrid.shape[:-1]
+    newshape = newgrid.shape[:-1]
 
     cart_arr = cartgrid.reshape(-1, cartgrid.shape[-1])
-    pol_arr = polgrid.reshape(-1, polgrid.shape[-1])
+    pol_arr = newgrid.reshape(-1, newgrid.shape[-1])
 
     if values.ndim > 1:
         values = values.ravel()
 
     interp = griddata(cart_arr, values, pol_arr, **kwargs)
-    interp = interp.reshape(polshape)
+    interp = interp.reshape(newshape)
 
     return interp
 
-def map_cart2polar(cartgrid, values, polgrid, **kwargs):
+def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     """
-    Interpolate data from cartesian grid to polar grid
+    Map array values defined by cartesian coordinate array cartgrid to new
+    coordinates defined by newgrid using spline interpolation.
+
 
     .. versionadded:: 0.6.0
 
     Keyword arguments are fed to
-    scipy.ndimage.interpolation.map_coordinates function
+    :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
 
     Parameters
     ----------
     cartgrid : numpy ndarray
-        3 dimensional array (nx, ny, lon/lat) of floats;
+        3 dimensional array (nx, ny, lon/lat) of floats
     values : numpy 2d-array
         2 dimensional array (nx, ny) of data values
-    polgrid : numpy ndarray
-        3 dimensional array (nrays, nbins, lon/lat) of floats;
+    newgrid : numpy ndarray
+        Nx2 dimensional array (..., lon/lat) of floats
 
-    Keywords
-    --------
-    See scipy.ndimage.interpolation.map_coordinates function
+    .. seealso:: :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
 
     Returns
     -------
-    interp : numpy 2d-array
-        array with interpolated values of size (nrays, nbins)
+    interp : numpy ndarray
+        array with interpolated values of size N
     """
 
     # TODO: dimension checking
 
-    polshape = polgrid.shape[:-1]
+    newshape = newgrid.shape[:-1]
 
-    xi = polgrid[...,0].ravel()
-    yi = polgrid[...,1].ravel()
+    xi = newgrid[...,0].ravel()
+    yi = newgrid[...,1].ravel()
 
     nx = cartgrid.shape[1]
     ny = cartgrid.shape[0]
@@ -1035,7 +1034,7 @@ def map_cart2polar(cartgrid, values, polgrid, **kwargs):
     yi = (ny - 1) * (yi - cymin) / (cymax-cymin)
 
     interp = map_coordinates(values, [yi, xi], **kwargs)
-    interp = interp.reshape(polshape)
+    interp = interp.reshape(newshape)
 
     return interp
 
