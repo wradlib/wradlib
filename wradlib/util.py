@@ -1189,7 +1189,7 @@ def half_power_radius(r, bwhalf):
     Parameters
     ----------
     r : float, array of floats
-        Range [m]
+        Range from radar [m]
     bwhalf : float
         Half-power beam width [degrees]
 
@@ -1208,40 +1208,48 @@ def half_power_radius(r, bwhalf):
     return Rhalf
 
 
-def clip_array_by_value(coords, values, bbox):
+def find_bbox_indices(coords, bbox):
     """
-    clip coord and value array by bounding box coordinates
+    Find min/max-indices for NxMx2 array coords using bbox-values.
+
+    The bounding box is defined by two points (llx,lly and urx,ury)
+    It finds the first indices before llx,lly and the first indices
+    after urx,ury. If no index is found 0 and N/M is returned.
 
     .. versionadded:: 0.6.0
 
     Parameters
     ----------
     coords : numpy ndarray
-        3 dimensional array (nx, ny, lon/lat) of floats
-    values : numpy 2d-array
-        2 dimensional array (nx, ny) of data values
+        3 dimensional array (ny, nx, lon/lat) of floats
     bbox : 4-element numpy array, list or tuple of floats
         (llx,lly,urx,ury)
 
     Returns
     -------
-    rcoords : numpy ndarray (nx, ny, lon/lat)
-        clipped coordinate array
-    rvalues : numpy 2d-array
-        clipped value array
+    bbind : 4-element tuple of int
+        (llx,lly,urx,ury)
     """
 
-    # apply radar bounding box to raster data
-    llx = np.searchsorted(coords[0,:,0], bbox[0])
-    urx = np.searchsorted(coords[0,:,0], bbox[2])
-    lly = np.searchsorted(coords[:,0,1], bbox[1])
-    ury = np.searchsorted(coords[:,0,1], bbox[3])
+    # find indices
+    llx = np.searchsorted(coords[0,:,0], bbox[0], side='left')
+    urx = np.searchsorted(coords[0,:,0], bbox[2], side='right')
+    lly = np.searchsorted(coords[:,0,1], bbox[1], side='left')
+    ury = np.searchsorted(coords[:,0,1], bbox[3], side='right')
 
-    # extend by one element to be sure to have all wanted values
-    rcoords = coords[lly-1:ury+1, llx-1:urx+1, :]
-    rvalues = values[lly-1:ury+1, llx-1:urx+1]
+    # check at boundaries
+    if llx:
+        llx = llx - 1
+    if lly:
+        lly = lly - 1
+    if urx < coords.shape[1]:
+        urx = urx + 1
+    if ury < coords.shape[0]:
+        ury = ury + 1
 
-    return rcoords, rvalues
+    bbind = (llx, lly, urx, ury)
+
+    return bbind
 
 
 if __name__ == '__main__':
