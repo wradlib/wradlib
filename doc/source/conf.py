@@ -31,6 +31,7 @@ extensions = ['sphinx.ext.autodoc',
               #'sphinx.ext.pngmath',
               'sphinx.ext.mathjax',
               'sphinx.ext.autosummary',
+              'sphinx.ext.intersphinx',
               'sphinxcontrib.bibtex',
               'numpydoc',
               'matplotlib.sphinxext.plot_directive',
@@ -245,6 +246,13 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_domain_indices = True
 
+intersphinx_mapping = {
+    'python': ('http://docs.python.org/2', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+    'matplotlib': ('http://matplotlib.sourceforge.net/', None),
+    'sphinx': ('http://sphinx-doc.org', None),
+}
 
 # -- Options for manual page output --------------------------------------------
 
