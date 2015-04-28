@@ -945,9 +945,9 @@ def interpolate_polar(data, mask = None, Interpolator = Nearest):
 
 def cart2irregular_interp(cartgrid, values, newgrid, **kwargs):
     """
-    Interpolate array values defined by cartesian coordinate array cartgrid
-    to new coordinates defined by newdata using nearest neighbour, linear or
-    cubic interpolation
+    Interpolate array ``values`` defined by cartesian coordinate array
+    ``cartgrid`` to new coordinates defined by ``newgrid`` using
+    nearest neighbour, linear or cubic interpolation
 
     .. versionadded:: 0.6.0
 
@@ -963,8 +963,7 @@ def cart2irregular_interp(cartgrid, values, newgrid, **kwargs):
         2 dimensional array (nx, ny) of data values
     newgrid : numpy ndarray
         Nx2 dimensional array (..., lon/lat) of floats
-
-    .. seealso::  :func:`scipy:scipy.interpolate.griddata`
+    kwargs : :func:`scipy:scipy.interpolate.griddata`
 
     Returns
     -------
@@ -977,25 +976,24 @@ def cart2irregular_interp(cartgrid, values, newgrid, **kwargs):
     newshape = newgrid.shape[:-1]
 
     cart_arr = cartgrid.reshape(-1, cartgrid.shape[-1])
-    pol_arr = newgrid.reshape(-1, newgrid.shape[-1])
+    new_arr = newgrid.reshape(-1, newgrid.shape[-1])
 
     if values.ndim > 1:
         values = values.ravel()
 
-    interp = griddata(cart_arr, values, pol_arr, **kwargs)
+    interp = griddata(cart_arr, values, new_arr, **kwargs)
     interp = interp.reshape(newshape)
 
     return interp
 
 def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     """
-    Map array values defined by cartesian coordinate array cartgrid to new
-    coordinates defined by newgrid using spline interpolation.
-
+    Map array ``values`` defined by cartesian coordinate array ``cartgrid``
+    to new coordinates defined by ``newgrid`` using spline interpolation.
 
     .. versionadded:: 0.6.0
 
-    Keyword arguments are fed to
+    Keyword arguments are fed through to
     :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
 
     Parameters
@@ -1006,8 +1004,7 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
         2 dimensional array (nx, ny) of data values
     newgrid : numpy ndarray
         Nx2 dimensional array (..., lon/lat) of floats
-
-    .. seealso:: :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
+    kwargs : :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
 
     Returns
     -------

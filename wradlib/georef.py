@@ -1559,9 +1559,6 @@ def resample_raster_dataset(src_ds, **kwargs):
     ----------
     src_ds : gdal object
         raster image with georeferencing (GeoTransform at least)
-
-    Keywords
-    --------
     spacing : float or tuple of two floats
         pixel spacing of resampled dataset
     size : tuple of two ints
@@ -1664,9 +1661,6 @@ def transform_geometry(geom, dest_srs):
     Parameters
     ----------
     geom : gdal ogr geometry object
-
-    Keywords
-    --------
     dest_srs: gdal osr spatial reference object
         Destination Projection
 

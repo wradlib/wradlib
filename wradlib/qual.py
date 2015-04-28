@@ -178,16 +178,16 @@ def beam_block_frac(Th, Bh, a):
     --------
     PBB = beam_block_frac(Th,Bh,a)
 
-    Notes
-    ------
-    This procedure uses a simplified interception function where no vertical
-    gradient of refractivity is considered.  Other algorithms treat this
-    more thoroughly.  However, this is accurate in most cases other than
-    the super-refractive case.
+    .. note::
 
-    See the the half_power_radius function to calculate variable a
+        This procedure uses a simplified interception function where no vertical
+        gradient of refractivity is considered.  Other algorithms treat this
+        more thoroughly.  However, this is accurate in most cases other than
+        the super-refractive case.
 
-    The heights must be the same units!
+        See the the half_power_radius function to calculate variable a
+
+        The heights must be the same units!
     """
 
     # First find the difference between the terrain and height of
