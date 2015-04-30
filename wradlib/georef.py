@@ -1728,12 +1728,9 @@ def get_shape_coordinates(layer, **kwargs):
                 transform_geometry(geom,dest_srs)
             # get list of xy-coordinates
             reslist = list(get_shape_points(geom))
-            shp.append(np.array(reslist))
-    shp = np.array(shp)
-    # hack needed since a solitair ndarray looks like (1, N, 2) while
-    # for multiple ndarrays within an array the dimensions are hidden like this (22,)
-    if shp.ndim > 1:
-        shp = np.squeeze(shp, axis=0)
+            shp.append(np.squeeze(np.array(reslist)))
+
+    shp = np.squeeze(np.array(shp))
 
     return shp, attrs
 
