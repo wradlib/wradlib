@@ -1214,11 +1214,12 @@ def add_patches(ax, patches, **kwargs):
     """
 
     try:
-        coll = mpl.collections.PolyCollection(patches, **kwargs)
+        ax.add_collection(mpl.collections.PolyCollection(patches, **kwargs))
     except AssertionError:
-        coll = mpl.collections.PolyCollection(patches[None,...], **kwargs)
-
-    ax.add_collection(coll)
+        ax.add_collection(mpl.collections.PolyCollection(patches[None,...], **kwargs))
+    except ValueError:
+       for patch in patches:
+           add_patches(ax, patch, **kwargs)
 
 
 if __name__ == '__main__':
