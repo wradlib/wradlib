@@ -2014,10 +2014,10 @@ def read_raster_data(filename, driver=None, **kwargs):
     values : numpy 2darray of raster values
     """
 
-    ds = gdal.Open(filename)
-
-    if driver:
-        gdal.GetDriverByName(driver)
+    ds = open_raster(filename, driver=driver)
+    #ds = gdal.Open(filename)
+    #if driver:
+    #    gdal.GetDriverByName(driver)
 
     #print("Raster:", ds.RasterXSize, ds.RasterYSize, ds.GetGeoTransform())
 
@@ -2026,14 +2026,16 @@ def read_raster_data(filename, driver=None, **kwargs):
     else:
         ds1 = ds
 
-    print("Raster:", ds1.RasterXSize, ds1.RasterYSize, ds1.GetGeoTransform())
+    #print("Raster:", ds1.RasterXSize, ds1.RasterYSize, ds1.GetGeoTransform())
+    #print(ds1)
 
     # we have to flipud data, because raster data is origin "upper left"
     values = np.flipud(georef.read_gdal_values(ds1))
     coords = np.flipud(georef.read_gdal_coordinates(ds1, mode='centers', z=False))
+    #print(values, coords)
 
     # close dataset
-    ds = None
+    ds1 = None
 
     return  coords, values
 
@@ -2068,6 +2070,31 @@ def open_shape(filename, driver=None):
     layer = dataset.GetLayer()
     return dataset, layer
 
-        
+
+def open_raster(filename, driver=None):
+    """
+    Open raster file, return ogr dataset
+
+    Parameters
+    ----------
+    filename : string
+        raster file name
+    driver : string
+        gdal driver string
+
+    Returns
+    -------
+    dataset : ogr dataset
+        dataset
+    """
+
+    ds = gdal.Open(filename)
+
+    if driver:
+        gdal.GetDriverByName(driver)
+
+    return ds
+
+
 if __name__ == '__main__':
     print 'wradlib: Calling module <io> as main...'
