@@ -30,6 +30,8 @@ Standard plotting and mapping procedures
    plot_plan_and_vert
    plot_max_plan_and_vert
    plot_tseries
+   add_lines
+   add_patches
 
 """
 
@@ -1171,6 +1173,53 @@ def set_ticklabel_size(ax, size):
     for label in ax.get_xticklabels() + ax.get_yticklabels():
         label.set_fontsize(size)
     return ax
+
+
+def add_lines(ax, lines, **kwargs):
+    """
+    Add lines (points in the form Nx2) to axes
+
+    Add lines (points in the form Nx2) to existing axes ax
+    using :class:`matplotlib:matplotlib.collections.LineCollection`.
+
+    Parameters
+    ----------
+    ax : :class:`matplotlib:matplotlib.axes.Axes`
+    lines : nested numpy Nx2 array(s)
+    kwargs : :class:`matplotlib:matplotlib.collections.LineCollection`
+    """
+
+    try:
+        ax.add_collection(mpl.collections.LineCollection(lines, **kwargs))
+    except AssertionError:
+        ax.add_collection(mpl.collections.LineCollection(lines[None,...], **kwargs))
+    except ValueError:
+       for line in lines:
+           add_lines(ax, line, **kwargs)
+
+
+def add_patches(ax, patches, **kwargs):
+    """
+    Add patches (points in the form Nx2) to axes
+
+
+    Add patches (points in the form Nx2) to existing axes ax
+    using :class:`matplotlib:matplotlib.collections.PolyCollection`.
+
+    Parameters
+    ----------
+    ax : :class:`matplotlib:matplotlib.axes.Axes`
+    patches : nested numpy Nx2 array(s)
+    kwargs : :class:`matplotlib:matplotlib.collections.PolyCollection`
+    """
+
+    try:
+        coll = mpl.collections.PolyCollection(patches, **kwargs)
+    except AssertionError:
+        coll = mpl.collections.PolyCollection(patches[None,...], **kwargs)
+
+    ax.add_collection(coll)
+
 
 if __name__ == '__main__':
     print 'wradlib: Calling module <vis> as main...'
