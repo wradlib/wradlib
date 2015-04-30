@@ -14,7 +14,6 @@
 # some imports needed
 import os
 import warnings
-# matplotlib pyplot for plotting
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.ticker as ticker
@@ -27,28 +26,6 @@ import wradlib as wrl
 # georef, gis
 from osgeo import osr
 
-def plot_lines(ax, lines, **kwargs):
-    for line in lines:
-        for l in line:
-            ax.plot(l[...,0], l[...,1], **kwargs)
-
-def plot_patches(ax, patches, **kwargs):
-    # TODO: make multidimensional
-    for p in patches:
-        pol = mpl.patches.Polygon(p, **kwargs)
-        ax.add_patch(pol)
-
-def points_to_polygon(points):
-    # TODO: make multidimensional
-    pl = []
-    for p in points:
-        pol = mpl.patches.Polygon(p)
-        pl.append(pol)
-    return pl
-
-def plot_collection(ax, collection, **kwargs):
-    pcoll = mpl.collections.PatchCollection(collection, **kwargs)
-    ax.add_collection(pcoll)
 
 def _check_file(filename):
     geo_src = 'https://bitbucket.org/kaimuehlbauer/wradlib_miub/downloads/geo.tar.gz'
@@ -60,7 +37,6 @@ def ex_overlay():
 
     # set filepath
     filepath = os.path.join(os.path.dirname(__file__), 'data/geo')
-
 
     # setup figure
     fig1 = plt.figure(figsize=(10,8))
@@ -111,7 +87,7 @@ def ex_overlay():
         inLayer.SetAttributeFilter(fattr)
         # get borders and names
         borders, keys = wrl.georef.get_shape_coordinates(inLayer, key='name')
-        plot_lines(ax1, borders, color='black', lw=2, zorder=4)
+        wrl.vis.add_lines(ax1, borders, color='black', lw=2, zorder=4)
 
     # some testing on additional axes
     # add Bangladesh to countries
@@ -132,7 +108,8 @@ def ex_overlay():
         layer.SetAttributeFilter(fattr)
         # get country patches and geotransform to destination srs
         patches, keys = wrl.georef.get_shape_coordinates(layer, dest_srs=india, key='name')
-        plot_patches(ax2, patches, facecolor=colors[i])
+        wrl.vis.add_patches(ax2, patches, facecolor=colors[i])
+
     ax2.autoscale(True)
     ax2.set_aspect('equal')
     ax2.set_xlabel('X - Coordinate')
@@ -151,8 +128,7 @@ def ex_overlay():
     for name, patch in zip(keys, patches):
         # why comes the US in here?
         if name in countries:
-            pl = points_to_polygon(patch)
-            plot_collection(ax3, pl, facecolor=colors[i], cmap=mpl.cm.jet, alpha=0.4)
+            wrl.vis.add_patches(ax3, patch, facecolor=colors[i], cmap=mpl.cm.jet, alpha=0.4)
             i = i + 1
     ax3.autoscale(True)
     ax3.set_aspect('equal')
@@ -171,9 +147,10 @@ def ex_overlay():
     # do spatial filtering to get only geometries inside bounding box
     inLayer.SetSpatialFilterRect(88,20,93,27)
     rivers, keys = wrl.georef.get_shape_coordinates(inLayer, key='MAJ_NAME')
+
     # plot on ax1, and ax4
-    plot_lines(ax1, rivers, color=mpl.cm.terrain(0.), lw=0.5, zorder=3)
-    plot_lines(ax4, rivers, color=mpl.cm.terrain(0.), lw=0.5, zorder=3)
+    wrl.vis.add_lines(ax1, rivers, color=mpl.cm.terrain(0.), lw=0.5, zorder=3)
+    wrl.vis.add_lines(ax4, rivers, color=mpl.cm.terrain(0.), lw=0.5, zorder=3)
     ax4.autoscale(True)
     ax4.set_aspect('equal')
     ax4.set_xlim((88,93))
@@ -191,7 +168,7 @@ def ex_overlay():
     dataset, inLayer = wrl.io.open_shape(filename)
     inLayer.SetSpatialFilterRect(88,20,93,27)
     rivers, keys = wrl.georef.get_shape_coordinates(inLayer)
-    plot_lines(ax1, rivers, color=mpl.cm.terrain(0.), lw=0.5, zorder=3)
+    wrl.vis.add_lines(ax1, rivers, color=mpl.cm.terrain(0.), lw=0.5, zorder=3)
     ax1.autoscale(True)
 
     # ### plot city dots with annotation, finalize plot
