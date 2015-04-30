@@ -1027,9 +1027,14 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     cymin = np.min(cartgrid[...,1])
     cymax = np.max(cartgrid[...,1])
 
+    # this functionality finds the floating point
+    # indices into the value array (0:nx-1)
+    # can be transferred into separate function
+    # if necessary
     xi = (nx - 1) * (xi - cxmin) / (cxmax-cxmin)
     yi = (ny - 1) * (yi - cymin) / (cymax-cymin)
 
+    # interpolation by map_coordinates
     interp = map_coordinates(values, [yi, xi], **kwargs)
     interp = interp.reshape(newshape)
 
