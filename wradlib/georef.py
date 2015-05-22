@@ -1560,7 +1560,7 @@ def resample_raster_dataset(src_ds, **kwargs):
     src_ds : gdal object
         raster image with georeferencing (GeoTransform at least)
     spacing : float or tuple of two floats
-        pixel spacing of resampled dataset
+        pixel spacing of resampled dataset, same unit as pixel coordinates
     size : tuple of two ints
         X/YRasterSize of resampled dataset
     resample : GDALResampleAlg, defaults to GRA_Bilinear
