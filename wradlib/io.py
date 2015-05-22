@@ -2000,7 +2000,7 @@ def read_raster_data(filename, driver=None, **kwargs):
         see: http://www.gdal.org/formats_list.html
         if no driver is given gdal is autodetecting which may fail
     spacing : float or tuple of two floats
-        pixel spacing of resampled dataset
+        pixel spacing of resampled dataset, same unit as pixel coordinates
     size : tuple of two ints
         X/YRasterSize of resampled dataset
     resample : GDALResampleAlg, defaults to GRA_Bilinear
@@ -2014,7 +2014,7 @@ def read_raster_data(filename, driver=None, **kwargs):
     values : numpy 2darray of raster values
     """
 
-    ds = open_raster(filename, driver=driver)
+    dataset = open_raster(filename, driver=driver)
     #ds = gdal.Open(filename)
     #if driver:
     #    gdal.GetDriverByName(driver)
@@ -2022,20 +2022,20 @@ def read_raster_data(filename, driver=None, **kwargs):
     #print("Raster:", ds.RasterXSize, ds.RasterYSize, ds.GetGeoTransform())
 
     if 'spacing' in kwargs or 'size' in kwargs:
-        ds1 = georef.resample_raster_dataset(ds, **kwargs)
+        datatset1 = georef.resample_raster_dataset(dataset, **kwargs)
     else:
-        ds1 = ds
+        dataset1 = dataset
 
     #print("Raster:", ds1.RasterXSize, ds1.RasterYSize, ds1.GetGeoTransform())
     #print(ds1)
 
     # we have to flipud data, because raster data is origin "upper left"
-    values = np.flipud(georef.read_gdal_values(ds1))
-    coords = np.flipud(georef.read_gdal_coordinates(ds1, mode='centers', z=False))
+    values = np.flipud(georef.read_gdal_values(dataset1))
+    coords = np.flipud(georef.read_gdal_coordinates(dataset1, mode='centers', z=False))
     #print(values, coords)
 
     # close dataset
-    ds1 = None
+    dataset1 = None
 
     return  coords, values
 
@@ -2088,12 +2088,12 @@ def open_raster(filename, driver=None):
         dataset
     """
 
-    ds = gdal.Open(filename)
+    dataset = gdal.Open(filename)
 
     if driver:
         gdal.GetDriverByName(driver)
 
-    return ds
+    return dataset
 
 
 if __name__ == '__main__':
