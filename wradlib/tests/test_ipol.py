@@ -120,6 +120,60 @@ class InterpolationTest(unittest.TestCase):
                                                 [ 3.,  2.,  1.],
                                                 [ 5.,  2., -1.],
                                                 [ 7.,  2., -3.]])))
+class Regular2IrregularTest(unittest.TestCase):
+
+    def setUp(self):
+        import wradlib.georef as georef
+        """ cartgrid : numpy ndarray
+                3 dimensional array (nx, ny, lon/lat) of floats;
+            values : numpy 2d-array
+                2 dimensional array (nx, ny) of data values
+            newgrid : numpy ndarray
+                Nx2 dimensional array (..., lon/lat) of floats
+        """
+        self.nx = np.linspace(-20, 20, num=41, endpoint=True)
+        self.ny = np.linspace(-20, 20, num=41, endpoint=True)
+        self.meshx, self.meshy = np.meshgrid(self.nx, self.ny)
+        self.cartgrid = np.dstack((self.meshx, self.meshy))
+        self.values = self.meshy
+        coord = georef.sweep_centroids(360,1,21,0.)
+        xx = coord[...,0]
+        yy = np.degrees(coord[...,1])
+
+        xxx = xx * np.cos(np.radians(90.-yy))
+        x = xx * np.sin(np.radians(90.-yy))
+        y = xxx
+
+        self.newgrid = np.dstack((x, y))
+
+
+
+    def test_cart2irregular_interp(self):
+        newvalues = ipol.cart2irregular_interp(self.cartgrid, self.values, self.newgrid)
+        print(newvalues.shape)
+        import matplotlib.pyplot as plt
+        import wradlib.vis as vis
+        plt.figure()
+        ax1 = plt.subplot2grid((1, 2), (0, 0))
+        ax2 = plt.subplot2grid((1, 2), (0, 1))
+        #vis.plot_ppi(newvalues)
+        ax1.pcolormesh(self.cartgrid[...,0], self.cartgrid[...,1], self.values)
+        ax2.pcolormesh(self.newgrid[...,0], self.newgrid[...,1], newvalues)
+        plt.show()
+        pass
+
+    def test_cart2irregular_spline(self):
+        newvalues = ipol.cart2irregular_spline(self.cartgrid, self.values, self.newgrid)
+        print(newvalues.shape)
+        import matplotlib.pyplot as plt
+        import wradlib.vis as vis
+        plt.figure()
+        ax1 = plt.subplot2grid((1, 2), (0, 0))
+        ax2 = plt.subplot2grid((1, 2), (0, 1))
+        ax1.pcolormesh(self.cartgrid[...,0], self.cartgrid[...,1], self.values)
+        ax2.pcolormesh(self.newgrid[...,0], self.newgrid[...,1], newvalues)
+        plt.show()
+        pass
 
 
 if __name__ == '__main__':
