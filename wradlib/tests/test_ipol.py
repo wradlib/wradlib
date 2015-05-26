@@ -12,6 +12,7 @@
 #!/usr/bin/env python
 import numpy as np
 import wradlib.ipol as ipol
+import wradlib.georef as georef
 import unittest
 
 class InterpolationTest(unittest.TestCase):
@@ -123,20 +124,14 @@ class InterpolationTest(unittest.TestCase):
 class Regular2IrregularTest(unittest.TestCase):
 
     def setUp(self):
-        import wradlib.georef as georef
-        """ cartgrid : numpy ndarray
-                3 dimensional array (nx, ny, lon/lat) of floats;
-            values : numpy 2d-array
-                2 dimensional array (nx, ny) of data values
-            newgrid : numpy ndarray
-                Nx2 dimensional array (..., lon/lat) of floats
-        """
-        self.nx = np.linspace(-20, 20, num=41, endpoint=True)
-        self.ny = np.linspace(-20, 20, num=41, endpoint=True)
-        self.meshx, self.meshy = np.meshgrid(self.nx, self.ny)
-        self.cartgrid = np.dstack((self.meshx, self.meshy))
-        self.values = self.meshy
-        coord = georef.sweep_centroids(360,1,21,0.)
+        NX = 2
+        nx = np.linspace(-NX + 0.5, NX - 0.5, num=2*NX, endpoint=True)
+        vx = np.linspace(-NX, NX, num=2*NX, endpoint=True)
+        meshx, meshy = np.meshgrid(nx, nx)
+        self.cartgrid = np.dstack((meshx, meshy))
+        self.values = np.repeat(vx[:, np.newaxis], 2*NX, 1)
+
+        coord = georef.sweep_centroids(4,1,NX,0.)
         xx = coord[...,0]
         yy = np.degrees(coord[...,1])
 
@@ -146,34 +141,24 @@ class Regular2IrregularTest(unittest.TestCase):
 
         self.newgrid = np.dstack((x, y))
 
-
+        self.result = np.array([[ -1.11022302e-16,   5.10244576e-01],
+                                [ -1.11022302e-16,   1.23183938e+00],
+                                [ -1.11022302e-16,  -5.10244576e-01],
+                                [ -1.11022302e-16,  -1.23183938e+00]])
 
     def test_cart2irregular_interp(self):
-        newvalues = ipol.cart2irregular_interp(self.cartgrid, self.values, self.newgrid)
-        print(newvalues.shape)
-        import matplotlib.pyplot as plt
-        import wradlib.vis as vis
-        plt.figure()
-        ax1 = plt.subplot2grid((1, 2), (0, 0))
-        ax2 = plt.subplot2grid((1, 2), (0, 1))
-        #vis.plot_ppi(newvalues)
-        ax1.pcolormesh(self.cartgrid[...,0], self.cartgrid[...,1], self.values)
-        ax2.pcolormesh(self.newgrid[...,0], self.newgrid[...,1], newvalues)
-        plt.show()
-        pass
+        newvalues = ipol.cart2irregular_interp(self.cartgrid, self.values, self.newgrid, method='linear')
+        self.assertTrue(np.allclose(newvalues, self.result))
 
     def test_cart2irregular_spline(self):
-        newvalues = ipol.cart2irregular_spline(self.cartgrid, self.values, self.newgrid)
-        print(newvalues.shape)
-        import matplotlib.pyplot as plt
-        import wradlib.vis as vis
-        plt.figure()
-        ax1 = plt.subplot2grid((1, 2), (0, 0))
-        ax2 = plt.subplot2grid((1, 2), (0, 1))
-        ax1.pcolormesh(self.cartgrid[...,0], self.cartgrid[...,1], self.values)
-        ax2.pcolormesh(self.newgrid[...,0], self.newgrid[...,1], newvalues)
-        plt.show()
-        pass
+        newvalues = ipol.cart2irregular_spline(self.cartgrid, self.values, self.newgrid, order=2, prefilter=False)
+        self.assertTrue(np.allclose(newvalues, self.result))
+
+    def test_cart2irregular_equality(self):
+        self.assertTrue(np.allclose(ipol.cart2irregular_interp(self.cartgrid, self.values,
+                                                               self.newgrid, method='linear'),
+                                    ipol.cart2irregular_spline(self.cartgrid, self.values, self.newgrid,
+                                                               order=2, prefilter=False)))
 
 
 if __name__ == '__main__':
