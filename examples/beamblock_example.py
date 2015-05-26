@@ -27,7 +27,7 @@ def _check_file(filename):
 
 # example function for calculation and visualisation of beam blockage
 # mimics PyRadarMets output
-def ex_beamblock(rasterfile, **kwargs):
+def nex_beamblock(rasterfile, **kwargs):
     """
     Function to calculate and visualize beamblock fraction
     """
@@ -154,10 +154,10 @@ if __name__ == '__main__':
     filepath = os.path.join(os.path.dirname(__file__), 'data/geo')
     filename = os.path.join(filepath, 'bonn_gtopo.tif')
     print("DataSource: GTOPO30")
-    ex_beamblock(filename)#, spacing=0.083333333333, resample=gdal.GRA_Bilinear)
+    nex_beamblock(filename)#, spacing=0.083333333333, resample=gdal.GRA_Bilinear)
 
     print("DataSource: SRTM")
     filename = os.path.join(filepath, 'bonn_new.tif')
-    ex_beamblock(filename)#, spacing=0.008333333333333333, resample=gdal.GRA_Lanczos)#gdal.GRA_Bilinear)
+    nex_beamblock(filename)#, spacing=0.008333333333333333, resample=gdal.GRA_Lanczos)#gdal.GRA_Bilinear)
 
     plt.show()
