@@ -2046,6 +2046,8 @@ def open_shape(filename, driver=None):
     .. warning:: dataset and layer have to live in the same context, if dataset is deleted
                  all layer references will get lost
 
+    .. versionadded:: 0.6.0
+
     Parameters
     ----------
     filename : string
@@ -2074,6 +2076,8 @@ def open_shape(filename, driver=None):
 def open_raster(filename, driver=None):
     """
     Open raster file, return ogr dataset
+
+    .. versionadded:: 0.6.0
 
     Parameters
     ----------

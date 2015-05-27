@@ -1658,6 +1658,8 @@ def transform_geometry(geom, dest_srs):
     It transforms coordinates to a given destination osr spatial reference
     if a geotransform is neccessary.
 
+    .. versionadded:: 0.6.0
+
     Parameters
     ----------
     geom : gdal ogr geometry object

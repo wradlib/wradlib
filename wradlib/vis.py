@@ -1182,6 +1182,8 @@ def add_lines(ax, lines, **kwargs):
     Add lines (points in the form Nx2) to existing axes ax
     using :class:`matplotlib:matplotlib.collections.LineCollection`.
 
+    .. versionadded:: 0.6.0
+
     Parameters
     ----------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
@@ -1205,6 +1207,8 @@ def add_patches(ax, patches, **kwargs):
 
     Add patches (points in the form Nx2) to existing axes ax
     using :class:`matplotlib:matplotlib.collections.PolyCollection`.
+
+    .. versionadded:: 0.6.0
 
     Parameters
     ----------
