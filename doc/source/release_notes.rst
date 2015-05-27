@@ -13,10 +13,18 @@ Bleeding Edge
 
 wradlib functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
 
+Added ability to handle georeferenced raster and vector data
+
+Port of PyRadarMet partial beamblockage calculations by DEM
+
+
 **New features**
 
-In georef module a new helper function `create_osr` is added. This function helps to create an osr object for specific projections.
-Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid`` merged from v0.5.1
+- In georef module a new helper function `create_osr` is added. This function helps to create an osr object for specific projections.
+- Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid`` merged from v0.5.1
+- Several convenience functions for reading, transforming and projecting as well as plotting rasterfiles and shapefiles including example
+- Caclulation of partial/cumulative beamblockage with example
+
 
 **Deprecated features**
 
@@ -42,16 +50,10 @@ Version 0.5.0
 
 From version ``0.6.0`` on, wradlib functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before using version ``0.6.0``: Any use of proj4 strings will generate a deprecation warning with the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid``.
 
-Added ability to handle georeferenced raster and vector data
-
-Port of PyRadarMet partial beamblockage calculations by DEM
-
 **New features**
 
 - Two functions exposed documentation library section: :doc:`generated/wradlib.io.read_safnwc` and :doc:`generated/wradlib.vis.plot_max_plan_and_vert`
 - New features, changes and deprecations will be addressed in the documentation in the future. This is by highlighting them as *New in Version X.Y.Z*, *Changed in Version X.Y.Z* or *Deprecated since Version X.Y.Z*
-- Several convenience functions for reading, transforming and projecting as well as plotting rasterfiles and shapefiles including example
-- Caclulation of partial/cumulative beamblockage with example
 
 **Deprecated features**
 
