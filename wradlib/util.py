@@ -27,6 +27,7 @@ to the other modules
 
 """
 import datetime as dt
+from datetime import tzinfo, timedelta
 from time import mktime
 import warnings
 import functools
@@ -1155,7 +1156,7 @@ def roll2d_polar(img,shift=1,axis=0):
     return(out)
 
 
-class UTC(dt.tzinfo):
+class UTC(tzinfo):
     """
     UTC implementation for tzinfo.
     
@@ -1167,13 +1168,13 @@ class UTC(dt.tzinfo):
         return "<UTC>"
 
     def utcoffset(self, dt):
-        return dt.timedelta(0)
+        return timedelta(0)
 
     def tzname(self, dt):
         return "UTC"
 
     def dst(self, dt):
-        return dt.timedelta(0)
+        return timedelta(0)
 
 
 def half_power_radius(r, bwhalf):
