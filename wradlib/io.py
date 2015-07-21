@@ -1683,7 +1683,7 @@ def read_generic_netcdf(fname):
     try:
         ncid = nc.Dataset(fname, 'r')
     except:
-        print("wradlib: Could not read " % fname)
+        print("wradlib: Could not read %s." % fname)
         print("Check whether file exists, and whether it is a netCDF file.")
         print("Raising exception...")
         raise
