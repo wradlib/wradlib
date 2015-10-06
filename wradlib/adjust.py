@@ -622,7 +622,7 @@ class AdjustMFB(AdjustBase):
         if None in [ix, rawatobs]:
             # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
-        if len(ix)<=self.mingages:
+        if len(ix) < self.mingages:
             # Not enough valid gages for adjustment? - return unadjusted data
             return raw
 ##        # Get new Interpolator instance if necessary
@@ -630,7 +630,7 @@ class AdjustMFB(AdjustBase):
 
         # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH---------------
         # compute ratios for each valid observation point
-        ratios = np.ma.masked_invalid(obs[ix] / rawatobs[ix])
+        ratios = np.ma.masked_invalid(obs[ix] / rawatobs.ravel()[ix])
         if len(np.where(np.logical_not(ratios.mask))[0]) < self.mingages:
             # Not enough valid pairs of raw and obs
             return raw
