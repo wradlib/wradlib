@@ -355,7 +355,7 @@ class AdjustAdd(AdjustBase):
         if None in [ix, rawatobs]:
             # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
-        if len(ix)<=self.mingages:
+        if len(ix) < self.mingages:
             # Not enough valid gages for adjustment? - return unadjusted data
             return raw
         # Get new Interpolator instance if necessary
@@ -440,7 +440,7 @@ class AdjustMultiply(AdjustBase):
         if None in [ix, rawatobs]:
             # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
-        if len(ix)<=self.mingages:
+        if len(ix) < self.mingages:
             # Not enough valid gages for adjustment? - return unadjusted data
             return raw
         # Get new Interpolator instance if necessary
@@ -540,7 +540,7 @@ class AdjustMixed(AdjustBase):
         if None in [ix, rawatobs]:
             # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
-        if len(ix)<=self.mingages:
+        if len(ix) < self.mingages:
             # Not enough valid gages for adjustment? - return unadjusted data
             return raw
         # Get new Interpolator instance if necessary
@@ -728,7 +728,7 @@ class AdjustNone(AdjustBase):
         if None in [ix, rawatobs]:
             # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
-        if len(ix)<=self.mingages:
+        if len(ix) < self.mingages:
             # Not enough valid gages for adjustment? - return unadjusted data
             return raw
         return raw
@@ -803,7 +803,7 @@ class GageOnly(AdjustBase):
         if None in [ix, rawatobs]:
             # Check for valid observation-radar pairs in case this method has not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
-        if len(ix)<=self.mingages:
+        if len(ix) < self.mingages:
             # Not enough valid gages for adjustment? - return unadjusted data
             return raw
         # Get new Interpolator instance if necessary
