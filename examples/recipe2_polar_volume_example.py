@@ -50,7 +50,7 @@ def recipe_polar_volume_example():
     minelev   = 0.1
     maxelev   = 25.
     maxalt    = 5000.
-    horiz_res = 1000.
+    horiz_res = 2000.
     vert_res  = 250.
     trgxyz, trgshape = wradlib.vpr.make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res)
 
