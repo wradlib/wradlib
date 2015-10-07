@@ -34,7 +34,7 @@ The general idea is that we quantify the error of the remotely sensed rainfall
 at the rain gage locations, assuming the rain gage observation to be accurate.
 The error can be assumed to be purely additive (AdjustAdd), purely multiplicative
 (AdjustMultiply, AdjustMFB) or a mixture of both (AdjustMixed). If the error is
-assumed to heterogeneous in space (AdjustAdd, AdjustMultiply, AdjustMixed), the
+assumed to be heterogeneous in space (AdjustAdd, AdjustMultiply, AdjustMixed), the
 error at the rain gage locations is interpolated to the radar bin locations and
 then used to adjust (correct) the raw radar rainfall estimates. In case of the
 AdjustMFB approach, though, the multiplicative error is assumed to be homogeneous
@@ -63,6 +63,8 @@ argument. The default interpolation class is Inverse Distance Weighting
     import wradlib.ipol as ipol
     adjuster = AdjustAdd(obs_coords, raw_coords, Ipclass=ipol.Linear)
     adjusted = adjuster(obs, raw)
+
+.. warning:: Be aware that there are a lot of control parameters that can dramatically influence the behaviour of the adjustment (which gauges are considered,ow is an error interpolation carried out, ...). Read the docs carefully and try to experiment with the effects of the different control parameters. There might be situations in which the algorithms decides - based on the control parameter -  not to do an adjustment and just return the unadjusted values. 
 
 Cross validation
 ----------------
@@ -93,6 +95,7 @@ cross validation results::
    AdjustMixed
    Raw_at_obs
    GageOnly
+   AdjustNone
 
 """
 
@@ -107,94 +110,95 @@ import wradlib.util as util
 
 
 class AdjustBase(ipol.IpolBase):
-    """
-    The basic adjustment class that inherits to all other classes
+    """The basic adjustment class that inherits to all other classes.
 
     All methods except the ``__call__`` method are inherited to the following adjustment classes.
 
     Parameters
     ----------
-    obs_coords : array of float
-        coordinate pairs of observations points
-    raw_coords : array of float
-        coordinate pairs of raw (unadjusted) field
+    obs_coords : array of floats of shape (number of points, 2)
+        x and y coordinate pairs of observation locations (e.g. rain gauges).
+    raw_coords : array of floats of shape (number of points, 2)
+        x and y coordinate pairs of raw (unadjusted) radar field
     nnear_raws : integer
-        defaults to 9
+        Defaults to 9. This parameter controls the number of radar bins or 
+        grid cells (in the neighbourhood of a rain gauge) which is used to 
+        compute the value of the radar observation AT a rain gauge.
     stat : string
-        defaults to 'median'
+        Defaults to 'median'. Must be either 'mean', 'median', or 'best'. 
+        This parameter controls the statistic that is used to compute the value
+        of the radar observation AT a rain gauge based on the neighbourhood
+        specified by parameter nnear_raws. 
     mingages : integer
-        minimum number of gages which are required for an adjustment
+        Defaults to 5. Minimum number of valid gages required for an adjustment. If less valid
+        gauges are available, the adjustment procedure will return unadjusted raw
+        values. If you do not want to use this feature, you need to set mingages=0.
     minval : float
         If the gage or radar observation is below this threshold, the location
         will not be used for adjustment. For additive adjustment, this value
-        should be set to zero (default value).
+        should be set to zero (default value). For multiplicative adjustment,
+        values larger than zeros might be chosen in order to minimize artifacts.
+    mfb_args : dictionary
+        **Only used for AdjustMFB** - This set of parameters controls how the mean 
+        field bias is computed. Items of the dictionary are:
+        
+        - *method*: defaults to "linregr" which fits a regression line through observed and estimated values and than gets the bias from the inverse of the slope. Other values: "mean" or "median" compute the mean or the median of the ratios between gauge and radar observations.
+        
+        - *minslope*, *minr*, *maxp*: When using method="linregr", these parameters control whether a linear regression turned out to be robust (minimum allowable slope, minimum allowable correlation, maximim allowable p-value). If the regression result is not considered robust, no adjustment will take place.
+        
     Ipclass : an interpolation class from wradib.ipol
-        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
+        **Not used for AdjustMFB** - default value is wradlib.ipol.Idw 
+        (Inverse Distance Weighting).
     ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+        **Not used for AdjustMFB** - for wradlib.ipol.Idw, these keyword 
+        arguments would e.g. be nnear or p.
 
     Examples
     --------
-    >>> import wradlib.adjust as adjust
-    >>> import numpy as np
-    >>> import pylab as pl
-    >>> pl.interactive(True)
-    >>> # 1-d example including all available adjustment methods
-    >>> # --------------------------------------------------------------------------
-    >>> # gage and radar coordinates
-    >>> obs_coords = np.array([5,10,15,20,30,45,65,70,77,90])
-    >>> radar_coords = np.arange(0,101)
-    >>> # true rainfall
-    >>> truth = np.abs(np.sin(0.1*radar_coords))
-    >>> # radar error
-    >>> erroradd = np.random.uniform(0,0.5,len(radar_coords))
-    >>> errormult= 1.1
-    >>> # radar observation
-    >>> radar = errormult*truth + erroradd
-    >>> # gage observations are assumed to be perfect
-    >>> obs = truth[obs_coords]
-    >>> # add a missing value to observations (just for testing)
-    >>> obs[1] = np.nan
-    >>> # adjust the radar observation by additive model
-    >>> add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=1)
-    >>> add_adjusted = add_adjuster(obs, radar)
-    >>> # adjust the radar observation by multiplicative model
-    >>> mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=1)
-    >>> # TODO: had to strip argument 3
-    >>> # mult_adjusted = mult_adjuster(obs, radar, 0.)
-    >>> mult_adjusted = mult_adjuster(obs, radar)
-    >>> # adjust the radar observation by MFB
-    >>> mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=1)
-    >>> mfb_adjusted = mfb_adjuster(obs, radar, 0.)
-    >>> # adjust the radar observation by AdjustMixed
-    >>> mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=1)
-    >>> mixed_adjusted = mixed_adjuster(obs, radar)
-    >>> line1 = pl.plot(radar_coords, radar, 'k-', label="raw radar")
-    >>> line2 = pl.plot(obs_coords, obs, 'ro', label="gage obs")
-    >>> line3 = pl.plot(radar_coords, add_adjusted, '-', color="red", label="adjusted by AdjustAdd")
-    >>> line4 = pl.plot(radar_coords, mult_adjusted, '-', color="green", label="adjusted by AdjustMultiply")
-    >>> line5 = pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="adjusted by AdjustMFB")
-    >>> line6 = pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="adjusted by AdjustMixed")
-    >>> lgnd = pl.legend()
-    >>> pl.show()
+    
+    See :download:`adjust_example.py script <../../../examples/adjust_example.py>`.
+
+    .. literalinclude:: ../../../examples/adjust_example.py
+ 
 
     """
-    def __init__(self, obs_coords, raw_coords, nnear_raws=9, stat='median', mingages=5, minval=0., Ipclass=ipol.Idw, **ipargs):
+    def __init__(self, obs_coords, raw_coords, 
+                 nnear_raws=9, stat='median', mingages=5, minval=0., 
+                 mfb_args=dict(method="linregr",minslope=0.1, minr=0.5, maxp=0.01), 
+                 Ipclass=ipol.Idw, **ipargs):
+        
+        # Check arguments
+        assert mfb_args["method"] in ["mean", "median", "linregr"], \
+        "Argument mfb_args['method'] has to be one out of 'mean', 'median' or 'linregr'."        
+        
         # These are the coordinates of the rain gage locations and the radar bin locations
         self.obs_coords     = self._make_coord_arrays(obs_coords)
         self.raw_coords     = self._make_coord_arrays(raw_coords)
+        
         # These are the general control parameters for all adjustment procedures
         self.nnear_raws     = nnear_raws
         self.stat           = stat
         self.mingages       = mingages
         self.minval         = minval
-        # This method will quickly retrieve the actual radar values at the gage locations
-        self.get_raw_at_obs = Raw_at_obs(self.obs_coords,  self.raw_coords, nnear=nnear_raws, stat=stat)
-        # remember the interpolation class and its keyword arguments as attributes
+        
+        # Control parameters for specific adjustment procedures
+        
+        #    for AdjustMFB
+        self.mfb_args         = mfb_args
+
+        #    interpolation class and its keyword arguments
+        #    ((needed for AdjustAdd, AdjustMultiply, AdjustMixed) 
         self.Ipclass        = Ipclass
         self.ipargs         = ipargs
-        # create a default instance of interpolator
+        #    create a default instance of interpolator
         self.ip             = Ipclass(src=self.obs_coords, trg=self.raw_coords, **ipargs)
+        
+        # This method will quickly retrieve the actual radar values at the gage locations
+        self.get_raw_at_obs = Raw_at_obs(self.obs_coords,  
+                                         self.raw_coords, 
+                                         nnear=nnear_raws, 
+                                         stat=stat)
+         
     def _checkip(self, ix, targets):
         """INTERNAL: Return a revised instance of the Interpolator class.
 
@@ -228,15 +232,18 @@ class AdjustBase(ipol.IpolBase):
             return self.Ipclass(self.obs_coords[ix], targets, **self.ipargs)
         else:
             return self.ip
+
     def __call__(self, obs, raw, targets=None):
         """Empty prototype
         """
         pass
+
     def _check_shape(self, obs, raw):
         """INTERNAL: Check consistency of the input data obs and raw with the shapes of the coordinates
         """
         # TODO
         pass
+
     def _get_valid_pairs(self, obs, raw):
         """INTERNAL: Helper method to identify valid obs-raw pairs
         """
@@ -247,6 +254,7 @@ class AdjustBase(ipol.IpolBase):
         # check where both gage and radar observations are valid
         ix = np.intersect1d( util._idvalid(obs, minval=self.minval),  util._idvalid(rawatobs, minval=self.minval))
         return rawatobs, ix
+
     def xvalidate(self, obs, raw):
         """Leave-One-Out Cross Validation, applicable to all gage adjustment classes.
 
@@ -301,26 +309,9 @@ class AdjustAdd(AdjustBase):
     distance weights needs to be repeated in __call__ which is at the expense of
     performance.
 
-    Parameters
-    ----------
-    obs_coords : array of float
-        coordinate pairs of observations points
-    raw_coords : array of float
-        coordinate pairs of raw (unadjusted) field
-    nnear_raws : integer
-        defaults to 9
-    stat : string
-        defaults to 'median'
-    mingages : integer
-        minimum number of gages which are required for an adjustment
-    minval : float
-        If the gage or radar observation is below this threshold, the location
-        will not be used for adjustment. For additive adjustment, this value
-        should be set to zero (default value).
-    Ipclass : an interpolation class from wradib.ipol
-        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
-    ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keywird arguments woudl e.g. be nnear or p
+    For a complete overview of parameters for the initialisation of adjustment
+    objects, as well as an extensive example, please see 
+    :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
     -------
@@ -386,26 +377,9 @@ class AdjustMultiply(AdjustBase):
     distance weights needs to be repeated in __call__ which is at the expense of
     performance.
 
-    Parameters
-    ----------
-    obs_coords : array of float
-        coordinate pairs of observations points
-    raw_coords : array of float
-        coordinate pairs of raw (unadjusted) field
-    nnear_raws : integer
-        defaults to 9
-    stat : string
-        defaults to 'median'
-    mingages : integer
-        minimum number of gages which are required for an adjustment
-    minval : float
-        If the gage or radar observation is below this threshold, the location
-        will not be used for adjustment. For additive adjustment, this value
-        should be set to zero (default value).
-    Ipclass : an interpolation class from wradlib.ipol
-        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
-    ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
+    For a complete overview of parameters for the initialisation of adjustment
+    objects, as well as an extensive example, please see 
+    :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
     -------
@@ -486,26 +460,9 @@ class AdjustMixed(AdjustBase):
     distance weights needs to be repeated in __call__ which is at the expense of
     performance.
 
-    Parameters
-    ----------
-    obs_coords : array of float
-        coordinate pairs of observations points
-    raw_coords : array of float
-        coordinate pairs of raw (unadjusted) field
-    nnear_raws : integer
-        defaults to 9
-    stat : string
-        defaults to 'median'
-    mingages : integer
-        minimum number of gages which are required for an adjustment
-    minval : float
-        If the gage or radar observation is below this threshold, the location
-        will not be used for adjustment. For additive adjustment, this value
-        should be set to zero (default value).
-    Ipclass : an interpolation class from wradlib.ipol
-        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
-    ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
+    For a complete overview of parameters for the initialisation of adjustment
+    objects, as well as an extensive example, please see 
+    :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
     -------
@@ -560,30 +517,17 @@ class AdjustMixed(AdjustBase):
 
 class AdjustMFB(AdjustBase):
     """
-    Multiplicative gage adjustment using *one* correction factor for the entire domain
+    Multiplicative gage adjustment using *one* correction factor for the entire domain.
 
-    This method is also known as the Mean Field Bias correction
+    This method is also known as the Mean Field Bias correction.
+    
+    .. versionchanged:: 0.6.0
+       Introduced a dictionary of control parameters 'mfb_args' which are passed during initialisation of adjustment objects.
+       Keyword argument 'biasby' of the call function has been removed.
 
-    Parameters
-    ----------
-    obs_coords : array of float
-        coordinate pairs of observations points
-    raw_coords : array of float
-        coordinate pairs of raw (unadjusted) field
-    nnear_raws : integer
-        defaults to 9
-    stat : string
-        defaults to 'median'
-    mingages : integer
-        minimum number of gages which are required for an adjustment
-    minval : float
-        If the gage or radar observation is below this threshold, the location
-        will not be used for adjustment. For additive adjustment, this value
-        should be set to zero (default value).
-    Ipclass : an interpolation class from wradlib.ipol
-        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
-    ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
+    For a complete overview of parameters for the initialisation of adjustment
+    objects, as well as an extensive example, please see 
+    :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
     -------
@@ -595,7 +539,7 @@ class AdjustMFB(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None, biasby="linregr"):
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
         """
         Return the field of *raw* values adjusted by *obs*.
 
@@ -605,10 +549,6 @@ class AdjustMFB(AdjustBase):
             Gage observations
         raw : array of floats
             Raw unadjusted radar rainfall
-        biasby : string
-            The method which is used to compute the mean field bias. Defaults to
-            "linregr" which fits a regression line through observed and estimated values
-            and than gets the bias from the inverse of the slope.
         targets : (INTERNAL) array of floats
             Coordinate pairs for locations on which the final adjustment product is interpolated
             Defaults to None. In this case, the output locations will be identical to the radar coordinates
@@ -634,11 +574,12 @@ class AdjustMFB(AdjustBase):
         if len(np.where(np.logical_not(ratios.mask))[0]) < self.mingages:
             # Not enough valid pairs of raw and obs
             return raw
-        if biasby=="mean":
+        if self.mfb_args["method"]=="mean":
             corrfact = np.mean(ratios)
-        elif biasby=="median":
+        elif self.mfb_args["method"]=="median":
             corrfact = np.median(ratios)
-        elif biasby=="linregr":
+        elif self.mfb_args["method"]=="linregr":
+            corrfact=1.
             ix_ = np.where(np.logical_not(ratios.mask))[0]
             x = obs[ix][ix_]
             y = rawatobs[ix][ix_]
@@ -647,53 +588,30 @@ class AdjustMFB(AdjustBase):
                 slope,intercept,r,p,stderr=linregress(x,y)
             except:
                 slope, r, p = 0, 0, np.inf
-            if slope > 0.1 and r > 0.5 and p < 0.01:
+            if slope > self.mfb_args["minslope"] and r > self.mfb_args["minr"] and p < self.mfb_args["maxp"]:
                 x = x[:,np.newaxis]
                 try:
                     slope, _,_,_ = np.linalg.lstsq(x,y)
                     if not slope[0]==0:
                         corrfact = 1. / slope[0]
-                    else:
-                        corrfact = 1.
                 except:
                     # no correction if linear regression fails
-                    corrfact = 1.
-            else:
-                corrfact=1.
-        else:
-            print("WARNING: Invalid <biasby> argument value for AdjustMFB: %s" % biasby)
-            print("         Using default value biasby='mean' instead.")
+                    pass
         if type(corrfact)==np.ma.core.MaskedConstant:
             corrfact = 1.
-        # TODO: commented out, remove if not necessary
-        # print "corrfact=",corrfact
         return corrfact*raw
 
 
 class AdjustNone(AdjustBase):
     """
-    Same behaviour as the other adjustment classes, but simply returns the unadjusted data
-
-    Parameters
-    ----------
-    obs_coords : array of float
-        coordinate pairs of observations points
-    raw_coords : array of float
-        coordinate pairs of raw (unadjusted) field
-    nnear_raws : integer
-        defaults to 9
-    stat : string
-        defaults to 'median'
-    mingages : integer
-        minimum number of gages which are required for an adjustment
-    minval : float
-        If the gage or radar observation is below this threshold, the location
-        will not be used for adjustment. For additive adjustment, this value
-        should be set to zero (default value).
-    Ipclass : an interpolation class from wradlib.ipol
-        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
-    ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
+    Same behaviour as the other adjustment classes, but simply returns the unadjusted data.
+    
+    This class can be used for benchmark verification experiments as a control for
+    unadjusted data.
+    
+    For a complete overview of parameters for the initialisation of adjustment
+    objects, as well as an extensive example, please see 
+    :doc:`here <wradlib.adjust.AdjustBase>`
 
     Returns
     -------
@@ -749,26 +667,9 @@ class GageOnly(AdjustBase):
     distance weights needs to be repeated in __call__ which is at the expense of
     performance.
 
-    Parameters
-    ----------
-    obs_coords : array of float
-        coordinate pairs of observations points
-    raw_coords : array of float
-        coordinate pairs of raw (unadjusted) field
-    nnear_raws : integer
-        defaults to 9
-    stat : string
-        defaults to 'median'
-    mingages : integer
-        minimum number of gages which are required for an adjustment
-    minval : float
-        If the gage or radar observation is below this threshold, the location
-        will not be used for adjustment. For additive adjustment, this value
-        should be set to zero (default value).
-    Ipclass : an interpolation class from wradib.ipol
-        Default value is wradlib.ipol.Idw (Inverse Distance Weighting)
-    ipargs : keyword arguments to create an instance of Ipclass
-        For wradlib.ipol.Idw, these keyword arguments would e.g. be nnear or p
+    For a complete overview of parameters for the initialisation of adjustment
+    objects, as well as an extensive example, please see 
+    :doc:`here <wradlib.adjust.AdjustBase>`
 
     Returns
     -------
@@ -958,24 +859,24 @@ def best(x, y):
     return y[np.arange(len(y)),np.argmin(np.abs(x-y), axis=axis)]
 
 
-def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
-    """
-    Get the raw values in the neighbourhood of the observation points
-
-    Parameters
-    ----------
-
-    obs_coords :
-
-    raw: Dataset of raw values (which shall be adjusted by obs)
-    nnear: number of neighbours which should be considered in the vicinity of each point in obs
-    stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourhood of obs
-
-    """
-    # get the values of the raw neighbours of obs
-    raw_neighbs = _get_neighbours(obs_coords, raw_coords, raw, nnear)
-    # and summarize the values of these neighbours by using a statistics option
-    return _get_statfunc(stat)(raw_neighbs)
+#def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
+#    """
+#    Get the raw values in the neighbourhood of the observation points
+#
+#    Parameters
+#    ----------
+#
+#    obs_coords :
+#
+#    raw: Dataset of raw values (which shall be adjusted by obs)
+#    nnear: number of neighbours which should be considered in the vicinity of each point in obs
+#    stat: a numpy statistical function which should be used to summarize the values of raw in the neighbourhood of obs
+#
+#    """
+#    # get the values of the raw neighbours of obs
+#    raw_neighbs = _get_neighbours(obs_coords, raw_coords, raw, nnear)
+#    # and summarize the values of these neighbours by using a statistics option
+#    return _get_statfunc(stat)(raw_neighbs)
 
 
 
