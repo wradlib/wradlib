@@ -12,7 +12,6 @@
 
 import wradlib.adjust as adjust
 import wradlib.verify as verify
-import wradlib.ipol as ipol
 import wradlib.util as util
 
 def ex_adjust():
