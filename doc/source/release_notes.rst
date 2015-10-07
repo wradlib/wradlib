@@ -23,7 +23,8 @@ Port of PyRadarMet partial beamblockage calculations by DEM
 - In georef module a new helper function `create_osr` is added. This function helps to create an osr object for specific projections.
 - Bugfix: add multiplication of grid resolution in ``wradlib.georef.get_radolan_grid`` merged from v0.5.1
 - Several convenience functions for reading, transforming and projecting as well as plotting rasterfiles and shapefiles including example
-- Caclulation of partial/cumulative beamblockage with example
+- Calculation of partial/cumulative beamblockage with example
+- The behaviour of wradlib.adjust.AdjustMFB has been changed. Control parameters are no longer passed via the ``__call__`` function, but, as for all other adjustment classes, via the initialisation of an adjustment object. Documentation has been revised to make the behaviour more transparent. The parameter 'biasby' has been replaced by a dictionary mfb_args that carries all parameters that control the behaviour of AdjustMFB.
 
 
 **Deprecated features**
