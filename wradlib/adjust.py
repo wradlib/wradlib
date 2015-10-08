@@ -53,6 +53,9 @@ coordinate pairs for the gage observations and the radar bins, respectively.
     adjuster = AdjustAdd(obs_coords, raw_coords)
     adjusted = adjuster(obs, raw)
 
+Both obs and raw need to be flat (1-dimensional) arrays of shape (n,) that have
+the same length as the the obs_coords and raw_coords arrays, respectively.
+
 The user can specify the approach that should be used to interpolate the error
 in space, as well as the keyword arguments which control the behaviour of the
 interpolation approach. For this purpose, all interpolation classes from the
@@ -233,8 +236,27 @@ class AdjustBase(ipol.IpolBase):
         else:
             return self.ip
 
-    def __call__(self, obs, raw, targets=None):
-        """Empty prototype
+    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+        """Returns an array of *raw* values that are adjusted by *obs*.
+
+        Parameters
+        ----------
+        obs : flat (1-D) array of floats with shape (num gauges,)
+            These are the gage observations used for adjustment. This array 
+            needs to be of the same length as the array "obs_coords" used to
+            initialize the adjustmetn object.
+        raw : flat (1-D) array of floats with shape (num radar cells,)
+            These are the raw (unadjusted) radar rainfall values. This array 
+            needs to be of the same length as the array "raw_coords" used to
+            initialize the adjustment object. 
+        targets : (INTERNAL - DO NOT USE) 
+            Array of floats. Coordinate pairs for locations on which the final adjustment product is interpolated
+            Defaults to None. In this case, the output locations will be identical to the radar coordinates
+        rawatobs : (INTERNAL - DO NOT USE) 
+            Array of floats. For internal use from AdjustBase.xvalidate only (defaults to None)
+        ix : (INTERNAL - DO NOT USE)
+            Array of integers. For internal use from AdjustBase.xvalidate only (defaults to None)
+
         """
         pass
 
@@ -324,22 +346,11 @@ class AdjustAdd(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """
-        Return the field of *raw* values adjusted by *obs*.
+        """Returns an array of *raw* values that are adjusted by *obs*.
 
-        Parameters
-        ----------
-        obs : array of floats
-            Gage observations
-        raw : array of floats
-            Raw unadjusted radar rainfall
-        targets : (INTERNAL) array of floats
-            Coordinate pairs for locations on which the final adjustment product is interpolated
-            Defaults to None. In this case, the output locations will be identical to the radar coordinates
-        rawatobs : (INTERNAL) array of floats
-            For internal use from AdjustBase.xvalidate only (defaults to None)
-        ix : (INTERNAL) array of integers
-            For internal use from AdjustBase.xvalidate only (defaults to None)
+        Calling an adjustment object works the same for all adjustment classes.
+        Detailed instructions on the parameters *obs* and *raw* are provided
+        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods----------------
@@ -392,22 +403,11 @@ class AdjustMultiply(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """
-        Return the field of *raw* values adjusted by *obs*.
+        """Returns an array of *raw* values that are adjusted by *obs*.
 
-        Parameters
-        ----------
-        obs : array of floats
-            Gage observations
-        raw : array of floats
-            Raw unadjusted radar rainfall
-        targets : (INTERNAL) array of floats
-            Coordinate pairs for locations on which the final adjustment product is interpolated
-            Defaults to None. In this case, the output locations will be identical to the radar coordinates
-        rawatobs : (INTERNAL) array of floats
-            For internal use from AdjustBase.xvalidate only (defaults to None)
-        ix : (INTERNAL) array of integers
-            For internal use from AdjustBase.xvalidate only (defaults to None)
+        Calling an adjustment object works the same for all adjustment classes.
+        Detailed instructions on the parameters *obs* and *raw* are provided
+        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods----------------
@@ -475,22 +475,11 @@ class AdjustMixed(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """
-        Return the field of *raw* values adjusted by *obs*.
+        """Returns an array of *raw* values that are adjusted by *obs*.
 
-        Parameters
-        ----------
-        obs : array of floats
-            Gage observations
-        raw : array of floats
-            Raw unadjusted radar rainfall
-        targets : (INTERNAL) array of floats
-            Coordinate pairs for locations on which the final adjustment product is interpolated
-            Defaults to None. In this case, the output locations will be identical to the radar coordinates
-        rawatobs : (INTERNAL) array of floats
-            For internal use from AdjustBase.xvalidate only (defaults to None)
-        ix : (INTERNAL) array of integers
-            For internal use from AdjustBase.xvalidate only (defaults to None)
+        Calling an adjustment object works the same for all adjustment classes.
+        Detailed instructions on the parameters *obs* and *raw* are provided
+        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods----------------
@@ -540,22 +529,11 @@ class AdjustMFB(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """
-        Return the field of *raw* values adjusted by *obs*.
+        """Returns an array of *raw* values that are adjusted by *obs*.
 
-        Parameters
-        ----------
-        obs : array of floats
-            Gage observations
-        raw : array of floats
-            Raw unadjusted radar rainfall
-        targets : (INTERNAL) array of floats
-            Coordinate pairs for locations on which the final adjustment product is interpolated
-            Defaults to None. In this case, the output locations will be identical to the radar coordinates
-        rawatobs : (INTERNAL) array of floats
-            For internal use from AdjustBase.xvalidate only (defaults to None)
-        ix : (INTERNAL) array of integers
-            For internal use from AdjustBase.xvalidate only (defaults to None)
+        Calling an adjustment object works the same for all adjustment classes.
+        Detailed instructions on the parameters *obs* and *raw* are provided
+        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods----------------
@@ -624,22 +602,11 @@ class AdjustNone(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """
-        Return the field of *raw* values adjusted by *obs* (here: no adjustment!)
+        """Returns an array of *raw* values that are adjusted by *obs*.
 
-        Parameters
-        ----------
-        obs : array of floats
-            Gage observations
-        raw : array of floats
-            Raw unadjusted radar rainfall
-        targets : (INTERNAL) array of floats
-            Coordinate pairs for locations on which the final adjustment product is interpolated
-            Defaults to None. In this case, the output locations will be identical to the radar coordinates
-        rawatobs : (INTERNAL) array of floats
-            For internal use from AdjustBase.xvalidate only (defaults to None)
-        ix : (INTERNAL) array of integers
-            For internal use from AdjustBase.xvalidate only (defaults to None)
+        Calling an adjustment object works the same for all adjustment classes.
+        Detailed instructions on the parameters *obs* and *raw* are provided
+        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods----------------
@@ -682,22 +649,11 @@ class GageOnly(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """
-        Return the field of *raw* values adjusted by *obs*.
+        """Returns an array of *raw* values that are adjusted by *obs*.
 
-        Parameters
-        ----------
-        obs : array of floats
-            Gage observations
-        raw : array of floats
-            Raw unadjusted radar rainfall
-        targets : (INTERNAL) array of floats
-            Coordinate pairs for locations on which the final adjustment product is interpolated
-            Defaults to None. In this case, the output locations will be identical to the radar coordinates
-        rawatobs : (INTERNAL) array of floats
-            For internal use from AdjustBase.xvalidate only (defaults to None)
-        ix : (INTERNAL) array of integers
-            For internal use from AdjustBase.xvalidate only (defaults to None)
+        Calling an adjustment object works the same for all adjustment classes.
+        Detailed instructions on the parameters *obs* and *raw* are provided
+        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods----------------
