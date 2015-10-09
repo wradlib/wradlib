@@ -2,5 +2,9 @@ include ez_setup.py
 include version
 include requirements.txt
 recursive-include examples *
-recursive-include examples/data *
 recursive-include wradlib/tests *
+recursive-exclude examples *.pyc
+recursive-exclude wradlib/tests *.pyc
+recursive-exclude examples/data/geo *
+exclude examples/data/geo.tar.gz
+exclude examples/centroids.tab
