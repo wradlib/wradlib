@@ -129,34 +129,6 @@ def ogr_to_polyg(ogrobj):
     return np.array(jsonobj["coordinates"][0])
 
 
-def _intersect(src, trg):
-    """Return intersection and its area from target and source vertices.  
-    """
-    # Convert to ogr if necessary
-    if not type(trg) == ogr.Geometry:
-        trg = [polyg_to_ogr(item) for item in trg]
-    if not type(src) == ogr.Geometry:    
-        src = [polyg_to_ogr(item) for item in src]
-    isecs = []
-    areas = []
-    # iterate over target polygons
-    for trg in trgs:
-        isecs_ = []
-        areas_ = []
-        for src in srcs:
-            tmp = trg.Intersection(src)
-            if tmp.GetGeometryName()=="POLYGON":
-                areas_.append( tmp.Area() )
-                isecs_.append( ogr_to_polyg(tmp) )
-            else:
-                #isecs_.append( np.array([]) )
-                areas_.append( 0. )
-        isecs.append(np.array(isecs_))
-        areas.append(np.array(areas_))
-    
-    return np.array(isecs), np.array(areas)
-
-
 def intersect(src, trg):
     """Return intersection and its area from target and source vertex.
     
@@ -179,7 +151,146 @@ def intersect(src, trg):
     if isec.GetGeometryName()=="POLYGON":
         return ogr_to_polyg(isec), isec.Area()         
     else:
-        return None, 0.         
+        return None, 0.
+
+
+def could_intersect(src, trg):
+    """Roughly checks for intersection between polygons in src and trg.
+    
+    This function should be used to filter polygons from src for which an 
+    intersection with trg *might* be possible. It simply uses the spatial 
+    bounding box (extent/envelope) of trg and checks whetehr any corner points
+    of src fall within. Beware that this does not mean that the polygons in 
+    fact intersect. This function is just to speed up the computation of true
+    intersections by preselection.
+    
+    Parameters
+    ----------
+    src : array polygons
+    trg : numpy array of polygon vertices of shape (n vertices, 2)
+    
+    Returns
+    -------
+    out : Boolean array of same length as src
+        ith element is True if at least on vertex of the ith element of src 
+        is within the bounding box of trg
+        
+    """
+    bbox = get_bbox(trg[:,0], trg[:,1])
+
+    right_of_left = np.any(src[...,0]>=bbox["left"], axis=1)
+    left_of_right = np.any(src[...,0]<=bbox["right"], axis=1)
+    above_bottom  = np.any(src[...,1]>=bbox["bottom"], axis=1)
+    below_top     = np.any(src[...,1]<=bbox["top"], axis=1)
+    
+    return right_of_left & left_of_right & above_bottom & below_top
+
+
+class ZonalMeanBase():
+    """
+    ZonalMeanBase(src, trg)
+
+    The base class for computing 2-dimensional zonal average for target 
+    polygons from source points or polygons. Provides the basic design 
+    for all other classes.
+
+    Parameters
+    ----------
+    src : sequence of source points or polygons 
+    trg : sequence of target polygons - each item is an ndarray of shape (num vertices, 2)
+
+    """
+
+    def __init__(self, src, trg, **kwargs):
+        self.src = self._check_src(src)
+        self.trg = self._check_trg(trg)
+        self.ix, self.w = self.get_weights(**kwargs)
+    def _get_weights(self, **kwargs):
+        """This is the key method that needs to be filled for any inheriting class.
+        """
+        pass
+    def _check_src(self, src):
+        """Basic check of source elements (sequence of points or polygons).
+
+        """
+        return src
+    def _check_trg(self, trg):
+        """Basic check of target elements (sequence of polygons).
+
+        """
+        return trg
+    def _check_vals(self, vals):
+        """Basic check of target elements (sequence of polygons).
+
+        """
+        assert len(vals)==len(self.src), "Argment vals must be of length %d" % len(self.src)
+        return vals
+    def __call__(self, vals):
+        """
+        Evaluate zonal statistics for values given at the source points.
+
+        Parameters
+        ----------
+        vals : 1-d ndarray of type float with the same length as self.src
+            Values at the source element for which to compute zonal statistics
+
+        """
+        self._check_vals(vals)
+        return np.array( [np.sum( vals[self.ix[i]] * self.w[i]) for i in xrange(len(self.trg))] )
+        
+
+class GridCellsToPoly(ZonalMeanBase):
+    """Compute weighted average for target polygons based on areal weights.   
+
+    The base class for computing 2-dimensional zonal statistics for target 
+    polygons from source points or polygons. Provides the basic design 
+    for all other classes.
+
+    Parameters
+    ----------
+    src : sequence of source points or polygons 
+    trg : sequence of target polygons - each item is an ndarray of shape (num vertices, 2)
+
+    """
+    def get_weights(self):
+        """
+        """
+        # Conversion to ogr Geometries (only once)
+        ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        ogr_trgs = np.array([polyg_to_ogr(item) for item in self.trg])
+        
+        ix, w = [], []
+        for i in xrange( len(self.trg) ):
+            # Pre-select grid vertices to increase performance
+            ix_ = could_intersect(self.src, self.trg[i])
+            areas = np.array([ intersect(ogr_src, ogr_trgs[i])[1] for ogr_src in ogr_srcs[ix_] ])
+            w.append(areas / np.sum(areas))
+            ix.append(ix_)
+        
+        return ix, w
+            
+
+class GridPointsToPoly(ZonalMeanBase):
+    """
+    """
+    def get_weights(self):
+        """
+        """
+        for trg_ in self.trg:
+            # Pre-selection to increase performance 
+            ix = subset_points(xy_, get_bbox(trg_[:,0],trg_[:,1]), buffer=500.)
+            ixix = ix[points_in_polygon(trg_, xy_[ix,:], buffer=500.)]
+            if len(ixix)==0:
+                # For very small catchments: increase buffer size
+                ix = subset_points(xy_, get_bbox(cat[:,0],cat[:,1]), buffer=1000.)
+                ixix = ix[points_in_polygon(cat, xy_[ix,:], buffer=1000.)]            
+            pips.append( ixix )
+
+    
+
+
+
+   
 
 
 if __name__ == '__main__':
@@ -280,15 +391,15 @@ if __name__ == '__main__':
         
     tstart = dt.datetime.now()    
     # Now compute the average areal rainfall based on the point assignments
-    avg = np.array([])
+    avg1 = np.array([])
     for i, cat in enumerate(cats):
         if len(pips[i])>0:
-            avg = np.append(avg, np.nanmean(data_.ravel()[pips[i]]) )
+            avg1 = np.append(avg1, np.nanmean(data_.ravel()[pips[i]]) )
         else:
-            avg = np.append(avg, np.nan )
+            avg1 = np.append(avg1, np.nan )
             
     # Check if some catchments still are NaN
-    invalids = np.where(np.isnan(avg))[0]
+    invalids = np.where(np.isnan(avg1))[0]
     assert len(invalids)==0, "Attention: No average rainfall computed for %d catchments" % len(invalids)
 
     tend = dt.datetime.now()
@@ -304,7 +415,7 @@ if __name__ == '__main__':
     # Average rainfall sum
     ax = fig.add_subplot(121, aspect="equal")
     wradlib.vis.add_lines(ax, cats, color='white', lw=0.5)
-    coll = PolyCollection(cats, array=avg, cmap=mycmap, norm=mynorm, edgecolors='none')
+    coll = PolyCollection(cats, array=avg1, cmap=mycmap, norm=mynorm, edgecolors='none')
     ax.add_collection(coll)
     ax.autoscale()
     cb = plt.colorbar(coll, ax=ax, shrink=0.5)
@@ -407,40 +518,43 @@ if __name__ == '__main__':
 
     # Create vertices for each grid cell (only once)
     # (use same structure as for other polygons)
-    tstart = dt.datetime.now()
-    
+
+    t1 = dt.datetime.now()
+    # Create vertices for each grid cell
     grdverts = grid_centers_to_vertices(xy[...,0][mask],xy[...,1][mask],1000.,1000.)
+    # Create object of type GridCellsToPoly
+    myobj2 = GridCellsToPoly(grdverts, cats)
+    t2 = dt.datetime.now()
+    # Compute averages for target polygons
+    avg2 = myobj2( data_.ravel() )
+    t3 = dt.datetime.now()
+
+    print "Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
+    print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
+
     
     # Conversion to ogr Geometries (only once)
-    srcs = np.array([polyg_to_ogr(item) for item in grdverts])
-    trgs = np.array([polyg_to_ogr(item) for item in cats]    )
+#    srcs = np.array([polyg_to_ogr(item) for item in grdverts])
+#    trgs = np.array([polyg_to_ogr(item) for item in cats]    )
+#    
+#    intersecs, areas, ixs = [], [], []
+#    for i, trg in enumerate(trgs):
+#        # Pre-select grid vertices to increase performance
+#        ix = could_intersect(grdverts, cats[i])
+#        isecs_ = []
+#        areas_ = []
+#        for src in srcs[ix]:
+#            tmp = intersect(src, trg)
+#            areas_.append(tmp[1] )            
+#            if not tmp[0]==None:
+#                isecs_.append(tmp[0])
+#                
+#        intersecs.append(np.array(isecs_))
+#        areas.append(np.array(areas_))
+#        ixs.append(ix)
+#        
+#    avg2 = np.array([ np.sum(areas[i] * data_.ravel()[ixs[i]] / np.sum(areas[i])) for i in xrange(len(cats)) ])
     
-    intersecs, areas, ixs = [], [], []
-    for i, trg in enumerate(trgs):
-        # Pre-select grid vertices to increase performance
-        bbox_ = trg.GetEnvelope()
-        right_of_left = np.any(grdverts[...,0]>=bbox_[0], axis=1)
-        left_of_right = np.any(grdverts[...,0]<=bbox_[1], axis=1)
-        above_bottom  = np.any(grdverts[...,1]>=bbox_[2], axis=1)
-        below_top     = np.any(grdverts[...,1]<=bbox_[3], axis=1)
-        ix = right_of_left & left_of_right & above_bottom & below_top
-        
-        isecs_ = []
-        areas_ = []
-        for src in srcs[ix]:
-            tmp = intersect(src, trg)
-            areas_.append(tmp[1] )            
-            if not tmp[0]==None:
-                isecs_.append(tmp[0])
-                
-        intersecs.append(np.array(isecs_))
-        areas.append(np.array(areas_))
-        ixs.append(ix)
-        
-    avg = np.array([ np.sum(areas[i] * data_.ravel()[ixs[i]] / np.sum(areas[i])) for i in xrange(len(cats)) ])
-    
-    tend = dt.datetime.now()
-    print "Approach #2 averaging takes: %f seconds" % (tend - tstart).total_seconds()
 
    
     fig = plt.figure(figsize=(14,8))
@@ -460,7 +574,7 @@ if __name__ == '__main__':
     # Average rainfall sum
     ax = fig.add_subplot(121, aspect="equal")
     wradlib.vis.add_lines(ax, cats, color='white', lw=0.5)
-    coll = PolyCollection(cats, array=avg, cmap=mycmap, norm=mynorm, edgecolors='none')
+    coll = PolyCollection(cats, array=avg2, cmap=mycmap, norm=mynorm, edgecolors='none')
     ax.add_collection(coll)
     ax.autoscale()
     cb = plt.colorbar(coll, ax=ax, shrink=0.5)
@@ -483,6 +597,19 @@ if __name__ == '__main__':
     plt.title("Original RADOLAN rain sums")
     plt.draw()
     plt.tight_layout()
+    
+    
+    # Compare estimates
+    maxlim = np.max(np.concatenate((avg1, avg2)))
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111, aspect="equal")
+    plt.scatter(avg1, avg2, edgecolor="None", alpha=0.5)
+    plt.xlabel("Average of points in or close to polygon (mm)")
+    plt.ylabel("Area-weighted average (mm)")
+    plt.xlim(0, maxlim)
+    plt.ylim(0, maxlim)
+    plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
+
 
 
     
