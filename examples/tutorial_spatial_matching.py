@@ -76,10 +76,27 @@ def get_bbox(x,y, buffer=0.):
                 right=np.max(x), 
                 bottom=np.min(y), 
                 top=np.max(y))
+    
+    
+def get_centroid(polyg):
+    """Return centroid of a polygon
+    
+    Parameters
+    ----------
+    polyg : ndarray of shape (num vertices, 2) or ogr.Geometry object
+    """
+    if not type(polyg) == ogr.Geometry:
+        polyg = polyg_to_ogr(polyg)
+    return polyg.Centroid().GetPoint()[0:2]
+
 
 
 def grid_centers_to_vertices(X, Y, dx, dy):
     """Produces array of vertices from grid's center point coordinates.
+    
+    .. warning:: This has to be done in the "native" grid projection. 
+                 Once you reprojected the coordinates, this trivial function
+                 cannot be used to compute vertices from center points.
 
     Parameters
     ----------   
@@ -206,21 +223,21 @@ class ZonalMeanBase():
         self.trg = self._check_trg(trg)
         self.ix, self.w = self.get_weights(**kwargs)
     def _get_weights(self, **kwargs):
-        """This is the key method that needs to be filled for any inheriting class.
+        """TODO This is the key method that needs to be filled for any inheriting class.
         """
         pass
     def _check_src(self, src):
-        """Basic check of source elements (sequence of points or polygons).
+        """TODO Basic check of source elements (sequence of points or polygons).
 
         """
         return src
     def _check_trg(self, trg):
-        """Basic check of target elements (sequence of polygons).
+        """TODO Basic check of target elements (sequence of polygons).
 
         """
         return trg
     def _check_vals(self, vals):
-        """Basic check of target elements (sequence of polygons).
+        """TODO Basic check of target elements (sequence of polygons).
 
         """
         assert len(vals)==len(self.src), "Argment vals must be of length %d" % len(self.src)
@@ -242,17 +259,13 @@ class ZonalMeanBase():
 class GridCellsToPoly(ZonalMeanBase):
     """Compute weighted average for target polygons based on areal weights.   
 
-    The base class for computing 2-dimensional zonal statistics for target 
-    polygons from source points or polygons. Provides the basic design 
-    for all other classes.
-
     Parameters
     ----------
     src : sequence of source points or polygons 
     trg : sequence of target polygons - each item is an ndarray of shape (num vertices, 2)
 
     """
-    def get_weights(self):
+    def get_weights(self, **kwargs):
         """
         """
         # Conversion to ogr Geometries (only once)
@@ -271,26 +284,72 @@ class GridCellsToPoly(ZonalMeanBase):
             
 
 class GridPointsToPoly(ZonalMeanBase):
+    """Compute zonal average from all points in or close to the target polygon.
+
+    Parameters
+    ----------
+    src : sequence of source points or polygons 
+    trg : sequence of target polygons - each item is an ndarray of shape (num vertices, 2)
+    
+    Keyword arguments
+    -----------------
+    buffer : 
+
     """
-    """
-    def get_weights(self):
+    def get_weights(self, **kwargs):
         """
         """
-        for trg_ in self.trg:
+        ix, w = [], []
+        for i in xrange( len(self.trg) ):
             # Pre-selection to increase performance 
-            ix = subset_points(xy_, get_bbox(trg_[:,0],trg_[:,1]), buffer=500.)
-            ixix = ix[points_in_polygon(trg_, xy_[ix,:], buffer=500.)]
-            if len(ixix)==0:
-                # For very small catchments: increase buffer size
-                ix = subset_points(xy_, get_bbox(cat[:,0],cat[:,1]), buffer=1000.)
-                ixix = ix[points_in_polygon(cat, xy_[ix,:], buffer=1000.)]            
-            pips.append( ixix )
+            ix1 = subset_points(self.src, get_bbox(self.trg[i][:,0],self.trg[i][:,1]), buffer=kwargs["buffer"])
+            ix2 = ix1[points_in_polygon(self.trg[i], self.src[ix1,:], buffer=kwargs["buffer"])]
+            if len(ix2)==0:
+                # No points in target polygon? Find the closest point to provide a value
+                #    Polygon centroid
+                centroid = get_centroid(self.trg[i])
+                tree = cKDTree(self.src)
+                distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
+                ix2 = np.array([ixnext])
+            w.append( np.ones(len(ix2)) / len(ix2 ) )
+            ix.append(ix2)
+        
+        return ix, w
 
     
+def testplot(cats, catsavg, xy, data):
+    """Quick test plot layout for this example file
+    """
+    levels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100]
+    colors = plt.cm.spectral(np.linspace(0,1,len(levels)) )    
+    mycmap, mynorm = from_levels_and_colors(levels, colors, extend="max")
 
-
-
-   
+    fig = plt.figure(figsize=(14,8))
+    # Average rainfall sum
+    ax = fig.add_subplot(121, aspect="equal")
+    wradlib.vis.add_lines(ax, cats, color='white', lw=0.5)
+    coll = PolyCollection(cats, array=catsavg, cmap=mycmap, norm=mynorm, edgecolors='none')
+    ax.add_collection(coll)
+    ax.autoscale()
+    cb = plt.colorbar(coll, ax=ax, shrink=0.5)
+    cb.set_label("(mm/h)")
+    plt.xlabel("GK4 Easting")
+    plt.ylabel("GK4 Northing")
+    plt.title("Areal average rain sums")
+    plt.draw()
+    # Original RADOLAN data
+    ax1 = fig.add_subplot(122, aspect="equal")
+    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=mycmap, norm=mynorm)
+    wradlib.vis.add_lines(ax1, cats, color='white', lw=0.5)
+    plt.xlim(ax.get_xlim())
+    plt.ylim(ax.get_ylim())
+    cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
+    cb.set_label("(mm/h)")
+    plt.xlabel("GK4 Easting")
+    plt.ylabel("GK4 Northing")
+    plt.title("Original RADOLAN rain sums")
+    plt.draw()
+    plt.tight_layout()
 
 
 if __name__ == '__main__':
@@ -332,113 +391,32 @@ if __name__ == '__main__':
     data_ = data[mask]
     
     ###########################################################################
-    # Approach #1a: Assign grid points to each polygon and compute the average.
+    # Approach #1: Assign grid points to each polygon and compute the average.
     # 
     # - Uses matplotlib.path.Path
     # - Each point is weighted equally (assumption: polygon >> grid cell)     
     ###########################################################################
 
-    tstart = dt.datetime.now()    
+    t1 = dt.datetime.now()
     
-    # Assign points to polygons (we need to do this only ONCE) 
-    pips = []  # these are those which we consider inside or close to our polygon
-    for cat in cats:
-        # Pre-selection to increase performance 
-        ixix = points_in_polygon(cat, xy_, buffer=500.)
-        if len(ixix)==0:
-            # For very small catchments: increase buffer size
-            ixix = points_in_polygon(cat, xy_, buffer=1000.)
-        pips.append( ixix )
+    # Create object    
+    myobj1 = GridPointsToPoly(xy_, cats, buffer=500.)
     
-    tend = dt.datetime.now()
-    print "Approach #1a (assign points) takes: %f seconds" % (tend - tstart).total_seconds()
+    t2 = dt.datetime.now()
+    
+    # Compute averages for target polygons
+    avg1 = myobj1( data_.ravel() )
 
+    t3 = dt.datetime.now()
 
-    ###########################################################################
-    # Approach #1b: Assign grid points to each polygon and compute the average
-    # 
-    # - same as approach #1a, but speed up vai preselecting points using a bbox
-    ###########################################################################
-    tstart = dt.datetime.now()    
-    
-    # Assign points to polygons (we need to do this only ONCE) 
-    pips = []  # these are those which we consider inside or close to our polygon
-    for cat in cats:
-        # Pre-selection to increase performance 
-        ix = subset_points(xy_, get_bbox(cat[:,0],cat[:,1]), buffer=500.)
-        ixix = ix[points_in_polygon(cat, xy_[ix,:], buffer=500.)]
-        if len(ixix)==0:
-            # For very small catchments: increase buffer size
-            ix = subset_points(xy_, get_bbox(cat[:,0],cat[:,1]), buffer=1000.)
-            ixix = ix[points_in_polygon(cat, xy_[ix,:], buffer=1000.)]            
-        pips.append( ixix )
-    
-    tend = dt.datetime.now()
-    print "Approach #1b (assign points) takes: %f seconds" % (tend - tstart).total_seconds()
-    
-    # Plot polygons and grid points
-    fig = plt.figure(figsize=(10,10))
-    ax = fig.add_subplot(111, aspect="equal")
-    wradlib.vis.add_lines(ax, cats, color='black', lw=0.5)
-    plt.scatter(xy[...,0][mask], xy[...,1][mask], c="blue", edgecolor="None", s=4)
-    plt.xlim([bbox["left"]-buffer, bbox["right"]+buffer])
-    plt.ylim([bbox["bottom"]-buffer, bbox["top"]+buffer])
-    # show associated points for some arbitrarily selected polygons
-    for i in xrange(0, len(pips), 15):
-        plt.scatter(xy_[pips[i],0], xy_[pips[i],1], c="red", edgecolor="None", s=8)
-    plt.tight_layout()
-    
-        
-    tstart = dt.datetime.now()    
-    # Now compute the average areal rainfall based on the point assignments
-    avg1 = np.array([])
-    for i, cat in enumerate(cats):
-        if len(pips[i])>0:
-            avg1 = np.append(avg1, np.nanmean(data_.ravel()[pips[i]]) )
-        else:
-            avg1 = np.append(avg1, np.nan )
-            
-    # Check if some catchments still are NaN
-    invalids = np.where(np.isnan(avg1))[0]
-    assert len(invalids)==0, "Attention: No average rainfall computed for %d catchments" % len(invalids)
+    print "Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
+    print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
 
-    tend = dt.datetime.now()
-    print "Approach #1 (average rainfall) takes: %f seconds" % (tend - tstart).total_seconds()
-
-              
     # Plot average rainfall and original data
-    levels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100]
-    colors = plt.cm.spectral(np.linspace(0,1,len(levels)) )    
-    mycmap, mynorm = from_levels_and_colors(levels, colors, extend="max")
+    testplot(cats, avg1, xy, data)    
 
-    fig = plt.figure(figsize=(14,8))
-    # Average rainfall sum
-    ax = fig.add_subplot(121, aspect="equal")
-    wradlib.vis.add_lines(ax, cats, color='white', lw=0.5)
-    coll = PolyCollection(cats, array=avg1, cmap=mycmap, norm=mynorm, edgecolors='none')
-    ax.add_collection(coll)
-    ax.autoscale()
-    cb = plt.colorbar(coll, ax=ax, shrink=0.5)
-    cb.set_label("(mm/h)")
-    plt.xlabel("GK4 Easting")
-    plt.ylabel("GK4 Northing")
-    plt.title("Areal average rain sums")
-    plt.draw()
-    # Original RADOLAN data
-    ax1 = fig.add_subplot(122, aspect="equal")
-    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=mycmap, norm=mynorm)
-    wradlib.vis.add_lines(ax1, cats, color='white', lw=0.5)
-    bbox = inLayer.GetExtent()
-    plt.xlim(ax.get_xlim())
-    plt.ylim(ax.get_ylim())
-    cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
-    cb.set_label("(mm/h)")
-    plt.xlabel("GK4 Easting")
-    plt.ylabel("GK4 Northing")
-    plt.title("Original RADOLAN rain sums")
-    plt.draw()
-    plt.tight_layout()
     
+
     ###########################################################################
     # Approach #2: Compute weighted mean based on fraction of source polygons in target polygons
     # 
@@ -452,7 +430,7 @@ if __name__ == '__main__':
     x, y = np.meshgrid(x,y)
     #   Build vertices from grid center points
     srcs = grid_centers_to_vertices(x,y,1.,1.)
-    # Example polygon vertices
+    #   Example polygon vertices
     trgs = np.array([ [[1.7,10.],
                           [3. , 9.8],
                           [3. , 12.],
@@ -514,23 +492,119 @@ if __name__ == '__main__':
     ax.set_ylim(9,16)
     plt.draw()
 
-    # Now use this approach for the real world example
-
-    # Create vertices for each grid cell (only once)
-    # (use same structure as for other polygons)
+    ###########################################################################
+    # Approach #2: Real world example
+    ###########################################################################
 
     t1 = dt.datetime.now()
-    # Create vertices for each grid cell
-    grdverts = grid_centers_to_vertices(xy[...,0][mask],xy[...,1][mask],1000.,1000.)
+
+    # Create vertices for each grid cell (MUST BE DONE IN NATIVE RADOLAN COORDINATES)
+    grdverts = grid_centers_to_vertices(x_radolan[mask],y_radolan[mask],1.,1.)
+    # And reproject to Cartesian reference system (here: GK4)
+    grdverts = wradlib.georef.reproject(grdverts,
+                                  projection_source=proj_stereo,
+                                  projection_target=proj_gk)
+
     # Create object of type GridCellsToPoly
     myobj2 = GridCellsToPoly(grdverts, cats)
+
     t2 = dt.datetime.now()
+
     # Compute averages for target polygons
     avg2 = myobj2( data_.ravel() )
+
     t3 = dt.datetime.now()
 
     print "Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
     print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
+    
+    # Plot average rainfall and original data
+    testplot(cats, avg2, xy, data) 
+    
+
+    # Compare estimates
+    maxlim = np.max(np.concatenate((avg1, avg2)))
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111, aspect="equal")
+    plt.scatter(avg1, avg2, edgecolor="None", alpha=0.5)
+    plt.xlabel("Average of points in or close to polygon (mm)")
+    plt.ylabel("Area-weighted average (mm)")
+    plt.xlim(0, maxlim)
+    plt.ylim(0, maxlim)
+    plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
+
+
+###############################################################################
+# DUMP
+###############################################################################
+
+#    tstart = dt.datetime.now()    
+#    
+#    # Assign points to polygons (we need to do this only ONCE) 
+#    pips = []  # these are those which we consider inside or close to our polygon
+#    for cat in cats:
+#        # Pre-selection to increase performance 
+#        ixix = points_in_polygon(cat, xy_, buffer=500.)
+#        if len(ixix)==0:
+#            # For very small catchments: increase buffer size
+#            ixix = points_in_polygon(cat, xy_, buffer=1000.)
+#        pips.append( ixix )
+#    
+#    tend = dt.datetime.now()
+#    print "Approach #1a (assign points) takes: %f seconds" % (tend - tstart).total_seconds()
+#
+#
+#    ###########################################################################
+#    # Approach #1b: Assign grid points to each polygon and compute the average
+#    # 
+#    # - same as approach #1a, but speed up vai preselecting points using a bbox
+#    ###########################################################################
+#    tstart = dt.datetime.now()    
+#    
+#    # Assign points to polygons (we need to do this only ONCE) 
+#    pips = []  # these are those which we consider inside or close to our polygon
+#    for cat in cats:
+#        # Pre-selection to increase performance 
+#        ix = subset_points(xy_, get_bbox(cat[:,0],cat[:,1]), buffer=500.)
+#        ixix = ix[points_in_polygon(cat, xy_[ix,:], buffer=500.)]
+#        if len(ixix)==0:
+#            # For very small catchments: increase buffer size
+#            ix = subset_points(xy_, get_bbox(cat[:,0],cat[:,1]), buffer=1000.)
+#            ixix = ix[points_in_polygon(cat, xy_[ix,:], buffer=1000.)]            
+#        pips.append( ixix )
+#    
+#    tend = dt.datetime.now()
+#    print "Approach #1b (assign points) takes: %f seconds" % (tend - tstart).total_seconds()
+#       
+#    # Plot polygons and grid points
+#    fig = plt.figure(figsize=(10,10))
+#    ax = fig.add_subplot(111, aspect="equal")
+#    wradlib.vis.add_lines(ax, cats, color='black', lw=0.5)
+#    plt.scatter(xy[...,0][mask], xy[...,1][mask], c="blue", edgecolor="None", s=4)
+#    plt.xlim([bbox["left"]-buffer, bbox["right"]+buffer])
+#    plt.ylim([bbox["bottom"]-buffer, bbox["top"]+buffer])
+#    # show associated points for some arbitrarily selected polygons
+#    for i in xrange(0, len(pips), 15):
+#        plt.scatter(xy_[pips[i],0], xy_[pips[i],1], c="red", edgecolor="None", s=8)
+#    plt.tight_layout()
+#    
+#        
+#    tstart = dt.datetime.now()    
+#    # Now compute the average areal rainfall based on the point assignments
+#    avg1 = np.array([])
+#    for i, cat in enumerate(cats):
+#        if len(pips[i])>0:
+#            avg1 = np.append(avg1, np.nanmean(data_.ravel()[pips[i]]) )
+#        else:
+#            avg1 = np.append(avg1, np.nan )
+#
+#    tend = dt.datetime.now()
+#    print "Approach #1 (average rainfall) takes: %f seconds" % (tend - tstart).total_seconds()
+#    
+#    # Plot average rainfall and original data
+#    testplot(cats, avg1, xy, data)    
+#          
+#    
 
     
     # Conversion to ogr Geometries (only once)
@@ -554,65 +628,6 @@ if __name__ == '__main__':
 #        ixs.append(ix)
 #        
 #    avg2 = np.array([ np.sum(areas[i] * data_.ravel()[ixs[i]] / np.sum(areas[i])) for i in xrange(len(cats)) ])
-    
-
-   
-    fig = plt.figure(figsize=(14,8))
-    # Average rainfall sum
-    ax = fig.add_subplot(121, aspect="equal")
-    wradlib.vis.add_lines(ax, cats, color='black', lw=0.5)
-    ax.plot(cat[:,0],cat[:,1])
-    ax.plot(xy[...,0][mask].ravel()[ix], xy[...,1][mask].ravel()[ix],"bo")
-    plt.draw()
-
-    # Plot average rainfall and original data
-    levels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100]
-    colors = plt.cm.spectral(np.linspace(0,1,len(levels)) )    
-    mycmap, mynorm = from_levels_and_colors(levels, colors, extend="max")
-
-    fig = plt.figure(figsize=(14,8))
-    # Average rainfall sum
-    ax = fig.add_subplot(121, aspect="equal")
-    wradlib.vis.add_lines(ax, cats, color='white', lw=0.5)
-    coll = PolyCollection(cats, array=avg2, cmap=mycmap, norm=mynorm, edgecolors='none')
-    ax.add_collection(coll)
-    ax.autoscale()
-    cb = plt.colorbar(coll, ax=ax, shrink=0.5)
-    cb.set_label("(mm/h)")
-    plt.xlabel("GK4 Easting")
-    plt.ylabel("GK4 Northing")
-    plt.title("Areal average rain sums")
-    plt.draw()
-    # Original RADOLAN data
-    ax1 = fig.add_subplot(122, aspect="equal")
-    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=mycmap, norm=mynorm)
-    wradlib.vis.add_lines(ax1, cats, color='white', lw=0.5)
-    bbox = inLayer.GetExtent()
-    plt.xlim(ax.get_xlim())
-    plt.ylim(ax.get_ylim())
-    cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
-    cb.set_label("(mm/h)")
-    plt.xlabel("GK4 Easting")
-    plt.ylabel("GK4 Northing")
-    plt.title("Original RADOLAN rain sums")
-    plt.draw()
-    plt.tight_layout()
-    
-    
-    # Compare estimates
-    maxlim = np.max(np.concatenate((avg1, avg2)))
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, aspect="equal")
-    plt.scatter(avg1, avg2, edgecolor="None", alpha=0.5)
-    plt.xlabel("Average of points in or close to polygon (mm)")
-    plt.ylabel("Area-weighted average (mm)")
-    plt.xlim(0, maxlim)
-    plt.ylim(0, maxlim)
-    plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
-
-
-
-    
     
   
 
