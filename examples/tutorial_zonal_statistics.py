@@ -81,7 +81,7 @@ if __name__ == '__main__':
     sec = attrs['secondary']
     data.flat[sec] = np.nan
     
-    # Reduce grid size using a bounding box (for enhancing performance)
+    # Reduce grid size using a bounding box (to enhancing performance)
     bbox = inLayer.GetExtent()
     buffer = 5000.
     bbox = dict(left=bbox[0]-buffer, right=bbox[1]+buffer, bottom=bbox[2]-buffer, top=bbox[3]+buffer)
@@ -93,7 +93,8 @@ if __name__ == '__main__':
     # Approach #1: Assign grid points to each polygon and compute the average.
     # 
     # - Uses matplotlib.path.Path
-    # - Each point is weighted equally (assumption: polygon >> grid cell)     
+    # - Each point is weighted equally (assumption: polygon >> grid cell)
+    # - this is quick, but theoretically dirty     
     ###########################################################################
 
     t1 = dt.datetime.now()
@@ -110,6 +111,28 @@ if __name__ == '__main__':
 
     print "Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
     print "Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
+    
+    # Just a test for plotting results with zero buffer
+    obj2 = wradlib.zonalstats.GridPointsToPoly(xy_, cats, buffer=0.)    
+
+    # Illustrate results for an example catchment i
+    i = 100 # try e.g. 48, 100 
+    fig = plt.figure()
+    ax = fig.add_subplot(111, aspect="equal")
+    # Target polygon patches
+    trg_patches = [patches.Polygon(item, True) for item in [cats[i]] ]
+    p = PatchCollection(trg_patches, facecolor="None", edgecolor="black", linewidth=2)
+    ax.add_collection(p)
+    # pips
+    plt.scatter(xy_[:,0], xy_[:,1], s=200, c="grey", edgecolor="None", label="all points")
+    plt.scatter(xy_[obj2.ix[i],0], xy_[obj2.ix[i],1], s=200, c="green", edgecolor="None", label="buffer=0 m")
+    plt.scatter(xy_[obj1.ix[i],0], xy_[obj1.ix[i],1], s=50, c="red", edgecolor="None", label="buffer=500 m")
+    bbox = wradlib.zonalstats.get_bbox(cats[i][:,0], cats[i][:,1])
+    plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
+    plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
+    plt.legend()
+    plt.title("Catchment #%d: Points considered for stats" % i)
+
 
     # Plot average rainfall and original data
     testplot(cats, avg1, xy, data)    
