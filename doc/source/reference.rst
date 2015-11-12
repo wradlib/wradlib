@@ -19,5 +19,6 @@ Library Reference
    adjust
    verify
    vis
+   zonalstats
    util
    
