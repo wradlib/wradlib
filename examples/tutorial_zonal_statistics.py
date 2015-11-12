@@ -133,7 +133,6 @@ if __name__ == '__main__':
     plt.legend()
     plt.title("Catchment #%d: Points considered for stats" % i)
 
-
     # Plot average rainfall and original data
     testplot(cats, avg1, xy, data)    
 
@@ -143,79 +142,6 @@ if __name__ == '__main__':
     # Approach #2: Compute weighted mean based on fraction of source polygons in target polygons
     # 
     # - This is more accurate (no assumptions), but probably slower...
-    ###########################################################################
-
-    # First a simple (illustrative) example
-    #   Create grid
-    x = np.arange(0,6)
-    y = np.arange(10,16)
-    x, y = np.meshgrid(x,y)
-    #   Build vertices from grid center points
-    srcs = wradlib.zonalstats.grid_centers_to_vertices(x,y,1.,1.)
-    #   Example polygon vertices
-    trgs = np.array([ [[1.7,10.],
-                          [3. , 9.8],
-                          [3. , 12.],
-                          [2. , 12.5],
-                          [1.7, 10.]],
-                       
-                         [[4. , 11.],
-                          [5. , 12.],
-                          [5  , 14.8],
-                          [4. , 15.],
-                          [4. , 11.]],
-
-                         [[1. , 13.],
-                          [2. , 13.],
-                          [2. , 14.],
-                          [1. , 14.],
-                          [1. , 13.]],
-
-                         [[2.7, 13.7],
-                          [3.3, 13.7],
-                          [3.3, 14.3],
-                          [2.7, 14.3],
-                          [2.7, 13.7]] 
-                    ])
-    
-    # Iterate over all target polygons
-    intersecs, areas = [], []
-    for trg in trgs:
-        isecs_ = []
-        areas_ = []
-        for src in srcs:
-            tmp = wradlib.zonalstats.intersect(src, trg)            
-            if not tmp[0]==None:
-                isecs_.append(tmp[0])
-                areas_.append(tmp[1] )
-        intersecs.append(np.array(isecs_))
-        areas.append(np.array(areas_))
-
-                     
-    # Plot the simple example
-    fig = plt.figure()
-    ax = fig.add_subplot(111, aspect="equal")
-    # Grid cell patches
-    grd_patches = [patches.Polygon(item, True) for item in srcs ]
-    p = PatchCollection(grd_patches, facecolor="None", edgecolor="black")
-    ax.add_collection(p)
-    # Target polygon patches
-    trg_patches = [patches.Polygon(item, True) for item in trgs ]
-    p = PatchCollection(trg_patches, facecolor="None", edgecolor="red", linewidth=2)
-    ax.add_collection(p)
-    # Intersectin patches
-    for isec in intersecs:
-        colors = 100*np.linspace(0,1.,len(isec))
-        isec_patches = [patches.Polygon(item, True) for item in isec ]
-        p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
-        p.set_array(np.array(colors))
-        ax.add_collection(p)
-    ax.set_xlim(-1,6)
-    ax.set_ylim(9,16)
-    plt.draw()
-
-    ###########################################################################
-    # Approach #2: Real world example
     ###########################################################################
 
     t1 = dt.datetime.now()
@@ -228,12 +154,12 @@ if __name__ == '__main__':
                                   projection_target=proj_gk)
 
     # Create instances of type GridCellsToPoly (one instance for each target polygon)
-    obj2 = wradlib.zonalstats.GridCellsToPoly(grdverts, cats)
+    obj3 = wradlib.zonalstats.GridCellsToPoly(grdverts, cats)
 
     t2 = dt.datetime.now()
 
     # Compute averages for target polygons
-    avg2 =  obj2( data_.ravel() )
+    avg3 =  obj3( data_.ravel() )
 
     t3 = dt.datetime.now()
 
@@ -241,18 +167,118 @@ if __name__ == '__main__':
     print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
     
     # Plot average rainfall and original data
-    testplot(cats, avg2, xy, data) 
+    testplot(cats, avg3, xy, data) 
+    
+
+    # Plot the simple example
+    i = 100
+    fig = plt.figure()
+    ax = fig.add_subplot(111, aspect="equal")
+    # Grid cell patches
+    grd_patches = [patches.Polygon(item, True) for item in grdverts[obj3.ix[i]] ]
+    p = PatchCollection(grd_patches, facecolor="None", edgecolor="black")
+    ax.add_collection(p)
+    # Target polygon patches
+    trg_patches = [patches.Polygon(item, True) for item in [cats[i]] ]
+    p = PatchCollection(trg_patches, facecolor="None", edgecolor="red", linewidth=2)
+    ax.add_collection(p)
+    # Intersecting patches (THIS IS WHAT HAPPENS INSIDE GridCellsToPoly)
+    isecs = []
+    for item in grdverts[obj3.ix[i]]:
+        tmp = wradlib.zonalstats.intersect(item, cats[i])
+        if not tmp[0]==None:
+            isecs.append(tmp[0])
+    colors = 100*np.linspace(0,1.,len(isecs))
+    isec_patches = [patches.Polygon(item, True) for item in isecs ]
+    p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
+    p.set_array(np.array(colors))
+    ax.add_collection(p)
+    bbox = wradlib.zonalstats.get_bbox(cats[i][:,0], cats[i][:,1])
+    plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
+    plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
+    plt.draw()
     
 
     # Compare estimates
-    maxlim = np.max(np.concatenate((avg1, avg2)))
+    maxlim = np.max(np.concatenate((avg1, avg3)))
     fig = plt.figure(figsize=(14,8))
     ax = fig.add_subplot(111, aspect="equal")
-    plt.scatter(avg1, avg2, edgecolor="None", alpha=0.5)
+    plt.scatter(avg1, avg3, edgecolor="None", alpha=0.5)
     plt.xlabel("Average of points in or close to polygon (mm)")
     plt.ylabel("Area-weighted average (mm)")
     plt.xlim(0, maxlim)
     plt.ylim(0, maxlim)
     plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
     
+    ###########################################################################
+    # DUMP
+    ###########################################################################
 
+#    # First a simple (illustrative) example
+#    #   Create grid
+#    x = np.arange(0,6)
+#    y = np.arange(10,16)
+#    x, y = np.meshgrid(x,y)
+#    #   Build vertices from grid center points
+#    srcs = wradlib.zonalstats.grid_centers_to_vertices(x,y,1.,1.)
+#    #   Example polygon vertices
+#    trgs = np.array([ [[1.7,10.],
+#                          [3. , 9.8],
+#                          [3. , 12.],
+#                          [2. , 12.5],
+#                          [1.7, 10.]],
+#                       
+#                         [[4. , 11.],
+#                          [5. , 12.],
+#                          [5  , 14.8],
+#                          [4. , 15.],
+#                          [4. , 11.]],
+#
+#                         [[1. , 13.],
+#                          [2. , 13.],
+#                          [2. , 14.],
+#                          [1. , 14.],
+#                          [1. , 13.]],
+#
+#                         [[2.7, 13.7],
+#                          [3.3, 13.7],
+#                          [3.3, 14.3],
+#                          [2.7, 14.3],
+#                          [2.7, 13.7]] 
+#                    ])
+#    
+#    # Iterate over all target polygons
+#    intersecs, areas = [], []
+#    for trg in trgs:
+#        isecs_ = []
+#        areas_ = []
+#        for src in srcs:
+#            tmp = wradlib.zonalstats.intersect(src, trg)            
+#            if not tmp[0]==None:
+#                isecs_.append(tmp[0])
+#                areas_.append(tmp[1] )
+#        intersecs.append(np.array(isecs_))
+#        areas.append(np.array(areas_))
+#
+#                     
+#    # Plot the simple example
+#    fig = plt.figure()
+#    ax = fig.add_subplot(111, aspect="equal")
+#    # Grid cell patches
+#    grd_patches = [patches.Polygon(item, True) for item in srcs ]
+#    p = PatchCollection(grd_patches, facecolor="None", edgecolor="black")
+#    ax.add_collection(p)
+#    # Target polygon patches
+#    trg_patches = [patches.Polygon(item, True) for item in trgs ]
+#    p = PatchCollection(trg_patches, facecolor="None", edgecolor="red", linewidth=2)
+#    ax.add_collection(p)
+#    # Intersectin patches
+#    for isec in intersecs:
+#        colors = 100*np.linspace(0,1.,len(isec))
+#        isec_patches = [patches.Polygon(item, True) for item in isec ]
+#        p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
+#        p.set_array(np.array(colors))
+#        ax.add_collection(p)
+#    ax.set_xlim(-1,6)
+#    ax.set_ylim(9,16)
+#    plt.draw()
