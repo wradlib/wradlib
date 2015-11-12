@@ -32,5 +32,6 @@ import vpr
 ##from vpr import *
 import zr
 ##from zr import *
+import zonalstats
 import util
 ##from util import *
