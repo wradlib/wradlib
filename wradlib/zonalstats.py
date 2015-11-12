@@ -143,28 +143,37 @@ class GridPointsToPoly(ZonalStatsBase):
     
     Keyword arguments
     -----------------
-    buffer : 
+    buffer : float (same unit as coordiantes)
+             Points will be considered inside the target if they are contained in the buffer.
 
     """
     def get_weights(self, **kwargs):
         """
         """
         ix, w = [], []
-        for i in xrange( len(self.trg) ):
-            # Pre-selection to increase performance 
-            ix1 = subset_points(self.src, get_bbox(self.trg[i][:,0],self.trg[i][:,1]), buffer=kwargs["buffer"])
-            ix2 = ix1[points_in_polygon(self.trg[i], self.src[ix1,:], buffer=kwargs["buffer"])]
-            if len(ix2)==0:
+        for trg in self.trg:
+            # Pre-selection to increase performance
+            ix_ = self.get_points_in_target(trg, **kwargs)
+            if len(ix_)==0:
                 # No points in target polygon? Find the closest point to provide a value
-                #    Polygon centroid
-                centroid = get_centroid(self.trg[i])
-                tree = cKDTree(self.src)
-                distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
-                ix2 = np.array([ixnext])
-            w.append( np.ones(len(ix2)) / len(ix2 ) )
-            ix.append(ix2)
-        
+                ix_ = self.get_point_next_to_target(trg, **kwargs)
+            w.append( np.ones(len(ix_)) / len(ix_ ) )
+            ix.append(ix_)        
         return ix, w
+    def get_points_in_target(self, trg, **kwargs):
+        """Helper method that can also be used to return intermediary results.
+        """
+        # Pre-selection to increase performance 
+        ix1 = subset_points(self.src, get_bbox(trg[:,0],trg[:,1]), buffer=kwargs["buffer"])
+        ix2 = ix1[points_in_polygon(trg, self.src[ix1,:], buffer=kwargs["buffer"])]
+        return ix2
+    def get_point_next_to_target(self, trg, **kwargs):
+        """Computes the target centroid and finds the closest point from src.
+        """
+        centroid = get_centroid(trg)
+        tree = cKDTree(self.src)
+        distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
+        return np.array([ixnext])
 
 
 def polyg_to_ogr(vert):
