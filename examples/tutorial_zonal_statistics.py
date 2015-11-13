@@ -16,12 +16,15 @@ from matplotlib.colors import from_levels_and_colors
 import datetime as dt
 
    
-def testplot(cats, catsavg, xy, data):
+def testplot(cats, catsavg, xy, data, levels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100], title=""):
     """Quick test plot layout for this example file
     """
-    levels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100]
     colors = plt.cm.spectral(np.linspace(0,1,len(levels)) )    
     mycmap, mynorm = from_levels_and_colors(levels, colors, extend="max")
+
+    radolevels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100]
+    radocolors = plt.cm.spectral(np.linspace(0,1,len(radolevels)) )    
+    radocmap, radonorm = from_levels_and_colors(radolevels, radocolors, extend="max")
 
     fig = plt.figure(figsize=(14,8))
     # Average rainfall sum
@@ -31,14 +34,13 @@ def testplot(cats, catsavg, xy, data):
     ax.add_collection(coll)
     ax.autoscale()
     cb = plt.colorbar(coll, ax=ax, shrink=0.5)
-    cb.set_label("(mm/h)")
     plt.xlabel("GK4 Easting")
     plt.ylabel("GK4 Northing")
-    plt.title("Areal average rain sums")
+    plt.title(title)
     plt.draw()
     # Original RADOLAN data
     ax1 = fig.add_subplot(122, aspect="equal")
-    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=mycmap, norm=mynorm)
+    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=radocmap, norm=radonorm)
     wradlib.vis.add_lines(ax1, cats, color='white', lw=0.5)
     plt.xlim(ax.get_xlim())
     plt.ylim(ax.get_ylim())
@@ -104,8 +106,9 @@ if __name__ == '__main__':
 
     t2 = dt.datetime.now()
 
-    # Compute averages for target polygons
-    avg1 =  obj1( data_.ravel() )
+    # Compute stats for target polygons
+    avg1 =  obj1.mean( data_.ravel() )
+    var1 =  obj1.var( data_.ravel() )
 
     t3 = dt.datetime.now()
 
@@ -134,9 +137,9 @@ if __name__ == '__main__':
     plt.title("Catchment #%d: Points considered for stats" % i)
 
     # Plot average rainfall and original data
-    testplot(cats, avg1, xy, data)    
-
-    
+    testplot(cats, avg1, xy, data, title="Catchment rainfall mean (GridPointsToPoly)")
+    testplot(cats, var1, xy, data, levels = np.arange(0,4.2,0.2), title="Catchment rainfall variance (GridPointsToPoly)")    
+   
 
     ###########################################################################
     # Approach #2: Compute weighted mean based on fraction of source polygons in target polygons
@@ -158,8 +161,9 @@ if __name__ == '__main__':
 
     t2 = dt.datetime.now()
 
-    # Compute averages for target polygons
-    avg3 =  obj3( data_.ravel() )
+    # Compute stats for target polygons
+    avg3 =  obj3.mean( data_.ravel() )
+    var3 =  obj3.var( data_.ravel() )
 
     t3 = dt.datetime.now()
 
@@ -167,11 +171,12 @@ if __name__ == '__main__':
     print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
     
     # Plot average rainfall and original data
-    testplot(cats, avg3, xy, data) 
+    testplot(cats, avg3, xy, data, title="Catchment rainfall mean (GridCellsToPoly)")
+    testplot(cats, var3, xy, data, levels = np.arange(0,4.2,0.2), title="Catchment rainfall variance (GridCellsToPoly)")    
     
 
-    # Plot the simple example
-    i = 100
+    # Illustrate results for an example catchment i
+    i = 100 # try any index between 0 and 429 
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
     # Grid cell patches
@@ -182,14 +187,10 @@ if __name__ == '__main__':
     trg_patches = [patches.Polygon(item, True) for item in [cats[i]] ]
     p = PatchCollection(trg_patches, facecolor="None", edgecolor="red", linewidth=2)
     ax.add_collection(p)
-    # Intersecting patches (THIS IS WHAT HAPPENS INSIDE GridCellsToPoly)
-    isecs = []
-    for item in grdverts[obj3.ix[i]]:
-        tmp = wradlib.zonalstats.intersect(item, cats[i])
-        if not tmp[0]==None:
-            isecs.append(tmp[0])
-    colors = 100*np.linspace(0,1.,len(isecs))
+    # View the actual intersections 
+    isecs = obj3._get_intersection(cats[i])
     isec_patches = [patches.Polygon(item, True) for item in isecs ]
+    colors = 100*np.linspace(0,1.,len(isecs))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
     p.set_array(np.array(colors))
     ax.add_collection(p)
