@@ -54,7 +54,7 @@ class ZonalStatsBase():
     
     .. versionadded:: 0.7.0
 
-    The base class for computing 2-dimensional zonal average for target 
+    The base class for computing 2-dimensional zonal statistics for target 
     polygons from source points or polygons. Provides the basic design 
     for all other classes.
 
@@ -89,9 +89,9 @@ class ZonalStatsBase():
         """
         assert len(vals)==len(self.src), "Argment vals must be of length %d" % len(self.src)
         return vals
-    def __call__(self, vals):
+    def mean(self, vals):
         """
-        Evaluate zonal statistics for values given at the source points.
+        Evaluate (weighted) zonal mean for values given at the source points.
 
         Parameters
         ----------
@@ -100,7 +100,21 @@ class ZonalStatsBase():
 
         """
         self._check_vals(vals)
-        return np.array( [np.sum( vals[self.ix[i]] * self.w[i]) for i in xrange(len(self.trg))] )
+#        return np.array( [np.sum( vals[self.ix[i]] * self.w[i]) for i in xrange(len(self.trg))] )
+        return np.array( [np.average( vals[self.ix[i]], weights=self.w[i] ) for i in xrange(len(self.trg))] )
+    def var(self, vals):
+        """
+        Evaluate (weighted) zonal variance for values given at the source points.
+
+        Parameters
+        ----------
+        vals : 1-d ndarray of type float with the same length as self.src
+            Values at the source element for which to compute zonal statistics
+
+        """
+        self._check_vals(vals)
+        mean = self.mean(vals)
+        return np.array( [np.average( (vals[self.ix[i]] - mean[i])**2, weights=self.w[i] ) for i in xrange(len(self.trg))] )
         
 
 class GridCellsToPoly(ZonalStatsBase):
@@ -122,13 +136,26 @@ class GridCellsToPoly(ZonalStatsBase):
         
         ix, w = [], []
         for i in xrange( len(self.trg) ):
-            # Pre-select grid vertices to increase performance
             ix_ = could_intersect(self.src, self.trg[i])
             areas = np.array([ intersect(ogr_src, ogr_trgs[i])[1] for ogr_src in ogr_srcs[ix_] ])
             w.append(areas / np.sum(areas))
             ix.append(ix_)
         
         return ix, w
+    def _get_intersection(self, trg, **kwargs):
+        """Just a toy function if you want to inspect the intersection polygons of a specific target.
+        """
+        ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        ogr_trg  = polyg_to_ogr(trg)
+        ix = could_intersect(self.src, trg)
+        intersecs = []
+        for ogr_src in ogr_srcs[ix]:
+            tmp = intersect(ogr_src, ogr_trg)[0]
+            if not tmp==None:
+                intersecs.append( tmp )
+        return intersecs
+
+
             
 
 class GridPointsToPoly(ZonalStatsBase):
