@@ -61,6 +61,9 @@ class ZonalStatsBase():
     The base class for computing 2-dimensional zonal statistics for target
     polygons from source points or polygons. Provides the basic design
     for all other classes.
+    
+    If no source points or polygons can be associated to a target polygon (e.g.
+    no intersection), the zonal statistic for that target will be NaN.
 
     Parameters
     ----------
@@ -73,20 +76,30 @@ class ZonalStatsBase():
         self.src = self._check_src(src)
         self.trg = self._check_trg(trg)
         self.ix, self.w = self.get_weights(**kwargs)
+        self.isempty = self.check_empty()
     def get_weights(self, **kwargs):
         """This is the key method that needs to be filled for any inheriting class.
         """
         pass
+    def check_empty(self):
+        """
+        """
+        isempty = np.repeat(False, len(self.w))
+        for i, weights in enumerate(self.w):
+            if np.sum(weights)==0 or np.isnan(np.sum(weights)):
+                isempty[i] = True
+        return isempty
+        
     def _check_src(self, src):
         """TODO Basic check of source elements (sequence of points or polygons).
 
         """
-        return src
+        return np.array(src)
     def _check_trg(self, trg):
         """TODO Basic check of target elements (sequence of polygons).
 
         """
-        return trg
+        return np.array(trg)
     def _check_vals(self, vals):
         """TODO Basic check of target elements (sequence of polygons).
 
@@ -105,7 +118,11 @@ class ZonalStatsBase():
 
         """
         self._check_vals(vals)
-        return np.array( [np.average( vals[self.ix[i]], weights=self.w[i] ) for i in xrange(len(self.trg))] )
+        out = np.zeros(len(self.trg))*np.nan
+        out[~self.isempty] =  np.array( [np.average( vals[self.ix[i]], weights=self.w[i] ) \
+                                        for i in np.arange(len(self.trg))[~self.isempty]] )
+        return out
+            
 
     def var(self, vals):
         """
@@ -119,7 +136,10 @@ class ZonalStatsBase():
         """
         self._check_vals(vals)
         mean = self.mean(vals)
-        return np.array( [np.average( (vals[self.ix[i]] - mean[i])**2, weights=self.w[i]) for i in xrange(len(self.trg))] )
+        out = np.zeros(len(self.trg))*np.nan
+        out[~self.isempty] = np.array( [np.average( (vals[self.ix[i]] - mean[i])**2, weights=self.w[i]) \
+                                       for i in np.arange(len(self.trg))[~self.isempty]] )
+        return out
 
 
 class PolarGridCellsToPoly(ZonalStatsBase):
@@ -346,7 +366,7 @@ def intersect(src, trg):
     if not type(src) == ogr.Geometry:
         src = polyg_to_ogr(src)
     isec = trg.Intersection(src)
-    if isec.GetGeometryName()=="POLYGON":
+    if isec.GetGeometryName() in ["POLYGON", "MULTIPOLYGON"]:
         return ogr_to_polyg(isec), isec.Area()
     else:
         return None, 0.
