@@ -168,7 +168,6 @@ class PolarGridCellsToPoly(ZonalStatsBase):
         ix, w = [], []
         for i in range(len(self.trg)):
 
-            t1 = dt.datetime.now()
             # precalculate points within convex hull to speed things up
             pip_hull = points_in_polygon(list(georef.get_shape_points(ogr_trgs[i].ConvexHull()))[0], src_)
 
