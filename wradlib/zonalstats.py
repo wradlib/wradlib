@@ -72,15 +72,55 @@ class ZonalStatsBase():
 
     """
 
-    def __init__(self, src, trg, **kwargs):
+    #def __init__(self, src, trg=None, idx=None, weights=None, **kwargs):
+    def __init__(self, src, trg=None, ix=None, w=None, **kwargs):
         self.src = self._check_src(src)
-        self.trg = self._check_trg(trg)
-        self.ix, self.w = self.get_weights(**kwargs)
-        self.isempty = self.check_empty()
-    def get_weights(self, **kwargs):
+        self.ogr_srcs = None
+        self.ogr_srcs_area = None
+        self._ix = []
+        self._w = []
+
+        if trg is not None:
+            for i, item in enumerate(trg):
+                self.add_target(item, **kwargs)
+        else:
+            if ix is not None:
+                if w is not None:
+                    for _ix, _w in zip(ix,w):
+                        self.add_idx_weights(_ix, _w)
+                else:
+                    print("ix and w are complementary parameters and must both be given")
+                    raise TypeError
+
+    def add_target(self, trg, **kwargs):
+        ix, w = self.get_weights(trg, **kwargs)
+        self.add_idx_weights(ix, w)
+
+    def add_idx_weights(self, ix, w):
+        self.ix = self.ix + [ix]
+        self.w = self.w + [w]
+
+    @property
+    def ix(self):
+        return self._ix
+
+    @ix.setter
+    def ix(self, value):
+        self._ix = value
+
+    @property
+    def w(self):
+        return self._w
+
+    @w.setter
+    def w(self, value):
+        self._w = value
+
+    def get_weights(self, trg, **kwargs):
         """This is the key method that needs to be filled for any inheriting class.
         """
         pass
+
     def check_empty(self):
         """
         """
@@ -118,9 +158,10 @@ class ZonalStatsBase():
 
         """
         self._check_vals(vals)
-        out = np.zeros(len(self.trg))*np.nan
+        self.isempty = self.check_empty()
+        out = np.zeros(len(self.ix))*np.nan
         out[~self.isempty] =  np.array( [np.average( vals[self.ix[i]], weights=self.w[i] ) \
-                                        for i in np.arange(len(self.trg))[~self.isempty]] )
+                                        for i in np.arange(len(self.ix))[~self.isempty]] )
         return out
             
 
@@ -136,9 +177,9 @@ class ZonalStatsBase():
         """
         self._check_vals(vals)
         mean = self.mean(vals)
-        out = np.zeros(len(self.trg))*np.nan
+        out = np.zeros(len(self.ix))*np.nan
         out[~self.isempty] = np.array( [np.average( (vals[self.ix[i]] - mean[i])**2, weights=self.w[i]) \
-                                       for i in np.arange(len(self.trg))[~self.isempty]] )
+                                       for i in np.arange(len(self.ix))[~self.isempty]] )
         return out
 
 
@@ -153,59 +194,83 @@ class PolarGridCellsToPoly(ZonalStatsBase):
     trg : sequence of target polygons - each item is an ndarray of shape (num vertices, 2)
 
     """
-    def get_weights(self, **kwargs):
+    def get_weights(self, trg, **kwargs):
         """
         """
-        ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
-        ogr_trgs = np.array([polyg_to_ogr(item) for item in self.trg])
+        if self.ogr_srcs is None:
+            self.ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        if self.ogr_srcs_area is None:
+            # precalculate areas
+            self.ogr_srcs_area = np.array([item.Area() for item in self.ogr_srcs])
 
-        # precalculate areas
-        ogr_srcs_area = np.array([item.Area() for item in ogr_srcs])
+        ogr_trgs = polyg_to_ogr(trg)
+
+        #ogr_srcs_area = np.array([item.Area() for item in ogr_srcs])
 
         # reshape source array to comply with `contains_points()`-function
         src_ = self.src.reshape((-1,2), order='F')
 
-        ix, w = [], []
-        for i in range(len(self.trg)):
+        #ix, w = [], []
+        #for i in range(len(self.trg)):
+        #print("Target Polygon:", i)
 
-            # precalculate points within convex hull to speed things up
-            pip_hull = points_in_polygon(list(georef.get_shape_points(ogr_trgs[i].ConvexHull()))[0], src_)
+        # precalculate points within convex hull to speed things up
+        pip_hull = points_in_polygon(list(georef.get_shape_points(ogr_trgs.ConvexHull()))[0], src_)
 
-            # calculate points within full polygon indexing with convex hull points
-            pip_trg = np.zeros(pip_hull.shape)
-            pip_trg[pip_hull] = points_in_polygon(list(georef.get_shape_points(ogr_trgs[i]))[0], src_[pip_hull,:])
+        # calculate points within full polygon indexing with convex hull points
+        # for the test data set this slows things down, so it's commented out for the time being
+        #pip_trg = np.zeros(pip_hull.shape)
+        #pip_trg[pip_hull] = points_in_polygon(list(georef.get_shape_points(ogr_trgs[i]))[0], src_[pip_hull,:])
 
-            # reshape to get src poly points as first axis
-            pip_trg = pip_trg.reshape((5, -1))
+        # reshape to get src poly points as first axis
+        #pip_trg = pip_trg.reshape((5, -1))
+        pip_trg = pip_hull.reshape((5, -1))
 
-            # get indices from `any` and `all` source polygon points contained
-            # in target polygon
-            ix0_ = np.where(np.any(pip_trg, axis=0) == True)[0]
-            ix2_ = np.where(np.all(pip_trg, axis=0) == True)[0]
+        # get indices from `any` and `all` source polygon points contained
+        # in target polygon
+        ix0_ = np.where(np.any(pip_trg, axis=0) == True)[0]
+        ix2_ = np.where(np.all(pip_trg, axis=0) == True)[0]
 
-            # get indices of source polygons which are not fully contained
-            # in target polygon
-            ix1_ = np.setdiff1d(ix0_, ix2_, assume_unique=True)
+        # get indices of source polygons which are not fully contained
+        # in target polygon
+        ix1_ = np.setdiff1d(ix0_, ix2_, assume_unique=True)
 
-            # calculate intersection area
-            areas = np.array([intersect(ogr_src, ogr_trgs[i])[1] for ogr_src in ogr_srcs[ix1_]])
+        # calculate intersection area
+        areas = np.array([intersect(ogr_src, ogr_trgs)[1] for ogr_src in self.ogr_srcs[ix1_]])
 
-            # fetch precalculated areas and append
-            areas = np.append(areas, ogr_srcs_area[ix2_])
+        # fetch precalculated areas and append
+        areas = np.append(areas, self.ogr_srcs_area[ix2_])
 
-            w.append(areas / np.sum(areas))
-            ix.append(np.append(ix1_, ix2_))
+        w = areas / np.sum(areas)
+        ix = np.append(ix1_, ix2_)
 
         return ix, w
 
     def _get_intersection(self, trg, **kwargs):
         """Just a toy function if you want to inspect the intersection polygons of a specific target.
         """
-        ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        if self.ogr_srcs is None:
+            self.ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+            #ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
         ogr_trg  = polyg_to_ogr(trg)
         ix = could_intersect(self.src, trg)
         intersecs = []
-        for ogr_src in ogr_srcs[ix]:
+        for ogr_src in self.ogr_srcs[ix]:
+            tmp = intersect(ogr_src, ogr_trg)[0]
+            if not tmp==None:
+                intersecs.append( tmp )
+        return intersecs
+
+    def _get_intersection_by_idx(self, trg, idx, **kwargs):
+        """Just a toy function if you want to inspect the intersection polygons of a specific target.
+        """
+        if self.ogr_srcs is None:
+            self.ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+            #ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        ogr_trg  = polyg_to_ogr(trg)
+        ix = self.ix[idx]#could_intersect(self.src, trg)
+        intersecs = []
+        for ogr_src in self.ogr_srcs[ix]:
             tmp = intersect(ogr_src, ogr_trg)[0]
             if not tmp==None:
                 intersecs.append( tmp )
@@ -223,29 +288,46 @@ class GridCellsToPoly(ZonalStatsBase):
     trg : sequence of target polygons - each item is an ndarray of shape (num vertices, 2)
 
     """
-    def get_weights(self, **kwargs):
+    def get_weights(self, trg, **kwargs):
         """
         """
-        ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
-        ogr_trgs = np.array([polyg_to_ogr(item) for item in self.trg])
+        if self.ogr_srcs is None:
+            self.ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        ogr_trgs = polyg_to_ogr(trg)
 
-        ix, w = [], []
-        for i in xrange( len(self.trg) ):
-            ix_ = could_intersect(self.src, self.trg[i])
-            areas = np.array([intersect(ogr_src, ogr_trgs[i])[1] for ogr_src in ogr_srcs[ix_]])
-            w.append(areas / np.sum(areas))
-            ix.append(ix_)
+        #ix, w = [], []
+        #for i in xrange( len(self.trg) ):
+        ix_ = could_intersect(self.src, trg)
+        areas = np.array([intersect(ogr_src, ogr_trgs)[1] for ogr_src in self.ogr_srcs[ix_]])
+        w = areas / np.sum(areas)
 
-        return ix, w
+        return ix_, w
 
     def _get_intersection(self, trg, **kwargs):
         """Just a toy function if you want to inspect the intersection polygons of a specific target.
         """
-        ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        if self.ogr_srcs is None:
+            self.ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+            #ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
         ogr_trg  = polyg_to_ogr(trg)
         ix = could_intersect(self.src, trg)
         intersecs = []
-        for ogr_src in ogr_srcs[ix]:
+        for ogr_src in self.ogr_srcs[ix]:
+            tmp = intersect(ogr_src, ogr_trg)[0]
+            if not tmp==None:
+                intersecs.append( tmp )
+        return intersecs
+
+    def _get_intersection_by_idx(self, trg, idx, **kwargs):
+        """Just a toy function if you want to inspect the intersection polygons of a specific target.
+        """
+        if self.ogr_srcs is None:
+            self.ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+            #ogr_srcs = np.array([polyg_to_ogr(item) for item in self.src])
+        ogr_trg  = polyg_to_ogr(trg)
+        ix = self.ix[idx]#could_intersect(self.src, trg)
+        intersecs = []
+        for ogr_src in self.ogr_srcs[ix]:
             tmp = intersect(ogr_src, ogr_trg)[0]
             if not tmp==None:
                 intersecs.append( tmp )
@@ -268,30 +350,28 @@ class GridPointsToPoly(ZonalStatsBase):
              Points will be considered inside the target if they are contained in the buffer.
 
     """
-    def get_weights(self, **kwargs):
+    def get_weights(self, trg, **kwargs):
         """
         """
-        ix, w = [], []
-        for trg in self.trg:
-            # Pre-selection to increase performance
-            ix_ = self.get_points_in_target(trg, **kwargs)
-            if len(ix_)==0:
-                # No points in target polygon? Find the closest point to provide a value
-                ix_ = self.get_point_next_to_target(trg, **kwargs)
-            w.append( np.ones(len(ix_)) / len(ix_ ) )
-            ix.append(ix_)
-        return ix, w
+        # Pre-selection to increase performance
+        ix_ = self.get_points_in_target(trg, **kwargs)
+        if len(ix_)==0:
+            # No points in target polygon? Find the closest point to provide a value
+            ix_ = self.get_point_next_to_target(trg, **kwargs)
+        w = np.ones(len(ix_)) / len(ix_ )
+        return ix_, w
 
     def get_points_in_target(self, trg, **kwargs):
         """Helper method that can also be used to return intermediary results.
         """
-        if kwargs.get('polar', False):
-            # Pre-selection to increase performance
-            ix1 = subset_points(self.src, get_bbox(trg[:,0],trg[:,1]), buffer=kwargs["buffer"])
-            ix2 = ix1[points_in_polygon(trg, self.src[ix1,:], buffer=kwargs["buffer"])]
+        buffer = kwargs.get('buffer', 0.)
+        polar = kwargs.get('polar', False)
+        if polar:
+            ix2 = np.where(points_in_polygon(trg, self.src, buffer=buffer))[0]
         else:
-            ix2 = np.where(points_in_polygon(trg, self.src, buffer=kwargs["buffer"]))[0]
-
+            # Pre-selection to increase performance
+            ix1 = subset_points(self.src, get_bbox(trg[:,0],trg[:,1]), buffer=buffer)
+            ix2 = ix1[points_in_polygon(trg, self.src[ix1,:], buffer=buffer)]
         return ix2
 
     def get_point_next_to_target(self, trg, **kwargs):

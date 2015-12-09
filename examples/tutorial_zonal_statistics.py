@@ -42,8 +42,8 @@ def testplot(cats, catsavg, xy, data, levels = [0,1,2,3,4,5,10,15,20,25,30,40,50
     ax1 = fig.add_subplot(122, aspect="equal")
     pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=radocmap, norm=radonorm)
     wradlib.vis.add_lines(ax1, cats, color='white', lw=0.5)
-    plt.xlim(ax.get_xlim())
-    plt.ylim(ax.get_ylim())
+    #plt.xlim(ax.get_xlim())
+    #plt.ylim(ax.get_ylim())
     cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
     cb.set_label("(mm/h)")
     plt.xlabel("GK4 Easting")
@@ -65,20 +65,26 @@ if __name__ == '__main__':
 
     # create Gauss Krueger zone 4 projection osr object
     proj_gk = osr.SpatialReference()
-    proj_gk.ImportFromEPSG(31468)
+    #proj_gk.ImportFromEPSG(31468)
+    #proj_gk.ImportFromEPSG(31492)
+    #proj_gk.ImportFromEPSG(31466)
+    proj_gk.ImportFromEPSG(31466)
 
-    # transform radolan polar stereographic projection to GK4
+    # transform rado
+    # lan polar stereographic projection to GK4
     xy = wradlib.georef.reproject(grid_xy_radolan,
                                   projection_source=proj_stereo,
                                   projection_target=proj_gk)
 
     # Open shapefile (already in GK4)
-    shpfile = "data/freiberger_mulde/freiberger_mulde.shp"
+    #shpfile = "data/freiberger_mulde/freiberger_mulde.shp"
+    shpfile = "data/agger/agger_merge.shp"
     dataset, inLayer = wradlib.io.open_shape(shpfile)
-    cats, keys = wradlib.georef.get_shape_coordinates(inLayer, key='GWKZ')
+    cats, keys = wradlib.georef.get_shape_coordinates(inLayer)#, key='GWKZ')
 
     # Read and prepare the actual data (RADOLAN)
-    f = "data/radolan/raa01-sf_10000-1305280050-dwd---bin.gz"
+    f = "/local/kai/daten/SF201406/raa01-sf_10000-1406100050-dwd---bin.gz"
+    #f = "data/radolan/raa01-sf_10000-1305280050-dwd---bin.gz"
     data, attrs = wradlib.io.read_RADOLAN_composite(f, missing=np.nan)
     sec = attrs['secondary']
     data.flat[sec] = np.nan
@@ -119,7 +125,7 @@ if __name__ == '__main__':
     obj2 = wradlib.zonalstats.GridPointsToPoly(xy_, cats, buffer=0.)    
 
     # Illustrate results for an example catchment i
-    i = 100 # try e.g. 48, 100 
+    i = 6 # try e.g. 48, 100
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
     # Target polygon patches
@@ -176,7 +182,7 @@ if __name__ == '__main__':
     
 
     # Illustrate results for an example catchment i
-    i = 100 # try any index between 0 and 429 
+    i = 6 # try any index between 0 and 429
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
     # Grid cell patches
@@ -189,7 +195,7 @@ if __name__ == '__main__':
     ax.add_collection(p)
     # View the actual intersections 
     isecs = obj3._get_intersection(cats[i])
-    isec_patches = [patches.Polygon(item, True) for item in isecs ]
+    isec_patches = [patches.Polygon(np.squeeze(item), True) for item in isecs ]
     colors = 100*np.linspace(0,1.,len(isecs))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
     p.set_array(np.array(colors))
@@ -210,7 +216,7 @@ if __name__ == '__main__':
     plt.xlim(0, maxlim)
     plt.ylim(0, maxlim)
     plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
-    
+    plt.show()
     ###########################################################################
     # DUMP
     ###########################################################################
