@@ -2015,24 +2015,15 @@ def read_raster_data(filename, driver=None, **kwargs):
     """
 
     dataset = open_raster(filename, driver=driver)
-    #ds = gdal.Open(filename)
-    #if driver:
-    #    gdal.GetDriverByName(driver)
-
-    #print("Raster:", ds.RasterXSize, ds.RasterYSize, ds.GetGeoTransform())
 
     if 'spacing' in kwargs or 'size' in kwargs:
-        datatset1 = georef.resample_raster_dataset(dataset, **kwargs)
+        dataset1 = georef.resample_raster_dataset(dataset, **kwargs)
     else:
         dataset1 = dataset
-
-    #print("Raster:", ds1.RasterXSize, ds1.RasterYSize, ds1.GetGeoTransform())
-    #print(ds1)
 
     # we have to flipud data, because raster data is origin "upper left"
     values = np.flipud(georef.read_gdal_values(dataset1))
     coords = np.flipud(georef.read_gdal_coordinates(dataset1, mode='centers', z=False))
-    #print(values, coords)
 
     # close dataset
     dataset1 = None
