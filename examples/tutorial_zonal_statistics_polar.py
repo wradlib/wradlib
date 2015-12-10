@@ -5,10 +5,7 @@ Created on Wed Aug 26 09:05:48 2015
 @author: k.muehlbauer
 """
 
-import os
-import glob
-
-from osgeo import osr, ogr
+from osgeo import osr
 import wradlib
 import pylab as plt
 import numpy as np
@@ -17,7 +14,6 @@ from matplotlib.collections import PolyCollection
 from matplotlib.collections import PatchCollection
 from matplotlib.colors import from_levels_and_colors
 import datetime as dt
-import scipy as sp
 
 
 def testplot(cats, catsavg, xy, data, levels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100], title=""):
