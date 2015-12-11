@@ -1314,10 +1314,7 @@ def get_RB_blob_data(datastring, blobid):
     xmltodict = util.import_optional('xmltodict')
 
     start = 0
-    if sys.version_info[1] == 6:
-        searchString = r'<BLOB blobid="{0}"'.format(blobid)
-    else:
-        searchString = r'<BLOB blobid="{}"'.format(blobid)
+    searchString = r'<BLOB blobid="{0}"'.format(blobid)
     start = datastring.find(searchString, start)
     if start == -1:
         raise EOFError('Blob ID {} not found!'.format(blobid))
