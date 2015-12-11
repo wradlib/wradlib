@@ -1317,7 +1317,7 @@ def get_RB_blob_data(datastring, blobid):
     searchString = r'<BLOB blobid="{0}"'.format(blobid)
     start = datastring.find(searchString, start)
     if start == -1:
-        raise EOFError('Blob ID {} not found!'.format(blobid))
+        raise EOFError('Blob ID {0} not found!'.format(blobid))
     end = datastring.find('>', start)
     xmlstring = datastring[start:end + 1]
 
