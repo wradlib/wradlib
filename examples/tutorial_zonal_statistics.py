@@ -122,7 +122,7 @@ if __name__ == '__main__':
     print "Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
     
     # Just a test for plotting results with zero buffer
-    obj2 = wradlib.zonalstats.GridPointsToPoly(xy_, cats, buffer=0.)    
+    obj2 = wradlib.zonalstats.GridPointsToPoly(xy_, cats, buffer=0.)
 
     # Illustrate results for an example catchment i
     i = 6 # try e.g. 48, 100
@@ -195,16 +195,6 @@ if __name__ == '__main__':
     ax.add_collection(p)
     # View the actual intersections 
     isecs = obj3._get_intersection(cats[i])
-    polys = []
-    for item in isecs:
-        if len(item) == 1:
-            polys.append(np.squeeze(item))
-            #print("normal", type(item), len(item), item.shape)
-        else:
-            for k in item:
-                polys.append(np.squeeze(k))
-                #print("multi", type(i), len(i), np.array(i[0]).shape)
-    isecs = polys
     isec_patches = [patches.Polygon(item, True) for item in isecs ]
     colors = 100*np.linspace(0,1.,len(isecs))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)

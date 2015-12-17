@@ -10,6 +10,7 @@ import wradlib
 import pylab as plt
 import numpy as np
 import matplotlib.patches as patches
+from matplotlib.path import Path
 from matplotlib.collections import PolyCollection
 from matplotlib.collections import PatchCollection
 from matplotlib.colors import from_levels_and_colors
@@ -93,8 +94,6 @@ def ex_tutorial_zonal_statistics_polar():
 
     data, attrib = wradlib.io.from_hdf5('data/rainsum_boxpol_20140609.h5')
 
-    print(data.shape)
-
     # get Lat, Lon, range, azimuth, rays, bins out of radar data
     lat1 = attrib['Latitude']
     lon1 = attrib['Longitude']
@@ -103,19 +102,6 @@ def ex_tutorial_zonal_statistics_polar():
 
     rays = a1.shape[0]
     bins = r1.shape[0]
-
-    x = np.linspace(-5, 5, 360)
-    y = np.linspace(-5, 5, 1000)
-    azimuths = np.radians(np.linspace(0, 360))
-    zeniths = np.arange(0, 70, 1000)
-    print(azimuths.shape, zeniths.shape)
-    r, theta = np.meshgrid(zeniths, azimuths)
-    values = np.random.random((azimuths.size, zeniths.size))
-    print(r.shape, theta.shape, values.shape)
-
-    #print(data.min(), data.max())
-    #print(data.shape)
-    #exit(9)
 
     # create polar grid polygon vertices in lat,lon
     radar_ll = wradlib.georef.polar2polyvert(r1, a1, (lon1, lat1))
@@ -141,18 +127,12 @@ def ex_tutorial_zonal_statistics_polar():
     shpfile = 'data/agger/agger_merge.shp'
     dataset, inLayer = wradlib.io.open_shape(shpfile)
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
-    print(list(cats)[0].shape)
     box = np.array([[2600000., 5630000.],[2600000., 5640000.],
                     [2610000., 5640000.],[2610000., 5630000.],
                     [2600000., 5630000.]])
-    print(box.shape)
-    print(cats)
     l = list(cats)
-    print(len(l))
     l.append(box)
-    print(len(l))
     cats = np.array(l)
-    print(cats)
     bbox = inLayer.GetExtent()
 
     # create catchment bounding box
@@ -179,7 +159,7 @@ def ex_tutorial_zonal_statistics_polar():
     if True:
 
         t1 = dt.datetime.now()
-
+        print(radar_gkc_.shape)
         # Create instances of type GridPointsToPoly (one instance for each target polygon)
         obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500., polar=True)
 
@@ -198,7 +178,7 @@ def ex_tutorial_zonal_statistics_polar():
         obj2 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=0., polar=True)
 
         # Illustrate results for an example catchment i
-        i = 1 # try e.g. 6, 12
+        i = 0 # try e.g. 6, 12
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect="equal")
         # Target polygon patches
@@ -230,7 +210,7 @@ def ex_tutorial_zonal_statistics_polar():
 
     t1 = dt.datetime.now()
     # Create instances of type GridCellsToPoly (one instance for each target polygon)
-    obj3 = wradlib.zonalstats.PolarGridCellsToPoly(radar_gk_, cats, shape=shape)
+    obj3 = wradlib.zonalstats.GridCellsToPoly(radar_gk_, cats)#, buffer=0.)
 
     t2 = dt.datetime.now()
 
@@ -250,7 +230,7 @@ def ex_tutorial_zonal_statistics_polar():
 
 
     # Illustrate results for an example catchment i
-    i = 1 # try any index between 0 and 12
+    i = 0 # try any index between 0 and 12
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
     # Grid cell patches
@@ -264,23 +244,11 @@ def ex_tutorial_zonal_statistics_polar():
     ax.add_collection(p)
     # View the actual intersections
     t1 = dt.datetime.now()
-    #isecs = obj3._get_intersection(cats[i])
-    isecs = obj3._get_intersection_by_idx(cats[i], i)
+    isecs = obj3._get_intersection(cats[i])
     t2 = dt.datetime.now()
     print "plot intersection takes: %f seconds" % (t2 - t1).total_seconds()
 
-    # this should be reworked and put into zonalstats or util
-    # should be directly implemented within _get_intersection functions
-    def traverse_list(l):
-        if len(l) == 1:
-            result = np.array(l[0])
-            yield result
-        else:
-            for sub in l:
-                for result in traverse_list(sub):
-                    yield result
-
-    isec_patches = [patches.Polygon(item, True) for item in traverse_list(isecs)]
+    isec_patches = [patches.Polygon(item) for item in isecs]
     colors = 100*np.linspace(0,1.,len(isec_patches))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
     p.set_array(np.array(colors))
