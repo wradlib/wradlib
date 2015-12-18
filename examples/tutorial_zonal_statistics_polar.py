@@ -162,7 +162,8 @@ def ex_tutorial_zonal_statistics_polar():
         print(radar_gkc_.shape)
         # Create instances of type GridPointsToPoly (one instance for each target polygon)
         obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500., polar=True)
-
+        obj1.dump_ogr_trg('test_zonal_gp')
+        #obj1.dump_ogr('test_points.shp')
         t2 = dt.datetime.now()
 
         # Compute stats for target polygons
@@ -209,8 +210,13 @@ def ex_tutorial_zonal_statistics_polar():
 
 
     t1 = dt.datetime.now()
+    #grid_ds, grid_lyr = wradlib.io.open_shape('test_polys.shp')
     # Create instances of type GridCellsToPoly (one instance for each target polygon)
     obj3 = wradlib.zonalstats.GridCellsToPoly(radar_gk_, cats)#, buffer=0.)
+    #obj3.dump_ogr('test_polys.shp')
+    #obj3.dump_ogr_trg('test_zonal')
+    #obj3 = wradlib.zonalstats.ShapeToPoly('test_zonal')
+
 
     t2 = dt.datetime.now()
 
@@ -259,15 +265,15 @@ def ex_tutorial_zonal_statistics_polar():
     plt.draw()
 
     # Compare estimates
-    maxlim = np.max(np.concatenate((avg1, avg3)))
-    fig = plt.figure(figsize=(14,8))
-    ax = fig.add_subplot(111, aspect="equal")
-    plt.scatter(avg1, avg3, edgecolor="None", alpha=0.5)
-    plt.xlabel("Average of points in or close to polygon (mm)")
-    plt.ylabel("Area-weighted average (mm)")
-    plt.xlim(0, maxlim)
-    plt.ylim(0, maxlim)
-    plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
+    #maxlim = np.max(np.concatenate((avg1, avg3)))
+    #fig = plt.figure(figsize=(14,8))
+    #ax = fig.add_subplot(111, aspect="equal")
+    #plt.scatter(avg1, avg3, edgecolor="None", alpha=0.5)
+    #plt.xlabel("Average of points in or close to polygon (mm)")
+    #plt.ylabel("Area-weighted average (mm)")
+    #plt.xlim(0, maxlim)
+    #plt.ylim(0, maxlim)
+    #plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
     plt.show()
 
 # =======================================================
