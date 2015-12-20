@@ -161,9 +161,10 @@ def ex_tutorial_zonal_statistics_polar():
         t1 = dt.datetime.now()
         print(radar_gkc_.shape)
         # Create instances of type GridPointsToPoly (one instance for each target polygon)
-        obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500., polar=True)
-        obj1.dump_ogr_trg('test_zonal_gp')
+        #obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500., polar=True)
+        #obj1.dump_ogr_trg('test_zonal_gp')
         #obj1.dump_ogr('test_points.shp')
+        obj1 = wradlib.zonalstats.ShapeToPoly('test_zonal_gp')
         t2 = dt.datetime.now()
 
         # Compute stats for target polygons
