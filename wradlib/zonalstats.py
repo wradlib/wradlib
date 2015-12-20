@@ -70,11 +70,12 @@ class ZonalStatsBase():
     each item is an ndarray of shape (num vertices, 2) or an ogr.polygon geometry
 
     """
-    def __init__(self, src, trg=None, ix=None, w=None, **kwargs):
+    def __init__(self, src, trg=None, ix=None, w=None, buffer=0., **kwargs):
         self.src = self._check_src(src, **kwargs)
         self._ix = []
         self._w = []
         self._trg = []
+        self._buffer = buffer
 
         self.trg = self._check_trg(trg, **kwargs)
         if self.trg is None:
@@ -126,28 +127,37 @@ class ZonalStatsBase():
         del trg_ds, trg_lyr
 
     def dump_ogr_trg(self, filename):
-        drv1 = ogr.GetDriverByName('ESRI Shapefile')
-        drv2 = ogr.GetDriverByName( 'Memory' )
-        dst_ds1 = drv2.CreateDataSource( 'out' )
+        # create output file datasource
+        drv_out = ogr.GetDriverByName('ESRI Shapefile')
         if os.path.exists(filename):
-            drv1.DeleteDataSource(filename)
-        dst_ds = drv1.CreateDataSource(filename)
-        # copy src layer
+            drv_out.DeleteDataSource(filename)
+        ds_out = drv_out.CreateDataSource(filename)
+
+        # create intermediate mem datasource
+        drv_mem = ogr.GetDriverByName( 'Memory' )
+        ds_mem = drv_mem.CreateDataSource( 'out' )
+
+        # get and copy src geometry layer
         src_lyr = self.ogr_src.GetLayer()
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)
-        dst_src_lyr = dst_ds.CopyLayer(src_lyr, 'src_grid')
+        dst_src_lyr = ds_out.CopyLayer(src_lyr, 'src_grid')
         gtype = dst_src_lyr.GetGeomType()
 
-        #print("TEst:", self.trg)
-        lyr = self.trg.GetLayer()
-        lyr.ResetReading()
+        # get and copy target polygon layer
+        trg_lyr = self.trg.GetLayer()
+        trg_lyr.ResetReading()
+        dst_src_lyr = ds_out.CopyLayer(trg_lyr, 'trg_poly')
 
-        for index, trg_geom in enumerate(lyr):
+        # iterate over target polygon layer and create intermediate trg layers
+        # containing involved src polygons atrributet with their respective src index and
+        # weight
+        # this could also
+        for index, trg_geom in enumerate(trg_lyr):
             src_lyr.ResetReading()
-            src_lyr.SetSpatialFilter(trg_geom.GetGeometryRef())
+            src_lyr.SetSpatialFilter(trg_geom.GetGeometryRef().Buffer(self._buffer))
             # create target layer
-            dst_trg_lyr = dst_ds1.CreateLayer('trg_{0}'.format(index), geom_type=gtype)
+            dst_trg_lyr = ds_mem.CreateLayer('trg_{0}'.format(index), geom_type=gtype)
             # create layer fields
             fields = {'index': ogr.OFTInteger, 'weight': ogr.OFTReal}
             for fname, fvalue in fields.items():
@@ -155,9 +165,6 @@ class ZonalStatsBase():
             # create defn and feat
             defn = dst_trg_lyr.GetLayerDefn()
             feat = ogr.Feature(defn)
-
-            #print(trg_geom)
-            #print(type(self.ix[index]), self.ix[index].shape)
 
             # iterate over source polys
             for i, ogr_src in enumerate(src_lyr):
@@ -167,19 +174,12 @@ class ZonalStatsBase():
                 feat.SetGeometry(geom)
                 dst_trg_lyr.CreateFeature(feat)
 
-            #feat.SetField('index', 0)
-            #feat.SetField('weight', 1)
-            #feat.SetGeometry(trg_geom)
-            #dst_trg_lyr.CreateFeature(feat)
+        # copy intermediate trg layers to output datasource
+        for i in range(ds_mem.GetLayerCount()):
+            dst_trg_lyr = ds_out.CopyLayer(ds_mem.GetLayerByIndex(i), 'trg_{0}'.format(i))
 
-
-        #print("Now copying layer")
-
-        for i in range(dst_ds1.GetLayerCount()):
-            dst_trg_lyr = dst_ds.CopyLayer(dst_ds1.GetLayerByIndex(i), 'trg_{0}'.format(i))
-
-
-        del dst_ds, dst_src_lyr, dst_trg_lyr, dst_ds1
+        # flush everything
+        del ds_out, ds_mem
 
     def get_weights(self, trg, **kwargs):
         """This is the key method that needs to be filled for any inheriting class.
@@ -340,7 +340,7 @@ class GridCellsToPoly(ZonalStatsBase):
         # claim and reset source ogr layer
         layer = self.ogr_src.GetLayer()
         layer.ResetReading()
-        layer.SetSpatialFilter(trg.Buffer(buffer))
+        layer.SetSpatialFilter(trg.Buffer(self._buffer))
 
         areas = []
         ix = []
@@ -348,13 +348,16 @@ class GridCellsToPoly(ZonalStatsBase):
         # iterate over layer features
         for ogr_src in layer:
             geom = ogr_src.GetGeometryRef()
+            #print(ogr_src.GetFID(), ogr_src.GetField('index'))
             ix.append(ogr_src.GetFID())
             # fetch precalculated area, if fully contained
             if trg.Contains(geom):
                 areas.append(ogr_src.GetField('area'))
             # otherwise calculate intersection
             else:
-                areas.append(trg.Intersection(geom).Area())
+                isec = trg.Intersection(geom)
+                print(isec.GetGeometryName(), isec.GetGeometryCount())
+                areas.append(isec.Area())
 
         areas = np.array(areas)
         w = areas / np.sum(areas)
@@ -429,17 +432,17 @@ class ShapeToPoly(GridCellsToPoly):
 
         self.ogr_src = ds
         self.src = ds
-
-        self.trg = []
+        self.trg = ds
+        #self.trg = []
         self.ix = []
         self.w = []
-        for i in range(1, ds.GetLayerCount()):
+        for i in range(2, ds.GetLayerCount()):
             lyr = ds.GetLayerByIndex(i)
             self.ix.append([ogr_src.GetField('index') for ogr_src in lyr][:-1])
             lyr.ResetReading()
             self.w.append([ogr_src.GetField('weight') for ogr_src in lyr][:-1])
             lyr.SetNextByIndex(lyr.GetFeatureCount() - 1)
-            self.trg.append(lyr.GetNextFeature().GetGeometryRef())
+
 
         #print(self.ix, self.w)
 
@@ -484,9 +487,13 @@ class GridPointsToPoly(ZonalStatsBase):
         # claim and reset source ogr layer
         layer = self.ogr_src.GetLayer()
         layer.ResetReading()
-        layer.SetSpatialFilter(trg.Buffer(buffer))
-
+        layer.SetSpatialFilter(trg.Buffer(self._buffer))
         ix2 = [ogr_src.GetFID() for ogr_src in layer]
+
+        #layer.ResetReading()
+        #layer.SetSpatialFilter(trg.Buffer(self._buffer))
+        #for ogr_src in layer:
+        #    print(ogr_src.GetFID(), ogr_src.GetField('index'))
 
         t2 = dt.datetime.now()
         print("Getting Weights takes: %f seconds" % (t2 - t1).total_seconds())
@@ -530,13 +537,13 @@ def create_ogr_datasource(src, geom_type=None):
         # Polygons have NxMx2 dimensionality
         if src.ndim == 3:
             geom_type = ogr.wkbPolygon
-            fields = {'area': ogr.OFTReal}
+            fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
         # no Polygons, just Points
         else:
             geom_type = ogr.wkbPoint
-            fields = {}
+            fields = {'index': ogr.OFTInteger}
     elif geom_type == ogr.wkbPolygon:
-        fields = {'area': ogr.OFTReal}
+        fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
 
     drv = ogr.GetDriverByName( 'Memory' )
     ds = drv.CreateDataSource( 'out' )
@@ -548,8 +555,11 @@ def create_ogr_datasource(src, geom_type=None):
     feat = ogr.Feature(defn)
     for index, src_item in enumerate(src):
         geom = numpy_to_ogr(src_item, geom_name)
+        feat.SetFID(index)
         if 'area' in fields.keys():
             feat.SetField('area', geom.Area())
+        if 'index' in fields.keys():
+            feat.SetField('index', index)
         feat.SetGeometry(geom)
         lyr.CreateFeature(feat)
 
