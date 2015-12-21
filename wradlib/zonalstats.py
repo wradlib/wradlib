@@ -240,15 +240,17 @@ class ZonalStatsBase():
             ogr_trg, ds_mem = None
         else:
             # create target polygon ogr.DataSource with dedicated target polygon layer
+            ogr_trg = ogr_create_ds('Memory', 'out')
             if type(trg) is not ogr.DataSource:
                 trg = np.array(trg)
-                # create memory datasource, layer and create features
-                ogr_trg = ogr_create_ds('Memory', 'out')
+                # create layer and features
                 fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
                 ogr_create_layer(ogr_trg, 'trg_poly', ogr.wkbPolygon, fields)
                 ogr_add(ogr_trg, trg, name='trg_poly')
             else:
-                ogr_trg = trg
+                # copy layer with features
+                tmp_lyr = trg.GetLayer()
+                ogr_trg_lyr = ogr_trg.CopyLayer(tmp_lyr, 'trg_poly')
 
             # the following code creates the destination target datasource with one layer
             # for each target polygon, consisting of the needed source data attributed with
@@ -273,11 +275,11 @@ class ZonalStatsBase():
                 # TODO: move the copy/add (ogr_add_by_index) inside the get_weights function
                 # thus we can have the intersections also as ogr features
 
-                ix, w = self.get_weights(trg_poly.GetGeometryRef(), **kwargs)
-                self._add_idx_weights(ix, w, **kwargs)
-
                 # create layer
                 dst_trg_lyr = ogr_create_layer(ds_mem, 'trg_{0}'.format(index), geom_type, fields)
+
+                ix, w = self.get_weights(trg_poly.GetGeometryRef(), dst_lyr=dst_trg_lyr, **kwargs)
+                self._add_idx_weights(ix, w, **kwargs)
 
                 # copy/add
                 ogr_add_by_index(dst_trg_lyr, src_lyr, zip(ix,w))
@@ -373,6 +375,7 @@ class GridCellsToPoly(ZonalStatsBase):
 
         # if given, we apply a buffer value to the target polygon filter
         buffer = kwargs.get('buffer', 0.)
+        #dst_trg_lyr = kwargs.get('dst_trg_lyr', None)
 
         # claim and reset source ogr layer
         layer = self.src.GetLayerByName('src_grid')
