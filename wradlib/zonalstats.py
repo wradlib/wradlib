@@ -74,17 +74,20 @@ class ZonalStatsBase():
         self.src = self._check_src(src, **kwargs)
         self._ix = []
         self._w = []
-        self._trg = []
         self._buffer = buffer
 
-        self.trg = self._check_trg(trg, **kwargs)
+        self._trg, self._dst = self._check_trg(trg, **kwargs)
+
         if self.trg is None:
             self._add_idx_weights(ix, w, **kwargs)
 
-    def _add_target(self, trg, **kwargs):
-        #print(trg)
-        ix, w = self.get_weights(trg, **kwargs)
-        self._add_idx_weights(ix, w, **kwargs)
+    # TODO: temporarily disabled
+    # make this work for adding target polygons
+    #def _add_target(self, trg, **kwargs):
+    #    #print(trg)
+    #
+    #    ix, w = self.get_weights(trg, **kwargs)
+    #    self._add_idx_weights(ix, w, **kwargs)
 
     def _add_idx_weights(self, ix, w, **kwargs):
         ix, w = self._check_ix_w(ix, w, **kwargs)
@@ -108,78 +111,73 @@ class ZonalStatsBase():
         self._w = value
 
     @property
+    def buffer(self):
+        return self._buffer
+
+    @buffer.setter
+    def buffer(self, value):
+        self._buffer = value
+        # TODO: recalculate index and weights
+
+    @property
     def trg(self):
         return self._trg
 
-    @trg.setter
-    def trg(self, value):
-        self._trg = value
+    #@trg.setter
+    #def trg(self, value):
+    #    self._trg = value
 
-    def dump_ogr(self, filename):
-        drv = ogr.GetDriverByName('ESRI Shapefile')
-        if os.path.exists(filename):
-            drv.DeleteDataSource(filename)
-        trg_ds = drv.CreateDataSource(filename)
-        lyr = self.ogr_src.GetLayer()
+    def dump_src_shape(self, filename, remove=True):
+        """ Output source grid points/polygons to ESRI_Shapefile
+
+        Parameters
+        ----------
+        filename : string, path to shape-filename
+
+        """
+        trg_ds = ogr_create_ds('ESRI Shapefile', filename, remove=remove)
+        lyr = self.src.GetLayerByName('src_grid')
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
         trg_lyr = trg_ds.CopyLayer(lyr, 'src_grid')
+
+        # flush everything
         del trg_ds, trg_lyr
 
-    def dump_ogr_trg(self, filename):
+    def dump_all_shape(self, filename):
+        """ Output source/target grid points/polygons to ESRI_Shapefile
+
+        target layer features are attributed with source index and weight
+
+        Parameters
+        ----------
+        filename : string, path to shape-filename
+
+        """
+
         # create output file datasource
         drv_out = ogr.GetDriverByName('ESRI Shapefile')
         if os.path.exists(filename):
             drv_out.DeleteDataSource(filename)
         ds_out = drv_out.CreateDataSource(filename)
 
-        # create intermediate mem datasource
-        drv_mem = ogr.GetDriverByName( 'Memory' )
-        ds_mem = drv_mem.CreateDataSource( 'out' )
-
         # get and copy src geometry layer
-        src_lyr = self.ogr_src.GetLayer()
+        src_lyr = self.src.GetLayerByName('src_grid')
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)
         dst_src_lyr = ds_out.CopyLayer(src_lyr, 'src_grid')
-        gtype = dst_src_lyr.GetGeomType()
 
         # get and copy target polygon layer
-        trg_lyr = self.trg.GetLayer()
+        trg_lyr = self.trg.GetLayerByName('trg_poly')
         trg_lyr.ResetReading()
         dst_src_lyr = ds_out.CopyLayer(trg_lyr, 'trg_poly')
 
-        # iterate over target polygon layer and create intermediate trg layers
-        # containing involved src polygons atrributet with their respective src index and
-        # weight
-        # this could also
-        for index, trg_geom in enumerate(trg_lyr):
-            src_lyr.ResetReading()
-            src_lyr.SetSpatialFilter(trg_geom.GetGeometryRef().Buffer(self._buffer))
-            # create target layer
-            dst_trg_lyr = ds_mem.CreateLayer('trg_{0}'.format(index), geom_type=gtype)
-            # create layer fields
-            fields = {'index': ogr.OFTInteger, 'weight': ogr.OFTReal}
-            for fname, fvalue in fields.items():
-                dst_trg_lyr.CreateField(ogr.FieldDefn(fname, fvalue))
-            # create defn and feat
-            defn = dst_trg_lyr.GetLayerDefn()
-            feat = ogr.Feature(defn)
-
-            # iterate over source polys
-            for i, ogr_src in enumerate(src_lyr):
-                geom = ogr_src.GetGeometryRef()
-                feat.SetField('index', self.ix[index][i])
-                feat.SetField('weight', self.w[index][i])
-                feat.SetGeometry(geom)
-                dst_trg_lyr.CreateFeature(feat)
-
-        # copy intermediate trg layers to output datasource
-        for i in range(ds_mem.GetLayerCount()):
-            dst_trg_lyr = ds_out.CopyLayer(ds_mem.GetLayerByIndex(i), 'trg_{0}'.format(i))
+        # get and copy memory destination trg layers to output datasource
+        for i in range(self._dst.GetLayerCount()):
+            dst_trg_lyr = ds_out.CopyLayer(self._dst.GetLayerByIndex(i), 'trg_{0}'.format(i))
 
         # flush everything
-        del ds_out, ds_mem
+        del ds_out
 
     def get_weights(self, trg, **kwargs):
         """This is the key method that needs to be filled for any inheriting class.
@@ -199,57 +197,95 @@ class ZonalStatsBase():
         """ Basic check of source elements (sequence of points or polygons).
 
             - array cast of source elements
-            - create ogr_src dictionary holding ogr-pointers
-            - transforming source grid polygons to ogr.geometries on ogr.layer
+            - create ogr_src datasource/layer holding src points/polygons
+            - transforming source grid points/polygons to ogr.geometries on ogr.layer
 
         """
         t1 = dt.datetime.now()
+
         if type(src) is not ogr.DataSource:
             src = np.array(src)
-            self.ogr_src = create_ogr_datasource(src)
+
+            # create memory datasource, layer and create features
+            if src.ndim == 3:
+                geom_type = ogr.wkbPolygon
+                fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
+            # no Polygons, just Points
+            else:
+                geom_type = ogr.wkbPoint
+                fields = {'index': ogr.OFTInteger}
+
+            ogr_src = ogr_create_ds('Memory', 'out')
+            ogr_create_layer(ogr_src, 'src_grid', geom_type, fields)
+            ogr_add(ogr_src, src, name='src_grid')
+
         else:
-            self.ogr_src = src
+            ogr_src = src
 
         t2 = dt.datetime.now()
         print "Setting up OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
 
-        return src
+        return ogr_src
 
     def _check_trg(self, trg, **kwargs):
         """ Basic check of target elements (sequence of points or polygons).
 
             Iterates over target elements (and transforms to ogr.Polygon if necessary)
+            create ogr_trg datasource/layer holding target polygons
+
         """
         t1 = dt.datetime.now()
+        # if no targets are given
         if trg is None:
-            pass
+            ogr_trg, ds_mem = None
         else:
+            # create target polygon ogr.DataSource with dedicated target polygon layer
             if type(trg) is not ogr.DataSource:
                 trg = np.array(trg)
-                trg = create_ogr_datasource(trg, geom_type=ogr.wkbPolygon)
+                # create memory datasource, layer and create features
+                ogr_trg = ogr_create_ds('Memory', 'out')
+                fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
+                ogr_create_layer(ogr_trg, 'trg_poly', ogr.wkbPolygon, fields)
+                ogr_add(ogr_trg, trg, name='trg_poly')
+            else:
+                ogr_trg = trg
 
-            lyr = trg.GetLayer()
+            # the following code creates the destination target datasource with one layer
+            # for each target polygon, consisting of the needed source data attributed with
+            # index and weights
+            # create intermediate mem datasource
+
+            ds_mem = ogr_create_ds('Memory', 'out')
+
+             # get src geometry layer
+            src_lyr = self.src.GetLayerByName('src_grid')
+            src_lyr.ResetReading()
+            src_lyr.SetSpatialFilter(None)
+            geom_type = src_lyr.GetGeomType()
+
+            fields = {'index': ogr.OFTInteger, 'weight': ogr.OFTReal}
+
+            # get target layer, iterate over polygons and calculate weights
+            lyr = ogr_trg.GetLayer()
             lyr.ResetReading()
-            for feat in lyr:
-                self._add_target(feat.GetGeometryRef(), **kwargs)
+            for index, trg_poly in enumerate(lyr):
 
+                # TODO: move the copy/add (ogr_add_by_index) inside the get_weights function
+                # thus we can have the intersections also as ogr features
 
-        #else:
-        #    if type(trg) is ogr.DataSource:
-        #        lyr = trg.GetLayer()
-        #        lyr.ResetReading()
-        #        # TODO: this is just for testing, because shapefile consists of linear rings not polygons
-        #        trg = [numpy_to_ogr(ogr_to_numpy(ogr_trg.GetGeometryRef()), 'Polygon') for ogr_trg in lyr]
-        #        #trg = [ogr_trg.GetGeometryRef() for ogr_trg in lyr]
-        #    else:
-        #        trg = [numpy_to_ogr(ogr_trg, 'Polygon') for ogr_trg in trg]
-        #    for t in trg:
-        #        self._add_target(t, **kwargs)
+                ix, w = self.get_weights(trg_poly.GetGeometryRef(), **kwargs)
+                self._add_idx_weights(ix, w, **kwargs)
+
+                # create layer
+                dst_trg_lyr = ogr_create_layer(ds_mem, 'trg_{0}'.format(index), geom_type, fields)
+
+                # copy/add
+                ogr_add_by_index(dst_trg_lyr, src_lyr, zip(ix,w))
 
         t2 = dt.datetime.now()
         print "Setting up Target takes: %f seconds" % (t2 - t1).total_seconds()
 
-        return trg
+        return ogr_trg, ds_mem
 
     def _check_ix_w(self, ix, w, **kwargs):
         """TODO Basic check of target attributes (sequence of values).
@@ -266,10 +302,10 @@ class ZonalStatsBase():
 
         """
         if type(self.src) is ogr.DataSource:
-            lyr = self.src.GetLayer()
+            lyr = self.src.GetLayerByName('src_grid')
             lyr.ResetReading()
             lyr.SetSpatialFilter(None)
-            src_len = self.src.GetLayer().GetFeatureCount()
+            src_len = lyr.GetFeatureCount()
         else:
             src_len = len(self.src)
         assert len(vals)==src_len, "Argument vals must be of length %d" % src_len
@@ -334,11 +370,12 @@ class GridCellsToPoly(ZonalStatsBase):
         """
         #print(trg)
         t1 = dt.datetime.now()
+
         # if given, we apply a buffer value to the target polygon filter
         buffer = kwargs.get('buffer', 0.)
 
         # claim and reset source ogr layer
-        layer = self.ogr_src.GetLayer()
+        layer = self.src.GetLayerByName('src_grid')
         layer.ResetReading()
         layer.SetSpatialFilter(trg.Buffer(self._buffer))
 
@@ -356,7 +393,7 @@ class GridCellsToPoly(ZonalStatsBase):
             # otherwise calculate intersection
             else:
                 isec = trg.Intersection(geom)
-                print(isec.GetGeometryName(), isec.GetGeometryCount())
+                #print(isec.GetGeometryName(), isec.GetGeometryCount())
                 areas.append(isec.Area())
 
         areas = np.array(areas)
@@ -368,6 +405,7 @@ class GridCellsToPoly(ZonalStatsBase):
 
         return ix, w
 
+
     def _get_intersection(self, trg=None, idx=None, **kwargs):
         """Just a toy function if you want to inspect the intersection polygons of an arbitrary target
         or an target by index.
@@ -375,9 +413,11 @@ class GridCellsToPoly(ZonalStatsBase):
 
         # check wether idx is given
         if idx is not None:
-            if self.trg:
+            if self._dst:
                 try:
-                    trg = self.trg[idx]
+                    lyr = self._dst.GetLayerByName('trg_poly')
+                    feat = lyr.GetFeature(idx)
+                    trg = feat.GetGeometryRef()
                 except:
                     raise TypeError("No target polygon found at index {0}".format(idx))
             else:
@@ -391,11 +431,17 @@ class GridCellsToPoly(ZonalStatsBase):
         if not type(trg) == ogr.Geometry:
             trg = numpy_to_ogr(trg, 'Polygon')
 
-        # claim and reset source layer
-        # apply spatial filter
-        layer = self.ogr_src.GetLayer()
-        layer.ResetReading()
-        layer.SetSpatialFilter(trg)
+        if idx is None:
+            # claim and reset source layer
+            # apply spatial filter
+            layer = self.src.GetLayerByName('src_grid')
+            layer.ResetReading()
+            layer.SetSpatialFilter(trg)
+        else:
+            # claim and reset source layer
+            layer = self.src.GetLayerByName('trg_{0}'.format(idx))
+            layer.ResetReading()
+
 
         intersecs = []
         for ogr_src in layer:
@@ -422,29 +468,31 @@ class GridCellsToPoly(ZonalStatsBase):
         return np.array(intersecs)
 
 
+
 class ShapeToPoly(GridCellsToPoly):
     def __init__(self, filename, **kwargs):
 
         from wradlib import io
         ds, lyr = io.open_shape(filename)
 
-        #print(ds, lyr)
-
-        self.ogr_src = ds
         self.src = ds
-        self.trg = ds
-        #self.trg = []
-        self.ix = []
-        self.w = []
-        for i in range(2, ds.GetLayerCount()):
-            lyr = ds.GetLayerByIndex(i)
-            self.ix.append([ogr_src.GetField('index') for ogr_src in lyr][:-1])
+        self._trg = ds
+        self._dst = ds
+        ix = []
+        w = []
+
+        # get target features
+        cnt = ds.GetLayerByName('trg_poly').GetFeatureCount()
+
+        for i in range(cnt):
+            lyr = ds.GetLayerByName('trg_{0}'.format(i))
             lyr.ResetReading()
-            self.w.append([ogr_src.GetField('weight') for ogr_src in lyr][:-1])
-            lyr.SetNextByIndex(lyr.GetFeatureCount() - 1)
+            ix.append([ogr_src.GetField('index') for ogr_src in lyr])
+            lyr.ResetReading()
+            w.append([ogr_src.GetField('weight') for ogr_src in lyr])
 
-
-        #print(self.ix, self.w)
+        self.ix = ix
+        self.w = w
 
 
 class GridPointsToPoly(ZonalStatsBase):
@@ -469,7 +517,6 @@ class GridPointsToPoly(ZonalStatsBase):
         """
         """
         # Pre-selection to increase performance
-        #print(trg)
         ix_ = self.get_points_in_target(trg, **kwargs)
         if len(ix_)==0:
             # No points in target polygon? Find the closest point to provide a value
@@ -480,39 +527,77 @@ class GridPointsToPoly(ZonalStatsBase):
     def get_points_in_target(self, trg, **kwargs):
         """Helper method that can also be used to return intermediary results.
         """
-        buffer = kwargs.get('buffer', 0.)
-
         t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
-        layer = self.ogr_src.GetLayer()
+        layer = self.src.GetLayer()
         layer.ResetReading()
         layer.SetSpatialFilter(trg.Buffer(self._buffer))
-        ix2 = [ogr_src.GetFID() for ogr_src in layer]
 
-        #layer.ResetReading()
-        #layer.SetSpatialFilter(trg.Buffer(self._buffer))
-        #for ogr_src in layer:
-        #    print(ogr_src.GetFID(), ogr_src.GetField('index'))
+        ix_ = [ogr_src.GetFID() for ogr_src in layer]
 
         t2 = dt.datetime.now()
         print("Getting Weights takes: %f seconds" % (t2 - t1).total_seconds())
 
-        return ix2
+        return ix_
 
     def get_point_next_to_target(self, trg, **kwargs):
         """ Computes the target centroid and finds the closest point from src.
-            TODO: this will break, if we have shape sources instead of numpy source,
-            make this work also for shape sources
         """
+        layer = self.src.GetLayer()
+        layer.ResetReading()
+        layer.SetSpatialFilter(None)
+        src_pts = np.array([ogr_src.GetGeometryRef().GetPoint_2D(0) for ogr_src in layer])
+
         centroid = get_centroid(trg)
-        tree = cKDTree(self.src)
+        tree = cKDTree(src_pts)
         distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
         return np.array([ixnext])
 
 
-def create_ogr_datasource(src, geom_type=None):
-    """Creates OGR.DataSource object in memory from numpy source array.
+# def ogr_create_datasource(src, geom_type=None):
+#     """Creates OGR.DataSource object in memory from numpy source array.
+#
+#     .. versionadded:: 0.7.0
+#
+#     OGR.DataSource object consists of one OGR.Layer with OGR.Feature(s)
+#     (polygon or point geometries) built from numpy src points or polygons.
+#
+#     OGR.Features 'FID' corresponds to source data element
+#     Polygons also get precomputed 'area' field attached.
+#
+#     Parameters
+#     ----------
+#     vert : a numpy array of polygon vertices of shape (num polygons, num vertices, 2)
+#
+#     Returns
+#     -------
+#     out : an OGR.DataSource object
+#
+#     """
+#
+#     if geom_type is None:
+#         # Polygons have NxMx2 dimensionality
+#         if src.ndim == 3:
+#             geom_type = ogr.wkbPolygon
+#             fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
+#         # no Polygons, just Points
+#         else:
+#             geom_type = ogr.wkbPoint
+#             fields = {'index': ogr.OFTInteger}
+#     elif geom_type == ogr.wkbPolygon:
+#         fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
+#
+#     ds = ogr_create_ds('Memory', 'out')
+#     ogr_create_layer(ds, 'src', geom_type=geom_type)
+#     #lyr = ds.CreateLayer('src', geom_type=geom_type)
+#     #for fname, fvalue in fields.items():
+#     #    lyr.CreateField(ogr.FieldDefn(fname, fvalue))
+#
+#     return ds
+
+def ogr_create_ds(drv, name, remove=False):
+    """Creates OGR.DataSource object.
 
     .. versionadded:: 0.7.0
 
@@ -524,7 +609,9 @@ def create_ogr_datasource(src, geom_type=None):
 
     Parameters
     ----------
-    vert : a numpy array of polygon vertices of shape (num polygons, num vertices, 2)
+    drv : string, GDAL/OGR driver string
+
+    name : string, path to filename
 
     Returns
     -------
@@ -533,37 +620,122 @@ def create_ogr_datasource(src, geom_type=None):
     """
 
 
-    if geom_type is None:
-        # Polygons have NxMx2 dimensionality
-        if src.ndim == 3:
-            geom_type = ogr.wkbPolygon
-            fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
-        # no Polygons, just Points
-        else:
-            geom_type = ogr.wkbPoint
-            fields = {'index': ogr.OFTInteger}
-    elif geom_type == ogr.wkbPolygon:
-        fields = {'index': ogr.OFTInteger, 'area': ogr.OFTReal}
+    drv = ogr.GetDriverByName(drv)
+    if remove:
+        if os.path.exists(name):
+            drv.DeleteDataSource(name)
+    ds = drv.CreateDataSource(name)
 
-    drv = ogr.GetDriverByName( 'Memory' )
-    ds = drv.CreateDataSource( 'out' )
-    lyr = ds.CreateLayer('src', geom_type=geom_type)
+    return ds
+
+def ogr_create_layer(ds, name, geom_type=None, fields=None):
+    """Creates OGR.Layer objects in OGR.DataSource object.
+
+    .. versionadded:: 0.7.0
+
+    OGR.DataSource object consists of one OGR.Layer with OGR.Feature(s)
+    (polygon or point geometries) built from numpy src points or polygons.
+
+    OGR.Features 'FID' corresponds to source data element
+    Polygons also get precomputed 'area' field attached.
+
+    Parameters
+    ----------
+    ds : OGR.DataSource object
+
+    name : string, OGRLayer name
+
+    geom_type : OGR GeometryType (eg. ogr.wkbPolygon)
+
+    fields : dictionary, dict.keys are field names strings
+            dict.values are OGR.DataTypes (eg. ogr.OFTReal)
+
+    Returns
+    -------
+    out : an OGR.Layer object
+
+    """
+
+    if geom_type is None:
+        raise TypeError("geometry_type needed")
+
+    lyr = ds.CreateLayer(name, geom_type=geom_type)
     for fname, fvalue in fields.items():
         lyr.CreateField(ogr.FieldDefn(fname, fvalue))
+
+    return lyr
+
+
+def ogr_add(ds, src, name=None):
+    """ Creates OGR.Feature objects in OGR.Layer object.
+
+    .. versionadded:: 0.7.0
+
+    OGR.Features are built from numpy src points or polygons.
+
+    OGR.Features 'FID' corresponds to source data element
+    Polygons also get precomputed 'area' field attached.
+
+    Parameters
+    ----------
+    ds : OGR.DataSource object
+
+    src : source data numpy array
+
+    name : string, name of wanted Layer
+    """
+
+    if name is not None:
+        lyr = ds.GetLayerByName(name)
+    else:
+        lyr = ds.GetLayer()
+
     defn = lyr.GetLayerDefn()
-    geom_name = ogr.GeometryTypeToName(geom_type)
+    geom_name = ogr.GeometryTypeToName(lyr.GetGeomType())
+    fields = [defn.GetFieldDefn(i).GetName() for i in range(defn.GetFieldCount())]
     feat = ogr.Feature(defn)
+
     for index, src_item in enumerate(src):
         geom = numpy_to_ogr(src_item, geom_name)
         feat.SetFID(index)
-        if 'area' in fields.keys():
+
+        if 'area' in fields:
             feat.SetField('area', geom.Area())
-        if 'index' in fields.keys():
+        if 'index' in fields:
             feat.SetField('index', index)
+
         feat.SetGeometry(geom)
         lyr.CreateFeature(feat)
 
-    return ds
+
+def ogr_add_by_index(layer, src_layer, values):
+    """ Copies OGR.Feature objects to an OGR.Layer object.
+
+    .. versionadded:: 0.7.0
+
+    OGR.Features are read by index from src layer. Attributes
+    are attached.
+
+    Parameters
+    ----------
+    layer : OGR.Layer object
+
+    src_layer : source layer
+
+    values : list of tupels (index, weights)
+    """
+
+
+    defn = layer.GetLayerDefn()
+    feat = ogr.Feature(defn)
+
+    for idx, weight in values:
+        geom = src_layer.GetFeature(idx)
+        feat.SetFID(idx)
+        feat.SetField('index', idx)
+        feat.SetField('weight', weight)
+        feat.SetGeometry(geom.GetGeometryRef())
+        layer.CreateFeature(feat)
 
 
 def numpy_to_ogr(vert, geom_name):
