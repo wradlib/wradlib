@@ -161,10 +161,11 @@ def ex_tutorial_zonal_statistics_polar():
         t1 = dt.datetime.now()
         print(radar_gkc_.shape)
         # Create instances of type GridPointsToPoly (one instance for each target polygon)
-        obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, dataset, buffer=500., polar=True)
+        #obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500.)
+        obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500.)
         obj1.dump_all_shape('test_zonal_gp')
         #obj1.dump_src_shape('test_points.shp')
-        obj1 = wradlib.zonalstats.ShapeToPoly('test_zonal_gp')
+        obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_gp')
         obj1.buffer = 500.
         t2 = dt.datetime.now()
 
@@ -178,7 +179,7 @@ def ex_tutorial_zonal_statistics_polar():
         print "Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
 
         # Just a test for plotting results with zero buffer
-        obj2 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=0., polar=True)
+        obj2 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=0.)
 
         # Illustrate results for an example catchment i
         i = 0 # try e.g. 6, 12
@@ -213,11 +214,11 @@ def ex_tutorial_zonal_statistics_polar():
     t1 = dt.datetime.now()
     #grid_ds, grid_lyr = wradlib.io.open_shape('test_polys.shp')
     # Create instances of type GridCellsToPoly (one instance for each target polygon)
-    obj3 = wradlib.zonalstats.GridCellsToPoly(radar_gk_, dataset)#, buffer=0.)
-    #obj3.dump_src_shape('test_polys.shp')
+    obj3 = wradlib.zonalstats.GridCellsToPoly(radar_gk_, cats)
+    #obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_src.shp', shpfile)
+    #obj3.dump_src_shape('test_zonal_src.shp')
     obj3.dump_all_shape('test_zonal')
-    obj3 = wradlib.zonalstats.ShapeToPoly('test_zonal')
-
+    obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal')
 
     t2 = dt.datetime.now()
 
