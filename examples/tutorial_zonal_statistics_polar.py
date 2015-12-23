@@ -162,8 +162,8 @@ def ex_tutorial_zonal_statistics_polar():
         print(radar_gkc_.shape)
         # Create instances of type GridPointsToPoly (one instance for each target polygon)
         #obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500.)
-        obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500.)
-        obj1.dump_all_shape('test_zonal_gp')
+        #obj1 = wradlib.zonalstats.GridPointsToPoly(radar_gkc_, cats, buffer=500.)
+        #obj1.dump_all_shape('test_zonal_gp')
         #obj1.dump_src_shape('test_points.shp')
         obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_gp')
         obj1.buffer = 500.
@@ -254,10 +254,25 @@ def ex_tutorial_zonal_statistics_polar():
     t1 = dt.datetime.now()
     #isecs = obj3._get_intersection(cats[i])
     isecs = obj3._get_intersection(idx=i)
+
+    # extract paths from intersections
+    paths = []
+    for item in isecs:
+        if item.ndim != 2:
+            vert = np.vstack(item)
+            code = np.full(vert.shape[0], 2, dtype=np.int)
+            ind = np.cumsum([0] + [len(x) for x in item[:-1]])
+            code[ind] = 1
+            path = Path(vert, code)
+            paths.append(path)
+        else:
+            path = Path(item, [1] + (len(item)-1) * [2])
+            paths.append(path)
+
     t2 = dt.datetime.now()
     print "plot intersection takes: %f seconds" % (t2 - t1).total_seconds()
 
-    isec_patches = [patches.Polygon(item) for item in isecs]
+    isec_patches = [patches.PathPatch(item) for item in paths]
     colors = 100*np.linspace(0,1.,len(isec_patches))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
     p.set_array(np.array(colors))
