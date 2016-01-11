@@ -80,6 +80,7 @@ class ZonalStatsBase():
         self._ix = []
         self._w = []
         self._buffer = buffer
+        self.tmp_lyr = None
 
         # if only src is given assume "dump_all_shape" filename
         if trg is None and ix is None and w is None:
@@ -458,27 +459,21 @@ class GridCellsToPoly(ZonalStatsBase):
             if not trg.Contains(geom):
                 geom = trg.Intersection(geom)
 
-            area = geom.Area()
-
-            # TODO: get GeometrieCollection working, at the moment Creation of Multipolygon doesnt't work
+            # checking GeometryCollection, convert to only Polygons, Multipolygons
             if geom.GetGeometryType() in [7]:
-                tmp  = ogr_src.Clone()
-                self.tmp_geom = numpy_to_ogr(ogr_geocol_to_numpy(geom), 'MultiPolygon')
-                tmp.SetGeometry(self.tmp_geom)
-                geom = tmp.GetGeometryRef()
-
+                geocol = ogr_geocol_to_numpy(geom)
+                geom = numpy_to_ogr(geocol, 'MultiPolygon')
 
             if geom.GetGeometryType() in [3, 6, 12]:
 
                 idx = ogr_src.GetField('index')
                 ix.append(idx)
 
-                #print(geom.GetGeometryName(), area)
-
+                area = geom.Area()
                 areas.append(area)
 
-                #ogr_add_feature(self.tmp_lyr, ogr_src, area / trg_area)
                 ogr_add_geometry(self.tmp_lyr, geom, idx, area / trg_area)
+                # neccessary?
                 self.tmp_lyr.SyncToDisk()
 
         areas = np.array(areas)
@@ -535,19 +530,9 @@ class GridCellsToPoly(ZonalStatsBase):
         intersecs = []
         for ogr_src in layer:
             geom = ogr_src.GetGeometryRef()
-            print(ogr_src)
 
-            #if trg.Contains(geom):
             if geom is not None:
-                print(geom.ExportToJson())
                 intersecs.append(ogr_to_numpy(geom))
-            #else:
-            #    isec = trg.Intersection(geom)
-            #    # only allow areal shapes to get appended
-            #    if isec.GetGeometryType() in [3, 6, 12]:
-            #        intersecs.append(ogr_to_numpy(isec))
-            #    elif isec.GetGeometryType() in[7]:
-            #        intersecs.append(ogr_geocol_to_numpy(isec))
 
         return intersecs
 
@@ -830,9 +815,6 @@ def ogr_add_geometry(layer, geom, idx, values):
     feat.SetGeometry(geom)
     layer.CreateFeature(feat)
 
-    return idx
-
-
 
 def numpy_to_ogr(vert, geom_name):
     """Convert a vertex array to gdal/ogr geometry.
@@ -851,7 +833,7 @@ def numpy_to_ogr(vert, geom_name):
 
     """
 
-    if geom_name == 'Polygon':
+    if geom_name in ['Polygon', 'MultiPolygon']:
         json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".format(geom_name, vert.tolist())
     else:
         json_str = "{{'type':{0!r},'coordinates':{1!r}}}".format(geom_name, vert.tolist())
