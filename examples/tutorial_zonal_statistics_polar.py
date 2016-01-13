@@ -199,6 +199,7 @@ def ex_tutorial_zonal_statistics_polar():
         # Create instance of type GridPointsToPoly from zonal data object
         obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
 
+
     t2 = dt.datetime.now()
 
     avg3 = obj3.mean(data_.ravel())
