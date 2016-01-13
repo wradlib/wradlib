@@ -410,7 +410,6 @@ class ZonalDataBase(object):
         intersecs = []
         for ogr_src in layer:
             geom = ogr_src.GetGeometryRef()
-
             if geom is not None:
                 intersecs.append(ogr_to_numpy(geom))
 
@@ -547,6 +546,10 @@ class ZonalDataPoly(ZonalDataBase):
                 geocol = ogr_geocol_to_numpy(geom)
                 geom = numpy_to_ogr(geocol, 'MultiPolygon')
 
+            # only geometries containing points
+            if geom.IsEmpty():
+                continue
+
             if geom.GetGeometryType() in [3, 6, 12]:
 
                 idx = ogr_src.GetField('index')
@@ -556,8 +559,6 @@ class ZonalDataPoly(ZonalDataBase):
                 ogr_add_geometry(dst, geom, idx, area / trg_area)
                 # neccessary?
                 dst.SyncToDisk()
-
-        # ix_ = [ogr_add_feature(dst, ogr_src, 1. / feat_cnt) for ogr_src in layer]
 
         t2 = dt.datetime.now()
         print "Getting Weights takes: %f seconds" % (t2 - t1).total_seconds()
