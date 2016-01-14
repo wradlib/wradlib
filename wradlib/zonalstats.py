@@ -82,6 +82,9 @@ class ZonalDataBase(object):
 
     .. versionadded:: 0.7.0
 
+    .. warning:: Writing shapefiles with the wrong locale settings can have impact on the
+    type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
+
     Parameters
     ----------
 
@@ -554,9 +557,8 @@ class ZonalDataPoly(ZonalDataBase):
 
                 idx = ogr_src.GetField('index')
 
-                area = geom.Area()
+                ogr_add_geometry(dst, geom, idx, geom.Area() / trg_area)
 
-                ogr_add_geometry(dst, geom, idx, area / trg_area)
                 # neccessary?
                 dst.SyncToDisk()
 
@@ -672,7 +674,6 @@ class ZonalDataPoint(ZonalDataBase):
         if feat_cnt:
             ix_ = [ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
                                     ogr_src.GetField('index'),  1. / feat_cnt) for ogr_src in layer]
-            #ix_ = [ogr_add_feature(dst, ogr_src, 1. / feat_cnt) for ogr_src in layer]
         else:
             layer.SetSpatialFilter(None)
             src_pts = np.array([ogr_src.GetGeometryRef().GetPoint_2D(0) for ogr_src in layer])
@@ -681,7 +682,6 @@ class ZonalDataPoint(ZonalDataBase):
             distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
             feat = layer.GetFeature(ixnext)
             ogr_add_geometry(dst, feat.GetGeometryRef(), feat.GetField('index'), 1.)
-            #ogr_add_feature(dst, layer.GetFeature(ixnext), 1.)
 
         # neccessary?
         dst.SyncToDisk()
