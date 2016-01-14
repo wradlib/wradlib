@@ -53,7 +53,7 @@ Calling the objects with actual data, however, will be very fast.
 
 import os
 
-from osgeo import ogr
+from osgeo import gdal, ogr
 import numpy as np
 from scipy.spatial import cKDTree
 import datetime as dt
@@ -307,6 +307,54 @@ class ZonalDataBase(object):
         # flush everything
         del ds_out
 
+    def dump_trg_shape(self, filename, remove=True):
+        """ Output layer to ESRI_Shapefile
+
+        Parameters
+        ----------
+        filename : string, path to shape-filename
+        layer : layer to output
+
+        """
+        ds_out = ogr_create_datasource('ESRI Shapefile', filename, remove=remove)
+        ogr_copy_layer(self.trg, 'trg_poly', ds_out)
+
+        # flush everything
+        del ds_out
+
+    def dump_trg_raster(self, filename, attr, pixel_size=1., nodata=0., remove=True):
+        """ Output layer to ESRI_Shapefile
+
+        Parameters
+        ----------
+        filename : string, path to shape-filename
+        layer : layer to output
+
+        """
+        layer = self.trg.GetLayerByIndex(0)
+        layer.ResetReading()
+
+        x_min, x_max, y_min, y_max = layer.GetExtent()
+
+        cols = int( (x_max - x_min) / pixel_size )
+        rows = int( (y_max - y_min) / pixel_size )
+
+
+        drv = gdal.GetDriverByName('GTiff')
+        if os.path.exists(filename):
+            drv.Delete(filename)
+        raster = drv.Create(filename, cols, rows, 1, gdal.GDT_Float32)
+        raster.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
+
+        band = raster.GetRasterBand(1)
+        band.SetNoDataValue(nodata)
+        band.FlushCache()
+
+        gdal.RasterizeLayer(raster, [1], layer, burn_values=[0], options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"])
+        raster.SetProjection(self._srs.ExportToWkt())
+
+        del raster
+
     def load_all_shape(self, filename):
         """ Load source/target grid points/polygons into in-memory Shapefile
 
@@ -337,6 +385,20 @@ class ZonalDataBase(object):
 
         # flush everything
         del ds_in
+
+    def set_trg_attribute(self, name, values):
+
+        lyr = self.trg.GetLayerByIndex(0)
+        lyr.ResetReading()
+        # todo: automatically check for value type
+        defn = lyr.GetLayerDefn()
+
+        if defn.GetFieldIndex(name) == -1:
+            lyr.CreateField(ogr.FieldDefn(name, ogr.OFTReal))
+
+        for i, item in enumerate(lyr):
+            item.SetField(name, values[i])
+            lyr.SetFeature(item)
 
     def _get_idx_weights(self):
         """ Read index and weights from OGR.Layer
@@ -792,6 +854,10 @@ class ZonalStatsBase(object):
         out = np.zeros(len(self.ix))*np.nan
         out[~self.isempty] =  np.array( [np.average( vals[self.ix[i]], weights=self.w[i] ) \
                                         for i in np.arange(len(self.ix))[~self.isempty]] )
+
+        if self.zdata is not None:
+            self.zdata.set_trg_attribute('mean', out)
+
         return out
             
 
@@ -810,6 +876,10 @@ class ZonalStatsBase(object):
         out = np.zeros(len(self.ix))*np.nan
         out[~self.isempty] = np.array( [np.average( (vals[self.ix[i]] - mean[i])**2, weights=self.w[i]) \
                                        for i in np.arange(len(self.ix))[~self.isempty]] )
+
+        if self.zdata is not None:
+            self.zdata.set_trg_attribute('var', out)
+
         return out
 
 
