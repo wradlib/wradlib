@@ -34,7 +34,7 @@ but only has to be done once (as long as the geometries do not change).
 
 Calling the objects with actual data, however, will be very fast.
 
-..note:: Right now we only support a limited set of 2-dimensional zonal statistics.
+.. note:: Right now we only support a limited set of 2-dimensional zonal statistics.
          In the future, we plan to extend this to three dimensions.
 
 
