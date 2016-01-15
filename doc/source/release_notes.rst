@@ -9,7 +9,11 @@ You can install the latest wradlib release from PyPI via ``$ pip install wradlib
 Bleeding Edge
 -------------
 
-*nothing new, yet*
+**Highlights**
+
+New *experimental* module ``zonalstats``: it supports computation of zonal statistics (so far mean and variance) for target polygons. 
+Typical applications would be the computation of average catchment rainfall from polar or cartesian grids. Check out the 
+`module documentation <http://wradlib.bitbucket.org/zonalstats>`_ and the new examples. 
 
 
 Version 0.6.0
