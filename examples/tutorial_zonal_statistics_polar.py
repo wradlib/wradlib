@@ -5,6 +5,7 @@ Created on Wed Aug 26 09:05:48 2015
 @author: k.muehlbauer
 """
 
+import os
 from osgeo import osr
 import wradlib
 import pylab as plt
@@ -53,7 +54,7 @@ def testplot(cats, catsavg, xy, data, levels = [0,1,2,3,4,5,10,15,20,25,30,40,50
 
 def ex_tutorial_zonal_statistics_polar():
 
-    data, attrib = wradlib.io.from_hdf5('data/rainsum_boxpol_20140609.h5')
+    data, attrib = wradlib.io.from_hdf5(os.path.dirname(__file__) + '/' + 'data/rainsum_boxpol_20140609.h5')
 
     # get Lat, Lon, range, azimuth, rays, bins out of radar data
     lat1 = attrib['Latitude']
@@ -85,7 +86,7 @@ def ex_tutorial_zonal_statistics_polar():
     radar_gk.shape = (rays, bins, 5, 2)
     radar_gkc.shape = (rays, bins, 2)
 
-    shpfile = 'data/agger/agger_merge.shp'
+    shpfile = os.path.dirname(__file__) + '/' + 'data/agger/agger_merge.shp'
     dataset, inLayer = wradlib.io.open_shape(shpfile)
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
 
