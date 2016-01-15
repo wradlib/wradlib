@@ -205,10 +205,12 @@ def ex_tutorial_zonal_statistics_polar():
 
     avg3 = obj3.mean(data_.ravel())
     var3 = obj3.var(data_.ravel())
+    print(avg3, var3)
 
     obj3.zdata.dump_trg_raster('test_zonal_tiff.tif', 'mean', pixel_size=100., nodata=0.)
 
-    obj3.zdata.dump_trg_shape('test_zonal_shp.shp')
+    obj3.zdata.dump_trg_vector('test_zonal_shp', 'ESRI Shapefile')
+    obj3.zdata.dump_trg_vector('test_zonal_json.geojson', 'GeoJSON')
 
     t3 = dt.datetime.now()
 
