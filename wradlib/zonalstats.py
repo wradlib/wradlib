@@ -32,11 +32,10 @@ objects by calling the class instance with an array of values (one for each sour
 Typically, creating the instance of the ZonalData class will be computationally expensive,
 but only has to be done once (as long as the geometries do not change).
 
-Calling the objects with actual data, however, will be very fast.
+Calling the objects with actual data, however, will be very fast.Fast
 
-..note:: Right now we only support a limited set of 2-dimensional zonal statistics.
+.. note:: Right now we only support a limited set of 2-dimensional zonal statistics.
          In the future, we plan to extend this to three dimensions.
-
 
 .. currentmodule:: wradlib.zonalstats
 
@@ -44,8 +43,10 @@ Calling the objects with actual data, however, will be very fast.
    :nosignatures:
    :toctree: generated/
 
+   ZonalDataBase
    ZonalDataPoint
    ZonalDataPoly
+   ZonalStatsBase
    GridCellsToPoly
    GridPointsToPoly
 
@@ -54,6 +55,7 @@ Calling the objects with actual data, however, will be very fast.
 import os
 
 from osgeo import gdal, ogr
+ogr.UseExceptions()
 import numpy as np
 from scipy.spatial import cKDTree
 import datetime as dt
@@ -61,6 +63,63 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 
 import wradlib.io as io
+
+
+class DataSource(object):
+
+    def __init__(self, data=None, srs=None, **kwargs):
+        self._srs = srs
+        self._name = kwargs.get('name', 'layer')
+        if data is not None:
+            self._ds = self._check_src(data, **kwargs)
+
+    @property
+    def ds(self):
+        """ Returns ds
+        """
+        return self._ds
+
+    @ds.setter
+    def ds(self, value):
+        self._ds = value
+
+    def _check_src(self, src, **kwargs):
+        """ Basic check of source elements (sequence of points or polygons).
+
+            - array cast of source elements
+            - create ogr_src datasource/layer holding src points/polygons
+            - transforming source grid points/polygons to ogr.geometries on ogr.layer
+
+        """
+        t1 = dt.datetime.now()
+
+        ogr_src = ogr_create_datasource('Memory', 'out')
+
+        try:
+            # is it ESRI Shapefile?
+            ds_in, tmp_lyr = io.open_shape(src, driver=ogr.GetDriverByName('ESRI Shapefile'))
+            ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, self._name)
+            #self._geom_type = ogr_src_lyr.GetGeomType()
+        except IOError:
+            # no ESRI shape file
+            raise
+        # all failed? then it should be sequence or numpy array
+        except RuntimeError:
+            src = np.array(src)
+            # create memory datasource, layer and create features
+            if src.ndim == 2:
+                geom_type = ogr.wkbPoint
+            # no Polygons, just Points
+            else:
+                geom_type = ogr.wkbPolygon
+            fields = {'index': ogr.OFTInteger}
+            ogr_create_layer(ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields)
+            ogr_add_feature(ogr_src, src, name=self._name)
+
+        t2 = dt.datetime.now()
+        print "Setting up Data OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
+
+        return ogr_src
 
 
 class ZonalDataBase(object):
@@ -73,17 +132,19 @@ class ZonalDataBase(object):
 
     Data Model is built upon OGR Implementation of ESRI Shapefile
 
-    - one src layer (named 'src_grid') holding source polygons or points
-    - one trg layer (named 'trg_grid') holding target polygons
-    - several dst layers (named 'dst_N', N is int number) holding src polygons/points
+    * one src layer (named 'src_grid') holding source polygons or points
+    * one trg layer (named 'trg_grid') holding target polygons
+    * several dst layers (named 'dst_N', N is int number) holding src polygons/points
     related to target polygons with attached index and weights fields
 
     By using OGR there are no restrictions for the used source grids.
 
     .. versionadded:: 0.7.0
 
-    .. warning:: Writing shapefiles with the wrong locale settings can have impact on the
-    type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
+    .. warning::
+
+        Writing shapefiles with the wrong locale settings can have impact on the
+        type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
 
     Parameters
     ----------
@@ -107,13 +168,19 @@ class ZonalDataBase(object):
 
     def __init__(self, src, trg=None, buf=0., srs=None, **kwargs):
         # if only src is given assume "dump_all_shape" filename
+
+        print("TRG", trg)
         self._buffer = buf
         self._srs = srs
         if trg is None:
+            print("Load_all_shape")
             self.load_all_shape(src)
         else:
-            self.src = self._check_src(src, **kwargs)
-            self.trg = self._check_trg(trg, **kwargs)
+            #self.src = self._check_src(src, **kwargs)
+            #self.trg = self._check_trg(trg, **kwargs)
+            #self.dst = self._create_dst_layers()
+            self.src = DataSource(src, name='src_grid', srs=srs, **kwargs)
+            self.trg = DataSource(trg, name='trg_poly', srs=srs, **kwargs)
             self.dst = self._create_dst_layers()
 
     @property
@@ -132,7 +199,7 @@ class ZonalDataBase(object):
     def targets(self):
         """ Returns target polygons
         """
-        lyr = self.trg.GetLayer()
+        lyr = self.trg.ds.GetLayer()
         lyr.ResetReading()
         targets = []
         for feature in lyr:
@@ -153,76 +220,78 @@ class ZonalDataBase(object):
         """
         raise NotImplementedError
 
-    def _check_src(self, src, **kwargs):
-        """ Basic check of source elements (sequence of points or polygons).
-
-            - array cast of source elements
-            - create ogr_src datasource/layer holding src points/polygons
-            - transforming source grid points/polygons to ogr.geometries on ogr.layer
-
-        """
-        t1 = dt.datetime.now()
-
-        ogr_src = ogr_create_datasource('Memory', 'src')
-
-        try:
-            # is it ESRI Shapefile?
-            ds_in, tmp_lyr = io.open_shape(src, driver=ogr.GetDriverByName('ESRI Shapefile'))
-            ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, 'src_grid')
-            self._geom_type = ogr_src_lyr.GetGeomType()
-        except IOError:
-            # no ESRI shape file
-            raise
-        # all failed? then it should be sequence or numpy array
-        except RuntimeError:
-            src = np.array(src)
-            # create memory datasource, layer and create features
-            if src.ndim == 3:
-                self._geom_type = ogr.wkbPolygon
-            # no Polygons, just Points
-            else:
-                self._geom_type = ogr.wkbPoint
-
-            fields = {'index': ogr.OFTInteger}
-            ogr_create_layer(ogr_src, 'src_grid', srs=self._srs, geom_type=self._geom_type, fields=fields)
-            ogr_add_feature(ogr_src, src, name='src_grid')
-
-        t2 = dt.datetime.now()
-        print "Setting up OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
-
-        return ogr_src
-
-    def _check_trg(self, trg, **kwargs):
-        """ Basic check of target elements (sequence of points or polygons).
-
-            Iterates over target elements (and transforms to ogr.Polygon if necessary)
-            create ogr_trg datasource/layer holding target polygons
-
-        """
-        t1 = dt.datetime.now()
-        # if no targets are given
-
-        # create target polygon ogr.DataSource with dedicated target polygon layer
-        ogr_trg = ogr_create_datasource('Memory', 'trg')
-
-        try:
-            # is it ESRI Shapefile?
-            ds, tmp_lyr = io.open_shape(trg, driver=ogr.GetDriverByName('ESRI Shapefile'))
-            ogr_trg_lyr = ogr_trg.CopyLayer(tmp_lyr, 'trg_poly')
-        except IOError:
-            # no ESRI shape file
-            raise
-        except RuntimeError:
-            trg = np.array(trg)
-            # create layer and features
-            fields = {'index': ogr.OFTInteger}
-            ogr_create_layer(ogr_trg, 'trg_poly', srs=self._srs, geom_type=ogr.wkbPolygon, fields=fields)
-            ogr_add_feature(ogr_trg, trg, name='trg_poly')
-
-        t2 = dt.datetime.now()
-        print "Setting up Target takes: %f seconds" % (t2 - t1).total_seconds()
-
-        return ogr_trg
+    # def _check_src(self, src, **kwargs):
+    #     """ Basic check of source elements (sequence of points or polygons).
+    #
+    #         - array cast of source elements
+    #         - create ogr_src datasource/layer holding src points/polygons
+    #         - transforming source grid points/polygons to ogr.geometries on ogr.layer
+    #
+    #     """
+    #     t1 = dt.datetime.now()
+    #
+    #     ogr_src = ogr_create_datasource('Memory', 'src')
+    #
+    #     try:
+    #         # is it ESRI Shapefile?
+    #         ds_in, tmp_lyr = io.open_shape(src, driver=ogr.GetDriverByName('ESRI Shapefile'))
+    #         ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, 'src_grid')
+    #         #self._geom_type = ogr_src_lyr.GetGeomType()
+    #     except IOError:
+    #         # no ESRI shape file
+    #         raise
+    #     # all failed? then it should be sequence or numpy array
+    #     except RuntimeError:
+    #         src = np.array(src)
+    #         # create memory datasource, layer and create features
+    #         if src.ndim == 3:
+    #             #self._geom_type = ogr.wkbPolygon
+    #             geom_type = ogr.wkbPolygon
+    #         # no Polygons, just Points
+    #         else:
+    #             #self._geom_type = ogr.wkbPoint
+    #             geom_type = ogr.wkbPoint
+    #
+    #         fields = {'index': ogr.OFTInteger}
+    #         ogr_create_layer(ogr_src, 'src_grid', srs=self._srs, geom_type=geom_type, fields=fields)
+    #         ogr_add_feature(ogr_src, src, name='src_grid')
+    #
+    #     t2 = dt.datetime.now()
+    #     print "Setting up OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
+    #
+    #     return ogr_src
+    #
+    # def _check_trg(self, trg, **kwargs):
+    #     """ Basic check of target elements (sequence of points or polygons).
+    #
+    #         Iterates over target elements (and transforms to ogr.Polygon if necessary)
+    #         create ogr_trg datasource/layer holding target polygons
+    #
+    #     """
+    #     t1 = dt.datetime.now()
+    #     # if no targets are given
+    #
+    #     # create target polygon ogr.DataSource with dedicated target polygon layer
+    #     ogr_trg = ogr_create_datasource('Memory', 'trg')
+    #
+    #     try:
+    #         # is it ESRI Shapefile?
+    #         ds, tmp_lyr = io.open_shape(trg, driver=ogr.GetDriverByName('ESRI Shapefile'))
+    #         ogr_trg_lyr = ogr_trg.CopyLayer(tmp_lyr, 'trg_poly')
+    #     except IOError:
+    #         # no ESRI shape file
+    #         raise
+    #     except RuntimeError:
+    #         trg = np.array(trg)
+    #         # create layer and features
+    #         fields = {'index': ogr.OFTInteger}
+    #         ogr_create_layer(ogr_trg, 'trg_poly', srs=self._srs, geom_type=ogr.wkbPolygon, fields=fields)
+    #         ogr_add_feature(ogr_trg, trg, name='trg_poly')
+    #
+    #     t2 = dt.datetime.now()
+    #     print "Setting up Target takes: %f seconds" % (t2 - t1).total_seconds()
+    #
+    #     return ogr_trg
 
     def _create_dst_layers(self, **kwargs):
         """ Create destination target OGR.DataSource
@@ -243,20 +312,21 @@ class ZonalDataBase(object):
         ds_mem = ogr_create_datasource('Memory', 'dst')
 
         # get src geometry layer
-        src_lyr = self.src.GetLayerByName('src_grid')
+        src_lyr = self.src.ds.GetLayerByName('src_grid')
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)
+        geom_type = src_lyr.GetGeomType()
 
         fields = {'index': ogr.OFTInteger, 'weight': ogr.OFTReal}
 
         # get target layer, iterate over polygons and calculate weights
-        lyr = self.trg.GetLayer()
+        lyr = self.trg.ds.GetLayerByName('trg_poly')
         lyr.ResetReading()
         for index, trg_poly in enumerate(lyr):
 
             # create layer as self.tmp_lyr
             self.tmp_lyr = ogr_create_layer(ds_mem, 'dst_{0}'.format(index), srs=self._srs,
-                                            geom_type=self._geom_type, fields=fields)
+                                            geom_type=geom_type, fields=fields)
 
             # calculate weights while filling self.tmp_lyr with index and weights information
             self._create_dst_features(self.tmp_lyr, trg_poly.GetGeometryRef(), **kwargs)
@@ -282,13 +352,16 @@ class ZonalDataBase(object):
         ds_out = ogr_create_datasource('ESRI Shapefile', filename, remove=remove)
 
         # get and copy src geometry layer
-        ogr_copy_layer(self.src, 'src_grid', ds_out)
+        #ogr_copy_layer(self.src.ds, 'src_grid', ds_out)
+        ogr_copy_layer(self.src.ds, 0, ds_out)
 
         # get and copy target polygon layer
-        ogr_copy_layer(self.trg, 'trg_poly', ds_out)
+        #ogr_copy_layer(self.trg.ds, 'trg_poly', ds_out)
+        ogr_copy_layer(self.trg.ds, 0, ds_out)
 
         # get and copy memory destination trg layers to output datasource
-        [ogr_copy_layer(self.dst, 'dst_{0}'.format(i), ds_out) for i in range(self.dst.GetLayerCount())]
+        #[ogr_copy_layer(self.dst, 'dst_{0}'.format(i), ds_out) for i in range(self.dst.GetLayerCount())]
+        [ogr_copy_layer(self.dst, i, ds_out) for i in range(self.dst.GetLayerCount())]
 
         # flush everything
         del ds_out
@@ -302,22 +375,34 @@ class ZonalDataBase(object):
 
         """
         ds_out = ogr_create_datasource('ESRI Shapefile', filename, remove=remove)
-        ogr_copy_layer(self.src, 'src_grid', ds_out)
+        #ogr_copy_layer(self.src.ds, 'src_grid', ds_out)
+        ogr_copy_layer(self.src.ds, 0, ds_out)
 
         # flush everything
         del ds_out
 
-    def dump_trg_shape(self, filename, remove=True):
+    def dump_trg_vector(self, filename, driver, remove=True):
         """ Output layer to ESRI_Shapefile
 
         Parameters
         ----------
         filename : string, path to shape-filename
-        layer : layer to output
+        driver : string, driver string
 
         """
-        ds_out = ogr_create_datasource('ESRI Shapefile', filename, remove=remove)
-        ogr_copy_layer(self.trg, 'trg_poly', ds_out)
+        lc = self.trg.ds.GetLayerCount()
+        root, ext = os.path.splitext(filename)
+
+        ds_out = ogr_create_datasource(driver, filename, remove=remove)
+
+        for i in range(lc):
+            #ogr_copy_layer(self.trg, 'trg_poly', ds_out)
+            try:
+                ogr_copy_layer(self.trg.ds, i, ds_out)
+            except:
+                del ds_out
+                ds_out = ogr_create_datasource(driver, '{0}_{1}{2}'.format(root,i,ext), remove=True)
+                ogr_copy_layer(self.trg.ds, i, ds_out)
 
         # flush everything
         del ds_out
@@ -331,14 +416,13 @@ class ZonalDataBase(object):
         layer : layer to output
 
         """
-        layer = self.trg.GetLayerByIndex(0)
+        layer = self.trg.ds.GetLayerByIndex(0)
         layer.ResetReading()
 
         x_min, x_max, y_min, y_max = layer.GetExtent()
 
         cols = int( (x_max - x_min) / pixel_size )
         rows = int( (y_max - y_min) / pixel_size )
-
 
         drv = gdal.GetDriverByName('GTiff')
         if os.path.exists(filename):
@@ -355,6 +439,7 @@ class ZonalDataBase(object):
 
         del raster
 
+
     def load_all_shape(self, filename):
         """ Load source/target grid points/polygons into in-memory Shapefile
 
@@ -369,26 +454,35 @@ class ZonalDataBase(object):
         # claim memory driver
         drv_in = ogr.GetDriverByName('Memory')
 
+        #DataSource(src, name='src_grid', srs=srs, **kwargs)
+
+
         # create all DataSources
-        self.src = drv_in.CreateDataSource('src')
-        self.trg = drv_in.CreateDataSource('trg')
+        self.src = DataSource(name='src')
+        self.src.ds = drv_in.CreateDataSource('src')
+        self.trg = DataSource(name='trg')
+        self.trg.ds = drv_in.CreateDataSource('trg')
         self.dst = drv_in.CreateDataSource('dst')
 
         # get src and target polygon layer
-        ogr_copy_layer(ds_in, 'src_grid', self.src)
-        ogr_copy_layer(ds_in, 'trg_poly', self.trg)
+        #ogr_copy_layer(ds_in, 'src_grid', self.src.ds)
+        #ogr_copy_layer(ds_in, 'trg_poly', self.trg.ds)
+        ogr_copy_layer(ds_in, 0, self.src.ds)
+        ogr_copy_layer(ds_in, 1, self.trg.ds)
 
         # get destination trg layers
-        [ogr_copy_layer(ds_in, 'dst_{0}'.format(i), self.dst) for i in range(ds_in.GetLayerCount() - 2)]
+        #[ogr_copy_layer(ds_in, 'dst_{0}'.format(i), self.dst) for i in range(ds_in.GetLayerCount() - 2)]
+        [ogr_copy_layer(ds_in, i, self.dst) for i in range(2, ds_in.GetLayerCount())]
 
-        self._srs = self.src.GetLayer().GetSpatialRef()
+        self._srs = self.src.ds.GetLayer().GetSpatialRef()
+        self.src._srs = self.src.ds.GetLayer().GetSpatialRef()
 
         # flush everything
         del ds_in
 
     def set_trg_attribute(self, name, values):
 
-        lyr = self.trg.GetLayerByIndex(0)
+        lyr = self.trg.ds.GetLayerByIndex(0)
         lyr.ResetReading()
         # todo: automatically check for value type
         defn = lyr.GetLayerDefn()
@@ -441,7 +535,7 @@ class ZonalDataBase(object):
         if idx is not None:
             if self.trg:
                 try:
-                    lyr = self.trg.GetLayerByName('trg_poly')
+                    lyr = self.trg.ds.GetLayerByName('trg_poly')
                     feat = lyr.GetFeature(idx)
                     trg = feat.GetGeometryRef()
                 except:
@@ -463,7 +557,7 @@ class ZonalDataBase(object):
         if idx is None:
             # claim and reset source layer
             # apply spatial filter
-            layer = self.src.GetLayerByName('src_grid')
+            layer = self.src.ds.GetLayerByName('src_grid')
             layer.ResetReading()
             layer.SetSpatialFilter(trg)
         else:
@@ -509,7 +603,7 @@ class ZonalDataPoly(ZonalDataBase):
 
         ..note:: This may be slow, because it extracts all source polygons
         """
-        lyr = self.src.GetLayer()
+        lyr = self.src.ds.GetLayer()
         sources = []
         for feature in lyr:
             geom = feature.GetGeometryRef()
@@ -535,7 +629,7 @@ class ZonalDataPoly(ZonalDataBase):
 
         index = [feature.GetField('index') for feature in lyr]
 
-        lyr = self.src.GetLayer()
+        lyr = self.src.ds.GetLayer()
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
 
@@ -590,7 +684,7 @@ class ZonalDataPoly(ZonalDataBase):
         t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
-        layer = self.src.GetLayerByName('src_grid')
+        layer = self.src.ds.GetLayerByName('src_grid')
         layer.ResetReading()
 
         # if given, we apply a buffer value to the target polygon filter
@@ -668,7 +762,7 @@ class ZonalDataPoint(ZonalDataBase):
         -------
         array : ndarray of Nx2 point coordinate arrays
         """
-        lyr = self.src.GetLayer()
+        lyr = self.src.ds.GetLayer()
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
 
@@ -697,7 +791,7 @@ class ZonalDataPoint(ZonalDataBase):
 
         index = [feature.GetField('index') for feature in lyr]
 
-        lyr = self.src.GetLayer()
+        lyr = self.src.ds.GetLayer()
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
 
@@ -724,7 +818,7 @@ class ZonalDataPoint(ZonalDataBase):
         t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
-        layer = self.src.GetLayerByName('src_grid')
+        layer = self.src.ds.GetLayerByName('src_grid')
         layer.ResetReading()
 
         # if given, we apply a buffer value to the target polygon filter
@@ -831,7 +925,7 @@ class ZonalStatsBase(object):
         """TODO Basic check of target elements (sequence of polygons).
 
         """
-        lyr = self.zdata.src.GetLayerByName('src_grid')
+        lyr = self.zdata.src.ds.GetLayerByName('src_grid')
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
         src_len = lyr.GetFeatureCount()
@@ -855,6 +949,7 @@ class ZonalStatsBase(object):
         out[~self.isempty] =  np.array( [np.average( vals[self.ix[i]], weights=self.w[i] ) \
                                         for i in np.arange(len(self.ix))[~self.isempty]] )
 
+        print(self.zdata, out)
         if self.zdata is not None:
             self.zdata.set_trg_attribute('mean', out)
 
@@ -1010,11 +1105,14 @@ def ogr_copy_layer(src_ds, name, dst_ds, reset=True):
     reset : bool, if True resets src_layer
     """
     # get and copy src geometry layer
-    src_lyr = src_ds.GetLayerByName(name)
+    try:
+        src_lyr = src_ds.GetLayerByName(name)
+    except:
+        src_lyr = src_ds.GetLayerByIndex(name)
     if reset:
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)
-    tmp_lyr = dst_ds.CopyLayer(src_lyr, name)
+    tmp_lyr = dst_ds.CopyLayer(src_lyr, src_lyr.GetName())
 
 
 def ogr_add_feature(ds, src, name=None):
