@@ -86,12 +86,14 @@ class DataSource(object):
 
     @property
     def data(self):
-        return self.get_data()
-
-    def get_data(self, idx=None):
-        """ Returns source polygon patches
+        """ Returns DataSource geometries as numpy ndarrays
 
         ..note:: This may be slow, because it extracts all source polygons
+        """
+        return self.get_data_by_idx()
+
+    def get_data_by_idx(self, idx=None):
+        """ Returns DataSource geometries as numpy ndarrays by their index
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -109,6 +111,19 @@ class DataSource(object):
                 geom = feature.GetGeometryRef()
                 poly = ogr_to_numpy(geom)
                 sources.append(poly)
+
+        return np.array(sources)
+
+    def get_data_by_att(self, attr=None, value=None):
+        lyr = self.ds.GetLayer()
+        lyr.ResetReading()
+        lyr.SetSpatialFilter(None)
+        lyr.SetAttributeFilter("{0}={1}".format(attr, value))
+        sources = []
+        for feature in lyr:
+            geom = feature.GetGeometryRef()
+            poly = ogr_to_numpy(geom)
+            sources.append(poly)
         return np.array(sources)
 
     def _check_src(self, src, **kwargs):
@@ -299,10 +314,16 @@ class ZonalDataBase(object):
         return self._srs
 
     @property
-    def isec(self):
+    def isecs(self):
         """ Returns intersections
+
+        Returns
+        -------
+        array : ndarray of Nx2 point coordinate arrays
         """
-        raise NotImplementedError
+        #trg = self.trg.ds.GetLayerByName('trg').GetFeatureCount()
+        return np.array([self._get_intersection(idx=idx)
+                         for idx in range(self.trg.ds.GetLayerByName('trg').GetFeatureCount())])
 
     @property
     def sources(self):
@@ -314,6 +335,36 @@ class ZonalDataBase(object):
         """ Returns sources referring to target polygon idx
         """
         raise NotImplementedError
+
+    def get_isec(self, idx):
+        """ Returns intersections
+
+        Returns
+        -------
+        array : ndarray of Nx2 point coordinate arrays
+        """
+        #trg = self.trg.ds.GetLayerByName('trg').GetFeatureCount()
+        return self._get_intersection(idx=idx)
+
+    def get_source_index(self, idx):
+        """ Returns source polygon patches referring to target polygon idx
+
+        Parameters
+        ----------
+        idx : int, index of target polygon
+
+        Returns
+        -------
+        array : ndarray of matplotlib.patches.Polygon objects
+        """
+        lyr = self.dst.ds.GetLayerByName('dst')
+        lyr.ResetReading()
+        lyr.SetSpatialFilter(None)
+        lyr.SetAttributeFilter("trg={0}".format(idx))
+
+        index = [feature.GetField('src') for feature in lyr]
+
+        return np.array(index)
 
     # def _check_src(self, src, **kwargs):
     #     """ Basic check of source elements (sequence of points or polygons).
@@ -694,7 +745,7 @@ class ZonalDataBase(object):
             if geom is not None:
                 intersecs.append(ogr_to_numpy(geom))
 
-        return intersecs
+        return np.array(intersecs)
 
 
 class ZonalDataPoly(ZonalDataBase):
@@ -719,25 +770,25 @@ class ZonalDataPoly(ZonalDataBase):
         in the buffer.
 
     """
-    def get_source_index(self, idx):
-        """ Returns source polygon patches referring to target polygon idx
-
-        Parameters
-        ----------
-        idx : int, index of target polygon
-
-        Returns
-        -------
-        array : ndarray of matplotlib.patches.Polygon objects
-        """
-        lyr = self.dst.ds.GetLayerByName('dst')
-        lyr.ResetReading()
-        lyr.SetSpatialFilter(None)
-        lyr.SetAttributeFilter("trg={0}".format(idx))
-
-        index = [feature.GetField('src') for feature in lyr]
-
-        return np.array(index)
+    # def get_source_index(self, idx):
+    #     """ Returns source polygon patches referring to target polygon idx
+    #
+    #     Parameters
+    #     ----------
+    #     idx : int, index of target polygon
+    #
+    #     Returns
+    #     -------
+    #     array : ndarray of matplotlib.patches.Polygon objects
+    #     """
+    #     lyr = self.dst.ds.GetLayerByName('dst')
+    #     lyr.ResetReading()
+    #     lyr.SetSpatialFilter(None)
+    #     lyr.SetAttributeFilter("trg={0}".format(idx))
+    #
+    #     index = [feature.GetField('src') for feature in lyr]
+    #
+    #     return np.array(index)
 
     # def get_sources(self, idx):
     #     """ Returns source polygon patches referring to target polygon idx
@@ -770,32 +821,32 @@ class ZonalDataPoly(ZonalDataBase):
     #
     #     return np.array(sources)
 
-    @property
-    def isec(self):
-        """ Returns intersections
-
-        Returns
-        -------
-        array : ndarray of matplotlib.patches.PathPatch objects
-        """
-        tmp = [self._get_intersection(idx=idx) for idx in range(self.dst.ds.GetLayerCount())]
-        isecs = []
-        for isec in tmp:
-            paths = []
-            for item in isec:
-                if item.ndim != 2:
-                    vert = np.vstack(item)
-                    code = np.full(vert.shape[0], 2, dtype=np.int)
-                    ind = np.cumsum([0] + [len(x) for x in item[:-1]])
-                    code[ind] = 1
-                    path = Path(vert, code)
-                    paths.append(patches.PathPatch(path))
-                else:
-                    path = Path(item, [1] + (len(item)-1) * [2])
-                    paths.append(patches.PathPatch(path))
-            isecs.append(paths)
-
-        return np.array(isecs)
+    # @property
+    # def isec1(self):
+    #     """ Returns intersections
+    #
+    #     Returns
+    #     -------
+    #     array : ndarray of matplotlib.patches.PathPatch objects
+    #     """
+    #     tmp = [self._get_intersection(idx=idx) for idx in range(self.dst.ds.GetLayerCount())]
+    #     isecs = []
+    #     for isec in tmp:
+    #         paths = []
+    #         for item in isec:
+    #             if item.ndim != 2:
+    #                 vert = np.vstack(item)
+    #                 code = np.full(vert.shape[0], 2, dtype=np.int)
+    #                 ind = np.cumsum([0] + [len(x) for x in item[:-1]])
+    #                 code[ind] = 1
+    #                 path = Path(vert, code)
+    #                 paths.append(patches.PathPatch(path))
+    #             else:
+    #                 path = Path(item, [1] + (len(item)-1) * [2])
+    #                 paths.append(patches.PathPatch(path))
+    #         isecs.append(paths)
+    #
+    #     return np.array(isecs)
 
     def _create_dst_features(self, dst, trg, **kwargs):
         """ Create needed OGR.Features in dst OGR.Layer
@@ -891,35 +942,35 @@ class ZonalDataPoint(ZonalDataBase):
         in the buffer.
 
     """
-    @property
-    def isec(self):
-        """ Returns intersections
+    # @property
+    # def isec(self):
+    #     """ Returns intersections
+    #
+    #     Returns
+    #     -------
+    #     array : ndarray of Nx2 point coordinate arrays
+    #     """
+    #     return [np.array(self._get_intersection(idx=idx)) for idx in range(self.dst.GetLayerCount())]
 
-        Returns
-        -------
-        array : ndarray of Nx2 point coordinate arrays
-        """
-        return [np.array(self._get_intersection(idx=idx)) for idx in range(self.dst.GetLayerCount())]
-
-    @property
-    def sources(self):
-        """ Returns source points
-
-        Returns
-        -------
-        array : ndarray of Nx2 point coordinate arrays
-        """
-        lyr = self.src.ds.GetLayer()
-        lyr.ResetReading()
-        lyr.SetSpatialFilter(None)
-
-        sources = []
-        for feature in lyr:
-            geom = feature.GetGeometryRef()
-            poly = ogr_to_numpy(geom)
-            sources.append(poly)
-
-        return np.array(sources)
+    # @property
+    # def sources(self):
+    #     """ Returns source points
+    #
+    #     Returns
+    #     -------
+    #     array : ndarray of Nx2 point coordinate arrays
+    #     """
+    #     lyr = self.src.ds.GetLayer()
+    #     lyr.ResetReading()
+    #     lyr.SetSpatialFilter(None)
+    #
+    #     sources = []
+    #     for feature in lyr:
+    #         geom = feature.GetGeometryRef()
+    #         poly = ogr_to_numpy(geom)
+    #         sources.append(poly)
+    #
+    #     return np.array(sources)
 
     def get_sources(self, idx):
         """ Returns source points referring to target polygon idx
@@ -966,11 +1017,11 @@ class ZonalDataPoint(ZonalDataBase):
         t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
-        layer = self.src.ds.GetLayerByName('src_grid')
+        layer = self.src.ds.GetLayerByName('src')
         layer.ResetReading()
 
         # if given, we apply a buffer value to the target polygon filter
-        trg_index = trg.GetField('index')
+        #trg_index = trg.GetField('index')
         trg = trg.GetGeometryRef()
         trg = trg.Buffer(self._buffer)
         layer.SetSpatialFilter(trg)
@@ -1472,6 +1523,29 @@ def ogr_geocol_to_numpy(ogrobj):
             mpol.append(item['coordinates'])
 
     return np.squeeze(mpol)
+
+
+def numpy_to_pathpatch(arr):
+    """ Returns intersections
+
+    Returns
+    -------
+    array : ndarray of matplotlib.patches.PathPatch objects
+    """
+    paths = []
+    for item in arr:
+        if item.ndim != 2:
+            vert = np.vstack(item)
+            code = np.full(vert.shape[0], 2, dtype=np.int)
+            ind = np.cumsum([0] + [len(x) for x in item[:-1]])
+            code[ind] = 1
+            path = Path(vert, code)
+            paths.append(patches.PathPatch(path))
+        else:
+            path = Path(item, [1] + (len(item)-1) * [2])
+            paths.append(patches.PathPatch(path))
+
+    return np.array(paths)
 
 
 def mask_from_bbox(x, y, bbox, polar=False):
