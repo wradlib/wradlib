@@ -1,9 +1,15 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 26 09:05:48 2015
-
-@author: heistermann
-"""
+# ------------------------------------------------------------------------------
+# Name:        tutorial_zonal_statistics.py
+# Purpose:
+#
+# Author:      Maik Heistermann, Kai Muehlbauer
+#
+# Created:     26.08.2015
+# Copyright:   (c) heistermann, muehlbauer 2015
+# Licence:     The MIT License
+# ------------------------------------------------------------------------------
 
 import os
 from osgeo import osr
@@ -12,27 +18,30 @@ import pylab as plt
 import numpy as np
 from matplotlib.collections import PatchCollection
 from matplotlib.colors import from_levels_and_colors
+import matplotlib.patches as patches
 import datetime as dt
 
    
-def testplot(cats, catsavg, xy, data, levels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100], title=""):
+def testplot(cats, catsavg, xy, data,
+             levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100], title=""):
     """Quick test plot layout for this example file
     """
-    colors = plt.cm.spectral(np.linspace(0,1,len(levels)) )    
+    colors = plt.cm.spectral(np.linspace(0, 1, len(levels)))
     mycmap, mynorm = from_levels_and_colors(levels, colors, extend="max")
 
-    radolevels = [0,1,2,3,4,5,10,15,20,25,30,40,50,100]
-    radocolors = plt.cm.spectral(np.linspace(0,1,len(radolevels)) )    
+    radolevels = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100]
+    radocolors = plt.cm.spectral(np.linspace(0, 1, len(radolevels)))
     radocmap, radonorm = from_levels_and_colors(radolevels, radocolors, extend="max")
 
-    fig = plt.figure(figsize=(14,8))
+    fig = plt.figure(figsize=(14, 8))
 
     # Average rainfall sum
     ax = fig.add_subplot(121, aspect="equal")
-    coll = PatchCollection(cats, array=catsavg, cmap=mycmap, norm=mynorm, edgecolors='white', lw=0.5)
+    coll = PatchCollection(cats, array=catsavg, cmap=mycmap, norm=mynorm,
+                           edgecolors='white', lw=0.5)
     ax.add_collection(coll)
     ax.autoscale()
-    cb = plt.colorbar(coll, ax=ax, shrink=0.5)
+    plt.colorbar(coll, ax=ax, shrink=0.5)
     plt.xlabel("GK2 Easting")
     plt.ylabel("GK2 Northing")
     plt.title(title)
@@ -40,7 +49,8 @@ def testplot(cats, catsavg, xy, data, levels = [0,1,2,3,4,5,10,15,20,25,30,40,50
 
     # Original radar data
     ax1 = fig.add_subplot(122, aspect="equal")
-    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=radocmap, norm=radonorm)
+    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data),
+                        cmap=radocmap, norm=radonorm)
     coll = PatchCollection(cats, facecolor='None', edgecolor='white', lw=0.5)
     ax1.add_collection(coll)
     cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
@@ -50,6 +60,7 @@ def testplot(cats, catsavg, xy, data, levels = [0,1,2,3,4,5,10,15,20,25,30,40,50
     plt.title("Original radar rain sums")
     plt.draw()
     plt.tight_layout()
+
 
 def ex_tutorial_zonal_statistics():
 
@@ -85,8 +96,8 @@ def ex_tutorial_zonal_statistics():
     bbox = inLayer.GetExtent()
     buffer = 5000.
     bbox = dict(left=bbox[0]-buffer, right=bbox[1]+buffer, bottom=bbox[2]-buffer, top=bbox[3]+buffer)
-    mask, shape = wradlib.zonalstats.mask_from_bbox(xy[...,0],xy[...,1], bbox)
-    xy_ = np.vstack((xy[...,0][mask].ravel(),xy[...,1][mask].ravel())).T
+    mask, shape = wradlib.zonalstats.mask_from_bbox(xy[..., 0], xy[..., 1], bbox)
+    xy_ = np.vstack((xy[..., 0][mask].ravel(),xy[..., 1][mask].ravel())).T
     data_ = data[mask]
     
     ###########################################################################
@@ -106,16 +117,16 @@ def ex_tutorial_zonal_statistics():
         # Create instance of type ZonalDataPoint from source grid and catchment array
         zd = wradlib.zonalstats.ZonalDataPoint(xy_, cats, srs=proj_gk, buf=500.)
         # dump to file
-        zd.dump_all_shape('test_zonal_points_cart')
+        zd.dump_vector('test_zonal_points_cart')
         # Create instance of type GridPointsToPoly from zonal data object
         obj1 = wradlib.zonalstats.GridPointsToPoly(zd)
 
-    isecs1 = obj1.zdata.isec
+    isecs1 = obj1.zdata.isecs
     t2 = dt.datetime.now()
 
     # Compute stats for target polygons
-    avg1 =  obj1.mean( data_.ravel() )
-    var1 =  obj1.var( data_.ravel() )
+    avg1 = obj1.mean(data_.ravel())
+    var1 = obj1.var(data_.ravel())
 
     t3 = dt.datetime.now()
 
@@ -126,7 +137,7 @@ def ex_tutorial_zonal_statistics():
     zd2 = wradlib.zonalstats.ZonalDataPoint(xy_, cats, buf=0)
     # Create instance of type GridPointsToPoly from zonal data object
     obj2 = wradlib.zonalstats.GridPointsToPoly(zd2)
-    isecs2 = obj2.zdata.isec
+    isecs2 = obj2.zdata.isecs
 
     # Illustrate results for an example catchment i
     i = 6 # try e.g. 48, 100
@@ -134,17 +145,17 @@ def ex_tutorial_zonal_statistics():
     ax = fig.add_subplot(111, aspect="equal")
 
     # Target polygon patches
-    trg_patches = obj1.zdata.targets
+    trg_patches = [patches.Polygon(item, True) for item in obj1.zdata.trg.data]
     trg_patch = [trg_patches[i]]
     p = PatchCollection(trg_patch, facecolor="None", edgecolor="black", linewidth=2)
     ax.add_collection(p)
 
     # pips
-    sources = obj1.zdata.sources
-    plt.scatter(sources[:,0], sources[:,1], s=200, c="grey", edgecolor="None", label="all points")
-    plt.scatter(isecs2[i][:,0], isecs2[i][:,1], s=200, c="green", edgecolor="None", label="buffer=0 m")
-    plt.scatter(isecs1[i][:,0], isecs1[i][:,1], s=50, c="red", edgecolor="None", label="buffer=500 m")
-    bbox = wradlib.zonalstats.get_bbox(cats[i][:,0], cats[i][:,1])
+    sources = obj1.zdata.src.data
+    plt.scatter(sources[:, 0], sources[:, 1], s=200, c="grey", edgecolor="None", label="all points")
+    plt.scatter(isecs2[i][:, 0], isecs2[i][:, 1], s=200, c="green", edgecolor="None", label="buffer=0 m")
+    plt.scatter(isecs1[i][:, 0], isecs1[i][:, 1], s=50, c="red", edgecolor="None", label="buffer=500 m")
+    bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
     plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
     plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
     plt.legend()
@@ -163,7 +174,8 @@ def ex_tutorial_zonal_statistics():
     t1 = dt.datetime.now()
 
     # Create vertices for each grid cell (MUST BE DONE IN NATIVE RADOLAN COORDINATES)
-    grdverts = wradlib.zonalstats.grid_centers_to_vertices(x_radolan[mask],y_radolan[mask],1.,1.)
+    grdverts = wradlib.zonalstats.grid_centers_to_vertices(x_radolan[mask],
+                                                           y_radolan[mask], 1., 1.)
     # And reproject to Cartesian reference system (here: GK2)
     grdverts = wradlib.georef.reproject(grdverts,
                                   projection_source=proj_stereo,
@@ -172,20 +184,21 @@ def ex_tutorial_zonal_statistics():
     try:
         # Create instance of type GridCellsToPoly from zonal data file
         obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly_cart')
-    except:
+    except Exception, e:
+        print(e)
         # Create instance of type ZonalDataPoly from source grid and
         # catchment array
         zd = wradlib.zonalstats.ZonalDataPoly(grdverts, cats, srs=proj_gk)
         # dump to file
-        zd.dump_all_shape('test_zonal_poly_cart')
+        zd.dump_vector('test_zonal_poly_cart')
         # Create instance of type GridPointsToPoly from zonal data object
         obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
 
     t2 = dt.datetime.now()
 
     # Compute stats for target polygons
-    avg3 =  obj3.mean( data_.ravel() )
-    var3 =  obj3.var( data_.ravel() )
+    avg3 = obj3.mean(data_.ravel())
+    var3 = obj3.var(data_.ravel())
 
     t3 = dt.datetime.now()
 
@@ -193,22 +206,23 @@ def ex_tutorial_zonal_statistics():
     print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
 
     # Target polygon patches
-    trg_patches = obj3.zdata.targets
+    trg_patches = [patches.Polygon(item, True) for item in obj3.zdata.trg.data]
 
     # Plot average rainfall and original data
     testplot(trg_patches, avg3, xy, data,
              title="Catchment rainfall mean (GridCellsToPoly)")
-    testplot(trg_patches, var3, xy, data, levels = np.arange(0,np.max(var3),1.),
+    testplot(trg_patches, var3, xy, data, levels=np.arange(0, np.max(var3), 1.),
              title="Catchment rainfall variance (GridCellsToPoly)")
     
-
     # Illustrate results for an example catchment i
-    i = 6 # try any index between 0 and 429
+    i = 6 # try any index between 0 and 13
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
 
     # Grid cell patches
-    grd_patches = obj3.zdata.get_sources(i)
+    src_index = obj3.zdata.get_source_index(i)
+    grd_patches = [patches.Polygon(item)
+                   for item in obj3.zdata.src.get_data_by_idx(src_index)]
     p = PatchCollection(grd_patches, facecolor="None", edgecolor="black")
     ax.add_collection(p)
 
@@ -218,28 +232,28 @@ def ex_tutorial_zonal_statistics():
     ax.add_collection(p)
 
     # View the actual intersections
-    isecs = obj3.zdata.isec
-    isec_patches = isecs[i]
-    colors = 100*np.linspace(0,1.,len(isec_patches))
+    isecs = obj3.zdata.get_isec(i)
+    isec_patches = wradlib.zonalstats.numpy_to_pathpatch(isecs)
+    colors = 100*np.linspace(0, 1., len(isec_patches))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
     p.set_array(np.array(colors))
     ax.add_collection(p)
 
-    bbox = wradlib.zonalstats.get_bbox(cats[i][:,0], cats[i][:,1])
+    bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
     plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
     plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
     plt.draw()
 
     # Compare estimates
     maxlim = np.max(np.concatenate((avg1, avg3)))
-    fig = plt.figure(figsize=(14,8))
+    fig = plt.figure(figsize=(14, 8))
     ax = fig.add_subplot(111, aspect="equal")
     plt.scatter(avg1, avg3, edgecolor="None", alpha=0.5)
     plt.xlabel("Average of points in or close to polygon (mm)")
     plt.ylabel("Area-weighted average (mm)")
     plt.xlim(0, maxlim)
     plt.ylim(0, maxlim)
-    plt.plot([-1,maxlim+1], [-1,maxlim+1], color="black")
+    plt.plot([-1, maxlim+1], [-1, maxlim+1], color="black")
     plt.show()
 
 # =======================================================
