@@ -66,6 +66,28 @@ import wradlib.io as io
 
 
 class DataSource(object):
+    """ DataSource class for handling ogr/gdal vector data
+
+    .. versionadded:: 0.7.0
+
+    DataSource handles creates in-memory (vector) ogr DataSource object with
+    one layer for point or polygon geometries.
+
+    Parameters
+    ----------
+
+    data : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
+        ESRI Shapefile filename containing source points/polygons
+
+    srs : ogr.SpatialReferenceSystem object
+        SRS describing projection of given data
+
+    .. warning::
+
+        Writing shapefiles with the wrong locale settings can have impact on the
+        type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
+
+    """
 
     def __init__(self, data=None, srs=None, **kwargs):
         self._srs = srs
