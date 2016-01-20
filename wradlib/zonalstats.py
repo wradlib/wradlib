@@ -270,7 +270,7 @@ class DataSource(object):
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
-        if filter is not None:
+        if filt is not None:
             lyr.SetAttributeFilter('{0}={1}'.format(*filt))
         ret = [[] for _ in attrs]
         for ogr_src in lyr:
@@ -918,8 +918,8 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
 
     geom_type : OGR GeometryType (eg. ogr.wkbPolygon)
 
-    fields : dictionary, dict.keys are field names strings
-            dict.values are OGR.DataTypes (eg. ogr.OFTReal)
+    fields : list of 2 element tuples, (strings, OGR.DataType)
+        field name, field type
 
     Returns
     -------
@@ -1037,7 +1037,8 @@ def numpy_to_ogr(vert, geom_name):
 
     Parameters
     ----------
-    vert : a numpy array of vertices of shape (num vertices, 2)
+    vert : array_like
+        a numpy array of vertices of shape (num vertices, 2)
     geom_name : string, Name of Geometry
 
     Returns
@@ -1066,7 +1067,8 @@ def ogr_to_numpy(ogrobj):
 
     Returns
     -------
-    out : a nested ndarray of vertices of shape (num vertices, 2)
+    out : array_like
+        a nested ndarray of vertices of shape (num vertices, 2)
 
     """
     jsonobj = eval(ogrobj.ExportToJson())
@@ -1142,7 +1144,8 @@ def mask_from_bbox(x, y, bbox, polar=False):
         x (Cartesian) coordinates
     y : nd array of shape (num rows, num columns)
         y (Cartesian) coordinates
-    bbox : dictionary with keys "left", "right", "bottom", "top"
+    bbox : dict
+        dictionary with keys "left", "right", "bottom", "top"
         These must refer to the same Cartesian reference system as x and y
     polar : x, y are aligned polar (azimuth x range)
 
@@ -1259,7 +1262,7 @@ def grid_centers_to_vertices(x, y, dx, dy):
     """Produces array of vertices from grid's center point coordinates.
 
     .. warning:: This has to be done in the "native" grid projection.
-                 Once you reprojected the coordinates, this trivial function
+                 once you reprojected the coordinates, this trivial function
                  cannot be used to compute vertices from center points.
 
     Parameters
