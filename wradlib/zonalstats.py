@@ -708,17 +708,20 @@ class ZonalStatsBase(object):
         ZonalData is available as 'zdata'-property inside class instance.
 
     """
-    def __init__(self, src):
+    def __init__(self, src=None, ix=None, w=None):
 
-        self._ix = []
-        self._w = []
+        self._ix = None
+        self._w = None
 
-        if isinstance(src, ZonalDataBase):
-            self._zdata = src
+        if src is not None:
+            if isinstance(src, ZonalDataBase):
+                self._zdata = src
+            else:
+                raise TypeError('Parameter mismatch in calling ZonalDataBase')
+            self.ix, self.w = self._check_ix_w(*self.zdata._get_idx_weights())
         else:
-            raise TypeError('Parameter mismatch in calling ZonalDataBase')
-
-        self.ix, self.w = self.zdata._get_idx_weights()
+            self._zdata = None
+            self.ix, self.w = self._check_ix_w(ix, w)
 
     # TODO: check which properties are really needed
     @property
@@ -759,6 +762,8 @@ class ZonalStatsBase(object):
 
         """
         if ix is not None and w is not None:
+            if len(ix) != len(w):
+                raise TypeError("parameters ix and w must be of equal length")
             return np.array(ix), np.array(w)
         else:
             print("ix and w are complementary parameters and must both be given")
@@ -768,12 +773,20 @@ class ZonalStatsBase(object):
         """TODO Basic check of target elements (sequence of polygons).
 
         """
-        lyr = self.zdata.src.ds.GetLayerByName('src')
-        lyr.ResetReading()
-        lyr.SetSpatialFilter(None)
-        src_len = lyr.GetFeatureCount()
+        if self.zdata is not None:
+            lyr = self.zdata.src.ds.GetLayerByName('src')
+            lyr.ResetReading()
+            lyr.SetSpatialFilter(None)
+            src_len = lyr.GetFeatureCount()
+            assert len(vals) == src_len, "Argument vals must be of length %d" % src_len
+        else:
+            max = 0
+            for i in self.ix:
+                mx = np.nanmax(i)
+                if max < mx:
+                    max = mx
+            assert len(vals) > max, "Argument vals cannot be subscripted by given index values"
 
-        assert len(vals) == src_len, "Argument vals must be of length %d" % src_len
         return vals
 
     def mean(self, vals):
@@ -835,10 +848,11 @@ class GridCellsToPoly(ZonalStatsBase):
     -----------------
 
     """
-    def __init__(self, src, **kwargs):
-        if not isinstance(src, ZonalDataPoly):
-            src = ZonalDataPoly(src, **kwargs)
-        super(GridCellsToPoly, self).__init__(src)
+    def __init__(self, src=None, **kwargs):
+        if src is not None:
+            if not isinstance(src, ZonalDataPoly):
+                src = ZonalDataPoly(src, **kwargs)
+        super(GridCellsToPoly, self).__init__(src, **kwargs)
 
 
 # should we rename class?
@@ -858,9 +872,10 @@ class GridPointsToPoly(ZonalStatsBase):
 
     """
     def __init__(self, src, **kwargs):
-        if not isinstance(src, ZonalDataPoint):
-            src = ZonalDataPoint(src, **kwargs)
-        super(GridPointsToPoly, self).__init__(src)
+        if src is not None:
+            if not isinstance(src, ZonalDataPoint):
+                src = ZonalDataPoint(src, **kwargs)
+        super(GridPointsToPoly, self).__init__(src, **kwargs)
 
 
 def gdal_create_dataset(drv, name, cols, rows, gdal_type, remove=False):
