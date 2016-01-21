@@ -251,12 +251,17 @@ class DataSource(object):
         # Todo: at the moment, always writing floats
         ds_out = gdal_create_dataset(driver, filename, cols, rows, gdal.GDT_Float32, remove=remove)
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
+        ds_out.SetProjection(layer.GetSpatialRef().ExportToWkt())
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
-        gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
-                            options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"])
-        ds_out.SetProjection(layer.GetSpatialRef().ExportToWkt())
+        if attr is not None:
+            gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
+                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"])
+        else:
+            gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
+                                options=["ALL_TOUCHED=TRUE"])
+
 
         del ds_out
 
