@@ -319,7 +319,7 @@ class ZonalDataBase(object):
     * one src DataSource (named 'src') holding source polygons or points
     * one trg DataSource (named 'trg') holding target polygons
     * one dst DataSource (named 'dst') holding intersection polygons/points
-    related to target polygons with attached index and weights fields
+        related to target polygons with attached index and weights fields
 
     By using OGR there are no restrictions for the used source grids.
 
