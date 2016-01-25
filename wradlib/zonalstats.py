@@ -182,7 +182,7 @@ class DataSource(object):
             - create ogr_src datasource/layer holding src points/polygons
             - transforming source grid points/polygons to ogr.geometries on ogr.layer
         """
-        t1 = dt.datetime.now()
+        #t1 = dt.datetime.now()
 
         ogr_src = ogr_create_datasource('Memory', 'out')
 
@@ -207,8 +207,8 @@ class DataSource(object):
             ogr_create_layer(ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields)
             ogr_add_feature(ogr_src, src, name=self._name)
 
-        t2 = dt.datetime.now()
-        print "Setting up Data OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
+        #t2 = dt.datetime.now()
+        #print "Setting up Data OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
 
         return ogr_src
 
@@ -255,12 +255,15 @@ class DataSource(object):
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
+        print("Rasterizing Layer")
         if attr is not None:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
-                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"])
+                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"],
+                                callback=gdal.TermProgress)
         else:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
-                                options=["ALL_TOUCHED=TRUE"])
+                                options=["ALL_TOUCHED=TRUE"],
+                                callback=gdal.TermProgress)
 
 
         del ds_out
@@ -442,21 +445,31 @@ class ZonalDataBase(object):
         src_lyr.SetSpatialFilter(None)
         geom_type = src_lyr.GetGeomType()
 
-        fields = [('src_index', ogr.OFTInteger), ('trg_index', ogr.OFTInteger)]
+        # create temp Buffer layer (time consuming)
+        ds_tmp = ogr_create_datasource('Memory', 'tmp')
+        ogr_copy_layer(self.trg.ds, 0, ds_tmp)
+        tmp_trg_lyr = ds_tmp.GetLayer()
 
-        # get target layer, iterate over polygons and calculate weights
-        lyr = self.trg.ds.GetLayerByName('trg')
-        lyr.ResetReading()
+        for i in range(tmp_trg_lyr.GetFeatureCount()):
+            feat = tmp_trg_lyr.GetFeature(i)
+            feat.SetGeometryDirectly(feat.GetGeometryRef().Buffer(self._buffer))
+            tmp_trg_lyr.SetFeature(feat)
 
-        t1 = dt.datetime.now()
+
+        # get target layer, iterate over polygons and calculate intersections
+        tmp_trg_lyr.ResetReading()
+
 
         self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
-                                        geom_type=geom_type, fields=fields)
+                                        geom_type=geom_type)
 
-        [self._create_dst_features(self.tmp_lyr, trg_poly, **kwargs) for trg_poly in lyr]
-
-        t2 = dt.datetime.now()
-        print "Getting Intersection takes: %f seconds" % (t2 - t1).total_seconds()
+        print("Calculate Intersection source/target-layers")
+        tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
+                                                                 'INPUT_PREFIX=trg_',
+                                                                 'METHOD_PREFIX=src_',
+                                                                 'PROMOTE_TO_MULTI=YES',
+                                                                 'PRETEST_CONTAINMENT=YES'],
+                                 callback=gdal.TermProgress)
 
         return ds_mem
 
@@ -613,7 +626,7 @@ class ZonalDataPoly(ZonalDataBase):
         """
         # TODO: kwargs necessary?
 
-        t1 = dt.datetime.now()
+        #t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
         layer = self.src.ds.GetLayerByName('src')
@@ -646,8 +659,8 @@ class ZonalDataPoly(ZonalDataBase):
                 idx = ogr_src.GetField('index')
                 ogr_add_geometry(dst, geom, [idx, trg_index])
 
-        t2 = dt.datetime.now()
-        print "Getting Weights takes: {0} seconds".format((t2 - t1).total_seconds())
+        #t2 = dt.datetime.now()
+        #print "Getting Weights takes: {0} seconds".format((t2 - t1).total_seconds())
 
 
 class ZonalDataPoint(ZonalDataBase):
@@ -704,7 +717,7 @@ class ZonalDataPoint(ZonalDataBase):
         """
         # TODO: kwargs necessary?
 
-        t1 = dt.datetime.now()
+        #t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
         layer = self.src.ds.GetLayerByName('src')
@@ -731,8 +744,8 @@ class ZonalDataPoint(ZonalDataBase):
             feat = layer.GetFeature(ixnext)
             ogr_add_geometry(dst, feat.GetGeometryRef(), [feat.GetField('index'), trg_index])
 
-        t2 = dt.datetime.now()
-        print "Getting Weights takes: %f seconds" % (t2 - t1).total_seconds()
+        #t2 = dt.datetime.now()
+        #print "Getting Weights takes: %f seconds" % (t2 - t1).total_seconds()
 
 
 class ZonalStatsBase(object):
