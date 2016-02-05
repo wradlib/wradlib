@@ -9,6 +9,12 @@ You can install the latest wradlib release from PyPI via ``$ pip install wradlib
 Bleeding Edge
 -------------
 
+Nothing so far...
+
+
+Version 0.7.0
+-------------
+
 **Highlights**
 
 New *experimental* module ``zonalstats``: it supports computation of zonal statistics (so far mean and variance) for target polygons. 
