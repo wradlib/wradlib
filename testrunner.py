@@ -21,7 +21,7 @@ import inspect
 # This import has to be done in order to return correct exit codes
 # see http://stackoverflow.com/questions/14354496/python-returns-wrong-exit-code
 #    for details on this weird fix
-import scipy.weave
+#import scipy.weave
 
 VERBOSE = 2
 
@@ -147,7 +147,7 @@ def main(args):
 
     try:
         options, arg = getopt.getopt(args, 'aeduhv:', ['all','examples', 'docs', 'units', 'help'])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         err_exit(e.msg)
 
     if not options:
