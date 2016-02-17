@@ -56,8 +56,6 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
                          thrs=59.0):
     """Gate-by-Gate attenuation correction according to Hitschfeld & Bordan :cite:`Hitschfeld1954`
 
-
-
     Parameters
     ----------
     gateset : array
@@ -67,30 +65,26 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
         polar form with `m` azimuths and `n` range-bins the input array's
         shape can be either (l,m,n) or (m,l,n)
         data has to be provided in decibel representation of reflectivity [dBZ]
-
     a : float
         proportionality factor of the k-Z relation ( :math:`k=a*Z^{b}` ).
         Per default set to 1.67e-4.
-
     b : float
         exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
         0.7.
-
     l : float
         length of a range gate [km]. Per default set to 1.0.
-
     mode : string
         controls how the function reacts, if the sum of signal and attenuation
-        exceeds the
-        threshold ``thrs``
+        exceeds the threshold ``thrs``
         Possible values:
-        'warn' : emit a warning through the module's logger but continue
-        execution
-        'zero' : set offending gates to 0.0
-        'nan' : set offending gates to nan
-        'except': raise an AttenuationOverflowError exception
-        Any other mode will also raise the Exception.
 
+        - 'warn' : emit a warning through the module's logger but continue
+          execution
+        - 'zero' : set offending gates to 0.0
+        - 'nan' : set offending gates to nan
+        - 'except': raise an AttenuationOverflowError exception
+
+        Any other mode will also raise the Exception.
     thrs : float
         threshold, for the sum of attenuation and signal, which is deemed
         unplausible.
@@ -107,12 +101,13 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
         Exception, if attenuation exceeds ``thrs`` and no handling ``mode`` is
         set.
 
-    .. comment
-        _[1] Krämer2008 - Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
-        für die Niederschlagsvorhersage und die Siedlungsentwässerung,
-        Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
-        Landwirtschaftlichen Wasserbau
-        Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
+    References
+    ----------
+    Krämer2008 - Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
+    für die Niederschlagsvorhersage und die Siedlungsentwässerung,
+    Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
+    Landwirtschaftlichen Wasserbau
+    Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
 
     """
     if coefficients is None:
@@ -262,10 +257,8 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
                          n = 30, l = 1.0, mode = 'zero', thrs_dBZ = 59.0,
                          max_PIA = 20.0):
     """Gate-by-Gate attenuation correction based on Stefan Kraemer
-    :cite:`Kraemer2008, expanded by Stephan Jacobi, Maik Heistermann and
+    :cite:`Kraemer2008`, expanded by Stephan Jacobi, Maik Heistermann and
     Thomas Pfaff :cite:`Jacobi2012`.
-
-
 
     Parameters
     ----------
@@ -275,47 +268,36 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
         the azimuths are supposed to vary along the next to last array-dimension.
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
-
     a_max : float
         initial value for linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
-
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
         overflow (sum of signal and attenuation exceeds the threshold ``thrs``).
         Per default set to 2.33e-5.
-
     b : float
         exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
         0.7.
-
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
-
     l : float
         length of a range gate [km]. Per default set to 1.0.
-
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
         signal and attenuation exceeds the threshold ``thrs``).
         Possible values:
 
-        'warn' : emit a warning through the module's logger but continue
-        execution
-
-        'zero' : set offending gates to 0.0
-
-        'nan' : set offending gates to nan
-
-        'cap' : set offending gates to maximum allowable PIA (max_PIA)
+        - 'warn' : emit a warning through the module's logger but continue
+          execution
+        - 'zero' : set offending gates to 0.0
+        - 'nan' : set offending gates to nan
+        - 'cap' : set offending gates to maximum allowable PIA (max_PIA)
 
         Per default set to 'zero'. Any other mode will raise an Exception.
-
     thrs_dBZ : float
         Threshold, for the attenuation corrected signal [dBZ], which is deemed
         unplausible. Per default set to 59.0 dBZ.
-
     max_PIA : float
         threshold, for the maximum path integrated attenuation [dB] which allows
         reasonable attenuation corrections. Per default set to 20.0 dB.
@@ -407,52 +389,41 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
-
     a_max : float
         initial value for linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
-
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
         overflow (sum of signal and attenuation exceeds the threshold ``thrs``).
         Per default set to 2.33e-5.
-
     b : float
         exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
         0.7.
-
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
-
     l : float
         length of a range gate [km]. Per default set to 1.0.
-
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
         signal and attenuation exceeds the threshold ``thrs``).
         Possible values:
 
-        'warn' : emit a warning through the module's logger but continue
-        execution
-
-        'zero' : set offending gates to 0.0
-
-        'nan' : set offending gates to nan
+        - 'warn' : emit a warning through the module's logger but continue
+          execution
+        - 'zero' : set offending gates to 0.0
+        - 'nan' : set offending gates to nan
 
         Per default set to 'zero'. Any other mode will raise an Exception.
-
     constraints : list
         list of constraint functions. The signature of these functions has to be
         constraint_function(`gateset`, `k`, \*`constr_args`). Their return value
         must be a boolean array of shape gateset.shape[:-1] set to True for
         beams, which do not fulfill the constraint.
-
     constr_args : list
         list of lists, which are to be passed to the individual constraint
         functions using the \*args mechanism
         (len(constr_args) == len(constraints))
-
     diagnostics : dictionary
         dictionary of variables, which are usually not returned by the function
         but may be of interest for research or during testing. Defaults to {},
@@ -462,9 +433,9 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Currently implemented diagnostics:
 
             - 'a' - returns the values of the a coefficient of the k-Z
-               relation, which was used to calculate the attenuation for the
-               respective beam as a np.array. The shape of the returned array
-               will be gateset.shape[:-1].
+              relation, which was used to calculate the attenuation for the
+              respective beam as a np.array. The shape of the returned array
+              will be gateset.shape[:-1].
 
     Returns
     -------
@@ -480,7 +451,6 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Examples
     --------
-
     Implementing the original Hitschfeld & Bordan (1954) algorithm with
     otherwise default parameters::
 
@@ -552,9 +522,9 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         elif mode == 'zero': k[beams2correct] = 0.0
         else: raise AttenuationOverflowError
 
-    if diagnostics.has_key('a'):
+    if 'a' in diagnostics:
             diagnostics['a'] = a_used
-    if diagnostics.has_key('b'):
+    if 'b' in diagnostics:
             diagnostics['b'] = b_used
 
     return k
@@ -632,24 +602,20 @@ def bisectReferenceAttenuation(gateset,
 
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
-
     pia_ref : array
         Array of the same number of dimensions as ``gateset``, but the size of
         the last dimension is 1, as it constitutes the reference pia [dB]of the
         last rangegate of every beam.
-
     a_max : float
         Upper bound of the bisection interval within the linear coefficient a of
         the k-Z relation has to be. ( :math:`k=a*Z^{b}` ).
 
         Per default set to 1.67e-4.
-
     a_min : float
         Lower bound of the bisection interval within the linear coefficient a of
         the k-Z relation has to be. ( :math:`k=a*Z^{b}` ).
 
         Per default set to 2.33e-5.
-
     b_start : float
         Initial value for exponential coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ). This value will be lowered incremental by 0.01 if
@@ -657,17 +623,14 @@ def bisectReferenceAttenuation(gateset,
         ``a_min`` within the number of given iterations ``max_iterations``.
 
         Per default set to 0.7.
-
     l : float
         Radial length of a range gate [km].
 
         Per default set to 1.0.
-
     mode : string {‘ratio’ or ‘difference’}
         Kind of tolerance of calculated pia in relation to reference pia.
 
         Per default set to 'difference'.
-
     thrs : float
         Value of the tolerance to stop bisection iteration successful. It is
         recommended to choose 0.05 for ratio ``mode`` and 0.25 for difference
@@ -675,13 +638,11 @@ def bisectReferenceAttenuation(gateset,
         respectively.
 
         Per default set to 0.25.
-
     max_iterations : integer
         Number of bisection iteration before the exponential coefficient b of
         the k-Z relation will be decreased and the bisection starts again.
 
         Per default set to 10.
-
 
     Returns
     -------
@@ -694,10 +655,7 @@ def bisectReferenceAttenuation(gateset,
     b : array
         Array with the same shape as ``pia_ref`` containing the finally used
         exponential k-Z relation coefficient b for successful pia calculation.
-
     """
-
-
     # Prepare arrays of initial k-Z relation coefficients for each beam.
     a_hi = np.repeat(a_max, pia_ref.shape)
     a_lo = np.repeat(a_min, pia_ref.shape)
@@ -739,7 +697,6 @@ def bisectReferenceAttenuation(gateset,
 def _sector_filter(mask, min_sector_size):
     """Calculate an array of same shape as mask, which is set to 1 in case of at
     least min_sector_size adjacent values, otherwise it is set to 0.
-
     """
 
     kernela = np.ones([1] * (mask.ndim - 1) + [min_sector_size])
@@ -838,13 +795,11 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
 
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
-
     a_max : float
         Initial value for linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ).
 
         Per default set to 1.67e-4.
-
     a_min : float
         Minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ) in the downwards iteration of 'a' in case
@@ -852,18 +807,15 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
         conditions ``constraints``.
 
         Per default set to 2.33e-5.
-
     n_a : integer
         Number of iterations from ``a_max`` to ``a_min``.
 
         Per default set to 4.
-
     b_max : float
         Initial value for exponential coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ).
 
         Per default set to 0.7.
-
     b_min : float
         Minimal allowed exponential coefficient of the k-Z relation
         ( :math:`k=a*Z^{b}` ) in the downwards iteration of 'b' in case
@@ -872,34 +824,28 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
         reached the lower limit ``a_min``.
 
         Per default set to 0.65.
-
     n_b : integer
         Number of iterations from ``b_max`` to ``b_min``.
 
         Per default set to 6.
-
     l : float
         Radial length of a range gate [km].
 
         Per default set to 1.0.
-
     constraints : list
         List of constraint functions. The signature of these functions has to be
         constraint_function(`gateset`, `k`, \*`constr_args`). Their return value
         must be a boolean array of shape gateset.shape[:-1] set to True for
         beams, which do not fulfill the constraint.
-
     constraint_args : list
         List of lists, which are to be passed to the individual constraint
         functions using the \*args mechanism
         (len(constr_args) == len(constraints)).
-
     sector_thr : integer
         Number of adjacent beams, for which in case of breaching the constraints
         the attenuation with downward iterated ``a`` and ``b`` - parameters is
         recalculated. For more narrow sectors the integrated attenuation of the
         last gate is interpolated and used as reference for the recalculation.
-
 
     Returns
     -------
@@ -909,7 +855,6 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
 
     Examples
     --------
-
     Implementing the original Hitschfeld & Bordan (1954) algorithm with
     otherwise default parameters::
 
@@ -931,7 +876,6 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
                                                        wrl.atten.constraint_pia],
                                           constr_args=[[59.0],
                                                       [20.0]])
-
     """
 
     # todo: überlauf darf so hoch sein, wie die urspruenglichen messwerte
@@ -1022,7 +966,6 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
         last array-dimension and the azimuths are supposed to vary
         along the next to last array-dimension. Data has to be provided
         in decibel representation of reflectivity [dBZ].
-
     frequency : float
         Radar-frequency [GHz]:
 
@@ -1038,22 +981,18 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
 
             Per default set to 5.64 as used by the German Weather
             Service radars.
-
     hydrophobicity : float
         Empirical parameter based on the hydrophobicity of the radome
         material.
 
-            0.165 for standard radomes,
-
-            0.0575 for hydrophobic radomes.
+            - 0.165 for standard radomes,
+            - 0.0575 for hydrophobic radomes.
 
             Per default set to 0.165.
-
     n_r : integer
         The radius of rangebins within the rain-intensity is
         statistically evaluated as the representative rain-intensity
         over radome.
-
     stat : class
         A name of a numpy function for statistical aggregation of the
         central rangebins defined by n_r.
@@ -1068,7 +1007,6 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
         In case the input array (gateset) contains NaNs the
         corresponding beams of the output array (k) will be set as NaN,
         too.
-
     """
 
     # Select rangebins inside the defined center-range n_r.
@@ -1103,7 +1041,6 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
     Returns
     -------
     output : array of same shape as kdp containing the path integrated attenuation
-
     """
     alpha = gamma * kdp
     return 2*np.cumsum(alpha, axis=-1)*dr
@@ -1111,4 +1048,4 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <atten> as main...'
+    print('wradlib: Calling module <atten> as main...')

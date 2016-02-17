@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        verify
 # Purpose:
 #
@@ -7,7 +7,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 #!/usr/bin/env python
 
 """
@@ -29,20 +29,17 @@ estimates to ground truth.
 import numpy as np
 from scipy.spatial import KDTree
 from scipy import stats
-import pylab as pl
+import matplotlib.pyplot as pl
 from pprint import pprint
 
-
 # wradlib modules
-import wradlib.georef as georef
-import wradlib.util as util
-from util import apichange_kwarg
+from . import georef as georef
+from . import util as util
+from .util import apichange_kwarg
+
 
 class PolarNeighbours():
     """
-    .. versionchanged:: 0.5.0
-       using osr objects instead of PROJ.4 strings as parameter
-
     For a set of projected point coordinates, extract the neighbouring bin values
     from a data set in polar coordinates. Use as follows:
 
@@ -51,6 +48,9 @@ class PolarNeighbours():
 
     Second, use the method *extract* in order to extract the values from a data array
     which corresponds to the polar coordinates
+
+    .. versionchanged:: 0.5.0
+       using osr objects instead of PROJ.4 strings as parameter
 
     Parameters
     ----------
@@ -71,7 +71,7 @@ class PolarNeighbours():
         number of neighbouring radar bins you would like to find
 
     """
-    @apichange_kwarg("0.6.0", par="projstr", typ=str, expar="proj", exfunc=georef.proj4_to_osr)
+
     def __init__(self, r, az, sitecoords, proj, x, y, nnear=9):
         self.nnear = nnear
         self.az = az
@@ -81,12 +81,13 @@ class PolarNeighbours():
         # compute the centroid coordinates in lat/lon
         bin_lon, bin_lat = georef.polar2centroids(r, az, sitecoords)
         # reproject the centroids to cartesian map coordinates
-        binx, biny = georef.reproject(bin_lon, bin_lat, projection_target=proj)
+        binx, biny, _ = georef.reproject(bin_lon, bin_lat, projection_target=proj)
         self.binx, self.biny = binx.ravel(), biny.ravel()
         # compute the KDTree
-        tree = KDTree(zip(self.binx, self.biny))
+        tree = KDTree(list(zip(self.binx, self.biny)))
         # query the tree for nearest neighbours
-        self.dist, self.ix = tree.query(zip(x, y), k=nnear)
+        self.dist, self.ix = tree.query(list(zip(x, y)), k=nnear)
+
     def extract(self, vals):
         """
         Extracts the values from an array of shape (azimuth angles, range gages)
@@ -102,12 +103,14 @@ class PolarNeighbours():
 
         """
         assert vals.ndim >= 2, \
-           'Your <vals> array should at least contain an azimuth and a range dimension.'
-        assert tuple(vals.shape[-2:])==(len(self.az), len(self.r)), \
-           'The shape of your vals array does not correspond with the range and azimuths you provided for your polar data set'
+            'Your <vals> array should at least contain an azimuth and a range dimension.'
+        assert tuple(vals.shape[-2:]) == (len(self.az), len(self.r)), \
+            'The shape of your vals array does not correspond with the range and azimuths ' \
+            'you provided for your polar data set'
         shape = vals.shape
-        vals = vals.reshape(np.concatenate( (shape[:-2], np.array([len(self.az) * len(self.r)])) ) )
-        return vals[...,self.ix]
+        vals = vals.reshape(np.concatenate((shape[:-2], np.array([len(self.az) * len(self.r)]))))
+        return vals[..., self.ix]
+
     def get_bincoords(self):
         """
         Returns all bin coordinates in map projection
@@ -118,6 +121,7 @@ class PolarNeighbours():
 
         """
         return self.binx, self.biny
+
     def get_bincoords_at_points(self):
         """
         Returns bin coordinates only in the neighbourhood of points
@@ -149,89 +153,104 @@ class ErrorMetrics():
 
     Examples
     --------
-    >>> obs = np.random.uniform(0,10,100)
-    >>> est = np.random.uniform(0,10,100)
-    >>> metrics = ErrorMetrics(obs,est)
+    >>> obs = np.random.uniform(0, 10, 100)
+    >>> est = np.random.uniform(0, 10, 100)
+    >>> metrics = ErrorMetrics(obs, est)
     >>> metrics.all() # doctest: +SKIP
     >>> metrics.pprint() # doctest: +SKIP
     >>> ax = metrics.plot() # doctest: +SKIP
     >>> metrics.report() # doctest: +SKIP
 
     """
+
     def __init__(self, obs, est, minval=None):
         # Check input
-        assert len(obs)==len(est), "obs and est need to have the same length. len(obs)=%d, len(est)=%d" % (len(obs, len(est)))
+        assert len(obs) == len(est), "obs and est need to have the same length. " \
+                                     "len(obs)=%d, len(est)=%d" % (len(obs), len(est))
         # only remember those entries which have both valid observations AND estimates
-        ix = np.intersect1d( util._idvalid(obs, minval=minval),  util._idvalid(est, minval=minval))
-        self.n      = len(ix)
-        if self.n==0:
-            print "WARNING: No valid pairs of observed and estimated available for ErrorMetrics!"
+        ix = np.intersect1d(util._idvalid(obs, minval=minval), util._idvalid(est, minval=minval))
+        self.n = len(ix)
+        if self.n == 0:
+            print("WARNING: No valid pairs of observed and estimated available for ErrorMetrics!")
             self.obs = np.array([])
             self.est = np.array([])
         else:
-            self.obs    = obs[ix]
-            self.est    = est[ix]
+            self.obs = obs[ix]
+            self.est = est[ix]
         self.resids = self.est - self.obs
+
     def corr(self):
         """Correlation coefficient
         """
-        return np.round( np.corrcoef(self.obs, self.est)[0,1], 2)
+        return np.round(np.corrcoef(self.obs, self.est)[0, 1], 2)
+
     def r2(self):
         """Coefficient of determination
         """
-        return np.round( ( np.corrcoef(self.obs, self.est)[0,1] )**2, 2)
+        return np.round((np.corrcoef(self.obs, self.est)[0, 1]) ** 2, 2)
+
     def spearman(self):
         """Spearman rank correlation coefficient
         """
-        return np.round( stats.stats.spearmanr(self.obs, self.est)[0], 2)
+        return np.round(stats.stats.spearmanr(self.obs, self.est)[0], 2)
+
     def nash(self):
         """Nash-Sutcliffe Efficiency
         """
-        return np.round(1. - ( self.mse() / np.var(self.obs) ), 2)
+        return np.round(1. - (self.mse() / np.var(self.obs)), 2)
+
     def sse(self):
         """Sum of Squared Errors
         """
-        return np.round( np.sum( self.resids**2 ), 2)
+        return np.round(np.sum(self.resids ** 2), 2)
+
     def mse(self):
         """Mean Squared Error
         """
-        return np.round( self.sse() / self.n, 2)
+        return np.round(self.sse() / self.n, 2)
+
     def rmse(self):
         """Root Mean Squared Error
         """
-        return np.round( self.mse()**0.5, 2)
+        return np.round(self.mse() ** 0.5, 2)
+
     def mas(self):
         """Mean Absolute Error
         """
-        return np.round( np.mean (np.abs(self.resids) ), 2)
+        return np.round(np.mean(np.abs(self.resids)), 2)
+
     def meanerr(self):
         """Mean Error
         """
-        return np.round( np.mean ( self.resids ) , 2)
+        return np.round(np.mean(self.resids), 2)
+
     def ratio(self):
         """Mean ratio between observed and estimated
         """
-        return np.round( np.mean( self.est / self.obs ), 2)
+        return np.round(np.mean(self.est / self.obs), 2)
+
     def pbias(self):
         """Percent bias
         """
-        return np.round( self.meanerr() * 100./ np.mean(self.obs), 1)
+        return np.round(self.meanerr() * 100. / np.mean(self.obs), 1)
+
     def all(self):
         """Returns a dictionary of all error metrics
         """
-        out = {}
-        out["corr"]     = self.corr()
-        out["r2"]       = self.r2()
-        out["spearman"] = self.spearman()
-        out["nash"]     = self.nash()
-        out["sse"]      = self.sse()
-        out["mse"]      = self.mse()
-        out["rmse"]     = self.rmse()
-        out["mas"]      = self.mas()
-        out["meanerr"]  = self.meanerr()
-        out["ratio"]    = self.ratio()
-        out["pbias"]    = self.pbias()
+        out = {"corr": self.corr(),
+               "r2": self.r2(),
+               "spearman": self.spearman(),
+               "nash": self.nash(),
+               "sse": self.sse(),
+               "mse": self.mse(),
+               "rmse": self.rmse(),
+               "mas": self.mas(),
+               "meanerr": self.meanerr(),
+               "ratio": self.ratio(),
+               "pbias": self.pbias()}
+
         return out
+
     def plot(self, ax=None, unit="", maxval=None):
         """Scatter plot of estimates vs observations
 
@@ -241,32 +260,34 @@ class ErrorMetrics():
            if None, a new axes object will be created
         unit : string
            measurement unit of the observations / estimates
-
+        maxval : maximum value for plot range, defaults to max(obs, est)
         """
         if self.n == 0:
-            print "No valid data, no plot."
+            print("No valid data, no plot.")
             return None
         doplot = False
-        if ax==None:
+        if ax is None:
             fig = pl.figure()
-            ax  = fig.add_subplot(111, aspect=1.)
+            ax = fig.add_subplot(111, aspect=1.)
             doplot = True
         ax.plot(self.obs, self.est, mfc="None", mec="black", marker="o", lw=0)
+        if maxval is None:
+            maxval = np.max(np.append(self.obs, self.est))
         pl.xlim(xmin=0., xmax=maxval)
         pl.ylim(ymin=0., ymax=maxval)
-        if maxval==None:
-            maxval = np.max(np.append(self.obs, self.est))
-        ax.plot([0,maxval], [0,maxval], "-", color="grey")
+        ax.plot([0, maxval], [0, maxval], "-", color="grey")
         pl.xlabel("Observations (%s)" % unit)
         pl.ylabel("Estimates (%s)" % unit)
         if (not pl.isinteractive()) and doplot:
             pl.show()
         return ax
+
     def pprint(self):
         """Pretty prints a summary of error metrics
         """
-        pprint( self.all() )
-    def report(self, metrics=["rmse","nash","pbias"], ax=None, unit="", maxval=None):
+        pprint(self.all())
+
+    def report(self, metrics=None, ax=None, unit="", maxval=None):
         """Pretty prints selected error metrics over a scatter plot
 
         Parameters
@@ -281,28 +302,26 @@ class ErrorMetrics():
 
         """
         if self.n == 0:
-            print "No valid data, no report."
+            print("No valid data, no report.")
             return None
+        if metrics is None:
+            metrics = ["rmse", "nash", "pbias"]
         doplot = False
-        if ax==None:
+        if ax is None:
             fig = pl.figure()
-            ax  = fig.add_subplot(111, aspect=1.)
+            ax = fig.add_subplot(111, aspect=1.)
             doplot = True
         ax = self.plot(ax=ax, unit=unit, maxval=maxval)
-        if maxval==None:
+        if maxval is None:
             maxval = np.max(np.append(self.obs, self.est))
         xtext = 0.6 * maxval
-        ytext = ( 0.1 + np.arange(0,len(metrics),0.1) )  * maxval
+        ytext = (0.1 + np.arange(0, len(metrics), 0.1)) * maxval
         mymetrics = self.all()
-        for i,metric in enumerate(metrics):
-            pl.text(xtext, ytext[i], "%s: %s" % (metric,mymetrics[metric]) )
+        for i, metric in enumerate(metrics):
+            pl.text(xtext, ytext[i], "%s: %s" % (metric, mymetrics[metric]))
         if not pl.isinteractive() and doplot:
             pl.show()
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <verify> as main...'
-
-
-
-
+    print('wradlib: Calling module <verify> as main...')

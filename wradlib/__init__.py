@@ -4,34 +4,20 @@ wradlib
 
 """
 
-import adjust
-##from adjust import *
-import atten
-##from atten import *
-import clutter
-##from clutter import *
-import comp
-##from comp import *
-import fill
-##from fill import *
-import io
-##from io import *
-import georef
-##from georef import *
-import ipol
-##from ipol import *
-import qual
-##from qual import *
-import trafo
-##from trafo import *
-import verify
-##from verify import *
-import vis
-##from vis import *
-import vpr
-##from vpr import *
-import zr
-##from zr import *
-import zonalstats
-import util
-##from util import *
+from . import adjust
+from . import atten
+from . import clutter
+from . import comp
+from . import dp
+from . import fill
+from . import io
+from . import georef
+from . import ipol
+from . import qual
+from . import trafo
+from . import verify
+from . import vis
+from . import vpr
+from . import zr
+from . import zonalstats
+from . import util
