@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        load_rainbow_example.py
 # Purpose:     show how to load and work with Gematronik Rainbow5 format
 #
@@ -7,16 +7,16 @@
 # Created:     08.09.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
+#pl.interactive(True)
 import numpy as np
 import os
- 
+
 
 def ex_load_rainbow():
-
     filename = os.path.dirname(__file__) + '/' + 'data/2013070308340000dBuZ.azi'
 
     # load rainbow file contents to dict
@@ -24,21 +24,21 @@ def ex_load_rainbow():
 
     # get azimuthal data
     azi = rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['data']
-    azidepth =  float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@depth'])
+    azidepth = float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@depth'])
     azirange = float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@rays'])
-    azi =  azi * azirange / 2**azidepth
+    azi = azi * azirange / 2 ** azidepth
 
     # create range array
     stoprange = float(rbdict['volume']['scan']['slice']['stoprange'])
     rangestep = float(rbdict['volume']['scan']['slice']['rangestep'])
-    r = np.arange(0,stoprange,rangestep)
+    r = np.arange(0, stoprange, rangestep)
 
     # get reflectivity data
     data = rbdict['volume']['scan']['slice']['slicedata']['rawdata']['data']
     datadepth = float(rbdict['volume']['scan']['slice']['slicedata']['rawdata']['@depth'])
     datamin = float(rbdict['volume']['scan']['slice']['slicedata']['rawdata']['@min'])
     datamax = float(rbdict['volume']['scan']['slice']['slicedata']['rawdata']['@max'])
-    data = datamin + data * (datamax - datamin) / 2**datadepth
+    data = datamin + data * (datamax - datamin) / 2 ** datadepth
 
     # get annotation data
     unit = rbdict['volume']['scan']['slice']['slicedata']['rawdata']['@type']
@@ -64,17 +64,7 @@ def ex_load_rainbow():
     pl.tight_layout()
     pl.show()
 
+
 # =======================================================
 if __name__ == '__main__':
     ex_load_rainbow()
-
-
-    
-
-
-    
-
-    
-
-
-

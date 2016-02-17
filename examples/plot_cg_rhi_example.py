@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        plot_cg_rhi_example.py
 # Purpose:     show a few examples on how to use wradlib.vis.plot_cg_rhi
 #
@@ -8,11 +8,11 @@
 # Created:     25.02.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 import numpy as np
 # importing most matplotlib routines at once
-import pylab as pl
-pl.interactive(True)
+import matplotlib.pyplot as pl
+#pl.interactive(True)
 # well, it's a wradlib example
 import wradlib
 import matplotlib.gridspec as gridspec
@@ -20,8 +20,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import NullFormatter
 import os
 
-def ex_plot_cg_rhi():
 
+def ex_plot_cg_rhi():
     # reading in data, range and theta arrays from special rhi hdf5 file
     filename = os.path.dirname(__file__) + '/' + 'data/polar_rhi_dBZ_bonn.h5'
     data, meta = wradlib.io.from_hdf5(filename, dataset='data')
@@ -53,7 +53,7 @@ def ex_plot_cg_rhi():
     # This examples makes heavy use of new matlotlib functionality. See
     # function help for more information.
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # First, creation of three simple figures
     # figure #1
     # the simplest call, plot cg rhi in new window
@@ -63,7 +63,7 @@ def ex_plot_cg_rhi():
     t.set_y(1.05)
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #2
     # now lets plot with given range and theta arrays
     # and plot some annotation and colorbar
@@ -98,7 +98,7 @@ def ex_plot_cg_rhi():
     # legend on main cg axis
     cgax.legend()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #3
     # now lets zoom into the data and apply our range_factor (to km)
     # and plot some annotation and colorbar
@@ -116,7 +116,7 @@ def ex_plot_cg_rhi():
     cbar.set_label('reflectivity [dBZ]')
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #4
     # plot figure #1-3 in one plot
     # stacked vertically
@@ -164,7 +164,7 @@ def ex_plot_cg_rhi():
     cbar.set_label('reflectivity [dBZ]')
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #5
     # create figure with GridSpec
     pl.figure()
@@ -183,7 +183,7 @@ def ex_plot_cg_rhi():
     t = pl.gcf().suptitle('GridSpec CG Example')
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #6
     # create figure with co-located x and y-axis
     # using axesgrid1 toolkit
@@ -197,17 +197,17 @@ def ex_plot_cg_rhi():
     axHistX.xaxis.set_major_formatter(NullFormatter())
     axHistY.yaxis.set_major_formatter(NullFormatter())
     axHistX.hist(x)
-    if not pl.matplotlib.__version__=="1.2.1":
+    if not pl.matplotlib.__version__ == "1.2.1":
         # There is a bug in matplotlib 1.2.1,
         # see https://github.com/matplotlib/matplotlib/pull/1985
         axHistY.hist(y, orientation='horizontal')
     else:
         axHistY.text(0.5, 0.5, "Does not work with\nmatplotlib 1.2.1",
-        horizontalalignment="center", rotation=90, fontsize=15, color="red")
+                     horizontalalignment="center", rotation=90, fontsize=15, color="red")
     t = pl.gcf().suptitle('AxesDivider CG Example')
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #7
     # compare plots with refraction True and refraction False
     pl.figure()
@@ -230,11 +230,10 @@ def ex_plot_cg_rhi():
     cgax.set_ylim(10, 12)
     # plot additional data point ((theta, range)
     paax.plot(15, 42, 'bo', label="paax")
-    caax. plot(40, 11, 'ro', label="caax")
+    caax.plot(40, 11, 'ro', label="caax")
     cgax.legend()
     pl.tight_layout()
     pl.subplots_adjust(hspace=0.4)
-
 
     # figure #7-2
     # check how refraction is doing
@@ -255,12 +254,13 @@ def ex_plot_cg_rhi():
     cgax.set_ylim(10, 12)
     # plot additional data point ((theta, range)
     paax.plot(15, 42, 'bo', label="paax")
-    caax. plot(40, 11, 'ro', label="caax")
+    caax.plot(40, 11, 'ro', label="caax")
     cgax.legend()
     pl.tight_layout()
 
     # show the plots
     pl.show()
+
 
 if __name__ == '__main__':
     ex_plot_cg_rhi()
