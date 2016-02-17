@@ -9,7 +9,10 @@ You can install the latest wradlib release from PyPI via ``$ pip install wradlib
 Bleeding Edge
 -------------
 
-Nothing so far...
+**Highlights**
+
+wradlib goes python3. The whole package was made python3-ready. The package is ready to run under python2.7.X and python3.5. All needed dependencies are also python3 ready.
+While doing the transformation not only code was adapted. Docstrings, tests and examples as well as the documentation were reviewed. All tests are performing good on python27 and python3.5
 
 
 Version 0.7.0
