@@ -203,10 +203,10 @@ Examples
 
 `This extensive example <https://bitbucket.org/wradlib/wradlib/src/default/examples/tutorial_zonal_statistics.py>`_ shows creation of Zonal Statistics from RADOLAN Data:
 
-.. plot:: pyplots/tutorial_zonal_statistics.py
-    :include-source: False
+    .. plot:: pyplots/tutorial_zonal_statistics.py
+        :include-source: False
 
 `This second example <https://bitbucket.org/wradlib/wradlib/src/default/examples/tutorial_zonal_statistics_polar.py>`_ shows creation of Zonal Statistics from Radar Data:
 
-.. plot:: pyplots/tutorial_zonal_statistics_polar.py
-    :include-source: False
+    .. plot:: pyplots/tutorial_zonal_statistics_polar.py
+        :include-source: False
