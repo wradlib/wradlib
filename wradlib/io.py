@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:         io
 # Purpose:
 #
@@ -7,7 +7,7 @@
 # Created:      26.10.2011
 # Copyright:    (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:      The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 #!/usr/bin/env python
 
 """
@@ -39,25 +39,34 @@ on how to deal with different file formats.
 """
 
 # standard libraries
-
+from __future__ import absolute_import
 import sys
 import datetime as dt
-import cPickle as pickle
-import StringIO
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+try:
+    from StringIO import StringIO
+    import io
+except ImportError:
+    from io import StringIO
+    import io
+
+# from builtins import bytes, chr
 from collections import OrderedDict
 import re
 import os
 import warnings
-
-
 
 # site packages
 import h5py
 import numpy as np
 import netCDF4 as nc  # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
 from osgeo import gdal, ogr, osr
-import util
-import georef
+from . import util as util
+from . import georef as georef
 
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
@@ -77,11 +86,11 @@ def getDXTimestamp(name):
 
     Parameters
     ----------
-    name : string representing a DWD product name
-
-    tz : timezone object (see pytz package or datetime module for explanation)
-         in case the timezone of the data is not UTC
-
+    name : string
+        representing a DWD product name
+    tz : timezone object
+        (see pytz package or datetime module for explanation)
+        in case the timezone of the data is not UTC
     opt : currently unused
 
     Returns
@@ -100,14 +109,14 @@ def unpackDX(raw):
 
     beam = []
 
-    ##    # naive version
-    ##    # 49193 function calls in 0.772 CPU seconds
-    ##    # 20234 function calls in 0.581 CPU seconds
-    ##    for item in raw:
-    ##        if item & flag:
-    ##            beam.extend([0]* (item & data))
-    ##        else:
-    ##            beam.append(item & data)
+    # # naive version
+    # # 49193 function calls in 0.772 CPU seconds
+    # # 20234 function calls in 0.581 CPU seconds
+    # for item in raw:
+    #     if item & flag:
+    #         beam.extend([0]* (item & data))
+    #     else:
+    #         beam.append(item & data)
 
     # performance version - hopefully
     # 6204 function calls in 0.149 CPU seconds
@@ -124,12 +133,12 @@ def unpackDX(raw):
     beam.extend(raw[0:flagged[0]])
 
     # iterate over all flags except the last one
-    for this, next in zip(flagged[:-1], flagged[1:]):
+    for this, nxt in zip(flagged[:-1], flagged[1:]):
         # create as many zeros as there are given within the flagged
         # byte's data part
         beam.extend([0] * (raw[this] & data))
         # append the data until the next flag
-        beam.extend(raw[this + 1:next])
+        beam.extend(raw[this + 1:nxt])
 
     # process the last flag
     # add zeroes
@@ -144,7 +153,13 @@ def unpackDX(raw):
 
 def parse_DX_header(header):
     """Internal function to retrieve and interpret the ASCII header of a DWD
-    DX product file."""
+    DX product file.
+
+    Parameters
+    ----------
+    header : string
+        string representation of DX header
+    """
     # empty container
     out = {}
     # RADOLAN product type def
@@ -176,13 +191,13 @@ def parse_DX_header(header):
 
 
 def readDX(filename):
-    r"""Data reader for German Weather Service DX product raw radar data files.
+    """Data reader for German Weather Service DX product raw radar data files.
 
     This product uses a simple algorithm to compress zero values to reduce data
     file size.
 
-    Notes
-    -----
+    Note
+    ----
     While the format appears to be well defined, there have been reports on DX-
     files that seem to produce errors. e.g. while one file usually contains a
     360 degree by 128 1km range bins, there are files, that contain 361 beams.
@@ -202,29 +217,31 @@ def readDX(filename):
 
     Parameters
     ----------
-    filename : binary file of DX raw data
+    filename : string
+        binary file of DX raw data
 
     Returns
     -------
-    data : numpy array of image data [dBZ]; shape (360,128)
+    data : numpy array
+        of image data [dBZ]; shape (360,128)
 
-    attributes : dictionary of attributes - currently implemented keys:
+    attributes : dict
+        dictionary of attributes - currently implemented keys:
 
         - 'azim' - azimuths np.array of shape (360,)
         - 'elev' - elevations (1 per azimuth); np.array of shape (360,)
-        - 'clutter' - clutter mask; boolean array of same shape as `data`;
-            corresponds to bit 15 set in each dataset.
-        - 'bytes'- the total product length (including header). Apparently,
-            this value may be off by one byte for unknown reasons
+        - 'clutter' - clutter mask; boolean array of same shape as `data`; corresponds to bit 15 set in each dataset.
+        - 'bytes'- the total product length (including header). Apparently, this value may be off by one byte
+          for unknown reasons
         - 'version'- a product version string - use unknown
         - 'cluttermap' - number of the (DWD internal) cluttermap used
         - 'dopplerfilter' - number of the dopplerfilter used (DWD internal)
         - 'statfilter' - number of a statistical filter used (DWD internal)
         - 'elevprofile' - as stated in the format description, this list
-            indicates the elevations in the eight 45 degree sectors. These
-            sectors need not start at 0 degrees north, so it is advised to
-            explicitly evaluate the `elev` attribute, if elevation information
-            is needed.
+          indicates the elevations in the eight 45 degree sectors. These
+          sectors need not start at 0 degrees north, so it is advised to
+          explicitly evaluate the `elev` attribute, if elevation information
+          is needed.
         - 'message' - additional text stored in the header.
     """
 
@@ -232,8 +249,9 @@ def readDX(filename):
     databitmask = 2 ** (13 - 1) - 1
     clutterflag = 2 ** 15
     dataflag = 2 ** 13 - 1
+
     # open the DX file in binary mode for reading
-    if type(filename) == file:
+    if isinstance(filename, io.IOBase):
         f = filename
     else:
         f = open(filename, 'rb')
@@ -241,16 +259,18 @@ def readDX(filename):
     # header string for later processing
     header = ''
     atend = False
+
     # read header
     while True:
         mychar = f.read(1)
         # 0x03 signals the end of the header but sometimes there might be
         # an additional 0x03 char after that
-        if mychar == chr(3):
+
+        if mychar == b'\x03':
             atend = True
-        if mychar != chr(3) and atend:
+        if mychar != b'\x03' and atend:
             break
-        header = header + mychar
+        header += str(mychar.decode())
 
     attrs = parse_DX_header(header)
 
@@ -266,7 +286,7 @@ def readDX(filename):
         # make sure that this is consistent with our assumption
         # i.e. contact DWD again, if DX files show up with uneven byte lengths
         # *and* only one 0x03 character
-        #assert header[-2] == chr(3)
+        # assert header[-2] == chr(3)
         buflen -= 1
 
     buf = f.read(buflen)
@@ -274,7 +294,7 @@ def readDX(filename):
     raw = np.frombuffer(buf, dtype='uint16')
 
     # reading finished, close file, but only if we opened it.
-    if type(filename) != file:
+    if isinstance(filename, io.IOBase):
         f.close()
 
     # a new ray/beam starts with bit 14 set
@@ -303,7 +323,7 @@ def readDX(filename):
 
     beams = np.array(beams)
 
-    #attrs =  {}
+    # attrs =  {}
     attrs['elev'] = np.array(elevs)
     attrs['azim'] = np.array(azims)
     attrs['clutter'] = (beams & clutterflag) != 0
@@ -339,19 +359,19 @@ def writePolygon2Text(fname, polygons):
     -------
     None
 
-    Notes
-    -----
+    Note
+    ----
     As Polygons are closed shapes, the first and the last vertex of each
     polygon **must** be the same!
 
     Examples
     --------
-    Writes two triangle Polygons to a text file
+    Writes two triangle Polygons to a text file::
 
-    >>> poly1 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
-    >>> poly2 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
-    >>> polygons = [poly1, poly2]
-    >>> writePolygon2Text('polygons.txt', polygons)
+        poly1 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
+        poly2 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
+        polygons = [poly1, poly2]
+        writePolygon2Text('polygons.txt', polygons)
 
     The resulting text file will look like this::
 
@@ -390,15 +410,16 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
 
     Parameters
     ----------
-    filename : path of the netCDF file
+    filename : string
+        path of the netCDF file
     enforce_equidist : boolean
         Set True if the values of the azimuth angles should be forced to be equidistant
         default value is False
 
     Returns
     -------
-    output : numpy array of image data (dBZ), dictionary of attributes
-
+    output : numpy array
+        of image data (dBZ), dictionary of attributes
     """
     try:
         # read the data from file
@@ -423,10 +444,10 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
         attrs = {}
         for attrname in dset.ncattrs():
             attrs[attrname] = dset.getncattr(attrname)
-        ##        # Limiting the returned range
-        ##        if range_lim and range_lim / binwidth <= data.shape[1]:
-        ##            data = data[:,:range_lim / binwidth]
-        ##            r = r[:range_lim / binwidth]
+        # # Limiting the returned range
+        # if range_lim and range_lim / binwidth <= data.shape[1]:
+        #     data = data[:,:range_lim / binwidth]
+        #     r = r[:range_lim / binwidth]
         # Set additional metadata attributes
         attrs['az'] = az
         attrs['r'] = r
@@ -446,7 +467,8 @@ def get_radolan_header_token():
 
     Returns
     -------
-    head:   dict with known header token, value set to None
+    head : dict
+        with known header token, value set to None
     """
     head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
             'INT': None, 'GP': None, 'MS': None, 'LV': None,
@@ -459,12 +481,13 @@ def get_radolan_header_token_pos(header):
 
     Parameters
     ----------
-    header: string (ASCII header)
+    header : string
+        (ASCII header)
 
     Returns
     -------
-    head: dictionary with found header tokens and positions
-
+    head : dictionary
+        with found header tokens and positions
     """
 
     head_dict = get_radolan_header_token()
@@ -473,17 +496,18 @@ def get_radolan_header_token_pos(header):
         d = header.rfind(token)
         if d > -1:
             head_dict[token] = d
-
     head = {}
 
-    for k, v in head_dict.iteritems():
+    result_dict = {}
+    result_dict.update((k, v) for k, v in head_dict.items() if v is not None)
+    for k, v in head_dict.items():
         if v is not None:
             start = v + len(k)
-            filt = filter(lambda x: x > v, head_dict.values())
+            filt = [x for x in result_dict.values() if x > v]
             if filt:
                 stop = min(filt)
             else:
-                stop = None
+                stop = len(header)
             head[k] = (start, stop)
         else:
             head[k] = v
@@ -496,12 +520,13 @@ def parse_DWD_quant_composite_header(header):
 
     Parameters
     ----------
-    header : string (ASCII header)
+    header : string
+        (ASCII header)
 
     Returns
     -------
-    output : dictionary of metadata retrieved from file header
-
+    output : dictionary
+        of metadata retrieved from file header
     """
     # empty container
     out = {}
@@ -516,9 +541,9 @@ def parse_DWD_quant_composite_header(header):
 
     # get dict of header token with positions
     head = get_radolan_header_token_pos(header)
-
     # iterate over token and fill output dict accordingly
-    for k, v in head.iteritems():
+    # for k, v in head.iteritems():
+    for k, v in head.items():
         if v:
             if k == 'BY':
                 out['datasize'] = int(header[v[0]:v[1]]) - len(header) - 1
@@ -539,7 +564,7 @@ def parse_DWD_quant_composite_header(header):
                 out["ncol"] = int(dimstrings[1])
             if k == 'BG':
                 dimstrings = header[v[0]:v[1]]
-                dimstrings = dimstrings[:len(dimstrings) / 2], dimstrings[len(dimstrings) / 2:]
+                dimstrings = dimstrings[:int(len(dimstrings) / 2)], dimstrings[int(len(dimstrings) / 2):]
                 out["nrow"] = int(dimstrings[0])
                 out["ncol"] = int(dimstrings[1])
             if k == 'LV':
@@ -564,11 +589,15 @@ def decode_radolan_runlength_line(line, attrs):
 
     Parameters
     ----------
-    line: numpy array of byte values
+    line : numpy array
+        of byte values
+    attrs : dict
+        dictionary of attributes derived from file header
 
     Returns
     -------
-    arr:  numpy array of decoded values
+    arr : numpy array
+        of decoded values
     """
     # byte '0' is line number, we don't need it
     # so we start with offset byte,
@@ -617,16 +646,18 @@ def read_radolan_runlength_line(fid):
 
     Parameters
     ----------
-    fid: file/buffer id
+    fid : object
+        file/buffer id
 
     Returns
     -------
-    line:  numpy array of coded values
+    line : numpy array
+        of coded values
     """
     line = fid.readline()
 
     # check if eot
-    if line == '\x04':
+    if line == b'\x04':
         return None
 
     # convert input buffer to np.uint8 array
@@ -641,14 +672,17 @@ def decode_radolan_runlength_array(binarr, attrs):
 
     Parameters
     ----------
-    binarr:    string Buffer
-    attrs:  Attribute dict of file header
+    binarr : string
+        Buffer
+    attrs : dict
+        Attribute dict of file header
 
     Returns
     -------
-    arr: numpy array of decoded values
+    arr : numpy array
+        of decoded values
     """
-    buf = StringIO.StringIO(binarr)
+    buf = io.BytesIO(binarr)
 
     # read and decode first line
     line = read_radolan_runlength_line(buf)
@@ -670,12 +704,15 @@ def read_radolan_binary_array(fid, size):
 
     Parameters
     ----------
-    fid: file handle
-    size: number of bytes to read
+    fid : object
+        file handle
+    size : int
+        number of bytes to read
 
     Returns
     -------
-    binarr: string array of binary data
+    binarr : string
+        array of binary data
     """
     binarr = fid.read(size)
     fid.close()
@@ -690,11 +727,13 @@ def get_radolan_filehandle(fname):
 
     Parameters
     ----------
-    fname: filename
+    fname : string
+        filename
 
     Returns
     -------
-    f: filehandle
+    f : object
+        filehandle
     """
 
     gzip = util.import_optional('gzip')
@@ -718,11 +757,12 @@ def read_radolan_header(fid):
 
     Parameters
     ----------
-    fid: file handle
+    fid : object
+        file handle
 
     Returns
     -------
-    header: string
+    header : string
     """
     # rewind, just in case...
     fid.seek(0, 0)
@@ -730,10 +770,9 @@ def read_radolan_header(fid):
     header = ''
     while True:
         mychar = fid.read(1)
-        if mychar == chr(3):
+        if mychar == b'\x03':
             break
-        header = header + mychar
-
+        header += str(mychar.decode())
     return header
 
 
@@ -758,16 +797,19 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
 
     Parameters
     ----------
-    fname : path to the composite file
-
-    missing : value assigned to no-data cells
+    fname : string
+        path to the composite file
+    missing : int
+        value assigned to no-data cells
+    loaddata : bool
+        True | False, If False function returns (None, attrs)
 
     Returns
     -------
-    output : tuple of two items (data, attrs)
+    output : tuple
+        tuple of two items (data, attrs)
         - data : numpy array of shape (number of rows, number of columns)
         - attrs : dictionary of metadata information from the file header
-
     """
 
     NODATA = missing
@@ -796,7 +838,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     indat = read_radolan_binary_array(f, attrs['datasize'])
 
     if attrs["producttype"] in ["RX", "EX"]:
-        #convert to 8bit integer
+        # convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
         arr = np.where(arr == 250, NODATA, arr)
         attrs['cluttermask'] = np.where(arr == 249)[0]
@@ -812,7 +854,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         negative = np.where(arr & 0x4000)[0]
         attrs['cluttermask'] = np.where(arr & 0x8000)[0]
         # mask out the last 4 bits
-        arr = arr & mask
+        arr &= mask
         # consider negative flag if product is RD (differences from adjustment)
         if attrs["producttype"] == "RD":
             # NOT TESTED, YET
@@ -846,12 +888,14 @@ def read_generic_hdf5(fname):
 
     Parameters
     ----------
-    fname : string (a hdf5 file path)
+    fname : string
+        a hdf5 file path
 
     Returns
     -------
-    output : a dictionary that contains both data and metadata according to the
-              original hdf5 file structure
+    output : dict
+        a dictionary that contains both data and metadata according to the
+        original hdf5 file structure
 
     """
     f = h5py.File(fname, "r")
@@ -896,21 +940,23 @@ def read_OPERA_hdf5(fname):
 
     Parameters
     ----------
-    fname : string (a hdf5 file path)
+    fname : string
+        a hdf5 file path
 
     Returns
     -------
-    output : a dictionary that contains both data and metadata according to the
-              original hdf5 file structure
+    output : dict
+        a dictionary that contains both data and metadata according to the
+        original hdf5 file structure
 
     """
     f = h5py.File(fname, "r")
-    # try verify OPERA conventions
-    ##    if not f.keys() == ['dataset1', 'how', 'what', 'where']:
-    ##        print "File is not organized according to OPERA conventions (ODIM_H5)..."
-    ##        print "Expected the upper level subgroups to be: dataset1, how, what', where"
-    ##        print "Try to use e.g. ViTables software in order to inspect the file hierarchy."
-    ##        sys.exit(1)
+    # # try verify OPERA conventions
+    # if not f.keys() == ['dataset1', 'how', 'what', 'where']:
+    #     print("File is not organized according to OPERA conventions (ODIM_H5)..."
+    #     print("Expected the upper level subgroups to be: dataset1, how, what', where"
+    #     print("Try to use e.g. ViTables software in order to inspect the file hierarchy."
+    #     sys.exit(1)
 
     # now we browse through all Groups and Datasets and store the info in one dictionary
     fcontent = {}
@@ -936,17 +982,18 @@ def read_gamic_scan_attributes(scan, scan_type):
 
     Parameters
     ----------
-    scan : scan object from hdf5 file
+    scan : object
+        scan object from hdf5 file
     scan_type : string
         "PVOL" (plan position indicator) or "RHI" (range height indicator)
 
     Returns
     -------
-    sattrs  : dictionary of scan attributes
-
+    sattrs : dict
+        dictionary of scan attributes
     """
 
-    global zero_index, el, az
+    # global zero_index, el, az
 
     # placeholder for attributes
     sattrs = {}
@@ -1017,16 +1064,19 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
 
     Parameters
     ----------
-    scan : scan object from hdf5 file
+    scan : object
+        scan object from hdf5 file
     scan_type : string
         "PVOL" (plan position indicator) or "RHI" (range height indicator)
-    wanted_moments  : sequence of strings containing upper case names of moment(s) to be returned
+    wanted_moments : strings
+        sequence of strings containing upper case names of moment(s) to be returned
 
     Returns
     -------
-    data : dictionary of moment data (numpy arrays)
-    sattrs : dictionary of scan attributes
-
+    data : dict
+        dictionary of moment data (numpy arrays)
+    sattrs : dict
+        dictionary of scan attributes
     """
 
     # placeholder for data and attrs
@@ -1038,8 +1088,8 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
         if 'moment' in mom:
             data1 = {}
             sg2 = scan[mom]
-            actual_moment = sg2.attrs.get('moment').upper()
-            if actual_moment in wanted_moments or wanted_moments == 'all':
+            actual_moment = sg2.attrs.get('moment').decode().upper()
+            if (actual_moment in wanted_moments) or (wanted_moments == 'all'):
                 # read attributes only once
                 if not sattrs:
                     sattrs = read_gamic_scan_attributes(scan, scan_type)
@@ -1078,17 +1128,19 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     Parameters
     ----------
-    filename : path of the gamic hdf5 file
-    scan_type : string
-        "PVOL" (plan position indicator) or "RHI" (range height indicator)
-    elevation_angle : sequence of strings of elevation_angle(s) of scan (only needed for PPI)
-    moments : sequence of strings of moment name(s)
+    filename : string
+        path of the gamic hdf5 file
+    wanted_elevations : strings
+        sequence of strings of elevation_angle(s) of scan (only needed for PPI)
+    wanted_moments : strings
+        sequence of strings of moment name(s)
 
     Returns
     -------
-    data : dictionary of scan and moment data (numpy arrays)
-    attrs : dictionary of attributes
-
+    data : dict
+        dictionary of scan and moment data (numpy arrays)
+    attrs : dict
+        dictionary of attributes
     """
 
     # check elevations
@@ -1115,7 +1167,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
         raise
 
     # get scan_type (PVOL or RHI)
-    scan_type = f['what'].attrs.get('object')
+    scan_type = f['what'].attrs.get('object').decode()
 
     # single or volume scan
     if scan_type == 'PVOL':
@@ -1158,7 +1210,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
         vattrs['Longitude'] = f['where'].attrs.get('lon')
         vattrs['Height'] = f['where'].attrs.get('height')
         # check whether its useful to implement that feature
-        #vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'], vattrs['Height'])
+        # vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'], vattrs['Height'])
         attrs['VOL'] = vattrs
 
     f.close()
@@ -1180,10 +1232,11 @@ def find_key(key, dictionary):
 
     Returns
     -------
-    output : a dictionary or list of dictionaries
+    output : dict
+        a dictionary or list of dictionaries
 
     """
-    for k, v in dictionary.iteritems():
+    for k, v in dictionary.items():
         if k == key:
             yield dictionary
         elif isinstance(v, dict):
@@ -1200,8 +1253,8 @@ def decompress(data):
 
     Parameters
     ----------
-    data : string (from xml)
-        data string containing compressed data.
+    data : string
+        (from xml) data string containing compressed data.
     """
     zlib = util.import_optional('zlib')
     return zlib.decompress(data)
@@ -1218,11 +1271,10 @@ def get_RB_data_layout(datadepth):
     Returns
     -------
     datawidth : int
-        Width in Byte of data
+        Width in Byte of data.
 
     datatype : string
         conversion string .
-
     """
 
     if sys.byteorder != 'big':
@@ -1230,7 +1282,7 @@ def get_RB_data_layout(datadepth):
     else:
         byteorder = '<'
 
-    datawidth = datadepth / 8
+    datawidth = int(datadepth / 8)
 
     if datawidth in [1, 2, 4]:
         datatype = byteorder + 'u' + str(datawidth)
@@ -1247,7 +1299,6 @@ def get_RB_data_attribute(xmldict, attr):
     ----------
     xmldict : dict
         Blob Description Dictionary
-
     attr : string
         Attribute key
 
@@ -1276,13 +1327,12 @@ def get_RB_blob_attribute(blobdict, attr):
     ----------
     blobdict : dict
         Blob Description Dictionary
-
     attr : string
         Attribute key
 
     Returns
     -------
-        Attribute Value
+    ret : Attribute Value
 
     """
     try:
@@ -1299,8 +1349,8 @@ def get_RB_blob_data(datastring, blobid):
 
     Parameters
     ----------
-    datastring : dict
-        Blob Description Dictionary
+    datastring : string
+        Blob Description String
 
     blobid : int
         Number of requested blob
@@ -1314,15 +1364,15 @@ def get_RB_blob_data(datastring, blobid):
     xmltodict = util.import_optional('xmltodict')
 
     start = 0
-    searchString = r'<BLOB blobid="{0}"'.format(blobid)
-    start = datastring.find(searchString, start)
+    searchString = '<BLOB blobid="{0}"'.format(blobid)
+    start = datastring.find(searchString.encode(), start)
     if start == -1:
         raise EOFError('Blob ID {0} not found!'.format(blobid))
-    end = datastring.find('>', start)
+    end = datastring.find(b'>', start)
     xmlstring = datastring[start:end + 1]
 
     # cheat the xml parser by making xml well-known
-    xmldict = xmltodict.parse(xmlstring + '</BLOB>')
+    xmldict = xmltodict.parse(xmlstring.decode() + '</BLOB>')
     cmpr = get_RB_blob_attribute(xmldict, 'compression')
     size = int(get_RB_blob_attribute(xmldict, 'size'))
     data = datastring[end + 2:end + 2 + size]  # read blob data to string
@@ -1342,7 +1392,6 @@ def map_RB_data(data, datadepth):
     ----------
     data : string
         Blob Data
-
     datadepth : int
         bit depth of Blob data
 
@@ -1350,12 +1399,11 @@ def map_RB_data(data, datadepth):
     -------
     data : numpy array
         Content of blob
-
     """
     datawidth, datatype = get_RB_data_layout(datadepth)
 
     # import from data buffer well aligned to data array
-    data = np.ndarray(shape=(len(data) / datawidth,), dtype=datatype, buffer=data)
+    data = np.ndarray(shape=(int(len(data) / datawidth),), dtype=datatype, buffer=data)
 
     return data
 
@@ -1367,17 +1415,15 @@ def get_RB_blob_from_string(datastring, blobdict):
 
     Parameters
     ----------
-    datastring : dict
-        Blob Description Dictionary
-
+    datastring : string
+        Blob Description String
     blobdict : dict
-        Blob Dict
+        Blob Description Dict
 
     Returns
     -------
     data : numpy array
         Content of blob as numpy array
-
     """
 
     blobid = get_RB_data_attribute(blobdict, 'blobid')
@@ -1405,7 +1451,6 @@ def get_RB_blob_from_file(filename, blobdict):
     ----------
     filename : string
         Filename of Data File
-
     blobdict : dict
         Blob Dict
 
@@ -1413,12 +1458,11 @@ def get_RB_blob_from_file(filename, blobdict):
     -------
     data : numpy array
         Content of blob as numpy array
-
     """
     try:
         fid = open(filename, "rb")
     except IOError:
-        print "WRADLIB: Error opening Rainbow file ", filename
+        print("WRADLIB: Error opening Rainbow file ", filename)
         raise IOError
 
     datastring = fid.read()
@@ -1441,12 +1485,11 @@ def get_RB_file_as_string(filename):
     -------
     dataString : string
         File Contents as dataString
-
     """
     try:
         fid = open(filename, "rb")
     except IOError:
-        print "WRADLIB: Error opening Rainbow file ", filename
+        print("WRADLIB: Error opening Rainbow file ", filename)
         raise IOError
 
     dataString = fid.read()
@@ -1461,16 +1504,15 @@ def get_RB_blobs_from_file(filename, rbdict):
 
     Parameters
     ----------
-    :param filename: string
+    filename : string
         Filename of Data File
-    :param rbdict: dict
+    rbdict : dict
         Rainbow file Contents
 
     Returns
     -------
-    :rtype : dict
+    ret : dict
         Rainbow File Contents
-
     """
 
     blobs = list(find_key('@blobid', rbdict))
@@ -1500,13 +1542,13 @@ def get_RB_header(filename):
     try:
         fid = open(filename, "rb")
     except IOError:
-        print "WRADLIB: Error opening Rainbow file ", filename
+        print("WRADLIB: Error opening Rainbow file ", filename)
         raise IOError
 
     # load the header lines, i.e. the XML part
-    endXMLmarker = "<!-- END XML -->"
-    header = ""
-    line = ""
+    endXMLmarker = b"<!-- END XML -->"
+    header = b""
+    line = b""
     while not line.startswith(endXMLmarker):
         header += line[:-1]
         line = fid.readline()
@@ -1533,12 +1575,16 @@ def read_Rainbow(filename, loaddata=True):
 
     Parameters
     ----------
-    filename : string (a rainbow file path)
+    filename : string
+        a rainbow file path
+    loaddata : bool
+        True | False, If False function returns only metadata
 
     Returns
     -------
-    rbdict : a dictionary that contains both data and metadata according to the
-              original rainbow file structure
+    rbdict : dict
+        a dictionary that contains both data and metadata according to the
+        original rainbow file structure
     """
 
     rbdict = get_RB_header(filename)
@@ -1574,13 +1620,17 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
 
     Parameters
     ----------
-    fpath : string (path to the hdf5 file)
+    fpath : string
+        path to the hdf5 file
     data : numpy array
-    mode : string, file open mode, defaults to "w" (create, truncate if exists)
-    metadata : dictionary of data's attributes
-    dataset : string describing dataset
-    compression : h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation for details
-
+    mode : string
+        file open mode, defaults to "w" (create, truncate if exists)
+    metadata : dict
+        dictionary of data's attributes
+    dataset : string
+        describing dataset
+    compression : string
+        h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation for details
     """
     f = h5py.File(fpath, mode=mode)
     dset = f.create_dataset(dataset, data=data, compression=compression)
@@ -1597,13 +1647,14 @@ def from_hdf5(fpath, dataset="data"):
 
     Parameters
     ----------
-    fpath : string (path to the hdf5 file)
-    dataset : name of the Dataset in which the data is stored
-
+    fpath : string
+        path to the hdf5 file
+    dataset : string
+        name of the Dataset in which the data is stored
     """
     f = h5py.File(fpath, mode="r")
     # Check whether Dataset exists
-    if not dataset in f.keys():
+    if dataset not in f.keys():
         print("Cannot read Dataset <%s> from hdf5 file <%s>" % (dataset, f))
         f.close()
         sys.exit()
@@ -1621,27 +1672,30 @@ def read_safnwc(filename):
 
     Parameters
     ----------
-    filename : satellite file name
+    filename : string
+        satellite file name
 
     Returns
     -------
-    ds : gdal dataset with satellite data
-
+    ds : gdal.DataSet
+        with satellite data
     """
 
     root = gdal.Open(filename)
-    ds = gdal.Open('HDF5:' + filename + '://CT')
+    ds1 = gdal.Open('HDF5:' + filename + '://CT')
+    ds = gdal.GetDriverByName('MEM').CreateCopy('out', ds1, 0)
+
     name = os.path.basename(filename)[7:11]
     try:
         proj = root.GetMetadata()["PROJECTION"]
     except Exception as error:
-        raise NameError("No metadata for satellite file %s" % (filename))
+        raise NameError("No metadata for satellite file %s" % filename)
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
     geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"]
     ds.SetProjection(proj)
     ds.SetGeoTransform([float(x) for x in geotransform])
-    return (ds)
+    return ds
 
 
 def read_generic_netcdf(fname):
@@ -1659,18 +1713,20 @@ def read_generic_netcdf(fname):
     the data that define the dimensions (e.g. sweeps, azimuths, ranges). These keys
     should be present in any netcdf file.
 
-    Notes
-    -----
+    Note
+    ----
     The returned dictionary could be quite big, depending on the content of the file.
 
     Parameters
     ----------
-    fname : string (a netcdf file path)
+    fname : string
+        a netcdf file path
 
     Returns
     -------
-    out : an ordered dictionary that contains both data and metadata according to the
-              original netcdf file structure
+    out : ordered dict
+        an ordered dictionary that contains both data and metadata according to the
+        original netcdf file structure
 
     Examples
     --------
@@ -1682,7 +1738,7 @@ def read_generic_netcdf(fname):
     """
     try:
         ncid = nc.Dataset(fname, 'r')
-    except:
+    except RuntimeError:
         print("wradlib: Could not read %s." % fname)
         print("Check whether file exists, and whether it is a netCDF file.")
         print("Raising exception...")
@@ -1693,35 +1749,34 @@ def read_generic_netcdf(fname):
         # I got my hands on have just one group/Dataset
         print("Groups", ncid.groups)
 
-
     out = OrderedDict()
 
     # get file format (should be NETCDF3 or NETCDF4)
     try:
         out["file_format"] = ncid.file_format
-    except:
+    except AttributeError:
         pass
 
     # global attributes
-    for k, v in ncid.__dict__.iteritems():
+    for k, v in ncid.__dict__.items():
         out[k] = v
 
     # dimensions
     dimids = np.array([])
     if ncid.dimensions:
         dim = OrderedDict()
-        for k, v in ncid.dimensions.iteritems():
+        for k, v in ncid.dimensions.items():
             tmp = OrderedDict()
             try:
-                tmp['data_model'] =  v._data_model
-            except:
+                tmp['data_model'] = v._data_model
+            except AttributeError:
                 pass
             try:
                 tmp['size'] = v.__len__()
-            except:
+            except AttributeError:
                 pass
             tmp['dimid'] = v._dimid
-            dimids = np.append(dimids,v._dimid)
+            dimids = np.append(dimids, v._dimid)
             tmp['grpid'] = v._grpid
             tmp['isunlimited'] = v.isunlimited()
             dim[k] = tmp
@@ -1741,7 +1796,7 @@ def read_generic_netcdf(fname):
     # variables
     if ncid.variables:
         var = OrderedDict()
-        for k, v in ncid.variables.iteritems():
+        for k, v in ncid.variables.items():
             tmp = OrderedDict()
             for k1 in v.ncattrs():
                 tmp[k1] = v.getncattr(k1)
@@ -1755,24 +1810,25 @@ def read_generic_netcdf(fname):
     ncid.close()
 
     return out
-    
+
+
 def _check_arguments(fpath, data):
     """Helper function to check input arguments for GIS export function    
     """
     # Check arguments
-    if not type(data)==np.ndarray:
-        raise Exception("Argument 'data' in has to be of " \
-        "type numpy.ndarray. Found argument of %s instead" % str(type(data)))
-    
-    if not data.ndim==2:
-        raise Exception("Argument 'data' has to be 2-dimensional. " \
-        "Found %d dimensions instead" % data.ndim)        
+    if not type(data) == np.ndarray:
+        raise Exception("Argument 'data' in has to be of type numpy.ndarray. "
+                        "Found argument of %s instead" % str(type(data)))
 
-    if not os.path.exists( os.path.dirname(fpath) ):
+    if not data.ndim == 2:
+        raise Exception("Argument 'data' has to be 2-dimensional. "
+                        "Found %d dimensions instead" % data.ndim)
+
+    if not os.path.exists(os.path.dirname(fpath)):
         raise Exception("Directory does not exist: %s" % os.path.dirname(fpath))
-    
 
-def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize, 
+
+def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
                nodata=-9999, proj=None, fmt="%.2f", to_esri=True):
     """Write a cartesian grid to an Arc/Info ASCII grid file.
     
@@ -1795,18 +1851,27 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     
     Parameters
     ----------
-    fpath : string (a file path) - must have a ".txt" or ".asc" extension.
-    data : two dimensional numpy array of type integer or float
-    xllcorner : float (x coordinate of the lower left corner of the grid)
-    yllcorner : float (y coordinate of the lower left corner of the grid)
-    cellsize : float (size of the grid cells - needs to be consistent with proj)
-    nodata : float (no data flag)
-    proj : a SpatialReference of class 'osr.SpatialReference'
-    fmt : format string
-    to_esri : Boolean (set True if the prj file should be made ESRI compatible)
+    fpath : string
+        a file path - must have a ".txt" or ".asc" extension.
+    data : array
+        two dimensional numpy array of type integer or float
+    xllcorner : float
+        x coordinate of the lower left corner of the grid
+    yllcorner : float
+        y coordinate of the lower left corner of the grid
+    cellsize : float
+        size of the grid cells - needs to be consistent with proj
+    nodata : float
+        no data flag
+    proj : osr.SpatialReference
+        a SpatialReference of class 'osr.SpatialReference'
+    fmt : string
+        format string
+    to_esri : bool
+        set True if the prj file should be made ESRI compatible
 
-    Notes
-    -----
+    Note
+    ----
     Has been tested with ESRI ArcGIS 9.3 and QGIS 2.8.
     
     Examples
@@ -1820,50 +1885,50 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     # Check input data
     _check_arguments(fpath, data)
 
-    ext = os.path.splitext( fpath )[-1]
-    if not ext in [".txt", ".asc"]:
-        raise Exception("File name extension should be either '.txt' or '.asc'. " \
-        "Found extension %s instead: %s" % ext)
-    
+    ext = os.path.splitext(fpath)[-1]
+    if ext not in [".txt", ".asc"]:
+        raise Exception("File name extension should be either '.txt' or '.asc'. "
+                        "Found extension instead: %s" % ext)
+
     # Define header
-    header="" \
-    "ncols         %d\n" \
-    "nrows         %d\n" \
-    "xllcorner     %.4f\n" \
-    "yllcorner     %.4f\n" \
-    "cellsize      %.4f\n" \
-    "NODATA_value  %.1f\n" % (data.shape[0],data.shape[1],xllcorner,yllcorner,cellsize,nodata)
-    
+    header = " " \
+             "ncols         %d\n" \
+             "nrows         %d\n" \
+             "xllcorner     %.4f\n" \
+             "yllcorner     %.4f\n" \
+             "cellsize      %.4f\n" \
+             "NODATA_value  %.1f\n" % (data.shape[0], data.shape[1], xllcorner, yllcorner, cellsize, nodata)
+
     # Replace NaNs by NoData
     # ...but we do not want to manipulate the original array!
     data = data.copy()
     data[np.isnan(data)] = nodata
-    
-    # Write grid file
-    with open(fpath, "w") as f:
-        f.write(header)
-        np.savetxt(f, np.flipud(data), fmt=fmt)
 
-    if proj==None:
+    # Write grid file
+    # with open(fpath, "w") as f:
+    #    f.write(header)
+    np.savetxt(fpath, np.flipud(data), fmt=fmt, header=header, comments='')
+
+    if proj is None:
         # No prj file will be written
         return 0
-    elif not type(proj)== osr.SpatialReference:
-        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', " \
-        "but got %s. See library reference for wradlib.georef on how to create " \
-        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
-        
+    elif not type(proj) == osr.SpatialReference:
+        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', "
+                        "but got %s. See library reference for wradlib.georef on how to create "
+                        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
+
     if to_esri:
         # Make a copy before manipulation
         proj = proj.Clone()
         proj.MorphToESRI()
-    
+
     # Write projection file
-    prjpath = os.path.splitext(fpath)[0] + ".prj"    
+    prjpath = os.path.splitext(fpath)[0] + ".prj"
     with open(prjpath, "w") as f:
-        f.write( proj.ExportToWkt() )
-    
+        f.write(proj.ExportToWkt())
+
     return 0
-    
+
 
 def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     """Write a cartesian grid to a GeoTIFF file.
@@ -1874,9 +1939,12 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     passed with the argument ``data``. For details on the GeoTIFF format
     see e.g. http://en.wikipedia.org/wiki/GeoTIFF.
     
-    .. warning:: The GeoTIFF files produced by this function might not work with ESRI ArcGIS, depending on the projection. Problems are particularly
-                 expected with the RADOLAN projection, due to inconsistencies in the definition of polar
-                 stereographic projections between GDAL and ESRI ArcGIS.  
+    Warning
+    -------
+    The GeoTIFF files produced by this function might not work with ESRI ArcGIS,
+    depending on the projection. Problems are particularly expected with the
+    RADOLAN projection, due to inconsistencies in the definition of polar
+    stereographic projections between GDAL and ESRI ArcGIS.
     
     The projection information (argument ``proj``) needs to be passed as a GDAL 
     SpatialReference object. Refer to http://wradlib.bitbucket.org/georef.html 
@@ -1907,14 +1975,19 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     
     Parameters
     ----------
-    fpath : string (a file path) - must have a ".txt" or ".asc" extension.
-    data : two dimensional numpy array of type integer or float
-    geotransform : sequence of length 6 (# top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size)
-    nodata : float (no data flag)
-    proj : a SpatialReference of class 'osr.SpatialReference'
+    fpath : string
+        a file path - must have a ".txt" or ".asc" extension.
+    data : array
+        two dimensional numpy array of type integer or float
+    geotransform : sequence
+        sequence of length 6 (# top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size)
+    nodata : float
+        no data flag
+    proj : osr.SpatialReference
+        a SpatialReference of class 'osr.SpatialReference'
 
-    Notes
-    -----
+    Note
+    ----
     Has been tested with ESRI ArcGIS 9.3 and QGIS 2.8.
     
     Examples
@@ -1927,54 +2000,54 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     """
     # Check input data
     _check_arguments(fpath, data)
-    ext = os.path.splitext( fpath )[-1]
-    if not ext in [".tif", ".tiff"]:
-        raise Exception("File name extension should be either '.tif' or '.tiff'. " \
-        "Found extension %s instead: %s" % ext)
-    
+    ext = os.path.splitext(fpath)[-1]
+    if ext not in [".tif", ".tiff"]:
+        raise Exception("File name extension should be either '.tif' or '.tiff'. "
+                        "Found extension instead: %s" % ext)
+
     # Set up our export object
-    driver = gdal.GetDriverByName( "GTiff" )
-    
+    driver = gdal.GetDriverByName("GTiff")
+
     # Mapping ur data type to GDAL data types
-    if data.dtype=="float64":
+    if data.dtype == "float64":
         gdal_dtype = gdal.GDT_Float64
-    elif data.dtype=="float32":
+    elif data.dtype == "float32":
         gdal_dtype = gdal.GDT_Float32
-    elif data.dtype=="int32":
+    elif data.dtype == "int32":
         gdal_dtype = gdal.GDT_Int32
-    elif data.dtype=="int16":
+    elif data.dtype == "int16":
         gdal_dtype = gdal.GDT_Int16
     else:
-        raise Exception("The data type of your input array data should be one of " \
-        "the following: float64, float32, int32, int16. You can use numpy's 'astype'" \
-        "method to convert your array to the desired data type.")
-        
+        raise Exception("The data type of your input array data should be one of "
+                        "the following: float64, float32, int32, int16. You can use numpy's 'astype' "
+                        "method to convert your array to the desired data type.")
+
     # Creat our export object
-    ds = driver.Create(fpath, data.shape[0], data.shape[1], 1, gdal_dtype )
-    
+    ds = driver.Create(fpath, data.shape[0], data.shape[1], 1, gdal_dtype)
+
     # set the reference info
-    if proj==None:
+    if proj is None:
         pass
-    elif not type(proj)== osr.SpatialReference:
-        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', " \
-        "but got %s. See library reference for wradlib.georef on how to create " \
-        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
+    elif not isinstance(proj, osr.SpatialReference):
+        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', "
+                        "but got %s. See library reference for wradlib.georef on how to create "
+                        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
     else:
-        ds.SetProjection( proj.ExportToWkt() )
-        
+        ds.SetProjection(proj.ExportToWkt())
+
     # top left x, w-e pixel resolution, rotation, top left y, rotation, n-s pixel resolution
-    ds.SetGeoTransform( geotransform )
+    ds.SetGeoTransform(geotransform)
 
     # Replace NaNs by NoData
     # ...but we do not want to manipulate the original array!
-    data = data.copy() 
+    data = data.copy()
     data[np.isnan(data)] = nodata
     # and replace them by NoData flag
     ds.GetRasterBand(1).SetNoDataValue(nodata)
-    
+
     # Write data
-    ds.GetRasterBand(1).WriteArray( np.flipud(data) )
-    
+    ds.GetRasterBand(1).WriteArray(np.flipud(data))
+
     # This is how we close the export file
     ds = None
 
@@ -1999,19 +2072,25 @@ def read_raster_data(filename, driver=None, **kwargs):
         GDAL Raster Format Code
         see: http://www.gdal.org/formats_list.html
         if no driver is given gdal is autodetecting which may fail
+
+    Keyword Arguments
+    -----------------
     spacing : float or tuple of two floats
         pixel spacing of resampled dataset, same unit as pixel coordinates
     size : tuple of two ints
         X/YRasterSize of resampled dataset
-    resample : GDALResampleAlg, defaults to GRA_Bilinear
+    resample : GDALResampleAlg
+        defaults to GRA_Bilinear
         GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2, GRA_CubicSpline = 3,
         GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6, GRA_Max = 8,
         GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
 
     Returns
     -------
-    coords : numpy ndarray of raster coordinates
-    values : numpy 2darray of raster values
+    coords : array
+        numpy ndarray of raster coordinates
+    values : array
+        numpy 2darray of raster values
     """
 
     dataset = open_raster(filename, driver=driver)
@@ -2028,7 +2107,8 @@ def read_raster_data(filename, driver=None, **kwargs):
     # close dataset
     dataset1 = None
 
-    return  coords, values
+    return coords, values
+
 
 def open_shape(filename, driver=None):
     """
@@ -2048,9 +2128,9 @@ def open_shape(filename, driver=None):
 
     Returns
     -------
-    dataset : ogr dataset
+    dataset : ogr.Dataset
         dataset
-    layer : ogr layer
+    layer : ogr.Layer
         layer
     """
 
@@ -2079,7 +2159,7 @@ def open_raster(filename, driver=None):
 
     Returns
     -------
-    dataset : ogr dataset
+    dataset : ogr.Dataset
         dataset
     """
 
@@ -2092,4 +2172,4 @@ def open_raster(filename, driver=None):
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <io> as main...'
+    print('wradlib: Calling module <io> as main...')

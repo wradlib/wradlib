@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        qual
 # Purpose:
 #
@@ -7,7 +7,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 #!/usr/bin/env python
 
 """
@@ -50,24 +50,22 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     ----------
     ranges : array
         the distances of each bin from the radar [m]
-
     elevations : array
         the elevation angles of each bin from the radar [degrees or radians]
-
     degrees : bool
         if True (the default) elevation angles are given in degrees and will
         be converted to radians before calculation. If False no transformation
         will be done and elevations has to be given in radians.
-
     re : float
         earth radius [m]
 
     Returns
     -------
-    output : height of the beam [m]
+    output : array
+        height of the beam [m]
 
-    Notes
-    -----
+    Note
+    ----
     The shape of `elevations` and `ranges` may differ in which case numpy's
     broadcasting rules will apply and the shape of `output` will be that of
     the broadcast arrays. See the numpy documentation on how broadcasting works.
@@ -78,7 +76,7 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     else:
         elev = elevations
 
-    return ((ranges**2*np.cos(elev)**2)/(2*(4./3.)*re))+ranges*np.sin(elev)
+    return ((ranges ** 2 * np.cos(elev) ** 2) / (2 * (4. / 3.) * re)) + ranges * np.sin(elev)
 
 
 def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
@@ -90,25 +88,23 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     ----------
     ranges : array
         the distances of each bin from the radar [m]
-
     elevations : array
         the elevation angles of each bin from the radar [degrees or radians]
-
     degrees : bool
         if True (the default) elevation angles are assumed to be given in
         degrees and will
         be converted to radians before calculation. If False no transformation
         will be done and `elevations` has to be given in radians.
-
     re : float
         earth radius [m]
 
     Returns
     -------
-    output : height of the beam [m]
+    output : array
+        height of the beam [m]
 
-    Notes
-    -----
+    Note
+    ----
     The shape of `elevations` and `ranges` may differ in which case numpy's
     broadcasting rules will apply and the shape of `output` will be that of
     the broadcast arrays. See the numpy documentation on how broadcasting works.
@@ -119,9 +115,9 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     else:
         elev = elevations
 
-    reft = (4./3.)*re
+    reft = (4. / 3.) * re
 
-    return np.sqrt(ranges**2 + reft**2 + 2*ranges*reft*np.sin(elev)) - reft
+    return np.sqrt(ranges ** 2 + reft ** 2 + 2 * ranges * reft * np.sin(elev)) - reft
 
 
 def pulse_volume(ranges, h, theta):
@@ -145,10 +141,11 @@ def pulse_volume(ranges, h, theta):
 
     Returns
     -------
-    output : volume of radar bins at each range in `ranges` [m**3]
+    output : array
+        volume of radar bins at each range in `ranges` [m**3]
 
     """
-    return np.pi * h * (ranges**2) * (np.tan( np.radians(theta) ))**2
+    return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta))) ** 2
 
 
 def beam_block_frac(Th, Bh, a):
@@ -156,17 +153,22 @@ def beam_block_frac(Th, Bh, a):
 
     .. versionadded:: 0.6.0
 
-    ported from PyRadarMet
+    Note
+    ----
+    Code was migrated from https://github.com/nguy/PyRadarMet.
 
     From Bech et al. (2003), Eqn 2 and Appendix
 
     Parameters
     ----------
-    Th : float, array of floats
+    Th : float
+        array of floats
         Terrain height [m]
-    Bh : float, array of floats
+    Bh : float
+        array of floats
         Beam height [m]
-    a : float, array of floats
+    a : float
+        array of floats
         Half power beam radius [m]
 
     Returns
@@ -176,31 +178,32 @@ def beam_block_frac(Th, Bh, a):
 
     Examples
     --------
-    PBB = beam_block_frac(Th,Bh,a)
+    >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
 
-    .. note::
+    Note
+    ----
+    This procedure uses a simplified interception function where no vertical
+    gradient of refractivity is considered.  Other algorithms treat this
+    more thoroughly.  However, this is accurate in most cases other than
+    the super-refractive case.
 
-        This procedure uses a simplified interception function where no vertical
-        gradient of refractivity is considered.  Other algorithms treat this
-        more thoroughly.  However, this is accurate in most cases other than
-        the super-refractive case.
+    See the the half_power_radius function to calculate variable `a`.
 
-        See the the half_power_radius function to calculate variable a
-
-        The heights must be the same units!
+    The heights must be the same units!
     """
 
     # First find the difference between the terrain and height of
     # radar beam (Bech et al. (2003), Fig.3)
     y = Th - Bh
 
-    Numer = (y * np.sqrt(a**2 - y**2)) + (a**2 * np.arcsin(y/a)) + (np.pi * a**2 /2.)
+    Numer = (y * np.sqrt(a ** 2 - y ** 2)) + (a ** 2 * np.arcsin(y / a)) + (np.pi * a ** 2 / 2.)
 
-    Denom = np.pi * a**2
+    Denom = np.pi * a ** 2
 
     PBB = Numer / Denom
 
     return PBB
 
+
 if __name__ == '__main__':
-    print 'wradlib: Calling module <qual> as main...'
+    print('wradlib: Calling module <qual> as main...')

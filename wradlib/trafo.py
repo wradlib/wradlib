@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        trafo
 # Purpose:
 #
@@ -7,7 +7,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 #!/usr/bin/env python
 """
 Data Transformation
@@ -40,7 +40,7 @@ import numpy as np
 
 # CONSTANTS
 meters_per_mile = 1609.344
-meters_per_nautical_mile  = 1852.
+meters_per_nautical_mile = 1852.
 
 
 def rvp2dBZ(x):
@@ -49,8 +49,8 @@ def rvp2dBZ(x):
 
     Parameters
     ----------
-    x : a number or an array
-
+    x : int
+        a number or an array
     """
     return x*0.5-32.5
 
@@ -61,7 +61,8 @@ def decibel(x):
 
     Parameters
     ----------
-    x : a number or an array (must not be <= 0.)
+    x : a number or an array
+        (must not be <= 0.)
 
     """
     return 10.*np.log10(x)
@@ -74,7 +75,6 @@ def idecibel(x):
     Parameters
     ----------
     x : a number or an array
-
     """
     return 10.**(x/10.)
 
@@ -85,14 +85,16 @@ def r2depth(x, interval):
 
     Parameters
     ----------
-    x : float or array of float
+    x : float,
+        float or array of float
         rainfall intensity in mm/h
     interval : number
         time interval (s) the values of `x` represent
 
     Returns
     -------
-    output : float or array of float
+    output : float
+        float or array of float
         rainfall depth (mm)
 
     """
@@ -111,24 +113,24 @@ def kdp2r(kdp, f, a=129., b=0.85):
 
     Parameters
     ----------
-    kdp : Kdp as array of floats
+    kdp : float
+        Kdp as array of floats
+    f : float
+        radar frequency [GHz]
 
-    f : radar frequency [GHz]
+        - Standard frequencies in X-band range between 8.0 and 12.0 GHz,
+        - Standard frequencies in C-band range between 4.0 and 8.0 GHz,
+        - Standard frequencies in S-band range between 2.0 and 4.0 GHz.
 
-       Standard frequencies in X-band range between 8.0 and 12.0 GHz,
-
-       Standard frequencies in C-band range between 4.0 and 8.0 GHz,
-
-       Standard frequencies in S-band range between 2.0 and 4.0 GHz.
-
-    a : linear coefficient of the power law
-
-    b : exponent of the power law
+    a : float
+        linear coefficient of the power law
+    b : float
+        exponent of the power law
 
     Returns
     -------
-    output : array of rainfall intensity
-
+    output : array
+        array of rainfall intensity
     """
     return np.sign(kdp) * a * (np.abs(kdp) / f)**b
 
@@ -136,26 +138,28 @@ def kdp2r(kdp, f, a=129., b=0.85):
 def si2kmh(vals):
     """Conversion from SI wind speed units to km/hr.
     
-    Notes
-    -----
-    ..versionadded:: 0.6.0
+    .. versionadded:: 0.6.0
     
+    Note
+    ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
     
     Parameters
     ----------
-    vals : float or array of floats
+    vals : float
+        float or array of floats
         Speed in SI units (m/s)
  
     Returns
     -------
-    output: float or array of floats
+    output: float
+        float or array of floats
         Speed in km/hr
     
     Examples
     --------
     >>> from wradlib.trafo import si2kmh
-    >>> print si2kmh(1.)
+    >>> print(si2kmh(1.))
     3.6
     """
     return vals * 3600. / 1000.
@@ -164,26 +168,28 @@ def si2kmh(vals):
 def si2mph(vals):
     """Conversion from SI wind speed units to miles/hr
 
-    Notes
-    -----
     ..versionadded:: 0.6.0
-    
+
+    Note
+    ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
 
     Parameters
     ----------
-    vals : float or array of floats
+    vals : float
+        float or array of floats
         Speed in SI units (m/s)
  
     Returns
     -------
     output: float
+        float or array of floats
         Speed in miles per hour
     
     Examples
     --------
     >>> from wradlib.trafo import si2mph
-    >>> print np.round( si2mph(1.), 3 )
+    >>> print(np.round(si2mph(1.), 3))
     2.237
 
     """
@@ -193,26 +199,28 @@ def si2mph(vals):
 def si2kts(vals):
     """Conversion from SI wind speed units to knots
 
-    Notes
-    -----
     ..versionadded:: 0.6.0
-    
+
+    Note
+    ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
 
     Parameters
     ----------
-    vals : float or array of floats
+    vals : float
+        float or array of floats
         Speed in SI units (m/s)
  
     Returns
     -------
     output: float
+        float or array of floats
         Speed in knots
     
     Examples
     --------
     >>> from wradlib.trafo import si2kts
-    >>> print np.round( si2kts(1.), 3 )
+    >>> print(np.round(si2kts(1.), 3))
     1.944
 
     """
@@ -222,26 +230,28 @@ def si2kts(vals):
 def kmh2si(vals):
     """Conversion from km/hr to SI wind speed units
 
-    Notes
-    -----
     ..versionadded:: 0.6.0
-    
+
+    Note
+    ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
     
     Parameters
     ----------
-    vals: float or array of floats
+    vals: float
+        float or array of floats
         Wind speed in km/hr
  
     Returns
     -------
-    output: float or array of floats
+    output: float
+        float or array of floats
         Wind speed in SI units (m/s)
     
     Examples
     --------
     >>> from wradlib.trafo import kmh2si
-    >>> print np.round( kmh2si(10.), 3 )
+    >>> print(np.round(kmh2si(10.), 3))
     2.778
 
     """
@@ -251,26 +261,28 @@ def kmh2si(vals):
 def mph2si(vals):
     """Conversion from miles/hr to SI wind speed units
 
-    Notes
-    -----
     ..versionadded:: 0.6.0
-    
+
+    Note
+    ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
     
     Parameters
     ----------
-    vals: float or array of floats
+    vals: float
+        float or array of floats
         Wind speed in miles per hour
  
     Returns
     -------
-    output: float or array of floats
+    output: float
+        float or array of floats
         Wind speed in SI units (m/s)
     
     Examples
     --------
     >>> from wradlib.trafo import mph2si
-    >>> print np.round( mph2si(10.), 2 )
+    >>> print(np.round(mph2si(10.), 2))
     4.47
 
     """
@@ -280,26 +292,28 @@ def mph2si(vals):
 def kts2si(vals):
     """Conversion from knots to SI wind speed units
 
-    Notes
-    -----
     ..versionadded:: 0.6.0
-    
+
+    Note
+    ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
     
     Parameters
     ----------
-    vals: float or array of floats
+    vals: float
+        float or array of floats
         Wind speed in knots
  
     Returns
     -------
-    output: float or array of floats
+    output: float
+        float or array of floats
         Wind speed in SI units (m/s)
     
     Examples
     --------
     >>> from wradlib.trafo import kts2si
-    >>> print np.round( kts2si(1.), 3 )
+    >>> print(np.round(kts2si(1.), 3))
     0.514
 
     """
@@ -307,4 +321,5 @@ def kts2si(vals):
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <trafo> as main...'
+    print('wradlib: Calling module <trafo> as main...')
+
