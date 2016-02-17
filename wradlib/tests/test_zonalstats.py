@@ -16,6 +16,11 @@ import wradlib.zonalstats as zonalstats
 import numpy as np
 from osgeo import osr, ogr, gdal
 
+# check for GEOS enabled GDAL
+pnt1 = ogr.CreateGeometryFromWkt( 'POINT(10 20)' )
+pnt2 = ogr.CreateGeometryFromWkt( 'POINT(30 20)' )
+skip = pnt1.Union( pnt2 ) is None
+
 
 class DataSourceTest(unittest.TestCase):
     def setUp(self):
@@ -70,9 +75,10 @@ class DataSourceTest(unittest.TestCase):
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 0)), self.values2[0])
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 1)), self.values2[1])
 
-
+@unittest.skipIf(skip, "GDAL without GEOS")
 class ZonalDataTest(unittest.TestCase):
     def setUp(self):
+        global skip
         # setup test grid and catchment
         lon = 7.071664
         lat = 50.730521
@@ -128,9 +134,9 @@ class ZonalDataTest(unittest.TestCase):
         self.radar_gk = self.radar_gk[mask]
 
         self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data, srs=self.proj_gk)
-        self.zdpoly.dump_vector('test_zdpoly')
+        #self.zdpoly.dump_vector('test_zdpoly')
         self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data, srs=self.proj_gk)
-        self.zdpoint.dump_vector('test_zdpoint')
+        #self.zdpoint.dump_vector('test_zdpoint')
 
         isec_poly0 = np.array([np.array([[2600000., 5630000.],
                                          [2600000., 5630057.83273596],
