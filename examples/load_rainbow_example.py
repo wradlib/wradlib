@@ -26,7 +26,8 @@ def ex_load_rainbow():
     azi = rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['data']
     azidepth = float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@depth'])
     azirange = float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@rays'])
-    azi = azi * azirange / 2 ** azidepth
+    azires = float(rbdict['volume']['scan']['slice']['anglestep'])
+    azi =  (azi * azirange / 2**azidepth) * azires
 
     # create range array
     stoprange = float(rbdict['volume']['scan']['slice']['stoprange'])
