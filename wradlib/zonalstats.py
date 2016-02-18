@@ -487,9 +487,9 @@ class ZonalDataBase(object):
                                                                      'PRETEST_CONTAINMENT=YES'],
                                      callback=gdal.TermProgress)
         except AttributeError:
-            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
-                                                                     'INPUT_PREFIX=trg_',
+            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['INPUT_PREFIX=trg_',
                                                                      'METHOD_PREFIX=src_',
+                                                                     'SKIP_FAILURES=YES',
                                                                      'PROMOTE_TO_MULTI=YES'],
                                      callback=gdal.TermProgress)
 
