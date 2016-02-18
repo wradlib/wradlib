@@ -21,7 +21,6 @@ from matplotlib.collections import PatchCollection
 from matplotlib.colors import from_levels_and_colors
 import matplotlib.patches as patches
 import datetime as dt
-from osgeo import ogr
 
 
 def testplot(cats, catsavg, xy, data,
@@ -66,12 +65,9 @@ def testplot(cats, catsavg, xy, data,
 
 def ex_tutorial_zonal_statistics():
     # check for GEOS enabled GDAL
-    pnt1 = ogr.CreateGeometryFromWkt( 'POINT(10 20)' )
-    pnt2 = ogr.CreateGeometryFromWkt( 'POINT(30 20)' )
-    skip = pnt1.Union( pnt2 ) is None
-    if skip:
+    if not wradlib.util.has_geos():
+        print("NO GEOS support within GDAL, aborting...")
         exit(0)
-
 
     # Get RADOLAN grid coordinates
     grid_xy_radolan = wradlib.georef.get_radolan_grid(900, 900)

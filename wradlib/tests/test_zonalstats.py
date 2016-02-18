@@ -13,13 +13,9 @@
 import unittest
 import wradlib.georef as georef
 import wradlib.zonalstats as zonalstats
+import wradlib.util as util
 import numpy as np
 from osgeo import osr, ogr, gdal
-
-# check for GEOS enabled GDAL
-pnt1 = ogr.CreateGeometryFromWkt( 'POINT(10 20)' )
-pnt2 = ogr.CreateGeometryFromWkt( 'POINT(30 20)' )
-skip = pnt1.Union( pnt2 ) is None
 
 
 class DataSourceTest(unittest.TestCase):
@@ -75,7 +71,7 @@ class DataSourceTest(unittest.TestCase):
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 0)), self.values2[0])
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 1)), self.values2[1])
 
-@unittest.skipIf(skip, "GDAL without GEOS")
+@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
 class ZonalDataTest(unittest.TestCase):
     def setUp(self):
         global skip
