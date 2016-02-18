@@ -479,6 +479,7 @@ class ZonalDataBase(object):
                                         geom_type=geom_type)
 
         print("Calculate Intersection source/target-layers")
+        print(tmp_trg_lyr.GetName(), src_lyr.GetName())
         try:
             tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
                                                                      'INPUT_PREFIX=trg_',
@@ -486,11 +487,9 @@ class ZonalDataBase(object):
                                                                      'PROMOTE_TO_MULTI=YES',
                                                                      'PRETEST_CONTAINMENT=YES'],
                                      callback=gdal.TermProgress)
+
         except AttributeError:
-            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['INPUT_PREFIX=trg_',
-                                                                     'METHOD_PREFIX=src_',
-                                                                     'SKIP_FAILURES=YES',
-                                                                     'PROMOTE_TO_MULTI=YES'],
+            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['PROMOTE_TO_MULTI=YES'],
                                      callback=gdal.TermProgress)
 
         return ds_mem
