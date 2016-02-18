@@ -38,6 +38,7 @@ from scipy import interpolate
 from scipy.ndimage import filters
 from scipy.spatial import cKDTree
 from scipy.stats import nanmean
+from osgeo import ogr
 
 warnings.simplefilter('always', DeprecationWarning)
 
@@ -1299,6 +1300,16 @@ def find_bbox_indices(coords, bbox):
     bbind = (llx, lly, urx, ury)
 
     return bbind
+
+def has_geos():
+    pnt1 = ogr.CreateGeometryFromWkt( 'POINT(10 20)' )
+    pnt2 = ogr.CreateGeometryFromWkt( 'POINT(30 20)' )
+    ogrex = ogr.GetUseExceptions()
+    ogr.DontUseExceptions()
+    hasgeos = pnt1.Union( pnt2 ) is not None
+    if ogrex:
+        ogr.UseExceptions()
+    return hasgeos
 
 
 if __name__ == '__main__':
