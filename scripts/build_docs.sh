@@ -26,7 +26,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     touch .nojekyll
     git add --all .
     git commit -m "Version" --allow-empty
-    git remote add origin https://$GH_TOKEN@github.com/kmuehlbauer/wradlib-docs.git &> /dev/null
+    git remote add origin https://$GH_TOKEN@github.com/wradlib/wradlib-docs.git &> /dev/null
     git push origin gh-pages -fq &> /dev/null
 fi
 
