@@ -556,7 +556,7 @@ def create_cg(st, fig=None, subplot=111):
 
     if st == 'RHI':
         # create transformation
-        tr = Affine2D().scale(np.pi / 180, 1.) + PolarAxes.PolarTransform()
+        tr = Affine2D().scale(np.pi / 180, 1) + PolarAxes.PolarTransform()
 
         # build up curvelinear grid
         extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
@@ -567,7 +567,7 @@ def create_cg(st, fig=None, subplot=111):
                                                      )
 
         # locator and formatter for angular annotation
-        grid_locator1 = angle_helper.LocatorD(10.)
+        grid_locator1 = angle_helper.LocatorDMS(10.)
         tick_formatter1 = angle_helper.FormatterDMS()
 
         # grid_helper for curvelinear grid
@@ -586,19 +586,20 @@ def create_cg(st, fig=None, subplot=111):
 
     if st == 'PPI':
         # create transformation
-        tr = (Affine2D().scale(np.pi / 180, 1.) +
+        tr = (Affine2D().scale(np.pi / 180, 1) +
               NorthPolarAxes.NorthPolarTransform())
 
         # build up curvelinear grid
         extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
-                                                     lon_cycle=360.,
+                                                     lon_cycle=360,
                                                      lat_cycle=None,
-                                                     lon_minmax=(360., 0.),
+                                                     lon_minmax=(350, 0),
                                                      lat_minmax=(0, np.inf),
                                                      )
 
         # locator and formatter for angle annotation
         grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
+        grid_locator1 = angle_helper.LocatorDMS(35)
         tick_formatter1 = angle_helper.FormatterDMS()
 
         # grid_helper for curvelinear grid
