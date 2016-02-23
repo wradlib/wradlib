@@ -1,0 +1,33 @@
+# run on container-based infrastructure
+sudo: false
+
+language: python
+
+addons:
+    apt:
+        packages:
+            - gfortran
+
+matrix:
+    include:
+    - python: 2.7
+      env:
+        - PYTHON_VERSION="2.7"
+        - COVERALLS="true"
+    - python: 3.4
+      env:
+        - PYTHON_VERSION="3.4"
+    - python: 3.5
+      env:
+        - PYTHON_VERSION="3.5"
+
+# command to install dependencies
+install: source scripts/install.sh
+# command to run tests
+script:
+    # needed to find projection information
+    - export GDAL_DATA=/home/travis/miniconda2/envs/wradlib/share/gdal
+    - xvfb-run coverage run --source wradlib testrunner.py -a
+
+after_success:
+    - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
