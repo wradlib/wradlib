@@ -7,14 +7,13 @@ cd "$TRAVIS_BUILD_DIR"
 
 echo "Building Docs"
 
-mv "$TRAVIS_BUILD_DIR"/doc /tmp
-cd /tmp/doc
-sphinx-build -b html source build
+#mv "$TRAVIS_BUILD_DIR"/doc /tmp
+sphinx-build -b html doc/source doc-build
 
 # upload to wradlib-docs repo if this is not a pull request and
 # secure token is available.
 if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' ]; then
-    cd /tmp/doc/build
+    cd doc-build
     git config --global user.email "wradlib-docs@example.com"
     git config --global user.name "wradlib-docs"
 
