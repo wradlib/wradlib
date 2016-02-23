@@ -41,6 +41,8 @@ import math
 
 # site packages
 import numpy as np
+import pylab as pl
+import matplotlib
 import matplotlib as mpl
 import matplotlib.pyplot as pl
 from matplotlib import patches
@@ -555,7 +557,7 @@ def create_cg(st, fig=None, subplot=111):
 
     if st == 'RHI':
         # create transformation
-        tr = Affine2D().scale(np.pi / 180, 1.) + PolarAxes.PolarTransform()
+        tr = Affine2D().scale(np.pi / 180, 1) + PolarAxes.PolarTransform()
 
         # build up curvelinear grid
         extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
@@ -597,7 +599,7 @@ def create_cg(st, fig=None, subplot=111):
                                                          )
 
         # locator and formatter for angle annotation
-        grid_locator1 = FixedLocator([i for i in np.arange(0, 350, 10, dtype=np.int32)])
+        grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
         grid_locator1 = angle_helper.LocatorDMS(35)
         tick_formatter1 = angle_helper.FormatterDMS()
 
