@@ -182,7 +182,7 @@ class DataSource(object):
             - create ogr_src datasource/layer holding src points/polygons
             - transforming source grid points/polygons to ogr.geometries on ogr.layer
         """
-        t1 = dt.datetime.now()
+        #t1 = dt.datetime.now()
 
         ogr_src = ogr_create_datasource('Memory', 'out')
 
@@ -207,8 +207,8 @@ class DataSource(object):
             ogr_create_layer(ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields)
             ogr_add_feature(ogr_src, src, name=self._name)
 
-        t2 = dt.datetime.now()
-        print "Setting up Data OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
+        #t2 = dt.datetime.now()
+        #print "Setting up Data OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
 
         return ogr_src
 
@@ -255,12 +255,15 @@ class DataSource(object):
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
+        print("Rasterizing Layer")
         if attr is not None:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
-                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"])
+                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"],
+                                callback=gdal.TermProgress)
         else:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
-                                options=["ALL_TOUCHED=TRUE"])
+                                options=["ALL_TOUCHED=TRUE"],
+                                callback=gdal.TermProgress)
 
 
         del ds_out
@@ -303,6 +306,25 @@ class DataSource(object):
         for ogr_src in lyr:
             for i, att in enumerate(attrs):
                 ret[i].append(ogr_src.GetField(att))
+        return ret
+
+    def get_geom_properties(self, props, filt=None):
+        """ Read attributes
+
+        Parameters
+        ----------
+        attrs : list, Attribute Names to retrieve
+        filt : tuple, (attname,value) for Attribute Filter
+
+        """
+        lyr = self.ds.GetLayer()
+        lyr.ResetReading()
+        if filt is not None:
+            lyr.SetAttributeFilter('{0}={1}'.format(*filt))
+        ret = [[] for _ in props]
+        for ogr_src in lyr:
+            for i, prop in enumerate(props):
+                ret[i].append(getattr(ogr_src.GetGeometryRef(), prop)())
         return ret
 
 
@@ -397,7 +419,7 @@ class ZonalDataBase(object):
         -------
         array : numpy array of indices
         """
-        return np.array(self.dst.get_attributes(['src'], filt=('trg', idx))[0])
+        return np.array(self.dst.get_attributes(['src_index'], filt=('trg_index', idx))[0])
 
     def _create_dst_datasource(self, **kwargs):
         """ Create destination target OGR.DataSource
@@ -423,21 +445,31 @@ class ZonalDataBase(object):
         src_lyr.SetSpatialFilter(None)
         geom_type = src_lyr.GetGeomType()
 
-        fields = [('src', ogr.OFTInteger), ('trg', ogr.OFTInteger), ('weight', ogr.OFTReal)]
+        # create temp Buffer layer (time consuming)
+        ds_tmp = ogr_create_datasource('Memory', 'tmp')
+        ogr_copy_layer(self.trg.ds, 0, ds_tmp)
+        tmp_trg_lyr = ds_tmp.GetLayer()
 
-        # get target layer, iterate over polygons and calculate weights
-        lyr = self.trg.ds.GetLayerByName('trg')
-        lyr.ResetReading()
+        for i in range(tmp_trg_lyr.GetFeatureCount()):
+            feat = tmp_trg_lyr.GetFeature(i)
+            feat.SetGeometryDirectly(feat.GetGeometryRef().Buffer(self._buffer))
+            tmp_trg_lyr.SetFeature(feat)
 
-        t1 = dt.datetime.now()
+
+        # get target layer, iterate over polygons and calculate intersections
+        tmp_trg_lyr.ResetReading()
+
 
         self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
-                                        geom_type=geom_type, fields=fields)
+                                        geom_type=geom_type)
 
-        [self._create_dst_features(self.tmp_lyr, trg_poly, **kwargs) for trg_poly in lyr]
-
-        t2 = dt.datetime.now()
-        print "Getting Intersection takes: %f seconds" % (t2 - t1).total_seconds()
+        print("Calculate Intersection source/target-layers")
+        tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
+                                                                 'INPUT_PREFIX=trg_',
+                                                                 'METHOD_PREFIX=src_',
+                                                                 'PROMOTE_TO_MULTI=YES',
+                                                                 'PRETEST_CONTAINMENT=YES'],
+                                 callback=gdal.TermProgress)
 
         return ds_mem
 
@@ -498,24 +530,9 @@ class ZonalDataBase(object):
 
     def _get_idx_weights(self):
         """ Retrieve index and weight from dst DataSource
-
-        Iterates over all trg DataSource Polygons
-
-        Returns
-        -------
-
-        tuple : (index, weight) arrays
-
         """
-        trg = self.trg.ds.GetLayer()
-        cnt = trg.GetFeatureCount()
-        attrs = ['src', 'weight']
-        ret = [[] for _ in attrs]
-        for index in range(cnt):
-            arr = self.dst.get_attributes(attrs, filt=('trg', index))
-            for i, l in enumerate(arr):
-                ret[i].append(np.array(l))
-        return tuple(ret)
+        raise NotImplementedError
+
 
     def _get_intersection(self, trg=None, idx=None, buf=0.):
         """Just a toy function if you want to inspect the intersection points/polygons
@@ -549,7 +566,7 @@ class ZonalDataBase(object):
         if idx is None:
             intersecs = self.src.get_data_by_geom(trg)
         else:
-            intersecs = self.dst.get_data_by_att('trg', idx)
+            intersecs = self.dst.get_data_by_att('trg_index', idx)
 
         return intersecs
 
@@ -576,6 +593,28 @@ class ZonalDataPoly(ZonalDataBase):
         in the buffer.
 
     """
+    def _get_idx_weights(self):
+        """ Retrieve index and weight from dst DataSource
+
+        Iterates over all trg DataSource Polygons
+
+        Returns
+        -------
+
+        tuple : (index, weight) arrays
+
+        """
+        trg = self.trg.ds.GetLayer()
+        cnt = trg.GetFeatureCount()
+        ret = [[] for _ in range(2)]
+        for index in range(cnt):
+            arr = self.dst.get_attributes(['src_index'], filt=('trg_index', index))
+            w = self.dst.get_geom_properties(['Area'], filt=('trg_index', index))
+            arr.append(w[0])
+            for i, l in enumerate(arr):
+                ret[i].append(np.array(l))
+        return tuple(ret)
+
     def _create_dst_features(self, dst, trg, **kwargs):
         """ Create needed OGR.Features in dst OGR.Layer
 
@@ -587,7 +626,7 @@ class ZonalDataPoly(ZonalDataBase):
         """
         # TODO: kwargs necessary?
 
-        t1 = dt.datetime.now()
+        #t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
         layer = self.src.ds.GetLayerByName('src')
@@ -599,7 +638,6 @@ class ZonalDataPoly(ZonalDataBase):
         trg = trg.Buffer(self._buffer)
         layer.SetSpatialFilter(trg)
 
-        trg_area = trg.Area()
         # iterate over layer features
         for ogr_src in layer:
             geom = ogr_src.GetGeometryRef()
@@ -619,10 +657,10 @@ class ZonalDataPoly(ZonalDataBase):
 
             if geom.GetGeometryType() in [3, 6, 12]:
                 idx = ogr_src.GetField('index')
-                ogr_add_geometry(dst, geom, [idx, trg_index, geom.Area() / trg_area])
+                ogr_add_geometry(dst, geom, [idx, trg_index])
 
-        t2 = dt.datetime.now()
-        print "Getting Weights takes: {0} seconds".format((t2 - t1).total_seconds())
+        #t2 = dt.datetime.now()
+        #print "Getting Weights takes: {0} seconds".format((t2 - t1).total_seconds())
 
 
 class ZonalDataPoint(ZonalDataBase):
@@ -647,6 +685,27 @@ class ZonalDataPoint(ZonalDataBase):
         in the buffer.
 
     """
+    def _get_idx_weights(self):
+        """ Retrieve index and weight from dst DataSource
+
+        Iterates over all trg DataSource Polygons
+
+        Returns
+        -------
+
+        tuple : (index, weight) arrays
+
+        """
+        trg = self.trg.ds.GetLayer()
+        cnt = trg.GetFeatureCount()
+        ret = [[] for _ in range(2)]
+        for index in range(cnt):
+            arr = self.dst.get_attributes(['src_index'], filt=('trg_index', index))
+            arr.append([1./len(arr[0])] * len(arr[0]))
+            for i, l in enumerate(arr):
+                ret[i].append(np.array(l))
+        return tuple(ret)
+
     def _create_dst_features(self, dst, trg, **kwargs):
         """ Create needed OGR.Features in dst OGR.Layer
 
@@ -658,7 +717,7 @@ class ZonalDataPoint(ZonalDataBase):
         """
         # TODO: kwargs necessary?
 
-        t1 = dt.datetime.now()
+        #t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
         layer = self.src.ds.GetLayerByName('src')
@@ -674,7 +733,7 @@ class ZonalDataPoint(ZonalDataBase):
 
         if feat_cnt:
             [ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
-                              [ogr_src.GetField('index'), trg_index,  1. / feat_cnt])
+                              [ogr_src.GetField('index'), trg_index])
              for ogr_src in layer]
         else:
             layer.SetSpatialFilter(None)
@@ -683,10 +742,10 @@ class ZonalDataPoint(ZonalDataBase):
             tree = cKDTree(src_pts)
             distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
             feat = layer.GetFeature(ixnext)
-            ogr_add_geometry(dst, feat.GetGeometryRef(), [feat.GetField('index'), trg_index, 1.])
+            ogr_add_geometry(dst, feat.GetGeometryRef(), [feat.GetField('index'), trg_index])
 
-        t2 = dt.datetime.now()
-        print "Getting Weights takes: %f seconds" % (t2 - t1).total_seconds()
+        #t2 = dt.datetime.now()
+        #print "Getting Weights takes: %f seconds" % (t2 - t1).total_seconds()
 
 
 class ZonalStatsBase(object):
