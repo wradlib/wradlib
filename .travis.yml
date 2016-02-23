@@ -8,12 +8,18 @@ addons:
         packages:
             - gfortran
 
+env:
+  global:
+    # wradlib-docs
+    - secure: 1nChVyDxyRMdQ9R8hi0XP8tzFm8k1k2WO4ABsQ4exvNacZElJFy4O99LkzNrKdhlqVXssYDXkpflrbADfPqZ4v3KW8P7Y/f1JD5gyQdZkJa5U0CxQWkSUO+yVebegq5gxQEpXTVRwU+sg48VdFeGLCSPSwvPB20GXqiIBZh3i/1DaRiADeKTpLnIpSipwtT/zI9nlB+AX02hc2ADlXErBS62SFqCjmUM6TMX1kFEc9n/BG0IR2IWcBw2fjKxSGNz9mHgsHLWkYvrXBj/xW42BGLUVs9FAHjtlt1168Zij5JlM2eP4lJ7AI38X4ox91MGvIByQn6mbuuaxFAr/QDw6coNT7QuXFW/gr6ke1pCoB6hhkmv6AvAKr8gyFhle54wdqGHa41XjITgvtq78A3uKMbhj8ffWKmKSYlLOMohC5s4zlxguH3Dp0YixDG8qj/T7pgbAcxfK+8T09ijkvNfA/wVjgg+7nHv8G/rVAbvZkVDxGFdvvXmla7781l1afZs8PWEZj/dCxzmRqA7KCiyc8yChCHQkLFxqh3zkd2fIQZXkda4ahYq6bYncGKC5WuiwMKBpug0az9Tv0ouJsv5gS9ehKXy0H5yiEr1pJiA9SomharD5ebZm2tgbaLQYf6qq/U59jaP/Cdr+hzC0uY8MlM8kHtPzEYIpcaOL2dNqmA=
+
 matrix:
     include:
     - python: 2.7
       env:
         - PYTHON_VERSION="2.7"
         - COVERALLS="true"
+        - DOC_BUILD="true"
     - python: 3.4
       env:
         - PYTHON_VERSION="3.4"
@@ -21,13 +27,12 @@ matrix:
       env:
         - PYTHON_VERSION="3.5"
 
-# command to install dependencies
 install: source scripts/install.sh
-# command to run tests
+
 script:
-    # needed to find projection information
     - export GDAL_DATA=/home/travis/miniconda2/envs/wradlib/share/gdal
     - xvfb-run coverage run --source wradlib testrunner.py -a
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
