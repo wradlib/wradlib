@@ -55,16 +55,15 @@ def testplot(cats, catsavg, xy, data,
     ax1.add_collection(coll)
     cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
     cb.set_label("(mm/h)")
-    ax1.set_ylim(ax.get_ylim())
-    ax1.set_xlim(ax.get_xlim())
     plt.xlabel("GK2 Easting")
     plt.ylabel("GK2 Northing")
     plt.title("Original radar rain sums")
-    #plt.draw()
+    plt.draw()
     plt.tight_layout()
 
 
 def ex_tutorial_zonal_statistics():
+
     # Get RADOLAN grid coordinates
     grid_xy_radolan = wradlib.georef.get_radolan_grid(900, 900)
     x_radolan = grid_xy_radolan[:, :, 0]
@@ -83,12 +82,12 @@ def ex_tutorial_zonal_statistics():
                                   projection_target=proj_gk)
 
     # Open shapefile (already in GK2)
-    shpfile = '../../../examples/data/agger/agger_merge.shp'
+    shpfile = "../../../examples/data/agger/agger_merge.shp"
     dataset, inLayer = wradlib.io.open_shape(shpfile)
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
 
     # Read and prepare the actual data (RADOLAN)
-    f = '../../../examples/data/radolan/raa01-sf_10000-1406100050-dwd---bin.gz'
+    f = "../../../examples/data/radolan/raa01-sf_10000-1406100050-dwd---bin.gz"
     data, attrs = wradlib.io.read_RADOLAN_composite(f, missing=np.nan)
     sec = attrs['secondary']
     data.flat[sec] = np.nan
@@ -111,13 +110,16 @@ def ex_tutorial_zonal_statistics():
 
     t1 = dt.datetime.now()
 
-
-    # Create instance of type ZonalDataPoint from source grid and catchment array
-    zd = wradlib.zonalstats.ZonalDataPoint(xy_, cats, srs=proj_gk, buf=500.)
-    # dump to file
-    #zd.dump_vector('test_zonal_points_cart')
-    # Create instance of type GridPointsToPoly from zonal data object
-    obj1 = wradlib.zonalstats.GridPointsToPoly(zd)
+    try:
+        # Create instance of type GridPointsToPoly from zonal data file
+        obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_points_cart')
+    except:
+        # Create instance of type ZonalDataPoint from source grid and catchment array
+        zd = wradlib.zonalstats.ZonalDataPoint(xy_, cats, srs=proj_gk, buf=500.)
+        # dump to file
+        zd.dump_vector('test_zonal_points_cart')
+        # Create instance of type GridPointsToPoly from zonal data object
+        obj1 = wradlib.zonalstats.GridPointsToPoly(zd)
 
     isecs1 = obj1.zdata.isecs
     t2 = dt.datetime.now()
@@ -128,8 +130,8 @@ def ex_tutorial_zonal_statistics():
 
     t3 = dt.datetime.now()
 
-    print "Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
-    print "Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
+    print("Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
+    print("Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
     
     # Just a test for plotting results with zero buffer
     zd2 = wradlib.zonalstats.ZonalDataPoint(xy_, cats, buf=0)
@@ -179,14 +181,18 @@ def ex_tutorial_zonal_statistics():
                                   projection_source=proj_stereo,
                                   projection_target=proj_gk)
 
-
-    # Create instance of type ZonalDataPoly from source grid and
-    # catchment array
-    zd = wradlib.zonalstats.ZonalDataPoly(grdverts, cats, srs=proj_gk)
-    # dump to file
-    #zd.dump_vector('test_zonal_poly_cart')
-    # Create instance of type GridPointsToPoly from zonal data object
-    obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
+    try:
+        # Create instance of type GridCellsToPoly from zonal data file
+        obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly_cart')
+    except Exception as e:
+        print(e)
+        # Create instance of type ZonalDataPoly from source grid and
+        # catchment array
+        zd = wradlib.zonalstats.ZonalDataPoly(grdverts, cats, srs=proj_gk)
+        # dump to file
+        zd.dump_vector('test_zonal_poly_cart')
+        # Create instance of type GridPointsToPoly from zonal data object
+        obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
 
     t2 = dt.datetime.now()
 
@@ -196,13 +202,17 @@ def ex_tutorial_zonal_statistics():
 
     t3 = dt.datetime.now()
 
-    print "Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
-    print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
+    print("Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
+    print("Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
 
     # Target polygon patches
     trg_patches = [patches.Polygon(item, True) for item in obj3.zdata.trg.data]
 
-
+    # Plot average rainfall and original data
+    testplot(trg_patches, avg3, xy, data,
+             title="Catchment rainfall mean (GridCellsToPoly)")
+    testplot(trg_patches, var3, xy, data, levels=np.arange(0, np.max(var3), 1.),
+             title="Catchment rainfall variance (GridCellsToPoly)")
     
     # Illustrate results for an example catchment i
     i = 6 # try any index between 0 and 13
@@ -232,13 +242,7 @@ def ex_tutorial_zonal_statistics():
     bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
     plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
     plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
-    #plt.draw()
-
-    # Plot average rainfall and original data
-    testplot(trg_patches, avg3, xy, data,
-             title="Catchment rainfall mean (GridCellsToPoly)")
-    testplot(trg_patches, var3, xy, data, levels=np.arange(0, np.max(var3), 1.),
-             title="Catchment rainfall variance (GridCellsToPoly)")
+    plt.draw()
 
     # Compare estimates
     maxlim = np.max(np.concatenate((avg1, avg3)))

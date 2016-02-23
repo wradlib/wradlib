@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        radolan_radarloc_example.py
 # Purpose:     showing radar-locations and range-rings
 #              for radolan composites
@@ -8,10 +8,11 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
+pl.interactive(True)
 import numpy as np
 import matplotlib as mpl
 import os
@@ -19,157 +20,65 @@ from osgeo import osr
 
 
 def get_radar_locations():
-
     radars = {}
-    radar = {}
-    radar['name'] = 'ASR Dresden'
-    radar['wmo'] = 10487
-    radar['lon'] = 13.76347
-    radar['lat'] = 51.12404
-    radar['alt'] = 261
+    radar = {'name': 'ASR Dresden', 'wmo': 10487, 'lon': 13.76347, 'lat': 51.12404, 'alt': 261}
     radars['ASD'] = radar
 
-    radar = {}
-    radar['name'] = 'Boostedt'
-    radar['wmo'] = 10132
-    radar['lon'] = 10.04687
-    radar['lat'] = 54.00438
-    radar['alt'] = 124.56
+    radar = {'name': 'Boostedt', 'wmo': 10132, 'lon': 10.04687, 'lat': 54.00438, 'alt': 124.56}
     radars['BOO'] = radar
 
-    radar = {}
-    radar['name'] = 'Dresden'
-    radar['wmo'] = 10488
-    radar['lon'] = 13.76865
-    radar['lat'] = 51.12465
-    radar['alt'] = 263.36
+    radar = {'name': 'Dresden', 'wmo': 10488, 'lon': 13.76865, 'lat': 51.12465, 'alt': 263.36}
     radars['DRS'] = radar
 
-    radar = {}
-    radar['name'] = 'Eisberg'
-    radar['wmo'] = 10780
-    radar['lon'] = 12.40278
-    radar['lat'] = 49.54066
-    radar['alt'] = 798.79
+    radar = {'name': 'Eisberg', 'wmo': 10780, 'lon': 12.40278, 'lat': 49.54066, 'alt': 798.79}
     radars['EIS'] = radar
 
-    radar = {}
-    radar['name'] = 'Emden'
-    radar['wmo'] = 10204
-    radar['lon'] = 7.02377
-    radar['lat'] = 53.33872
-    radar['alt'] = 58
+    radar = {'name': 'Emden', 'wmo': 10204, 'lon': 7.02377, 'lat': 53.33872, 'alt': 58}
     radars['EMD'] = radar
 
-    radar = {}
-    radar['name'] = 'Essen'
-    radar['wmo'] = 10410
-    radar['lon'] = 6.96712
-    radar['lat'] = 51.40563
-    radar['alt'] = 185.10
+    radar = {'name': 'Essen', 'wmo': 10410, 'lon': 6.96712, 'lat': 51.40563, 'alt': 185.10}
     radars['ESS'] = radar
 
-    radar = {}
-    radar['name'] = 'Feldberg'
-    radar['wmo'] = 10908
-    radar['lon'] = 8.00361
-    radar['lat'] = 47.87361
-    radar['alt'] = 1516.10
+    radar = {'name': 'Feldberg', 'wmo': 10908, 'lon': 8.00361, 'lat': 47.87361, 'alt': 1516.10}
     radars['FBG'] = radar
 
-    radar = {}
-    radar['name'] = 'Flechtdorf'
-    radar['wmo'] = 10440
-    radar['lon'] = 8.802
-    radar['lat'] = 51.3112
-    radar['alt'] = 627.88
+    radar = {'name': 'Flechtdorf', 'wmo': 10440, 'lon': 8.802, 'lat': 51.3112, 'alt': 627.88}
     radars['FLD'] = radar
 
-    radar = {}
-    radar['name'] = 'Hannover'
-    radar['wmo'] = 10339
-    radar['lon'] = 9.69452
-    radar['lat'] = 52.46008
-    radar['alt'] = 97.66
+    radar = {'name': 'Hannover', 'wmo': 10339, 'lon': 9.69452, 'lat': 52.46008, 'alt': 97.66}
     radars['HNR'] = radar
 
-    radar = {}
-    radar['name'] = 'Neuhaus'
-    radar['wmo'] = 10557
-    radar['lon'] = 11.13504
-    radar['lat'] = 50.50012
-    radar['alt'] = 878.04
+    radar = {'name': 'Neuhaus', 'wmo': 10557, 'lon': 11.13504, 'lat': 50.50012, 'alt': 878.04}
     radars['NEU'] = radar
 
-    radar = {}
-    radar['name'] = 'Neuheilenbach'
-    radar['wmo'] = 10605
-    radar['lon'] = 6.54853
-    radar['lat'] = 50.10965
-    radar['alt'] = 585.84
+    radar = {'name': 'Neuheilenbach', 'wmo': 10605, 'lon': 6.54853, 'lat': 50.10965, 'alt': 585.84}
     radars['NHB'] = radar
 
-    radar = {}
-    radar['name'] = 'Offenthal'
-    radar['wmo'] = 10629
-    radar['lon'] = 8.71293
-    radar['lat'] = 49.9847
-    radar['alt'] = 245.80
+    radar = {'name': 'Offenthal', 'wmo': 10629, 'lon': 8.71293, 'lat': 49.9847, 'alt': 245.80}
     radars['OFT'] = radar
 
-    radar = {}
-    radar['name'] = 'Proetzel'
-    radar['wmo'] = 10392
-    radar['lon'] = 13.85821
-    radar['lat'] = 52.64867
-    radar['alt'] = 193.92
+    radar = {'name': 'Proetzel', 'wmo': 10392, 'lon': 13.85821, 'lat': 52.64867, 'alt': 193.92}
     radars['PRO'] = radar
 
-    radar = {}
-    radar['name'] = 'Memmingen'
-    radar['wmo'] = 10950
-    radar['lon'] = 10.21924
-    radar['lat'] = 48.04214
-    radar['alt'] = 724.40
+    radar = {'name': 'Memmingen', 'wmo': 10950, 'lon': 10.21924, 'lat': 48.04214, 'alt': 724.40}
     radars['MEM'] = radar
 
-    radar = {}
-    radar['name'] = 'Rostock'
-    radar['wmo'] = 10169
-    radar['lon'] = 12.05808
-    radar['lat'] = 54.17566
-    radar['alt'] = 37
+    radar = {'name': 'Rostock', 'wmo': 10169, 'lon': 12.05808, 'lat': 54.17566, 'alt': 37}
     radars['ROS'] = radar
 
-    radar = {}
-    radar['name'] = 'Isen'
-    radar['wmo'] = 10873
-    radar['lon'] = 12.10177
-    radar['lat'] = 48.1747
-    radar['alt'] = 677.77
+    radar = {'name': 'Isen', 'wmo': 10873, 'lon': 12.10177, 'lat': 48.1747, 'alt': 677.77}
     radars['ISN'] = radar
 
-    radar = {}
-    radar['name'] = 'Tuerkheim'
-    radar['wmo'] = 10832
-    radar['lon'] = 9.78278
-    radar['lat'] = 48.58528
-    radar['alt'] = 767.62
+    radar = {'name': 'Tuerkheim', 'wmo': 10832, 'lon': 9.78278, 'lat': 48.58528, 'alt': 767.62}
     radars['TUR'] = radar
 
-    radar = {}
-    radar['name'] = 'Ummendorf'
-    radar['wmo'] = 10356
-    radar['lon'] = 11.17609
-    radar['lat'] = 52.16009
-    radar['alt'] = 183
+    radar = {'name': 'Ummendorf', 'wmo': 10356, 'lon': 11.17609, 'lat': 52.16009, 'alt': 183}
     radars['UMM'] = radar
 
     return radars
 
 
 def ex_radolan_radarloc():
-
     # load radolan file
     rw_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
@@ -183,8 +92,7 @@ def ex_radolan_radarloc():
     rwdata = np.ma.masked_equal(rwdata, -9999)
 
     # create radolan projection object
-    dwd_string = wrl.georef.create_projstr("dwd-radolan")
-    proj_stereo = wrl.georef.proj4_to_osr(dwd_string)
+    proj_stereo = wrl.georef.create_osr("dwd-radolan")
 
     # create wgs84 projection object
     proj_wgs = osr.SpatialReference()
@@ -209,8 +117,8 @@ def ex_radolan_radarloc():
     pl.xlabel("Longitude ")
     pl.ylabel("Latitude")
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n WGS84')
-    pl.xlim((lon1[0, 0],lon1[-1, -1]))
-    pl.ylim((lat1[0, 0],lat1[-1, -1]))
+    pl.xlim((lon1[0, 0], lon1[-1, -1]))
+    pl.ylim((lat1[0, 0], lat1[-1, -1]))
     pl.grid(color='r')
 
     fig2 = pl.figure()
@@ -221,13 +129,13 @@ def ex_radolan_radarloc():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat() + '\n Polar Stereographic Projection')
-    pl.xlim((x1[0, 0],x1[-1, -1]))
-    pl.ylim((y1[0, 0],y1[-1, -1]))
+    pl.xlim((x1[0, 0], x1[-1, -1]))
+    pl.ylim((y1[0, 0], y1[-1, -1]))
     pl.grid(color='r')
 
     # range array 150 km
     print("Max Range: ", rwattrs['maxrange'])
-    r = np.arange(1, 151)*1000
+    r = np.arange(1, 151) * 1000
     # azimuth array 1 degree spacing
     az = np.linspace(0, 360, 361)[0:-1]
 
@@ -271,6 +179,7 @@ def ex_radolan_radarloc():
 
     pl.tight_layout()
     pl.show()
+
 
 # =======================================================
 if __name__ == '__main__':

@@ -59,7 +59,7 @@ Installation under Linux
 ------------------------
 
 Installing Manually
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 This way no dependency checking is done and you need to make sure yourself that all dependencies (see below) are met.
 
@@ -70,7 +70,7 @@ This way no dependency checking is done and you need to make sure yourself that 
 This will install wradlib to your site-packages or dist-packages folder.
 
 Installing via easy_install
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Open a terminal and run:
 
@@ -85,6 +85,9 @@ Be aware that with easy_install we can only look for python-module dependencies.
 For example the numpy module itself depends on some other libraries, which need to be present in order for the module to compile properly after being downloaded by easy_install. We have no control over these dependencies and it is rather hard to give a complete overview.
 
 Therefore we recommend trying to satisfy the dependencies using your favorite package management system.
+
+Since python environments as Enthought Python or Anaconda Python have ermerged and matured in the past, we also recommend to use these environments.
+
 As an example we give all packages necessary to successfully install wradlib on a Ubuntu Linux 12.04 (thanks to Diego Civera from the wradlib-users mailing list for pioneering this).
 
 Satisfying wradlib dependencies using apt-get on Ubuntu 12.04 LTS (precise pangolin)

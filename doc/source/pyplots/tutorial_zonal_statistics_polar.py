@@ -52,8 +52,6 @@ def testplot(cats, catsavg, xy, data, levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 
     ax1.add_collection(coll)
     cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
     cb.set_label("(mm/h)")
-    ax1.set_ylim(ax.get_ylim())
-    ax1.set_xlim(ax.get_xlim())
     plt.xlabel("GK2 Easting")
     plt.ylabel("GK2 Northing")
     plt.title("Original radar rain sums")
@@ -135,13 +133,16 @@ def ex_tutorial_zonal_statistics_polar():
 
     t1 = dt.datetime.now()
 
-
-    # Create instance of type ZonalDataPoint from source grid and catchment array
-    zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, srs=proj_gk, buf=500.)
-    # dump to file
-    #zd.dump_vector('test_zonal_points')
-    # Create instance of type GridPointsToPoly from zonal data object
-    obj1 = wradlib.zonalstats.GridPointsToPoly(zd)
+    try:
+        # Create instance of type GridPointsToPoly from zonal data file
+        obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_points')
+    except:
+        # Create instance of type ZonalDataPoint from source grid and catchment array
+        zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, srs=proj_gk, buf=500.)
+        # dump to file
+        zd.dump_vector('test_zonal_points')
+        # Create instance of type GridPointsToPoly from zonal data object
+        obj1 = wradlib.zonalstats.GridPointsToPoly(zd)
 
     isecs1 = obj1.zdata.isecs
     t2 = dt.datetime.now()
@@ -152,8 +153,8 @@ def ex_tutorial_zonal_statistics_polar():
 
     t3 = dt.datetime.now()
 
-    print "Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
-    print "Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
+    print("Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
+    print("Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
 
     # Just a test for plotting results with zero buffer
     zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, buf=0)
@@ -191,19 +192,24 @@ def ex_tutorial_zonal_statistics_polar():
 
     ###########################################################################
     # Approach #2: Compute weighted mean based on fraction of source polygons in target polygons
-    # 
+    #
     # - This is more accurate (no assumptions), but probably slower...
     ###########################################################################
 
     t1 = dt.datetime.now()
 
-    # Create instance of type ZonalDataPoly from source grid and
-    # catchment array
-    zd = wradlib.zonalstats.ZonalDataPoly(radar_gk_, cats, srs=proj_gk)
-    # dump to file
-    #zd.dump_vector('test_zonal_poly')
-    # Create instance of type GridPointsToPoly from zonal data object
-    obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
+    try:
+        # Create instance of type GridCellsToPoly from zonal data file
+        obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly')
+    except Exception as e:
+        print(e)
+        # Create instance of type ZonalDataPoly from source grid and
+        # catchment array
+        zd = wradlib.zonalstats.ZonalDataPoly(radar_gk_, cats, srs=proj_gk)
+        # dump to file
+        zd.dump_vector('test_zonal_poly')
+        # Create instance of type GridPointsToPoly from zonal data object
+        obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
 
     obj3.zdata.dump_vector('test_zonal_poly')
     t2 = dt.datetime.now()
@@ -211,13 +217,24 @@ def ex_tutorial_zonal_statistics_polar():
     avg3 = obj3.mean(data_.ravel())
     var3 = obj3.var(data_.ravel())
 
+    obj3.zdata.trg.dump_raster('test_zonal_hdr.nc', 'netCDF', 'mean', pixel_size=100.)
+
+    obj3.zdata.trg.dump_vector('test_zonal_shp')
+    obj3.zdata.trg.dump_vector('test_zonal_json.geojson', 'GeoJSON')
+
     t3 = dt.datetime.now()
 
-    print "Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds()
-    print "Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds()
+    print("Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
+    print("Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
 
     # Target polygon patches
     trg_patches = [patches.Polygon(item, True) for item in obj3.zdata.trg.data]
+
+    # Plot average rainfall and original data
+    testplot(trg_patches, avg3, radar_gkc, data,
+             title="Catchment rainfall mean (PolarGridCellsToPoly)")
+    testplot(trg_patches, var3, radar_gkc, data, levels = np.arange(0, 20, 1.0),
+             title="Catchment rainfall variance (PolarGridCellsToPoly)")
 
     # Illustrate results for an example catchment i
     i = 0 # try any index between 0 and 13
@@ -250,13 +267,7 @@ def ex_tutorial_zonal_statistics_polar():
     plt.draw()
 
     t2 = dt.datetime.now()
-    print "plot intersection takes: %f seconds" % (t2 - t1).total_seconds()
-
-    # Plot average rainfall and original data
-    testplot(trg_patches, avg3, radar_gkc, data,
-             title="Catchment rainfall mean (PolarGridCellsToPoly)")
-    testplot(trg_patches, var3, radar_gkc, data, levels = np.arange(0, 20, 1.0),
-             title="Catchment rainfall variance (PolarGridCellsToPoly)")
+    print("plot intersection takes: %f seconds" % (t2 - t1).total_seconds())
 
     # Compare estimates
     maxlim = np.max(np.concatenate((avg1, avg3)))

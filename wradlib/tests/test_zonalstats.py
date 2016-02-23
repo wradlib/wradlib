@@ -13,20 +13,20 @@
 import unittest
 import wradlib.georef as georef
 import wradlib.zonalstats as zonalstats
+import wradlib.util as util
 import numpy as np
 from osgeo import osr, ogr, gdal
 
 
 class DataSourceTest(unittest.TestCase):
-
     def setUp(self):
         # create synthetic box
-        self.box0 = np.array([[2600000., 5630000.],[2600000., 5640000.],
-                              [2610000., 5640000.],[2610000., 5630000.],
+        self.box0 = np.array([[2600000., 5630000.], [2600000., 5640000.],
+                              [2610000., 5640000.], [2610000., 5630000.],
                               [2600000., 5630000.]])
 
-        self.box1 = np.array([[2700000., 5630000.],[2700000., 5640000.],
-                              [2710000., 5640000.],[2710000., 5630000.],
+        self.box1 = np.array([[2700000., 5630000.], [2700000., 5640000.],
+                              [2710000., 5640000.], [2710000., 5630000.],
                               [2700000., 5630000.]])
 
         self.data = np.array([self.box0, self.box1])
@@ -71,14 +71,14 @@ class DataSourceTest(unittest.TestCase):
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 0)), self.values2[0])
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 1)), self.values2[1])
 
-
+@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
 class ZonalDataTest(unittest.TestCase):
-
     def setUp(self):
+        global skip
         # setup test grid and catchment
         lon = 7.071664
         lat = 50.730521
-        r = np.array(range(50, 100*1000 + 50 , 100))
+        r = np.array(range(50, 100 * 1000 + 50, 100))
         a = np.array(range(0, 360, 1))
         rays = a.shape[0]
         bins = r.shape[0]
@@ -97,20 +97,20 @@ class ZonalDataTest(unittest.TestCase):
 
         # project ll grids to GK2
         self.radar_gk = georef.reproject(radar_ll, projection_source=self.proj_ll,
-                                    projection_target=self.proj_gk)
+                                         projection_target=self.proj_gk)
         self.radar_gkc = georef.reproject(radar_llc, projection_source=self.proj_ll,
-                                     projection_target=self.proj_gk)
+                                          projection_target=self.proj_gk)
 
         # reshape
         self.radar_gk.shape = (rays, bins, 5, 2)
         self.radar_gkc.shape = (rays, bins, 2)
 
-        self.box0 = np.array([[2600000., 5630000.],[2600000., 5630100.],
-                              [2600100., 5630100.],[2600100., 5630000.],
+        self.box0 = np.array([[2600000., 5630000.], [2600000., 5630100.],
+                              [2600100., 5630100.], [2600100., 5630000.],
                               [2600000., 5630000.]])
 
-        self.box1 = np.array([[2600100., 5630000.],[2600100., 5630100.],
-                              [2600200., 5630100.],[2600200., 5630000.],
+        self.box1 = np.array([[2600100., 5630000.], [2600100., 5630100.],
+                              [2600200., 5630100.], [2600200., 5630000.],
                               [2600100., 5630000.]])
 
         self.data = np.array([self.box0, self.box1])
@@ -118,21 +118,21 @@ class ZonalDataTest(unittest.TestCase):
         # create catchment bounding box
         buffer = 5000.
         bbox = zonalstats.get_bbox(self.data[..., 0], self.data[..., 1])
-        bbox = dict(left=bbox['left']-buffer, right=bbox['right']+buffer,
-                    bottom=bbox['bottom']-buffer, top=bbox['top']+buffer)
+        bbox = dict(left=bbox['left'] - buffer, right=bbox['right'] + buffer,
+                    bottom=bbox['bottom'] - buffer, top=bbox['top'] + buffer)
 
         mask, shape = zonalstats.mask_from_bbox(self.radar_gkc[..., 0],
                                                 self.radar_gkc[..., 1],
                                                 bbox,
                                                 polar=True)
 
-        self.radar_gkc = self.radar_gkc[mask,:]
+        self.radar_gkc = self.radar_gkc[mask, :]
         self.radar_gk = self.radar_gk[mask]
 
         self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data, srs=self.proj_gk)
-        self.zdpoly.dump_vector('test_zdpoly')
+        #self.zdpoly.dump_vector('test_zdpoly')
         self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data, srs=self.proj_gk)
-        self.zdpoint.dump_vector('test_zdpoint')
+        #self.zdpoint.dump_vector('test_zdpoint')
 
         isec_poly0 = np.array([np.array([[2600000., 5630000.],
                                          [2600000., 5630057.83273596],
@@ -166,7 +166,7 @@ class ZonalDataTest(unittest.TestCase):
                                          [2600197.20644071, 5630100.]])])
 
         isec_point0 = np.array([[2600062.31245173, 5630031.20266055]])
-        isec_point1 = np.array([[ 2600157.8352244, 5630061.85098382]])
+        isec_point1 = np.array([[2600157.8352244, 5630061.85098382]])
 
         self.isec_poly = np.array([isec_poly0, isec_poly1])
         self.isec_point = np.array([isec_point0, isec_point1])
@@ -191,6 +191,7 @@ class ZonalDataTest(unittest.TestCase):
         self.assertTrue(np.allclose(self.zdpoint.get_source_index(0), np.array([2255])))
         self.assertTrue(np.allclose(self.zdpoint.get_source_index(1), np.array([2256])))
 
+
 class ZonalStatsTest(unittest.TestCase):
     # TODO: create tests for ZonalStatsBase class and descendants
     pass
@@ -198,8 +199,8 @@ class ZonalStatsTest(unittest.TestCase):
 
 class ZonalStatsUtilTest(unittest.TestCase):
     def setUp(self):
-        self.npobj = np.array([[2600000., 5630000.],[2600000., 5630100.],
-                               [2600100., 5630100.],[2600100., 5630000.],
+        self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
+                               [2600100., 5630100.], [2600100., 5630000.],
                                [2600000., 5630000.]])
 
         self.ogrobj = zonalstats.numpy_to_ogr(self.npobj, 'Polygon')
@@ -225,6 +226,7 @@ class ZonalStatsUtilTest(unittest.TestCase):
     def test_angle_between(self):
         self.assertAlmostEqual(zonalstats.angle_between(355., 5.), 10.)
         self.assertAlmostEqual(zonalstats.angle_between(5., 355.), -10.)
+
 
 if __name__ == '__main__':
     unittest.main()

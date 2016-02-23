@@ -1,0 +1,5 @@
+[run]
+source = wradlib
+omit =
+    */setup.py
+    */tests*

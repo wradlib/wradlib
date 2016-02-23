@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        radolan_header_example.py
 # Purpose:     showing header information
 #              for radolan composites
@@ -8,14 +8,13 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import wradlib as wrl
 import os
 
 
 def ex_radolan_header():
-
     # load radolan file
     rx_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rx_10000-1408102050-dwd---bin.gz'
     ex_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-ex_10000-1408102050-dwd---bin.gz'
@@ -29,26 +28,27 @@ def ex_radolan_header():
 
     # print the available attributes
     print("RX Attributes:")
-    for key, value in rxattrs.iteritems():
+    for key, value in rxattrs.items():
         print(key + ':', value)
     print("----------------------------------------------------------------")
     # print the available attributes
     print("EX Attributes:")
-    for key, value in exattrs.iteritems():
+    for key, value in exattrs.items():
         print(key + ':', value)
     print("----------------------------------------------------------------")
 
     # print the available attributes
     print("RW Attributes:")
-    for key, value in rwattrs.iteritems():
+    for key, value in rwattrs.items():
         print(key + ':', value)
     print("----------------------------------------------------------------")
 
     # print the available attributes
     print("SF Attributes:")
-    for key, value in sfattrs.iteritems():
+    for key, value in sfattrs.items():
         print(key + ':', value)
     print("----------------------------------------------------------------")
+
 
 # =======================================================
 if __name__ == '__main__':

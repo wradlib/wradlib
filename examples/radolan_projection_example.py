@@ -1,5 +1,4 @@
-
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        radolan_projection_example.py
 # Purpose:     example for calculation of radolan grid coordinates
 #
@@ -8,23 +7,19 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
 import wradlib as wrl
 from osgeo import osr
 
-
 def ex_radolan_projection():
-
     # create radolan grid coordinates
     # add 1 to each dimension to get upper left corner coordinates
     radolan_grid_xy = wrl.georef.get_radolan_grid(900, 900)
 
     # create radolan projection osr object
     proj_stereo = wrl.georef.create_osr("dwd-radolan")
-    #dwd_string = wrl.georef.create_projstr("dwd-radolan")
-    #proj_stereo = wrl.georef.proj4_to_osr(dwd_string)
 
     # create wgs84 projection osr object
     proj_wgs = osr.SpatialReference()
@@ -68,6 +63,7 @@ def ex_radolan_projection():
     print("lr: {:10.0f}   {:10.0f} ".format(x_gk3[0, -1], y_gk3[0, -1]))
     print("ur: {:10.0f}   {:10.0f} ".format(x_gk3[-1, -1], y_gk3[-1, -1]))
     print("ul: {:10.0f}   {:10.0f} ".format(x_gk3[-1, 0], y_gk3[-1, 0]))
+
 
 # =======================================================
 if __name__ == '__main__':

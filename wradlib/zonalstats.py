@@ -32,7 +32,7 @@ objects by calling the class instance with an array of values (one for each sour
 Typically, creating the instance of the ZonalData class will be computationally expensive,
 but only has to be done once (as long as the geometries do not change).
 
-Calling the objects with actual data, however, will be very fast.Fast
+Calling the objects with actual data, however, will be very fast.
 
 .. note:: Right now we only support a limited set of 2-dimensional zonal statistics.
          In the future, we plan to extend this to three dimensions.
@@ -60,9 +60,9 @@ import datetime as dt
 from matplotlib.path import Path
 import matplotlib.patches as patches
 from osgeo import gdal, ogr
+import wradlib.io as io
 ogr.UseExceptions()
 gdal.UseExceptions()
-import wradlib.io as io
 
 
 class DataSource(object):
@@ -75,17 +75,16 @@ class DataSource(object):
 
     Parameters
     ----------
-
     data : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         ESRI Shapefile filename containing source points/polygons
 
     srs : ogr.SpatialReferenceSystem object
         SRS describing projection of given data
 
-    .. warning::
-
-        Writing shapefiles with the wrong locale settings can have impact on the
-        type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
+    Warning
+    -------
+    Writing shapefiles with the wrong locale settings can have impact on the
+    type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
 
     """
 
@@ -109,7 +108,9 @@ class DataSource(object):
     def data(self):
         """ Returns DataSource geometries as numpy ndarrays
 
-        ..note:: This may be slow, because it extracts all source polygons
+        Note
+        ----
+        This may be slow, because it extracts all source polygons
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -131,9 +132,10 @@ class DataSource(object):
     def get_data_by_idx(self, idx):
         """ Returns DataSource geometries as numpy ndarrays from given index
 
-        Parameter
-        ---------
-        idx : sequence of int, indices
+        Parameters
+        ----------
+        idx : sequence of int
+            indices
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -150,11 +152,12 @@ class DataSource(object):
     def get_data_by_att(self, attr=None, value=None):
         """ Returns DataSource geometries filtered by given attribute/value
 
-        Parameter
-        ---------
-        attr : string, attribute name
-        value : attribute value
-
+        Parameters
+        ----------
+        attr : string
+            attribute name
+        value : string
+            attribute value
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -165,8 +168,8 @@ class DataSource(object):
     def get_data_by_geom(self, geom=None):
         """ Returns DataSource geometries filtered by given OGR geometry
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         geom : OGR.Geometry object
         """
         lyr = self.ds.GetLayer()
@@ -182,8 +185,6 @@ class DataSource(object):
             - create ogr_src datasource/layer holding src points/polygons
             - transforming source grid points/polygons to ogr.geometries on ogr.layer
         """
-        t1 = dt.datetime.now()
-
         ogr_src = ogr_create_datasource('Memory', 'out')
 
         try:
@@ -207,9 +208,6 @@ class DataSource(object):
             ogr_create_layer(ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields)
             ogr_add_feature(ogr_src, src, name=self._name)
 
-        t2 = dt.datetime.now()
-        print "Setting up Data OGR Layer takes: %f seconds" % (t2 - t1).total_seconds()
-
         return ogr_src
 
     def dump_vector(self, filename, driver='ESRI Shapefile', remove=True):
@@ -217,9 +215,12 @@ class DataSource(object):
 
         Parameters
         ----------
-        filename : string, path to shape-filename
-        driver : string, driver string
-        remove : bool, if True removes existing output file
+        filename : string
+            path to shape-filename
+        driver : string
+            driver string
+        remove : bool
+            if True removes existing output file
 
         """
         ds_out = ogr_create_datasource(driver, filename, remove=remove)
@@ -233,11 +234,16 @@ class DataSource(object):
 
         Parameters
         ----------
-        filename : string, path to shape-filename
-        driver : string, GDAL Raster Driver
-        attr : string, attribute to burn into raster
-        pixel_size : float,pixel Size in source units
-        remove : bool, if True removes existing output file
+        filename : string
+            path to shape-filename
+        driver : string
+            GDAL Raster Driver
+        attr : string
+            attribute to burn into raster
+        pixel_size : float
+            pixel Size in source units
+        remove : bool
+            if True removes existing output file
 
         """
         layer = self.ds.GetLayer()
@@ -255,13 +261,15 @@ class DataSource(object):
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
+        print("Rasterizing Layer")
         if attr is not None:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
-                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"])
+                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"],
+                                callback=gdal.TermProgress)
         else:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
-                                options=["ALL_TOUCHED=TRUE"])
-
+                                options=["ALL_TOUCHED=TRUE"],
+                                callback=gdal.TermProgress)
 
         del ds_out
 
@@ -270,8 +278,10 @@ class DataSource(object):
 
         Parameters
         ----------
-        name : string, Attribute Name
-        values : nparray, Values to fill in attributes
+        name : string
+            Attribute Name
+        values : ndarray
+            Values to fill in attributes
         """
 
         lyr = self.ds.GetLayerByIndex(0)
@@ -291,9 +301,10 @@ class DataSource(object):
 
         Parameters
         ----------
-        attrs : list, Attribute Names to retrieve
-        filt : tuple, (attname,value) for Attribute Filter
-
+        attrs : list
+            Attribute Names to retrieve
+        filt : tuple
+            (attname,value) for Attribute Filter
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -303,6 +314,27 @@ class DataSource(object):
         for ogr_src in lyr:
             for i, att in enumerate(attrs):
                 ret[i].append(ogr_src.GetField(att))
+        return ret
+
+    def get_geom_properties(self, props, filt=None):
+        """ Read attributes
+
+        Parameters
+        ----------
+        props : list
+            Attribute Names to retrieve
+        filt : tuple
+            (attname,value) for Attribute Filter
+
+        """
+        lyr = self.ds.GetLayer()
+        lyr.ResetReading()
+        if filt is not None:
+            lyr.SetAttributeFilter('{0}={1}'.format(*filt))
+        ret = [[] for _ in props]
+        for ogr_src in lyr:
+            for i, prop in enumerate(props):
+                ret[i].append(getattr(ogr_src.GetGeometryRef(), prop)())
         return ret
 
 
@@ -319,20 +351,19 @@ class ZonalDataBase(object):
     * one src DataSource (named 'src') holding source polygons or points
     * one trg DataSource (named 'trg') holding target polygons
     * one dst DataSource (named 'dst') holding intersection polygons/points
-        related to target polygons with attached index and weights fields
+      related to target polygons with attached index and weights fields
 
     By using OGR there are no restrictions for the used source grids.
 
     .. versionadded:: 0.7.0
 
-    .. warning::
-
-        Writing shapefiles with the wrong locale settings can have impact on the
-        type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
+    Warning
+    -------
+    Writing shapefiles with the wrong locale settings can have impact on the
+    type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
 
     Parameters
     ----------
-
     src : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         ESRI Shapefile filename containing source points/polygons
 
@@ -341,11 +372,12 @@ class ZonalDataBase(object):
 
     Keyword arguments
     -----------------
+    buf : float
+        (same unit as coordinates)
+        Points/Polygons  will be considered inside the target if they are contained in the buffer.
 
-    buf : float (same unit as coordinates)
-        Points will be considered inside the target if they are contained in the buffer.
-
-    srs : OGR.SpatialReference object which will be used for DataSource object.
+    srs : OGR.SpatialReference
+        will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
     """
@@ -372,7 +404,8 @@ class ZonalDataBase(object):
 
         Returns
         -------
-        array : ndarray of Nx2 point coordinate arrays
+        array : ndarray
+            of Nx2 point coordinate arrays
         """
         return np.array([self._get_intersection(idx=idx)
                          for idx in range(self.trg.ds.GetLayerByName('trg').GetFeatureCount())])
@@ -380,9 +413,15 @@ class ZonalDataBase(object):
     def get_isec(self, idx):
         """ Returns intersections
 
+        Parameters
+        ----------
+        idx : int
+            index of target polygon
+
         Returns
         -------
-        array : ndarray of Nx2 point coordinate arrays
+        array : ndarray
+            of Nx2 point coordinate arrays
         """
         return self._get_intersection(idx=idx)
 
@@ -391,13 +430,15 @@ class ZonalDataBase(object):
 
         Parameters
         ----------
-        idx : int, index of target polygon
+        idx : int
+            index of target polygon
 
         Returns
         -------
-        array : numpy array of indices
+        array : np.ndarray
+            indices
         """
-        return np.array(self.dst.get_attributes(['src'], filt=('trg', idx))[0])
+        return np.array(self.dst.get_attributes(['src_index'], filt=('trg_index', idx))[0])
 
     def _create_dst_datasource(self, **kwargs):
         """ Create destination target OGR.DataSource
@@ -407,9 +448,7 @@ class ZonalDataBase(object):
 
         Returns
         -------
-
         ds_mem : OGR.DataSource object
-
         """
 
         # TODO: kwargs necessary?
@@ -423,21 +462,29 @@ class ZonalDataBase(object):
         src_lyr.SetSpatialFilter(None)
         geom_type = src_lyr.GetGeomType()
 
-        fields = [('src', ogr.OFTInteger), ('trg', ogr.OFTInteger), ('weight', ogr.OFTReal)]
+        # create temp Buffer layer (time consuming)
+        ds_tmp = ogr_create_datasource('Memory', 'tmp')
+        ogr_copy_layer(self.trg.ds, 0, ds_tmp)
+        tmp_trg_lyr = ds_tmp.GetLayer()
 
-        # get target layer, iterate over polygons and calculate weights
-        lyr = self.trg.ds.GetLayerByName('trg')
-        lyr.ResetReading()
+        for i in range(tmp_trg_lyr.GetFeatureCount()):
+            feat = tmp_trg_lyr.GetFeature(i)
+            feat.SetGeometryDirectly(feat.GetGeometryRef().Buffer(self._buffer))
+            tmp_trg_lyr.SetFeature(feat)
 
-        t1 = dt.datetime.now()
+        # get target layer, iterate over polygons and calculate intersections
+        tmp_trg_lyr.ResetReading()
 
         self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
-                                        geom_type=geom_type, fields=fields)
+                                        geom_type=geom_type)
 
-        [self._create_dst_features(self.tmp_lyr, trg_poly, **kwargs) for trg_poly in lyr]
-
-        t2 = dt.datetime.now()
-        print "Getting Intersection takes: %f seconds" % (t2 - t1).total_seconds()
+        print("Calculate Intersection source/target-layers")
+        tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
+                                                                 'INPUT_PREFIX=trg_',
+                                                                 'METHOD_PREFIX=src_',
+                                                                 'PROMOTE_TO_MULTI=YES',
+                                                                 'PRETEST_CONTAINMENT=YES'],
+                                 callback=gdal.TermProgress)
 
         return ds_mem
 
@@ -453,9 +500,12 @@ class ZonalDataBase(object):
 
         Parameters
         ----------
-        filename : string, path to shape-filename
-        driver : string, OGR Vector Driver String, defaults to 'ESRI Shapefile'
-        remove : bool, if True, existing file will be removed before creation
+        filename : string
+            path to shape-filename
+        driver : string
+            OGR Vector Driver String, defaults to 'ESRI Shapefile'
+        remove : bool
+            if True, existing file will be removed before creation
         """
         self.src.dump_vector(filename, driver, remove=remove)
         self.trg.dump_vector(filename, driver, remove=False)
@@ -466,7 +516,8 @@ class ZonalDataBase(object):
 
         Parameters
         ----------
-        filename : string, path to vector file
+        filename : string
+            path to vector file
         """
         # get input file handles
         ds_in, tmp = io.open_shape(filename)
@@ -498,24 +549,8 @@ class ZonalDataBase(object):
 
     def _get_idx_weights(self):
         """ Retrieve index and weight from dst DataSource
-
-        Iterates over all trg DataSource Polygons
-
-        Returns
-        -------
-
-        tuple : (index, weight) arrays
-
         """
-        trg = self.trg.ds.GetLayer()
-        cnt = trg.GetFeatureCount()
-        attrs = ['src', 'weight']
-        ret = [[] for _ in attrs]
-        for index in range(cnt):
-            arr = self.dst.get_attributes(attrs, filt=('trg', index))
-            for i, l in enumerate(arr):
-                ret[i].append(np.array(l))
-        return tuple(ret)
+        raise NotImplementedError
 
     def _get_intersection(self, trg=None, idx=None, buf=0.):
         """Just a toy function if you want to inspect the intersection points/polygons
@@ -549,7 +584,7 @@ class ZonalDataBase(object):
         if idx is None:
             intersecs = self.src.get_data_by_geom(trg)
         else:
-            intersecs = self.dst.get_data_by_att('trg', idx)
+            intersecs = self.dst.get_data_by_att('trg_index', idx)
 
         return intersecs
 
@@ -561,33 +596,58 @@ class ZonalDataPoly(ZonalDataBase):
 
     Parameters
     ----------
-
     src : sequence of source polygons (shape NxMx2) or
         ESRI Shapefile filename containing source polygons
 
     trg : sequence of target polygons (shape Nx2, num vertices x 2) or
         ESRI Shapefile filename containing target polygons
 
-    Keyword arguments
+    Keyword Arguments
     -----------------
-
-    buf : float (same unit as coordinates)
+    buf : float
+        (same unit as coordinates)
         Polygons will be considered inside the target if they are contained
         in the buffer.
 
+    srs : OGR.SpatialReference
+        will be used for DataSource object.
+        src and trg data have to be in the same srs-format
+
     """
+    def _get_idx_weights(self):
+        """ Retrieve index and weight from dst DataSource
+
+        Iterates over all trg DataSource Polygons
+
+        Returns
+        -------
+
+        ret : tuple
+            (index, weight) arrays
+
+        """
+        trg = self.trg.ds.GetLayer()
+        cnt = trg.GetFeatureCount()
+        ret = [[] for _ in range(2)]
+        for index in range(cnt):
+            arr = self.dst.get_attributes(['src_index'], filt=('trg_index', index))
+            w = self.dst.get_geom_properties(['Area'], filt=('trg_index', index))
+            arr.append(w[0])
+            for i, l in enumerate(arr):
+                ret[i].append(np.array(l))
+        return tuple(ret)
+
     def _create_dst_features(self, dst, trg, **kwargs):
         """ Create needed OGR.Features in dst OGR.Layer
 
         Parameters
         ----------
-        dst : OGR.Layer object, destination layer
-        trg : OGR.Geometry object, target polygon
-
+        dst : OGR.Layer
+            destination layer
+        trg : OGR.Geometry
+            target polygon
         """
         # TODO: kwargs necessary?
-
-        t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
         layer = self.src.ds.GetLayerByName('src')
@@ -599,7 +659,6 @@ class ZonalDataPoly(ZonalDataBase):
         trg = trg.Buffer(self._buffer)
         layer.SetSpatialFilter(trg)
 
-        trg_area = trg.Area()
         # iterate over layer features
         for ogr_src in layer:
             geom = ogr_src.GetGeometryRef()
@@ -619,10 +678,7 @@ class ZonalDataPoly(ZonalDataBase):
 
             if geom.GetGeometryType() in [3, 6, 12]:
                 idx = ogr_src.GetField('index')
-                ogr_add_geometry(dst, geom, [idx, trg_index, geom.Area() / trg_area])
-
-        t2 = dt.datetime.now()
-        print "Getting Weights takes: {0} seconds".format((t2 - t1).total_seconds())
+                ogr_add_geometry(dst, geom, [idx, trg_index])
 
 
 class ZonalDataPoint(ZonalDataBase):
@@ -632,33 +688,54 @@ class ZonalDataPoint(ZonalDataBase):
 
     Parameters
     ----------
-
     src : sequence of source points (shape Nx2) or
         ESRI Shapefile filename containing source points
 
     trg : sequence of target polygons (shape Nx2, num vertices x 2) or
         ESRI Shapefile filename containing target polygons
 
-    Keyword arguments
+    Keyword Arguments
     -----------------
-
-    buf : float (same unit as coordinates)
+    buf : float
+        (same unit as coordinates)
         Points will be considered inside the target if they are contained
         in the buffer.
 
+    srs : OGR.SpatialReference
+        will be used for DataSource object.
+        src and trg data have to be in the same srs-format
     """
+    def _get_idx_weights(self):
+        """ Retrieve index and weight from dst DataSource
+
+        Iterates over all trg DataSource Polygons
+
+        Returns
+        -------
+        ret : tuple
+            (index, weight) arrays
+        """
+        trg = self.trg.ds.GetLayer()
+        cnt = trg.GetFeatureCount()
+        ret = [[] for _ in range(2)]
+        for index in range(cnt):
+            arr = self.dst.get_attributes(['src_index'], filt=('trg_index', index))
+            arr.append([1./len(arr[0])] * len(arr[0]))
+            for i, l in enumerate(arr):
+                ret[i].append(np.array(l))
+        return tuple(ret)
+
     def _create_dst_features(self, dst, trg, **kwargs):
         """ Create needed OGR.Features in dst OGR.Layer
 
         Parameters
         ----------
-        dst : OGR.Layer object, destination layer
-        trg : OGR.Geometry object, target polygon
-
+        dst : OGR.Layer
+            destination layer
+        trg : OGR.Geometry
+            target polygon
         """
         # TODO: kwargs necessary?
-
-        t1 = dt.datetime.now()
 
         # claim and reset source ogr layer
         layer = self.src.ds.GetLayerByName('src')
@@ -674,7 +751,7 @@ class ZonalDataPoint(ZonalDataBase):
 
         if feat_cnt:
             [ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
-                              [ogr_src.GetField('index'), trg_index,  1. / feat_cnt])
+                              [ogr_src.GetField('index'), trg_index])
              for ogr_src in layer]
         else:
             layer.SetSpatialFilter(None)
@@ -683,10 +760,7 @@ class ZonalDataPoint(ZonalDataBase):
             tree = cKDTree(src_pts)
             distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
             feat = layer.GetFeature(ixnext)
-            ogr_add_geometry(dst, feat.GetGeometryRef(), [feat.GetField('index'), trg_index, 1.])
-
-        t2 = dt.datetime.now()
-        print "Getting Weights takes: %f seconds" % (t2 - t1).total_seconds()
+            ogr_add_geometry(dst, feat.GetGeometryRef(), [feat.GetField('index'), trg_index])
 
 
 class ZonalStatsBase(object):
@@ -703,7 +777,8 @@ class ZonalStatsBase(object):
 
     Parameters
     ----------
-    src : ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI shapefile
+    src : ZonalDataPoly
+        object or filename pointing to ZonalDataPoly ESRI shapefile
         containing necessary ZonalData
         ZonalData is available as 'zdata'-property inside class instance.
 
@@ -780,12 +855,12 @@ class ZonalStatsBase(object):
             src_len = lyr.GetFeatureCount()
             assert len(vals) == src_len, "Argument vals must be of length %d" % src_len
         else:
-            max = 0
+            imax = 0
             for i in self.ix:
                 mx = np.nanmax(i)
-                if max < mx:
-                    max = mx
-            assert len(vals) > max, "Argument vals cannot be subscripted by given index values"
+                if imax < mx:
+                    imax = mx
+            assert len(vals) > imax, "Argument vals cannot be subscripted by given index values"
 
         return vals
 
@@ -795,7 +870,8 @@ class ZonalStatsBase(object):
 
         Parameters
         ----------
-        vals : 1-d ndarray of type float with the same length as self.src
+        vals : 1-d ndarray
+            of type float with the same length as self.src
             Values at the source element for which to compute zonal statistics
 
         """
@@ -816,7 +892,8 @@ class ZonalStatsBase(object):
 
         Parameters
         ----------
-        vals : 1-d ndarray of type float with the same length as self.src
+        vals : 1-d ndarray
+            of type float with the same length as self.src
             Values at the source element for which to compute zonal statistics
 
         """
@@ -841,7 +918,8 @@ class GridCellsToPoly(ZonalStatsBase):
 
     Parameters
     ----------
-    src : ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI shapefile
+    src : ZonalDataPoly
+        object or filename pointing to ZonalDataPoly ESRI shapefile
         containing necessary Zonal Data
 
     Keyword arguments
@@ -864,7 +942,8 @@ class GridPointsToPoly(ZonalStatsBase):
 
     Parameters
     ----------
-    src : ZonalDataPoint object or filename pointing to ZonalDataPoly ESRI shapefile
+    src : ZonalDataPoint
+        object or filename pointing to ZonalDataPoly ESRI shapefile
         containing necessary Zonal Data
 
     Keyword arguments
@@ -885,21 +964,24 @@ def gdal_create_dataset(drv, name, cols, rows, gdal_type, remove=False):
 
     Parameters
     ----------
-    drv : string, GDAL driver string
-
-    name : string, path to filename
-
-    cols : int, # of columns
-    rows : int, # of rows
-
+    drv : string
+        GDAL driver string
+    name : string
+        path to filename
+    cols : int
+        # of columns
+    rows : int
+        # of rows
     gdal_type : raster data type
-
-    remove : bool, if True, existing OGR.DataSource will be
+        eg. gdal.GDT_Float32
+    remove : bool
+        if True, existing OGR.DataSource will be
         removed before creation
 
     Returns
     -------
-    out : an OGR.DataSource object
+    out : OGR.DataSource
+        object
 
     """
     driver = gdal.GetDriverByName(drv)
@@ -923,16 +1005,18 @@ def ogr_create_datasource(drv, name, remove=False):
 
     Parameters
     ----------
-    drv : string, GDAL/OGR driver string
-
-    name : string, path to filename
-
-    remove : bool, if True, existing OGR.DataSource will be
+    drv : string
+        GDAL/OGR driver string
+    name : string
+        path to filename
+    remove : bool
+        if True, existing OGR.DataSource will be
         removed before creation
 
     Returns
     -------
-    out : an OGR.DataSource object
+    out : OGR.DataSource
+        object
 
     """
     driver = ogr.GetDriverByName(drv)
@@ -954,19 +1038,21 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
 
     Parameters
     ----------
-    ds : OGR.DataSource object
-
-    name : string, OGRLayer name
-
-    geom_type : OGR GeometryType (eg. ogr.wkbPolygon)
-
-    fields : list of 2 element tuples, (strings, OGR.DataType)
-        field name, field type
+    ds : OGR.DataSource
+        object
+    name : string
+        OGRLayer name
+    srs : OSR.SpatialReference
+        object
+    geom_type : OGR GeometryType
+        (eg. ogr.wkbPolygon)
+    fields : list of 2 element tuples
+        (strings, OGR.DataType) field name, field type
 
     Returns
     -------
-    out : an OGR.Layer object
-
+    out : OGR.Layer
+        object
     """
     if geom_type is None:
         raise TypeError("geometry_type needed")
@@ -988,13 +1074,14 @@ def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
 
     Parameters
     ----------
-    src_ds : OGR.DataSource object
-
-    index : int, layer index
-
-    dst_ds : OGR.DataSource object
-
-    reset : bool, if True resets src_layer
+    src_ds : OGR.DataSource
+        object
+    index : int
+        layer index
+    dst_ds : OGR.DataSource
+        object
+    reset : bool
+        if True resets src_layer
     """
     # get and copy src geometry layer
 
@@ -1017,11 +1104,12 @@ def ogr_add_feature(ds, src, name=None):
 
     Parameters
     ----------
-    ds : OGR.DataSource object
-
-    src : source data numpy array
-
-    name : string, name of wanted Layer
+    ds : OGR.DataSource
+        object
+    src : numpy array
+        source data
+    name : string
+        name of wanted Layer
     """
 
     if name is not None:
@@ -1054,11 +1142,12 @@ def ogr_add_geometry(layer, geom, attrs):
 
     Parameters
     ----------
-    layer : OGR.Layer object
-
-    geom : OGR.Geometry object
-
-    attrs : list, attributes referring to layer fields
+    layer : OGR.Layer
+        object
+    geom : OGR.Geometry
+        object
+    attrs : list
+        attributes referring to layer fields
 
     """
     defn = layer.GetLayerDefn()
@@ -1081,11 +1170,13 @@ def numpy_to_ogr(vert, geom_name):
     ----------
     vert : array_like
         a numpy array of vertices of shape (num vertices, 2)
-    geom_name : string, Name of Geometry
+    geom_name : string
+        Name of Geometry
 
     Returns
     -------
-    out : an ogr Geometry object of type geom_name
+    out : ogr.Geometry
+        object of type geom_name
     """
 
     if geom_name in ['Polygon', 'MultiPolygon']:
@@ -1105,7 +1196,8 @@ def ogr_to_numpy(ogrobj):
 
     Parameters
     ----------
-    ogrobj : an ogr Geometry object
+    ogrobj : ogr.Geometry
+        object
 
     Returns
     -------
@@ -1129,11 +1221,13 @@ def ogr_geocol_to_numpy(ogrobj):
 
     Parameters
     ----------
-    ogrobj : an ogr Geometry Collection object
+    ogrobj : ogr.Geometry
+        Collection object
 
     Returns
     -------
-    out : a nested ndarray of vertices of shape (num vertices, 2)
+    out : ndarray
+        a nested ndarray of vertices of shape (num vertices, 2)
 
     """
     jsonobj = eval(ogrobj.ExportToJson())
@@ -1151,11 +1245,13 @@ def numpy_to_pathpatch(arr):
 
     Parameters
     ----------
-    arr : numpy array of Polygon/Multipolygon vertices
+    arr : ndarray
+        numpy array of Polygon/Multipolygon vertices
 
     Returns
     -------
-    array : ndarray of matplotlib.patches.PathPatch objects
+    array : ndarray
+        of matplotlib.patches.PathPatch objects
     """
     paths = []
     for item in arr:
@@ -1182,14 +1278,17 @@ def mask_from_bbox(x, y, bbox, polar=False):
 
     Parameters
     ----------
-    x : nd array of shape (num rows, num columns)
+    x : ndarray
+        of shape (num rows, num columns)
         x (Cartesian) coordinates
-    y : nd array of shape (num rows, num columns)
+    y : ndarray
+        of shape (num rows, num columns)
         y (Cartesian) coordinates
     bbox : dict
         dictionary with keys "left", "right", "bottom", "top"
         These must refer to the same Cartesian reference system as x and y
-    polar : x, y are aligned polar (azimuth x range)
+    polar : bool,
+        if True, x, y are aligned polar (azimuth x range)
 
     Returns
     -------
@@ -1207,7 +1306,7 @@ def mask_from_bbox(x, y, bbox, polar=False):
     tree = cKDTree(np.vstack((x.ravel(), y.ravel())).transpose())
     # find lower left corner index
     dists, ixll = tree.query([bbox["left"], bbox["bottom"]], k=1)
-    ill = (ixll / nx) - 1
+    ill = (ixll // nx) - 1
     jll = (ixll % nx) - 1
     # find upper right corner index
     dists, ixur = tree.query([bbox["right"], bbox["top"]], k=1)
@@ -1218,11 +1317,11 @@ def mask_from_bbox(x, y, bbox, polar=False):
     if polar:
         # find upper left corner index
         dists, ixul = tree.query([bbox["left"], bbox["top"]], k=1)
-        iul = (ixul / nx) - 1
+        iul = (ixul // nx) - 1
         jul = (ixul % nx) - 1
         # find lower right corner index
         dists, ixlr = tree.query([bbox["right"], bbox["bottom"]], k=1)
-        ilr = (ixlr / nx) + 1
+        ilr = (ixlr // nx) + 1
         jlr = (ixlr % nx) + 1
 
     mask = np.repeat(False, ix.size).reshape(ix.shape)
@@ -1232,17 +1331,15 @@ def mask_from_bbox(x, y, bbox, polar=False):
         # ranges are not problematic, just get min and max
         jmin = min(jll, jul, jur, jlr)
         jmax = max(jll, jul, jur, jlr)
-
         # azimuth array for angle_between calculation
         ax = np.array([[ill, ilr],
                        [ill, iur],
                        [iul, ilr],
-                       [iul, iur]])
-
+                       [iul, iur]], dtype=int)
         # this calculates the angles between 4 azimuth and returns indices
         # of the greatest angle
         ar = angle_between(ax[:, 0], ax[:, 1])
-        maxind = np.argmax(ar)
+        maxind = int(np.argmax(ar))
         imin, imax = ax[maxind, :]
 
         # if catchment extends over zero angle
@@ -1268,6 +1365,11 @@ def mask_from_bbox(x, y, bbox, polar=False):
 
 def angle_between(source_angle, target_angle):
     """Return angle between source and target radial angle
+
+    Parameters
+    ----------
+    source_angle : starting angle
+    target_angle : target angle
     """
     sin1 = np.sin(np.radians(target_angle)-np.radians(source_angle))
     cos1 = np.cos(np.radians(target_angle)-np.radians(source_angle))
@@ -1276,6 +1378,15 @@ def angle_between(source_angle, target_angle):
 
 def get_bbox(x, y):
     """Return bbox dictionary that represents the extent of the points.
+
+    Parameters
+    ----------
+
+    x : array
+        x-coordinate values
+    y : array
+        y-coordinate values
+
     """
     return dict(left=np.min(x),
                 right=np.max(x),
@@ -1288,7 +1399,8 @@ def get_centroid(polyg):
 
     Parameters
     ----------
-    polyg : ndarray of shape (num vertices, 2) or ogr.Geometry object
+    polyg : ndarray
+        of shape (num vertices, 2) or ogr.Geometry object
 
     Returns
     -------
@@ -1303,21 +1415,24 @@ def get_centroid(polyg):
 def grid_centers_to_vertices(x, y, dx, dy):
     """Produces array of vertices from grid's center point coordinates.
 
-    .. warning:: This has to be done in the "native" grid projection.
-                 once you reprojected the coordinates, this trivial function
-                 cannot be used to compute vertices from center points.
+    Warning
+    -------
+    This has to be done in the "native" grid projection.
+    Once you reprojected the coordinates, this trivial function cannot be used to compute vertices from center points.
 
     Parameters
     ----------
-    x : 2-d array of x coordinates (same shape as the actual 2-D grid)
-    y : 2-d array of y coordinates (same shape as the actual 2-D grid)
+    x : 2-d array
+        of x coordinates (same shape as the actual 2-D grid)
+    y : 2-d array
+        of y coordinates (same shape as the actual 2-D grid)
     dx : grid spacing in x direction
     dy : grid spacing in y direction
 
     Returns
     -------
-    out : 3-d array of vertices for each grid cell of shape (n grid points,
-          5, 2)
+    out : 3-d array
+        of vertices for each grid cell of shape (n grid points,5, 2)
     """
     top = y + dy/2
     left = x - dx/2
@@ -1334,4 +1449,4 @@ def grid_centers_to_vertices(x, y, dx, dy):
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <zonalstats> as main...'
+    print('wradlib: Calling module <zonalstats> as main...')
