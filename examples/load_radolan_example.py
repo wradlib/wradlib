@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        load_radolan_example.py
 # Purpose:     show how to load radolan composites
 #
@@ -7,16 +7,17 @@
 # Created:     24.09.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
+#pl.interactive(True)
 import numpy as np
 import matplotlib as mpl
 import os
 
-
 def ex_load_radolan():
+
     pg_filename = os.path.dirname(__file__) + '/' + 'data/raa00-pc_10015-1408030905-dwd---bin.gz'
     rw_filename = os.path.dirname(__file__) + '/' + 'data/raa01-rw_10000-1408030950-dwd---bin.gz'
 
@@ -35,11 +36,11 @@ def ex_load_radolan():
     rwdata = np.ma.masked_equal(rwdata, -9999)
 
     # plot the images side by side
-    pl.figure(figsize=(12,8))
+    pl.figure(figsize=(12, 8))
     pl.subplot(121, aspect='equal')
     # consider 2km grid resolution
-    x = np.arange(0, pgdata.shape[0]*2 + 1, 2)
-    y = np.arange(0, pgdata.shape[1]*2 + 1, 2)
+    x = np.arange(0, pgdata.shape[0] * 2 + 1, 2)
+    y = np.arange(0, pgdata.shape[1] * 2 + 1, 2)
     X, Y = np.meshgrid(x, y)
     # color-scheme taken from DWD "legend_radar_products_pc.pdf"
     colors = ['lightgrey', 'yellow', 'lightblue', 'magenta', 'green', 'red', 'darkblue', 'darkred']
@@ -50,8 +51,8 @@ def ex_load_radolan():
     pl.xlim(0, max(x))
     pl.ylim(0, max(y))
     # harmonize ticklabel
-    pl.xticks(np.arange(min(x), max(x)+1, 100))
-    pl.yticks(np.arange(min(y), max(y)+1, 100))
+    pl.xticks(np.arange(min(x), max(x) + 1, 100))
+    pl.yticks(np.arange(min(y), max(y) + 1, 100))
 
     # add colorbar and do some magic for proper visualisation
     cb = pl.colorbar(shrink=0.5, norm=norm, boundaries=bounds)
@@ -79,6 +80,7 @@ def ex_load_radolan():
     pl.tight_layout()
 
     pl.show()
+
 
 # =======================================================
 if __name__ == '__main__':

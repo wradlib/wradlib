@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        plot_ppi_example.py
 # Purpose:     show a few examples on how to use wradlib.vis.plot_ppi
 #
@@ -7,19 +7,20 @@
 # Created:     09.01.2014
 # Copyright:   (c) Thomas Pfaff 2014
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import numpy as np
 # importing most matplotlib routines at once
-import pylab as pl
+import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
-pl.interactive(True)
+#pl.interactive(True)
 # well, it's a wradlib example
 import wradlib
 import os
 
+
 def ex_plot_ppi():
     # a polar scan
-    img = np.loadtxt(os.path.dirname(__file__)+'/' + 'data/polar_dBZ_tur.gz')
+    img = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_tur.gz')
 
     # the simplest call, everything else some default
     pl.figure()
@@ -33,10 +34,9 @@ def ex_plot_ppi():
     # the autoext-feature, and otherwise the last row and column of our data
     # would not be plotted
     r = np.arange(40, 81)
-    az = np.arange(200,251)
+    az = np.arange(200, 251)
     wradlib.vis.plot_ppi(img[200:250, 40:80], r, az, autoext=False)
     pl.title('Sector PPI')
-
 
     # Let's get a bit more complex
     pl.figure()
@@ -46,10 +46,10 @@ def ex_plot_ppi():
     # we overwrite the default angles, adding the line at 45 degrees
     # also we overwrite some line properties (don't ask for good taste here)
     wradlib.vis.plot_ppi_crosshair(site=(10, 20),
-                                   ranges=[40,80,120],
-                                   angles=[0,45,90,180,270],
-                                   kwds={'line':dict(color='white',
-                                                     linestyle='solid')})
+                                   ranges=[40, 80, 120],
+                                   angles=[0, 45, 90, 180, 270],
+                                   line=dict(color='white',
+                                             linestyle='solid'))
     pl.title('Offset and Custom Crosshair')
 
     # adding georeferencing
@@ -57,7 +57,7 @@ def ex_plot_ppi():
     # using the proj keyword we tell the function to:
     # - interpret the site coordinates as longitude/latitude
     # - reproject the coordinates to the given dwd-radolan composite coordinate system
-    proj_rad = wradlib.georef.proj4_to_osr(wradlib.georef.create_projstr('dwd-radolan'))
+    proj_rad = wradlib.georef.create_osr("dwd-radolan")
     wradlib.vis.plot_ppi(img, site=(10., 45.), proj=proj_rad)
     # now the crosshair must also observe the projection
     # in addition the ranges must now be given in meters
@@ -66,10 +66,9 @@ def ex_plot_ppi():
     # they are completely equivalent. Your choice, which you like better
     wradlib.vis.plot_ppi_crosshair(site=(10., 45.),
                                    ranges=[40000, 80000, 128000],
-                                   kwds={'line':dict(color='black'),
-                                         'circle':{'edgecolor':'blue',
-                                                   'linestyle':'dotted'},
-                                        },
+                                   line=dict(color='black'),
+                                   circle={'edgecolor': 'blue',
+                                           'linestyle': 'dotted'},
                                    proj=proj_rad
                                    )
     pl.title('Georeferenced/Projected PPI')
@@ -86,10 +85,9 @@ def ex_plot_ppi():
     # The same is true for the range circles, but with more vertices, of course
     wradlib.vis.plot_ppi_crosshair(site=(45., 7.),
                                    ranges=[64000, 128000],
-                                   kwds={'line':dict(color='black'),
-                                         'circle':{'edgecolor':'darkgray',
-                                                   'linestyle':'dotted'},
-                                        },
+                                   line=dict(color='black'),
+                                   circle={'edgecolor': 'darkgray',
+                                           'linestyle': 'dotted'},
                                    proj=proj_rad
                                    )
     pl.title('Projection Side Effects')
@@ -109,8 +107,8 @@ def ex_plot_ppi():
     # as the function returns the axes- and 'mappable'-objects colorbar needs,
     # adding a colorbar is easy
     pl.colorbar(pm, ax=ppi)
+    pl.show()
 
 
 if __name__ == '__main__':
     ex_plot_ppi()
-

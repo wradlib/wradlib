@@ -326,25 +326,29 @@ Special Specials
 But there is more to know, when using the curvelinear grids! As an example, you can get access to the underlying
 ``cgax`` ``grid_helper`` to change the azimuth and range resolution::
 
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     gh = cgax.get_grid_helper()
     # set azimuth resolution to 20deg
-    gh.grid_finder.grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 15)])
+    locs = [i for i in np.arange(0., 359., 5.)]
+    gh.grid_finder.grid_locator1 = FixedLocator(locs)
+    gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
     gh.grid_finder.grid_locator2._nbins = 20
     gh.grid_finder.grid_locator2._steps = [1, 1.5, 2, 2.5, 5, 10]
 
-The use of ``FixedLocator`` should be clear. The use of ``_nbins`` and ``_steps`` is a bit of head-twisting.
-With ``_steps`` you can set the possible divisions of the range. In connection with the ``_nbins`` the range grid
-is created depending on maximum range. In the above situation with ``_nbins`` set to 10 we get an range grid
-resolution of 25 (divider 2.5). When setting steps to 20 we get a resolution of 15 (divider 1.5). Choosing 30
-lead to resolution of 10 (divider 1/10). So it may be good to play around a bit, for wanted results.
+The use of ``FixedLocator`` and ``DictFormatter`` should be clear. The use of ``_nbins`` and ``_steps`` is
+a bit of head-twisting. With ``_steps`` you can set the possible divisions of the range. In connection with
+the ``_nbins`` the range grid is created depending on maximum range. In the above situation with ``_nbins``
+set to 10 we get an range grid resolution of 25 (divider 2.5). When setting steps to 20 we get a resolution
+of 15 (divider 1.5). Choosing 30 lead to resolution of 10 (divider 1/10). So it may be good to play around
+a bit, for wanted results.
 
 .. plot::
 
     import matplotlib.pyplot as plt
     import numpy as np
     import wradlib
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
+    import mpl_toolkits.axisartist.angle_helper as angle_helper
     # load a polar scan and create range and azimuth arrays accordingly
     data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
     r = np.arange(0, data.shape[1])
@@ -367,7 +371,9 @@ lead to resolution of 10 (divider 1/10). So it may be good to play around a bit,
     cbar.set_label('reflectivity [dBZ]')
     gh = cgax.get_grid_helper()
     # set azimuth resolution to 15deg
-    gh.grid_finder.grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 5)])
+    locs = [i for i in np.arange(0., 359., 5.)]
+    gh.grid_finder.grid_locator1 = FixedLocator(locs)
+    gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
     gh.grid_finder.grid_locator2._nbins = 30
     gh.grid_finder.grid_locator2._steps = [1, 1.5, 2, 2.5, 5, 10]
     cgax.axis["lat"] = cgax.new_floating_axis(0, 240)
@@ -419,7 +425,7 @@ Everything else stays the same. So now we have:
     import matplotlib.pyplot as plt
     import numpy as np
     import wradlib
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     from matplotlib.ticker import MaxNLocator
     # load a polar scan and create range and azimuth arrays accordingly
     data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
@@ -459,8 +465,12 @@ Everything else stays the same. So now we have:
         ha='left')
     cbar.set_label('reflectivity [dBZ]')
     gh = cgax.get_grid_helper()
-    # set azimuth resolution to 15deg
-    gh.grid_finder.grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 5)])
+    # set azimuth resolution to 5deg
+    locs = [i for i in np.arange(0., 359., 5.)]
+    gh.grid_finder.grid_locator1 = FixedLocator(locs)
+    gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
+    #gh.grid_finder.grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 5, dtype=np.int32)])
+    #gh.grid_finder.grid_locator1 = LocatorDMS(15)
     gh.grid_finder.grid_locator2._nbins = 30
     gh.grid_finder.grid_locator2._steps = [1, 1.5, 2, 2.5, 5, 10]
     cgax.axis["lat"] = cgax.new_floating_axis(0, 240)
@@ -485,7 +495,7 @@ With little effort we got a better (IMHO) representation:
     import matplotlib.pyplot as plt
     import numpy as np
     import wradlib
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     from matplotlib.ticker import MaxNLocator
     # load a polar scan and create range and azimuth arrays accordingly
     data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
@@ -527,8 +537,10 @@ With little effort we got a better (IMHO) representation:
         ha='left')
     cbar.set_label('reflectivity [dBZ]')
     gh = cgax.get_grid_helper()
-    # set azimuth resolution to 15deg
-    gh.grid_finder.grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 5)])
+    # set azimuth resolution to 5deg
+    locs = [i for i in np.arange(0., 359., 5.)]
+    gh.grid_finder.grid_locator1 = FixedLocator(locs)
+    gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
     gh.grid_finder.grid_locator2._nbins = 30
     gh.grid_finder.grid_locator2._steps = [1, 1.5, 2, 2.5, 5, 10]
     cgax.axis["lat"] = cgax.new_floating_axis(0, 240)
@@ -560,7 +572,7 @@ So just a quick example of an cg rhi plot with some decorations::
     import numpy as np
     # well, it's a wradlib example
     import wradlib
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
     file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
@@ -586,8 +598,10 @@ So just a quick example of an cg rhi plot with some decorations::
     gh = cgax.get_grid_helper()
     # set theta to some nice values
     #gh.grid_finder.grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 5)])
-    gh.grid_finder.grid_locator1 = FixedLocator([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                    15, 16, 17, 18, 20, 22, 25, 30, 35,  40, 50, 60, 70, 80, 90,])
+    locs = [0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14.,
+                    15., 16., 17., 18., 20., 22., 25., 30., 35.,  40., 50., 60., 70., 80., 90.]
+    gh.grid_finder.grid_locator1 = FixedLocator(locs)
+    gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
     plt.tight_layout()
     plt.plot()
     plt.show()
@@ -600,7 +614,7 @@ As you can see, the ``grid_locator1`` for the theta angles is overwritten and no
     import numpy as np
     # well, it's a wradlib example
     import wradlib
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
     file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
@@ -626,8 +640,10 @@ As you can see, the ``grid_locator1`` for the theta angles is overwritten and no
     gh = cgax.get_grid_helper()
     # set theta to some nice values
     #gh.grid_finder.grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 5)])
-    gh.grid_finder.grid_locator1 = FixedLocator([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                    15, 16, 17, 18, 20, 22, 25, 30, 35,  40, 50, 60, 70, 80, 90,])
+    locs = [0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14.,
+                    15., 16., 17., 18., 20., 22., 25., 30., 35.,  40., 50., 60., 70., 80., 90.]
+    gh.grid_finder.grid_locator1 = FixedLocator(locs)
+    gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
     plt.tight_layout()
     plt.plot()
     plt.show()
@@ -668,7 +684,9 @@ in one figure on a regular grid::
         caax.set_ylabel('height [km]')
         gh = cgax.get_grid_helper()
         # set theta to some nice values
-        gh.grid_finder.grid_locator1 = FixedLocator([0, 5, 10, 15, 20, 30, 40, 60, 90,])
+        locs = [0., 5., 10., 15., 20., 30., 40., 60., 90.]
+        gh.grid_finder.grid_locator1 = FixedLocator(locs)
+        gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
         cbar.set_label('reflectivity [dBZ]')
     plt.tight_layout()
 
@@ -678,7 +696,7 @@ in one figure on a regular grid::
     import numpy as np
     # well, it's a wradlib example
     import wradlib
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
     file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
@@ -701,7 +719,9 @@ in one figure on a regular grid::
         caax.set_ylabel('height [km]')
         gh = cgax.get_grid_helper()
         # set theta to some nice values
-        gh.grid_finder.grid_locator1 = FixedLocator([0, 5, 10, 15, 20, 30, 40, 60, 90,])
+        locs = [0., 5., 10., 15., 20., 30., 40., 60., 90.]
+        gh.grid_finder.grid_locator1 = FixedLocator(locs)
+        gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
         cbar.set_label('reflectivity [dBZ]')
     plt.tight_layout()
     plt.draw()
@@ -733,7 +753,9 @@ Then you can take the GridSpec object as an input to the parameter ``subplot``::
         caax.set_ylabel('height [km]')
         gh = cgax.get_grid_helper()
         # set theta to some nice values
-        gh.grid_finder.grid_locator1 = FixedLocator([0, 5, 10, 15, 20, 30, 40, 60, 90,])
+        locs = [0., 5., 10., 15., 20., 30., 40., 60., 90.]
+        gh.grid_finder.grid_locator1 = FixedLocator(locs)
+        gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
         cbar.set_label('reflectivity [dBZ]')
     plt.tight_layout()
 
@@ -744,7 +766,7 @@ Then you can take the GridSpec object as an input to the parameter ``subplot``::
     import numpy as np
     # well, it's a wradlib example
     import wradlib
-    from mpl_toolkits.axisartist.grid_finder import FixedLocator
+    from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
     file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
@@ -770,7 +792,9 @@ Then you can take the GridSpec object as an input to the parameter ``subplot``::
         caax.set_ylabel('height [km]')
         gh = cgax.get_grid_helper()
         # set theta to some nice values
-        gh.grid_finder.grid_locator1 = FixedLocator([0, 5, 10, 15, 20, 30, 40, 60, 90,])
+        locs = [0., 5., 10., 15., 20., 30., 40., 60., 90.]
+        gh.grid_finder.grid_locator1 = FixedLocator(locs)
+        gh.grid_finder.tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i)) for i in locs]))
         cbar.set_label('reflectivity [dBZ]')
     plt.tight_layout()
     plt.draw()

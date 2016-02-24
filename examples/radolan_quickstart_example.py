@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        radolan_quickstart_example.py
 # Purpose:     quick plot of radolan rw-product
 #
@@ -7,16 +7,16 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import wradlib as wrl
 import numpy as np
 import matplotlib.pyplot as pl
+#pl.interactive(True)
 import os
 
 
 def ex_radolan_quickstart():
-
     # load radolan files
     rw_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
     print(rw_filename)
@@ -44,6 +44,7 @@ def ex_radolan_quickstart():
     pl.grid(color='r')
 
     pl.show()
+
 
 # =======================================================
 if __name__ == '__main__':

@@ -8,7 +8,7 @@
 # Created:     18.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 #!/usr/bin/env python
 
 import time, sys
@@ -28,7 +28,7 @@ def ex_apichange():
             print(z, x, type(x), "normal function behaviour, no DeprecationWarning")
         else:
             print(z, x, type(x), "using wrong type here, no DeprecationWarning, "
-                              "but TypeError will be raised")
+                                 "but TypeError will be raised")
             raise TypeError("Wrong Input %s, 'str' expected" % type(x))
         sys.stdout.flush()
         return z, x
@@ -41,14 +41,13 @@ def ex_apichange():
         futurechange(2, x=20)
         time.sleep(1)
     except TypeError as e:
-        print "Type error: {0}".format(e)
-
+        print("Type error: {0}".format(e))
 
     @util.apichange_kwarg("0.6.0", par='x', typ=str, exfunc=help_function)
     def typechanged(z, x=None):
         if isinstance(x, int):
             print(z, x, type(x), "normal function behaviour or type change, "
-                              "DeprecationWarning is issued when 'x' is type(str)")
+                                 "DeprecationWarning is issued when 'x' is type(str)")
         elif isinstance(x, type(None)):
             print(z, x, type(x), "normal function behaviour, no DeprecationWarning")
         else:
@@ -64,7 +63,6 @@ def ex_apichange():
     time.sleep(1)
     typechanged(4, x=40)
     time.sleep(1)
-
 
     @util.apichange_kwarg("0.6.0", par='x', typ=str, expar='y')
     def namechanged(z, y=None):
@@ -86,21 +84,21 @@ def ex_apichange():
     try:
         namechanged(6, x=60)
     except TypeError as e:
-        print "Type error: {0}".format(e)
+        print("Type error: {0}".format(e))
     time.sleep(1)
     namechanged(7, y='70')
     time.sleep(1)
     try:
         namechanged(8, y=80)
     except TypeError as e:
-        print "Type error: {0}".format(e)
+        print("Type error: {0}".format(e))
     time.sleep(1)
 
     @util.apichange_kwarg("0.6.0", par='x', typ=str, expar='y', exfunc=help_function)
     def name_and_type_changed(z, y=None):
         if isinstance(y, int):
             print(z, y, type(y), "normal function behaviour or paramter and type change, "
-                              "DeprecationWarning is issued when 'x' is given")
+                                 "DeprecationWarning is issued when 'x' is given")
         elif isinstance(y, type(None)):
             print(z, y, type(y), "normal function behaviour, no DeprecationWarning")
         else:
@@ -116,7 +114,7 @@ def ex_apichange():
     try:
         name_and_type_changed(10, x=100)
     except TypeError as e:
-        print "Type error: {0}".format(e)
+        print("Type error: {0}".format(e))
     time.sleep(1)
 
 

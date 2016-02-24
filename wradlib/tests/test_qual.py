@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        test_qual.py
 # Purpose:     unit tests for the wrdalib.qual module
 #
@@ -8,14 +8,14 @@
 # Created:     26.05.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -------------------------------------------------------------------------------
+# !/usr/bin/env python
 import numpy as np
 import wradlib.qual as qual
 import unittest
 
-class BeamBlockFracTest(unittest.TestCase):
 
+class BeamBlockFracTest(unittest.TestCase):
     def setUp(self):
         """
         create linear arrays of beamheight, beamradius and terrainheight
@@ -30,8 +30,8 @@ class BeamBlockFracTest(unittest.TestCase):
 
         self.beamheight = np.linspace(start, end, num=NARR)
         self.beamradius = np.ones(NARR) * beam
-        self.terrainheight = np.linspace(start - beam , end + beam, num=NARR)
-        self.ones = np.ones((NARR-1)/2)
+        self.terrainheight = np.linspace(start - beam, end + beam, num=NARR)
+        self.ones = np.ones((NARR - 1) / 2)
 
     def test_beam_block_frac(self):
         """
@@ -43,8 +43,3 @@ class BeamBlockFracTest(unittest.TestCase):
         pbb = qual.beam_block_frac(self.terrainheight, self.beamheight, self.beamradius)
         arr = pbb[0:self.NBINS] + pbb[-1:self.NBINS:-1]
         self.assertTrue(np.allclose(arr, self.ones))
-
-
-
-
-

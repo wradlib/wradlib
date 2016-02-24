@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        radolan_products_example.py
 # Purpose:     plotting several radolan composite products
 #
@@ -7,16 +7,16 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
+#pl.interactive(True)
 import numpy as np
 import os
 
 
 def ex_radolan_products():
-
     # load radolan file
     rx_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rx_10000-1408102050-dwd---bin.gz'
     ex_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-ex_10000-1408102050-dwd---bin.gz'
@@ -58,8 +58,8 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN RX Product \n' + rxattrs['datetime'].isoformat())
-    pl.xlim((x[0, 0],x[-1, -1]))
-    pl.ylim((y[0, 0],y[-1, -1]))
+    pl.xlim((x[0, 0], x[-1, -1]))
+    pl.ylim((y[0, 0], y[-1, -1]))
     pl.grid(color='r')
 
     # plot EX product
@@ -71,8 +71,8 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN EX Product \n' + exattrs['datetime'].isoformat())
-    pl.xlim((xe[0, 0],xe[-1, -1]))
-    pl.ylim((ye[0, 0],ye[-1, -1]))
+    pl.xlim((xe[0, 0], xe[-1, -1]))
+    pl.ylim((ye[0, 0], ye[-1, -1]))
     pl.grid(color='r')
 
     # plot RW product
@@ -84,8 +84,8 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN RW Product \n' + rwattrs['datetime'].isoformat())
-    pl.xlim((x[0, 0],x[-1, -1]))
-    pl.ylim((y[0, 0],y[-1, -1]))
+    pl.xlim((x[0, 0], x[-1, -1]))
+    pl.ylim((y[0, 0], y[-1, -1]))
     pl.grid(color='r')
 
     # plot SF product
@@ -97,11 +97,12 @@ def ex_radolan_products():
     pl.xlabel("x [km]")
     pl.ylabel("y [km]")
     pl.title('RADOLAN SF Product \n' + sfattrs['datetime'].isoformat())
-    pl.xlim((x[0, 0],x[-1, -1]))
-    pl.ylim((y[0, 0],y[-1, -1]))
+    pl.xlim((x[0, 0], x[-1, -1]))
+    pl.ylim((y[0, 0], y[-1, -1]))
     pl.grid(color='r')
 
     pl.show()
+
 
 # =======================================================
 if __name__ == '__main__':

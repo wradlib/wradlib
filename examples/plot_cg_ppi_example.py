@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        plot_cg_ppi_example.py
 # Purpose:     show a few examples on how to use wradlib.vis.plot_cg_ppi
 #
@@ -7,22 +7,21 @@
 # Created:     25.02.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 import numpy as np
 # importing most matplotlib routines at once
-import pylab as pl
-pl.interactive(True)
+import matplotlib.pyplot as pl
+#pl.interactive(True)
 # well, it's a wradlib example
 import wradlib
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import NullFormatter
-import unittest
 import os
 
-def ex_plot_cg_ppi():
 
-    pl.interactive(True)
+def ex_plot_cg_ppi():
+    # pl.interactive(True)
     # load a polar scan and create range and azimuth arrays accordingly
     data = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_tur.gz')
     r = np.arange(0, data.shape[1])
@@ -53,7 +52,7 @@ def ex_plot_cg_ppi():
     # This examples makes heavy use of new matlotlib functionality. See
     # function help for more information.
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # First, creation of four simple figures
     # figure #1
     # the simplest call, plot cg ppi in new window
@@ -63,7 +62,7 @@ def ex_plot_cg_ppi():
     t.set_y(1.05)
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #2
     # now let's just plot a sector of data
     # for this, we need to give the ranges and azimuths explicitly
@@ -92,7 +91,7 @@ def ex_plot_cg_ppi():
     # legend on main cg axis
     cgax.legend()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #3
     # now let's plot with given range and theta arrays
     # and plot some annotation and colorbar
@@ -108,7 +107,7 @@ def ex_plot_cg_ppi():
     cbar.set_label('reflectivity [dBZ]')
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #4
     # now let's just plot a sector of data
     # and plot some annotation and colorbar
@@ -132,7 +131,7 @@ def ex_plot_cg_ppi():
     cgax.axis["lat"].label.set_pad(10)
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #5
     # plot figure #1-4 in one figure 2x2 grid
     pl.figure()
@@ -144,7 +143,7 @@ def ex_plot_cg_ppi():
     t.set_y(1.05)
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #5-2
     # now let's just plot a sector of data
     # for this, we need to give the ranges and azimuths explicitly
@@ -159,7 +158,7 @@ def ex_plot_cg_ppi():
     t.set_y(1.05)
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #5-3
     # now let's plot with given range and theta arrays
     # and plot some annotation and colorbar
@@ -175,7 +174,7 @@ def ex_plot_cg_ppi():
     cbar.set_label('reflectivity [dBZ]')
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #5-4
     # now let's just plot a sector of data
     # and plot some annotation and colorbar
@@ -200,8 +199,7 @@ def ex_plot_cg_ppi():
     cgax.axis["lat"].label.set_pad(10)
     pl.tight_layout()
 
-
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #6
     # create figure with GridSpec
     pl.figure()
@@ -217,7 +215,7 @@ def ex_plot_cg_ppi():
     t = pl.gcf().suptitle('GridSpec CG Example')
     pl.tight_layout()
 
-    #----------------------------------------------------------------
+    # ----------------------------------------------------------------
     # figure #7
     # create figure with co-located x and y-axis
     # using axesgrid1 toolkit
@@ -231,19 +229,18 @@ def ex_plot_cg_ppi():
     axHistX.xaxis.set_major_formatter(NullFormatter())
     axHistY.yaxis.set_major_formatter(NullFormatter())
     axHistX.hist(x)
-    if not pl.matplotlib.__version__=="1.2.1":
+    if not pl.matplotlib.__version__ == "1.2.1":
         # There is a bug in matplotlib 1.2.1,
         # see https://github.com/matplotlib/matplotlib/pull/1985
         axHistY.hist(y, orientation='horizontal')
     else:
         axHistY.text(0.5, 0.5, "Does not work with\nmatplotlib 1.2.1",
-        horizontalalignment="center", rotation=90, fontsize=15, color="red")
+                     horizontalalignment="center", rotation=90, fontsize=15, color="red")
     t = pl.gcf().suptitle('AxesDivider CG Example')
     pl.tight_layout()
 
     pl.show()
 
+
 if __name__ == '__main__':
     ex_plot_cg_ppi()
-    #testcase = unittest.FunctionTestCase(plot_cg_ppi_example)
-    #unittest.TextTestRunner(verbosity=2).run(testcase)

@@ -36,7 +36,8 @@ def query_yes_quit(question, default="quit"):
     while 1:
         sys.stdout.write(question + prompt)
         sys.stdout.flush()
-        choice = raw_input().lower()
+        rinput = vars(__builtins__).get('raw_input',input)
+        choice = rinput().lower()
         if default is not None and choice == '':
             return default
         elif choice in valid.keys():
@@ -73,7 +74,7 @@ for sample in requires:
                 print("Dependency %s version %s installed, but %s needed! " % (modulestr, mver, ver))
                 sys.stdout.flush()
                 missing.append(sample)
-    except ImportError, e:
+    except ImportError as e:
         print("Dependency %s not installed." % modulestr)
         print("The following exception occured: %s" % e)
         sys.stdout.flush()
