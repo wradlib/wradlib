@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Please note that as long as wradlib releases are within the ``0.y.z`` series, the API cannot be considered stable. We will try to avoid sudden API breaks via deprecation warnings. All wradlib releases come without any warranty. Release notes might be incomplete. See `here <https://bitbucket.org/wradlib/wradlib/commits/all>`_ for a complete record of changes. 
+Please note that as long as wradlib releases are within the ``0.y.z`` series, the API cannot be considered stable. We will try to avoid sudden API breaks via deprecation warnings. All wradlib releases come without any warranty. Release notes might be incomplete. See `here <https://github.com/wradlib/wradlib/commits/master>`_ for a complete record of changes.
 
 You can install the latest wradlib release from PyPI via ``$ pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``.
 
@@ -22,7 +22,7 @@ Version 0.7.0
 
 New *experimental* module ``zonalstats``: it supports computation of zonal statistics (so far mean and variance) for target polygons. 
 Typical applications would be the computation of average catchment rainfall from polar or cartesian grids. Check out the 
-`module documentation <http://wradlib.bitbucket.org/zonalstats>`_ and the new examples. 
+`module documentation <http://wradlib.github.io/wradlib-docs/zonalstats.html>`_ and the new examples.
 
 
 Version 0.6.0
@@ -111,7 +111,7 @@ Version 0.4.0
 
 **New features**
 
-- comprehensive RADOLAN tutorial, examples, and example data: http://wradlib.bitbucket.org/tutorial_radolan_format.html
+- comprehensive RADOLAN tutorial, examples, and example data: http://wradlib.github.io/wradlib-docs/tutorial_radolan_format.html
 - enhanced :doc:`generated/wradlib.io.read_RADOLAN_composite` to read EX product
 - :doc:`generated/wradlib.georef.get_radolan_grid`
 
@@ -133,15 +133,15 @@ Visually most strikingly, we moved to a new style in our online documentation.
 
 However, the most important change introduced with this release was to remove a number of deprecated functions that will not be supported anymore (see list below). Users who want to use these functions need to fall back to ``0.2.0`` (not recommended). Accordingly, examples and documentation has been revised in order to remove all remaining usage of deprecated functions and also fix some documentation issues.
 
-In addition, we removed three outdated tutorial (on clutter detection, convertion and rainfall accumulation) and replaced the two latter by a more concise tutorial "Converting reflectivity to rainfall" (see http://wradlib.bitbucket.org/tutorial_get_rainfall.html).
+In addition, we removed three outdated tutorial (on clutter detection, convertion and rainfall accumulation) and replaced the two latter by a more concise tutorial "Converting reflectivity to rainfall".
 
-Finally, we use one "central" bibliography for literature cross-referencing now (see http://wradlib.bitbucket.org/zreferences.html). 
+Finally, we use one "central" bibliography for literature cross-referencing now (see http://wradlib.github.io/wradlib-docs/zreferences.html).
 
 **New features**
 
-- New style of online docs (http://wradlib.bitbucket.org), using sphinx_rtd_theme
-- Added Tutorial http://wradlib.bitbucket.org/tutorial_get_rainfall.html
-- New organisation of bibliography: http://wradlib.bitbucket.org/zreferences.html
+- New style of online docs (http://wradlib.github.io/wradlib-docs), using sphinx_rtd_theme
+- Added Tutorial http://wradlib.github.io/wradlib-docs/tutorial_get_rainfall.html
+- New organisation of bibliography: http://wradlib.github.io/wradlib-docs/zreferences.html
 
 **Deprecated features**
 
