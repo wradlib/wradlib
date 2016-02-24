@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        vis
 # Purpose:
 #
@@ -8,7 +8,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 #!/usr/bin/env python
 
 """
@@ -44,7 +44,8 @@ import numpy as np
 import pylab as pl
 import matplotlib
 import matplotlib as mpl
-#from mpl_toolkits.basemap import Basemap, cm
+import matplotlib.pyplot as pl
+from matplotlib import patches
 from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
 from mpl_toolkits.axisartist import SubplotHost, ParasiteAxesAuxTrans, GridHelperCurveLinear
@@ -54,32 +55,32 @@ from mpl_toolkits.axes_grid1 import axes_size as Size
 import mpl_toolkits.axisartist.angle_helper as angle_helper
 from matplotlib.ticker import NullFormatter, FuncFormatter
 import matplotlib.dates as mdates
+from matplotlib.collections import LineCollection, PolyCollection
 import matplotlib.font_manager as fm
 
 # wradlib modules
-import wradlib.georef as georef
-import wradlib.util as util
-from util import apichange_kwarg
-from util import deprecated
-
+from . import georef as georef
+from . import util as util
+from .util import apichange_kwarg
+from .util import deprecated
 
 
 class NorthPolarAxes(PolarAxes):
-    '''
+    """
     A variant of PolarAxes where theta starts pointing north and goes
     clockwise.
     Obsolete since matplotlib version 1.1.0, where the same behaviour may
     be achieved with a reconfigured standard PolarAxes object.
-    '''
+    """
     name = 'northpolar'
 
     class NorthPolarTransform(PolarAxes.PolarTransform):
         def transform(self, tr):
-            xy   = np.zeros(tr.shape, np.float_)
-            t    = tr[:, 0:1]
-            r    = tr[:, 1:2]
-            x    = xy[:, 0:1]
-            y    = xy[:, 1:2]
+            xy = np.zeros(tr.shape, np.float_)
+            t = tr[:, 0:1]
+            r = tr[:, 1:2]
+            x = xy[:, 0:1]
+            y = xy[:, 1:2]
             x[:] = r * np.sin(t)
             y[:] = r * np.cos(t)
             return xy
@@ -93,7 +94,7 @@ class NorthPolarAxes(PolarAxes):
         def transform(self, xy):
             x = xy[:, 0:1]
             y = xy[:, 1:]
-            r = np.sqrt(x*x + y*y)
+            r = np.sqrt(x * x + y * y)
             theta = np.arctan2(y, x)
             return np.concatenate((theta, r), 1)
 
@@ -122,11 +123,12 @@ class NorthPolarAxes(PolarAxes):
             Affine2D().scale(1.0 / 360.0, 1.0) +
             self._yaxis_transform)
 
+
 register_projection(NorthPolarAxes)
 
-@apichange_kwarg("0.6.0", "proj", typ=str, exfunc=georef.proj4_to_osr)
+
 def plot_ppi(data, r=None, az=None, autoext=True,
-             site=(0,0), proj=None, elev=0.,
+             site=(0, 0), proj=None, elev=0.,
              ax=None,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
@@ -180,10 +182,6 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         If this parameter is not None, `site` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
         coordinate system defined by the projection string.
-
-        .. versionchanged:: 0.6.0
-           using osr objects instead of PROJ.4 strings as parameter
-
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
@@ -194,8 +192,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     See also
     --------
     wradlib.georef.reproject - for information on projection strings
-    wradlib.georef.create_projstr - routine to generate pre-defined projection
-        strings
+    wradlib.georef.create_osr - routine to generate pre-defined projection strings
 
     Returns
     -------
@@ -227,7 +224,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     if autoext:
         # the ranges need to go 'one bin further', assuming some regularity
         # we extend by the distance between the preceding bins.
-        x = np.append(d1, d1[-1]+(d1[-1]-d1[-2]))
+        x = np.append(d1, d1[-1] + (d1[-1] - d1[-2]))
         # the angular dimension is supposed to be cyclic, so we just add the
         # first element
         y = np.append(d2, d2[0])
@@ -242,8 +239,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     if proj is None:
         # no georeferencing -> simple trigonometry
-        xxx = xx * np.cos(np.radians(90.-yy)) + site[0]
-        yy = xx * np.sin(np.radians(90.-yy))  + site[1]
+        xxx = xx * np.cos(np.radians(90. - yy)) + site[0]
+        yy = xx * np.sin(np.radians(90. - yy)) + site[1]
         xx = xxx
     else:
         # with georeferencing
@@ -270,9 +267,9 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # so that the user may add colorbars etc.
     return ax, pm
 
-@apichange_kwarg("0.6.0", "proj", typ=str, exfunc=georef.proj4_to_osr)
-def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
-                       proj=None, elev=0., ax=None, kwds={}):
+
+def plot_ppi_crosshair(site, ranges, angles=None,
+                       proj=None, elev=0., ax=None, **kwargs):
     """Plots a Crosshair for a Plan Position Indicator (PPI).
 
     .. versionchanged:: 0.6.0
@@ -302,10 +299,6 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         Depending on the projection, crosshair lines might not be straight and
         range circles might appear elliptical (also check if the aspect of the
         axes might not also be responsible for this).
-
-        .. versionchanged:: 0.6.0
-           using osr objects instead of PROJ.4 strings
-
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
@@ -313,15 +306,17 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         If given, the crosshair will be plotted into this axes object. If None
         matplotlib's current axes (function gca()) concept will be used to
         determine the axes.
-    kwds : dictionary
-        Dictionary of settings to alter the appearance of lines and range
-        circles. With the key 'line', you may pass a dictionary, which will be
-        passed to the line objects using the standard keyword inheritance
-        mechanism.
-        With the key 'circle' you may do the same for the range circles.
-        If not given defaults will be used.
-        See the file plot_ppi_example.py in the examples folder for examples on
-        how this works.
+
+    Keyword Arguments
+    -----------------
+    line :  dict
+        dictionary, which will be passed to the crosshair line objects using the standard keyword inheritance
+        mechanism. If not given defaults will be used.
+    circle : dict
+        dictionary, which will be passed to the range circle line objects using the standard keyword inheritance
+        mechanism. If not given defaults will be used.
+
+    See the file plot_ppi_example.py in the examples folder for examples on how this works.
 
     See also
     --------
@@ -337,15 +332,18 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
     if ax is None:
         ax = pl.gca()
 
+    if angles is None:
+        angles = [0, 90, 180, 270]
+
     # set default line keywords
     linekw = dict(color='gray', linestyle='dashed')
     # update with user settings
-    linekw.update(kwds.get('line', {}))
+    linekw.update(kwargs.get('line', {}))
 
     # set default circle keywords
     circkw = dict(edgecolor='gray', linestyle='dashed', facecolor='none')
     # update with user settings
-    circkw.update(kwds.get('circle', {}))
+    circkw.update(kwargs.get('circle', {}))
 
     # determine coordinates for 'straight' lines
     if proj:
@@ -354,42 +352,41 @@ def plot_ppi_crosshair(site, ranges, angles=[0,90,180,270],
         psite = georef.reproject(*site, projection_target=proj)
         # these lines might not be straigt so we approximate them with 10
         # segments. Produce polar coordinates
-        rr, az = np.meshgrid(np.linspace(0,ranges[-1],10), angles)
+        rr, az = np.meshgrid(np.linspace(0, ranges[-1], 10), angles)
         # and reproject using polar2lonlatalt to convert from polar to geographic
-        nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr, az, elev,
-                                                                site)[:2],
-                                      projection_target=proj)
+        nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr, az, elev, site)[:2],
+                                        projection_target=proj)
     else:
         # no projection
         psite = site
-        rr, az = np.meshgrid(np.linspace(0,ranges[-1],2), angles)
+        rr, az = np.meshgrid(np.linspace(0, ranges[-1], 2), angles)
         # use simple trigonometry to calculate coordinates
-        nsewx, nsewy = (psite[0]+rr*np.cos(np.radians(az)),
-                        psite[1]+rr*np.sin(np.radians(az)))
+        nsewx, nsewy = (psite[0] + rr * np.cos(np.radians(az)),
+                        psite[1] + rr * np.sin(np.radians(az)))
 
     # mark the site, just in case nothing else would be drawn
     ax.plot(*psite, marker='+', **linekw)
 
     # draw the lines
     for i in range(len(angles)):
-        ax.add_line(mpl.lines.Line2D(nsewx[i,:], nsewy[i,:], **linekw))
+        ax.add_line(mpl.lines.Line2D(nsewx[i, :], nsewy[i, :], **linekw))
 
     # draw the range circles
     for r in ranges:
         if proj:
             # produce an approximation of the circle
             x, y = georef.reproject(*georef.polar2lonlatalt_n(r,
-                                                            np.arange(360),
-                                                            elev,
-                                                            site)[:2],
-                                  projection_target=proj)
-            ax.add_patch(mpl.patches.Polygon(np.concatenate([x[:,None],
-                                                             y[:,None]],
-                                                             axis=1),
-                                             **circkw))
+                                                              np.arange(360),
+                                                              elev,
+                                                              site)[:2],
+                                    projection_target=proj)
+            ax.add_patch(patches.Polygon(np.concatenate([x[:, None],
+                                                         y[:, None]],
+                                                        axis=1),
+                                         **circkw))
         else:
             # in the unprojected case, we may use 'true' circles.
-            ax.add_patch(mpl.patches.Circle(psite, r, **circkw))
+            ax.add_patch(patches.Circle(psite, r, **circkw))
 
     # there should be not much wrong, setting the axes aspect to equal by default
     ax.set_aspect('equal')
@@ -406,6 +403,9 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     coordinate transforms beforehand. This allows zooming into the data as well
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
+
+    `**kwargs` may be used to try to influence the matplotlib.pcolormesh routine
+     under the hood.
 
     Parameters
     ----------
@@ -463,10 +463,10 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
 
     if autoext:
         # extend the range by the delta of the two last bins
-        x = np.append(d1, d1[-1]+d1[-1]-d1[-2])
+        x = np.append(d1, d1[-1] + d1[-1] - d1[-2])
         # RHIs usually aren't cyclic, so we best guess a regular extension
         # here as well
-        y = np.append(d2, d2[-1]+d2[-1]-d2[-2])
+        y = np.append(d2, d2[-1] + d2[-1] - d2[-2])
     else:
         # hopefully, the user supplied everything correctly...
         x = d1
@@ -479,22 +479,22 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         # the data with masked values, simulating the gap between beams
         # make a temporary data array with one dimension twice the size of
         # the original
-        img = np.ma.empty((data.shape[0], data.shape[1]*2))
+        img = np.ma.empty((data.shape[0], data.shape[1] * 2))
         # mask everything
         img.mask = np.ma.masked
         # set the data in the first half of the temporary array
         # this automatically unsets the mask
-        img[:,:data.shape[1]] = data
+        img[:, :data.shape[1]] = data
         # reshape so that data and masked lines interlace each other
         img = img.reshape((-1, data.shape[1]))
         # produce lower and upper y coordinates for the actual data
-        yl = d2-th_res*0.5
-        yu = d2+th_res*0.5
+        yl = d2 - th_res * 0.5
+        yu = d2 + th_res * 0.5
         # glue them together to achieve the proper dimensions for the
         # interlaced array
-        y = np.concatenate([yl[None,:], yu[None,:]], axis=0).T.ravel()
+        y = np.concatenate([yl[None, :], yu[None, :]], axis=0).T.ravel()
     else:
-        img=data
+        img = data
 
     # coordinates for all vertices
     xx, yy = np.meshgrid(x, y)
@@ -515,7 +515,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         ax = pl.gca()
 
     # plot the stuff
-    pm = ax.pcolormesh(xx, yy, img)
+    pm = ax.pcolormesh(xx, yy, img, **kwargs)
 
     # return references to important and eventually new objects
     return ax, pm
@@ -535,7 +535,8 @@ def create_cg(st, fig=None, subplot=111):
 
     Parameters
     ----------
-    st : scan type, 'PPI' or 'RHI'
+    st : string
+        scan type, 'PPI' or 'RHI'
     fig : matplotlib Figure object
         If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None a new figure object will be created or
@@ -560,11 +561,11 @@ def create_cg(st, fig=None, subplot=111):
 
         # build up curvelinear grid
         extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
-                                                     lon_cycle=100,
-                                                     lat_cycle=None,
-                                                     lon_minmax=(0, np.inf),
-                                                     lat_minmax=(0, np.inf),
-                                                     )
+                                                         lon_cycle=100,
+                                                         lat_cycle=None,
+                                                         lon_minmax=(0, np.inf),
+                                                         lat_minmax=(0, np.inf),
+                                                         )
 
         # locator and formatter for angular annotation
         grid_locator1 = angle_helper.LocatorDMS(10.)
@@ -572,12 +573,12 @@ def create_cg(st, fig=None, subplot=111):
 
         # grid_helper for curvelinear grid
         grid_helper = GridHelperCurveLinear(tr,
-                                        extreme_finder=extreme_finder,
-                                        grid_locator1=grid_locator1,
-                                        grid_locator2=None,
-                                        tick_formatter1=tick_formatter1,
-                                        tick_formatter2=None,
-                                        )
+                                            extreme_finder=extreme_finder,
+                                            grid_locator1=grid_locator1,
+                                            grid_locator2=None,
+                                            tick_formatter1=tick_formatter1,
+                                            tick_formatter2=None,
+                                            )
 
         # try to set nice locations for range gridlines
         grid_helper.grid_finder.grid_locator2._nbins = 30.0
@@ -591,11 +592,11 @@ def create_cg(st, fig=None, subplot=111):
 
         # build up curvelinear grid
         extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
-                                                     lon_cycle=360,
-                                                     lat_cycle=None,
-                                                     lon_minmax=(350, 0),
-                                                     lat_minmax=(0, np.inf),
-                                                     )
+                                                         lon_cycle=360,
+                                                         lat_cycle=None,
+                                                         lon_minmax=(350, 0),
+                                                         lat_minmax=(0, np.inf),
+                                                         )
 
         # locator and formatter for angle annotation
         grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
@@ -604,12 +605,12 @@ def create_cg(st, fig=None, subplot=111):
 
         # grid_helper for curvelinear grid
         grid_helper = GridHelperCurveLinear(tr,
-                                        extreme_finder=extreme_finder,
-                                        grid_locator1=grid_locator1,
-                                        grid_locator2=None,
-                                        tick_formatter1=tick_formatter1,
-                                        tick_formatter2=None,
-                                        )
+                                            extreme_finder=extreme_finder,
+                                            grid_locator1=grid_locator1,
+                                            grid_locator2=None,
+                                            tick_formatter1=tick_formatter1,
+                                            tick_formatter2=None,
+                                            )
 
     # if there is no figure object given
     if fig is None:
@@ -663,8 +664,8 @@ def create_cg(st, fig=None, subplot=111):
 
 
 def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
-             refrac=True, elev=0., fig=None, subplot=111,
-             **kwargs):
+                refrac=True, elev=0., fig=None, subplot=111,
+                **kwargs):
     """Plots a Plan Position Indicator (PPI) on a curvelinear grid.
 
     The implementation of this plot routine is in curvelinear grid axes and
@@ -706,6 +707,13 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         As this function needs one set of coordinates more than would usually
         be provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
+    refrac : True | False
+        If True, the effect of refractivity of the earth's atmosphere on the
+        beam propagation will be taken into account. If False, simple
+        trigonometry will be used to calculate beam propagation.
+        Functionality for this will be provided by functions
+        wradlib.georef.arc_distance_n. Therefore, if `refrac` is True,
+        `r` must be given in meters.
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
@@ -759,7 +767,6 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         # dimensions himself.
         x = d1
         y = d2
-    print(x.shape, y.shape)
 
     if refrac:
         # with refraction correction, significant at higher elevations
@@ -798,7 +805,7 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
 
 
 def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
-             rf=1., fig=None, subplot=111, **kwargs):
+                rf=1., fig=None, subplot=111, **kwargs):
     """Plots a Range Height Indicator (RHI) on a curvelinear grid.
 
     The implementation of this plot routine is in a curvelinear grid axes and
@@ -892,7 +899,7 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     if th is None:
         # assume, data is evenly spaced between 0 and 90 degree
         d2 = np.linspace(0., 90., num=data.shape[0], endpoint=True)
-        #d2 = np.arange(data.shape[0], dtype=np.float)
+        # d2 = np.arange(data.shape[0], dtype=np.float)
     else:
         d2 = np.asanyarray(th)
 
@@ -955,7 +962,7 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         # please note that the data is plottet within a polar grid
         # with 0 degree at 3 o'clock, hence the slightly other data handling
         xxx, yyy = np.meshgrid(y, x)
-        yyy = yyy / rf
+        yyy /= rf
         img = img.transpose()
         # assign parasite axis as plotting axis
         plax = paax
@@ -986,7 +993,7 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500., maxalt=10000., ax=Non
     site : tuple of site coordinates (longitude, latitude, altitude)
     """
     # just a dummy
-    az=np.array([90.])
+    az = np.array([90.])
 
     polc = util.meshgridN(ranges, az, elevs)
 
@@ -995,30 +1002,30 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500., maxalt=10000., ax=Non
     alt = alt.reshape(len(ranges), len(elevs))
     r = polc[0].reshape(len(ranges), len(elevs))
 
-    if ax==None:
+    if ax is None:
         returnax = False
         fig = pl.figure()
         ax = fig.add_subplot(111)
     else:
         returnax = True
     # actual plotting
-    for y in np.arange(0,10000.,vert_res):
+    for y in np.arange(0, 10000., vert_res):
         ax.axhline(y=y, color="grey")
     for x in ranges:
         ax.axvline(x=x, color="grey")
     for i in range(len(elevs)):
-        ax.plot(r[:,i].ravel(), alt[:,i].ravel(), lw=2, color="black")
+        ax.plot(r[:, i].ravel(), alt[:, i].ravel(), lw=2, color="black")
     pl.ylim(ymax=maxalt)
     ax.tick_params(labelsize="large")
     pl.xlabel("Range (m)", size="large")
     pl.ylabel("Height over radar (m)", size="large")
     for i, elev in enumerate(elevs):
-        x = r[:,i].ravel()[-1]+1500.
-        y = alt[:,i].ravel()[-1]
-        if  y > maxalt:
-            ix = np.where(alt[:,i].ravel()<maxalt)[0][-1]
-            x = r[:,i].ravel()[ix]
-            y = maxalt+100.
+        x = r[:, i].ravel()[-1] + 1500.
+        y = alt[:, i].ravel()[-1]
+        if y > maxalt:
+            ix = np.where(alt[:, i].ravel() < maxalt)[0][-1]
+            x = r[:, i].ravel()[ix]
+            y = maxalt + 100.
         pl.text(x, y, str(elev), fontsize="large")
 
     if returnax:
@@ -1040,6 +1047,9 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
     unit : string (unit of data arrays)
     title: string
     saveto : file path if figure should be saved
+
+    Keyword Arguments
+    -----------------
     **kwargs : other kwargs which can be passed to pylab.contourf
 
     """
@@ -1049,9 +1059,9 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
     # define axes
     left, bottom, width, height = 0.1, 0.1, 0.6, 0.2
     ax_xy = pl.axes((left, bottom, width, width))
-    ax_x  = pl.axes((left, bottom+width, width, height))
-    ax_y  = pl.axes((left+width, bottom, height, width))
-    ax_cb  = pl.axes((left+width+height+0.02, bottom, 0.02, width))
+    ax_x = pl.axes((left, bottom + width, width, height))
+    ax_y = pl.axes((left + width, bottom, height, width))
+    ax_cb = pl.axes((left + width + height + 0.02, bottom, 0.02, width))
 
     # set axis label formatters
     ax_x.xaxis.set_major_formatter(NullFormatter())
@@ -1059,7 +1069,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
 
     # draw CAPPI
     pl.axes(ax_xy)
-    xy = pl.contourf(x,y,dataxy, **kwargs)
+    xy = pl.contourf(x, y, dataxy, **kwargs)
     pl.grid(color="grey", lw=1.5)
 
     # draw colorbar
@@ -1080,15 +1090,15 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
     ax_y.set_ylabel('')
     ax_y.set_xlabel('z (km)')
 
-    def xycoords(x,pos):
-        'The two args are the value and tick position'
-        return "%d" % (x/1000.)
+    def xycoords(x, pos):
+        """The two args are the value and tick position"""
+        return "%d" % (x / 1000.)
 
     xyformatter = FuncFormatter(xycoords)
 
-    def zcoords(x,pos):
-        'The two args are the value and tick position'
-        return ( "%.1f" % (x/1000.) ).rstrip('0').rstrip('.')
+    def zcoords(x, pos):
+        """The two args are the value and tick position"""
+        return ("%.1f" % (x / 1000.)).rstrip('0').rstrip('.')
 
     zformatter = FuncFormatter(zcoords)
 
@@ -1097,14 +1107,14 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
     ax_x.yaxis.set_major_formatter(zformatter)
     ax_y.xaxis.set_major_formatter(zformatter)
 
-    if not title=="":
+    if not title == "":
         # add a title - here, we have to create a new axes object which will be invisible
         # then the invisible axes will get a title
-        tax = pl.axes((left, bottom+width+height+0.01, width+height, 0.01), frameon=False, axisbg="none")
+        tax = pl.axes((left, bottom + width + height + 0.01, width + height, 0.01), frameon=False, axisbg="none")
         tax.get_xaxis().set_visible(False)
         tax.get_yaxis().set_visible(False)
         pl.title(title)
-    if saveto=='':
+    if saveto == '':
         # show plot
         pl.show()
         if not pl.isinteractive():
@@ -1112,7 +1122,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
             pl.close()
     else:
         # save plot to file
-        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+        if (path.exists(path.dirname(saveto))) or (path.dirname(saveto) == ''):
             pl.savefig(saveto)
             pl.close()
 
@@ -1120,10 +1130,12 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
 def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs):
     """Plot according to <plot_plan_and_vert> with the maximum values along the three axes of <data>
     """
-    plot_plan_and_vert(x, y, z, np.max(data,axis=-3), np.max(data, axis=-2), np.max(data, axis=-1), unit, title, saveto, **kwargs)
+    plot_plan_and_vert(x, y, z, np.max(data, axis=-3), np.max(data, axis=-2), np.max(data, axis=-1),
+                       unit, title, saveto, **kwargs)
 
 
-def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', colors=None, ylabel="", title="", fontsize="medium", saveto="", **kwargs):
+def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', colors=None, ylabel="",
+                 title="", fontsize="medium", saveto="", **kwargs):
     """Plot time series data (e.g. gage recordings)
 
     Parameters
@@ -1135,28 +1147,28 @@ def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', col
     kwargs : keyword arguments related to pylab.plot
 
     """
-    if ax==None:
+    if ax is None:
         returnax = False
         fig = pl.figure()
-        ax  = fig.add_subplot(1,1,1,  title=title)
+        ax = fig.add_subplot(1, 1, 1, title=title)
     else:
         returnax = True
-##    if labels==None:
-##        labels = ["series%d"%i for i in range(1, data.shape[1]+1)]
-##    for i, label in enumerate(labels):
-##        ax.plot_date(mpl.dates.date2num(dtimes),data[:,i],label=label, color=colors[i], **kwargs)
+    # if labels==None:
+    #    labels = ["series%d"%i for i in range(1, data.shape[1]+1)]
+    # for i, label in enumerate(labels):
+    #    ax.plot_date(mpl.dates.date2num(dtimes),data[:,i],label=label, color=colors[i], **kwargs)
     ax.plot_date(mpl.dates.date2num(dtimes), data, **kwargs)
     ax.xaxis.set_major_formatter(mdates.DateFormatter(datefmt))
     pl.setp(ax.get_xticklabels(), visible=True)
     pl.setp(ax.get_xticklabels(), rotation=-30, horizontalalignment='left')
     ax.set_ylabel(ylabel, size=fontsize)
-    ax = set_ticklabel_size(ax,fontsize)
+    ax = set_ticklabel_size(ax, fontsize)
     ax.legend(loc='best')
 
     if returnax:
         return ax
 
-    if saveto=="":
+    if saveto == "":
         # show plot
         pl.show()
         if not pl.isinteractive():
@@ -1164,9 +1176,10 @@ def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', col
             pl.close()
     else:
         # save plot to file
-        if ( path.exists(path.dirname(saveto)) ) or ( path.dirname(saveto)=='' ):
+        if (path.exists(path.dirname(saveto))) or (path.dirname(saveto) == ''):
             pl.savefig(saveto)
             pl.close()
+
 
 def set_ticklabel_size(ax, size):
     """
@@ -1191,17 +1204,16 @@ def add_lines(ax, lines, **kwargs):
     lines : nested numpy Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.LineCollection`
     """
-
     try:
-        ax.add_collection(mpl.collections.LineCollection(lines, **kwargs))
+        ax.add_collection(LineCollection([lines], **kwargs))
     except AssertionError:
-        ax.add_collection(mpl.collections.LineCollection(lines[None,...], **kwargs))
+        ax.add_collection(LineCollection([lines[None, ...]], **kwargs))
     except ValueError:
-       for line in lines:
-           add_lines(ax, line, **kwargs)
+        for line in lines:
+            add_lines(ax, line, **kwargs)
 
 
-def add_patches(ax, patches, **kwargs):
+def add_patches(ax, patch_array, **kwargs):
     """
     Add patches (points in the form Nx2) to axes
 
@@ -1214,21 +1226,18 @@ def add_patches(ax, patches, **kwargs):
     Parameters
     ----------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
-    patches : nested numpy Nx2 array(s)
+    patch_array : nested numpy Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.PolyCollection`
     """
 
     try:
-        ax.add_collection(mpl.collections.PolyCollection(patches, **kwargs))
+        ax.add_collection(PolyCollection([patch_array], **kwargs))
     except AssertionError:
-        ax.add_collection(mpl.collections.PolyCollection(patches[None,...], **kwargs))
+        ax.add_collection(PolyCollection([patch_array[None, ...]], **kwargs))
     except ValueError:
-       for patch in patches:
-           add_patches(ax, patch, **kwargs)
+        for patch in patch_array:
+            add_patches(ax, patch, **kwargs)
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <vis> as main...'
-
-
-
+    print('wradlib: Calling module <vis> as main...')

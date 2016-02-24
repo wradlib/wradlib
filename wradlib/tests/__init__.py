@@ -1,10 +1,15 @@
-__author__ = 'k.muehlbauer'
+"""
+wradlib_tests
+=============
 
-import test_atten
-import test_clutter
-import test_io
-import test_ipol
-import test_qual
-import test_trafo
-import test_georef
-import test_zonalstats
+__author__ = 'k.muehlbauer'
+"""
+
+from . import test_atten
+from . import test_clutter
+from . import test_io
+from . import test_ipol
+from . import test_qual
+from . import test_trafo
+from . import test_georef
+from . import test_zonalstats

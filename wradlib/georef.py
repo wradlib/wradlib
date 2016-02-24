@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        georef
 # Purpose:
 #
@@ -8,7 +8,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 #!/usr/bin/env python
 
 """
@@ -29,7 +29,6 @@ Georeferencing
    centroid2polyvert
    reproject
    create_osr
-   create_projstr
    proj4_to_osr
    epsg_to_osr
    wkt_to_osr
@@ -59,23 +58,25 @@ Georeferencing
 ## a - azimuth (von süden aus gezählt)
 ## h - Höhe über Horizont
 
-from osgeo import gdal,osr
-#from numpy import sin, cos, arcsin, pi
+from osgeo import gdal, osr
+# from numpy import sin, cos, arcsin, pi
 import numpy as np
 from sys import exit
 import warnings
 import wradlib as wrl
 
+
 def hor2aeq(a, h, phi):
     """"""
-    delta = np.arcsin(np.sin(h)*np.sin(phi) - np.cos(h)*np.cos(a)*np.cos(phi))
-    tau = np.arcsin(np.cos(h)*np.sin(a)/np.cos(delta))
+    delta = np.arcsin(np.sin(h) * np.sin(phi) - np.cos(h) * np.cos(a) * np.cos(phi))
+    tau = np.arcsin(np.cos(h) * np.sin(a) / np.cos(delta))
     return delta, tau
+
 
 def aeq2hor(tau, delta, phi):
     """"""
-    h = np.arcsin(np.cos(delta)*np.cos(tau)*np.cos(phi) + np.sin(delta)*np.sin(phi))
-    a = np.arcsin(np.cos(delta)*np.sin(tau)/np.cos(h))
+    h = np.arcsin(np.cos(delta) * np.cos(tau) * np.cos(phi) + np.sin(delta) * np.sin(phi))
+    a = np.arcsin(np.cos(delta) * np.sin(tau) / np.cos(h))
     return a, h
 
 
@@ -110,11 +111,11 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     Returns
     -------
-    lon, lat : tuple of arrays
+    lon, lat : tuple
         two arrays containing the spherical longitude and latitude coordinates
 
-    Notes
-    -----
+    Note
+    ----
     Be aware that the coordinates returned by this function are valid for
     a sphere. When using them in GIS make sure to distinguish that from
     the usually assumed WGS coordinate systems where the coordinates are based
@@ -133,7 +134,7 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     >>> # csite = (0.0, 0.0)
     >>> lon1, lat1= polar2lonlat(r, az, csite)
     >>> for x, y in zip(lon1, lat1):
-    ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
+    ...     print('{0:6.2f}, {1:6.2f}'.format(x, y))
       9.00,  48.00
       9.00,  48.00
       9.00,  49.00
@@ -148,13 +149,13 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     """
 
-    #phi = 48.58611111 * pi/180.  # drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
-    #lon = 9.783888889 * pi/180.  # drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778
+    # phi = 48.58611111 * pi/180.  # drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
+    # lon = 9.783888889 * pi/180.  # drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778
     phi = np.deg2rad(sitecoords[1])
     lam = np.deg2rad(sitecoords[0])
 
     a = np.deg2rad(-(180. + az))
-    h =  0.5*np.pi - r/re
+    h = 0.5 * np.pi - r / re
 
     delta, tau = hor2aeq(a, h, phi)
     latc = np.rad2deg(delta)
@@ -182,7 +183,7 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     >>> csite = (9.0, 48.0)
     >>> lon1, lat1= __pol2lonlat(r, az, csite)
     >>> for x, y in zip(lon1, lat1):
-    ...     print '{0:6.2f}, {1:6.2f}'.format(x, y)
+    ...     print('{0:6.2f}, {1:6.2f}'.format(x, y))
       9.00,  48.00
       9.00,  48.00
       9.00,  49.00
@@ -198,17 +199,17 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     phia = sitecoords[1]
     thea = sitecoords[0]
 
-    l = np.deg2rad(90.-phia)
-    r = rng/re
+    l = np.deg2rad(90. - phia)
+    r = rng / re
 
-    easterly = az<=180.
+    easterly = az <= 180.
     westerly = ~easterly
-    a = np.deg2rad(np.where(easterly,az,az-180.))
+    a = np.deg2rad(np.where(easterly, az, az - 180.))
 
-    m = np.arccos(np.cos(r)*np.cos(l) + np.sin(r)*np.sin(l)*np.cos(a))
-    g = np.arcsin((np.sin(r)*np.sin(a))/(np.sin(m)))
+    m = np.arccos(np.cos(r) * np.cos(l) + np.sin(r) * np.sin(l) * np.cos(a))
+    g = np.arcsin((np.sin(r) * np.sin(a)) / (np.sin(m)))
 
-    return thea+np.rad2deg(np.where(easterly,g,-g)), 90.-np.rad2deg(m)
+    return thea + np.rad2deg(np.where(easterly, g, -g)), 90. - np.rad2deg(m)
 
 
 def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
@@ -241,7 +242,8 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 
     Returns
     -------
-    output : a tuple of three arrays (longitudes, latitudes,  altitudes)
+    output : tuple
+        three arrays (longitudes, latitudes,  altitudes)
 
     Examples
     --------
@@ -251,7 +253,7 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     >>> csite = (9.0, 48.0)
     >>> lon1, lat1, alt1 = polar2lonlatalt(r, az, th, csite)
     >>> for x, y, z in zip(lon1, lat1, alt1):
-    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...     print('{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z))
     ...
      9.0000, 48.0000,  0.0000
      9.0000, 48.0000,  0.0000
@@ -270,17 +272,17 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     # local earth radius
     re = re + centalt
 
-    cosaz = np.cos( np.deg2rad(az) )
-    sinaz = np.sin( np.deg2rad(az) )
+    cosaz = np.cos(np.deg2rad(az))
+    sinaz = np.sin(np.deg2rad(az))
     # assume azimuth = 0 at north, then clockwise
-    coselev = np.cos( np.deg2rad(elev) )
-    sinelev = np.sin( np.deg2rad(elev) )
+    coselev = np.cos(np.deg2rad(elev))
+    sinelev = np.sin(np.deg2rad(elev))
     rp = np.sqrt(re * re + r * r + 2.0 * sinelev * re * r)
 
     # altitudes
     alts = rp - re + centalt
 
-    angle = np.arcsin(coselev * r / rp) # really sin(elev+90)
+    angle = np.arcsin(coselev * r / rp)  # really sin(elev+90)
     radp = re * angle
     lats = centlat + cosaz * radp / _latscale()
     lons = centlon + sinaz * radp / _lonscale(centlat)
@@ -291,16 +293,16 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 def _latscale(re=6370040.):
     """Return meters per degree latitude assuming spherical earth
     """
-    return 2*np.pi*re / 360.
+    return 2 * np.pi * re / 360.
 
 
 def _lonscale(lat, re=6370040.):
     """Return meters per degree longitude assuming spherical earth
     """
-    return (2*np.pi*re / 360.) * np.cos( np.deg2rad(lat) )
+    return (2 * np.pi * re / 360.) * np.cos(np.deg2rad(lat))
 
 
-def beam_height_n(r, theta, re=6370040., ke=4./3.):
+def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
     r"""Calculates the height of a radar beam taking the refractivity of the
     atmosphere into account.
 
@@ -332,10 +334,10 @@ def beam_height_n(r, theta, re=6370040., ke=4./3.):
         height of the beam in [m]
 
     """
-    return np.sqrt( r**2 + (ke*re)**2 + 2*r*ke*re*np.sin(np.radians(theta)) ) - ke*re
+    return np.sqrt(r ** 2 + (ke * re) ** 2 + 2 * r * ke * re * np.sin(np.radians(theta))) - ke * re
 
 
-def arc_distance_n(r, theta, re=6370040., ke=4./3.):
+def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
     r"""Calculates the great circle distance of a radar beam over a sphere,
     taking the refractivity of the atmosphere into account.
 
@@ -372,11 +374,11 @@ def arc_distance_n(r, theta, re=6370040., ke=4./3.):
     beam_height_n
 
     """
-    return ke*re * np.arcsin((r*np.cos(np.radians(theta)))/
-                             (ke*re + beam_height_n(r, theta, re, ke)))
+    return ke * re * np.arcsin((r * np.cos(np.radians(theta))) /
+                               (ke * re + beam_height_n(r, theta, re, ke)))
 
 
-def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
+def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates taking elevation angle and refractivity into account.
 
@@ -415,8 +417,8 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
         three arrays containing the spherical longitude and latitude coordinates
         as well as the altitude of the beam.
 
-    Notes
-    -----
+    Note
+    ----
     The function uses osgeo/gdal functionality to reproject from azimuthal
     equidistant projection to spherical geographical coordinates.
     The earth model for this conversion is therefore spherical.
@@ -437,7 +439,7 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     >>> csite = (9.0, 48.0)
     >>> lon1, lat1, alt1 = polar2lonlatalt_n(r, az, th, csite)
     >>> for x, y, z in zip(lon1, lat1, alt1):
-    ...     print '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z)
+    ...     print( '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z))
     ...
      9.0000, 48.0000,  0.0000
      9.0000, 48.0000,  0.0000
@@ -472,16 +474,16 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4./3.):
     # define the two projections
     # for the radar it's azimuthal equidistant projection
     rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={re:f} ' +
-                       '+b={re:f}').format(lon=sitecoords[0],
-                                        lat=sitecoords[1],
-                                        re=re))
+                        '+b={re:f}').format(lon=sitecoords[0],
+                                            lat=sitecoords[1],
+                                            re=re))
     # for output we'd like to have spherical coordinates
     sph = proj4_to_osr('+proj=latlong +a={re:f} +b={re:f}'.format(re=re))
 
     # projected coordinates such as aeqd must be passed as x,y cartesian
     # coordinates and thus we have to convert the polar ones
-    x = arc * np.cos(np.radians(90-az))
-    y = arc * np.sin(np.radians(90-az))
+    x = arc * np.cos(np.radians(90 - az))
+    y = arc * np.sin(np.radians(90 - az))
 
     # then it's just a matter of invoking reproject
     lon, lat = reproject(x, y, projection_source=rad, projection_target=sph)
@@ -509,8 +511,8 @@ def centroid2polyvert(centroid, delta):
     vertices : array
                an array with 5 vertices per centroid.
 
-    Notes
-    -----
+    Note
+    ----
     The function can currently only deal with 2-D data (If you come up with a
     higher dimensional version of 'clockwise' you're welcome to add it).
     The data is then assumed to be organized within the `centroid` array with
@@ -540,20 +542,20 @@ def centroid2polyvert(centroid, delta):
 
     """
     cent = np.asanyarray(centroid)
-    if (cent.shape[0]==2) and (cent.shape[-1]!=2):
+    if (cent.shape[0] == 2) and (cent.shape[-1] != 2):
         cent = np.transpose(cent)
     assert cent.shape[-1] == 2
-    dshape = [1]*cent.ndim
+    dshape = [1] * cent.ndim
     dshape.insert(-1, 5)
     dshape[-1] = 2
 
-    d = np.array([[-1.,-1.],
-                  [-1.,1.],
+    d = np.array([[-1., -1.],
+                  [-1., 1.],
                   [1., 1.],
-                  [1.,-1.],
-                  [-1.,-1.]]).reshape(tuple(dshape))
+                  [1., -1.],
+                  [-1., -1.]]).reshape(tuple(dshape))
 
-    return np.asanyarray(centroid)[...,None,:] + d * np.asanyarray(delta)
+    return np.asanyarray(centroid)[..., None, :] + d * np.asanyarray(delta)
 
 
 def polar2polyvert(r, az, sitecoords):
@@ -570,7 +572,6 @@ def polar2polyvert(r, az, sitecoords):
 
     Parameters
     ----------
-
     r : array
         array of ranges [m]; r defines the exterior boundaries of the range bins!
         (not the centroids). Thus, values must be positive!
@@ -585,7 +586,8 @@ def polar2polyvert(r, az, sitecoords):
 
     Returns
     -------
-    output : a 3-d array of polygon vertices in lon/lat
+    output : array
+        a 3-d array of polygon vertices in lon/lat
         with shape(num_vertices, num_vertex_nodes, 2). The last dimension
         carries the longitudes on the first position, the latitudes on the
         second (lon: output[:,:,0], lat: output[:,:,1]
@@ -616,28 +618,28 @@ def polar2polyvert(r, az, sitecoords):
     """
     # prepare the range and azimuth array so they describe the boundaries of a bin,
     #   not the centroid
-    r, az = _check_polar_coords(r,az)
-    r = np.insert(r, 0, r[0] - _get_range_resolution(r) )
-    az = az - 0.5*_get_azimuth_resolution(az)
+    r, az = _check_polar_coords(r, az)
+    r = np.insert(r, 0, r[0] - _get_range_resolution(r))
+    az = az - 0.5 * _get_azimuth_resolution(az)
     az = np.append(az, az[0])
-    az = np.where(az<0, az+360., az)
+    az = np.where(az < 0, az + 360., az)
 
     # generate a grid of polar coordinates of bin corners
     r, az = np.meshgrid(r, az)
     # convert polar coordinates to lat/lon
-    lon, lat= polar2lonlat(r, az, sitecoords)
+    lon, lat = polar2lonlat(r, az, sitecoords)
 
-    llc = np.transpose(np.vstack((lon[:-1,:-1].ravel(), lat[:-1,:-1].ravel())))
-    ulc = np.transpose(np.vstack((lon[:-1,1: ].ravel(), lat[:-1,1: ].ravel())))
-    urc = np.transpose(np.vstack((lon[1: ,1: ].ravel(), lat[1: ,1: ].ravel())))
-    lrc = np.transpose(np.vstack((lon[1: ,:-1].ravel(), lat[1: ,:-1].ravel())))
+    llc = np.transpose(np.vstack((lon[:-1, :-1].ravel(), lat[:-1, :-1].ravel())))
+    ulc = np.transpose(np.vstack((lon[:-1, 1:].ravel(), lat[:-1, 1:].ravel())))
+    urc = np.transpose(np.vstack((lon[1:, 1:].ravel(), lat[1:, 1:].ravel())))
+    lrc = np.transpose(np.vstack((lon[1:, :-1].ravel(), lat[1:, :-1].ravel())))
 
-    vertices = np.concatenate((llc, ulc, urc, lrc, llc)).reshape((-1,5,2), order='F')
+    vertices = np.concatenate((llc, ulc, urc, lrc, llc)).reshape((-1, 5, 2), order='F')
 
     return vertices
 
 
-def polar2centroids(r=None, az=None, sitecoords=None, range_res = None):
+def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
     """
     Computes the lat/lon centroids of the radar bins from the polar coordinates.
 
@@ -648,6 +650,8 @@ def polar2centroids(r=None, az=None, sitecoords=None, range_res = None):
 
     For further information refer to the documentation of georef.polar2lonlat.
 
+    Parameters
+    ----------
     r : array
         array of ranges [m]; r defines the exterior boundaries of the range bins!
         (not the centroids). Thus, values must be positive!
@@ -665,11 +669,12 @@ def polar2centroids(r=None, az=None, sitecoords=None, range_res = None):
 
     Returns
     -------
-    output : tuple of 2 arrays which describe the bin centroids
+    output : tuple
+        tuple of 2 arrays which describe the bin centroids
         longitude and latitude
 
-    Notes
-    -----
+    Note
+    ----
     Azimuth angles of 360 deg are internally converted to 0 deg.
 
     """
@@ -680,10 +685,10 @@ def polar2centroids(r=None, az=None, sitecoords=None, range_res = None):
     if range_res:
         r = r - 0.5 * range_res
     else:
-        r = r - 0.5*_get_range_resolution(r)
+        r = r - 0.5 * _get_range_resolution(r)
     # generate a polar grid and convert to lat/lon
     r, az = np.meshgrid(r, az)
-    lon, lat= polar2lonlat(r, az, sitecoords)
+    lon, lat = polar2lonlat(r, az, sitecoords)
 
     return lon, lat
 
@@ -700,40 +705,41 @@ def _check_polar_coords(r, az):
     """
     r = np.array(r, 'f4')
     az = np.array(az, 'f4')
-    az[az==360.] = 0.
+    az[az == 360.] = 0.
     if 0. in r:
-        print('Invalid polar coordinates: 0 is not a valid range gate specification (the centroid of a range gate must be positive).')
+        print(
+            'Invalid polar coordinates: 0 is not a valid range gate specification (the centroid of a range gate must be positive).')
         exit()
-    if len(np.unique(r))!=len(r):
+    if len(np.unique(r)) != len(r):
         print('Invalid polar coordinates: Range gate specification contains duplicate entries.')
         exit()
-    if len(np.unique(az))!=len(az):
+    if len(np.unique(az)) != len(az):
         print('Invalid polar coordinates: Azimuth specification contains duplicate entries.')
         exit()
-    if len(np.unique(az))!=len(az):
+    if len(np.unique(az)) != len(az):
         print('Invalid polar coordinates: Azimuth specification contains duplicate entries.')
         exit()
     if not _is_sorted(r):
         print('Invalid polar coordinates: Range array must be sorted.')
         exit()
-    if len(np.unique(r[1:]-r[:-1]))>1:
+    if len(np.unique(r[1:] - r[:-1])) > 1:
         print('Invalid polar coordinates: Range gates are not equidistant.')
         exit()
-    if len(np.where(az>=360.)[0])>0:
+    if len(np.where(az >= 360.)[0]) > 0:
         print('Invalid polar coordinates: Azimuth angles must not be greater than or equal to 360 deg.')
         exit()
     if not _is_sorted(az):
         # it is ok if the azimuth angle array is not sorted, but it has to be
         #   'continuously clockwise', e.g. it could start at 90° and stop at °89
-        az_right = az[np.where(np.logical_and(az<=360, az>=az[0]))[0]]
-        az_left = az[np.where(az<az[0])]
-        if ( not _is_sorted(az_right) ) or ( not _is_sorted(az_left) ):
+        az_right = az[np.where(np.logical_and(az <= 360, az >= az[0]))[0]]
+        az_left = az[np.where(az < az[0])]
+        if (not _is_sorted(az_right)) or (not _is_sorted(az_left)):
             print('Invalid polar coordinates: Azimuth array is not sorted clockwise.')
             exit()
-    if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1]))>1:
+    if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1])) > 1:
         warnings.warn("The azimuth angles of the current dataset are not equidistant.", UserWarning)
-##        print 'Invalid polar coordinates: Azimuth angles are not equidistant.'
-##        exit()
+    ##        print 'Invalid polar coordinates: Azimuth angles are not equidistant.'
+    ##        exit()
     return r, az
 
 
@@ -741,7 +747,7 @@ def _is_sorted(x):
     """
     Returns True when array x is sorted
     """
-    return np.all(x==np.sort(x))
+    return np.all(x == np.sort(x))
 
 
 def _get_range_resolution(x):
@@ -749,22 +755,23 @@ def _get_range_resolution(x):
     Returns the range resolution based on
     the array x of the range gates' exterior limits
     """
-    if len(x)<=1:
-        print 'The range gate array has to contain at least two values for deriving the resolution.'
+    if len(x) <= 1:
+        print('The range gate array has to contain at least two values for deriving the resolution.')
         exit()
-    res = np.unique(x[1:]-x[:-1])
-    if len(res)>1:
-        print 'The resolution of the range array is ambiguous.'
+    res = np.unique(x[1:] - x[:-1])
+    if len(res) > 1:
+        print('The resolution of the range array is ambiguous.')
         exit()
     return res[0]
+
 
 def _get_azimuth_resolution(x):
     """
     Returns the azimuth resolution based on the array x of the beams' azimuth angles
     """
-    res = np.unique(np.sort(x)[1:]-np.sort(x)[:-1])
-    if len(res)>1:
-        print 'The resolution of the azimuth angle array is ambiguous.'
+    res = np.unique(np.sort(x)[1:] - np.sort(x)[:-1])
+    if len(res) > 1:
+        print('The resolution of the azimuth angle array is ambiguous.')
         exit()
     return res[0]
 
@@ -793,11 +800,12 @@ def create_osr(projname, **kwargs):
     Parameters
     ----------
     projname : string
+        "aeqd" or "dwd-radolan"
     kwargs : depends on projname - see above!
 
     Returns
     -------
-    output : osr spatial reference object
+    output : osr.SpatialReference
         GDAL/OSR object defining projection
     """
 
@@ -829,140 +837,48 @@ def create_osr(projname, **kwargs):
                   'UNIT["m*1000.0", 1000.0],' \
                   'AXIS["X", EAST],' \
                   'AXIS["Y", NORTH]]'
-#                  'AUTHORITY["USER","100000"]]'
+    #                  'AUTHORITY["USER","100000"]]'
 
     proj = osr.SpatialReference()
 
-    if projname=="aeqd":
+    if projname == "aeqd":
         # Azimuthal Equidistant
         if "x_0" in kwargs:
             proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"]))
         else:
             proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0, 0))
 
-    elif projname=="dwd-radolan":
+    elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
-        scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
+        scale = (1. + np.sin(np.radians(60.))) / (1. + np.sin(np.radians(90.)))
         proj.ImportFromWkt(radolan_wkt.format(scale))
 
     else:
-        print "No convenience support for projection %r, yet." % projname
-        print "You need to create projection by using other means..."
+        print("No convenience support for projection %r, yet." % projname)
+        print("You need to create projection by using other means...")
         exit(1)
 
     return proj
 
 
-@wrl.util.deprecated("create_osr")
-def create_projstr(projname, **kwargs):
-    """Conveniently supports the construction of proj.4 projection strings
-
-    Currently, the following projection names (argument *projname*) are supported:
-
-    **"aeqd": Azimuthal Equidistant**
-
-    needs the following keyword arguments: *lat_0* (latitude at projection center),
-    *lon_0* (longitude at projection center), *x_0* (false Easting, also known as x-offset),
-    *y_0* (false Northing, also known as y-offset)
-
-    **"gk" : Gauss-Krueger (for Germany)**
-
-    only needs keyword argument *zone* (number of the Gauss-Krueger strip)
-
-    **"utm" : Universal Transmercator**
-
-    needs keyword arguments *zone* (integer) and optionally *hemisphere* (accepted values: "south", "north")
-    see `Wikipedia entry <http://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system>`_ for UTM zones.
-
-    **"dwd-radolan" : RADOLAN Composite Coordinate System**
-
-    no additional arguments needed.
-
-    Polar stereographic projection used by the German Weather Service (DWD)
-    for all Radar composite products. See the final report on the RADOLAN
-    project (available at http://www.dwd.de/RADOLAN) for details.
+def proj4_to_osr(proj4str):
+    """Transform a proj4 string to an osr spatial reference object
 
     Parameters
     ----------
-    projname : string (proj.4 projection acronym)
-    kwargs : depends on projname - see above!
-
-    Returns
-    -------
-    output : string (a proj.4 projection string)
-
-    Examples
-    --------
-    >>> # Gauss-Krueger 2nd strip
-    >>> print create_projstr("gk", zone=2)
-    +proj=tmerc +lat_0=0 +lon_0=6 +k=1 +x_0=2500000 +y_0=0
-                +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7
-                +units=m +no_defs
-    >>> # UTM zone 51 (northern hemisphere)
-    >>> print create_projstr("utm", zone=51)
-    +proj=utm +zone=51 +ellps=WGS84
-    >>> # UTM zone 51 (southern hemisphere)
-    >>> print create_projstr("utm", zone=51, hemisphere="south")
-    +proj=utm +zone=51 +ellps=WGS84 +south
-
+    proj4str : string
+        Proj4 string describing projection
     """
-    if projname=="aeqd":
-        # Azimuthal Equidistant
-        if "x_0" in kwargs:
-            projstr = """+proj=aeqd  +lat_0=%f +lon_0=%f +x_0=%f +y_0=%f""" \
-                  % (kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"])
-        else:
-            projstr = """+proj=aeqd  +lat_0=%f +lon_0=%f""" \
-                  % (kwargs["lat_0"], kwargs["lon_0"])
-    elif projname=="gk":
-        # Gauss-Krueger
-        if kwargs.has_key("zone"):
-            projstr = """+proj=tmerc +lat_0=0 +lon_0=%d +k=1 +x_0=%d +y_0=0
-            +ellps=bessel +towgs84=598.1,73.7,418.2,0.202,0.045,-2.455,6.7
-            +units=m +no_defs""" % (kwargs["zone"]*3,
-                                    kwargs["zone"] * 1000000 + 500000)
-    elif projname=="utm":
-        # Universal Transmercator
-        if kwargs.has_key("hemisphere"):
-            if kwargs["hemisphere"]=="south":
-                hemisphere = " +south"
-            elif kwargs["hemisphere"]=="north":
-                hemisphere = ""
-            else:
-                print "Value %s for keyword argument hemisphere in function create_projstr is not valid. Value must be either north or south!" % kwargs["hemisphere"]
-                exit(1)
-        else:
-            hemisphere = ""
-        try:
-            projstr = "+proj=utm +zone=%d +ellps=WGS84%s" % (kwargs["zone"], hemisphere)
-        except:
-            print "Cannot create projection string for projname %s. Maybe keyword argument zone was not passed?" % projname
-            exit(1)
-
-    elif projname=="dwd-radolan":
-        # DWD-RADOLAN polar stereographic projection
-        scale = (1.+np.sin(np.radians(60.)))/(1.+np.sin(np.radians(90.)))
-        projstr = ('+proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 +k={0:10.8f} '
-                   '+x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs').format(scale)
-    else:
-        print "No support for projection %r, yet." % projname
-        print "You need to create projection string by hand..."
-        exit(1)
-    return projstr
-
-
-def proj4_to_osr(proj4str):
-    """Transform a proj4 string to an osr spatial reference object"""
+    proj = None
     if proj4str:
         proj = osr.SpatialReference()
         proj.ImportFromProj4(proj4str)
     else:
         proj = get_default_projection()
-    return(proj)
+    return proj
 
 
-@wrl.util.apichange_kwarg("0.6.0", "projstr", typ=str, expar="proj", exfunc=proj4_to_osr)
-def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = None):
+def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res=None):
     """
     Convenience function to compute projected bin coordinates directly from
     radar site coordinates and range/azimuth specs
@@ -982,27 +898,28 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, proj, range_res = Non
         The first angle can start at any values, but make sure the array is sorted
         continuously positively clockwise and the angles are equidistant. An angle
         if 0 degree is pointing north.
-    proj : osr spatial reference object
+    proj : osr.SpatialReference
         GDAL OSR Spatial Reference Object describing projection
 
         .. versionadded:: 0.6.0
            using osr objects instead of PROJ.4 strings
-
     range_res : float
         range resolution of radar measurement [m] in case it cannot be derived
         from r (single entry in r-array)
 
     """
-    cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res = range_res)
-    x, y = reproject(cent_lon, cent_lat, projection_target = proj)
+    cent_lon, cent_lat = polar2centroids(r, az, sitecoords, range_res=range_res)
+    x, y = reproject(cent_lon, cent_lat, projection_target=proj)
     return x.ravel(), y.ravel()
 
 
-def get_earth_radius(latitude, sr= None):
-    """
+def get_earth_radius(latitude, sr=None):
+    r"""
     Get the radius of the Earth (in km) for a given Spheroid model (sr) at a given position
 
-    R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 ).
+    .. math::
+
+        R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 )
 
     Parameters
     ----------
@@ -1022,11 +939,14 @@ def get_earth_radius(latitude, sr= None):
     RADIUS_E = sr.GetSemiMajor()
     RADIUS_P = sr.GetSemiMinor()
     latitude = np.radians(latitude)
-    radius = np.sqrt((np.power(RADIUS_E,4) * np.power(np.cos(latitude),2) + np.power(RADIUS_P,4) * np.power(np.sin(latitude),2) ) / ( np.power(RADIUS_E,2) * np.power(np.cos(latitude),2) +  np.power(RADIUS_P,2) * np.power(np.sin(latitude),2) ))
-    return(radius)
+    radius = np.sqrt((np.power(RADIUS_E, 4) * np.power(np.cos(latitude), 2) + np.power(RADIUS_P, 4) * np.power(
+        np.sin(latitude), 2)) / (
+                     np.power(RADIUS_E, 2) * np.power(np.cos(latitude), 2) + np.power(RADIUS_P, 2) * np.power(
+                         np.sin(latitude), 2)))
+    return (radius)
 
 
-def pixel_coordinates(nx,ny,mode="centers"):
+def pixel_coordinates(nx, ny, mode="centers"):
     """Get pixel coordinates from a regular grid with dimension nx by ny.
 
     Parameters
@@ -1046,33 +966,34 @@ def pixel_coordinates(nx,ny,mode="centers"):
     """
     if mode == "centroids":
         mode = "centers"
-    x = np.linspace(0,nx,num=nx+1)
-    y = np.linspace(0,ny,num=ny+1)
-    if  mode == "centers":
+    x = np.linspace(0, nx, num=nx + 1)
+    y = np.linspace(0, ny, num=ny + 1)
+    if mode == "centers":
         x = x + 0.5
         y = y + 0.5
-        x = np.delete(x,-1)
-        y = np.delete(y,-1)
-    X,Y = np.meshgrid(x,y)
+        x = np.delete(x, -1)
+        y = np.delete(y, -1)
+    X, Y = np.meshgrid(x, y)
     coordinates = np.empty(X.shape + (2,))
-    coordinates[:,:,0] = X
-    coordinates[:,:,1] = Y
+    coordinates[:, :, 0] = X
+    coordinates[:, :, 1] = Y
     return (coordinates)
 
 
-def pixel_to_map(geotransform,coordinates):
+def pixel_to_map(geotransform, coordinates):
     """Apply a geographical transformation to return map coordinates from pixel coordinates.
 
     Parameters
     ----------
     geotransform : np array
         geographical transformation vector:
-            geotransform[0] = East/West location of Upper Left corner
-            geotransform[1] = X pixel size
-            geotransform[2] = X pixel rotation
-            geotransform[3] = North/South location of Upper Left corner
-            geotransform[4] = Y pixel rotation
-            geotransform[5] = Y pixel size
+
+            - geotransform[0] = East/West location of Upper Left corner
+            - geotransform[1] = X pixel size
+            - geotransform[2] = X pixel rotation
+            - geotransform[3] = North/South location of Upper Left corner
+            - geotransform[4] = Y pixel rotation
+            - geotransform[5] = Y pixel size
     coordinates : 2d array
         array of pixel coordinates
 
@@ -1082,9 +1003,11 @@ def pixel_to_map(geotransform,coordinates):
         3d array with map coordinates x,y
     """
     coordinates_map = np.empty(coordinates.shape)
-    coordinates_map[...,0] = geotransform[0] + geotransform[1] * coordinates[...,0] + geotransform[2] * coordinates[...,1]
-    coordinates_map[...,1] = geotransform[3] + geotransform[4] * coordinates[...,0] + geotransform[5] * coordinates[...,1]
-    return(coordinates_map)
+    coordinates_map[..., 0] = geotransform[0] + geotransform[1] * coordinates[..., 0] + geotransform[2] * coordinates[
+        ..., 1]
+    coordinates_map[..., 1] = geotransform[3] + geotransform[4] * coordinates[..., 0] + geotransform[5] * coordinates[
+        ..., 1]
+    return (coordinates_map)
 
 
 def pixel_to_map3d(geotransform, coordinates, z=None):
@@ -1109,17 +1032,17 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
     """
 
     coordinates_map = np.empty(coordinates.shape[:-1] + (3,))
-    coordinates_map[...,0:2] = pixel_to_map(geotransform, coordinates)
-    coordinates_map[...,2] = np.zeros(coordinates.shape[:-1])
-    return(coordinates_map)
+    coordinates_map[..., 0:2] = pixel_to_map(geotransform, coordinates)
+    coordinates_map[..., 2] = np.zeros(coordinates.shape[:-1])
+    return (coordinates_map)
 
 
-def read_gdal_coordinates(dataset,mode='centers',z=True):
+def read_gdal_coordinates(dataset, mode='centers', z=True):
     """Get the projected coordinates from a GDAL dataset.
 
     Parameters
     ----------
-    dataset : gdal object
+    dataset : gdal.Dataset
         raster image with georeferencing
     mode : string
         either 'centers' or 'borders'
@@ -1131,13 +1054,13 @@ def read_gdal_coordinates(dataset,mode='centers',z=True):
     coordinates : 3D np array
         projected coordinates (x,y,z)
     """
-    coordinates_pixel = pixel_coordinates(dataset.RasterXSize,dataset.RasterYSize,mode)
+    coordinates_pixel = pixel_coordinates(dataset.RasterXSize, dataset.RasterYSize, mode)
     geotransform = dataset.GetGeoTransform()
     if z:
-        coordinates = pixel_to_map3d(geotransform,coordinates_pixel)
+        coordinates = pixel_to_map3d(geotransform, coordinates_pixel)
     else:
-        coordinates = pixel_to_map(geotransform,coordinates_pixel)
-    return(coordinates)
+        coordinates = pixel_to_map(geotransform, coordinates_pixel)
+    return (coordinates)
 
 
 def read_gdal_projection(dset):
@@ -1145,21 +1068,21 @@ def read_gdal_projection(dset):
 
     Parameters
     ----------
-    dset : gdal dataset object
+    dset : gdal.Dataset
 
     Returns
     -------
-    srs : OSR object
-        dataset projection
+    srs : OSR.SpatialReference
+        dataset projection object
     """
     proj4 = dset.GetProjection()
     srs = osr.SpatialReference()
     srs.ImportFromProj4(proj4)
     src = None
-    return(srs)
+    return srs
 
 
-def read_gdal_values(data=None,nodata=False):
+def read_gdal_values(data=None, nodata=False):
     """Read values from a gdal object.
 
     Parameters
@@ -1179,8 +1102,9 @@ def read_gdal_values(data=None,nodata=False):
     if nodata:
         nodata = b1.GetNoDataValue()
         values = values.astype('float')
-        values[values==nodata] = np.nan
-    return(values)
+        values[values == nodata] = np.nan
+    return (values)
+
 
 def reproject(*args, **kwargs):
     """Transform coordinates from a source projection to a target projection.
@@ -1196,7 +1120,6 @@ def reproject(*args, **kwargs):
 
     Parameters
     ----------
-
     C : multidimensional np array
         array of shape (...,2) or (...,3) with coordinates (x,y) or (x,y,z)
         respectively
@@ -1207,9 +1130,12 @@ def reproject(*args, **kwargs):
     Z : nd array
         array of z coordinates
 
-    Keyword arguments:
-    projection_source : osr object (defaults to EPSG(4326)
-    projection_target : osr object (defaults to EPSG(4326)
+    Keyword Arguments
+    -----------------
+    projection_source : osr object
+        defaults to EPSG(4326)
+    projection_target : osr object
+        defaults to EPSG(4326)
 
     Returns
     -------
@@ -1223,9 +1149,9 @@ def reproject(*args, **kwargs):
     """
     if len(args) == 1:
         C = np.asanyarray(args[0])
-        cshape =  C.shape
+        cshape = C.shape
         numCols = C.shape[-1]
-        C = C.reshape(-1,numCols)
+        C = C.reshape(-1, numCols)
         if numCols < 2 or numCols > 3:
             raise TypeError('Input Array column mismatch to %s' % ('reproject'))
     else:
@@ -1248,42 +1174,43 @@ def reproject(*args, **kwargs):
         if 'Z' in locals():
             if xshape != zshape:
                 raise TypeError('Incompatible Z input to %s' % ('reproject'))
-            C = np.concatenate([X.ravel()[:,None],
-                                Y.ravel()[:,None],
-                                Z.ravel()[:,None]], axis=1)
+            C = np.concatenate([X.ravel()[:, None],
+                                Y.ravel()[:, None],
+                                Z.ravel()[:, None]], axis=1)
         else:
-            C = np.concatenate([X.ravel()[:,None],
-                                Y.ravel()[:,None]], axis=1)
+            C = np.concatenate([X.ravel()[:, None],
+                                Y.ravel()[:, None]], axis=1)
 
     projection_source = kwargs.get('projection_source', get_default_projection())
     projection_target = kwargs.get('projection_target', get_default_projection())
 
-    ct = osr.CoordinateTransformation(projection_source,projection_target)
+    ct = osr.CoordinateTransformation(projection_source, projection_target)
     trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
         # here we could do this one
-        #return(np.array(ct.TransformPoints(C))[...,0:numCols]))
+        # return(np.array(ct.TransformPoints(C))[...,0:numCols]))
         # or this one
-        trans = trans[:,0:numCols].reshape(cshape)
+        trans = trans[:, 0:numCols].reshape(cshape)
         return trans
     else:
-        X = trans[:,0].reshape(xshape)
-        Y = trans[:,1].reshape(yshape)
+        X = trans[:, 0].reshape(xshape)
+        Y = trans[:, 1].reshape(yshape)
         if len(args) == 2:
             return X, Y
         if len(args) == 3:
-            Z = trans[:,2].reshape(zshape)
+            Z = trans[:, 2].reshape(zshape)
             return X, Y, Z
+
 
 def get_default_projection():
     """Create a default projection object (wgs84)"""
     proj = osr.SpatialReference()
     proj.ImportFromEPSG(4326)
-    return(proj)
+    return proj
 
 
-def sweep_centroids(nrays,rscale,nbins,elangle):
+def sweep_centroids(nrays, rscale, nbins, elangle):
     """Construct sweep centroids native coordinates.
 
     Parameters
@@ -1302,14 +1229,14 @@ def sweep_centroids(nrays,rscale,nbins,elangle):
     coordinates : 3d array
         array of shape (nrays,nbins,3) containing native centroid radar coordinates (slant range, azimuth, elevation)
     """
-    ascale = np.pi/nrays
-    azimuths = ascale/2 + np.linspace(0,2*np.pi,nrays,endpoint=False)
-    ranges = np.arange(nbins)*rscale + rscale/2
-    coordinates = np.empty((nrays,nbins,3),dtype=float)
-    coordinates[:,:,0] = np.tile(ranges,(nrays,1))
-    coordinates[:,:,1] = np.transpose(np.tile(azimuths,(nbins,1)))
-    coordinates[:,:,2] = elangle
-    return(coordinates)
+    ascale = np.pi / nrays
+    azimuths = ascale / 2. + np.linspace(0, 2 * np.pi, nrays, endpoint=False)
+    ranges = np.arange(nbins) * rscale + rscale / 2.
+    coordinates = np.empty((nrays, nbins, 3), dtype=float)
+    coordinates[:, :, 0] = np.tile(ranges, (nrays, 1))
+    coordinates[:, :, 1] = np.transpose(np.tile(azimuths, (nbins, 1)))
+    coordinates[:, :, 2] = elangle
+    return coordinates
 
 
 def epsg_to_osr(epsg):
@@ -1324,17 +1251,16 @@ def epsg_to_osr(epsg):
 
     Returns
     -------
-    proj : osr spatial reference object
+    proj : osr.SpatialReference
         GDAL/OSR object defining projection
-
-
     """
+    proj = None
     if epsg:
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(epsg)
     else:
         proj = get_default_projection()
-    return(proj)
+    return proj
 
 
 def wkt_to_osr(wkt):
@@ -1349,16 +1275,17 @@ def wkt_to_osr(wkt):
 
     Returns
     -------
-    proj : osr spatial reference object
+    proj : osr.SpatialReference
         GDAL/OSR object defining projection
 
     """
+    proj = None
     if wkt:
         proj = osr.SpatialReference()
         proj.ImportFromWkt(wkt)
     else:
         proj = get_default_projection()
-    return(proj)
+    return proj
 
 
 def get_radolan_coords(lon, lat, trig=False):
@@ -1487,7 +1414,6 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     Raises
     ------
         TypeError, ValueError
-
     """
 
     # setup default parameters in dicts
@@ -1500,7 +1426,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
             raise TypeError("wradlib.georef: Parameter *nrows* and *ncols* not integer")
-        if (nrows, ncols) not in griddefs.iterkeys():
+        if (nrows, ncols) not in griddefs.keys():
             raise ValueError("wradlib.georef: Parameter *nrows* and *ncols* mismatch.")
     else:
         # fallback for call without parameters
@@ -1525,14 +1451,14 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
 
         if trig:
             # inverse projection
-            lon0 = 10.   # central meridian of projection
-            lat0 = 60.   # standard parallel of projection
+            lon0 = 10.  # central meridian of projection
+            lat0 = 60.  # standard parallel of projection
 
             sinlat0 = np.sin(np.radians(lat0))
 
-            fac = (6370.040**2.) * ((1.+sinlat0) ** 2.)
-            lon = np.degrees(np.arctan((-x/y))) + lon0
-            lat = np.degrees(np.arcsin((fac - (x**2. + y**2.))/(fac + (x**2. + y**2.))))
+            fac = (6370.040 ** 2.) * ((1. + sinlat0) ** 2.)
+            lon = np.degrees(np.arctan((-x / y))) + lon0
+            lat = np.degrees(np.arcsin((fac - (x ** 2. + y ** 2.)) / (fac + (x ** 2. + y ** 2.))))
             radolan_grid = np.dstack((lon, lat))
         else:
             # create radolan projection osr object
@@ -1557,20 +1483,24 @@ def resample_raster_dataset(src_ds, **kwargs):
 
     Parameters
     ----------
-    src_ds : gdal object
+    src_ds : gdal.Dataset
         raster image with georeferencing (GeoTransform at least)
-    spacing : float or tuple of two floats
+    spacing : float
+        float or tuple of two floats
         pixel spacing of resampled dataset, same unit as pixel coordinates
-    size : tuple of two ints
+    size : int
+        tuple of two ints
         X/YRasterSize of resampled dataset
-    resample : GDALResampleAlg, defaults to GRA_Bilinear
+    resample : GDALResampleAlg
+        defaults to GRA_Bilinear
         GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2, GRA_CubicSpline = 3,
         GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6, GRA_Max = 8,
         GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
 
     Returns
     -------
-    dst_ds : resampled raster dataset
+    dst_ds : gdal.Dataset
+        resampled raster dataset
     """
 
     # checking kwargs
@@ -1590,8 +1520,8 @@ def resample_raster_dataset(src_ds, **kwargs):
         except TypeError:
             x_ps = spacing
             y_ps = spacing
-        cols = int( (x_size * src_geo[1]) / x_ps )
-        rows = int( (y_size * abs(src_geo[5])) / y_ps)
+        cols = int((x_size * src_geo[1]) / x_ps)
+        rows = int((y_size * abs(src_geo[5])) / y_ps)
     elif size:
         cols, rows = size
         x_ps = x_size * src_geo[1] / cols
@@ -1627,7 +1557,7 @@ def get_shape_points(geom):
 
     Parameters
     ----------
-    geom : gdal ogr geometry object
+    geom : ogr.Geometry
 
     Returns
     -------
@@ -1662,13 +1592,13 @@ def transform_geometry(geom, dest_srs):
 
     Parameters
     ----------
-    geom : gdal ogr geometry object
-    dest_srs: gdal osr spatial reference object
+    geom : ogr.geometry
+    dest_srs: osr.SpatialReference
         Destination Projection
 
     Returns
     -------
-    geom : gdal ogr geometry object
+    geom : ogr.Geometry
         Transformed Geometry
     """
 
@@ -1694,11 +1624,11 @@ def get_shape_coordinates(layer, **kwargs):
 
     Parameters
     ----------
-    layer : gdal ogr layer object
+    layer : ogr.Layer
 
     Keywords
     --------
-    dest_srs: gdal osr spatial reference object
+    dest_srs: osr.SpatialReference
         Destination Projection
     key : string
         attribute key to extract from layer feature
@@ -1708,10 +1638,11 @@ def get_shape_coordinates(layer, **kwargs):
     shp : nested ndarray
         Dimension of subarrays Nx2
         extracted shape coordinate points
-    attrs : List of attributes extracted from features
+    attrs : list
+        List of attributes extracted from features
     """
 
-    shp =  []
+    shp = []
 
     dest_srs = kwargs.get('dest_srs', None)
     key = kwargs.get('key', None)
@@ -1727,7 +1658,7 @@ def get_shape_coordinates(layer, **kwargs):
                 attrs.append(feature[key])
             geom = feature.GetGeometryRef()
             if dest_srs:
-                transform_geometry(geom,dest_srs)
+                transform_geometry(geom, dest_srs)
             # get list of xy-coordinates
             reslist = list(get_shape_points(geom))
             shp.append(np.squeeze(np.array(reslist)))
@@ -1737,13 +1668,12 @@ def get_shape_coordinates(layer, **kwargs):
     return shp, attrs
 
 
-
 def _doctest_():
     import doctest
-    print 'doctesting'
+    print('doctesting')
     doctest.testmod()
-    print 'finished'
+    print('finished')
 
 
 if __name__ == '__main__':
-    print 'wradlib: Calling module <georef> as main...'
+    print('wradlib: Calling module <georef> as main...')
