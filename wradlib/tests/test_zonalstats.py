@@ -39,8 +39,8 @@ class DataSourceTest(unittest.TestCase):
         self.values2 = np.array([47.11, 15.08])
 
     def test__check_src(self):
-        self.assertEqual(len(zonalstats.DataSource('../../examples/data/agger/agger_merge.shp').data), 13)
-        self.assertRaises(OSError, lambda: zonalstats.DataSource('test_zonalstats.py'))
+        self.assertEqual(len(zonalstats.DataSource('examples/data/agger/agger_merge.shp').data), 13)
+        self.assertRaises(IOError, lambda: zonalstats.DataSource('test_zonalstats.py'))
 
     def test_data(self):
         self.assertTrue(np.allclose(self.ds.data, self.data))
@@ -83,7 +83,7 @@ class DataSourceTest(unittest.TestCase):
     def test_dump_raster(self):
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
-        test = zonalstats.DataSource('../../examples/data/agger/agger_merge.shp', proj)
+        test = zonalstats.DataSource('examples/data/agger/agger_merge.shp', proj)
         self.assertRaises(AttributeError, test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF', pixel_size=100.))
 
 
@@ -226,7 +226,7 @@ class ZonalStatsUtilTest(unittest.TestCase):
         del ds
         ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, gdal.GDT_Float32, remove=True)
         self.assertTrue(isinstance(ds, gdal.Dataset))
-        self.assertRaises(OSError, lambda: zonalstats.gdal_create_dataset('GXF', 'test.gxf', 100, 100, gdal.GDT_Float32))
+        self.assertRaises(IOError, lambda: zonalstats.gdal_create_dataset('GXF', 'test.gxf', 100, 100, gdal.GDT_Float32))
 
     def test_ogr_create_datasource(self):
         ds = zonalstats.ogr_create_datasource('Memory', 'test')
