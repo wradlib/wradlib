@@ -223,7 +223,10 @@ class ZonalStatsUtilTest(unittest.TestCase):
 
     def test_gdal_create_dataset(self):
         ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, gdal.GDT_Float32)
+        del ds
+        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, gdal.GDT_Float32, remove=True)
         self.assertTrue(isinstance(ds, gdal.Dataset))
+        self.assertRaises(OSError, lambda: zonalstats.gdal_create_dataset('GXF', 'test.gxf', 100, 100, gdal.GDT_Float32))
 
     def test_ogr_create_datasource(self):
         ds = zonalstats.ogr_create_datasource('Memory', 'test')
