@@ -1239,7 +1239,7 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
     return coordinates
 
 
-def epsg_to_osr(epsg):
+def epsg_to_osr(epsg=None):
     """Create osr spatial reference object from EPSG number
 
     .. versionadded:: 0.6.0
@@ -1263,7 +1263,7 @@ def epsg_to_osr(epsg):
     return proj
 
 
-def wkt_to_osr(wkt):
+def wkt_to_osr(wkt=None):
     """Create osr spatial reference object from WKT string
 
     .. versionadded:: 0.6.0

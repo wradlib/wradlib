@@ -50,7 +50,6 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertEqual(georef._latscale(), 111178.17148373958)
 
     def test__lonscale(self):
-        print(georef._lonscale(np.arange(-90., 90., 10.)))
         self.assertTrue(np.allclose(georef._lonscale(np.arange(-90., 90., 10.)),
                                     np.array([6.80769959e-12, 1.93058869e+04, 3.80251741e+04, 5.55890857e+04,
                                               7.14639511e+04, 8.51674205e+04, 9.62831209e+04, 1.04473307e+05,
@@ -126,25 +125,88 @@ class CoordinateHelperTest(unittest.TestCase):
                                                      [47.99992237, 47.9999208]])))))
 
     def test_sweep_centroids(self):
-        pass
+        self.assertTrue(np.allclose(georef.sweep_centroids(1,100.,1,2.0),
+                                    np.array([[[50., 1.57079633, 2.]]])))
 
 
 class ProjectionsTest(unittest.TestCase):
-
     def test_create_osr(self):
-        pass
+        self.maxDiff = None
+        radolan_wkt = 'PROJCS["Radolan projection",' \
+                  'GEOGCS["Radolan Coordinate System",' \
+                  'DATUM["Radolan Kugel",' \
+                  'SPHEROID["Erdkugel",6370040.0,0.0]],' \
+                  'PRIMEM["Greenwich",0.0,AUTHORITY["EPSG","8901"]],' \
+                  'UNIT["degree",0.017453292519943295],' \
+                  'AXIS["Longitude",EAST],' \
+                  'AXIS["Latitude",NORTH]],' \
+                  'PROJECTION["polar_stereographic"],' \
+                  'PARAMETER["central_meridian",10.0],' \
+                  'PARAMETER["latitude_of_origin",60.0],' \
+                  'PARAMETER["scale_factor",{0:8.10f}],' \
+                  'PARAMETER["false_easting",0.0],' \
+                  'PARAMETER["false_northing",0.0],' \
+                  'UNIT["m*1000.0",1000.0],' \
+                  'AXIS["X",EAST],' \
+                  'AXIS["Y",NORTH]]'.format((1. + np.sin(np.radians(60.))) / (1. + np.sin(np.radians(90.))))
+        self.assertEqual(georef.create_osr('dwd-radolan').ExportToWkt(), radolan_wkt)
+
     def test_proj4_to_osr(self):
-        pass
+        srs = georef.proj4_to_osr('+proj=lcc +lat_1=46.8 +lat_0=46.8 +lon_0=0 +k_0=0.99987742 +x_0=600000 +y_0=2200000 +a=6378249.2 +b=6356515 +towgs84=-168,-60,320,0,0,0,0 +pm=paris +units=m +no_defs' )
+        p4 = srs.ExportToProj4()
+        srs2 = osr.SpatialReference()
+        srs2.ImportFromProj4(p4)
+        self.assertTrue(srs.IsSame(srs2))
+
     def test_get_earth_radius(self):
-        pass
+        self.assertEqual(georef.get_earth_radius(50.), 6365631.51753728)
+
     def test_reproject(self):
-        pass
+        proj_gk = osr.SpatialReference()
+        proj_gk.ImportFromEPSG(31466)
+        proj_wgs84 = osr.SpatialReference()
+        proj_wgs84.ImportFromEPSG(4326)
+        x, y = georef.reproject(7., 53., projection_source=proj_wgs84, projection_target=proj_gk)
+        lon, lat = georef.reproject(x, y, projection_source=proj_gk, projection_target=proj_wgs84)
+        self.assertAlmostEqual(lon, 7.0)
+        self.assertAlmostEqual(lat, 53.0)
+
     def test_get_default_projection(self):
-        pass
+        self.assertEqual(georef.get_default_projection().ExportToWkt(),
+                      'GEOGCS["WGS 84",DATUM["WGS_1984",'
+                      'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                      'AUTHORITY["EPSG","6326"]],'
+                      'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                      'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                      'AUTHORITY["EPSG","4326"]]')
+
     def test_epsg_to_osr(self):
-        pass
+        self.assertEqual(georef.epsg_to_osr(4326).ExportToWkt(),
+                      'GEOGCS["WGS 84",DATUM["WGS_1984",'
+                      'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                      'AUTHORITY["EPSG","6326"]],'
+                      'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                      'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                      'AUTHORITY["EPSG","4326"]]')
+
+        self.assertEqual(georef.epsg_to_osr().ExportToWkt(),
+                      'GEOGCS["WGS 84",DATUM["WGS_1984",'
+                      'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                      'AUTHORITY["EPSG","6326"]],'
+                      'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                      'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                      'AUTHORITY["EPSG","4326"]]')
+
+
     def test_wkt_to_osr(self):
-        pass
+        self.assertTrue(georef.wkt_to_osr('GEOGCS["WGS 84",DATUM["WGS_1984",'
+                                           'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                                           'AUTHORITY["EPSG","6326"]],'
+                                           'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                                           'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                                           'AUTHORITY["EPSG","4326"]]').IsSame(georef.get_default_projection()))
+
+        self.assertTrue(georef.wkt_to_osr().IsSame(georef.get_default_projection()))
 
 
 class PixMapTest(unittest.TestCase):
@@ -218,7 +280,9 @@ class GetGridsTest(unittest.TestCase):
         self.assertEqual((900, 900, 2), radolan_grid_xy.shape)
 
     def test_radolan_coords(self):
-        pass
+        x, y = georef.get_radolan_coords(7.0, 53.0)
+        self.assertEqual(x, -208.15159184860158)
+        self.assertEqual(y, -3971.7689758313813)
 
 
 if __name__ == '__main__':
