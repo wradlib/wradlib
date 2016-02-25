@@ -16,6 +16,25 @@ import numpy as np
 from osgeo import osr
 
 
+class CoordinateTransformTest(unittest.TestCase):
+    def test_hor2aeq(self):
+        pass
+    def test_aeq2hor(self):
+        pass
+    def test_polar2lonlat(self):
+        pass
+    def test___pol2lonlat(self):
+        pass
+    def test_polar2lonlatalt(self):
+        pass
+    def test__latscale(self):
+        pass
+    def test__lonscale(self):
+        pass
+    def test_polar2lonlatalt_n(self):
+        pass
+
+
 class GetGridsTest(unittest.TestCase):
     def setUp(self):
         # calculate xy and lonlat grids with georef function
