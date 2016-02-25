@@ -11,6 +11,8 @@
 # -------------------------------------------------------------------------------
 
 import unittest
+import tempfile
+
 import wradlib.georef as georef
 import wradlib.zonalstats as zonalstats
 import wradlib.util as util
@@ -35,6 +37,10 @@ class DataSourceTest(unittest.TestCase):
 
         self.values1 = np.array([47.11, 47.11])
         self.values2 = np.array([47.11, 15.08])
+
+    def test__check_src(self):
+        self.assertEqual(len(zonalstats.DataSource('../../examples/data/agger/agger_merge.shp').data), 13)
+        self.assertRaises(OSError, lambda: zonalstats.DataSource('test_zonalstats.py'))
 
     def test_data(self):
         self.assertTrue(np.allclose(self.ds.data, self.data))
@@ -70,6 +76,16 @@ class DataSourceTest(unittest.TestCase):
         self.ds.set_attribute('test', self.values2)
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 0)), self.values2[0])
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 1)), self.values2[1])
+
+    def test_dump_vector(self):
+        self.ds.dump_vector(tempfile.NamedTemporaryFile(mode='w+b').name)
+
+    def test_dump_raster(self):
+        proj = osr.SpatialReference()
+        proj.ImportFromEPSG(31466)
+        test = zonalstats.DataSource('../../examples/data/agger/agger_merge.shp', proj)
+        self.assertRaises(AttributeError, test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF', pixel_size=100.))
+
 
 @unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
 class ZonalDataTest(unittest.TestCase):
@@ -130,9 +146,9 @@ class ZonalDataTest(unittest.TestCase):
         self.radar_gk = self.radar_gk[mask]
 
         self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data, srs=self.proj_gk)
-        #self.zdpoly.dump_vector('test_zdpoly')
+        # self.zdpoly.dump_vector('test_zdpoly')
         self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data, srs=self.proj_gk)
-        #self.zdpoint.dump_vector('test_zdpoint')
+        # self.zdpoint.dump_vector('test_zdpoint')
 
         isec_poly0 = np.array([np.array([[2600000., 5630000.],
                                          [2600000., 5630057.83273596],
