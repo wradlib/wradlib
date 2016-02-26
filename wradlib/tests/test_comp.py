@@ -12,8 +12,7 @@
 
 import unittest
 
-import wradlib.vpr as vpr
-import wradlib.georef as georef
+import wradlib.comp as comp
 import numpy as np
 
 class ComposeTest(unittest.TestCase):
