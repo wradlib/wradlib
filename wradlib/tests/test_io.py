@@ -54,7 +54,6 @@ class HDF5Test(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile()
         wrl.io.to_hdf5(tmp.name, arr, metadata=metadata)
         res, resmeta = wrl.io.from_hdf5(tmp.name)
-        print(res)
         self.assertTrue(np.allclose(arr, res))
         self.assertDictEqual(metadata, resmeta)
 
