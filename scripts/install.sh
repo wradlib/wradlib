@@ -13,9 +13,9 @@ conda create -n wradlib --yes pip python=$PYTHON_VERSION
 source activate wradlib
 
 # Install wradlib dependencies
-conda install --yes numpy scipy matplotlib netcdf4 proj4
+conda install -c https://conda.anaconda.org/anaconda --yes numpy scipy matplotlib netcdf4 proj4
 
-conda install --yes sphinx gdal numpydoc h5py geos
+conda install -c https://conda.anaconda.org/anaconda --yes sphinx gdal numpydoc h5py geos
 ls -lart /home/travis/miniconda2/envs/wradlib/share/gdal
 conda install --yes sphinx_rtd_theme
 pip install sphinxcontrib-bibtex
