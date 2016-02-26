@@ -56,9 +56,9 @@ class PolarPlotTest(unittest.TestCase):
         pl.figure()
         ax, pm = vis.plot_rhi(self.img[0:90,:], refrac=False)
         pl.figure()
-        ax, pm = vis.plot_rhi(self.img[0:90,:], autoext=True)
+        ax, pm = vis.plot_rhi(self.img[0:90,:], autoext=False)
         pl.figure()
-        ax, pm = vis.plot_rhi(self.img[0:90,:], r=np.arange(10), th=np.arange(90), autoext=True)
+        ax, pm = vis.plot_rhi(self.img[0:90,:], r=np.arange(10), th=np.arange(90))
 
     def test_plot_cg_ppi(self):
         cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, elev=2.0)
@@ -69,7 +69,7 @@ class PolarPlotTest(unittest.TestCase):
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90,:])
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90,:], th_res=0.5)
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90,:], refrac=False)
-        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90,:], autoext=True)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90,:], autoext=False)
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90,:], r=np.arange(10), th=np.arange(90), autoext=True)
 
     def test_plot_scan_strategy(self):
@@ -78,6 +78,8 @@ class PolarPlotTest(unittest.TestCase):
         elevs = np.arange(1, 30, 3)
         site = (7.0, 53.0)
         vis.plot_scan_strategy(ranges, elevs, site)
+        pl.figure()
+        ax = vis.plot_scan_strategy(ranges, elevs, site, ax=pl.gca())
 
 
 class MiscPlotTest(unittest.TestCase):
