@@ -227,8 +227,8 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
     # Make really sure L is an integer
     L = int(L)
     kdp = np.zeros(phidp.shape)
-    for r in range(L / 2, phidp.shape[-1] - L / 2):
-        kdp[..., r] = (phidp[..., r + L / 2] - phidp[..., r - L / 2]) / (L - 1)
+    for r in range(int(L / 2), phidp.shape[-1] - int(L / 2)):
+        kdp[..., r] = (phidp[..., r + int(L / 2)] - phidp[..., r - int(L / 2)]) / (L - 1)
     return kdp / 2. / dr
 
 
@@ -507,7 +507,7 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
         nangates = np.where(invalidkdp[beam] & nvalid)[0]
         # now iterate over those
         for r in nangates:
-            ix = np.arange(max(0, r - L / 2), min(r + L / 2 + 1, shape[-1]))
+            ix = np.arange(max(0, r - int(L / 2)), min(r + int(L / 2) + 1, shape[-1]))
             # check again (just to make sure...)
             if np.sum(validphidp[beam, ix]) < L / 2:
                 # not enough valid values inside our window
