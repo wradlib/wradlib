@@ -11,11 +11,17 @@ from collections import OrderedDict
 
 class IOTest(unittest.TestCase):
     # testing functions related to readDX
-    def test_getTimestampFromFilename(self):
-        pass
+    def test__getTimestampFromFilename(self):
+        filename = 'raa00-dx_10488-200608050000-drs---bin'
+        self.assertEqual(wrl.io._getTimestampFromFilename(filename), datetime.datetime(2006,8,5,0))
+        filename = 'raa00-dx_10488-0608050000-drs---bin'
+        self.assertEqual(wrl.io._getTimestampFromFilename(filename), datetime.datetime(2006,8,5,0))
 
     def test_getDXTimestamp(self):
-        pass
+        filename = 'raa00-dx_10488-200608050000-drs---bin'
+        self.assertEqual(wrl.io.getDXTimestamp(filename).__str__(), '2006-08-05 00:00:00+00:00')
+        filename = 'raa00-dx_10488-0608050000-drs---bin'
+        self.assertEqual(wrl.io.getDXTimestamp(filename).__str__(), '2006-08-05 00:00:00+00:00')
 
     def test_unpackDX(self):
         pass
@@ -23,13 +29,34 @@ class IOTest(unittest.TestCase):
     def test_readDX(self):
         pass
 
+    def test_writePolygon2Text(self):
+        poly1 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
+        poly2 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
+        polygons = [poly1, poly2]
+        res = ['Polygon\n', '0 0\n', '0 0.000000 0.000000 0.000000 0.000000\n', '1 0.000000 1.000000 0.000000 1.000000\n', '2 1.000000 1.000000 0.000000 2.000000\n', '3 0.000000 0.000000 0.000000 0.000000\n', '1 0\n', '0 0.000000 0.000000 0.000000 0.000000\n', '1 0.000000 1.000000 0.000000 1.000000\n', '2 1.000000 1.000000 0.000000 2.000000\n', '3 0.000000 0.000000 0.000000 0.000000\n', 'END\n']
+        tmp = tempfile.NamedTemporaryFile()
+        wrl.io.writePolygon2Text(tmp.name, polygons)
+        self.assertEqual(open(tmp.name, 'r').readlines(), res)
+
 
 class PickleTest(unittest.TestCase):
     def test_pickle(self):
         arr = np.zeros((124, 248), dtype=np.int16)
-        wrl.io.to_pickle("test", arr)
-        res = wrl.io.from_pickle("test")
+        tmp = tempfile.NamedTemporaryFile()
+        wrl.io.to_pickle(tmp.name, arr)
+        res = wrl.io.from_pickle(tmp.name)
         self.assertTrue(np.allclose(arr, res))
+
+class HDF5Test(unittest.TestCase):
+    def test_to_hdf5(self):
+        arr = np.zeros((124, 248), dtype=np.int16)
+        metadata = {'test': 12.}
+        tmp = tempfile.NamedTemporaryFile()
+        wrl.io.to_hdf5(tmp.name, arr, metadata=metadata)
+        res, resmeta = wrl.io.from_hdf5(tmp.name)
+        print(res)
+        self.assertTrue(np.allclose(arr, res))
+        self.assertDictEqual(metadata, resmeta)
 
 
 class RadolanTest(unittest.TestCase):
