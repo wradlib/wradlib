@@ -12,8 +12,7 @@
 
 import unittest
 
-import wradlib.vpr as vpr
-import wradlib.georef as georef
+import wradlib.verify as verify
 import numpy as np
 
 class PolarNeighboursTest(unittest.TestCase):

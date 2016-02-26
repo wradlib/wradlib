@@ -13,7 +13,6 @@
 import unittest
 
 import wradlib.zr as zr
-import wradlib.vis as vis
 import wradlib.trafo as trafo
 import numpy as np
 
