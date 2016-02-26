@@ -110,8 +110,6 @@ class TestUtil(unittest.TestCase):
         self.assertTrue(np.allclose(hpr, res))
 
     def test_filter_window_cartesian(self):
-        #print(self.img)
-        print(util.filter_window_cartesian(self.img, 500., "maximum", np.array([250., 250])))
         correct = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                             [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                             [0., 0., 1., 1., 0., 0., 0., 0., 0., 0.],
