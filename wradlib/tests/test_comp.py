@@ -23,10 +23,10 @@ class ComposeTest(unittest.TestCase):
     def test_togrid(self):
         pass
 
-    def compose_ko(self):
+    def test_compose_ko(self):
         pass
 
-    def compose_weighted(self):
+    def test_compose_weighted(self):
         pass
 
 
