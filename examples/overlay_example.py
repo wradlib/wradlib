@@ -29,6 +29,7 @@ from osgeo import osr
 
 
 def _check_file(filename):
+    # todo: move this to another place
     geo_src = 'https://bitbucket.org/kaimuehlbauer/wradlib_miub/downloads/geo.tar.gz'
     if not os.path.exists(filename):
         warnings.warn(
