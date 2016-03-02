@@ -168,7 +168,7 @@ class OptionalModuleStub(object):
         self.name = name
 
     def __getattr__(self, name):
-        link = 'http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies'
+        link = 'https://wradlib.github.io/wradlib-docs/gettingstarted.html#optional-dependencies'
         raise AttributeError('Module "' + self.name +
                              '" is not installed.\n\n' +
                              'You tried to access function/module/attribute "' +
@@ -219,7 +219,7 @@ def import_optional(module):
     from module "nonexistentmodule".
     This module is optional right now in wradlib.
     You need to separately install this dependency.
-    Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies
+    Please refer to https://wradlib.github.io/wradlib-docs/gettingstarted.html#optional-dependencies
     for further instructions.
     """
     try:
