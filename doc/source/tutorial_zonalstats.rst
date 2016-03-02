@@ -201,12 +201,12 @@ The ZonalStats classes can also be used without any ZonalData by instantiating w
 Examples
 ========
 
-`This extensive example <https://bitbucket.org/wradlib/wradlib/src/default/examples/tutorial_zonal_statistics.py>`_ shows creation of Zonal Statistics from RADOLAN Data:
+`This extensive example <https://github.com/wradlib/wradlib/blob/master/examples/tutorial_zonal_statistics.py>`_ shows creation of Zonal Statistics from RADOLAN Data:
 
     .. plot:: pyplots/tutorial_zonal_statistics.py
         :include-source: False
 
-`This second example <https://bitbucket.org/wradlib/wradlib/src/default/examples/tutorial_zonal_statistics_polar.py>`_ shows creation of Zonal Statistics from Radar Data:
+`This second example <https://github.com/wradlib/wradlib/blob/master/examples/tutorial_zonal_statistics_polar.py>`_ shows creation of Zonal Statistics from Radar Data:
 
     .. plot:: pyplots/tutorial_zonal_statistics_polar.py
         :include-source: False

@@ -2,7 +2,7 @@
 Supported radar data formats
 ****************************
 
-The binary encoding of many radar products is a major obstacle for many potential radar users. Often, decoder software is not easily available. In case formats are documented, the implementation of decoders is a major programming effort. This tutorial provides an overview of the data formats currently supported by wradlib. We seek to continuously enhance the range of supported formats, so this document is only a snapshot. If you need a specific file format to be supported by wradlib, please `raise an issue <https://bitbucket.org/wradlib/wradlib/issues/new>`_ of type *enhancement*. You can provide support by adding documents which help to decode the format, e.g. format reference documents or software code in other languages for decoding the format.
+The binary encoding of many radar products is a major obstacle for many potential radar users. Often, decoder software is not easily available. In case formats are documented, the implementation of decoders is a major programming effort. This tutorial provides an overview of the data formats currently supported by wradlib. We seek to continuously enhance the range of supported formats, so this document is only a snapshot. If you need a specific file format to be supported by wradlib, please `raise an issue <https://github.com/wradlib/wradlib/issues/new>`_ of type *enhancement*. You can provide support by adding documents which help to decode the format, e.g. format reference documents or software code in other languages for decoding the format.
 
 At the moment, *supported format* means that the radar format can be read and further processed by wradlib. Normally, wradlib will return an array of data values and a dictionary of metadata - if the file contains any. wradlib does not support encoding to any specific file formats, yet! This might change in the future, but it is not a priority. However, you can use Python's netCDF4 or h5py packages to encode the results of your analysis to standard self-describing file formats such as netCDF or hdf5. If you have Python(x,y) installed on your machine, these packages are readily available to you.
 
@@ -87,7 +87,7 @@ The NetCDF format also claims to be self-describing. However, as for all such fo
    for key in outdict.keys():
       print key
 
-Please see `this example file <https://bitbucket.org/wradlib/wradlib/src/default/examples/generic_netcdf_example.py>`_	to get started.
+Please see `this example file <https://github.com/wradlib/wradlib/blob/master/examples/generic_netcdf_example.py>`_	to get started.
 
 **NetCDF files exported by the EDGE software**
 

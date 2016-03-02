@@ -4,9 +4,9 @@ Getting Started
 Bleeding edge code
 ------------------
 
-.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://bitbucket.org/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
+.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://github.com/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
 
-`Download <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_ the source, unzip, and run:
+`Download <https://github.com/wradlib/wradlib/archive/master.zip>`_ the source, unzip, and run:
 
 ``$ python setup.py install``
 
@@ -63,7 +63,7 @@ Installing Manually
 
 This way no dependency checking is done and you need to make sure yourself that all dependencies (see below) are met.
 
-`Download the source <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_, unpack, go to the directory, where you unpacked the files and run:
+`Download the source <https://github.com/wradlib/wradlib/archive/master.zip>`_, unpack, go to the directory, where you unpacked the files and run:
 
 ``$ python setup.py install``
 
@@ -234,7 +234,7 @@ This may also be an issue with other dependencies which are relying on libraries
 
 If you are in need to install everything from scratch, or if you are setting up a clean virtual environment, etc., you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables so that libraries and includes can be found.
 
-If all this doesn't help, check on your favorite search engine or create an issue `here <https://bitbucket.org/wradlib/wradlib/issues?status=new&status=open>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
+If all this doesn't help, check on your favorite search engine or create an issue `here <https://github.com/wradlib/wradlib/issues>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
 
 
 Community
