@@ -15,6 +15,23 @@ import wradlib.qual as qual
 import unittest
 
 
+class HelperFunctionsTest(unittest.TestCase):
+    def test_beam_height_ft(self):
+        self.assertTrue(np.allclose(qual.beam_height_ft(np.array([100, 200]),
+                                                        np.array([2.0])),
+                                    np.array([3.49053756, 6.98225089])))
+        self.assertTrue(np.allclose(qual.beam_height_ft(np.array([100, 200]),
+                                                        np.deg2rad([2.0]), degrees=False),
+                                    np.array([3.49053756, 6.98225089])))
+    def test_beamheight_ft_doviak(self):
+        self.assertTrue(np.allclose(qual.beam_height_ft_doviak(np.array([100, 200]),
+                                                        np.array([2.0])),
+                                    np.array([3.49053756, 6.98225089])))
+        self.assertTrue(np.allclose(qual.beam_height_ft_doviak(np.array([100, 200]),
+                                                        np.deg2rad([2.0]), degrees=False),
+                                    np.array([3.49053756, 6.98225089])))
+
+
 class BeamBlockFracTest(unittest.TestCase):
     def setUp(self):
         """
