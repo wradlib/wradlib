@@ -50,14 +50,6 @@ Topic :: Scientific/Engineering :: Atmospheric Science
 Operating System :: OS Independent
 """
 
-# if setuptools not present bootstrap it
-try:
-    from setuptools import setup
-except ImportError:
-    from ez_setup import use_setuptools
-    use_setuptools()
-    from setuptools import setup
-
 NAME = 'wradlib'
 MAINTAINER = "wradlib developers"
 MAINTAINER_EMAIL = "heisterm@uni-potsdam.de"
@@ -169,7 +161,7 @@ def setup_package():
     # rewrite version file
     write_version_py()
 
-    #from numpy.distutils.core import setup
+    from numpy.distutils.core import setup
 
     setup(
         name=NAME,
