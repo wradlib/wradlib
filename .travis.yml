@@ -35,7 +35,7 @@ script:
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
-    - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
+    #- if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:
   provider: pypi
