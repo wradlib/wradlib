@@ -5,7 +5,7 @@ wradlib
 
 """
 
-# Detect if we're being called as part of Py-ART's setup procedure
+# Detect if we're being called as part of wradlib's setup procedure
 try:
     __WRADLIB_SETUP__
 except NameError:
