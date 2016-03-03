@@ -120,7 +120,7 @@ if not release:
     elif os.path.exists('wradlib/version.py'):
         # must be a source distribution, use existing version file
         try:
-            from pyart.version import git_revision as GIT_REVISION
+            from wradlib.version import git_revision as GIT_REVISION
         except ImportError:
             raise ImportError("Unable to import git_revision. Try removing "
                               "wradlib/version.py and the build directory "
