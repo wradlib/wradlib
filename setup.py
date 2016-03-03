@@ -52,7 +52,7 @@ Operating System :: OS Independent
 
 NAME = 'wradlib'
 MAINTAINER = "wradlib developers"
-MAINTAINER_EMAIL = "heisterm@uni-potsdam.de"
+MAINTAINER_EMAIL = "wradlib@wradlib.org"
 DESCRIPTION = DOCLINES[0]
 LONG_DESCRIPTION = "\n".join(DOCLINES[2:])
 URL = "https://wradlib.org"
