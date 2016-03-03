@@ -19,6 +19,15 @@ import re
 import subprocess
 import glob
 
+# workaround to get wininst build correctly
+# http://code.activestate.com/lists/python-list/616822/
+import codecs
+try:
+    codecs.lookup('mbcs')
+except LookupError:
+    ascii = codecs.lookup('ascii')
+    func = lambda name, enc=ascii: {True: enc}.get(name=='mbcs')
+    codecs.register(func)
 
 if sys.version_info[0] < 3:
     import __builtin__ as builtins
@@ -29,7 +38,7 @@ CLASSIFIERS = """\
 Development Status :: 4 - Beta
 Intended Audience :: Science/Research
 Intended Audience :: Developers
-License :: OSI Approved :: BSD License
+License :: OSI Approved :: MIT License
 Programming Language :: Python
 Programming Language :: Python :: 2
 Programming Language :: Python :: 2.7
@@ -54,9 +63,9 @@ MAINTAINER = "wradlib developers"
 MAINTAINER_EMAIL = "heisterm@uni-potsdam.de"
 DESCRIPTION = DOCLINES[0]
 LONG_DESCRIPTION = "\n".join(DOCLINES[2:])
-URL = "https://github.com/wradlib/wradlib"
+URL = "https://wradlib.org"
 DOWNLOAD_URL = "https://github.com/wradlib/wradlib"
-LICENSE = 'BSD'
+LICENSE = 'MIT'
 CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix"]
 MAJOR = 0
@@ -64,6 +73,7 @@ MINOR = 8
 MICRO = 0
 ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+
 
 # Return the git revision as a string
 def git_version():
@@ -100,6 +110,7 @@ if os.path.exists('MANIFEST'):
 # avoid attempting to load components that aren't built yet. While ugly, it's
 # a lot more robust than what was previously being used.
 builtins.__WRADLIB_SETUP__ = True
+
 
 def write_version_py(filename='wradlib/version.py'):
     cnt = """
@@ -140,6 +151,7 @@ if not release:
     finally:
         a.close()
 
+
 def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration(None, parent_package, top_path)
@@ -157,7 +169,7 @@ def setup_package():
     # rewrite version file
     write_version_py()
 
-    from numpy.distutils.core import setup
+    #from numpy.distutils.core import setup
 
     setup(
         name=NAME,
