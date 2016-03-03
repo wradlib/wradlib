@@ -191,7 +191,8 @@ class DataSource(object):
             # is it ESRI Shapefile?
             ds_in, tmp_lyr = io.open_shape(src, driver=ogr.GetDriverByName('ESRI Shapefile'))
             ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, self._name)
-            self._srs = ogr_src_lyr.GetSpatialRef()
+            if self._srs is None:
+                self._srs = ogr_src_lyr.GetSpatialRef()
         except IOError:
             # no ESRI shape file
             raise
@@ -257,7 +258,10 @@ class DataSource(object):
         # Todo: at the moment, always writing floats
         ds_out = gdal_create_dataset(driver, filename, cols, rows, gdal.GDT_Float32, remove=remove)
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
-        ds_out.SetProjection(layer.GetSpatialRef().ExportToWkt())
+        proj = layer.GetSpatialRef()
+        if proj is None:
+            proj = self._srs
+        ds_out.SetProjection(proj.ExportToWkt())
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
