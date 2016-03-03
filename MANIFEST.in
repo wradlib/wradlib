@@ -1,3 +1,4 @@
+include LICENSE.txt
 include requirements.txt
 recursive-include examples *
 recursive-include wradlib/tests *
