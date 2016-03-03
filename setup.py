@@ -52,7 +52,7 @@ Operating System :: OS Independent
 
 NAME = 'wradlib'
 MAINTAINER = "wradlib developers"
-MAINTAINER_EMAIL = "heisterm@uni-potsdam.de"
+MAINTAINER_EMAIL = "wradlib@wradlib.org"
 DESCRIPTION = DOCLINES[0]
 LONG_DESCRIPTION = "\n".join(DOCLINES[2:])
 URL = "https://wradlib.org"
@@ -62,7 +62,7 @@ CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix"]
 MAJOR = 0
 MINOR = 7
-MICRO = 1
+MICRO = 2
 ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
