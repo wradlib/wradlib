@@ -3,3 +3,8 @@ source = wradlib
 omit =
     */setup.py
     */tests*
+
+[report]
+exclude_lines =
+    raise NotImplementedError
+    if __name__ == .__main__.:
