@@ -11,7 +11,7 @@ addons:
 env:
   global:
     # wradlib-docs
-    - secure: "IGK2D/g89w2J2bJomtPTL2UT6SXlyUV+QfoQZP9MCUDQZI3tRddL2M0YYIO5WegUhPDYuCaQDqZCc03tF+UedZgMhyCAsAQWY8Kgt5cC8EXdj4AEs0L5FHB0yuPkOJhJX2cGezKTMjqFfF7pFQWxYmEK3zFzz/8pVBPa7jPkRn2U0ZlWp3v+vO5WbTYgkFdnYSH6+yTnRbnLHmOTbPg62G75mkDU9/RCCZ4a4oKmz40RKIhroSFQtw8HK4UbwVLQsoE06/iL0Q8dbT0o63W1liXcwUbqoljIBHq2i8RVHB1GrtMFIzY40mgIHVOtlJuw6pg0bNaawTGp3wBIfAdk2sCeKLoX5bPsCewed8Bo+kkYdF4TT8mHJVwPHaKjZ0grhavcboHcgC6+ddUS+4TrS9ZKlFyd87EIhCnqdW4X3n665QM8foP7sB6B+hRYrQFneAoHpuif4ea3/wuk//J8Wd5HlVROkd/1Fxqika0KmDNUH5cH1cvIAa2D37MKCf3nKGe/sCBB/TZBkwcmXl1Q4JA+PWzuC6QSc6qWrKZGiqgvPJKKczto5j1hssUh0tBTO9FM5kue/33TvTq1Hkk1tPfl0e4VFmz3BvlLXKLTDpGF+cPn09irINoZJooA3andBjTynwWDYMbtXDQJ4YwCJXyS3N6yAAyaO8pGV23W3aQ="
+    - secure: "EuHfeOlRNhTnGbHbyavNwAIjtouQIBDc1iClOtnXV5qoqZ9huooi7kwLxWFkHMsQrqKPNwj0o0mWAeR7Hx2SYtulvWhDhtS1BlfGDNUuDABKmrcp1Fcnk1CVvwx6YxN5w/wwqHC69I/nVYgCmoCt3zB1nA1YBc/hFAlpQBwg7WZmvhyKENQBm+eSjZ6IIbiH17HanD8lhO+kLSZ/KL1hlPbh+8bYXxgt95HQBf+iCtptfIfEnirgL7VXCkFLZjYHgMLHAgwfPKiklA++AC8m0XOxpai/ab1b/87Wpj8Ptpz2BuWFBzBrcMD81TKdRkZwUpIix9dGppR7T/ZgwvjammcS86hoVqmSL3SMfHAM4cF/ddEjE81kqynxHXWMmRFH6bzLrqSnWNUT+y1HcvzPd/C5YKb8XmvFYvHRNE/vdwZtPwo+fQw1QJaLFZmBGJi1cTV8TODlJ1hGAiIgQu9QuqZePHQiV1UCRoMHQYEGKM0QeI0ByMNgcsklwXgdotCpjLZMzkaj1FIivJ/VSiLtlXDx8J+Izrox1KQeCbprf2Lb/kqIqtnlv1FejWqibXgFRgTWtUXxVJVqGgE9ihHKJUHqkzxacjomBXQ3n/U906AxXvQPfzOnTZQVgHUzLNijZLm0OeclwO6RVbD4pOf/rPYdtcY05ZOtiCGx/rSTONU="
 
 matrix:
     include:
@@ -27,7 +27,7 @@ matrix:
       env:
         - PYTHON_VERSION="3.5"
 
-install: source scripts/install_testing.sh
+install: source scripts/install.sh
 
 script:
     - export GDAL_DATA=/home/travis/miniconda2/envs/wradlib/share/gdal
@@ -35,7 +35,7 @@ script:
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
-    #- if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:
   provider: pypi
