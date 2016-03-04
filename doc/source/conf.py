@@ -42,7 +42,7 @@ extensions = ['sphinx.ext.autodoc',
 # just generate normal png
 plot_formats = ['png']
 
-mathjax_path = ("http://cdn.mathjax.org/mathjax/latest/MathJax.js?"
+mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
 "config=TeX-AMS-MML_HTMLorMML")
 
 pngmath_latex_preamble=r'\usepackage[active]{preview}' # + other custom stuff for inline math, such as non-default math fonts etc.
@@ -268,9 +268,9 @@ latex_documents = [
 #latex_domain_indices = True
 
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/2', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+    'python': ('https://docs.python.org/2', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'matplotlib': ('http://matplotlib.org/', None),
     'sphinx': ('http://sphinx-doc.org', None),
 }

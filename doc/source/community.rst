@@ -8,7 +8,7 @@ We need your help to enhance the capabilities of wradlib! Is there an algorithm 
 
 However, **there is an even better way:** Start a `Pull Request <https://help.github.com/articles/creating-a-pull-request/>`_!
 
-    * **Step 1:** `Fork <http://github.com/wradlib/wradlib>`_ your own wradlib repository from the `main wradlib repo <http://github.com/wradlib/wradlib>`_.
+    * **Step 1:** `Fork <https://github.com/wradlib/wradlib>`_ your own wradlib repository from the `main wradlib repo <https://github.com/wradlib/wradlib>`_.
     * **Step 2:** Implement your changes into the forked repository. Test your code.
     * **Step 3:** Now you want to feed these changes back into the main wradlib development branch? Start a `Pull Request <https://help.github.com/articles/creating-a-pull-request>`_!
     * **Step 4:** We will review your changes. On approval, we will merge your fork back into the main wradlib branch.
@@ -24,4 +24,4 @@ Users
 
 **Your feedback** will contribute to the future development of wradlib! To provide feedback, use the `issues page <https://github.com/wradlib/wradlib/issues>`_ and `create an issue <https://github.com/wradlib/wradlib/issues/new>`_ (bug reports, suggestions, ...).
 
-We also encourage you to register to the mailing list `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_. Using this mailing list or forum, you can ask other users and developers for help and help others, and we can notify you about the latest updates and developments. 
+We also encourage you to register to the mailing list `wradlib-users <https://groups.google.com/forum/#!forum/wradlib-users>`_. Using this mailing list or forum, you can ask other users and developers for help and help others, and we can notify you about the latest updates and developments.

@@ -1836,14 +1836,14 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
     The function writes a text file to ``fpath`` that contains the header info and 
     the grid data passed with the argument ``data``. For details on ESRI grids
-    (or Arc/Info ASCII grids) see e.g. http://en.wikipedia.org/wiki/Esri_grid.
+    (or Arc/Info ASCII grids) see e.g. https://en.wikipedia.org/wiki/Esri_grid.
     This should work for most GIS software systems (tested for QGIS and ESRI ArcGIS).
     
     In case a GDAL SpatialReference object (argument ``proj``) is passed, 
     the function will also try to write an accompanying projection (``.prj``) 
     file that has the same file name, but a different extension.
     
-    Please refer to https://wradlib.github.io/wradlib-docs/georef.html to see how to
+    Please refer to http://wradlib.github.io/wradlib-docs/georef.html to see how to
     create SpatialReference objects from e.g. :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
     :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
     or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
@@ -1937,7 +1937,7 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
 
     The function writes a GeoTIFF file to ``fpath`` that contains the grid data 
     passed with the argument ``data``. For details on the GeoTIFF format
-    see e.g. http://en.wikipedia.org/wiki/GeoTIFF.
+    see e.g. https://en.wikipedia.org/wiki/GeoTIFF.
     
     Warning
     -------
