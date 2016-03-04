@@ -45,15 +45,15 @@ MAINTAINER = "wradlib developers"
 MAINTAINER_EMAIL = "wradlib@wradlib.org"
 DESCRIPTION = DOCLINES[0]
 LONG_DESCRIPTION = "\n".join(DOCLINES[2:])
-URL = "https://wradlib.org"
+URL = "http://wradlib.org"
 DOWNLOAD_URL = "https://github.com/wradlib/wradlib"
 LICENSE = 'MIT'
 CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix"]
 MAJOR = 0
 MINOR = 7
-MICRO = 4
-ISRELEASED = False
+MICRO = 5
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
