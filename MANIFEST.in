@@ -2,7 +2,6 @@ include LICENSE.txt
 include MANIFEST.in
 include requirements.txt
 include testrunner.py
-recursive-include doc
 recursive-include examples *.py
 recursive-exclude examples *.pyc
 recursive-include examples/data *
