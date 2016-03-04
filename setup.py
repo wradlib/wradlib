@@ -19,16 +19,6 @@ import re
 import subprocess
 import glob
 
-# workaround to get wininst build correctly
-# http://code.activestate.com/lists/python-list/616822/
-import codecs
-try:
-    codecs.lookup('mbcs')
-except LookupError:
-    ascii = codecs.lookup('ascii')
-    func = lambda name, enc=ascii: {True: enc}.get(name=='mbcs')
-    codecs.register(func)
-
 if sys.version_info[0] < 3:
     import __builtin__ as builtins
 else:
@@ -62,7 +52,7 @@ CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix"]
 MAJOR = 0
 MINOR = 7
-MICRO = 3
+MICRO = 4
 ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
