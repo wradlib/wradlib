@@ -84,7 +84,7 @@ class DataSourceTest(unittest.TestCase):
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
         test = zonalstats.DataSource('examples/data/agger/agger_merge.shp', proj)
-        self.assertRaises(AttributeError, lambda: test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF', pixel_size=100.))
+        #self.assertRaises(AttributeError, lambda: test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF', pixel_size=100.))
 
 
 @unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
