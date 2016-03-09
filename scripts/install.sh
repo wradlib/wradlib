@@ -16,6 +16,8 @@ source activate wradlib
 conda install -c https://conda.anaconda.org/anaconda --yes numpy scipy matplotlib netcdf4 proj4
 
 conda install -c https://conda.anaconda.org/anaconda --yes sphinx gdal numpydoc h5py geos
+# install krb5 for gdal
+conda install -c https://conda.anaconda.org/anaconda --yes krb5
 ls -lart /home/travis/miniconda2/envs/wradlib/share/gdal
 conda install --yes sphinx_rtd_theme
 pip install sphinxcontrib-bibtex
