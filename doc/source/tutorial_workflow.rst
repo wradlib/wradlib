@@ -120,7 +120,7 @@ Check the shape and values of your resulting array for plausibility:
 
 Georeferencing and projection
 -----------------------------
-In order to define the horizontal and vertical position of the radar bins, we need to retrieve the corresponding 3-dimensional coordinates in terms of longitude, latitude and altitude. This information is required e.g. if the positions should be plotted on a map. It is also required for constructing `CAPPIs <http://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_. The position of a radar bin in 3-dimensional space depends on the position of the radar device, the elevation and azimuth angle of the radar beam, the range of the bin, and the assumed influence of atmospheric refraction on the beam propagation. For the sample data used above, the position of the radar device is the Feldberg in Germany (8.005, 47.8744, 1517)::
+In order to define the horizontal and vertical position of the radar bins, we need to retrieve the corresponding 3-dimensional coordinates in terms of longitude, latitude and altitude. This information is required e.g. if the positions should be plotted on a map. It is also required for constructing `CAPPIs <https://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_. The position of a radar bin in 3-dimensional space depends on the position of the radar device, the elevation and azimuth angle of the radar beam, the range of the bin, and the assumed influence of atmospheric refraction on the beam propagation. For the sample data used above, the position of the radar device is the Feldberg in Germany (8.005, 47.8744, 1517)::
 
     import numpy as np
     radar_location = (8.005, 47.8744, 1517) # (lon, lat, alt) in decimal degree and meters
@@ -131,13 +131,13 @@ In order to define the horizontal and vertical position of the radar bins, we ne
     lon, lat, alt = wradlib.georef.polar2lonlatalt_n(polargrid[0], polargrid[1],
                                                      elevation, radar_location)
 
-*wradlib* supports the projection of geographical coordinates (lon/lat) to a Cartesian reference system. It uses GDAL/OSR Spatial References Objects as function parameters. Basically, you have to create the OSR-object by using GDAL-capabilities or one of the provided helper functions. We recommend the creation using `EPSG numbers <http://epsg.io/>`_::
+*wradlib* supports the projection of geographical coordinates (lon/lat) to a Cartesian reference system. It uses GDAL/OSR Spatial References Objects as function parameters. Basically, you have to create the OSR-object by using GDAL-capabilities or one of the provided helper functions. We recommend the creation using `EPSG numbers <https://epsg.io/>`_::
 
     # Gauss Krueger Zone 3, EPSG-Number 31467
     gk3 = wradlib.georef.epsg_to_osr(31467)
     x, y = wradlib.georef.reproject(lon, lat, projection_target=gk3)
 
-Second, you can provide a string which represents the projection - based on the `PROJ.4 library <http://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.remotesensing.org/geotiff/proj_list>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is azimuthal equidistant::
+Second, you can provide a string which represents the projection - based on the `PROJ.4 library <https://trac.osgeo.org/proj/>`_. You can `look up projection strings <http://www.spatialreference.org/>`_, but for some projections, *wradlib* helps you to define a projection string. In the following example, the target projection is azimuthal equidistant::
 
     ae = wradlib.georef.create_osr("aeqd", lon_0=radar_location[0], lat_0=radar_location[1])
     x, y = wradlib.georef.reproject(lon, lat, projection_target=ae)
@@ -236,7 +236,7 @@ In the above sections `Reading the data`_, `Clutter removal`_, and `Gridding`_ y
 
 Data export to other applications
 ---------------------------------
-Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or support a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <http://code.google.com/p/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://code.google.com/p/h5py/>`_ or `PyTables <http://www.pytables.org/moin>`_ to write hdf5 files. 
+Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or support a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <https://unidata.github.io/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://www.h5py.org/>`_ or `PyTables <http://www.pytables.org>`_ to write hdf5 files.
 At a later stage of development, *wradlib* might support a standardized data export by using the OPERA's ODIM_H5 data model 
 (see :doc:`tutorial_supported_formats`). Of course, you can also export data as images. See :doc:`vis` for some options.
 

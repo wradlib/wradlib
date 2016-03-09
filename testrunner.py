@@ -59,7 +59,7 @@ def create_doctest_testsuite():
     # gather information on doctests, search in only wradlib folder
     root_dir = 'wradlib/'
     files = []
-    skip = ['__init__.py', 'bufr.py', 'test_']
+    skip = ['__init__.py', 'version.py', 'bufr.py', 'test_']
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
             if filename in skip or filename[-3:] != '.py':

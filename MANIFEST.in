@@ -1,9 +1,11 @@
-include ez_setup.py
-include version
+include LICENSE.txt
+include MANIFEST.in
 include requirements.txt
-recursive-include examples *
-recursive-include wradlib/tests *
+include testrunner.py
+recursive-include examples *.py
 recursive-exclude examples *.pyc
+recursive-include examples/data *
+recursive-include wradlib/tests *.py
 recursive-exclude wradlib/tests *.pyc
 recursive-exclude examples/data/geo *
 exclude examples/data/geo.tar.gz

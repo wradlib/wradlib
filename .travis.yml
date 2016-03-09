@@ -11,7 +11,7 @@ addons:
 env:
   global:
     # wradlib-docs
-    - secure: "IGK2D/g89w2J2bJomtPTL2UT6SXlyUV+QfoQZP9MCUDQZI3tRddL2M0YYIO5WegUhPDYuCaQDqZCc03tF+UedZgMhyCAsAQWY8Kgt5cC8EXdj4AEs0L5FHB0yuPkOJhJX2cGezKTMjqFfF7pFQWxYmEK3zFzz/8pVBPa7jPkRn2U0ZlWp3v+vO5WbTYgkFdnYSH6+yTnRbnLHmOTbPg62G75mkDU9/RCCZ4a4oKmz40RKIhroSFQtw8HK4UbwVLQsoE06/iL0Q8dbT0o63W1liXcwUbqoljIBHq2i8RVHB1GrtMFIzY40mgIHVOtlJuw6pg0bNaawTGp3wBIfAdk2sCeKLoX5bPsCewed8Bo+kkYdF4TT8mHJVwPHaKjZ0grhavcboHcgC6+ddUS+4TrS9ZKlFyd87EIhCnqdW4X3n665QM8foP7sB6B+hRYrQFneAoHpuif4ea3/wuk//J8Wd5HlVROkd/1Fxqika0KmDNUH5cH1cvIAa2D37MKCf3nKGe/sCBB/TZBkwcmXl1Q4JA+PWzuC6QSc6qWrKZGiqgvPJKKczto5j1hssUh0tBTO9FM5kue/33TvTq1Hkk1tPfl0e4VFmz3BvlLXKLTDpGF+cPn09irINoZJooA3andBjTynwWDYMbtXDQJ4YwCJXyS3N6yAAyaO8pGV23W3aQ="
+    - secure: "EcGUE3aYsO2rH9q3Aoin5r/1MxSHyVBeVL+6Exn3qfUp9z4ycIxEJlOZer9aNg15J5qfNED0aBQCmA+chzUJ0fR7NWcD9JZDlUFUA9A+GMTdxVHy5jBRh//74qr90Q54XzIiXo9PC4zK1wLrrY3HpATA0/FAJ/6JR02VsacxAEo4nBWMTtxGpULhXAqGfb2YccZCy3ytMZC6Uf+SpE8gU9KkVAQsRwrC5iFc6bzNgiDjKFZSvcRxv4V1A/xcbO58A+Nyv77lKbYoSPiJRfxbAWpeNnlp7pf1FXZF2Kyu0smp7eGfYiDoYjWxKwc8fzfWS32WuIhobSmVNsdJpj6AjSEtne9eyj5/a+EPCCl4nyopQQdmGcYYuEBx8bEABXXd9dNKtaGKGN7MzmCiR0qAfbsqIke9kvgZ6mn0VFzpZjbluSWHOnYCWlr4XbXqn4BAeWS8BJRkuyVomefir+Xz2xfeKY1X5iPCZ4dr52ca2NcdGcEB9+DCKu7SBG/ANEGpWkF4mPAlKDfkwxAD4SXWeVpGcdt95a0glvnw7OktJwNKAG4ougeZCYxIK+ERn7IBYPDNnkGfPnZ/TRy0xt4hfsEReBcR+oyreY/ZFA/bYJSzzGz4nP9cT4d9jEnIbwHPHfAvJpx9/eMXrl8q4HZD13fDvXG1lwX65Q5zW+ybgf4="
 
 matrix:
     include:
@@ -36,3 +36,14 @@ script:
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
+
+deploy:
+  provider: pypi
+  server: https://testpypi.python.org/pypi
+  user: wradlib
+  password:
+    secure: rKiAS61oDiuV2uJvkP2aiXt8hb7boU2p35RWiTLS8b5pSo/BWysThOIf1jmz5GQIpI8uYU+5GajlgtGVq8GmOxprexDgwTfMFF2bsblfUuZwYM3R1tPQuo2poAZ1/m0jPCul60vJJ31B2wEzsneo4tvbM4a7mAoBMMA5auli5o3eVo4P8xnXziMbw/l53bnl+ZYv7qocbt9RIsrgckAdfjLkZy8gAgDxcYXGGybg6K8VN/twSZGMIJfOvjkONhOtRfsiUc8fEu2hF6+HjQfSC07jue4KDPzo3s9hrAS6+fB0v8MV4UsB710VsrqoPuIfhBRo+xj8tW7Y2MPzJq/6kPBrVoQwV7gLTxZ7IWy5y4/Si78rxhXZIKDzo2VS4tNq1wo6xfGXv8pbzal7TOljqzK+ekXJBsXgdVUiGisZJLHTnPr0rkjwY7qzW+mqPqnpLLTCoHYWQE9AlrEQI3jP1FejGB5iyv/A3kDhjaerFkXlu5TXfkE44EpoKp8uURCNdzNiFoACv/68w3BJmWI0IkQR+YWZEBQm0xySMj8zLd5qrhqX/0u2crEC2uUPEQnkwNF1X8fOz3KFozY68KYsvSmIqKPlJFWSpzXYzMzqFnpvSumgb+g8FK/UppmMpukeQXTVSMGHY9k0Hi6I/WoGgmlDMksRB4fMUG0nZXdOqyM=
+  on:
+    tags: true
+    distributions: sdist
+    repo: wradlib/wradlib

@@ -4,7 +4,7 @@ RADOLAN
 
 RADOLAN is abbreviated from the german **RA**\ dar-\ **O**\ n\ **L**\ ine-\ **AN**\ eichung, which means Radar-Online-Adjustment.
 
-Using it's `network of 17 weather radar <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Oeffentlichkeit/TI/TI2/Downloads/Standorttabelle,templateId=raw,property=publicationFile.pdf/Standorttabelle.pdf>`_ the German Weather Service provides many products for high resolution precipitation analysis and forecast. A comprehensive product list can be found in chapter :ref:`radolan_composite_products`.
+Using it's `network of 17 weather radar <https://www.dwd.de/SharedDocs/broschueren/DE/presse/Wetterradar_PDF.pdf?__blob=publicationFile&v=5>`_ the German Weather Service provides many products for high resolution precipitation analysis and forecast. A comprehensive product list can be found in chapter :ref:`radolan_composite_products`.
 
 These composite products are distributed in the :ref:`radolan_binary_data_format` with an ASCII header. All composites are available in :ref:`polar_stereo_projection` which will be discussed in the chapter :ref:`radolan_grid`.
 
@@ -19,7 +19,7 @@ Here, ``data`` is a two dimensional integer or float array of shape (number of r
 
 The :ref:`radolan_grid` coordinates can be calculated with :func:`wradlib.georef.get_radolan_grid()`.
 
-In `the radolan_quickstart_example.py script <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_quickstart_example.py>`_ the RW-product is shown in the RADOLAN :ref:`polar_stereo_projection`::
+In `the radolan_quickstart_example.py script <https://github.com/wradlib/wradlib/blob/master/examples/radolan_quickstart_example.py>`_ the RW-product is shown in the RADOLAN :ref:`polar_stereo_projection`::
 
     # import section
     import wradlib as wrl
@@ -92,7 +92,7 @@ The function :func:`wradlib.io.parse_DWD_quant_composite_header` takes care of c
 RADOLAN composite products
 ==========================
 
-A few products including RW and SF are available free of charge at this `DWD FTP Server <ftp://ftp-cdc.dwd.de/pub/CDC/grids_germany/>`_. A full list of RADOLAN products can be found in the `DWD RADOLAN/RADVOR-OP Kompositformat Version 2.2.2 <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Wasserwirtschaft/Unsere__Leistungen/Radarniederschlagsprodukte/RADOLAN/RADOLAN__RADVOR__OP__Komposit__format__pdf,templateId=raw,property=publicationFile.pdf/RADOLAN_RADVOR_OP_Komposit_format_pdf.pdf>`_.
+A few products including RW and SF are available free of charge at this `DWD FTP Server <ftp://ftp-cdc.dwd.de/pub/CDC/grids_germany/>`_. A full list of RADOLAN products can be found in the `DWD RADOLAN/RADVOR-OP Kompositformat <https://www.dwd.de/DE/leistungen/radolan/radolan_info/radolan_radvor_op_komposit_format_pdf.pdf?__blob=publicationFile&v=5>`_.
 
 Currently, most of the RADOLAN composites have a spatial resolution of 1km x 1km, with the :ref:`national_composits` (R- and S-series) being 900 x 900 km grids, and the :ref:`european_composits` 1500 x 1400 km grids. The polar-stereographic projection is described in the chapter :ref:`radolan_grid`.
 
@@ -320,7 +320,7 @@ Attention is paid to:
 DWD-Radar Network
 -----------------
 
-In `the radolan_radarloc_example.py script <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_radarloc_example.py>`_ the RW-product is shown in WGS84 and the RADOLAN :ref:`polar_stereo_projection`. All for the compositing process used radars are extracted from the metadata and plotted with their respective maximum range rings and location information.
+In `the radolan_radarloc_example.py script <https://github.com/wradlib/wradlib/blob/master/examples/radolan_radarloc_example.py>`_ the RW-product is shown in WGS84 and the RADOLAN :ref:`polar_stereo_projection`. All for the compositing process used radars are extracted from the metadata and plotted with their respective maximum range rings and location information.
 
 .. plot::
 
@@ -592,7 +592,7 @@ In `the radolan_radarloc_example.py script <https://bitbucket.org/wradlib/wradli
 RADOLAN composite header
 ------------------------
 
-In `the radolan_header_example.py script <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_header_example.py>`_ we extract and show header information from several RADOLAN-products. First we load data and metadata of RX,EX,RW and SF-products::
+In `the radolan_header_example.py script <https://github.com/wradlib/wradlib/blob/master/examples/radolan_header_example.py>`_ we extract and show header information from several RADOLAN-products. First we load data and metadata of RX,EX,RW and SF-products::
 
     import wradlib as wrl
     import os
@@ -706,7 +706,7 @@ The metadata information reflects the different measurement time intervals, the 
 RADOLAN Projection
 ------------------
 
-In `the radolan_projection_example.py script <https://bitbucket.org/wradlib/wradlib/src/default/examples/radolan_projection_example.py>`_ we calculate the RADOLAN Grid and print their bounding box coordinates in different projections::
+In `the radolan_projection_example.py script <https://github.com/wradlib/wradlib/blob/master/examples/radolan_projection_example.py>`_ we calculate the RADOLAN Grid and print their bounding box coordinates in different projections::
 
     import wradlib as wrl
     from osgeo import osr
@@ -796,7 +796,7 @@ Output::
 RADOLAN products showcase
 -------------------------
 
-In `the radolan_products_example.py script <https://bitbucket.org/wradlib/wradlib/src/default/examples/examples/radolan_products_example.py>`_ we show several RADOLAN products:
+In `the radolan_products_example.py script <https://github.com/wradlib/wradlib/blob/master/examples/radolan_products_example.py>`_ we show several RADOLAN products:
 
 .. plot::
 
@@ -929,5 +929,5 @@ Example follows soon...
 Acknowledgements
 ================
 
-This tutorial was prepared with material from the `DWD RADOLAN/RADVOR-OP Kompositformat Version 2.2.2 <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Wasserwirtschaft/Unsere__Leistungen/Radarniederschlagsprodukte/RADOLAN/RADOLAN__RADVOR__OP__Komposit__format__pdf,templateId=raw,property=publicationFile.pdf/RADOLAN_RADVOR_OP_Komposit_format_pdf.pdf>`_.
+This tutorial was prepared with material from the `DWD RADOLAN/RADVOR-OP Kompositformat <http://www.dwd.de/DE/leistungen/radolan/radolan_info/radolan_radvor_op_komposit_format_pdf.pdf?__blob=publicationFile&v=5>`_.
 We also wish to thank Elmar Weigl, German Weather Service, for providing the extensive set of example data and his valuable information about the RADOLAN products.

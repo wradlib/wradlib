@@ -67,7 +67,7 @@ def ex_tutorial_zonal_statistics():
     # check for GEOS enabled GDAL
     if not wradlib.util.has_geos():
         print("NO GEOS support within GDAL, aborting...")
-        exit(0)
+        return
 
     # Get RADOLAN grid coordinates
     grid_xy_radolan = wradlib.georef.get_radolan_grid(900, 900)

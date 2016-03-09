@@ -4,9 +4,9 @@ Getting Started
 Bleeding edge code
 ------------------
 
-.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://bitbucket.org/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
+.. warning:: The wradlib version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might lag behind the actual developments. You can use the bleeding edge code from the `wradlib repository <https://github.com/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
 
-`Download <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_ the source, unzip, and run:
+`Download <https://github.com/wradlib/wradlib/archive/master.zip>`_ the source, unzip, and run:
 
 ``$ python setup.py install``
 
@@ -16,9 +16,9 @@ Alternatively, you can add the wradlib directory to your environment variable ``
 Installation under Windows
 --------------------------
 
-In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We recommend to install `Python(x,y) <http://code.google.com/p/pythonxy>`_ as it installs Python, a number of required packages, and other useful tools (e.g. MinGW).
+In order to run *wradlib*, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We recommend to install `Python(x,y) <https://python-xy.github.io/>`_ as it installs Python, a number of required packages, and other useful tools (e.g. MinGW).
 
-Download and install the latest Python(x,y) distribution from http://code.google.com/p/pythonxy. 
+Download and install the latest Python(x,y) distribution from https://python-xy.github.io/.
 The latest distribution tested by us is **Python(x,y)-2.7.9.0.exe**. 
 We recommend to use the full installation mode, because this will install all packages. 
 Otherwise you have to make sure that all prerequisites mentioned below will be installed, which may not be the case with a standard installation. 
@@ -63,7 +63,7 @@ Installing Manually
 
 This way no dependency checking is done and you need to make sure yourself that all dependencies (see below) are met.
 
-`Download the source <http://bitbucket.org/wradlib/wradlib/get/default.zip>`_, unpack, go to the directory, where you unpacked the files and run:
+`Download the source <https://github.com/wradlib/wradlib/archive/master.zip>`_, unpack, go to the directory, where you unpacked the files and run:
 
 ``$ python setup.py install``
 
@@ -158,7 +158,7 @@ As of Ubuntu 12.04 numpydoc, which is needed to build the source documentation o
 Dependencies
 ------------
 
-*wradlib* was not designed to be a self-contained library. Besides extensive use of Numpy and Scipy, *wradlib* uses additional libraries, which you will need to install before you can use *wradlib*. Note that all libraries marked with a (*) are *not* contained in the Python(x,y) distribution. Installers for the remaining libraries can be downloaded at http://code.google.com/p/pythonxy/wiki/StandardPlugins.
+*wradlib* was not designed to be a self-contained library. Besides extensive use of Numpy and Scipy, *wradlib* uses additional libraries, which you will need to install before you can use *wradlib*. Note that all libraries marked with a (*) are *not* contained in the Python(x,y) distribution. Installers for the remaining libraries can be downloaded at https://python-xy.github.io/downloads.html.
 
 - numpy, version >= 1.6.1
 
@@ -197,7 +197,7 @@ As for now, the following dependencies are defined as optional:
 **The speedup module**
 
 The speedup module is intended as a collection of Fortran code in order to speed up specific wradlib function that are critical for performance.
-In order to build the speedup module as a shared library, you need to use f2py (http://cens.ioc.ee/projects/f2py2e/). f2py usually ships with numpy and should be available via the command line. To test whether f2py is available on your system, execute ``f2py`` on the system console. Or, alternatively, ``f2py.py``. If it is available, you should get a bunch of help instructions. Now change to the wradlib module directory and execute on the system console:
+In order to build the speedup module as a shared library, you need to use f2py (https://sysbio.ioc.ee/projects/f2py2e/). f2py usually ships with numpy and should be available via the command line. To test whether f2py is available on your system, execute ``f2py`` on the system console. Or, alternatively, ``f2py.py``. If it is available, you should get a bunch of help instructions. Now change to the wradlib module directory and execute on the system console:
 
 ``f2py.py -c -m speedup speedup.f``
 
@@ -234,12 +234,12 @@ This may also be an issue with other dependencies which are relying on libraries
 
 If you are in need to install everything from scratch, or if you are setting up a clean virtual environment, etc., you may encounter some other strange problems. Especially in virtual environments you may have to export some PATH variables so that libraries and includes can be found.
 
-If all this doesn't help, check on your favorite search engine or create an issue `here <https://bitbucket.org/wradlib/wradlib/issues?status=new&status=open>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
+If all this doesn't help, check on your favorite search engine or create an issue `here <https://github.com/wradlib/wradlib/issues>`_ with details on the problem or send an email on the `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list.
 
 
 Community
 ---------
 
-*wradlib* is intended to be a community effort, and community needs communication. The key communication platform for *wradlib* is the  `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list and forum. Through this forum, you can help to improve wradlib by reporting bugs, proposing enhancements, or by contributing code snippets (in any programming language) and documentation of algorithms. You can also ask other users and developers for help, or use your own knowledge and experience to help other users. We strongly encourage you to `subscribe <https://groups.google.com/group/wradlib-users/subscribe>`_ to this list. Check it out! 
+*wradlib* is intended to be a community effort, and community needs communication. The key communication platform for *wradlib* is the  `wradlib-users <https://groups.google.com/forum/?fromgroups=#!forum/wradlib-users>`_ mailing list and forum. Through this forum, you can help to improve wradlib by reporting bugs, proposing enhancements, or by contributing code snippets (in any programming language) and documentation of algorithms. You can also ask other users and developers for help, or use your own knowledge and experience to help other users. We strongly encourage you to `subscribe <https://groups.google.com/forum/#!forum/wradlib-users/join>`_ to this list. Check it out!
 
 Learn more about wradlib as a community effort :doc:`here <community>`!
