@@ -15,7 +15,10 @@ source activate wradlib
 # Install wradlib dependencies
 conda install -c https://conda.anaconda.org/anaconda --yes numpy scipy matplotlib netcdf4 proj4
 
-conda install -c https://conda.anaconda.org/anaconda --yes sphinx gdal numpydoc h5py geos
+conda install -c https://conda.anaconda.org/anaconda --yes sphinx numpydoc h5py
+# Installing libgdal is required to get the lastest build.
+# The build installed by default  2.0.0_0 is broken.
+conda install -c https://conda.anaconda.org/anaconda --yes gdal geos libgdal
 # install krb5 for gdal
 conda install -c https://conda.anaconda.org/anaconda --yes krb5
 ls -lart /home/travis/miniconda2/envs/wradlib/share/gdal
