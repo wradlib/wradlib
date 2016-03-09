@@ -483,13 +483,22 @@ class ZonalDataBase(object):
                                         geom_type=geom_type)
 
         print("Calculate Intersection source/target-layers")
-        tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
-                                                                 'INPUT_PREFIX=trg_',
-                                                                 'METHOD_PREFIX=src_',
-                                                                 'PROMOTE_TO_MULTI=YES',
-                                                                 'PRETEST_CONTAINMENT=YES'],
-                                 callback=gdal.TermProgress)
-
+        try:
+            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
+                                                                     'INPUT_PREFIX=trg_',
+                                                                     'METHOD_PREFIX=src_',
+                                                                     'PROMOTE_TO_MULTI=YES',
+                                                                     'PRETEST_CONTAINMENT=YES'],
+                                     callback=gdal.TermProgress)
+        except RuntimeError:
+            # Catch RuntimeError that was reported on gdal 1.11.1 on Windows systems
+            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
+                                                                     'INPUT_PREFIX=trg_',
+                                                                     'METHOD_PREFIX=src_',
+                                                                     'PROMOTE_TO_MULTI=YES',
+                                                                     'PRETEST_CONTAINMENT=YES'])
+        
+        
         return ds_mem
 
     def _create_dst_features(self, dst, trg, **kwargs):
@@ -534,13 +543,13 @@ class ZonalDataBase(object):
         self.src.ds = drv_in.CreateDataSource('src')
         self.trg = DataSource(name='trg')
         self.trg.ds = drv_in.CreateDataSource('trg')
-        self.dst = DataSource(name='trg')
+        self.dst = DataSource(name='dst')
         self.dst.ds = drv_in.CreateDataSource('dst')
 
         # copy all layers
-        ogr_copy_layer(ds_in, 0, self.src.ds)
-        ogr_copy_layer(ds_in, 1, self.trg.ds)
-        ogr_copy_layer(ds_in, 2, self.dst.ds)
+        ogr_copy_layer_by_name(ds_in, "src", self.src.ds)
+        ogr_copy_layer_by_name(ds_in, "trg", self.trg.ds)
+        ogr_copy_layer_by_name(ds_in, "dst", self.dst.ds)
 
         # get spatial reference object
         self._srs = self.src.ds.GetLayer().GetSpatialRef()
@@ -1090,6 +1099,34 @@ def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
     # get and copy src geometry layer
 
     src_lyr = src_ds.GetLayerByIndex(index)
+    if reset:
+        src_lyr.ResetReading()
+        src_lyr.SetSpatialFilter(None)
+        src_lyr.SetAttributeFilter(None)
+    dst_ds.CopyLayer(src_lyr, src_lyr.GetName())
+
+
+def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
+    """ Copy OGR.Layer object.
+
+    .. versionadded:: 0.8.0
+
+    Copy OGR.Layer object from src_ds OGR.DataSource to dst_ds OGR.DataSource
+
+    Parameters
+    ----------
+    src_ds : OGR.DataSource
+        object
+    name : string
+        layer name
+    dst_ds : OGR.DataSource
+        object
+    reset : bool
+        if True resets src_layer
+    """
+    # get and copy src geometry layer
+
+    src_lyr = src_ds.GetLayerByName(name)
     if reset:
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)

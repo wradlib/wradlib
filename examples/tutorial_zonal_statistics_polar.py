@@ -139,16 +139,12 @@ def ex_tutorial_zonal_statistics_polar():
 
     t1 = dt.datetime.now()
 
-    try:
-        # Create instance of type GridPointsToPoly from zonal data file
-        obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_points')
-    except IOError:
-        # Create instance of type ZonalDataPoint from source grid and catchment array
-        zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, srs=proj_gk, buf=500.)
-        # dump to file
-        zd.dump_vector('test_zonal_points')
-        # Create instance of type GridPointsToPoly from zonal data object
-        obj1 = wradlib.zonalstats.GridPointsToPoly(zd)
+    # Create instance of type ZonalDataPoint from source grid and catchment array
+    zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, srs=proj_gk, buf=500.)
+    # dump to file
+    zd.dump_vector('test_zonal_points')
+    # Create instance of type GridPointsToPoly from zonal data object
+    obj1 = wradlib.zonalstats.GridPointsToPoly(zd)
 
     isecs1 = obj1.zdata.isecs
     t2 = dt.datetime.now()
@@ -158,9 +154,18 @@ def ex_tutorial_zonal_statistics_polar():
     var1 = obj1.var(data_.ravel())
 
     t3 = dt.datetime.now()
+    
+    # Create instance of type GridPointsToPoly from zonal data file
+    obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_points')
 
-    print("Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
-    print("Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
+    t4 = dt.datetime.now()
+
+    print ("Approach #1 computation time:")
+    print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
+    print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
+    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())    
+
+    # PLOTTING Approach #2
 
     # Just a test for plotting results with zero buffer
     zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, buf=0)
@@ -204,17 +209,13 @@ def ex_tutorial_zonal_statistics_polar():
 
     t1 = dt.datetime.now()
 
-    try:
-        # Create instance of type GridCellsToPoly from zonal data file
-        obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly')
-    except IOError:
-        # Create instance of type ZonalDataPoly from source grid and
-        # catchment array
-        zd = wradlib.zonalstats.ZonalDataPoly(radar_gk_, cats, srs=proj_gk)
-        # dump to file
-        zd.dump_vector('test_zonal_poly')
-        # Create instance of type GridPointsToPoly from zonal data object
-        obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
+    # Create instance of type ZonalDataPoly from source grid and
+    # catchment array
+    zd = wradlib.zonalstats.ZonalDataPoly(radar_gk_, cats, srs=proj_gk)
+    # dump to file
+    zd.dump_vector('test_zonal_poly')
+    # Create instance of type GridPointsToPoly from zonal data object
+    obj3 = wradlib.zonalstats.GridCellsToPoly(zd)
 
     obj3.zdata.dump_vector('test_zonal_poly')
     t2 = dt.datetime.now()
@@ -222,15 +223,22 @@ def ex_tutorial_zonal_statistics_polar():
     avg3 = obj3.mean(data_.ravel())
     var3 = obj3.var(data_.ravel())
 
+    t3 = dt.datetime.now()
+    
+    # Create instance of type GridCellsToPoly from zonal data file
+    obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly')
+
+    t4 = dt.datetime.now()
+
+    print ("Approach #2 computation time:")
+    print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
+    print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
+    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())    
+
     obj3.zdata.trg.dump_raster('test_zonal_hdr.nc', 'netCDF', 'mean', pixel_size=100.)
 
     obj3.zdata.trg.dump_vector('test_zonal_shp')
     obj3.zdata.trg.dump_vector('test_zonal_json.geojson', 'GeoJSON')
-
-    t3 = dt.datetime.now()
-
-    print("Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
-    print("Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
 
     # Target polygon patches
     trg_patches = [patches.Polygon(item, True) for item in obj3.zdata.trg.data]
