@@ -168,7 +168,7 @@ class OptionalModuleStub(object):
         self.name = name
 
     def __getattr__(self, name):
-        link = 'http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies'
+        link = 'https://wradlib.github.io/wradlib-docs/gettingstarted.html#optional-dependencies'
         raise AttributeError('Module "' + self.name +
                              '" is not installed.\n\n' +
                              'You tried to access function/module/attribute "' +
@@ -219,7 +219,7 @@ def import_optional(module):
     from module "nonexistentmodule".
     This module is optional right now in wradlib.
     You need to separately install this dependency.
-    Please refer to http://wradlib.bitbucket.org/gettingstarted.html#optional-dependencies
+    Please refer to https://wradlib.github.io/wradlib-docs/gettingstarted.html#optional-dependencies
     for further instructions.
     """
     try:
@@ -652,9 +652,8 @@ def _get_func(funcname):
     """
     try:
         func = getattr(np, funcname)
-    except:
-        print('<' + funcname + '> is not a valid function in numpy...')
-        raise
+    except AttributeError:
+        raise AttributeError('<' + funcname + '> is not a valid function in numpy...')
     return func
 
 
@@ -715,9 +714,11 @@ def _tdelta2seconds(tdelta):
 def _get_tdelta(tstart, tend, as_secs=False):
     """Returns the difference between two datetimes
     """
-    if not type(tstart) == dt.datetime:
+    if not isinstance(tstart, dt.datetime):
+    #if not type(tstart) == dt.datetime:
         tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
-    if not type(tend) == dt.datetime:
+    if not isinstance(tend, dt.datetime):
+    #if not type(tend) == dt.datetime:
         tend = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
     if not as_secs:
         return tend - tstart
@@ -1142,7 +1143,7 @@ def prob_round(x, prec=0):
     return round_func / fixup
 
 
-def filter_window_cartesian(img, wsize, fun, scale):
+def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
     r"""Apply a filter of square window size `fsize` on a given cartesian image `img`.
 
     Parameters
@@ -1164,7 +1165,7 @@ def filter_window_cartesian(img, wsize, fun, scale):
     """
     fun = getattr(filters, "%s_filter" % fun)
     size = np.fix(wsize / scale + 0.5).astype(int)
-    data_filtered = fun(img, size)
+    data_filtered = fun(img, size, **kwargs)
     return data_filtered
 
 

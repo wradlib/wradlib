@@ -75,7 +75,7 @@ Warning
 Cross validation
 ----------------
 Another helpful feature is an easy-to-use method for `leave-one-out cross-validation
-<http://en.wikipedia.org/wiki/Cross-validation_%28statistics%29>`_. Cross validation
+<https://en.wikipedia.org/wiki/Cross-validation_%28statistics%29>`_. Cross validation
 is a standard procedure for verifying rain gage adjustment or interpolation procedures.
 You can start the cross validation in the same way as you start the actual adjustment,
 however, you call the ``xvalidate`` method instead. The result of the cross validation

@@ -21,6 +21,7 @@ class TransformationTest(unittest.TestCase):
         self.lin = np.array([1e-4, 1, 1e4])
         self.dec = np.array([-40, 0, 40])
         self.r = np.array([5., 10., 20.])
+        self.kdp = np.array([0., 1., 2., 5.])
         self.speedsi = np.array([0., 1., 50.])  # speed in m/s
         self.speedkmh = np.array([0., 3.6, 180.])  # speed in km/h
         self.speedmph = np.array([0., 2.23693629, 111.8468146])  # speed in miles/h
@@ -38,6 +39,9 @@ class TransformationTest(unittest.TestCase):
     def test_r2depth(self):
         self.assertTrue(np.allclose(trafo.r2depth(self.r, 720), np.array([1., 2., 4.])))
         self.assertTrue(np.allclose(trafo.r2depth(self.r, 360), np.array([0.5, 1., 2.])))
+
+    def test_kdp2r(self):
+        self.assertTrue(np.allclose(trafo.kdp2r(self.kdp, 9.45), np.array([0., 19.11933017, 34.46261032, 75.09260608])))
 
     def test_si2kmh(self):
         self.assertTrue(np.allclose(trafo.si2kmh(self.speedsi), self.speedkmh))
