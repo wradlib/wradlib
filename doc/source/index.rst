@@ -6,7 +6,7 @@
 wradlib: An Open Source Library for Weather Radar Data Processing
 =================================================================
 
-:Release: |version|
+:Release: |release|
 :Date: |today|
 
 The *wradlib* project has been initiated in order facilitate the use of weather radar data as well as to provide a common platform for research on new algorithms. *wradlib* is an open source library which is well documented and easy to use. It is written in the free programming language `Python <https://www.python.org>`_.
