@@ -31,7 +31,7 @@ install: source scripts/install.sh
 
 script:
     - export GDAL_DATA=/home/travis/miniconda2/envs/wradlib/share/gdal
-    - xvfb-run coverage run --source wradlib testrunner.py -u
+    - xvfb-run coverage run --source wradlib testrunner.py -a
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
