@@ -42,7 +42,7 @@ extensions = ['sphinx.ext.autodoc',
 # just generate normal png
 plot_formats = ['png']
 
-mathjax_path = ("http://cdn.mathjax.org/mathjax/latest/MathJax.js?"
+mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
 "config=TeX-AMS-MML_HTMLorMML")
 
 pngmath_latex_preamble=r'\usepackage[active]{preview}' # + other custom stuff for inline math, such as non-default math fonts etc.
@@ -70,24 +70,30 @@ copyright = u'2011-2016, wradlib developers'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
+
+# todo: clean this up
 import wradlib
 # The short X.Y version (including the .devXXXX suffix if present)
-version = re.sub(r'^(\d+\.\d+)\.\d+(.*)', r'\1\2', wradlib.__version__)
-if 'dev' not in version:
-    # strip all other suffixes
-    version = re.sub(r'^(\d+\.\d+).*?$', r'\1', version)
-else:
-    # retain the .dev suffix, but clean it up
-    #version = re.sub(r'(\.dev\d*).*?$', r'\1', version)
-    pass
+#version = re.sub(r'^(\d+\.\d+)\.\d+(.*)', r'\1\2', wradlib.__version__)
+#if 'dev' not in version:
+#    # strip all other suffixes
+#    version = re.sub(r'^(\d+\.\d+).*?$', r'\1', version)
+#else:
+#    # retain the .dev suffix, but clean it up
+#    version = re.sub(r'(\.dev\d*).*?$', r'\1', version)
+#    pass
 
 # The full version, including alpha/beta/rc tags.
+version = wradlib.__version__
 release = wradlib.__version__
-# full wradlib version in CI built docselse:
+
+
+print("RELEASE, VERSION", release, version)
+
+# full wradlib version in CI built docs
+
 if 'CI' in os.environ and os.environ['CI'] == 'true':
     version = release
-
-print("VERSION", wradlib.__version__, version)
 
 # # get current version from file
 # with open("../../version") as f:
@@ -146,6 +152,7 @@ pygments_style = 'sphinx'
 import sphinx_rtd_theme
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_style = 'wradlib.css'
 html_theme_options = {'sticky_navigation' : True}
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -268,9 +275,9 @@ latex_documents = [
 #latex_domain_indices = True
 
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/2', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
+    'python': ('https://docs.python.org/2', None),
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'matplotlib': ('http://matplotlib.org/', None),
     'sphinx': ('http://sphinx-doc.org', None),
 }
@@ -295,3 +302,19 @@ napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = False
+
+# multiple releases section
+# if on CI get TAGGED_VERSIONS otherwise empty dict
+releases = []
+if 'CI' in os.environ and os.environ['CI'] == 'true':
+    if 'TAGGED_VERSIONS' in os.environ:
+        for ver in os.environ['TAGGED_VERSIONS'].split("\n"):
+            releases.append([ver, ver])
+        releases.sort(reverse=True)
+# if tagged release insert tag
+if 'TAG' in os.environ and os.environ['TAG']:
+    releases.insert(0, [os.environ['TAG'], os.environ['TAG']])
+# have latest anyway
+releases.insert(0, ['latest', 'latest'])
+# push releases into html_context
+html_context = { 'releases' : releases, }

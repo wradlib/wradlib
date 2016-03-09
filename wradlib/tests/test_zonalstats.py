@@ -12,6 +12,7 @@
 
 import unittest
 import tempfile
+import os
 
 import wradlib.georef as georef
 import wradlib.zonalstats as zonalstats
@@ -39,7 +40,7 @@ class DataSourceTest(unittest.TestCase):
         self.values2 = np.array([47.11, 15.08])
 
     def test__check_src(self):
-        self.assertEqual(len(zonalstats.DataSource('examples/data/agger/agger_merge.shp').data), 13)
+        self.assertEqual(len(zonalstats.DataSource(os.path.dirname(__file__) + '/../../examples/data/agger/agger_merge.shp').data), 13)
         self.assertRaises(IOError, lambda: zonalstats.DataSource('test_zonalstats.py'))
 
     def test_data(self):
@@ -83,7 +84,7 @@ class DataSourceTest(unittest.TestCase):
     def test_dump_raster(self):
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
-        test = zonalstats.DataSource('examples/data/agger/agger_merge.shp', proj)
+        test = zonalstats.DataSource(os.path.dirname(__file__) + '/../../examples/data/agger/agger_merge.shp', proj)
         self.assertRaises(AttributeError, test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF', pixel_size=100.))
 
 

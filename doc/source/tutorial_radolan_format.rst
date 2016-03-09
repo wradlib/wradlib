@@ -4,7 +4,7 @@ RADOLAN
 
 RADOLAN is abbreviated from the german **RA**\ dar-\ **O**\ n\ **L**\ ine-\ **AN**\ eichung, which means Radar-Online-Adjustment.
 
-Using it's `network of 17 weather radar <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Oeffentlichkeit/TI/TI2/Downloads/Standorttabelle,templateId=raw,property=publicationFile.pdf/Standorttabelle.pdf>`_ the German Weather Service provides many products for high resolution precipitation analysis and forecast. A comprehensive product list can be found in chapter :ref:`radolan_composite_products`.
+Using it's `network of 17 weather radar <https://www.dwd.de/SharedDocs/broschueren/DE/presse/Wetterradar_PDF.pdf?__blob=publicationFile&v=5>`_ the German Weather Service provides many products for high resolution precipitation analysis and forecast. A comprehensive product list can be found in chapter :ref:`radolan_composite_products`.
 
 These composite products are distributed in the :ref:`radolan_binary_data_format` with an ASCII header. All composites are available in :ref:`polar_stereo_projection` which will be discussed in the chapter :ref:`radolan_grid`.
 
@@ -92,7 +92,7 @@ The function :func:`wradlib.io.parse_DWD_quant_composite_header` takes care of c
 RADOLAN composite products
 ==========================
 
-A few products including RW and SF are available free of charge at this `DWD FTP Server <ftp://ftp-cdc.dwd.de/pub/CDC/grids_germany/>`_. A full list of RADOLAN products can be found in the `DWD RADOLAN/RADVOR-OP Kompositformat Version 2.2.2 <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Wasserwirtschaft/Unsere__Leistungen/Radarniederschlagsprodukte/RADOLAN/RADOLAN__RADVOR__OP__Komposit__format__pdf,templateId=raw,property=publicationFile.pdf/RADOLAN_RADVOR_OP_Komposit_format_pdf.pdf>`_.
+A few products including RW and SF are available free of charge at this `DWD FTP Server <ftp://ftp-cdc.dwd.de/pub/CDC/grids_germany/>`_. A full list of RADOLAN products can be found in the `DWD RADOLAN/RADVOR-OP Kompositformat <https://www.dwd.de/DE/leistungen/radolan/radolan_info/radolan_radvor_op_komposit_format_pdf.pdf?__blob=publicationFile&v=5>`_.
 
 Currently, most of the RADOLAN composites have a spatial resolution of 1km x 1km, with the :ref:`national_composits` (R- and S-series) being 900 x 900 km grids, and the :ref:`european_composits` 1500 x 1400 km grids. The polar-stereographic projection is described in the chapter :ref:`radolan_grid`.
 
@@ -929,5 +929,5 @@ Example follows soon...
 Acknowledgements
 ================
 
-This tutorial was prepared with material from the `DWD RADOLAN/RADVOR-OP Kompositformat Version 2.2.2 <http://www.dwd.de/bvbw/generator/DWDWWW/Content/Wasserwirtschaft/Unsere__Leistungen/Radarniederschlagsprodukte/RADOLAN/RADOLAN__RADVOR__OP__Komposit__format__pdf,templateId=raw,property=publicationFile.pdf/RADOLAN_RADVOR_OP_Komposit_format_pdf.pdf>`_.
+This tutorial was prepared with material from the `DWD RADOLAN/RADVOR-OP Kompositformat <http://www.dwd.de/DE/leistungen/radolan/radolan_info/radolan_radvor_op_komposit_format_pdf.pdf?__blob=publicationFile&v=5>`_.
 We also wish to thank Elmar Weigl, German Weather Service, for providing the extensive set of example data and his valuable information about the RADOLAN products.

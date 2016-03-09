@@ -1,0 +1,36 @@
+{% extends "!layout.html" %}
+{% block extrahead %}
+    {# link wradlib.css with version drop down #}
+    <link href="{{ pathto('_static/wradlib.css', True) }}" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{# mimic behaviour of original rtd layout.html #}
+{% block sidebartitle %}
+{% if logo and theme_logo_only %}
+  <a href="{{ pathto(master_doc) }}">
+{% else %}
+  <a href="{{ pathto(master_doc) }}" class="icon icon-home"> {{ project }}
+{% endif %}
+
+{% if logo %}
+  {# Not strictly valid HTML, but it's the only way to display/scale it properly, without weird scripting or heaps of work #}
+  <img src="{{ pathto('_static/' + logo, 1) }}" class="logo" />
+{% endif %}
+</a>
+
+{# stripped version, we only need 'version' here #}
+{% if theme_display_version %}
+  <div class="version">
+    {# add drop down html #}
+    <button class="verbtn">{{ version }}</button>
+    <div class="version-content">
+      {# iterate over 'releases' (defined in conf.py) #}
+      {%- for rl in releases %}
+        <a href="../{{ rl[0] }}/">{{ rl[1] }}</a>
+      {%- endfor %}
+    </div>
+  </div>
+{% endif %}
+
+{% include "searchbox.html" %}
+{% endblock %}

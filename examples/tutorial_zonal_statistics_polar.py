@@ -65,7 +65,7 @@ def ex_tutorial_zonal_statistics_polar():
     # check for GEOS enabled GDAL
     if not wradlib.util.has_geos():
         print("NO GEOS support within GDAL, aborting...")
-        exit(0)
+        return
 
     data, attrib = wradlib.io.from_hdf5(os.path.dirname(__file__) + '/' + 'data/rainsum_boxpol_20140609.h5')
 
