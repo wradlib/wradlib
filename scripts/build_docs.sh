@@ -24,7 +24,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
 
     # clone wradlib-docs
     echo "Cloning wradlib-docs repo"
-    git clone git@github.com:wradlib/wradlib-docs.git
+    git clone https://github.com/wradlib/wradlib-docs.git
 
     # get tagged versions from cloned repo
     cd wradlib-docs
