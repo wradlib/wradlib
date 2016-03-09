@@ -29,7 +29,7 @@ original polar volume data can be computed using :doc:`volcoords_from_polar <gen
 Then, we can create regular 3-D grids in order to analyse the vertical profile
 of reflectivity or rainfall intensity. For some applications you might want
 to create so-called `Constant Altitude Plan Position Indicators (CAPPI)
-<http://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_ in order
+<https://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_ in order
 to make radar observations at different distances from the radar more comparable.
 Basically, a CAPPI is simply one slice out of a 3-D volume grid. AnalogousBy the way, we will
 refer to the elements in a three dimensional Cartesian grid as *voxels*. In wradlib,
