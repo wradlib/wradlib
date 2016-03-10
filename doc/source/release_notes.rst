@@ -11,8 +11,31 @@ Bleeding Edge
 
 **Highlights**
 
-wradlib goes python3. The whole package was made python3-ready. The package is ready to run under python2.7.X and python3.5. All needed dependencies are also python3 ready.
-While doing the transformation not only code was adapted. Docstrings, tests and examples as well as the documentation were reviewed. All tests are performing good on python27 and python3.5
+nothing so far
+
+
+Version 0.8.0
+-------------
+
+**Highlights**
+
+* As of now wradlib is python3 compatible.
+* Docstrings, tests and examples as well as the documentation have been reviewed and fixed.
+* main wradlib repository is now hosted `here on github <https://github.com/wradlib/wradlib>`_.
+* wradlib docs are now hosted `on github, but with custom domain <http://wradlib.org/wradlib-docs/>`_.
+
+**New features**
+
+wradlib is constantly tested on `travis-ci wradlib <https://travis-ci.org/wradlib/wradlib>`_ within a miniconda python environment with the latest python27, python34 and python35 interpreters on linux OS.
+We also check code coverage for all pull requests and additions with `coveralls <https://coveralls.io/github/wradlib/wradlib>`_.
+
+**Deprecated features**
+
+*None.*
+
+**Removed functions**
+
+* `georef.create_projstr`, also removed deprecated decorators
 
 
 Version 0.7.0
@@ -22,7 +45,7 @@ Version 0.7.0
 
 New *experimental* module ``zonalstats``: it supports computation of zonal statistics (so far mean and variance) for target polygons. 
 Typical applications would be the computation of average catchment rainfall from polar or cartesian grids. Check out the 
-`module documentation <http://wradlib.github.io/wradlib-docs/zonalstats.html>`_ and the new examples.
+`module documentation <http://wradlib.github.io/wradlib-docs/latest/zonalstats.html>`_ and the new examples.
 
 
 Version 0.6.0
@@ -111,7 +134,7 @@ Version 0.4.0
 
 **New features**
 
-- comprehensive RADOLAN tutorial, examples, and example data: http://wradlib.github.io/wradlib-docs/tutorial_radolan_format.html
+- comprehensive RADOLAN tutorial, examples, and example data: http://wradlib.github.io/wradlib-docs/latest/tutorial_radolan_format.html
 - enhanced :doc:`generated/wradlib.io.read_RADOLAN_composite` to read EX product
 - :doc:`generated/wradlib.georef.get_radolan_grid`
 
@@ -135,13 +158,13 @@ However, the most important change introduced with this release was to remove a 
 
 In addition, we removed three outdated tutorial (on clutter detection, convertion and rainfall accumulation) and replaced the two latter by a more concise tutorial "Converting reflectivity to rainfall".
 
-Finally, we use one "central" bibliography for literature cross-referencing now (see http://wradlib.github.io/wradlib-docs/zreferences.html).
+Finally, we use one "central" bibliography for literature cross-referencing now (see http://wradlib.github.io/wradlib-docs/latest/zreferences.html).
 
 **New features**
 
 - New style of online docs (http://wradlib.github.io/wradlib-docs), using sphinx_rtd_theme
-- Added Tutorial http://wradlib.github.io/wradlib-docs/tutorial_get_rainfall.html
-- New organisation of bibliography: http://wradlib.github.io/wradlib-docs/zreferences.html
+- Added Tutorial http://wradlib.github.io/wradlib-docs/latest/tutorial_get_rainfall.html
+- New organisation of bibliography: http://wradlib.github.io/wradlib-docs/latest/zreferences.html
 
 **Deprecated features**
 
