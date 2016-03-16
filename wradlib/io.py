@@ -1244,8 +1244,9 @@ def find_key(key, dictionary):
                 yield result
         elif isinstance(v, list):
             for d in v:
-                for result in find_key(key, d):
-                    yield result
+                if isinstance(d, dict):
+                    for result in find_key(key, d):
+                        yield result
 
 
 def decompress(data):
