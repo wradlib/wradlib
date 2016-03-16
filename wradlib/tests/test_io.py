@@ -266,7 +266,6 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(wrl.io.get_RB_data_attribute(data[0], 'blobid'), 0)
         self.assertEqual(wrl.io.get_RB_data_attribute(data[1], 'blobid'), 1)
         self.assertEqual(wrl.io.get_RB_data_attribute(data[0], 'rays'), 361)
-        self.assertIsNone(wrl.io.get_RB_data_attribute(data[0], 'bins'))
         self.assertEqual(wrl.io.get_RB_data_attribute(data[1], 'rays'), 361)
         self.assertEqual(wrl.io.get_RB_data_attribute(data[1], 'bins'), 400)
         self.assertRaises(KeyError, lambda: wrl.io.get_RB_data_attribute(data[0], 'Nonsense'))
@@ -279,6 +278,20 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(wrl.io.get_RB_blob_attribute(xmldict, 'size'), '737')
         self.assertEqual(wrl.io.get_RB_blob_attribute(xmldict, 'blobid'), '0')
         self.assertRaises(KeyError, lambda: wrl.io.get_RB_blob_attribute(xmldict, 'Nonsense'))
+
+    def test_get_RB_data_shape(self):
+        xmltodict = wrl.util.import_optional('xmltodict')
+        data = xmltodict.parse('<slicedata time="13:30:05" date="2013-04-26"> \
+        #<rayinfo refid="startangle" blobid="0" rays="361" depth="16"/> \
+        #<rawdata blobid="1" rays="361" type="dBuZ" bins="400" min="-31.5" max="95.5" depth="8"/> \
+        #<flagmap blobid="2" rows="800" type="dBuZ" columns="400" min="-31.5" max="95.5" depth="6"/> \
+        #<defect blobid="3" type="dBuZ" columns="400" min="-31.5" max="95.5" depth="6"/> \
+        #</slicedata>')
+        data = list(wrl.io.find_key('@blobid', data))
+        self.assertEqual(wrl.io.get_RB_data_shape(data[0]), 361)
+        self.assertEqual(wrl.io.get_RB_data_shape(data[1]), (361, 400))
+        self.assertEqual(wrl.io.get_RB_data_shape(data[2]), (800, 400, 6))
+        self.assertRaises(KeyError, lambda: wrl.io.get_RB_data_shape(data[3]))
 
     def test_map_RB_data(self):
         indata = b'0123456789'
