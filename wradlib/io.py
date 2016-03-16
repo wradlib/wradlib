@@ -1244,8 +1244,9 @@ def find_key(key, dictionary):
                 yield result
         elif isinstance(v, list):
             for d in v:
-                for result in find_key(key, d):
-                    yield result
+                if isinstance(d, dict):
+                    for result in find_key(key, d):
+                        yield result
 
 
 def decompress(data):
@@ -1312,9 +1313,6 @@ def get_RB_data_attribute(xmldict, attr):
     try:
         sattr = int(xmldict['@' + attr])
     except KeyError:
-        if attr == 'bins':
-            sattr = None
-        else:
             raise KeyError('Attribute @' + attr + ' is missing from Blob Description'
                                                   'There may be some problems with your file')
     return sattr
@@ -1400,12 +1398,63 @@ def map_RB_data(data, datadepth):
     data : numpy array
         Content of blob
     """
+    flagdepth = None
+    if datadepth < 8 :
+        flagdepth = datadepth
+        datadepth = 8
+
     datawidth, datatype = get_RB_data_layout(datadepth)
 
     # import from data buffer well aligned to data array
     data = np.ndarray(shape=(int(len(data) / datawidth),), dtype=datatype, buffer=data)
 
+    if flagdepth:
+        data = np.unpackbits(data)
+
     return data
+
+
+def get_RB_data_shape(blobdict):
+    """
+    Retrieve correct BLOB data shape from blobdict
+
+    Parameters
+    ----------
+    blobdict : dict
+        Blob Description Dict
+
+    Returns
+    -------
+    tuple : shape
+        shape of data
+    """
+    # this is a bit hacky, but we do not know beforehand, so we extract this on the run
+    try:
+        dim0 = get_RB_data_attribute(blobdict, 'rays')
+        dim1 = get_RB_data_attribute(blobdict, 'bins')
+        # if rays and bins are found, return both
+        return dim0, dim1
+    except KeyError as e1:
+        try:
+            # if only rays is found, return rays
+            return dim0
+        except UnboundLocalError:
+            try:
+                # if both rays and bins not found assuming pixmap
+                dim0 = get_RB_data_attribute(blobdict, 'rows')
+                dim1 = get_RB_data_attribute(blobdict, 'columns')
+                dim2 = get_RB_data_attribute(blobdict, 'depth')
+                if dim2 < 8:
+                    # if flagged data return ros x columns x depth
+                    return dim0, dim1, dim2
+                else:
+                    # otherwise just rosw x columns
+                    return dim0, dim1
+            except KeyError as e2:
+                # if no some keys are missing, print errors and raise
+                print(e1)
+                print(e2)
+                raise
 
 
 def get_RB_blob_from_string(datastring, blobdict):
@@ -1434,10 +1483,7 @@ def get_RB_blob_from_string(datastring, blobdict):
     data = map_RB_data(data, datadepth)
 
     # reshape data
-    bins = get_RB_data_attribute(blobdict, 'bins')
-    if bins:
-        rays = get_RB_data_attribute(blobdict, 'rays')
-        data.shape = (rays, bins)
+    data.shape = get_RB_data_shape(blobdict)
 
     return data
 
