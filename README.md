@@ -6,9 +6,10 @@ wradlib uses [Travis CI](https://travis-ci.org/) for Continuous Integration. Thi
 
 Below you see the Travis Status of wradlib. A red status indicates that the current revision of wradlib did not pass the tests successfully. You should be aware of that. then again, you should be aware that a green Travis status is not a guarantee that the latest revision is bug free. It just means that our tests did not find any bugs.
 
-## Build Status ##
+## Package Status ##
 
 [![Build Status](https://travis-ci.org/wradlib/wradlib.svg?branch=master)](https://travis-ci.org/wradlib/wradlib)
+[![Code Coverage](https://coveralls.io/repos/github/wradlib/wradlib/badge.svg?branch=master)](https://coveralls.io/github/wradlib/wradlib?branch=master)
 
 ### Documentation ###
 
