@@ -3,7 +3,7 @@ Release Notes
 
 Please note that as long as wradlib releases are within the ``0.y.z`` series, the API cannot be considered stable. We will try to avoid sudden API breaks via deprecation warnings. All wradlib releases come without any warranty. Release notes might be incomplete. See `here <https://github.com/wradlib/wradlib/commits/master>`_ for a complete record of changes.
 
-You can install the latest wradlib release from PyPI via ``$ pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``.
+You can install the latest wradlib release from PyPI via ``$ pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in :doc:`gettingstarted`.
 
 
 Bleeding Edge
@@ -11,7 +11,14 @@ Bleeding Edge
 
 **Highlights**
 
-nothing so far
+* documentation reviewed, adapted gettingstarted.rst, dev_setup.rst and release_notes.rst
+
+** New features **
+
+* enhanced ``wradlib.io.read_Rainbow`` to read product pixmap data from rainbow5 files
+Bugfix: removed bug reading lists in ``wradlib.io.read_Rainbow``
+
+
 
 
 Version 0.8.0
