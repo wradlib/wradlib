@@ -29,6 +29,9 @@ matrix:
 
 install: source scripts/install.sh
 
+before_script:
+    flake8 .
+
 script:
     - export GDAL_DATA=/home/travis/miniconda2/envs/wradlib/share/gdal
     - xvfb-run coverage run --source wradlib testrunner.py -a
