@@ -226,7 +226,7 @@ def ex_tutorial_zonal_statistics_polar():
     t3 = dt.datetime.now()
     
     # Create instance of type GridCellsToPoly from zonal data file
-    obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly')
+    obj4 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly')
 
     t4 = dt.datetime.now()
 
