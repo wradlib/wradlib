@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        georef
 # Purpose:
 #
@@ -8,8 +9,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Georeferencing
@@ -45,25 +45,23 @@ Georeferencing
 
 """
 
-##* Seitenlänge Zenit - Himmelsnordpol: 90°-phi
-##* Seitenlänge Himmelsnordpol - Gestirn: 90°-delta
-##* Seitenlänge Zenit - Gestirn: 90°-h
-##* Winkel Himmelsnordpol - Zenit - Gestirn: 180°-a
-##* Winkel Zenit - Himmelsnordpol - Gestirn: tau
+# Seitenlänge Zenit - Himmelsnordpol: 90°-phi
+# Seitenlänge Himmelsnordpol - Gestirn: 90°-delta
+# Seitenlänge Zenit - Gestirn: 90°-h
+# Winkel Himmelsnordpol - Zenit - Gestirn: 180°-a
+# Winkel Zenit - Himmelsnordpol - Gestirn: tau
 
-## alpha - rektaszension
-## delta - deklination
-## theta - sternzeit
-## tau = theta - alpha - stundenwinkel
-## a - azimuth (von süden aus gezählt)
-## h - Höhe über Horizont
+# alpha - rektaszension
+# delta - deklination
+# theta - sternzeit
+# tau = theta - alpha - stundenwinkel
+# a - azimuth (von süden aus gezählt)
+# h - Höhe über Horizont
 
 from osgeo import gdal, osr
-# from numpy import sin, cos, arcsin, pi
 import numpy as np
 from sys import exit
 import warnings
-import wradlib as wrl
 
 
 def hor2aeq(a, h, phi):
@@ -203,7 +201,7 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     r = rng / re
 
     easterly = az <= 180.
-    westerly = ~easterly
+    # westerly = ~easterly
     a = np.deg2rad(np.where(easterly, az, az - 180.))
 
     m = np.arccos(np.cos(r) * np.cos(l) + np.sin(r) * np.sin(l) * np.cos(a))
@@ -730,7 +728,7 @@ def _check_polar_coords(r, az):
         exit()
     if not _is_sorted(az):
         # it is ok if the azimuth angle array is not sorted, but it has to be
-        #   'continuously clockwise', e.g. it could start at 90° and stop at °89
+        # 'continuously clockwise', e.g. it could start at 90° and stop at °89
         az_right = az[np.where(np.logical_and(az <= 360, az >= az[0]))[0]]
         az_left = az[np.where(az < az[0])]
         if (not _is_sorted(az_right)) or (not _is_sorted(az_left)):
@@ -738,8 +736,8 @@ def _check_polar_coords(r, az):
             exit()
     if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1])) > 1:
         warnings.warn("The azimuth angles of the current dataset are not equidistant.", UserWarning)
-    ##        print 'Invalid polar coordinates: Azimuth angles are not equidistant.'
-    ##        exit()
+        # print 'Invalid polar coordinates: Azimuth angles are not equidistant.'
+        # exit()
     return r, az
 
 
@@ -939,10 +937,10 @@ def get_earth_radius(latitude, sr=None):
     RADIUS_E = sr.GetSemiMajor()
     RADIUS_P = sr.GetSemiMinor()
     latitude = np.radians(latitude)
-    radius = np.sqrt((np.power(RADIUS_E, 4) * np.power(np.cos(latitude), 2) + np.power(RADIUS_P, 4) * np.power(
-        np.sin(latitude), 2)) / (
-                     np.power(RADIUS_E, 2) * np.power(np.cos(latitude), 2) + np.power(RADIUS_P, 2) * np.power(
-                         np.sin(latitude), 2)))
+    radius = np.sqrt((np.power(RADIUS_E, 4) * np.power(np.cos(latitude), 2) +
+                      np.power(RADIUS_P, 4) * np.power(np.sin(latitude), 2)) /
+                     (np.power(RADIUS_E, 2) * np.power(np.cos(latitude), 2) +
+                      np.power(RADIUS_P, 2) * np.power(np.sin(latitude), 2)))
     return (radius)
 
 
@@ -1078,7 +1076,7 @@ def read_gdal_projection(dset):
     proj4 = dset.GetProjection()
     srs = osr.SpatialReference()
     srs.ImportFromProj4(proj4)
-    src = None
+    # src = None
     return srs
 
 

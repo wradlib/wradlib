@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        zonalstats
 # Purpose:
 #
@@ -8,7 +8,8 @@
 # Created:     12.11.2015
 # Copyright:   (c) Maik Heistermann, Kai Muehlbauer 2015
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 """
 Zonal Statistics
 ^^^^^^^^^^^^^^^^
@@ -56,7 +57,6 @@ Calling the objects with actual data, however, will be very fast.
 import os
 import numpy as np
 from scipy.spatial import cKDTree
-import datetime as dt
 from matplotlib.path import Path
 import matplotlib.patches as patches
 from osgeo import gdal, ogr
@@ -497,8 +497,7 @@ class ZonalDataBase(object):
                                                                      'METHOD_PREFIX=src_',
                                                                      'PROMOTE_TO_MULTI=YES',
                                                                      'PRETEST_CONTAINMENT=YES'])
-        
-        
+
         return ds_mem
 
     def _create_dst_features(self, dst, trg, **kwargs):
@@ -733,7 +732,7 @@ class ZonalDataPoint(ZonalDataBase):
         ret = [[] for _ in range(2)]
         for index in range(cnt):
             arr = self.dst.get_attributes(['src_index'], filt=('trg_index', index))
-            arr.append([1./len(arr[0])] * len(arr[0]))
+            arr.append([1. / len(arr[0])] * len(arr[0]))
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
         return tuple(ret)
@@ -784,7 +783,7 @@ class ZonalStatsBase(object):
     The base class for computing 2-dimensional zonal statistics for target
     polygons from source points or polygons as built up with ZonalDataBase
     and derived classes. Provides the basic design for all other classes.
-    
+
     If no source points or polygons can be associated to a target polygon (e.g.
     no intersection), the zonal statistic for that target will be NaN.
 
@@ -898,7 +897,7 @@ class ZonalStatsBase(object):
             self.zdata.trg.set_attribute('mean', out)
 
         return out
-            
+
     def var(self, vals):
         """
         Evaluate (weighted) zonal variance for values given at the source points.
@@ -1304,7 +1303,7 @@ def numpy_to_pathpatch(arr):
             path = Path(vert, code)
             paths.append(patches.PathPatch(path))
         else:
-            path = Path(item, [1] + (len(item)-1) * [2])
+            path = Path(item, [1] + (len(item) - 1) * [2])
             paths.append(patches.PathPatch(path))
 
     return np.array(paths)
@@ -1387,19 +1386,19 @@ def mask_from_bbox(x, y, bbox, polar=False):
         if imin > imax:
             mask[:imax, jmin:jmax] = True
             mask[imin:, jmin:jmax] = True
-            shape = (int(ar[maxind]), jmax-jmin)
+            shape = (int(ar[maxind]), jmax - jmin)
         else:
             mask[imin:imax, jmin:jmax] = True
-            shape = (int(ar[maxind]), jmax-jmin)
+            shape = (int(ar[maxind]), jmax - jmin)
 
     else:
 
         if iur > ill:
             mask[ill:iur, jll:jur] = True
-            shape = (iur-ill, jur-jll)
+            shape = (iur - ill, jur - jll)
         else:
             mask[iur:ill, jll:jur] = True
-            shape = (ill-iur, jur-jll)
+            shape = (ill - iur, jur - jll)
 
     return mask, shape
 
@@ -1412,8 +1411,8 @@ def angle_between(source_angle, target_angle):
     source_angle : starting angle
     target_angle : target angle
     """
-    sin1 = np.sin(np.radians(target_angle)-np.radians(source_angle))
-    cos1 = np.cos(np.radians(target_angle)-np.radians(source_angle))
+    sin1 = np.sin(np.radians(target_angle) - np.radians(source_angle))
+    cos1 = np.cos(np.radians(target_angle) - np.radians(source_angle))
     return np.rad2deg(np.arctan2(sin1, cos1))
 
 
@@ -1475,10 +1474,10 @@ def grid_centers_to_vertices(x, y, dx, dy):
     out : 3-d array
         of vertices for each grid cell of shape (n grid points,5, 2)
     """
-    top = y + dy/2
-    left = x - dx/2
-    right = x + dy/2
-    bottom = y - dy/2
+    top = y + dy / 2
+    left = x - dx / 2
+    right = x + dy / 2
+    bottom = y - dy / 2
 
     verts = np.vstack(([left.ravel(), bottom.ravel()],
                        [right.ravel(), bottom.ravel()],

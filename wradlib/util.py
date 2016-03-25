@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        util
 # Purpose:
 #
@@ -7,9 +8,8 @@
 #
 # Created:     26.10.2011
 # Copyright:   (c) heistermann 2011
-# Licence:     <your licence>
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# Licence:     The MIT License
+# -----------------------------------------------------------------------------
 
 """
 Utility functions
@@ -440,7 +440,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
      [  nan   nan   nan   nan]]
 
     """
-    ##    src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
+    # src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
     dt_src, dt_trg = np.array(dt_src), np.array(dt_trg)
     trg_shape = list(src.shape)
     trg_shape[taxis] = len(dt_trg) - 1
@@ -633,7 +633,7 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
 
     for i in range(len(dt_trg) - 1):
         # width of window
-        width = float(_tdelta2seconds(dt_trg[i + 1] - dt_trg[i]))
+        # width = float(_tdelta2seconds(dt_trg[i + 1] - dt_trg[i]))
         # These are the intervals completely INSIDE the target time window
         helper_ix = np.where(np.logical_and(dt_src >= dt_trg[i], dt_src <= dt_trg[i + 1]))[0]
         trg[i] = np.mean(helpers[helper_ix], axis=0)
@@ -715,10 +715,8 @@ def _get_tdelta(tstart, tend, as_secs=False):
     """Returns the difference between two datetimes
     """
     if not isinstance(tstart, dt.datetime):
-    #if not type(tstart) == dt.datetime:
         tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
     if not isinstance(tend, dt.datetime):
-    #if not type(tend) == dt.datetime:
         tend = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
     if not as_secs:
         return tend - tstart
@@ -858,7 +856,7 @@ def meshgridN(*arrs):
             if j != i:
                 arr2 = arr2.repeat(sz, axis=j)
         ans.append(arr2)
-    ##   return tuple(ans[::-1])
+    # return tuple(ans[::-1])
     return tuple(ans)
 
 
@@ -890,7 +888,7 @@ def issequence(x):
     out = True
     try:
         # can we get a length on the object
-        length = len(x)
+        len(x)
     except Exception:
         return False
     # is the object not a string?
@@ -1208,9 +1206,9 @@ def roll2d_polar(img, shift=1, axis=0):
 class UTC(tzinfo):
     """
     UTC implementation for tzinfo.
-    
+
     See e.g. http://python.active-venture.com/lib/datetime-tzinfo.html
-    
+
     Replaces pytz.utc
     """
 
@@ -1302,12 +1300,13 @@ def find_bbox_indices(coords, bbox):
 
     return bbind
 
+
 def has_geos():
-    pnt1 = ogr.CreateGeometryFromWkt( 'POINT(10 20)' )
-    pnt2 = ogr.CreateGeometryFromWkt( 'POINT(30 20)' )
+    pnt1 = ogr.CreateGeometryFromWkt('POINT(10 20)')
+    pnt2 = ogr.CreateGeometryFromWkt('POINT(30 20)')
     ogrex = ogr.GetUseExceptions()
     ogr.DontUseExceptions()
-    hasgeos = pnt1.Union( pnt2 ) is not None
+    hasgeos = pnt1.Union(pnt2) is not None
     if ogrex:
         ogr.UseExceptions()
     return hasgeos

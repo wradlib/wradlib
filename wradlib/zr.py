@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        zr
 # Purpose:
 #
@@ -6,9 +7,9 @@
 #
 # Created:     26.10.2011
 # Copyright:   (c) heistermann 2011
-# Licence:     <your licence>
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# Licence:     The MIT License
+# -----------------------------------------------------------------------------
+
 """
 Z-R Conversions
 ^^^^^^^^^^^^^^^
@@ -221,7 +222,7 @@ def _z2rEnhanced_md(z):
 
     # now iterate only over remaining pixels
     wlt36 = np.where(db < 36.5)
-    nlt36 = len(wlt36[0])
+    # nlt36 = len(wlt36[0])
     for indices in zip(*wlt36):
         # x and y-indices
         i = indices[-2]
@@ -277,8 +278,8 @@ def _z2rEnhanced_mdfilt(z):
     even more.
     """
     # get the shape of the input
-    dimy = z.shape[-2]
-    dimx = z.shape[-1]
+    # dimy = z.shape[-2]
+    # dimx = z.shape[-1]
 
     # calculate the decibel values from the input
     db = decibel(z)
@@ -318,8 +319,8 @@ def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
     even more.
     """
     # get the shape of the input
-    dimy = z.shape[-2]
-    dimx = z.shape[-1]
+    # dimy = z.shape[-2]
+    # dimx = z.shape[-1]
 
     # calculate the decibel values from the input
     db = decibel(z)

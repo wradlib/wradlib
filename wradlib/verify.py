@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        verify
 # Purpose:
 #
@@ -7,8 +8,8 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
+
 
 """
 Verification
@@ -35,7 +36,6 @@ from pprint import pprint
 # wradlib modules
 from . import georef as georef
 from . import util as util
-from .util import apichange_kwarg
 
 
 class PolarNeighbours():

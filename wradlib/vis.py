@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        vis
 # Purpose:
 #
@@ -8,8 +9,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Visualisation
@@ -37,12 +37,9 @@ Standard plotting and mapping procedures
 
 # standard libraries
 import os.path as path
-import math
 
 # site packages
 import numpy as np
-import pylab as pl
-import matplotlib
 import matplotlib as mpl
 import matplotlib.pyplot as pl
 from matplotlib import patches
@@ -50,19 +47,14 @@ from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
 from mpl_toolkits.axisartist import SubplotHost, ParasiteAxesAuxTrans, GridHelperCurveLinear
 from mpl_toolkits.axisartist.grid_finder import FixedLocator
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from mpl_toolkits.axes_grid1 import axes_size as Size
 import mpl_toolkits.axisartist.angle_helper as angle_helper
 from matplotlib.ticker import NullFormatter, FuncFormatter
 import matplotlib.dates as mdates
 from matplotlib.collections import LineCollection, PolyCollection
-import matplotlib.font_manager as fm
 
 # wradlib modules
 from . import georef as georef
 from . import util as util
-from .util import apichange_kwarg
-from .util import deprecated
 
 
 class NorthPolarAxes(PolarAxes):
@@ -1054,7 +1046,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
 
     """
 
-    fig = pl.figure(figsize=(10, 10))
+    pl.figure(figsize=(10, 10))
 
     # define axes
     left, bottom, width, height = 0.1, 0.1, 0.6, 0.2
