@@ -12,8 +12,6 @@
 
 import unittest
 
-import wradlib.comp as comp
-import numpy as np
 
 class ComposeTest(unittest.TestCase):
     def test_extract_circle(self):

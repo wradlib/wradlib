@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+# !/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        test_georef
 # Purpose:     testing file for the wradlib.georef module
 #
@@ -7,8 +8,7 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-# !/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import unittest
 import wradlib.georef as georef
@@ -18,9 +18,9 @@ from osgeo import osr
 
 class CoordinateTransformTest(unittest.TestCase):
     def setUp(self):
-        self.r = np.array([0.,   0., 111., 111., 111., 111.]) * 1000
-        self.az = np.array([0., 180.,   0.,  90., 180., 270.])
-        self.th = np.array([0.,   0.,   0.,   0.,   0.,  0.5])
+        self.r = np.array([0., 0., 111., 111., 111., 111.]) * 1000
+        self.az = np.array([0., 180., 0., 90., 180., 270.])
+        self.th = np.array([0., 0., 0., 0., 0., 0.5])
         self.csite = (9.0, 48.0)
         self.result = tuple((np.array([9., 9., 9., 10.49189531, 9., 7.50810469]),
                              np.array([48., 48., 48.99839742, 47.99034027, 47.00160258, 47.99034027]),
@@ -56,6 +56,7 @@ class CoordinateTransformTest(unittest.TestCase):
                                               1.09489125e+05, 1.11178171e+05, 1.09489125e+05, 1.04473307e+05,
                                               9.62831209e+04, 8.51674205e+04, 7.14639511e+04, 5.55890857e+04,
                                               3.80251741e+04, 1.93058869e+04])))
+
     def test_beam_height_n(self):
         self.assertTrue(np.allclose(georef.beam_height_n(np.arange(10., 101., 10.) * 1000., 2.),
                                     np.array([354.87448647, 721.50702113, 1099.8960815,
@@ -74,9 +75,9 @@ class CoordinateHelperTest(unittest.TestCase):
     def test_centroid2polyvert(self):
         self.assertTrue(np.allclose(georef.centroid2polyvert([0., 1.], [0.5, 1.5]),
                         np.array([[-0.5, -0.5],
-                                  [-0.5,  2.5],
-                                  [ 0.5,  2.5],
-                                  [ 0.5, -0.5],
+                                  [-0.5, 2.5],
+                                  [0.5, 2.5],
+                                  [0.5, -0.5],
                                   [-0.5, -0.5]])))
 
         self.assertTrue(np.allclose(georef.centroid2polyvert(np.arange(4).reshape((2, 2)), 0.5),
@@ -125,34 +126,39 @@ class CoordinateHelperTest(unittest.TestCase):
                                                      [47.99992237, 47.9999208]])))))
 
     def test_sweep_centroids(self):
-        self.assertTrue(np.allclose(georef.sweep_centroids(1,100.,1,2.0),
+        self.assertTrue(np.allclose(georef.sweep_centroids(1, 100., 1, 2.0),
                                     np.array([[[50., 1.57079633, 2.]]])))
 
 
 class ProjectionsTest(unittest.TestCase):
     def test_create_osr(self):
         self.maxDiff = None
-        radolan_wkt = 'PROJCS["Radolan projection",' \
-                  'GEOGCS["Radolan Coordinate System",' \
-                  'DATUM["Radolan Kugel",' \
-                  'SPHEROID["Erdkugel",6370040.0,0.0]],' \
-                  'PRIMEM["Greenwich",0.0,AUTHORITY["EPSG","8901"]],' \
-                  'UNIT["degree",0.017453292519943295],' \
-                  'AXIS["Longitude",EAST],' \
-                  'AXIS["Latitude",NORTH]],' \
-                  'PROJECTION["polar_stereographic"],' \
-                  'PARAMETER["central_meridian",10.0],' \
-                  'PARAMETER["latitude_of_origin",60.0],' \
-                  'PARAMETER["scale_factor",{0:8.10f}],' \
-                  'PARAMETER["false_easting",0.0],' \
-                  'PARAMETER["false_northing",0.0],' \
-                  'UNIT["m*1000.0",1000.0],' \
-                  'AXIS["X",EAST],' \
-                  'AXIS["Y",NORTH]]'.format((1. + np.sin(np.radians(60.))) / (1. + np.sin(np.radians(90.))))
+        radolan_wkt = 'PROJCS["Radolan projection", ' \
+                      'GEOGCS["Radolan Coordinate System",' \
+                      'DATUM["Radolan Kugel",' \
+                      'SPHEROID["Erdkugel",6370040.0,0.0]],' \
+                      'PRIMEM["Greenwich",0.0,AUTHORITY["EPSG","8901"]],' \
+                      'UNIT["degree",0.017453292519943295],' \
+                      'AXIS["Longitude",EAST],' \
+                      'AXIS["Latitude",NORTH]],' \
+                      'PROJECTION["polar_stereographic"],' \
+                      'PARAMETER["central_meridian",10.0],' \
+                      'PARAMETER["latitude_of_origin",60.0],' \
+                      'PARAMETER["scale_factor",{0:8.10f}],' \
+                      'PARAMETER["false_easting",0.0],' \
+                      'PARAMETER["false_northing",0.0],' \
+                      'UNIT["m*1000.0",1000.0],' \
+                      'AXIS["X",EAST],' \
+                      'AXIS["Y",NORTH]]'.format((1. + np.sin(np.radians(60.))) /
+                                                (1. + np.sin(np.radians(90.))))
         self.assertEqual(georef.create_osr('dwd-radolan').ExportToWkt(), radolan_wkt)
 
     def test_proj4_to_osr(self):
-        srs = georef.proj4_to_osr('+proj=lcc +lat_1=46.8 +lat_0=46.8 +lon_0=0 +k_0=0.99987742 +x_0=600000 +y_0=2200000 +a=6378249.2 +b=6356515 +towgs84=-168,-60,320,0,0,0,0 +pm=paris +units=m +no_defs' )
+        srs = georef.proj4_to_osr('+proj=lcc +lat_1=46.8 +lat_0=46.8 +lon_0=0 '
+                                  '+k_0=0.99987742 +x_0=600000 +y_0=2200000 '
+                                  '+a=6378249.2 +b=6356515 '
+                                  '+towgs84=-168,-60,320,0,0,0,0 '
+                                  '+pm=paris +units=m +no_defs')
         p4 = srs.ExportToProj4()
         srs2 = osr.SpatialReference()
         srs2.ImportFromProj4(p4)
@@ -173,38 +179,37 @@ class ProjectionsTest(unittest.TestCase):
 
     def test_get_default_projection(self):
         self.assertEqual(georef.get_default_projection().ExportToWkt(),
-                      'GEOGCS["WGS 84",DATUM["WGS_1984",'
-                      'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
-                      'AUTHORITY["EPSG","6326"]],'
-                      'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
-                      'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
-                      'AUTHORITY["EPSG","4326"]]')
+                         'GEOGCS["WGS 84",DATUM["WGS_1984",'
+                         'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                         'AUTHORITY["EPSG","6326"]],'
+                         'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                         'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                         'AUTHORITY["EPSG","4326"]]')
 
     def test_epsg_to_osr(self):
         self.assertEqual(georef.epsg_to_osr(4326).ExportToWkt(),
-                      'GEOGCS["WGS 84",DATUM["WGS_1984",'
-                      'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
-                      'AUTHORITY["EPSG","6326"]],'
-                      'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
-                      'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
-                      'AUTHORITY["EPSG","4326"]]')
+                         'GEOGCS["WGS 84",DATUM["WGS_1984",'
+                         'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                         'AUTHORITY["EPSG","6326"]],'
+                         'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                         'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                         'AUTHORITY["EPSG","4326"]]')
 
         self.assertEqual(georef.epsg_to_osr().ExportToWkt(),
-                      'GEOGCS["WGS 84",DATUM["WGS_1984",'
-                      'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
-                      'AUTHORITY["EPSG","6326"]],'
-                      'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
-                      'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
-                      'AUTHORITY["EPSG","4326"]]')
-
+                         'GEOGCS["WGS 84",DATUM["WGS_1984",'
+                         'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                         'AUTHORITY["EPSG","6326"]],'
+                         'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                         'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                         'AUTHORITY["EPSG","4326"]]')
 
     def test_wkt_to_osr(self):
         self.assertTrue(georef.wkt_to_osr('GEOGCS["WGS 84",DATUM["WGS_1984",'
-                                           'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
-                                           'AUTHORITY["EPSG","6326"]],'
-                                           'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
-                                           'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
-                                           'AUTHORITY["EPSG","4326"]]').IsSame(georef.get_default_projection()))
+                                          'SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+                                          'AUTHORITY["EPSG","6326"]],'
+                                          'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                                          'UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],'
+                                          'AUTHORITY["EPSG","4326"]]').IsSame(georef.get_default_projection()))
 
         self.assertTrue(georef.wkt_to_osr().IsSame(georef.get_default_projection()))
 

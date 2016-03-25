@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
+# Name:        test_util
+# Purpose:     testing file for the wradlib.util module
+#
+# Authors:     wradlib developers
+#
+# Created:
+# Copyright:   wradlib developers
+# Licence:     The MIT License
+# -----------------------------------------------------------------------------
+
 import numpy as np
 import wradlib.util as util
 import unittest
@@ -11,20 +23,20 @@ class HelperFunctionsTest(unittest.TestCase):
         self.assertRaises(AttributeError, lambda: util._get_func('aranged'))
 
     def test__shape2size(self):
-        self.assertEqual(util._shape2size((10, 10, 10)), 10*10*10)
+        self.assertEqual(util._shape2size((10, 10, 10)), 10 * 10 * 10)
 
     def test__tdelta2seconds(self):
-        self.assertEqual(util._tdelta2seconds(dt.datetime(2001,1,1,1)-dt.datetime(2000,1,1)), 366 * 24 * 60 * 60 + 3600)
-        self.assertEqual(util._tdelta2seconds(dt.datetime(2002,1,1,1)-dt.datetime(2001,1,1)), 365 * 24 * 60 * 60 + 3600)
+        self.assertEqual(util._tdelta2seconds(dt.datetime(2001, 1, 1, 1) - dt.datetime(2000, 1, 1)), 366 * 24 * 60 * 60 + 3600)
+        self.assertEqual(util._tdelta2seconds(dt.datetime(2002, 1, 1, 1) - dt.datetime(2001, 1, 1)), 365 * 24 * 60 * 60 + 3600)
 
     def test__get_tdelta(self):
-        tstart = dt.datetime(2000,1,1)
-        tend = dt.datetime(2001,1,1,1)
+        tstart = dt.datetime(2000, 1, 1)
+        tend = dt.datetime(2001, 1, 1, 1)
         tstart_str = "2000-01-01 00:00:00"
         tend_str = "2001-01-01 01:00:00"
-        self.assertEqual(util._get_tdelta(tstart, tend), tend-tstart)
-        self.assertEqual(util._get_tdelta(tstart_str, tend_str), tend-tstart)
-        self.assertRaises(ValueError, lambda: util._get_tdelta(tstart_str, tend_str+".00000"))
+        self.assertEqual(util._get_tdelta(tstart, tend), tend - tstart)
+        self.assertEqual(util._get_tdelta(tstart_str, tend_str), tend - tstart)
+        self.assertRaises(ValueError, lambda: util._get_tdelta(tstart_str, tend_str + ".00000"))
         self.assertEqual(util._get_tdelta(tstart_str, tend_str, as_secs=True), 366 * 24 * 60 * 60 + 3600)
 
     def test__idvalid(self):
@@ -61,8 +73,8 @@ class TestUtil(unittest.TestCase):
     def test_filter_window_polar(self):
         np.set_printoptions(precision=3)
         rscale = 250
-        nrays, nbins = self.img.shape
-        ascale = 2 * np.pi / self.img.shape[0]
+        # nrays, nbins = self.img.shape
+        # ascale = 2 * np.pi / self.img.shape[0]
         mean = util.filter_window_polar(self.img, 300, "maximum", rscale)
         correct = np.array([[0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
                             [0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
@@ -148,6 +160,7 @@ class TestUtil(unittest.TestCase):
                             [0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]])
         self.assertTrue(np.allclose(util.filter_window_cartesian(self.img, 500., "maximum", np.array([250., 250])),
                                     correct))
+
 
 class FindBboxIndicesTest(unittest.TestCase):
     def setUp(self):

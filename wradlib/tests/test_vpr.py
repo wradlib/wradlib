@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        test_vpr.py
 # Purpose:     testing file for the wradlib.vpr module
 #
@@ -8,13 +8,14 @@
 # Created:     26.02.2016
 # Copyright:   (c) wradlib developers
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import unittest
 
 import wradlib.vpr as vpr
 import wradlib.georef as georef
 import numpy as np
+
 
 class VPRHelperFunctionsTest(unittest.TestCase):
     def setUp(self):
@@ -32,15 +33,15 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         pass
 
     def test_volcoords_from_polar(self):
-        coords = vpr.volcoords_from_polar(self.site, self.el, self.az, self.r, self.proj)
+        coords = vpr.volcoords_from_polar(self.site, self.el, self.az, self.r, self.proj)  # noqa
         pass
 
     def test_volcoords_from_polar_irregular(self):
-        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0], self.az, self.r, self.proj)
+        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0], self.az, self.r, self.proj)  # noqa
         pass
 
     def test_synthetic_polar_volume(self):
-        vol = vpr.synthetic_polar_volume(self.coords)
+        vol = vpr.synthetic_polar_volume(self.coords)  # noqa
         pass
 
     def test_vpr_interpolator(self):
@@ -62,6 +63,7 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         vert_res = 250.
         vpr.make_3D_grid(self.site, self.proj, maxrange, maxalt, horiz_res, vert_res)
         pass
+
 
 class CartesianVolumeTest(unittest.TestCase):
     def test_CartesianVolume(self):
