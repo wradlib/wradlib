@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        tutorial_zonal_statistics_polar.py
 # Purpose:
 #
@@ -8,14 +9,13 @@
 # Created:     26.08.2015
 # Copyright:   (c) heistermann, muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import os
 from osgeo import osr
 import wradlib
 import matplotlib.pyplot as plt
-#plt.interactive(True)
+# plt.interactive(True)
 import numpy as np
 from matplotlib.collections import PatchCollection
 from matplotlib.colors import from_levels_and_colors
@@ -130,7 +130,7 @@ def ex_tutorial_zonal_statistics_polar():
 
     ###########################################################################
     # Approach #1: Assign grid points to each polygon and compute the average.
-    # 
+    #
     # - Uses matplotlib.path.Path
     # - Each point is weighted equally (assumption: polygon >> grid cell)
     # - this is quick, but theoretically dirty
@@ -154,7 +154,7 @@ def ex_tutorial_zonal_statistics_polar():
     var1 = obj1.var(data_.ravel())
 
     t3 = dt.datetime.now()
-    
+
     # Create instance of type GridPointsToPoly from zonal data file
     obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_points')
 
@@ -163,7 +163,7 @@ def ex_tutorial_zonal_statistics_polar():
     print ("Approach #1 computation time:")
     print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
     print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
-    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())    
+    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())
 
     # PLOTTING Approach #2
 
@@ -224,7 +224,7 @@ def ex_tutorial_zonal_statistics_polar():
     var3 = obj3.var(data_.ravel())
 
     t3 = dt.datetime.now()
-    
+
     # Create instance of type GridCellsToPoly from zonal data file
     obj3 = wradlib.zonalstats.GridCellsToPoly('test_zonal_poly')
 
@@ -233,7 +233,7 @@ def ex_tutorial_zonal_statistics_polar():
     print ("Approach #2 computation time:")
     print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
     print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
-    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())    
+    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())
 
     obj3.zdata.trg.dump_raster('test_zonal_hdr.nc', 'netCDF', 'mean', pixel_size=100.)
 

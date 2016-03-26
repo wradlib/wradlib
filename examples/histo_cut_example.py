@@ -1,17 +1,17 @@
+#!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        module1
 # Purpose:
 # Author:      jacobi
 # Created:     05.04.2011
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import wradlib.clutter as clutter
 import numpy as np
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
-#pl.interactive(True)
+# pl.interactive(True)
 import os
 
 

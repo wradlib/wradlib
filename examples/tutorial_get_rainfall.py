@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        tutorial_get_rainfall.py
 # Purpose:
 #
@@ -7,13 +8,12 @@
 # Created:     27/01/2015
 # Copyright:   (c) Maik Heistermann 2015
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import wradlib
 import numpy as np
 import matplotlib.pyplot as plt
-#plt.interactive(True)
+# plt.interactive(True)
 import os
 
 

@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        clutter_gabella_example
 # Purpose:
 #
@@ -7,12 +8,11 @@
 # Created:     26.10.2011
 # Copyright:   (c) Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
-#pl.interactive(True)
+# pl.interactive(True)
 import wradlib.vis as vis
 import wradlib.clutter as clutter
 import os

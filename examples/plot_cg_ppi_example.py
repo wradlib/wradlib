@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        plot_cg_ppi_example.py
 # Purpose:     show a few examples on how to use wradlib.vis.plot_cg_ppi
 #
@@ -7,23 +7,23 @@
 # Created:     25.02.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 import numpy as np
 # importing most matplotlib routines at once
 import matplotlib.pyplot as pl
-#pl.interactive(True)
-# well, it's a wradlib example
+# pl.interactive(True)
 import wradlib
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.ticker import NullFormatter,FuncFormatter, MaxNLocator
+from matplotlib.ticker import NullFormatter, FuncFormatter, MaxNLocator
 import os
 
 
 def ex_plot_cg_ppi():
     # pl.interactive(True)
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_tur.gz')
+    data = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data/polar_dBZ_tur.gz'))
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -239,12 +239,12 @@ def ex_plot_cg_ppi():
 
     # calculate max intensity proj
     xs, ys, mip1 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=angle, elev=elev)
-    xs, ys, mip2 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=90+angle, elev=elev)
+    xs, ys, mip2 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=(90 + angle), elev=elev)
 
     # normal cg plot
     cgax, caax, paax, pm = wradlib.vis.plot_cg_ppi(data, r=d1, az=d2, refrac=True)
-    cgax.set_xlim(-np.max(d1),np.max(d1))
-    cgax.set_ylim(-np.max(d1),np.max(d1))
+    cgax.set_xlim(-np.max(d1), np.max(d1))
+    cgax.set_ylim(-np.max(d1), np.max(d1))
     caax.xaxis.set_major_formatter(FuncFormatter(mip_formatter))
     caax.yaxis.set_major_formatter(FuncFormatter(mip_formatter))
     caax.set_xlabel('x_range [km]')
@@ -272,10 +272,10 @@ def ex_plot_cg_ppi():
     axMipY.pcolormesh(ys.T, xs.T, ma.T)
 
     # set labels, limits etc
-    axMipX.set_xlim(-np.max(d1),np.max(d1))
+    axMipX.set_xlim(-np.max(d1), np.max(d1))
     axMipX.set_ylim(0, wradlib.georef.beam_height_n(d1[-2], elev))
     axMipY.set_xlim(0, wradlib.georef.beam_height_n(d1[-2], elev))
-    axMipY.set_ylim(-np.max(d1),np.max(d1))
+    axMipY.set_ylim(-np.max(d1), np.max(d1))
     axMipX.set_ylabel('height [km]')
     axMipY.set_xlabel('height [km]')
     axMipX.grid(True)

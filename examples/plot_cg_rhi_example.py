@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        plot_cg_rhi_example.py
 # Purpose:     show a few examples on how to use wradlib.vis.plot_cg_rhi
 #
@@ -8,12 +8,12 @@
 # Created:     25.02.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
 import numpy as np
 # importing most matplotlib routines at once
 import matplotlib.pyplot as pl
-#pl.interactive(True)
-# well, it's a wradlib example
+# pl.interactive(True)
 import wradlib
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable

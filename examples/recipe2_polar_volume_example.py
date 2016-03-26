@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        Reading polar volume data
 # Purpose:
 #
@@ -7,14 +8,13 @@
 # Created:     14.01.2013
 # Copyright:   (c) heistermann 2013
 # Licence:     MIT
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
-#pl.interactive(True)
+pl.interactive(True)  # noqa
 import datetime as dt
 import os
 from osgeo import osr

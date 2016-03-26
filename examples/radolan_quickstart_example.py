@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        radolan_quickstart_example.py
 # Purpose:     quick plot of radolan rw-product
 #
@@ -7,12 +7,12 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import wradlib as wrl
 import numpy as np
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
 import os
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        tutorial_zonal_statistics_polar.py
 # Purpose:
 #
@@ -9,9 +9,8 @@
 # Created:     26.08.2015
 # Copyright:   (c) heistermann, muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-import os
 from osgeo import osr
 import wradlib
 import pylab as plt
@@ -25,11 +24,11 @@ import datetime as dt
 def testplot(cats, catsavg, xy, data, levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100], title=""):
     """Quick test plot layout for this example file
     """
-    colors = plt.cm.spectral(np.linspace(0,1,len(levels)) )    
+    colors = plt.cm.spectral(np.linspace(0, 1, len(levels)))
     mycmap, mynorm = from_levels_and_colors(levels, colors, extend="max")
 
     radolevels = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100]
-    radocolors = plt.cm.spectral(np.linspace(0, 1, len(radolevels)) )
+    radocolors = plt.cm.spectral(np.linspace(0, 1, len(radolevels)))
     radocmap, radonorm = from_levels_and_colors(radolevels, radocolors, extend="max")
 
     fig = plt.figure(figsize=(14, 8))
@@ -100,8 +99,8 @@ def ex_tutorial_zonal_statistics_polar():
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
 
     # create synthetic box
-    box = np.array([[2600000., 5630000.],[2600000., 5640000.],
-                    [2610000., 5640000.],[2610000., 5630000.],
+    box = np.array([[2600000., 5630000.], [2600000., 5640000.],
+                    [2610000., 5640000.], [2610000., 5630000.],
                     [2600000., 5630000.]])
     l = list(cats)
     l.append(box)
@@ -110,21 +109,21 @@ def ex_tutorial_zonal_statistics_polar():
 
     # create catchment bounding box
     buffer = 5000.
-    bbox = dict(left=bbox[0]-buffer, right=bbox[1]+buffer,
-                bottom=bbox[2]-buffer, top=bbox[3]+buffer)
+    bbox = dict(left=bbox[0] - buffer, right=bbox[1] + buffer,
+                bottom=bbox[2] - buffer, top=bbox[3] + buffer)
 
     mask, shape = wradlib.zonalstats.mask_from_bbox(radar_gkc[..., 0],
                                                     radar_gkc[..., 1],
                                                     bbox,
                                                     polar=True)
 
-    radar_gkc_ = radar_gkc[mask,:]
+    radar_gkc_ = radar_gkc[mask, :]
     radar_gk_ = radar_gk[mask]
     data_ = data[mask]
 
     ###########################################################################
     # Approach #1: Assign grid points to each polygon and compute the average.
-    # 
+    #
     # - Uses matplotlib.path.Path
     # - Each point is weighted equally (assumption: polygon >> grid cell)
     # - this is quick, but theoretically dirty
@@ -163,7 +162,7 @@ def ex_tutorial_zonal_statistics_polar():
     isecs2 = obj2.zdata.isecs
 
     # Illustrate results for an example catchment i
-    i = 0 # try e.g. 6, 12
+    i = 0  # try e.g. 6, 12
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
 
@@ -179,15 +178,15 @@ def ex_tutorial_zonal_statistics_polar():
     plt.scatter(isecs2[i][:, 0], isecs2[i][:, 1], s=200, c="green", edgecolor="None", label="buffer=0 m")
     plt.scatter(isecs1[i][:, 0], isecs1[i][:, 1], s=50, c="red", edgecolor="None", label="buffer=500 m")
     bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
-    plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
-    plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
+    plt.xlim(bbox["left"] - 2000, bbox["right"] + 2000)
+    plt.ylim(bbox["bottom"] - 2000, bbox["top"] + 2000)
     plt.legend()
     plt.title("Catchment #%d: Points considered for stats" % i)
 
     # Plot average rainfall and original data
     testplot(trg_patches, avg1, radar_gkc, data,
              title="Catchment rainfall mean (GridPointsToPoly)")
-    testplot(trg_patches, var1, radar_gkc, data, levels = np.arange(0,20,1.0),
+    testplot(trg_patches, var1, radar_gkc, data, levels=np.arange(0, 20, 1.0),
              title="Catchment rainfall variance (GridPointsToPoly)")
 
     ###########################################################################
@@ -233,11 +232,11 @@ def ex_tutorial_zonal_statistics_polar():
     # Plot average rainfall and original data
     testplot(trg_patches, avg3, radar_gkc, data,
              title="Catchment rainfall mean (PolarGridCellsToPoly)")
-    testplot(trg_patches, var3, radar_gkc, data, levels = np.arange(0, 20, 1.0),
+    testplot(trg_patches, var3, radar_gkc, data, levels=np.arange(0, 20, 1.0),
              title="Catchment rainfall variance (PolarGridCellsToPoly)")
 
     # Illustrate results for an example catchment i
-    i = 0 # try any index between 0 and 13
+    i = 0  # try any index between 0 and 13
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
 
@@ -256,14 +255,14 @@ def ex_tutorial_zonal_statistics_polar():
     t1 = dt.datetime.now()
     isecs = obj3.zdata.get_isec(i)
     isec_patches = wradlib.zonalstats.numpy_to_pathpatch(isecs)
-    colors = 100*np.linspace(0, 1., len(isec_patches))
+    colors = 100 * np.linspace(0, 1., len(isec_patches))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
     p.set_array(np.array(colors))
     ax.add_collection(p)
 
     bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
-    plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
-    plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
+    plt.xlim(bbox["left"] - 2000, bbox["right"] + 2000)
+    plt.ylim(bbox["bottom"] - 2000, bbox["top"] + 2000)
     plt.draw()
 
     t2 = dt.datetime.now()
@@ -278,10 +277,9 @@ def ex_tutorial_zonal_statistics_polar():
     plt.ylabel("Area-weighted average (mm)")
     plt.xlim(0, maxlim)
     plt.ylim(0, maxlim)
-    plt.plot([-1, maxlim+1], [-1, maxlim+1], color="black")
+    plt.plot([-1, maxlim + 1], [-1, maxlim + 1], color="black")
     plt.show()
 
 # =======================================================
 if __name__ == '__main__':
     ex_tutorial_zonal_statistics_polar()
-

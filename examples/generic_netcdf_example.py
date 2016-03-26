@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        generic_netcdf_example.py
 # Purpose:
 #
@@ -7,15 +8,13 @@
 # Created:     16/01/2015
 # Copyright:   (c) Maik Heistermann 2015
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import wradlib
 import os
 
 
 # In this example, we test reading NetCDF radar files from different sources
-
 def read_and_overview(filename):
     """Read NetCDF using read_generic_netcdf and print upper level dictionary keys
     """

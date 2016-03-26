@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        module1
 # Purpose:
 #
@@ -6,15 +7,15 @@
 #
 # Created:     28.10.2011
 # Copyright:   (c) heistermann 2011
-# Licence:     <your licence>
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# Licence:     The MIT License
+# -----------------------------------------------------------------------------
 
-from wradlib.ipol import *
+
+from wradlib.ipol import Idw, interpolate
 import os
 import numpy as np
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
 import datetime as dt
 
 
@@ -59,7 +60,7 @@ def ex_ipol():
     pl.show()
     pl.close()
 
-    # --------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # Using the convenience function ipol.interpolation in order to deal with missing values
     #    1st test: for 1 dimension in space and two dimensions of the source value array
     src = np.arange(10)[:, None]

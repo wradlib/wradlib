@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        plot_cg_rhi_example.py
 # Purpose:     show a few examples on how to use wradlib.vis.plot_cg_rhi
 #
@@ -8,7 +8,7 @@
 # Created:     25.02.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 import matplotlib.pyplot as plt
 import numpy as np
 # well, it's a wradlib example
@@ -23,7 +23,7 @@ th, meta = wradlib.io.from_hdf5(file, dataset='theta')
 mask_ind = np.where(data <= np.nanmin(data))
 data[mask_ind] = np.nan
 ma = np.ma.array(data, mask=np.isnan(data))
-#----------------------------------------------------------------
+# ----------------------------------------------------------------
 # the simplest call, plot cg rhi in new window
 cgax, caax, paax, pm = wradlib.vis.plot_cg_rhi(ma, refrac=False,
                                                subplot=111)

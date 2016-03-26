@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        clutter_cloud_example
 # Purpose:
 #
@@ -7,9 +8,9 @@
 # Created:     13.02.2014
 # Copyright:   (c) Edouard Goudenhoofdt 2014
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
-import math
+# -----------------------------------------------------------------------------
+
+# import math
 import os
 
 import numpy as np
@@ -57,7 +58,7 @@ def ex_clutter_cloud():
     for t in range(ntilt):
         elangle = pvol["dataset%d/where" % (t + 1)]["elangle"]
         coord[t, ...] = georef.sweep_centroids(nrays, rscale, nbins, elangle)
-    ascale = math.pi / nrays
+    # ascale = math.pi / nrays
     sitecoords = (pvol["where"]["lon"], pvol["where"]["lat"], pvol["where"]["height"])
     proj_radar = georef.create_osr("aeqd", lat_0=pvol["where"]["lat"], lon_0=pvol["where"]["lon"])
     coord[..., 0], coord[..., 1], coord[..., 2] = georef.polar2lonlatalt_n(coord[..., 0], np.degrees(coord[..., 1]),

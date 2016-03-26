@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        tutorial_zonal_statistics.py
 # Purpose:
 #
@@ -9,9 +9,8 @@
 # Created:     26.08.2015
 # Copyright:   (c) heistermann, muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-import os
 from osgeo import osr
 import wradlib
 import pylab as plt
@@ -21,7 +20,7 @@ from matplotlib.colors import from_levels_and_colors
 import matplotlib.patches as patches
 import datetime as dt
 
-   
+
 def testplot(cats, catsavg, xy, data,
              levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100], title=""):
     """Quick test plot layout for this example file
@@ -68,7 +67,7 @@ def ex_tutorial_zonal_statistics():
     grid_xy_radolan = wradlib.georef.get_radolan_grid(900, 900)
     x_radolan = grid_xy_radolan[:, :, 0]
     y_radolan = grid_xy_radolan[:, :, 1]
-    
+
     # create radolan projection osr object
     proj_stereo = wradlib.georef.create_osr("dwd-radolan")
 
@@ -91,21 +90,21 @@ def ex_tutorial_zonal_statistics():
     data, attrs = wradlib.io.read_RADOLAN_composite(f, missing=np.nan)
     sec = attrs['secondary']
     data.flat[sec] = np.nan
-    
+
     # Reduce grid size using a bounding box (to enhancing performance)
     bbox = inLayer.GetExtent()
     buffer = 5000.
-    bbox = dict(left=bbox[0]-buffer, right=bbox[1]+buffer, bottom=bbox[2]-buffer, top=bbox[3]+buffer)
+    bbox = dict(left=bbox[0] - buffer, right=bbox[1] + buffer, bottom=bbox[2] - buffer, top=bbox[3] + buffer)
     mask, shape = wradlib.zonalstats.mask_from_bbox(xy[..., 0], xy[..., 1], bbox)
-    xy_ = np.vstack((xy[..., 0][mask].ravel(),xy[..., 1][mask].ravel())).T
+    xy_ = np.vstack((xy[..., 0][mask].ravel(), xy[..., 1][mask].ravel())).T
     data_ = data[mask]
-    
+
     ###########################################################################
     # Approach #1: Assign grid points to each polygon and compute the average.
-    # 
+    #
     # - Uses matplotlib.path.Path
     # - Each point is weighted equally (assumption: polygon >> grid cell)
-    # - this is quick, but theoretically dirty     
+    # - this is quick, but theoretically dirty
     ###########################################################################
 
     t1 = dt.datetime.now()
@@ -132,7 +131,7 @@ def ex_tutorial_zonal_statistics():
 
     print("Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
     print("Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
-    
+
     # Just a test for plotting results with zero buffer
     zd2 = wradlib.zonalstats.ZonalDataPoint(xy_, cats, buf=0)
     # Create instance of type GridPointsToPoly from zonal data object
@@ -140,7 +139,7 @@ def ex_tutorial_zonal_statistics():
     isecs2 = obj2.zdata.isecs
 
     # Illustrate results for an example catchment i
-    i = 6 # try e.g. 48, 100
+    i = 6  # try e.g. 48, 100
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
 
@@ -156,18 +155,18 @@ def ex_tutorial_zonal_statistics():
     plt.scatter(isecs2[i][:, 0], isecs2[i][:, 1], s=200, c="green", edgecolor="None", label="buffer=0 m")
     plt.scatter(isecs1[i][:, 0], isecs1[i][:, 1], s=50, c="red", edgecolor="None", label="buffer=500 m")
     bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
-    plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
-    plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
+    plt.xlim(bbox["left"] - 2000, bbox["right"] + 2000)
+    plt.ylim(bbox["bottom"] - 2000, bbox["top"] + 2000)
     plt.legend()
     plt.title("Catchment #%d: Points considered for stats" % i)
 
     # Plot average rainfall and original data
     testplot(trg_patches, avg1, xy, data, title="Catchment rainfall mean (GridPointsToPoly)")
-    testplot(trg_patches, var1, xy, data, levels = np.arange(0,np.max(var1),1.), title="Catchment rainfall variance (GridPointsToPoly)")
-   
+    testplot(trg_patches, var1, xy, data, levels=np.arange(0, np.max(var1), 1.), title="Catchment rainfall variance (GridPointsToPoly)")
+
     ###########################################################################
     # Approach #2: Compute weighted mean based on fraction of source polygons in target polygons
-    # 
+    #
     # - This is more accurate (no assumptions), but probably slower...
     ###########################################################################
 
@@ -178,8 +177,8 @@ def ex_tutorial_zonal_statistics():
                                                            y_radolan[mask], 1., 1.)
     # And reproject to Cartesian reference system (here: GK2)
     grdverts = wradlib.georef.reproject(grdverts,
-                                  projection_source=proj_stereo,
-                                  projection_target=proj_gk)
+                                        projection_source=proj_stereo,
+                                        projection_target=proj_gk)
 
     try:
         # Create instance of type GridCellsToPoly from zonal data file
@@ -213,9 +212,9 @@ def ex_tutorial_zonal_statistics():
              title="Catchment rainfall mean (GridCellsToPoly)")
     testplot(trg_patches, var3, xy, data, levels=np.arange(0, np.max(var3), 1.),
              title="Catchment rainfall variance (GridCellsToPoly)")
-    
+
     # Illustrate results for an example catchment i
-    i = 6 # try any index between 0 and 13
+    i = 6  # try any index between 0 and 13
     fig = plt.figure()
     ax = fig.add_subplot(111, aspect="equal")
 
@@ -234,26 +233,26 @@ def ex_tutorial_zonal_statistics():
     # View the actual intersections
     isecs = obj3.zdata.get_isec(i)
     isec_patches = wradlib.zonalstats.numpy_to_pathpatch(isecs)
-    colors = 100*np.linspace(0, 1., len(isec_patches))
+    colors = 100 * np.linspace(0, 1., len(isec_patches))
     p = PatchCollection(isec_patches, cmap=plt.cm.jet, alpha=0.5)
     p.set_array(np.array(colors))
     ax.add_collection(p)
 
     bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
-    plt.xlim(bbox["left"]-2000, bbox["right"]+2000)
-    plt.ylim(bbox["bottom"]-2000, bbox["top"]+2000)
+    plt.xlim(bbox["left"] - 2000, bbox["right"] + 2000)
+    plt.ylim(bbox["bottom"] - 2000, bbox["top"] + 2000)
     plt.draw()
 
     # Compare estimates
     maxlim = np.max(np.concatenate((avg1, avg3)))
     fig = plt.figure(figsize=(14, 8))
-    ax = fig.add_subplot(111, aspect="equal")
+    fig.add_subplot(111, aspect="equal")
     plt.scatter(avg1, avg3, edgecolor="None", alpha=0.5)
     plt.xlabel("Average of points in or close to polygon (mm)")
     plt.ylabel("Area-weighted average (mm)")
     plt.xlim(0, maxlim)
     plt.ylim(0, maxlim)
-    plt.plot([-1, maxlim+1], [-1, maxlim+1], color="black")
+    plt.plot([-1, maxlim + 1], [-1, maxlim + 1], color="black")
     plt.show()
 
 # =======================================================

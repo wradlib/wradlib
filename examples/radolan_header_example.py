@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        radolan_header_example.py
 # Purpose:     showing header information
 #              for radolan composites
@@ -8,7 +8,7 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import wradlib as wrl
 import os
@@ -16,10 +16,10 @@ import os
 
 def ex_radolan_header():
     # load radolan file
-    rx_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rx_10000-1408102050-dwd---bin.gz'
-    ex_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-ex_10000-1408102050-dwd---bin.gz'
-    rw_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
-    sf_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-sf_10000-1408102050-dwd---bin.gz'
+    rx_filename = os.path.join(os.path.dirname(__file__), 'data/radolan/raa01-rx_10000-1408102050-dwd---bin.gz')
+    ex_filename = os.path.join(os.path.dirname(__file__), 'data/radolan/raa01-ex_10000-1408102050-dwd---bin.gz')
+    rw_filename = os.path.join(os.path.dirname(__file__), 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz')
+    sf_filename = os.path.join(os.path.dirname(__file__), 'data/radolan/raa01-sf_10000-1408102050-dwd---bin.gz')
 
     rxdata, rxattrs = wrl.io.read_RADOLAN_composite(rx_filename)
     exdata, exattrs = wrl.io.read_RADOLAN_composite(ex_filename)

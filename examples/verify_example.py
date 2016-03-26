@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        verify_example
 # Purpose:
 #
@@ -8,13 +9,12 @@
 # Created:     28.10.2011
 # Copyright:   (c) Maik Heistermann 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
 
 
 def ex_verify():
@@ -24,11 +24,11 @@ def ex_verify():
     gaps = np.concatenate([range(10, 20), range(30, 40), range(60, 80)])
     phidp_raw[gaps] = np.nan
     kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
-    line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
-    line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
-    line3 = pl.plot(kdp_true, "g-", label="kdp_true")
-    line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
-    lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")
+    pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    pl.plot(kdp_true, "g-", label="kdp_true")
+    pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
+    pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
     print('Done')
     pl.show()
     # import numpy as np
