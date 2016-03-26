@@ -133,7 +133,7 @@ class CoordinateHelperTest(unittest.TestCase):
 class ProjectionsTest(unittest.TestCase):
     def test_create_osr(self):
         self.maxDiff = None
-        radolan_wkt = 'PROJCS["Radolan projection", ' \
+        radolan_wkt = 'PROJCS["Radolan projection",' \
                       'GEOGCS["Radolan Coordinate System",' \
                       'DATUM["Radolan Kugel",' \
                       'SPHEROID["Erdkugel",6370040.0,0.0]],' \

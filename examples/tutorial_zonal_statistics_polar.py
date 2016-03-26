@@ -10,6 +10,7 @@
 # Copyright:   (c) heistermann, muehlbauer 2015
 # Licence:     The MIT License
 # -----------------------------------------------------------------------------
+# flake8: noqa
 
 import os
 from osgeo import osr

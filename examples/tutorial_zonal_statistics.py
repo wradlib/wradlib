@@ -137,7 +137,7 @@ def ex_tutorial_zonal_statistics():
 
     t4 = dt.datetime.now()
 
-    print ("Approach #1 computation time:")
+    print("Approach #1 computation time:")
     print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
     print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
     print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())
@@ -213,7 +213,7 @@ def ex_tutorial_zonal_statistics():
 
     t4 = dt.datetime.now()
 
-    print ("Approach #2 computation time:")
+    print("Approach #2 computation time:")
     print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
     print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
     print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())
