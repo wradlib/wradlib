@@ -3,7 +3,7 @@ For Developers
 
 Setup
 -----
-The section :doc:`gettingstarted` will provide you with detailed guidance on how to install wradlib and the required dependencies for different operating systems (MS Windows, Linux, Mac OS). On MS Windows, each release of wradlib should work with a certain version of Python(x,y). wradlib |release| has been tested with Python(x,y) 2.7.9.0. on Windows and anaconda 2.7.10 and 3.5 on linux-64.
+The section :doc:`gettingstarted` will provide you with detailed guidance on how to install wradlib and the required dependencies for different operating systems (MS Windows, Linux, Mac OS). wradlib |release| has been tested with Anaconda Python 2.5.0 on linux-64, osx-64 and MS Windows 32 and 64 versions.
 
 As a developer, though, you should rather link into wradlib's version control. This way, it will be easier for you to track changes and to contribute your changes to wradlib's main respository (see next section). Just install `Git <https://git-scm.com/>`_, then clone the wradlib repository to your local system by executing the following command in your shell: ``git clone https://github.com/wradlib/wradlib.git``. Do not forget to set the ``PYTHONPATH`` to point to the corresponding directory.
 
