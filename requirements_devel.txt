@@ -1,4 +1,4 @@
 sphinx
 sphinxcontrib-bibtex
 sphinx_rtd_theme
-numpydoc >= 0.3
+numpydoc
