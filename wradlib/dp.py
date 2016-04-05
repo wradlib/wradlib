@@ -1,15 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -----------------------------------------------------------------------------
-# Name:         dp
-# Purpose:      Processing related to Dual-Pol and Differential Phase
-#
-# Authors:      Maik Heistermann, Stephan Jacobi and Thomas Pfaff
-#
-# Created:      20.09.2013
-# Copyright:    (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
-# Licence:      The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
 Dual-Pol and Differential Phase

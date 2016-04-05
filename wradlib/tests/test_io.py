@@ -1,3 +1,6 @@
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
+
 import unittest
 import wradlib as wrl
 import numpy as np

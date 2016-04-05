@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        test_zonalstats
-# Purpose:     testing file for the wradlib.zonalstats module
-#
-# Authors:     Kai Muehlbauer
-#
-# Created:     20.01.2016
-# Copyright:   (c) Kai Muehlbauer
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 import tempfile

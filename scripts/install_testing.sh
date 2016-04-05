@@ -1,4 +1,6 @@
 #!/bin/bash
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
     -O miniconda.sh

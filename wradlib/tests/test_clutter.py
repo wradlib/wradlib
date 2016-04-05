@@ -1,15 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -----------------------------------------------------------------------------
-# Name:        test_clutter.py
-# Purpose:     unit tests for clutter.py routines
-#
-# Author:      wradlib developers
-#
-# Created:
-# Copyright:   (c) wradlib developers
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import numpy as np
 import wradlib.clutter as cl

@@ -1,15 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -----------------------------------------------------------------------------
-# Name:        test_atten
-# Purpose:     unit tests for atten.py routines
-#
-# Author:      pfaff
-#
-# Created:     08.05.2012
-# Copyright:   (c) pfaff 2012
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import numpy as np
 import wradlib.atten as atten

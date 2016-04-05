@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -------------------------------------------------------------------------------
-# Name:        test_verify.py
-# Purpose:     testing file for the wradlib.verify module
-#
-# Authors:     wradlib developers
-#
-# Created:     26.02.2016
-# Copyright:   (c) wradlib developers
-# Licence:     The MIT License
-# -------------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 
