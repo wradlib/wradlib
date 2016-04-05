@@ -1,0 +1,17 @@
+Developers
+----------
+
+Maik Heistermann - University of Potsdam
+Kai Muehlbauer - University of Bonn
+
+Contributors
+------------
+
+Jonathan J. Helmus - Argonne National Laboratory
+Nick Guy - University of Wyoming
+Thomas Pfaff - Blue Yonder
+Irene Crisologo - University of Potsdam
+Edouard Goudenhooft - Royal Meteorological Institute, Brussels
+Stephan Jacobi - University of Potsdam
+
+

@@ -1,14 +1,5 @@
-# -*- coding: utf-8 -*-
-# -----------------------------------------------------------------------------
-# Name:        radolan_projection_example.py
-# Purpose:     example for calculation of radolan grid coordinates
-#
-# Author:      Kai Muehlbauer
-#
-# Created:     11.02.2015
-# Copyright:   (c) Kai Muehlbauer 2015
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib as wrl
 from osgeo import osr

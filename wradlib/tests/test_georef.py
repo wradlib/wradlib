@@ -1,14 +1,6 @@
 # !/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        test_georef
-# Purpose:     testing file for the wradlib.georef module
-#
-# Authors:     Kai Muehlbauer
-#
-# Created:     11.02.2015
-# Copyright:   (c) Kai Muehlbauer
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 import wradlib.georef as georef

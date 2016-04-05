@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: iso-8859-1 -*-
-# -----------------------------------------------------------------------------
-# Name:        module1
-# Purpose:
-# Author:      jacobi
-# Created:     05.04.2011
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib.clutter as clutter
 import numpy as np

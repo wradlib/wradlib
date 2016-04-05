@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        clutter_gabella_example
-# Purpose:
-#
-# Author:      Thomas Pfaff
-#
-# Created:     26.10.2011
-# Copyright:   (c) Thomas Pfaff 2011
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up

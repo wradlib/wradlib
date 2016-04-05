@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        tutorial_get_rainfall.py
-# Purpose:
-#
-# Author:      heistermann
-#
-# Created:     27/01/2015
-# Copyright:   (c) Maik Heistermann 2015
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib
 import numpy as np

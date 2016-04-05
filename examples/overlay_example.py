@@ -1,15 +1,6 @@
 # -*- coding: utf-8 -*-
-# -----------------------------------------------------------------------------
-# Name:        overlay_example.py
-# Purpose:     example file for creating image overlays from shapefiles
-#              and underlays of terrain maps from raster files
-#
-# Author:      Kai Muehlbauer
-#
-# Created:     21.04.2015
-# Copyright:   (c) Kai Muehlbauer 2015
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 # some imports needed
 import os

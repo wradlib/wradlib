@@ -1,13 +1,5 @@
-# -----------------------------------------------------------------------------
-# Name:        plot_cg_ppi_example.py
-# Purpose:     show a few examples on how to use wradlib.vis.plot_cg_ppi
-#
-# Author:      Kai Muehlbauer
-#
-# Created:     25.02.2014
-# Copyright:   (c) Kai Muehlbauer 2014
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import numpy as np
 # importing most matplotlib routines at once

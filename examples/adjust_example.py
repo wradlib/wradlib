@@ -1,15 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -----------------------------------------------------------------------------
-# Name:        adjust_example.py
-# Purpose:
-#
-# Author:      heistermann
-#
-# Created:     28.10.2011
-# Copyright:   (c) heistermann 2011
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib.adjust as adjust
 import wradlib.verify as verify

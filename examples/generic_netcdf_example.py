@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        generic_netcdf_example.py
-# Purpose:
-#
-# Author:      Maik Heistermann
-#
-# Created:     16/01/2015
-# Copyright:   (c) Maik Heistermann 2015
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib
 import os

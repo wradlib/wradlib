@@ -1,4 +1,7 @@
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 # adapted from https://github.com/ARM-DOE/pyart/blob/master/pyart/__init__.py
+
 """
 wradlib
 =======

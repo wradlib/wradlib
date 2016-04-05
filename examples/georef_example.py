@@ -1,16 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -----------------------------------------------------------------------------
-# Name:        georef_example
-# Purpose:
-#
-# Author:      Maik Heistermann
-#
-# Created:     28.10.2011
-# Copyright:   (c) Maik Heistermann 2011
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
-
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib.georef as georef
 import numpy as np
