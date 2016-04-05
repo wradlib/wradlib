@@ -127,7 +127,7 @@ def pulse_volume(ranges, h, theta):
     We assume a cone frustum which has the volume V=(pi/3)*h*(R**2 + R*r + r**2).
     R and r are the radii of the two frustum surface circles. Assuming that the
     pulse width is small compared to the range, we get R=r=tan(theta*pi/180)*range.
-    Thus, the pulse volume simpy becomes a the volume of a cylinder with
+    Thus, the pulse volume simply becomes a the volume of a cylinder with
     V=pi * h * range**2 * tan(theta*pi/180)**2
 
     Parameters
