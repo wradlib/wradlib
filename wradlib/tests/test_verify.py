@@ -12,8 +12,6 @@
 
 import unittest
 
-import wradlib.verify as verify
-import numpy as np
 
 class PolarNeighboursTest(unittest.TestCase):
     def test___init__(self):

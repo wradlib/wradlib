@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        radolan_radarloc_example.py
 # Purpose:     showing radar-locations and range-rings
 #              for radolan composites
@@ -8,11 +8,11 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
-pl.interactive(True)
+pl.interactive(True)  # noqa
 import numpy as np
 import matplotlib as mpl
 import os

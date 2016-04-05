@@ -5,23 +5,26 @@ import zlib
 import tempfile
 import os
 import datetime
-import io  # import StringIO
-from collections import OrderedDict
+import io
 
 
 class IOTest(unittest.TestCase):
     # testing functions related to readDX
     def test__getTimestampFromFilename(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
-        self.assertEqual(wrl.io._getTimestampFromFilename(filename), datetime.datetime(2006,8,5,0))
+        self.assertEqual(wrl.io._getTimestampFromFilename(filename),
+                         datetime.datetime(2006, 8, 5, 0))
         filename = 'raa00-dx_10488-0608050000-drs---bin'
-        self.assertEqual(wrl.io._getTimestampFromFilename(filename), datetime.datetime(2006,8,5,0))
+        self.assertEqual(wrl.io._getTimestampFromFilename(filename),
+                         datetime.datetime(2006, 8, 5, 0))
 
     def test_getDXTimestamp(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
-        self.assertEqual(wrl.io.getDXTimestamp(filename).__str__(), '2006-08-05 00:00:00+00:00')
+        self.assertEqual(wrl.io.getDXTimestamp(filename).__str__(),
+                         '2006-08-05 00:00:00+00:00')
         filename = 'raa00-dx_10488-0608050000-drs---bin'
-        self.assertEqual(wrl.io.getDXTimestamp(filename).__str__(), '2006-08-05 00:00:00+00:00')
+        self.assertEqual(wrl.io.getDXTimestamp(filename).__str__(),
+                         '2006-08-05 00:00:00+00:00')
 
     def test_unpackDX(self):
         pass
@@ -30,10 +33,19 @@ class IOTest(unittest.TestCase):
         pass
 
     def test_writePolygon2Text(self):
-        poly1 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
-        poly2 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
+        poly1 = [[0., 0., 0., 0.], [0., 1., 0., 1.], [1., 1., 0., 2.],
+                 [0., 0., 0., 0.]]
+        poly2 = [[0., 0., 0., 0.], [0., 1., 0., 1.], [1., 1., 0., 2.],
+                 [0., 0., 0., 0.]]
         polygons = [poly1, poly2]
-        res = ['Polygon\n', '0 0\n', '0 0.000000 0.000000 0.000000 0.000000\n', '1 0.000000 1.000000 0.000000 1.000000\n', '2 1.000000 1.000000 0.000000 2.000000\n', '3 0.000000 0.000000 0.000000 0.000000\n', '1 0\n', '0 0.000000 0.000000 0.000000 0.000000\n', '1 0.000000 1.000000 0.000000 1.000000\n', '2 1.000000 1.000000 0.000000 2.000000\n', '3 0.000000 0.000000 0.000000 0.000000\n', 'END\n']
+        res = ['Polygon\n', '0 0\n', '0 0.000000 0.000000 0.000000 0.000000\n',
+               '1 0.000000 1.000000 0.000000 1.000000\n',
+               '2 1.000000 1.000000 0.000000 2.000000\n',
+               '3 0.000000 0.000000 0.000000 0.000000\n', '1 0\n',
+               '0 0.000000 0.000000 0.000000 0.000000\n',
+               '1 0.000000 1.000000 0.000000 1.000000\n',
+               '2 1.000000 1.000000 0.000000 2.000000\n',
+               '3 0.000000 0.000000 0.000000 0.000000\n', 'END\n']
         tmp = tempfile.NamedTemporaryFile()
         wrl.io.writePolygon2Text(tmp.name, polygons)
         self.assertEqual(open(tmp.name, 'r').readlines(), res)
@@ -46,6 +58,7 @@ class PickleTest(unittest.TestCase):
         wrl.io.to_pickle(tmp.name, arr)
         res = wrl.io.from_pickle(tmp.name)
         self.assertTrue(np.allclose(arr, res))
+
 
 class HDF5Test(unittest.TestCase):
     def test_to_hdf5(self):
@@ -83,31 +96,56 @@ class RadolanTest(unittest.TestCase):
         self.assertDictEqual(head, test_head)
 
     def test_decode_radolan_runlength_line(self):
-        testarr = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
-                   9., 9., 9., 9., 9., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        testarr = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9., 9.,
+                   9., 9., 9.,
+                   9., 9., 9., 9., 9., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
+                   0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                   0., 0., 0.,
                    0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
         testline = b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n'
@@ -131,7 +169,8 @@ class RadolanTest(unittest.TestCase):
         self.assertTrue(np.allclose(line, testarr))
 
     def test_decode_radolan_runlength_array(self):
-        pg_file = os.path.dirname(__file__) + '/../../examples/data/raa00-pc_10015-1408030905-dwd---bin.gz'
+        pg_file = os.path.dirname(
+            __file__) + '/../../examples/data/raa00-pc_10015-1408030905-dwd---bin.gz'
         pg_fid = wrl.io.get_radolan_filehandle(pg_file)
         header = wrl.io.read_radolan_header(pg_fid)
         attrs = wrl.io.parse_DWD_quant_composite_header(header)
@@ -141,7 +180,8 @@ class RadolanTest(unittest.TestCase):
         self.assertEqual(arr.shape, (460, 460))
 
     def test_read_radolan_binary_array(self):
-        rw_file = os.path.dirname(__file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
+        rw_file = os.path.dirname(
+            __file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
         rw_fid = wrl.io.get_radolan_filehandle(rw_file)
         header = wrl.io.read_radolan_header(rw_fid)
         attrs = wrl.io.parse_DWD_quant_composite_header(header)
@@ -151,10 +191,14 @@ class RadolanTest(unittest.TestCase):
         rw_fid = wrl.io.get_radolan_filehandle(rw_file)
         header = wrl.io.read_radolan_header(rw_fid)
         attrs = wrl.io.parse_DWD_quant_composite_header(header)
-        self.assertRaises(IOError, lambda: wrl.io.read_radolan_binary_array(rw_fid, attrs['datasize'] + 10))
+        self.assertRaises(IOError,
+                          lambda: wrl.io.read_radolan_binary_array(rw_fid,
+                                                                   attrs[
+                                                                       'datasize'] + 10))
 
     def test_get_radolan_filehandle(self):
-        rw_file = os.path.dirname(__file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
+        rw_file = os.path.dirname(
+            __file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
         rw_fid = wrl.io.get_radolan_filehandle(rw_file)
         self.assertEqual(rw_file, rw_fid.name)
 
@@ -169,23 +213,30 @@ class RadolanTest(unittest.TestCase):
     def test_parse_DWD_quant_composite_header(self):
         rx_header = 'RW030950100000814BY1620130VS 3SW   2.13.1PR E-01INT  60GP 900x 900' \
                     'MS 58<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,oft,tur,isn,fbg,mem>'
-        test_rx = {'maxrange': '150 km', 'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro',
-                                                            'ess', 'asd', 'neu', 'nhb', 'oft',
-                                                            'tur', 'isn', 'fbg', 'mem'],
+        test_rx = {'maxrange': '150 km',
+                   'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro',
+                                      'ess', 'asd', 'neu', 'nhb', 'oft',
+                                      'tur', 'isn', 'fbg', 'mem'],
                    'nrow': 900, 'intervalseconds': 3600, 'precision': 0.1,
-                   'datetime': datetime.datetime(2014, 8, 3, 9, 50), 'ncol': 900,
-                   'radolanversion': '2.13.1', 'producttype': 'RW', 'radarid': '10000',
-                   'datasize': 1620001,}
+                   'datetime': datetime.datetime(2014, 8, 3, 9, 50),
+                   'ncol': 900,
+                   'radolanversion': '2.13.1', 'producttype': 'RW',
+                   'radarid': '10000',
+                   'datasize': 1620001, }
 
         pg_header = 'PG030905100000814BY20042LV 6  1.0 19.0 28.0 37.0 46.0 55.0CS0MX 0MS 82' \
                     '<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,oft,tur,isn,fbg,mem,czbrd> are used, ' \
                     'BG460460'
-        test_pg = {'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro', 'ess', 'asd', 'neu',
-                                      'nhb', 'oft', 'tur', 'isn', 'fbg', 'mem', 'czbrd'],
-                   'nrow': 460, 'level': [1., 19., 28., 37., 46., 55.],
-                   'datetime': datetime.datetime(2014, 8, 3, 9, 5), 'ncol': 460,
-                   'producttype': 'PG', 'radarid': '10000', 'nlevel': 6,
-                   'indicator': 'near ground level', 'imagecount': 0, 'datasize': 19889}
+        test_pg = {
+            'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro', 'ess', 'asd',
+                               'neu',
+                               'nhb', 'oft', 'tur', 'isn', 'fbg', 'mem',
+                               'czbrd'],
+            'nrow': 460, 'level': [1., 19., 28., 37., 46., 55.],
+            'datetime': datetime.datetime(2014, 8, 3, 9, 5), 'ncol': 460,
+            'producttype': 'PG', 'radarid': '10000', 'nlevel': 6,
+            'indicator': 'near ground level', 'imagecount': 0,
+            'datasize': 19889}
 
         rx = wrl.io.parse_DWD_quant_composite_header(rx_header)
         pg = wrl.io.parse_DWD_quant_composite_header(pg_header)
@@ -199,13 +250,17 @@ class RadolanTest(unittest.TestCase):
                 self.assertEqual(value, test_pg[key])
 
     def test_read_RADOLAN_composite(self):
-        rw_file = os.path.dirname(__file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
-        test_attrs = {'maxrange': '150 km', 'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro',
-                                                               'ess', 'asd', 'neu', 'nhb', 'oft',
-                                                               'tur', 'isn', 'fbg', 'mem'],
+        rw_file = os.path.dirname(
+            __file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
+        test_attrs = {'maxrange': '150 km',
+                      'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro',
+                                         'ess', 'asd', 'neu', 'nhb', 'oft',
+                                         'tur', 'isn', 'fbg', 'mem'],
                       'nrow': 900, 'intervalseconds': 3600,
-                      'precision': 0.1, 'datetime': datetime.datetime(2014, 8, 3, 9, 50),
-                      'ncol': 900, 'radolanversion': '2.13.1', 'producttype': 'RW', 'nodataflag': -9999,
+                      'precision': 0.1,
+                      'datetime': datetime.datetime(2014, 8, 3, 9, 50),
+                      'ncol': 900, 'radolanversion': '2.13.1',
+                      'producttype': 'RW', 'nodataflag': -9999,
                       'datasize': 1620000, 'radarid': '10000'}
 
         # test for complete file
@@ -268,16 +323,22 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(wrl.io.get_RB_data_attribute(data[0], 'rays'), 361)
         self.assertEqual(wrl.io.get_RB_data_attribute(data[1], 'rays'), 361)
         self.assertEqual(wrl.io.get_RB_data_attribute(data[1], 'bins'), 400)
-        self.assertRaises(KeyError, lambda: wrl.io.get_RB_data_attribute(data[0], 'Nonsense'))
+        self.assertRaises(KeyError,
+                          lambda: wrl.io.get_RB_data_attribute(data[0],
+                                                               'Nonsense'))
         self.assertEqual(wrl.io.get_RB_data_attribute(data[0], 'depth'), 16)
 
     def test_get_RB_blob_attribute(self):
         xmltodict = wrl.util.import_optional('xmltodict')
-        xmldict = xmltodict.parse('<BLOB blobid="0" size="737" compression="qt"></BLOB>')
-        self.assertEqual(wrl.io.get_RB_blob_attribute(xmldict, 'compression'), 'qt')
+        xmldict = xmltodict.parse(
+            '<BLOB blobid="0" size="737" compression="qt"></BLOB>')
+        self.assertEqual(wrl.io.get_RB_blob_attribute(xmldict, 'compression'),
+                         'qt')
         self.assertEqual(wrl.io.get_RB_blob_attribute(xmldict, 'size'), '737')
         self.assertEqual(wrl.io.get_RB_blob_attribute(xmldict, 'blobid'), '0')
-        self.assertRaises(KeyError, lambda: wrl.io.get_RB_blob_attribute(xmldict, 'Nonsense'))
+        self.assertRaises(KeyError,
+                          lambda: wrl.io.get_RB_blob_attribute(xmldict,
+                                                               'Nonsense'))
 
     def test_get_RB_data_shape(self):
         xmltodict = wrl.util.import_optional('xmltodict')
@@ -295,8 +356,10 @@ class RainbowTest(unittest.TestCase):
 
     def test_map_RB_data(self):
         indata = b'0123456789'
-        outdata8 = np.array([48, 49, 50, 51, 52, 53, 54, 55, 56, 57], dtype=np.uint8)
-        outdata16 = np.array([12337, 12851, 13365, 13879, 14393], dtype=np.uint16)
+        outdata8 = np.array([48, 49, 50, 51, 52, 53, 54, 55, 56, 57],
+                            dtype=np.uint8)
+        outdata16 = np.array([12337, 12851, 13365, 13879, 14393],
+                             dtype=np.uint16)
         outdata32 = np.array([808530483, 875902519], dtype=np.uint32)
         self.assertTrue(np.allclose(wrl.io.map_RB_data(indata, 8), outdata8))
         self.assertTrue(np.allclose(wrl.io.map_RB_data(indata, 16), outdata16))
@@ -304,7 +367,8 @@ class RainbowTest(unittest.TestCase):
 
     def test_get_RB_blob_data(self):
         datastring = b'<BLOB blobid="0" size="737" compression="qt"></BLOB>'
-        self.assertRaises(EOFError, lambda: wrl.io.get_RB_blob_data(datastring, 1))
+        self.assertRaises(EOFError,
+                          lambda: wrl.io.get_RB_blob_data(datastring, 1))
 
 
 if __name__ == '__main__':

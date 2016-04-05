@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        load_rainbow_example.py
 # Purpose:     show how to load and work with Gematronik Rainbow5 format
 #
@@ -7,27 +7,30 @@
 # Created:     08.09.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
 import numpy as np
 import os
 
 
 def ex_load_rainbow():
-    filename = os.path.dirname(__file__) + '/' + 'data/2013070308340000dBuZ.azi'
+    filename = os.path.join(os.path.dirname(__file__),
+                            'data/2013070308340000dBuZ.azi')
 
     # load rainbow file contents to dict
     rbdict = wrl.io.read_Rainbow(filename)
 
     # get azimuthal data
     azi = rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['data']
-    azidepth = float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@depth'])
-    azirange = float(rbdict['volume']['scan']['slice']['slicedata']['rayinfo']['@rays'])
+    azidepth = float(rbdict['volume']['scan']['slice']
+                     ['slicedata']['rayinfo']['@depth'])
+    azirange = float(rbdict['volume']['scan']['slice']
+                     ['slicedata']['rayinfo']['@rays'])
     azires = float(rbdict['volume']['scan']['slice']['anglestep'])
-    azi =  (azi * azirange / 2**azidepth) * azires
+    azi = (azi * azirange / 2**azidepth) * azires
 
     # create range array
     stoprange = float(rbdict['volume']['scan']['slice']['stoprange'])
@@ -36,9 +39,12 @@ def ex_load_rainbow():
 
     # get reflectivity data
     data = rbdict['volume']['scan']['slice']['slicedata']['rawdata']['data']
-    datadepth = float(rbdict['volume']['scan']['slice']['slicedata']['rawdata']['@depth'])
-    datamin = float(rbdict['volume']['scan']['slice']['slicedata']['rawdata']['@min'])
-    datamax = float(rbdict['volume']['scan']['slice']['slicedata']['rawdata']['@max'])
+    datadepth = float(rbdict['volume']['scan']['slice']
+                      ['slicedata']['rawdata']['@depth'])
+    datamin = float(rbdict['volume']['scan']['slice']
+                    ['slicedata']['rawdata']['@min'])
+    datamax = float(rbdict['volume']['scan']['slice']
+                    ['slicedata']['rawdata']['@max'])
     data = datamin + data * (datamax - datamin) / 2 ** datadepth
 
     # get annotation data
@@ -53,7 +59,8 @@ def ex_load_rainbow():
     # plot data with annotation
     cgax, caax, paax, pm = wrl.vis.plot_cg_ppi(data, r=r, az=azi)
 
-    title = sensortype + ' ' + sensorname + ' ' + date + ' ' + time + '\n' + lon + 'E ' + lat + 'N'
+    title = '{0} {1} {2} {3}\n{4}E {5}N'.format(sensortype, sensorname, date,
+                                                time, lon, lat)
     t = pl.title(title, fontsize=12)
     t.set_y(1.1)
     cbar = pl.gcf().colorbar(pm, pad=0.075)

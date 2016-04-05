@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        A typical workflow for radar-based rainfall estimation
 # Purpose:
 #
@@ -7,31 +8,30 @@
 # Created:     26.10.2012
 # Copyright:   (c) heistermann 2012
 # Licence:     MIT
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+pl.interactive(True)  # noqa
 import os
 
 
 def ex_typical_workflow():
     # read the data
     data, metadata = wradlib.io.readDX(os.path.join(os.path.dirname(__file__), "data/sample.dx"))
-    fig = pl.figure()
+    pl.figure()
     ax = pl.subplot(111)
     ax, pm = wradlib.vis.plot_ppi(data, ax=ax)
-    cmap = pl.colorbar(pm, shrink=0.75)
+    pl.colorbar(pm, shrink=0.75)
 
     # identify and visualise clutters
     clutter = wradlib.clutter.filter_gabella(data, tr1=12, n_p=6, tr2=1.1)
-    fig = pl.figure()
+    pl.figure()
     ax = pl.subplot(111)
     ax, pm = wradlib.vis.plot_ppi(clutter, ax=ax, cmap=pl.cm.gray)
     pl.title('Clutter Map')
-    cbar = pl.colorbar(pm, shrink=0.75)
+    pl.colorbar(pm, shrink=0.75)
 
     # Remove and fill clutter
     data_no_clutter = wradlib.ipol.interpolate_polar(data, clutter)
@@ -40,8 +40,8 @@ def ex_typical_workflow():
     pia = wradlib.atten.correctAttenuationKraemer(data_no_clutter)
     data_attcorr = data_no_clutter + pia
     # compare reflectivity with and without attenuation correction for one beam
-    fig = pl.figure()
-    ax = pl.subplot(111)
+    pl.figure()
+    pl.subplot(111)
     pl.plot(data_attcorr[240], label="attcorr")
     pl.plot(data_no_clutter[240], label="no attcorr")
     pl.xlabel("km")
@@ -53,12 +53,14 @@ def ex_typical_workflow():
     R = wradlib.zr.z2r(wradlib.trafo.idecibel(data_attcorr))
     # and then to rainfall depth over 5 minutes
     depth = wradlib.trafo.r2depth(R, 300)
+    print(depth.shape)
 
     # example for rainfall accumulation in case we have a series of sweeps (here: random numbers)
     sweep_times = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 300)
     depths_5min = np.random.uniform(size=(len(sweep_times) - 1, 360, 128))
     hours = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 3600)
     depths_hourly = wradlib.util.aggregate_in_time(depths_5min, sweep_times, hours, func='sum')
+    print(depths_hourly.shape)
 
     # Georeferencing
     radar_location = (8.005, 47.8744, 1517)  # (lon, lat, alt) in decimal degree and meters
@@ -81,8 +83,8 @@ def ex_typical_workflow():
     gridded = wradlib.comp.togrid(xy, grid_xy, 128000., np.array([x.mean(), y.mean()]), data.ravel(), wradlib.ipol.Idw)
     gridded = np.ma.masked_invalid(gridded).reshape((len(xgrid), len(ygrid)))
 
-    fig = pl.figure(figsize=(10, 8))
-    ax = pl.subplot(111, aspect="equal")
+    pl.figure(figsize=(10, 8))
+    pl.subplot(111, aspect="equal")
     pm = pl.pcolormesh(xgrid, ygrid, gridded)
     pl.colorbar(pm, shrink=0.75)
     pl.xlabel("Easting (m)")
@@ -106,8 +108,8 @@ def ex_typical_workflow():
     adjuster = wradlib.adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=3)
     adjusted = adjuster(obs, radar)
     # Let's compare the ``truth``, the ``radar`` rainfall estimate and the ``adjusted`` product:
-    fig = pl.figure()
-    ax = pl.subplot(111)
+    pl.figure()
+    pl.subplot(111)
     pl.plot(radar_coords, truth, 'k-', label="True rainfall", linewidth=2.)
     pl.xlabel("Distance (km)")
     pl.ylabel("Rainfall intensity (mm/h)")
@@ -134,6 +136,7 @@ def ex_typical_workflow():
     sweep_xy = rootgrp.createGroup('sweep_xy')
     dim_azimuth = sweep_xy.createDimension('azimuth', None)
     dim_range = sweep_xy.createDimension('range', None)
+    print(dim_azimuth, dim_range)
     azimuths_var = sweep_xy.createVariable('azimuths', 'i4', ('azimuth',))
     ranges_var = sweep_xy.createVariable('ranges', 'f4', ('range',))
     dBZ_var = sweep_xy.createVariable('dBZ', 'f4', ('azimuth', 'range',))

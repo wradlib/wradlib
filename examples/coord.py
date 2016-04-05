@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        test_coord
 # Purpose:
 #
@@ -7,17 +8,15 @@
 # Created:     07.03.2014
 # Copyright:   (c) Edouard Goudenhoofdt 2014
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
-import math
+# -----------------------------------------------------------------------------
+
+# import math
 import os
 
 import numpy as np
 
 import wradlib.georef as georef
 import wradlib.io as io
-import matplotlib.pyplot as plt
-#plt.interactive(True)
 
 
 def ex_coord():
@@ -42,7 +41,7 @@ def ex_coord():
     for t in range(ntilt):
         elangle = pvol["dataset%d/where" % (t + 1)]["elangle"]
         coord[t, ...] = georef.sweep_centroids(nrays, rscale, nbins, elangle)
-    ascale = math.pi / nrays
+    # ascale = math.pi / nrays
     sitecoords = (pvol["where"]["lon"], pvol["where"]["lat"], pvol["where"]["height"])
     proj_radar = georef.create_osr("aeqd", lat_0=pvol["where"]["lat"], lon_0=pvol["where"]["lon"])
     radius = georef.get_earth_radius(pvol["where"]["lat"], proj_radar)

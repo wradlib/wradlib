@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        radolan_products_example.py
 # Purpose:     plotting several radolan composite products
 #
@@ -7,11 +7,11 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
 import numpy as np
 import os
 

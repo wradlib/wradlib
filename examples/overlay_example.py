@@ -1,4 +1,5 @@
-# ------------------------------------------------------------------------------
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
 # Name:        overlay_example.py
 # Purpose:     example file for creating image overlays from shapefiles
 #              and underlays of terrain maps from raster files
@@ -8,14 +9,13 @@
 # Created:     21.04.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
-# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
 
 # some imports needed
 import os
 import warnings
 import matplotlib.pyplot as plt
-#plt.interactive(True)
+# plt.interactive(True)
 import matplotlib as mpl
 import matplotlib.ticker as ticker
 from matplotlib.colors import LogNorm
@@ -58,9 +58,11 @@ def nex_overlay():
     filename = os.path.join(filepath, 'bangladesh.tif')
     _check_file(filename)
     # pixel_spacing is in output units (lonlat)
-    rastercoords, rastervalues = wrl.io.read_raster_data(filename, spacing=0.005)
+    rastercoords, rastervalues = wrl.io.read_raster_data(filename,
+                                                         spacing=0.005)
     # specify kwargs for plotting, using terrain colormap and LogNorm
-    dem = ax1.pcolormesh(rastercoords[..., 0], rastercoords[..., 1], rastervalues, cmap=mpl.cm.terrain, norm=LogNorm(),
+    dem = ax1.pcolormesh(rastercoords[..., 0], rastercoords[..., 1],
+                         rastervalues, cmap=mpl.cm.terrain, norm=LogNorm(),
                          vmin=1, vmax=3000)
 
     # make some space on the right for colorbar axis
@@ -107,12 +109,14 @@ def nex_overlay():
     filename = os.path.join(filepath, 'ne_10m_admin_0_countries.shp')
     _check_file(filename)
     dataset, layer = wrl.io.open_shape(filename)
-    # iterate over countries, filter by attribute and plot single patches on ax2
+    # iterate over countries, filter by attribute, plot single patches on ax2
     for i, item in enumerate(countries):
         fattr = "name = '" + item + "'"
         layer.SetAttributeFilter(fattr)
         # get country patches and geotransform to destination srs
-        patches, keys = wrl.georef.get_shape_coordinates(layer, dest_srs=india, key='name')
+        patches, keys = wrl.georef.get_shape_coordinates(layer,
+                                                         dest_srs=india,
+                                                         key='name')
         wrl.vis.add_patches(ax2, patches, facecolor=colors[i])
 
     ax2.autoscale(True)
@@ -128,12 +132,15 @@ def nex_overlay():
 
     # filter spatially and plot as PatchCollection on ax3
     layer.SetSpatialFilterRect(88, 20, 93, 27)
-    patches, keys = wrl.georef.get_shape_coordinates(layer, dest_srs=wgs84, key='name')
+    patches, keys = wrl.georef.get_shape_coordinates(layer,
+                                                     dest_srs=wgs84,
+                                                     key='name')
     i = 0
     for name, patch in zip(keys, patches):
         # why comes the US in here?
         if name in countries:
-            wrl.vis.add_patches(ax3, patch, facecolor=colors[i], cmap=mpl.cm.jet, alpha=0.4)
+            wrl.vis.add_patches(ax3, patch, facecolor=colors[i],
+                                cmap=mpl.cm.jet, alpha=0.4)
             i += 1
     ax3.autoscale(True)
     ax3.set_aspect('equal')

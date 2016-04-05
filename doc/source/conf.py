@@ -12,7 +12,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, re
+import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -43,10 +43,10 @@ extensions = ['sphinx.ext.autodoc',
 plot_formats = ['png']
 
 mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
-"config=TeX-AMS-MML_HTMLorMML")
+                "config=TeX-AMS-MML_HTMLorMML")
 
-pngmath_latex_preamble=r'\usepackage[active]{preview}' # + other custom stuff for inline math, such as non-default math fonts etc.
-pngmath_use_preview=True
+pngmath_latex_preamble = r'\usepackage[active]{preview}'  # + other custom stuff for inline math, such as non-default math fonts etc.
+pngmath_use_preview = True
 
 autosummary_generate = True
 
@@ -70,9 +70,8 @@ copyright = u'2011-2016, wradlib developers'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-
 # todo: clean this up
-import wradlib
+import wradlib  # noqa
 # The short X.Y version (including the .devXXXX suffix if present)
 #version = re.sub(r'^(\d+\.\d+)\.\d+(.*)', r'\1\2', wradlib.__version__)
 #if 'dev' not in version:
@@ -87,11 +86,9 @@ import wradlib
 version = wradlib.__version__
 release = wradlib.__version__
 
-
 print("RELEASE, VERSION", release, version)
 
 # full wradlib version in CI built docs
-
 if 'CI' in os.environ and os.environ['CI'] == 'true':
     version = release
 
@@ -149,19 +146,19 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 #html_theme = 'default'
 
-import sphinx_rtd_theme
+import sphinx_rtd_theme  # noqa
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 html_style = 'wradlib.css'
-html_theme_options = {'sticky_navigation' : True}
+html_theme_options = {'sticky_navigation': True}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-##html_theme_options = {"sidebarbgcolor": "black",
-##                      "relbarbgcolor": "black",
-##                      "headtextcolor": "#4A4344",
-##                      "footerbgcolor": "black" }
+#html_theme_options = {"sidebarbgcolor": "black",
+#                      "relbarbgcolor": "black",
+#                      "headtextcolor": "#4A4344",
+#                      "footerbgcolor": "black" }
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -197,10 +194,10 @@ html_static_path = ['_static']
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
-##html_sidebars = {
-##   '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
-##   'using/windows': ['windowssidebar.html', 'searchbox.html'],
-##}
+#html_sidebars = {
+#   '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
+#   'using/windows': ['windowssidebar.html', 'searchbox.html'],
+#}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
@@ -246,10 +243,8 @@ htmlhelp_basename = 'wradlibdoc'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [
-  ('index', 'wradlib.tex', u'wradlib Documentation',
-   u'wradlib developers', 'manual'),
-]
+latex_documents = [('index', 'wradlib.tex', u'wradlib Documentation',
+                    u'wradlib developers', 'manual'), ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -317,4 +312,4 @@ if 'TAG' in os.environ and os.environ['TAG']:
 # have latest anyway
 releases.insert(0, ['latest', 'latest'])
 # push releases into html_context
-html_context = { 'releases' : releases, }
+html_context = {'releases': releases, }

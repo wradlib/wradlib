@@ -8,19 +8,19 @@
 # Copyright:   (c) Thomas Pfaff 2014
 # Licence:     The MIT License
 # -------------------------------------------------------------------------------
+
 import numpy as np
 # importing most matplotlib routines at once
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
-#pl.interactive(True)
-# well, it's a wradlib example
+# pl.interactive(True)
 import wradlib
 import os
 
 
 def ex_plot_ppi():
     # a polar scan
-    img = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_tur.gz')
+    img = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data/polar_dBZ_tur.gz'))
 
     # the simplest call, everything else some default
     pl.figure()

@@ -12,7 +12,5 @@
 
 import unittest
 
-import wradlib.fill as fill
-
 if __name__ == '__main__':
     unittest.main()

@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        recipe1_clutter_attenuation_composition.py
 # Purpose:
 #
@@ -7,15 +8,13 @@
 # Created:     15.01.2013
 # Copyright:   (c) heistermann 2013
 # Licence:     MIT
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
-
+# -----------------------------------------------------------------------------
 
 import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
-#pl.interactive(True)
+# pl.interactive(True)
 import glob
 import os
 import datetime as dt
@@ -140,7 +139,7 @@ def recipe_clutter_attenuation():
     print("Processing took:", dt.datetime.now() - start)
 
     # Plotting rainfall map
-    ax = pl.subplot(111, aspect="equal")
+    pl.subplot(111, aspect="equal")
     pm = pl.pcolormesh(x, y, composite.reshape((len(x), len(y))), cmap="spectral")
     pl.grid()
     pl.colorbar(pm)

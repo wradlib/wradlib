@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        beamblock_example.py
 # Purpose:     example file for porting PyRadarMet  functionality
 #
@@ -7,14 +7,14 @@
 # Created:     17.04.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import os
 import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
-#plt.interactive(True)
+# plt.interactive(True)
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -123,7 +123,7 @@ def nex_beamblock(rasterfile, **kwargs):
     div2 = make_axes_locatable(ax2)
     cax2 = div2.append_axes("right", size="5%", pad=0.1)
     # colorbar
-    cb = fig.colorbar(cbb, cax=cax2)
+    fig.colorbar(cbb, cax=cax2)
     # limits
     ax2.set_xlim(lonmin, lonmax)
     ax2.set_ylim(latmin, latmax)
@@ -135,9 +135,9 @@ def nex_beamblock(rasterfile, **kwargs):
     b3db, = ax3.plot(r / 1000., (alt[angle, :] + beamradius) / 1000., ':b',
                      linewidth=1.5, label='3 dB Beam width')
     ax3.plot(r / 1000., (alt[angle, :] - beamradius) / 1000., ':b')
-    tf = ax3.fill_between(r / 1000., 0.,
-                          polarvalues[angle, :] / 1000.,
-                          color='0.75')
+    ax3.fill_between(r / 1000., 0.,
+                     polarvalues[angle, :] / 1000.,
+                     color='0.75')
     ax3.set_xlim(0., np.max(r / 1000.) + 0.1)
     ax3.set_ylim(0., 5)
     ax3.set_xlabel('Range (km)')

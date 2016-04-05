@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        attenuation_correction_example.py
 # Purpose:     Examplify different attenuation correction procedures
 #
@@ -7,11 +7,11 @@
 # Created:     10.01.2015
 # Copyright:   (c) Maik Heistermann 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import wradlib
 import matplotlib.pyplot as plt
-#plt.interactive(True)
+# plt.interactive(True)
 import os
 
 
@@ -20,7 +20,6 @@ def ex_attenuation():
 
     # Show PPI
     data, attrs = wradlib.io.readDX(filename)
-    test = data.copy()
     ax, cf = wradlib.vis.plot_ppi(data, cmap="spectral")
     plt.xlabel("Easting from radar (km)")
     plt.ylabel("Northing from radar (km)")

@@ -1,4 +1,6 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# -----------------------------------------------------------------------------
 # Name:        adjust_example.py
 # Purpose:
 #
@@ -7,15 +9,15 @@
 # Created:     28.10.2011
 # Copyright:   (c) heistermann 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 import wradlib.adjust as adjust
 import wradlib.verify as verify
 import wradlib.util as util
 import numpy as np
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
+
 
 def ex_adjust():
 
@@ -156,7 +158,7 @@ def ex_adjust():
 
     # c) PLOTTING
 
-    # Maximum value (used for normalisation of colorscales)    
+    # Maximum value (used for normalisation of colorscales)
     maxval = np.max(np.concatenate((truth, radar, obs, addadjusted)).ravel())
 
     # Helper functions for repeated plotting tasks

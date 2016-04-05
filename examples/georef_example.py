@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        georef_example
 # Purpose:
 #
@@ -8,18 +9,18 @@
 # Created:     28.10.2011
 # Copyright:   (c) Maik Heistermann 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
+
 
 import wradlib.georef as georef
 import numpy as np
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
 import matplotlib as mpl
 
 
 def ex_georef():
-    # --------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # EXAMPLE 1: Full workflow for georeferencing radar data
 
     # 1st step: generate the centroid coordinates of the radar bins

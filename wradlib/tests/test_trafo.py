@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        test_trafo
 # Purpose:     testing file for the wradlib.trafo module
 #
@@ -7,8 +8,8 @@
 # Created:     12.03.2013
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-# !/usr/bin/env python
+# -----------------------------------------------------------------------------
+
 import unittest
 import numpy as np
 import wradlib.trafo as trafo

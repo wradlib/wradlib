@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        test_adjust.py
 # Purpose:     testing file for the wradlib.adjust module
 #
@@ -8,12 +8,10 @@
 # Created:     26.02.2016
 # Copyright:   (c) wradlib developers
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import unittest
 
-import wradlib.adjust as adjust
-import numpy as np
 
 class AdjustBaseTest(unittest.TestCase):
     def test___init__(self):
@@ -63,7 +61,6 @@ class AdjustNoneTest(unittest.TestCase):
 class GageOnlyTest(unittest.TestCase):
     def test___call__(self):
         pass
-
 
 
 class AdjustHelperTest(unittest.TestCase):

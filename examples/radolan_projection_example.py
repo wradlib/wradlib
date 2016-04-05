@@ -1,4 +1,5 @@
-# ------------------------------------------------------------------------------
+# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
 # Name:        radolan_projection_example.py
 # Purpose:     example for calculation of radolan grid coordinates
 #
@@ -7,11 +8,11 @@
 # Created:     11.02.2015
 # Copyright:   (c) Kai Muehlbauer 2015
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
-# -*- coding: utf-8 -*-
+# -----------------------------------------------------------------------------
 
 import wradlib as wrl
 from osgeo import osr
+
 
 def ex_radolan_projection():
     # create radolan grid coordinates

@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:        load_radolan_example.py
 # Purpose:     show how to load radolan composites
 #
@@ -7,20 +7,24 @@
 # Created:     24.09.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 import wradlib as wrl
 import matplotlib.pyplot as pl
-#pl.interactive(True)
+# pl.interactive(True)
 import numpy as np
 import matplotlib as mpl
 import os
 
+
 def ex_load_radolan():
 
-    pg_filename = os.path.dirname(__file__) + '/' + 'data/raa00-pc_10015-1408030905-dwd---bin.gz'
-    rw_filename = os.path.dirname(__file__) + '/' + 'data/raa01-rw_10000-1408030950-dwd---bin.gz'
+    pg_filename = os.path.join(os.path.dirname(__file__),
+                               'data/raa00-pc_10015-1408030905-dwd---bin.gz')
+    rw_filename = os.path.join(os.path.dirname(__file__),
+                               'data/raa01-rw_10000-1408030950-dwd---bin.gz')
 
+    print(pg_filename)
     # load radolan files
     pgdata, pgattrs = wrl.io.read_RADOLAN_composite(pg_filename, missing=255)
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
@@ -43,7 +47,8 @@ def ex_load_radolan():
     y = np.arange(0, pgdata.shape[1] * 2 + 1, 2)
     X, Y = np.meshgrid(x, y)
     # color-scheme taken from DWD "legend_radar_products_pc.pdf"
-    colors = ['lightgrey', 'yellow', 'lightblue', 'magenta', 'green', 'red', 'darkblue', 'darkred']
+    colors = ['lightgrey', 'yellow', 'lightblue', 'magenta', 'green',
+              'red', 'darkblue', 'darkred']
     cmap = mpl.colors.ListedColormap(colors, name=u'DWD-pc-scheme')
     bounds = np.arange(len(colors) + 1)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
