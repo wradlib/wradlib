@@ -12,19 +12,23 @@ conda update --yes conda
 conda create -n wradlib --yes pip python=$PYTHON_VERSION
 source activate wradlib
 
-# Install wradlib dependencies
-conda install -c https://conda.anaconda.org/anaconda --yes numpy scipy matplotlib netcdf4 proj4
+# add conda-forge channel
+conda config --add channels conda-forge
 
-conda install -c https://conda.anaconda.org/anaconda --yes sphinx numpydoc h5py
-# Installing libgdal is required to get the lastest build.
-# The build installed by default  2.0.0_0 is broken.
-conda install -c https://conda.anaconda.org/anaconda --yes gdal geos libgdal
-# install krb5 for gdal
-conda install -c https://conda.anaconda.org/anaconda --yes krb5
+# Install wradlib dependencies
+conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0
 ls -lart /home/travis/miniconda2/envs/wradlib/share/gdal
+
+# install wradlib docu dependencies
+conda install --yes sphinx numpydoc
 conda install --yes sphinx_rtd_theme
 pip install sphinxcontrib-bibtex
+
+# install optional wradlib dependencies
 pip install xmltodict
+
+# install fkale8 PEP checker
+pip install flake8
 
 # install coverage modules
 pip install coverage

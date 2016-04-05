@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -------------------------------------------------------------------------------
 # Name:        fill
 # Purpose:
@@ -8,7 +9,6 @@
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
 # -------------------------------------------------------------------------------
-#!/usr/bin/env python
 
 """
 Filling Missing Values

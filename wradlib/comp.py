@@ -1,4 +1,5 @@
-# ------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        comp
 # Purpose:
 #
@@ -7,8 +8,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Composition
@@ -29,34 +29,34 @@ Combine data from different radar locations on one common set of locations
 import numpy as np
 
 
-#from scipy.spatial import KDTree
-#def extract_circle(center, radius, coords):
-#    """
-#    Extract the indices of coords which fall within a circle
-#    defined by center and radius
+# from scipy.spatial import KDTree
+# def extract_circle(center, radius, coords):
+#     """
+#     Extract the indices of coords which fall within a circle
+#     defined by center and radius
 #
-#    Parameters
-#    ----------
-#    center : float
-#    radius : float
-#    coords : array of float with shape (numpoints,2)
+#     Parameters
+#     ----------
+#     center : float
+#     radius : float
+#     coords : array of float with shape (numpoints,2)
 #
-#    Returns
-#    -------
-#    output : 1-darray of integers
+#     Returns
+#     -------
+#     output : 1-darray of integers
 #        index array referring to the coords array
 #
-#    """
-#    print 'Building tree takes:'
-#    t0 = dt.datetime.now()
-#    tree = KDTree(coords)
-#    print dt.datetime.now() - t0
-#    print 'Query tree takes:'
-#    t0 = dt.datetime.now()
-#    ix = tree.query(center, k=len(coords), distance_upper_bound=radius)[1]
-#    print dt.datetime.now() - t0
-#    ix = ix[np.where(ix<len(coords))[0]]
-#    return ix
+#     """
+#     print 'Building tree takes:'
+#     t0 = dt.datetime.now()
+#     tree = KDTree(coords)
+#     print dt.datetime.now() - t0
+#     print 'Query tree takes:'
+#     t0 = dt.datetime.now()
+#     ix = tree.query(center, k=len(coords), distance_upper_bound=radius)[1]
+#     print dt.datetime.now() - t0
+#     ix = ix[np.where(ix<len(coords))[0]]
+#     return ix
 
 
 def extract_circle(center, radius, coords):

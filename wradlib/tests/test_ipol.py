@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 # -------------------------------------------------------------------------------
 # Name:        test_ipol
@@ -9,7 +10,7 @@
 # Copyright:   (c) Thomas Pfaff 2012
 # Licence:     The MIT License
 # -------------------------------------------------------------------------------
-# !/usr/bin/env python
+
 import numpy as np
 import wradlib.ipol as ipol
 import wradlib.georef as georef

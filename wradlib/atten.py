@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-#-------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:         atten
 # Purpose:
 #
@@ -8,8 +9,7 @@
 # Created:      26.10.2011
 # Copyright:    (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:      The MIT License
-#-------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Attenuation Correction
@@ -28,18 +28,12 @@ Attenuation Correction
 
 """
 
-import os
-import sys
-import math
 import logging
-
 import numpy as np
 import scipy.ndimage
 import scipy.interpolate
-
 from wradlib.trafo import idecibel
 from wradlib.zr import z2r
-
 
 logger = logging.getLogger('attcorr')
 
@@ -52,7 +46,8 @@ class AttenuationIterationError(Exception):
     pass
 
 
-def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), mode='except',
+def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
+                         mode='except',
                          thrs=59.0):
     """Gate-by-Gate attenuation correction according to Hitschfeld & Bordan :cite:`Hitschfeld1954`
 
@@ -111,7 +106,7 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
 
     """
     if coefficients is None:
-        _coefficients = {'a':1.67e-4, 'b':0.7, 'l':1.0}
+        _coefficients = {'a': 1.67e-4, 'b': 0.7, 'l': 1.0}
     else:
         _coefficients = coefficients
 
@@ -119,41 +114,41 @@ def correctAttenuationHB(gateset, coefficients = dict(a=1.67e-4, b=0.7, l=1.0), 
     b = _coefficients['b']
     l = _coefficients['l']
 
-
     pia = np.empty(gateset.shape)
-    pia[...,0] = 0.
+    pia[..., 0] = 0.
     ksum = 0.
 
     # multidimensional version
     # assumes that iteration is only along the last dimension (i.e. range gates)
     # all other dimensions are calculated simultaneously to gain some speed
-    for gate in range(gateset.shape[-1]-1):
+    for gate in range(gateset.shape[-1] - 1):
         # calculate k in dB/km from k-Z relation
         # c.f. Krämer2008(p. 147)
-        k = a * (10.0**((gateset[...,gate] + ksum)/10.0))**b  * 2.0 * l
-        #k = 10**(log10(a)+0.1*bin*b)
-        #dBkn = 10*math.log10(a) + (bin+ksum)*b + 10*math.log10(2*l)
+        k = a * (10.0 ** ((gateset[..., gate] + ksum) / 10.0)) ** b * 2.0 * l
+        # k = 10**(log10(a)+0.1*bin*b)
+        # dBkn = 10*math.log10(a) + (bin+ksum)*b + 10*math.log10(2*l)
         ksum += k
 
-        pia[...,gate+1] = ksum
+        pia[..., gate + 1] = ksum
         # stop-criterion, if corrected reflectivity is larger than 59 dBZ
-        overflow = (gateset[...,gate+1] + ksum) > thrs
+        overflow = (gateset[..., gate + 1] + ksum) > thrs
         if np.any(overflow):
             if mode == 'warn':
-                logger.warning('corrected signal over threshold (%3.1f)'%thrs)
+                logger.warning(
+                    'corrected signal over threshold (%3.1f)' % thrs)
             elif mode == 'nan':
-                pia[...,gate+1][overflow] = np.nan
+                pia[..., gate + 1][overflow] = np.nan
             elif mode == 'zero':
-                pia[...,gate+1][overflow] = 0.0
+                pia[..., gate + 1][overflow] = 0.0
             else:
                 raise AttenuationOverflowError
 
     return pia
 
 
-def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
-                              b = 0.7, n = 30, l = 1.0, mode = 'zero',
-                              thrs_dBZ = 59.0):
+def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
+                              b=0.7, n=30, l=1.0, mode='zero',
+                              thrs_dBZ=59.0):
     """Gate-by-Gate attenuation correction according to Stefan Kraemer :cite:`Kraemer2008`.
 
 
@@ -221,41 +216,51 @@ def correctAttenuationKraemer(gateset,  a_max = 1.67e-4, a_min = 2.33e-5,
 
     """
 
-    if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
+    if np.max(np.isnan(gateset)):
+        raise Exception('There are not processable NaN in the gateset!')
 
-    if n != 1: da = (a_max - a_min) / (n - 1)
-    else: da = 0.
+    if n != 1:
+        da = (a_max - a_min) / (n - 1)
+    else:
+        da = 0.
     pia = np.zeros(gateset.shape)
-    pia[...,0] = 0.0
+    pia[..., 0] = 0.0
     # indexing all rows of last dimension (radarbeams)
-    beams2correct = np.where(np.max(pia, axis = pia.ndim - 1) > (-1.))
+    beams2correct = np.where(np.max(pia, axis=pia.ndim - 1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
-        ai = a_max - i*da
+        ai = a_max - i * da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
         sub_pia = pia[beams2correct]
         for gate in range(gateset.shape[-1] - 1):
-            k = ai * (10.0**((sub_gateset[...,gate] + sub_pia[...,gate])/10.0))**b  * 2.0 * l
-            sub_pia[...,gate + 1] = sub_pia[...,gate] + k
+            k = ai * (10.0 ** ((sub_gateset[..., gate] + sub_pia[
+                ..., gate]) / 10.0)) ** b * 2.0 * l
+            sub_pia[..., gate + 1] = sub_pia[..., gate] + k
         # integration of the calculated attenuation subset to the whole attenuation matrix
         pia[beams2correct] = sub_pia
         # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the threshold
-        beams2correct = np.where(np.max(gateset + pia, axis = pia.ndim - 1) > thrs_dBZ)
+        beams2correct = np.where(
+            np.max(gateset + pia, axis=pia.ndim - 1) > thrs_dBZ)
         # if there is no beam left for correction, the iteration can be interrupted prematurely
-        if len(pia[beams2correct]) == 0: break
+        if len(pia[beams2correct]) == 0:
+            break
     if len(pia[beams2correct]) > 0:
-        if mode == 'warn': logger.warning('dB-sum over threshold (%3.1f)'%thrs)
-        elif mode == 'nan':  pia[beams2correct] = np.nan
-        elif mode == 'zero': pia[beams2correct] = 0.0
-        else: raise AttenuationOverflowError
+        if mode == 'warn':
+            logger.warning('dB-sum over threshold (%3.1f)' % thrs_dBZ)
+        elif mode == 'nan':
+            pia[beams2correct] = np.nan
+        elif mode == 'zero':
+            pia[beams2correct] = 0.0
+        else:
+            raise AttenuationOverflowError
 
     return pia
 
 
-def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
-                         n = 30, l = 1.0, mode = 'zero', thrs_dBZ = 59.0,
-                         max_PIA = 20.0):
+def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
+                         n=30, l=1.0, mode='zero', thrs_dBZ=59.0,
+                         max_PIA=20.0):
     """Gate-by-Gate attenuation correction based on Stefan Kraemer
     :cite:`Kraemer2008`, expanded by Stephan Jacobi, Maik Heistermann and
     Thomas Pfaff :cite:`Jacobi2012`.
@@ -327,53 +332,65 @@ def correctAttenuationHJ(gateset, a_max = 1.67e-4, a_min = 2.33e-5, b = 0.7,
 
     """
 
-#    if np.any(np.isnan(gateset)):
-#        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
-#    k = np.zeros(gateset.shape)
+    #    if np.any(np.isnan(gateset)):
+    #        raise ValueError, 'There are NaNs in the gateset! Cannot continue.'
+    #    k = np.zeros(gateset.shape)
     if not np.all(gateset.shape):
         # gateset contains empty dimensions, thus no data
         return np.where(np.isnan(gateset), np.nan, 0.)
-    if n != 1: da = (a_max - a_min) / (n - 1)
-    else: da = 0.
-##  initialize an attenuation array with the same shape as the gateset,
-##  filled with zeros, except that NaNs occuring in the gateset will cause a
-##  initialization with Nans for the ENTIRE corresponding attenuation beam
+    if n != 1:
+        da = (a_max - a_min) / (n - 1)
+    else:
+        da = 0.
+    # initialize an attenuation array with the same shape as the gateset,
+    # filled with zeros, except that NaNs occuring in the gateset will cause a
+    # initialization with Nans for the ENTIRE corresponding attenuation beam
     pia = np.where(np.isnan(gateset), np.nan, 0.)
     pia[np.where(np.isnan(pia))[:-1]] = np.nan
     # indexing all rows of last dimension (radarbeams) except rows including NaNs
     beams2correct = np.where(np.max(pia, axis=-1) > (-1.))
     # iterate over possible a-parameters
     for i in range(n):
-        ai = a_max - i*da
+        ai = a_max - i * da
         # subset of beams that have to be corrected and corresponding attenuations
         sub_gateset = gateset[beams2correct]
         sub_pia = pia[beams2correct]
         for gate in range(gateset.shape[-1] - 1):
-            k = ai * (10.0**((sub_gateset[...,gate] + sub_pia[...,gate])/10.0))**b  * 2.0 * l
-            sub_pia[...,gate + 1] = sub_pia[...,gate] + k
+            k = ai * (10.0 ** ((sub_gateset[..., gate] + sub_pia[
+                ..., gate]) / 10.0)) ** b * 2.0 * l
+            sub_pia[..., gate + 1] = sub_pia[..., gate] + k
         # integration of the calculated attenuation subset to the whole attenuation matrix
         pia[beams2correct] = sub_pia
         # indexing the rows of the last dimension (radarbeam), if any corrected values exceed the thresholds
         # of corrected attenuation or PIA or NaNs are occuring
-        beams2correct = np.where(np.logical_or(np.max(gateset + pia, axis=-1) > thrs_dBZ,
-                                               np.max(pia, axis=-1) > max_PIA))
+        beams2correct = np.where(
+            np.logical_or(np.max(gateset + pia, axis=-1) > thrs_dBZ,
+                          np.max(pia, axis=-1) > max_PIA))
         # if there is no beam left for correction, the iteration can be interrupted prematurely
-        if len(pia[beams2correct]) == 0: break
+        if len(pia[beams2correct]) == 0:
+            break
     if len(pia[beams2correct]) > 0:
-        if mode == 'warn': logger.warning('threshold exceeded (corrected dBZ or PIA) even for lowest a')
-        elif mode == 'nan':  pia[beams2correct] = np.nan
-        elif mode == 'zero': pia[beams2correct] = 0.0
-        elif mode == 'cap': pia[beams2correct] = np.where(pia[beams2correct] > max_PIA, max_PIA, pia[beams2correct])
-        else: raise AttenuationOverflowError
+        if mode == 'warn':
+            logger.warning(
+                'threshold exceeded (corrected dBZ or PIA) even for lowest a')
+        elif mode == 'nan':
+            pia[beams2correct] = np.nan
+        elif mode == 'zero':
+            pia[beams2correct] = 0.0
+        elif mode == 'cap':
+            pia[beams2correct] = np.where(pia[beams2correct] > max_PIA,
+                                          max_PIA, pia[beams2correct])
+        else:
+            raise AttenuationOverflowError
 
     return pia
 
 
 def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
-                                b_max=0.7, b_min=0.2, na=30, nb=5, l=1.0,
-                                mode='error',
-                                constraints=None, constr_args=None,
-                                diagnostics={}):
+                                  b_max=0.7, b_min=0.2, na=30, nb=5, l=1.0,
+                                  mode='error',
+                                  constraints=None, constr_args=None,
+                                  diagnostics={}):
     """Gate-by-Gate attenuation correction based on the iterative approach of
     Stefan Kraemer :cite:`Kraemer2008` with a generalized and arbitrary number of
     constraints.
@@ -474,36 +491,41 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     """
 
-    if np.max(np.isnan(gateset)): raise Exception('There are not processable NaN in the gateset!')
+    if np.max(np.isnan(gateset)):
+        raise Exception('There are not processable NaN in the gateset!')
 
     if constraints is None:
         constraints = []
     if constr_args is None:
         constr_args = []
 
-
     a_used = np.empty(gateset.shape[:-1])
     b_used = np.empty(gateset.shape[:-1])
 
-    if na != 1: da = (a_max - a_min) / (na - 1)
-    else: da = 0.
+    if na != 1:
+        da = (a_max - a_min) / (na - 1)
+    else:
+        da = 0.
     k = np.zeros(gateset.shape)
-    if nb != 1: db = (b_max - b_min) / (nb - 1)
-    else: db = 0.
+    if nb != 1:
+        db = (b_max - b_min) / (nb - 1)
+    else:
+        db = 0.
 
     # indexing all rows of last dimension (radarbeams)
     beams2correct = np.where(np.max(k, axis=-1) > (-1.))
     # iterate over possible a-parameters
     for j in range(nb):
-        bi = b_max - db*j
+        bi = b_max - db * j
         for i in range(na):
-            ai = a_max - da*i
+            ai = a_max - da * i
             # subset of beams that have to be corrected and corresponding attenuations
             sub_gateset = gateset[beams2correct]
             sub_k = k[beams2correct]
             for gate in range(gateset.shape[-1] - 1):
-                kn = ai * (10.0**((sub_gateset[...,gate] + sub_k[...,gate])/10.0))**bi  * 2.0 * l
-                sub_k[...,gate + 1] = sub_k[...,gate] + kn
+                kn = ai * (10.0 ** ((sub_gateset[..., gate] + sub_k[
+                    ..., gate]) / 10.0)) ** bi * 2.0 * l
+                sub_k[..., gate + 1] = sub_k[..., gate] + kn
             # integration of the calculated attenuation subset to the whole attenuation matrix
             k[beams2correct] = sub_k
             a_used[beams2correct] = ai
@@ -512,20 +534,28 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
             incorrectbeams = np.zeros(gateset.shape[:-1], dtype=np.bool)
             for constraint, constr_arg in zip(constraints, constr_args):
                 incorrectbeams |= constraint(gateset, k, *constr_arg)
-            beams2correct = np.where(incorrectbeams) #np.where(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ)
+            beams2correct = np.where(
+                incorrectbeams)  # np.where(np.max(gateset + k, axis = k.ndim - 1) > thrs_dBZ)
             # if there is no beam left for correction, the iteration can be interrupted prematurely
-            if len(k[beams2correct]) == 0: break
-        if len(k[beams2correct]) == 0: break
+            if len(k[beams2correct]) == 0:
+                break
+        if len(k[beams2correct]) == 0:
+            break
     if len(k[beams2correct]) > 0:
-        if mode == 'warn': logger.warning('correction did not fulfill constraints within given parameter range')
-        elif mode == 'nan':  k[beams2correct] = np.nan
-        elif mode == 'zero': k[beams2correct] = 0.0
-        else: raise AttenuationOverflowError
+        if mode == 'warn':
+            logger.warning(
+                'correction did not fulfill constraints within given parameter range')
+        elif mode == 'nan':
+            k[beams2correct] = np.nan
+        elif mode == 'zero':
+            k[beams2correct] = 0.0
+        else:
+            raise AttenuationOverflowError
 
     if 'a' in diagnostics:
-            diagnostics['a'] = a_used
+        diagnostics['a'] = a_used
     if 'b' in diagnostics:
-            diagnostics['b'] = b_used
+        diagnostics['b'] = b_used
 
     return k
 
@@ -544,14 +574,14 @@ def constraint_pia(gateset, pia, thrs_pia):
     return np.max(pia, axis=-1) > thrs_pia
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # new implementation of Kraemer algorithm
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
     """Gate-by-Gate forward correction as described in Kraemer :cite:`Kraemer2008`"""
     pia = np.zeros(gateset.shape)
     for gate in range(gateset.shape[-1] - 1):
-        k = a * idecibel(gateset[..., gate] + pia[..., gate])**b  * 2.0 * l
+        k = a * idecibel(gateset[..., gate] + pia[..., gate]) ** b * 2.0 * l
         pia[..., gate + 1] = pia[..., gate] + k
     return pia
 
@@ -559,25 +589,25 @@ def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
 def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
     """Gate-by-Gate backward correction as described in Kraemer :cite:`Kraemer2008`"""
     k = np.zeros(gateset.shape)
-    k[...,-1] = a_ref
-    for gate in range(gateset.shape[-1]-2, 0, -1):
-        kright = np.zeros(gateset.shape[:-1])+a_ref/gateset.shape[-1]
+    k[..., -1] = a_ref
+    for gate in range(gateset.shape[-1] - 2, 0, -1):
+        kright = np.zeros(gateset.shape[:-1]) + a_ref / gateset.shape[-1]
         toprocess = np.ones(gateset.shape[:-1], dtype=np.bool)
         for j in range(maxiter):
-            kleft = a * (idecibel(gateset[...,gate][toprocess]
-                                  + k[...,gate+1][toprocess]
-                                  - kright[toprocess]))**b * 2.0 * l
-            diff = np.abs(kleft-kright)
+            kleft = a * (idecibel(gateset[..., gate][toprocess] +
+                                  k[..., gate + 1][toprocess] -
+                                  kright[toprocess])) ** b * 2.0 * l
+            diff = np.abs(kleft - kright)
             kright[toprocess] = kleft
-            toprocess[diff<tdiff] = False
+            toprocess[diff < tdiff] = False
             if ~np.any(toprocess):
                 break
 
-        if j == maxiter-1:
+        if j == maxiter - 1:
             raise AttenuationIterationError
 
-        k[...,gate] = k[...,gate+1] - kright
-    #k = np.cumsum(k, axis=-1)
+        k[..., gate] = k[..., gate + 1] - kright
+    # k = np.cumsum(k, axis=-1)
     return k
 
 
@@ -701,20 +731,23 @@ def _sector_filter(mask, min_sector_size):
 
     kernela = np.ones([1] * (mask.ndim - 1) + [min_sector_size])
     kernelb = np.ones((min_sector_size,))
-    forward_origin = (-(min_sector_size - (min_sector_size //2)) +
+    forward_origin = (-(min_sector_size - (min_sector_size // 2)) +
                       min_sector_size % 2)
     backward_origin = (min_sector_size - (min_sector_size // 2)) - 1
     forward_sum = scipy.ndimage.correlate1d(mask.astype(np.int), kernelb,
-                    axis=-1, mode='wrap', origin=forward_origin)
+                                            axis=-1, mode='wrap',
+                                            origin=forward_origin)
     backward_sum = scipy.ndimage.correlate1d(mask.astype(np.int), kernelb,
-                    axis=-1, mode='wrap', origin=backward_origin)
+                                             axis=-1, mode='wrap',
+                                             origin=backward_origin)
     forward_corners = (forward_sum == min_sector_size)
     backward_corners = (backward_sum == min_sector_size)
     forward_large_sectors = np.zeros_like(mask)
     backward_large_sectors = np.zeros_like(mask)
     for iii in range(mask.shape[0]):
         forward_large_sectors[iii] = scipy.ndimage.morphology.binary_dilation(
-            forward_corners[iii], kernela[0], origin=forward_origin).astype(int)
+            forward_corners[iii], kernela[0], origin=forward_origin).astype(
+            int)
         backward_large_sectors[iii] = scipy.ndimage.morphology.binary_dilation(
             backward_corners[iii], kernela[0],
             origin=backward_origin).astype(int)
@@ -726,24 +759,24 @@ def nd_pad(data, pad, axis=-1, mode='wrap'):
     """"""
     axislen = data.shape[axis]
     new_shape = np.array(data.shape)
-    new_shape[axis] += 2*pad
+    new_shape[axis] += 2 * pad
     new_data = np.empty(new_shape)
 
     dataslices = [slice(None, None) for i in new_shape]
-    dataslices[axis] = slice(pad, axislen+pad)
+    dataslices[axis] = slice(pad, axislen + pad)
 
-    new_data[dataslices]=data
+    new_data[dataslices] = data
 
-    if mode=='wrap':
+    if mode == 'wrap':
         old_leftslice = [slice(None, None) for i in new_shape]
         old_leftslice[axis] = slice(0, pad)
         old_rightslice = [slice(None, None) for i in new_shape]
-        old_rightslice[axis] = slice(axislen-pad, axislen)
+        old_rightslice[axis] = slice(axislen - pad, axislen)
 
         new_leftslice = [slice(None, None) for i in new_shape]
-        new_leftslice[axis] = slice(0,pad)
+        new_leftslice[axis] = slice(0, pad)
         new_rightslice = [slice(None, None) for i in new_shape]
-        new_rightslice[axis] = slice(axislen+pad, axislen+2*pad)
+        new_rightslice[axis] = slice(axislen + pad, axislen + 2 * pad)
 
         new_data[new_leftslice] = data[old_rightslice]
         new_data[new_rightslice] = data[old_leftslice]
@@ -758,24 +791,26 @@ def _interp_atten(pia, invalidbeams):
     # Build an spatial equidistant array for interpolation of the ahead and
     # behind extended temporary pia-array for handling invalid sectors
     # overlapping the seam of the radarcircle.
-    x = np.arange(3*pia.shape[1])
+    x = np.arange(3 * pia.shape[1])
 
     for i in range(pia.shape[0]):
-        sub_invalid = invalidbeams[i,:]
-        sub_pia = pia[i,:,-1]
+        sub_invalid = invalidbeams[i, :]
+        sub_pia = pia[i, :, -1]
         # Build the extended bool-array with the invalid sectors.
-        extended_invalid = np.concatenate([sub_invalid]*3)
+        extended_invalid = np.concatenate([sub_invalid] * 3)
         # Build the extended pia-array.
-        extended_pia = np.concatenate([sub_pia]*3)
+        extended_pia = np.concatenate([sub_pia] * 3)
         # Build interpolation class.
         intp = scipy.interpolate.interp1d(x[~extended_invalid],
-            extended_pia[~extended_invalid], kind='linear')
+                                          extended_pia[~extended_invalid],
+                                          kind='linear')
         # Interpolate where sectors are invalid.
-        pia[i,sub_invalid,-1] = intp(x[pia.shape[1]:2 * pia.shape[1] +
-            1][sub_invalid])
+        pia[i, sub_invalid, -1] = intp(x[pia.shape[1]:2 * pia.shape[1] + 1]
+                                       [sub_invalid])
 
 
-def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
+def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
+                                   n_a=4,
                                    b_max=0.7, b_min=0.65, n_b=6, l=1.,
                                    constraints=None, constraint_args=None,
                                    sector_thr=10):
@@ -894,13 +929,17 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
 
     # Calculate attenuation forward.
     # Indexing all rows of last dimension (radarbeams).
-    beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype = np.bool))
-    small_sectors = np.zeros(tmp_gateset.shape[:-1], dtype = np.bool)
+    beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype=np.bool))
+    small_sectors = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
 
-    if n_a != 1: delta_a = (a_max - a_min) / (n_a - 1)
-    else: delta_a = 0.
-    if n_b != 1: delta_b = (b_max - b_min) / (n_b - 1)
-    else: delta_b = 0.
+    if n_a != 1:
+        delta_a = (a_max - a_min) / (n_a - 1)
+    else:
+        delta_a = 0.
+    if n_b != 1:
+        delta_b = (b_max - b_min) / (n_b - 1)
+    else:
+        delta_b = 0.
 
     # Iterate over possible b-parameters.
     for j in range(n_b):
@@ -916,32 +955,37 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5, n_a=4,
             b_used[beams2correct] = b
             # Indexing threshold exceeding beams.
             incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
-            for constraint, constraint_arg in zip(constraints, constraint_args):
+            for constraint, constraint_arg in zip(constraints,
+                                                  constraint_args):
                 incorrectbeams = np.logical_or(incorrectbeams,
-                constraint(tmp_gateset, pia, *constraint_arg))
+                                               constraint(tmp_gateset, pia,
+                                                          *constraint_arg))
             # Determine incorrect sectors larger than sector_thr.
             large_sectors = _sector_filter(incorrectbeams, sector_thr)
             # Determine incorrect sectors smaller than sector_thr.
             small_sectors = np.logical_or(small_sectors,
-                                         (incorrectbeams & ~large_sectors))
+                                          (incorrectbeams & ~large_sectors))
             beams2correct = np.where(large_sectors)
-            if len(pia[beams2correct]) == 0: break
-        if len(pia[beams2correct]) == 0: break
+            if len(pia[beams2correct]) == 0:
+                break
+        if len(pia[beams2correct]) == 0:
+            break
     if np.any(small_sectors):
         # Interpolate reference pia of most distant rangebin of invalid sectors.
         _interp_atten(pia, small_sectors)
         # Calculate attenuation forward by achieving reference attenuation based on
         # bisection-method.
-        tmp_pia, tmp_a, tmp_b = bisectReferenceAttenuation(tmp_gateset[small_sectors,:],
-                                            pia[small_sectors, -1],
-                                            a_max=a_max,
-                                            a_min=a_min,
-                                            b_start=b_max,
-                                            l=l,
-                                            mode='difference',
-                                            thrs=0.25,
-                                            max_iterations=10)
-        pia[small_sectors,:] = tmp_pia
+        tmp_pia, tmp_a, tmp_b = bisectReferenceAttenuation(
+            tmp_gateset[small_sectors, :],
+            pia[small_sectors, -1],
+            a_max=a_max,
+            a_min=a_min,
+            b_start=b_max,
+            l=l,
+            mode='difference',
+            thrs=0.25,
+            max_iterations=10)
+        pia[small_sectors, :] = tmp_pia
         a_used[small_sectors] = tmp_a
         b_used[small_sectors] = tmp_b
 
@@ -1010,17 +1054,17 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
     """
 
     # Select rangebins inside the defined center-range n_r.
-    center = gateset[...,:n_r].reshape(-1, n_r * gateset.shape[-2])
+    center = gateset[..., :n_r].reshape(-1, n_r * gateset.shape[-2])
     center_m = np.ma.masked_array(center, np.isnan(center))
     # Calculate rainrate in the center-range based on statistical method stat
     # and with standard ZR-relation.
-    rain_over_radome = z2r(idecibel(stat(center_m, axis = -1)))
+    rain_over_radome = z2r(idecibel(stat(center_m, axis=-1)))
     # Estimate the empirical two-way transmission loss due to
     # radome-attenuation.
-    k = 2 * hydrophobicity * rain_over_radome * np.tanh(frequency / 10.)**2
+    k = 2 * hydrophobicity * rain_over_radome * np.tanh(frequency / 10.) ** 2
     # Reshape the result to gateset-shape.
     k = np.repeat(k, gateset.shape[-1] *
-        gateset.shape[-2]).reshape(gateset.shape)
+                  gateset.shape[-2]).reshape(gateset.shape)
 
     return k
 
@@ -1043,8 +1087,7 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
     output : array of same shape as kdp containing the path integrated attenuation
     """
     alpha = gamma * kdp
-    return 2*np.cumsum(alpha, axis=-1)*dr
-
+    return 2 * np.cumsum(alpha, axis=-1) * dr
 
 
 if __name__ == '__main__':

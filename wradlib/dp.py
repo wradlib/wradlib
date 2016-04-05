@@ -1,5 +1,6 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:         dp
 # Purpose:      Processing related to Dual-Pol and Differential Phase
 #
@@ -8,8 +9,7 @@
 # Created:      20.09.2013
 # Copyright:    (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:      The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Dual-Pol and Differential Phase
@@ -60,7 +60,7 @@ function is that the **range dimension must be the last dimension** of all input
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import medfilt
-from scipy.stats import nanmedian, nanmean, linregress
+from scipy.stats import linregress
 from scipy.ndimage.filters import convolve1d
 from . import util as util
 
@@ -608,7 +608,7 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     for r in range(rs - 9):
         stdarr[..., r] = np.std(phidp[..., r:r + 9], -1)
 
-    phi_corr = np.zeros(phidp.shape)
+    # phi_corr = np.zeros(phidp.shape)
     for beam in range(beams):
 
         if np.all(phidp[beam] == 0):

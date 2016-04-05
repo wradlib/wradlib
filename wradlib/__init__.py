@@ -20,25 +20,25 @@ else:
     import warnings as _warnings
     _warnings.simplefilter("always", DeprecationWarning)
 
-     # versioning
-    from .version import git_revision as __git_revision__
-    from .version import version as __version__
+    # versioning
+    from .version import git_revision as __git_revision__  # noqa
+    from .version import version as __version__  # noqa
 
     # import subpackages
-    from . import adjust
-    from . import atten
-    from . import clutter
-    from . import comp
-    from . import dp
-    from . import fill
-    from . import georef
-    from . import io
-    from . import ipol
-    from . import qual
-    from . import trafo
-    from . import util
-    from . import verify
-    from . import vis
-    from . import vpr
-    from . import zonalstats
-    from . import zr
+    from . import adjust  # noqa
+    from . import atten  # noqa
+    from . import clutter  # noqa
+    from . import comp  # noqa
+    from . import dp  # noqa
+    from . import fill  # noqa
+    from . import georef  # noqa
+    from . import io  # noqa
+    from . import ipol  # noqa
+    from . import qual  # noqa
+    from . import trafo  # noqa
+    from . import util  # noqa
+    from . import verify  # noqa
+    from . import vis  # noqa
+    from . import vpr  # noqa
+    from . import zonalstats  # noqa
+    from . import zr  # noqa

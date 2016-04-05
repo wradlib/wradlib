@@ -1,4 +1,4 @@
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Name:        runtest.py
 # Purpose:     testrunner for unittest, doctest and examples test
 #
@@ -7,27 +7,22 @@
 # Created:     03.03.2014
 # Copyright:   (c) Kai Muehlbauer 2014
 # Licence:     The MIT License
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 import sys
 import os
 import getopt
 import unittest
 import doctest
-
-import glob
 import inspect
-
-# This import has to be done in order to return correct exit codes
-# see http://stackoverflow.com/questions/14354496/python-returns-wrong-exit-code
-#    for details on this weird fix
-#import scipy.weave
 
 VERBOSE = 2
 
+
 def create_examples_testsuite():
     # gather information on examples
-    # all functions inside the examples starting with 'ex_' or 'recipe_' are considered as tests
+    # all functions inside the examples starting with 'ex_' or 'recipe_'
+    # are considered as tests
     # find example files in examples directory
     root_dir = 'examples/'
     files = []
@@ -50,10 +45,10 @@ def create_examples_testsuite():
         module = __import__(module)
         func = getattr(module, func)
         funcs = inspect.getmembers(func, inspect.isfunction)
-        [suite.addTest(unittest.FunctionTestCase(v)) for k,v in funcs if k.startswith(("ex_", "recipe_")) ]
+        [suite.addTest(unittest.FunctionTestCase(v))
+         for k, v in funcs if k.startswith(("ex_", "recipe_"))]
     return suite
 
-#testSuite.append(unittest.TestSuite(suite))
 
 def create_doctest_testsuite():
     # gather information on doctests, search in only wradlib folder
@@ -77,7 +72,6 @@ def create_doctest_testsuite():
         suite.addTest(doctest.DocTestSuite(module))
     return suite
 
-#testSuite.append(unittest.TestSuite(suite))
 
 def create_unittest_testsuite():
     # gather information on tests (unittest etc)
@@ -93,14 +87,16 @@ def create_unittest_testsuite():
             f = f[:-3]
             files.append(f)
             print(f)
-    suite = [unittest.defaultTestLoader.loadTestsFromName(str) for str in files]
+    suite = [unittest.defaultTestLoader.loadTestsFromName(str)
+             for str in files]
     return suite
+
 
 def main(args):
     usage_message = """Usage: python testrunner.py options
 
-    If run without options, testrunner displays the usage message. If all tests
-    suites should be run,, use the -a option.
+    If run without options, testrunner displays the usage message.
+    If all tests suites should be run,, use the -a option.
 
     options:
 
@@ -144,9 +140,10 @@ def main(args):
     test_units = 0
     verbosity = VERBOSE
 
-
     try:
-        options, arg = getopt.getopt(args, 'aeduhv:', ['all','examples', 'docs', 'units', 'help'])
+        options, arg = getopt.getopt(args, 'aeduhv:',
+                                     ['all', 'examples', 'docs',
+                                      'units', 'help'])
     except getopt.GetoptError as e:
         err_exit(e.msg)
 
@@ -192,14 +189,17 @@ def main(args):
     all_success = 1
     for ts in testSuite:
         result = unittest.TextTestRunner(verbosity=verbosity).run(ts)
-        # if any test suite was not successful, all_success should be 0 in the end
+        # if any test suite was not successful,
+        # all_success should be 0 in the end
         all_success = all_success & result.wasSuccessful()
 
     if all_success:
         sys.exit(0)
     else:
         # This will retrun exit code 1
-        sys.exit("At least one test hase failed. Please see test report for details.")
+        sys.exit("At least one test has failed. "
+                 "Please see test report for details.")
+
 
 def err_exit(message, rc=2):
     sys.stderr.write("\n%s\n" % message)
@@ -207,5 +207,3 @@ def err_exit(message, rc=2):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-
-

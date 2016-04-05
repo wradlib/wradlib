@@ -10,19 +10,16 @@ clutter or attenuation) and visualising the data.
 
 """
 
-DOCLINES = __doc__.split("\n")
-
 import os
-import shutil
 import sys
-import re
 import subprocess
-import glob
 
 if sys.version_info[0] < 3:
     import __builtin__ as builtins
 else:
     import builtins
+
+DOCLINES = __doc__.split("\n")
 
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
@@ -49,7 +46,7 @@ URL = "http://wradlib.org"
 DOWNLOAD_URL = "https://github.com/wradlib/wradlib"
 LICENSE = 'MIT'
 CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
-PLATFORMS = ["Linux", "Mac OS-X", "Unix"]
+PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 0
 MINOR = 8
 MICRO = 1
@@ -106,7 +103,8 @@ if not release:
     version = full_version
 """
     # Adding the git rev number needs to be done inside write_version_py(),
-    # otherwise the import of wradlib.version messes up the build under Python 3.
+    # otherwise the import of wradlib.version messes up the build under
+    # Python 3.
     FULLVERSION = VERSION
     if os.path.exists('.git'):
         GIT_REVISION = git_version()
@@ -171,4 +169,3 @@ def setup_package():
 
 if __name__ == '__main__':
     setup_package()
-

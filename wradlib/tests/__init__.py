@@ -2,22 +2,21 @@
 wradlib_tests
 =============
 
-__author__ = 'k.muehlbauer'
 """
 
-from . import test_adjust
-from . import test_atten
-from . import test_clutter
-from . import test_comp
-from . import test_dp
-from . import test_fill
-from . import test_georef
-from . import test_io
-from . import test_ipol
-from . import test_qual
-from . import test_trafo
-from . import test_util
-from . import test_verify
-from . import test_vpr
-from . import test_zonalstats
-from . import test_zr
+from . import test_adjust  # noqa
+from . import test_atten  # noqa
+from . import test_clutter  # noqa
+from . import test_comp  # noqa
+from . import test_dp  # noqa
+from . import test_fill  # noqa
+from . import test_georef  # noqa
+from . import test_io  # noqa
+from . import test_ipol  # noqa
+from . import test_qual  # noqa
+from . import test_trafo  # noqa
+from . import test_util  # noqa
+from . import test_verify  # noqa
+from . import test_vpr  # noqa
+from . import test_zonalstats  # noqa
+from . import test_zr  # noqa

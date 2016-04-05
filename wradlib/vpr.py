@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        vpr
 # Purpose:
 #
@@ -7,8 +8,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Vertical Profile of Reflectivity (VPR)
@@ -84,16 +84,12 @@ Here's an example how a set of CAPPIs can be created from synthetic polar volume
 """
 
 import numpy as np
-from scipy.spatial import cKDTree
-from scipy import stats
 import scipy
-import os
 
 from . import georef as georef
 from . import ipol as ipol
 from . import util as util
 from . import qual as qual
-from .util import apichange_kwarg
 
 
 class CartesianVolume():
@@ -353,9 +349,9 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         print("Could not create an array from argument <elevs>.")
         print("The following exception was raised:")
         raise
-    assert (elevs.ndim == 1) and (
-    elevs.dtype != np.dtype("object")), "Argument <elevs> in wradlib.wolcoords_from_polar must be a 1-D array."
-    #   now: is there one azimuths array for all elevation angles or one for each?
+    assert (elevs.ndim == 1) and (elevs.dtype != np.dtype("object")), \
+        "Argument <elevs> in wradlib.wolcoords_from_polar must be a 1-D array."
+    # now: is there one azimuths array for all elevation angles or one for each?
     try:
         azimuths = np.array(azimuths)
     except:
@@ -365,8 +361,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
     if len(azimuths) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in azimuths]
-        assert not (
-        (False in isseq) and (True in isseq)), "Argument <azimuths> contains both iterable and non-iterable items."
+        assert not ((False in isseq) and (True in isseq)), \
+            "Argument <azimuths> contains both iterable and non-iterable items."
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             oneaz4all = False
@@ -380,8 +376,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
     if len(ranges) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in ranges]
-        assert not (
-        (False in isseq) and (True in isseq)), "Argument <azimuths> contains both iterable and non-iterable items."
+        assert not ((False in isseq) and (True in isseq)), \
+            "Argument <azimuths> contains both iterable and non-iterable items."
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             onerange4all = False
@@ -437,7 +433,7 @@ def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
 
     """
     center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=proj)
-    minz = sitecoords[2]
+    # minz = sitecoords[2]
     llx = center[0] - maxrange
     lly = center[1] - maxrange
     x = np.arange(llx, llx + 2 * maxrange + horiz_res, horiz_res)
@@ -483,7 +479,7 @@ def mean_norm_vpr_from_volume(volume, reference_idx):
 
 
 def norm_vpr_stats(volume, reference_idx, stat, **kwargs):
-    ##    tmp = volume / volume[...,reference_idx]
+    # tmp = volume / volume[...,reference_idx]
     tmp = volume / volume[reference_idx]
     return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), **kwargs)
 

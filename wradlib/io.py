@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:         io
 # Purpose:
 #
@@ -7,8 +8,7 @@
 # Created:      26.10.2011
 # Copyright:    (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:      The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Raw Data I/O
@@ -51,7 +51,7 @@ try:
     from StringIO import StringIO
     import io
 except ImportError:
-    from io import StringIO
+    from io import StringIO  # noqa
     import io
 
 # from builtins import bytes, chr
@@ -1161,7 +1161,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     # check if GAMIC file and
     try:
-        swver = f['how'].attrs.get('software')
+        f['how'].attrs.get('software')
     except KeyError:
         print("WRADLIB: File is no GAMIC hdf5!")
         raise
@@ -1399,7 +1399,7 @@ def map_RB_data(data, datadepth):
         Content of blob
     """
     flagdepth = None
-    if datadepth < 8 :
+    if datadepth < 8:
         flagdepth = datadepth
         datadepth = 8
 
@@ -1731,10 +1731,10 @@ def read_safnwc(filename):
     ds1 = gdal.Open('HDF5:' + filename + '://CT')
     ds = gdal.GetDriverByName('MEM').CreateCopy('out', ds1, 0)
 
-    name = os.path.basename(filename)[7:11]
+    # name = os.path.basename(filename)[7:11]
     try:
         proj = root.GetMetadata()["PROJECTION"]
-    except Exception as error:
+    except Exception:
         raise NameError("No metadata for satellite file %s" % filename)
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
@@ -1859,7 +1859,7 @@ def read_generic_netcdf(fname):
 
 
 def _check_arguments(fpath, data):
-    """Helper function to check input arguments for GIS export function    
+    """Helper function to check input arguments for GIS export function
     """
     # Check arguments
     if not type(data) == np.ndarray:
@@ -1877,24 +1877,24 @@ def _check_arguments(fpath, data):
 def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
                nodata=-9999, proj=None, fmt="%.2f", to_esri=True):
     """Write a cartesian grid to an Arc/Info ASCII grid file.
-    
+
     .. versionadded:: 0.6.0
 
-    The function writes a text file to ``fpath`` that contains the header info and 
+    The function writes a text file to ``fpath`` that contains the header info and
     the grid data passed with the argument ``data``. For details on ESRI grids
     (or Arc/Info ASCII grids) see e.g. https://en.wikipedia.org/wiki/Esri_grid.
     This should work for most GIS software systems (tested for QGIS and ESRI ArcGIS).
-    
-    In case a GDAL SpatialReference object (argument ``proj``) is passed, 
-    the function will also try to write an accompanying projection (``.prj``) 
+
+    In case a GDAL SpatialReference object (argument ``proj``) is passed,
+    the function will also try to write an accompanying projection (``.prj``)
     file that has the same file name, but a different extension.
-    
+
     Please refer to http://wradlib.github.io/wradlib-docs/latest/georef.html to see how to
     create SpatialReference objects from e.g. :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
     :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
     or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
     are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
-    
+
     Parameters
     ----------
     fpath : string
@@ -1919,13 +1919,12 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     Note
     ----
     Has been tested with ESRI ArcGIS 9.3 and QGIS 2.8.
-    
+
     Examples
     --------
     See :download:`gis_export_example.py script <../../../examples/gis_export_example.py>`.
 
     .. literalinclude:: ../../../examples/gis_export_example.py
-    
 
     """
     # Check input data
@@ -1978,47 +1977,47 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
 def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     """Write a cartesian grid to a GeoTIFF file.
-    
+
     .. versionadded:: 0.6.0
 
-    The function writes a GeoTIFF file to ``fpath`` that contains the grid data 
+    The function writes a GeoTIFF file to ``fpath`` that contains the grid data
     passed with the argument ``data``. For details on the GeoTIFF format
     see e.g. https://en.wikipedia.org/wiki/GeoTIFF.
-    
+
     Warning
     -------
     The GeoTIFF files produced by this function might not work with ESRI ArcGIS,
     depending on the projection. Problems are particularly expected with the
     RADOLAN projection, due to inconsistencies in the definition of polar
     stereographic projections between GDAL and ESRI ArcGIS.
-    
-    The projection information (argument ``proj``) needs to be passed as a GDAL 
+
+    The projection information (argument ``proj``) needs to be passed as a GDAL
     SpatialReference object. Refer to https://wradlib.github.io/wradlib-docs/latest/georef.html
-    to see how to create SpatialReference objects from e.g. 
+    to see how to create SpatialReference objects from e.g.
     :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
     :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
     or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
     are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
-    
+
     Writing a GeoTIFF file requires a ``geotransform`` list to define how to compute
     map coordinates from grid indices. The list needs to contain the following
-    items: top left x, w-e pixel resolution, rotation, top left y, rotation, 
+    items: top left x, w-e pixel resolution, rotation, top left y, rotation,
     n-s pixel resolution. The unit of the pixel resolution has to be consistent
     with the projection information. **BE CAREFUL**: You need to consider whether
     your grid coordinates define the corner (typically lower left) or the cenmter of your pixels.
-    And Since the ``geotransform`` is used to define the grid from the top-left corner, 
+    And Since the ``geotransform`` is used to define the grid from the top-left corner,
     the n-s pixel resolution is usually a negative value.
-    
+
     Here is an example of the ``geotransform`` that worked e.g. with RADOLAN grids.
-    Notice that the RADOLAN coordinates returned by wradlib refer to the lower left 
+    Notice that the RADOLAN coordinates returned by wradlib refer to the lower left
     pixel corners, so you have to add another pixel unit to the top left y coordinate
     in order to define the top left corner of the bounding box::
-    
+
         import wradlib
         xy = wradlib.georef.get_radolan_grid(900,900)
         # top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size
         geotransform = [xy[0,0,0], 1., 0, xy[-1,-1,1]+1., 0, -1.]
-    
+
     Parameters
     ----------
     fpath : string
@@ -2035,13 +2034,12 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     Note
     ----
     Has been tested with ESRI ArcGIS 9.3 and QGIS 2.8.
-    
+
     Examples
     --------
     See :download:`gis_export_example.py script <../../../examples/gis_export_example.py>`.
 
     .. literalinclude:: ../../../examples/gis_export_example.py
-    
 
     """
     # Check input data

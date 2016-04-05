@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:         adjust
 # Purpose:
 #
@@ -7,8 +8,7 @@
 # Created:      26.10.2011
 # Copyright:    (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:      The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 """
 Gage adjustment
 ^^^^^^^^^^^^^^^
@@ -126,14 +126,14 @@ class AdjustBase(ipol.IpolBase):
     raw_coords : array of floats of shape (number of points, 2)
         x and y coordinate pairs of raw (unadjusted) radar field
     nnear_raws : integer
-        Defaults to 9. This parameter controls the number of radar bins or 
-        grid cells (in the neighbourhood of a rain gauge) which is used to 
+        Defaults to 9. This parameter controls the number of radar bins or
+        grid cells (in the neighbourhood of a rain gauge) which is used to
         compute the value of the radar observation AT a rain gauge.
     stat : string
-        Defaults to 'median'. Must be either 'mean', 'median', or 'best'. 
+        Defaults to 'median'. Must be either 'mean', 'median', or 'best'.
         This parameter controls the statistic that is used to compute the value
         of the radar observation AT a rain gauge based on the neighbourhood
-        specified by parameter nnear_raws. 
+        specified by parameter nnear_raws.
     mingages : integer
         Defaults to 5. Minimum number of valid gages required for an adjustment. If less valid
         gauges are available, the adjustment procedure will return unadjusted raw
@@ -144,9 +144,9 @@ class AdjustBase(ipol.IpolBase):
         should be set to zero (default value). For multiplicative adjustment,
         values larger than zeros might be chosen in order to minimize artifacts.
     mfb_args : dictionary
-        **Only used for AdjustMFB** - This set of parameters controls how the mean 
+        **Only used for AdjustMFB** - This set of parameters controls how the mean
         field bias is computed. Items of the dictionary are:
-        
+
         - *method*: string
           defaults to "linregr" which fits a regression line through observed and
           estimated values and than gets the bias from the inverse of the slope.
@@ -157,21 +157,20 @@ class AdjustBase(ipol.IpolBase):
           turned out to be robust (minimum allowable slope, minimum allowable correlation,
           maximim allowable p-value). If the regression result is not considered robust,
           no adjustment will take place.
-        
+
     Ipclass : an interpolation class from wradib.ipol
-        **Not used for AdjustMFB** - default value is wradlib.ipol.Idw 
+        **Not used for AdjustMFB** - default value is wradlib.ipol.Idw
         (Inverse Distance Weighting).
     ipargs : keyword arguments to create an instance of Ipclass
-        **Not used for AdjustMFB** - for wradlib.ipol.Idw, these keyword 
+        **Not used for AdjustMFB** - for wradlib.ipol.Idw, these keyword
         arguments would e.g. be nnear or p.
 
     Examples
     --------
-    
+
     See :download:`adjust_example.py script <../../../examples/adjust_example.py>`.
 
     .. literalinclude:: ../../../examples/adjust_example.py
- 
 
     """
 
@@ -197,14 +196,14 @@ class AdjustBase(ipol.IpolBase):
 
         # Control parameters for specific adjustment procedures
 
-        #    for AdjustMFB
+        # for AdjustMFB
         self.mfb_args = mfb_args
 
-        #    interpolation class and its keyword arguments
-        #    ((needed for AdjustAdd, AdjustMultiply, AdjustMixed) 
+        # interpolation class and its keyword arguments
+        # ((needed for AdjustAdd, AdjustMultiply, AdjustMixed)
         self.Ipclass = Ipclass
         self.ipargs = ipargs
-        #    create a default instance of interpolator
+        # create a default instance of interpolator
         self.ip = Ipclass(src=self.obs_coords, trg=self.raw_coords, **ipargs)
 
         # This method will quickly retrieve the actual radar values at the gage locations
@@ -253,17 +252,17 @@ class AdjustBase(ipol.IpolBase):
         Parameters
         ----------
         obs : flat (1-D) array of floats with shape (num gauges,)
-            These are the gage observations used for adjustment. This array 
+            These are the gage observations used for adjustment. This array
             needs to be of the same length as the array "obs_coords" used to
             initialize the adjustmetn object.
         raw : flat (1-D) array of floats with shape (num radar cells,)
-            These are the raw (unadjusted) radar rainfall values. This array 
+            These are the raw (unadjusted) radar rainfall values. This array
             needs to be of the same length as the array "raw_coords" used to
-            initialize the adjustment object. 
-        targets : (INTERNAL - DO NOT USE) 
+            initialize the adjustment object.
+        targets : (INTERNAL - DO NOT USE)
             Array of floats. Coordinate pairs for locations on which the final adjustment product is interpolated
             Defaults to None. In this case, the output locations will be identical to the radar coordinates
-        rawatobs : (INTERNAL - DO NOT USE) 
+        rawatobs : (INTERNAL - DO NOT USE)
             Array of floats. For internal use from AdjustBase.xvalidate only (defaults to None)
         ix : (INTERNAL - DO NOT USE)
             Array of integers. For internal use from AdjustBase.xvalidate only (defaults to None)
@@ -345,7 +344,7 @@ class AdjustAdd(AdjustBase):
     performance.
 
     For a complete overview of parameters for the initialisation of adjustment
-    objects, as well as an extensive example, please see 
+    objects, as well as an extensive example, please see
     :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
@@ -401,7 +400,7 @@ class AdjustMultiply(AdjustBase):
     performance.
 
     For a complete overview of parameters for the initialisation of adjustment
-    objects, as well as an extensive example, please see 
+    objects, as well as an extensive example, please see
     :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
@@ -474,7 +473,7 @@ class AdjustMixed(AdjustBase):
     performance.
 
     For a complete overview of parameters for the initialisation of adjustment
-    objects, as well as an extensive example, please see 
+    objects, as well as an extensive example, please see
     :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
@@ -521,14 +520,14 @@ class AdjustMFB(AdjustBase):
     Multiplicative gage adjustment using *one* correction factor for the entire domain.
 
     This method is also known as the Mean Field Bias correction.
-    
+
     .. versionchanged:: 0.6.0
        Introduced a dictionary of control parameters 'mfb_args' which are passed
        during initialisation of adjustment objects.
        Keyword argument 'biasby' of the call function has been removed.
 
     For a complete overview of parameters for the initialisation of adjustment
-    objects, as well as an extensive example, please see 
+    objects, as well as an extensive example, please see
     :doc:`here <wradlib.adjust.AdjustBase>`.
 
     Returns
@@ -596,12 +595,12 @@ class AdjustMFB(AdjustBase):
 class AdjustNone(AdjustBase):
     """
     Same behaviour as the other adjustment classes, but simply returns the unadjusted data.
-    
+
     This class can be used for benchmark verification experiments as a control for
     unadjusted data.
-    
+
     For a complete overview of parameters for the initialisation of adjustment
-    objects, as well as an extensive example, please see 
+    objects, as well as an extensive example, please see
     :doc:`here <wradlib.adjust.AdjustBase>`
 
     Returns
@@ -648,7 +647,7 @@ class GageOnly(AdjustBase):
     performance.
 
     For a complete overview of parameters for the initialisation of adjustment
-    objects, as well as an extensive example, please see 
+    objects, as well as an extensive example, please see
     :doc:`here <wradlib.adjust.AdjustBase>`
 
     Returns

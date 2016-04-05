@@ -1,4 +1,5 @@
-# -------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 # Name:        ipol
 # Purpose:
 #
@@ -7,8 +8,7 @@
 # Created:     26.10.2011
 # Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
 # Licence:     The MIT License
-# -------------------------------------------------------------------------------
-#!/usr/bin/env python
+# -----------------------------------------------------------------------------
 
 """
 Interpolation
@@ -196,7 +196,7 @@ class Nearest(IpolBase):
         """
         self._check_shape(vals)
         out = vals[self.ix]
-        if maxdist == None:
+        if maxdist is None:
             return out
         else:
             return np.where(self.dists > maxdist, np.nan, out)
@@ -288,7 +288,7 @@ class Idw(IpolBase):
             weights[jinterpol] = w
             src_ix[jinterpol] = ix
             jinterpol += 1
-        return interpol  ## if self.qdim > 1  else interpol[0]
+        return interpol  # if self.qdim > 1  else interpol[0]
 
 
 class Linear(IpolBase):
@@ -564,8 +564,8 @@ class OrdinaryKriging(IpolBase):
             rhs = self._krig_rhs(dist)
             weights = np.linalg.solve(matrix, rhs)
             self.weights.append(weights)
-            self.estimation_variance.append(self.cov_func(0.)
-                                            - np.sum(weights * rhs))
+            self.estimation_variance.append(self.cov_func(0.) -
+                                            np.sum(weights * rhs))
 
     def __call__(self, vals):
         """
@@ -702,8 +702,8 @@ class ExternalDriftKriging(IpolBase):
             except np.linalg.LinAlgError:
                 weights = np.repeat(np.nan, len(rhs))
             all_weights.append(weights)
-            estimation_variances.append(self.cov_func(0.)
-                                        - np.sum(weights * rhs))
+            estimation_variances.append(self.cov_func(0.) -
+                                        np.sum(weights * rhs))
 
         return all_weights, estimation_variances
 
@@ -732,14 +732,14 @@ class ExternalDriftKriging(IpolBase):
         if src_drift is None:
             # check if we have data from __init__
             if self.src_drift is None:
-                raise ValueError('src_drift must be specified either on ' \
-                                 + 'initialization or when calling the interpolator.')
+                raise ValueError('src_drift must be specified either on '
+                                 'initialization or when calling the interpolator.')
             src_drift = self.src_drift
         if trg_drift is None:
             # check if we have data from __init__
             if self.trg_drift is None:
-                raise ValueError('trg_drift must be specified either on ' \
-                                 + 'initialization or when calling the interpolator.')
+                raise ValueError('trg_drift must be specified either on '
+                                 'initialization or when calling the interpolator.')
             trg_drift = self.trg_drift
 
         src_d = self._make_2d(src_drift)
@@ -851,7 +851,7 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
         ip = Interpolator(src, trg, *args, **kwargs)
         result = ip(vals)
         nan_in_result = np.where(np.isnan(result))
-        nan_in_vals = np.where(np.isnan(vals))
+        # nan_in_vals = np.where(np.isnan(vals))
         for i in np.unique(nan_in_result[-1]):
             ix_good = np.where(np.isfinite(vals[..., i]))[0]
             ix_broken_targets = nan_in_result[0][np.where(nan_in_result[-1] == i)[0]]
