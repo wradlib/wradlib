@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        A typical workflow for radar-based rainfall estimation
-# Purpose:
-#
-# Author:      heistermann
-#
-# Created:     26.10.2012
-# Copyright:   (c) heistermann 2012
-# Licence:     MIT
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib
 import numpy as np

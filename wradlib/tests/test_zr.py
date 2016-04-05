@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -------------------------------------------------------------------------------
-# Name:        test_zr.py
-# Purpose:     testing file for the wradlib.zr module
-#
-# Authors:     Kai Muehlbauer
-#
-# Created:     26.02.2016
-# Copyright:   (c) Kai Muehlbauer
-# Licence:     The MIT License
-# -------------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 

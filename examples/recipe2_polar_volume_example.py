@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        Reading polar volume data
-# Purpose:
-#
-# Author:      heistermann
-#
-# Created:     14.01.2013
-# Copyright:   (c) heistermann 2013
-# Licence:     MIT
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib
 import numpy as np

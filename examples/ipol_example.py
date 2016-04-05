@@ -1,15 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        module1
-# Purpose:
-#
-# Author:      heistermann
-#
-# Created:     28.10.2011
-# Copyright:   (c) heistermann 2011
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
-
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 from wradlib.ipol import Idw, interpolate
 import os

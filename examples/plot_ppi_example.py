@@ -1,13 +1,5 @@
-# -------------------------------------------------------------------------------
-# Name:        plot_ppi_example.py
-# Purpose:     show a few examples on how to use wradlib.vis.plot_ppi
-#
-# Author:      Thomas Pfaff
-#
-# Created:     09.01.2014
-# Copyright:   (c) Thomas Pfaff 2014
-# Licence:     The MIT License
-# -------------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import numpy as np
 # importing most matplotlib routines at once

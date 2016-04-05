@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        test_coord
-# Purpose:
-#
-# Author:      Edouard Goudenhoofdt
-#
-# Created:     07.03.2014
-# Copyright:   (c) Edouard Goudenhoofdt 2014
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 # import math
 import os

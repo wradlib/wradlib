@@ -1,13 +1,5 @@
-# -----------------------------------------------------------------------------
-# Name:        beamblock_example.py
-# Purpose:     example file for porting PyRadarMet  functionality
-#
-# Author:      Kai Muehlbauer
-#
-# Created:     17.04.2015
-# Copyright:   (c) Kai Muehlbauer 2015
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import os
 import warnings

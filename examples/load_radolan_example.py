@@ -1,13 +1,5 @@
-# -----------------------------------------------------------------------------
-# Name:        load_radolan_example.py
-# Purpose:     show how to load radolan composites
-#
-# Author:      Kai Muehlbauer
-#
-# Created:     24.09.2014
-# Copyright:   (c) Kai Muehlbauer 2014
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib as wrl
 import matplotlib.pyplot as pl

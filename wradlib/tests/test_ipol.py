@@ -1,15 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# -------------------------------------------------------------------------------
-# Name:        test_ipol
-# Purpose:     unit tests for the wrdalib.ipol module
-#
-# Author:      Thomas Pfaff
-#
-# Created:     31.05.2012
-# Copyright:   (c) Thomas Pfaff 2012
-# Licence:     The MIT License
-# -------------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import numpy as np
 import wradlib.ipol as ipol

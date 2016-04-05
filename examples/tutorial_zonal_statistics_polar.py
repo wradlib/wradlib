@@ -1,15 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# -----------------------------------------------------------------------------
-# Name:        tutorial_zonal_statistics_polar.py
-# Purpose:
-#
-# Author:      Maik Heistermann, Kai Muehlbauer
-#
-# Created:     26.08.2015
-# Copyright:   (c) heistermann, muehlbauer 2015
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 # flake8: noqa
 
 import os

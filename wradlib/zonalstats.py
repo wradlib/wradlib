@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        zonalstats
-# Purpose:
-#
-# Author:      Maik Heistermann, Kai Muehlbauer
-#
-# Created:     12.11.2015
-# Copyright:   (c) Maik Heistermann, Kai Muehlbauer 2015
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
 Zonal Statistics
