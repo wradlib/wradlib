@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 # Adapted from the continuous_integration/build_docs.sh file from the pyart project
 # https://github.com/ARM-DOE/pyart/
+
+
 set -e
 
 cd "$TRAVIS_BUILD_DIR"

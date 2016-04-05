@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        test_trafo
-# Purpose:     testing file for the wradlib.trafo module
-#
-# Authors:     Maik Heistermann, Stephan Jacobi and Thomas Pfaff
-#
-# Created:     12.03.2013
-# Copyright:   (c) Maik Heistermann, Stephan Jacobi and Thomas Pfaff 2011
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 import numpy as np

@@ -1,14 +1,6 @@
 #!/usr/bin/env python
-# -----------------------------------------------------------------------------
-# Name:        test_util
-# Purpose:     testing file for the wradlib.util module
-#
-# Authors:     wradlib developers
-#
-# Created:
-# Copyright:   wradlib developers
-# Licence:     The MIT License
-# -----------------------------------------------------------------------------
+# Copyright (c) 2016, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import numpy as np
 import wradlib.util as util
