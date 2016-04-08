@@ -25,7 +25,7 @@ source activate wradlib
 #conda config --add channels conda-forge
 
 # Install wradlib dependencies
-conda install --yes notebook
+conda install --yes notebook numpy
 #conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0 notebook
 ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
