@@ -25,7 +25,7 @@ source activate wradlib
 #conda config --add channels conda-forge
 
 # Install wradlib dependencies
-conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0
+conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0 notebook
 ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
 # install wradlib docu dependencies
@@ -33,7 +33,9 @@ conda install --yes sphinx numpydoc
 conda install --yes sphinx_rtd_theme
 pip install sphinxcontrib-bibtex
 # install notebook dependencies
-conda install --yes notebook runipy pandoc
+#conda install --yes notebook runipy pandoc
+conda config --add channels conda-forge
+conda install --yes runipy pandoc
 pip install nbsphinx
 
 # install optional wradlib dependencies
