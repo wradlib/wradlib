@@ -30,7 +30,7 @@ def create_examples_testsuite():
     skip = ['__init__.py']
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-3:] != '.ipynb':
+            if filename in skip or filename[-3:] != '.py':
                 continue
             if 'examples/data' in root:
                 continue
@@ -217,6 +217,7 @@ def main(args):
 
     if test_all:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
+        testSuite.append(unittest.TestSuite(create_notebooks_testsuite()))
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
     elif test_examples:
