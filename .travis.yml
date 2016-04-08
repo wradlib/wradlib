@@ -27,8 +27,8 @@ matrix:
         - COVERALLS="true"
         - DOC_BUILD="true"
 
-before_install:
-  - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
+#before_install:
+#  - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
 
 install: source scripts/install.sh
 
