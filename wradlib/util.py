@@ -19,11 +19,9 @@ to the other modules
    from_to
 
 """
-
 import warnings
 import functools
 import os
-
 
 # TODO: check this again, removed to suppress deprecation warning in util.render_notebook
 # warnings.simplefilter('always', DeprecationWarning)
@@ -212,6 +210,7 @@ def import_optional(module):
         mod = OptionalModuleStub(module)
 
     return mod
+
 
 def get_wradlib_data_path():
     wrl_data_path = os.environ.get('WRADLIB_DATA', None)
