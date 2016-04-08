@@ -36,6 +36,7 @@ before_script:
 
 script:
     - export GDAL_DATA=/home/travis/miniconda2/envs/wradlib/share/gdal
+    - export WRADLIB_DATA=$PWD/examples/data
     - xvfb-run coverage run --source wradlib testrunner.py -a
 
 after_success:
