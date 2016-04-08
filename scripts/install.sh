@@ -20,16 +20,20 @@ conda config --add channels conda-forge
 # Install wradlib dependencies
 conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0
 ls -lart /home/travis/miniconda2/envs/wradlib/share/gdal
+conda install
 
 # install wradlib docu dependencies
 conda install --yes sphinx numpydoc
 conda install --yes sphinx_rtd_theme
 pip install sphinxcontrib-bibtex
+# install notebook dependencies
+conda install --yes notebook runipy pandoc
+pip install nbsphinx
 
 # install optional wradlib dependencies
 pip install xmltodict
 
-# install fkale8 PEP checker
+# install flake8 PEP checker
 pip install flake8
 
 # install coverage modules
