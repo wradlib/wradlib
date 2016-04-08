@@ -11,6 +11,7 @@ export PATH="$HOME/miniconda/bin:$PATH"
 #export PATH=/home/travis/miniconda2/bin:$PATH
 #export PATH=/home/k.muehlbauer/miniconda2/bin:$PATH
 #conda update --yes conda
+hash -r
 conda update --yes conda
 
 conda info -a
