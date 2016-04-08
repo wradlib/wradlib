@@ -56,6 +56,7 @@ class NotebookTests(unittest.TestCase):
     def __init__(self, input):
         super(NotebookTests, self).__init__()
         self.input = input
+
     def runTest(self):
         self.assertFalse(wrl.util.render_notebook(self.input, out='doc/source'))
 
