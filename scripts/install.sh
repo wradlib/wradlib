@@ -22,7 +22,7 @@ conda create -n wradlib --yes pip python=$PYTHON_VERSION
 source activate wradlib
 
 # add conda-forge channel
-conda config --add channels conda-forge
+#conda config --add channels conda-forge
 
 # Install wradlib dependencies
 conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0
