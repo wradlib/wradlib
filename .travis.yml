@@ -3,43 +3,29 @@ sudo: false
 
 language: python
 
-addons:
-    apt:
-        packages:
-            - gfortran
+#addons:
+#    apt:
+#        packages:
+#            - gfortran
 
 env:
   global:
     # wradlib-docs
     - secure: "EcGUE3aYsO2rH9q3Aoin5r/1MxSHyVBeVL+6Exn3qfUp9z4ycIxEJlOZer9aNg15J5qfNED0aBQCmA+chzUJ0fR7NWcD9JZDlUFUA9A+GMTdxVHy5jBRh//74qr90Q54XzIiXo9PC4zK1wLrrY3HpATA0/FAJ/6JR02VsacxAEo4nBWMTtxGpULhXAqGfb2YccZCy3ytMZC6Uf+SpE8gU9KkVAQsRwrC5iFc6bzNgiDjKFZSvcRxv4V1A/xcbO58A+Nyv77lKbYoSPiJRfxbAWpeNnlp7pf1FXZF2Kyu0smp7eGfYiDoYjWxKwc8fzfWS32WuIhobSmVNsdJpj6AjSEtne9eyj5/a+EPCCl4nyopQQdmGcYYuEBx8bEABXXd9dNKtaGKGN7MzmCiR0qAfbsqIke9kvgZ6mn0VFzpZjbluSWHOnYCWlr4XbXqn4BAeWS8BJRkuyVomefir+Xz2xfeKY1X5iPCZ4dr52ca2NcdGcEB9+DCKu7SBG/ANEGpWkF4mPAlKDfkwxAD4SXWeVpGcdt95a0glvnw7OktJwNKAG4ougeZCYxIK+ERn7IBYPDNnkGfPnZ/TRy0xt4hfsEReBcR+oyreY/ZFA/bYJSzzGz4nP9cT4d9jEnIbwHPHfAvJpx9/eMXrl8q4HZD13fDvXG1lwX65Q5zW+ybgf4="
 
-python:
-    # We don't actually use the Travis Python, but this keeps it organized.
-    - "2.7"
-    - "3.4"
-
-#matrix:
-#    include:
-#    - python: 2.7
-#      #env:
-#      #  - PYTHON_VERSION="2.7"
-#    - python: 3.4
-#      #env:
-#      #  - PYTHON_VERSION="3.4"
-#    - python: 3.5
-#      #env:
-#      #  - PYTHON_VERSION="3.5"
-#        - COVERALLS="true"
-#        - DOC_BUILD="true"
-
-before_install:
-    - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-          wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-      else
-          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-      fi
-#before_install:
-#  - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
+matrix:
+    include:
+    - python: 2.7
+      env:
+        - PYTHON_VERSION="2.7"
+    - python: 3.4
+      env:
+        - PYTHON_VERSION="3.4"
+    - python: 3.5
+      env:
+        - PYTHON_VERSION="3.5"
+        - COVERALLS="true"
+        - DOC_BUILD="true"
 
 install: source scripts/install.sh
 

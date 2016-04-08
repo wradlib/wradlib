@@ -4,9 +4,9 @@
 
 #source deactivate
 
-#wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
-#    -O miniconda.sh
-#chmod +x miniconda.sh
+wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
+    -O miniconda.sh
+chmod +x miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:"
 export PATH="$HOME/miniconda/bin:$PATH"
