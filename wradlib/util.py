@@ -1333,7 +1333,9 @@ def render_notebook(filename, out=None):
     else:
         out_path = out
     doc_name = os.path.join(out_path, nb_name)
-    nbformat.write(r.nb, doc_name, 4)
+    nbformat.write(r.nb, doc_name, 3)
+    notebook = nbformat.read(doc_name, 3)
+    nbformat.write(notebook, doc_name, 4)
 
 
 if __name__ == '__main__':

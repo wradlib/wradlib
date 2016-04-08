@@ -20,7 +20,6 @@ conda config --add channels conda-forge
 # Install wradlib dependencies
 conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0
 ls -lart /home/travis/miniconda2/envs/wradlib/share/gdal
-conda install
 
 # install wradlib docu dependencies
 conda install --yes sphinx numpydoc
