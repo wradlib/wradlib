@@ -2,9 +2,7 @@
 # Copyright (c) 2016, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-pip install ipython
-
-wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
+wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
     -O miniconda.sh
 chmod +x miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
