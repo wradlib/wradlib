@@ -30,20 +30,20 @@ else:
     from .version import version as __version__  # noqa
 
     # import subpackages
-    from . import adjust  # noqa
-    from . import atten  # noqa
-    from . import clutter  # noqa
-    from . import comp  # noqa
-    from . import dp  # noqa
-    from . import fill  # noqa
-    from . import georef  # noqa
-    from . import io  # noqa
-    from . import ipol  # noqa
-    from . import qual  # noqa
-    from . import trafo  # noqa
+    # from . import adjust  # noqa
+    # from . import atten  # noqa
+    # from . import clutter  # noqa
+    # from . import comp  # noqa
+    # from . import dp  # noqa
+    # from . import fill  # noqa
+    # from . import georef  # noqa
+    # from . import io  # noqa
+    # from . import ipol  # noqa
+    # from . import qual  # noqa
+    # from . import trafo  # noqa
     from . import util  # noqa
-    from . import verify  # noqa
-    from . import vis  # noqa
-    from . import vpr  # noqa
-    from . import zonalstats  # noqa
-    from . import zr  # noqa
+    # from . import verify  # noqa
+    # from . import vis  # noqa
+    # from . import vpr  # noqa
+    # from . import zonalstats  # noqa
+    # from . import zr  # noqa
