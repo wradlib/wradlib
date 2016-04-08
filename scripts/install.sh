@@ -12,6 +12,8 @@ export PATH="$HOME/miniconda/bin:$PATH"
 #conda update --yes conda
 conda update --yes conda
 
+conda info -a
+
 # Create a testenv with the correct Python version
 conda create -n wradlib --yes pip python=$PYTHON_VERSION
 #conda create -n wradlib --yes pip python=2.7
