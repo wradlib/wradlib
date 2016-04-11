@@ -34,7 +34,7 @@ before_script:
     - flake8 --ignore=E501 examples
     - flake8 --ignore=E501,E265 doc
     # convert notebooks, render notebooks
-    - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal+
+    - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$PWD/examples/data
     - scripts/process_notebooks.sh
 
