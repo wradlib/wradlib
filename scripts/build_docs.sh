@@ -18,7 +18,7 @@ echo "TRAVIS_TAG " $TRAVIS_TAG ${TRAVIS_TAG:1}
 rm -rf doc-build
 rm -rf wradlib-docs
 
-# create doc build dicrectory
+# create doc build directory
 mkdir doc-build
 
 # create docs and upload to wradlib-docs repo if this is not a pull request and

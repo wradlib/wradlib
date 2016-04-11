@@ -22,8 +22,6 @@ else:
     # Make sure that deprecation warnings get printed by default
     import warnings as _warnings
     _warnings.simplefilter("always", DeprecationWarning)
-    ## TODO: check this again, suppress deprecation warning in util.render_notebook
-    _warnings.filterwarnings('ignore', category=DeprecationWarning, message='.*use @default decorator instead.*')
 
     # versioning
     from .version import git_revision as __git_revision__  # noqa

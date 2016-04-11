@@ -13,6 +13,7 @@
 # serve to show the default.
 
 import os
+import glob
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -50,9 +51,7 @@ mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
 pngmath_latex_preamble = r'\usepackage[active]{preview}'  # + other custom stuff for inline math, such as non-default math fonts etc.
 pngmath_use_preview = True
 
-
-import glob
-
+# get all rst files, do it manually
 rst_files = glob.glob('*.rst')
 autosummary_generate = rst_files
 
