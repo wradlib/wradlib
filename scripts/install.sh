@@ -5,8 +5,8 @@
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
     -O miniconda.sh
 chmod +x miniconda.sh
-./miniconda.sh -b
-export PATH=/home/travis/miniconda2/bin:$PATH
+bash miniconda.sh -b -p $HOME/miniconda
+export PATH=$HOME/miniconda/bin:$PATH
 conda update --yes conda
 conda update --yes conda
 
@@ -19,8 +19,7 @@ conda config --add channels conda-forge
 
 # Install wradlib dependencies
 conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0
-ls -lart /home/travis/miniconda2/envs/wradlib/share/gdal
-conda install
+ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
 # install wradlib docu dependencies
 conda install --yes sphinx numpydoc

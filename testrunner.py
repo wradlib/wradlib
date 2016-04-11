@@ -30,7 +30,7 @@ def create_examples_testsuite():
     skip = ['__init__.py']
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-3:] != '.ipynb':
+            if filename in skip or filename[-3:] != '.py':
                 continue
             if 'examples/data' in root:
                 continue
@@ -52,17 +52,19 @@ def create_examples_testsuite():
     return suite
 
 
-class NotebookTests(unittest.TestCase):
-    def __init__(self, input):
-        super(NotebookTests, self).__init__()
-        self.input = input
+class NotebookTest(unittest.TestCase):
+    def __init__(self, module):
+        super(NotebookTest, self).__init__()
+        self.name = module
+
     def runTest(self):
-        self.assertFalse(wrl.util.render_notebook(self.input, out='doc/source'))
+        print(self.name.split('.')[1])
+        self.assertTrue(__import__(self.name))
 
 
 def create_notebooks_testsuite():
     # gather information on notebooks
-    # all notebooks in the notebooks folder
+    # all 'converted' notebooks in the notebooks folder
     # are considered as tests
     # find notebook files in notebooks directory
     root_dir = 'notebooks/'
@@ -70,18 +72,19 @@ def create_notebooks_testsuite():
     skip = ['__init__.py']
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            print(filename)
-            if filename in skip or filename[-6:] != '.ipynb':
+            if filename in skip or filename[-3:] != '.py':
                 continue
             if 'notebooks/.' in root:
                 continue
-            f = os.path.abspath(os.path.join(root, filename))
+            f = os.path.join(root, filename)
+            f = f.replace('/', '.')
+            f = f[:-3]
             files.append(f)
+
     # create empty testsuite
     suite = unittest.TestSuite()
-
     # add NotebookTests
-    suite.addTests(NotebookTests(input) for input in files)
+    suite.addTests(NotebookTest(input) for input in files)
 
     return suite
 
@@ -138,7 +141,7 @@ def main(args):
 
         -a
         --all
-            Run all tests (examples, test, doctest)
+            Run all tests (examples, test, doctest, notebooks)
 
         -m
             Run all tests within a single testsuite [default]
@@ -216,6 +219,7 @@ def main(args):
 
     if test_all:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
+        testSuite.append(unittest.TestSuite(create_notebooks_testsuite()))
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
     elif test_examples:
