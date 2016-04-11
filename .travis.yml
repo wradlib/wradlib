@@ -27,7 +27,9 @@ matrix:
       env:
         - PYTHON_VERSION="3.5"
 
-install: source scripts/install.sh
+install:
+    - deactivate
+    - source scripts/install.sh
 
 before_script:
     - flake8 --ignore=E501 wradlib
@@ -41,7 +43,7 @@ before_script:
 script:
     #- export GDAL_DATA=$HOME/miniconda2/envs/wradlib/share/gdal+
     #- export WRADLIB_DATA=$PWD/examples/data
-    - xvfb-run coverage run --source wradlib testrunner.py -a
+    - xvfb-run coverage run --source wradlib testrunner.py -n
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
