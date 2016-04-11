@@ -1320,21 +1320,5 @@ def get_wradlib_data_file(relfile):
     return data_file
 
 
-def render_notebook(filename, out=None):
-    nbformat = import_optional('nbformat')
-    runipy = import_optional('runipy.notebook_runner')
-
-    notebook = nbformat.read(filename, 3)
-    r = runipy.notebook_runner.NotebookRunner(notebook, mpl_inline=True)
-    r.run_notebook()
-    nb_name = os.path.basename(filename)
-    if out is None:
-        out_path = os.path.join(os.path.dirname(filename), 'rendered')
-    else:
-        out_path = out
-    doc_name = os.path.join(out_path, nb_name)
-    nbformat.write(r.nb, doc_name, 4)
-
-
 if __name__ == '__main__':
     print('wradlib: Calling module <util> as main...')
