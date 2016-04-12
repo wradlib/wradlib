@@ -15,6 +15,7 @@ import getopt
 import unittest
 import doctest
 import inspect
+import wradlib as wrl
 
 VERBOSE = 2
 
@@ -47,6 +48,44 @@ def create_examples_testsuite():
         funcs = inspect.getmembers(func, inspect.isfunction)
         [suite.addTest(unittest.FunctionTestCase(v))
          for k, v in funcs if k.startswith(("ex_", "recipe_"))]
+
+    return suite
+
+
+class NotebookTest(unittest.TestCase):
+    def __init__(self, module):
+        super(NotebookTest, self).__init__()
+        self.name = module
+
+    def runTest(self):
+        print(self.name.split('.')[1])
+        self.assertTrue(__import__(self.name))
+
+
+def create_notebooks_testsuite():
+    # gather information on notebooks
+    # all 'converted' notebooks in the notebooks folder
+    # are considered as tests
+    # find notebook files in notebooks directory
+    root_dir = 'notebooks/'
+    files = []
+    skip = ['__init__.py']
+    for root, _, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if filename in skip or filename[-3:] != '.py':
+                continue
+            if 'notebooks/.' in root:
+                continue
+            f = os.path.join(root, filename)
+            f = f.replace('/', '.')
+            f = f[:-3]
+            files.append(f)
+
+    # create empty testsuite
+    suite = unittest.TestSuite()
+    # add NotebookTests
+    suite.addTests(NotebookTest(input) for input in files)
+
     return suite
 
 
@@ -102,7 +141,7 @@ def main(args):
 
         -a
         --all
-            Run all tests (examples, test, doctest)
+            Run all tests (examples, test, doctest, notebooks)
 
         -m
             Run all tests within a single testsuite [default]
@@ -137,13 +176,14 @@ def main(args):
     test_all = 0
     test_examples = 0
     test_docs = 0
+    test_notebooks = 0
     test_units = 0
     verbosity = VERBOSE
 
     try:
-        options, arg = getopt.getopt(args, 'aeduhv:',
+        options, arg = getopt.getopt(args, 'aednuhv:',
                                      ['all', 'examples', 'docs',
-                                      'units', 'help'])
+                                      'notebooks', 'units', 'help'])
     except getopt.GetoptError as e:
         err_exit(e.msg)
 
@@ -156,6 +196,8 @@ def main(args):
             test_examples = 1
         elif name in ('-d', '--docs'):
             test_docs = 1
+        elif name in ('-n', '--notebooks'):
+            test_notebooks = 1
         elif name in ('-u', '--units'):
             test_units = 1
         elif name in ('-h', '--help'):
@@ -165,8 +207,8 @@ def main(args):
         else:
             err_exit(usage_message)
 
-    if not(test_all or test_examples or test_docs or test_units):
-        err_exit('must specify one of: -a -e -d -u')
+    if not(test_all or test_examples or test_docs or test_notebooks or test_units):
+        err_exit('must specify one of: -a -e -d -n -u')
 
     # change to main package path, where testrunner.py lives
     path = os.path.dirname(__file__)
@@ -177,10 +219,13 @@ def main(args):
 
     if test_all:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
+        testSuite.append(unittest.TestSuite(create_notebooks_testsuite()))
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
     elif test_examples:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
+    elif test_notebooks:
+        testSuite.append(unittest.TestSuite(create_notebooks_testsuite()))
     elif test_docs:
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
     elif test_units:

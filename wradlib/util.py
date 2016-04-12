@@ -24,6 +24,7 @@ from datetime import tzinfo, timedelta
 from time import mktime
 import warnings
 import functools
+import os
 
 import numpy as np
 from scipy import interpolate
@@ -33,8 +34,6 @@ from scipy.stats import nanmean
 from osgeo import ogr
 
 warnings.simplefilter('always', DeprecationWarning)
-
-
 # warnings.simplefilter('always', FutureWarning)
 
 
@@ -60,7 +59,8 @@ def deprecated(replacement=None):
     >>> @deprecated()
     ... def foo(x):
     ...     return x
-    >>> ret = foo(1) #doctest: +ELLIPSIS
+    >>> ret = foo(1) #doctest: +SKIP
+    #  #doctest: +ELLIPSIS
     /.../util.py:1: DeprecationWarning: wradlib.util.foo is deprecated
       #!/usr/bin/env python
 
@@ -69,7 +69,8 @@ def deprecated(replacement=None):
     >>> @deprecated(newfun)
     ... def foo(x):
     ...     return x
-    >>> ret = foo(1) #doctest: +ELLIPSIS
+    >>> ret = foo(1) #doctest: +SKIP
+    # #doctest: +ELLIPSIS
     /.../util.py:1: DeprecationWarning: wradlib.util.foo is deprecated; use <function newfun at 0x...> instead
       #!/usr/bin/env python
 
@@ -1302,6 +1303,22 @@ def has_geos():
     if ogrex:
         ogr.UseExceptions()
     return hasgeos
+
+
+def get_wradlib_data_path():
+    wrl_data_path = os.environ.get('WRADLIB_DATA', None)
+    if wrl_data_path is None:
+        raise EnvironmentError("'WRADLIB_DATA' environment variable not set")
+    if not os.path.isdir(wrl_data_path):
+        raise EnvironmentError("'WRADLIB_DATA' path '{0}' does not exist".format(wrl_data_path))
+    return wrl_data_path
+
+
+def get_wradlib_data_file(relfile):
+    data_file = os.path.join(get_wradlib_data_path(), relfile)
+    if not os.path.exists(data_file):
+        raise EnvironmentError("WRADLIB_DATA file '{0}' does not exist".format(data_file))
+    return data_file
 
 
 if __name__ == '__main__':

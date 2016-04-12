@@ -242,11 +242,7 @@ def readDX(filename):
     clutterflag = 2 ** 15
     dataflag = 2 ** 13 - 1
 
-    # open the DX file in binary mode for reading
-    if isinstance(filename, io.IOBase):
-        f = filename
-    else:
-        f = open(filename, 'rb')
+    f = get_radolan_filehandle(filename)
 
     # header string for later processing
     header = ''
@@ -464,7 +460,7 @@ def get_radolan_header_token():
     """
     head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
             'INT': None, 'GP': None, 'MS': None, 'LV': None,
-            'CS': None, 'MX': None, 'BG': None}
+            'CS': None, 'MX': None, 'BG': None, 'ST': None}
     return head
 
 
@@ -566,6 +562,9 @@ def parse_DWD_quant_composite_header(header):
             if k == 'MS':
                 locationstring = header[v[0]:].strip().split("<")[1].split(">")[0]
                 out["radarlocations"] = locationstring.split(",")
+            if k == 'ST':
+                locationstring = header[v[0]:].strip().split("<")[1].split(">")[0]
+                out["radardays"] = locationstring.split(",")
             if k == 'CS':
                 out['indicator'] = {0: "near ground level",
                                     1: "maximum",
@@ -829,7 +828,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     # read the actual data
     indat = read_radolan_binary_array(f, attrs['datasize'])
 
-    if attrs["producttype"] in ["RX", "EX"]:
+    if attrs["producttype"] in ["RX", "EX", "WX"]:
         # convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
         arr = np.where(arr == 250, NODATA, arr)
@@ -837,6 +836,10 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
 
     elif attrs['producttype'] in ["PG", "PC"]:
         arr = decode_radolan_runlength_array(indat, attrs)
+    elif attrs['producttype'] in ["W1", "W2", "W3", "W4"]:
+        arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
+        arr = arr * attrs["precision"]
+        # arr[nodata] = NODATA
     else:
         # convert to 16-bit integers
         arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
