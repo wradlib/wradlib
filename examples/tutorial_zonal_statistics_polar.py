@@ -60,7 +60,8 @@ def ex_tutorial_zonal_statistics_polar():
         print("NO GEOS support within GDAL, aborting...")
         return
 
-    data, attrib = wradlib.io.from_hdf5(os.path.dirname(__file__) + '/' + 'data/rainsum_boxpol_20140609.h5')
+    filename = wradlib.util.get_wradlib_data_file('hdf5/rainsum_boxpol_20140609.h5')
+    data, attrib = wradlib.io.from_hdf5(filename)
 
     # get Lat, Lon, range, azimuth, rays, bins out of radar data
     lat1 = attrib['Latitude']
@@ -93,8 +94,7 @@ def ex_tutorial_zonal_statistics_polar():
     # reshape
     radar_gk.shape = (rays, bins, 5, 2)
     radar_gkc.shape = (rays, bins, 2)
-
-    shpfile = os.path.dirname(__file__) + '/' + 'data/agger/agger_merge.shp'
+    shpfile = wradlib.util.get_wradlib_data_file('shapefiles/agger/agger_merge.shp')
     dataset, inLayer = wradlib.io.open_shape(shpfile)
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
 

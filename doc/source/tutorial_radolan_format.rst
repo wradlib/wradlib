@@ -27,7 +27,7 @@ In `the radolan_quickstart_example.py script <https://github.com/wradlib/wradlib
     import matplotlib.pyplot as pl
 
     # load radolan files
-    rw_filename = '../../examples/data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
+    rw_filename = wrl.util.get_wradlib_data_file('radolan/misc/raa01-rw_10000-1408102050-dwd---bin.gz')
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
 
     # print the available attributes
@@ -57,7 +57,7 @@ In `the radolan_quickstart_example.py script <https://github.com/wradlib/wradlib
     import numpy as np
     import matplotlib.pyplot as pl
     # load radolan files
-    rw_filename = '../../examples/data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
+    rw_filename = wrl.util.get_wradlib_data_file('radolan/misc/raa01-rw_10000-1408102050-dwd---bin.gz')
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
     # print the available attributes
     print("RW Attributes:", rwattrs)
@@ -483,7 +483,7 @@ In `the radolan_radarloc_example.py script <https://github.com/wradlib/wradlib/b
     def ex_radolan_radarloc():
 
         # load radolan file
-        rw_filename = '../../examples/data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
+        rw_filename = wrl.util.get_wradlib_data_file('radolan/misc/raa01-rw_10000-1408102050-dwd---bin.gz')
         rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
 
         # print the available attributes
@@ -598,10 +598,10 @@ In `the radolan_header_example.py script <https://github.com/wradlib/wradlib/blo
     import os
 
     # load radolan file
-    rx_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rx_10000-1408102050-dwd---bin.gz'
-    ex_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-ex_10000-1408102050-dwd---bin.gz'
-    rw_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
-    sf_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-sf_10000-1408102050-dwd---bin.gz'
+    rx_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rx_10000-1408102050-dwd---bin.gz')
+    ex_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-ex_10000-1408102050-dwd---bin.gz')
+    rw_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rw_10000-1408102050-dwd---bin.gz')
+    sf_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-sf_10000-1408102050-dwd---bin.gz')
 
     rxdata, rxattrs = wrl.io.read_RADOLAN_composite(rx_filename)
     exdata, exattrs = wrl.io.read_RADOLAN_composite(ex_filename)
@@ -806,10 +806,10 @@ In `the radolan_products_example.py script <https://github.com/wradlib/wradlib/b
     import os
 
     # load radolan file
-    rx_filename = '../../examples/data/radolan/raa01-rx_10000-1408102050-dwd---bin.gz'
-    ex_filename = '../../examples/data/radolan/raa01-ex_10000-1408102050-dwd---bin.gz'
-    rw_filename = '../../examples/data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
-    sf_filename = '../../examples/data/radolan/raa01-sf_10000-1408102050-dwd---bin.gz'
+    rx_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rx_10000-1408102050-dwd---bin.gz')
+    ex_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-ex_10000-1408102050-dwd---bin.gz')
+    rw_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rw_10000-1408102050-dwd---bin.gz')
+    sf_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-sf_10000-1408102050-dwd---bin.gz')
 
     rxdata, rxattrs = wrl.io.read_RADOLAN_composite(rx_filename)
     exdata, exattrs = wrl.io.read_RADOLAN_composite(ex_filename)

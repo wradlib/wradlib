@@ -3,17 +3,17 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 # import math
-import os
-
 import numpy as np
 
 import wradlib.georef as georef
 import wradlib.io as io
+import wradlib.util as util
 
 
 def ex_coord():
 
-    pvol = io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + 'data/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
+    filename = util.get_wradlib_data_file('hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
+    pvol = io.read_OPERA_hdf5(filename)
 
     # Count the number of dataset
 

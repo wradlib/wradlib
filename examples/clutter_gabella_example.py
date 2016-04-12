@@ -7,14 +7,15 @@ import matplotlib.pyplot as pl
 # pl.interactive(True)
 import wradlib.vis as vis
 import wradlib.clutter as clutter
-import os
+import wradlib.util as util
 
 
 def ex_clutter_gabella():
     # load the example data
     import numpy as np
     # Todo: link right data set
-    testdata = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_fbg.gz')
+    filename = util.get_wradlib_data_file('misc/polar_dBZ_fbg.gz')
+    testdata = np.loadtxt(filename)
 
     # calculate the clutter map
     clmap = clutter.filter_gabella(testdata,

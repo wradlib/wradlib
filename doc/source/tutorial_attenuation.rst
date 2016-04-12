@@ -10,14 +10,14 @@ The example event
 Let's have a look at the situation in South-West Germany on June 2nd, 2008, at 16:55 UTC, as observed by the DWD C-band radar on mount Feldberg.
 The data can be read by the following lines and then visualized by ``wradlib.vis.plot_ppi`` (see image source code below)::
 
-   filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+   filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
    data, attrs = wradlib.io.readDX(filename)
 
 .. plot::
 
    import matplotlib.pyplot as plt
    import wradlib
-   filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+   filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
    data, attrs = wradlib.io.readDX(filename)
    ax, cf = wradlib.vis.plot_ppi(data, cmap="spectral")
    plt.xlabel("Easting from radar (km)")
@@ -38,7 +38,7 @@ We see a set of convective cells with high rainfall intensity in the NE-sector o
 
    import matplotlib.pyplot as plt
    import wradlib
-   filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+   filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
    data, attrs = wradlib.io.readDX(filename)
    mybeams = slice(53,56)
    labelsize=13
@@ -75,7 +75,7 @@ Plotting the result below the reflectivity profile, we obtain the following figu
 
 	import matplotlib.pyplot as plt
 	import wradlib
-	filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+	filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
 	data, attrs = wradlib.io.readDX(filename)
 	pia_hibo = wradlib.atten.correctAttenuationHB(data, coefficients = dict(a=8.e-5, b=0.731, l=1.0), mode="warn", thrs=59.)
 	
@@ -128,7 +128,7 @@ And the results would look like this:
 
 	import matplotlib.pyplot as plt
 	import wradlib
-	filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+	filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
 	data, attrs = wradlib.io.readDX(filename)
 	pia_harrison = wradlib.atten.correctAttenuationHB(data, coefficients = dict(a=4.57e-5, b=0.731, l=1.0), mode="warn", thrs=59.)
 	pia_harrison[pia_harrison>4.8] = 4.8
@@ -181,7 +181,7 @@ In brief, this call specifies ranges of the power parameters a and b of the A(Z)
 
 	import matplotlib.pyplot as plt
 	import wradlib
-	filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+	filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
 	data, attrs = wradlib.io.readDX(filename)
 	pia_kraemer = wradlib.atten.correctAttenuationConstrained2(data, a_max=1.67e-4, a_min=2.33e-5, n_a=100, b_max=0.7, b_min=0.65, n_b=6, l=1.,  
 	              constraints=[wradlib.atten.constraint_dBZ], constraint_args=[[59.0]])
@@ -233,7 +233,7 @@ The function :doc:`generated/wradlib.atten.correctAttenuationConstrained2` allow
 
 	import matplotlib.pyplot as plt
 	import wradlib
-	filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+	filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
 	data, attrs = wradlib.io.readDX(filename)
 	pia_mKraemer = wradlib.atten.correctAttenuationConstrained2(data, a_max=1.67e-4, a_min=2.33e-5, n_a=100, b_max=0.7, b_min=0.65, n_b=6, l=1.,  
 	              constraints=[wradlib.atten.constraint_dBZ,wradlib.atten.constraint_pia], constraint_args=[[59.0],[20.0]])
@@ -278,7 +278,7 @@ Plotting all of the above methods (`Hitschfeld and Bordan`_, `Harrison`_, `Kraem
 
 	import matplotlib.pyplot as plt
 	import wradlib
-	filename = "../../examples/data/raa00-dx_10908-0806021655-fbg---bin"
+	filename = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-0806021655-fbg---bin.gz')
 	data, attrs = wradlib.io.readDX(filename)
 	pia_hibo = wradlib.atten.correctAttenuationHB(data, coefficients = dict(a=8.e-5, b=0.731, l=1.0), mode="warn", thrs=59.)
 	pia_harrison = wradlib.atten.correctAttenuationHB(data, coefficients = dict(a=4.57e-5, b=0.731, l=1.0), mode="warn", thrs=59.)

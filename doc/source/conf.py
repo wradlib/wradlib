@@ -13,6 +13,7 @@
 # serve to show the default.
 
 import os
+import glob
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -37,6 +38,8 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.bibtex',
               'numpydoc',
               'matplotlib.sphinxext.plot_directive',
+              'nbsphinx',
+              'IPython.sphinxext.ipython_console_highlighting',
               ]
 
 # just generate normal png
@@ -48,7 +51,9 @@ mathjax_path = ("https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
 pngmath_latex_preamble = r'\usepackage[active]{preview}'  # + other custom stuff for inline math, such as non-default math fonts etc.
 pngmath_use_preview = True
 
-autosummary_generate = True
+# get all rst files, do it manually
+rst_files = glob.glob('*.rst')
+autosummary_generate = rst_files
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -117,7 +122,8 @@ today_fmt = '%B %d, %Y'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+#exclude_patterns = []
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

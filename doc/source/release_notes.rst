@@ -12,13 +12,16 @@ Bleeding Edge
 **Highlights**
 
 * documentation reviewed, adapted gettingstarted.rst, dev_setup.rst and release_notes.rst
+* added notebook-workflow
 
-** New features **
+**New features**
 
+* added simple notebooks showing workflow
+* added use of dedicated wradlib-repo, WRADLIB_DATA env variable and data file retrieving functions
+* add ability to read gzipped dx data
 * enhanced ``wradlib.io.read_Rainbow`` to read product pixmap data from rainbow5 files
+
 Bugfix: removed bug reading lists in ``wradlib.io.read_Rainbow``
-
-
 
 
 Version 0.8.0

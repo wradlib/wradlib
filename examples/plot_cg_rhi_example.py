@@ -10,12 +10,11 @@ import wradlib
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import NullFormatter
-import os
 
 
 def ex_plot_cg_rhi():
     # reading in data, range and theta arrays from special rhi hdf5 file
-    filename = os.path.dirname(__file__) + '/' + 'data/polar_rhi_dBZ_bonn.h5'
+    filename = wradlib.util.get_wradlib_data_file('hdf5/polar_rhi_dBZ_bonn.h5')
     data, meta = wradlib.io.from_hdf5(filename, dataset='data')
     r, meta = wradlib.io.from_hdf5(filename, dataset='range')
     th, meta = wradlib.io.from_hdf5(filename, dataset='theta')

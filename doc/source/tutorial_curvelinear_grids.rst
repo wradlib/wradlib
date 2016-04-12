@@ -119,7 +119,8 @@ For this simple example, we do not need the returned axes. This is the image we 
     import numpy as np
     import wradlib
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -164,7 +165,8 @@ is set via :func:`text`. Also a colorbar is easily added. This is the image we w
     import numpy as np
     import wradlib
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -225,7 +227,8 @@ Let's have a look at the plot:
     import numpy as np
     import wradlib
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -281,7 +284,8 @@ Taking the former sector example, we can plot some additional **stations**::
     import numpy as np
     import wradlib
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -350,7 +354,8 @@ a bit, for wanted results.
     from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     import mpl_toolkits.axisartist.angle_helper as angle_helper
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -428,7 +433,8 @@ Everything else stays the same. So now we have:
     from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     from matplotlib.ticker import MaxNLocator
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -498,7 +504,8 @@ With little effort we got a better (IMHO) representation:
     from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     from matplotlib.ticker import MaxNLocator
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -574,7 +581,7 @@ So just a quick example of an cg rhi plot with some decorations::
     import wradlib
     from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
-    file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
+    file = wradlib.util.get_wradlib_data_file('hdf5/polar_rhi_dBZ_bonn.h5')
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
     r, meta = wradlib.io.from_hdf5(file, dataset='range')
     th, meta = wradlib.io.from_hdf5(file, dataset='theta')
@@ -616,7 +623,7 @@ As you can see, the ``grid_locator1`` for the theta angles is overwritten and no
     import wradlib
     from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
-    file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
+    file = wradlib.util.get_wradlib_data_file('hdf5/polar_rhi_dBZ_bonn.h5')
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
     r, meta = wradlib.io.from_hdf5(file, dataset='range')
     th, meta = wradlib.io.from_hdf5(file, dataset='theta')
@@ -698,7 +705,7 @@ in one figure on a regular grid::
     import wradlib
     from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
-    file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
+    file = wradlib.util.get_wradlib_data_file('hdf5/polar_rhi_dBZ_bonn.h5')
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
     r, meta = wradlib.io.from_hdf5(file, dataset='range')
     th, meta = wradlib.io.from_hdf5(file, dataset='theta')
@@ -768,7 +775,7 @@ Then you can take the GridSpec object as an input to the parameter ``subplot``::
     import wradlib
     from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
     # reading in data, range and theta arrays from special rhi hdf5 file
-    file = '../../examples/data/polar_rhi_dBZ_bonn.h5'
+    file = wradlib.util.get_wradlib_data_file('hdf5/polar_rhi_dBZ_bonn.h5')
     data, meta = wradlib.io.from_hdf5(file, dataset='data')
     r, meta = wradlib.io.from_hdf5(file, dataset='range')
     th, meta = wradlib.io.from_hdf5(file, dataset='theta')
@@ -895,7 +902,8 @@ And this looks actually very nice:
     angle = 0.0
     elev = 0.0
 
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     # we need to have meter here for the georef function inside mip
     d1 = np.arange(data.shape[1], dtype=np.float) * 1000
     d2 = np.arange(data.shape[0], dtype=np.float)

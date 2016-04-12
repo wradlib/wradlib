@@ -3,8 +3,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 # import math
-import os
-
 import numpy as np
 
 import wradlib.vis as vis
@@ -12,14 +10,15 @@ import wradlib.clutter as cl
 import wradlib.georef as georef
 import wradlib.ipol as ipol
 import wradlib.io as io
+import wradlib.util as util
 import matplotlib.pyplot as plt
 plt.interactive(True)
 
 
 def ex_clutter_cloud():
     # read the radar volume scan
-    path = os.path.dirname(__file__) + '/'
-    pvol = io.read_OPERA_hdf5(path + 'data/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
+    filename = util.get_wradlib_data_file('hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf')
+    pvol = io.read_OPERA_hdf5(filename)
 
     # Count the number of dataset
 
@@ -59,8 +58,8 @@ def ex_clutter_cloud():
     coord = georef.reproject(coord, projection_target=proj_radar)
 
     # Construct collocated satellite data
-
-    sat_gdal = io.read_safnwc(path + 'data/SAFNWC_MSG3_CT___201304290415_BEL_________.h5')
+    filename = util.get_wradlib_data_file('hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5')
+    sat_gdal = io.read_safnwc(filename)
     val_sat = georef.read_gdal_values(sat_gdal)
     coord_sat = georef.read_gdal_coordinates(sat_gdal)
     proj_sat = georef.read_gdal_projection(sat_gdal)

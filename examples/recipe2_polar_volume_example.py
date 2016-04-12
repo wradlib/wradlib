@@ -8,13 +8,13 @@ import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
 pl.interactive(True)  # noqa
 import datetime as dt
-import os
 from osgeo import osr
 
 
 def recipe_polar_volume_example():
     # read the data (sample file in wradlib/examples/data)
-    raw = wradlib.io.read_OPERA_hdf5(os.path.dirname(__file__) + '/' + "data/knmi_polar_volume.h5")
+    filename = wradlib.util.get_wradlib_data_file('hdf5/knmi_polar_volume.h5')
+    raw = wradlib.io.read_OPERA_hdf5(filename)
     # this is the radar position tuple (longitude, latitude, altitude)
     sitecoords = (raw["where"]["lon"][0], raw["where"]["lat"][0], raw["where"]["height"][0])
     # define your cartesian reference system

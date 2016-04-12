@@ -29,9 +29,9 @@ def _check_file(filename):
         exit(0)
 
 
-def nex_overlay():
+def ex_overlay():
     # set filepath
-    filepath = os.path.join(os.path.dirname(__file__), 'data/geo')
+    # filepath = os.path.join(os.path.dirname(__file__), 'data/geo')
 
     # setup figure
     fig1 = plt.figure(figsize=(10, 8))
@@ -46,8 +46,8 @@ def nex_overlay():
     # created from srtm data via the following shell command:
     # gdalwarp -te 88. 20. 93. 27. srtm_54_07.tif srtm_55_07.tif srtm_54_08.tif srtm_55_08.tif bangladesh.tif
 
-    filename = os.path.join(filepath, 'bangladesh.tif')
-    _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/bangladesh.tif')
+    # _check_file(filename)
     # pixel_spacing is in output units (lonlat)
     rastercoords, rastervalues = wrl.io.read_raster_data(filename,
                                                          spacing=0.005)
@@ -75,8 +75,8 @@ def nex_overlay():
     # country list
     countries = ['India', 'Nepal', 'Bhutan', 'Myanmar']
     # open the input data source and get the layer
-    filename = os.path.join(filepath, 'ne_10m_admin_0_boundary_lines_land.shp')
-    _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_admin_0_boundary_lines_land.shp')
+    # _check_file(filename)
     dataset, inLayer = wrl.io.open_shape(filename)
     # iterate over countries, filter accordingly, get coordinates and plot
     for item in countries:
@@ -97,8 +97,8 @@ def nex_overlay():
         colors.append(cm(1. * i / len(countries)))
 
     # open the input data source and get the layer
-    filename = os.path.join(filepath, 'ne_10m_admin_0_countries.shp')
-    _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_admin_0_countries.shp')
+    # _check_file(filename)
     dataset, layer = wrl.io.open_shape(filename)
     # iterate over countries, filter by attribute, plot single patches on ax2
     for i, item in enumerate(countries):
@@ -143,8 +143,8 @@ def nex_overlay():
     # http://www.fao.org/geonetwork/srv/en/metadata.show?id=37331
 
     # open the input data source and get the layer
-    filename = os.path.join(filepath, 'rivers_asia_37331.shp')
-    _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/rivers_asia_37331.shp')
+    # _check_file(filename)
     dataset, inLayer = wrl.io.open_shape(filename)
 
     # do spatial filtering to get only geometries inside bounding box
@@ -165,8 +165,8 @@ def nex_overlay():
     # plot rivers from esri vector shape, filter spatially
     # plot rivers from NED
     # open the input data source and get the layer
-    filename = os.path.join(filepath, 'ne_10m_rivers_lake_centerlines.shp')
-    _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_rivers_lake_centerlines.shp')
+    # _check_file(filename)
     dataset, inLayer = wrl.io.open_shape(filename)
     inLayer.SetSpatialFilterRect(88, 20, 93, 27)
     rivers, keys = wrl.georef.get_shape_coordinates(inLayer)
@@ -196,4 +196,4 @@ def nex_overlay():
 
 # =======================================================
 if __name__ == '__main__':
-    nex_overlay()
+    ex_overlay()

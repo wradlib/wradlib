@@ -5,8 +5,8 @@
 import wradlib.ipol as ipol
 import wradlib.qual as qual
 import wradlib.comp as comp
+import wradlib.util as util
 import numpy as np
-import os
 import matplotlib.pyplot as pl
 # pl.interactive(True)
 
@@ -19,9 +19,10 @@ def ex_compose_by_height():
     # -------------------------------------------------------------------------
     # load the data for the first radar
     # -------------------------------------------------------------------------
-    path = os.path.dirname(__file__) + '/'
-    rad1 = np.loadtxt(path + 'data/polar_dBZ_tur.gz').ravel()
-    rad1coords = np.loadtxt(path + 'data/bin_coords_tur.gz')
+    filename = util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    rad1 = np.loadtxt(filename).ravel()
+    filename = util.get_wradlib_data_file('misc/bin_coords_tur.gz')
+    rad1coords = np.loadtxt(filename)
     center1 = rad1coords.mean(axis=0)
     radius1 = 128000.
 
@@ -36,8 +37,10 @@ def ex_compose_by_height():
     # -------------------------------------------------------------------------
     # load the data for the second radar
     # -------------------------------------------------------------------------
-    rad2 = np.loadtxt(path + 'data/polar_dBZ_fbg.gz').ravel()
-    rad2coords = np.loadtxt(path + 'data/bin_coords_fbg.gz')
+    filename = util.get_wradlib_data_file('misc/polar_dBZ_fbg.gz')
+    rad2 = np.loadtxt(filename).ravel()
+    filename = util.get_wradlib_data_file('misc/bin_coords_fbg.gz')
+    rad2coords = np.loadtxt(filename)
     center2 = rad2coords.mean(axis=0)
     radius2 = 128000.
 

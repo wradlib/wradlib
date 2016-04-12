@@ -2,14 +2,13 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib
-import os
 
 
 def ex_grid_to_gis():
     # We will export this RADOLAN dataset to a GIS compatible format
-    wdir = os.path.dirname(__file__) + '/data/radolan/'
-    fpath = wdir + 'raa01-sf_10000-1408102050-dwd---bin.gz'
-    data, meta = wradlib.io.read_RADOLAN_composite(fpath)
+    wdir = wradlib.util.get_wradlib_data_path() + '/radolan/grid/'
+    filename = wradlib.util.get_wradlib_data_file('radolan/misc/raa01-sf_10000-1408102050-dwd---bin.gz')
+    data, meta = wradlib.io.read_RADOLAN_composite(filename)
 
     # This is the RADOLAN projection
     proj_osr = wradlib.georef.create_osr("dwd-radolan")

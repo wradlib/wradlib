@@ -5,12 +5,11 @@ import wradlib as wrl
 import numpy as np
 import matplotlib.pyplot as pl
 # pl.interactive(True)
-import os
 
 
 def ex_radolan_quickstart():
     # load radolan files
-    rw_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
+    rw_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rw_10000-1408102050-dwd---bin.gz')
     print(rw_filename)
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
 

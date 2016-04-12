@@ -6,7 +6,6 @@ import matplotlib.pyplot as pl
 pl.interactive(True)  # noqa
 import numpy as np
 import matplotlib as mpl
-import os
 from osgeo import osr
 
 
@@ -71,7 +70,7 @@ def get_radar_locations():
 
 def ex_radolan_radarloc():
     # load radolan file
-    rw_filename = os.path.dirname(__file__) + '/' + 'data/radolan/raa01-rw_10000-1408102050-dwd---bin.gz'
+    rw_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rw_10000-1408102050-dwd---bin.gz')
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
 
     # print the available attributes

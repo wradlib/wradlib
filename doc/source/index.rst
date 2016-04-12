@@ -27,6 +27,7 @@ This documentation is under steady development. It provides a complete library r
    
    gettingstarted   
    tutorials
+   notebooks
    recipes
    reference
    community

@@ -6,7 +6,6 @@ import wradlib
 import numpy as np
 import matplotlib.pyplot as plt
 # plt.interactive(True)
-import os
 
 
 def read_data(dtimes):
@@ -14,7 +13,7 @@ def read_data(dtimes):
     """
     data = np.empty((len(dtimes), 360, 128))
     for i, dtime in enumerate(dtimes):
-        f = os.path.dirname(__file__) + "/" + "data/raa00-dx_10908-%s-fbg---bin" % dtime
+        f = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-{0}-fbg---bin.gz'.format(dtime))
         data[i], attrs = wradlib.io.readDX(f)
     return data
 

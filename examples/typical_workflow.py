@@ -6,12 +6,12 @@ import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
 pl.interactive(True)  # noqa
-import os
 
 
 def ex_typical_workflow():
     # read the data
-    data, metadata = wradlib.io.readDX(os.path.join(os.path.dirname(__file__), "data/sample.dx"))
+    filename = wradlib.util.get_wradlib_data_file('dx/sample.dx.gz')
+    data, metadata = wradlib.io.readDX(filename)
     pl.figure()
     ax = pl.subplot(111)
     ax, pm = wradlib.vis.plot_ppi(data, ax=ax)
