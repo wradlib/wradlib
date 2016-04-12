@@ -59,7 +59,7 @@ def deprecated(replacement=None):
     >>> @deprecated()
     ... def foo(x):
     ...     return x
-    >>> ret = foo(1) #doctest: +ELLIPSIS
+    >>> ret = foo(1) #doctest: +SKIP #doctest: +ELLIPSIS
     /.../util.py:1: DeprecationWarning: wradlib.util.foo is deprecated
       #!/usr/bin/env python
 
@@ -68,7 +68,7 @@ def deprecated(replacement=None):
     >>> @deprecated(newfun)
     ... def foo(x):
     ...     return x
-    >>> ret = foo(1) #doctest: +ELLIPSIS
+    >>> ret = foo(1) #doctest: +SKIP #doctest: +ELLIPSIS
     /.../util.py:1: DeprecationWarning: wradlib.util.foo is deprecated; use <function newfun at 0x...> instead
       #!/usr/bin/env python
 
