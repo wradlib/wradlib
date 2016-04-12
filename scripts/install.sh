@@ -23,6 +23,7 @@ ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
 # install wradlib-data
 wget https://github.com/wradlib/wradlib-data/archive/wradlib-data.tar.gz
+echo $PWD
 tar xzvf wradlib-data.tar.gz
 ls -lart $HOME
 ls -lart $HOME/wradlib-data-wradlib-data
