@@ -17,6 +17,7 @@ For further information on wradlib (Gettings started, library reference, develop
 
 http://wradlib.github.io/wradlib-docs
 
+Specific informations for develeopers is availabel via the [wradlib-wiki](https://github.com/wradlib/wradlib/wiki).
 
 ### User forum ###
 
