@@ -20,7 +20,7 @@ def process_polar_level_data(radarname):
     # preparations for loading sample data in source directory
     # files = glob.glob(os.path.dirname(__file__) + '/' + 'data/raa*%s*bin'%radarname)
 
-    files = glob.glob(os.path.dirname(__file__) + '/' + 'data/recipe1_data/raa*%s*bin' % radarname)
+    files = glob.glob(wradlib.util.get_wradlib_data_path() + '/dx/recipe1_data/raa*%s*bin' % radarname)
 
     if len(files) == 0:
         print("WARNING: No data files found - maybe you did not extract the data from data/recipe1_data.zip?")
