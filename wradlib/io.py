@@ -260,8 +260,6 @@ def readDX(filename):
             break
         header += str(mychar.decode())
 
-
-
     attrs = parse_DX_header(header)
 
     # position file at end of header
@@ -841,7 +839,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     elif attrs['producttype'] in ["W1", "W2", "W3", "W4"]:
         arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
         arr = arr * attrs["precision"]
-        #arr[nodata] = NODATA
+        # arr[nodata] = NODATA
     else:
         # convert to 16-bit integers
         arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
