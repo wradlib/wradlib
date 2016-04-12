@@ -15,7 +15,8 @@ import os
 def ex_plot_cg_ppi():
     # pl.interactive(True)
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data/polar_dBZ_tur.gz'))
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation
@@ -223,7 +224,8 @@ def ex_plot_cg_ppi():
     angle = 0.0
     elev = 0.0
 
-    data = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     # we need to have meter here for the georef function inside mip
     d1 = np.arange(data.shape[1], dtype=np.float) * 1000
     d2 = np.arange(data.shape[0], dtype=np.float)

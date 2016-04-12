@@ -53,7 +53,8 @@ So, now let's plot some weather radar stuff::
         import wradlib
 
         # load a polar scan and create range and azimuth arrays accordingly
-        data = np.loadtxt('../../../examples/data/polar_dBZ_tur.gz')
+        filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+        data = np.loadtxt(filename)
         r = np.arange(0, data.shape[1])
         az = np.arange(0, data.shape[0])
         # mask data array for better presentation
@@ -79,7 +80,8 @@ But, take care of the correct path to your example data. It starts from your doc
 
     # load a polar scan and create range and azimuth arrays accordingly
     # path starts in your documentation root
-    data = np.loadtxt('../../examples/data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation

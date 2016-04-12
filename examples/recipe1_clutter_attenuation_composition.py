@@ -19,6 +19,7 @@ def process_polar_level_data(radarname):
     print("Polar level processing for radar %s..." % radarname)
     # preparations for loading sample data in source directory
     # files = glob.glob(os.path.dirname(__file__) + '/' + 'data/raa*%s*bin'%radarname)
+
     files = glob.glob(os.path.dirname(__file__) + '/' + 'data/recipe1_data/raa*%s*bin' % radarname)
 
     if len(files) == 0:
@@ -64,8 +65,8 @@ def recipe_clutter_attenuation():
     # set timer
     start = dt.datetime.now()
     # unzip data
-    filename = os.path.dirname(__file__) + '/' + 'data/recipe1_data.zip'
-    targetdir = os.path.dirname(__file__) + '/' + 'data/recipe1_data'
+    filename = wradlib.util.get_wradlib_data_file('dx/recipe1_data.zip')
+    targetdir = wradlib.util.get_wradlib_data_path() + '/dx/recipe1_data'
     with zipfile.ZipFile(filename, 'r') as z:
         z.extractall(targetdir)
 

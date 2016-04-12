@@ -4,6 +4,7 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib.clutter as clutter
+import wradlib.util as util
 import numpy as np
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
@@ -13,7 +14,8 @@ import os
 
 def ex_histo_cut():
     # load annual rainfall radar array
-    yearsum = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/annual_rainfall_fbg.gz')
+    filename = util.get_wradlib_data_file('misc/annual_rainfall_fbg.gz')
+    yearsum = np.loadtxt(filename)
 
     # get boolean array for clutter and shading
     mask = clutter.histo_cut(yearsum)

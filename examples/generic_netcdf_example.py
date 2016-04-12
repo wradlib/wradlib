@@ -19,20 +19,21 @@ def read_and_overview(filename):
 def ex_read_generic_netcdf():
     # CfRadial example from TITAN homepage
     #   http://www.ral.ucar.edu/projects/titan/docs/radial_formats
-    filename = os.path.dirname(__file__) + '/' + 'data/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+
+    filename = wradlib.util.get_wradlib_data_file('netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc')
     read_and_overview(filename)
 
     # Example PPI from Py-ART repository
     #    https://github.com/ARM-DOE/pyart/blob/master/pyart/testing/data/example_cfradial_ppi.nc
-    filename = os.path.dirname(__file__) + '/' + 'data/example_cfradial_ppi.nc'
+    filename = wradlib.util.get_wradlib_data_file('netcdf/example_cfradial_ppi.nc')
     read_and_overview(filename)
     # Example RHI from Py-ART repository
     #    https://github.com/ARM-DOE/pyart/blob/master/pyart/testing/data/example_cfradial_rhi.nc
-    filename = os.path.dirname(__file__) + '/' + 'data/example_cfradial_rhi.nc'
+    filename = wradlib.util.get_wradlib_data_file('netcdf/example_cfradial_rhi.nc')
     read_and_overview(filename)
 
     # Example EDGE NetCDF export format
-    filename = os.path.dirname(__file__) + '/' + 'data/edge_netcdf.nc'
+    filename = wradlib.util.get_wradlib_data_file('netcdf/edge_netcdf.nc')
     read_and_overview(filename)
 
 

@@ -11,10 +11,8 @@ import os
 
 def ex_load_radolan():
 
-    pg_filename = os.path.join(os.path.dirname(__file__),
-                               'data/raa00-pc_10015-1408030905-dwd---bin.gz')
-    rw_filename = os.path.join(os.path.dirname(__file__),
-                               'data/raa01-rw_10000-1408030950-dwd---bin.gz')
+    pg_filename = wrl.util.get_wradlib_data_file('radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz')
+    rw_filename = wrl.util.get_wradlib_data_file('radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz')
 
     print(pg_filename)
     # load radolan files

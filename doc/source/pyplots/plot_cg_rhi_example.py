@@ -15,7 +15,7 @@ import numpy as np
 import wradlib
 
 # reading in data, range and theta arrays from special rhi hdf5 file
-file = '../../../examples/data/polar_rhi_dBZ_bonn.h5'
+file = wradlib.util.get_wradlib_data_file('hdf5/polar_rhi_dBZ_bonn.h5')
 data, meta = wradlib.io.from_hdf5(file, dataset='data')
 r, meta = wradlib.io.from_hdf5(file, dataset='range')
 th, meta = wradlib.io.from_hdf5(file, dataset='theta')

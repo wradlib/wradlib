@@ -3,6 +3,7 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 from wradlib.ipol import Idw, interpolate
+from wradlib.util import get_wradlib_data_file
 import os
 import numpy as np
 import matplotlib.pyplot as pl
@@ -11,10 +12,12 @@ import datetime as dt
 
 
 def ex_ipol():
-    xsrc = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/bin_coords_tur.gz')
+    filename = get_wradlib_data_file('misc/bin_coords_tur.gz')
+    xsrc = np.loadtxt(filename)
     xtrg = np.meshgrid(np.linspace(3300000.0, 3300000.0 + 900000, 100),
                        np.linspace(5200000.0, 5200000.0 + 900000., 100))
-    vals = np.loadtxt(os.path.dirname(__file__) + '/' + 'data/polar_R_tur.gz').ravel()
+    filename = get_wradlib_data_file('misc/polar_R_tur.gz')
+    vals = np.loadtxt(filename).ravel()
 
     print('Building our object takes:')
     t0 = dt.datetime.now()

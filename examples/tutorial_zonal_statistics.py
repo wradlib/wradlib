@@ -79,12 +79,13 @@ def ex_tutorial_zonal_statistics():
                                   projection_target=proj_gk)
 
     # Open shapefile (already in GK2)
-    shpfile = os.path.dirname(__file__) + '/' + "data/agger/agger_merge.shp"
+
+    shpfile = wradlib.util.get_wradlib_data_file('shapefiles/agger/agger_merge.shp')
     dataset, inLayer = wradlib.io.open_shape(shpfile)
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
 
     # Read and prepare the actual data (RADOLAN)
-    f = os.path.dirname(__file__) + '/' + "data/radolan/raa01-sf_10000-1406100050-dwd---bin.gz"
+    f = wradlib.util.get_wradlib_data_file('radolan/misc/raa01-sf_10000-1406100050-dwd---bin.gz')
     data, attrs = wradlib.io.read_RADOLAN_composite(f, missing=np.nan)
     sec = attrs['secondary']
     data.flat[sec] = np.nan

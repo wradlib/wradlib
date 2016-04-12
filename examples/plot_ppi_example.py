@@ -12,7 +12,8 @@ import os
 
 def ex_plot_ppi():
     # a polar scan
-    img = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data/polar_dBZ_tur.gz'))
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    img = np.loadtxt(filename)
 
     # the simplest call, everything else some default
     pl.figure()

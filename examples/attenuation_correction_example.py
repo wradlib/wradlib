@@ -8,7 +8,8 @@ import os
 
 
 def ex_attenuation():
-    filename = os.path.dirname(__file__) + '/' + 'data/raa00-dx_10908-0806021655-fbg---bin'
+    filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
+    filename = wradlib.util.get_wradlib_data_file(filename)
 
     # Show PPI
     data, attrs = wradlib.io.readDX(filename)
