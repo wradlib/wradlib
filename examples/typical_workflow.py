@@ -6,7 +6,6 @@ import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
 pl.interactive(True)  # noqa
-import os
 
 
 def ex_typical_workflow():

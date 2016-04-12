@@ -7,7 +7,6 @@ import wradlib.qual as qual
 import wradlib.comp as comp
 import wradlib.util as util
 import numpy as np
-import os
 import matplotlib.pyplot as pl
 # pl.interactive(True)
 

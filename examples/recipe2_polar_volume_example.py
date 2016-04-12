@@ -8,7 +8,6 @@ import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
 pl.interactive(True)  # noqa
 import datetime as dt
-import os
 from osgeo import osr
 
 

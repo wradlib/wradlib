@@ -4,7 +4,6 @@
 
 from wradlib.ipol import Idw, interpolate
 from wradlib.util import get_wradlib_data_file
-import os
 import numpy as np
 import matplotlib.pyplot as pl
 # pl.interactive(True)

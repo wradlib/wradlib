@@ -6,7 +6,6 @@ import matplotlib.pyplot as pl
 pl.interactive(True)  # noqa
 import numpy as np
 import matplotlib as mpl
-import os
 from osgeo import osr
 
 

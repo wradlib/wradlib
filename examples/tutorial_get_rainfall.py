@@ -6,7 +6,6 @@ import wradlib
 import numpy as np
 import matplotlib.pyplot as plt
 # plt.interactive(True)
-import os
 
 
 def read_data(dtimes):

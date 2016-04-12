@@ -5,7 +5,6 @@ import wradlib as wrl
 import matplotlib.pyplot as pl
 # pl.interactive(True)
 import numpy as np
-import os
 
 
 def ex_load_rainbow():

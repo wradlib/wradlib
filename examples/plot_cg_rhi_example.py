@@ -10,7 +10,6 @@ import wradlib
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import NullFormatter
-import os
 
 
 def ex_plot_cg_rhi():

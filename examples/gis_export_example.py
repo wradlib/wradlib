@@ -2,7 +2,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import wradlib
-import os
 
 
 def ex_grid_to_gis():

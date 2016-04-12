@@ -8,7 +8,6 @@ import matplotlib.pyplot as pl
 import wradlib.vis as vis
 import wradlib.clutter as clutter
 import wradlib.util as util
-import os
 
 
 def ex_clutter_gabella():

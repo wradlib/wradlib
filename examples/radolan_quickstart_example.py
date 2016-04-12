@@ -5,7 +5,6 @@ import wradlib as wrl
 import numpy as np
 import matplotlib.pyplot as pl
 # pl.interactive(True)
-import os
 
 
 def ex_radolan_quickstart():

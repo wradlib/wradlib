@@ -7,7 +7,6 @@ import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
 # pl.interactive(True)
 import wradlib
-import os
 
 
 def ex_plot_ppi():

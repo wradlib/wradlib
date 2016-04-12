@@ -4,7 +4,6 @@
 import wradlib
 import matplotlib.pyplot as plt
 # plt.interactive(True)
-import os
 
 
 def ex_attenuation():

@@ -6,7 +6,7 @@ import warnings
 
 import numpy as np
 import matplotlib.pyplot as plt
-plt.ion()
+plt.ion()  # noqa
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -31,7 +31,7 @@ def nex_beamblock(rasterfile, **kwargs):
     """
 
     # check if raster file is available, graceful exit
-    #_check_file(rasterfile)
+    # _check_file(rasterfile)
 
     # setup radar specs (Bonn Radar)
     sitecoords = (7.071663, 50.73052, 99.5)
@@ -150,6 +150,7 @@ def ex_gtopo():
     filename = wrl.util.get_wradlib_data_file('geo/bonn_gtopo.tif')
     print("DataSource: GTOPO30")
     nex_beamblock(filename)  # , spacing=0.083333333333, resample=gdal.GRA_Bilinear)
+
 
 def ex_srtm():
     filename = wrl.util.get_wradlib_data_file('geo/bonn_new.tif')

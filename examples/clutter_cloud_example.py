@@ -3,8 +3,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 # import math
-import os
-
 import numpy as np
 
 import wradlib.vis as vis

@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as pl
 # just making sure that the plots immediately pop up
 # pl.interactive(True)
-import os
 
 
 def ex_histo_cut():
