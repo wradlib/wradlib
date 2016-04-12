@@ -33,8 +33,7 @@ from scipy.spatial import cKDTree
 from scipy.stats import nanmean
 from osgeo import ogr
 
-# TODO: check this again, removed to suppress deprecation warning in util.render_notebook
-# warnings.simplefilter('always', DeprecationWarning)
+warnings.simplefilter('always', DeprecationWarning)
 # warnings.simplefilter('always', FutureWarning)
 
 
