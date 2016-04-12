@@ -10,6 +10,7 @@ also consider to have look at the code examples distributed with the source code
    
    wradlib_introduction.ipynb
    simple_plot.ipynb
+   radolan_showcase.ipynb
 
 
 
