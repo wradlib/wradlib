@@ -9,26 +9,29 @@ Zonal Statistics
 .. versionadded:: 0.7.0
 
 This module supports you in computing statistics over spatial zones. A typical
-application would be to compute mean areal precipitation for a catchment by using
-precipitation estimates from a radar grid in polar coordinates or from precipitation
-estimates in a Cartesian grid.
+application would be to compute mean areal precipitation for a catchment by
+using precipitation estimates from a radar grid in polar coordinates or from
+precipitation estimates in a Cartesian grid.
 
 The general usage is similar to the ipol and adjustment modules:
 
-You have to create an instance of a class (derived from ZonalDataBase) by using the
-spatial information of your source and target objects (e.g. radar bins and
-catchment polygons). The Zonal Data within this object can be saved as an ESRI Shapefile.
+You have to create an instance of a class (derived from ZonalDataBase) by using
+the spatial information of your source and target objects (e.g. radar bins and
+catchment polygons). The Zonal Data within this object can be saved as an
+ESRI Shapefile.
 
-This object is then called with another class to compute zonal statistics for your target
-objects by calling the class instance with an array of values (one for each source object).
+This object is then called with another class to compute zonal statistics for
+your target objects by calling the class instance with an array of values
+(one for each source object).
 
-Typically, creating the instance of the ZonalData class will be computationally expensive,
-but only has to be done once (as long as the geometries do not change).
+Typically, creating the instance of the ZonalData class will be computationally
+expensive, but only has to be done once (as long as the geometries do
+not change).
 
 Calling the objects with actual data, however, will be very fast.
 
-.. note:: Right now we only support a limited set of 2-dimensional zonal statistics.
-         In the future, we plan to extend this to three dimensions.
+.. note:: Right now we only support a limited set of 2-dimensional zonal
+         statistics. In the future, we plan to extend this to three dimensions.
 
 .. currentmodule:: wradlib.zonalstats
 
@@ -175,13 +178,15 @@ class DataSource(object):
 
             - array cast of source elements
             - create ogr_src datasource/layer holding src points/polygons
-            - transforming source grid points/polygons to ogr.geometries on ogr.layer
+            - transforming source grid points/polygons to ogr.geometries
+              on ogr.layer
         """
         ogr_src = ogr_create_datasource('Memory', 'out')
 
         try:
             # is it ESRI Shapefile?
-            ds_in, tmp_lyr = io.open_shape(src, driver=ogr.GetDriverByName('ESRI Shapefile'))
+            ds_in, tmp_lyr = io.open_shape(src, driver=ogr.
+                                           GetDriverByName('ESRI Shapefile'))
             ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, self._name)
             if self._srs is None:
                 self._srs = ogr_src_lyr.GetSpatialRef()
@@ -198,7 +203,8 @@ class DataSource(object):
             else:
                 geom_type = ogr.wkbPolygon
             fields = [('index', ogr.OFTInteger)]
-            ogr_create_layer(ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields)
+            ogr_create_layer(ogr_src, self._name, srs=self._srs,
+                             geom_type=geom_type, fields=fields)
             ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
@@ -222,7 +228,8 @@ class DataSource(object):
         # flush everything
         del ds_out
 
-    def dump_raster(self, filename, driver='GTiff', attr=None, pixel_size=1., remove=True):
+    def dump_raster(self, filename, driver='GTiff', attr=None,
+                    pixel_size=1., remove=True):
         """ Output layer to GDAL Rasterfile
 
         Parameters
@@ -248,7 +255,8 @@ class DataSource(object):
         rows = int((y_max - y_min) / pixel_size)
 
         # Todo: at the moment, always writing floats
-        ds_out = gdal_create_dataset(driver, filename, cols, rows, gdal.GDT_Float32, remove=remove)
+        ds_out = gdal_create_dataset(driver, filename, cols, rows,
+                                     gdal.GDT_Float32, remove=remove)
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
         proj = layer.GetSpatialRef()
         if proj is None:
@@ -260,7 +268,8 @@ class DataSource(object):
         print("Rasterizing Layer")
         if attr is not None:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
-                                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"],
+                                options=["ATTRIBUTE={0}".format(attr),
+                                         "ALL_TOUCHED=TRUE"],
                                 callback=gdal.TermProgress)
         else:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
@@ -337,7 +346,8 @@ class DataSource(object):
 class ZonalDataBase(object):
     """
     The base class for managing 2-dimensional zonal data for target polygons
-    from source points or polygons. Provides the basic design for all other classes.
+    from source points or polygons. Provides the basic design for all other
+    classes.
 
     If no source points or polygons can be associated to a target polygon (e.g.
     no intersection), the created destination layer will be empty.
@@ -370,7 +380,8 @@ class ZonalDataBase(object):
     -----------------
     buf : float
         (same unit as coordinates)
-        Points/Polygons  will be considered inside the target if they are contained in the buffer.
+        Points/Polygons  will be considered inside the target if they are
+        contained in the buffer.
 
     srs : OGR.SpatialReference
         will be used for DataSource object.
@@ -404,7 +415,8 @@ class ZonalDataBase(object):
             of Nx2 point coordinate arrays
         """
         return np.array([self._get_intersection(idx=idx)
-                         for idx in range(self.trg.ds.GetLayerByName('trg').GetFeatureCount())])
+                         for idx in range(self.trg.ds.GetLayerByName('trg').
+                                          GetFeatureCount())])
 
     def get_isec(self, idx):
         """ Returns intersections
@@ -434,7 +446,8 @@ class ZonalDataBase(object):
         array : np.ndarray
             indices
         """
-        return np.array(self.dst.get_attributes(['src_index'], filt=('trg_index', idx))[0])
+        return np.array(self.dst.get_attributes(['src_index'],
+                                                filt=('trg_index', idx))[0])
 
     def _create_dst_datasource(self, **kwargs):
         """ Create destination target OGR.DataSource
@@ -465,7 +478,8 @@ class ZonalDataBase(object):
 
         for i in range(tmp_trg_lyr.GetFeatureCount()):
             feat = tmp_trg_lyr.GetFeature(i)
-            feat.SetGeometryDirectly(feat.GetGeometryRef().Buffer(self._buffer))
+            feat.SetGeometryDirectly(feat.GetGeometryRef().
+                                     Buffer(self._buffer))
             tmp_trg_lyr.SetFeature(feat)
 
         # get target layer, iterate over polygons and calculate intersections
@@ -476,19 +490,22 @@ class ZonalDataBase(object):
 
         print("Calculate Intersection source/target-layers")
         try:
-            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
-                                                                     'INPUT_PREFIX=trg_',
-                                                                     'METHOD_PREFIX=src_',
-                                                                     'PROMOTE_TO_MULTI=YES',
-                                                                     'PRETEST_CONTAINMENT=YES'],
+            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr,
+                                     options=['SKIP_FAILURES=YES',
+                                              'INPUT_PREFIX=trg_',
+                                              'METHOD_PREFIX=src_',
+                                              'PROMOTE_TO_MULTI=YES',
+                                              'PRETEST_CONTAINMENT=YES'],
                                      callback=gdal.TermProgress)
         except RuntimeError:
-            # Catch RuntimeError that was reported on gdal 1.11.1 on Windows systems
-            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr, options=['SKIP_FAILURES=YES',
-                                                                     'INPUT_PREFIX=trg_',
-                                                                     'METHOD_PREFIX=src_',
-                                                                     'PROMOTE_TO_MULTI=YES',
-                                                                     'PRETEST_CONTAINMENT=YES'])
+            # Catch RuntimeError that was reported on gdal 1.11.1
+            # on Windows systems
+            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr,
+                                     options=['SKIP_FAILURES=YES',
+                                              'INPUT_PREFIX=trg_',
+                                              'METHOD_PREFIX=src_',
+                                              'PROMOTE_TO_MULTI=YES',
+                                              'PRETEST_CONTAINMENT=YES'])
 
         return ds_mem
 
@@ -557,8 +574,8 @@ class ZonalDataBase(object):
         raise NotImplementedError
 
     def _get_intersection(self, trg=None, idx=None, buf=0.):
-        """Just a toy function if you want to inspect the intersection points/polygons
-        of an arbitrary target or an target by index.
+        """Just a toy function if you want to inspect the intersection
+        points/polygons of an arbitrary target or an target by index.
         """
         # TODO: kwargs necessary?
 
@@ -570,7 +587,8 @@ class ZonalDataBase(object):
                     feat = lyr.GetFeature(idx)
                     trg = feat.GetGeometryRef()
                 except:
-                    raise TypeError("No target polygon found at index {0}".format(idx))
+                    raise TypeError("No target polygon found at index {0}".
+                                    format(idx))
             else:
                 raise TypeError('No target polygons found in object!')
 
@@ -634,8 +652,10 @@ class ZonalDataPoly(ZonalDataBase):
         cnt = trg.GetFeatureCount()
         ret = [[] for _ in range(2)]
         for index in range(cnt):
-            arr = self.dst.get_attributes(['src_index'], filt=('trg_index', index))
-            w = self.dst.get_geom_properties(['Area'], filt=('trg_index', index))
+            arr = self.dst.get_attributes(['src_index'],
+                                          filt=('trg_index', index))
+            w = self.dst.get_geom_properties(['Area'],
+                                             filt=('trg_index', index))
             arr.append(w[0])
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
@@ -671,7 +691,8 @@ class ZonalDataPoly(ZonalDataBase):
             if not trg.Contains(geom):
                 geom = trg.Intersection(geom)
 
-            # checking GeometryCollection, convert to only Polygons, Multipolygons
+            # checking GeometryCollection, convert to only Polygons,
+            #  Multipolygons
             if geom.GetGeometryType() in [7]:
                 geocol = ogr_geocol_to_numpy(geom)
                 geom = numpy_to_ogr(geocol, 'MultiPolygon')
@@ -723,7 +744,8 @@ class ZonalDataPoint(ZonalDataBase):
         cnt = trg.GetFeatureCount()
         ret = [[] for _ in range(2)]
         for index in range(cnt):
-            arr = self.dst.get_attributes(['src_index'], filt=('trg_index', index))
+            arr = self.dst.get_attributes(['src_index'],
+                                          filt=('trg_index', index))
             arr.append([1. / len(arr[0])] * len(arr[0]))
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
@@ -759,12 +781,14 @@ class ZonalDataPoint(ZonalDataBase):
              for ogr_src in layer]
         else:
             layer.SetSpatialFilter(None)
-            src_pts = np.array([ogr_src.GetGeometryRef().GetPoint_2D(0) for ogr_src in layer])
+            src_pts = np.array([ogr_src.GetGeometryRef().GetPoint_2D(0)
+                                for ogr_src in layer])
             centroid = get_centroid(trg)
             tree = cKDTree(src_pts)
             distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
             feat = layer.GetFeature(ixnext)
-            ogr_add_geometry(dst, feat.GetGeometryRef(), [feat.GetField('index'), trg_index])
+            ogr_add_geometry(dst, feat.GetGeometryRef(),
+                             [feat.GetField('index'), trg_index])
 
 
 class ZonalStatsBase(object):
@@ -845,7 +869,8 @@ class ZonalStatsBase(object):
                 raise TypeError("parameters ix and w must be of equal length")
             return np.array(ix), np.array(w)
         else:
-            print("ix and w are complementary parameters and must both be given")
+            print("ix and w are complementary parameters and "
+                  "must both be given")
             raise TypeError
 
     def _check_vals(self, vals):
@@ -857,14 +882,16 @@ class ZonalStatsBase(object):
             lyr.ResetReading()
             lyr.SetSpatialFilter(None)
             src_len = lyr.GetFeatureCount()
-            assert len(vals) == src_len, "Argument vals must be of length %d" % src_len
+            assert len(vals) == src_len, \
+                "Argument vals must be of length %d" % src_len
         else:
             imax = 0
             for i in self.ix:
                 mx = np.nanmax(i)
                 if imax < mx:
                     imax = mx
-            assert len(vals) > imax, "Argument vals cannot be subscripted by given index values"
+            assert len(vals) > imax, \
+                "Argument vals cannot be subscripted by given index values"
 
         return vals
 
@@ -882,8 +909,9 @@ class ZonalStatsBase(object):
         self._check_vals(vals)
         self.isempty = self.check_empty()
         out = np.zeros(len(self.ix)) * np.nan
-        out[~self.isempty] = np.array([np.average(vals[self.ix[i]], weights=self.w[i])
-                                       for i in np.arange(len(self.ix))[~self.isempty]])
+        out[~self.isempty] = np.array(
+            [np.average(vals[self.ix[i]], weights=self.w[i])
+             for i in np.arange(len(self.ix))[~self.isempty]])
 
         if self.zdata is not None:
             self.zdata.trg.set_attribute('mean', out)
@@ -892,20 +920,23 @@ class ZonalStatsBase(object):
 
     def var(self, vals):
         """
-        Evaluate (weighted) zonal variance for values given at the source points.
+        Evaluate (weighted) zonal variance for values given at the source
+        points.
 
         Parameters
         ----------
         vals : 1-d ndarray
             of type float with the same length as self.src
-            Values at the source element for which to compute zonal statistics
+            Values at the source element for which to compute
+            zonal statistics
 
         """
         self._check_vals(vals)
         mean = self.mean(vals)
         out = np.zeros(len(self.ix)) * np.nan
-        out[~self.isempty] = np.array([np.average((vals[self.ix[i]] - mean[i])**2, weights=self.w[i])
-                                       for i in np.arange(len(self.ix))[~self.isempty]])
+        out[~self.isempty] = np.array(
+            [np.average((vals[self.ix[i]] - mean[i])**2, weights=self.w[i])
+             for i in np.arange(len(self.ix))[~self.isempty]])
 
         if self.zdata is not None:
             self.zdata.trg.set_attribute('var', out)
@@ -1151,7 +1182,8 @@ def ogr_add_feature(ds, src, name=None):
 
     defn = lyr.GetLayerDefn()
     geom_name = ogr.GeometryTypeToName(lyr.GetGeomType())
-    fields = [defn.GetFieldDefn(i).GetName() for i in range(defn.GetFieldCount())]
+    fields = [defn.GetFieldDefn(i).GetName()
+              for i in range(defn.GetFieldCount())]
     feat = ogr.Feature(defn)
 
     for index, src_item in enumerate(src):
@@ -1212,9 +1244,11 @@ def numpy_to_ogr(vert, geom_name):
     """
 
     if geom_name in ['Polygon', 'MultiPolygon']:
-        json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".format(geom_name, vert.tolist())
+        json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".\
+            format(geom_name, vert.tolist())
     else:
-        json_str = "{{'type':{0!r},'coordinates':{1!r}}}".format(geom_name, vert.tolist())
+        json_str = "{{'type':{0!r},'coordinates':{1!r}}}".\
+            format(geom_name, vert.tolist())
 
     return ogr.CreateGeometryFromJson(json_str)
 
@@ -1304,7 +1338,8 @@ def numpy_to_pathpatch(arr):
 def mask_from_bbox(x, y, bbox, polar=False):
     """Return 2-d index array based on spatial selection from a bounding box.
 
-    Use this function to create a 2-d boolean mask from 2-d arrays of grids points.
+    Use this function to create a 2-d boolean mask from 2-d arrays of grids
+    points.
 
     .. versionadded:: 0.7.0
 
@@ -1450,7 +1485,8 @@ def grid_centers_to_vertices(x, y, dx, dy):
     Warning
     -------
     This has to be done in the "native" grid projection.
-    Once you reprojected the coordinates, this trivial function cannot be used to compute vertices from center points.
+    Once you reprojected the coordinates, this trivial function cannot be used
+    to compute vertices from center points.
 
     Parameters
     ----------

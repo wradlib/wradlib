@@ -31,14 +31,15 @@ from . import util as util
 
 class PolarNeighbours():
     """
-    For a set of projected point coordinates, extract the neighbouring bin values
-    from a data set in polar coordinates. Use as follows:
+    For a set of projected point coordinates, extract the neighbouring bin
+    values from a data set in polar coordinates. Use as follows:
 
-    First, create an instance of PolarNeighbours by passing all the information needed
-    to georeference the polar radar data to the points of interest (see parameters)
+    First, create an instance of PolarNeighbours by passing all the information
+    needed to georeference the polar radar data to the points of interest
+    (see parameters).
 
-    Second, use the method *extract* in order to extract the values from a data array
-    which corresponds to the polar coordinates
+    Second, use the method *extract* in order to extract the values from a data
+    array which corresponds to the polar coordinates.
 
     .. versionchanged:: 0.5.0
        using osr objects instead of PROJ.4 strings as parameter
@@ -72,7 +73,8 @@ class PolarNeighbours():
         # compute the centroid coordinates in lat/lon
         bin_lon, bin_lat = georef.polar2centroids(r, az, sitecoords)
         # reproject the centroids to cartesian map coordinates
-        binx, biny, _ = georef.reproject(bin_lon, bin_lat, projection_target=proj)
+        binx, biny, _ = georef.reproject(bin_lon, bin_lat,
+                                         projection_target=proj)
         self.binx, self.biny = binx.ravel(), biny.ravel()
         # compute the KDTree
         tree = KDTree(list(zip(self.binx, self.biny)))
@@ -81,8 +83,9 @@ class PolarNeighbours():
 
     def extract(self, vals):
         """
-        Extracts the values from an array of shape (azimuth angles, range gages)
-        which correspond to the indices computed during initialisation
+        Extracts the values from an array of shape (azimuth angles,
+        range gages) which correspond to the indices computed during
+        initialisation
 
         Parameters
         ----------
@@ -94,12 +97,15 @@ class PolarNeighbours():
 
         """
         assert vals.ndim >= 2, \
-            'Your <vals> array should at least contain an azimuth and a range dimension.'
+            'Your <vals> array should at least contain an ' \
+            'azimuth and a range dimension.'
         assert tuple(vals.shape[-2:]) == (len(self.az), len(self.r)), \
-            'The shape of your vals array does not correspond with the range and azimuths ' \
-            'you provided for your polar data set'
+            'The shape of your vals array does not correspond with ' \
+            'the range and azimuths you provided for your polar data set'
         shape = vals.shape
-        vals = vals.reshape(np.concatenate((shape[:-2], np.array([len(self.az) * len(self.r)]))))
+        vals = vals.reshape(np.concatenate((shape[:-2],
+                                            np.array([len(self.az) *
+                                                      len(self.r)]))))
         return vals[..., self.ix]
 
     def get_bincoords(self):
@@ -126,12 +132,14 @@ class PolarNeighbours():
 
 
 class ErrorMetrics():
-    """Compute quality metrics from a set of observations (obs) and estimates (est).
+    """Compute quality metrics from a set of observations (obs) and
+    estimates (est).
 
-    First create an instance of the class using the set of observations and estimates.
-    Then compute quality metrics using the class methods. A dictionary of all available
-    quality metrics is returned using the *all* method. Method *report* pretty prints
-    all these metrics over a scatter plot.
+    First create an instance of the class using the set of observations and
+    estimates. Then compute quality metrics using the class methods.
+    A dictionary of all available quality metrics is returned using the
+    *all* method. Method *report* pretty prints all these metrics over a
+    scatter plot.
 
     Parameters
     ----------
@@ -140,7 +148,8 @@ class ErrorMetrics():
     est: array of floats
         estimates (e.g. radar, adjusted radar, ...)
     minval : float
-        threshold value in order to compute metrics only for values larger than minval
+        threshold value in order to compute metrics only for values larger
+        than minval
 
     Examples
     --------
@@ -156,13 +165,17 @@ class ErrorMetrics():
 
     def __init__(self, obs, est, minval=None):
         # Check input
-        assert len(obs) == len(est), "obs and est need to have the same length. " \
-                                     "len(obs)=%d, len(est)=%d" % (len(obs), len(est))
-        # only remember those entries which have both valid observations AND estimates
-        ix = np.intersect1d(util._idvalid(obs, minval=minval), util._idvalid(est, minval=minval))
+        assert len(obs) == len(est), \
+            "obs and est need to have the same length. " \
+            "len(obs)=%d, len(est)=%d" % (len(obs), len(est))
+        # only remember those entries which have both valid observations
+        # AND estimates
+        ix = np.intersect1d(util._idvalid(obs, minval=minval),
+                            util._idvalid(est, minval=minval))
         self.n = len(ix)
         if self.n == 0:
-            print("WARNING: No valid pairs of observed and estimated available for ErrorMetrics!")
+            print("WARNING: No valid pairs of observed and "
+                  "estimated available for ErrorMetrics!")
             self.obs = np.array([])
             self.est = np.array([])
         else:
