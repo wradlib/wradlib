@@ -36,9 +36,9 @@ This recipe shows a workflow to process radar data provided by the German Weathe
 
 `Download source <https://github.com/wradlib/wradlib/blob/master/examples/recipe1_clutter_attenuation_composition.py>`_
 
-`Download required data <https://github.com/wradlib/wradlib/blob/master/examples/data/recipe1_data.zip>`_
+`Download required data <https://github.com/wradlib/wradlib-data/archive/wradlib-data.zip>`_
 
-.. note:: In order to run the recipe code, you need to place the extract the sample data into a directory ``data/`` relative to the location of the recipe script. 
+.. note:: In order to run the recipe code, you need to extract the sample data into a directory pointed to by environment variable ``WRADLIB_DATA``.
 
 
 Recipe #2: Reading and visualizing an ODIM_H5 polar volume
@@ -54,9 +54,9 @@ This recipe shows how extract the polar volume data from an ODIM_H5 hdf5 file (K
 
 `Download source <https://github.com/wradlib/wradlib/blob/master/examples/recipe2_polar_volume_example.py>`_
 
-`Download required data <https://github.com/wradlib/wradlib/blob/master/examples/data/knmi_polar_volume.h5>`_
+`Download required data <https://github.com/wradlib/wradlib-data/archive/wradlib-data.zip>`_
 
-.. note:: In order to run the recipe code, you need to place the sample data into a directory ``data/`` relative to the location of the recipe script. 
+.. note::  In order to run the recipe code, you need to extract the sample data into a directory pointed to by environment variable ``WRADLIB_DATA``.
 
 
 

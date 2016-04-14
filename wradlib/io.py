@@ -6,8 +6,8 @@
 Raw Data I/O
 ^^^^^^^^^^^^
 
-Please have a look at the tutorial :doc:`tutorial_supported_formats` for an introduction
-on how to deal with different file formats.
+Please have a look at the tutorial :doc:`tutorial_supported_formats` for an
+introduction on how to deal with different file formats.
 
 .. autosummary::
    :nosignatures:
@@ -55,7 +55,8 @@ import warnings
 # site packages
 import h5py
 import numpy as np
-import netCDF4 as nc  # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+# ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
+import netCDF4 as nc
 from osgeo import gdal, ogr, osr
 from . import util as util
 from . import georef as georef
@@ -74,7 +75,8 @@ def _getTimestampFromFilename(filename):
 
 
 def getDXTimestamp(name):
-    """Converts a dx-timestamp (as part of a dx-product filename) to a python datetime.object.
+    """Converts a dx-timestamp (as part of a dx-product filename) to a
+    python datetime.object.
 
     Parameters
     ----------
@@ -176,8 +178,8 @@ def parse_DX_header(header):
     out['cluttermap'] = int(header[pos_CO + 2:pos_CO + 3])
     out['dopplerfilter'] = int(header[pos_CD + 2:pos_CD + 3])
     out['statfilter'] = int(header[pos_CS + 2:pos_CS + 3])
-    out['elevprofile'] = [float(header[pos_EP + 2 + 3 * i:pos_EP + 2 + 3 * (i + 1)]) for i in range(8)]
-    out['message'] = header[pos_MS + 5:pos_MS + 5 + int(header[pos_MS + 2:pos_MS + 5])]
+    out['elevprofile'] = [float(header[pos_EP + 2 + 3 * i:pos_EP + 2 + 3 * (i + 1)]) for i in range(8)]  # noqa
+    out['message'] = header[pos_MS + 5:pos_MS + 5 + int(header[pos_MS + 2:pos_MS + 5])]  # noqa
 
     return out
 
@@ -201,8 +203,8 @@ def readDX(filename):
 
     Be aware that this function does no extensive checking on its output.
     If e.g. beams contain different numbers of range bins, the resulting data
-    will not be a 2-D array but a 1-D array of objects, which will most probably
-    break calling code. It was decided to leave the handling of these
+    will not be a 2-D array but a 1-D array of objects, which will most
+    probably break calling code. It was decided to leave the handling of these
     (hopefully) rare events to the user, who might still be able to retrieve
     some reasonable data, instead of raising an exception, making it impossible
     to get any data from a file containing errors.
@@ -222,9 +224,10 @@ def readDX(filename):
 
         - 'azim' - azimuths np.array of shape (360,)
         - 'elev' - elevations (1 per azimuth); np.array of shape (360,)
-        - 'clutter' - clutter mask; boolean array of same shape as `data`; corresponds to bit 15 set in each dataset.
-        - 'bytes'- the total product length (including header). Apparently, this value may be off by one byte
-          for unknown reasons
+        - 'clutter' - clutter mask; boolean array of same shape as `data`;
+          corresponds to bit 15 set in each dataset.
+        - 'bytes'- the total product length (including header).
+          Apparently, this value may be off by one byte for unknown reasons
         - 'version'- a product version string - use unknown
         - 'cluttermap' - number of the (DWD internal) cluttermap used
         - 'dopplerfilter' - number of the dopplerfilter used (DWD internal)
@@ -288,10 +291,10 @@ def readDX(filename):
     # a new ray/beam starts with bit 14 set
     # careful! where always returns its results in a tuple, so in order to get
     # the indices we have to retrieve element 0 of this tuple
-    newazimuths = np.where(raw == azimuthbitmask)[0]  # Thomas kontaktieren!!!!!!!!!!!!!!!!!!!
+    newazimuths = np.where(raw == azimuthbitmask)[0]  # Thomas kontaktieren!
 
-    # for the following calculations it is necessary to have the end of the data
-    # as the last index
+    # for the following calculations it is necessary to have the end of the
+    # data as the last index
     newazimuths = np.append(newazimuths, len(raw))
 
     # initialize our list of rays/beams
@@ -316,7 +319,8 @@ def readDX(filename):
     attrs['azim'] = np.array(azims)
     attrs['clutter'] = (beams & clutterflag) != 0
 
-    # converting the DWD rvp6-format into dBZ data and return as numpy array together with attributes
+    # converting the DWD rvp6-format into dBZ data and return as numpy array
+    # together with attributes
     return (beams & dataflag) * 0.5 - 32.5, attrs
 
 
@@ -389,20 +393,21 @@ def writePolygon2Text(fname, polygons):
 def read_EDGE_netcdf(filename, enforce_equidist=False):
     """Data reader for netCDF files exported by the EDGE radar software
 
-    The corresponding NetCDF files from the EDGE software typically contain only
-    one variable (e.g. reflectivity) for one elevation angle (sweep). The elevation
-    angle is specified in the attributes keyword "Elevation".
+    The corresponding NetCDF files from the EDGE software typically contain
+    only one variable (e.g. reflectivity) for one elevation angle (sweep).
+    The elevation angle is specified in the attributes keyword "Elevation".
 
-    Please note that the radar might not return data with equidistant azimuth angles.
-    In case you need equidistant azimuth angles, please set enforce_equidist to True.
+    Please note that the radar might not return data with equidistant azimuth
+    angles. In case you need equidistant azimuth angles, please set
+    enforce_equidist to True.
 
     Parameters
     ----------
     filename : string
         path of the netCDF file
     enforce_equidist : boolean
-        Set True if the values of the azimuth angles should be forced to be equidistant
-        default value is False
+        Set True if the values of the azimuth angles should be forced to be
+        equidistant; default value is False
 
     Returns
     -------
@@ -419,15 +424,19 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
         ix_minaz = np.argmin(az)
         ix_maxaz = np.argmax(az)
         if enforce_equidist:
-            az = np.linspace(np.round(az[ix_minaz], 2), np.round(az[ix_maxaz], 2), len(az))
+            az = np.linspace(np.round(az[ix_minaz], 2),
+                             np.round(az[ix_maxaz], 2), len(az))
         else:
             az = np.roll(az, -ix_minaz)
         # rotate accordingly
         data = np.roll(data, -ix_minaz, axis=0)
         data = np.where(data == dset.getncattr('MissingData'), np.nan, data)
         # Ranges
-        binwidth = (dset.getncattr('MaximumRange-value') * 1000.) / len(dset.dimensions['Gate'])
-        r = np.arange(binwidth, (dset.getncattr('MaximumRange-value') * 1000.) + binwidth, binwidth)
+        binwidth = ((dset.getncattr('MaximumRange-value') * 1000.) /
+                    len(dset.dimensions['Gate']))
+        r = np.arange(binwidth,
+                      (dset.getncattr('MaximumRange-value') * 1000.) +
+                      binwidth, binwidth)
         # collect attributes
         attrs = {}
         for attrname in dset.ncattrs():
@@ -439,7 +448,8 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
         # Set additional metadata attributes
         attrs['az'] = az
         attrs['r'] = r
-        attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'], attrs['Height'])
+        attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'],
+                               attrs['Height'])
         attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
         attrs['max_range'] = data.shape[1] * binwidth
     except:
@@ -539,7 +549,8 @@ def parse_DWD_quant_composite_header(header):
                 out["maxrange"] = {0: "100 km and 128 km (mixed)",
                                    1: "100 km",
                                    2: "128 km",
-                                   3: "150 km"}.get(int(header[v[0]:v[1]]), "100 km")
+                                   3: "150 km"}.get(int(header[v[0]:v[1]]),
+                                                    "100 km")
             if k == 'SW':
                 out["radolanversion"] = header[v[0]:v[1]].strip()
             if k == 'PR':
@@ -552,7 +563,8 @@ def parse_DWD_quant_composite_header(header):
                 out["ncol"] = int(dimstrings[1])
             if k == 'BG':
                 dimstrings = header[v[0]:v[1]]
-                dimstrings = dimstrings[:int(len(dimstrings) / 2)], dimstrings[int(len(dimstrings) / 2):]
+                dimstrings = (dimstrings[:int(len(dimstrings) / 2)],
+                              dimstrings[int(len(dimstrings) / 2):])
                 out["nrow"] = int(dimstrings[0])
                 out["ncol"] = int(dimstrings[1])
             if k == 'LV':
@@ -560,10 +572,12 @@ def parse_DWD_quant_composite_header(header):
                 out['nlevel'] = np.int(lv[0])
                 out['level'] = np.array(lv[1:]).astype('float')
             if k == 'MS':
-                locationstring = header[v[0]:].strip().split("<")[1].split(">")[0]
+                locationstring = (header[v[0]:].strip().split("<")[1].
+                                  split(">")[0])
                 out["radarlocations"] = locationstring.split(",")
             if k == 'ST':
-                locationstring = header[v[0]:].strip().split("<")[1].split(">")[0]
+                locationstring = (header[v[0]:].strip().split("<")[1].
+                                  split(">")[0])
                 out["radardays"] = locationstring.split(",")
             if k == 'CS':
                 out['indicator'] = {0: "near ground level",
@@ -624,7 +638,8 @@ def decode_radolan_runlength_line(line, attrs):
 
     trailing = attrs['ncol'] - len(arr)
     if trailing > 0:
-        arr = np.append(arr, np.ones(trailing, dtype=np.uint8) * attrs['nodataflag'])
+        arr = np.append(arr, np.ones(trailing,
+                                     dtype=np.uint8) * attrs['nodataflag'])
     elif trailing < 0:
         arr = dline[:trailing]
 
@@ -708,8 +723,8 @@ def read_radolan_binary_array(fid, size):
     binarr = fid.read(size)
     fid.close()
     if len(binarr) != size:
-        raise IOError('{0}: File corruption while reading {1}! '
-                      '\nCould not read enough data!'.format(__name__, fid.name))
+        raise IOError('{0}: File corruption while reading {1}! \nCould not '
+                      'read enough data!'.format(__name__, fid.name))
     return binarr
 
 
@@ -771,20 +786,21 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
-    established in the course of the `RADOLAN project <http://www.dwd.de/RADOLAN>`
-    and includes several file types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG, PC,
-    PG and many, many more.
+    established in the course of the
+    `RADOLAN project <http://www.dwd.de/RADOLAN>` and includes several file
+    types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG, PC, PG and many, many more.
     (see format description on the RADOLAN project homepage :cite:`DWD2009`).
 
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
-    resolution and in polar-stereographic projection. There are other grid resolutions
-    for different composites (eg. PC, PG)
+    resolution and in polar-stereographic projection. There are other grid
+    resolutions for different composites (eg. PC, PG)
 
-    **Beware**: This function already evaluates and applies the so-called PR factor which is
-    specified in the header section of the RADOLAN files. The raw values in an RY file
-    are in the unit 0.01 mm/5min, while read_RADOLAN_composite returns values
-    in mm/5min (i. e. factor 100 higher). The factor is also returned as part of
-    attrs dictionary under keyword "precision".
+    **Beware**: This function already evaluates and applies the so-called
+    PR factor which is specified in the header section of the RADOLAN files.
+    The raw values in an RY file are in the unit 0.01 mm/5min, while
+    read_RADOLAN_composite returns values in mm/5min (i. e. factor 100 higher).
+    The factor is also returned as part of attrs dictionary under
+    keyword "precision".
 
     Parameters
     ----------
@@ -833,13 +849,8 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
         arr = np.where(arr == 250, NODATA, arr)
         attrs['cluttermask'] = np.where(arr == 249)[0]
-
     elif attrs['producttype'] in ["PG", "PC"]:
         arr = decode_radolan_runlength_array(indat, attrs)
-    elif attrs['producttype'] in ["W1", "W2", "W3", "W4"]:
-        arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
-        arr = arr * attrs["precision"]
-        # arr[nodata] = NODATA
     else:
         # convert to 16-bit integers
         arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
@@ -875,11 +886,11 @@ def browse_hdf5_group(grp):
 def read_generic_hdf5(fname):
     """Reads hdf5 files according to their structure
 
-    In contrast to other file readers under wradlib.io, this function will *not* return
-    a two item tuple with (data, metadata). Instead, this function returns ONE
-    dictionary that contains all the file contents - both data and metadata. The keys
-    of the output dictionary conform to the Group/Subgroup directory branches of
-    the original file.
+    In contrast to other file readers under wradlib.io, this function will
+    *not* return a two item tuple with (data, metadata). Instead, this function
+    returns ONE dictionary that contains all the file contents - both data and
+    metadata. The keys of the output dictionary conform to the Group/Subgroup
+    directory branches of the original file.
 
     Parameters
     ----------
@@ -919,19 +930,19 @@ def read_generic_hdf5(fname):
 def read_OPERA_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
-    Please refer to the `OPERA data model documentation
-    <https://www.eol.ucar.edu/system/files/OPERA_2008_03_WP2.1b_ODIM_H5_v2.1.pdf>`_
-    in order to understand how an hdf5 file is organized that conforms to the OPERA
-    ODIM_H5 conventions.
+    Please refer to the OPERA data model documentation :cite:`OPERA-data-model`
+    in order to understand how an hdf5 file is organized that conforms to the
+    OPERA ODIM_H5 conventions.
 
-    In contrast to other file readers under wradlib.io, this function will *not* return
-    a two item tuple with (data, metadata). Instead, this function returns ONE
-    dictionary that contains all the file contents - both data and metadata. The keys
-    of the output dictionary conform to the Group/Subgroup directory branches of
-    the original file. If the end member of a branch (or path) is "data", then the
-    corresponding item of output dictionary is a numpy array with actual data. Any other
-    end member (either *how*, *where*, and *what*) will contain the meta information
-    applying to the corresponding level of the file hierarchy.
+    In contrast to other file readers under wradlib.io, this function will
+    *not* return a two item tuple with (data, metadata). Instead, this function
+    returns ONE dictionary that contains all the file contents - both data and
+    metadata. The keys of the output dictionary conform to the Group/Subgroup
+    directory branches of the original file. If the end member of a branch
+    (or path) is "data", then the corresponding item of output dictionary is a
+    numpy array with actual data. Any other end member (either *how*, *where*,
+    and *what*) will contain the meta information applying to the corresponding
+    level of the file hierarchy.
 
     Parameters
     ----------
@@ -946,14 +957,9 @@ def read_OPERA_hdf5(fname):
 
     """
     f = h5py.File(fname, "r")
-    # # try verify OPERA conventions
-    # if not f.keys() == ['dataset1', 'how', 'what', 'where']:
-    #     print("File is not organized according to OPERA conventions (ODIM_H5)..."
-    #     print("Expected the upper level subgroups to be: dataset1, how, what', where"
-    #     print("Try to use e.g. ViTables software in order to inspect the file hierarchy."
-    #     sys.exit(1)
 
-    # now we browse through all Groups and Datasets and store the info in one dictionary
+    # now we browse through all Groups and Datasets and store the info in one
+    # dictionary
     fcontent = {}
 
     def filldict(x, y):
@@ -1039,8 +1045,9 @@ def read_gamic_scan_attributes(scan, scan_type):
     sattrs['zero_index'] = zero_index[0]
 
     # create range array
-    r = np.arange(sattrs['bin_range'], sattrs['bin_range'] * sattrs['bin_count'] + sattrs['bin_range'],
-                  sattrs['bin_range'])
+    r = np.arange(sattrs['bin_range'],
+                  sattrs['bin_range'] * sattrs['bin_count'] +
+                  sattrs['bin_range'], sattrs['bin_range'])
 
     # save variables to scan attributes
     sattrs['az'] = az
@@ -1064,7 +1071,8 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
     scan_type : string
         "PVOL" (plan position indicator) or "RHI" (range height indicator)
     wanted_moments : strings
-        sequence of strings containing upper case names of moment(s) to be returned
+        sequence of strings containing upper case names of moment(s) to
+        be returned
 
     Returns
     -------
@@ -1096,7 +1104,8 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
                     div = 256.0
                 else:
                     div = 65536.0
-                mdata = dyn_range_min + mdata * (dyn_range_max - dyn_range_min) / div
+                mdata = (dyn_range_min + mdata *
+                         (dyn_range_max - dyn_range_min) / div)
 
                 if scan_type == 'PVOL':
                     # rotate accordingly
@@ -1116,7 +1125,8 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
 
 
 def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
-    """Data reader for hdf5 files produced by the commercial GAMIC Enigma V3 MURAN software
+    """Data reader for hdf5 files produced by the commercial
+    GAMIC Enigma V3 MURAN software
 
     Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
     homepage for further info (http://www.gamic.com).
@@ -1176,10 +1186,12 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
                 el = sg1.attrs.get('elevation')
                 el = str(round(el, 2))
 
-                # try to read scan data and attrs if wanted_elevations are found
+                # try to read scan data and attrs
+                # if wanted_elevations are found
                 if (el in wanted_elevations) or (wanted_elevations == 'all'):
-                    sdata, sattrs = read_gamic_scan(scan=g, scan_type=scan_type,
-                                                    wanted_moments=wanted_moments)
+                    sdata, sattrs = read_gamic_scan(scan=g,
+                                                    scan_type=scan_type,
+                                                    wanted_moments=wanted_moments)  # noqa
                     if sdata:
                         data[n.upper()] = sdata
                     if sattrs:
@@ -1205,7 +1217,8 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
         vattrs['Longitude'] = f['where'].attrs.get('lon')
         vattrs['Height'] = f['where'].attrs.get('height')
         # check whether its useful to implement that feature
-        # vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'], vattrs['Height'])
+        # vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'],
+        #                         vattrs['Height'])
         attrs['VOL'] = vattrs
 
     f.close()
@@ -1257,7 +1270,8 @@ def decompress(data):
 
 
 def get_RB_data_layout(datadepth):
-    """Calculates DataWidth and DataType from given DataDepth of RAINBOW radar data
+    """Calculates DataWidth and DataType from given DataDepth of
+    RAINBOW radar data
 
     Parameters
     ----------
@@ -1283,7 +1297,8 @@ def get_RB_data_layout(datadepth):
     if datawidth in [1, 2, 4]:
         datatype = byteorder + 'u' + str(datawidth)
     else:
-        raise ValueError("Wrong DataDepth: %d. Conversion only for depth 8, 16, 32" % datadepth)
+        raise ValueError("Wrong DataDepth: %d. "
+                         "Conversion only for depth 8, 16, 32" % datadepth)
 
     return datawidth, datatype
 
@@ -1308,8 +1323,9 @@ def get_RB_data_attribute(xmldict, attr):
     try:
         sattr = int(xmldict['@' + attr])
     except KeyError:
-            raise KeyError('Attribute @' + attr + ' is missing from Blob Description'
-                                                  'There may be some problems with your file')
+            raise KeyError('Attribute @{0} is missing from '
+                           'Blob Description. There may be some '
+                           'problems with your file'.format(attr))
     return sattr
 
 
@@ -1379,7 +1395,8 @@ def get_RB_blob_data(datastring, blobid):
 
 
 def map_RB_data(data, datadepth):
-    """ Map BLOB data to correct DataWidth and Type and convert it to numpy array
+    """ Map BLOB data to correct DataWidth and Type and convert it
+    to numpy array
 
     Parameters
     ----------
@@ -1401,7 +1418,8 @@ def map_RB_data(data, datadepth):
     datawidth, datatype = get_RB_data_layout(datadepth)
 
     # import from data buffer well aligned to data array
-    data = np.ndarray(shape=(int(len(data) / datawidth),), dtype=datatype, buffer=data)
+    data = np.ndarray(shape=(int(len(data) / datawidth),),
+                      dtype=datatype, buffer=data)
 
     if flagdepth:
         data = np.unpackbits(data)
@@ -1423,7 +1441,8 @@ def get_RB_data_shape(blobdict):
     tuple : shape
         shape of data
     """
-    # this is a bit hacky, but we do not know beforehand, so we extract this on the run
+    # this is a bit hacky, but we do not know beforehand,
+    # so we extract this on the run
     try:
         dim0 = get_RB_data_attribute(blobdict, 'rays')
         dim1 = get_RB_data_attribute(blobdict, 'bins')
@@ -1606,13 +1625,15 @@ def get_RB_header(filename):
 def read_Rainbow(filename, loaddata=True):
     """"Reads Rainbow files files according to their structure
 
-    In contrast to other file readers under wradlib.io, this function will *not* return
-    a two item tuple with (data, metadata). Instead, this function returns ONE
-    dictionary that contains all the file contents - both data and metadata. The keys
-    of the output dictionary conform to the XML outline in the original data file.
+    In contrast to other file readers under wradlib.io, this function will
+    *not* return a two item tuple with (data, metadata). Instead, this function
+    returns ONE dictionary that contains all the file contents - both data and
+    metadata. The keys of the output dictionary conform to the XML outline in
+    the original data file.
 
-    The radar data will be extracted from the data blobs, converted and added to the
-    dict with key 'data' at the place where the @blobid was pointing from.
+    The radar data will be extracted from the data blobs, converted and added
+    to the dict with key 'data' at the place where the @blobid was pointing
+    from.
 
     Parameters
     ----------
@@ -1653,11 +1674,12 @@ def from_pickle(fpath):
     return obj
 
 
-def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="gzip"):
+def to_hdf5(fpath, data, mode="w", metadata=None,
+            dataset="data", compression="gzip"):
     """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
 
-    This is more efficient than pickle, cPickle or numpy.save. The data is stored in
-    a subgroup named ``data`` (i.e. hdf5file["data").
+    This is more efficient than pickle, cPickle or numpy.save. The data is
+    stored in a subgroup named ``data`` (i.e. hdf5file["data").
 
     Parameters
     ----------
@@ -1671,7 +1693,8 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
     dataset : string
         describing dataset
     compression : string
-        h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation for details
+        h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation
+        for details
     """
     f = h5py.File(fpath, mode=mode)
     dset = f.create_dataset(dataset, data=data, compression=compression)
@@ -1740,23 +1763,25 @@ def read_safnwc(filename):
 
 
 def read_generic_netcdf(fname):
-    """Reads netcdf files and returns a dictionary with corresponding structure.
+    """Reads netcdf files and returns a dictionary with corresponding
+    structure.
 
-    In contrast to other file readers under wradlib.io, this function will *not* return
-    a two item tuple with (data, metadata). Instead, this function returns ONE
-    dictionary that contains all the file contents - both data and metadata. The keys
-    of the output dictionary conform to the Group/Subgroup directory branches of
-    the original file.
+    In contrast to other file readers under wradlib.io, this function will
+    *not* return a two item tuple with (data, metadata). Instead, this function
+    returns ONE dictionary that contains all the file contents - both data and
+    metadata. The keys of the output dictionary conform to the Group/Subgroup
+    directory branches of the original file.
 
     Please see the examples below on how to browse through a return object. The
     most important keys are the "dimensions" which define the shape of the data
-    arrays, and the "variables" which contain the actual data and typically also
-    the data that define the dimensions (e.g. sweeps, azimuths, ranges). These keys
-    should be present in any netcdf file.
+    arrays, and the "variables" which contain the actual data and typically
+    also the data that define the dimensions (e.g. sweeps, azimuths, ranges).
+    These keys should be present in any netcdf file.
 
     Note
     ----
-    The returned dictionary could be quite big, depending on the content of the file.
+    The returned dictionary could be quite big, depending on the content of
+    the file.
 
     Parameters
     ----------
@@ -1766,12 +1791,13 @@ def read_generic_netcdf(fname):
     Returns
     -------
     out : ordered dict
-        an ordered dictionary that contains both data and metadata according to the
-        original netcdf file structure
+        an ordered dictionary that contains both data and metadata according
+        to the original netcdf file structure
 
     Examples
     --------
-    See :download:`generic_netcdf_example.py script <../../../examples/generic_netcdf_example.py>`.
+    See :download:`generic_netcdf_example.py script
+    <../../../examples/generic_netcdf_example.py>`.
 
     .. literalinclude:: ../../../examples/generic_netcdf_example.py
 
@@ -1780,7 +1806,7 @@ def read_generic_netcdf(fname):
     try:
         ncid = nc.Dataset(fname, 'r')
     except RuntimeError:
-        print("wradlib: Could not read %s." % fname)
+        print("wradlib1: Could not read %s." % fname)
         print("Check whether file exists, and whether it is a netCDF file.")
         print("Raising exception...")
         raise
@@ -1821,8 +1847,8 @@ def read_generic_netcdf(fname):
             tmp['grpid'] = v._grpid
             tmp['isunlimited'] = v.isunlimited()
             dim[k] = tmp
-        # Usually, the dimensions should be ordered by dimid automatically in case netcdf used OrderedDict
-        # However, we should double check
+        # Usually, the dimensions should be ordered by dimid automatically
+        # in case netcdf used OrderedDict. However, we should double check
         if np.array_equal(dimids, np.sort(dimids)):
             # is already sorted
             out['dimensions'] = dim
@@ -1866,7 +1892,8 @@ def _check_arguments(fpath, data):
                         "Found %d dimensions instead" % data.ndim)
 
     if not os.path.exists(os.path.dirname(fpath)):
-        raise Exception("Directory does not exist: %s" % os.path.dirname(fpath))
+        raise Exception("Directory does not exist: %s" %
+                        os.path.dirname(fpath))
 
 
 def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
@@ -1875,20 +1902,23 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
     .. versionadded:: 0.6.0
 
-    The function writes a text file to ``fpath`` that contains the header info and
-    the grid data passed with the argument ``data``. For details on ESRI grids
-    (or Arc/Info ASCII grids) see e.g. https://en.wikipedia.org/wiki/Esri_grid.
-    This should work for most GIS software systems (tested for QGIS and ESRI ArcGIS).
+    The function writes a text file to ``fpath`` that contains the header info
+    and the grid data passed with the argument ``data``. Find details on ESRI
+    grids (or Arc/Info ASCII grids) on wikipedia :cite:`ESRI-grid`.
+    This should work for most GIS software systems
+    (tested for QGIS and ESRI ArcGIS).
 
     In case a GDAL SpatialReference object (argument ``proj``) is passed,
     the function will also try to write an accompanying projection (``.prj``)
     file that has the same file name, but a different extension.
 
-    Please refer to http://wradlib.github.io/wradlib-docs/latest/georef.html to see how to
-    create SpatialReference objects from e.g. :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
+    Please refer to :any:`georef`
+    to see how to create SpatialReference objects from e.g.
+    :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
     :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
     or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
-    are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
+    are addressed by the
+    :doc:`create_osr function <wradlib.georef.create_osr>`.
 
     Parameters
     ----------
@@ -1917,7 +1947,8 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
     Examples
     --------
-    See :download:`gis_export_example.py script <../../../examples/gis_export_example.py>`.
+    See :download:`gis_export_example.py script
+    <../../../examples/gis_export_example.py>`.
 
     .. literalinclude:: ../../../examples/gis_export_example.py
 
@@ -1927,17 +1958,19 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
     ext = os.path.splitext(fpath)[-1]
     if ext not in [".txt", ".asc"]:
-        raise Exception("File name extension should be either '.txt' or '.asc'. "
-                        "Found extension instead: %s" % ext)
+        raise Exception("File name extension should be either "
+                        "'.txt' or '.asc'. Found extension instead: %s" % ext)
 
     # Define header
-    header = " " \
-             "ncols         %d\n" \
-             "nrows         %d\n" \
-             "xllcorner     %.4f\n" \
-             "yllcorner     %.4f\n" \
-             "cellsize      %.4f\n" \
-             "NODATA_value  %.1f\n" % (data.shape[0], data.shape[1], xllcorner, yllcorner, cellsize, nodata)
+    header = ("\n"
+              "ncols         %d\n"
+              "nrows         %d\n"
+              "xllcorner     %.4f\n"
+              "yllcorner     %.4f\n"
+              "cellsize      %.4f\n"
+              "NODATA_value  %.1f\n" % (data.shape[0], data.shape[1],
+                                        xllcorner, yllcorner, cellsize,
+                                        nodata))
 
     # Replace NaNs by NoData
     # ...but we do not want to manipulate the original array!
@@ -1953,9 +1986,11 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
         # No prj file will be written
         return 0
     elif not type(proj) == osr.SpatialReference:
-        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', "
-                        "but got %s. See library reference for wradlib.georef on how to create "
-                        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
+        raise Exception("Expected 'proj' argument of type "
+                        "'osr.SpatialReference', but got %s. See library "
+                        "reference for wradlib.georef on how to create "
+                        "SpatialReference objects from different sources "
+                        "(proj4, WKT, EPSG, ...)." % type(proj))
 
     if to_esri:
         # Make a copy before manipulation
@@ -1977,40 +2012,44 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
 
     The function writes a GeoTIFF file to ``fpath`` that contains the grid data
     passed with the argument ``data``. For details on the GeoTIFF format
-    see e.g. https://en.wikipedia.org/wiki/GeoTIFF.
+    see e.g. wikipedia :cite:`GeoTIFF`.
 
     Warning
     -------
-    The GeoTIFF files produced by this function might not work with ESRI ArcGIS,
-    depending on the projection. Problems are particularly expected with the
-    RADOLAN projection, due to inconsistencies in the definition of polar
-    stereographic projections between GDAL and ESRI ArcGIS.
+    The GeoTIFF files produced by this function might not work with ESRI
+    ArcGIS, depending on the projection. Problems are particularly expected
+    with the RADOLAN projection, due to inconsistencies in the definition of
+    polar stereographic projections between GDAL and ESRI ArcGIS.
 
     The projection information (argument ``proj``) needs to be passed as a GDAL
-    SpatialReference object. Refer to https://wradlib.github.io/wradlib-docs/latest/georef.html
-    to see how to create SpatialReference objects from e.g.
+    SpatialReference object. Refer to :any:`georef` to see how to create
+    SpatialReference objects from e.g.
     :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
     :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
     or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
-    are addressed by the :doc:`create_osr function <wradlib.georef.create_osr>`.
+    are addressed by the
+    :doc:`create_osr function <wradlib.georef.create_osr>`.
 
-    Writing a GeoTIFF file requires a ``geotransform`` list to define how to compute
-    map coordinates from grid indices. The list needs to contain the following
-    items: top left x, w-e pixel resolution, rotation, top left y, rotation,
-    n-s pixel resolution. The unit of the pixel resolution has to be consistent
-    with the projection information. **BE CAREFUL**: You need to consider whether
-    your grid coordinates define the corner (typically lower left) or the cenmter of your pixels.
-    And Since the ``geotransform`` is used to define the grid from the top-left corner,
-    the n-s pixel resolution is usually a negative value.
+    Writing a GeoTIFF file requires a ``geotransform`` list to define how to
+    compute map coordinates from grid indices. The list needs to contain the
+    following items: top left x, w-e pixel resolution, rotation, top left y,
+    rotation, n-s pixel resolution. The unit of the pixel resolution has to be
+    consistent with the projection information. **BE CAREFUL**: You need to
+    consider whether your grid coordinates define the corner (typically lower
+    left) or the center of your pixels.
+    And since the ``geotransform`` is used to define the grid from the top-left
+    corner, the n-s pixel resolution is usually a negative value.
 
-    Here is an example of the ``geotransform`` that worked e.g. with RADOLAN grids.
-    Notice that the RADOLAN coordinates returned by wradlib refer to the lower left
-    pixel corners, so you have to add another pixel unit to the top left y coordinate
-    in order to define the top left corner of the bounding box::
+    Here is an example of the ``geotransform`` that worked e.g. with RADOLAN
+    grids. Notice that the RADOLAN coordinates returned by wradlib refer to the
+    lower left pixel corners, so you have to add another pixel unit to the top
+    left y coordinate in order to define the top left corner of the
+    bounding box::
 
         import wradlib
         xy = wradlib.georef.get_radolan_grid(900,900)
-        # top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size
+        # top left x, w-e pixel size, rotation, top left y, rotation,
+        # n-s pixel size
         geotransform = [xy[0,0,0], 1., 0, xy[-1,-1,1]+1., 0, -1.]
 
     Parameters
@@ -2020,7 +2059,8 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     data : array
         two dimensional numpy array of type integer or float
     geotransform : sequence
-        sequence of length 6 (# top left x, w-e pixel size, rotation, top left y, rotation, n-s pixel size)
+        sequence of length 6 (# top left x, w-e pixel size, rotation,
+        top left y, rotation, n-s pixel size)
     nodata : float
         no data flag
     proj : osr.SpatialReference
@@ -2032,7 +2072,8 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
 
     Examples
     --------
-    See :download:`gis_export_example.py script <../../../examples/gis_export_example.py>`.
+    See :download:`gis_export_example.py script
+    <../../../examples/gis_export_example.py>`.
 
     .. literalinclude:: ../../../examples/gis_export_example.py
 
@@ -2041,8 +2082,8 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     _check_arguments(fpath, data)
     ext = os.path.splitext(fpath)[-1]
     if ext not in [".tif", ".tiff"]:
-        raise Exception("File name extension should be either '.tif' or '.tiff'. "
-                        "Found extension instead: %s" % ext)
+        raise Exception("File name extension should be either '.tif' or "
+                        "'.tiff'. Found extension instead: %s" % ext)
 
     # Set up our export object
     driver = gdal.GetDriverByName("GTiff")
@@ -2057,9 +2098,10 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     elif data.dtype == "int16":
         gdal_dtype = gdal.GDT_Int16
     else:
-        raise Exception("The data type of your input array data should be one of "
-                        "the following: float64, float32, int32, int16. You can use numpy's 'astype' "
-                        "method to convert your array to the desired data type.")
+        raise Exception("The data type of your input array data should be one "
+                        "of the following: float64, float32, int32, int16. "
+                        "You can use numpy's 'astype' method to convert "
+                        "your array to the desired data type.")
 
     # Creat our export object
     ds = driver.Create(fpath, data.shape[0], data.shape[1], 1, gdal_dtype)
@@ -2068,13 +2110,16 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     if proj is None:
         pass
     elif not isinstance(proj, osr.SpatialReference):
-        raise Exception("Expected 'proj' argument of type 'osr.SpatialReference', "
-                        "but got %s. See library reference for wradlib.georef on how to create "
-                        "SpatialReference objects from different sources (proj4, WKT, EPSG, ...)." % type(proj))
+        raise Exception("Expected 'proj' argument of type "
+                        "'osr.SpatialReference', but got %s. See library "
+                        "reference for wradlib.georef on how to create "
+                        "SpatialReference objects from different sources "
+                        "(proj4, WKT, EPSG, ...)." % type(proj))
     else:
         ds.SetProjection(proj.ExportToWkt())
 
-    # top left x, w-e pixel resolution, rotation, top left y, rotation, n-s pixel resolution
+    # top left x, w-e pixel resolution, rotation, top left y, rotation,
+    # n-s pixel resolution
     ds.SetGeoTransform(geotransform)
 
     # Replace NaNs by NoData
@@ -2120,9 +2165,9 @@ def read_raster_data(filename, driver=None, **kwargs):
         X/YRasterSize of resampled dataset
     resample : GDALResampleAlg
         defaults to GRA_Bilinear
-        GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2, GRA_CubicSpline = 3,
-        GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6, GRA_Max = 8,
-        GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
+        GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2,
+        GRA_CubicSpline = 3, GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6,
+        GRA_Max = 8, GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
 
     Returns
     -------
@@ -2141,7 +2186,9 @@ def read_raster_data(filename, driver=None, **kwargs):
 
     # we have to flipud data, because raster data is origin "upper left"
     values = np.flipud(georef.read_gdal_values(dataset1))
-    coords = np.flipud(georef.read_gdal_coordinates(dataset1, mode='centers', z=False))
+    coords = np.flipud(georef.read_gdal_coordinates(dataset1,
+                                                    mode='centers',
+                                                    z=False))
 
     # close dataset
     dataset1 = None
@@ -2153,8 +2200,8 @@ def open_shape(filename, driver=None):
     """
     Open shapefile, return ogr dataset and layer
 
-    .. warning:: dataset and layer have to live in the same context, if dataset is deleted
-                 all layer references will get lost
+    .. warning:: dataset and layer have to live in the same context,
+                 if dataset is deleted all layer references will get lost
 
     .. versionadded:: 0.6.0
 

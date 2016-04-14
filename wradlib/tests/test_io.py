@@ -83,8 +83,9 @@ class RadolanTest(unittest.TestCase):
             self.assertIsNone(head[key])
 
     def test_get_radolan_header_token_pos(self):
-        header = 'RW030950100000814BY1620130VS 3SW   2.13.1PR E-01INT  60GP 900x 900' \
-                 'MS 58<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,oft,tur,isn,fbg,mem>'
+        header = ('RW030950100000814BY1620130VS 3SW   2.13.1PR E-01'
+                  'INT  60GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,'
+                  'asd,neu,nhb,oft,tur,isn,fbg,mem>')
 
         test_head = wrl.io.get_radolan_header_token()
         test_head['PR'] = (43, 48)
@@ -151,14 +152,16 @@ class RadolanTest(unittest.TestCase):
                    0., 0., 0.,
                    0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
-        testline = b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n'
+        testline = (b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9'
+                    b'\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n')
         testattrs = {'ncol': 460, 'nodataflag': 0}
         arr = np.fromstring(testline, np.uint8).astype(np.uint8)
         line = wrl.io.decode_radolan_runlength_line(arr, testattrs)
         self.assertTrue(np.allclose(line, testarr))
 
     def test_read_radolan_runlength_line(self):
-        testline = b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n'
+        testline = (b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9'
+                    b'\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n')
         testarr = np.fromstring(testline, np.uint8).astype(np.uint8)
         fid, temp_path = tempfile.mkstemp()
         tmp_id = open(temp_path, 'wb')
@@ -172,8 +175,8 @@ class RadolanTest(unittest.TestCase):
         self.assertTrue(np.allclose(line, testarr))
 
     def test_decode_radolan_runlength_array(self):
-        pg_file = os.path.dirname(
-            __file__) + '/../../examples/data/raa00-pc_10015-1408030905-dwd---bin.gz'
+        filename = 'radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz'
+        pg_file = wrl.util.get_wradlib_data_file(filename)
         pg_fid = wrl.io.get_radolan_filehandle(pg_file)
         header = wrl.io.read_radolan_header(pg_fid)
         attrs = wrl.io.parse_DWD_quant_composite_header(header)
@@ -183,8 +186,8 @@ class RadolanTest(unittest.TestCase):
         self.assertEqual(arr.shape, (460, 460))
 
     def test_read_radolan_binary_array(self):
-        rw_file = os.path.dirname(
-            __file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
+        filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
+        rw_file = wrl.util.get_wradlib_data_file(filename)
         rw_fid = wrl.io.get_radolan_filehandle(rw_file)
         header = wrl.io.read_radolan_header(rw_fid)
         attrs = wrl.io.parse_DWD_quant_composite_header(header)
@@ -194,28 +197,30 @@ class RadolanTest(unittest.TestCase):
         rw_fid = wrl.io.get_radolan_filehandle(rw_file)
         header = wrl.io.read_radolan_header(rw_fid)
         attrs = wrl.io.parse_DWD_quant_composite_header(header)
-        self.assertRaises(IOError,
-                          lambda: wrl.io.read_radolan_binary_array(rw_fid,
-                                                                   attrs[
-                                                                       'datasize'] + 10))
+        self.assertRaises(
+            IOError,
+            lambda: wrl.io.read_radolan_binary_array(rw_fid,
+                                                     attrs['datasize'] + 10))
 
     def test_get_radolan_filehandle(self):
-        rw_file = os.path.dirname(
-            __file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
+        filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
+        rw_file = wrl.util.get_wradlib_data_file(filename)
         rw_fid = wrl.io.get_radolan_filehandle(rw_file)
         self.assertEqual(rw_file, rw_fid.name)
 
     def test_read_radolan_header(self):
-        rx_header = b'RW030950100000814BY1620130VS 3SW   2.13.1PR E-01INT  60GP 900x 900' \
-                    b'MS 58<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,oft,tur,isn,fbg,mem>'
+        rx_header = (b'RW030950100000814BY1620130VS 3SW   2.13.1PR E-01'
+                     b'INT  60GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,'
+                     b'asd,neu,nhb,oft,tur,isn,fbg,mem>')
 
         buf = io.BytesIO(rx_header + b"\x03")
         header = wrl.io.read_radolan_header(buf)
         self.assertEqual(header, rx_header.decode())
 
     def test_parse_DWD_quant_composite_header(self):
-        rx_header = 'RW030950100000814BY1620130VS 3SW   2.13.1PR E-01INT  60GP 900x 900' \
-                    'MS 58<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,oft,tur,isn,fbg,mem>'
+        rx_header = ('RW030950100000814BY1620130VS 3SW   2.13.1PR E-01INT  60'
+                     'GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,'
+                     'oft,tur,isn,fbg,mem>')
         test_rx = {'maxrange': '150 km',
                    'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro',
                                       'ess', 'asd', 'neu', 'nhb', 'oft',
@@ -227,9 +232,9 @@ class RadolanTest(unittest.TestCase):
                    'radarid': '10000',
                    'datasize': 1620001, }
 
-        pg_header = 'PG030905100000814BY20042LV 6  1.0 19.0 28.0 37.0 46.0 55.0CS0MX 0MS 82' \
-                    '<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,oft,tur,isn,fbg,mem,czbrd> are used, ' \
-                    'BG460460'
+        pg_header = ('PG030905100000814BY20042LV 6  1.0 19.0 28.0 37.0 46.0 '
+                     '55.0CS0MX 0MS 82<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,'
+                     'oft,tur,isn,fbg,mem,czbrd> are used, BG460460')
         test_pg = {
             'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro', 'ess', 'asd',
                                'neu',
@@ -253,8 +258,8 @@ class RadolanTest(unittest.TestCase):
                 self.assertEqual(value, test_pg[key])
 
     def test_read_RADOLAN_composite(self):
-        rw_file = os.path.dirname(
-            __file__) + '/../../examples/data/raa01-rw_10000-1408030950-dwd---bin.gz'
+        filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
+        rw_file = wrl.util.get_wradlib_data_file(filename)
         test_attrs = {'maxrange': '150 km',
                       'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro',
                                          'ess', 'asd', 'neu', 'nhb', 'oft',
@@ -316,10 +321,12 @@ class RainbowTest(unittest.TestCase):
 
     def test_get_RB_data_attribute(self):
         xmltodict = wrl.util.import_optional('xmltodict')
-        data = xmltodict.parse('<slicedata time="13:30:05" date="2013-04-26"> \
-        #<rayinfo refid="startangle" blobid="0" rays="361" depth="16"/> \
-        #<rawdata blobid="1" rays="361" type="dBuZ" bins="400" min="-31.5" max="95.5" depth="8"/> \
-        #</slicedata>')
+        data = xmltodict.parse(('<slicedata time="13:30:05" date="2013-04-26">'
+                                '#<rayinfo refid="startangle" blobid="0" '
+                                'rays="361" depth="16"/> '
+                                '#<rawdata blobid="1" rays="361" type="dBuZ" '
+                                'bins="400" min="-31.5" max="95.5" '
+                                'depth="8"/> #</slicedata>'))
         data = list(wrl.io.find_key('@blobid', data))
         self.assertEqual(wrl.io.get_RB_data_attribute(data[0], 'blobid'), 0)
         self.assertEqual(wrl.io.get_RB_data_attribute(data[1], 'blobid'), 1)
@@ -345,12 +352,16 @@ class RainbowTest(unittest.TestCase):
 
     def test_get_RB_data_shape(self):
         xmltodict = wrl.util.import_optional('xmltodict')
-        data = xmltodict.parse('<slicedata time="13:30:05" date="2013-04-26"> \
-        #<rayinfo refid="startangle" blobid="0" rays="361" depth="16"/> \
-        #<rawdata blobid="1" rays="361" type="dBuZ" bins="400" min="-31.5" max="95.5" depth="8"/> \
-        #<flagmap blobid="2" rows="800" type="dBuZ" columns="400" min="-31.5" max="95.5" depth="6"/> \
-        #<defect blobid="3" type="dBuZ" columns="400" min="-31.5" max="95.5" depth="6"/> \
-        #</slicedata>')
+        data = xmltodict.parse(('<slicedata time="13:30:05" date="2013-04-26">'
+                                '#<rayinfo refid="startangle" blobid="0" '
+                                'rays="361" depth="16"/> #<rawdata blobid="1" '
+                                'rays="361" type="dBuZ" bins="400" '
+                                'min="-31.5" max="95.5" depth="8"/> #<flagmap '
+                                'blobid="2" rows="800" type="dBuZ" '
+                                'columns="400" min="-31.5" max="95.5" '
+                                'depth="6"/> #<defect blobid="3" type="dBuZ" '
+                                'columns="400" min="-31.5" max="95.5" '
+                                'depth="6"/> #</slicedata>'))
         data = list(wrl.io.find_key('@blobid', data))
         self.assertEqual(wrl.io.get_RB_data_shape(data[0]), 361)
         self.assertEqual(wrl.io.get_RB_data_shape(data[1]), (361, 400))

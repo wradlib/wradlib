@@ -12,15 +12,19 @@ def help_function(x):
 
 
 def ex_apichange():
-    @util.apichange_kwarg("0.6.0", par='x', typ=str, msg="x will take int data in the future")
+    @util.apichange_kwarg("0.6.0", par='x', typ=str,
+                          msg="x will take int data in the future")
     def futurechange(z, x=None):
         if isinstance(x, str):
-            print(z, x, type(x), "normal function behaviour, DeprecationWarning is issued")
+            print(z, x, type(x),
+                  "normal function behaviour, DeprecationWarning is issued")
         elif isinstance(x, type(None)):
-            print(z, x, type(x), "normal function behaviour, no DeprecationWarning")
+            print(z, x, type(x),
+                  "normal function behaviour, no DeprecationWarning")
         else:
-            print(z, x, type(x), "using wrong type here, no DeprecationWarning, "
-                                 "but TypeError will be raised")
+            print(z, x, type(x),
+                  "using wrong type here, no DeprecationWarning, "
+                  "but TypeError will be raised")
             raise TypeError("Wrong Input %s, 'str' expected" % type(x))
         sys.stdout.flush()
         return z, x
@@ -39,11 +43,14 @@ def ex_apichange():
     def typechanged(z, x=None):
         if isinstance(x, int):
             print(z, x, type(x), "normal function behaviour or type change, "
-                                 "DeprecationWarning is issued when 'x' is type(str)")
+                                 "DeprecationWarning is issued when 'x' "
+                                 "is type(str)")
         elif isinstance(x, type(None)):
-            print(z, x, type(x), "normal function behaviour, no DeprecationWarning")
+            print(z, x, type(x),
+                  "normal function behaviour, no DeprecationWarning")
         else:
-            print(z, x, type(x), "using wrong type here, TypeError will be raised")
+            print(z, x, type(x),
+                  "using wrong type here, TypeError will be raised")
             raise TypeError("Wrong Input %s, 'int' expected" % type(x))
         sys.stdout.flush()
         return z, x
@@ -61,7 +68,8 @@ def ex_apichange():
         if isinstance(y, str):
             print(z, y, type(y), "DeprecationWarning")
         elif isinstance(y, type(None)):
-            print(z, y, type(y), "normal function behaviour, no DeprecationWarning")
+            print(z, y, type(y),
+                  "normal function behaviour, no DeprecationWarning")
         else:
             print(z, y, type(y), "using wrong type here, TypeError is issued")
             raise TypeError("Wrong Input %s, 'str' expected" % type(y))
@@ -86,15 +94,19 @@ def ex_apichange():
         print("Type error: {0}".format(e))
     time.sleep(1)
 
-    @util.apichange_kwarg("0.6.0", par='x', typ=str, expar='y', exfunc=help_function)
+    @util.apichange_kwarg("0.6.0", par='x', typ=str, expar='y',
+                          exfunc=help_function)
     def name_and_type_changed(z, y=None):
         if isinstance(y, int):
-            print(z, y, type(y), "normal function behaviour or paramter and type change, "
-                                 "DeprecationWarning is issued when 'x' is given")
+            print(z, y, type(y),
+                  "normal function behaviour or paramter and type change, "
+                  "DeprecationWarning is issued when 'x' is given")
         elif isinstance(y, type(None)):
-            print(z, y, type(y), "normal function behaviour, no DeprecationWarning")
+            print(z, y, type(y),
+                  "normal function behaviour, no DeprecationWarning")
         else:
-            print(z, y, type(y), "using wrong type here, TypeError will be raised")
+            print(z, y, type(y),
+                  "using wrong type here, TypeError will be raised")
             raise TypeError("Wrong Input %s, 'str' expected" % type(y))
         return z, y
 

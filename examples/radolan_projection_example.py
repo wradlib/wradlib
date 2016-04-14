@@ -22,8 +22,12 @@ def ex_radolan_projection():
     proj_gk3.ImportFromEPSG(31467)
 
     # transform radolan polar stereographic projection to wgs84 and then to gk3
-    radolan_grid_ll = wrl.georef.reproject(radolan_grid_xy, projection_source=proj_stereo, projection_target=proj_wgs)
-    radolan_grid_gk = wrl.georef.reproject(radolan_grid_ll, projection_source=proj_wgs, projection_target=proj_gk3)
+    radolan_grid_ll = wrl.georef.reproject(radolan_grid_xy,
+                                           projection_source=proj_stereo,
+                                           projection_target=proj_wgs)
+    radolan_grid_gk = wrl.georef.reproject(radolan_grid_ll,
+                                           projection_source=proj_wgs,
+                                           projection_target=proj_gk3)
 
     lon_wgs0 = radolan_grid_ll[:, :, 0]
     lat_wgs0 = radolan_grid_ll[:, :, 1]

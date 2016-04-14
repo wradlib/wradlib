@@ -15,7 +15,8 @@ import datetime as dt
 
 
 def testplot(cats, catsavg, xy, data,
-             levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100], title=""):
+             levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100],
+             title=""):
     """Quick test plot layout for this example file
     """
     colors = plt.cm.spectral(np.linspace(0, 1, len(levels)))
@@ -23,7 +24,8 @@ def testplot(cats, catsavg, xy, data,
 
     radolevels = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100]
     radocolors = plt.cm.spectral(np.linspace(0, 1, len(radolevels)))
-    radocmap, radonorm = from_levels_and_colors(radolevels, radocolors, extend="max")
+    radocmap, radonorm = from_levels_and_colors(radolevels, radocolors,
+                                                extend="max")
 
     fig = plt.figure(figsize=(14, 8))
 
@@ -79,12 +81,14 @@ def ex_tutorial_zonal_statistics():
 
     # Open shapefile (already in GK2)
 
-    shpfile = wradlib.util.get_wradlib_data_file('shapefiles/agger/agger_merge.shp')
+    shpfile = wradlib.util.get_wradlib_data_file(
+        'shapefiles/agger/agger_merge.shp')
     dataset, inLayer = wradlib.io.open_shape(shpfile)
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
 
     # Read and prepare the actual data (RADOLAN)
-    f = wradlib.util.get_wradlib_data_file('radolan/misc/raa01-sf_10000-1406100050-dwd---bin.gz')
+    f = wradlib.util.get_wradlib_data_file(
+        'radolan/misc/raa01-sf_10000-1406100050-dwd---bin.gz')
     data, attrs = wradlib.io.read_RADOLAN_composite(f, missing=np.nan)
     sec = attrs['secondary']
     data.flat[sec] = np.nan
@@ -92,8 +96,10 @@ def ex_tutorial_zonal_statistics():
     # Reduce grid size using a bounding box (to enhancing performance)
     bbox = inLayer.GetExtent()
     buffer = 5000.
-    bbox = dict(left=bbox[0] - buffer, right=bbox[1] + buffer, bottom=bbox[2] - buffer, top=bbox[3] + buffer)
-    mask, shape = wradlib.zonalstats.mask_from_bbox(xy[..., 0], xy[..., 1], bbox)
+    bbox = dict(left=bbox[0] - buffer, right=bbox[1] + buffer,
+                bottom=bbox[2] - buffer, top=bbox[3] + buffer)
+    mask, shape = wradlib.zonalstats.mask_from_bbox(xy[..., 0], xy[..., 1],
+                                                    bbox)
     xy_ = np.vstack((xy[..., 0][mask].ravel(), xy[..., 1][mask].ravel())).T
     data_ = data[mask]
 
@@ -107,7 +113,8 @@ def ex_tutorial_zonal_statistics():
 
     t1 = dt.datetime.now()
 
-    # Create instance of type ZonalDataPoint from source grid and catchment array
+    # Create instance of type ZonalDataPoint from source grid and
+    # catchment array
     zd = wradlib.zonalstats.ZonalDataPoint(xy_, cats, srs=proj_gk, buf=500.)
     # dump to file (for later use - see below)
     zd.dump_vector('test_zonal_points_cart')
@@ -124,15 +131,19 @@ def ex_tutorial_zonal_statistics():
 
     t3 = dt.datetime.now()
 
-    # Create instance of type GridPointsToPoly from zonal data file (much faster)
+    # Create instance of type GridPointsToPoly from zonal data file
+    # (much faster)
     obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_points_cart')
 
     t4 = dt.datetime.now()
 
     print("Approach #1 computation time:")
-    print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
-    print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
-    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())
+    print("\tCreate object from scratch: %f "
+          "seconds" % (t2 - t1).total_seconds())
+    print("\tCreate object from dumped file: %f "
+          "seconds" % (t4 - t3).total_seconds())
+    print("\tCompute stats using object: %f "
+          "seconds" % (t3 - t2).total_seconds())
 
     # PLOTTING Approach #1
 
@@ -150,14 +161,18 @@ def ex_tutorial_zonal_statistics():
     # Target polygon patches
     trg_patches = [patches.Polygon(item, True) for item in obj1.zdata.trg.data]
     trg_patch = [trg_patches[i]]
-    p = PatchCollection(trg_patch, facecolor="None", edgecolor="black", linewidth=2)
+    p = PatchCollection(trg_patch, facecolor="None", edgecolor="black",
+                        linewidth=2)
     ax.add_collection(p)
 
     # pips
     sources = obj1.zdata.src.data
-    plt.scatter(sources[:, 0], sources[:, 1], s=200, c="grey", edgecolor="None", label="all points")
-    plt.scatter(isecs2[i][:, 0], isecs2[i][:, 1], s=200, c="green", edgecolor="None", label="buffer=0 m")
-    plt.scatter(isecs1[i][:, 0], isecs1[i][:, 1], s=50, c="red", edgecolor="None", label="buffer=500 m")
+    plt.scatter(sources[:, 0], sources[:, 1], s=200, c="grey",
+                edgecolor="None", label="all points")
+    plt.scatter(isecs2[i][:, 0], isecs2[i][:, 1], s=200, c="green",
+                edgecolor="None", label="buffer=0 m")
+    plt.scatter(isecs1[i][:, 0], isecs1[i][:, 1], s=50, c="red",
+                edgecolor="None", label="buffer=500 m")
     bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
     plt.xlim(bbox["left"] - 2000, bbox["right"] + 2000)
     plt.ylim(bbox["bottom"] - 2000, bbox["top"] + 2000)
@@ -165,19 +180,24 @@ def ex_tutorial_zonal_statistics():
     plt.title("Catchment #%d: Points considered for stats" % i)
 
     # Plot average rainfall and original data
-    testplot(trg_patches, avg1, xy, data, title="Catchment rainfall mean (GridPointsToPoly)")
-    testplot(trg_patches, var1, xy, data, levels=np.arange(0, np.max(var1), 1.),
+    testplot(trg_patches, avg1, xy, data,
+             title="Catchment rainfall mean (GridPointsToPoly)")
+    testplot(trg_patches, var1, xy, data,
+             levels=np.arange(0, np.max(var1), 1.),
              title="Catchment rainfall variance (GridPointsToPoly)")
 
     ###########################################################################
-    # Approach #2: Compute weighted mean based on fraction of source polygons in target polygons
+    # Approach #2: Compute weighted mean based on fraction of source polygons
+    # in target polygons
     #
     # - This is more accurate (no assumptions), but probably slower...
     ###########################################################################
 
-    # Create vertices for each grid cell (MUST BE DONE IN NATIVE RADOLAN COORDINATES)
+    # Create vertices for each grid cell
+    # (MUST BE DONE IN NATIVE RADOLAN COORDINATES)
     grdverts = wradlib.zonalstats.grid_centers_to_vertices(x_radolan[mask],
-                                                           y_radolan[mask], 1., 1.)
+                                                           y_radolan[mask], 1.,
+                                                           1.)
     # And reproject to Cartesian reference system (here: GK2)
     grdverts = wradlib.georef.reproject(grdverts,
                                         projection_source=proj_stereo,
@@ -185,7 +205,8 @@ def ex_tutorial_zonal_statistics():
 
     t1 = dt.datetime.now()
 
-    # Create instance of type ZonalDataPoly from source grid and catchment array
+    # Create instance of type ZonalDataPoly from source grid and
+    # catchment array
     zd = wradlib.zonalstats.ZonalDataPoly(grdverts, cats, srs=proj_gk)
     # dump to file
     zd.dump_vector('test_zonal_poly_cart')
@@ -206,9 +227,12 @@ def ex_tutorial_zonal_statistics():
     t4 = dt.datetime.now()
 
     print("Approach #2 computation time:")
-    print("\tCreate object from scratch: %f seconds" % (t2 - t1).total_seconds())
-    print("\tCreate object from dumped file: %f seconds" % (t4 - t3).total_seconds())
-    print("\tCompute stats using object: %f seconds" % (t3 - t2).total_seconds())
+    print("\tCreate object from scratch: %f "
+          "seconds" % (t2 - t1).total_seconds())
+    print("\tCreate object from dumped file: %f "
+          "seconds" % (t4 - t3).total_seconds())
+    print("\tCompute stats using object: %f "
+          "seconds" % (t3 - t2).total_seconds())
 
     # PLOTTING Approach #2
 
@@ -218,7 +242,8 @@ def ex_tutorial_zonal_statistics():
     # Plot average rainfall and original data
     testplot(trg_patches, avg3, xy, data,
              title="Catchment rainfall mean (GridCellsToPoly)")
-    testplot(trg_patches, var3, xy, data, levels=np.arange(0, np.max(var3), 1.),
+    testplot(trg_patches, var3, xy, data,
+             levels=np.arange(0, np.max(var3), 1.),
              title="Catchment rainfall variance (GridCellsToPoly)")
 
     # Illustrate results for an example catchment i
@@ -235,7 +260,8 @@ def ex_tutorial_zonal_statistics():
 
     # Target polygon patches
     trg_patch = [trg_patches[i]]
-    p = PatchCollection(trg_patch, facecolor="None", edgecolor="red", linewidth=2)
+    p = PatchCollection(trg_patch, facecolor="None", edgecolor="red",
+                        linewidth=2)
     ax.add_collection(p)
 
     # View the actual intersections

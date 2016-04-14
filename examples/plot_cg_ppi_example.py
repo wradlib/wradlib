@@ -231,11 +231,16 @@ def ex_plot_cg_ppi():
     data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
 
     # calculate max intensity proj
-    xs, ys, mip1 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=angle, elev=elev)
-    xs, ys, mip2 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2, angle=(90 + angle), elev=elev)
+    xs, ys, mip1 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2,
+                                                             angle=angle,
+                                                             elev=elev)
+    xs, ys, mip2 = wradlib.util.maximum_intensity_projection(data, r=d1, az=d2,
+                                                             angle=90 + angle,
+                                                             elev=elev)
 
     # normal cg plot
-    cgax, caax, paax, pm = wradlib.vis.plot_cg_ppi(data, r=d1, az=d2, refrac=True)
+    cgax, caax, paax, pm = wradlib.vis.plot_cg_ppi(data, r=d1, az=d2,
+                                                   refrac=True)
     cgax.set_xlim(-np.max(d1), np.max(d1))
     cgax.set_ylim(-np.max(d1), np.max(d1))
     caax.xaxis.set_major_formatter(FuncFormatter(mip_formatter))

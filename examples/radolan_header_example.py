@@ -6,10 +6,14 @@ import wradlib as wrl
 
 def ex_radolan_header():
     # load radolan file
-    rx_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rx_10000-1408102050-dwd---bin.gz')
-    ex_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-ex_10000-1408102050-dwd---bin.gz')
-    rw_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rw_10000-1408102050-dwd---bin.gz')
-    sf_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-sf_10000-1408102050-dwd---bin.gz')
+    filename = 'radolan/showcase/raa01-rx_10000-1408102050-dwd---bin.gz'
+    rx_filename = wrl.util.get_wradlib_data_file(filename)
+    filename = 'radolan/showcase/raa01-ex_10000-1408102050-dwd---bin.gz'
+    ex_filename = wrl.util.get_wradlib_data_file(filename)
+    filename = 'radolan/showcase/raa01-rw_10000-1408102050-dwd---bin.gz'
+    rw_filename = wrl.util.get_wradlib_data_file(filename)
+    filename = 'radolan/showcase/raa01-sf_10000-1408102050-dwd---bin.gz'
+    sf_filename = wrl.util.get_wradlib_data_file(filename)
 
     rxdata, rxattrs = wrl.io.read_RADOLAN_composite(rx_filename)
     exdata, exattrs = wrl.io.read_RADOLAN_composite(ex_filename)

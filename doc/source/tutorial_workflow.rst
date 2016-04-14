@@ -14,7 +14,7 @@ Consider this just as an example. We will not go into detail for each step in th
 
 If you have trouble with that import, please head back to the :doc:`gettingstarted` section.
 
-.. note:: The code used in this tutorial can be found in the file ``wradib/examples/typical_workflow.py`` of the wradlib distribution. The corresponding example data is stored in ``wradlib/examples/data``.
+.. note:: The code used in this tutorial can be found in the file ``wradib/examples/typical_workflow.py`` of the wradlib distribution. The corresponding example data is stored in ``WRADLIB_DATA``.
 
 .. warning:: Be aware that applying an algorithm for error correction does not guarantee that the error is totally removed. Error correction procedures are suceptible to errors, too. Not only might they fail to *remove* the error. They might also introduce *new* errors. The trade-off between costs (introduction of new errors) and benefits (error reduction) can turn out differently for different locations, different points in time, or different rainfall situations.
 

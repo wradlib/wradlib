@@ -18,19 +18,20 @@ def process_polar_level_data(radarname):
     """
     print("Polar level processing for radar %s..." % radarname)
     # preparations for loading sample data in source directory
-    # files = glob.glob(os.path.dirname(__file__) + '/' + 'data/raa*%s*bin'%radarname)
-
-    files = glob.glob(wradlib.util.get_wradlib_data_path() + '/dx/recipe1_data/raa*%s*bin' % radarname)
+    files = glob.glob(os.path.join(wradlib.util.get_wradlib_data_path(),
+                                   'dx/recipe1_data/raa*%s*bin' % radarname))
 
     if len(files) == 0:
-        print("WARNING: No data files found - maybe you did not extract the data from data/recipe1_data.zip?")
+        print("WARNING: No data files found - maybe you did not extract "
+              "the data from data/recipe1_data.zip?")
     data = np.empty((len(files), 360, 128))
     # loading the data (two hours of 5-minute images)
     for i, f in enumerate(files):
         print(i, f)
         data[i], attrs = wradlib.io.readDX(f)
     # Clutter filter on an event base
-    clmap = wradlib.clutter.filter_gabella(data.mean(axis=0), tr1=12, n_p=6, tr2=1.1)
+    clmap = wradlib.clutter.filter_gabella(data.mean(axis=0), tr1=12, n_p=6,
+                                           tr2=1.1)
     for i, scan in enumerate(data):
         data[i] = wradlib.ipol.interpolate_polar(scan, clmap)
     # correcting for attenuation
@@ -93,12 +94,16 @@ def recipe_clutter_attenuation():
     #   for Tuerkheim radar
     # create osr projection using epsg number for GK Zone 3
     proj_gk3 = wradlib.georef.epsg_to_osr(31467)
-    tur_cent_lon, tur_cent_lat = wradlib.georef.polar2centroids(r, az, tur_sitecoords)
-    tur_x, tur_y = wradlib.georef.reproject(tur_cent_lon, tur_cent_lat, projection_target=proj_gk3)
+    tur_cent_lon, tur_cent_lat = wradlib.georef.polar2centroids(r, az,
+                                                                tur_sitecoords)
+    tur_x, tur_y = wradlib.georef.reproject(tur_cent_lon, tur_cent_lat,
+                                            projection_target=proj_gk3)
     tur_coord = np.array([tur_x.ravel(), tur_y.ravel()]).transpose()
     #    for Feldberg radar
-    fbg_cent_lon, fbg_cent_lat = wradlib.georef.polar2centroids(r, az, fbg_sitecoords)
-    fbg_x, fbg_y = wradlib.georef.reproject(fbg_cent_lon, fbg_cent_lat, projection_target=proj_gk3)
+    fbg_cent_lon, fbg_cent_lat = wradlib.georef.polar2centroids(r, az,
+                                                                fbg_sitecoords)
+    fbg_x, fbg_y = wradlib.georef.reproject(fbg_cent_lon, fbg_cent_lat,
+                                            projection_target=proj_gk3)
     fbg_coord = np.array([fbg_x.ravel(), fbg_y.ravel()]).transpose()
 
     # define target grid for composition
@@ -111,28 +116,43 @@ def recipe_clutter_attenuation():
     pulse_volumes = np.tile(wradlib.qual.pulse_volume(r, 1000., 1.), 360)
     # interpolate polar radar-data and quality data to the grid
     print("Gridding Tuerkheim data...")
-    tur_quality_gridded = wradlib.comp.togrid(tur_coord, grid_coords, r.max() + 500., tur_coord.mean(axis=0),
-                                              pulse_volumes, wradlib.ipol.Nearest)
-    tur_gridded = wradlib.comp.togrid(tur_coord, grid_coords, r.max() + 500., tur_coord.mean(axis=0), tur_accum.ravel(),
+    tur_quality_gridded = wradlib.comp.togrid(tur_coord, grid_coords,
+                                              r.max() + 500.,
+                                              tur_coord.mean(axis=0),
+                                              pulse_volumes,
+                                              wradlib.ipol.Nearest)
+    tur_gridded = wradlib.comp.togrid(tur_coord, grid_coords, r.max() + 500.,
+                                      tur_coord.mean(axis=0),
+                                      tur_accum.ravel(),
                                       wradlib.ipol.Nearest)
 
     print("Gridding Feldberg data...")
-    fbg_quality_gridded = wradlib.comp.togrid(fbg_coord, grid_coords, r.max() + 500., fbg_coord.mean(axis=0),
-                                              pulse_volumes, wradlib.ipol.Nearest)
-    fbg_gridded = wradlib.comp.togrid(fbg_coord, grid_coords, r.max() + 500., fbg_coord.mean(axis=0), fbg_accum.ravel(),
+    fbg_quality_gridded = wradlib.comp.togrid(fbg_coord, grid_coords,
+                                              r.max() + 500.,
+                                              fbg_coord.mean(axis=0),
+                                              pulse_volumes,
+                                              wradlib.ipol.Nearest)
+    fbg_gridded = wradlib.comp.togrid(fbg_coord, grid_coords, r.max() + 500.,
+                                      fbg_coord.mean(axis=0),
+                                      fbg_accum.ravel(),
                                       wradlib.ipol.Nearest)
 
-    # compose the both radar-data based on the quality information calculated above
+    # compose the both radar-data based on the quality information
+    # calculated above
     print("Composing Tuerkheim and Feldbarg data on a common grid...")
     composite = wradlib.comp.compose_weighted([tur_gridded, fbg_gridded],
-                                              [1. / (tur_quality_gridded + 0.001), 1. / (fbg_quality_gridded + 0.001)])
+                                              [1. / (tur_quality_gridded +
+                                                     0.001),
+                                               1. / (fbg_quality_gridded +
+                                                     0.001)])
     composite = np.ma.masked_invalid(composite)
 
     print("Processing took:", dt.datetime.now() - start)
 
     # Plotting rainfall map
     pl.subplot(111, aspect="equal")
-    pm = pl.pcolormesh(x, y, composite.reshape((len(x), len(y))), cmap="spectral")
+    pm = pl.pcolormesh(x, y, composite.reshape((len(x), len(y))),
+                       cmap="spectral")
     pl.grid()
     pl.colorbar(pm)
     pl.show()

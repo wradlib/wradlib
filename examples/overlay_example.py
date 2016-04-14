@@ -3,8 +3,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 # some imports needed
-import os
-import warnings
 import matplotlib.pyplot as plt
 # plt.interactive(True)
 import matplotlib as mpl
@@ -19,20 +17,7 @@ import wradlib as wrl
 from osgeo import osr
 
 
-def _check_file(filename):
-    # todo: move this to another place
-    geo_src = 'https://bitbucket.org/kaimuehlbauer/wradlib_miub/downloads/geo.tar.gz'
-    if not os.path.exists(filename):
-        warnings.warn(
-            "File does not exist: {0}\nGet data from {1} and extract archive to wradlib/example/data folder".format(
-                filename, geo_src))
-        exit(0)
-
-
 def ex_overlay():
-    # set filepath
-    # filepath = os.path.join(os.path.dirname(__file__), 'data/geo')
-
     # setup figure
     fig1 = plt.figure(figsize=(10, 8))
 
@@ -44,10 +29,10 @@ def ex_overlay():
 
     # we use this special prepared geotiff
     # created from srtm data via the following shell command:
-    # gdalwarp -te 88. 20. 93. 27. srtm_54_07.tif srtm_55_07.tif srtm_54_08.tif srtm_55_08.tif bangladesh.tif
+    # gdalwarp -te 88. 20. 93. 27. srtm_54_07.tif srtm_55_07.tif srtm_54_08.tif
+    # srtm_55_08.tif bangladesh.tif
 
     filename = wrl.util.get_wradlib_data_file('geo/bangladesh.tif')
-    # _check_file(filename)
     # pixel_spacing is in output units (lonlat)
     rastercoords, rastervalues = wrl.io.read_raster_data(filename,
                                                          spacing=0.005)
@@ -75,8 +60,8 @@ def ex_overlay():
     # country list
     countries = ['India', 'Nepal', 'Bhutan', 'Myanmar']
     # open the input data source and get the layer
-    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_admin_0_boundary_lines_land.shp')
-    # _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_admin_0_boundary_'
+                                              'lines_land.shp')
     dataset, inLayer = wrl.io.open_shape(filename)
     # iterate over countries, filter accordingly, get coordinates and plot
     for item in countries:
@@ -97,8 +82,8 @@ def ex_overlay():
         colors.append(cm(1. * i / len(countries)))
 
     # open the input data source and get the layer
-    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_admin_0_countries.shp')
-    # _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_admin_0_'
+                                              'countries.shp')
     dataset, layer = wrl.io.open_shape(filename)
     # iterate over countries, filter by attribute, plot single patches on ax2
     for i, item in enumerate(countries):
@@ -144,7 +129,6 @@ def ex_overlay():
 
     # open the input data source and get the layer
     filename = wrl.util.get_wradlib_data_file('geo/rivers_asia_37331.shp')
-    # _check_file(filename)
     dataset, inLayer = wrl.io.open_shape(filename)
 
     # do spatial filtering to get only geometries inside bounding box
@@ -165,8 +149,8 @@ def ex_overlay():
     # plot rivers from esri vector shape, filter spatially
     # plot rivers from NED
     # open the input data source and get the layer
-    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_rivers_lake_centerlines.shp')
-    # _check_file(filename)
+    filename = wrl.util.get_wradlib_data_file('geo/ne_10m_rivers_lake_'
+                                              'centerlines.shp')
     dataset, inLayer = wrl.io.open_shape(filename)
     inLayer.SetSpatialFilterRect(88, 20, 93, 27)
     rivers, keys = wrl.georef.get_shape_coordinates(inLayer)
