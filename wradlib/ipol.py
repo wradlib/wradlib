@@ -9,7 +9,8 @@ Interpolation
 Interpolation allows to transfer data from one set of locations to another.
 This includes for example:
 
-- interpolating the data from a polar grid to a cartesian grid or irregular points
+- interpolating the data from a polar grid to a cartesian grid or irregular
+  points
 
 - interpolating point observations to a grid or a set of irregular points
 
@@ -88,8 +89,9 @@ class IpolBase():
         vals : ndarray of float
 
         """
-        assert len(vals) == self.numsources, 'Length of value array %d does not correspond to \
-        number of source points %d' % (len(vals), self.numsources)
+        assert len(vals) == self.numsources, \
+            ('Length of value array %d does not correspond to number '
+             'of source points %d' % (len(vals), self.numsources))
 
     def _make_coord_arrays(self, x):
         """
@@ -99,8 +101,8 @@ class IpolBase():
         Parameters
         ----------
         x : ndarray of float with shape (numpoints, ndim)
-            OR a sequence of ndarrays of float with len(sequence)==ndim and the length
-            of the ndarray corresponding to the number of points
+            OR a sequence of ndarrays of float with len(sequence)==ndim and
+            the length of the ndarray corresponding to the number of points
 
         """
         if type(x) in [list, tuple]:
@@ -249,10 +251,12 @@ class Idw(IpolBase):
 
         """
 
-        # self distances: a list of arrays of distances of the nearest points which are indicated by self.ix
+        # self distances: a list of arrays of distances of the nearest points
+        # which are indicated by self.ix
         outshape = list(vals.shape)
         outshape[0] = len(self.dists)
-        interpol = np.repeat(np.nan, util._shape2size(outshape)).reshape(tuple(outshape)).astype('f4')
+        interpol = (np.repeat(np.nan, util._shape2size(outshape)).
+                    reshape(tuple(outshape)).astype('f4'))
         # weights is the container for the weights (a list)
         weights = list(range(len(self.dists)))
         # sources is the container for the source point indices
@@ -338,7 +342,8 @@ def parse_covariogram(cov_model):
                 re.compile('([\d\.]+) Gau\(([\d\.]+)\)'),  # gaussian
                 re.compile('([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'),  # matern
                 re.compile('([\d\.]+) Pow\(([\d\.]+)\)'),  # power
-                re.compile('([\d\.]+) Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),  # cauchy
+                # cauchy
+                re.compile('([\d\.]+) Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),
                 ]
 
     cov_funs = [cov_nug,
@@ -391,7 +396,9 @@ def cov_exp(h, sill=1.0, rng=1.0):
 def cov_sph(h, sill=1.0, rng=1.0):
     """spherical type covariance function"""
     h = np.asanyarray(h)
-    return np.where(h < rng, sill * (1. - 1.5 * h / rng + h ** 3 / (2 * rng ** 3)), 0.)
+    return np.where(h < rng, sill * (1. - 1.5 * h /
+                                     rng + h ** 3 /
+                                     (2 * rng ** 3)), 0.)
 
 
 def cov_gau(h, sill=1.0, rng=1.0):
@@ -418,13 +425,16 @@ def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
     if shp > 100:
         c = cov_gau(h, sill, rng)
     else:
-        Kv = scipy.special.kv  # modified bessel function of second kind of order v
-        Tau = scipy.special.gamma  # Gamma function
+        # modified bessel function of second kind of order v
+        Kv = scipy.special.kv
+        # Gamma function
+        Tau = scipy.special.gamma
 
         fac1 = h / rng * 2.0 * np.sqrt(shp)
         fac2 = (Tau(shp) * 2.0 ** (shp - 1.0))
 
-        c = np.where(h != 0, sill * 1.0 / fac2 * fac1 ** shp * Kv(shp, fac1), sill)
+        c = np.where(h != 0, sill * 1.0 /
+                     fac2 * fac1 ** shp * Kv(shp, fac1), sill)
 
     return c
 
@@ -457,26 +467,26 @@ class OrdinaryKriging(IpolBase):
     combinations.
     Each basic covariogram is usually defined by
     Note that, strictly speaking, this implementation doesn't allow Kriging of
-    fields for which the covariance does not exist. While this is mathematically
-    possible, it is rather rare for fields encountered in reality. Therefore,
-    this should not be a severe limitation.
+    fields for which the covariance does not exist. While this is
+    mathematically possible, it is rather rare for fields encountered in
+    reality. Therefore, this should not be a severe limitation.
 
     Most (co-)variograms are characterized by a sill parameter (which is
     the (co-)variance at separation distance 0) a range parameter (which
     indicates a separation distance after which the the covariance drops
     close to zero) an sometimes additional parameters governing the shape
-    of the function. In the following range is given by the variable `r` and the
-    sill by the variable `s`.
+    of the function. In the following range is given by the variable `r` and
+    the sill by the variable `s`.
     Currently implemented are:
 
-    - Pure Nugget
-    - Exponential
-    - Spherical
-    - Gaussian
-    - Linear
-    - Matern
-    - Power
-    - Cauchy
+        - Pure Nugget
+        - Exponential
+        - Spherical
+        - Gaussian
+        - Linear
+        - Matern
+        - Power
+        - Cauchy
 
     Parameters
     ----------
@@ -514,7 +524,8 @@ class OrdinaryKriging(IpolBase):
         self.nnearest = nnearest
         # plant a tree
         self.tree = cKDTree(src)
-        self.dists, self.ix = self.tree.query(trg, k=min(nnearest, self.numsources))
+        self.dists, self.ix = self.tree.query(trg, k=min(nnearest,
+                                                         self.numsources))
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -581,7 +592,8 @@ class OrdinaryKriging(IpolBase):
         self._check_shape(v)
         # calculate estimator
         weights = np.array(self.weights)
-        ip = np.add.reduce(weights[:, :-1, np.newaxis] * v[self.ix, ...], axis=1)
+        ip = np.add.reduce(weights[:, :-1, np.newaxis] * v[self.ix, ...],
+                           axis=1)
 
         return ip
 
@@ -640,7 +652,8 @@ class ExternalDriftKriging(IpolBase):
         self.nnearest = nnearest
         # plant a tree
         self.tree = cKDTree(src)
-        self.dists, self.ix = self.tree.query(trg, k=min(nnearest, self.numsources))
+        self.dists, self.ix = self.tree.query(trg, k=min(nnearest,
+                                                         self.numsources))
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -725,13 +738,15 @@ class ExternalDriftKriging(IpolBase):
             # check if we have data from __init__
             if self.src_drift is None:
                 raise ValueError('src_drift must be specified either on '
-                                 'initialization or when calling the interpolator.')
+                                 'initialization or when calling '
+                                 'the interpolator.')
             src_drift = self.src_drift
         if trg_drift is None:
             # check if we have data from __init__
             if self.trg_drift is None:
                 raise ValueError('trg_drift must be specified either on '
-                                 'initialization or when calling the interpolator.')
+                                 'initialization or when calling the '
+                                 'interpolator.')
             trg_drift = self.trg_drift
 
         src_d = self._make_2d(src_drift)
@@ -750,18 +765,21 @@ class ExternalDriftKriging(IpolBase):
             self.weights = wght
             self.estimation_variance = variances
             weights = np.array(self.weights)
-            ip = np.add.reduce(weights[:, :-2, np.newaxis] * v[self.ix, ...], axis=1)
+            ip = np.add.reduce(weights[:, :-2, np.newaxis] * v[self.ix, ...],
+                               axis=1)
         # otherwise we need to setup and solve the kriging system for each
         # field individually
         else:
             ip = np.empty((self.trg.shape[0], v.shape[1]))
-            assert (v.shape[1] == src_d.shape[1]) and (v.shape[1] == trg_d.shape[1])
+            assert ((v.shape[1] == src_d.shape[1]) and
+                    (v.shape[1] == trg_d.shape[1]))
             for i in range(v.shape[1]):
                 wght, variances = self._krige(src_d[:, i].squeeze(),
                                               trg_d[:, i].squeeze())
 
                 weights = np.array(wght)
-                ip[:, i] = np.add.reduce(weights[:, :-2] * v[self.ix, i], axis=1)
+                ip[:, i] = np.add.reduce(weights[:, :-2] * v[self.ix, i],
+                                         axis=1)
                 self.weights.append(weights)
                 self.estimation_variance.append(variances)
 
@@ -775,26 +793,27 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     """
     Convenience function to use the interpolation classes in an efficient way
 
-    The interpolation classes in wradlib.ipol are computationally very efficient
-    if they are applied on large multi-dimensional arrays of which the first dimension
-    must be the locations' dimension (1d or 2d coordinates) and the following dimensions
-    can be anything (e.g. time or ensembles). This way, the weights need to be computed
-    only once. However, this can only be done with success if all source values for
-    the interpolation are valid numbers. If the source values contain let's say
-    *np.nan* types, the result of the interpolation will be *np.nan* in the
-    vicinity of the corresponding points, too. Imagine that you have a time series
-    of observations at points and in each time step one observation is missing.
+    The interpolation classes in wradlib.ipol are computationally very
+    efficient if they are applied on large multi-dimensional arrays of which
+    the first dimension must be the locations' dimension (1d or 2d coordinates)
+    and the following dimensions can be anything (e.g. time or ensembles). This
+    way, the weights need to be computed only once. However, this can only be
+    done with success if all source values for the interpolation are valid
+    numbers. If the source values contain let's say *np.nan* types, the result
+    of the interpolation will be *np.nan* in the vicinity of the corresponding
+    points, too. Imagine that you have a time series of observations at points
+    and in each time step one observation is missing.
     You would still like to efficiently apply the interpolation
     classes, but you will need to account for the resulting *np.nan* values in
     the interpolation output.
 
-    In order to still allow for the efficient application, you have to take care
-    of the remaining np.nan in your interpolation result. This is done by this
-    convenience function.
+    In order to still allow for the efficient application, you have to take
+    care of the remaining np.nan in your interpolation result. This is done by
+    this convenience function.
 
-    Alternatively, you have to make sure that your *vals* argument does not contain
-    any *np.nan* values OR you have to post-process missing values in your interpolation
-    result in another way.
+    Alternatively, you have to make sure that your *vals* argument does not
+    contain any *np.nan* values OR you have to post-process missing values in
+    your interpolation result in another way.
 
     Warning
     -------
@@ -834,7 +853,8 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
 
     """
     if vals.ndim == 1:
-        # source values are one dimensional, we have just to remove invalid data
+        # source values are one dimensional, we have just
+        # to remove invalid data
         ix_valid = np.where(np.isfinite(vals))[0]
         ip = Interpolator(src[ix_valid], trg, *args, **kwargs)
         result = ip(vals[ix_valid])
@@ -846,16 +866,22 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
         # nan_in_vals = np.where(np.isnan(vals))
         for i in np.unique(nan_in_result[-1]):
             ix_good = np.where(np.isfinite(vals[..., i]))[0]
-            ix_broken_targets = nan_in_result[0][np.where(nan_in_result[-1] == i)[0]]
-            ip = Interpolator(src[ix_good], trg[nan_in_result[0][np.where(nan_in_result[-1] == i)[0]]], *args, **kwargs)
+            ix_broken_targets = (nan_in_result[0]
+                                 [np.where(nan_in_result[-1] == i)[0]])
+            ip = Interpolator(src[ix_good],
+                              trg[nan_in_result[0]
+                              [np.where(nan_in_result[-1] == i)[0]]],
+                              *args, **kwargs)
             tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
             result[ix_broken_targets, i] = tmp.ravel()
     else:
         if not np.any(np.isnan(vals.ravel())):
             raise Exception(
-                'At the moment, <interpolate> can only deal with NaN values in <vals> if vals has less than 3 dimension.')
+                'At the moment, <interpolate> can only deal with NaN values '
+                'in <vals> if vals has less than 3 dimension.')
         else:
-            # if no NaN value are in <vals> we can safely apply the Interpolator as is
+            # if no NaN value are in <vals> we can safely apply the
+            # Interpolator as is
             ip = Interpolator(src, trg, *args, **kwargs)
             result = ip(vals[ix_valid])
     return result
@@ -884,7 +910,7 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
 
     Examples
     --------
-    >>> import numpy as np
+    >>> import numpy as np  # noqa
     >>> import wradlib as wrl
     >>> # creating a data array and mask some values
     >>> data = np.arange(12.).reshape(4,3)
@@ -902,7 +928,8 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
     if mask is None:
         # no mask assigned: try to get it from masked array
         if type(data) != np.ma.core.MaskedArray:
-            print('Warning! Neither an explicit mask is assigned nor the data-array is masked.')
+            print('Warning! Neither an explicit mask is assigned nor the '
+                  'data-array is masked.')
         mask = np.ma.getmaskarray(data)
     elif not np.any(mask):
         # mask contains no True values, so there is nothing to fill
@@ -911,14 +938,17 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
     # construct the ranges for every bin
     ranges = np.tile(np.arange(0.5, data.shape[1] + 0.5), data.shape[0])
     # construct the angles for every bin
-    angles = np.repeat(np.radians(np.arange(0, 360, 360. / data.shape[0])), data.shape[1])
+    angles = np.repeat(np.radians(np.arange(0, 360, 360. / data.shape[0])),
+                       data.shape[1])
     # calculate cartesian coordinates for every bin
     binx = np.cos(angles) * ranges
     biny = np.sin(angles) * ranges
     # calculate cartesian coordinates for bins, which are not masked
-    src_coord = np.array([(np.delete(binx, clutter_indices)), (np.delete(biny, clutter_indices))]).transpose()
+    src_coord = np.array([(np.delete(binx, clutter_indices)),
+                          (np.delete(biny, clutter_indices))]).transpose()
     # calculate cartesian coordinates for bins, which are masked
-    trg_coord = np.array([binx[clutter_indices], biny[clutter_indices]]).transpose()
+    trg_coord = np.array([binx[clutter_indices],
+                          biny[clutter_indices]]).transpose()
     # data values for bins, which are not masked
     values_list = np.delete(data, clutter_indices)
     filled_data = data.copy().ravel()
@@ -926,11 +956,14 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
     filling = interpolate(src_coord, trg_coord, values_list, Interpolator)
     # fill data with the interpolations
     filled_data[clutter_indices] = filling.astype(filled_data.dtype)
-    # in case of nans as processed at the rim when interpolating linear, these values are finally interpolated
-    # by nearest Neighbor interpolation
+    # in case of nans as processed at the rim when interpolating linear,
+    # these values are finally interpolated by nearest Neighbor interpolation
     if np.any(np.isnan(filled_data)):
-        trg_coord = np.array([binx[np.where(np.isnan(filled_data))], biny[np.where(np.isnan(filled_data))]]).transpose()
-        filling = interpolate(src_coord, trg_coord, values_list, Interpolator=Nearest)
+        trg_coord = (np.array([binx[np.where(np.isnan(filled_data))],
+                              biny[np.where(np.isnan(filled_data))]])
+                     .transpose())
+        filling = interpolate(src_coord, trg_coord, values_list,
+                              Interpolator=Nearest)
         filled_data[np.where(np.isnan(filled_data))] = filling
     return filled_data.reshape(data.shape[0], data.shape[1])
 

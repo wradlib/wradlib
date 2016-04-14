@@ -94,7 +94,8 @@ def filter_gabella_b(img, thrs=0.):
     -------
     output : array_like
         contains in each pixel the ratio between area and circumference of the
-        meteorological echo it is assigned to or 0 for non precipitation pixels.
+        meteorological echo it is assigned to or 0 for non precipitation
+        pixels.
 
     See Also
     --------
@@ -135,7 +136,8 @@ def filter_gabella_b(img, thrs=0.):
     return result
 
 
-def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3, rm_nans=True, radial=False, cartesian=False):
+def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
+                   rm_nans=True, radial=False, cartesian=False):
     r"""Clutter identification filter developed by Gabella :cite:`Gabella2002`.
 
     This is a two-part identification algorithm using echo continuity and
@@ -225,32 +227,40 @@ def histo_cut(prec_accum):
     lower_bound_before = -51
     upper_bound_before = -51
 
-    # iterate as long as the difference between current and last iteration doesn't fall below the stop criterion
-    while (abs(lower_bound - lower_bound_before) > 1) or (abs(upper_bound - upper_bound_before) > 1):
+    # iterate as long as the difference between current and
+    # last iteration doesn't fall below the stop criterion
+    while (abs(lower_bound - lower_bound_before) > 1) or \
+            (abs(upper_bound - upper_bound_before) > 1):
 
         # masks for bins with sums over/under the data bounds
         upper_mask = (prec_accum <= upper_bound).astype(int)
         lower_mask = (prec_accum >= lower_bound).astype(int)
         # NaNs in place of masked bins
-        # Kopie der Datenmatrix mit Nans an Stellen, wo der Threshold erreicht wird
-        prec_accum_masked = np.where((upper_mask * lower_mask) == 0, np.nan, prec_accum)
+        # Kopie der Datenmatrix mit Nans an Stellen,
+        # wo der Threshold erreicht wird
+        prec_accum_masked = np.where((upper_mask * lower_mask) == 0,
+                                     np.nan, prec_accum)
 
         # generate a histogram of the valid bins with 50 classes
-        (n, bins) = np.histogram(prec_accum_masked[np.isfinite(prec_accum_masked)].ravel(), bins=50)
+        (n, bins) = np.histogram(prec_accum_masked[np.isfinite(
+            prec_accum_masked)].ravel(), bins=50)
         # get the class with biggest occurence
         index = np.where(n == n.max())
         index = index[0]
 
-        # separated stop criterion check in case one of the bounds is already robust
+        # separated stop criterion check in case one of the bounds
+        # is already robust
         if abs(lower_bound - lower_bound_before) > 1:
-            # get the index of the class which underscores the occurence of the biggest class by 1%,
-            # beginning from the class with the biggest occurence to the first class
+            # get the index of the class which underscores the occurence of
+            # the biggest class by 1%, beginning from the class with the
+            # biggest occurence to the first class
             for i in range(index, -1, -1):
                 if n[i] < (n[index] * 0.01):
                     break
         if abs(upper_bound - upper_bound_before) > 1:
-            # get the index of the class which underscores the occurence of the biggest class by 1%,
-            # beginning from the class with the biggest occurence to the last class
+            # get the index of the class which underscores the occurence of
+            # the biggest class by 1%, beginning from the class with the
+            # biggest occurence to the last class
             for j in range(index, len(n)):
                 if n[j] < (n[index] * 0.01):
                     break
@@ -265,16 +275,19 @@ def histo_cut(prec_accum):
 
 
 def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
-    """Fuzzy echo classification and clutter identification based on polarimetric moments.
+    """Fuzzy echo classification and clutter identification based on
+    polarimetric moments.
 
-    The implementation is based on Vulpiani et al. :cite:`Vulpiani2012`. At the moment, it only distinguishes
-    between meteorological and non-meteorological echos.
+    The implementation is based on Vulpiani et al. :cite:`Vulpiani2012`. At the
+    moment, it only distinguishes between meteorological and non-meteorological
+    echos.
 
     For each decision variable and radar bin, the algorithm uses trapezoidal
-    functions in order to define the membership to the non-meteorological echo class.
+    functions in order to define the membership to the non-meteorological
+    echo class.
     Based on pre-defined weights, a linear combination of the different degrees
-    of membership is computed. The echo is assumed to be non-meteorological in case
-    the linear combination exceeds a threshold.
+    of membership is computed. The echo is assumed to be non-meteorological
+    in case the linear combination exceeds a threshold.
 
     At the moment, the following decision variables are considered:
 
@@ -293,20 +306,24 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     Parameters
     ----------
     dat : dictionary of arrays
-       Contains the data of the decision variables. The shapes of the arrays should
-       be (..., number of beams, number of gates) and the shapes need to be identical or be broadcastable.
+       Contains the data of the decision variables. The shapes of the arrays
+       should be (..., number of beams, number of gates) and the shapes need
+       to be identical or be broadcastable.
     weights : dictionary of floats
        Defines the weights of the decision variables.
     trpz : dictionary of lists of floats
-       Contains the arguments of the trapezoidal membership functions for each decision variable
+       Contains the arguments of the trapezoidal membership functions for each
+       decision variable
     thresh : float
-       Threshold below which membership in non-meteorological membership class is assumed.
+       Threshold below which membership in non-meteorological membership class
+       is assumed.
 
     Returns
     -------
     output : tuple
         a tuple of two boolean arrays of same shape as the input arrays
-        The first array boolean array indicates non-meteorological echos based on the fuzzy classification.
+        The first array boolean array indicates non-meteorological echos based
+        on the fuzzy classification.
         The second boolean array indicates where all the polarimetric moments
         had missing values which could be used as an additional information
         criterion.
@@ -316,7 +333,8 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     keys = ["zdr", "rho", "phi", "dop", "map"]
 
     if weights is None:
-        weights = {"zdr": 0.4, "rho": 0.4, "rho2": 0.4, "phi": 0.1, "dop": 0.1, "map": 0.5}
+        weights = {"zdr": 0.4, "rho": 0.4, "rho2": 0.4,
+                   "phi": 0.1, "dop": 0.1, "map": 0.5}
 
     if trpz is None:
         trpz = {"zdr": [0.7, 1.0, 9999, 9999],
@@ -326,25 +344,30 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
                 "dop": [-0.2, -0.1, 0.1, 0.2],
                 "map": [1, 1, 9999, 9999]}
 
-    assert np.all(np.in1d(keys, dat.keys())), "Argument dat of classify_echo_fuzzy must be a dictionary " \
-                                              "with keywords %r." % (keys,)
-    assert np.all(np.in1d(keys, weights.keys())), "Argument weights of classify_echo_fuzzy must be a dictionary " \
-                                                  "with keywords %r." % (keys,)
-    assert np.all(np.in1d(keys, trpz.keys())), "Argument trpz of classify_echo_fuzzy must be a dictionary " \
-                                               "with keywords %r." % (keys,)
+    assert np.all(np.in1d(keys, dat.keys())), \
+        "Argument dat of classify_echo_fuzzy must be a dictionary " \
+        "with keywords %r." % (keys,)
+    assert np.all(np.in1d(keys, weights.keys())), \
+        "Argument weights of classify_echo_fuzzy must be a dictionary " \
+        "with keywords %r." % (keys,)
+    assert np.all(np.in1d(keys, trpz.keys())), \
+        "Argument trpz of classify_echo_fuzzy must be a dictionary " \
+        "with keywords %r." % (keys,)
     shape = None
     for key in keys:
         if not dat[key] is None:
             if shape is None:
                 shape = dat[key].shape
             else:
-                assert dat[key].shape[-2:] == shape[-2:], "Arrays of the decision variables have inconsistent " \
-                                                          "shapes: %r vs. %r" % (dat[key].shape, shape)
+                assert dat[key].shape[-2:] == shape[-2:], \
+                    "Arrays of the decision variables have inconsistent " \
+                    "shapes: %r vs. %r" % (dat[key].shape, shape)
         else:
             print("WARNING: Missing decision variable: %s" % key)
 
-    # If all dual-pol moments are NaN, can we assume that and echo is non-meteorological?
-    #    Successively identify those bins where all moments are NaN
+    # If all dual-pol moments are NaN, can we assume that and echo is
+    # non-meteorological?
+    # Successively identify those bins where all moments are NaN
     nan_mask = np.isnan(dat["rho"])
     nan_mask &= np.isnan(dat["zdr"])
     nan_mask &= np.isnan(dat["phi"])
@@ -357,18 +380,23 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
             dat[key] = dummy
 
     # membership in meteorological class for each variable
-    q_dop = 1. - util.trapezoid(dat["dop"],
-                                trpz["dop"][0], trpz["dop"][1], trpz["dop"][2], trpz["dop"][3])
+    q_dop = 1. - util.trapezoid(dat["dop"], trpz["dop"][0], trpz["dop"][1],
+                                trpz["dop"][2], trpz["dop"][3])
     q_zdr = 1. - util.trapezoid(dp.texture(dat["zdr"]),
-                                trpz["zdr"][0], trpz["zdr"][1], trpz["zdr"][2], trpz["zdr"][3])
+                                trpz["zdr"][0], trpz["zdr"][1],
+                                trpz["zdr"][2], trpz["zdr"][3])
     q_phi = 1. - util.trapezoid(dp.texture(dat["phi"]),
-                                trpz["phi"][0], trpz["phi"][1], trpz["phi"][2], trpz["phi"][3])
+                                trpz["phi"][0], trpz["phi"][1],
+                                trpz["phi"][2], trpz["phi"][3])
     q_rho = 1. - util.trapezoid(dp.texture(dat["rho"]),
-                                trpz["rho"][0], trpz["rho"][1], trpz["rho"][2], trpz["rho"][3])
+                                trpz["rho"][0], trpz["rho"][1],
+                                trpz["rho"][2], trpz["rho"][3])
     q_map = 1. - util.trapezoid(dat["map"],
-                                trpz["map"][0], trpz["map"][1], trpz["map"][2], trpz["map"][3])
+                                trpz["map"][0], trpz["map"][1],
+                                trpz["map"][2], trpz["map"][3])
     q_rho2 = 1. - util.trapezoid(dat["rho"],
-                                 trpz["rho2"][0], trpz["rho2"][1], trpz["rho2"][2], trpz["rho2"][3])
+                                 trpz["rho2"][0], trpz["rho2"][1],
+                                 trpz["rho2"][2], trpz["rho2"][3])
 
     # create weight arrays which are zero where the data is NaN
     # This way, each pixel "adapts" to the local data availability
@@ -388,8 +416,9 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     q_rho2 = np.nan_to_num(q_rho2)
 
     # Membership in meteorological class after combining all variables
-    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) + (q_rho * w_rho) + (q_phi * w_phi) + (q_rho2 * w_rho2)) \
-        / (w_map + w_dop + w_zdr + w_rho + w_phi + w_rho2)
+    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) +
+         (q_rho * w_rho) + (q_phi * w_phi) + (q_rho2 * w_rho2)) / \
+        (w_map + w_dop + w_zdr + w_rho + w_phi + w_rho2)
 
     # flag low quality
     return np.where(Q < thresh, True, False), nan_mask
@@ -397,14 +426,16 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
 def _weight_array(data, weight):
     """
-    Generates weight array where valid values have the weight value and NaNs have 0 weight value.
+    Generates weight array where valid values have the weight value
+    and NaNs have 0 weight value.
     """
     w_array = weight * np.ones(np.shape(data))
     w_array[np.isnan(data)] = 0.
     return w_array
 
 
-def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False, smoothing=None, grid="polar", scale=None):
+def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
+                     smoothing=None, grid="polar", scale=None):
     r"""Identification of non-meteorological echoes based on cloud type.
 
     Parameters
@@ -418,12 +449,14 @@ def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False, sm
     snow : boolean
         Swith to use PGE02 class "land/sea snow" for clutter identification
     low : boolean
-        Swith to use PGE02 class "low/very low stratus/cumulus" for clutter identification
+        Swith to use PGE02 class "low/very low stratus/cumulus" for
+        clutter identification
     cirrus : boolean
-        Swith to use PGE02 class "very thin cirrus" and "fractional clouds" for clutter identification
+        Swith to use PGE02 class "very thin cirrus" and "fractional clouds"
+        for clutter identification
     smoothing : float
-        Size [m] of the smoothing window used to take into account various localisation errors
-        (e.g. advection, parallax)
+        Size [m] of the smoothing window used to take into account various
+        localisation errors (e.g. advection, parallax)
     grid : string
         "polar" or "cartesian"
     scale : float or tuple of 2 floats
@@ -454,9 +487,9 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
     r"""2d filter looking for large reflectivity
     gradients.
 
-    This function counts for each bin in `img` the percentage of surrounding bins
-    in a window of half size `fsize` which are not `tr1` smaller than the central bin.
-    The window is defined using geometrical distance.
+    This function counts for each bin in `img` the percentage of surrounding
+    bins in a window of half size `fsize` which are not `tr1` smaller than
+    the central bin. The window is defined using geometrical distance.
 
     Parameters
     ----------
@@ -502,7 +535,8 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
             similar[:, 0: imax] += (img[:, 0: imax] - refr1[:, 0: imax] < tr1)
             if sa > 0:
                 refr2 = util.roll2d_polar(refa2, sr, axis=1)
-                similar[:, 0: imax] += (img[:, 0: imax] - refr2[:, 0: imax] < tr1)
+                similar[:, 0: imax] += (img[:, 0: imax] -
+                                        refr2[:, 0: imax] < tr1)
         count[:, 0:imax] = 2 * sa + 1
         sa += 1
     similar[~valid] = np.nan
@@ -512,7 +546,8 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
         count[:, i] = count[:, i] * (nr + 1 + i)
         count[:, -i - 1] = count[:, -i - 1] * (nr + 1 + i)
     if hole:
-        good = util.filter_window_polar(valid.astype(float), fsize, "uniform", rscale)
+        good = util.filter_window_polar(valid.astype(float),
+                                        fsize, "uniform", rscale)
         count = count * good
         count[count == 0] = 1
     similar -= 1

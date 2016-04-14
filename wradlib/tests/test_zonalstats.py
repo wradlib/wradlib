@@ -32,8 +32,11 @@ class DataSourceTest(unittest.TestCase):
         self.values2 = np.array([47.11, 15.08])
 
     def test__check_src(self):
-        self.assertEqual(len(zonalstats.DataSource(os.path.dirname(__file__) + '/../../examples/data/agger/agger_merge.shp').data), 13)
-        self.assertRaises(IOError, lambda: zonalstats.DataSource('test_zonalstats.py'))
+        filename = util.get_wradlib_data_file('shapefiles/agger/'
+                                              'agger_merge.shp')
+        self.assertEqual(len(zonalstats.DataSource(filename).data), 13)
+        self.assertRaises(IOError,
+                          lambda: zonalstats.DataSource('test_zonalstats.py'))
 
     def test_data(self):
         self.assertTrue(np.allclose(self.ds.data, self.data))
@@ -44,11 +47,14 @@ class DataSourceTest(unittest.TestCase):
     def test_get_data_by_idx(self):
         self.assertTrue(np.allclose(self.ds.get_data_by_idx([0]), self.box0))
         self.assertTrue(np.allclose(self.ds.get_data_by_idx([1]), self.box1))
-        self.assertTrue(np.allclose(self.ds.get_data_by_idx([0, 1]), self.data))
+        self.assertTrue(
+            np.allclose(self.ds.get_data_by_idx([0, 1]), self.data))
 
     def test_get_data_by_att(self):
-        self.assertTrue(np.allclose(self.ds.get_data_by_att('index', 0), self.box0))
-        self.assertTrue(np.allclose(self.ds.get_data_by_att('index', 1), self.box1))
+        self.assertTrue(
+            np.allclose(self.ds.get_data_by_att('index', 0), self.box0))
+        self.assertTrue(
+            np.allclose(self.ds.get_data_by_att('index', 1), self.box1))
 
     def test_get_data_by_geom(self):
         lyr = self.ds.ds.GetLayer()
@@ -57,18 +63,23 @@ class DataSourceTest(unittest.TestCase):
         lyr.SetAttributeFilter(None)
         for i, feature in enumerate(lyr):
             geom = feature.GetGeometryRef()
-            self.assertTrue(np.allclose(self.ds.get_data_by_geom(geom), self.data[i]))
+            self.assertTrue(
+                np.allclose(self.ds.get_data_by_geom(geom), self.data[i]))
 
     def test_set_attribute(self):
         self.ds.set_attribute('test', self.values1)
-        self.assertTrue(np.allclose(self.ds.get_attributes(['test']), self.values1))
+        self.assertTrue(
+            np.allclose(self.ds.get_attributes(['test']), self.values1))
         self.ds.set_attribute('test', self.values2)
-        self.assertTrue(np.allclose(self.ds.get_attributes(['test']), self.values2))
+        self.assertTrue(
+            np.allclose(self.ds.get_attributes(['test']), self.values2))
 
     def test_get_attributes(self):
         self.ds.set_attribute('test', self.values2)
-        self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 0)), self.values2[0])
-        self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 1)), self.values2[1])
+        self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 0)),
+                         self.values2[0])
+        self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 1)),
+                         self.values2[1])
 
     def test_dump_vector(self):
         self.ds.dump_vector(tempfile.NamedTemporaryFile(mode='w+b').name)
@@ -76,8 +87,12 @@ class DataSourceTest(unittest.TestCase):
     def test_dump_raster(self):
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
-        test = zonalstats.DataSource(os.path.dirname(__file__) + '/../../examples/data/agger/agger_merge.shp', proj)
-        self.assertRaises(AttributeError, test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF', pixel_size=100.))
+        filename = util.get_wradlib_data_file('shapefiles/agger/'
+                                              'agger_merge.shp')
+        test = zonalstats.DataSource(filename, proj)
+        self.assertRaises(AttributeError, test.dump_raster(
+            tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF',
+            pixel_size=100.))
 
 
 @unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
@@ -105,9 +120,11 @@ class ZonalDataTest(unittest.TestCase):
         self.proj_ll.ImportFromEPSG(4326)
 
         # project ll grids to GK2
-        self.radar_gk = georef.reproject(radar_ll, projection_source=self.proj_ll,
+        self.radar_gk = georef.reproject(radar_ll,
+                                         projection_source=self.proj_ll,
                                          projection_target=self.proj_gk)
-        self.radar_gkc = georef.reproject(radar_llc, projection_source=self.proj_ll,
+        self.radar_gkc = georef.reproject(radar_llc,
+                                          projection_source=self.proj_ll,
                                           projection_target=self.proj_gk)
 
         # reshape
@@ -138,9 +155,11 @@ class ZonalDataTest(unittest.TestCase):
         self.radar_gkc = self.radar_gkc[mask, :]
         self.radar_gk = self.radar_gk[mask]
 
-        self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data, srs=self.proj_gk)
+        self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data,
+                                               srs=self.proj_gk)
         # self.zdpoly.dump_vector('test_zdpoly')
-        self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data, srs=self.proj_gk)
+        self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data,
+                                                 srs=self.proj_gk)
         # self.zdpoint.dump_vector('test_zdpoint')
 
         isec_poly0 = np.array([np.array([[2600000., 5630000.],
@@ -186,19 +205,28 @@ class ZonalDataTest(unittest.TestCase):
 
     def test_isecs(self):
         self.assertEqual(self.zdpoly.isecs.__str__(), self.isec_poly.__str__())
-        self.assertEqual(self.zdpoint.isecs.__str__(), self.isec_point.__str__())
+        self.assertEqual(self.zdpoint.isecs.__str__(),
+                         self.isec_point.__str__())
 
     def test_get_isec(self):
-        self.assertEqual(self.zdpoly.get_isec(0).__str__(), self.isec_poly[0].__str__())
-        self.assertEqual(self.zdpoly.get_isec(1).__str__(), self.isec_poly[1].__str__())
-        self.assertEqual(self.zdpoint.get_isec(0).__str__(), self.isec_point[0].__str__())
-        self.assertEqual(self.zdpoint.get_isec(1).__str__(), self.isec_point[1].__str__())
+        self.assertEqual(self.zdpoly.get_isec(0).__str__(),
+                         self.isec_poly[0].__str__())
+        self.assertEqual(self.zdpoly.get_isec(1).__str__(),
+                         self.isec_poly[1].__str__())
+        self.assertEqual(self.zdpoint.get_isec(0).__str__(),
+                         self.isec_point[0].__str__())
+        self.assertEqual(self.zdpoint.get_isec(1).__str__(),
+                         self.isec_point[1].__str__())
 
     def test_get_source_index(self):
-        self.assertTrue(np.allclose(self.zdpoly.get_source_index(0), np.array([2254, 2255, 2256])))
-        self.assertTrue(np.allclose(self.zdpoly.get_source_index(1), np.array([2255, 2256, 2257])))
-        self.assertTrue(np.allclose(self.zdpoint.get_source_index(0), np.array([2255])))
-        self.assertTrue(np.allclose(self.zdpoint.get_source_index(1), np.array([2256])))
+        self.assertTrue(np.allclose(self.zdpoly.get_source_index(0),
+                                    np.array([2254, 2255, 2256])))
+        self.assertTrue(np.allclose(self.zdpoly.get_source_index(1),
+                                    np.array([2255, 2256, 2257])))
+        self.assertTrue(
+            np.allclose(self.zdpoint.get_source_index(0), np.array([2255])))
+        self.assertTrue(
+            np.allclose(self.zdpoint.get_source_index(1), np.array([2256])))
 
 
 class ZonalStatsTest(unittest.TestCase):
@@ -215,11 +243,18 @@ class ZonalStatsUtilTest(unittest.TestCase):
         self.ogrobj = zonalstats.numpy_to_ogr(self.npobj, 'Polygon')
 
     def test_gdal_create_dataset(self):
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, gdal.GDT_Float32)
+        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100,
+                                            gdal.GDT_Float32)
         del ds
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, gdal.GDT_Float32, remove=True)
+        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100,
+                                            gdal.GDT_Float32, remove=True)
         self.assertTrue(isinstance(ds, gdal.Dataset))
-        self.assertRaises(IOError, lambda: zonalstats.gdal_create_dataset('GXF', 'test.gxf', 100, 100, gdal.GDT_Float32))
+        self.assertRaises(IOError,
+                          lambda: zonalstats
+                          .gdal_create_dataset('GXF',
+                                               'test.gxf',
+                                               100, 100,
+                                               gdal.GDT_Float32))
 
     def test_ogr_create_datasource(self):
         ds = zonalstats.ogr_create_datasource('Memory', 'test')
@@ -227,13 +262,15 @@ class ZonalStatsUtilTest(unittest.TestCase):
 
     def test_ogr_create_layer(self):
         ds = zonalstats.ogr_create_datasource('Memory', 'test')
-        self.assertRaises(TypeError, lambda: zonalstats.ogr_create_layer(ds, 'test'))
+        self.assertRaises(TypeError,
+                          lambda: zonalstats.ogr_create_layer(ds, 'test'))
         lyr = zonalstats.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
                                           fields=[('test', ogr.OFTReal)])
         self.assertTrue(isinstance(lyr, ogr.Layer))
 
     def test_ogr_to_numpy(self):
-        self.assertTrue(np.allclose(zonalstats.ogr_to_numpy(self.ogrobj), self.npobj))
+        self.assertTrue(
+            np.allclose(zonalstats.ogr_to_numpy(self.ogrobj), self.npobj))
 
     def test_angle_between(self):
         self.assertAlmostEqual(zonalstats.angle_between(355., 5.), 10.)

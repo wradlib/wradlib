@@ -37,9 +37,10 @@ import matplotlib.pyplot as pl
 from matplotlib import patches
 from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
-from mpl_toolkits.axisartist import SubplotHost, ParasiteAxesAuxTrans, GridHelperCurveLinear
+from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
+                                     GridHelperCurveLinear)
 from mpl_toolkits.axisartist.grid_finder import FixedLocator
-import mpl_toolkits.axisartist.angle_helper as angle_helper
+import mpl_toolkits.axisartist.angle_helper as ah
 from matplotlib.ticker import NullFormatter, FuncFormatter
 import matplotlib.dates as mdates
 from matplotlib.collections import LineCollection, PolyCollection
@@ -144,8 +145,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         The data to be plotted. It is assumed that the first dimension is over
         the azimuth angles, while the second dimension is over the range bins
     r : np.array
-        The ranges. Units may be chosen arbitrarily, unless proj is set. In that
-        case the units must be meters. If None, a default is
+        The ranges. Units may be chosen arbitrarily, unless proj is set. In
+        that case the units must be meters. If None, a default is
         calculated from the dimensions of `data`.
     az : np.array
         The azimuth angles in degrees. If None, a default is
@@ -176,7 +177,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     See also
     --------
     wradlib.georef.reproject - for information on projection strings
-    wradlib.georef.create_osr - routine to generate pre-defined projection strings
+    wradlib.georef.create_osr - routine to generate pre-defined projection
+    strings
 
     Returns
     -------
@@ -233,7 +235,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
             # therefore we need to get from km to m
             xx *= 1000
         # latitude longitudes from the polar data still stored in xx and yy
-        lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site, **kw_polar2lonlatalt_n)
+        lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site,
+                                                 **kw_polar2lonlatalt_n)
         # projected to the final coordinate system
         xx, yy = georef.reproject(lon, lat, projection_target=proj)
 
@@ -273,8 +276,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         the underlying PPI plot. Otherwise the ranges must be given in meters.
     angles : list
         List of angles (in degrees) for which straight lines should be drawn.
-        These lines will be drawn starting from the center and until the largest
-        range.
+        These lines will be drawn starting from the center and until the
+        largest range.
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
         The function will calculate lines and circles according to
@@ -294,13 +297,16 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     Keyword Arguments
     -----------------
     line :  dict
-        dictionary, which will be passed to the crosshair line objects using the standard keyword inheritance
-        mechanism. If not given defaults will be used.
+        dictionary, which will be passed to the crosshair line objects using
+        the standard keyword inheritance mechanism. If not given defaults will
+        be used.
     circle : dict
-        dictionary, which will be passed to the range circle line objects using the standard keyword inheritance
-        mechanism. If not given defaults will be used.
+        dictionary, which will be passed to the range circle line objects using
+        the standard keyword inheritance mechanism. If not given defaults will
+        be used.
 
-    See the file plot_ppi_example.py in the examples folder for examples on how this works.
+    See the file plot_ppi_example.py in the examples folder for examples on how
+    this works.
 
     See also
     --------
@@ -337,8 +343,12 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         # these lines might not be straigt so we approximate them with 10
         # segments. Produce polar coordinates
         rr, az = np.meshgrid(np.linspace(0, ranges[-1], 10), angles)
-        # and reproject using polar2lonlatalt to convert from polar to geographic
-        nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr, az, elev, site)[:2],
+        # and reproject using polar2lonlatalt to convert from polar
+        # to geographic
+        nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr,
+                                                                  az,
+                                                                  elev,
+                                                                  site)[:2],
                                         projection_target=proj)
     else:
         # no projection
@@ -372,7 +382,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
             # in the unprojected case, we may use 'true' circles.
             ax.add_patch(patches.Circle(psite, r, **circkw))
 
-    # there should be not much wrong, setting the axes aspect to equal by default
+    # there should be not much wrong, setting the axes aspect to equal
+    # by default
     ax.set_aspect('equal')
 
     # return the axes object for later use
@@ -388,8 +399,8 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    `**kwargs` may be used to try to influence the matplotlib.pcolormesh routine
-     under the hood.
+    `**kwargs` may be used to try to influence the matplotlib.pcolormesh
+    routine under the hood.
 
     Parameters
     ----------
@@ -509,6 +520,7 @@ def create_cg(st, fig=None, subplot=111):
     """ Helper function to create curvelinear grid
 
     The function makes use of the Matplotlib AXISARTIST namespace
+    :doc:`axisartist`
     http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
 
     Here are some limitations to normal Matplotlib Axes. While using the
@@ -544,16 +556,16 @@ def create_cg(st, fig=None, subplot=111):
         tr = Affine2D().scale(np.pi / 180, 1) + PolarAxes.PolarTransform()
 
         # build up curvelinear grid
-        extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
-                                                         lon_cycle=100,
-                                                         lat_cycle=None,
-                                                         lon_minmax=(0, np.inf),
-                                                         lat_minmax=(0, np.inf),
-                                                         )
+        extreme_finder = ah.ExtremeFinderCycle(20, 20,
+                                               lon_cycle=100,
+                                               lat_cycle=None,
+                                               lon_minmax=(0, np.inf),
+                                               lat_minmax=(0, np.inf),
+                                               )
 
         # locator and formatter for angular annotation
-        grid_locator1 = angle_helper.LocatorDMS(10.)
-        tick_formatter1 = angle_helper.FormatterDMS()
+        grid_locator1 = ah.LocatorDMS(10.)
+        tick_formatter1 = ah.FormatterDMS()
 
         # grid_helper for curvelinear grid
         grid_helper = GridHelperCurveLinear(tr,
@@ -575,17 +587,17 @@ def create_cg(st, fig=None, subplot=111):
               NorthPolarAxes.NorthPolarTransform())
 
         # build up curvelinear grid
-        extreme_finder = angle_helper.ExtremeFinderCycle(20, 20,
-                                                         lon_cycle=360,
-                                                         lat_cycle=None,
-                                                         lon_minmax=(350, 0),
-                                                         lat_minmax=(0, np.inf),
-                                                         )
+        extreme_finder = ah.ExtremeFinderCycle(20, 20,
+                                               lon_cycle=360,
+                                               lat_cycle=None,
+                                               lon_minmax=(350, 0),
+                                               lat_minmax=(0, np.inf),
+                                               )
 
         # locator and formatter for angle annotation
         grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
-        grid_locator1 = angle_helper.LocatorDMS(35)
-        tick_formatter1 = angle_helper.FormatterDMS()
+        grid_locator1 = ah.LocatorDMS(35)
+        tick_formatter1 = ah.FormatterDMS()
 
         # grid_helper for curvelinear grid
         grid_helper = GridHelperCurveLinear(tr,
@@ -967,7 +979,8 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     return cgax, caax, paax, pm
 
 
-def plot_scan_strategy(ranges, elevs, site, vert_res=500., maxalt=10000., ax=None):
+def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
+                       maxalt=10000., ax=None):
     """Plot the vertical scanning strategy
 
     Parameters
@@ -982,7 +995,8 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500., maxalt=10000., ax=Non
     polc = util.meshgridN(ranges, az, elevs)
 
     # get mean height over radar
-    lon, lat, alt = georef.polar2lonlatalt_n(polc[0].ravel(), polc[1].ravel(), polc[2].ravel(), site)
+    lon, lat, alt = georef.polar2lonlatalt_n(polc[0].ravel(), polc[1].ravel(),
+                                             polc[2].ravel(), site)
     alt = alt.reshape(len(ranges), len(elevs))
     r = polc[0].reshape(len(ranges), len(elevs))
 
@@ -1017,8 +1031,10 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500., maxalt=10000., ax=Non
     pl.show()
 
 
-def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", saveto="", **kwargs):
-    """Plot 2-D plan view of <dataxy> together with vertical sections <dataxz> and <datazy>
+def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
+                       title="", saveto="", **kwargs):
+    """Plot 2-D plan view of <dataxy> together with
+    vertical sections <dataxz> and <datazy>
 
     Parameters
     ----------
@@ -1092,9 +1108,10 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
     ax_y.xaxis.set_major_formatter(zformatter)
 
     if not title == "":
-        # add a title - here, we have to create a new axes object which will be invisible
-        # then the invisible axes will get a title
-        tax = pl.axes((left, bottom + width + height + 0.01, width + height, 0.01), frameon=False, axisbg="none")
+        # add a title - here, we have to create a new axes object which will
+        # be invisible then the invisible axes will get a title
+        tax = pl.axes((left, bottom + width + height + 0.01,
+                       width + height, 0.01), frameon=False, axisbg="none")
         tax.get_xaxis().set_visible(False)
         tax.get_yaxis().set_visible(False)
         pl.title(title)
@@ -1111,15 +1128,19 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="", title="", savet
             pl.close()
 
 
-def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs):
-    """Plot according to <plot_plan_and_vert> with the maximum values along the three axes of <data>
+def plot_max_plan_and_vert(x, y, z, data, unit="", title="",
+                           saveto="", **kwargs):
+    """Plot according to <plot_plan_and_vert> with the maximum values
+    along the three axes of <data>
     """
-    plot_plan_and_vert(x, y, z, np.max(data, axis=-3), np.max(data, axis=-2), np.max(data, axis=-1),
+    plot_plan_and_vert(x, y, z, np.max(data, axis=-3), np.max(data, axis=-2),
+                       np.max(data, axis=-1),
                        unit, title, saveto, **kwargs)
 
 
-def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', colors=None, ylabel="",
-                 title="", fontsize="medium", saveto="", **kwargs):
+def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M',
+                 colors=None, ylabel="", title="", fontsize="medium",
+                 saveto="", **kwargs):
     """Plot time series data (e.g. gage recordings)
 
     Parameters
@@ -1140,7 +1161,8 @@ def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M', col
     # if labels==None:
     #    labels = ["series%d"%i for i in range(1, data.shape[1]+1)]
     # for i, label in enumerate(labels):
-    #    ax.plot_date(mpl.dates.date2num(dtimes),data[:,i],label=label, color=colors[i], **kwargs)
+    #    ax.plot_date(mpl.dates.date2num(dtimes),data[:,i],label=label,
+    #                 color=colors[i], **kwargs)
     ax.plot_date(mpl.dates.date2num(dtimes), data, **kwargs)
     ax.xaxis.set_major_formatter(mdates.DateFormatter(datefmt))
     pl.setp(ax.get_xticklabels(), visible=True)
