@@ -7,8 +7,8 @@
 Utility functions
 ^^^^^^^^^^^^^^^^^
 
-Module util provides a set of useful helpers which are currently not attributable
-to the other modules
+Module util provides a set of useful helpers which are currently not
+attributable to the other modules
 
 .. autosummary::
    :nosignatures:
@@ -55,7 +55,7 @@ def deprecated(replacement=None):
     >>> # so they are not seen here
     >>> from wradlib.util import deprecated
     >>> import sys
-    >>> sys.stderr = sys.stdout
+    >>> sys.stderr = sys.stdout  # noqa
     >>> @deprecated()
     ... def foo(x):
     ...     return x
@@ -99,7 +99,8 @@ def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
     This decorator function generates a DeprecationWarning if a given kwarg
     is changed/deprecated in a future version.
 
-    The warning is only issued, when the kwarg is actually used in the function call.
+    The warning is only issued, when the kwarg is actually used in the
+    function call.
 
     Parameters
     ----------
@@ -125,13 +126,16 @@ def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
             para = kwargs.pop(par, None)
             key = par
             if para:
-                wmsg = "\nPrevious behaviour of parameter '%s' in function '%s.%s' is deprecated " \
-                       "\nand will be changed in version '%s'." % (par, func.__module__, func.__name__, ver)
+                wmsg = "\nPrevious behaviour of parameter '%s' in " \
+                       "function '%s.%s' is deprecated " \
+                       "\nand will be changed in version '%s'." % \
+                       (par, func.__module__, func.__name__, ver)
                 if expar:
                     wmsg += "\nUse parameter %s instead." % expar
                 if exfunc:
-                    wmsg += "\nWrong parameter types will be automatically converted by " \
-                            "using %s.%s." % (exfunc.__module__, exfunc.__name__)
+                    wmsg += "\nWrong parameter types will be " \
+                            "automatically converted by using %s.%s." % \
+                            (exfunc.__module__, exfunc.__name__)
                 if msg:
                     wmsg += "\n%s" % msg
                 if isinstance(para, typ):
@@ -139,7 +143,8 @@ def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
                         para = exfunc(para)
                     if expar:
                         key = expar
-                    warnings.warn(wmsg, category=DeprecationWarning, stacklevel=2)
+                    warnings.warn(wmsg, category=DeprecationWarning,
+                                  stacklevel=2)
                 kwargs.update({key: para})
             return func(*args, **kwargs)
 
@@ -161,22 +166,22 @@ class OptionalModuleStub(object):
         self.name = name
 
     def __getattr__(self, name):
-        link = 'https://wradlib.github.io/wradlib-docs/latest/gettingstarted.html#optional-dependencies'
-        raise AttributeError('Module "' + self.name +
-                             '" is not installed.\n\n' +
-                             'You tried to access function/module/attribute "' +
-                             name + '"\nfrom module "' + self.name + '".\nThis ' +
-                             'module is optional right now in wradlib.\n' +
-                             'You need to separately install this dependency.\n' +
-                             'Please refer to ' + link + '\n' +
-                             'for further instructions.')
+        link = 'https://wradlib.github.io/wradlib-docs/latest/' \
+               'gettingstarted.html#optional-dependencies'
+        raise AttributeError('Module "{0}" is not installed.\n\n'
+                             'You tried to access function/module/attribute '
+                             '"{1}"\nfrom module "{0}".\nThis module is '
+                             'optional right now in wradlib.\nYou need to '
+                             'separately install this dependency.\n'
+                             'Please refer to {2}\nfor further instructions.'.
+                             format(self.name, name, link))
 
 
 def import_optional(module):
     """Allowing for lazy loading of optional wradlib modules or dependencies.
 
-    This function removes the need to satisfy all dependencies of wradlib before
-    being able to work with it.
+    This function removes the need to satisfy all dependencies of wradlib
+    before being able to work with it.
 
     Parameters
     ----------
@@ -200,9 +205,9 @@ def import_optional(module):
     >>> m.log10(100)
     2.0
 
-    Trying to import a module that does not exists, does not produce any errors.
-    Only when some function is used, the code triggers an error
-    >>> m = import_optional('nonexistentmodule')
+    Trying to import a module that does not exists, does not produce
+    any errors. Only when some function is used, the code triggers an error
+    >>> m = import_optional('nonexistentmodule')  # noqa
     >>> m.log10(100)  # doctest +ELLIPSIS
     Traceback (most recent call last):
     ...
@@ -223,26 +228,28 @@ def import_optional(module):
     return mod
 
 
-def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, src, method="sum", minpercvalid=100.):
+def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
+                                  src, method="sum", minpercvalid=100.):
     """Aggregates an equidistant time series to equidistant target time windows.
 
-    This function aggregates time series data under the assumption that the source
-    and the target time series are equidistant, and that the source time steps
-    regularly fit into the target time steps (no shifts at the boundaries).
-    This is the most trivial aggregation scenario.
+    This function aggregates time series data under the assumption that the
+    source and the target time series are equidistant, and that the source time
+    steps regularly fit into the target time steps (no shifts at the
+    boundaries). This is the most trivial aggregation scenario.
 
-    However, the function allows for gaps in the source data. This means, we assume the
-    data to be equidistant (each item represents a time step with the same length),
-    but it does not need to be contiguous. NaN values in the source data are allowed,
-    too.
+    However, the function allows for gaps in the source data. This means, we
+    assume the data to be equidistant (each item represents a time step with
+    the same length), but it does not need to be contiguous. NaN values in the
+    source data are allowed, too.
 
-    The output, though, will be a contiguous time series. This series will have NaN
-    values for those target time steps which were not sufficiently supported by source
-    data. The decision whether the support was "sufficient" is based on the argument
-    *minpercvalid*. This argument specifies the minimum percentage of valid source
-    time steps inside one target time step (valid meaning not NaN and not missing) which
-    is required to compute an aggregate. The default value of minpercvalid is 100 percent.
-    This means no gaps are allowed, and a target time step will be NaN if only one source
+    The output, though, will be a contiguous time series. This series will have
+    NaN values for those target time steps which were not sufficiently
+    supported by source data. The decision whether the support was "sufficient"
+    is based on the argument *minpercvalid*. This argument specifies the
+    minimum percentage of valid source time steps inside one target time step
+    (valid meaning not NaN and not missing) which is required to compute an
+    aggregate. The default value of minpercvalid is 100 percent. This means no
+    gaps are allowed, and a target time step will be NaN if only one source
     time step is missing.
 
     Aggregation methods at the moment are "sum" and "mean" of the source data.
@@ -264,24 +271,26 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, s
     method : string
         Method of aggregation (either "sum" or "mean")
     minpercvalid : float
-        Minimum percentage of valid source values within target interval that are
-        required to compute an aggregate target value. If set to 100 percent,
-        the target value wil be NaN if only one source value is missing or NaN.
-        If set to 90 percent, target value will be NaN if more than 10 percent of
-        the source values are missing or NaN.
+        Minimum percentage of valid source values within target interval that
+        are required to compute an aggregate target value. If set to 100
+        percent, the target value wil be NaN if only one source value is
+        missing or NaN. If set to 90 percent, target value will be NaN if more
+        than 10 percent of the source values are missing or NaN.
 
     Returns
     -------
     tstarts : array of datetime objects
-        array of timestamps which defines the start of each target time step/window
+        array of timestamps which defines the start of each target time
+        step/window
     tends : array of datetime objects
-        array of timestamps which defines the end of each target time step/window
+        array of timestamps which defines the end of each target time
+        step/window
     agg : array of aggregated values
         aggregated values for each target time step
 
     Examples
     --------
-    >>> tstart = "2000-01-01 00:00:00"
+    >>> tstart = "2000-01-01 00:00:00"  # noqa
     >>> tend = "2000-01-02 00:00:00"
     >>> tdelta = 3600 * 6
     >>> tends_src = ["2000-01-01 02:00:00", "2000-01-01 03:00:00", "2000-01-01 04:00:00", \
@@ -304,14 +313,18 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, s
     tends = twins[1:]
 
     # Check consistency of timestamps and data
-    assert len(tends_src) == len(src), "Length of source timestamps tends_src must equal length of source data src."
+    assert len(tends_src) == len(src), \
+        "Length of source timestamps tends_src must " \
+        "equal length of source data src."
 
     # Check that source time steps are sorted correctly
-    assert np.all(np.sort(tends_src) == tends_src), "The source time steps are not in chronological order."
+    assert np.all(np.sort(tends_src) == tends_src), \
+        "The source time steps are not in chronological order."
 
     # number of expected source time steps per target timestep
-    assert tdelta % tdelta_src == 0, "Target resolution %d is not a multiple of " \
-                                     "source resolution %d." % (tdelta, tdelta_src)
+    assert tdelta % tdelta_src == 0, \
+        "Target resolution %d is not a multiple of " \
+        "source resolution %d." % (tdelta, tdelta_src)
     nexpected = tdelta / tdelta_src
 
     # results container
@@ -323,14 +336,17 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, s
         end = tends[i]
         # select source data that is between start and end of this interval
         ixinside = np.where((tends_src > begin) & (tends_src <= end))[0]
-        # Time steps and array shape in that interval sized as if it had no gaps
+        # Time steps and array shape in that interval sized as if
+        # it had no gaps
         tends_src_expected = np.array(from_to(begin, end, tdelta_src)[1:])
         srcfull = np.repeat(np.nan, len(tends_src_expected))
-        # These are the indices of srcfull which actually have data according to src
+        # These are the indices of srcfull which actually have
+        # data according to src
         validix = np.where(np.in1d(tends_src_expected, tends_src[ixinside]))[0]
         if not len(validix) == len(ixinside):
             # If we find time stamps in tends_src[ixinside] that are not
-            #   contained in the expected cintiguous time steps (tends_src_expected),
+            #   contained in the expected cintiguous time steps
+            #   (tends_src_expected),
             #   we assume that the data is corrupt (can have multiple reasons,
             #   e.g. wrong increment)
             inconsistencies += 1
@@ -339,8 +355,8 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, s
         # valid source values found in target time window
         nvalid = len(np.where(~np.isnan(srcfull))[0])
         if nvalid > nexpected:
-            # If we have more source time steps in target interval than expected
-            # something must be wrong.
+            # If we have more source time steps in target interval than
+            # expected aomething must be wrong.
             inconsistencies += 1
             continue
         if float(nvalid) / float(nexpected) >= minpercvalid / 100.:
@@ -352,7 +368,8 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src, s
                 print("Aggregation method not known, yet.")
                 raise Exception()
     if inconsistencies > 0:
-        print("WARNING: Inconsistent source times in %d target time intervals." % inconsistencies)
+        print("WARNING: Inconsistent source times "
+              "in %d target time intervals." % inconsistencies)
 
     return tstarts, tends, agg
 
@@ -374,29 +391,31 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     dt_src : array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
-        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is the
-        upper limit of time step 1 and the lower limit of time step 2 and so on.
+        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
+        the upper limit of time step 1 and the lower limit of time step 2 and
+        so on.
 
     dt_trg : array of datetime objects
-        Must be of length *number of output time steps + 1* analogously to dt_src.
-        This means: dt_trg[0] is the lower limit of output time step 1, dt_trg[1]
-        is the upper limit of output time step 1 and the lower limit of output
-        time step 2 and so on.
+        Must be of length *number of output time steps + 1* analogously to
+        dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
+        dt_trg[1] is the upper limit of output time step 1 and the lower limit
+        of output time step 2 and so on.
 
     func : numpy function name, e.g. 'sum', 'mean'
-        Defines the way the data should be aggregated. The string must correspond
-        to a valid numpy function, e.g. 'sum', 'mean', 'min', 'max'.
+        Defines the way the data should be aggregated. The string must
+        correspond to a valid numpy function, e.g. 'sum', 'mean', 'min', 'max'.
 
     Returns
     -------
 
     output : array of shape (..., len(dt_trg) - 1, ...)
-        The length of the time dimension of the output array depends on the array
-        *dt_trg* which defines the limits of the output time step intervals.
+        The length of the time dimension of the output array depends on the
+        array *dt_trg* which defines the limits of the output time step
+        intervals.
 
     Examples
     --------
-    >>> src = np.arange(8 * 4).reshape((8, 4))
+    >>> src = np.arange(8 * 4).reshape((8, 4))  # noqa
     >>> print('source time series:') # doctest: +SKIP
     >>> print(src)
     [[ 0  1  2  3]
@@ -442,7 +461,9 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
         trg_slice = [slice(0, j) for j in trg.shape]
         trg_slice[taxis] = i
         src_slice = [slice(0, src.shape[j]) for j in range(len(src.shape))]
-        src_slice[taxis] = np.where(np.logical_and(dt_src <= dt_trg[i + 1], dt_src >= dt_trg[i]))[0][:-1]
+        src_slice[taxis] = np.where(
+            np.logical_and(dt_src <= dt_trg[i + 1],
+                           dt_src >= dt_trg[i]))[0][:-1]
         if len(src_slice[taxis]) == 0:
             trg[trg_slice] = np.nan
         else:
@@ -462,24 +483,28 @@ def sum_over_time_windows(src, dt_src, dt_trg, minpercvalid):
     dt_src : array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
-        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is the
-        upper limit of time step 1 and the lower limit of time step 2 and so on.
+        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
+        the upper limit of time step 1 and the lower limit of time step 2 and
+        so on.
 
     dt_trg : array of datetime objects
-        Must be of length *number of output time steps + 1* analogously to dt_src.
-        This means: dt_trg[0] is the lower limit of output time step 1, dt_trg[1]
-        is the upper limit of output time step 1 and the lower limit of output
-        time step 2 and so on.
-    #Todo: add minpercvalid
+        Must be of length *number of output time steps + 1* analogously to
+        dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
+        dt_trg[1] is the upper limit of output time step 1 and the lower limit
+        of output time step 2 and so on.
+    # Todo: add minpercvalid
     """
     assert len(src) + 1 == len(
-        dt_src), "Length of time series array <src> must be one less than datetime array <dt_src>."
+        dt_src), "Length of time series array <src> must be one " \
+                 "less than datetime array <dt_src>."
     try:
-        dt_src = [dt.datetime.strptime(dtime, "%Y-%m-%d %H:%M:%S") for dtime in dt_src]
+        dt_src = [dt.datetime.strptime(dtime, "%Y-%m-%d %H:%M:%S")
+                  for dtime in dt_src]
     except TypeError:
         pass
     try:
-        dt_trg = [dt.datetime.strptime(dtime, "%Y-%m-%d %H:%M:%S") for dtime in dt_trg]
+        dt_trg = [dt.datetime.strptime(dtime, "%Y-%m-%d %H:%M:%S")
+                  for dtime in dt_trg]
     except TypeError:
         pass
 
@@ -491,13 +516,15 @@ def sum_over_time_windows(src, dt_src, dt_trg, minpercvalid):
         ix = np.where((dt_src > tstart) & (dt_src <= tend))[0] - 1
         if len(src[ix]) == 0:
             continue
-        elif len(np.where(np.isnan(src[ix]))[0]) / len(src[ix]) < minpercvalid / 100.:
+        elif (len(np.where(np.isnan(src[ix]))[0]) / len(src[ix])) < \
+                (minpercvalid / 100.):
             accum[i] = np.nansum(src[ix])
     return accum
 
 
 def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
-    """UNDER DEVELOPMENT: Aggregate time series data to a coarser temporal resolution.
+    """UNDER DEVELOPMENT: Aggregate time series data to a coarser temporal
+    resolution.
 
     Parameters
     ----------
@@ -509,21 +536,23 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
     dt_src : array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
-        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is the
-        upper limit of time step 1 and the lower limit of time step 2 and so on.
+        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
+        the upper limit of time step 1 and the lower limit of time step 2 and
+        so on.
 
     dt_trg : array of datetime objects
-        Must be of length *number of output time steps + 1* analogously to dt_src.
-        This means: dt_trg[0] is the lower limit of output time step 1, dt_trg[1]
-        is the upper limit of output time step 1 and the lower limit of output
-        time step 2 and so on.
+        Must be of length *number of output time steps + 1* analogously to
+        dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
+        dt_trg[1] is the upper limit of output time step 1 and the lower limit
+        of output time step 2 and so on.
     #todo: add minbasepoints
 
     Returns
     -------
     output : array of shape (..., len(dt_trg) - 1, ...)
-        The length of the time dimension of the output array depends on the array
-        *dt_trg* which defines the limits of the output time step intervals.
+        The length of the time dimension of the output array depends on the
+        array *dt_trg* which defines the limits of the output time step
+        intervals.
 
     Examples
     --------
@@ -540,7 +569,8 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
         # width of window
         width = float(_tdelta2seconds(dt_trg[i + 1] - dt_trg[i]))
         # These are the intervals completely INSIDE the target time window
-        src_ix = np.where(np.logical_and(dt_src > dt_trg[i], dt_src < dt_trg[i + 1]))[0]
+        src_ix = np.where(np.logical_and(dt_src > dt_trg[i],
+                                         dt_src < dt_trg[i + 1]))[0]
         intervals = dt_src[src_ix[1:]] - dt_src[src_ix[:-1]]
         # check left edge
         intervals = np.insert(intervals, 0, dt_src[src_ix[0]] - dt_trg[i])
@@ -551,7 +581,8 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
         if src_ix[-1] > (len(dt_src) - 1):
             src_ix = np.append(src_ix, src_ix[-1] + 1)
         # convert to seconds
-        intervals = np.array([_tdelta2seconds(interval) for interval in intervals])
+        intervals = np.array([_tdelta2seconds(interval)
+                              for interval in intervals])
         # compute weights
         weights = intervals / width
         # compute weighted mean
@@ -559,15 +590,18 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
     return trg
 
 
-def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval=300, **ipargs):
-    """UNDER DEVELOPMENT: Computes the average of a time series over given time windows.
+def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600,
+                              helper_interval=300, **ipargs):
+    """UNDER DEVELOPMENT: Computes the average of a time series over given
+    time windows.
 
-    This function computes the average values of an irregular time series ``src``
-    within given time windows ``dt_trg``. The datetimes of the original time series
-    are given by ``dt_src``. The idea of this function is to create regular helper
-    timesteps at an interval length given by ``helper_interval``. The values of
-    ``src`` are then interpolated to these helper time steps, and the resulting
-    helper values are finally averaged over the given target time windows.
+    This function computes the average values of an irregular time series
+    ``src`` within given time windows ``dt_trg``. The datetimes of the original
+    time series are given by ``dt_src``. The idea of this function is to create
+    regular helper timesteps at an interval length given by
+    ``helper_interval``. The values of ``src`` are then interpolated to these
+    helper time steps, and the resulting helper values are finally averaged
+    over the given target time windows.
 
 
     Parameters
@@ -579,21 +613,23 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
     dt_src : array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
-        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is the
-        upper limit of time step 1 and the lower limit of time step 2 and so on.
+        This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
+        the upper limit of time step 1 and the lower limit of time step 2 and
+        so on.
 
     dt_trg : array of datetime objects
-        Must be of length *number of output time steps + 1* analogously to dt_src.
-        This means: dt_trg[0] is the lower limit of output time step 1, dt_trg[1]
-        is the upper limit of output time step 1 and the lower limit of output
-        time step 2 and so on.
+        Must be of length *number of output time steps + 1* analogously to
+        dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
+        dt_trg[1] is the upper limit of output time step 1 and the lower limit
+        of output time step 2 and so on.
     # todo: add maxdist, helper_interval, **ipargs
 
     Returns
     -------
     output : array of shape (..., len(dt_trg) - 1, ...)
-        The length of the time dimension of the output array depends on the array
-        *dt_trg* which defines the limits of the output time step intervals.
+        The length of the time dimension of the output array depends on the
+        array *dt_trg* which defines the limits of the output time step
+        intervals.
 
     Examples
     --------
@@ -611,7 +647,8 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
     f = interpolate.interp1d(src_secs, src, axis=0, bounds_error=False)
     helpers = f(helper_secs)
 
-    # Mask those values as invalid which are more than maxdist from the next source point
+    # Mask those values as invalid which are more than maxdist from the next
+    # source point
     tree = cKDTree(src_secs.reshape((-1, 1)))
     dists, ix = tree.query(helper_secs.reshape((-1, 1)), k=1)
     # deal with edges (in case of extrapolation, we apply nearest neighbour)
@@ -628,7 +665,8 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600, helper_interval
         # width of window
         # width = float(_tdelta2seconds(dt_trg[i + 1] - dt_trg[i]))
         # These are the intervals completely INSIDE the target time window
-        helper_ix = np.where(np.logical_and(dt_src >= dt_trg[i], dt_src <= dt_trg[i + 1]))[0]
+        helper_ix = np.where(np.logical_and(dt_src >= dt_trg[i],
+                                            dt_src <= dt_trg[i + 1]))[0]
         trg[i] = np.mean(helpers[helper_ix], axis=0)
 
     return trg
@@ -646,7 +684,8 @@ def _get_func(funcname):
     try:
         func = getattr(np, funcname)
     except AttributeError:
-        raise AttributeError('<' + funcname + '> is not a valid function in numpy...')
+        raise AttributeError('<' + funcname +
+                             '> is not a valid function in numpy...')
     return func
 
 
@@ -736,7 +775,8 @@ def iso2datetime(iso):
     except (ValueError, TypeError):
         return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S")
     except:
-        print("Could not convert argument <%r> to datetime. Probably not an isostring. See following traceback:" % iso)
+        print("Could not convert argument <%r> to datetime. "
+              "Probably not an isostring. See following traceback:" % iso)
         raise
 
 
@@ -794,7 +834,8 @@ def timestamp2index(ts, delta, refts, **kwargs):
         _refts = refts
     if not isinstance(delta, dt.timedelta):
         kwargs = dict([(sp[0], int(sp[1]))
-                       for sp in [item.split('=') for item in delta.split(',')]])
+                       for sp in [item.split('=')
+                                  for item in delta.split(',')]])
         _dt = dt.timedelta(**kwargs)
     else:
         _dt = delta
@@ -802,10 +843,11 @@ def timestamp2index(ts, delta, refts, **kwargs):
 
 
 def _idvalid(data, isinvalid=None, minval=None, maxval=None):
-    """Identifies valid entries in an array and returns the corresponding indices
+    """Identifies valid entries in an array and returns the corresponding
+    indices
 
-    Invalid values are NaN and Inf. Other invalid values can be passed using the
-    isinvalid keyword argument.
+    Invalid values are NaN and Inf. Other invalid values can be passed using
+    the isinvalid keyword argument.
 
     Parameters
     ----------
@@ -854,7 +896,8 @@ def meshgridN(*arrs):
 
 
 def gridaspoints(*arrs):
-    """Creates an N-dimensional grid form arrs and returns grid points sequence of point coordinate pairs
+    """Creates an N-dimensional grid form arrs and returns grid points sequence
+    of point coordinate pairs
     """
     # there is a small gotcha here.
     # with the convention following the 2013-08-30 sprint in Potsdam it was
@@ -891,8 +934,9 @@ def issequence(x):
 
 def trapezoid(data, x1, x2, x3, x4):
     """
-    Applied the trapezoidal function described in Vulpiani et al, 2012 :cite:`Vulpiani` to determine
-    the degree of membership in the non-meteorological target class.
+    Applied the trapezoidal function described in Vulpiani et al,
+    2012 :cite:`Vulpiani` to determine the degree of membership in
+    the non-meteorological target class.
 
     Parameters
     ----------
@@ -910,25 +954,29 @@ def trapezoid(data, x1, x2, x3, x4):
     Returns
     -------
     d : array
-        Array of values describing degree of membership in nonmeteorological target class.
+        Array of values describing degree of membership in
+        nonmeteorological target class.
 
     """
 
     d = np.ones(np.shape(data))
     d[np.logical_or(data <= x1, data >= x4)] = 0
     d[np.logical_and(data >= x2, data <= x3)] = 1
-    d[np.logical_and(data > x1, data < x2)] = (data[np.logical_and(data > x1, data < x2)] - x1) / float((x2 - x1))
-    d[np.logical_and(data > x3, data < x4)] = (x4 - data[np.logical_and(data > x3, data < x4)]) / float((x4 - x3))
+    d[np.logical_and(data > x1, data < x2)] = \
+        (data[np.logical_and(data > x1, data < x2)] - x1) / float((x2 - x1))
+    d[np.logical_and(data > x3, data < x4)] = \
+        (x4 - data[np.logical_and(data > x3, data < x4)]) / float((x4 - x3))
 
     d[np.isnan(data)] = np.nan
 
     return d
 
 
-def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, autoext=True):
+def maximum_intensity_projection(data, r=None, az=None, angle=None,
+                                 elev=None, autoext=True):
     """
-    Computes the maximum intensity projection along an arbitrary cut through the ppi
-    from polar data.
+    Computes the maximum intensity projection along an arbitrary cut
+    through the ppi from polar data.
 
     Parameters
     ----------
@@ -945,8 +993,8 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
         elevation angle of scan, Defaults to 0.
     autoext : True | False
         This routine uses numpy.digitize to bin the data.
-        As this function needs bounds, we create one set of coordinates more than
-        would usually be provided by `r` and `az`.
+        As this function needs bounds, we create one set of coordinates more
+        than would usually be provided by `r` and `az`.
 
     Returns
     -------
@@ -961,8 +1009,8 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
 
     from wradlib.georef import beam_height_n as beam_height_n
 
-    # this may seem odd at first, but d1 and d2 are also used in several plotting
-    # functions and thus it may be easier to compare the functions
+    # this may seem odd at first, but d1 and d2 are also used in several
+    # plotting functions and thus it may be easier to compare the functions
     d1 = r
     d2 = az
 
@@ -1031,8 +1079,10 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
     height_dig1 = height_dig1[0:-1, 0:-1]
 
     # create height and range masks
-    height_mask = [(height_dig1 == i).ravel().nonzero()[0] for i in range(1, len(hc))]
-    range_mask = [(range_dig1 == i).ravel().nonzero()[0] for i in range(1, len(dc))]
+    height_mask = [(height_dig1 == i).ravel().nonzero()[0]
+                   for i in range(1, len(hc))]
+    range_mask = [(range_dig1 == i).ravel().nonzero()[0]
+                  for i in range(1, len(dc))]
 
     # create mip output array, set outval to inf
     mip = np.zeros((d1.shape[0], 2 * d1.shape[0]))
@@ -1046,8 +1096,8 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
         found = False
         for j in range(0, len(height_mask)):
             mask2 = np.intersect1d(mask1, height_mask[j])
-            # this is to catch the ValueError from the max() routine when calculating
-            # on empty array
+            # this is to catch the ValueError from the max() routine when
+            # calculating on empty array
             try:
                 mip[j, i] = data.ravel()[mask2].max()
                 if not found:
@@ -1070,7 +1120,8 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None, elev=None, a
 
 
 def filter_window_polar(img, wsize, fun, rscale, random=False):
-    r"""Apply a filter of an approximated square window of half size `fsize` on a given polar image `img`.
+    r"""Apply a filter of an approximated square window of half size `fsize`
+    on a given polar image `img`.
 
     Parameters
     ----------
@@ -1101,7 +1152,9 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
         na = prob_round(wsize / asize).astype(int)
     else:
         na = np.fix(wsize / asize + 0.5).astype(int)
-    na[na > 20] = 20  # Maximum of adjacent azimuths (higher close to the origin) to increase performance
+    # Maximum of adjacent azimuths (higher close to the origin) to
+    # increase performance
+    na[na > 20] = 20
     sr = np.fix(wsize / rscale + 0.5).astype(int)
     for sa in np.unique(na):
         imax = np.where(na >= sa)[0][-1] + 1
@@ -1120,7 +1173,8 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
 
 
 def prob_round(x, prec=0):
-    """Round the float number `x` to the lower or higher integer randomly following a binomial distribution
+    """Round the float number `x` to the lower or higher integer randomly
+    following a binomial distribution
 
     Parameters
     ----------
@@ -1135,7 +1189,8 @@ def prob_round(x, prec=0):
 
 
 def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
-    r"""Apply a filter of square window size `fsize` on a given cartesian image `img`.
+    r"""Apply a filter of square window size `fsize` on a given
+    cartesian image `img`.
 
     Parameters
     ----------
@@ -1161,7 +1216,8 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
 
 
 def roll2d_polar(img, shift=1, axis=0):
-    r"""Roll a 2D polar array [azimuth,range] by a given `shift` for the given `axis`
+    r"""Roll a 2D polar array [azimuth,range] by a given `shift` for
+    the given `axis`
 
     Parameters
     ----------
@@ -1310,14 +1366,16 @@ def get_wradlib_data_path():
     if wrl_data_path is None:
         raise EnvironmentError("'WRADLIB_DATA' environment variable not set")
     if not os.path.isdir(wrl_data_path):
-        raise EnvironmentError("'WRADLIB_DATA' path '{0}' does not exist".format(wrl_data_path))
+        raise EnvironmentError("'WRADLIB_DATA' path '{0}' "
+                               "does not exist".format(wrl_data_path))
     return wrl_data_path
 
 
 def get_wradlib_data_file(relfile):
     data_file = os.path.join(get_wradlib_data_path(), relfile)
     if not os.path.exists(data_file):
-        raise EnvironmentError("WRADLIB_DATA file '{0}' does not exist".format(data_file))
+        raise EnvironmentError("WRADLIB_DATA file '{0}' "
+                               "does not exist".format(data_file))
     return data_file
 
 

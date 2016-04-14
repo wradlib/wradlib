@@ -8,7 +8,8 @@ import numpy as np
 
 
 def ex_load_rainbow():
-    filename = wrl.util.get_wradlib_data_file('rainbow/2013070308340000dBuZ.azi')
+    filename = wrl.util.get_wradlib_data_file('rainbow/'
+                                              '2013070308340000dBuZ.azi')
 
     # load rainbow file contents to dict
     rbdict = wrl.io.read_Rainbow(filename)

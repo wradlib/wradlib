@@ -15,7 +15,6 @@ import getopt
 import unittest
 import doctest
 import inspect
-import wradlib as wrl
 
 VERBOSE = 2
 
@@ -207,7 +206,8 @@ def main(args):
         else:
             err_exit(usage_message)
 
-    if not(test_all or test_examples or test_docs or test_notebooks or test_units):
+    if not (test_all or test_examples or test_docs or
+            test_notebooks or test_units):
         err_exit('must specify one of: -a -e -d -n -u')
 
     # change to main package path, where testrunner.py lives

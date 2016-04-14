@@ -5,6 +5,8 @@
 import wradlib
 import numpy as np
 import matplotlib.pyplot as plt
+
+
 # plt.interactive(True)
 
 
@@ -13,7 +15,8 @@ def read_data(dtimes):
     """
     data = np.empty((len(dtimes), 360, 128))
     for i, dtime in enumerate(dtimes):
-        f = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-{0}-fbg---bin.gz'.format(dtime))
+        f = wradlib.util.get_wradlib_data_file('dx/raa00-dx_10908-{0}-'
+                                               'fbg---bin.gz'.format(dtime))
         data[i], attrs = wradlib.io.readDX(f)
     return data
 
@@ -50,7 +53,8 @@ def ex_reflectivity_to_rainfall():
     ax, cf = wradlib.vis.plot_ppi(accum, cmap="spectral")
     plt.xlabel("Easting from radar (km)")
     plt.ylabel("Northing from radar (km)")
-    plt.title("Radar Feldberg\n15 min. rainfall depth, 2008-06-02 17:30-17:45 UTC")
+    plt.title(
+        "Radar Feldberg\n15 min. rainfall depth, 2008-06-02 17:30-17:45 UTC")
     cb = plt.colorbar(cf, shrink=0.8)
     cb.set_label("mm")
     plt.xlim(-128, 128)

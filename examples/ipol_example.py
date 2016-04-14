@@ -26,7 +26,8 @@ def ex_ipol():
     t0 = dt.datetime.now()
     test = ip(vals)
     print(dt.datetime.now() - t0)
-    pl.scatter(xtrg[0].ravel(), xtrg[1].ravel(), c=test.ravel(), s=5, edgecolor='none')
+    pl.scatter(xtrg[0].ravel(), xtrg[1].ravel(), c=test.ravel(), s=5,
+               edgecolor='none')
     pl.show()
     pl.close()
 
@@ -42,7 +43,8 @@ def ex_ipol():
     pl.close()
 
     # two-dimensional in space
-    xsrc = np.vstack((np.array([4, 7, 3, 15]), np.array([8, 18, 17, 3]))).transpose()
+    xsrc = np.vstack(
+        (np.array([4, 7, 3, 15]), np.array([8, 18, 17, 3]))).transpose()
     xtrg = np.meshgrid(np.linspace(0, 20, 40), np.linspace(0, 20, 40))
     vals = np.random.uniform(size=len(xsrc))
     ip = Idw(xsrc, xtrg)
@@ -54,8 +56,10 @@ def ex_ipol():
     pl.close()
 
     # -------------------------------------------------------------------------
-    # Using the convenience function ipol.interpolation in order to deal with missing values
-    #    1st test: for 1 dimension in space and two dimensions of the source value array
+    # Using the convenience function ipol.interpolation in order to deal
+    # with missing values
+    #    1st test: for 1 dimension in space and two dimensions of the source
+    # value array
     src = np.arange(10)[:, None]
     trg = np.linspace(0, 20, 40)[:, None]
     vals = np.hstack((np.sin(src), 10. + np.sin(src)))
@@ -68,8 +72,10 @@ def ex_ipol():
     pl.plot(src, vals, 'ro')
     pl.show()
 
-    #    2nd test: for 2 dimensions in space and two dimensions of the source value array
-    src = np.vstack((np.array([4, 7, 3, 15]), np.array([8, 18, 17, 3]))).transpose()
+    #    2nd test: for 2 dimensions in space and two dimensions of the
+    # source value array
+    src = np.vstack(
+        (np.array([4, 7, 3, 15]), np.array([8, 18, 17, 3]))).transpose()
     trg = np.meshgrid(np.linspace(0, 20, 100), np.linspace(0, 20, 100))
     trg = np.vstack((trg[0].ravel(), trg[1].ravel())).transpose()
     vals = np.round(np.random.uniform(size=(len(src), 2)), 1)
@@ -83,8 +89,10 @@ def ex_ipol():
 
     def plotall(ax, trg, src, interp, pts, title):
         ix = np.where(np.isfinite(pts))
-        ax.scatter(trg[:, 0], trg[:, 1], c=interp.ravel(), s=20, edgecolor='none', vmin=vmin, vmax=vmax)
-        ax.scatter(src[ix, 0], src[ix, 1], c=pts.ravel()[ix], s=20, marker='s', vmin=vmin, vmax=vmax)
+        ax.scatter(trg[:, 0], trg[:, 1], c=interp.ravel(), s=20,
+                   edgecolor='none', vmin=vmin, vmax=vmax)
+        ax.scatter(src[ix, 0], src[ix, 1], c=pts.ravel()[ix], s=20, marker='s',
+                   vmin=vmin, vmax=vmax)
         ax.set_title(title)
 
     fig = pl.figure()
@@ -93,9 +101,11 @@ def ex_ipol():
     ax = fig.add_subplot(222)
     plotall(ax, trg, src, result[:, 1], vals[:, 1], '2nd dim: no NaNs')
     ax = fig.add_subplot(223)
-    plotall(ax, trg, src, result_with_nan[:, 0], vals_with_nan[:, 0], '1st dim: one NaN')
+    plotall(ax, trg, src, result_with_nan[:, 0], vals_with_nan[:, 0],
+            '1st dim: one NaN')
     ax = fig.add_subplot(224)
-    plotall(ax, trg, src, result_with_nan[:, 1], vals_with_nan[:, 1], '2nd dim: two NaN')
+    plotall(ax, trg, src, result_with_nan[:, 1], vals_with_nan[:, 1],
+            '2nd dim: two NaN')
     pl.show()
 
 

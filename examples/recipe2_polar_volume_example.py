@@ -5,6 +5,7 @@
 import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
+
 # just making sure that the plots immediately pop up
 pl.interactive(True)  # noqa
 import datetime as dt
@@ -12,11 +13,12 @@ from osgeo import osr
 
 
 def recipe_polar_volume_example():
-    # read the data (sample file in wradlib/examples/data)
+    # read the data (sample file in WRADLIB_DATA)
     filename = wradlib.util.get_wradlib_data_file('hdf5/knmi_polar_volume.h5')
     raw = wradlib.io.read_OPERA_hdf5(filename)
     # this is the radar position tuple (longitude, latitude, altitude)
-    sitecoords = (raw["where"]["lon"][0], raw["where"]["lat"][0], raw["where"]["height"][0])
+    sitecoords = (raw["where"]["lon"][0], raw["where"]["lat"][0],
+                  raw["where"]["height"][0])
     # define your cartesian reference system
     # proj = wradlib.georef.create_osr(32632)
     proj = osr.SpatialReference()
@@ -30,13 +32,17 @@ def recipe_polar_volume_example():
         what = raw["dataset%d/data1/what" % (i + 1)]
         # define arrays of polar coordinate arrays (azimuth and range)
         az = np.arange(0., 360., 360. / where["nrays"])
-        r = np.arange(where["rstart"], where["rstart"] + where["nbins"] * where["rscale"], where["rscale"])
+        r = np.arange(where["rstart"],
+                      where["rstart"] + where["nbins"] * where["rscale"],
+                      where["rscale"])
         # derive 3-D Cartesian coordinate tuples
-        xyz_ = wradlib.vpr.volcoords_from_polar(sitecoords, where["elangle"], az, r, proj)
+        xyz_ = wradlib.vpr.volcoords_from_polar(sitecoords, where["elangle"],
+                                                az, r, proj)
         # get the scan data for this elevation
         #   here, you can do all the processing on the 2-D polar level
         #   e.g. clutter elimination, attenuation correction, ...
-        data_ = what["offset"] + what["gain"] * raw["dataset%d/data1/data" % (i + 1)]
+        data_ = what["offset"] + what["gain"] * raw[
+            "dataset%d/data1/data" % (i + 1)]
         # transfer to containers
         xyz, data = np.vstack((xyz, xyz_)), np.append(data, data_.ravel())
 
@@ -47,11 +53,13 @@ def recipe_polar_volume_example():
     maxalt = 5000.
     horiz_res = 2000.
     vert_res = 250.
-    trgxyz, trgshape = wradlib.vpr.make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res)
+    trgxyz, trgshape = wradlib.vpr.make_3D_grid(sitecoords, proj, maxrange,
+                                                maxalt, horiz_res, vert_res)
 
     # interpolate to Cartesian 3-D volume grid
     tstart = dt.datetime.now()
-    gridder = wradlib.vpr.CAPPI(xyz, trgxyz, trgshape, maxrange, minelev, maxelev)
+    gridder = wradlib.vpr.CAPPI(xyz, trgxyz, trgshape, maxrange, minelev,
+                                maxelev)
     vol = np.ma.masked_invalid(gridder(data).reshape(trgshape))
     print("3-D interpolation took:", dt.datetime.now() - tstart)
 
@@ -59,7 +67,8 @@ def recipe_polar_volume_example():
     trgx = trgxyz[:, 0].reshape(trgshape)[0, 0, :]
     trgy = trgxyz[:, 1].reshape(trgshape)[0, :, 0]
     trgz = trgxyz[:, 2].reshape(trgshape)[:, 0, 0]
-    wradlib.vis.plot_max_plan_and_vert(trgx, trgy, trgz, vol, unit="dBZH", levels=range(-32, 60))
+    wradlib.vis.plot_max_plan_and_vert(trgx, trgy, trgz, vol, unit="dBZH",
+                                       levels=range(-32, 60))
 
 
 if __name__ == '__main__':

@@ -8,11 +8,12 @@ import wradlib.comp as comp
 import wradlib.util as util
 import numpy as np
 import matplotlib.pyplot as pl
+
+
 # pl.interactive(True)
 
 
 def ex_compose_by_height():
-
     # just making sure that the plots immediately pop up
     # pl.interactive(True)
 
@@ -61,47 +62,62 @@ def ex_compose_by_height():
     ymax = np.max(yc) + 5000
 
     gridshape = (100, 100)
-    coords = np.meshgrid(np.linspace(xmin, xmax, gridshape[0]), np.linspace(ymin, ymax, gridshape[1]))
+    coords = np.meshgrid(np.linspace(xmin, xmax, gridshape[0]),
+                         np.linspace(ymin, ymax, gridshape[1]))
     coords = np.vstack((coords[0].ravel(), coords[1].ravel())).transpose()
 
     # -------------------------------------------------------------------------
     # transfer the first radar data to the grid
     # -------------------------------------------------------------------------
-    rad1_gridded = comp.togrid(rad1coords, coords, radius1, center1, rad1, ipol.Nearest)
-    heights1_gridded = comp.togrid(rad1coords, coords, radius1, center1, heights1, ipol.Nearest)
+    rad1_gridded = comp.togrid(rad1coords, coords, radius1, center1, rad1,
+                               ipol.Nearest)
+    heights1_gridded = comp.togrid(rad1coords, coords, radius1, center1,
+                                   heights1, ipol.Nearest)
 
     # -------------------------------------------------------------------------
     # transfer the second radar data to the grid
     # -------------------------------------------------------------------------
-    rad2_gridded = comp.togrid(rad2coords, coords, radius2, center2, rad2, ipol.Nearest)
-    heights2_gridded = comp.togrid(rad2coords, coords, radius2, center2, heights2, ipol.Nearest)
+    rad2_gridded = comp.togrid(rad2coords, coords, radius2, center2, rad2,
+                               ipol.Nearest)
+    heights2_gridded = comp.togrid(rad2coords, coords, radius2, center2,
+                                   heights2, ipol.Nearest)
 
     # -------------------------------------------------------------------------
     # combine radar data according to height (lower bin wins)
     # -------------------------------------------------------------------------
-    # # radinfo = np.hstack((np.empty_like(rad1_gridded)*np.nan, rad1_gridded, rad2_gridded))
-    # # heightinfo = np.hstack((np.ones_like(heights1_gridded)*1e10, heights1_gridded, heights2_gridded))
+    # # radinfo = np.hstack((np.empty_like(rad1_gridded)*np.nan, rad1_gridded,
+    # #                      rad2_gridded))
+    # # heightinfo = np.hstack((np.ones_like(heights1_gridded)*1e10,
+    # #                         heights1_gridded, heights2_gridded))
     # # select = np.nanargmin(heightinfo, axis=1)
     # # composite = radinfo[np.arange(select.shape[0]),select]
     # second approach using the function
-    # # composite = comp.compose_ko([rad1_gridded, rad2_gridded],[1./(heights1_gridded+0.001), 1./(heights2_gridded+0.001)])
+    # # composite = comp.compose_ko([rad1_gridded, rad2_gridded],
+    # #                             [1./(heights1_gridded+0.001),
+    # #                             1./(heights2_gridded+0.001)])
     # third approach using weighted averaging
     composite = comp.compose_weighted([rad1_gridded, rad2_gridded],
-                                      [1. / (heights1_gridded + 0.001), 1. / (heights2_gridded + 0.001)])
+                                      [1. / (heights1_gridded + 0.001),
+                                       1. / (heights2_gridded + 0.001)])
 
     # -------------------------------------------------------------------------
     # visualize the results
     # -------------------------------------------------------------------------
     pl.figure()
-    pl.imshow(rad1_gridded.reshape(gridshape), interpolation='nearest', origin='lower')
+    pl.imshow(rad1_gridded.reshape(gridshape), interpolation='nearest',
+              origin='lower')
     pl.figure()
-    pl.imshow(rad2_gridded.reshape(gridshape), interpolation='nearest', origin='lower')
+    pl.imshow(rad2_gridded.reshape(gridshape), interpolation='nearest',
+              origin='lower')
     pl.figure()
-    pl.imshow(composite.reshape(gridshape), interpolation='nearest', origin='lower')
+    pl.imshow(composite.reshape(gridshape), interpolation='nearest',
+              origin='lower')
     pl.figure()
-    pl.imshow(heights1_gridded.reshape(gridshape), interpolation='nearest', origin='lower')
+    pl.imshow(heights1_gridded.reshape(gridshape), interpolation='nearest',
+              origin='lower')
     pl.figure()
-    pl.imshow(heights2_gridded.reshape(gridshape), interpolation='nearest', origin='lower')
+    pl.imshow(heights2_gridded.reshape(gridshape), interpolation='nearest',
+              origin='lower')
     pl.show()
 
 

@@ -5,6 +5,7 @@
 import wradlib
 import numpy as np
 import matplotlib.pyplot as pl
+
 pl.interactive(True)  # noqa
 
 
@@ -47,20 +48,27 @@ def ex_typical_workflow():
     depth = wradlib.trafo.r2depth(R, 300)
     print(depth.shape)
 
-    # example for rainfall accumulation in case we have a series of sweeps (here: random numbers)
-    sweep_times = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 300)
+    # example for rainfall accumulation in case we have a series of sweeps
+    # (here: random numbers)
+    sweep_times = wradlib.util.from_to("2012-10-26 00:00:00",
+                                       "2012-10-26 02:00:00", 300)
     depths_5min = np.random.uniform(size=(len(sweep_times) - 1, 360, 128))
-    hours = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00", 3600)
-    depths_hourly = wradlib.util.aggregate_in_time(depths_5min, sweep_times, hours, func='sum')
+    hours = wradlib.util.from_to("2012-10-26 00:00:00", "2012-10-26 02:00:00",
+                                 3600)
+    depths_hourly = wradlib.util.aggregate_in_time(depths_5min, sweep_times,
+                                                   hours, func='sum')
     print(depths_hourly.shape)
 
     # Georeferencing
-    radar_location = (8.005, 47.8744, 1517)  # (lon, lat, alt) in decimal degree and meters
+    # (lon, lat, alt) in decimal degree and meters
+    radar_location = (8.005, 47.8744, 1517)
     elevation = 0.5  # in degree
     azimuths = np.arange(0, 360)  # in degrees
     ranges = np.arange(0, 128000., 1000.)  # in meters
     polargrid = np.meshgrid(ranges, azimuths)
-    lon, lat, alt = wradlib.georef.polar2lonlatalt_n(polargrid[0], polargrid[1], elevation, radar_location)
+    lon, lat, alt = wradlib.georef.polar2lonlatalt_n(polargrid[0],
+                                                     polargrid[1], elevation,
+                                                     radar_location)
 
     # projection to Gauss Krueger zone 3
     proj_gk3 = wradlib.georef.epsg_to_osr(31467)
@@ -72,7 +80,9 @@ def ex_typical_workflow():
     ygrid = np.linspace(y.min(), y.mean(), 100)
     grid_xy = np.meshgrid(xgrid, ygrid)
     grid_xy = np.vstack((grid_xy[0].ravel(), grid_xy[1].ravel())).transpose()
-    gridded = wradlib.comp.togrid(xy, grid_xy, 128000., np.array([x.mean(), y.mean()]), data.ravel(), wradlib.ipol.Idw)
+    gridded = wradlib.comp.togrid(xy, grid_xy, 128000.,
+                                  np.array([x.mean(), y.mean()]), data.ravel(),
+                                  wradlib.ipol.Idw)
     gridded = np.ma.masked_invalid(gridded).reshape((len(xgrid), len(ygrid)))
 
     pl.figure(figsize=(10, 8))
@@ -84,30 +94,39 @@ def ex_typical_workflow():
 
     # Adjustment example
     radar_coords = np.arange(0, 101)
-    truth = np.abs(1.5 + np.sin(0.075 * radar_coords)) + np.random.uniform(-0.1, 0.1, len(radar_coords))
+    truth = np.abs(1.5 + np.sin(0.075 * radar_coords)) + np.random.uniform(
+        -0.1, 0.1, len(radar_coords))
     # The radar rainfall estimate ``radar`` is then computed by
     # imprinting a multiplicative ``error`` on ``truth`` and adding some noise.
     error = 0.75 + 0.015 * radar_coords
     radar = error * truth + np.random.uniform(-0.1, 0.1, len(radar_coords))
-    # Synthetic gage observations ``obs`` are then created by selecting arbitrary "true" values.
+    # Synthetic gage observations ``obs`` are then created by selecting
+    # arbitrary "true" values.
     obs_coords = np.array([5, 10, 15, 20, 30, 45, 65, 70, 77, 90])
     obs = truth[obs_coords]
-    # Now we adjust the ``radar`` rainfall estimate by using the gage observations.
+    # Now we adjust the ``radar`` rainfall estimate by using the
+    # gage observations.
     # First, you create an "adjustment object" from the approach you
-    # want to use for adjustment. After that, you can call the object with the actual data that is to be adjusted.
-    # Here, we use a multiplicative error model with spatially heterogenous error
-    # (see :doc:`wradlib.adjust.AdjustMultiply`).
-    adjuster = wradlib.adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=3)
+    # want to use for adjustment. After that, you can call the object with
+    # the actual data that is to be adjusted.
+    # Here, we use a multiplicative error model with spatially heterogenous
+    # error (see :doc:`wradlib.adjust.AdjustMultiply`).
+    adjuster = wradlib.adjust.AdjustMultiply(obs_coords, radar_coords,
+                                             nnear_raws=3)
     adjusted = adjuster(obs, radar)
-    # Let's compare the ``truth``, the ``radar`` rainfall estimate and the ``adjusted`` product:
+    # Let's compare the ``truth``, the ``radar`` rainfall estimate and
+    # the ``adjusted`` product:
     pl.figure()
     pl.subplot(111)
     pl.plot(radar_coords, truth, 'k-', label="True rainfall", linewidth=2.)
     pl.xlabel("Distance (km)")
     pl.ylabel("Rainfall intensity (mm/h)")
-    pl.plot(radar_coords, radar, 'k-', label="Raw radar rainfall", linewidth=2., linestyle="dashed")
-    pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0, markerfacecolor="grey")
-    pl.plot(radar_coords, adjusted, '-', color="green", label="Multiplicative adjustment", linewidth=2.)
+    pl.plot(radar_coords, radar, 'k-', label="Raw radar rainfall",
+            linewidth=2., linestyle="dashed")
+    pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0,
+            markerfacecolor="grey")
+    pl.plot(radar_coords, adjusted, '-', color="green",
+            label="Multiplicative adjustment", linewidth=2.)
     pl.legend(prop={'size': 12})
 
     # Verification

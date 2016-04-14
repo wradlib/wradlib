@@ -92,10 +92,11 @@ First we will look into plotting a **PPI**. We start with importing the necessar
     import numpy as np
     import wradlib
 
-Next, we will load a polar scan from the examples/data folder and prepare it::
+Next, we will load a polar scan from the WRADLIB_DATA folder and prepare it::
 
     # load a polar scan and create range and azimuth arrays accordingly
-    data = np.loadtxt('data/polar_dBZ_tur.gz')
+    filename = wradlib.util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+    data = np.loadtxt(filename)
     r = np.arange(0, data.shape[1])
     az = np.arange(0, data.shape[0])
     # mask data array for better presentation

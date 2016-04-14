@@ -19,7 +19,8 @@ def ex_histo_cut():
     # get boolean array for clutter and shading
     mask = clutter.histo_cut(yearsum)
 
-    # substitute cluttered/shaded pixels in the annual rainfall image by NaNs based on the boolean mask
+    # substitute cluttered/shaded pixels in the annual rainfall image by NaNs
+    # based on the boolean mask
     yearsum_masked = np.where(mask, np.nan, yearsum)
 
     # Requirements for the plots
@@ -36,7 +37,8 @@ def ex_histo_cut():
     pl.rc('ytick', labelsize=0)
     pl.subplot(1, 2, 1, projection="polar", aspect=1.)
     plotarr = np.fliplr(np.transpose(yearsum[0:360, 0:128]))
-    pl.pcolormesh(theta + np.pi / 2, r, plotarr, cmap=palette, rasterized=True, vmin=0,
+    pl.pcolormesh(theta + np.pi / 2, r, plotarr, cmap=palette,
+                  rasterized=True, vmin=0,
                   vmax=yearsum_masked[np.isfinite(yearsum_masked)].max())
     pl.rc('xtick', labelsize=8)
     pl.rc('ytick', labelsize=8)
@@ -46,7 +48,8 @@ def ex_histo_cut():
     pl.rc('ytick', labelsize=0)
     pl.subplot(1, 2, 2, projection="polar", aspect=1.)
     plotarr = np.fliplr(np.transpose(yearsum_masked[0:360, 0:128]))
-    pl.pcolormesh(theta + np.pi / 2, r, plotarr, cmap=palette, rasterized=True, vmin=0,
+    pl.pcolormesh(theta + np.pi / 2, r, plotarr, cmap=palette,
+                  rasterized=True, vmin=0,
                   vmax=yearsum_masked[np.isfinite(yearsum_masked)].max())
     pl.rc('xtick', labelsize=8)
     pl.rc('ytick', labelsize=8)

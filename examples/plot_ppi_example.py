@@ -48,7 +48,8 @@ def ex_plot_ppi():
     pl.figure()
     # using the proj keyword we tell the function to:
     # - interpret the site coordinates as longitude/latitude
-    # - reproject the coordinates to the given dwd-radolan composite coordinate system
+    # - reproject the coordinates to the given dwd-radolan composite
+    # coordinate system
     proj_rad = wradlib.georef.create_osr("dwd-radolan")
     wradlib.vis.plot_ppi(img, site=(10., 45.), proj=proj_rad)
     # now the crosshair must also observe the projection
@@ -85,8 +86,8 @@ def ex_plot_ppi():
     pl.title('Projection Side Effects')
 
     # now you might wonder, how to annotate these plots.
-    # The functions don't provide anything for this, as it can be much more flexibly
-    # done outside, using standard matplotlib tools
+    # The functions don't provide anything for this, as it can be much more
+    # flexibly done outside, using standard matplotlib tools
     # returning to the simple call
     pl.figure()
     ppi, pm = wradlib.vis.plot_ppi(img)

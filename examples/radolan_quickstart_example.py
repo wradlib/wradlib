@@ -4,12 +4,15 @@
 import wradlib as wrl
 import numpy as np
 import matplotlib.pyplot as pl
+
+
 # pl.interactive(True)
 
 
 def ex_radolan_quickstart():
     # load radolan files
-    rw_filename = wrl.util.get_wradlib_data_file('radolan/showcase/raa01-rw_10000-1408102050-dwd---bin.gz')
+    filename = 'radolan/showcase/raa01-w2_10000-1408110550-dwd---bin.gz'
+    rw_filename = wrl.util.get_wradlib_data_file(filename)
     print(rw_filename)
     rwdata, rwattrs = wrl.io.read_RADOLAN_composite(rw_filename)
 
@@ -17,8 +20,8 @@ def ex_radolan_quickstart():
     print("RW Attributes:", rwattrs)
 
     # do some masking
-    sec = rwattrs['secondary']
-    rwdata.flat[sec] = -9999
+    # sec = rwattrs['secondary']
+    # rwdata.flat[sec] = -9999
     rwdata = np.ma.masked_equal(rwdata, -9999)
 
     # Get coordinates
@@ -31,7 +34,8 @@ def ex_radolan_quickstart():
     # add colorbar and title
     cb = pl.colorbar(shrink=0.75)
     cb.set_label("mm/h")
-    pl.title('RADOLAN RW Product Polar Stereo \n' + rwattrs['datetime'].isoformat())
+    pl.title(
+        'RADOLAN RW Product Polar Stereo \n' + rwattrs['datetime'].isoformat())
     pl.grid(color='r')
 
     pl.show()

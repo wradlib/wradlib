@@ -1,26 +1,14 @@
 # Copyright (c) 2016, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import os
-import warnings
-
 import numpy as np
 import matplotlib.pyplot as plt
+
 plt.ion()  # noqa
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import wradlib as wrl
-
-
-def _check_file(filename):
-    # todo: move this to another place
-    geo_src = 'https://bitbucket.org/kaimuehlbauer/wradlib_miub/downloads/geo.tar.gz'
-    if not os.path.exists(filename):
-        warnings.warn(
-            "File does not exist: {0}\nGet data from {1} and extract archive to wradlib/example/data folder".format(
-                filename, geo_src))
-        exit(0)
 
 
 # example function for calculation and visualisation of beam blockage
@@ -29,10 +17,6 @@ def nex_beamblock(rasterfile, **kwargs):
     """
     Function to calculate and visualize beamblock fraction
     """
-
-    # check if raster file is available, graceful exit
-    # _check_file(rasterfile)
-
     # setup radar specs (Bonn Radar)
     sitecoords = (7.071663, 50.73052, 99.5)
     nrays = 360
@@ -47,8 +31,9 @@ def nex_beamblock(rasterfile, **kwargs):
 
     # calculate radar bin centroids and lat, lon, alt of radar bins
     coord = wrl.georef.sweep_centroids(nrays, range_res, nbins, el)
-    lon, lat, alt = np.array(wrl.georef.polar2lonlatalt_n(coord[..., 0], np.degrees(coord[..., 1]),
-                                                          coord[..., 2], sitecoords))
+    lon, lat, alt = np.array(
+        wrl.georef.polar2lonlatalt_n(coord[..., 0], np.degrees(coord[..., 1]),
+                                     coord[..., 2], sitecoords))
     polcoords = np.dstack((lon, lat))
     print("lon,lat,alt:", lon.shape, lat.shape, alt.shape)
 
@@ -65,13 +50,17 @@ def nex_beamblock(rasterfile, **kwargs):
 
     # apply radar bounding box to raster data
     # this actually cuts out the interesting box from rasterdata
-    # rastercoords, rastervalues = wrl.util.clip_array_by_value(rastercoords, rastervalues, rlimits)
+    # rastercoords, rastervalues = wrl.util.clip_array_by_value(rastercoords,
+    #                                                           rastervalues,
+    #                                                           rlimits)
     ind = wrl.util.find_bbox_indices(rastercoords, rlimits)
     rastercoords = rastercoords[ind[1]:ind[3], ind[0]:ind[2], ...]
     rastervalues = rastervalues[ind[1]:ind[3], ind[0]:ind[2]]
 
     # map rastervalues to polar grid points
-    polarvalues = wrl.ipol.cart2irregular_spline(rastercoords, rastervalues, polcoords, order=3, prefilter=False)
+    polarvalues = wrl.ipol.cart2irregular_spline(rastercoords, rastervalues,
+                                                 polcoords, order=3,
+                                                 prefilter=False)
 
     # calculate partial beam blockage PBB
     PBB = wrl.qual.beam_block_frac(polarvalues, alt, beamradius)
@@ -96,9 +85,11 @@ def nex_beamblock(rasterfile, **kwargs):
     angle = 225
 
     # plot terrain
-    dem = ax1.pcolormesh(lon, lat, polarvalues / 1000., cmap=mpl.cm.terrain, vmin=-0.3, vmax=0.8)
+    dem = ax1.pcolormesh(lon, lat, polarvalues / 1000., cmap=mpl.cm.terrain,
+                         vmin=-0.3, vmax=0.8)
     ax1.plot(sitecoords[0], sitecoords[1], 'rD')
-    ax1.set_title('Terrain within {0} km range of Radar'.format(np.max(r / 1000.) + 0.1))
+    ax1.set_title(
+        'Terrain within {0} km range of Radar'.format(np.max(r / 1000.) + 0.1))
     # colorbar
     div1 = make_axes_locatable(ax1)
     cax1 = div1.append_axes("right", size="5%", pad=0.1)
@@ -149,13 +140,15 @@ def nex_beamblock(rasterfile, **kwargs):
 def ex_gtopo():
     filename = wrl.util.get_wradlib_data_file('geo/bonn_gtopo.tif')
     print("DataSource: GTOPO30")
-    nex_beamblock(filename)  # , spacing=0.083333333333, resample=gdal.GRA_Bilinear)
+    # , spacing=0.083333333333, resample=gdal.GRA_Bilinear)
+    nex_beamblock(filename)
 
 
 def ex_srtm():
     filename = wrl.util.get_wradlib_data_file('geo/bonn_new.tif')
     print("DataSource: SRTM")
-    nex_beamblock(filename)  # , spacing=0.083333333333, resample=gdal.GRA_Bilinear)
+    # , spacing=0.083333333333, resample=gdal.GRA_Bilinear)
+    nex_beamblock(filename)
 
 
 # =======================================================

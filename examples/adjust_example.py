@@ -8,11 +8,12 @@ import wradlib.verify as verify
 import wradlib.util as util
 import numpy as np
 import matplotlib.pyplot as pl
+
+
 # pl.interactive(True)
 
 
 def ex_adjust():
-
     ###########################################################################
     # 1d Example ##############################################################
     ###########################################################################
@@ -22,7 +23,8 @@ def ex_adjust():
     radar_coords = np.arange(0, 101)
 
     # true rainfall
-    truth = np.abs(1.5 + np.sin(0.075 * radar_coords)) + np.random.uniform(-0.1, 0.1, len(radar_coords))
+    truth = np.abs(1.5 + np.sin(0.075 * radar_coords)) + np.random.uniform(
+        -0.1, 0.1, len(radar_coords))
 
     # radar error
     erroradd = 0.7 * np.sin(0.2 * radar_coords + 10.)
@@ -42,31 +44,41 @@ def ex_adjust():
     nnear_raws = 3
 
     # adjust the radar observation by additive model
-    add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords, nnear_raws=nnear_raws)
+    add_adjuster = adjust.AdjustAdd(obs_coords, radar_coords,
+                                    nnear_raws=nnear_raws)
     add_adjusted = add_adjuster(obs, radar)
 
     # adjust the radar observation by multiplicative model
-    mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords, nnear_raws=nnear_raws)
+    mult_adjuster = adjust.AdjustMultiply(obs_coords, radar_coords,
+                                          nnear_raws=nnear_raws)
     mult_adjusted = mult_adjuster(obs, radar)
 
     # adjust the radar observation by MFB
-    mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords, nnear_raws=nnear_raws)
+    mfb_adjuster = adjust.AdjustMFB(obs_coords, radar_coords,
+                                    nnear_raws=nnear_raws)
     mfb_adjusted = mfb_adjuster(obs, radar)
 
     # adjust the radar observation by AdjustMixed
-    mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords, nnear_raws=nnear_raws)
+    mixed_adjuster = adjust.AdjustMixed(obs_coords, radar_coords,
+                                        nnear_raws=nnear_raws)
     mixed_adjusted = mixed_adjuster(obs, radar)
 
     # plotting
-    pl.plot(radar_coords, radar, 'k-', label="Unadjusted radar", linewidth=2., linestyle="dashed")
+    pl.plot(radar_coords, radar, 'k-', label="Unadjusted radar", linewidth=2.,
+            linestyle="dashed")
     pl.xlabel("Distance (km)")
     pl.ylabel("Rainfall intensity (mm/h)")
     pl.plot(radar_coords, truth, 'k-', label="True rainfall", linewidth=2.)
-    pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0, markerfacecolor="grey")
-    pl.plot(radar_coords, add_adjusted, '-', color="red", label="Additive adjustment")
-    pl.plot(radar_coords, mult_adjusted, '-', color="green", label="Multiplicative adjustment")
-    pl.plot(radar_coords, mfb_adjusted, '-', color="orange", label="Mean Field Bias adjustment")
-    pl.plot(radar_coords, mixed_adjusted, '-', color="blue", label="Mixed (mult./add.) adjustment")
+    pl.plot(obs_coords, obs, 'o', label="Gage observation", markersize=10.0,
+            markerfacecolor="grey")
+    pl.plot(radar_coords, add_adjusted, '-', color="red",
+            label="Additive adjustment")
+    pl.plot(radar_coords, mult_adjusted, '-', color="green",
+            label="Multiplicative adjustment")
+    pl.plot(radar_coords, mfb_adjusted, '-', color="orange",
+            label="Mean Field Bias adjustment")
+    pl.plot(radar_coords, mixed_adjusted, '-', color="blue",
+            label="Mixed (mult./add.) adjustment")
     pl.legend(prop={'size': 12})
 
     pl.show()
@@ -120,13 +132,16 @@ def ex_adjust():
     # Synthetic true rainfall
     truth = np.abs(10. * np.sin(0.1 * grid_coords).sum(axis=1))
 
-    # Creating radar data by perturbing truth with multiplicative and additive error
+    # Creating radar data by perturbing truth with multiplicative and
+    # additive error
     # YOU CAN EXPERIMENT WITH THE ERROR STRUCTURE
-    radar = 0.6 * truth + 1. * np.random.uniform(low=-1., high=1, size=len(truth))
+    radar = 0.6 * truth + 1. * np.random.uniform(low=-1., high=1,
+                                                 size=len(truth))
     radar[radar < 0.] = 0.
 
     # indices for creating obs from raw (random placement of gauges)
-    obs_ix = np.random.uniform(low=0, high=len(grid_coords), size=num_obs).astype('i4')
+    obs_ix = np.random.uniform(low=0, high=len(grid_coords),
+                               size=num_obs).astype('i4')
 
     # creating obs_coordinates
     obs_coords = grid_coords[obs_ix]
@@ -170,8 +185,10 @@ def ex_adjust():
         """
         xplot = np.append(xgrid, xgrid[-1] + 1.) - 0.5
         yplot = np.append(ygrid, ygrid[-1] + 1.) - 0.5
-        grd = ax.pcolormesh(xplot, yplot, data.reshape(gridshape), vmin=0, vmax=maxval)
-        ax.scatter(obs_coords[:, 0], obs_coords[:, 1], c=obs.ravel(), marker='s', s=50, vmin=0, vmax=maxval)
+        grd = ax.pcolormesh(xplot, yplot, data.reshape(gridshape), vmin=0,
+                            vmax=maxval)
+        ax.scatter(obs_coords[:, 0], obs_coords[:, 1], c=obs.ravel(),
+                   marker='s', s=50, vmin=0, vmax=maxval)
         pl.colorbar(grd, shrink=0.7)
         pl.title(title)
 
@@ -205,17 +222,20 @@ def ex_adjust():
 
     # Adjusted (MFB) vs. radar (for control purposes)
     ax = fig.add_subplot(337, aspect='equal')
-    # scatterplot(obs, mfbadjusted[obs_ix], 'Adjusted (MFB) vs. Gauges\n(no x-validation!)')
-    scatterplot(truth, mfbadjusted, 'Adjusted (MFB) vs. Truth')
+    # scatterplot(obs, mfbadjusted[obs_ix],
+    #             'Adjusted (MFB) vs. Gauges\n(no x-validation!)')
+    # scatterplot(truth, mfbadjusted, 'Adjusted (MFB) vs. Truth')
 
     # Adjusted (Add) vs. radar (for control purposes)
     ax = fig.add_subplot(338, aspect='equal')
-    # scatterplot(obs, addadjusted[obs_ix], 'Adjusted (Add.) vs. Gauges\n(no x-validation!)')
-    scatterplot(truth, addadjusted, 'Adjusted (Add.) vs. Truth')
+    # scatterplot(obs, addadjusted[obs_ix],
+    #             'Adjusted (Add.) vs. Gauges\n(no x-validation!)')
+    # scatterplot(truth, addadjusted, 'Adjusted (Add.) vs. Truth')
 
     # Adjusted (Mult.) vs. radar (for control purposes)
     ax = fig.add_subplot(339, aspect='equal')
-    # scatterplot(obs, multadjusted[obs_ix], 'Adjusted (Mult.) vs. Gauges\n(no x-validation!)')
+    # scatterplot(obs, multadjusted[obs_ix],
+    #             'Adjusted (Mult.) vs. Gauges\n(no x-validation!)')
     scatterplot(truth, multadjusted, 'Adjusted (Mult.) vs. Truth')
 
     pl.tight_layout()

@@ -3,6 +3,8 @@
 
 import wradlib
 import matplotlib.pyplot as plt
+
+
 # plt.interactive(True)
 
 
@@ -27,11 +29,17 @@ def ex_attenuation():
     plt.close()
 
     # Hitschfeld and Bordan
-    pia_hibo = wradlib.atten.correctAttenuationHB(data, coefficients=dict(a=8.e-5, b=0.731, l=1.0), mode="warn",
+    coeff = dict(a=8.e-5, b=0.731, l=1.0)
+    pia_hibo = wradlib.atten.correctAttenuationHB(data,
+                                                  coefficients=coeff,
+                                                  mode="warn",
                                                   thrs=59.)
 
     # Harrison
-    pia_harrison = wradlib.atten.correctAttenuationHB(data, coefficients=dict(a=4.57e-5, b=0.731, l=1.0), mode="warn",
+    coeff = dict(a=4.57e-5, b=0.731, l=1.0)
+    pia_harrison = wradlib.atten.correctAttenuationHB(data,
+                                                      coefficients=coeff,
+                                                      mode="warn",
                                                       thrs=59.)
     pia_harrison[pia_harrison > 4.8] = 4.8
 
@@ -74,7 +82,8 @@ def ex_attenuation():
     plt.plot(data[54], label="54 deg")
     plt.plot(data[55], label="55 deg")
     plt.grid()
-    plt.text(0.99, 0.88, "Reflectivity along beams", horizontalalignment='right', transform=ax.transAxes,
+    plt.text(0.99, 0.88, "Reflectivity along beams",
+             horizontalalignment='right', transform=ax.transAxes,
              fontsize="large")
     plt.ylabel("Reflectivity (dBZ)", fontsize="large")
     plt.legend(loc="upper left")
@@ -87,7 +96,8 @@ def ex_attenuation():
     plt.grid()
     plt.ylim(0, 30)
     plt.ylabel("PIA (dB)", fontsize="large")
-    plt.text(0.01, 0.88, "PIA according to Hitschfeld and Bordan", transform=ax.transAxes, fontsize="large")
+    plt.text(0.01, 0.88, "PIA according to Hitschfeld and Bordan",
+             transform=ax.transAxes, fontsize="large")
     ax.tick_params(axis='x', labelsize=labelsize)
     ax.tick_params(axis='y', labelsize=labelsize)
     plt.xlim(0, 128)
@@ -97,7 +107,8 @@ def ex_attenuation():
     plt.grid()
     plt.ylim(0, 30)
     plt.ylabel("PIA (dB)", fontsize="large")
-    plt.text(0.01, 0.88, "PIA according to Harrison", transform=ax.transAxes, fontsize="large")
+    plt.text(0.01, 0.88, "PIA according to Harrison", transform=ax.transAxes,
+             fontsize="large")
     ax.tick_params(axis='x', labelsize=labelsize)
     ax.tick_params(axis='y', labelsize=labelsize)
     plt.xlim(0, 128)
@@ -107,7 +118,8 @@ def ex_attenuation():
     plt.grid()
     plt.ylim(0, 30)
     plt.ylabel("PIA (dB)", fontsize="large")
-    plt.text(0.01, 0.88, "PIA according to Kraemer", transform=ax.transAxes, fontsize="large")
+    plt.text(0.01, 0.88, "PIA according to Kraemer", transform=ax.transAxes,
+             fontsize="large")
     ax.tick_params(axis='x', labelsize=labelsize)
     ax.tick_params(axis='y', labelsize=labelsize)
     plt.xlim(0, 128)
@@ -118,7 +130,8 @@ def ex_attenuation():
     plt.ylim(0, 30)
     plt.xlabel("range (km)", fontsize="large")
     plt.ylabel("PIA (dB)", fontsize="large")
-    plt.text(0.01, 0.88, "PIA according to modified Kraemer", transform=ax.transAxes, fontsize="large")
+    plt.text(0.01, 0.88, "PIA according to modified Kraemer",
+             transform=ax.transAxes, fontsize="large")
     ax.tick_params(axis='x', labelsize=labelsize)
     ax.tick_params(axis='y', labelsize=labelsize)
     plt.xlim(0, 128)

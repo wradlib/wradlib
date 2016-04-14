@@ -194,7 +194,8 @@ def ex_plot_cg_rhi():
         axHistY.hist(y, orientation='horizontal')
     else:
         axHistY.text(0.5, 0.5, "Does not work with\nmatplotlib 1.2.1",
-                     horizontalalignment="center", rotation=90, fontsize=15, color="red")
+                     horizontalalignment="center", rotation=90, fontsize=15,
+                     color="red")
     t = pl.gcf().suptitle('AxesDivider CG Example')
     pl.tight_layout()
 

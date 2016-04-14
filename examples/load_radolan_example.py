@@ -10,8 +10,10 @@ import matplotlib as mpl
 
 def ex_load_radolan():
 
-    pg_filename = wrl.util.get_wradlib_data_file('radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz')
-    rw_filename = wrl.util.get_wradlib_data_file('radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz')
+    filename = 'radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz'
+    pg_filename = wrl.util.get_wradlib_data_file(filename)
+    filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
+    rw_filename = wrl.util.get_wradlib_data_file(filename)
 
     print(pg_filename)
     # load radolan files

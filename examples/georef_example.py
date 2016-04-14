@@ -18,7 +18,8 @@ def ex_georef():
     #   define the polar coordinates and the site coordinates in lat/lon
     r = np.arange(1, 129) * 1000
     az = np.linspace(0, 360, 361)[0:-1]
-    #   drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ; muc: 48.3372222
+    #   drs:  51.12527778 ; fbg: 47.87444444 ; tur: 48.58611111 ;
+    # muc: 48.3372222
     #   drs:  13.76972222 ; fbg: 8.005 ; tur: 9.783888889 ; muc: 11.61277778
     sitecoords = (9.7839, 48.5861)
 
@@ -31,7 +32,8 @@ def ex_georef():
     # plot the vertices and the centroids in one plot
     fig = pl.figure(figsize=(8, 8))
     ax = fig.add_subplot(111)
-    polycoll = mpl.collections.PolyCollection(polygons, closed=True, facecolors='None')
+    polycoll = mpl.collections.PolyCollection(polygons, closed=True,
+                                              facecolors='None')
     ax.add_collection(polycoll, autolim=True)
     ax.plot(cent_lon, cent_lat, 'r+')
     ax.axis('tight')
@@ -48,7 +50,8 @@ def ex_georef():
     # f = open('centroids.tab', 'w')
     f = 'centroids.tab'
     # f.write('x\ty\n')
-    np.savetxt(f, np.hstack((x.reshape((-1, 1)), y.reshape((-1, 1)))), fmt='%.2f', header='x\ty', delimiter='\t')
+    np.savetxt(f, np.hstack((x.reshape((-1, 1)), y.reshape((-1, 1)))),
+               fmt='%.2f', header='x\ty', delimiter='\t')
     # f.close()
 
     print('Exit.')
