@@ -4,9 +4,5 @@ include requirements.txt
 include testrunner.py
 recursive-include examples *.py
 recursive-exclude examples *.pyc
-recursive-include examples/data *
 recursive-include wradlib/tests *.py
 recursive-exclude wradlib/tests *.pyc
-recursive-exclude examples/data/geo *
-exclude examples/data/geo.tar.gz
-exclude examples/centroids.tab
