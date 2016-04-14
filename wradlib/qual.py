@@ -60,7 +60,8 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     ----
     The shape of `elevations` and `ranges` may differ in which case numpy's
     broadcasting rules will apply and the shape of `output` will be that of
-    the broadcast arrays. See the numpy documentation on how broadcasting works.
+    the broadcast arrays. See the numpy documentation on how broadcasting
+    works.
 
     """
     if degrees:
@@ -68,11 +69,12 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     else:
         elev = elevations
 
-    return ((ranges ** 2 * np.cos(elev) ** 2) / (2 * (4. / 3.) * re)) + ranges * np.sin(elev)
+    return ((ranges ** 2 * np.cos(elev) ** 2) /
+            (2 * (4. / 3.) * re)) + ranges * np.sin(elev)
 
 
 def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
-    """Calculates the height of a radar beam above the antenna according to \
+    """Calculates the height of a radar beam above the antenna according to
     the 4/3 (four-thirds -> ft) effective Earth radius model.
     The formula was taken from Doviak :cite:`Doviak1993`.
 
@@ -99,7 +101,8 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     ----
     The shape of `elevations` and `ranges` may differ in which case numpy's
     broadcasting rules will apply and the shape of `output` will be that of
-    the broadcast arrays. See the numpy documentation on how broadcasting works.
+    the broadcast arrays. See the numpy documentation on how broadcasting
+    works.
 
     """
     if degrees:
@@ -109,18 +112,21 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
 
     reft = (4. / 3.) * re
 
-    return np.sqrt(ranges ** 2 + reft ** 2 + 2 * ranges * reft * np.sin(elev)) - reft
+    return np.sqrt(ranges ** 2 + reft ** 2 +
+                   2 * ranges * reft * np.sin(elev)) - reft
 
 
 def pulse_volume(ranges, h, theta):
-    """Calculates the sampling volume of the radar beam per bin depending on \
+    r"""Calculates the sampling volume of the radar beam per bin depending on
     range and aperture.
 
-    We assume a cone frustum which has the volume V=(pi/3)*h*(R**2 + R*r + r**2).
+    We assume a cone frustum which has the volume
+    :math:`V=(\pi/3)*h*(R^2 + R*r + r^2)`.
     R and r are the radii of the two frustum surface circles. Assuming that the
-    pulse width is small compared to the range, we get R=r=tan(theta*pi/180)*range.
+    pulse width is small compared to the range, we get
+    :math:`R=r= \tan ( \theta * \pi/180 ) * range`.
     Thus, the pulse volume simply becomes a the volume of a cylinder with
-    V=pi * h * range**2 * tan(theta*pi/180)**2
+    :math:`V=\pi * h * range^2 * \tan(\theta*pi/180)^2`
 
     Parameters
     ----------
@@ -188,7 +194,8 @@ def beam_block_frac(Th, Bh, a):
     # radar beam (Bech et al. (2003), Fig.3)
     y = Th - Bh
 
-    Numer = (y * np.sqrt(a ** 2 - y ** 2)) + (a ** 2 * np.arcsin(y / a)) + (np.pi * a ** 2 / 2.)
+    Numer = (y * np.sqrt(a ** 2 - y ** 2)) + \
+            (a ** 2 * np.arcsin(y / a)) + (np.pi * a ** 2 / 2.)
 
     Denom = np.pi * a ** 2
 

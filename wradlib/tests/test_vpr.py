@@ -16,7 +16,8 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         self.az = np.arange(0., 360., 1.)
         self.r = np.arange(0, 100000, 1000)
         self.el = 2.5
-        self.coords = vpr.volcoords_from_polar(self.site, self.el, self.az, self.r, self.proj)
+        self.coords = vpr.volcoords_from_polar(self.site, self.el, self.az,
+                                               self.r, self.proj)
 
     def test_out_of_range(self):
         pass
@@ -25,11 +26,14 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         pass
 
     def test_volcoords_from_polar(self):
-        coords = vpr.volcoords_from_polar(self.site, self.el, self.az, self.r, self.proj)  # noqa
+        coords = vpr.volcoords_from_polar(self.site, self.el, self.az, self.r,  # noqa
+                                          self.proj)
         pass
 
     def test_volcoords_from_polar_irregular(self):
-        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0], self.az, self.r, self.proj)  # noqa
+        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0],  # noqa
+                                                    self.az, self.r,
+                                                    self.proj)
         pass
 
     def test_synthetic_polar_volume(self):
@@ -53,7 +57,8 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         maxalt = 5000.
         horiz_res = 2000.
         vert_res = 250.
-        vpr.make_3D_grid(self.site, self.proj, maxrange, maxalt, horiz_res, vert_res)
+        vpr.make_3D_grid(self.site, self.proj, maxrange, maxalt, horiz_res,
+                         vert_res)
         pass
 
 

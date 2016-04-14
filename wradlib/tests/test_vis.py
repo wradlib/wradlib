@@ -8,6 +8,7 @@ import wradlib.vis as vis
 import wradlib.georef as georef
 import numpy as np
 import matplotlib.pyplot as pl
+
 pl.interactive(True)  # noqa
 import datetime as dt
 
@@ -32,7 +33,8 @@ class PolarPlotTest(unittest.TestCase):
                                line=dict(color='white',
                                          linestyle='solid'))
         pl.figure()
-        ax, pm = vis.plot_ppi(self.img, site=(10., 45.), autoext=False, proj=proj)
+        ax, pm = vis.plot_ppi(self.img, site=(10., 45.), autoext=False,
+                              proj=proj)
         vis.plot_ppi_crosshair(site=(0, 0),
                                ranges=[2, 4, 8],
                                angles=[0, 45, 90, 180, 270],
@@ -50,7 +52,8 @@ class PolarPlotTest(unittest.TestCase):
         pl.figure()
         ax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False)
         pl.figure()
-        ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10), th=np.arange(90))
+        ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
+                              th=np.arange(90))
 
     def test_plot_cg_ppi(self):
         cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, elev=2.0)
@@ -61,8 +64,11 @@ class PolarPlotTest(unittest.TestCase):
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :])
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :], th_res=0.5)
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :], refrac=False)
-        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :], autoext=False)
-        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :], r=np.arange(10), th=np.arange(90), autoext=True)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               autoext=False)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               r=np.arange(10),
+                                               th=np.arange(90), autoext=True)
 
     def test_plot_scan_strategy(self):
         pl.figure()
@@ -83,7 +89,8 @@ class MiscPlotTest(unittest.TestCase):
 
     def test_plot_tseries(self):
         base = dt.datetime.today()
-        date_list = np.array([base - dt.timedelta(hours=x) for x in range(0, 48)])
+        date_list = np.array(
+            [base - dt.timedelta(hours=x) for x in range(0, 48)])
         data = np.arange(0, len(date_list))
         data = np.vstack((data, data[::-1]))
         vis.plot_tseries(date_list, data.T)

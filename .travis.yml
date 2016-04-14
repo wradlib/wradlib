@@ -32,17 +32,13 @@ install:
     - source scripts/install.sh
 
 before_script:
-    - flake8 --ignore=E501 wradlib
-    - flake8 --ignore=E501 examples
-    - flake8 --ignore=E501,E265 doc
+    - flake8 .
     # convert notebooks, render notebooks
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data-wradlib-data
     - scripts/process_notebooks.sh
 
 script:
-    #- export GDAL_DATA=$HOME/miniconda2/envs/wradlib/share/gdal
-    #- export WRADLIB_DATA=$PWD/examples/data
     - xvfb-run coverage run --source wradlib testrunner.py -a
 
 after_success:

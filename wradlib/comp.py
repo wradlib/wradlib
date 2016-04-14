@@ -73,7 +73,7 @@ def extract_circle(center, radius, coords):
 
 def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     """
-    Interpolate data from a radar location to the composite grid or set of \
+    Interpolate data from a radar location to the composite grid or set of
     locations
 
     Parameters
@@ -113,7 +113,8 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     # create container for entire grid
     composegridshape = [len(trg)]
     composegridshape.extend(data.shape[1:])
-    compose_grid = np.repeat(np.nan, len(trg) * np.prod(data.shape[1:])).reshape(composegridshape)
+    compose_grid = np.repeat(np.nan, len(trg) *
+                             np.prod(data.shape[1:])).reshape(composegridshape)
     # push subgrid results into the large grid
     compose_grid[ix] = data_on_subgrid
     return compose_grid

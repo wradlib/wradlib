@@ -46,7 +46,8 @@ def z2r(z, a=200., b=1.6):
 
     Note
     ----
-    The German Weather Service uses a=256 and b=1.42 instead of the Marshall-Palmer defaults.
+    The German Weather Service uses a=256 and b=1.42 instead of
+    the Marshall-Palmer defaults.
 
     Returns
     -------
@@ -75,7 +76,8 @@ def r2z(r, a=200., b=1.6):
 
     Note
     ----
-    The German Weather Service uses a=256 and b=1.42 instead of the Marshall-Palmer defaults.
+    The German Weather Service uses a=256 and b=1.42 instead of
+    the Marshall-Palmer defaults.
 
     Returns
     -------
@@ -166,7 +168,8 @@ def _z2rEnhanced(z):
                 diffxcut = diffx[ymin:ymax + 1, xmin:xmax]
                 diffycut = diffy[ymin:ymax, xmin:xmax + 1]
                 # calculate the mean for the current pixel
-                mn = (np.sum(diffxcut) + np.sum(diffycut)) / (diffxcut.size + diffycut.size)
+                mn = (np.sum(diffxcut) + np.sum(diffycut)) / \
+                     (diffxcut.size + diffycut.size)
                 # apply the three different Z/R relations
                 if mn < 3.5:
                     r[i, j] = z2r(z[i, j], a=125., b=1.4)
@@ -233,7 +236,8 @@ def _z2rEnhanced_md(z):
         diffxcut = diffx[ridx, ymin:ymax + 1, xmin:xmax]
         diffycut = diffy[ridx, ymin:ymax, xmin:xmax + 1]
         # calculate the mean for the current pixel
-        mn = (np.sum(diffxcut) + np.sum(diffycut)) / (diffxcut.size + diffycut.size)
+        mn = (np.sum(diffxcut) + np.sum(diffycut)) / \
+             (diffxcut.size + diffycut.size)
         # apply the three different Z/R relations
         if mn < 3.5:
             r[ridx, i, j] = z2r(z[ridx, i, j], a=125, b=1.4)
@@ -318,21 +322,29 @@ def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
     db = decibel(z)
     # calculate the shower differences by 1-d correlation with a differencing
     # kernel
-    db_diffx = np.abs(filters.correlate1d(db, [1, -1], axis=-1, mode=xmode, origin=-1))
-    db_diffy = np.abs(filters.correlate1d(db, [1, -1], axis=-2, mode=ymode, origin=-1))
+    db_diffx = np.abs(filters.correlate1d(db, [1, -1], axis=-1,
+                                          mode=xmode, origin=-1))
+    db_diffy = np.abs(filters.correlate1d(db, [1, -1], axis=-2,
+                                          mode=ymode, origin=-1))
 
     diffxmode = 'wrap' if xmode == 'wrap' else 'constant'
     diffymode = 'wrap' if ymode == 'wrap' else 'constant'
-    diffx_sum1 = filters.correlate1d(db_diffx, [1, 1, 1], axis=-2, mode=diffymode)
-    diffxsum = filters.correlate1d(diffx_sum1, [1, 1, 0], axis=-1, mode=diffxmode)
-    diffy_sum1 = filters.correlate1d(db_diffy, [1, 1, 1], axis=-1, mode=diffxmode)
-    diffysum = filters.correlate1d(diffy_sum1, [1, 1, 0], axis=-2, mode=diffymode)
+    diffx_sum1 = filters.correlate1d(db_diffx, [1, 1, 1],
+                                     axis=-2, mode=diffymode)
+    diffxsum = filters.correlate1d(diffx_sum1, [1, 1, 0],
+                                   axis=-1, mode=diffxmode)
+    diffy_sum1 = filters.correlate1d(db_diffy, [1, 1, 1],
+                                     axis=-1, mode=diffxmode)
+    diffysum = filters.correlate1d(diffy_sum1, [1, 1, 0],
+                                   axis=-2, mode=diffymode)
 
     divider = np.ones(db.shape) * 12.
     if xmode != 'wrap':
-        divider[..., [0, -1]] = np.rint((divider[..., [0, -1]] + 1) / 1.618) - 1
+        divider[..., [0, -1]] = np.rint((divider[..., [0, -1]] + 1) /
+                                        1.618) - 1
     if ymode != 'wrap':
-        divider[..., [0, -1], :] = np.rint((divider[..., [0, -1], :] + 1) / 1.618) - 1
+        divider[..., [0, -1], :] = np.rint((divider[..., [0, -1], :] + 1) /
+                                           1.618) - 1
 
     # the shower index is the sum of the x- and y-differences
     si = (diffxsum + diffysum) / divider

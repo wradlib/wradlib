@@ -6,34 +6,39 @@
 Vertical Profile of Reflectivity (VPR)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Precipitation is 3-dimensional in space. The vertical distribution of precipitation
-(and thus reflectivity) is typically non-uniform. As the height of the radar beam
-increases with the distance from the radar location (beam elevation, earth curvature),
-one sweep samples from different heights. The effects of the non-uniform VPR and
-the different sampling heights need to be accounted for if we are interested in
-the precipitation near the ground or in defined heights. This module is intended
-to provide a set of tools to account for these effects.
+Precipitation is 3-dimensional in space. The vertical distribution of
+precipitation (and thus reflectivity) is typically non-uniform. As the height
+of the radar beam increases with the distance from the radar location
+(beam elevation, earth curvature), one sweep samples from different heights.
+The effects of the non-uniform VPR and the different sampling heights need to
+be accounted for if we are interested in the precipitation near the ground or
+in defined heights. This module is intended to provide a set of tools to
+account for these effects.
 
-The first step will normally be to reference the polar volume data in a 3-dimensional
-Cartesian coordinate system. The three dimensional Cartesian coordinates of the
-original polar volume data can be computed using :doc:`volcoords_from_polar <generated/wradlib.vpr.volcoords_from_polar>`.
+The first step will normally be to reference the polar volume data in a
+3-dimensional Cartesian coordinate system. The three dimensional Cartesian
+coordinates of the original polar volume data can be computed using
+:doc:`volcoords_from_polar <generated/wradlib.vpr.volcoords_from_polar>`.
 
 Then, we can create regular 3-D grids in order to analyse the vertical profile
 of reflectivity or rainfall intensity. For some applications you might want
 to create so-called `Constant Altitude Plan Position Indicators (CAPPI)
-<https://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_ in order
-to make radar observations at different distances from the radar more comparable.
-Basically, a CAPPI is simply one slice out of a 3-D volume grid. AnalogousBy the way, we will
-refer to the elements in a three dimensional Cartesian grid as *voxels*. In wradlib,
-you can create :doc:`CAPPIs <generated/wradlib.vpr.CAPPI>` (and :doc:`Pseudo CAPPIs
+<https://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_
+in order to make radar observations at different distances from the radar more
+comparable. Basically, a CAPPI is simply one slice out of a 3-D volume grid.
+Analoguous, we will refer to the elements in a three dimensional Cartesian grid
+as *voxels*. In wradlib, you can create
+:doc:`CAPPIs <generated/wradlib.vpr.CAPPI>` (and :doc:`Pseudo CAPPIs
 <generated/wradlib.vpr.PseudoCAPPI>`) for different altitudes at once.
 
-Here's an example how a set of CAPPIs can be created from synthetic polar volume data::
+Here's an example how a set of CAPPIs can be created from synthetic polar
+volume data::
 
     import wradlib
     import numpy as np
 
-    # define elevation and azimuth angles, ranges, radar site coordinates, projection
+    # define elevation and azimuth angles, ranges, radar site coordinates,
+    # projection
     elevs  = np.array([0.5,1.5,2.4,3.4,4.3,5.3,6.2,7.5,8.7,10,12,14,16.7,19.5])
     azims  = np.arange(0., 360., 1.)
     ranges = np.arange(0., 120000., 1000.)
@@ -41,8 +46,9 @@ Here's an example how a set of CAPPIs can be created from synthetic polar volume
     proj = osr.SpatialReference()
     proj.ImportFromEPSG(32651)
 
-    # create Cartesian coordinates corresponding the location of the polar volume bins
-    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs, azims, ranges, proj)
+    # create Cartesian coordinates corresponding the location of the
+    # polar volume bins
+    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs, azims, ranges, proj)  # noqa
     poldata = wradlib.vpr.synthetic_polar_volume(polxyz)
     # this is the shape of our polar volume
     polshape = (len(elevs),len(azims),len(ranges))
@@ -85,7 +91,8 @@ from . import qual as qual
 
 
 class CartesianVolume():
-    """Create 3-D regular volume grid in Cartesian coordinates from polar data with multiple elevation angles
+    """Create 3-D regular volume grid in Cartesian coordinates from polar data
+    with multiple elevation angles
 
     Parameters
     ----------
@@ -99,19 +106,24 @@ class CartesianVolume():
 
     Returns
     -------
-    output : float ndarray of shape (num levels, num x coordinates, num y coordinates)
+    output : float ndarray of shape (num levels, num x coordinates,
+        num y coordinates)
 
     """
 
-    def __init__(self, polcoords, gridcoords, gridshape=None, maxrange=None, minelev=None, maxelev=None,
+    def __init__(self, polcoords, gridcoords, gridshape=None,
+                 maxrange=None, minelev=None, maxelev=None,
                  Ipclass=ipol.Idw, **ipargs):
         # TODO: rename Ipclas to ipclass
         # radar location in Cartesian coordinates
-        # TODO: pass projected radar location as argument (allows processing of incomplete polar volumes)
-        self.radloc = np.array([np.mean(polcoords[:, 0]), np.mean(polcoords[:, 1]), np.min(polcoords[:, 2])]).reshape(
-            (-1, 3))
+        # TODO: pass projected radar location as argument
+        # (allows processing of incomplete polar volumes)
+        self.radloc = np.array([np.mean(polcoords[:, 0]),
+                                np.mean(polcoords[:, 1]),
+                                np.min(polcoords[:, 2])]).reshape((-1, 3))
         # Set the mask which masks the blind voxels of the 3-D volume grid
-        self.mask = self._get_mask(gridcoords, polcoords, gridshape, maxrange, minelev, maxelev)
+        self.mask = self._get_mask(gridcoords, polcoords, gridshape,
+                                   maxrange, minelev, maxelev)
         # create an instance of the Interpolation class
         self.trgix = np.where(np.logical_not(self.mask))
         self.ip = Ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
@@ -135,10 +147,13 @@ class CartesianVolume():
 
         return ipdata
 
-    def _get_mask(self, gridcoords, polcoords=None, gridshape=None, maxrange=None, minelev=None, maxelev=None):
-        """Returns a mask (the base class only contains a dummy function which masks nothing)
+    def _get_mask(self, gridcoords, polcoords=None, gridshape=None,
+                  maxrange=None, minelev=None, maxelev=None):
+        """Returns a mask (the base class only contains a dummy function which
+        masks nothing)
 
-        This method needs to be replaced for inherited classes such as CAPPI or PseudoCAPPI.
+        This method needs to be replaced for inherited classes such as CAPPI or
+        PseudoCAPPI.
 
         Parameters
         ----------
@@ -158,12 +173,13 @@ class CartesianVolume():
 class CAPPI(CartesianVolume):
     """Create a Constant Altitude Plan Position Indicator (CAPPI)
 
-    A CAPPI gives the value of a target variable (typically reflectivity in dBZ,
-    but here also other variables such as e.g. rainfall intensity) in a defined
-    altitude.
+    A CAPPI gives the value of a target variable (typically reflectivity
+    in dBZ, but here also other variables such as e.g. rainfall intensity) in
+    a defined altitude.
 
-    In order to create a CAPPI , you first have to create an instance of this class.
-    Calling this instance with the actual polar volume data will return the CAPPI grid.
+    In order to create a CAPPI, you first have to create an instance of this
+    class. Calling this instance with the actual polar volume data will return
+    the CAPPI grid.
 
     Parameters
     ----------
@@ -171,7 +187,8 @@ class CAPPI(CartesianVolume):
         Represents the 3-D coordinates of the orginal radar bins
     gridcoords : coordinate array of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    gridshape : shape of the original polar volume (num elevation angles, num azimuth angles, num range bins)
+    gridshape : shape of the original polar volume (num elevation angles,
+        num azimuth angles, num range bins)
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
@@ -180,23 +197,28 @@ class CAPPI(CartesianVolume):
 
     """
 
-    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
+    def _get_mask(self, gridcoords, polcoords, gridshape,
+                  maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
         """
-        below, above, out_of_range = blindspots(self.radloc, gridcoords, minelev, maxelev, maxrange)
-        return np.logical_not(np.logical_not(out_of_range) & np.logical_not(below) & np.logical_not(above))
+        below, above, out_of_range = blindspots(self.radloc, gridcoords,
+                                                minelev, maxelev, maxrange)
+        return np.logical_not(np.logical_not(out_of_range) &
+                              np.logical_not(below) & np.logical_not(above))
 
 
 class PseudoCAPPI(CartesianVolume):
     """Create a Pseudo-CAPPI Constant Altitude Plan Position Indicator (CAPPI)
 
-    The difference to a :doc:`CAPPI <wradlib.vpr.CAPPI>` is that the blind area *below* and *above* the radar
-    are not masked, but filled by interpolation. Only the areas beyond the *range*
-    of the radar are masked out. As a result, "blind" areas below the radar are
-    particularly filled from the lowest available elevation angle.
+    The difference to a :doc:`CAPPI <wradlib.vpr.CAPPI>` is that the blind area
+    *below* and *above* the radar are not masked, but filled by interpolation.
+    Only the areas beyond the *range* of the radar are masked out. As a result,
+    "blind" areas below the radar are particularly filled from the lowest
+    available elevation angle.
 
-    In order to create a Pseudo CAPPI , you first have to create an instance of this class.
-    Calling this instance with the actual polar volume data will return the Pseudo CAPPI grid.
+    In order to create a Pseudo CAPPI , you first have to create an instance of
+    this class. Calling this instance with the actual polar volume data will
+    return the Pseudo CAPPI grid.
 
     Parameters
     ----------
@@ -204,7 +226,8 @@ class PseudoCAPPI(CartesianVolume):
         Represents the 3-D coordinates of the orginal radar bins
     gridcoords : coordinate array of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    gridshape : shape of the original polar volume (num elevation angles, num azimuth angles, num range bins)
+    gridshape : shape of the original polar volume (num elevation angles,
+        num azimuth angles, num range bins)
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
@@ -213,10 +236,13 @@ class PseudoCAPPI(CartesianVolume):
 
     """
 
-    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
+    def _get_mask(self, gridcoords, polcoords, gridshape,
+                  maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
         """
-        return np.logical_not(np.logical_not(out_of_range(self.radloc, gridcoords, maxrange)))
+        return np.logical_not(np.logical_not(out_of_range(self.radloc,
+                                                          gridcoords,
+                                                          maxrange)))
 
 
 def out_of_range(center, gridcoords, maxrange):
@@ -240,9 +266,9 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     """Blind regions of the radar, marked on a 3-D grid
 
     The radar is blind below the radar, above the radar and beyond the range.
-    The function returns three boolean arrays which indicate whether (1) the grid
-    node is below the radar, (2) the grid node is above the radar, (3) the grid node
-    is beyond the maximum range.
+    The function returns three boolean arrays which indicate whether (1) the
+    grid node is below the radar, (2) the grid node is above the radar,
+    (3) the grid node is beyond the maximum range.
 
     Parameters
     ----------
@@ -261,9 +287,11 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     dist_from_rad = np.sqrt(((gridcoords - center) ** 2).sum(axis=-1))
     # below the radar
     # TODO: use qual.beam_height_ft_doviak
-    below = gridcoords[:, 2] < (qual.beam_height_ft(dist_from_rad, minelev) + center[:, 2])
+    below = gridcoords[:, 2] < (qual.beam_height_ft(dist_from_rad, minelev) +
+                                center[:, 2])
     # above the radar
-    above = gridcoords[:, 2] > (qual.beam_height_ft(dist_from_rad, maxelev) + center[:, 2])
+    above = gridcoords[:, 2] > (qual.beam_height_ft(dist_from_rad, maxelev) +
+                                center[:, 2])
     # out of range
     out_of_range = dist_from_rad > maxrange
     return below, above, out_of_range
@@ -279,15 +307,13 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     Parameters
     ----------
     sitecoords : sequence of three floats indicating the radar position
-       (longitude in decimal degrees, latitude in decimal degrees, height a.s.l. in meters)
+        (longitude in decimal degrees, latitude in decimal degrees,
+        height a.s.l. in meters)
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
-
-        .. versionadded:: 0.6.0
-           using osr objects instead of PROJ.4 strings as parameter
 
     Returns
     -------
@@ -299,7 +325,8 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     # create polar grid
     el, az, r = util.meshgridN(elevs, azimuths, ranges)
     # get geographical coordinates
-    lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
+    lons, lats, z = georef.polar2lonlatalt_n(r, az, el,
+                                             sitecoords, re=6370040.)
     # get projected horizontal coordinates
     x, y = georef.reproject(lons, lats, projection_target=proj)
     # create standard shape
@@ -307,7 +334,8 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     return coords
 
 
-def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
+def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
+                                   ranges, proj=None):
     """Create Cartesian coordinates for the polar volume bins
 
     .. versionchanged:: 0.6.0
@@ -316,22 +344,21 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
     Parameters
     ----------
     sitecoords : sequence of three floats indicating the radar position
-       (longitude in decimal degrees, latitude in decimal degrees, height a.s.l. in meters)
+        (longitude in decimal degrees, latitude in decimal degrees,
+        height a.s.l. in meters)
     elevs : sequence of elevation angles
     azimuths : sequence of azimuth angles
     ranges : sequence of ranges
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
 
-        .. versionadded:: 0.6.0
-           using osr objects instead of PROJ.4 strings as parameter
-
     Returns
     -------
     output : array of shape (num volume bins, 3)
 
     """
-    # check structure: Are azimuth angles and range bins the same for each elevation angle?
+    # check structure: Are azimuth angles and range bins the same for each
+    # elevation angle?
     oneaz4all = True
     onerange4all = True
     #   check elevs array, first: must be one-dimensional
@@ -343,7 +370,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         raise
     assert (elevs.ndim == 1) and (elevs.dtype != np.dtype("object")), \
         "Argument <elevs> in wradlib.wolcoords_from_polar must be a 1-D array."
-    # now: is there one azimuths array for all elevation angles or one for each?
+    # now: is there one azimuths array for all elevation angles
+    # or one for each?
     try:
         azimuths = np.array(azimuths)
     except:
@@ -354,7 +382,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in azimuths]
         assert not ((False in isseq) and (True in isseq)), \
-            "Argument <azimuths> contains both iterable and non-iterable items."
+            "Argument <azimuths> contains both iterable " \
+            "and non-iterable items."
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             oneaz4all = False
@@ -369,15 +398,17 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in ranges]
         assert not ((False in isseq) and (True in isseq)), \
-            "Argument <azimuths> contains both iterable and non-iterable items."
+            "Argument <azimuths> contains both iterable " \
+            "and non-iterable items."
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             onerange4all = False
     if oneaz4all and onerange4all:
         # this is the simple way
         return volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj)
-    # No simply way, so we need to construct the coordinates arrays for each elevation angle
-    #   but first adapt input arrays to this task
+    # No simply way, so we need to construct the coordinates arrays for
+    # each elevation angle
+    # but first adapt input arrays to this task
     if onerange4all:
         ranges = np.array([ranges for i in range(len(elevs))])
     if oneaz4all:
@@ -392,7 +423,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         az = np.append(az, az_tmp.ravel())
         r = np.append(r, r_tmp.ravel())
     # get geographical coordinates
-    lons, lats, z = georef.polar2lonlatalt_n(r, az, el, sitecoords, re=6370040.)
+    lons, lats, z = georef.polar2lonlatalt_n(r, az, el,
+                                             sitecoords, re=6370040.)
     # get projected horizontal coordinates
     x, y = georef.reproject(lons, lats, projection_target=proj)
     # create standard shape
@@ -401,7 +433,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
 
 
 def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
-    """Generate Cartesian coordinates for a regular 3-D grid based on radar specs.
+    """Generate Cartesian coordinates for a regular 3-D grid based on
+    radar specs.
 
     .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
@@ -421,10 +454,12 @@ def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
 
     Returns
     -------
-    output : float array of shape (num grid points, 3), a tuple of 3 representing the grid shape
+    output : float array of shape (num grid points, 3), a tuple of
+        3 representing the grid shape
 
     """
-    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=proj)
+    center = georef.reproject(sitecoords[0], sitecoords[1],
+                              projection_target=proj)
     # minz = sitecoords[2]
     llx = center[0] - maxrange
     lly = center[1] - maxrange
