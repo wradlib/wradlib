@@ -20,11 +20,11 @@ class HelperFunctionsTest(unittest.TestCase):
         self.assertEqual(util._shape2size((10, 10, 10)), 10 * 10 * 10)
 
     def test__tdelta2seconds(self):
-        self.assertEqual(util._tdelta2seconds(
-            dt.datetime(2001, 1, 1, 1) - dt.datetime(2000, 1, 1)),
+        self.assertEqual(util._tdelta2seconds(dt.datetime(2001, 1, 1, 1) -
+                                              dt.datetime(2000, 1, 1)),
                          366 * 24 * 60 * 60 + 3600)
-        self.assertEqual(util._tdelta2seconds(
-            dt.datetime(2002, 1, 1, 1) - dt.datetime(2001, 1, 1)),
+        self.assertEqual(util._tdelta2seconds(dt.datetime(2002, 1, 1, 1) -
+                                              dt.datetime(2001, 1, 1)),
                          365 * 24 * 60 * 60 + 3600)
 
     def test__get_tdelta(self):

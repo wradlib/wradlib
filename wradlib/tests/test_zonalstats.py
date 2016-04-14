@@ -4,7 +4,6 @@
 
 import unittest
 import tempfile
-import os
 
 import wradlib.georef as georef
 import wradlib.zonalstats as zonalstats
