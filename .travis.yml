@@ -32,7 +32,7 @@ install:
     - source scripts/install.sh
 
 before_script:
-    - flake8
+    - flake8 .
     # convert notebooks, render notebooks
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data-wradlib-data
