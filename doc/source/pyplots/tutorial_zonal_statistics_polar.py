@@ -21,7 +21,9 @@ import matplotlib.patches as patches
 import datetime as dt
 
 
-def testplot(cats, catsavg, xy, data, levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100], title=""):
+def testplot(cats, catsavg, xy, data,
+             levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100],
+             title=""):
     """Quick test plot layout for this example file
     """
     colors = plt.cm.spectral(np.linspace(0, 1, len(levels)))
@@ -29,13 +31,15 @@ def testplot(cats, catsavg, xy, data, levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 
 
     radolevels = [0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50, 100]
     radocolors = plt.cm.spectral(np.linspace(0, 1, len(radolevels)))
-    radocmap, radonorm = from_levels_and_colors(radolevels, radocolors, extend="max")
+    radocmap, radonorm = from_levels_and_colors(radolevels, radocolors,
+                                                extend="max")
 
     fig = plt.figure(figsize=(14, 8))
 
     # Average rainfall sum
     ax = fig.add_subplot(121, aspect="equal")
-    coll = PatchCollection(cats, array=catsavg, cmap=mycmap, norm=mynorm, edgecolors='white', lw=0.5)
+    coll = PatchCollection(cats, array=catsavg, cmap=mycmap, norm=mynorm,
+                           edgecolors='white', lw=0.5)
     ax.add_collection(coll)
     ax.autoscale()
     plt.colorbar(coll, ax=ax, shrink=0.5)
@@ -46,7 +50,8 @@ def testplot(cats, catsavg, xy, data, levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 
 
     # Original radar data
     ax1 = fig.add_subplot(122, aspect="equal")
-    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data), cmap=radocmap, norm=radonorm)
+    pm = plt.pcolormesh(xy[:, :, 0], xy[:, :, 1], np.ma.masked_invalid(data),
+                        cmap=radocmap, norm=radonorm)
     coll = PatchCollection(cats, facecolor='None', edgecolor='white', lw=0.5)
     ax1.add_collection(coll)
     cb = plt.colorbar(pm, ax=ax1, shrink=0.5)
@@ -59,7 +64,8 @@ def testplot(cats, catsavg, xy, data, levels=[0, 1, 2, 3, 4, 5, 10, 15, 20, 25, 
 
 
 def ex_tutorial_zonal_statistics_polar():
-    filename = wradlib.util.get_wradlib_data_file('hdf5/rainsum_boxpol_20140609.h5')
+    filename = 'hdf5/rainsum_boxpol_20140609.h5'
+    filename = wradlib.util.get_wradlib_data_file(filename)
     data, attrib = wradlib.io.from_hdf5(filename)
 
     # get Lat, Lon, range, azimuth, rays, bins out of radar data
@@ -94,7 +100,8 @@ def ex_tutorial_zonal_statistics_polar():
     radar_gk.shape = (rays, bins, 5, 2)
     radar_gkc.shape = (rays, bins, 2)
 
-    shpfile = wradlib.util.get_wradlib_data_file('shapefiles/agger/agger_merge.shp')
+    shpfile = wradlib.util.get_wradlib_data_file(
+        'shapefiles/agger/agger_merge.shp')
     dataset, inLayer = wradlib.io.open_shape(shpfile)
     cats, keys = wradlib.georef.get_shape_coordinates(inLayer)
 
@@ -136,8 +143,10 @@ def ex_tutorial_zonal_statistics_polar():
         # Create instance of type GridPointsToPoly from zonal data file
         obj1 = wradlib.zonalstats.GridPointsToPoly('test_zonal_points')
     except:
-        # Create instance of type ZonalDataPoint from source grid and catchment array
-        zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, srs=proj_gk, buf=500.)
+        # Create instance of type ZonalDataPoint from source grid and
+        # catchment array
+        zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, srs=proj_gk,
+                                               buf=500.)
         # dump to file
         zd.dump_vector('test_zonal_points')
         # Create instance of type GridPointsToPoly from zonal data object
@@ -152,8 +161,10 @@ def ex_tutorial_zonal_statistics_polar():
 
     t3 = dt.datetime.now()
 
-    print("Approach #1 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
-    print("Approach #1 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
+    print("Approach #1 (create object) takes: %f "
+          "seconds" % (t2 - t1).total_seconds())
+    print("Approach #1 (compute average) takes: %f "
+          "seconds" % (t3 - t2).total_seconds())
 
     # Just a test for plotting results with zero buffer
     zd = wradlib.zonalstats.ZonalDataPoint(radar_gkc_, cats, buf=0)
@@ -169,14 +180,18 @@ def ex_tutorial_zonal_statistics_polar():
     # Target polygon patches
     trg_patches = [patches.Polygon(item, True) for item in obj1.zdata.trg.data]
     trg_patch = [trg_patches[i]]
-    p = PatchCollection(trg_patch, facecolor="None", edgecolor="black", linewidth=2)
+    p = PatchCollection(trg_patch, facecolor="None", edgecolor="black",
+                        linewidth=2)
     ax.add_collection(p)
 
     # pips
     sources = obj1.zdata.src.data
-    plt.scatter(sources[:, 0], sources[:, 1], s=200, c="grey", edgecolor="None", label="all points")
-    plt.scatter(isecs2[i][:, 0], isecs2[i][:, 1], s=200, c="green", edgecolor="None", label="buffer=0 m")
-    plt.scatter(isecs1[i][:, 0], isecs1[i][:, 1], s=50, c="red", edgecolor="None", label="buffer=500 m")
+    plt.scatter(sources[:, 0], sources[:, 1], s=200, c="grey",
+                edgecolor="None", label="all points")
+    plt.scatter(isecs2[i][:, 0], isecs2[i][:, 1], s=200, c="green",
+                edgecolor="None", label="buffer=0 m")
+    plt.scatter(isecs1[i][:, 0], isecs1[i][:, 1], s=50, c="red",
+                edgecolor="None", label="buffer=500 m")
     bbox = wradlib.zonalstats.get_bbox(cats[i][:, 0], cats[i][:, 1])
     plt.xlim(bbox["left"] - 2000, bbox["right"] + 2000)
     plt.ylim(bbox["bottom"] - 2000, bbox["top"] + 2000)
@@ -190,7 +205,8 @@ def ex_tutorial_zonal_statistics_polar():
              title="Catchment rainfall variance (GridPointsToPoly)")
 
     ###########################################################################
-    # Approach #2: Compute weighted mean based on fraction of source polygons in target polygons
+    # Approach #2: Compute weighted mean based on fraction of source polygons
+    # in target polygons
     #
     # - This is more accurate (no assumptions), but probably slower...
     ###########################################################################
@@ -216,15 +232,18 @@ def ex_tutorial_zonal_statistics_polar():
     avg3 = obj3.mean(data_.ravel())
     var3 = obj3.var(data_.ravel())
 
-    obj3.zdata.trg.dump_raster('test_zonal_hdr.nc', 'netCDF', 'mean', pixel_size=100.)
+    obj3.zdata.trg.dump_raster('test_zonal_hdr.nc', 'netCDF', 'mean',
+                               pixel_size=100.)
 
     obj3.zdata.trg.dump_vector('test_zonal_shp')
     obj3.zdata.trg.dump_vector('test_zonal_json.geojson', 'GeoJSON')
 
     t3 = dt.datetime.now()
 
-    print("Approach #2 (create object) takes: %f seconds" % (t2 - t1).total_seconds())
-    print("Approach #2 (compute average) takes: %f seconds" % (t3 - t2).total_seconds())
+    print("Approach #2 (create object) takes: %f "
+          "seconds" % (t2 - t1).total_seconds())
+    print("Approach #2 (compute average) takes: %f "
+          "seconds" % (t3 - t2).total_seconds())
 
     # Target polygon patches
     trg_patches = [patches.Polygon(item, True) for item in obj3.zdata.trg.data]
@@ -242,13 +261,15 @@ def ex_tutorial_zonal_statistics_polar():
 
     # Grid cell patches
     src_index = obj3.zdata.get_source_index(i)
-    grd_patches = [patches.Polygon(item) for item in obj3.zdata.src.get_data_by_idx(src_index)]
+    grd_patches = [patches.Polygon(item) for item in
+                   obj3.zdata.src.get_data_by_idx(src_index)]
     p = PatchCollection(grd_patches, facecolor="None", edgecolor="black")
     ax.add_collection(p)
 
     # Target polygon patches
     trg_patch = [trg_patches[i]]
-    p = PatchCollection(trg_patch, facecolor="None", edgecolor="red", linewidth=2)
+    p = PatchCollection(trg_patch, facecolor="None", edgecolor="red",
+                        linewidth=2)
     ax.add_collection(p)
 
     # View the actual intersections
@@ -279,6 +300,7 @@ def ex_tutorial_zonal_statistics_polar():
     plt.ylim(0, maxlim)
     plt.plot([-1, maxlim + 1], [-1, maxlim + 1], color="black")
     plt.show()
+
 
 # =======================================================
 if __name__ == '__main__':
