@@ -9,8 +9,10 @@ also consider to have look at the code examples distributed with the source code
    :maxdepth: 2
    
    wradlib_introduction.ipynb
+   wradlib_plot_curvelinear_grids.ipynb
    simple_plot.ipynb
    radolan.ipynb
+
 
 
 
