@@ -39,10 +39,10 @@ before_script:
     - scripts/process_notebooks.sh
 
 script:
-    - xvfb-run coverage run --source wradlib testrunner.py -u
-    - xvfb-run coverage run --source wradlib testrunner.py -d
-    - xvfb-run coverage run --source wradlib testrunner.py -n
-    - xvfb-run coverage run --source wradlib testrunner.py -e
+    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
+    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -d
+    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -e
+    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -n
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
