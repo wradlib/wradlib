@@ -99,7 +99,7 @@ def ex_apichange():
     def name_and_type_changed(z, y=None):
         if isinstance(y, int):
             print(z, y, type(y),
-                  "normal function behaviour or paramter and type change, "
+                  "normal function behaviour or parameter and type change, "
                   "DeprecationWarning is issued when 'x' is given")
         elif isinstance(y, type(None)):
             print(z, y, type(y),
