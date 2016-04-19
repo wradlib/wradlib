@@ -40,9 +40,9 @@ before_script:
 
 script:
     - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
-    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -d
-    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -e
-    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -n
+    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -d
+    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -e
+    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
