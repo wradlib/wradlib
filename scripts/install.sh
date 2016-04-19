@@ -22,11 +22,10 @@ conda install --yes gdal numpy scipy matplotlib netcdf4 h5py==2.5.0
 ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
 # install wradlib-data
-wget https://github.com/wradlib/wradlib-data/archive/wradlib-data.tar.gz
+git clone https://github.com/wradlib/wradlib-data.git $HOME/wradlib-data
 echo $PWD
-tar xzvf wradlib-data.tar.gz -C $HOME
 ls -lart $HOME
-ls -lart $HOME/wradlib-data-wradlib-data
+ls -lart $HOME/wradlib-data
 
 # install wradlib docu dependencies
 conda install --yes sphinx numpydoc
