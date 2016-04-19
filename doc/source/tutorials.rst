@@ -9,12 +9,12 @@ also consider to have look at the code examples distributed with the source code
    :maxdepth: 2
    
    tutorial_workflow
-   tutorial_supported_formats
+   wradlib_radar_formats
    tutorial_reading_dx
    tutorial_get_rainfall
    tutorial_autoimages
-   tutorial_curvelinear_grids
+   wradlib_plot_curvelinear_grids.ipynb
    tutorial_attenuation
    radolan.ipynb
-   tutorial_zonalstats
+   wradlib_zonalstats_classes.ipynb
 

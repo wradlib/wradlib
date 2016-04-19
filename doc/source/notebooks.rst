@@ -12,7 +12,6 @@ also consider to have look at the code examples distributed with the source code
    wradlib_api_change.ipynb
    wradlib_beamblock.ipynb
    wradlib_overlay.ipynb
-   wradlib_plot_curvelinear_grids.ipynb
    simple_plot.ipynb
 
 
