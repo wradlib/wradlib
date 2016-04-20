@@ -4,7 +4,7 @@ Recipes
 How can I publish my recipe here?
 --------------------------------- 
 
-This recipe section provides a collection of code snippets for exemplary wradlib applications. Compared to the :doc:`tutorials` section, the level of documentation is a bit lower. For each recipe, we provide a short summary and a link to the example code. 
+This recipe section provides a collection of code snippets for exemplary wradlib applications. Compared to the :doc:`tutorials` section, the level of documentation is a bit lower. For each recipe, we provide a short summary and a link to the example code.
 
 Please feel to send us your recipes so we can include them on this page. Please send an e-mail to wradlib-dev@googlegroups.com containing:
 
@@ -25,7 +25,7 @@ Please feel to send us your recipes so we can include them on this page. Please 
 Recipe #1: Clutter and attenuation correction plus composition for two DWD radars
 ---------------------------------------------------------------------------------
 
-This recipe shows a workflow to process radar data provided by the German Weather Service (DWD). The processing includes: *(1)* Reading local :doc:`DX data <tutorial_supported_formats>` for radars Feldberg and Tuerkheim. *(2)* Clutter correction using the :doc:`Gabella filter algorithm <clutter>`. *(3)* Attenuation correction using the :doc:`Kraemer algorithm <atten>`. *(4)* Conversion from reflectivity to rainfall using the :doc:`zr` module. *(5)* Accumulation of rainfall depths over the entire event. *(6)* :doc:`Composition <comp>` of data from both radars to a common Cartesian grid (Gauss Krueger Zone 3). Composition is based on a weighted combination, using the sampling volume as a :doc:`quality criterion <qual>` *(7)* Plotting a rainfall map using :doc:`cartesian_plot <vis>`:
+This recipe shows a workflow to process radar data provided by the German Weather Service (DWD). The processing includes: *(1)* Reading local :ref:`DX-Data <wradlib_radar_formats.ipynb#German-Weather-Service:-DX-format>` for radars Feldberg and Tuerkheim. *(2)* Clutter correction using the :doc:`Gabella filter algorithm <clutter>`. *(3)* Attenuation correction using the :doc:`Kraemer algorithm <atten>`. *(4)* Conversion from reflectivity to rainfall using the :doc:`zr` module. *(5)* Accumulation of rainfall depths over the entire event. *(6)* :doc:`Composition <comp>` of data from both radars to a common Cartesian grid (Gauss Krueger Zone 3). Composition is based on a weighted combination, using the sampling volume as a :doc:`quality criterion <qual>` *(7)* Plotting a rainfall map using :doc:`cartesian_plot <vis>`:
 
 .. image:: images/recipe1_fig1.png
    :scale: 40%
