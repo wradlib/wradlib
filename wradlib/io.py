@@ -6,7 +6,7 @@
 Raw Data I/O
 ^^^^^^^^^^^^
 
-Please have a look at the tutorial :doc:`tutorial_supported_formats` for an
+Please have a look at the tutorial :ref:`wradlib_radar_formats.ipynb` for an
 introduction on how to deal with different file formats.
 
 .. autosummary::
