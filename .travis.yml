@@ -36,7 +36,7 @@ before_script:
     # convert notebooks, render notebooks
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
-    - scripts/process_notebooks.sh
+    - scripts/convert_notebooks.sh
 
 script:
     - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
@@ -45,6 +45,7 @@ script:
     - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
 
 after_success:
+    - scripts/render_notebooks.sh
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
