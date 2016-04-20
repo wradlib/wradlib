@@ -109,6 +109,10 @@ def ex_tutorial_zonal_statistics_polar():
                     [2610000., 5640000.], [2610000., 5630000.],
                     [2600000., 5630000.]])
     l = list(cats)
+
+    # Todo: remove after testing
+    l = l[0:3]
+
     l.append(box)
     cats = np.array(l)
     bbox = inLayer.GetExtent()
