@@ -33,7 +33,7 @@ The basic data type used in *wradlib* is a multi-dimensional array, the numpy.nd
 
 The ``metadata`` object can be inspected via keywords. The ``data`` object contains the actual data, in this case a polar grid with 360 azimuth angles and 128 range bins.
 
-.. seealso:: Get more info in the section :doc:`tutorial_supported_formats` and in the library reference section :doc:`io`.   
+.. seealso:: Get more info in the section :ref:`wradlib_radar_formats.ipynb` and in the library reference section :doc:`io`.
 
 
 Clutter removal
@@ -238,7 +238,7 @@ Data export to other applications
 ---------------------------------
 Once you created a dataset which meets your requirements, you might want to export it to other applications or archives. *wradlib* does not favour or support a specific output format. Basically, you have all the freedom of choice offered by Python and its packages in order to export your data. Arrays can be stored as text or binary files by using numpy functions. You can use the package `NetCDF4 <https://unidata.github.io/netcdf4-python/>`_ to write NetCDF files, and the packages `h5py <http://www.h5py.org/>`_ or `PyTables <http://www.pytables.org>`_ to write hdf5 files.
 At a later stage of development, *wradlib* might support a standardized data export by using the OPERA's ODIM_H5 data model 
-(see :doc:`tutorial_supported_formats`). Of course, you can also export data as images. See :doc:`vis` for some options.
+(see :ref:`wradlib_radar_formats.ipynb`). Of course, you can also export data as images. See :doc:`vis` for some options.
 
 Export your data array as a text file::
 

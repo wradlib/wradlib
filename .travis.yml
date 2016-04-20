@@ -35,13 +35,17 @@ before_script:
     - flake8 .
     # convert notebooks, render notebooks
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
-    - export WRADLIB_DATA=$HOME/wradlib-data-wradlib-data
-    - scripts/process_notebooks.sh
+    - export WRADLIB_DATA=$HOME/wradlib-data
+    - scripts/convert_notebooks.sh
 
 script:
-    - xvfb-run coverage run --source wradlib testrunner.py -a
+    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
+    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -d
+    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -e
+    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
 
 after_success:
+    - scripts/render_notebooks.sh
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
