@@ -8,7 +8,7 @@ also consider to have look at the code examples distributed with the source code
 .. toctree::
    :maxdepth: 2
    
-   tutorial_workflow
+   wradlib_workflow
    wradlib_radar_formats
    wradlib_reading_dx.ipynb
    tutorial_get_rainfall
