@@ -10,7 +10,7 @@ also consider to have look at the code examples distributed with the source code
    
    tutorial_workflow
    wradlib_radar_formats
-   tutorial_reading_dx
+   wradlib_reading_dx.ipynb
    tutorial_get_rainfall
    tutorial_autoimages
    wradlib_plot_curvelinear_grids.ipynb

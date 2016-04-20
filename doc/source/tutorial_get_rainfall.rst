@@ -41,7 +41,7 @@ The figure shows a 15 minute accumulation of rainfall which was produced from th
 scans at 5 minute intervals between 17:30 and 17:45 on June 8, 2008.
 
 The radar data are read using :doc:`generated/wradlib.io.readDX` function which returns an array of dBZ values and a metadata dictionary
-(see also :doc:`tutorial_reading_dx`). The conversion is carried out the same way as in the example above. The plot is produced using
+(see also :ref:`wradlib_reading_dx.ipynb`). The conversion is carried out the same way as in the example above. The plot is produced using
 the function :doc:`generated/wradlib.vis.plot_ppi`. See full source code below for download. 
  
 
