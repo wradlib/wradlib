@@ -8,13 +8,13 @@ also consider to have look at the code examples distributed with the source code
 .. toctree::
    :maxdepth: 2
    
-   wradlib_workflow
-   wradlib_radar_formats
+   wradlib_workflow.ipynb
+   wradlib_radar_formats.ipynb
    wradlib_reading_dx.ipynb
-   tutorial_get_rainfall
+   wradlib_get_rainfall.ipynb
    tutorial_autoimages
    wradlib_plot_curvelinear_grids.ipynb
-   tutorial_attenuation
+   wradlib_attenuation.ipynb
    radolan.ipynb
    wradlib_zonalstats_classes.ipynb
 
