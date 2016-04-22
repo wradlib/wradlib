@@ -129,6 +129,11 @@ today_fmt = '%B %d, %Y'
 # exclude_patterns = []
 exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
+# -- nbsphinx specifics --
+
+# This allows sphinx-directives used within notebooks
+nbsphinx_allow_directives = True
+
 # The reST default role (used for this markup: `text`)
 # to use for all documents.
 # default_role = None
