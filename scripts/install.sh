@@ -33,7 +33,10 @@ conda install --yes sphinx_rtd_theme
 pip install sphinxcontrib-bibtex
 # install notebook dependencies
 conda install --yes notebook runipy pandoc
-pip install nbsphinx
+
+# install nbsphinx-fork until merged upstream
+git clone https://github.com/kmuehlbauer/nbsphinx.git $HOME/nbsphinx
+pip install -e $HOME/nbsphinx
 
 # install optional wradlib dependencies
 pip install xmltodict

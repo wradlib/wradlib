@@ -28,7 +28,7 @@ This documentation is under steady development. It provides a complete library r
    gettingstarted   
    tutorials
    notebooks
-   recipes
+   recipes.ipynb
    reference
    community
    dev_setup
