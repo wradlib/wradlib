@@ -21,7 +21,10 @@ Bleeding Edge
 * add ability to read gzipped dx data
 * enhanced ``wradlib.io.read_Rainbow`` to read product pixmap data from rainbow5 files
 
-Bugfix: removed bug reading lists in ``wradlib.io.read_Rainbow``
+**Bugfixes**
+
+* removed bug reading lists in ``wradlib.io.read_Rainbow``
+* fixed offset bug in ``wradlib.georef.sweep_centroids``
 
 
 Version 0.8.0
