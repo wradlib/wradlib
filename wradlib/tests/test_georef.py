@@ -148,7 +148,7 @@ class CoordinateHelperTest(unittest.TestCase):
 
     def test_sweep_centroids(self):
         self.assertTrue(np.allclose(georef.sweep_centroids(1, 100., 1, 2.0),
-                                    np.array([[[50., 1.57079633, 2.]]])))
+                                    np.array([[[50., 3.14159265, 2.]]])))
 
 
 class ProjectionsTest(unittest.TestCase):
