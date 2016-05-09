@@ -154,20 +154,22 @@ class Regular2IrregularTest(unittest.TestCase):
 
         self.newgrid = np.dstack((x, y))
 
-        self.result = np.array([[0.25512229, 0.76536686],
-                                [0.61591969, 1.84775907],
-                                [-0.25512229, -0.76536686],
-                                [-0.61591969, -1.84775907]])
+        self.result = np.array([[0.47140452, 1.41421356],
+                                [0.47140452, 1.41421356],
+                                [-0.47140452, -1.41421356],
+                                [-0.47140452, -1.41421356]])
 
     def test_cart2irregular_interp(self):
         newvalues = ipol.cart2irregular_interp(self.cartgrid, self.values,
                                                self.newgrid, method='linear')
+        print(newvalues)
         self.assertTrue(np.allclose(newvalues, self.result))
 
     def test_cart2irregular_spline(self):
         newvalues = ipol.cart2irregular_spline(self.cartgrid, self.values,
                                                self.newgrid, order=1,
                                                prefilter=False)
+        print(newvalues)
         self.assertTrue(np.allclose(newvalues, self.result))
 
     def test_cart2irregular_equality(self):
