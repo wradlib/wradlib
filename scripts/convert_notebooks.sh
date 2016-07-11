@@ -6,6 +6,7 @@
 cd notebooks
 jupyter nbconvert --to script *.ipynb
 cd ..
+cp notebooks/*.py examples/
 
 
 
