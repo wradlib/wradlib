@@ -4,5 +4,7 @@ include requirements.txt
 include testrunner.py
 recursive-include examples *.py
 recursive-exclude examples *.pyc
+recursive-include notebooks *.ipynb
+prune */.ipynb_checkpoints
 recursive-include wradlib/tests *.py
 recursive-exclude wradlib/tests *.pyc
