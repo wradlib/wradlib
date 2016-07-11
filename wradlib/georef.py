@@ -716,40 +716,34 @@ def _check_polar_coords(r, az):
     az = np.array(az, 'f4')
     az[az == 360.] = 0.
     if 0. in r:
-        print('Invalid polar coordinates: 0 is not a valid range gate '
-              'specification (the centroid of a range gate must be positive).')
-        exit()
+        raise ValueError('Invalid polar coordinates: '
+                         '0 is not a valid range gate specification '
+                         '(the centroid of a range gate must be positive).')
     if len(np.unique(r)) != len(r):
-        print('Invalid polar coordinates: Range gate specification '
-              'contains duplicate entries.')
-        exit()
+        raise ValueError('Invalid polar coordinates: '
+                         'Range gate specification contains duplicate '
+                         'entries.')
     if len(np.unique(az)) != len(az):
-        print('Invalid polar coordinates: Azimuth specification '
-              'contains duplicate entries.')
-        exit()
-    if len(np.unique(az)) != len(az):
-        print('Invalid polar coordinates: Azimuth specification '
-              'contains duplicate entries.')
-        exit()
+        raise ValueError('Invalid polar coordinates: '
+                         'Azimuth specification contains duplicate entries.')
     if not _is_sorted(r):
-        print('Invalid polar coordinates: Range array must be sorted.')
-        exit()
+        raise ValueError('Invalid polar coordinates: '
+                         'Range array must be sorted.')
     if len(np.unique(r[1:] - r[:-1])) > 1:
-        print('Invalid polar coordinates: Range gates are not equidistant.')
-        exit()
+        raise ValueError('Invalid polar coordinates: '
+                         'Range gates are not equidistant.')
     if len(np.where(az >= 360.)[0]) > 0:
-        print('Invalid polar coordinates: Azimuth angles must '
-              'not be greater than or equal to 360 deg.')
-        exit()
+        raise ValueError('Invalid polar coordinates: '
+                         'Azimuth angles must not be greater than '
+                         'or equal to 360 deg.')
     if not _is_sorted(az):
         # it is ok if the azimuth angle array is not sorted, but it has to be
         # 'continuously clockwise', e.g. it could start at 90° and stop at °89
         az_right = az[np.where(np.logical_and(az <= 360, az >= az[0]))[0]]
         az_left = az[np.where(az < az[0])]
         if (not _is_sorted(az_right)) or (not _is_sorted(az_left)):
-            print('Invalid polar coordinates: Azimuth array '
-                  'is not sorted clockwise.')
-            exit()
+            raise ValueError('Invalid polar coordinates: '
+                             'Azimuth array is not sorted clockwise.')
     if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1])) > 1:
         warnings.warn("The azimuth angles of the current "
                       "dataset are not equidistant.", UserWarning)
@@ -772,13 +766,11 @@ def _get_range_resolution(x):
     the array x of the range gates' exterior limits
     """
     if len(x) <= 1:
-        print('The range gate array has to contain at least '
-              'two values for deriving the resolution.')
-        exit()
+        raise ValueError('The range gate array has to contain at least '
+                         'two values for deriving the resolution.')
     res = np.unique(x[1:] - x[:-1])
     if len(res) > 1:
-        print('The resolution of the range array is ambiguous.')
-        exit()
+        raise ValueError('The resolution of the range array is ambiguous.')
     return res[0]
 
 
@@ -789,8 +781,8 @@ def _get_azimuth_resolution(x):
     """
     res = np.unique(np.sort(x)[1:] - np.sort(x)[:-1])
     if len(res) > 1:
-        print('The resolution of the azimuth angle array is ambiguous.')
-        exit()
+        raise ValueError('The resolution of the azimuth angle array '
+                         'is ambiguous.')
     return res[0]
 
 
