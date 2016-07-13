@@ -874,7 +874,6 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         # this promotes arr to float if precision is float
         arr = arr * attrs["precision"]
         # this applies correction for new "FZ" product
-        print(attrs["producttype"])
         if attrs['producttype'] == 'FZ':
             arr /= 12.
         # set nodata value
