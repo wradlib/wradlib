@@ -470,7 +470,8 @@ def get_radolan_header_token():
     """
     head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
             'INT': None, 'GP': None, 'MS': None, 'LV': None,
-            'CS': None, 'MX': None, 'BG': None, 'ST': None}
+            'CS': None, 'MX': None, 'BG': None, 'ST': None,
+            'VV': None, 'MF': None}
     return head
 
 
@@ -585,6 +586,10 @@ def parse_DWD_quant_composite_header(header):
                                     2: "tops"}.get(int(header[v[0]:v[1]]))
             if k == 'MX':
                 out['imagecount'] = int(header[v[0]:v[1]])
+            if k == 'VV':
+                out['vv'] = int(header[v[0]:v[1]])
+            if k == 'MF':
+                out['mf'] = int(header[v[0]:v[1]])
     return out
 
 
@@ -868,6 +873,9 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         # apply precision factor
         # this promotes arr to float if precision is float
         arr = arr * attrs["precision"]
+        # this applies correction for new "FZ" product
+        if attrs['producttype'] == 'FZ':
+            arr /= 12.
         # set nodata value
         arr[nodata] = NODATA
 
