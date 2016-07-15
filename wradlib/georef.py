@@ -1449,10 +1449,12 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     """
 
     # setup default parameters in dicts
+    tiny = {'j_0': 450, 'i_0': 450, 'res': 2}
     small = {'j_0': 460, 'i_0': 460, 'res': 2}
     normal = {'j_0': 450, 'i_0': 450, 'res': 1}
     extended = {'j_0': 600, 'i_0': 800, 'res': 1}
-    griddefs = {(460, 460): small, (900, 900): normal, (1500, 1400): extended}
+    griddefs = {(450, 450): tiny, (460, 460): small,
+                (900, 900): normal, (1500, 1400): extended}
 
     # type and value checking
     if nrows and ncols:
@@ -1467,7 +1469,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
         nrows = 900
         ncols = 900
 
-    # small, normal or extended grid check
+    # tiny, small, normal or extended grid check
     # reference point changes according to radolan composit format
     j_0 = griddefs[(nrows, ncols)]['j_0']
     i_0 = griddefs[(nrows, ncols)]['i_0']
