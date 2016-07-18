@@ -587,9 +587,9 @@ def parse_DWD_quant_composite_header(header):
             if k == 'MX':
                 out['imagecount'] = int(header[v[0]:v[1]])
             if k == 'VV':
-                out['vv'] = int(header[v[0]:v[1]])
+                out['predictiontime'] = int(header[v[0]:v[1]])
             if k == 'MF':
-                out['mf'] = int(header[v[0]:v[1]])
+                out['moduleflag'] = int(header[v[0]:v[1]])
     return out
 
 
@@ -849,12 +849,12 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     # read the actual data
     indat = read_radolan_binary_array(f, attrs['datasize'])
 
-    if attrs["producttype"] in ["RX", "EX", "WX"]:
+    if attrs['producttype'] in ['RX', 'EX', 'WX']:
         # convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
         arr = np.where(arr == 250, NODATA, arr)
         attrs['cluttermask'] = np.where(arr == 249)[0]
-    elif attrs['producttype'] in ["PG", "PC"]:
+    elif attrs['producttype'] in ['PG', 'PC']:
         arr = decode_radolan_runlength_array(indat, attrs)
     else:
         # convert to 16-bit integers
@@ -867,20 +867,21 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         # mask out the last 4 bits
         arr &= mask
         # consider negative flag if product is RD (differences from adjustment)
-        if attrs["producttype"] == "RD":
+        if attrs['producttype'] == 'RD':
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
         # apply precision factor
         # this promotes arr to float if precision is float
-        arr = arr * attrs["precision"]
+        arr = arr * attrs['precision']
         # this applies correction for new "FZ" product
+        # data is in RVP6-units, converted to dBZ
         if attrs['producttype'] == 'FZ':
-            arr /= 12.
+            arr = arr/2. - 32.5
         # set nodata value
         arr[nodata] = NODATA
 
     # anyway, bring it into right shape
-    arr = arr.reshape((attrs["nrow"], attrs["ncol"]))
+    arr = arr.reshape((attrs['nrow'], attrs['ncol']))
 
     return arr, attrs
 
