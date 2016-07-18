@@ -873,10 +873,6 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         # apply precision factor
         # this promotes arr to float if precision is float
         arr = arr * attrs['precision']
-        # this applies correction for new "FZ" product
-        # data is in RVP6-units, converted to dBZ
-        if attrs['producttype'] == 'FZ':
-            arr = arr/2. - 32.5
         # set nodata value
         arr[nodata] = NODATA
 
