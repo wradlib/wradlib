@@ -73,7 +73,7 @@ class PolarNeighbours():
         # compute the centroid coordinates in lat/lon
         bin_lon, bin_lat = georef.polar2centroids(r, az, sitecoords)
         # reproject the centroids to cartesian map coordinates
-        binx, biny, _ = georef.reproject(bin_lon, bin_lat,
+        binx, biny = georef.reproject(bin_lon, bin_lat,
                                          projection_target=proj)
         self.binx, self.biny = binx.ravel(), biny.ravel()
         # compute the KDTree
