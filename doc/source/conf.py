@@ -332,9 +332,10 @@ releases.insert(0, ['latest', 'latest'])
 html_context = {'releases': releases, }
 
 # -- pybtex definitions for changing citation reference labels ----------------
-from pybtex.style.formatting.unsrt import Style
-from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum
-from pybtex.plugin import register_plugin
+from pybtex.style.formatting.unsrt import Style  # noqa
+from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum  # noqa
+from pybtex.plugin import register_plugin  # noqa
+
 
 class WradlibLabelStyle(LabelStyle):
 
