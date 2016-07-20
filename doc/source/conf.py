@@ -330,3 +330,43 @@ if 'TAG' in os.environ and os.environ['TAG']:
 releases.insert(0, ['latest', 'latest'])
 # push releases into html_context
 html_context = {'releases': releases, }
+
+# -- pybtex definitions for changing citation reference labels ----------------
+from pybtex.style.formatting.unsrt import Style
+from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum
+from pybtex.plugin import register_plugin
+
+class WradlibLabelStyle(LabelStyle):
+
+    # copy from AlphaStyle
+    def format_label(self, entry):
+        if entry.type == "book" or entry.type == "inbook":
+            label = self.author_editor_key_label(entry)
+        elif entry.type == "proceedings":
+            label = self.editor_key_organization_label(entry)
+        elif entry.type == "manual":
+            label = self.author_key_organization_label(entry)
+        else:
+            label = self.author_key_label(entry)
+        # add full year comma separated
+        if "year" in entry.fields:
+            return '{0}, {1}'.format(label, entry.fields["year"])
+        else:
+            return label
+
+    def format_lab_names(self, persons):
+        numnames = len(persons)
+        person = persons[0]
+        result = _strip_nonalnum(person.prelast_names +
+                                 person.last_names)
+        if numnames > 1:
+            result += " et al."
+        return result
+
+
+class WradlibStyle(Style):
+    default_label_style = 'wrl'
+
+
+register_plugin('pybtex.style.labels', 'wrl', WradlibLabelStyle)
+register_plugin('pybtex.style.formatting', 'wrlstyle', WradlibStyle)
