@@ -5,7 +5,7 @@ Bibliography
 
 .. bibliography:: refs.bib
    :all:
-   :style: plain
+   :style: wrlstyle
    :encoding: latex+latin
    :labelprefix:
 
