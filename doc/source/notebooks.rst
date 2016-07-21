@@ -6,7 +6,7 @@ can be used for weather radar processing. For additional help to certain functio
 also consider to have look at the code examples distributed with the source code.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    
    wradlib_introduction.ipynb
    wradlib_api_change.ipynb
