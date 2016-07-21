@@ -138,7 +138,7 @@ def filter_gabella_b(img, thrs=0.):
 
 def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
                    rm_nans=True, radial=False, cartesian=False):
-    r"""Clutter identification filter developed by :cite:`Gabella2002`.
+    r"""Clutter identification filter developed by Gabella :cite:`Gabella2002`.
 
     This is a two-part identification algorithm using echo continuity and
     minimum echo area to distinguish between meteorological (rain) and non-
@@ -278,7 +278,7 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     """Fuzzy echo classification and clutter identification based on
     polarimetric moments.
 
-    The implementation is based on :cite:`Vulpiani2012`. At the
+    The implementation is based on Vulpiani et al. :cite:`Vulpiani2012`. At the
     moment, it only distinguishes between meteorological and non-meteorological
     echos.
 

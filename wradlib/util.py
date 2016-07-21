@@ -934,9 +934,9 @@ def issequence(x):
 
 def trapezoid(data, x1, x2, x3, x4):
     """
-    Applied the trapezoidal function described in :cite:`Vulpiani`
-    to determine the degree of membership in the non-meteorological
-    target class.
+    Applied the trapezoidal function described in Vulpiani et al,
+    2012 :cite:`Vulpiani` to determine the degree of membership in
+    the non-meteorological target class.
 
     Parameters
     ----------

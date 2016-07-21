@@ -34,8 +34,8 @@ pip install sphinxcontrib-bibtex
 # install notebook dependencies
 conda install --yes notebook runipy pandoc
 
-# install nbsphinx
-git clone https://github.com/spatialaudio/nbsphinx.git $HOME/nbsphinx
+# install nbsphinx-fork until merged upstream
+git clone https://github.com/kmuehlbauer/nbsphinx.git $HOME/nbsphinx
 pip install -e $HOME/nbsphinx
 
 # install optional wradlib dependencies

@@ -26,7 +26,9 @@ This documentation is under steady development. It provides a complete library r
    :maxdepth: 2
    
    gettingstarted   
+   tutorials
    notebooks
+   recipes.ipynb
    reference
    community
    dev_setup
