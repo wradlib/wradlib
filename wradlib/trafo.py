@@ -96,11 +96,9 @@ def r2depth(x, interval):
 def kdp2r(kdp, f, a=129., b=0.85):
     """Estimating rainfall intensity directly from specific differential phase.
 
-    The general power law expression has been suggested by
-    Ryzhkov et al. :cite:`Ryzhkov2005`.
+    The general power law expression has been suggested by :cite:`Ryzhkov2005`.
 
-    The default parameters have been set according
-    to Bringi and Chandrasekar :cite:`Bringi2001`.
+    The default parameters have been set according to :cite:`Bringi2001`.
 
     **Please note that this way, rainfall intensities can become negative.**
     This is an intended behaviour in order to account for noisy Kdp values.

@@ -303,7 +303,7 @@ def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
     r"""Calculates the height of a radar beam taking the refractivity of the
     atmosphere into account.
 
-    Based on Doviak :cite:`Doviak1993` the beam height is calculated as
+    Based on :cite:`Doviak1993` the beam height is calculated as
 
     .. math::
 
@@ -339,7 +339,7 @@ def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
     r"""Calculates the great circle distance of a radar beam over a sphere,
     taking the refractivity of the atmosphere into account.
 
-    Based on Doviak :cite:`Doviak1993` the arc distance may be calculated as
+    Based on :cite:`Doviak1993` the arc distance may be calculated as
 
     .. math::
 

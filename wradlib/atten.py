@@ -42,7 +42,7 @@ def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
                          mode='except',
                          thrs=59.0):
     """Gate-by-Gate attenuation correction according to
-    Hitschfeld & Bordan :cite:`Hitschfeld1954`
+    :cite:`Hitschfeld1954`
 
     Parameters
     ----------
@@ -143,9 +143,7 @@ def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
 def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
                               b=0.7, n=30, l=1.0, mode='zero',
                               thrs_dBZ=59.0):
-    """Gate-by-Gate attenuation correction according to
-    Stefan Kraemer :cite:`Kraemer2008`.
-
+    """Gate-by-Gate attenuation correction according to :cite:`Kraemer2008`.
 
     Parameters
     ----------
@@ -261,9 +259,8 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
                          n=30, l=1.0, mode='zero', thrs_dBZ=59.0,
                          max_PIA=20.0):
-    """Gate-by-Gate attenuation correction based on Stefan Kraemer
-    :cite:`Kraemer2008`, expanded by Stephan Jacobi, Maik Heistermann and
-    Thomas Pfaff :cite:`Jacobi2012`.
+    """Gate-by-Gate attenuation correction based on :cite:`Kraemer2008`,
+    expanded by :cite:`Jacobi2012`.
 
     Parameters
     ----------
@@ -400,7 +397,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
                                   constraints=None, constr_args=None,
                                   diagnostics={}):
     """Gate-by-Gate attenuation correction based on the iterative approach of
-    Stefan Kraemer :cite:`Kraemer2008` with a generalized and arbitrary number
+    :cite:`Kraemer2008` with a generalized and arbitrary number
     of constraints.
 
     Parameters
@@ -594,7 +591,7 @@ def constraint_pia(gateset, pia, thrs_pia):
 # -----------------------------------------------------------------------------
 def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
     """Gate-by-Gate forward correction as described in
-    Kraemer :cite:`Kraemer2008`"""
+    :cite:`Kraemer2008`"""
     pia = np.zeros(gateset.shape)
     for gate in range(gateset.shape[-1] - 1):
         k = a * idecibel(gateset[..., gate] + pia[..., gate]) ** b * 2.0 * l
@@ -604,7 +601,7 @@ def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
 
 def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
     """Gate-by-Gate backward correction as described in
-    Kraemer :cite:`Kraemer2008`"""
+    :cite:`Kraemer2008`"""
     k = np.zeros(gateset.shape)
     k[..., -1] = a_ref
     for gate in range(gateset.shape[-1] - 2, 0, -1):
@@ -832,7 +829,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
                                    constraints=None, constraint_args=None,
                                    sector_thr=10):
     """Gate-by-Gate attenuation correction based on the iterative approach of
-    Stefan Kraemer :cite:`Kraemer2008` with a generalized and scalable number
+    :cite:`Kraemer2008` with a generalized and scalable number
     of constraints. Differing from the original approach, the method for
     recalculating constraint breaching small sectors is based on a bisection
     forward calculating method, and not on backwards attenuation calculation.
@@ -1016,8 +1013,7 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
                                       stat=np.mean):
     """Estimate two-way wet radome losses as an empirical
     function of frequency and rainfall rate for both standard and
-    hydrophobic radomes based on the approach of Francis J. Merceret
-    and Jennifer G. Ward :cite:`Merceret2000`.
+    hydrophobic radomes based on the approach of :cite:`Merceret2000`.
 
 
 
@@ -1092,7 +1088,7 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
     """Retrieving path integrated attenuation from
     specific differential phase (Kdp).
 
-    The default value of gamma is based on Carey :cite:`Carey2000`.
+    The default value of gamma is based on :cite:`Carey2000`.
 
     Parameters
     ----------

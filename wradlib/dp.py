@@ -27,7 +27,7 @@ modules, e.g.:
 Establishing a valid PhiDP profile for Kdp retrieval involves despeckling
 (linear_despeckle), phase unfolding, and iterative retrieval of PhiDP form KDP.
 The main workflow and its single steps is based on a publication by
-Vulpiani :cite:`Vulpiani2012`. For convenience, the entire workflow has been
+:cite:`Vulpiani2012`. For convenience, the entire workflow has been
 put together in the function :doc:`process_raw_phidp
 <generated/wradlib.dp.process_raw_phidp_vulpiani>`.
 
@@ -67,7 +67,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
                                niter=2, copy=False):
     """Establish consistent PhiDP profiles from raw data.
 
-    This approach is based on Vulpiani :cite:`Vulpiani2012` and involves a
+    This approach is based on :cite:`Vulpiani2012` and involves a
     two step procedure of PhiDP reconstruction.
 
     Processing of raw PhiDP data contains the following steps:
@@ -143,7 +143,7 @@ def unfold_phi_vulpiani(phidp, kdp):
     """Alternative phase unfolding which completely relies on Kdp.
 
     This unfolding should be used in oder to iteratively reconstruct
-    phidp and Kdp (see Vulpiani :cite:`Vulpiani2012`).
+    phidp and Kdp (see :cite:`Vulpiani2012`).
 
     Parameters
     ----------
@@ -205,7 +205,7 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
     """Retrieves Kdp from PhiDP by applying a moving window range finite
     difference derivative.
 
-    See Vulpiani :cite:`Vulpiani2012` for details about this approach.
+    See :cite:`Vulpiani2012` for details about this approach.
 
     Please note that the moving window size *L* is specified as the number of
     range gates. Thus, this argument might need adjustment in case the
@@ -246,7 +246,7 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
     Please note that the moving window size *L* is specified as the number of
     range gates. Thus, this argument might need adjustment in case the range
     resolution changes.
-    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7
+    In the original publication (:cite:`Vulpiani2012`), the value L=7
     was chosen for a range resolution of 1km.
 
     Warning
@@ -338,7 +338,7 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
     Please note that the moving window size *L* is specified as the number of
     range gates. Thus, this argument might need adjustment in case the range
     resolution changes.
-    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7
+    In the original publication (:cite:`Vulpiani2012`), the value L=7
     was chosen for a range resolution of 1km.
 
     Warning
@@ -465,7 +465,7 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     Please note that the moving window size *L* is specified as the number of
     range gates. Thus, this argument might need adjustment in case the
     range resolution changes.
-    In the original publication (Vulpiani :cite:`Vulpiani2012`), the value L=7
+    In the original publication (:cite:`Vulpiani2012`), the value L=7
     was chosen for a range resolution of 1km.
 
     Warning
@@ -574,7 +574,7 @@ def unfold_phi(phidp, rho, width=5, copy=False):
 
     This is the fast Fortran-based implementation (RECOMMENDED).
 
-    The algorithm is based on the paper of Wang :cite:`Wang2009`.
+    The algorithm is based on the paper of :cite:`Wang2009`.
 
     Parameters
     ----------
@@ -623,7 +623,7 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
 
     This is the slow Python-based implementation (NOT RECOMMENDED).
 
-    The algorithm is based on the paper of Wang :cite:`Wang2009`.
+    The algorithm is based on the paper of :cite:`Wang2009`.
 
     Parameters
     ----------
@@ -726,7 +726,7 @@ def linear_despeckle(data, N=3, copy=False):
 def texture(data):
     """
     Compute the texture of the data by comparing values with a 3x3 neighborhood
-    (based on Gourley, 2007, :cite:`Gourley2007`).
+    (based on :cite:`Gourley2007`).
     NaN values in the original array have NaN textures.
 
     Parameters

@@ -36,7 +36,7 @@ import numpy as np
 def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
     """Calculates the height of a radar beam above the antenna according to
     the 4/3 (four-thirds -> ft) effective Earth radius model.
-    The formula was taken from Collier :cite:`Collier1996`.
+    The formula was taken from :cite:`Collier1996`.
 
     Parameters
     ----------
@@ -76,7 +76,7 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
 def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
     """Calculates the height of a radar beam above the antenna according to
     the 4/3 (four-thirds -> ft) effective Earth radius model.
-    The formula was taken from Doviak :cite:`Doviak1993`.
+    The formula was taken from :cite:`Doviak1993`.
 
     Parameters
     ----------
