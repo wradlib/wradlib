@@ -21,10 +21,10 @@ Basically, we only need two data sources:
 - set of (potentially irregular) unadjusted point values
   (e.g. remotely sensed rainfall)
 
-Goudenhoofdt :cite:`Goudenhoofdt2009` provide an excellent overview of
-adjustment procedures. The general idea is that we quantify the error of the
-remotely sensed rainfall at the rain gage locations, assuming the rain gage
-observation to be accurate.
+:cite:`Goudenhoofdt2009` provide an excellent overview of adjustment
+procedures. The general idea is that we quantify the error of the
+remotely sensed rainfall at the rain gage locations, assuming the rain
+gage observation to be accurate.
 
 The error can be assumed to be purely additive (AdjustAdd), purely
 multiplicative (AdjustMultiply, AdjustMFB) or a mixture of both (AdjustMixed).
@@ -477,7 +477,7 @@ class AdjustMixed(AdjustBase):
     additive error term. The intention is to overcome the drawbacks of the
     purely additive and multiplicative approaches (see AdjustAdd and
     AdjustMultiply). The formal representation of the error model according
-    to Pfaff :cite:`Pfaff2010` is:
+    to :cite:`Pfaff2010` is:
 
         :math:`R(gage) = R(radar) * (1+delta) + epsilon`
 
