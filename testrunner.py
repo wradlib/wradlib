@@ -57,7 +57,7 @@ class NotebookTest(unittest.TestCase):
         self.name = module
 
     def runTest(self):
-        print(self.name.split('.')[1])
+        print(self.name.split('.')[1:])
         self.assertTrue(__import__(self.name))
 
 
