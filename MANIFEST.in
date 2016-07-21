@@ -2,9 +2,9 @@ include LICENSE.txt
 include MANIFEST.in
 include requirements.txt
 include testrunner.py
-recursive-include examples *.py
-recursive-exclude examples *.pyc
 recursive-include notebooks *.ipynb
+recursive-include notebooks *.py
+recursive-exclude notebooks __init__.py
 prune */.ipynb_checkpoints
 recursive-include wradlib/tests *.py
 recursive-exclude wradlib/tests *.pyc
