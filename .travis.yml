@@ -48,7 +48,6 @@ after_success:
     - scripts/render_notebooks.sh
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
-    - cp notebooks/*.py examples/
 
 deploy:
   provider: pypi
