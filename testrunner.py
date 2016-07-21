@@ -57,7 +57,7 @@ class NotebookTest(unittest.TestCase):
         self.name = module
 
     def runTest(self):
-        print(self.name.split('.')[1])
+        print(self.name.split('.')[1:])
         self.assertTrue(__import__(self.name))
 
 
@@ -71,13 +71,16 @@ def create_notebooks_testsuite():
     skip = ['__init__.py']
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
+            #print(filename)
             if filename in skip or filename[-3:] != '.py':
                 continue
             if 'notebooks/.' in root:
                 continue
             f = os.path.join(root, filename)
+            #print(f)
             f = f.replace('/', '.')
             f = f[:-3]
+            print(f)
             files.append(f)
 
     # create empty testsuite
