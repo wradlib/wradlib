@@ -1,18 +1,29 @@
-Notebooks
-=========
+Tutorials and Examples
+======================
 
-The notebooks should give an idea how the individual functions of *wradlib*
-can be used for weather radar processing. For additional help to certain functions
-also consider to have look at the code examples distributed with the source code.
+This tutorials and examples should give an idea how the individual functions of
+*wradlib* can be used for weather radar processing. For additional help to
+certain functions also consider to have look at the jupyter notebooks and
+example scripts distributed with the source code.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    
-   wradlib_introduction.ipynb
-   wradlib_api_change.ipynb
-   wradlib_beamblock.ipynb
-   wradlib_overlay.ipynb
-   simple_plot.ipynb
+
+   notebooks/basics.ipynb
+   notebooks/fileio.ipynb
+   notebooks/attenuation/wradlib_attenuation.ipynb
+   notebooks/beamblockage/wradlib_beamblock.ipynb
+   notebooks/classify.ipynb
+   notebooks/georeferencing.ipynb
+   notebooks/develop.ipynb
+   notebooks/interpolation/wradlib_ipol_example.ipynb
+   notebooks/multisensor/wradlib_adjust_example.ipynb
+   notebooks/verification/wradlib_verify_example.ipynb
+   notebooks/recipes.ipynb
+   notebooks/radolan.ipynb
+   notebooks/zonalstats/wradlib_zonalstats_classes.ipynb
+
 
 
 
