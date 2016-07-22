@@ -50,12 +50,29 @@ after_success:
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:
-  provider: pypi
-  server: https://pypi.python.org/pypi
-  user: wradlib
-  password:
-    secure: rKiAS61oDiuV2uJvkP2aiXt8hb7boU2p35RWiTLS8b5pSo/BWysThOIf1jmz5GQIpI8uYU+5GajlgtGVq8GmOxprexDgwTfMFF2bsblfUuZwYM3R1tPQuo2poAZ1/m0jPCul60vJJ31B2wEzsneo4tvbM4a7mAoBMMA5auli5o3eVo4P8xnXziMbw/l53bnl+ZYv7qocbt9RIsrgckAdfjLkZy8gAgDxcYXGGybg6K8VN/twSZGMIJfOvjkONhOtRfsiUc8fEu2hF6+HjQfSC07jue4KDPzo3s9hrAS6+fB0v8MV4UsB710VsrqoPuIfhBRo+xj8tW7Y2MPzJq/6kPBrVoQwV7gLTxZ7IWy5y4/Si78rxhXZIKDzo2VS4tNq1wo6xfGXv8pbzal7TOljqzK+ekXJBsXgdVUiGisZJLHTnPr0rkjwY7qzW+mqPqnpLLTCoHYWQE9AlrEQI3jP1FejGB5iyv/A3kDhjaerFkXlu5TXfkE44EpoKp8uURCNdzNiFoACv/68w3BJmWI0IkQR+YWZEBQm0xySMj8zLd5qrhqX/0u2crEC2uUPEQnkwNF1X8fOz3KFozY68KYsvSmIqKPlJFWSpzXYzMzqFnpvSumgb+g8FK/UppmMpukeQXTVSMGHY9k0Hi6I/WoGgmlDMksRB4fMUG0nZXdOqyM=
-  on:
-    tags: true
+  # devel
+  - provider: pypi
+    server: https://testpypi.python.org/pypi
     distributions: sdist
-    repo: wradlib/wradlib
+    user: wradlib
+    password:
+      secure: rKiAS61oDiuV2uJvkP2aiXt8hb7boU2p35RWiTLS8b5pSo/BWysThOIf1jmz5GQIpI8uYU+5GajlgtGVq8GmOxprexDgwTfMFF2bsblfUuZwYM3R1tPQuo2poAZ1/m0jPCul60vJJ31B2wEzsneo4tvbM4a7mAoBMMA5auli5o3eVo4P8xnXziMbw/l53bnl+ZYv7qocbt9RIsrgckAdfjLkZy8gAgDxcYXGGybg6K8VN/twSZGMIJfOvjkONhOtRfsiUc8fEu2hF6+HjQfSC07jue4KDPzo3s9hrAS6+fB0v8MV4UsB710VsrqoPuIfhBRo+xj8tW7Y2MPzJq/6kPBrVoQwV7gLTxZ7IWy5y4/Si78rxhXZIKDzo2VS4tNq1wo6xfGXv8pbzal7TOljqzK+ekXJBsXgdVUiGisZJLHTnPr0rkjwY7qzW+mqPqnpLLTCoHYWQE9AlrEQI3jP1FejGB5iyv/A3kDhjaerFkXlu5TXfkE44EpoKp8uURCNdzNiFoACv/68w3BJmWI0IkQR+YWZEBQm0xySMj8zLd5qrhqX/0u2crEC2uUPEQnkwNF1X8fOz3KFozY68KYsvSmIqKPlJFWSpzXYzMzqFnpvSumgb+g8FK/UppmMpukeQXTVSMGHY9k0Hi6I/WoGgmlDMksRB4fMUG0nZXdOqyM=
+    on:
+      branch: master
+      tags: false
+      repo: wradlib/wradlib
+      condition: $TRAVIS_PYTHON_VERSION = "2.7"
+
+  # tagged
+  - provider: pypi
+    server: https://testpypi.python.org/pypi
+    distributions: sdist
+    user: wradlib
+    password:
+      secure: rKiAS61oDiuV2uJvkP2aiXt8hb7boU2p35RWiTLS8b5pSo/BWysThOIf1jmz5GQIpI8uYU+5GajlgtGVq8GmOxprexDgwTfMFF2bsblfUuZwYM3R1tPQuo2poAZ1/m0jPCul60vJJ31B2wEzsneo4tvbM4a7mAoBMMA5auli5o3eVo4P8xnXziMbw/l53bnl+ZYv7qocbt9RIsrgckAdfjLkZy8gAgDxcYXGGybg6K8VN/twSZGMIJfOvjkONhOtRfsiUc8fEu2hF6+HjQfSC07jue4KDPzo3s9hrAS6+fB0v8MV4UsB710VsrqoPuIfhBRo+xj8tW7Y2MPzJq/6kPBrVoQwV7gLTxZ7IWy5y4/Si78rxhXZIKDzo2VS4tNq1wo6xfGXv8pbzal7TOljqzK+ekXJBsXgdVUiGisZJLHTnPr0rkjwY7qzW+mqPqnpLLTCoHYWQE9AlrEQI3jP1FejGB5iyv/A3kDhjaerFkXlu5TXfkE44EpoKp8uURCNdzNiFoACv/68w3BJmWI0IkQR+YWZEBQm0xySMj8zLd5qrhqX/0u2crEC2uUPEQnkwNF1X8fOz3KFozY68KYsvSmIqKPlJFWSpzXYzMzqFnpvSumgb+g8FK/UppmMpukeQXTVSMGHY9k0Hi6I/WoGgmlDMksRB4fMUG0nZXdOqyM=
+    on:
+      branch: master
+      tags: true
+      repo: wradlib/wradlib
+      condition: $TRAVIS_PYTHON_VERSION = "2.7"
+
