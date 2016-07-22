@@ -22,7 +22,7 @@ Once these requirements are met, you can open a console window in the folder wra
 
 Testing
 -------
-wradlib uses the `unittest <http://pythontesting.net/framework/unittest/unittest-introduction/>`_ framework. New functions should come with corresponding unittests in the ``wradlib/wradlib/tests`` directory. Just have a look at `available tests <https://github.com/wradlib/wradlib/tree/master/wradlib/tests>`_ to get an idea. In addition, examples and docstrings are a good way to combine testing and documentation. Have a look at the `examples <https://github.com/wradlib/wradlib/tree/master/examples>`_ in order to get an idea on how to set these up correctly. In the docstrings, the ``Examples`` section will be tested by our testing framework. This could look like this::
+wradlib uses the `unittest <http://pythontesting.net/framework/unittest/unittest-introduction/>`_ framework. New functions should come with corresponding unittests in the ``wradlib/wradlib/tests`` directory. Just have a look at `available tests <https://github.com/wradlib/wradlib/tree/master/wradlib/tests>`_ to get an idea. In addition, examples and docstrings are a good way to combine testing and documentation. Have a look at the `notebooks <https://github.com/wradlib/wradlib/tree/master/notebooks>`_ in order to get an idea on how to set these up correctly. In the docstrings, the ``Examples`` section will be tested by our testing framework. This could look like this::
 
 	def foo(a):
 		"""Docstring to be evaluated by doctest
@@ -38,5 +38,5 @@ wradlib uses the `unittest <http://pythontesting.net/framework/unittest/unittest
 
 Continuous Integration
 ----------------------
-We use `Travis_CI <https://travis-ci.org>`_ for Continuous Integration (CI). CI means, in our case, that each commit pushed to wradlib's main repository will trigger the test suites on Travis-CI. If all tests pass successfully, a new documentation will be built and published on http://wradlib.github.io/wradlib-docs. In case a new release tag is associated with a commit, a new release will be distributed via `PyPI <https://pypi.python.org/pypi/wradlib>`_.
+We use `Travis_CI <https://travis-ci.org>`_ for Continuous Integration (CI). CI means, in our case, that each commit pushed to wradlib's main repository will trigger the test suites on Travis-CI. If all tests pass successfully, a new documentation will be built and published on http://wradlib.org/wradlib-docs. In case a new release tag is associated with a commit, a new release will be distributed via `PyPI <https://pypi.python.org/pypi/wradlib>`_.
 

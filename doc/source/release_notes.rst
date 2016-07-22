@@ -58,7 +58,7 @@ Version 0.7.0
 
 New *experimental* module ``zonalstats``: it supports computation of zonal statistics (so far mean and variance) for target polygons. 
 Typical applications would be the computation of average catchment rainfall from polar or cartesian grids. Check out the 
-`module documentation <http://wradlib.github.io/wradlib-docs/latest/zonalstats.html>`_ and the new examples.
+`module documentation <http://wradlib.org/wradlib-docs/latest/zonalstats.html>`_ and the new examples.
 
 
 Version 0.6.0
@@ -147,7 +147,7 @@ Version 0.4.0
 
 **New features**
 
-- comprehensive RADOLAN tutorial, examples, and example data: http://wradlib.github.io/wradlib-docs/latest/tutorial_radolan_format.html
+- comprehensive RADOLAN tutorial, examples, and example data: http://wradlib.org/wradlib-docs/latest/tutorial_radolan_format.html
 - enhanced :doc:`generated/wradlib.io.read_RADOLAN_composite` to read EX product
 - :doc:`generated/wradlib.georef.get_radolan_grid`
 
@@ -171,13 +171,13 @@ However, the most important change introduced with this release was to remove a 
 
 In addition, we removed three outdated tutorial (on clutter detection, convertion and rainfall accumulation) and replaced the two latter by a more concise tutorial "Converting reflectivity to rainfall".
 
-Finally, we use one "central" bibliography for literature cross-referencing now (see http://wradlib.github.io/wradlib-docs/latest/zreferences.html).
+Finally, we use one "central" bibliography for literature cross-referencing now (see http://wradlib.org/wradlib-docs/latest/zreferences.html).
 
 **New features**
 
-- New style of online docs (http://wradlib.github.io/wradlib-docs), using sphinx_rtd_theme
-- Added Tutorial http://wradlib.github.io/wradlib-docs/latest/tutorial_get_rainfall.html
-- New organisation of bibliography: http://wradlib.github.io/wradlib-docs/latest/zreferences.html
+- New style of online docs (http://wradlib.org/wradlib-docs), using sphinx_rtd_theme
+- Added Tutorial http://wradlib.org/wradlib-docs/latest/tutorial_get_rainfall.html
+- New organisation of bibliography: http://wradlib.org/wradlib-docs/latest/zreferences.html
 
 **Deprecated features**
 
