@@ -16,7 +16,7 @@ If your Anaconda Python installation is working, the following command (in a con
     $ python --version
     Python 3.5.1 :: Continuum Analytics, Inc.
 
-Now you can use the ``conda`` package and environment manager (`conda documentation <http://conda.pydata.org/docs/index.html/>`_) to setup your *wradlib* installation.
+Now you can use the ``conda`` package and environment manager (`conda documentation <http://conda.pydata.org/docs/#>`_) to setup your *wradlib* installation.
 
 #. Clone the root environment or create one from scratch::
 
