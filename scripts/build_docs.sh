@@ -60,6 +60,9 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
         mkdir doc-build/$TAG
         ln -s $TAG doc-build/latest
 
+        # need to replace /latest/ in notebooks to $TAG
+        find doc/source/ -name *.ipynb -type f -exec sed -i 's/latest/$TAG/g' {} \;
+
     # if is devel version
     else
         echo "Building Devel Docs"
