@@ -172,10 +172,7 @@ class AdjustBase(ipol.IpolBase):
     Examples
     --------
 
-    See :download:`adjust_example.py script\
-    <../../../examples/adjust_example.py>`.
-
-    .. literalinclude:: ../../../examples/adjust_example.py
+    See :ref:`notebooks/multisensor/wradlib_adjust_example.ipynb`.
 
     """
 
@@ -373,7 +370,7 @@ class AdjustAdd(AdjustBase):
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :doc:`here <wradlib.adjust.AdjustBase>`.
+    :meth:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -390,7 +387,7 @@ class AdjustAdd(AdjustBase):
 
         Calling an adjustment object works the same for all adjustment classes.
         Detailed instructions on the parameters *obs* and *raw* are provided
-        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
+        :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -430,7 +427,7 @@ class AdjustMultiply(AdjustBase):
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :doc:`here <wradlib.adjust.AdjustBase>`.
+    :meth:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -447,7 +444,7 @@ class AdjustMultiply(AdjustBase):
 
         Calling an adjustment object works the same for all adjustment classes.
         Detailed instructions on the parameters *obs* and *raw* are provided
-        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
+        :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -506,7 +503,7 @@ class AdjustMixed(AdjustBase):
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :doc:`here <wradlib.adjust.AdjustBase>`.
+    :meth:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -523,7 +520,7 @@ class AdjustMixed(AdjustBase):
 
         Calling an adjustment object works the same for all adjustment classes.
         Detailed instructions on the parameters *obs* and *raw* are provided
-        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
+        :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -562,7 +559,7 @@ class AdjustMFB(AdjustBase):
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :doc:`here <wradlib.adjust.AdjustBase>`.
+    :meth:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -579,7 +576,7 @@ class AdjustMFB(AdjustBase):
 
         Calling an adjustment object works the same for all adjustment classes.
         Detailed instructions on the parameters *obs* and *raw* are provided
-        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
+        :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -639,7 +636,7 @@ class AdjustNone(AdjustBase):
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :doc:`here <wradlib.adjust.AdjustBase>`
+    :meth:`wradlib.adjust.AdjustBase`
 
     Returns
     -------
@@ -656,7 +653,7 @@ class AdjustNone(AdjustBase):
 
         Calling an adjustment object works the same for all adjustment classes.
         Detailed instructions on the parameters *obs* and *raw* are provided
-        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
+        :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -688,7 +685,7 @@ class GageOnly(AdjustBase):
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :doc:`here <wradlib.adjust.AdjustBase>`
+    :meth:`wradlib.adjust.AdjustBase`
 
     Returns
     -------
@@ -705,7 +702,7 @@ class GageOnly(AdjustBase):
 
         Calling an adjustment object works the same for all adjustment classes.
         Detailed instructions on the parameters *obs* and *raw* are provided
-        :doc:`here <wradlib.adjust.AdjustBase.__call__>`.
+        :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------

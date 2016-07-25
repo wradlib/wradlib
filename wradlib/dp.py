@@ -17,19 +17,15 @@ application of polarimetric moments is implemented in the corresponding wradlib
 modules, e.g.:
 
     - fuzzy echo classification from polarimetric moments
-      (:doc:`classify_echo_fuzzy
-      <generated/wradlib.clutter.classify_echo_fuzzy>`)
-    - attenuation correction (:doc:`pia_from_kdp
-      <generated/wradlib.atten.pia_from_kdp>`)
-    - direct precipitation retrieval from Kdp (:doc:`kdp2r
-      <generated/wradlib.trafo.kdp2r>`)
+      (:meth:`wradlib.clutter.classify_echo_fuzzy`)
+    - attenuation correction (:meth:`wradlib.atten.pia_from_kdp`)
+    - direct precipitation retrieval from Kdp (:meth:`wradlib.trafo.kdp2r`)
 
 Establishing a valid PhiDP profile for Kdp retrieval involves despeckling
 (linear_despeckle), phase unfolding, and iterative retrieval of PhiDP form KDP.
 The main workflow and its single steps is based on a publication by
 :cite:`Vulpiani2012`. For convenience, the entire workflow has been
-put together in the function :doc:`process_raw_phidp
-<generated/wradlib.dp.process_raw_phidp_vulpiani>`.
+put together in the function :meth:`wradlib.dp.process_raw_phidp_vulpiani`.
 
 Once a valid PhiDP profile has been established, the `kdp_from_phidp` functions
 can be used to retrieve Kdp.
@@ -99,6 +95,11 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
         reconstructed phidp
     kdp : array of shape (n azimuth angles, n range gates)
         kdp estimate corresponding to phidp output
+
+    Examples
+    --------
+
+    See :ref:`notebooks/verification/wradlib_verify_example.ipynb`.
 
     """
     if copy:

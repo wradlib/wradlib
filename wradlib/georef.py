@@ -450,6 +450,10 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     Here, the coordinates of the east and west directions won't come to lie on
     the latitude of the site because the beam doesn't travel along the latitude
     circle but along a great circle.
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#\
+Georeferencing-and-Projection`.
+
     """
     # if site altitude is present, use it, else assume it to be zero
     try:
@@ -821,6 +825,13 @@ def create_osr(projname, **kwargs):
     -------
     output : osr.SpatialReference
         GDAL/OSR object defining projection
+
+    Examples
+    --------
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#\
+Georeferencing-and-Projection`.
+
     """
 
     aeqd_wkt = ('PROJCS["unnamed",'
@@ -886,6 +897,12 @@ def proj4_to_osr(proj4str):
     ----------
     proj4str : string
         Proj4 string describing projection
+
+    Examples
+    --------
+
+    See :ref:`notebooks/radolan/radolan_grid.ipynb#PROJ.4`.
+
     """
     proj = None
     if proj4str:
@@ -1076,6 +1093,12 @@ def read_gdal_coordinates(dataset, mode='centers', z=True):
     -------
     coordinates : 3D np array
         projected coordinates (x,y,z)
+
+    Examples
+    --------
+
+    See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+
     """
     coordinates_pixel = pixel_coordinates(dataset.RasterXSize,
                                           dataset.RasterYSize, mode)
@@ -1098,6 +1121,12 @@ def read_gdal_projection(dset):
     -------
     srs : OSR.SpatialReference
         dataset projection object
+
+    Examples
+    --------
+
+    See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+
     """
     proj4 = dset.GetProjection()
     srs = osr.SpatialReference()
@@ -1119,6 +1148,12 @@ def read_gdal_values(data=None, nodata=False):
     -------
     values : 2d array
         array with values
+
+    Examples
+    --------
+
+    See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+
     """
 
     b1 = data.GetRasterBand(1)
@@ -1170,6 +1205,12 @@ def reproject(*args, **kwargs):
         arrays of reprojected x,y coordinates, shape depending on input array
     X, Y, Z: nd arrays
         arrays of reprojected x,y,z coordinates, shape depending on input array
+
+    Examples
+    --------
+
+    See :ref:`notebooks/georeferencing/wradlib_georef_example.ipynb`.
+
     """
     if len(args) == 1:
         C = np.asanyarray(args[0])
@@ -1442,6 +1483,9 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
         >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
         >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
         (900, 900, 2), (3.5889, 46.9526)
+
+    See :ref:`notebooks/radolan/radolan_grid.ipynb#\
+Polar-Stereographic-Projection`.
 
     Raises
     ------
