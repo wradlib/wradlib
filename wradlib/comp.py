@@ -104,6 +104,11 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     output : ndarray of float
         data of the radar circle which is interpolated on the composite grid
 
+    Examples
+    --------
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#Gridding`.
+
     """
     # get indices to select the subgrid from the composite grid
     ix = extract_circle(center, radius, trg)
@@ -181,6 +186,11 @@ def compose_weighted(radargrids, qualitygrids):
     Returns
     -------
     composite : array
+
+    Examples
+    --------
+
+    See :ref:`notebooks/workflow/recipe1.ipynb`.
 
     See Also
     --------

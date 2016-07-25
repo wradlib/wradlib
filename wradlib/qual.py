@@ -142,6 +142,11 @@ def pulse_volume(ranges, h, theta):
     output : array
         volume of radar bins at each range in `ranges` [m**3]
 
+    Examples
+    --------
+
+    See :ref:`notebooks/workflow/recipe1.ipynb`.
+
     """
     return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta))) ** 2
 
@@ -177,6 +182,8 @@ def beam_block_frac(Th, Bh, a):
     Examples
     --------
     >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
+
+    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb`.
 
     Note
     ----

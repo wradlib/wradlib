@@ -155,9 +155,14 @@ class Nearest(IpolBase):
     trg : ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
 
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
+
+
     Note
     ----
-    Uses :func:`scipy.spatial.cKDTree`
+    :meth:`scipy.spatial.cKDTree`
 
     """
 
@@ -210,6 +215,10 @@ class Idw(IpolBase):
         Data point coordinates of the target points.
     nnearest : integer - max. number of neighbours to be considered
     p : float - inverse distance power used in 1/dist**p
+
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
 
     Note
     ----
@@ -300,6 +309,10 @@ class Linear(IpolBase):
         Data point coordinates of the source points.
     trg : ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
+
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
     def __init__(self, src, trg):
@@ -512,6 +525,9 @@ class OrdinaryKriging(IpolBase):
     After initialization the estimation variance at each interpolation target
     may be retrieved from the attribute `estimation_variance`.
 
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
     def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12):
@@ -1036,6 +1052,11 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     -------
     interp : numpy ndarray
         array with interpolated values of size N
+
+    Examples
+    --------
+    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb#\
+Read-DEM-Raster-Data`.
     """
 
     # TODO: dimension checking

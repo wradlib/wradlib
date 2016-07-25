@@ -58,7 +58,7 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     Examples
     --------
 
-    # TODO: provide a correct example here
+    See :ref:`notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
 
     """
     nn = wsize // 2
@@ -105,7 +105,7 @@ def filter_gabella_b(img, thrs=0.):
     Examples
     --------
 
-    # TODO: provide a correct example here
+    See :ref:`notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
 
     """
     conn = np.ones((3, 3))
@@ -174,7 +174,7 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
     Examples
     --------
 
-    # TODO: provide a correct example here
+    See :ref:`notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
 
     """
     bad = np.isnan(img)
@@ -214,6 +214,11 @@ def histo_cut(prec_accum):
     -------
     output : array
         boolean array with pixels identified as clutter/shadings set to True.
+
+    Examples
+    --------
+
+    See :ref:`notebooks/classify/wradlib_histo_cut_example.ipynb`.
 
     """
 

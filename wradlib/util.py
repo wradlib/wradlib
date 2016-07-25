@@ -451,6 +451,8 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
      [  88.   92.   96.  100.]
      [  nan   nan   nan   nan]]
 
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#Rainfall-accumulation`.
+
     """
     # src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
     dt_src, dt_trg = np.array(dt_src), np.array(dt_trg)

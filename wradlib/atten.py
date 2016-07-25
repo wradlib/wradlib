@@ -12,6 +12,8 @@ Attenuation Correction
    :toctree: generated/
 
     correctAttenuationHB
+    correctAttenuationKraemer
+    correctAttenuationHJ
     constraint_dBZ
     constraint_pia
     correctAttenuationConstrained2
@@ -89,13 +91,10 @@ def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
         Exception, if attenuation exceeds ``thrs`` and no handling ``mode`` is
         set.
 
-    References
-    ----------
-    Krämer2008 - Krämer, Stefan 2008: Quantitative Radardatenaufbereitung
-    für die Niederschlagsvorhersage und die Siedlungsentwässerung,
-    Mitteilungen Institut für Wasserwirtschaft, Hydrologie und
-    Landwirtschaftlichen Wasserbau
-    Gottfried Wilhelm Leibniz Universität Hannover, Heft 92, ISSN 0343-8090.
+    Examples
+    --------
+    See :ref:`notebooks/attenuation/wradlib_attenuation.ipynb#\
+Hitschfeld-and-Bordan`.
 
     """
     if coefficients is None:
@@ -208,6 +207,9 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Exception, if attenuation exceeds ``thrs`` even with smallest possible
         linear coefficient (a_min) and no handling ``mode`` is set.
 
+    Examples
+    --------
+    See :ref:`notebooks/attenuation/wradlib_attenuation.ipynb#Kraemer`.
     """
 
     if np.max(np.isnan(gateset)):
@@ -318,6 +320,10 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
     AttenuationOverflowError
         Exception, if attenuation exceeds ``thrs`` even with smallest possible
         linear coefficient (a_min) and no handling ``mode`` is set.
+
+    Examples
+    --------
+    See :ref:`notebooks/attenuation/wradlib_attenuation.ipynb#Harrison`.
 
     Examples
     --------

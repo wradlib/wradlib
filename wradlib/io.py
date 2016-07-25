@@ -6,8 +6,8 @@
 Raw Data I/O
 ^^^^^^^^^^^^
 
-Please have a look at the tutorial :ref:`wradlib_radar_formats.ipynb` for an
-introduction on how to deal with different file formats.
+Please have a look at the tutorial :ref:`notebooks/wradlib_radar_formats.ipynb`
+for an introduction on how to deal with different file formats.
 
 .. autosummary::
    :nosignatures:
@@ -238,6 +238,12 @@ def readDX(filename):
           explicitly evaluate the `elev` attribute, if elevation information
           is needed.
         - 'message' - additional text stored in the header.
+
+    Examples
+    --------
+
+    See :ref:`notebooks/fileio/wradlib_reading_dx.ipynb`.
+
     """
 
     azimuthbitmask = 2 ** (14 - 1)
@@ -822,6 +828,12 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
         tuple of two items (data, attrs)
         - data : numpy array of shape (number of rows, number of columns)
         - attrs : dictionary of metadata information from the file header
+
+    Examples
+    --------
+
+    See :ref:`notebooks/radolan/radolan_format.ipynb`.
+
     """
 
     NODATA = missing
@@ -907,6 +919,11 @@ def read_generic_hdf5(fname):
     output : dict
         a dictionary that contains both data and metadata according to the
         original hdf5 file structure
+
+    Examples
+    --------
+
+    See :ref:`notebooks/fileio/wradlib_radar_formats.ipynb#Generic-HDF5`.
 
     """
     f = h5py.File(fname, "r")
@@ -1151,6 +1168,12 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
         dictionary of scan and moment data (numpy arrays)
     attrs : dict
         dictionary of attributes
+
+    Examples
+    --------
+
+    See :ref:`notebooks/fileio/wradlib_radar_formats.ipynb#GAMIC-HDF5`.
+
     """
 
     # check elevations
@@ -1652,6 +1675,12 @@ def read_Rainbow(filename, loaddata=True):
     rbdict : dict
         a dictionary that contains both data and metadata according to the
         original rainbow file structure
+
+    Examples
+    --------
+
+    See :ref:`notebooks/fileio/wradlib_load_rainbow_example.ipynb`.
+
     """
 
     rbdict = get_RB_header(filename)
@@ -1801,11 +1830,8 @@ def read_generic_netcdf(fname):
 
     Examples
     --------
-    See :download:`generic_netcdf_example.py script
-    <../../../examples/generic_netcdf_example.py>`.
 
-    .. literalinclude:: ../../../examples/generic_netcdf_example.py
-
+    See :ref:`notebooks/fileio/wradlib_generic_netcdf_example.ipynb`.
 
     """
     try:
@@ -1919,11 +1945,10 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
     Please refer to :any:`georef`
     to see how to create SpatialReference objects from e.g.
-    :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
-    :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
-    or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
-    are addressed by the
-    :doc:`create_osr function <wradlib.georef.create_osr>`.
+    EPSG codes :meth:`wradlib.georef.epsg_to_osr`,
+    PROJ.4 strings :meth:`wradlib.georef.proj4_to_osr`,
+    or WKT strings :meth:`wradlib.georef.wkt_to_osr`. Other projections
+    are addressed by :meth:`wradlib.georef.create_osr`.
 
     Parameters
     ----------
@@ -1952,10 +1977,7 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
     Examples
     --------
-    See :download:`gis_export_example.py script
-    <../../../examples/gis_export_example.py>`.
-
-    .. literalinclude:: ../../../examples/gis_export_example.py
+    See :ref:`notebooks/fileio/wradlib_gis_export_example.ipynb`.
 
     """
     # Check input data
@@ -2027,13 +2049,12 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     polar stereographic projections between GDAL and ESRI ArcGIS.
 
     The projection information (argument ``proj``) needs to be passed as a GDAL
-    SpatialReference object. Refer to :any:`georef` to see how to create
-    SpatialReference objects from e.g.
-    :doc:`EPSG codes <wradlib.georef.epsg_to_osr>`,
-    :doc:`proj4 strings <wradlib.georef.proj4_to_osr>`,
-    or :doc:`WKT strings <wradlib.georef.wkt_to_osr>`. Other projections
-    are addressed by the
-    :doc:`create_osr function <wradlib.georef.create_osr>`.
+    SpatialReference object. Please refer to :any:`georef`
+    to see how to create SpatialReference objects from e.g.
+    EPSG codes :meth:`wradlib.georef.epsg_to_osr`,
+    PROJ.4 strings :meth:`wradlib.georef.proj4_to_osr`,
+    or WKT strings :meth:`wradlib.georef.wkt_to_osr`. Other projections
+    are addressed by :meth:`wradlib.georef.create_osr`.
 
     Writing a GeoTIFF file requires a ``geotransform`` list to define how to
     compute map coordinates from grid indices. The list needs to contain the
@@ -2077,10 +2098,8 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
 
     Examples
     --------
-    See :download:`gis_export_example.py script
-    <../../../examples/gis_export_example.py>`.
 
-    .. literalinclude:: ../../../examples/gis_export_example.py
+    See :ref:`notebooks/fileio/wradlib_gis_export_example.ipynb`.
 
     """
     # Check input data
@@ -2180,6 +2199,13 @@ def read_raster_data(filename, driver=None, **kwargs):
         numpy ndarray of raster coordinates
     values : array
         numpy 2darray of raster values
+
+    Examples
+    --------
+
+    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb` and
+    :ref:`notebooks/visualisation/wradlib_overlay.ipynb`
+
     """
 
     dataset = open_raster(filename, driver=driver)

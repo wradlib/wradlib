@@ -16,6 +16,7 @@ Standard plotting and mapping procedures
    plot_ppi
    plot_ppi_crosshair
    plot_rhi
+   create_cg
    plot_cg_ppi
    plot_cg_rhi
    plot_scan_strategy
@@ -177,8 +178,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     See also
     --------
     wradlib.georef.reproject - for information on projection strings
-    wradlib.georef.create_osr - routine to generate pre-defined projection
-    strings
+    wradlib.georef.create_osr - generate pre-defined projection strings
 
     Returns
     -------
@@ -187,6 +187,10 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
+
+    Examples
+    --------
+    See :ref:`notebooks/visualisation/wradlib_plot_ppi_example.ipynb`.
 
     """
     # kwargs handling
@@ -316,6 +320,10 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     -------
     ax : matplotlib Axes object
         The axes object into which the PPI was plotted
+
+    Examples
+    --------
+    See :ref:`notebooks/visualisation/wradlib_plot_ppi_example.ipynb`.
 
     """
     # if we didn't get an axes object, find the current one
@@ -520,14 +528,15 @@ def create_cg(st, fig=None, subplot=111):
     """ Helper function to create curvelinear grid
 
     The function makes use of the Matplotlib AXISARTIST namespace
-    :doc:`axisartist`
-    http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+    `mpl_toolkits.axisartist \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
 
     Here are some limitations to normal Matplotlib Axes. While using the
-    Matplotlib AxesGrid Toolkit
-    http://matplotlib.org/mpl_toolkits/axes_grid/index.html
+    Matplotlib `AxesGrid Toolkit \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
     most of the limitations can be overcome.
-    See http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html.
+    See `Matplotlib AxesGrid Toolkit User’s Guide \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
 
     Parameters
     ----------
@@ -673,13 +682,15 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
     coordinates depending which axes object is used.
 
     The function uses create_cg which uses the Matplotlib AXISARTIST namespace
-    http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+    `mpl_toolkits.axisartist \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
 
     Here are some limitations to normal Matplotlib Axes. While using the
-    Matplotlib AxesGrid Toolkit
-    http://matplotlib.org/mpl_toolkits/axes_grid/index.html
+    Matplotlib `AxesGrid Toolkit \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
     most of the limitations can be overcome.
-    See http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html.
+    See `Matplotlib AxesGrid Toolkit User’s Guide \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
 
     `**kwargs` may be used to try to influence the matplotlib.pcolormesh
     routine under the hood.
@@ -738,6 +749,10 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
+
+    Examples
+    --------
+    See :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
     """
 
     # this may seem odd at first, but d1 and d2 are also used in plot_rhi
@@ -814,15 +829,17 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     Plotting in the radar's polar coordinate system is possible as well.
 
     The function uses create_cg wich uses the Matplotlib AXISARTIST namespace
-    http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+    `mpl_toolkits.axisartist \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
 
     Here are some limitations to normal Matplotlib Axes. While using the
-    Matplotlib AxesGrid Toolkit
-    http://matplotlib.org/mpl_toolkits/axes_grid/index.html
+    Matplotlib `AxesGrid Toolkit \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
     most of the limitations can be overcome.
-    See http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html.
+    See `Matplotlib AxesGrid Toolkit User’s Guide \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
 
-    `**kwargs` may be used to try to influence the matplotlib.pcolormesh
+    `**kwargs` may be used to try to influence the :func:`matplotlib.pcolormesh`
     routine under the hood.
 
     Parameters
@@ -884,6 +901,10 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     pm : matplotlib QuadMesh object
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
+
+    Examples
+    --------
+    See :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
     """
 
     # autogenerate axis dimensions
@@ -1132,6 +1153,10 @@ def plot_max_plan_and_vert(x, y, z, data, unit="", title="",
                            saveto="", **kwargs):
     """Plot according to <plot_plan_and_vert> with the maximum values
     along the three axes of <data>
+
+    Examples
+    --------
+    See :ref:`notebooks/workflow/recipe2.ipynb`.
     """
     plot_plan_and_vert(x, y, z, np.max(data, axis=-3), np.max(data, axis=-2),
                        np.max(data, axis=-1),
@@ -1209,6 +1234,10 @@ def add_lines(ax, lines, **kwargs):
     ax : :class:`matplotlib:matplotlib.axes.Axes`
     lines : nested numpy Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.LineCollection`
+
+    Examples
+    --------
+    See :ref:`notebooks/visualisation/wradlib_overlay.ipynb`.
     """
     try:
         ax.add_collection(LineCollection([lines], **kwargs))
@@ -1234,6 +1263,10 @@ def add_patches(ax, patch_array, **kwargs):
     ax : :class:`matplotlib:matplotlib.axes.Axes`
     patch_array : nested numpy Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.PolyCollection`
+
+    Examples
+    --------
+    See :ref:`notebooks/visualisation/wradlib_overlay.ipynb`.
     """
 
     try:
