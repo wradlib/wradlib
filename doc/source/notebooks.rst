@@ -2,9 +2,9 @@ Tutorials and Examples
 ======================
 
 This tutorials and examples should give an idea how the individual functions of
-*wradlib* can be used for weather radar processing. For additional help to
-certain functions also consider to have look at the jupyter notebooks and
-example scripts distributed with the source code.
+:math:`\omega radlib` can be used for weather radar processing. For additional
+help to certain functions also consider to have look at the jupyter notebooks
+and example scripts distributed with the source code.
 
 .. toctree::
    :maxdepth: 2
