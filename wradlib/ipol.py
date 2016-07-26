@@ -155,9 +155,14 @@ class Nearest(IpolBase):
     trg : ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
 
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
+
+
     Note
     ----
-    Uses :func:`scipy.spatial.cKDTree`
+    Uses :class:`scipy:scipy.spatial.cKDTree`
 
     """
 
@@ -211,9 +216,13 @@ class Idw(IpolBase):
     nnearest : integer - max. number of neighbours to be considered
     p : float - inverse distance power used in 1/dist**p
 
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
+
     Note
     ----
-    Uses :func:`scipy.spatial.cKDTree`
+    Uses :class:`scipy:scipy.spatial.cKDTree`
 
     """
 
@@ -289,7 +298,8 @@ class Idw(IpolBase):
 
 class Linear(IpolBase):
     """
-    Interface to the scipy.interpolate.LinearNDInterpolator class.
+    Interface to the :class:`scipy:scipy.interpolate.LinearNDInterpolator`
+    class.
 
     We provide this class in order to achieve a uniform interface for all
     Interpolator classes
@@ -300,6 +310,10 @@ class Linear(IpolBase):
         Data point coordinates of the source points.
     trg : ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
+
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
     def __init__(self, src, trg):
@@ -330,9 +344,9 @@ class Linear(IpolBase):
         return ip(self.trg)
 
 
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Covariance routines needed for Kriging
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 def parse_covariogram(cov_model):
     """"""
     patterns = [re.compile('([\d\.]+) Nug\(([\d\.]+)\)'),  # nugget
@@ -512,6 +526,9 @@ class OrdinaryKriging(IpolBase):
     After initialization the estimation variance at each interpolation target
     may be retrieved from the attribute `estimation_variance`.
 
+    Examples
+    --------
+    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
     def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12):
@@ -786,9 +803,9 @@ class ExternalDriftKriging(IpolBase):
         return ip
 
 
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Wrapper functions
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     """
     Convenience function to use the interpolation classes in an efficient way
@@ -916,11 +933,11 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
     >>> data = np.arange(12.).reshape(4,3)
     >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
-    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)
+    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_a)
-    >>> # the same result can be achieved by using an masked array instead of an explicit mask
+    >>> # the same result can be achieved by using an masked array instead of an explicit mask  # noqa
     >>> mdata = np.ma.array(data, mask = masked_values)
-    >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)
+    >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_b)
 
 
@@ -1020,7 +1037,7 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     .. versionadded:: 0.6.0
 
     Keyword arguments are fed through to
-    :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
+    :func:`scipy:scipy.ndimage.map_coordinates`
 
     Parameters
     ----------
@@ -1030,12 +1047,17 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
         2 dimensional array (nx, ny) of data values
     newgrid : numpy ndarray
         Nx2 dimensional array (..., lon/lat) of floats
-    kwargs : :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
+    kwargs : :func:`scipy:scipy.ndimage.map_coordinates`
 
     Returns
     -------
     interp : numpy ndarray
         array with interpolated values of size N
+
+    Examples
+    --------
+    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb#\
+Read-DEM-Raster-Data`.
     """
 
     # TODO: dimension checking

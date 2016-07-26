@@ -43,30 +43,50 @@ def rvp2dBZ(x):
     ----------
     x : int
         a number or an array
+
+    Examples
+    --------
+    >>> from wradlib.trafo import rvp2dBZ
+    >>> print(rvp2dBZ(65.))
+    0.0
     """
     return x * 0.5 - 32.5
 
 
 def decibel(x):
     """Calculates the decibel representation of the input values
-    dBZ = 10 * log10(z)
+
+    :math:`dBZ=10 \cdot \log_{10} z`
 
     Parameters
     ----------
     x : a number or an array
         (must not be <= 0.)
 
+    Examples
+    --------
+    >>> from wradlib.trafo import decibel
+    >>> print(decibel(100.))
+    20.0
     """
     return 10. * np.log10(x)
 
 
 def idecibel(x):
     """Calculates the inverse of input decibel values
-    10.**(x/10.)
+
+    :math:`z=10^{x \over 10}`
 
     Parameters
     ----------
     x : a number or an array
+
+    Examples
+    --------
+    >>> from wradlib.trafo import idecibel
+    >>> print(idecibel(10.))
+    10.0
+
     """
     return 10. ** (x / 10.)
 
@@ -100,6 +120,8 @@ def kdp2r(kdp, f, a=129., b=0.85):
 
     The default parameters have been set according to :cite:`Bringi2001`.
 
+    Note
+    ----
     **Please note that this way, rainfall intensities can become negative.**
     This is an intended behaviour in order to account for noisy Kdp values.
 

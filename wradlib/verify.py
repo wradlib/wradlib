@@ -62,6 +62,11 @@ class PolarNeighbours():
     nnear : int
         number of neighbouring radar bins you would like to find
 
+    Examples
+    --------
+
+    See :ref:`notebooks/verification/wradlib_verify_example.ipynb`.
+
     """
 
     def __init__(self, r, az, sitecoords, proj, x, y, nnear=9):
@@ -160,6 +165,9 @@ class ErrorMetrics():
     >>> metrics.pprint() # doctest: +SKIP
     >>> ax = metrics.plot() # doctest: +SKIP
     >>> metrics.report() # doctest: +SKIP
+
+    See :ref:`notebooks/verification/wradlib_verify_example.ipynb` and
+    :ref:`notebooks/multisensor/wradlib_adjust_example.ipynb`.
 
     """
 

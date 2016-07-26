@@ -1,9 +1,9 @@
 Release Notes
 =============
 
-Please note that as long as wradlib releases are within the ``0.y.z`` series, the API cannot be considered stable. We will try to avoid sudden API breaks via deprecation warnings. All wradlib releases come without any warranty. Release notes might be incomplete. See `here <https://github.com/wradlib/wradlib/commits/master>`_ for a complete record of changes.
+Please note that as long as :math:`\omega radlib` releases are within the ``0.y.z`` series, the API cannot be considered stable. We will try to avoid sudden API breaks via deprecation warnings. All :math:`\omega radlib` releases come without any warranty. Release notes might be incomplete. See `here <https://github.com/wradlib/wradlib/commits/master>`_ for a complete record of changes.
 
-You can install the latest wradlib release from PyPI via ``$ pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in :doc:`gettingstarted`.
+You can install the latest :math:`\omega radlib` release from PyPI via ``$ pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in :doc:`gettingstarted`.
 
 
 Bleeding Edge
@@ -11,12 +11,23 @@ Bleeding Edge
 
 **Highlights**
 
-* documentation reviewed, adapted gettingstarted.rst, dev_setup.rst and release_notes.rst
-* added notebook-workflow
+* added notebook-workflow (converted all example-scripts to jupyter notebooks)
+* structured notebooks with parent notebook, where appropriate
+* documentation reviewed and adapted
+    - community.rst,
+    - dev_setup.rst,
+    - gettingstarted.rst,
+    - index.rst,
+    - notebooks.rst,
+    - release_notes.rst
+* docstrings reviewed, added links to notebooks where appropriate, cosmetic changes
+* package notebooks and converted python scripts with pypi-sdist
 
 **New features**
 
-* added simple notebooks showing workflow
+* deploy untagged MICRO-version changes to test-pypi
+* reworked citation handling
+* added reading capability of new radolan FZ product
 * added use of dedicated wradlib-repo, WRADLIB_DATA env variable and data file retrieving functions
 * add ability to read gzipped dx data
 * enhanced ``wradlib.io.read_Rainbow`` to read product pixmap data from rainbow5 files
@@ -25,6 +36,7 @@ Bleeding Edge
 
 * removed bug reading lists in ``wradlib.io.read_Rainbow``
 * fixed offset bug in ``wradlib.georef.sweep_centroids``
+* several minor fixes
 
 
 Version 0.8.0
@@ -32,14 +44,14 @@ Version 0.8.0
 
 **Highlights**
 
-* As of now wradlib is python3 compatible.
+* As of now :math:`\omega radlib` is python3 compatible.
 * Docstrings, tests and examples as well as the documentation have been reviewed and fixed.
-* main wradlib repository is now hosted `here on github <https://github.com/wradlib/wradlib>`_.
-* wradlib docs are now hosted `on github, but with custom domain <http://wradlib.org/wradlib-docs/>`_.
+* main :math:`\omega radlib` repository is now hosted `here on github <https://github.com/wradlib/wradlib>`_.
+* :math:`\omega radlib` docs are now hosted `on github, but with custom domain <http://wradlib.org/wradlib-docs/>`_.
 
 **New features**
 
-wradlib is constantly tested on `travis-ci wradlib <https://travis-ci.org/wradlib/wradlib>`_ within a miniconda python environment with the latest python27, python34 and python35 interpreters on linux OS.
+:math:`\omega radlib` is constantly tested on `travis-ci wradlib <https://travis-ci.org/wradlib/wradlib>`_ within a miniconda python environment with the latest python27, python34 and python35 interpreters on linux OS.
 We also check code coverage for all pull requests and additions with `coveralls <https://coveralls.io/github/wradlib/wradlib>`_.
 
 **Deprecated features**
@@ -66,7 +78,7 @@ Version 0.6.0
 
 **Highlights**
 
-wradlib functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
+:math:`\omega radlib` functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
 
 Added ability to handle georeferenced raster and vector data
 
@@ -104,7 +116,7 @@ Version 0.5.0
 
 **Highlights**
 
-From version ``0.6.0`` on, wradlib functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before using version ``0.6.0``: Any use of proj4 strings will generate a deprecation warning with the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid``.
+From version ``0.6.0`` on, :math:`\omega radlib` functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before using version ``0.6.0``: Any use of proj4 strings will generate a deprecation warning with the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid``.
 
 **New features**
 
@@ -133,7 +145,7 @@ Version 0.4.1
 
 **Highlights**
 
-From now on, wradlib will generate warnings if keyword parameters of wradlib functions will be or have been changed. This is achieved by using ``wradlib.util.apichange_kwargs`` as a decorator (see ``apichange_example.py`` for examples how these warnings might look like). Please take these warnings seriously and adapt your applications before stepping to a new wradlib release.
+From now on, :math:`\omega radlib` will generate warnings if keyword parameters of :math:`\omega radlib` functions will be or have been changed. This is achieved by using ``wradlib.util.apichange_kwargs`` as a decorator (see ``apichange_example.py`` for examples how these warnings might look like). Please take these warnings seriously and adapt your applications before stepping to a new :math:`\omega radlib` release.
 
 
 Version 0.4.0
@@ -209,10 +221,10 @@ The following functions/classes that were marked as deprecated before have been 
 Version 0.2.0
 -------------
 
-``0.2.0`` is the first new release of wradlib after more than three years of ``0.0.1``. The changes that have accumulated during this time are too many to list them here. Let's just say that from here on, we will keep track of changes in wradlib releases more thoroughly.
+``0.2.0`` is the first new release of :math:`\omega radlib` after more than three years of ``0.0.1``. The changes that have accumulated during this time are too many to list them here. Let's just say that from here on, we will keep track of changes in :math:`\omega radlib` releases more thoroughly.
 
 
 Version 0.1.1
 -------------
 
-``0.1.1`` was the first experimental wradlib release. 
+``0.1.1`` was the first experimental :math:`\omega radlib` release.

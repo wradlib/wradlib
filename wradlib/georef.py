@@ -83,10 +83,10 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     horizon's coordinate system to the equatorial coordinate system.
 
     The conversion formulas used were taken from Wikipedia
-    :cite:`Nautisches-Dreiceck` and are only valid as long as the radar's
+    :cite:`Nautisches-Dreieck` and are only valid as long as the radar's
     elevation angle is small, as one main assumption of this method is, that
     the 'zenith-star'-side of the nautic triangle can be described by the radar
-    range divided by the earths radius. For lager elevation angles, this side
+    range divided by the earths radius. For larger elevation angles, this side
     would have to be reduced.
 
     Parameters
@@ -346,7 +346,8 @@ def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
         s = k_e r_e \arcsin\left(
         \frac{r \cos\theta}{k_e r_e + h_n(r, \theta, r_e, k_e)}\right)
 
-    where :math:`h_n` would be provided by beam_height_n
+    where :math:`h_n` would be provided by
+    :meth:`~wradlib.georef.beam_height_n`
 
     Parameters
     ----------
@@ -450,6 +451,10 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     Here, the coordinates of the east and west directions won't come to lie on
     the latitude of the site because the beam doesn't travel along the latitude
     circle but along a great circle.
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#\
+Georeferencing-and-Projection`.
+
     """
     # if site altitude is present, use it, else assume it to be zero
     try:
@@ -562,13 +567,13 @@ def polar2polyvert(r, az, sitecoords):
     """
     Generate 2-D polygon vertices directly from polar coordinates.
 
-    This is an alternative to centroid2polyvert which does not use centroids,
-    but generates the polygon vertices by simply connecting the corners of the
-    radar bins.
+    This is an alternative to :meth:`~wradlib.georef.centroid2polyvert` which
+    does not use centroids, but generates the polygon vertices by simply
+    connecting the corners of the radar bins.
 
     Both azimuth and range arrays are assumed to be equidistant and to contain
     only unique values. For further information refer to the documentation of
-    polar2lonlat.
+    :meth:`~wradlib.georef.polar2lonlat`.
 
     Parameters
     ----------
@@ -610,8 +615,8 @@ def polar2polyvert(r, az, sitecoords):
     >>> # plot the resulting mesh
     >>> fig = pl.figure()
     >>> ax = fig.add_subplot(111)
-    >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)
-    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors='None')
+    >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)  # noqa
+    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors='None')  # noqa
     >>> ret = ax.add_collection(polycoll, autolim=True)
     >>> pl.autoscale()
     >>> pl.show()
@@ -655,7 +660,8 @@ def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
     boundaries of the range bins (thus they must be positive). The angles are
     assumed to describe the pointing direction fo the main beam lobe.
 
-    For further information refer to the documentation of georef.polar2lonlat.
+    For further information refer to the documentation of
+    :meth:`~wradlib.georef.polar2lonlat`.
 
     Parameters
     ----------
@@ -821,6 +827,13 @@ def create_osr(projname, **kwargs):
     -------
     output : osr.SpatialReference
         GDAL/OSR object defining projection
+
+    Examples
+    --------
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#\
+Georeferencing-and-Projection`.
+
     """
 
     aeqd_wkt = ('PROJCS["unnamed",'
@@ -886,6 +899,12 @@ def proj4_to_osr(proj4str):
     ----------
     proj4str : string
         Proj4 string describing projection
+
+    Examples
+    --------
+
+    See :ref:`notebooks/radolan/radolan_grid.ipynb#PROJ.4`.
+
     """
     proj = None
     if proj4str:
@@ -937,7 +956,8 @@ def get_earth_radius(latitude, sr=None):
 
     .. math::
 
-        R^2 = ( a^4 cos(f)^2 + b^4 sin(f)^2 ) / ( a^2 cos(f)^2 + b^2 sin(f)^2 )
+        R^2 = \frac{a^4 \cos(f)^2 + b^4 \sin(f)^2}
+        {a^2 \cos(f)^2 + b^2 \sin(f)^2}
 
     Parameters
     ----------
@@ -1038,7 +1058,8 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
     Parameters
     ----------
     geotransform : np array
-        geographical transformation vector (see pixel_to_map())
+        geographical transformation vector
+        (see :meth:`~wradlib.georef.pixel_to_map`)
     coordinates : 2d array
         array of pixel coordinates;
     z : string
@@ -1076,6 +1097,12 @@ def read_gdal_coordinates(dataset, mode='centers', z=True):
     -------
     coordinates : 3D np array
         projected coordinates (x,y,z)
+
+    Examples
+    --------
+
+    See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+
     """
     coordinates_pixel = pixel_coordinates(dataset.RasterXSize,
                                           dataset.RasterYSize, mode)
@@ -1098,6 +1125,12 @@ def read_gdal_projection(dset):
     -------
     srs : OSR.SpatialReference
         dataset projection object
+
+    Examples
+    --------
+
+    See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+
     """
     proj4 = dset.GetProjection()
     srs = osr.SpatialReference()
@@ -1119,6 +1152,12 @@ def read_gdal_values(data=None, nodata=False):
     -------
     values : 2d array
         array with values
+
+    Examples
+    --------
+
+    See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+
     """
 
     b1 = data.GetRasterBand(1)
@@ -1170,6 +1209,12 @@ def reproject(*args, **kwargs):
         arrays of reprojected x,y coordinates, shape depending on input array
     X, Y, Z: nd arrays
         arrays of reprojected x,y,z coordinates, shape depending on input array
+
+    Examples
+    --------
+
+    See :ref:`notebooks/georeferencing/wradlib_georef_example.ipynb`.
+
     """
     if len(args) == 1:
         C = np.asanyarray(args[0])
@@ -1422,26 +1467,29 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef  # noqa
         >>> radolan_grid = georef.get_radolan_grid()
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
         (900, 900, 2), (-523.4622, -4658.6447)
 
         >>> # using pure trigonometric transformations
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(trig=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
         (900, 900, 2), (-523.4622, -4658.6447)
 
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
         (1500, 1400, 2), (-673.4622, -5008.6447)
 
         >>> # using osr spatial reference transformation
         >>> import wradlib.georef as georef
         >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))
+        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
         (900, 900, 2), (3.5889, 46.9526)
+
+    See :ref:`notebooks/radolan/radolan_grid.ipynb#\
+Polar-Stereographic-Projection`.
 
     Raises
     ------

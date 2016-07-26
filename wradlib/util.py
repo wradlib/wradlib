@@ -17,6 +17,8 @@ attributable to the other modules
    aggregate_in_time
    aggregate_equidistant_tseries
    from_to
+   filter_window_polar
+   filter_window_cartesian
 
 """
 import datetime as dt
@@ -30,7 +32,6 @@ import numpy as np
 from scipy import interpolate
 from scipy.ndimage import filters
 from scipy.spatial import cKDTree
-from scipy.stats import nanmean
 from osgeo import ogr
 
 warnings.simplefilter('always', DeprecationWarning)
@@ -59,8 +60,7 @@ def deprecated(replacement=None):
     >>> @deprecated()
     ... def foo(x):
     ...     return x
-    >>> ret = foo(1) #doctest: +SKIP
-    #  #doctest: +ELLIPSIS
+    >>> ret = foo(1) #doctest: +ELLIPSIS
     /.../util.py:1: DeprecationWarning: wradlib.util.foo is deprecated
       #!/usr/bin/env python
 
@@ -69,9 +69,9 @@ def deprecated(replacement=None):
     >>> @deprecated(newfun)
     ... def foo(x):
     ...     return x
-    >>> ret = foo(1) #doctest: +SKIP
-    # #doctest: +ELLIPSIS
-    /.../util.py:1: DeprecationWarning: wradlib.util.foo is deprecated; use <function newfun at 0x...> instead
+    >>> ret = foo(1) #doctest: +ELLIPSIS
+    /.../util.py:1: DeprecationWarning: wradlib.util.foo is deprecated; \
+use <function newfun at 0x...> instead
       #!/usr/bin/env python
 
     """
@@ -217,7 +217,8 @@ def import_optional(module):
     from module "nonexistentmodule".
     This module is optional right now in wradlib.
     You need to separately install this dependency.
-    Please refer to https://wradlib.github.io/wradlib-docs/latest/gettingstarted.html#optional-dependencies
+    Please refer to https://wradlib.github.io/wradlib-docs/\
+latest/gettingstarted.html#optional-dependencies
     for further instructions.
     """
     try:
@@ -293,12 +294,12 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
     >>> tstart = "2000-01-01 00:00:00"  # noqa
     >>> tend = "2000-01-02 00:00:00"
     >>> tdelta = 3600 * 6
-    >>> tends_src = ["2000-01-01 02:00:00", "2000-01-01 03:00:00", "2000-01-01 04:00:00", \
-    "2000-01-01 05:00:00", "2000-01-01 12:00:00"]
+    >>> tends_src = ["2000-01-01 02:00:00", "2000-01-01 03:00:00", \
+    "2000-01-01 04:00:00", "2000-01-01 05:00:00", "2000-01-01 12:00:00"]
     >>> tdelta_src = 3600
     >>> src = [1, 1, 1, 1, 1]
-    >>> tstarts, tends, agg = aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, \
-    tdelta_src, src, minpercvalid=50.)
+    >>> tstarts, tends, agg = aggregate_equidistant_tseries(tstart, tend, \
+    tdelta, tends_src, tdelta_src, src, minpercvalid=50.)
     >>> print(agg)
     [  4.  nan  nan  nan]
 
@@ -363,7 +364,7 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
             if method == "sum":
                 agg[i] = np.nansum(srcfull)
             elif method == "mean":
-                agg[i] = nanmean(srcfull)
+                agg[i] = np.nanmean(srcfull)
             else:
                 print("Aggregation method not known, yet.")
                 raise Exception()
@@ -415,7 +416,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
 
     Examples
     --------
-    >>> src = np.arange(8 * 4).reshape((8, 4))  # noqa
+    >>> src = np.arange(8 * 4).reshape((8, 4))
     >>> print('source time series:') # doctest: +SKIP
     >>> print(src)
     [[ 0  1  2  3]
@@ -426,7 +427,8 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
      [20 21 22 23]
      [24 25 26 27]
      [28 29 30 31]]
-    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(hours=i) for i in range(9)]
+    >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + \
+    dt.timedelta(hours=i) for i in range(9)]
     >>> print('source time interval limits:') # doctest: +SKIP
     >>> for tim in dt_src: print(tim)
     2008-06-02 00:00:00
@@ -439,7 +441,8 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     2008-06-02 07:00:00
     2008-06-02 08:00:00
     >>> print('target time interval limits:') # doctest: +SKIP
-    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + dt.timedelta(seconds=i*3600*4) for i in range(4)]
+    >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + \
+    dt.timedelta(seconds=i*3600*4) for i in range(4)]
     >>> for tim in dt_trg: print(tim)
     2008-06-02 00:00:00
     2008-06-02 04:00:00
@@ -450,6 +453,8 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     [[  24.   28.   32.   36.]
      [  88.   92.   96.  100.]
      [  nan   nan   nan   nan]]
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#Rainfall-accumulation`.
 
     """
     # src, dt_src, dt_trg = np.array(src), np.array(dt_src), np.array(dt_trg)
@@ -1130,7 +1135,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
     wsize : float
         Half size of the window centred on the pixel [m]
     fun : string
-        name of the 1d filter from scipy.ndimage.filters
+        name of the 1d filter from :mod:`scipy:scipy.ndimage`
     rscale : float
         range [m] scale of the polar grid
     random: bool
@@ -1199,7 +1204,7 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
     wsize : float
         Half size of the window centred on the pixel [m]
     fun : string
-        name of the 2d filter from scipy.ndimage.filters
+        name of the 2d filter from :mod:`scipy:scipy.ndimage`
     scale : tuple of 2 floats
         x and y scale of the cartesian grid [m]
 

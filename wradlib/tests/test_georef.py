@@ -150,6 +150,43 @@ class CoordinateHelperTest(unittest.TestCase):
         self.assertTrue(np.allclose(georef.sweep_centroids(1, 100., 1, 2.0),
                                     np.array([[[50., 3.14159265, 2.]]])))
 
+    def test__check_polar_coords(self):
+        r = np.array([50., 100., 150., 200.])
+        az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
+        self.assertRaises(ValueError,
+                          lambda: georef._check_polar_coords(r, az))
+
+        r = np.array([0, 50., 100., 150., 200.])
+        az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
+        self.assertRaises(ValueError,
+                          lambda: georef._check_polar_coords(r, az))
+
+        r = np.array([100., 50., 150., 200.])
+        az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
+        self.assertRaises(ValueError,
+                          lambda: georef._check_polar_coords(r, az))
+
+        r = np.array([50., 100., 125., 200.])
+        az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
+        self.assertRaises(ValueError,
+                          lambda: georef._check_polar_coords(r, az))
+
+        r = np.array([50., 100., 150., 200.])
+        az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 361.])
+        self.assertRaises(ValueError,
+                          lambda: georef._check_polar_coords(r, az))
+
+        r = np.array([50., 100., 150., 200.])
+        az = np.array([225., 270., 315., 0., 45., 90., 135., 180.])[::-1]
+        self.assertRaises(ValueError,
+                          lambda: georef._check_polar_coords(r, az))
+
+        # only py3k
+        # r = np.array([50., 100., 150., 200.])
+        # az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
+        # self.assertWarns(UserWarning,
+        #                  lambda: georef._check_polar_coords(r, az))
+
 
 class ProjectionsTest(unittest.TestCase):
     def test_create_osr(self):
