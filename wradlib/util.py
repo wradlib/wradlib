@@ -17,6 +17,8 @@ attributable to the other modules
    aggregate_in_time
    aggregate_equidistant_tseries
    from_to
+   filter_window_polar
+   filter_window_cartesian
 
 """
 import datetime as dt
@@ -1133,7 +1135,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
     wsize : float
         Half size of the window centred on the pixel [m]
     fun : string
-        name of the 1d filter from scipy.ndimage.filters
+        name of the 1d filter from :mod:`scipy:scipy.ndimage`
     rscale : float
         range [m] scale of the polar grid
     random: bool
@@ -1202,7 +1204,7 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
     wsize : float
         Half size of the window centred on the pixel [m]
     fun : string
-        name of the 2d filter from scipy.ndimage.filters
+        name of the 2d filter from :mod:`scipy:scipy.ndimage`
     scale : tuple of 2 floats
         x and y scale of the cartesian grid [m]
 

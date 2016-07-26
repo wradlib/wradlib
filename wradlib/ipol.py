@@ -162,7 +162,7 @@ class Nearest(IpolBase):
 
     Note
     ----
-    :meth:`scipy.spatial.cKDTree`
+    Uses :class:`scipy:scipy.spatial.cKDTree`
 
     """
 
@@ -222,7 +222,7 @@ class Idw(IpolBase):
 
     Note
     ----
-    Uses :func:`scipy.spatial.cKDTree`
+    Uses :class:`scipy:scipy.spatial.cKDTree`
 
     """
 
@@ -298,7 +298,8 @@ class Idw(IpolBase):
 
 class Linear(IpolBase):
     """
-    Interface to the scipy.interpolate.LinearNDInterpolator class.
+    Interface to the :class:`scipy:scipy.interpolate.LinearNDInterpolator`
+    class.
 
     We provide this class in order to achieve a uniform interface for all
     Interpolator classes
@@ -1036,7 +1037,7 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     .. versionadded:: 0.6.0
 
     Keyword arguments are fed through to
-    :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
+    :func:`scipy:scipy.ndimage.map_coordinates`
 
     Parameters
     ----------
@@ -1046,7 +1047,7 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
         2 dimensional array (nx, ny) of data values
     newgrid : numpy ndarray
         Nx2 dimensional array (..., lon/lat) of floats
-    kwargs : :func:`scipy:scipy.ndimage.interpolation.map_coordinates`
+    kwargs : :func:`scipy:scipy.ndimage.map_coordinates`
 
     Returns
     -------
