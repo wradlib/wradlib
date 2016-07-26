@@ -67,7 +67,7 @@ class HelperFunctionsTest(unittest.TestCase):
         wrl_data_path = os.environ.get('WRADLIB_DATA', None)
         del os.environ['WRADLIB_DATA']
         self.assertRaises(EnvironmentError,
-                         lambda: util.get_wradlib_data_path())
+                          lambda: util.get_wradlib_data_path())
         filename = 'rainbow/2013070308340000dBuZ.azi'
         os.environ['WRADLIB_DATA'] = os.path.join(wrl_data_path, filename)
         self.assertRaises(EnvironmentError,
@@ -76,8 +76,6 @@ class HelperFunctionsTest(unittest.TestCase):
         filename = os.path.join(wrl_data_path, "test.dat")
         self.assertRaises(EnvironmentError,
                           lambda: util.get_wradlib_data_file(filename))
-
-
 
 
 # -------------------------------------------------------------------------------
