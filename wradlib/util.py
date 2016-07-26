@@ -30,7 +30,6 @@ import numpy as np
 from scipy import interpolate
 from scipy.ndimage import filters
 from scipy.spatial import cKDTree
-from scipy.stats import nanmean
 from osgeo import ogr
 
 warnings.simplefilter('always', DeprecationWarning)
@@ -363,7 +362,7 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
             if method == "sum":
                 agg[i] = np.nansum(srcfull)
             elif method == "mean":
-                agg[i] = nanmean(srcfull)
+                agg[i] = np.nanmean(srcfull)
             else:
                 print("Aggregation method not known, yet.")
                 raise Exception()
