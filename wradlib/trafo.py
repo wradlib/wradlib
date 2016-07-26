@@ -49,7 +49,8 @@ def rvp2dBZ(x):
 
 def decibel(x):
     """Calculates the decibel representation of the input values
-    dBZ = 10 * log10(z)
+
+    :math:`dBZ=10 \cdot \log_{10} z`
 
     Parameters
     ----------
@@ -62,7 +63,8 @@ def decibel(x):
 
 def idecibel(x):
     """Calculates the inverse of input decibel values
-    10.**(x/10.)
+
+    :math:`z=10^{x \over 10}`
 
     Parameters
     ----------
@@ -100,6 +102,8 @@ def kdp2r(kdp, f, a=129., b=0.85):
 
     The default parameters have been set according to :cite:`Bringi2001`.
 
+    Note
+    ----
     **Please note that this way, rainfall intensities can become negative.**
     This is an intended behaviour in order to account for noisy Kdp values.
 

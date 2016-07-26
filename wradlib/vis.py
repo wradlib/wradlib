@@ -127,15 +127,16 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    `**kwargs` may be used to try to influence the matplotlib.pcolormesh and
-    wradlib.georef.polar2lonlatalt_n routines under the hood.
+    `**kwargs` may be used to try to influence the
+    :func:`matplotlib.pyplot.pcolormesh` and
+    :meth:`wradlib.georef.polar2lonlatalt_n` routines under the hood.
 
     There is one major caveat concerning the values of `r` and `az`.
-    Due to the way matplotlib.pcolormesh works, `r` should give the location
-    of the start of each range bin, while `az` should give the angle also at
-    the begin (i.e. 'leftmost') of the beam. This might be in contrast to
-    other conventions, which might define ranges and angles at the center of
-    bin and beam.
+    Due to the way :func:`matplotlib.pyplot.pcolormesh` works, `r` should give
+    the location of the start of each range bin, while `az` should give the
+    angle also at the begin (i.e. 'leftmost') of the beam.
+    This might be in contrast to other conventions, which might define ranges
+    and angles at the center of bin and beam.
     This affects especially the default values set for `r` and `az`, but ìt
     should be possible to accommodate all other conventions by setting `r` and
     `az` properly.
@@ -153,7 +154,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         The azimuth angles in degrees. If None, a default is
         calculated from the dimensions of `data`.
     autoext : True | False
-        This routine uses matplotlib.pyplot.pcolormesh to draw the bins.
+        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw the
+        bins.
         As this function needs one set of coordinates more than would usually
         be provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
@@ -309,9 +311,6 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         the standard keyword inheritance mechanism. If not given defaults will
         be used.
 
-    See the file plot_ppi_example.py in the examples folder for examples on how
-    this works.
-
     See also
     --------
     wradlib.vis.plot_ppi - plotting a PPI in cartesian coordinates
@@ -407,8 +406,8 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    `**kwargs` may be used to try to influence the matplotlib.pcolormesh
-    routine under the hood.
+    `**kwargs` may be used to try to influence the
+    :func:`matplotlib.pyplot.pcolormesh` routine under the hood.
 
     Parameters
     ----------
@@ -425,10 +424,11 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         In RHI's it happens that the elevation angles are spaced wider than
         the beam width. If this beam width (in degrees) is given in `th_res`,
         plot_rhi will plot the beams accordingly. Otherwise the behavior of
-        matplotlib.pyplot.pcolormesh assumes all beams to be adjacent to each
-        other, which might lead to unexpected results.
+        :func:`matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
+        to each other, which might lead to unexpected results.
     autoext : True | False
-        This routine uses matplotlib.pyplot.pcolormesh to draw the bins.
+        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw
+        the bins.
         As this function needs one set of coordinates more than would usually
         provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
@@ -437,9 +437,10 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         beam propagation will be taken into account. If False, simple
         trigonometry will be used to calculate beam propagation.
         Functionality for this will be provided by functions
-        wradlib.georef.arc_distance_n and wradlib.georef.beam_height_n, which
-        assume distances to be given in meters. Therefore, if `refrac` is True,
-        `r` must be given in meters.
+        :meth:`wradlib.georef.arc_distance_n` and
+        :meth:`wradlib.georef.beam_height_n`, which assume distances to be
+        given in meters. Therefore, if `refrac` is True, `r` must be given
+        in meters.
     ax : matplotlib Axes object
         If given, the RHI will be plotted into this axes object. If None a
         new axes object will be created.
@@ -710,7 +711,7 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         The azimuth angles in degrees. If None, a default is
         calculated from the dimensions of `data`.
     autoext : True | False
-        This routine uses matplotlib.pyplot.pcolormesh to draw the bins.
+        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw the bins.
         As this function needs one set of coordinates more than would usually
         be provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
@@ -718,8 +719,8 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         If True, the effect of refractivity of the earth's atmosphere on the
         beam propagation will be taken into account. If False, simple
         trigonometry will be used to calculate beam propagation.
-        Functionality for this will be provided by functions
-        wradlib.georef.arc_distance_n. Therefore, if `refrac` is True,
+        Functionality for this will be provided by function
+        :meth:`wradlib.georef.arc_distance_n`. Therefore, if `refrac` is True,
         `r` must be given in meters.
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
@@ -839,8 +840,8 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     See `Matplotlib AxesGrid Toolkit User’s Guide \
     <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
 
-    `**kwargs` may be used to try to influence the :func:`matplotlib.pcolormesh`
-    routine under the hood.
+    `**kwargs` may be used to try to influence :func:`matplotlib.pcolormesh`
+    under the hood.
 
     Parameters
     ----------
@@ -861,8 +862,8 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         In RHI's it happens that the elevation angles are spaced wider than
         the beam width. If this beam width (in degrees) is given in `th_res`,
         plot_rhi will plot the beams accordingly. Otherwise the behavior of
-        matplotlib.pyplot.pcolormesh assumes all beams to be adjacent to each
-        other, which might lead to unexpected results.
+        :func:`matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
+        to each other, which might lead to unexpected results.
     autoext : True | False
         This routine uses matplotlib.pyplot.pcolormesh to draw the bins.
         As this function needs one set of coordinates more than would usually
@@ -872,11 +873,13 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         If True, the effect of refractivity of the earth's atmosphere on the
         beam propagation will be taken into account.
         Functionality for this will be provided by functions
-        wradlib.georef.arc_distance_n and wradlib.georef.beam_height_n, which
+        :meth:`wradlib.georef.arc_distance_n` and
+        :meth:`wradlib.georef.beam_height_n`, which
         assume distances to be given in meters. Therefore, if `refrac` is True,
         `r` must be given in meters. Cartesian Axis caax ist used for plotting.
-        If False, PolarAxes.PolarTransform will be used to calculate
-        beam propagation.
+        If False,
+        :class:`~matplotlib.projections.polar.PolarAxes.PolarTransform`
+        will be used to calculate beam propagation.
     fig : matplotlib Figure object
         If given, the RHI will be plotted into this figure object. Axes are
         created as needed. If None a new figure object will be created or
@@ -1071,7 +1074,8 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
 
     Keyword Arguments
     -----------------
-    **kwargs : other kwargs which can be passed to pylab.contourf
+    **kwargs : other kwargs which can be passed to \
+               :func:`matplotlib.pyplot.contourf`
 
     """
 
@@ -1174,7 +1178,7 @@ def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M',
     data : 2D array of shape ( num time steps, num data series )
     labels : list of strings (names of data series)
     title : string
-    kwargs : keyword arguments related to pylab.plot
+    kwargs : keyword arguments related to :func:`matplotlib.pyplot.plot`
 
     """
     if ax is None:
@@ -1232,7 +1236,7 @@ def add_lines(ax, lines, **kwargs):
     Parameters
     ----------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
-    lines : nested numpy Nx2 array(s)
+    lines : nested :class:`numpy:numpy.ndarray` Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.LineCollection`
 
     Examples
@@ -1261,7 +1265,7 @@ def add_patches(ax, patch_array, **kwargs):
     Parameters
     ----------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
-    patch_array : nested numpy Nx2 array(s)
+    patch_array : nested :class:`numpy:numpy.ndarray` Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.PolyCollection`
 
     Examples

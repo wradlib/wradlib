@@ -368,6 +368,10 @@ class AdjustAdd(AdjustBase):
     computation of the inverse distance weights needs to be repeated in
     __call__ which is at the expense of performance.
 
+    Note
+    ----
+    Inherits from AdjustBase
+
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
     :meth:`wradlib.adjust.AdjustBase`.
@@ -375,10 +379,6 @@ class AdjustAdd(AdjustBase):
     Returns
     -------
     output : array of adjusted radar values
-
-    Notes
-    -----
-    Inherits from AdjustBase
 
     """
 
@@ -425,6 +425,10 @@ class AdjustMultiply(AdjustBase):
     the computation of the inverse distance weights needs to be repeated in
     __call__ which is at the expense of performance.
 
+    Note
+    ----
+    Inherits from AdjustBase
+
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
     :meth:`wradlib.adjust.AdjustBase`.
@@ -432,10 +436,6 @@ class AdjustMultiply(AdjustBase):
     Returns
     -------
     output : array of adjusted radar values
-
-    Notes
-    -----
-    Inherits from AdjustBase
 
     """
 
@@ -476,20 +476,22 @@ class AdjustMixed(AdjustBase):
     AdjustMultiply). The formal representation of the error model according
     to :cite:`Pfaff2010` is:
 
-        :math:`R(gage) = R(radar) * (1+delta) + epsilon`
+        :math:`R_{gage} = R_{radar} \cdot (1 + \delta) + \epsilon`
 
-    delta and epsilon have to be assumed to be independent and normally
-    distributed. The present implementation is based on a Least Squares
-    estimation of delta and epsilon for each rain gage location. delta and
-    epsilon are then interpolated and used to correct the radar rainfall field.
+    :math:`\delta` and :math:`\epsilon` have to be assumed to be independent
+    and normally distributed. The present implementation is based on a Least
+    Squares estimation of delta and epsilon for each rain gage location.
+    :math:`\delta` and :math:`\epsilon` are then interpolated and used to
+    correct the radar rainfall field.
+
     The least squares implementation uses the equation for the error model plus
-    the condition to minimize (delta**2 + epsilon**2) for each gage
+    the condition to minimize (:math:`\delta^2 + \epsilon^2`) for each gage
     location. The idea behind this is that epsilon dominates the adjustment for
     small deviations between radar and gage while delta dominates in case of
     large deviations.
 
     **Usage**:
-    First, an instance of AdjustMMixed has to be created. Calling this instance
+    First, an instance of AdjustMixed has to be created. Calling this instance
     then does the actual adjustment. The motivation behind this is performance.
     In case the observation points are always the same for different time
     steps, the computation of neighbours and inverse distance weights only
@@ -501,6 +503,10 @@ class AdjustMixed(AdjustBase):
     computation of the inverse distance weights needs to be repeated in
     __call__ which is at the expense of performance.
 
+    Note
+    ----
+    Inherits from AdjustBase
+
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
     :meth:`wradlib.adjust.AdjustBase`.
@@ -509,9 +515,7 @@ class AdjustMixed(AdjustBase):
     -------
     output : array of adjusted radar values
 
-    Notes
-    -----
-    Inherits from AdjustBase
+
 
     """
 
@@ -557,6 +561,10 @@ class AdjustMFB(AdjustBase):
        passed during initialisation of adjustment objects.
        Keyword argument 'biasby' of the call function has been removed.
 
+    Note
+    ----
+    Inherits from AdjustBase
+
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
     :meth:`wradlib.adjust.AdjustBase`.
@@ -564,10 +572,6 @@ class AdjustMFB(AdjustBase):
     Returns
     -------
     output : array of adjusted radar values
-
-    Notes
-    -----
-    Inherits from AdjustBase
 
     """
 
@@ -634,17 +638,17 @@ class AdjustNone(AdjustBase):
     This class can be used for benchmark verification experiments as a control
     for unadjusted data.
 
+    Note
+    ----
+    Inherits from AdjustBase
+
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :meth:`wradlib.adjust.AdjustBase`
+    :meth:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
     output : array of unadjusted radar values
-
-    Notes
-    -----
-    Inherits from AdjustBase
 
     """
 
@@ -683,18 +687,17 @@ class GageOnly(AdjustBase):
     computation of the inverse distance weights needs to be repeated in
     __call__ which is at the expense of performance.
 
+    Note
+    ----
+    Inherits from AdjustBase
+
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :meth:`wradlib.adjust.AdjustBase`
+    :meth:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
     output : array of adjusted radar values
-
-    Notes
-    -----
-    Inherits from AdjustBase
-
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):

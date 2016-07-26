@@ -88,8 +88,8 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
         the location coordinates of the radar
     data : ndarray of float
         the data that should be transferred to composite
-    interpol : an interpolation class name from wradlib.ipol - e.g. Nearest or
-       Idw
+    interpol : an interpolation class name from :meth:`wradlib.ipol`
+        e.g. :class:`~wradlib.ipol.Nearest` or :class:`~wradlib.ipol.Idw`
 
     Other Parameters
     ----------------
