@@ -1953,7 +1953,7 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     the function will also try to write an accompanying projection (``.prj``)
     file that has the same file name, but a different extension.
 
-    Please refer to :any:`georef`
+    Please refer to :mod:`wradlib.georef`
     to see how to create SpatialReference objects from e.g.
     EPSG codes :meth:`~wradlib.georef.epsg_to_osr`,
     PROJ.4 strings :meth:`~wradlib.georef.proj4_to_osr`,
@@ -2059,7 +2059,7 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     polar stereographic projections between GDAL and ESRI ArcGIS.
 
     The projection information (argument ``proj``) needs to be passed as a GDAL
-    SpatialReference object. Please refer to :any:`georef`
+    SpatialReference object. Please refer to :mod:`wradlib.georef`
     to see how to create SpatialReference objects from e.g.
     EPSG codes :meth:`~wradlib.georef.epsg_to_osr`,
     PROJ.4 strings :meth:`~wradlib.georef.proj4_to_osr`,

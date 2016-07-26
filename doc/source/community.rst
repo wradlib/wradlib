@@ -2,7 +2,7 @@ Community
 =========
 
 How to contribute to :math:`\omega radlib`?
------------------------------
+-------------------------------------------
 
 We need your help to enhance the capabilities of :math:`\omega radlib`! Is there an algorithm you would consider useful? Please **provide code (in any programming language) or documentation**. We will it a try to integrate this algorithm in :math:`\omega radlib`.
 
@@ -16,7 +16,7 @@ However, **there is an even better way:** Start a `Pull Request <https://help.gi
 
 A step-by-step tutorial for a pull request can be found `here <https://guides.github.com/activities/forking/>`_.
 
-Finally, you are welcome to **contribute examples of your own** :math:`\boldsymbol \omega radlib` **applications** in our :doc:`recipes <recipes>` section. There, you will also find a guide on how to submit your recipes to the :math:`\omega radlib` documentation pages.
+Finally, you are welcome to **contribute examples of your own** :math:`\boldsymbol \omega radlib` **applications** in our :doc:`recipes <notebooks/recipes>` section. There, you will also find a guide on how to submit your recipes to the :math:`\omega radlib` documentation pages.
 
 
 Users

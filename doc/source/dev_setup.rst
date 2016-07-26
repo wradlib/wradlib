@@ -9,7 +9,7 @@ As a developer, though, you should rather link into :math:`\omega radlib`'s vers
 
 
 Contributing to :math:`\omega radlib`
------------------------
+-------------------------------------
 Everyone can contribute to the developement of :math:`\omega radlib` by using the Fork and Pull model. For this purpose, you need to set up ``Git`` (see section `Setup`_). Then see section :doc:`community` for further instructions on how to create a Pull Request.
 
 
