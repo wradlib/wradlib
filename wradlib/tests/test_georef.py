@@ -181,10 +181,11 @@ class CoordinateHelperTest(unittest.TestCase):
         self.assertRaises(ValueError,
                           lambda: georef._check_polar_coords(r, az))
 
-        r = np.array([50., 100., 150., 200.])
-        az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
-        self.assertWarns(UserWarning,
-                         lambda: georef._check_polar_coords(r, az))
+        # only py3k
+        #r = np.array([50., 100., 150., 200.])
+        #az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
+        #self.assertWarns(UserWarning,
+        #                 lambda: georef._check_polar_coords(r, az))
 
 
 class ProjectionsTest(unittest.TestCase):
