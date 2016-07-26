@@ -8,9 +8,8 @@ import wradlib.vis as vis
 import wradlib.georef as georef
 import numpy as np
 import matplotlib.pyplot as pl
-
 pl.interactive(True)  # noqa
-import datetime as dt
+import datetime as dt  # noqa
 
 
 class PolarPlotTest(unittest.TestCase):

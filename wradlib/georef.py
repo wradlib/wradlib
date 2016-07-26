@@ -83,7 +83,7 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     horizon's coordinate system to the equatorial coordinate system.
 
     The conversion formulas used were taken from Wikipedia
-    :cite:`Nautisches-Dreiceck` and are only valid as long as the radar's
+    :cite:`Nautisches-Dreieck` and are only valid as long as the radar's
     elevation angle is small, as one main assumption of this method is, that
     the 'zenith-star'-side of the nautic triangle can be described by the radar
     range divided by the earths radius. For larger elevation angles, this side
@@ -956,7 +956,8 @@ def get_earth_radius(latitude, sr=None):
 
     .. math::
 
-        R^2 = \frac{a^4 \cos(f)^2 + b^4 \sin(f)^2}{a^2 \cos(f)^2 + b^2 \sin(f)^2}
+        R^2 = \frac{a^4 \cos(f)^2 + b^4 \sin(f)^2}
+        {a^2 \cos(f)^2 + b^2 \sin(f)^2}
 
     Parameters
     ----------

@@ -711,7 +711,8 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
         The azimuth angles in degrees. If None, a default is
         calculated from the dimensions of `data`.
     autoext : True | False
-        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw the bins.
+        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw
+        the bins.
         As this function needs one set of coordinates more than would usually
         be provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
