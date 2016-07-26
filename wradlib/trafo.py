@@ -43,6 +43,12 @@ def rvp2dBZ(x):
     ----------
     x : int
         a number or an array
+
+    Examples
+    --------
+    >>> from wradlib.trafo import rvp2dBZ
+    >>> print(rvp2dBZ(65.))
+    0.0
     """
     return x * 0.5 - 32.5
 
@@ -57,6 +63,11 @@ def decibel(x):
     x : a number or an array
         (must not be <= 0.)
 
+    Examples
+    --------
+    >>> from wradlib.trafo import decibel
+    >>> print(decibel(100.))
+    20.0
     """
     return 10. * np.log10(x)
 
@@ -69,6 +80,13 @@ def idecibel(x):
     Parameters
     ----------
     x : a number or an array
+
+    Examples
+    --------
+    >>> from wradlib.trafo import idecibel
+    >>> print(idecibel(10.))
+    10.0
+
     """
     return 10. ** (x / 10.)
 
