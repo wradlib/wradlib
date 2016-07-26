@@ -343,9 +343,9 @@ class Linear(IpolBase):
         return ip(self.trg)
 
 
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Covariance routines needed for Kriging
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 def parse_covariogram(cov_model):
     """"""
     patterns = [re.compile('([\d\.]+) Nug\(([\d\.]+)\)'),  # nugget
@@ -802,9 +802,9 @@ class ExternalDriftKriging(IpolBase):
         return ip
 
 
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Wrapper functions
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
     """
     Convenience function to use the interpolation classes in an efficient way
@@ -932,11 +932,11 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
     >>> data = np.arange(12.).reshape(4,3)
     >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
-    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)
+    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_a)
-    >>> # the same result can be achieved by using an masked array instead of an explicit mask
+    >>> # the same result can be achieved by using an masked array instead of an explicit mask  # noqa
     >>> mdata = np.ma.array(data, mask = masked_values)
-    >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)
+    >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_b)
 
 

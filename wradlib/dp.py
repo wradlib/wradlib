@@ -11,24 +11,26 @@ Overview
 --------
 
 This module provides algorithms to process polarimetric radar moments,
-namely the differential phase, PhiDP, and, based on successful PhiDP retrieval,
-also the specific differential phase, KDP. Please note that the actual
-application of polarimetric moments is implemented in the corresponding wradlib
-modules, e.g.:
+namely the differential phase, :math:`Phi_{DP}`, and, based on successful
+:math:`Phi_{DP}` retrieval, also the specific differential phase,
+:math:`K_{DP}`.
+Please note that the actual application of polarimetric moments is implemented
+in the corresponding wradlib modules, e.g.:
 
     - fuzzy echo classification from polarimetric moments
       (:meth:`wradlib.clutter.classify_echo_fuzzy`)
     - attenuation correction (:meth:`wradlib.atten.pia_from_kdp`)
     - direct precipitation retrieval from Kdp (:meth:`wradlib.trafo.kdp2r`)
 
-Establishing a valid PhiDP profile for Kdp retrieval involves despeckling
-(linear_despeckle), phase unfolding, and iterative retrieval of PhiDP form KDP.
+Establishing a valid :math:`Phi_{DP}` profile for :math:`K_{DP}` retrieval
+involves despeckling (linear_despeckle), phase unfolding, and iterative
+retrieval of :math:`Phi_{DP}` form :math:`K_{DP}`.
 The main workflow and its single steps is based on a publication by
 :cite:`Vulpiani2012`. For convenience, the entire workflow has been
 put together in the function :meth:`wradlib.dp.process_raw_phidp_vulpiani`.
 
-Once a valid PhiDP profile has been established, the `kdp_from_phidp` functions
-can be used to retrieve Kdp.
+Once a valid :math:`Phi_{DP}` profile has been established, the
+`kdp_from_phidp` functions can be used to retrieve :math:`K_{DP}`.
 
 Please note that so far, the functions in this module were designed to increase
 performance. This was mainly achieved by allowing the simultaneous application
@@ -43,7 +45,9 @@ all input arrays.
 
     process_raw_phidp_vulpiani
     kdp_from_phidp_finitediff
+    kdp_from_phidp_linregress
     kdp_from_phidp_convolution
+    kdp_from_phidp_sobel
     unfold_phi_vulpiani
     unfold_phi
     linear_despeckle
@@ -61,18 +65,19 @@ from . import util as util
 
 def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
                                niter=2, copy=False):
-    """Establish consistent PhiDP profiles from raw data.
+    """Establish consistent :math:`Phi_{DP}` profiles from raw data.
 
     This approach is based on :cite:`Vulpiani2012` and involves a
-    two step procedure of PhiDP reconstruction.
+    two step procedure of :math:`Phi_{DP}` reconstruction.
 
-    Processing of raw PhiDP data contains the following steps:
+    Processing of raw :math:`Phi_{DP}` data contains the following steps:
 
         - Despeckle
-        - Initial KDP estimation
+        - Initial :math:`K_{DP}` estimation
         - Removal of artifacts
         - Phase unfolding
-        - PhiDP reconstruction using iterative estimation of KDP
+        - :math:`Phi_{DP}` reconstruction using iterative estimation
+          of :math:`K_{DP}`
 
     Parameters
     ----------
@@ -82,7 +87,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
     N_despeckle : integer
         *N* parameter of function dp.linear_despeckle
     L : integer
-        *L* parameter of dp.kdp_from_phidp_convolution
+        *L* parameter of :meth:`~wradlib.dp.kdp_from_phidp_convolution`
     niter : integer
         Number of iterations in which phidp is retrieved from kdp
         and vice versa
@@ -203,8 +208,8 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
 
 
 def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
-    """Retrieves Kdp from PhiDP by applying a moving window range finite
-    difference derivative.
+    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving
+    window range finite difference derivative.
 
     See :cite:`Vulpiani2012` for details about this approach.
 
@@ -241,8 +246,8 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
 
 
 def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
-    """Alternative Kdp from PhiDP by applying a moving window
-    linear regression.
+    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving
+    window linear regression.
 
     Please note that the moving window size *L* is specified as the number of
     range gates. Thus, this argument might need adjustment in case the range
@@ -278,10 +283,10 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
     >>> phidp_raw[gaps] = np.nan
     >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
     >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
-    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
     >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
-    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
+    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
 
     """
     assert (L % 2) == 1, \
@@ -323,15 +328,15 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
 
 
 def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
-    """Alternative Kdp from PhiDP by applying a sobel filter where possible
-    and linear regression otherwise.
+    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a sobel
+    filter where possible and linear regression otherwise.
 
     The results are quite similar to the moving window linear regression, but
     this is much faster, depending on the percentage of NaN values in the beam,
     though. The Sobel filter is applied everywhere but will return NaNs in case
     only one value in the moving window is NaN. The remaining NaN values are
     then dealt with by using local linear regression
-    (see kdp_from_phidp_linregress).
+    (see :meth:`~wradlib.dp.kdp_from_phidp_linregress`).
 
     This Sobel filter solution has been provided by Scott Collis at
     StackOverflow :cite:`Sobel-linfit`
@@ -370,10 +375,10 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
     >>> phidp_raw[gaps] = np.nan
     >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
     >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
-    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
     >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
-    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
+    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
 
     """
     assert (L % 2) == 1, \
@@ -449,8 +454,8 @@ def sobel(x, window_len=7):
 
 
 def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
-    """Alternative Kdp from PhiDP by applying a convolution filter where
-    possible and linear regression otherwise.
+    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a
+    convolution filter where possible and linear regression otherwise.
 
     The results are very similar to the moving window linear regression, but
     the convolution is *much* faster, depending on the percentage of NaN values
@@ -458,10 +463,10 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
 
     The convolution filter was suggested by Kai Mühlbauer (University of Bonn).
 
-    The filter provides fast Kdp retrieval but will return NaNs in case at
-    least one value in the moving window is NaN. The remaining gates are
-    treated by using local linear regression where possible
-    (see kdp_from_phidp_linregress).
+    The filter provides fast :math:`K_{DP}` retrieval but will return NaNs in
+    case at least one value in the moving window is NaN. The remaining gates
+    are treated by using local linear regression where possible
+    (see :meth:`~wradlib.dp.kdp_from_phidp_linregress`).
 
     Please note that the moving window size *L* is specified as the number of
     range gates. Thus, this argument might need adjustment in case the
@@ -498,10 +503,10 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     >>> phidp_raw[gaps] = np.nan
     >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
     >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
-    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")
+    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
     >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")
-    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))
+    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
+    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> pl.show()
 
     """

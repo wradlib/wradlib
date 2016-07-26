@@ -56,11 +56,11 @@ def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
         shape can be either (l,m,n) or (m,l,n)
         data has to be provided in decibel representation of reflectivity [dBZ]
     a : float
-        proportionality factor of the k-Z relation ( :math:`k=a*Z^{b}` ).
+        proportionality factor of the k-Z relation ( :math:`k=a \cdot Z^{b}` ).
         Per default set to 1.67e-4.
     b : float
-        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
-        0.7.
+        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        set to 0.7.
     l : float
         length of a range gate [km]. Per default set to 1.0.
     mode : string
@@ -158,18 +158,18 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     a_max : float
         initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
+        ( :math:`k=a \cdot Z^{b}` ). Per default set to 1.67e-4.
 
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
-        overflow (sum of signal and attenuation exceeds
+        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of a in case of
+        signal overflow (sum of signal and attenuation exceeds
         the threshold ``thrs``).
         Per default set to 2.33e-5.
 
     b : float
-        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
-        0.7.
+        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        set to 0.7.
 
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
@@ -274,16 +274,16 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
         reflectivity [dBZ].
     a_max : float
         initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
+        ( :math:`k=a \cdot Z^{b}` ). Per default set to 1.67e-4.
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
-        overflow (sum of signal and attenuation exceeds
+        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of a in case of
+        signal overflow (sum of signal and attenuation exceeds
         the threshold ``thrs``).
         Per default set to 2.33e-5.
     b : float
-        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
-        0.7.
+        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        set to 0.7.
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
     l : float
@@ -332,9 +332,9 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
     >>> # example data from DWD radar Feldberg
     >>> filename = get_wradlib_data_file("dx/raa00-dx_10908-0806021655-fbg---bin.gz")  # noqa
     >>> gateset, attrs = readDX(filename)
-    >>> # Set this up according to Harrison, D.L., Driscoll, S.J., Kitchen, M. (2000)
+    >>> # according to Harrison, D.L., Driscoll, S.J., Kitchen, M. (2000)
     >>> k = correctAttenuationHJ(gateset, a_max = 4.565e-5, b = 0.73125, n=1,
-    ...                          mode = 'cap', thrs_dBZ = 100.0, max_PIA = 4.82)
+    ...                          mode = 'cap', thrs_dBZ = 100.0, max_PIA = 4.82)  # noqa
 
     """
 
@@ -419,16 +419,16 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         [dBZ].
     a_max : float
         initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ). Per default set to 1.67e-4.
+        ( :math:`k=a \cdot Z^{b}` ). Per default set to 1.67e-4.
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ) in the downwards iteration of a in case of signal
-        overflow (sum of signal and attenuation exceeds
+        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of a in case of
+        signal overflow (sum of signal and attenuation exceeds
         the threshold ``thrs``).
         Per default set to 2.33e-5.
     b : float
-        exponent of the k-Z relation ( :math:`k=a*Z^{b}` ). Per default set to
-        0.7.
+        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        set to 0.7.
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
     l : float
@@ -658,19 +658,20 @@ def bisectReferenceAttenuation(gateset,
         last rangegate of every beam.
     a_max : float
         Upper bound of the bisection interval within the linear coefficient a
-        of the k-Z relation has to be. ( :math:`k=a*Z^{b}` ).
+        of the k-Z relation has to be. ( :math:`k=a \cdot Z^{b}` ).
 
         Per default set to 1.67e-4.
     a_min : float
         Lower bound of the bisection interval within the linear coefficient a
-        of the k-Z relation has to be. ( :math:`k=a*Z^{b}` ).
+        of the k-Z relation has to be. ( :math:`k=a \cdot Z^{b}` ).
 
         Per default set to 2.33e-5.
     b_start : float
         Initial value for exponential coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ). This value will be lowered incremental by 0.01
-        if no solution was found within the bisection interval of ``a_max`` and
-        ``a_min`` within the number of given iterations ``max_iterations``.
+        ( :math:`k=a \cdot Z^{b}` ). This value will be lowered incremental
+        by 0.01 if no solution was found within the bisection interval of
+        ``a_max`` and ``a_min`` within the number of given iterations
+        ``max_iterations``.
 
         Per default set to 0.7.
     l : float
@@ -852,12 +853,12 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         [dBZ].
     a_max : float
         Initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ).
+        ( :math:`k=a \cdot Z^{b}` ).
 
         Per default set to 1.67e-4.
     a_min : float
         Minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ) in the downwards iteration of 'a' in case
+        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of 'a' in case
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints``.
 
@@ -868,12 +869,12 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Per default set to 4.
     b_max : float
         Initial value for exponential coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ).
+        ( :math:`k=a \cdot Z^{b}` ).
 
         Per default set to 0.7.
     b_min : float
         Minimal allowed exponential coefficient of the k-Z relation
-        ( :math:`k=a*Z^{b}` ) in the downwards iteration of 'b' in case
+        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of 'b' in case
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints`` and the linear coefficient 'a' has already
         reached the lower limit ``a_min``.
@@ -914,24 +915,24 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
     Implementing the original Hitschfeld & Bordan (1954) algorithm with
     otherwise default parameters::
 
-        import wradlib as wrl
-        k = wrl.atten.correctAttenuationConstrained2(gateset, n=1, mode='nan')
+        from wradlib.atten import *
+        k = correctAttenuationConstrained2(gateset, n=1, mode='nan')
 
     Implementing the basic Kraemer algorithm::
 
-        k = wrl.atten.correctAttenuationConstrained2(gateset,
-                                          mode='nan',
-                                          constraints=[wrl.atten.constraint_dBZ],
-                                          constr_args=[[59.0]])
+        k = correctAttenuationConstrained2(gateset,
+                                           mode='nan',
+                                           constraints=[constraint_dBZ],
+                                           constr_args=[[59.0]])
 
     Implementing the PIA algorithm by Jacobi et al.::
 
-        k = wrl.atten.correctAttenuationConstrained2(gateset,
-                                          mode='nan',
-                                          constraints=[wrl.atten.constraint_dBZ,
-                                                       wrl.atten.constraint_pia],
-                                          constr_args=[[59.0],
-                                                      [20.0]])
+        k = correctAttenuationConstrained2(gateset,
+                                           mode='nan',
+                                           constraints=[constraint_dBZ,
+                                                        constraint_pia],
+                                           constr_args=[[59.0],
+                                                        [20.0]])
     """
 
     # todo: überlauf darf so hoch sein, wie die urspruenglichen messwerte

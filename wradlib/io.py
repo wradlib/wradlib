@@ -6,7 +6,8 @@
 Raw Data I/O
 ^^^^^^^^^^^^
 
-Please have a look at the tutorial :ref:`notebooks/wradlib_radar_formats.ipynb`
+Please have a look at the tutorial
+:ref:`notebooks/fileio/wradlib_radar_formats.ipynb`
 for an introduction on how to deal with different file formats.
 
 .. autosummary::
@@ -25,6 +26,8 @@ for an introduction on how to deal with different file formats.
    read_safnwc
    to_AAIGrid
    to_GeoTIFF
+   to_hdf5
+   from_hdf5
    read_raster_data
    open_shape
 
@@ -216,7 +219,7 @@ def readDX(filename):
 
     Returns
     -------
-    data : numpy array
+    data : :func:`numpy:numpy.array`
         of image data [dBZ]; shape (360,128)
 
     attributes : dict
@@ -417,7 +420,7 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
 
     Returns
     -------
-    output : numpy array
+    output : :func:`numpy:numpy.array`
         of image data (dBZ), dictionary of attributes
     """
     try:
@@ -605,14 +608,14 @@ def decode_radolan_runlength_line(line, attrs):
 
     Parameters
     ----------
-    line : numpy array
+    line : :func:`numpy:numpy.array`
         of byte values
     attrs : dict
         dictionary of attributes derived from file header
 
     Returns
     -------
-    arr : numpy array
+    arr : :func:`numpy:numpy.array`
         of decoded values
     """
     # byte '0' is line number, we don't need it
@@ -668,7 +671,7 @@ def read_radolan_runlength_line(fid):
 
     Returns
     -------
-    line : numpy array
+    line : :func:`numpy:numpy.array`
         of coded values
     """
     line = fid.readline()
@@ -696,7 +699,7 @@ def decode_radolan_runlength_array(binarr, attrs):
 
     Returns
     -------
-    arr : numpy array
+    arr : :func:`numpy:numpy.array`
         of decoded values
     """
     buf = io.BytesIO(binarr)
@@ -798,7 +801,7 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
 
     The quantitative composite format of the DWD (German Weather Service) was
     established in the course of the
-    `RADOLAN project <http://www.dwd.de/RADOLAN>` and includes several file
+    RADOLAN project and includes several file
     types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG, PC, PG and many, many more.
     (see format description on the RADOLAN project homepage :cite:`DWD2009`).
 
@@ -806,7 +809,9 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     resolution and in polar-stereographic projection. There are other grid
     resolutions for different composites (eg. PC, PG)
 
-    **Beware**: This function already evaluates and applies the so-called
+    Warning
+    -------
+    This function already evaluates and applies the so-called
     PR factor which is specified in the header section of the RADOLAN files.
     The raw values in an RY file are in the unit 0.01 mm/5min, while
     read_RADOLAN_composite returns values in mm/5min (i. e. factor 100 higher).
@@ -825,9 +830,11 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     Returns
     -------
     output : tuple
-        tuple of two items (data, attrs)
-        - data : numpy array of shape (number of rows, number of columns)
-        - attrs : dictionary of metadata information from the file header
+        tuple of two items (data, attrs):
+
+            - data : :func:`numpy:numpy.array` of shape (number of rows,
+              number of columns)
+            - attrs : dictionary of metadata information from the file header
 
     Examples
     --------
@@ -903,11 +910,11 @@ def browse_hdf5_group(grp):
 def read_generic_hdf5(fname):
     """Reads hdf5 files according to their structure
 
-    In contrast to other file readers under wradlib.io, this function will
-    *not* return a two item tuple with (data, metadata). Instead, this function
-    returns ONE dictionary that contains all the file contents - both data and
-    metadata. The keys of the output dictionary conform to the Group/Subgroup
-    directory branches of the original file.
+    In contrast to other file readers under :meth:`wradlib.io`, this function
+    will *not* return a two item tuple with (data, metadata). Instead, this
+    function returns ONE dictionary that contains all the file contents - both
+    data and metadata. The keys of the output dictionary conform to the
+    Group/Subgroup directory branches of the original file.
 
     Parameters
     ----------
@@ -956,13 +963,14 @@ def read_OPERA_hdf5(fname):
     in order to understand how an hdf5 file is organized that conforms to the
     OPERA ODIM_H5 conventions.
 
-    In contrast to other file readers under wradlib.io, this function will
-    *not* return a two item tuple with (data, metadata). Instead, this function
-    returns ONE dictionary that contains all the file contents - both data and
-    metadata. The keys of the output dictionary conform to the Group/Subgroup
-    directory branches of the original file. If the end member of a branch
-    (or path) is "data", then the corresponding item of output dictionary is a
-    numpy array with actual data. Any other end member (either *how*, *where*,
+    In contrast to other file readers under :meth:`wradlib.io`, this function
+    will *not* return a two item tuple with (data, metadata). Instead, this
+    function returns ONE dictionary that contains all the file contents - both
+    data and metadata. The keys of the output dictionary conform to the
+    Group/Subgroup directory branches of the original file.
+    If the end member of a branch (or path) is "data", then the corresponding
+    item of output dictionary is a numpy array with actual data.
+    Any other end member (either *how*, *where*,
     and *what*) will contain the meta information applying to the corresponding
     level of the file hierarchy.
 
@@ -1487,10 +1495,10 @@ def get_RB_data_shape(blobdict):
                 dim1 = get_RB_data_attribute(blobdict, 'columns')
                 dim2 = get_RB_data_attribute(blobdict, 'depth')
                 if dim2 < 8:
-                    # if flagged data return ros x columns x depth
+                    # if flagged data return rows x columns x depth
                     return dim0, dim1, dim2
                 else:
-                    # otherwise just rosw x columns
+                    # otherwise just rows x columns
                     return dim0, dim1
             except KeyError as e2:
                 # if no some keys are missing, print errors and raise
@@ -1653,11 +1661,11 @@ def get_RB_header(filename):
 def read_Rainbow(filename, loaddata=True):
     """"Reads Rainbow files files according to their structure
 
-    In contrast to other file readers under wradlib.io, this function will
-    *not* return a two item tuple with (data, metadata). Instead, this function
-    returns ONE dictionary that contains all the file contents - both data and
-    metadata. The keys of the output dictionary conform to the XML outline in
-    the original data file.
+    In contrast to other file readers under :meth:`wradlib.io`, this function
+    will *not* return a two item tuple with (data, metadata). Instead, this
+    function returns ONE dictionary that contains all the file contents - both
+    data and metadata. The keys of the output dictionary conform to the XML
+    outline in the original data file.
 
     The radar data will be extracted from the data blobs, converted and added
     to the dict with key 'data' at the place where the @blobid was pointing
@@ -1714,12 +1722,13 @@ def to_hdf5(fpath, data, mode="w", metadata=None,
 
     This is more efficient than pickle, cPickle or numpy.save. The data is
     stored in a subgroup named ``data`` (i.e. hdf5file["data").
+    See :meth:`~wradlib.io.from_hdf5` for retrieving stored data.
 
     Parameters
     ----------
     fpath : string
         path to the hdf5 file
-    data : numpy array
+    data : :func:`numpy:numpy.array`
     mode : string
         file open mode, defaults to "w" (create, truncate if exists)
     metadata : dict
@@ -1741,7 +1750,8 @@ def to_hdf5(fpath, data, mode="w", metadata=None,
 
 
 def from_hdf5(fpath, dataset="data"):
-    """Loading data from hdf5 files that was stored by <wradlib.io.to_hdf5>
+    """Loading data from hdf5 files that was stored by \
+    :meth:`~wradlib.io.to_hdf5`
 
     Parameters
     ----------
@@ -1800,11 +1810,11 @@ def read_generic_netcdf(fname):
     """Reads netcdf files and returns a dictionary with corresponding
     structure.
 
-    In contrast to other file readers under wradlib.io, this function will
-    *not* return a two item tuple with (data, metadata). Instead, this function
-    returns ONE dictionary that contains all the file contents - both data and
-    metadata. The keys of the output dictionary conform to the Group/Subgroup
-    directory branches of the original file.
+    In contrast to other file readers under :meth:`wradlib.io`, this function
+    will *not* return a two item tuple with (data, metadata). Instead, this
+    function returns ONE dictionary that contains all the file contents - both
+    data and metadata. The keys of the output dictionary conform to the
+    Group/Subgroup directory branches of the original file.
 
     Please see the examples below on how to browse through a return object. The
     most important keys are the "dimensions" which define the shape of the data
@@ -1945,16 +1955,16 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
 
     Please refer to :any:`georef`
     to see how to create SpatialReference objects from e.g.
-    EPSG codes :meth:`wradlib.georef.epsg_to_osr`,
-    PROJ.4 strings :meth:`wradlib.georef.proj4_to_osr`,
-    or WKT strings :meth:`wradlib.georef.wkt_to_osr`. Other projections
-    are addressed by :meth:`wradlib.georef.create_osr`.
+    EPSG codes :meth:`~wradlib.georef.epsg_to_osr`,
+    PROJ.4 strings :meth:`~wradlib.georef.proj4_to_osr`,
+    or WKT strings :meth:`~wradlib.georef.wkt_to_osr`. Other projections
+    are addressed by :meth:`~wradlib.georef.create_osr`.
 
     Parameters
     ----------
     fpath : string
         a file path - must have a ".txt" or ".asc" extension.
-    data : array
+    data : :func:`numpy:numpy.array`
         two dimensional numpy array of type integer or float
     xllcorner : float
         x coordinate of the lower left corner of the grid
@@ -2051,10 +2061,10 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     The projection information (argument ``proj``) needs to be passed as a GDAL
     SpatialReference object. Please refer to :any:`georef`
     to see how to create SpatialReference objects from e.g.
-    EPSG codes :meth:`wradlib.georef.epsg_to_osr`,
-    PROJ.4 strings :meth:`wradlib.georef.proj4_to_osr`,
-    or WKT strings :meth:`wradlib.georef.wkt_to_osr`. Other projections
-    are addressed by :meth:`wradlib.georef.create_osr`.
+    EPSG codes :meth:`~wradlib.georef.epsg_to_osr`,
+    PROJ.4 strings :meth:`~wradlib.georef.proj4_to_osr`,
+    or WKT strings :meth:`~wradlib.georef.wkt_to_osr`. Other projections
+    are addressed by :meth:`~wradlib.georef.create_osr`.
 
     Writing a GeoTIFF file requires a ``geotransform`` list to define how to
     compute map coordinates from grid indices. The list needs to contain the
@@ -2082,7 +2092,7 @@ def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     ----------
     fpath : string
         a file path - must have a ".txt" or ".asc" extension.
-    data : array
+    data : :func:`numpy:numpy.array`
         two dimensional numpy array of type integer or float
     geotransform : sequence
         sequence of length 6 (# top left x, w-e pixel size, rotation,
@@ -2195,9 +2205,9 @@ def read_raster_data(filename, driver=None, **kwargs):
 
     Returns
     -------
-    coords : array
+    coords : :func:`numpy:numpy.array`
         numpy ndarray of raster coordinates
-    values : array
+    values : :func:`numpy:numpy.array`
         numpy 2darray of raster values
 
     Examples
