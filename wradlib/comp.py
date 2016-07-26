@@ -88,8 +88,8 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
         the location coordinates of the radar
     data : ndarray of float
         the data that should be transferred to composite
-    interpol : an interpolation class name from wradlib.ipol - e.g. Nearest or
-       Idw
+    interpol : an interpolation class name from :meth:`wradlib.ipol`
+        e.g. :class:`~wradlib.ipol.Nearest` or :class:`~wradlib.ipol.Idw`
 
     Other Parameters
     ----------------
@@ -103,6 +103,11 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     -------
     output : ndarray of float
         data of the radar circle which is interpolated on the composite grid
+
+    Examples
+    --------
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#Gridding`.
 
     """
     # get indices to select the subgrid from the composite grid
@@ -181,6 +186,11 @@ def compose_weighted(radargrids, qualitygrids):
     Returns
     -------
     composite : array
+
+    Examples
+    --------
+
+    See :ref:`notebooks/workflow/recipe1.ipynb`.
 
     See Also
     --------

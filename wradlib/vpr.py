@@ -18,7 +18,7 @@ account for these effects.
 The first step will normally be to reference the polar volume data in a
 3-dimensional Cartesian coordinate system. The three dimensional Cartesian
 coordinates of the original polar volume data can be computed using
-:doc:`volcoords_from_polar <generated/wradlib.vpr.volcoords_from_polar>`.
+:meth:`wradlib.vpr.volcoords_from_polar`.
 
 Then, we can create regular 3-D grids in order to analyse the vertical profile
 of reflectivity or rainfall intensity. For some applications you might want
@@ -28,8 +28,8 @@ in order to make radar observations at different distances from the radar more
 comparable. Basically, a CAPPI is simply one slice out of a 3-D volume grid.
 Analoguous, we will refer to the elements in a three dimensional Cartesian grid
 as *voxels*. In wradlib, you can create
-:doc:`CAPPIs <generated/wradlib.vpr.CAPPI>` (and :doc:`Pseudo CAPPIs
-<generated/wradlib.vpr.PseudoCAPPI>`) for different altitudes at once.
+CAPPIS (:meth:`wradlib.vpr.CAPPI`) and Pseudo CAPPIs
+(:meth:wradlib.vpr.PseudoCAPPI`) for different altitudes at once.
 
 Here's an example how a set of CAPPIs can be created from synthetic polar
 volume data::
@@ -48,7 +48,8 @@ volume data::
 
     # create Cartesian coordinates corresponding the location of the
     # polar volume bins
-    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs, azims, ranges, proj)  # noqa
+    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs,
+                                               azims, ranges, proj)  # noqa
     poldata = wradlib.vpr.synthetic_polar_volume(polxyz)
     # this is the shape of our polar volume
     polshape = (len(elevs),len(azims),len(ranges))
@@ -60,13 +61,16 @@ volume data::
     xyz = wradlib.util.gridaspoints(x, y, z)
     gridshape = (len(x), len(y), len(z))
 
-    # create an instance of the CAPPI class and use it to create a series of CAPPIs
-    gridder = wradlib.vpr.CAPPI(polxyz, xyz, maxrange=ranges.max(), gridshape=gridshape, Ipclass=wradlib.ipol.Idw)
+    # create an instance of the CAPPI class and
+    # use it to create a series of CAPPIs
+    gridder = wradlib.vpr.CAPPI(polxyz, xyz, maxrange=ranges.max(),
+                                gridshape=gridshape, Ipclass=wradlib.ipol.Idw)
     gridded = np.ma.masked_invalid( gridder(poldata) ).reshape(gridshape)
 
     # plot results
     levels = np.linspace(0,100,25)
-    wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels, cmap=pl.cm.spectral)
+    wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels,
+                                       cmap=pl.cm.spectral)
 
 
 .. autosummary::
@@ -96,12 +100,13 @@ class CartesianVolume():
 
     Parameters
     ----------
-    polcoords : array of shape (num bins, 3)
-    gridcoords : array of shape (num voxels, 3)
-    gridshape : shape of the Cartesian grid (num x, num y, num z)
+    polcoords : :func:`numpy:numpy.array` of shape (num bins, 3)
+    gridcoords : :func:`numpy:numpy.array` of shape (num voxels, 3)
+    gridshape : tuple
+        shape of the Cartesian grid (num x, num y, num z)
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    Ipclass : an interpolation class from wradlib.ipol
+    Ipclass : an interpolation class from :mod:`wradlib.ipol`
     ipargs : keyword arguments corresponding to Ipclass
 
     Returns
@@ -183,18 +188,24 @@ class CAPPI(CartesianVolume):
 
     Parameters
     ----------
-    polcoords : coordinate array of shape (num bins, 3)
+    polcoords : :func:`numpy:numpy.array` coordinate array \
+        of shape (num bins, 3)
         Represents the 3-D coordinates of the orginal radar bins
-    gridcoords : coordinate array of shape (num voxels, 3)
+    gridcoords : :func:`numpy:numpy.array` coordinate array \
+        of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    gridshape : shape of the original polar volume (num elevation angles,
+    gridshape : tuple
+        shape of the original polar volume (num elevation angles,
         num azimuth angles, num range bins)
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    Ipclass : an interpolation class from wradlib.ipol
+    Ipclass : an interpolation class from :mod:`wradlib.ipol`
     ipargs : keyword arguments corresponding to Ipclass
 
+    Examples
+    --------
+    See :ref:`notebooks/workflow/recipe2.ipynb`.
     """
 
     def _get_mask(self, gridcoords, polcoords, gridshape,
@@ -210,28 +221,31 @@ class CAPPI(CartesianVolume):
 class PseudoCAPPI(CartesianVolume):
     """Create a Pseudo-CAPPI Constant Altitude Plan Position Indicator (CAPPI)
 
-    The difference to a :doc:`CAPPI <wradlib.vpr.CAPPI>` is that the blind area
+    The difference to a CAPPI (:meth:`wradlib.vpr.CAPPI` is that the blind area
     *below* and *above* the radar are not masked, but filled by interpolation.
     Only the areas beyond the *range* of the radar are masked out. As a result,
     "blind" areas below the radar are particularly filled from the lowest
     available elevation angle.
 
-    In order to create a Pseudo CAPPI , you first have to create an instance of
+    In order to create a Pseudo CAPPI, you first have to create an instance of
     this class. Calling this instance with the actual polar volume data will
     return the Pseudo CAPPI grid.
 
     Parameters
     ----------
-    polcoords : coordinate array of shape (num bins, 3)
+    polcoords : :func:`numpy:numpy.array` coordinate array \
+        of shape (num bins, 3)
         Represents the 3-D coordinates of the orginal radar bins
-    gridcoords : coordinate array of shape (num voxels, 3)
+    gridcoords : :func:`numpy:numpy.array` coordinate array \
+        of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    gridshape : shape of the original polar volume (num elevation angles,
+    gridshape : tuple
+        shape of the original polar volume (num elevation angles,
         num azimuth angles, num range bins)
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    Ipclass : an interpolation class from wradlib.ipol
+    Ipclass : an interpolation class from :mod:`wradlib.ipol`
     ipargs : keyword arguments corresponding to Ipclass
 
     """
@@ -317,8 +331,12 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
 
     Returns
     -------
-    output : array of shape (num volume bins, 3)
+    output :  :func:`numpy:numpy.array`
+        (num volume bins, 3)
 
+    Examples
+    --------
+    See :ref:`notebooks/workflow/recipe2.ipynb`.
     """
     # make sure that elevs is an array
     elevs = np.array([elevs]).ravel()
@@ -354,7 +372,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
 
     Returns
     -------
-    output : array of shape (num volume bins, 3)
+    output : :func:`numpy:numpy.array`
+        (num volume bins, 3)
 
     """
     # check structure: Are azimuth angles and range bins the same for each

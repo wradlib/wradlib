@@ -2,6 +2,7 @@
 # Copyright (c) 2016, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import os
 import numpy as np
 import wradlib.util as util
 import unittest
@@ -61,6 +62,20 @@ class HelperFunctionsTest(unittest.TestCase):
 
     def test_prob_round(self):
         pass
+
+    def test_get_wradlib_data_path(self):
+        wrl_data_path = os.environ.get('WRADLIB_DATA', None)
+        del os.environ['WRADLIB_DATA']
+        self.assertRaises(EnvironmentError,
+                          lambda: util.get_wradlib_data_path())
+        filename = 'rainbow/2013070308340000dBuZ.azi'
+        os.environ['WRADLIB_DATA'] = os.path.join(wrl_data_path, filename)
+        self.assertRaises(EnvironmentError,
+                          lambda: util.get_wradlib_data_path())
+        os.environ['WRADLIB_DATA'] = wrl_data_path
+        filename = os.path.join(wrl_data_path, "test.dat")
+        self.assertRaises(EnvironmentError,
+                          lambda: util.get_wradlib_data_file(filename))
 
 
 # -------------------------------------------------------------------------------

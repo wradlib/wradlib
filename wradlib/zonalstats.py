@@ -81,6 +81,10 @@ class DataSource(object):
     Writing shapefiles with the wrong locale settings can have impact on the
     type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
 
+    Examples
+    --------
+    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#\
+DataSource`.
     """
 
     def __init__(self, data=None, srs=None, **kwargs):
@@ -285,7 +289,7 @@ class DataSource(object):
         ----------
         name : string
             Attribute Name
-        values : ndarray
+        values : :class:`numpy:numpy.ndarray`
             Values to fill in attributes
         """
 
@@ -387,6 +391,10 @@ class ZonalDataBase(object):
         will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
+    Examples
+    --------
+    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
+
     """
     def __init__(self, src, trg=None, buf=0., srs=None, **kwargs):
         self._buffer = buf
@@ -411,7 +419,7 @@ class ZonalDataBase(object):
 
         Returns
         -------
-        array : ndarray
+        array : :class:`numpy:numpy.ndarray`
             of Nx2 point coordinate arrays
         """
         return np.array([self._get_intersection(idx=idx)
@@ -428,7 +436,7 @@ class ZonalDataBase(object):
 
         Returns
         -------
-        array : ndarray
+        array : :class:`numpy:numpy.ndarray`
             of Nx2 point coordinate arrays
         """
         return self._get_intersection(idx=idx)
@@ -443,7 +451,7 @@ class ZonalDataBase(object):
 
         Returns
         -------
-        array : np.ndarray
+        array : :class:`numpy:numpy.ndarray`
             indices
         """
         return np.array(self.dst.get_attributes(['src_index'],
@@ -635,6 +643,9 @@ class ZonalDataPoly(ZonalDataBase):
         will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
+    Examples
+    --------
+    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
     def _get_idx_weights(self):
         """ Retrieve index and weight from dst DataSource
@@ -729,6 +740,10 @@ class ZonalDataPoint(ZonalDataBase):
     srs : OGR.SpatialReference
         will be used for DataSource object.
         src and trg data have to be in the same srs-format
+
+    Examples
+    --------
+    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
     def _get_idx_weights(self):
         """ Retrieve index and weight from dst DataSource
@@ -810,6 +825,10 @@ class ZonalStatsBase(object):
         containing necessary ZonalData
         ZonalData is available as 'zdata'-property inside class instance.
 
+    Examples
+    --------
+    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#\
+ZonalStats`.
     """
     def __init__(self, src=None, ix=None, w=None):
 
@@ -901,7 +920,7 @@ class ZonalStatsBase(object):
 
         Parameters
         ----------
-        vals : 1-d ndarray
+        vals : 1-d :class:`numpy:numpy.ndarray`
             of type float with the same length as self.src
             Values at the source element for which to compute zonal statistics
 
@@ -925,7 +944,7 @@ class ZonalStatsBase(object):
 
         Parameters
         ----------
-        vals : 1-d ndarray
+        vals : 1-d :class:`numpy:numpy.ndarray`
             of type float with the same length as self.src
             Values at the source element for which to compute
             zonal statistics
@@ -960,6 +979,10 @@ class GridCellsToPoly(ZonalStatsBase):
     Keyword arguments
     -----------------
 
+    Examples
+    --------
+    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
+    and :ref:`notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
     """
     def __init__(self, src=None, **kwargs):
         if src is not None:
@@ -984,6 +1007,10 @@ class GridPointsToPoly(ZonalStatsBase):
     Keyword arguments
     -----------------
 
+    Examples
+    --------
+    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
+    and :ref:`notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
     """
     def __init__(self, src, **kwargs):
         if src is not None:
@@ -1169,7 +1196,7 @@ def ogr_add_feature(ds, src, name=None):
     ----------
     ds : OGR.DataSource
         object
-    src : numpy array
+    src : :func:`numpy:numpy.array`
         source data
     name : string
         name of wanted Layer
@@ -1267,7 +1294,7 @@ def ogr_to_numpy(ogrobj):
 
     Returns
     -------
-    out : array_like
+    out : :class:`numpy:numpy.ndarray`
         a nested ndarray of vertices of shape (num vertices, 2)
 
     """
@@ -1292,7 +1319,7 @@ def ogr_geocol_to_numpy(ogrobj):
 
     Returns
     -------
-    out : ndarray
+    out : :class:`numpy:numpy.ndarray`
         a nested ndarray of vertices of shape (num vertices, 2)
 
     """
@@ -1311,12 +1338,12 @@ def numpy_to_pathpatch(arr):
 
     Parameters
     ----------
-    arr : ndarray
+    arr : :class:`numpy:numpy.ndarray`
         numpy array of Polygon/Multipolygon vertices
 
     Returns
     -------
-    array : ndarray
+    array : :class:`numpy:numpy.ndarray`
         of matplotlib.patches.PathPatch objects
     """
     paths = []
@@ -1345,16 +1372,16 @@ def mask_from_bbox(x, y, bbox, polar=False):
 
     Parameters
     ----------
-    x : ndarray
+    x : :class:`numpy:numpy.ndarray`
         of shape (num rows, num columns)
         x (Cartesian) coordinates
-    y : ndarray
+    y : :class:`numpy:numpy.ndarray`
         of shape (num rows, num columns)
         y (Cartesian) coordinates
     bbox : dict
         dictionary with keys "left", "right", "bottom", "top"
         These must refer to the same Cartesian reference system as x and y
-    polar : bool,
+    polar : bool
         if True, x, y are aligned polar (azimuth x range)
 
     Returns
@@ -1466,7 +1493,7 @@ def get_centroid(polyg):
 
     Parameters
     ----------
-    polyg : ndarray
+    polyg : :class:`numpy:numpy.ndarray`
         of shape (num vertices, 2) or ogr.Geometry object
 
     Returns

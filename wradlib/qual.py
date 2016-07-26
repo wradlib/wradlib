@@ -121,12 +121,12 @@ def pulse_volume(ranges, h, theta):
     range and aperture.
 
     We assume a cone frustum which has the volume
-    :math:`V=(\pi/3)*h*(R^2 + R*r + r^2)`.
+    :math:`V=(\pi/3) \cdot h \cdot (R^2 + R \cdot r + r^2)`.
     R and r are the radii of the two frustum surface circles. Assuming that the
     pulse width is small compared to the range, we get
-    :math:`R=r= \tan ( \theta * \pi/180 ) * range`.
-    Thus, the pulse volume simply becomes a the volume of a cylinder with
-    :math:`V=\pi * h * range^2 * \tan(\theta*pi/180)^2`
+    :math:`R=r= \tan ( \theta \cdot \pi/180 ) \cdot range`.
+    Thus, the pulse volume simply becomes the volume of a cylinder with
+    :math:`V=\pi \cdot h \cdot range^2 \cdot \tan(\theta \cdot \pi/180)^2`
 
     Parameters
     ----------
@@ -140,7 +140,12 @@ def pulse_volume(ranges, h, theta):
     Returns
     -------
     output : array
-        volume of radar bins at each range in `ranges` [m**3]
+        volume of radar bins at each range in `ranges` [:math:`m^3`]
+
+    Examples
+    --------
+
+    See :ref:`notebooks/workflow/recipe1.ipynb`.
 
     """
     return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta))) ** 2
@@ -177,6 +182,8 @@ def beam_block_frac(Th, Bh, a):
     Examples
     --------
     >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
+
+    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb`.
 
     Note
     ----
