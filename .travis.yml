@@ -33,10 +33,9 @@ install:
 
 before_script:
     - flake8 .
-    # convert notebooks, render notebooks
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
-    - scripts/convert_notebooks.sh
+    - scripts/copy_notebooks.sh
 
 script:
     - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
@@ -45,8 +44,11 @@ script:
     - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
 
 after_success:
-    - scripts/render_notebooks.sh
+    # convert notebooks to python script for packaging
+    - scripts/convert_notebooks.sh
+    # report code coverage
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
+    # build docs
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:

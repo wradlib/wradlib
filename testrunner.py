@@ -15,6 +15,8 @@ import getopt
 import unittest
 import doctest
 import inspect
+from runipy.notebook_runner import NotebookRunner
+from nbformat import read, write, NO_CONVERT
 
 VERBOSE = 2
 
@@ -57,13 +59,27 @@ class NotebookTest(unittest.TestCase):
         self.name = module
 
     def runTest(self):
-        print(self.name.split('.')[1:])
-        self.assertTrue(__import__(self.name))
+        print(self.name)
+        nb_name = self.name.split('/')[-1:][0]
+        output_dir = os.path.join('doc/source',
+                                  '/'.join(self.name.split('/')[:-1]))
+
+        # we have currently version 3 notebooks
+        notebook = read(open(self.name), 3)
+
+        runner = NotebookRunner(notebook, working_dir=output_dir)
+        runner.run_notebook(True)
+
+        write(runner.nb,
+              open(os.path.join(output_dir, nb_name), 'w'),
+              version=NO_CONVERT)
+
+        runner.shutdown_kernel()
 
 
 def create_notebooks_testsuite():
     # gather information on notebooks
-    # all 'converted' notebooks in the notebooks folder
+    # all notebooks in the notebooks folder
     # are considered as tests
     # find notebook files in notebooks directory
     root_dir = 'notebooks/'
@@ -71,13 +87,11 @@ def create_notebooks_testsuite():
     skip = ['__init__.py']
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-3:] != '.py':
+            if filename in skip or filename[-6:] != '.ipynb':
                 continue
-            if 'notebooks/.' in root:
+            if '.ipynb_checkpoints' in root:
                 continue
             f = os.path.join(root, filename)
-            f = f.replace('/', '.')
-            f = f[:-3]
             files.append(f)
 
     # create empty testsuite
@@ -154,6 +168,10 @@ def main(args):
 
         -d
         --doc
+            Run only doctests
+
+        -n
+        --notebooks
             Run only doctests
 
         -u
@@ -241,7 +259,7 @@ def main(args):
     if all_success:
         sys.exit(0)
     else:
-        # This will retrun exit code 1
+        # This will return exit code 1
         sys.exit("At least one test has failed. "
                  "Please see test report for details.")
 

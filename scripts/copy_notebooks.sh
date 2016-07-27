@@ -6,9 +6,8 @@
 notebooks=`find notebooks -path notebooks/.ipynb_checkpoints -prune -o -name *.ipynb -print`
 echo $notebooks
 
-# render notebooks to doc/sources
+# copy notebooks to doc/sources
 for nb in $notebooks; do
+    echo "cp --parents $nb doc/source/"
     cp --parents $nb doc/source/
-    echo "runipy --quiet --overwrite --matplotlib doc/source/$nb"
-    runipy --quiet --overwrite --matplotlib doc/source/$nb
 done
