@@ -9,7 +9,7 @@ and example scripts distributed with the source code.
 .. toctree::
    :maxdepth: 2
    
-
+   jupyter.rst	
    notebooks/basics.ipynb
    notebooks/fileio.ipynb
    notebooks/attenuation/wradlib_attenuation.ipynb
