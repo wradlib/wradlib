@@ -55,7 +55,7 @@ The notebooks are distributed with each :math:`\omega radlib` release on `PyPI <
 How can I get the example data?
 -------------------------------
 
-Most notebooks use example data. These data are provided in a seperate repository and you need to "install" them manually. *"Installing"* actually means: Download the data archive `here <https://github.com/wradlib/wradlib-data/archive/master.zip>`_ and extract it into any arbitrary directory. Now you need to set an environment variable pointing to that directory:
+Most notebooks use example data. These data are provided in a separate repository and you need to "install" them manually. *"Installing"* actually means: Download the data archive `here <https://github.com/wradlib/wradlib-data/archive/master.zip>`_ and extract it into any arbitrary directory. Now you need to set an environment variable pointing to that directory:
 
 **Under Windows**, open a console and execute ``setx WRADLIB_DATA <full path to wradlib-data>``.
 
@@ -71,7 +71,7 @@ After this procedure, the example notebooks will automagically pull the required
 How to install jupyter?
 -----------------------
 
-As already pointed out above, you can just look at the rendered notebooks :doc:`online docs <notebooks>`. In order to use them interactively, you need to install ``jupyter``. ``jupyter`` is shipped with with `Anaconda's <https://www.continuum.io/downloads>` distribution by default. If you installed wradlib into Anaconda's *default (root) environment*, you are already done. If you installed wradlib in a seperate *virtual environment* (as recommended :doc:`here <gettingstarted>`), you need to install ``jupyter`` in that virtual environment, too::
+As already pointed out above, you can just look at the rendered notebooks :doc:`online docs <notebooks>`. In order to use them interactively, you need to install ``jupyter``. ``jupyter`` is shipped with `Anaconda's <https://www.continuum.io/downloads>` distribution by default. If you installed wradlib into Anaconda's *default (root) environment*, you are already done. If you installed wradlib in a seperate *virtual environment* (as recommended :doc:`here <gettingstarted>`), you need to install ``jupyter`` in that virtual environment, too::
 
 	Under Windows:
 	> activate wradlib
