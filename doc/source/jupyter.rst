@@ -10,7 +10,7 @@ The documentation of :math:`\omega radlib` basically consists of two elements: t
 Interactive examples with jupyter notebooks
 -------------------------------------------
 
-All :math:`\omega radlib` examples are distributed as `jupyter notebooks <http://jupyter.org/>`_. This way, you can interactively explore various  topics. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from :math:`\omega radlib`'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
+All :math:`\omega radlib` examples are distributed as `jupyter notebooks <http://jupyter.org/>`_. This way, you can interactively explore various   topics. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from :math:`\omega radlib`'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
 
 .. note:: Are you using :math:`\omega radlib` on the `Open Virtual Machine for Cross-Platform Weather Radar Science <http://openradar.github.io/>`_? Then skip the rest: just log in, run the command ``$ ./start_notebook.sh`` and direct your browser `here <http://127.0.0.1:8888/tree>`_. That's it. 
 
