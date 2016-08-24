@@ -81,7 +81,8 @@ class HelperFunctionsTest(unittest.TestCase):
         out = util.from_to("2000-01-01 00:00:00",
                            "2000-01-02 00:00:00",
                            86400)
-        shouldbe = [dt.datetime(2000, 1, 1, 0, 0), dt.datetime(2000, 1, 2, 0, 0)]
+        shouldbe = [dt.datetime(2000, 1, 1, 0, 0),
+                    dt.datetime(2000, 1, 2, 0, 0)]
         self.assertEqual(out, shouldbe)
 
 
