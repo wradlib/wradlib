@@ -43,15 +43,18 @@ import numpy as np
 import wradlib.util as util
 import warnings
 
+
 class MissingSourcesError(Exception):
     """Is raised in case no source coordinates are available for interpolation.
     """
     pass
 
+
 class MissingTargetsError(Exception):
     """Is raised in case no interpolation targets are available.
     """
     pass
+
 
 class IpolBase():
     """
@@ -181,7 +184,7 @@ class Nearest(IpolBase):
         trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
-        if self.numtargets==0:
+        if self.numtargets == 0:
             raise MissingTargetsError
         self.numsources = len(src)
         if self.numsources == 0:
@@ -245,15 +248,16 @@ class Idw(IpolBase):
         trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
-        if self.numtargets==0:
+        if self.numtargets == 0:
             raise MissingTargetsError
         self.numsources = len(src)
         if self.numsources == 0:
             raise MissingSourcesError
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.Idw: <nnearest> is larger than number of source points and " \
-                "is set to %d corresponding to the number of source points." % self.numsources,
+                "wradlib.ipol.Idw: <nnearest> is larger than number of "
+                "source points and is set to %d corresponding to the "
+                "number of source points." % self.numsources,
                 UserWarning
             )
             self.nnearest = self.numsources
@@ -348,7 +352,7 @@ class Linear(IpolBase):
         self.trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
-        if self.numtargets==0:
+        if self.numtargets == 0:
             raise MissingTargetsError
         self.numsources = len(src)
         if self.numsources == 0:
@@ -568,15 +572,17 @@ class OrdinaryKriging(IpolBase):
         self.trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
-        if self.numtargets==0:
+        if self.numtargets == 0:
             raise MissingTargetsError
         self.numsources = len(src)
         if self.numsources == 0:
             raise MissingSourcesError
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.OrdinaryKriging: <nnearest> is larger than number of source points and " \
-                "is set to %d corresponding to the number of source points." % self.numsources,
+                "wradlib.ipol.OrdinaryKriging: <nnearest> is "
+                "larger than number of source points and is "
+                "set to %d corresponding to the "
+                "number of source points." % self.numsources,
                 UserWarning
             )
             self.nnearest = self.numsources
@@ -714,8 +720,10 @@ class ExternalDriftKriging(IpolBase):
             raise MissingSourcesError
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.ExternalDriftKriging: <nnearest> is larger than number of source points and " \
-                "is set to %d corresponding to the number of source points." % self.numsources,
+                "wradlib.ipol.ExternalDriftKriging: <nnearest> is larger "
+                "than number of source points and is set to %d "
+                "corresponding to the number of source "
+                "points." % self.numsources,
                 UserWarning
             )
             self.nnearest = self.numsources
