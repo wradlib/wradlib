@@ -713,7 +713,7 @@ class ExternalDriftKriging(IpolBase):
         self.trg_drift = trg_drift
         # remember some things
         self.numtargets = len(trg)
-        if self.numtargets==0:
+        if self.numtargets == 0:
             raise MissingTargetsError
         self.numsources = len(src)
         if self.numsources == 0:
