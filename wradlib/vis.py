@@ -362,8 +362,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         psite = site
         rr, az = np.meshgrid(np.linspace(0, ranges[-1], 2), angles)
         # use simple trigonometry to calculate coordinates
-        nsewx, nsewy = (psite[0] + rr * np.cos(np.radians(az)),
-                        psite[1] + rr * np.sin(np.radians(az)))
+        nsewx, nsewy = (psite[0] + rr * np.cos(np.radians(90 - az)),
+                        psite[1] + rr * np.sin(np.radians(90 - az)))
 
     # mark the site, just in case nothing else would be drawn
     ax.plot(*psite, marker='+', **linekw)
