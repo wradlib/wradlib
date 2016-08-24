@@ -134,6 +134,12 @@ class InterpolationTest(unittest.TestCase):
                                                 [5., 2., -1.],
                                                 [7., 2., -3.]])))
 
+    def test_MissingErrors(self):
+        self.assertRaises(ipol.MissingSourcesError,
+                          ipol.Idw, np.array([]), self.trg)
+        self.assertRaises(ipol.MissingTargetsError,
+                          ipol.Idw, self.src, np.array([]))
+
 
 class Regular2IrregularTest(unittest.TestCase):
     def setUp(self):
