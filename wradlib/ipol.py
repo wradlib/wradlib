@@ -41,7 +41,17 @@ from scipy.ndimage.interpolation import map_coordinates
 from scipy.interpolate import griddata
 import numpy as np
 import wradlib.util as util
+import warnings
 
+class MissingSourcesError(Exception):
+    """Is raised in case no source coordinates are available for interpolation.
+    """
+    pass
+
+class MissingTargetsError(Exception):
+    """Is raised in case no interpolation targets are available.
+    """
+    pass
 
 class IpolBase():
     """
@@ -171,7 +181,11 @@ class Nearest(IpolBase):
         trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
+        if self.numtargets==0:
+            raise MissingTargetsError
         self.numsources = len(src)
+        if self.numsources == 0:
+            raise MissingSourcesError
         # plant a tree
         self.tree = cKDTree(src)
         self.dists, self.ix = self.tree.query(trg, k=1)
@@ -231,12 +245,24 @@ class Idw(IpolBase):
         trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
+        if self.numtargets==0:
+            raise MissingTargetsError
         self.numsources = len(src)
-        self.nnearest = nnearest
+        if self.numsources == 0:
+            raise MissingSourcesError
+        if nnearest > self.numsources:
+            warnings.warn(
+                "wradlib.ipol.Idw: <nnearest> is larger than number of source points and " \
+                "is set to %d corresponding to the number of source points." % self.numsources,
+                UserWarning
+            )
+            self.nnearest = self.numsources
+        else:
+            self.nnearest = nnearest
         self.p = p
         # plant a tree
         self.tree = cKDTree(src)
-        self.dists, self.ix = self.tree.query(trg, k=nnearest)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -262,6 +288,7 @@ class Idw(IpolBase):
 
         # self distances: a list of arrays of distances of the nearest points
         # which are indicated by self.ix
+        self._check_shape(vals)
         outshape = list(vals.shape)
         outshape[0] = len(self.dists)
         interpol = (np.repeat(np.nan, util._shape2size(outshape)).
@@ -321,7 +348,11 @@ class Linear(IpolBase):
         self.trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
+        if self.numtargets==0:
+            raise MissingTargetsError
         self.numsources = len(src)
+        if self.numsources == 0:
+            raise MissingSourcesError
 
     def __call__(self, vals, fill_value=np.nan):
         """
@@ -537,12 +568,23 @@ class OrdinaryKriging(IpolBase):
         self.trg = self._make_coord_arrays(trg)
         # remember some things
         self.numtargets = len(trg)
+        if self.numtargets==0:
+            raise MissingTargetsError
         self.numsources = len(src)
-        self.nnearest = nnearest
+        if self.numsources == 0:
+            raise MissingSourcesError
+        if nnearest > self.numsources:
+            warnings.warn(
+                "wradlib.ipol.OrdinaryKriging: <nnearest> is larger than number of source points and " \
+                "is set to %d corresponding to the number of source points." % self.numsources,
+                UserWarning
+            )
+            self.nnearest = self.numsources
+        else:
+            self.nnearest = nnearest
         # plant a tree
         self.tree = cKDTree(src)
-        self.dists, self.ix = self.tree.query(trg, k=min(nnearest,
-                                                         self.numsources))
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -665,12 +707,23 @@ class ExternalDriftKriging(IpolBase):
         self.trg_drift = trg_drift
         # remember some things
         self.numtargets = len(trg)
+        if self.numtargets==0:
+            raise MissingTargetsError
         self.numsources = len(src)
-        self.nnearest = nnearest
+        if self.numsources == 0:
+            raise MissingSourcesError
+        if nnearest > self.numsources:
+            warnings.warn(
+                "wradlib.ipol.ExternalDriftKriging: <nnearest> is larger than number of source points and " \
+                "is set to %d corresponding to the number of source points." % self.numsources,
+                UserWarning
+            )
+            self.nnearest = self.numsources
+        else:
+            self.nnearest = nnearest
         # plant a tree
         self.tree = cKDTree(src)
-        self.dists, self.ix = self.tree.query(trg, k=min(nnearest,
-                                                         self.numsources))
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
