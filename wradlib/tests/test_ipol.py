@@ -168,26 +168,15 @@ class InterpolationTest(unittest.TestCase):
 
     def test_nnearest_warning(self):
         with warnings.catch_warnings(record=True) as w:
-            # Cause all warnings to always be triggered.
             warnings.simplefilter("always")
-            # Trigger a warning.
             ipol.Idw(self.src, self.trg, nnearest=len(self.src) + 1)
-            # Verify some things
-            self.assertTrue(len(w) == 1)
-            self.assertTrue(issubclass(w[-1].category, UserWarning))
-            self.assertTrue("nnearest" in str(w[-1].message))
             ipol.OrdinaryKriging(self.src, self.trg,
                                  nnearest=len(self.src) + 1)
-            # Verify some things
-            self.assertTrue(len(w) == 1)
-            self.assertTrue(issubclass(w[-1].category, UserWarning))
-            self.assertTrue("nnearest" in str(w[-1].message))
             ipol.ExternalDriftKriging(self.src, self.trg,
                                       nnearest=len(self.src) + 1)
-            # Verify some things
-            self.assertTrue(len(w) == 1)
-            self.assertTrue(issubclass(w[-1].category, UserWarning))
-            self.assertTrue("nnearest" in str(w[-1].message))
+            for item in w:
+                self.assertTrue(issubclass(item.category, UserWarning))
+                self.assertTrue("nnearest" in str(item.message))
 
     def test_IpolBase(self):
         """testing the basic behaviour of the base class"""
