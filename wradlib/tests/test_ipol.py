@@ -7,6 +7,7 @@ import numpy as np
 import wradlib.ipol as ipol
 import wradlib.georef as georef
 import unittest
+import warnings
 
 
 class InterpolationTest(unittest.TestCase):
@@ -134,11 +135,79 @@ class InterpolationTest(unittest.TestCase):
                                                 [5., 2., -1.],
                                                 [7., 2., -3.]])))
 
+    def test_ExternalDriftKriging_3(self):
+        """testing the basic behaviour of the ExternalDriftKriging class
+        with missing drift terms"""
+        ip = ipol.ExternalDriftKriging(self.src, self.trg, '1.0 Lin(2.0)',
+                                       src_drift=None,
+                                       trg_drift=None)
+
+        self.assertRaises(ValueError, ip, self.vals)
+
     def test_MissingErrors(self):
+        self.assertRaises(ipol.MissingSourcesError,
+                          ipol.Nearest, np.array([]), self.trg)
+        self.assertRaises(ipol.MissingTargetsError,
+                          ipol.Nearest, self.src, np.array([]))
         self.assertRaises(ipol.MissingSourcesError,
                           ipol.Idw, np.array([]), self.trg)
         self.assertRaises(ipol.MissingTargetsError,
                           ipol.Idw, self.src, np.array([]))
+        self.assertRaises(ipol.MissingSourcesError,
+                          ipol.Linear, np.array([]), self.trg)
+        self.assertRaises(ipol.MissingTargetsError,
+                          ipol.Linear, self.src, np.array([]))
+        self.assertRaises(ipol.MissingSourcesError,
+                          ipol.OrdinaryKriging, np.array([]), self.trg)
+        self.assertRaises(ipol.MissingTargetsError,
+                          ipol.OrdinaryKriging, self.src, np.array([]))
+        self.assertRaises(ipol.MissingSourcesError,
+                          ipol.ExternalDriftKriging, np.array([]), self.trg)
+        self.assertRaises(ipol.MissingTargetsError,
+                          ipol.ExternalDriftKriging, self.src, np.array([]))
+
+
+    def test_nnearest_warning(self):
+            with warnings.catch_warnings(record=True) as w:
+                # Cause all warnings to always be triggered.
+                warnings.simplefilter("always")
+                # Trigger a warning.
+                ipol.Idw(self.src, self.trg, nnearest=len(self.src)+1)
+                # Verify some things
+                self.assertTrue(len(w) == 1)
+                self.assertTrue(issubclass(w[-1].category, UserWarning))
+                self.assertTrue("nnearest" in str(w[-1].message))
+                ipol.OrdinaryKriging(self.src, self.trg,
+                                     nnearest=len(self.src) + 1)
+                # Verify some things
+                self.assertTrue(len(w) == 1)
+                self.assertTrue(issubclass(w[-1].category, UserWarning))
+                self.assertTrue("nnearest" in str(w[-1].message))
+                ipol.ExternalDriftKriging(self.src, self.trg,
+                                          nnearest=len(self.src) + 1)
+                # Verify some things
+                self.assertTrue(len(w) == 1)
+                self.assertTrue(issubclass(w[-1].category, UserWarning))
+                self.assertTrue("nnearest" in str(w[-1].message))
+
+    def test_IpolBase(self):
+        """testing the basic behaviour of the base class"""
+
+        ip = ipol.IpolBase(self.src, self.trg)
+        res = ip(self.vals)
+        self.assertEqual(res, None)
+
+        # Check behaviour if args are passed as lists
+        src = [self.src[:,0], self.src[:,1]]
+        trg = [self.trg[:,0], self.trg[:,1]]
+        ip = ipol.IpolBase(src, trg)
+        self.assertEqual(len(self.src), ip.numsources)
+
+        # Check behaviour if dimension is > 2
+        ip = ipol.IpolBase(self.src, self.trg)
+        self.assertRaises(Exception, ipol.IpolBase,
+                          np.arange(12).reshape((2,3,2)),
+                          np.arange(20).reshape((2, 2, 5)))
 
 
 class Regular2IrregularTest(unittest.TestCase):

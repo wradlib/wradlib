@@ -75,6 +75,8 @@ class IpolBase():
     def __init__(self, src, trg):
         src = self._make_coord_arrays(src)
         trg = self._make_coord_arrays(trg)
+        self.numsources = len(src)
+        self.numtargets = len(trg)
 
     def __call__(self, vals):
         """
