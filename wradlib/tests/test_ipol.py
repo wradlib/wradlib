@@ -166,29 +166,28 @@ class InterpolationTest(unittest.TestCase):
         self.assertRaises(ipol.MissingTargetsError,
                           ipol.ExternalDriftKriging, self.src, np.array([]))
 
-
     def test_nnearest_warning(self):
-            with warnings.catch_warnings(record=True) as w:
-                # Cause all warnings to always be triggered.
-                warnings.simplefilter("always")
-                # Trigger a warning.
-                ipol.Idw(self.src, self.trg, nnearest=len(self.src)+1)
-                # Verify some things
-                self.assertTrue(len(w) == 1)
-                self.assertTrue(issubclass(w[-1].category, UserWarning))
-                self.assertTrue("nnearest" in str(w[-1].message))
-                ipol.OrdinaryKriging(self.src, self.trg,
-                                     nnearest=len(self.src) + 1)
-                # Verify some things
-                self.assertTrue(len(w) == 1)
-                self.assertTrue(issubclass(w[-1].category, UserWarning))
-                self.assertTrue("nnearest" in str(w[-1].message))
-                ipol.ExternalDriftKriging(self.src, self.trg,
-                                          nnearest=len(self.src) + 1)
-                # Verify some things
-                self.assertTrue(len(w) == 1)
-                self.assertTrue(issubclass(w[-1].category, UserWarning))
-                self.assertTrue("nnearest" in str(w[-1].message))
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            # Trigger a warning.
+            ipol.Idw(self.src, self.trg, nnearest=len(self.src) + 1)
+            # Verify some things
+            self.assertTrue(len(w) == 1)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue("nnearest" in str(w[-1].message))
+            ipol.OrdinaryKriging(self.src, self.trg,
+                                 nnearest=len(self.src) + 1)
+            # Verify some things
+            self.assertTrue(len(w) == 1)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue("nnearest" in str(w[-1].message))
+            ipol.ExternalDriftKriging(self.src, self.trg,
+                                      nnearest=len(self.src) + 1)
+            # Verify some things
+            self.assertTrue(len(w) == 1)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue("nnearest" in str(w[-1].message))
 
     def test_IpolBase(self):
         """testing the basic behaviour of the base class"""
@@ -198,15 +197,15 @@ class InterpolationTest(unittest.TestCase):
         self.assertEqual(res, None)
 
         # Check behaviour if args are passed as lists
-        src = [self.src[:,0], self.src[:,1]]
-        trg = [self.trg[:,0], self.trg[:,1]]
+        src = [self.src[:, 0], self.src[:, 1]]
+        trg = [self.trg[:, 0], self.trg[:, 1]]
         ip = ipol.IpolBase(src, trg)
         self.assertEqual(len(self.src), ip.numsources)
 
         # Check behaviour if dimension is > 2
         ip = ipol.IpolBase(self.src, self.trg)
         self.assertRaises(Exception, ipol.IpolBase,
-                          np.arange(12).reshape((2,3,2)),
+                          np.arange(12).reshape((2, 3, 2)),
                           np.arange(20).reshape((2, 2, 5)))
 
 
