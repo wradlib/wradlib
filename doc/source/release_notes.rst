@@ -9,9 +9,15 @@ You can install the latest :math:`\omega radlib` release from PyPI via ``$ pip i
 Bleeding Edge
 -------------
 
+*Nothing, yet.*
+
+Version 0.9.0
+-------------
+
 **Highlights**
 
-* added notebook-workflow (converted all example-scripts to jupyter notebooks)
+* examples and tutorials are provided as jupyter notebooks
+* docs are directly created from notebooks (see full workflow `here <https://github.com/wradlib/wradlib/wiki/dev.-notebook-workflow>`_) 
 * structured notebooks with parent notebook, where appropriate
 * documentation reviewed and adapted
     - community.rst,
@@ -22,6 +28,7 @@ Bleeding Edge
     - release_notes.rst
 * docstrings reviewed, added links to notebooks where appropriate, cosmetic changes
 * package notebooks and converted python scripts with pypi-sdist
+* added tutorials on how to use notebooks and a breif Python introduction
 
 **New features**
 
@@ -36,6 +43,7 @@ Bleeding Edge
 
 * removed bug reading lists in ``wradlib.io.read_Rainbow``
 * fixed offset bug in ``wradlib.georef.sweep_centroids``
+* fixed incompatibility issue of ipol module with scipy 0.18.0
 * several minor fixes
 
 
