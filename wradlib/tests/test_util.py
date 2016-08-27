@@ -77,6 +77,14 @@ class HelperFunctionsTest(unittest.TestCase):
         self.assertRaises(EnvironmentError,
                           lambda: util.get_wradlib_data_file(filename))
 
+    def test_from_to(self):
+        out = util.from_to("2000-01-01 00:00:00",
+                           "2000-01-02 00:00:00",
+                           86400)
+        shouldbe = [dt.datetime(2000, 1, 1, 0, 0),
+                    dt.datetime(2000, 1, 2, 0, 0)]
+        self.assertEqual(out, shouldbe)
+
 
 # -------------------------------------------------------------------------------
 # testing the filter helper function
