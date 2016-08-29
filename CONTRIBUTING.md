@@ -18,11 +18,11 @@ Source code, testing, bug tracking as well as docs and wiki are handled via GitH
 
 ## Documentation
 
-* wradlib's documentation is administered in doc/-folder, in reStructuredText format.
-* Jupyter Notebooks (in notebooks/-folder) are utilized to extend the documentation with examples and tutorials.
+* wradlib's documentation source is contained in `doc` directory, and mainly written in reStructuredText.
+* Jupyter Notebooks (in `notebooks` directory) are utilized to extend the documentation with examples and tutorials.
 * wradlib uses [Sphinx](http://sphinx-doc.org/), [runipy](https://github.com/paulgb/runipy) and [nbsphinx]()https://github.com/spatialaudio/nbsphinx to compile docs
 
-## Bugs
+## Issue tracking
 
 Using wradlib's [GitHub issue tracker](https://github.com/wradlib/wradlib/issues) users can file bug reports or discuss feature requests. Bug reports should contain
 used wradlib as well as Python and OS version, error messages and instructions to reproduce the bug.
