@@ -66,7 +66,7 @@ deploy:
 
   # tagged
   - provider: pypi
-    server: https://testpypi.python.org/pypi
+    server: https://pypi.python.org/pypi
     distributions: sdist
     skip_cleanup: true
     user: wradlib
