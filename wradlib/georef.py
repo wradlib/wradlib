@@ -1689,11 +1689,8 @@ def transform_geometry(geom, dest_srs):
         Transformed Geometry
     """
 
-    src_srs = geom.GetSpatialReference()
-    # needed to get EPSG code
-    src_srs.AutoIdentifyEPSG()
     # transform if not the same spatial reference system
-    if src_srs.GetAuthorityCode(None) != dest_srs.GetAuthorityCode(None):
+    if not geom.GetSpatialReference().IsSame(dest_srs):
         geom.TransformTo(dest_srs)
 
     return geom
