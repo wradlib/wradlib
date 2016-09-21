@@ -247,7 +247,7 @@ def cum_beam_block_frac(pbb):
     # Iterate over all beams
     for ii, index in enumerate(maxindex):
         premax = 0.
-        for jj in xrange(index):
+        for jj in range(index):
             # Only iterate to max index to make this faster
             if pbb[ii, jj] > premax:
                 cbb[ii, jj] = pbb[ii, jj]
@@ -256,7 +256,7 @@ def cum_beam_block_frac(pbb):
                 cbb[ii, jj] = premax
         # beyond max index, everything is max anyway
         cbb[ii, index:] = pbb[ii, index]
-        
+
     return cbb
 
 
