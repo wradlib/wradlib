@@ -29,6 +29,7 @@ import scipy.interpolate
 from wradlib.trafo import idecibel
 from wradlib.zr import z2r
 
+logging.basicConfig()
 logger = logging.getLogger('attcorr')
 
 

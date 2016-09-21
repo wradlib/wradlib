@@ -47,6 +47,10 @@ class BeamBlockFracTest(unittest.TestCase):
         self.beamradius = np.ones(NARR) * beam
         self.terrainheight = np.linspace(start - beam, end + beam, num=NARR)
         self.ones = np.ones((NARR - 1) / 2)
+        self.sample_pbb = np.array([[0.1, 0.2, 0.3, 0.1, 0.2, 0.4, 0.1],
+                                    [0.1, 0.2, 0.3, 0.1, 0.2, 0.4, 0.1]])
+        self.sample_cbb = np.array([[0.1, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4],
+                                    [0.1, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4]])
 
     def test_beam_block_frac(self):
         """
@@ -60,3 +64,12 @@ class BeamBlockFracTest(unittest.TestCase):
                                    self.beamradius)
         arr = pbb[0:self.NBINS] + pbb[-1:self.NBINS:-1]
         self.assertTrue(np.allclose(arr, self.ones))
+
+    def test_cum_beam_block_frac(self):
+        """
+        Test whether local maxima BEFORE the absolute maximum along a beam
+        are correctly dealt with.
+
+        """
+        cbb = qual.cum_beam_block_frac(self.sample_pbb)
+        self.assertTrue(np.allclose(cbb, self.sample_cbb))
