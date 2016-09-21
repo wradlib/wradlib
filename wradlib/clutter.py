@@ -335,7 +335,9 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
     """
     # Check the inputs
-    keys = ["zdr", "rho", "rho2", "phi", "dop", "map"]
+    dkeys = ["zdr", "rho", "phi", "dop", "map"]
+    wkeys = ["zdr", "rho", "rho2", "phi", "dop", "map"]
+    tkeys = ["zdr", "rho", "rho2", "phi", "dop", "map"]
 
     if weights is None:
         weights = {"zdr": 0.4, "rho": 0.4, "rho2": 0.4,
@@ -349,17 +351,17 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
                 "dop": [-0.2, -0.1, 0.1, 0.2],
                 "map": [1, 1, 9999, 9999]}
 
-    assert np.all(np.in1d(keys, dat.keys())), \
+    assert np.all(np.in1d(dkeys, dat.keys())), \
         "Argument dat of classify_echo_fuzzy must be a dictionary " \
-        "with keywords %r." % (keys,)
-    assert np.all(np.in1d(keys, weights.keys())), \
+        "with keywords %r." % (dkeys,)
+    assert np.all(np.in1d(wkeys, weights.keys())), \
         "Argument weights of classify_echo_fuzzy must be a dictionary " \
-        "with keywords %r." % (keys,)
-    assert np.all(np.in1d(keys, trpz.keys())), \
+        "with keywords %r." % (wkeys,)
+    assert np.all(np.in1d(tkeys, trpz.keys())), \
         "Argument trpz of classify_echo_fuzzy must be a dictionary " \
-        "with keywords %r." % (keys,)
+        "with keywords %r." % (tkeys,)
     shape = None
-    for key in keys:
+    for key in dkeys:
         if not dat[key] is None:
             if shape is None:
                 shape = dat[key].shape
