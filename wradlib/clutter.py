@@ -335,7 +335,7 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
     """
     # Check the inputs
-    keys = ["zdr", "rho", "phi", "dop", "map"]
+    keys = ["zdr", "rho", "rho2", "phi", "dop", "map"]
 
     if weights is None:
         weights = {"zdr": 0.4, "rho": 0.4, "rho2": 0.4,
