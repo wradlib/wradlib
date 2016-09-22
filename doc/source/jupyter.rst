@@ -24,8 +24,13 @@ Once these conditions are met, you can open a notebook: Launch a console or bash
 
 	> jupyter notebook
 	
-If you installed :math:`\omega radlib` into a virtual environment (as recommended :doc:`here <gettingstarted>`), 
-you need to find the path to that virtual environment, e.g. by:: 
+If you installed :math:`\omega radlib` into a conda environment (as recommended :doc:`here <gettingstarted>`), 
+you need to activate that environment first. Let's say you named the environment `wradlib`::
+	
+	> activate wradlib
+	> jupyter notebook
+	
+Did you forget the name of the environment that contains wradlib? This way, you get an overview over all environments:: 
 
 	> conda info --envs
 	
@@ -34,10 +39,6 @@ which will give you something like (example output under Windows)::
 	# conda environments
 	wradlib      C:\Anaconda2\envs\wradlib
 	root      *  C:\Anaconda2
-	
-Given this example, you would open a jupyter notebook server via::
-
-	> C:\Anaconda2\envs\wradlib\python C:\Anaconda2\envs\wradlib\Scripts\ipython-script.py notebook
 	
 In both cases, a browser window will open (typically at http://localhost:8888/tree) which will show the tree of the directory in which you started the jupyter notebook server. Just open any notebook by clicking. Code cells are executed by hitting ``Shift + Enter`` or by using the toolbar icons. It's pretty much self-explaining, and you'll soon get the hang of it.  
 
