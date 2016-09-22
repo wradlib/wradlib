@@ -35,6 +35,7 @@ Georeferencing
    get_earth_radius
    get_radolan_grid
    resample_raster_dataset
+   get_shape_coordinates
 
 """
 
