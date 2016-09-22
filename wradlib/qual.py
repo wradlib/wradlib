@@ -211,5 +211,54 @@ def beam_block_frac(Th, Bh, a):
     return PBB
 
 
+def cum_beam_block_frac(pbb):
+    """Cumulative beam blockage fraction along a beam.
+
+    Computes the cumulative beam blockage (cbb) along a beam from the partial
+    beam blockage (pbb) fraction of each bin along that beam. CBB in one bin
+    along a beam will always be at least as high as the maximum PBB of the
+    preceeding bins.
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    pbb : 2-D array of floats of shape (num beams, num range bins)
+        Partial beam blockage fraction of a bin along a beam [m]
+
+    Returns
+    -------
+    cbb : array of floats of the ssame shape as pbb
+        Cumulative partial beam blockage fraction [unitless]
+
+    Examples
+    --------
+    >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
+    >>> CBB = cum_beam_block_frac(PBB) #doctest: +SKIP
+
+    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb`.
+
+    """
+
+    # This is the index of the maximum PBB along each beam
+    maxindex = np.nanargmax(pbb, axis=1)
+    cbb = np.copy(pbb)
+
+    # Iterate over all beams
+    for ii, index in enumerate(maxindex):
+        premax = 0.
+        for jj in range(index):
+            # Only iterate to max index to make this faster
+            if pbb[ii, jj] > premax:
+                cbb[ii, jj] = pbb[ii, jj]
+                premax = pbb[ii, jj]
+            else:
+                cbb[ii, jj] = premax
+        # beyond max index, everything is max anyway
+        cbb[ii, index:] = pbb[ii, index]
+
+    return cbb
+
+
 if __name__ == '__main__':
     print('wradlib: Calling module <qual> as main...')
