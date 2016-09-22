@@ -351,13 +351,13 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
                 "dop": [-0.2, -0.1, 0.1, 0.2],
                 "map": [1, 1, 9999, 9999]}
 
-    assert np.all(np.in1d(dkeys, dat.keys())), \
+    assert np.all(np.in1d(dkeys, list(dat.keys()))), \
         "Argument dat of classify_echo_fuzzy must be a dictionary " \
         "with keywords %r." % (dkeys,)
-    assert np.all(np.in1d(wkeys, weights.keys())), \
+    assert np.all(np.in1d(wkeys, list(weights.keys()))), \
         "Argument weights of classify_echo_fuzzy must be a dictionary " \
         "with keywords %r." % (wkeys,)
-    assert np.all(np.in1d(tkeys, trpz.keys())), \
+    assert np.all(np.in1d(tkeys, list(trpz.keys()))), \
         "Argument trpz of classify_echo_fuzzy must be a dictionary " \
         "with keywords %r." % (tkeys,)
     shape = None
