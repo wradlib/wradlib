@@ -1806,6 +1806,89 @@ def read_safnwc(filename):
     return ds
 
 
+def read_netcdf_group(ncid):
+    """Reads netcdf (nested) groups into python dictionary with corresponding
+    structure.
+
+    Note
+    ----
+    The returned dictionary could be quite big, depending on the content of
+    the file.
+
+    Parameters
+    ----------
+    ncid : object
+        nc/group id from netcdf file
+
+    Returns
+    -------
+    out : ordered dict
+        an ordered dictionary that contains both data and metadata
+        according to the original netcdf file structure
+    """
+    out = OrderedDict()
+
+    # attributes
+    for k, v in ncid.__dict__.items():
+        out[k] = v
+
+    # groups
+    if ncid.groups:
+        for k, v in ncid.groups.items():
+            out[k] = read_netcdf_group(v)
+
+    # dimensions
+    dimids = np.array([])
+    if ncid.dimensions:
+        dim = OrderedDict()
+        for k, v in ncid.dimensions.items():
+            tmp = OrderedDict()
+            try:
+                tmp['data_model'] = v._data_model
+            except AttributeError:
+                pass
+            try:
+                tmp['size'] = v.__len__()
+            except AttributeError:
+                pass
+            tmp['dimid'] = v._dimid
+            dimids = np.append(dimids, v._dimid)
+            tmp['grpid'] = v._grpid
+            tmp['isunlimited'] = v.isunlimited()
+            dim[k] = tmp
+        # Usually, the dimensions should be ordered by dimid automatically
+        # in case netcdf used OrderedDict. However, we should double check
+        if np.array_equal(dimids, np.sort(dimids)):
+            # is already sorted
+            out['dimensions'] = dim
+        else:
+            # need to sort
+            dim2 = OrderedDict()
+            keys = dim.keys()
+            for dimid in np.sort(dimids):
+                dim2[keys[dimid]] = dim[keys[dimid]]
+            out["dimensions"] = dim2
+
+    # variables
+    if ncid.variables:
+        var = OrderedDict()
+        for k, v in ncid.variables.items():
+            tmp = OrderedDict()
+            for k1 in v.ncattrs():
+                tmp[k1] = v.getncattr(k1)
+            if v[:].dtype.kind == 'S':
+                try:
+                    tmp['data'] = nc.chartostring(v[:])
+                except:
+                    tmp['data'] = v[:]
+            else:
+                tmp['data'] = v[:]
+            var[k] = tmp
+        out['variables'] = var
+
+    return out
+
+
 def read_generic_netcdf(fname):
     """Reads netcdf files and returns a dictionary with corresponding
     structure.
@@ -1852,68 +1935,7 @@ def read_generic_netcdf(fname):
         print("Raising exception...")
         raise
 
-    if ncid.groups:
-        # To be implemented if necessary, all netcdf files
-        # I got my hands on have just one group/Dataset
-        print("Groups", ncid.groups)
-
-    out = OrderedDict()
-
-    # get file format (should be NETCDF3 or NETCDF4)
-    try:
-        out["file_format"] = ncid.file_format
-    except AttributeError:
-        pass
-
-    # global attributes
-    for k, v in ncid.__dict__.items():
-        out[k] = v
-
-    # dimensions
-    dimids = np.array([])
-    if ncid.dimensions:
-        dim = OrderedDict()
-        for k, v in ncid.dimensions.items():
-            tmp = OrderedDict()
-            try:
-                tmp['data_model'] = v._data_model
-            except AttributeError:
-                pass
-            try:
-                tmp['size'] = v.__len__()
-            except AttributeError:
-                pass
-            tmp['dimid'] = v._dimid
-            dimids = np.append(dimids, v._dimid)
-            tmp['grpid'] = v._grpid
-            tmp['isunlimited'] = v.isunlimited()
-            dim[k] = tmp
-        # Usually, the dimensions should be ordered by dimid automatically
-        # in case netcdf used OrderedDict. However, we should double check
-        if np.array_equal(dimids, np.sort(dimids)):
-            # is already sorted
-            out['dimensions'] = dim
-        else:
-            # need to sort
-            dim2 = OrderedDict()
-            keys = dim.keys()
-            for dimid in np.sort(dimids):
-                dim2[keys[dimid]] = dim[keys[dimid]]
-            out["dimensions"] = dim2
-
-    # variables
-    if ncid.variables:
-        var = OrderedDict()
-        for k, v in ncid.variables.items():
-            tmp = OrderedDict()
-            for k1 in v.ncattrs():
-                tmp[k1] = v.getncattr(k1)
-            if v[:].dtype.kind == 'S':
-                tmp['data'] = nc.chartostring(v[:])
-            else:
-                tmp['data'] = v[:]
-            var[k] = tmp
-        out['variables'] = var
+    out = read_netcdf_group(ncid)
 
     ncid.close()
 
