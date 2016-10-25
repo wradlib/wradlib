@@ -847,10 +847,11 @@ def read_RADOLAN_composite(f, missing=-9999, loaddata=True):
     mask = 0xFFF  # max value integer
 
     # If a file name is supplied, get a file handle
-    if type(f) == str:
+    try:
+        header = read_radolan_header(f)
+    except AttributeError:
         f = get_radolan_filehandle(f)
-
-    header = read_radolan_header(f)
+        header = read_radolan_header(f)
 
     attrs = parse_DWD_quant_composite_header(header)
 
