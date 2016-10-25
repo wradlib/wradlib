@@ -367,8 +367,12 @@ class GetGridsTest(unittest.TestCase):
 
     def test_radolan_coords(self):
         x, y = georef.get_radolan_coords(7.0, 53.0)
-        self.assertEqual(x, -208.15159184860158)
-        self.assertEqual(y, -3971.7689758313813)
+        self.assertAlmostEqual(x, -208.15159184860158)
+        self.assertAlmostEqual(y, -3971.7689758313813)
+        # Also test with trigonometric approach
+        x, y = georef.get_radolan_coords(7.0, 53.0, trig=True)
+        self.assertEqual(x, -208.15159184860175)
+        self.assertEqual(y, -3971.7689758313832)
 
 
 if __name__ == '__main__':

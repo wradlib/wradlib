@@ -796,7 +796,7 @@ def read_radolan_header(fid):
     return header
 
 
-def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
+def read_RADOLAN_composite(f, missing=-9999, loaddata=True):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
@@ -820,8 +820,8 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
 
     Parameters
     ----------
-    fname : string
-        path to the composite file
+    f : string or file handle
+        path to the composite file or file handle
     missing : int
         value assigned to no-data cells
     loaddata : bool
@@ -846,9 +846,12 @@ def read_RADOLAN_composite(fname, missing=-9999, loaddata=True):
     NODATA = missing
     mask = 0xFFF  # max value integer
 
-    f = get_radolan_filehandle(fname)
-
-    header = read_radolan_header(f)
+    # If a file name is supplied, get a file handle
+    try:
+        header = read_radolan_header(f)
+    except AttributeError:
+        f = get_radolan_filehandle(f)
+        header = read_radolan_header(f)
 
     attrs = parse_DWD_quant_composite_header(header)
 
