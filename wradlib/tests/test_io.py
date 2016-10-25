@@ -5,6 +5,7 @@ import unittest
 import wradlib as wrl
 import numpy as np
 import zlib
+import gzip
 import tempfile
 import os
 import datetime
@@ -274,6 +275,18 @@ class RadolanTest(unittest.TestCase):
         # test for complete file
         data, attrs = wrl.io.read_RADOLAN_composite(rw_file)
         self.assertEqual(data.shape, (900, 900))
+
+        for key, value in attrs.items():
+            if type(value) == np.ndarray:
+                self.assertIn(value.dtype, [np.int32, np.int64])
+            else:
+                self.assertEqual(value, test_attrs[key])
+
+        # Do the same for the case where a file handle is passed
+        # instead of a file name
+        with gzip.open(rw_file) as fh:
+            data, attrs = wrl.io.read_RADOLAN_composite(fh)
+            self.assertEqual(data.shape, (900, 900))
 
         for key, value in attrs.items():
             if type(value) == np.ndarray:
