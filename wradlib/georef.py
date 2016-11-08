@@ -1501,9 +1501,11 @@ Polar-Stereographic-Projection`.
     tiny = {'j_0': 450, 'i_0': 450, 'res': 2}
     small = {'j_0': 460, 'i_0': 460, 'res': 2}
     normal = {'j_0': 450, 'i_0': 450, 'res': 1}
+    normal_wx = {'j_0': 370, 'i_0': 550, 'res': 1}
     extended = {'j_0': 600, 'i_0': 800, 'res': 1}
     griddefs = {(450, 450): tiny, (460, 460): small,
-                (900, 900): normal, (1500, 1400): extended}
+                (900, 900): normal, (1100, 900): normal_wx,
+                (1500, 1400): extended}
 
     # type and value checking
     if nrows and ncols:
