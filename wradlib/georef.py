@@ -1459,7 +1459,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     Parameters
     ----------
     nrows : int
-        number of rows (460, 900 by default, 1500)
+        number of rows (460, 900 by default, 1100, 1500)
     ncols : int
         number of columns (460, 900 by default, 1400)
     trig : boolean
