@@ -198,3 +198,84 @@ def read_trmm(filename1, filename2):
                      'refl': refl})
 
     return trmm_data
+
+
+def _get_tilts(dic):
+    i = 0
+    for k in dic.keys():
+        if 'dataset' in k:
+            i += 1
+    return i
+
+
+def read_gr(filename, loaddata=True):
+
+    gr_data = wrl.io.read_generic_netcdf(filename)
+    dat = gr_data['what']['date']
+    tim = gr_data['what']['time']
+    date = dt.datetime.strptime(dat + tim, "%Y%d%m%H%M%S")
+    source = gr_data['what']['source']
+
+    lon = gr_data['where']['lon']
+    lat = gr_data['where']['lat']
+    alt = gr_data['where']['height']
+
+
+    if gr_data['what']['object'] == 'PVOL':
+        ntilt = _get_tilts(gr_data)
+    else:
+        raise ValueError('GR file is no PPI/Volume File')
+
+    ngate = np.zeros(ntilt, dtype=np.int16)
+    nbeam = np.zeros(ntilt)
+    elang = np.zeros(ntilt)
+    r0 = np.zeros(ntilt)
+    dr = np.zeros(ntilt)
+    a0 = np.zeros(ntilt)
+
+    for i in range(0, ntilt):
+        dset = gr_data['dataset{0}'.format(i+1)]
+        a0[i] = dset['how']['astart']
+        elang[i] = dset['where']['elangle']
+        ngate[i] = dset['where']['nbins']
+        r0[i] = dset['where']['rstart']
+        dr[i] = dset['where']['rscale']
+        nbeam[i] = dset['where']['nrays']
+
+    if ((len(np.unique(r0)) != 1) |
+            (len(np.unique(dr)) != 1) |
+            (len(np.unique(a0)) != 1) |
+            (len(np.unique(nbeam)) != 1) |
+            (nbeam[0] != 360)):
+        raise ValueError('GroundRadar Data layout dos not match')
+
+    gr_dict = {}
+    gr_dict.update({'source': source, 'date': date, 'lon': lon, 'lat': lat,
+                    'alt': alt, 'ngate': ngate, 'nbeam': nbeam, 'ntilt': ntilt,
+                    'r0': r0, 'dr': dr, 'a0': a0, 'elang': elang})
+    if not loaddata:
+        return gr_dict
+
+
+    sdate = []
+    refl = []
+    for i in range(0, ntilt):
+        dset = gr_data['dataset{0}'.format(i+1)]
+        dat = dset['what']['startdate']
+        tim = dset['what']['starttime']
+        date = dt.datetime.strptime(dat + tim, "%Y%d%m%H%M%S")
+        sdate.append(date)
+        data = dset['data1']
+        quantity = data['what']['quantity']
+        factor = data['what']['gain']
+        offset = data['what']['offset']
+        if quantity == 'DBZH':
+            dat = data['variables']['data']['data'] * factor + offset
+            refl.append(dat)
+
+    sdate = np.array(sdate)
+    refl = np.array(refl)
+
+    gr_dict.update({'sdate': sdate, 'refl': refl})
+
+    return gr_dict
