@@ -250,5 +250,6 @@ def err_exit(message, rc=2):
     sys.stderr.write("\n%s\n" % message)
     sys.exit(rc)
 
+
 if __name__ == '__main__':
     main(sys.argv[1:])
