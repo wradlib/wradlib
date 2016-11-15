@@ -124,9 +124,10 @@ def pulse_volume(ranges, h, theta):
     :math:`V=(\pi/3) \cdot h \cdot (R^2 + R \cdot r + r^2)`.
     R and r are the radii of the two frustum surface circles. Assuming that the
     pulse width is small compared to the range, we get
-    :math:`R=r= \tan ( \theta \cdot \pi/180 ) \cdot range`.
+    :math:`R=r= \tan ( 0.5 \cdot \theta \cdot \pi/180 ) \cdot range`
+    with theta being the aperture angle (beam width).
     Thus, the pulse volume simply becomes the volume of a cylinder with
-    :math:`V=\pi \cdot h \cdot range^2 \cdot \tan(\theta \cdot \pi/180)^2`
+    :math:`V=\pi \cdot h \cdot range^2 \cdot \tan( 0.5 \cdot \theta \cdot \pi/180)^2`
 
     Parameters
     ----------
@@ -148,7 +149,7 @@ def pulse_volume(ranges, h, theta):
     See :ref:`notebooks/workflow/recipe1.ipynb`.
 
     """
-    return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta))) ** 2
+    return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta/2.))) ** 2
 
 
 def beam_block_frac(Th, Bh, a):
