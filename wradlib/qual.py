@@ -127,7 +127,7 @@ def pulse_volume(ranges, h, theta):
     :math:`R=r= \tan ( 0.5 \cdot \theta \cdot \pi/180 ) \cdot range`
     with theta being the aperture angle (beam width).
     Thus, the pulse volume simply becomes the volume of a cylinder with
-    :math:`V=\pi \cdot h \cdot range^2 \cdot \tan( 
+    :math:`V=\pi \cdot h \cdot range^2 \cdot \tan(
     0.5 \cdot \theta \cdot \pi/180)^2`
 
     Parameters
