@@ -103,7 +103,7 @@ def get_bb_ratio(pr_data, zp):
     ratio = (zp - zmlb[:, :, np.newaxis]) / (zmlt - zmlb)[:, :, np.newaxis]
     print("RATIO:", ratio.shape)
     
-    return ratio
+    return ratio, zbb
 
 
 def calculate_polynomial(data, w):
@@ -121,14 +121,15 @@ def calculate_polynomial(data, w):
     #print(res1 - res)
     return res
 
-def ku_s_coefficients():
-    
-    cs = np.array([0.185074, 1.01378, 0.00189212])
-    cr = np.array([-1.50393, 1.07274, 0.000165393])
-    
-    return cs, cr
+
+# Coefficients to transform from Ku band to S-band for snow and rain
+ku2s = { 
+    "snow": np.array([0.185074, 1.01378, -0.00189212]),
+    "rain": np.array([-1.50393, 1.07274, 0.000165393])
+}
     
 
+# TODO: Reformat from function to dictionary
 def s_ku_coefficients():
     
     # Set coefficients for conversion from Ku-band to S-band
