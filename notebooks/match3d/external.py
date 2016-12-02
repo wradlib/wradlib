@@ -2,6 +2,17 @@
 
 import numpy as np
 
+# Space-born precipitation radar parameters
+pr_pars = {"trmm": {
+   "zt": 402500.,   # orbital height of TRMM (post boost)   APPROXIMATION!
+   "dr": 250. ,    # gate spacing of TRMM
+    }, "gpm": {
+   "zt": 407000.,   # orbital height of GPM                 APPROXIMATION!
+   "dr": 125.      # gate spacing of GPM
+}}
+
+
+
 def correct_parallax(pr_xy, nray, nbin, drt, alpha):
 
     # get x,y-grids
@@ -65,11 +76,10 @@ def sat2pol(prcoords, grcoords, re):
     return r, theta, phi
 
 
-def pulse_volume(orbit_height, prng, alpha, bwt):
-    rt = orbit_height/np.cos(np.deg2rad(alpha))[:, np.newaxis] - prng
-    vol = 1e-9*np.pi*(rt*np.deg2rad(bwt/2.)**2*prng[1])
-    return vol
-	
+def dist_from_orbit(zt, alpha, r_pr_inv):
+	"""Returns range distances of PR bins (in meters) as seen from the orbit.
+	"""
+	return(zt/np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv)	
 
 def get_bb_ratio(pr_data, zp):
 
