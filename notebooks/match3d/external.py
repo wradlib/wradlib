@@ -4,20 +4,19 @@ import numpy as np
 
 # Space-born precipitation radar parameters
 pr_pars = {"trmm": {
-   "zt": 402500.,   # orbital height of TRMM (post boost)   APPROXIMATION!
-   "dr": 250. ,    # gate spacing of TRMM
+   "zt": 402500.,  # orbital height of TRMM (post boost)   APPROXIMATION!
+   "dr": 250.,     # gate spacing of TRMM
     }, "gpm": {
-   "zt": 407000.,   # orbital height of GPM                 APPROXIMATION!
+   "zt": 407000.,  # orbital height of GPM                 APPROXIMATION!
    "dr": 125.      # gate spacing of GPM
 }}
-
 
 
 def correct_parallax(pr_xy, nray, nbin, drt, alpha):
 
     # get x,y-grids
-    pr_x = pr_xy[...,0]
-    pr_y = pr_xy[...,1]
+    pr_x = pr_xy[..., 0]
+    pr_y = pr_xy[..., 1]
     
     # create range array from ground to sat
     prng = np.arange(nbin) * drt
@@ -31,8 +30,8 @@ def correct_parallax(pr_xy, nray, nbin, drt, alpha):
 
     # calculate x,y-differences between ground coordinate 
     # and center ground coordinate [25th element]
-    xdiff = pr_x[:,24][:, np.newaxis] - pr_x 
-    ydiff = pr_y[:,24][:, np.newaxis] - pr_y 
+    xdiff = pr_x[:, 24][:, np.newaxis] - pr_x
+    ydiff = pr_y[:, 24][:, np.newaxis] - pr_y
     print("XDIFF:", xdiff.shape)
 
     # assuming ydiff and xdiff being a triangles adjacent and 
@@ -50,24 +49,26 @@ def correct_parallax(pr_xy, nray, nbin, drt, alpha):
     pr_yp = dy + pr_y[..., np.newaxis]
     print("XP:", pr_xp.shape)
     
-    return np.stack((pr_xp, pr_yp, np.repeat(zp[np.newaxis,...],pr_xp.shape[0], axis=0)), axis=3), prng, zp
+    return np.stack((pr_xp, pr_yp,
+                     np.repeat(zp[np.newaxis, ...], pr_xp.shape[0], axis=0)),
+                    axis=3), prng, zp
 
 
 def sat2pol(prcoords, grcoords, re):
     
     # calculate arc length
-    s = np.sqrt(np.sum(prcoords[...,0:2]**2, axis=-1))
+    s = np.sqrt(np.sum(prcoords[..., 0:2]**2, axis=-1))
     
     # calculate arc angle
     gamma = s / re
     
     # calculate theta (elevation-angle)
-    numer = np.cos(gamma) - (re+grcoords[2])/(re+prcoords[...,2])
+    numer = np.cos(gamma) - (re+grcoords[2])/(re+prcoords[..., 2])
     denom = np.sin(gamma)
     theta = np.rad2deg(np.arctan(numer/denom))
     
     # calculate SlantRange r
-    r = (re+prcoords[...,2])*denom/np.cos(np.deg2rad(theta))
+    r = (re+prcoords[..., 2])*denom/np.cos(np.deg2rad(theta))
     
     # calculate Azimuth phi
     phi = 90 - np.rad2deg(np.arctan2(prcoords[..., 1], prcoords[..., 0]))
@@ -77,9 +78,11 @@ def sat2pol(prcoords, grcoords, re):
 
 
 def dist_from_orbit(zt, alpha, r_pr_inv):
-	"""Returns range distances of PR bins (in meters) as seen from the orbit.
-	"""
-	return(zt/np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv)	
+    """
+    Returns range distances of PR bins (in meters) as seen from the orbit.
+    """
+    return(zt/np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv)
+
 
 def get_bb_ratio(pr_data, zp):
 
@@ -102,8 +105,8 @@ def get_bb_ratio(pr_data, zp):
     print("MEDIAN:", zbb_m, bbwidth_m)
     
     # approximation of melting layer top and bottom
-    zmlt=zbb_m+bbwidth/2.
-    zmlb=zbb_m-bbwidth/2.
+    zmlt = zbb_m+bbwidth/2.
+    zmlb = zbb_m-bbwidth/2.
     print("ZMLT:", zmlt.shape)
 
     # get ratio connected to brightband height
@@ -117,18 +120,18 @@ def get_bb_ratio(pr_data, zp):
 
 
 def calculate_polynomial(data, w):
-    #print("Data:", data.shape, w.shape)
+    # print("Data:", data.shape, w.shape)
     res = np.zeros_like(data)
     for i, c in enumerate(w):
-        #print(i, res.shape, c.shape, (data**i).shape)
+        # print(i, res.shape, c.shape, (data**i).shape)
         res += c * data**i
-    #print(w.shape)
-    #res1 = (w[0] +
+    # print(w.shape)
+    # res1 = (w[0] +
     #        w[1] * data +            
     #        w[2] * data**2 +
     #        w[3] * data**3 +
     #        w[4] * data**4)
-    #print(res1 - res)
+    # print(res1 - res)
     return res
 
 
@@ -166,11 +169,12 @@ def s_ku_coefficients():
 
     return a_s, a_h
 
+
 def fix_for_cband(refp, refp_ss, refp_sh):
     delta_s = (refp_ss - refp) * 5.3 / 10.0
-    refp_ss = refp + deltas
+    refp_ss = refp + delta_s
     delta_h = (refp_sh - refp) * 5.3 / 10.0
-    refp_sh = refp + deltah
+    refp_sh = refp + delta_h
     return refp_ss, refp_sh
 
 
