@@ -491,6 +491,83 @@ def read_gr(filename, loaddata=True):
 
     return gr_dict
 
+
+def read_gr2(filename, loaddata=True):
+
+    gr_data = wrl.io.read_generic_hdf5(filename)
+    dat = gr_data['what']['attrs']['date']
+    tim = gr_data['what']['attrs']['time']
+    date = dt.datetime.strptime(dat + tim, "%Y%d%m%H%M%S")
+    source = gr_data['what']['attrs']['source']
+
+    lon = gr_data['where']['attrs']['lon']
+    lat = gr_data['where']['attrs']['lat']
+    alt = gr_data['where']['attrs']['height']
+
+    if gr_data['what']['attrs']['object'] == 'PVOL':
+        ntilt = _get_tilts(gr_data)
+        print "ntilt:", ntilt
+    else:
+        raise ValueError('GR file is no PPI/Volume File')
+
+    ngate = np.zeros(ntilt, dtype=np.int16)
+    nbeam = np.zeros(ntilt)
+    elang = np.zeros(ntilt)
+    r0 = np.zeros(ntilt)
+    dr = np.zeros(ntilt)
+    a0 = np.zeros(ntilt)
+
+    for i in range(0, ntilt):
+        a0[i] = gr_data['dataset{0}/how'.format(i+1)]['attrs']['astart']
+        elang[i] = gr_data['dataset{0}/where'.format(i+1)]['attrs']['elangle']
+        ngate[i] = gr_data['dataset{0}/where'.format(i+1)]['attrs']['nbins']
+        r0[i] = gr_data['dataset{0}/where'.format(i+1)]['attrs']['rstart']
+        dr[i] = gr_data['dataset{0}/where'.format(i+1)]['attrs']['rscale']
+        nbeam[i] = gr_data['dataset{0}/where'.format(i+1)]['attrs']['nrays']
+
+    if ((len(np.unique(r0)) != 1) |
+            (len(np.unique(dr)) != 1) |
+            (len(np.unique(a0)) != 1) |
+            (len(np.unique(nbeam)) != 1) |
+            (nbeam[0] != 360)):
+        raise ValueError('GroundRadar Data layout dos not match')
+
+    gr_dict = {}
+    gr_dict.update({'source': source, 'date': date, 'lon': lon, 'lat': lat,
+                    'alt': alt, 'ngate': ngate, 'nbeam': nbeam, 'ntilt': ntilt,
+                    'r0': r0, 'dr': dr, 'a0': a0, 'elang': elang})
+    if not loaddata:
+        return gr_dict
+
+    sdate = []
+    refl = []
+    for i in range(0, ntilt):
+        dat = gr_data['dataset{0}/what'.format(i+1)]['attrs']['startdate']
+        tim = gr_data['dataset{0}/what'.format(i+1)]['attrs']['starttime']
+        date = dt.datetime.strptime(dat + tim, "%Y%d%m%H%M%S")
+        sdate.append(date)
+        quantity = gr_data['dataset{0}/data1/what'.format(i+1)]['attrs']['quantity']
+        factor = gr_data['dataset{0}/data1/what'.format(i+1)]['attrs']['gain']
+        offset = gr_data['dataset{0}/data1/what'.format(i+1)]['attrs']['offset']
+        if quantity == 'DBZH':
+            dat = gr_data['dataset{0}/data1/data'.format(i+1)]['data'] * factor + offset
+            refl.append(dat)
+
+    sdate = np.array(sdate)
+    refl = np.array(refl)
+
+    gr_dict.update({'sdate': sdate, 'refl': refl})
+
+    return gr_dict
+
+
+def _get_tilts2(dic):
+    i = 0
+    for k in dic.keys():
+        if 'dataset' in k:
+            i += 1
+    return i/5
+
 if __name__ == '__main__':
 
     out = read_trmm_gdal(r"E:/src/git/heistermann/wradlib-data/trmm/2A-RW-BRS.TRMM.PR.2A23.20100206-S111422-E111519.069662.7.HDF",
