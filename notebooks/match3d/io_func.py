@@ -1,6 +1,7 @@
 import wradlib as wrl
 import datetime as dt
 import numpy as np
+from osgeo import gdal
 
 
 def read_gpm(filename):
@@ -134,7 +135,8 @@ def read_trmm(filename1, filename2):
     # Determine the dimensions
     ndim = refl.ndim
     if ndim != 3:
-        raise ValueError('TRMM Dimensions do not match! Needed 3, given {0}'.format(ndim))
+        raise ValueError('TRMM Dimensions do not match!'
+                         'Needed 3, given {0}'.format(ndim))
 
     tmp = refl.shape
     nscan = tmp[0]
@@ -173,7 +175,7 @@ def read_trmm(filename1, filename2):
     sfc[i2] = 2
     i3 = ((status - 3) % 10 == 0)
     sfc[i3] = 3
-    i4 = ((status - 4)  % 10 == 0)
+    i4 = ((status - 4) % 10 == 0)
     sfc[i4] = 4
     i5 = ((status - 5) % 10 == 0)
     sfc[i5] = 5
@@ -185,19 +187,230 @@ def read_trmm(filename1, filename2):
     quality = np.zeros((nscan, nray), dtype=np.uint8)
     i0 = (status == 168)
     sfc[i0] = 0
-    i1 = (status  <  50)
+    i1 = (status < 50)
     sfc[i1] = 1
     i2 = ((status >= 50) & (status < 109))
     sfc[i2] = 2
 
     trmm_data = {}
     trmm_data.update({'nscan': nscan, 'nray': nray, 'nbin': nbin,
-                     'date': pr_time, 'lon': lon, 'lat': lat,
-                     'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
-                     'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
-                     'refl': refl})
+                      'date': pr_time, 'lon': lon, 'lat': lat,
+                      'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
+                      'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
+                      'refl': refl})
 
     return trmm_data
+
+
+# Hidden subdatasets in TRMM HDF4 files
+sds_hidden_2a23 = {
+    "0": {"name": "Year",         "units": "years",   "dtype": np.integer},
+    "1": {"name": "Month",        "units": "months",  "dtype": np.integer},
+    "2": {"name": "DayOfMonth",   "units": "days",    "dtype": np.integer},
+    "3": {"name": "Hour",         "units": "hours",   "dtype": np.integer},
+    "4": {"name": "Minute",       "units": "minutes", "dtype": np.integer},
+    "5": {"name": "Second",       "units": "s",       "dtype": np.integer},
+    "6": {"name": "MilliSecond",  "units": "ms",      "dtype": np.integer}
+}
+# NOT USED
+#    "7": {"name": "DayOfYear",    "units": "days",    "dtype": np.integer},
+#    "8": {"name": "scanTime_sec", "units": "s",       "dtype": np.float},
+
+sds_hidden_2a25 = {
+    "8": {"name": "dataQuality", "units": None, "dtype": np.integer}
+}
+# NOT USED
+# "0": {"name": "Year",         "units": "years",   "dtype": np.integer},
+# "1": {"name": "Month", "units": "months", "dtype": np.integer},
+# "2": {"name": "DayOfMonth", "units": "days", "dtype": np.integer},
+# "3": {"name": "Hour", "units": "hours", "dtype": np.integer},
+# "4": {"name": "Minute", "units": "minutes", "dtype": np.integer},
+# "5": {"name": "Second", "units": "s", "dtype": np.integer},
+# "6": {"name": "MilliSecond", "units": "ms", "dtype": np.integer}
+# "7": {"name": "DayOfYear",    "units": "days",    "dtype": np.integer},
+# "9": {"name": "scanTime_sec", "units": "s",       "dtype": np.float},
+
+trmm_sd_prefix = "HDF4_SDS:UNKNOWN:"
+
+
+def read_trmm_gdal(f2a23, f2a25):
+    """
+    TRMM 2A23 and 2A25 data comes in hdf4. It can be read with
+    `read_generic_netcdf`, but only if netcDF4 was compiled with hdf4 support.
+    If not, we need to use gdal.
+
+    The use of this function is discouraged in case read_trmm works. This
+    is because the mapping is fragile since GDAL is unable to access all
+    subdatasets by name. Unfortunately, we have to assume that the order
+    of subdatasets remains the same. However, this might not be true depending
+    on how the TRMM file was generated from the STORM database!
+
+    """
+    vars2a23 = {"Latitude": "lat", "Longitude": "lon", "rainFlag": "pflag",
+                "rainType": "ptype", "status": "status", "HBB": "zbb",
+                "BBwidth": "bbwidth"}
+    vars2a25 = {"correctZFactor": "refl"}
+
+    # Extract "visible" 2A23 subdatasets into output dictionary
+    trmm = {}
+    hdf = gdal.Open(f2a23)
+    sds = hdf.GetSubDatasets()
+    for var in vars2a23.keys():
+        for sd in sds:
+            if (var in sd[1]):
+                trmm[vars2a23[var]] = gdal.Open(sd[0]).ReadAsArray()
+    # TODO: What about the flags (-1111: no bb, -8888: no rain, -9999: no data)
+    trmm["zbb"] = trmm["zbb"].astype(np.float32)
+    trmm["bbwidth"] = trmm["bbwidth"].astype(np.float32)
+
+    # Extract "hidden" 2A23 subdatasets into output dictionary
+    d = {}
+    for sd in sds_hidden_2a23.keys():
+        sdstr = "%s%s:%s" % (trmm_sd_prefix, hdf.GetDescription(), sd)
+        tmp = gdal.Open(sdstr)
+        d[sds_hidden_2a23[sd]["name"]] = tmp.ReadAsArray()
+        # Check consistency
+        #   of units
+        if not sds_hidden_2a23[sd]["units"] == tmp.GetMetadata_Dict()["units"]:
+            raise ValueError("Unexpected TRMM HDF4 subdataset units: %s"
+                             "instead of %s" % (sds_hidden_2a23[sd]["units"],
+                                                tmp.GetMetadata_Dict()["units"]))
+        #   of data type
+        if not np.issubdtype(d[sds_hidden_2a23[sd]["name"]].dtype,
+                             sds_hidden_2a23[sd]["dtype"]):
+            raise ValueError("Unexpected TRMM HDF4 subdataset dtype:"
+                             "%s instead of %s" %
+                             (d[sds_hidden_2a23[sd]["name"]].dtype,
+                              sds_hidden_2a23[sd]["dtype"]))
+
+    date_array = zip(d["Year"].astype(np.int32).ravel(),
+                     d["Month"].astype(np.int32).ravel(),
+                     d["DayOfMonth"].astype(np.int32).ravel(),
+                     d["Hour"].astype(np.int32).ravel(),
+                     d["Minute"].astype(np.int32).ravel(),
+                     d["Second"].astype(np.int32).ravel(),
+                     # Millisecond to Microsecond
+                     d["MilliSecond"].astype(np.int32).ravel() * 1000)
+
+    trmm["date"] = np.array(
+        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in
+         date_array]
+    )
+
+    # Extract "visible" 2A25 subdatasets into output dictionary
+    hdf = gdal.Open(f2a25)
+    sds = hdf.GetSubDatasets()
+    for var in vars2a25.keys():
+        for sd in sds:
+            if (var in sd[1]):
+                trmm[vars2a25[var]] = np.swapaxes(
+                    gdal.Open(sd[0]).ReadAsArray(), 0, 1)
+    trmm["refl"] = trmm["refl"].astype(np.float32)
+    # Ground clutter
+    trmm["refl"][trmm["refl"] == -8888.] = np.nan
+    # Misssing data
+    trmm["refl"][trmm["refl"] == -9999.] = np.nan
+    # Scaling
+    trmm["refl"] = trmm["refl"] / 100.
+
+    # Extract "hidden" 2A25 subdatasets into output dictionary
+    d2 = {}
+    for sd in sds_hidden_2a25.keys():
+        sdstr = "%s%s:%s" % (trmm_sd_prefix, hdf.GetDescription(), sd)
+        tmp = gdal.Open(sdstr)
+        d2[sds_hidden_2a25[sd]["name"]] = tmp.ReadAsArray()
+        # Check consistency
+        #   of units
+        if "units" not in tmp.GetMetadata_Dict().keys():
+            # Quality flag does not have a units keyword
+            if not sds_hidden_2a25[sd]["units"] is None:
+                raise ValueError("Unexpected TRMM HDF4 subdataset units: %s"
+                                 "is not expected to have units." %
+                                 sds_hidden_2a25[sd]["name"])
+        elif not sds_hidden_2a25[sd]["units"] == tmp.GetMetadata_Dict()["units"]:
+            raise ValueError("Unexpected TRMM HDF4 subdataset units: %s"
+                             "instead of %s" % (sds_hidden_2a25[sd]["units"],
+                                                tmp.GetMetadata_Dict()["units"]))
+        #   of data type
+        if not np.issubdtype(d2[sds_hidden_2a25[sd]["name"]].dtype,
+                             sds_hidden_2a25[sd]["dtype"]):
+            raise ValueError("Unexpected TRMM HDF4 subdataset dtype:"
+                             "%s instead of %s" %
+                             (d2[sds_hidden_2a25[sd]["name"]].dtype,
+                              sds_hidden_2a25[sd]["dtype"]))
+
+    # Check for bad data
+    if d2["dataQuality"].max() != 0:
+        raise ValueError('TRMM contains Bad Data.')
+
+    # Check dimensions
+    ndim = trmm["refl"].ndim
+    if ndim != 3:
+        raise ValueError("TRMM Dimensions do not match!"
+                         "Needed 3, given {0}".format(ndim))
+
+    tmp = trmm["refl"].shape
+    nscan = tmp[0]
+    nray = tmp[1]
+    nbin = tmp[2]
+
+    # Reverse direction along the beam
+    # TODO: Why is this reversed?
+    trmm["refl"] = trmm["refl"][::-1]
+
+    # Simplify the precipitation flag
+    ipos = (trmm["pflag"] >= 10) & (trmm["pflag"] <= 20)
+    icer = (trmm["pflag"] >= 20)
+    trmm["pflag"][ipos] = 1
+    trmm["pflag"][icer] = 2
+
+    # Simplify the precipitation types
+    istr = (trmm["ptype"] >= 100) & (trmm["ptype"] <= 200)
+    icon = (trmm["ptype"] >= 200) & (trmm["ptype"] <= 300)
+    ioth = (trmm["ptype"] >= 300)
+    inone = (trmm["ptype"] == -88)
+    imiss = (trmm["ptype"] == -99)
+    trmm["ptype"][istr] = 1
+    trmm["ptype"][icon] = 2
+    trmm["ptype"][ioth] = 3
+    trmm["ptype"][inone] = 0
+    trmm["ptype"][imiss] = -1
+
+    # Extract the surface type
+    sfc = np.zeros((nscan, nray), dtype=np.uint8)
+    i0 = (trmm["status"] == 168)
+    sfc[i0] = 0
+    i1 = (trmm["status"] % 10 == 0)
+    sfc[i1] = 1
+    i2 = ((trmm["status"] - 1) % 10 == 0)
+    sfc[i2] = 2
+    i3 = ((trmm["status"] - 3) % 10 == 0)
+    sfc[i3] = 3
+    i4 = ((trmm["status"] - 4)  % 10 == 0)
+    sfc[i4] = 4
+    i5 = ((trmm["status"] - 5) % 10 == 0)
+    sfc[i5] = 5
+    i9 = ((trmm["status"] - 9) % 10 == 0)
+    sfc[i9] = 9
+
+    # Extract 2A23 quality
+    # TODO: Why is the `quality` variable overwritten?
+    trmm["quality"] = np.zeros((nscan, nray), dtype=np.uint8)
+    i0 = (trmm["status"] == 168)
+    sfc[i0] = 0
+    i1 = (trmm["status"] < 50)
+    sfc[i1] = 1
+    i2 = ((trmm["status"] >= 50) & (trmm["status"] < 109))
+    sfc[i2] = 2
+
+    # Update output dictionary
+    trmm["sfs"] = sfc
+    del trmm["status"]
+    trmm["nscan"] = nscan
+    trmm["nray"] = nray
+    trmm["nbin"] = nbin
+
+    return trmm
 
 
 def _get_tilts(dic):
@@ -219,7 +432,6 @@ def read_gr(filename, loaddata=True):
     lon = gr_data['where']['lon']
     lat = gr_data['where']['lat']
     alt = gr_data['where']['height']
-
 
     if gr_data['what']['object'] == 'PVOL':
         ntilt = _get_tilts(gr_data)
@@ -256,7 +468,6 @@ def read_gr(filename, loaddata=True):
     if not loaddata:
         return gr_dict
 
-
     sdate = []
     refl = []
     for i in range(0, ntilt):
@@ -279,3 +490,8 @@ def read_gr(filename, loaddata=True):
     gr_dict.update({'sdate': sdate, 'refl': refl})
 
     return gr_dict
+
+if __name__ == '__main__':
+
+    out = read_trmm_gdal(r"E:/src/git/heistermann/wradlib-data/trmm/2A-RW-BRS.TRMM.PR.2A23.20100206-S111422-E111519.069662.7.HDF",
+                         r"E:/src/git/heistermann/wradlib-data/trmm/2A-RW-BRS.TRMM.PR.2A25.20100206-S111422-E111519.069662.7.HDF")
