@@ -492,6 +492,14 @@ def read_gr(filename, loaddata=True):
     return gr_dict
 
 
+def _get_tilts2(dic):
+    i = 0
+    for k in dic.keys():
+        if 'dataset' in k:
+            i += 1
+    return i/5
+
+
 def read_gr2(filename, loaddata=True):
 
     gr_data = wrl.io.read_generic_hdf5(filename)
@@ -505,7 +513,7 @@ def read_gr2(filename, loaddata=True):
     alt = gr_data['where']['attrs']['height']
 
     if gr_data['what']['attrs']['object'] == 'PVOL':
-        ntilt = _get_tilts(gr_data)
+        ntilt = _get_tilts2(gr_data)
         print "ntilt:", ntilt
     else:
         raise ValueError('GR file is no PPI/Volume File')
@@ -561,12 +569,6 @@ def read_gr2(filename, loaddata=True):
     return gr_dict
 
 
-def _get_tilts2(dic):
-    i = 0
-    for k in dic.keys():
-        if 'dataset' in k:
-            i += 1
-    return i/5
 
 if __name__ == '__main__':
 
