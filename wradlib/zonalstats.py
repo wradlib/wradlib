@@ -1543,5 +1543,43 @@ def grid_centers_to_vertices(x, y, dx, dy):
     return verts
 
 
+def get_clip_mask(coords, clippoly, srs):
+    """Returns boolean mask of points within clippoly
+
+    Parameters
+    ----------
+    coords : np.ndarray
+        array of xy coords with shape [...,2]
+
+    clippoly: np.array
+        array of xy coords with shape (N,2) representing closed
+        polygon coordinates
+
+    srs: osr.SpatialReference
+
+    Returns
+    -------
+    src_mask : np.ndarray
+        boolean np.ndarray of shape coords.shape[0:-1]
+
+    """
+    clip = [clippoly]
+
+    zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]),
+                        clip, srs=srs)
+    obj = GridPointsToPoly(zd)
+
+    #    Get source indices within GR-Domain from zonal object
+    #    (0 because we have only one zone)
+    pr_idx = obj.zdata.get_source_index(0)
+
+    # Subsetting in order to use only precipitating profiles
+    src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool)
+    mask = np.unravel_index(pr_idx, coords.shape[0:-1])
+    src_mask[mask] = True
+
+    return src_mask
+
+
 if __name__ == '__main__':
     print('wradlib: Calling module <zonalstats> as main...')

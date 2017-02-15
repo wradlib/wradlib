@@ -1384,5 +1384,32 @@ def get_wradlib_data_file(relfile):
     return data_file
 
 
+def calculate_polynomial(data, w):
+    """
+    Todo: fix docstring
+    Parameters
+    ----------
+    data
+    w
+
+    Returns
+    -------
+
+    """
+    # print("Data:", data.shape, w.shape)
+    res = np.zeros_like(data)
+    for i, c in enumerate(w):
+        # print(i, res.shape, c.shape, (data**i).shape)
+        res += c * data**i
+    # print(w.shape)
+    # res1 = (w[0] +
+    #        w[1] * data +
+    #        w[2] * data**2 +
+    #        w[3] * data**3 +
+    #        w[4] * data**4)
+    # print(res1 - res)
+    return res
+
+
 if __name__ == '__main__':
     print('wradlib: Calling module <util> as main...')

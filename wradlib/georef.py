@@ -1769,6 +1769,98 @@ def get_shape_coordinates(layer, **kwargs):
     return shp, attrs
 
 
+def correct_parallax(pr_xy, nbin, drt, alpha):
+    """
+    TODO: fix docstring
+    Parameters
+    ----------
+    pr_xy
+    nbin
+    drt
+    alpha
+
+    Returns
+    -------
+
+    """
+    # get x,y-grids
+    pr_x = pr_xy[..., 0]
+    pr_y = pr_xy[..., 1]
+
+    # create range array from ground to sat
+    r_pr_inv = np.arange(nbin) * drt
+
+    # calculate height of bin
+    z_pr = r_pr_inv * np.cos(np.deg2rad(alpha))[:, np.newaxis]
+    # calculate bin ground xy-displacement length
+    ds = r_pr_inv * np.sin(np.deg2rad(alpha))[:, np.newaxis]
+
+    # calculate x,y-differences between ground coordinate
+    # and center ground coordinate [25th element]
+    center = int(np.floor(len(pr_x[-1]) / 2.))
+    xdiff = pr_x[:, center][:, np.newaxis] - pr_x
+    ydiff = pr_y[:, center][:, np.newaxis] - pr_y
+
+    # assuming ydiff and xdiff being a triangles adjacent and
+    # opposite this calculates the xy-angle of the PR scan
+    ang = np.arctan2(ydiff, xdiff)
+
+    # calculate displacement dx, dy from displacement length
+    dx = ds * np.cos(ang)[..., np.newaxis]
+    dy = ds * np.sin(ang)[..., np.newaxis]
+
+    # add displacement to PR ground coordinates
+    pr_xp = dx + pr_x[..., np.newaxis]
+    pr_yp = dy + pr_y[..., np.newaxis]
+
+    return np.stack((pr_xp, pr_yp), axis=3), r_pr_inv, z_pr
+
+
+def sat2pol(prcoords, gr_site_alt, re):
+    """
+    TODO: explain thoroughly the use of azimuthal equidistant pr and gr
+    coordinates
+    fix docstring
+
+    Parameters
+    ----------
+    prcoords
+    grcoords
+    re
+
+    Returns
+    -------
+
+    """
+    # calculate arc length
+    s = np.sqrt(np.sum(prcoords[..., 0:2] ** 2, axis=-1))
+
+    # calculate arc angle
+    gamma = s / re
+
+    # calculate theta (elevation-angle)
+    numer = np.cos(gamma) - (re + gr_site_alt) / (re + prcoords[..., 2])
+    denom = np.sin(gamma)
+    theta = np.rad2deg(np.arctan(numer / denom))
+
+    # calculate SlantRange r
+    r = (re + prcoords[..., 2]) * denom / np.cos(np.deg2rad(theta))
+
+    # calculate Azimuth phi
+    phi = 90 - np.rad2deg(np.arctan2(prcoords[..., 1], prcoords[..., 0]))
+    phi[phi <= 0] += 360
+
+    return r, theta, phi
+
+
+def dist_from_orbit(zt, alpha, r_pr_inv):
+    """
+    TODO: fix docstring
+    Returns range distances of PR bins (in meters) as seen from the orbit.
+    """
+    return zt/np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv
+
+
 def _doctest_():
     import doctest
     print('doctesting')

@@ -12,26 +12,27 @@ pr_pars = {"trmm": {
 }}
 
 
-def correct_parallax(pr_xy, nray, nbin, drt, alpha):
+def correct_parallax(pr_xy, nbin, drt, alpha):
 
     # get x,y-grids
     pr_x = pr_xy[..., 0]
     pr_y = pr_xy[..., 1]
     
     # create range array from ground to sat
-    prng = np.arange(nbin) * drt
-    print("PRANGE:", prng.shape, prng.max())
+    r_pr_inv = np.arange(nbin) * drt
+    print("PRANGE:", r_pr_inv.shape, r_pr_inv.max())
 
     # calculate height of bin
-    zp = prng * np.cos(np.deg2rad(alpha))[:,np.newaxis]
+    z_pr = r_pr_inv * np.cos(np.deg2rad(alpha))[:,np.newaxis]
     # calculate bin ground xy-displacement length
-    ds = prng * np.sin(np.deg2rad(alpha))[:, np.newaxis]
-    print("HEIGHT:", zp.shape, zp.max())
+    ds = r_pr_inv * np.sin(np.deg2rad(alpha))[:, np.newaxis]
+    print("HEIGHT:", z_pr.shape, z_pr.max())
 
     # calculate x,y-differences between ground coordinate 
     # and center ground coordinate [25th element]
-    xdiff = pr_x[:, 24][:, np.newaxis] - pr_x
-    ydiff = pr_y[:, 24][:, np.newaxis] - pr_y
+    center = int(np.floor(len(pr_x[-1])/2.))
+    xdiff = pr_x[:, center][:, np.newaxis] - pr_x
+    ydiff = pr_y[:, center][:, np.newaxis] - pr_y
     print("XDIFF:", xdiff.shape)
 
     # assuming ydiff and xdiff being a triangles adjacent and 
@@ -49,9 +50,8 @@ def correct_parallax(pr_xy, nray, nbin, drt, alpha):
     pr_yp = dy + pr_y[..., np.newaxis]
     print("XP:", pr_xp.shape)
     
-    return np.stack((pr_xp, pr_yp,
-                     np.repeat(zp[np.newaxis, ...], pr_xp.shape[0], axis=0)),
-                    axis=3), prng, zp
+    return np.stack((pr_xp, pr_yp), axis=3), r_pr_inv, z_pr
+
 
 
 def sat2pol(prcoords, grcoords, re):
@@ -81,14 +81,11 @@ def dist_from_orbit(zt, alpha, r_pr_inv):
     """
     Returns range distances of PR bins (in meters) as seen from the orbit.
     """
-    return(zt/np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv)
+    return (zt/np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv)
 
 
-def get_bb_ratio(pr_data, zp):
+def get_bb_ratio(zbb, bbwidth, quality, zp):
 
-    zbb = pr_data['zbb']
-    bbwidth = pr_data['bbwidth']
-    quality = pr_data['quality']
     print("ZBB", zbb.shape, np.nanmin(zbb), np.nanmax(zbb))
     print("BBWidth", bbwidth.shape, np.nanmin(bbwidth), np.nanmax(bbwidth))
 
@@ -96,9 +93,10 @@ def get_bb_ratio(pr_data, zp):
     ibb = (zbb > 0) & (bbwidth > 0) & (quality == 1)
     
     # set non-bb-pixels to np.nan
-    zbb[~ibb] = np.nan 
-    bbwidth[~ibb] = np.nan 
-    
+    zbb = zbb.copy()
+    zbb[~ibb] = np.nan
+    bbwidth = bbwidth.copy()
+    bbwidth[~ibb] = np.nan
     # get median of bb-pixels
     zbb_m = np.nanmedian(zbb)
     bbwidth_m = np.nanmedian(bbwidth)
@@ -116,7 +114,7 @@ def get_bb_ratio(pr_data, zp):
     ratio = (zp - zmlb[:, :, np.newaxis]) / (zmlt - zmlb)[:, :, np.newaxis]
     print("RATIO:", ratio.shape)
     
-    return ratio, zbb
+    return ratio, ibb
 
 
 def calculate_polynomial(data, w):

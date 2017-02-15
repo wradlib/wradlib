@@ -32,6 +32,7 @@ def read_gpm(filename):
 
     bbflag = pr_data['NS/CSF/flagBB']['data']
     zbb = pr_data['NS/CSF/heightBB']['data']
+    print(zbb.dtype)
     bbwidth = pr_data['NS/CSF/widthBB']['data']
     qbb = pr_data['NS/CSF/qualityBB']['data']
     qtype = pr_data['NS/CSF/qualityTypePrecip']['data']
@@ -122,11 +123,19 @@ def read_trmm(filename1, filename2):
     ptype = pr_data1['variables']['rainType']['data']
 
     status = pr_data1['variables']['status']['data']
-    zbb = pr_data1['variables']['HBB']['data']
-    bbwidth = pr_data1['variables']['BBwidth']['data']
+    zbb = pr_data1['variables']['HBB']['data'].astype(np.float32)
+    bbwidth = pr_data1['variables']['BBwidth']['data'].astype(np.float32)
 
     quality = pr_data2['variables']['dataQuality']['data']
-    refl = pr_data2['variables']['correctZFactor']['data']
+    refl = pr_data2['variables']['correctZFactor']['data'] / 100.
+    print(refl.dtype, refl)
+
+    # Ground clutter
+    refl[refl == -8888.] = np.nan
+    # Misssing data
+    refl[refl == -9999.] = np.nan
+    # Scaling
+    refl /= 100.
 
     # Check for bad data
     if max(quality) != 0:
@@ -186,11 +195,11 @@ def read_trmm(filename1, filename2):
     # TODO: Why is the `quality` variable overwritten?
     quality = np.zeros((nscan, nray), dtype=np.uint8)
     i0 = (status == 168)
-    sfc[i0] = 0
+    quality[i0] = 0
     i1 = (status < 50)
-    sfc[i1] = 1
+    quality[i1] = 1
     i2 = ((status >= 50) & (status < 109))
-    sfc[i2] = 2
+    quality[i2] = 2
 
     trmm_data = {}
     trmm_data.update({'nscan': nscan, 'nray': nray, 'nbin': nbin,
@@ -503,8 +512,8 @@ def _get_tilts2(dic):
 def read_gr2(filename, loaddata=True):
 
     gr_data = wrl.io.read_generic_hdf5(filename)
-    dat = gr_data['what']['attrs']['date']
-    tim = gr_data['what']['attrs']['time']
+    dat = gr_data['what']['attrs']['date'].decode()
+    tim = gr_data['what']['attrs']['time'].decode()
     date = dt.datetime.strptime(dat + tim, "%Y%d%m%H%M%S")
     source = gr_data['what']['attrs']['source']
 
@@ -512,9 +521,9 @@ def read_gr2(filename, loaddata=True):
     lat = gr_data['where']['attrs']['lat']
     alt = gr_data['where']['attrs']['height']
 
-    if gr_data['what']['attrs']['object'] == 'PVOL':
+    if gr_data['what']['attrs']['object'].decode() == 'PVOL':
         ntilt = _get_tilts2(gr_data)
-        print "ntilt:", ntilt
+        print("ntilt:", ntilt)
     else:
         raise ValueError('GR file is no PPI/Volume File')
 
@@ -525,7 +534,7 @@ def read_gr2(filename, loaddata=True):
     dr = np.zeros(ntilt)
     a0 = np.zeros(ntilt)
 
-    for i in range(0, ntilt):
+    for i in np.arange(0, ntilt, dtype=np.uint8):
         a0[i] = gr_data['dataset{0}/how'.format(i+1)]['attrs']['astart']
         elang[i] = gr_data['dataset{0}/where'.format(i+1)]['attrs']['elangle']
         ngate[i] = gr_data['dataset{0}/where'.format(i+1)]['attrs']['nbins']
@@ -549,15 +558,15 @@ def read_gr2(filename, loaddata=True):
 
     sdate = []
     refl = []
-    for i in range(0, ntilt):
-        dat = gr_data['dataset{0}/what'.format(i+1)]['attrs']['startdate']
-        tim = gr_data['dataset{0}/what'.format(i+1)]['attrs']['starttime']
+    for i in np.arange(0, ntilt, dtype=np.uint8):
+        dat = gr_data['dataset{0}/what'.format(i+1)]['attrs']['startdate'].decode()
+        tim = gr_data['dataset{0}/what'.format(i+1)]['attrs']['starttime'].decode()
         date = dt.datetime.strptime(dat + tim, "%Y%d%m%H%M%S")
         sdate.append(date)
         quantity = gr_data['dataset{0}/data1/what'.format(i+1)]['attrs']['quantity']
         factor = gr_data['dataset{0}/data1/what'.format(i+1)]['attrs']['gain']
         offset = gr_data['dataset{0}/data1/what'.format(i+1)]['attrs']['offset']
-        if quantity == 'DBZH':
+        if quantity.decode() == 'DBZH':
             dat = gr_data['dataset{0}/data1/data'.format(i+1)]['data'] * factor + offset
             refl.append(dat)
 

@@ -262,5 +262,50 @@ def cum_beam_block_frac(pbb):
     return cbb
 
 
+def get_bb_ratio(zbb, bbwidth, quality, zp):
+    """
+    ToDO: fix docstring
+    Parameters
+    ----------
+    zbb
+    bbwidth
+    quality
+    zp
+
+    Returns
+    -------
+
+    """
+    print("ZBB", zbb.shape, np.nanmin(zbb), np.nanmax(zbb))
+    print("BBWidth", bbwidth.shape, np.nanmin(bbwidth), np.nanmax(bbwidth))
+
+    # parameters for bb detection
+    ibb = (zbb > 0) & (bbwidth > 0) & (quality == 1)
+
+    # set non-bb-pixels to np.nan
+    zbb = zbb.copy()
+    zbb[~ibb] = np.nan
+    bbwidth = bbwidth.copy()
+    bbwidth[~ibb] = np.nan
+    # get median of bb-pixels
+    zbb_m = np.nanmedian(zbb)
+    bbwidth_m = np.nanmedian(bbwidth)
+    print("MEDIAN:", zbb_m, bbwidth_m)
+
+    # approximation of melting layer top and bottom
+    zmlt = zbb_m + bbwidth / 2.
+    zmlb = zbb_m - bbwidth / 2.
+    print("ZMLT:", zmlt.shape)
+
+    # get ratio connected to brightband height
+    # ratio <= 0: below ml
+    # 0 < ratio < 1 : between ml
+    # 1 <= ratio: above ml
+    ratio = (zp - zmlb[:, :, np.newaxis]) / (zmlt - zmlb)[:, :, np.newaxis]
+    print("RATIO:", ratio.shape)
+
+    return ratio, ibb
+
+
 if __name__ == '__main__':
     print('wradlib: Calling module <qual> as main...')
