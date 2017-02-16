@@ -2,6 +2,7 @@ import wradlib as wrl
 import matplotlib.pyplot as pl
 import numpy as np
 #import os
+# flake8: noqa
 
 def discrete_cmap(N, base_cmap=None):
     """Create an N-bin discrete colormap from the specified input map"""
