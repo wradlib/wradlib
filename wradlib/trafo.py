@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 # Copyright (c) 2016, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
@@ -38,7 +39,7 @@ meters_per_nautical_mile = 1852.
 class s2ku():
     """Class to hold coefficients for Radar Reflectivity Conversion
 
-    From S-band (2.8 GHz) to Ku-band (13.8 GHz)
+    From S-band (2.8GHz) to Ku-band (13.8GHz)
 
     .. versionadded:: 0.10.0
 
