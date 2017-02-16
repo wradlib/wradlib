@@ -1546,6 +1546,8 @@ def grid_centers_to_vertices(x, y, dx, dy):
 def get_clip_mask(coords, clippoly, srs):
     """Returns boolean mask of points within clippoly
 
+    .. versionadded:: 0.10.0
+
     Parameters
     ----------
     coords : np.ndarray

@@ -27,6 +27,7 @@ fields except that they exhibit the numpy ndarray interface.
     beam_height_ft_doviak
     pulse_volume
     beam_block_frac
+    get_bb_ratio
 
 """
 

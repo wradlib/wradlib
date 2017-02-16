@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
 import numpy as np
+# flake8: noqa
 
 # Space-born precipitation radar parameters
 pr_pars = {"trmm": {

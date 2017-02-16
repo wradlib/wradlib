@@ -19,6 +19,7 @@ attributable to the other modules
    from_to
    filter_window_polar
    filter_window_cartesian
+   calculate_polynomial
 
 """
 import datetime as dt
@@ -1385,30 +1386,32 @@ def get_wradlib_data_file(relfile):
 
 
 def calculate_polynomial(data, w):
-    """
-    Todo: fix docstring
+    """Calculate Polynomial
+
+    The functions calculates the following polynomial:
+
+    .. math::
+
+        P = \sum_{n=0}^{N} w(n) \cdot data^{n}
+
+    .. versionadded:: 0.10.0
+
     Parameters
     ----------
-    data
-    w
+    data : np.array
+        Flat numpy array of data values.
+    w : np.array
+        Numpy array of shape (N) containing weights.
 
     Returns
     -------
-
+    poly : np.ndarray
+        Flat numpy array of processed data.
     """
-    # print("Data:", data.shape, w.shape)
-    res = np.zeros_like(data)
+    poly = np.zeros_like(data)
     for i, c in enumerate(w):
-        # print(i, res.shape, c.shape, (data**i).shape)
-        res += c * data**i
-    # print(w.shape)
-    # res1 = (w[0] +
-    #        w[1] * data +
-    #        w[2] * data**2 +
-    #        w[3] * data**3 +
-    #        w[4] * data**4)
-    # print(res1 - res)
-    return res
+        poly += c * data**i
+    return poly
 
 
 if __name__ == '__main__':

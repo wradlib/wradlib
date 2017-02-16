@@ -36,6 +36,10 @@ Georeferencing
    get_radolan_grid
    resample_raster_dataset
    get_shape_coordinates
+   correct_parallax
+   sat2pol
+   dist_from_orbit
+
 
 """
 
@@ -1777,6 +1781,8 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     ground radar is fixed at xy-coordinate (0, 0) and every PR bin has its
     relative xy-coordinates with respect to the ground radar site.
 
+    .. versionadded:: 0.10.0
+
     Parameters
     ----------
     pr_xy : np.ndarray
@@ -1840,6 +1846,8 @@ def sat2pol(pr_xyz, gr_site_alt, re):
     is fixed at xy-coordinate (0, 0) and every PR bin has its relative
     xy-coordinates with respect to the ground radar site.
 
+    .. versionadded:: 0.10.0
+
     Parameters
     ----------
     pr_xyz : np.ndarray
@@ -1886,6 +1894,8 @@ def sat2pol(pr_xyz, gr_site_alt, re):
 
 def dist_from_orbit(pr_alt, alpha, r_pr_inv):
     """Returns range distances of PR bins (in meters) as seen from the orbit.
+
+    .. versionadded:: 0.10.0
 
     Parameters
     ----------
