@@ -20,9 +20,6 @@ matrix:
         - PYTHON_VERSION="2.7"
         - COVERALLS="true"
         - DOC_BUILD="true"
-    - python: 3.4
-      env:
-        - PYTHON_VERSION="3.4"
     - python: 3.5
       env:
         - PYTHON_VERSION="3.5"
