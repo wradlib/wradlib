@@ -35,7 +35,7 @@ pip install sphinxcontrib-bibtex
 conda install --yes notebook runipy pandoc
 
 # install nbsphinx
-conda install --yes nbpshinx
+conda install --yes nbsphinx
 
 # install optional wradlib dependencies
 pip install xmltodict
