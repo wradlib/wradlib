@@ -555,16 +555,16 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
         ix = np.arange(0, L)
         if np.sum(validphidp[beam, ix]) >= 2:
             kdp[beam, 0:int(L / 2)] = linregress(x[ix][validphidp[beam, ix]],
-                                              phidp[beam,
-                                                    ix[validphidp[beam,
-                                                                  ix]]])[0]
+                                                 phidp[beam,
+                                                       ix[validphidp[beam,
+                                                                     ix]]])[0]
         # end
         ix = np.arange(shape[-1] - L, shape[-1])
         if np.sum(validphidp[beam, ix]) >= 2:
-            kdp[beam, -int(L / 2):] = linregress(x[ix][validphidp[beam,
-                                                             ix]],
-                                            phidp[beam,
-                                                  ix[validphidp[beam, ix]]])[0]
+            kdp[beam, -int(L / 2):] = linregress(x[ix][validphidp[beam, ix]],
+                                                 phidp[beam,
+                                                       ix[validphidp[beam,
+                                                                     ix]]])[0]
 
     # accounting for forward/backward propagation AND gate length
     return kdp.reshape(shape) / 2. / dr
