@@ -301,12 +301,12 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     bb_width = bb_width.copy()
     bb_width[~ibb] = np.nan
     # get median of bb-pixels
-    zbb_m = np.nanmedian(bb_height)
-    bbwidth_m = np.nanmedian(bb_width)
+    bb_height_m = np.nanmedian(bb_height)
+    bb_width_m = np.nanmedian(bb_width)
 
     # approximation of melting layer top and bottom
-    zmlt = zbb_m + bb_width / 2.
-    zmlb = zbb_m - bb_width / 2.
+    zmlt = bb_height_m + bb_width_m / 2.
+    zmlb = bb_height_m - bb_width_m / 2.
 
     # get ratio connected to brightband height
     ratio = (zp_r - zmlb[:, :, np.newaxis]) / (zmlt - zmlb)[:, :, np.newaxis]

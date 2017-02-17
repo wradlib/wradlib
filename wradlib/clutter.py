@@ -258,7 +258,6 @@ def histo_cut(prec_accum):
             # get the index of the class which underscores the occurence of
             # the biggest class by 1%, beginning from the class with the
             # biggest occurence to the first class
-            tt = range(index, -1, -1)
             for i in range(index, -1, -1):
                 if n[i] < (n[index] * 0.01):
                     break
