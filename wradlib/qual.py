@@ -309,7 +309,8 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     zmlb = bb_height_m - bb_width_m / 2.
 
     # get ratio connected to brightband height
-    ratio = (zp_r - zmlb[:, :, np.newaxis]) / (zmlt - zmlb)[:, :, np.newaxis]
+    ratio = (zp_r - zmlb) / (zmlt - zmlb)
+    ratio = np.broadcast_to(ratio, (bb_width.shape[0],) + ratio.shape)
 
     return ratio, ibb
 
