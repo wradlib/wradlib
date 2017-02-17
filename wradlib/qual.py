@@ -292,9 +292,6 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
         Boolean numpy array containing the indices of PR bins connected to the
         bright band.
     """
-    print("ZBB", bb_height.shape, np.nanmin(bb_height), np.nanmax(bb_height))
-    print("BBWidth", bb_width.shape, np.nanmin(bb_width), np.nanmax(bb_width))
-
     # parameters for bb detection
     ibb = (bb_height > 0) & (bb_width > 0) & (quality == 1)
 
@@ -306,16 +303,13 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     # get median of bb-pixels
     zbb_m = np.nanmedian(bb_height)
     bbwidth_m = np.nanmedian(bb_width)
-    print("MEDIAN:", zbb_m, bbwidth_m)
 
     # approximation of melting layer top and bottom
     zmlt = zbb_m + bb_width / 2.
     zmlb = zbb_m - bb_width / 2.
-    print("ZMLT:", zmlt.shape)
 
     # get ratio connected to brightband height
     ratio = (zp_r - zmlb[:, :, np.newaxis]) / (zmlt - zmlb)[:, :, np.newaxis]
-    print("RATIO:", ratio.shape)
 
     return ratio, ibb
 
