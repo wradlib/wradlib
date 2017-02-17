@@ -4,6 +4,7 @@ import numpy as np
 from osgeo import gdal
 # flake8: noqa
 
+
 def read_gpm(filename):
 
     pr_data = wrl.io.read_generic_hdf5(filename)
@@ -523,7 +524,7 @@ def read_gr2(filename, loaddata=True):
     alt = gr_data['where']['attrs']['height']
 
     if gr_data['what']['attrs']['object'].decode() == 'PVOL':
-        ntilt = _get_tilts2(gr_data)
+        ntilt = int(_get_tilts2(gr_data))
         print("ntilt:", ntilt)
     else:
         raise ValueError('GR file is no PPI/Volume File')
