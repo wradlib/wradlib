@@ -35,8 +35,7 @@ pip install sphinxcontrib-bibtex
 conda install --yes notebook runipy pandoc
 
 # install nbsphinx
-git clone https://github.com/spatialaudio/nbsphinx.git $HOME/nbsphinx
-pip install -e $HOME/nbsphinx
+conda install --yes nbpshinx
 
 # install optional wradlib dependencies
 pip install xmltodict
