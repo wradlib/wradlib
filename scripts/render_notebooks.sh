@@ -14,8 +14,8 @@ echo $notebooks
 # render notebooks to doc/sources
 for nb in $notebooks; do
     echo "runipy --quiet --overwrite --matplotlib $nb"
-    #runipy --quiet --overwrite --matplotlib $nb
-    #cp --parents $nb ../doc/source/
+    runipy --quiet --overwrite --matplotlib $nb
+    cp --parents $nb ../doc/source/
 done
 
 # copy images to docs too
