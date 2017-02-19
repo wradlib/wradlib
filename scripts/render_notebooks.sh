@@ -14,6 +14,13 @@ echo $notebooks
 # render notebooks to doc/sources
 for nb in $notebooks; do
     echo "runipy --quiet --overwrite --matplotlib $nb"
-    runipy --quiet --overwrite --matplotlib $nb
+    #runipy --quiet --overwrite --matplotlib $nb
+    #cp --parents $nb ../doc/source/
+done
+
+# copy images to docs too
+images=`find notebooks -path notebooks/*.ipynb_checkpoints -prune -o -name *.png -print`
+echo $images
+for im in $images; do
     cp --parents $nb ../doc/source/
 done
