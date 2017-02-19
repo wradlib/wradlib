@@ -22,5 +22,5 @@ done
 images=`find notebooks -path notebooks/*.ipynb_checkpoints -prune -o -name *.png -print`
 echo $images
 for im in $images; do
-    cp --parents $nb ../doc/source/
+    cp --parents $im ../doc/source/
 done
