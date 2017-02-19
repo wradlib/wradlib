@@ -17,7 +17,7 @@ Version 0.9.0
 **Highlights**
 
 * examples and tutorials are provided as jupyter notebooks
-* docs are directly created from notebooks (see full workflow `here <https://github.com/wradlib/wradlib/wiki/dev.-notebook-workflow>`_) 
+* docs are directly created from notebooks (see full workflow `here <https://github.com/wradlib/wradlib/wiki/dev.-notebook-workflow>`__)
 * structured notebooks with parent notebook, where appropriate
 * documentation reviewed and adapted
     - community.rst,
@@ -54,7 +54,7 @@ Version 0.8.0
 
 * As of now :math:`\omega radlib` is python3 compatible.
 * Docstrings, tests and examples as well as the documentation have been reviewed and fixed.
-* main :math:`\omega radlib` repository is now hosted `here on github <https://github.com/wradlib/wradlib>`_.
+* main :math:`\omega radlib` repository is now hosted `here on github <https://github.com/wradlib/wradlib>`__.
 * :math:`\omega radlib` docs are now hosted `on github, but with custom domain <http://wradlib.org/wradlib-docs/>`_.
 
 **New features**

@@ -1483,32 +1483,31 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     Examples
     --------
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef  # noqa
-        >>> radolan_grid = georef.get_radolan_grid()
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (-523.4622, -4658.6447)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef  # noqa
+    >>> radolan_grid = georef.get_radolan_grid()
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (-523.4622, -4658.6447)
 
-        >>> # using pure trigonometric transformations
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(trig=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (-523.4622, -4658.6447)
+    >>> # using pure trigonometric transformations
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(trig=True)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (-523.4622, -4658.6447)
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (1500, 1400, 2), (-673.4622, -5008.6447)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (1500, 1400, 2), (-673.4622, -5008.6447)
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (3.5889, 46.9526)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (3.5889, 46.9526)
 
-    See :ref:`notebooks/radolan/radolan_grid.ipynb#\
-Polar-Stereographic-Projection`.
+    See :ref:`notebooks/radolan/radolan_grid.ipynb#Polar-Stereographic-Projection`.  # noqa
 
     Raises
     ------
@@ -1864,12 +1863,11 @@ def sat2pol(pr_xyz, gr_site_alt, re):
         Numpy array of shape (nscans, nbeams, nbins). Contains the slant
         distance of PR bins from GR site.
     theta: np.ndarray
-         Numpy array of shape (nscans, nbeams, nbins). Contains the elevation
+        Numpy array of shape (nscans, nbeams, nbins). Contains the elevation
         angle of PR bins seen from GR site.
     phi : np.ndarray
         Numpy array of shape (nscans, nbeams, nbins). Contains the azimuth
         angles of PR bins seen from GR site.
-
     """
     # calculate arc length
     s = np.sqrt(np.sum(pr_xyz[..., 0:2] ** 2, axis=-1))
