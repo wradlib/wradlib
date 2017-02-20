@@ -46,7 +46,7 @@ class BeamBlockFracTest(unittest.TestCase):
         self.beamheight = np.linspace(start, end, num=NARR)
         self.beamradius = np.ones(NARR) * beam
         self.terrainheight = np.linspace(start - beam, end + beam, num=NARR)
-        self.ones = np.ones((NARR - 1) / 2)
+        self.ones = np.ones(int((NARR - 1) / 2))
         self.sample_pbb = np.array([[0.1, 0.2, 0.3, 0.1, 0.2, 0.4, 0.1],
                                     [0.1, 0.2, 0.3, 0.1, 0.2, 0.4, 0.1]])
         self.sample_cbb = np.array([[0.1, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4],

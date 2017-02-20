@@ -27,6 +27,7 @@ fields except that they exhibit the numpy ndarray interface.
     beam_height_ft_doviak
     pulse_volume
     beam_block_frac
+    get_bb_ratio
 
 """
 
@@ -262,47 +263,56 @@ def cum_beam_block_frac(pbb):
     return cbb
 
 
-def get_bb_ratio(zbb, bbwidth, quality, zp):
-    """
-    ToDO: fix docstring
+def get_bb_ratio(bb_height, bb_width, quality, zp_r):
+    """Calculate bright band ratio of PR bins
+
+    .. versionadded:: 0.10.0
+
     Parameters
     ----------
-    zbb
-    bbwidth
-    quality
-    zp
+    bb_height : np.ndarray
+        Numpy array of shape (nscans, nbeams) containing the PR bright band
+        heights in meters.
+    bb_width : np.ndarray
+        Numpy array of shape (nscans, nbeams) containing the PR bright band
+        widths in meters.
+    quality : np.ndarray
+        Numpy array of shape (nscans, nbeams) containing the PR brigth band
+        quality index.
+    zp_r : np.ndarray
+        Numpy array of PR bin altitudes of shape (nbeams, nbins).
 
     Returns
     -------
-
+    ratio : np.ndarray
+        Numpy array of shape (nscans, nbeams, nbins) containing the bb-ratio of
+        every PR bin.
+        - ratio <= 0: below ml
+        - 0 < ratio < 1: between ml
+        - 1 <= ratio: above ml
+    ibb : np.ndarray
+        Boolean numpy array containing the indices of PR bins connected to the
+        bright band.
     """
-    print("ZBB", zbb.shape, np.nanmin(zbb), np.nanmax(zbb))
-    print("BBWidth", bbwidth.shape, np.nanmin(bbwidth), np.nanmax(bbwidth))
-
     # parameters for bb detection
-    ibb = (zbb > 0) & (bbwidth > 0) & (quality == 1)
+    ibb = (bb_height > 0) & (bb_width > 0) & (quality == 1)
 
     # set non-bb-pixels to np.nan
-    zbb = zbb.copy()
-    zbb[~ibb] = np.nan
-    bbwidth = bbwidth.copy()
-    bbwidth[~ibb] = np.nan
+    bb_height = bb_height.copy()
+    bb_height[~ibb] = np.nan
+    bb_width = bb_width.copy()
+    bb_width[~ibb] = np.nan
     # get median of bb-pixels
-    zbb_m = np.nanmedian(zbb)
-    bbwidth_m = np.nanmedian(bbwidth)
-    print("MEDIAN:", zbb_m, bbwidth_m)
+    bb_height_m = np.nanmedian(bb_height)
+    bb_width_m = np.nanmedian(bb_width)
 
     # approximation of melting layer top and bottom
-    zmlt = zbb_m + bbwidth / 2.
-    zmlb = zbb_m - bbwidth / 2.
-    print("ZMLT:", zmlt.shape)
+    zmlt = bb_height_m + bb_width_m / 2.
+    zmlb = bb_height_m - bb_width_m / 2.
 
     # get ratio connected to brightband height
-    # ratio <= 0: below ml
-    # 0 < ratio < 1 : between ml
-    # 1 <= ratio: above ml
-    ratio = (zp - zmlb[:, :, np.newaxis]) / (zmlt - zmlb)[:, :, np.newaxis]
-    print("RATIO:", ratio.shape)
+    ratio = (zp_r - zmlb) / (zmlt - zmlb)
+    ratio = np.broadcast_to(ratio, (bb_width.shape[0],) + ratio.shape)
 
     return ratio, ibb
 

@@ -36,6 +36,10 @@ Georeferencing
    get_radolan_grid
    resample_raster_dataset
    get_shape_coordinates
+   correct_parallax
+   sat2pol
+   dist_from_orbit
+
 
 """
 
@@ -1479,32 +1483,31 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     Examples
     --------
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef  # noqa
-        >>> radolan_grid = georef.get_radolan_grid()
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (-523.4622, -4658.6447)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef  # noqa
+    >>> radolan_grid = georef.get_radolan_grid()
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (-523.4622, -4658.6447)
 
-        >>> # using pure trigonometric transformations
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(trig=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (-523.4622, -4658.6447)
+    >>> # using pure trigonometric transformations
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(trig=True)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (-523.4622, -4658.6447)
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (1500, 1400, 2), (-673.4622, -5008.6447)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (1500, 1400, 2), (-673.4622, -5008.6447)
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (3.5889, 46.9526)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (3.5889, 46.9526)
 
-    See :ref:`notebooks/radolan/radolan_grid.ipynb#\
-Polar-Stereographic-Projection`.
+    See :ref:`notebooks/radolan/radolan_grid.ipynb#Polar-Stereographic-Projection`.  # noqa
 
     Raises
     ------
@@ -1770,18 +1773,36 @@ def get_shape_coordinates(layer, **kwargs):
 
 
 def correct_parallax(pr_xy, nbin, drt, alpha):
-    """
-    TODO: fix docstring
+    """Adjust the geo-locations of the PR pixels
+
+    The pr_xy coordinates of the PR beam footprints need to be in the
+    azimuthal equidistant projection of the ground radar. This ensures that the
+    ground radar is fixed at xy-coordinate (0, 0) and every PR bin has its
+    relative xy-coordinates with respect to the ground radar site.
+
+    .. versionadded:: 0.10.0
+
     Parameters
     ----------
-    pr_xy
-    nbin
-    drt
-    alpha
+    pr_xy : np.ndarray
+        Numpy array of xy-coordinates of shape (nscans, nbeams, 2)
+    nbin : int
+        Number of bins along PR beam.
+    drt : float
+        Gate lenght of PR in meter.
+    alpha: np.array
+        Numpy array of depression angles of the PR beams with shape (nbeams).
 
     Returns
     -------
 
+    pr_xyp : np.ndarray
+        Numpy array of parallax corrected coordinates
+        of shape (nscans, nbeams, nbins, 2).
+    r_pr_inv : np.array
+        Numpy array of ranges from ground to PR platform of shape (nbins).
+    z_pr : np.ndarray
+        Numpy array of PR bin altitudes of shape (nbeams, nbins).
     """
     # get x,y-grids
     pr_x = pr_xy[..., 0]
@@ -1816,49 +1837,80 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     return np.stack((pr_xp, pr_yp), axis=3), r_pr_inv, z_pr
 
 
-def sat2pol(prcoords, gr_site_alt, re):
-    """
-    TODO: explain thoroughly the use of azimuthal equidistant pr and gr
-    coordinates
-    fix docstring
+def sat2pol(pr_xyz, gr_site_alt, re):
+    """Calculates spherical coordinates of PR bins with respect to GR
+
+    The pr_xyz coordinates of the PR bins need to be in the azimuthal
+    equidistant projection of the ground radar. This ensures that ground radar
+    is fixed at xy-coordinate (0, 0) and every PR bin has its relative
+    xy-coordinates with respect to the ground radar site.
+
+    .. versionadded:: 0.10.0
 
     Parameters
     ----------
-    prcoords
-    grcoords
-    re
+    pr_xyz : np.ndarray
+        Numpy array of shape (nscans, nbeams, nbins, 3). Contains corrected
+        PR xy coordinates in GR azimuthal equidistant projection and altitude
+    gr_site_alt : float
+        Height of the Ground Radar site
+    re : float
+        Effective Earth Radius at Ground Radar site
 
     Returns
     -------
-
+    r : np.ndarray
+        Numpy array of shape (nscans, nbeams, nbins). Contains the slant
+        distance of PR bins from GR site.
+    theta: np.ndarray
+        Numpy array of shape (nscans, nbeams, nbins). Contains the elevation
+        angle of PR bins seen from GR site.
+    phi : np.ndarray
+        Numpy array of shape (nscans, nbeams, nbins). Contains the azimuth
+        angles of PR bins seen from GR site.
     """
     # calculate arc length
-    s = np.sqrt(np.sum(prcoords[..., 0:2] ** 2, axis=-1))
+    s = np.sqrt(np.sum(pr_xyz[..., 0:2] ** 2, axis=-1))
 
     # calculate arc angle
     gamma = s / re
 
     # calculate theta (elevation-angle)
-    numer = np.cos(gamma) - (re + gr_site_alt) / (re + prcoords[..., 2])
+    numer = np.cos(gamma) - (re + gr_site_alt) / (re + pr_xyz[..., 2])
     denom = np.sin(gamma)
     theta = np.rad2deg(np.arctan(numer / denom))
 
     # calculate SlantRange r
-    r = (re + prcoords[..., 2]) * denom / np.cos(np.deg2rad(theta))
+    r = (re + pr_xyz[..., 2]) * denom / np.cos(np.deg2rad(theta))
 
     # calculate Azimuth phi
-    phi = 90 - np.rad2deg(np.arctan2(prcoords[..., 1], prcoords[..., 0]))
+    phi = 90 - np.rad2deg(np.arctan2(pr_xyz[..., 1], pr_xyz[..., 0]))
     phi[phi <= 0] += 360
 
     return r, theta, phi
 
 
-def dist_from_orbit(zt, alpha, r_pr_inv):
+def dist_from_orbit(pr_alt, alpha, r_pr_inv):
+    """Returns range distances of PR bins (in meters) as seen from the orbit.
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    pr_alt : float
+        PR orbit height in meters.
+    alpha: np.array
+        Numpy array of depression angles of the PR beams with shape (nbeams).
+    r_pr_inv : np.array
+        Numpy array of ranges from ground to PR platform of shape (nbins).
+
+    Returns
+    -------
+    ranges : np.ndarray
+        Numpy array of shape (nbeams, nbins) of PR bin range distances from
+        PR platform in orbit.
     """
-    TODO: fix docstring
-    Returns range distances of PR bins (in meters) as seen from the orbit.
-    """
-    return zt/np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv
+    return pr_alt / np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv
 
 
 def _doctest_():

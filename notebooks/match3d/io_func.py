@@ -2,6 +2,7 @@ import wradlib as wrl
 import datetime as dt
 import numpy as np
 from osgeo import gdal
+# flake8: noqa
 
 
 def read_gpm(filename):
@@ -50,7 +51,8 @@ def read_gpm(filename):
     # Determine the dimensions
     ndim = refl.ndim
     if ndim != 3:
-        raise ValueError('GPM Dimensions do not match! Needed 3, given {0}'.format(ndim))
+        raise ValueError('GPM Dimensions do not match! '
+                         'Needed 3, given {0}'.format(ndim))
 
     tmp = refl.shape
     nscan = tmp[0]
@@ -522,7 +524,7 @@ def read_gr2(filename, loaddata=True):
     alt = gr_data['where']['attrs']['height']
 
     if gr_data['what']['attrs']['object'].decode() == 'PVOL':
-        ntilt = _get_tilts2(gr_data)
+        ntilt = int(_get_tilts2(gr_data))
         print("ntilt:", ntilt)
     else:
         raise ValueError('GR file is no PPI/Volume File')

@@ -449,8 +449,8 @@ def sobel(x, window_len=7):
     w = 2.0 * np.arange(window_len) / (window_len - 1.0) - 1.0
     w = w / (abs(w).sum())
     y = np.convolve(w, s, mode='valid')
-    return -1.0 * y[window_len / 2:len(x) +
-                    window_len / 2] / (window_len / 3.0)
+    return (-1.0 * y[int(window_len / 2):len(x) + int(window_len / 2)] /
+            (window_len / 3.0))
 
 
 def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
@@ -554,17 +554,17 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
         #   start
         ix = np.arange(0, L)
         if np.sum(validphidp[beam, ix]) >= 2:
-            kdp[beam, 0:(L / 2)] = linregress(x[ix][validphidp[beam, ix]],
-                                              phidp[beam,
-                                                    ix[validphidp[beam,
-                                                                  ix]]])[0]
+            kdp[beam, 0:int(L / 2)] = linregress(x[ix][validphidp[beam, ix]],
+                                                 phidp[beam,
+                                                       ix[validphidp[beam,
+                                                                     ix]]])[0]
         # end
         ix = np.arange(shape[-1] - L, shape[-1])
         if np.sum(validphidp[beam, ix]) >= 2:
-            kdp[beam, -L / 2:] = linregress(x[ix][validphidp[beam,
-                                                             ix]],
-                                            phidp[beam,
-                                                  ix[validphidp[beam, ix]]])[0]
+            kdp[beam, -int(L / 2):] = linregress(x[ix][validphidp[beam, ix]],
+                                                 phidp[beam,
+                                                       ix[validphidp[beam,
+                                                                     ix]]])[0]
 
     # accounting for forward/backward propagation AND gate length
     return kdp.reshape(shape) / 2. / dr

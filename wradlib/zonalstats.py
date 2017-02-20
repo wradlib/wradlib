@@ -1404,7 +1404,7 @@ def mask_from_bbox(x, y, bbox, polar=False):
     jll = (ixll % nx) - 1
     # find upper right corner index
     dists, ixur = tree.query([bbox["right"], bbox["top"]], k=1)
-    iur = (ixur / nx) + 1
+    iur = int(ixur / nx) + 1
     jur = (ixur % nx) + 1
 
     # for polar grids we need all 4 corners
@@ -1545,6 +1545,8 @@ def grid_centers_to_vertices(x, y, dx, dy):
 
 def get_clip_mask(coords, clippoly, srs):
     """Returns boolean mask of points within clippoly
+
+    .. versionadded:: 0.10.0
 
     Parameters
     ----------
