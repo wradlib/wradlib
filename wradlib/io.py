@@ -1132,7 +1132,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
                 mdata = sg2[...]
                 dyn_range_max = sg2.attrs.get('dyn_range_max')
                 dyn_range_min = sg2.attrs.get('dyn_range_min')
-                bin_format = sg2.attrs.get('format')
+                bin_format = sg2.attrs.get('format').decode()
                 if bin_format == 'UV8':
                     div = 256.0
                 else:
