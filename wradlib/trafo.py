@@ -27,6 +27,8 @@ to dBZ-values to Z-values and vice versa.
    kmh2si
    mph2si
    kts2si
+   ku2s
+   s2ku
 
 """
 import numpy as np

@@ -9,7 +9,28 @@ You can install the latest :math:`\omega radlib` release from PyPI via ``$ pip i
 Bleeding Edge
 -------------
 
-*Nothing, yet.*
+**Highlights**
+
+* Added functions to calculate 3D-matching of GPM/TRMM with Ground Radar (``wradlib.georef.correct_parallax``, ``wradlib.georef.sat2pol``, ``wradlib.georef.dist_from_orbit``, ``wradlib.qual.get_bb_ratio``, ````wradlib.trafo.s2ku``, ``wradlib.trafo.ku2s``, ``wradlib.util.calculate_polynomial``, ``wradlib.zonalstats.get_clip_mask``)
+* Added example notebook of GPM/TRMM-GR matching
+* reworked docs and buzild process
+
+**New features**
+
+* New notebook examples covering wradlib-tour, classification
+* Added reading WX-format to RADOLAN reader
+* Enhanced ``wradlib.io.read_RADOLAN_composite`` to also accept file-handles
+* Added reading groups to ``wradlib.io.read_generic_netcdf``
+* Added `wradlib.qual.cu_beam_block_frac`` to compute cumulative beam blockage
+* Added earth curvature display to beam blockage
+
+**Bugfixes**
+
+* Fix documentation inconsistencies
+* Fix calculation of pulse volume
+* Use dedicated OSR IsSame() in ``wradlib.georef.transform_geometry``
+* several minor fixes
+
 
 Version 0.9.0
 -------------
@@ -86,7 +107,7 @@ Version 0.6.0
 
 **Highlights**
 
-:math:`\omega radlib` functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
+:math:`\omega radlib` functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``, ``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
 
 Added ability to handle georeferenced raster and vector data
 

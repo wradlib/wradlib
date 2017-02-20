@@ -266,6 +266,8 @@ def cum_beam_block_frac(pbb):
 def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     """Calculate bright band ratio of PR bins
 
+    .. versionadded:: 0.10.0
+
     Parameters
     ----------
     bb_height : np.ndarray
