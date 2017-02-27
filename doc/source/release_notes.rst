@@ -11,9 +11,9 @@ Bleeding Edge
 
 **Highlights**
 
-* Added functions to calculate 3D-matching of GPM/TRMM with Ground Radar (``wradlib.georef.correct_parallax``, ``wradlib.georef.sat2pol``, ``wradlib.georef.dist_from_orbit``, ``wradlib.qual.get_bb_ratio``, ````wradlib.trafo.s2ku``, ``wradlib.trafo.ku2s``, ``wradlib.util.calculate_polynomial``, ``wradlib.zonalstats.get_clip_mask``)
+* Added functions to match the precipitation radar of GPM/TRMM platforms with ground radar observations in 3D (``wradlib.georef.correct_parallax``, ``wradlib.georef.sat2pol``, ``wradlib.georef.dist_from_orbit``, ``wradlib.qual.get_bb_ratio``, ````wradlib.trafo.s2ku``, ``wradlib.trafo.ku2s``, ``wradlib.util.calculate_polynomial``, ``wradlib.zonalstats.get_clip_mask``)
 * Added example notebook of GPM/TRMM-GR matching
-* reworked docs and buzild process
+* revised docs and build process
 
 **New features**
 
