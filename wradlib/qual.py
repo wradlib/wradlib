@@ -264,20 +264,29 @@ def cum_beam_block_frac(pbb):
 
 
 def get_bb_ratio(bb_height, bb_width, quality, zp_r):
-    """Calculate bright band ratio of PR bins
+    """Returns the Bright Band ratio of each PR bin
+
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM.
+
+    This function basically applies the Bright Band (BB) information as
+    provided by the corresponding PR datasets per beam, namely BB height and
+    width, as well as quality flags of the PR beams. A BB ratio of <= 0
+    indicates that a bin is located below the melting layer (ML), >=1
+    above the ML, and inbetween 0 and 1 inside the ML.
 
     .. versionadded:: 0.10.0
 
     Parameters
     ----------
     bb_height : np.ndarray
-        Numpy array of shape (nscans, nbeams) containing the PR bright band
+        Numpy array of shape (nscans, nbeams) containing the PR beams' BB
         heights in meters.
     bb_width : np.ndarray
-        Numpy array of shape (nscans, nbeams) containing the PR bright band
+        Numpy array of shape (nscans, nbeams) containing the PR beams' BB
         widths in meters.
     quality : np.ndarray
-        Numpy array of shape (nscans, nbeams) containing the PR brigth band
+        Numpy array of shape (nscans, nbeams) containing the PR beams' BB
         quality index.
     zp_r : np.ndarray
         Numpy array of PR bin altitudes of shape (nbeams, nbins).
@@ -285,14 +294,14 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     Returns
     -------
     ratio : np.ndarray
-        Numpy array of shape (nscans, nbeams, nbins) containing the bb-ratio of
+        Numpy array of shape (nscans, nbeams, nbins) containing the BB ratio of
         every PR bin.
         - ratio <= 0: below ml
         - 0 < ratio < 1: between ml
         - 1 <= ratio: above ml
     ibb : np.ndarray
         Boolean numpy array containing the indices of PR bins connected to the
-        bright band.
+        BB.
     """
     # parameters for bb detection
     ibb = (bb_height > 0) & (bb_width > 0) & (quality == 1)

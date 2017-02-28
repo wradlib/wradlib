@@ -1775,9 +1775,12 @@ def get_shape_coordinates(layer, **kwargs):
 def correct_parallax(pr_xy, nbin, drt, alpha):
     """Adjust the geo-locations of the PR pixels
 
-    The pr_xy coordinates of the PR beam footprints need to be in the
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM.
+
+    The `pr_xy` coordinates of the PR beam footprints need to be in the
     azimuthal equidistant projection of the ground radar. This ensures that the
-    ground radar is fixed at xy-coordinate (0, 0) and every PR bin has its
+    ground radar is fixed at xy-coordinate (0, 0), and every PR bin has its
     relative xy-coordinates with respect to the ground radar site.
 
     .. versionadded:: 0.10.0
@@ -1799,7 +1802,7 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     pr_xyp : np.ndarray
         Numpy array of parallax corrected coordinates
         of shape (nscans, nbeams, nbins, 2).
-    r_pr_inv : np.array
+    r_pr_inv : np.ndarray
         Numpy array of ranges from ground to PR platform of shape (nbins).
     z_pr : np.ndarray
         Numpy array of PR bin altitudes of shape (nbeams, nbins).
@@ -1838,12 +1841,17 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
 
 
 def sat2pol(pr_xyz, gr_site_alt, re):
-    """Calculates spherical coordinates of PR bins with respect to GR
+    """Returns spherical coordinates of PR bins as seen from the GR location.
 
-    The pr_xyz coordinates of the PR bins need to be in the azimuthal
-    equidistant projection of the ground radar. This ensures that ground radar
-    is fixed at xy-coordinate (0, 0) and every PR bin has its relative
-    xy-coordinates with respect to the ground radar site.
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM. With *GR*, we refer to terrestrial weather radars
+    (ground radars).
+
+    For this function to work, the `pr_xyz` coordinates of the PR bins need
+    to be in the azimuthal equidistant projection of the ground radar! This
+    ensures that the ground radar is fixed at xy-coordinate (0, 0), and every
+    PR bin has its relative xy-coordinates with respect to the ground radar
+    site.
 
     .. versionadded:: 0.10.0
 
@@ -1853,9 +1861,9 @@ def sat2pol(pr_xyz, gr_site_alt, re):
         Numpy array of shape (nscans, nbeams, nbins, 3). Contains corrected
         PR xy coordinates in GR azimuthal equidistant projection and altitude
     gr_site_alt : float
-        Height of the Ground Radar site
+        Altitude of the GR site (in meters)
     re : float
-        Effective Earth Radius at Ground Radar site
+        Effective Earth radius at GR site (in meters)
 
     Returns
     -------
@@ -1864,10 +1872,10 @@ def sat2pol(pr_xyz, gr_site_alt, re):
         distance of PR bins from GR site.
     theta: np.ndarray
         Numpy array of shape (nscans, nbeams, nbins). Contains the elevation
-        angle of PR bins seen from GR site.
+        angle of PR bins as seen from GR site.
     phi : np.ndarray
         Numpy array of shape (nscans, nbeams, nbins). Contains the azimuth
-        angles of PR bins seen from GR site.
+        angles of PR bins as seen from GR site.
     """
     # calculate arc length
     s = np.sqrt(np.sum(pr_xyz[..., 0:2] ** 2, axis=-1))
@@ -1891,7 +1899,10 @@ def sat2pol(pr_xyz, gr_site_alt, re):
 
 
 def dist_from_orbit(pr_alt, alpha, r_pr_inv):
-    """Returns range distances of PR bins (in meters) as seen from the orbit.
+    """Returns range distances of PR bins (in meters) as seen from the orbit
+
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM.
 
     .. versionadded:: 0.10.0
 
@@ -1899,9 +1910,9 @@ def dist_from_orbit(pr_alt, alpha, r_pr_inv):
     ----------
     pr_alt : float
         PR orbit height in meters.
-    alpha: np.array
+    alpha: np.ndarray
         Numpy array of depression angles of the PR beams with shape (nbeams).
-    r_pr_inv : np.array
+    r_pr_inv : np.ndarray
         Numpy array of ranges from ground to PR platform of shape (nbins).
 
     Returns
