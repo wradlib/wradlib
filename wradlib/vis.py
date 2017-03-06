@@ -30,6 +30,7 @@ Standard plotting and mapping procedures
 
 # standard libraries
 import os.path as path
+import warnings
 
 # site packages
 import numpy as np
@@ -40,7 +41,7 @@ from matplotlib.projections import PolarAxes, register_projection
 from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
 from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
                                      GridHelperCurveLinear)
-from mpl_toolkits.axisartist.grid_finder import FixedLocator
+from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
 import mpl_toolkits.axisartist.angle_helper as ah
 from matplotlib.ticker import NullFormatter, FuncFormatter
 import matplotlib.dates as mdates
@@ -115,9 +116,13 @@ register_projection(NorthPolarAxes)
 
 def plot_ppi(data, r=None, az=None, autoext=True,
              site=(0, 0), proj=None, elev=0.,
-             ax=None,
+             fig=None, ax=111, func='pcolormesh',
+             cg=False, rf=1., refrac=False,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
+
+    .. versionchanged:: 0.10.0
+       added contour, contourf plotting, added `cgplot`
 
     .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
@@ -127,8 +132,13 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    `**kwargs` may be used to try to influence the
-    :func:`matplotlib.pyplot.pcolormesh` and
+    Using `cgplot=True` the plotting is done in a curvelinear grid axes.
+    Additional data can be plotted in polar coordinates or cartesian
+    coordinates depending which axes object is used.
+
+    ``**kwargs` may be used to try to influence the
+    :func:`matplotlib.pyplot.pcolormesh`, :func:`matplotlib.pyplot.contour`,
+    :func:`matplotlib.pyplot.contourf` and
     :meth:`wradlib.georef.polar2lonlatalt_n` routines under the hood.
 
     There is one major caveat concerning the values of `r` and `az`.
@@ -150,6 +160,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         The ranges. Units may be chosen arbitrarily, unless proj is set. In
         that case the units must be meters. If None, a default is
         calculated from the dimensions of `data`.
+    rf: float
+        If present, factor for scaling range axes, defaults to 1.
     az : np.array
         The azimuth angles in degrees. If None, a default is
         calculated from the dimensions of `data`.
@@ -159,6 +171,13 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         As this function needs one set of coordinates more than would usually
         be provided by `r` and `az`, setting ´autoext´ to True automatically
         extends r and az so that all of `data` will be plotted.
+    refrac: True | False
+        If True, the effect of refractivity of the earth's atmosphere on the
+        beam propagation will be taken into account. If False, simple
+        trigonometry will be used to calculate beam propagation.
+        Functionality for this will be provided by function
+        :meth:`wradlib.georef.arc_distance_n`. Therefore, if `refrac` is True,
+        `r` must be given in meters.
     site : tuple
         Tuple of coordinates of the radar site.
         If `proj` is not used, this simply becomes the offset for the origin
@@ -173,9 +192,21 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
-    ax : matplotlib Axes object
-        If given, the PPI will be plotted into this axes object. If None a
-        new axes object will be created
+    fig : matplotlib Figure object
+        If given, the RHI will be plotted into this figure object. Axes are
+        created as needed. If None, a new figure object will be created or
+        current figure will be used, depending on "ax".
+    ax : matplotlib Axes object | matplotlib grid definition
+        If matplotlib Axes object is given, the PPI will be plotted into this
+        axes object.
+        If matplotlib grid definition is given (nrows/ncols/plotnumber),
+        axis are created in the specified place.
+        Defaults to '111', only one subplot/axis.
+    func : str
+        Name of plotting function to be used under the hood.
+        Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
+    cg : True | False
+        If True, the data will be plotted on curvelinear axes.
 
     See also
     --------
@@ -186,13 +217,35 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     -------
     ax : matplotlib Axes object
         The axes object into which the PPI was plotted
-    pm : matplotlib QuadMesh object
+    pm : mmatplotlib QuadMesh object | matplotlib QuadContourSet
         The result of the pcolormesh operation. Necessary, if you want to
         add a colorbar to the plot.
 
+    Note
+    ----
+    If `cgplot` is True, the `cgax` - curvelinear Axes (r-theta-grid)
+    is returned. `caax` - Cartesian Axes (x-y-grid) and `paax` -
+    parasite axes object for plotting polar data can be derived like this::
+
+        caax = cgax.parasites[0]
+        paax = cgax.parasites[1]
+
+    The function `create_cg` uses the Matplotlib AXISARTIST namespace
+    `mpl_toolkits.axisartist \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
+
+    Here are some limitations to normal Matplotlib Axes. While using the
+    Matplotlib `AxesGrid Toolkit \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
+    most of the limitations can be overcome.
+    See `Matplotlib AxesGrid Toolkit User’s Guide \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
+
+
     Examples
     --------
-    See :ref:`notebooks/visualisation/wradlib_plot_ppi_example.ipynb`.
+    See :ref:`notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
+    and :ref:`notebooks/visualisation/wwradlib_plot_curvelinear_grids.ipynb`.
 
     """
     # kwargs handling
@@ -202,18 +255,23 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     if 'ke' in kwargs:
         kw_polar2lonlatalt_n['ke'] = kwargs.pop('ke')
 
-    # this may seem odd at first, but d1 and d2 are also used in plot_rhi
-    # and thus it may be easier to compare the two functions
-    d1 = r
-    d2 = az
+    if (proj is not None) & cg:
+        cg = False
+        warnings.warn(
+            "WARNING: `cg` cannot be used with `proj`, falling back.")
 
     # providing 'reasonable defaults', based on the data's shape
-    if d1 is None:
+    if r is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
-    if d2 is None:
-        d2 = np.arange(data.shape[0], dtype=np.float)
+    else:
+        d1 = np.asanyarray(r.copy())
 
-    if autoext:
+    if az is None:
+        d2 = np.arange(data.shape[0], dtype=np.float)
+    else:
+        d2 = np.asanyarray(az.copy())
+
+    if autoext & ('pcolormesh' in func):
         # the ranges need to go 'one bin further', assuming some regularity
         # we extend by the distance between the preceding bins.
         x = np.append(d1, d1[-1] + (d1[-1] - d1[-2]))
@@ -226,15 +284,55 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         x = d1
         y = d2
 
-    # coordinates for all vertices
-    xx, yy = np.meshgrid(x, y)
+    if 'contour' in func:
+        # add first azimuth as last for y and data
+        y = np.append(d2, d2[0])
+        data = np.vstack((data, data[0][np.newaxis, ...]))
+        # move to center
+        x += (x[1] - x[0]) / 2
+        y += (y[1] - y[0]) / 2
 
-    if proj is None:
-        # no georeferencing -> simple trigonometry
-        xxx = xx * np.cos(np.radians(90. - yy)) + site[0]
-        yy = xx * np.sin(np.radians(90. - yy)) + site[1]
-        xx = xxx
+    if refrac & (proj is None):
+        # with refraction correction, significant at higher elevations
+        # calculate new range values
+        x = georef.arc_distance_n(x, elev)
+
+    # axes object is given
+    if isinstance(ax, mpl.axes.Axes):
+        if cg:
+            caax = ax.parasites[0]
+            paax = ax.parasites[1]
     else:
+        if fig is None:
+            if ax is 111:
+                # create new figure if there is only one subplot
+                fig = pl.figure()
+            else:
+                # assume current figure
+                fig = pl.gcf()
+        if cg:
+            # create curvelinear axes
+            ax, caax, paax = create_cg('PPI', fig, ax)
+            # this is in fact the outermost thick "ring"
+            ax.axis["lon"] = ax.new_floating_axis(1, np.max(x) / rf)
+            ax.axis["lon"].major_ticklabels.set_visible(False)
+            # and also set tickmarklength to zero for better presentation
+            ax.axis["lon"].major_ticks.set_ticksize(0)
+        else:
+            ax = fig.add_subplot(ax)
+
+    if cg:
+        xx, yy = np.meshgrid(y, x)
+        # set bounds to min/max
+        xa = yy * np.sin(np.radians(xx)) / rf
+        ya = yy * np.cos(np.radians(xx)) / rf
+        plax = paax
+    else:
+        # coordinates for all vertices
+        xx, yy = np.meshgrid(x, y)
+        plax = ax
+
+    if proj:
         # with georeferencing
         if r is None:
             # if we produced a default, this one is still in 'kilometers'
@@ -245,19 +343,29 @@ def plot_ppi(data, r=None, az=None, autoext=True,
                                                  **kw_polar2lonlatalt_n)
         # projected to the final coordinate system
         xx, yy = georef.reproject(lon, lat, projection_target=proj)
+    else:
+        if cg:
+            yy = yy / rf
+            data = data.transpose()
+        else:
+            # no georeferencing -> simple trigonometry
+            xxx = (xx * np.cos(np.radians(90. - yy)) + site[0]) / rf
+            yy = (xx * np.sin(np.radians(90. - yy)) + site[1]) / rf
+            xx = xxx
 
-    # get the current axes.
-    # this creates one, if there is none
-    if ax is None:
-        ax = pl.gca()
+    # plot the stuff
+    plotfunc = getattr(plax, func)
+    pm = plotfunc(xx, yy, data, **kwargs)
 
-    # plot the colormesh
-    pm = ax.pcolormesh(xx, yy, data, **kwargs)
+    if cg:
+        # show curvelinear and cartesian grids
+        ax.set_ylim(np.min(ya), np.max(ya))
+        ax.set_xlim(np.min(xa), np.max(xa))
+        ax.grid(True)
+        caax.grid(True)
+    else:
+        ax.set_aspect('equal')
 
-    ax.set_aspect('equal')
-
-    # return the axes and the colormesh object
-    # so that the user may add colorbars etc.
     return ax, pm
 
 
@@ -398,16 +506,25 @@ def plot_ppi_crosshair(site, ranges, angles=None,
 
 
 def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
-             ax=None, **kwargs):
+             rf=1., fig=None, ax=111, func='pcolormesh', cgplot=False,
+             **kwargs):
     """Plots a Range Height Indicator (RHI).
+
+    .. versionchanged:: 0.10.0
+       added contour, contourf plotting, added `cgplot`
 
     The implementation of this plot routine is in cartesian axes and does all
     coordinate transforms beforehand. This allows zooming into the data as well
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
+    Using `cgplot=True` the plotting is done in a curvelinear grid axes.
+    Additional data can be plotted in polar coordinates or cartesian
+    coordinates depending which axes object is used.
+
     `**kwargs` may be used to try to influence the
-    :func:`matplotlib.pyplot.pcolormesh` routine under the hood.
+    :func:`matplotlib.pyplot.pcolormesh`, :func:`matplotlib.pyplot.contour`
+    and :func:`matplotlib.pyplot.contourf` routines under the hood.
 
     Parameters
     ----------
@@ -417,6 +534,8 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     r : np.array
         The ranges. Units may be chosen arbitrarily. If None, a default is
         calculated from the dimensions of `data`.
+    rf: float
+        If present, factor for scaling range axis, defaults to 1.
     th : np.array
         The elevation angles in degrees. If None, a default is
         calculated from the dimensions of `data`.
@@ -441,31 +560,73 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         :meth:`wradlib.georef.beam_height_n`, which assume distances to be
         given in meters. Therefore, if `refrac` is True, `r` must be given
         in meters.
-    ax : matplotlib Axes object
-        If given, the RHI will be plotted into this axes object. If None a
-        new axes object will be created.
+    fig : matplotlib Figure object
+        If given, the RHI will be plotted into this figure object. Axes are
+        created as needed. If None, a new figure object will be created or
+        current figure will be used, depending on "ax".
+    ax : matplotlib Axes object | matplotlib grid definition
+        If matplotlib Axes object is given, the RHI will be plotted into this
+        axes object.
+        If matplotlib grid definition is given (nrows/ncols/plotnumber),
+        axis are created in the specified place.
+        Defaults to '111', only one subplot/axis.
+    func : str
+        Name of plotting function to be used under the hood.
+        Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
+    cgplot : True | False
+        If True, the data will be plotted on curvelinear axes.
+
+    See also
+    --------
+    create_cg : creation of curvelinear grid axes objects
 
     Returns
     -------
     ax : matplotlib Axes object
-        The axes object into which the RHI was plotted
-    pm : matplotlib QuadMesh object
-        The result of the pcolormesh operation. Necessary, if you want to
+        The axes object into which the RHI was plotted.
+    pm : matplotlib QuadMesh object | matplotlib QuadContourSet object
+        The result of the plot operation. Necessary, if you want to
         add a colorbar to the plot.
 
+    Note
+    ----
+    If `cgplot` is True, the `cgax` - curvelinear Axes (r-theta-grid)
+    is returned. `caax` - Cartesian Axes (x-y-grid) and `paax` -
+    parasite axes object for plotting polar data can be derived like this::
+
+        caax = cgax.parasites[0]
+        paax = cgax.parasites[1]
+
+    The function `create_cg` uses the Matplotlib AXISARTIST namespace
+    `mpl_toolkits.axisartist \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
+
+    Here are some limitations to normal Matplotlib Axes. While using the
+    Matplotlib `AxesGrid Toolkit \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
+    most of the limitations can be overcome.
+    See `Matplotlib AxesGrid Toolkit User’s Guide \
+    <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
+
+
+    Examples
+    --------
+    See :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
     """
     # autogenerate axis dimensions
     if r is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
     else:
-        d1 = np.asanyarray(r)
+        d1 = np.asanyarray(r.copy())
 
     if th is None:
-        d2 = np.arange(data.shape[0], dtype=np.float)
+        # assume, data is evenly spaced between 0 and 90 degree
+        d2 = np.linspace(0., 90., num=data.shape[0], endpoint=True)
+        # d2 = np.arange(data.shape[0], dtype=np.float)
     else:
-        d2 = np.asanyarray(th)
+        d2 = np.asanyarray(th.copy())
 
-    if autoext:
+    if autoext & ('pcolormesh' in func):
         # extend the range by the delta of the two last bins
         x = np.append(d1, d1[-1] + d1[-1] - d1[-2])
         # RHIs usually aren't cyclic, so we best guess a regular extension
@@ -500,30 +661,73 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     else:
         img = data
 
+    # fix reference for contour functions
+    if 'contour' in func:
+        x += (x[1] - x[0]) / 2
+        y += (y[1] - y[0]) / 2
+
+    # axes object given
+    if isinstance(ax, mpl.axes.Axes):
+        if cgplot:
+            caax = ax.parasites[0]
+            paax = ax.parasites[1]
+    else:
+        if fig is None:
+            # create new figure if there is only one subplot
+            if ax is 111:
+                fig = pl.figure()
+            else:
+                fig = pl.gcf()
+        if cgplot:
+            # create curvelinear axes
+            ax, caax, paax = create_cg('RHI', fig, ax)
+
+            # this is in fact the outermost thick "ring" aka max_range
+            ax.axis["lon"] = ax.new_floating_axis(1, np.max(x) / rf)
+            ax.axis["lon"].major_ticklabels.set_visible(False)
+            # and also set tickmarklength to zero for better presentation
+            ax.axis["lon"].major_ticks.set_ticksize(0)
+        else:
+            ax = fig.add_subplot(ax)
+
     # coordinates for all vertices
     xx, yy = np.meshgrid(x, y)
 
+    plax = ax
     if refrac:
         # observing air refractivity, so ground distances and beam height
         # must be calculated specially
-        xxx = georef.arc_distance_n(xx, yy)
-        yy = georef.beam_height_n(xx, yy)
+        xxx = georef.arc_distance_n(xx, yy) / rf
+        yyy = georef.beam_height_n(xx, yy) / rf
+        if cgplot:
+            plax = caax
     else:
-        # otherwise plane trigonometry will do
-        xxx = xx * np.cos(np.radians(yy))
-        yy = xx * np.sin(np.radians(yy))
-    xx = xxx
-
-    # get current axes if not given
-    if ax is None:
-        ax = pl.gca()
+        if cgplot:
+            xxx, yyy = np.meshgrid(y, x)
+            yyy /= rf
+            img = img.transpose()
+            plax = paax
+        else:
+            # otherwise plane trigonometry will do
+            xxx = xx * np.cos(np.radians(yy)) / rf
+            yyy = xx * np.sin(np.radians(yy)) / rf
 
     # plot the stuff
-    pm = ax.pcolormesh(xx, yy, img, **kwargs)
+    plotfunc = getattr(plax, func)
+    pm = plotfunc(xxx, yyy, img, **kwargs)
 
     # return references to important and eventually new objects
-    return ax, pm
+    if cgplot:
+        # set bounds to maximum
+        ax.set_ylim(0, np.max(x) / rf)
+        ax.set_xlim(0, np.max(x) / rf)
 
+        # show curvelinear and cartesian grids
+        # makes no sense not to plot, if we made such a fuss to get that handled
+        ax.grid(True)
+        caax.grid(True)
+
+    return ax, pm
 
 def create_cg(st, fig=None, subplot=111):
     """ Helper function to create curvelinear grid
@@ -600,14 +804,15 @@ def create_cg(st, fig=None, subplot=111):
         extreme_finder = ah.ExtremeFinderCycle(20, 20,
                                                lon_cycle=360,
                                                lat_cycle=None,
-                                               lon_minmax=(350, 0),
+                                               lon_minmax=(360, 0),
                                                lat_minmax=(0, np.inf),
                                                )
 
         # locator and formatter for angle annotation
-        grid_locator1 = FixedLocator([i for i in np.arange(0, 359, 10)])
-        grid_locator1 = ah.LocatorDMS(35)
-        tick_formatter1 = ah.FormatterDMS()
+        locs = [i for i in np.arange(0., 359., 10.)]
+        grid_locator1 = FixedLocator(locs)
+        tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i))
+                                              for i in locs]))
 
         # grid_helper for curvelinear grid
         grid_helper = GridHelperCurveLinear(tr,
@@ -617,6 +822,12 @@ def create_cg(st, fig=None, subplot=111):
                                             tick_formatter1=tick_formatter1,
                                             tick_formatter2=None,
                                             )
+        # try to set nice locations for range gridlines
+        grid_helper.grid_finder.grid_locator2._nbins = 15.0
+        grid_helper.grid_finder.grid_locator2._steps = [0, 1, 1.5, 2,
+                                                        2.5,
+                                                        5,
+                                                        10]
 
     # if there is no figure object given
     if fig is None:
@@ -915,14 +1126,14 @@ def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     if r is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
     else:
-        d1 = np.asanyarray(r)
+        d1 = np.asanyarray(r.copy())
 
     if th is None:
         # assume, data is evenly spaced between 0 and 90 degree
         d2 = np.linspace(0., 90., num=data.shape[0], endpoint=True)
         # d2 = np.arange(data.shape[0], dtype=np.float)
     else:
-        d2 = np.asanyarray(th)
+        d2 = np.asanyarray(th.copy())
 
     if autoext:
         # extend the range by the delta of the two last bins
