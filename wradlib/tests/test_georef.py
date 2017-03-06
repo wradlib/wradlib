@@ -423,7 +423,7 @@ class SatelliteTest(unittest.TestCase):
                                            self.dr, alpha)
         self.xyz = np.concatenate((xy,
                                    np.repeat(z[np.newaxis, ..., np.newaxis],
-                                            xy.shape[0], axis=0)),
+                                             xy.shape[0], axis=0)),
                                   axis=-1)
         pr_out = np.array([[[[-58533.78453556, 124660.60390174],
                              [-58501.33048429, 124677.58873852]],
@@ -439,7 +439,7 @@ class SatelliteTest(unittest.TestCase):
                           478.05020449, 597.56275561, 717.07530673,
                           836.58785786, 956.10040898, 1075.6129601])
 
-        np.testing.assert_allclose(xy[60:62, 0:2, 0:2,:], pr_out, rtol=1e-12)
+        np.testing.assert_allclose(xy[60:62, 0:2, 0:2, :], pr_out, rtol=1e-12)
         np.testing.assert_allclose(r[0:10], r_out, rtol=1e-12)
         np.testing.assert_allclose(z[0, 0:10], z_out, rtol=1e-10)
 
