@@ -4,6 +4,8 @@
 
 import unittest
 import wradlib.georef as georef
+import wradlib.util as util
+from wradlib.io import read_generic_hdf5
 import numpy as np
 from osgeo import osr
 
@@ -373,6 +375,114 @@ class GetGridsTest(unittest.TestCase):
         x, y = georef.get_radolan_coords(7.0, 53.0, trig=True)
         self.assertEqual(x, -208.15159184860175)
         self.assertEqual(y, -3971.7689758313832)
+
+
+class SatelliteTest(unittest.TestCase):
+    def setUp(self):
+        f = 'gpm/2A-RW-BRS.GPM.Ku.V6-20160118.20141206-S095002-E095137.004383.V04A.HDF5'  # noqa
+        gpm_file = util.get_wradlib_data_file(f)
+        pr_data = read_generic_hdf5(gpm_file)
+        pr_lon = pr_data['NS/Longitude']['data']
+        pr_lat = pr_data['NS/Latitude']['data']
+        wgs84 = georef.get_default_projection()
+        a = wgs84.GetSemiMajor()
+        b = wgs84.GetSemiMinor()
+        rad = georef.proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
+                                   '+lat_0={lat:f} +a={a:f} +b={b:f}' +
+                                   '').format(lon=pr_lon[88, 0],
+                                              lat=pr_lat[88, 0],
+                                              a=a, b=b))
+        pr_x, pr_y = georef.reproject(pr_lon, pr_lat,
+                                      projection_source=wgs84,
+                                      projection_target=rad)
+        self.re = georef.get_earth_radius(pr_lat[88, 0], wgs84) * 4. / 3.
+        self.pr_xy = np.dstack((pr_x, pr_y))
+        self.zt = 407000.
+        self.dr = 125.
+        self.bw_pr = 0.71
+        self.nbin = 176
+        self.nray = 49
+
+        self.pr_out = np.array([[[[-58533.78453556, 124660.60390174],
+                                  [-58501.33048429, 124677.58873852]],
+                                 [[-53702.13393133, 127251.83656509],
+                                  [-53670.98686161, 127268.11882882]]],
+                                [[[-56444.00788528, 120205.5374491],
+                                  [-56411.55421163, 120222.52300741]],
+                                 [[-51612.2360682, 122796.78620764],
+                                  [-51581.08938314, 122813.06920719]]]])
+        self.r_out = np.array([0., 125., 250., 375., 500., 625., 750., 875.,
+                               1000., 1125.])
+        self.z_out = np.array([0., 119.51255112, 239.02510224, 358.53765337,
+                               478.05020449, 597.56275561, 717.07530673,
+                               836.58785786, 956.10040898, 1075.6129601])
+
+    def test_correct_parallax(self):
+        alpha = abs(-17.04 + np.arange(self.nray) * self.bw_pr)
+        xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin,
+                                           self.dr, alpha)
+        self.xyz = np.concatenate((xy,
+                                   np.repeat(z[np.newaxis, ..., np.newaxis],
+                                            xy.shape[0], axis=0)),
+                                  axis=-1)
+        pr_out = np.array([[[[-58533.78453556, 124660.60390174],
+                             [-58501.33048429, 124677.58873852]],
+                            [[-53702.13393133, 127251.83656509],
+                             [-53670.98686161, 127268.11882882]]],
+                           [[[-56444.00788528, 120205.5374491],
+                             [-56411.55421163, 120222.52300741]],
+                            [[-51612.2360682, 122796.78620764],
+                             [-51581.08938314, 122813.06920719]]]])
+        r_out = np.array([0., 125., 250., 375., 500., 625., 750., 875.,
+                          1000., 1125.])
+        z_out = np.array([0., 119.51255112, 239.02510224, 358.53765337,
+                          478.05020449, 597.56275561, 717.07530673,
+                          836.58785786, 956.10040898, 1075.6129601])
+
+        np.testing.assert_allclose(xy[60:62, 0:2, 0:2,:], pr_out, rtol=1e-12)
+        np.testing.assert_allclose(r[0:10], r_out, rtol=1e-12)
+        np.testing.assert_allclose(z[0, 0:10], z_out, rtol=1e-10)
+
+    def test_sat2pol(self):
+        alpha = abs(-17.04 + np.arange(self.nray) * self.bw_pr)
+        xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin,
+                                           self.dr, alpha)
+        xyz = np.concatenate((xy, np.repeat(z[np.newaxis, ..., np.newaxis],
+                                            xy.shape[0], axis=0)),
+                             axis=-1)
+        r, elev, az = georef.sat2pol(xyz, 0, self.re)
+        r_out = np.array([[[137717.30082892, 137719.90658336],
+                           [138117.80876426, 138121.73096704]],
+                          [[132796.6051515,  132799.17870318],
+                           [133201.01464654, 133204.95588902]]])
+        elev_out = np.array([[[-0.46429523, -0.41458125],
+                              [-0.46564551, -0.41589613]],
+                             [[-0.44770542, -0.39614903],
+                              [-0.44906886, -0.39748285]]])
+        az_out = np.array([[[334.84782396, 334.8630489],
+                            [337.11954474, 337.13407465]],
+                           [[334.8470123, 334.86280139],
+                            [337.20268839, 337.21775277]]])
+        np.testing.assert_allclose(r[60:62, 0:2, 0:2], r_out, rtol=1e-12)
+        np.testing.assert_allclose(elev[60:62, 0:2, 0:2], elev_out,
+                                   rtol=1e-7)
+        np.testing.assert_allclose(az[60:62, 0:2, 0:2], az_out, rtol=1e-10)
+
+    def test_dist_from_orbit(self):
+        alpha = abs(-17.04 + np.arange(self.nray) * self.bw_pr)
+        xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin,
+                                           self.dr, alpha)
+        dists = georef.dist_from_orbit(self.zt, alpha, r)
+        bd = np.array([425687.50748141, 424109.33230608, 422607.46970342,
+                       421180.65286622, 419827.68811468, 418547.45236861,
+                       417338.89079494, 416201.01462109, 415132.8991056,
+                       414133.68165791])
+        sd = np.array([425687.50748141, 425562.50748141, 425437.50748141,
+                       425312.50748141, 425187.50748141, 425062.50748141,
+                       424937.50748141, 424812.50748141, 424687.50748141,
+                       424562.50748141])
+        np.testing.assert_allclose(dists[0:10, 0], bd, rtol=1e-12)
+        np.testing.assert_allclose(dists[0, 0:10], sd, rtol=1e-12)
 
 
 if __name__ == '__main__':

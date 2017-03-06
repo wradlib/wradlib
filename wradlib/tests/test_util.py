@@ -85,6 +85,13 @@ class HelperFunctionsTest(unittest.TestCase):
                     dt.datetime(2000, 1, 2, 0, 0)]
         self.assertEqual(out, shouldbe)
 
+    def test_calculate_polynomial(self):
+        data = np.arange(0, 10, 1)
+        w = np.arange(0, 5, 1)
+        out = np.array([0, 10, 98, 426, 1252, 2930, 5910, 10738, 18056, 28602])
+        poly = util.calculate_polynomial(data, w)
+        np.testing.assert_allclose(poly, out, rtol=1e-12)
+
 
 # -------------------------------------------------------------------------------
 # testing the filter helper function

@@ -275,6 +275,16 @@ class ZonalStatsUtilTest(unittest.TestCase):
         self.assertAlmostEqual(zonalstats.angle_between(355., 5.), 10.)
         self.assertAlmostEqual(zonalstats.angle_between(5., 355.), -10.)
 
+    def test_get_clip_mask(self):
+        proj_gk = osr.SpatialReference()
+        proj_gk.ImportFromEPSG(31466)
+        coords = np.array([[2600020., 5630020.], [2600030., 5630030.],
+                               [2600040., 5630040.], [2700100., 5630030.],
+                               [2600040., 5640000.]])
+        mask = zonalstats.get_clip_mask(coords, self.npobj, proj_gk)
+        out = np.array([True, True, True, False, False])
+        np.testing.assert_array_equal(mask, out)
+
 
 if __name__ == '__main__':
     unittest.main()
