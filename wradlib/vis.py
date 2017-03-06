@@ -723,11 +723,11 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         ax.set_xlim(0, np.max(x) / rf)
 
         # show curvelinear and cartesian grids
-        # makes no sense not to plot, if we made such a fuss to get that handled
         ax.grid(True)
         caax.grid(True)
 
     return ax, pm
+
 
 def create_cg(st, fig=None, subplot=111):
     """ Helper function to create curvelinear grid
