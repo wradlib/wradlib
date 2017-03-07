@@ -31,7 +31,7 @@ ls -lart $HOME
 ls -lart $HOME/wradlib-data
 
 # Install nbconvert
-conda install --yes nbconvert
+conda install --yes notebook nbconvert
 
 # Install wradlib docu dependencies
 if [[ "$DOC_BUILD" == "true" ]]; then
