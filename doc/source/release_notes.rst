@@ -11,7 +11,7 @@ Bleeding Edge
 
 **Highlights**
 
-* Added functions to match the precipitation radar of GPM/TRMM platforms with ground radar observations in 3D (``wradlib.georef.correct_parallax``, ``wradlib.georef.sat2pol``, ``wradlib.georef.dist_from_orbit``, ``wradlib.qual.get_bb_ratio``, ````wradlib.trafo.s2ku``, ``wradlib.trafo.ku2s``, ``wradlib.util.calculate_polynomial``, ``wradlib.zonalstats.get_clip_mask``)
+* Added functions to match the precipitation radar of GPM/TRMM platforms with ground radar observations in 3D (:meth:`wradlib.georef.correct_parallax`, :meth:`wradlib.georef.sat2pol`, :meth:`wradlib.georef.dist_from_orbit`, :meth:`wradlib.qual.get_bb_ratio`, :meth:`wradlib.trafo.s2ku`, :meth:`wradlib.trafo.ku2s`, :meth:`wradlib.util.calculate_polynomial`, :meth:`wradlib.zonalstats.get_clip_mask`)
 * Added example notebook of GPM/TRMM-GR matching
 * revised docs and build process
 
@@ -19,16 +19,16 @@ Bleeding Edge
 
 * New notebook examples covering wradlib-tour, classification
 * Added reading WX-format to RADOLAN reader
-* Enhanced :meth:`~wradlib.io.read_RADOLAN_composite` to also accept file-handles
+* Enhanced :meth:`wradlib.io.read_RADOLAN_composite` to also accept file-handles
 * Added reading groups to :meth:`wradlib.io.read_generic_netcdf`
-* Added `wradlib.qual.cu_beam_block_frac`` to compute cumulative beam blockage
+* Added :meth:`wradlib.qual.cu_beam_block_frac` to compute cumulative beam blockage
 * Added earth curvature display to beam blockage
 
 **Bugfixes**
 
 * Fix documentation inconsistencies
 * Fix calculation of pulse volume
-* Use dedicated OSR IsSame() in ``wradlib.georef.transform_geometry``
+* Use dedicated OSR IsSame() in :meth:`wradlib.georef.transform_geometry`
 * several minor fixes
 
 
