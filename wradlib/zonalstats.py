@@ -48,7 +48,7 @@ Calling the objects with actual data, however, will be very fast.
    GridPointsToPoly
    mask_from_bbox
    get_bbox
-   grid_centers_to vertices
+   grid_centers_to_vertices
    get_clip_mask
 
 """

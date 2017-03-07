@@ -98,7 +98,7 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     ----------
     r : :class:`numpy:numpy.ndarray`
         Array of ranges [m]
-    az : :class:`numpy:numpy.ndarray`rray
+    az : :class:`numpy:numpy.ndarray`
         Array of azimuth angles containing values between 0° and 360°.
         These are assumed to start with 0° pointing north and counted positive
         clockwise!
