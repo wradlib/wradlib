@@ -19,8 +19,8 @@ Bleeding Edge
 
 * New notebook examples covering wradlib-tour, classification
 * Added reading WX-format to RADOLAN reader
-* Enhanced ``wradlib.io.read_RADOLAN_composite`` to also accept file-handles
-* Added reading groups to ``wradlib.io.read_generic_netcdf``
+* Enhanced :meth:`~wradlib.io.read_RADOLAN_composite` to also accept file-handles
+* Added reading groups to :meth:`wradlib.io.read_generic_netcdf`
 * Added `wradlib.qual.cu_beam_block_frac`` to compute cumulative beam blockage
 * Added earth curvature display to beam blockage
 
