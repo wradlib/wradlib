@@ -36,12 +36,7 @@ before_script:
     - scripts/convert_notebooks.sh
 
 script:
-    - if [[ "$COVERALLS" == "true" ]]; then export CV="coverage run --source wradlib"; fi
-    - if [[ "$COVERALLS" == "true" ]]; then export CVA="coverage run -a --source wradlib"; fi
-    - xvfb-run -a -w 5 "$CV" testrunner.py -u
-    - xvfb-run -a -w 5 "$CVA" testrunner.py -d
-    - xvfb-run -a -w 5 "$CVA" testrunner.py -e
-    - xvfb-run -a -w 5 "$CVA" testrunner.py -n
+    - scripts/run_tests.sh
 
 after_success:
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
