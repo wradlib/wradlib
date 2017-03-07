@@ -1480,9 +1480,9 @@ def get_bbox(x, y):
     Parameters
     ----------
 
-    x : array
+    x : :class:`numpy:numpy.ndarray`
         x-coordinate values
-    y : array
+    y : :class:`numpy:numpy.ndarray`
         y-coordinate values
 
     """
@@ -1521,10 +1521,10 @@ def grid_centers_to_vertices(x, y, dx, dy):
 
     Parameters
     ----------
-    x : 2-d array
-        of x coordinates (same shape as the actual 2-D grid)
-    y : 2-d array
-        of y coordinates (same shape as the actual 2-D grid)
+    x : :class:`numpy:numpy.ndarray`
+        2-d array of x coordinates (same shape as the actual 2-D grid)
+    y : :class:`numpy:numpy.ndarray`
+        2-d array of y coordinates (same shape as the actual 2-D grid)
     dx : grid spacing in x direction
     dy : grid spacing in y direction
 
@@ -1557,7 +1557,7 @@ def get_clip_mask(coords, clippoly, srs):
     coords : :class:`numpy:numpy.ndarray`
         array of xy coords with shape [...,2]
 
-    clippoly: :class:`numpy:numpy.ndarray`
+    clippoly : :class:`numpy:numpy.ndarray`
         array of xy coords with shape (N,2) representing closed
         polygon coordinates
 
