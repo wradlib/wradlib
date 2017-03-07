@@ -60,7 +60,3 @@ pip --version
 
 python -c "import numpy; print(numpy.__version__)"
 python -c "import numpy; print(numpy.__path__)"
-
-python -c "import runipy; print(runipy.__version__)"
-python -c "import runipy; print(runipy.__path__)"
-
