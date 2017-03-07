@@ -1554,10 +1554,10 @@ def get_clip_mask(coords, clippoly, srs):
 
     Parameters
     ----------
-    coords : np.ndarray
+    coords : :class:`numpy:numpy.ndarray`
         array of xy coords with shape [...,2]
 
-    clippoly: np.array
+    clippoly: :class:`numpy:numpy.ndarray`
         array of xy coords with shape (N,2) representing closed
         polygon coordinates
 
@@ -1565,8 +1565,8 @@ def get_clip_mask(coords, clippoly, srs):
 
     Returns
     -------
-    src_mask : np.ndarray
-        boolean np.ndarray of shape coords.shape[0:-1]
+    src_mask : :class:`numpy:numpy.ndarray`
+        boolean array of shape coords.shape[0:-1]
 
     """
     clip = [clippoly]
