@@ -46,6 +46,10 @@ Calling the objects with actual data, however, will be very fast.
    ZonalStatsBase
    GridCellsToPoly
    GridPointsToPoly
+   mask_from_bbox
+   get_bbox
+   grid_centers_to vertices
+   get_clip_mask
 
 """
 
