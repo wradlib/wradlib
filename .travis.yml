@@ -36,7 +36,7 @@ before_script:
     - scripts/convert_notebooks.sh
 
 script:
-    - if [[ "$COVERALLS" == "true" ]]; export CV=coverage; fi
+    - if [[ "$COVERALLS" == "true" ]]; then export CV=coverage; fi
     - xvfb-run -a -w 5 "$CV" run --source wradlib testrunner.py -u
     - xvfb-run -a -w 5 "$CV" run -a --source wradlib testrunner.py -d
     - xvfb-run -a -w 5 "$CV" run -a --source wradlib testrunner.py -e
