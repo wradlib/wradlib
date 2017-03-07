@@ -14,39 +14,42 @@ conda update --yes conda
 conda create -n wradlib --yes pip python=$PYTHON_VERSION
 source activate wradlib
 
-# add conda-forge channel
+# Add conda-forge channel
 conda config --add channels conda-forge
 
 # Install wradlib dependencies
 conda install --yes gdal numpy scipy matplotlib netcdf4 h5py
 ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
-# install wradlib-data
+# Install optional wradlib dependencies
+conda install --yes xmltodict
+
+# Install wradlib-data
 git clone https://github.com/wradlib/wradlib-data.git $HOME/wradlib-data
 echo $PWD
 ls -lart $HOME
 ls -lart $HOME/wradlib-data
 
-# install wradlib docu dependencies
-conda install --yes sphinx numpydoc
-conda install --yes sphinx_rtd_theme
-pip install sphinxcontrib-bibtex
-# install notebook dependencies
-conda install --yes notebook runipy pandoc
+# Install nbconvert
+conda install --yes nbconvert
 
-# install nbsphinx
-conda install --yes nbsphinx
+# Install wradlib docu dependencies
+if [[ "$DOC_BUILD" == "true" ]]; then
+    conda install --yes sphinx numpydoc
+    conda install --yes sphinx_rtd_theme
+    pip install sphinxcontrib-bibtex
+    # install notebook dependencies
+    conda install --yes runipy pandoc
+    # install nbsphinx
+    conda install --yes nbsphinx
+fi
 
-# install optional wradlib dependencies
-pip install xmltodict
+# Install flake8 PEP checker
+conda install --yes flake8
 
-# install flake8 PEP checker
-pip install flake8
-
-# install coverage modules
-pip install coverage
+# Install coverage modules
 if [[ "$COVERALLS" == "true" ]]; then
-    pip install python-coveralls
+    conda install --yes coverage python-coveralls
 fi
 
 python setup.py install

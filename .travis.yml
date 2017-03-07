@@ -42,8 +42,8 @@ script:
     - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
 
 after_success:
-    - scripts/render_notebooks.sh
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then scripts/render_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:
