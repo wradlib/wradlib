@@ -36,6 +36,10 @@ Georeferencing
    get_radolan_grid
    resample_raster_dataset
    get_shape_coordinates
+   correct_parallax
+   sat2pol
+   dist_from_orbit
+
 
 """
 
@@ -92,10 +96,10 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]
-    az : array
-        array of azimuth angles containing values between 0° and 360°.
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]
+    az : :class:`numpy:numpy.ndarray`
+        Array of azimuth angles containing values between 0° and 360°.
         These are assumed to start with 0° pointing north and counted positive
         clockwise!
     sitecoords : a sequence of two floats
@@ -106,7 +110,8 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     Returns
     -------
     lon, lat : tuple
-        two arrays containing the spherical longitude and latitude coordinates
+        Tuple of two :class:`numpy:numpy.ndarray` containing the spherical
+        longitude and latitude coordinates.
 
     Note
     ----
@@ -225,10 +230,10 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]
-    az : array
-        array of azimuth angles containing values between 0° and 360°.
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]
+    az : :class:`numpy:numpy.ndarray`
+        Array of azimuth angles containing values between 0° and 360°.
         These are assumed to start with 0° pointing north and counted positive
         clockwise!
     sitecoords : a sequence of three floats
@@ -241,7 +246,8 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     Returns
     -------
     output : tuple
-        three arrays (longitudes, latitudes,  altitudes)
+        Tuple of three :class:`numpy:numpy.ndarray`
+        (longitudes, latitudes, altitudes).
 
     Examples
     --------
@@ -313,10 +319,10 @@ def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]
-    theta : scalar or array broadcastable to the shape of r
-        elevation angles in degrees with 0° at horizontal and +90°
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]
+    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
+        of r elevation angles in degrees with 0° at horizontal and +90°
         pointing vertically upwards from the radar
     re : float
         earth's radius [m]
@@ -352,10 +358,10 @@ def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]
-    theta : scalar or array broadcastable to the shape of r
-        elevation angles in degrees with 0° at horizontal and +90°
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]
+    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
+        of r elevation angles in degrees with 0° at horizontal and +90°
         pointing vertically upwards from the radar
     re : float
         earth's radius [m]
@@ -389,33 +395,33 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]
-    az : array
-        array of azimuth angles containing values between 0 and 360°.
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]
+    az : :class:`numpy:numpy.ndarray`
+        Array of azimuth angles containing values between 0 and 360°.
         These are assumed to start with 0° pointing north and counted
         positive clockwise!
-    th : scalar or array of the same shape as az
-        elevation angles in degrees starting with 0° at horizontal to 90°
+    th : scalar or :class:`numpy:numpy.ndarray` of the same shape as az
+        Elevation angles in degrees starting with 0° at horizontal to 90°
         pointing vertically upwards from the radar
     sitecoords : a sequence of two or three floats
-        the lon / lat coordinates of the radar location, the third value,
+        The lon / lat coordinates of the radar location, the third value,
         if present, will be interpreted as the height of the site above the
         geoid (i.e. sphere)
     re : float
-        earth's radius [m], if None, `get_earth_radius` will be used to
+        Earth's radius [m], if None, `get_earth_radius` will be used to
         determine the equivalent radius of the WGS84 ellipsoid for the
         latitude given in sitecoords.
     ke : float
-        adjustment factor to account for the refractivity gradient that
+        Adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependent. The default of 4/3 is a good approximation for most
         weather radar wavelengths
 
     Returns
     -------
-    lon, lat, alt : tuple of arrays
-        three arrays containing the spherical longitude and latitude
+    lon, lat, alt : tuple of :class:`numpy:numpy.ndarray`
+        Three arrays containing the spherical longitude and latitude
         coordinates as well as the altitude of the beam.
 
     Note
@@ -506,16 +512,16 @@ def centroid2polyvert(centroid, delta):
     Parameters
     ----------
     centroid : array_like
-               list of 2-D coordinates of the center point of the rectangle
-    delta :    scalar or array
-               symmetric distances of the vertices from the centroid in each
+               List of 2-D coordinates of the center point of the rectangle.
+    delta :    scalar or :class:`numpy:numpy.ndarray`
+               Symmetric distances of the vertices from the centroid in each
                direction. If `delta` is scalar, it is assumed to apply to
                both dimensions.
 
     Returns
     -------
-    vertices : array
-               an array with 5 vertices per centroid.
+    vertices : :class:`numpy:numpy.ndarray`
+               An array with 5 vertices per centroid.
 
     Note
     ----
@@ -578,11 +584,11 @@ def polar2polyvert(r, az, sitecoords):
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]; r defines the exterior boundaries of the range
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]; r defines the exterior boundaries of the range
         bins! (not the centroids). Thus, values must be positive!
-    az : array
-        array of azimuth angles containing values between 0° and 360°.
+    az : :class:`numpy:numpy.ndarray`
+        Array of azimuth angles containing values between 0° and 360°.
         The angles are assumed to describe the pointing direction fo the main
         beam lobe!
         The first angle can start at any values, but make sure the array is
@@ -593,8 +599,8 @@ def polar2polyvert(r, az, sitecoords):
 
     Returns
     -------
-    output : array
-        a 3-d array of polygon vertices in lon/lat with shape(num_vertices,
+    output : :class:`numpy:numpy.ndarray`
+        A 3-d array of polygon vertices in lon/lat with shape(num_vertices,
         num_vertex_nodes, 2). The last dimension carries the longitudes on
         the first position, the latitudes on the second (lon: output[:,:,0],
         lat: output[:,:,1]
@@ -666,11 +672,11 @@ def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]; r defines the exterior boundaries of the range
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]; r defines the exterior boundaries of the range
         bins! (not the centroids). Thus, values must be positive!
-    az : array
-        array of azimuth angles containing values between 0° and 360°.
+    az : :class:`numpy:numpy.ndarray`
+        Array of azimuth angles containing values between 0° and 360°.
         The angles are assumed to describe the pointing direction fo the main
         beam lobe!
         The first angle can start at any values, but make sure the array is
@@ -685,8 +691,8 @@ def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
     Returns
     -------
     output : tuple
-        tuple of 2 arrays which describe the bin centroids
-        longitude and latitude
+        Tuple of 2 :class:`numpy:numpy.ndarray` which describe the bin
+        centroids longitude and latitude.
 
     Note
     ----
@@ -715,8 +721,10 @@ def _check_polar_coords(r, az):
 
     Parameters
     ----------
-    r : range gates in any unit
-    az : azimuth angles in degree
+    r : :class:`numpy:numpy.ndarray`
+        range gates in any unit
+    az : :class:`numpy:numpy.ndarray`
+        azimuth angles in degree
 
     """
     r = np.array(r, 'f4')
@@ -927,10 +935,10 @@ def projected_bincoords_from_radarspecs(r, az, sitecoords, proj,
 
     Parameters
     ----------
-    r : array
-        array of ranges [m]; r defines the exterior boundaries of the range
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]; r defines the exterior boundaries of the range
         bins! (not the centroids). Thus, values must be positive!
-    az : array
+    az : :class:`numpy:numpy.ndarray`
     sitecoords : tuple
         array of azimuth angles containing values between 0° and 360°.
         The angles are assumed to describe the pointing direction fo the main
@@ -999,8 +1007,8 @@ def pixel_coordinates(nx, ny, mode="centers"):
         otherwise the pixel edges coordinates will be returned
     Returns
     -------
-    coordinates : np array
-         array of shape (ny,nx) with pixel coordinates (x,y)
+    coordinates : :class:`numpy:numpy.ndarray`
+         Array of shape (ny,nx) with pixel coordinates (x,y)
 
     """
     if mode == "centroids":
@@ -1025,7 +1033,7 @@ def pixel_to_map(geotransform, coordinates):
 
     Parameters
     ----------
-    geotransform : np array
+    geotransform : :class:`numpy:numpy.ndarray`
         geographical transformation vector:
 
             - geotransform[0] = East/West location of Upper Left corner
@@ -1034,12 +1042,12 @@ def pixel_to_map(geotransform, coordinates):
             - geotransform[3] = North/South location of Upper Left corner
             - geotransform[4] = Y pixel rotation
             - geotransform[5] = Y pixel size
-    coordinates : 2d array
-        array of pixel coordinates
+    coordinates : :class:`numpy:numpy.ndarray`
+        2d array of pixel coordinates
 
     Returns
     -------
-    coordinates_map : np array
+    coordinates_map : :class:`numpy:numpy.ndarray`
         3d array with map coordinates x,y
     """
     coordinates_map = np.empty(coordinates.shape)
@@ -1058,11 +1066,11 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
 
     Parameters
     ----------
-    geotransform : np array
+    geotransform : :class:`numpy:numpy.ndarray`
         geographical transformation vector
         (see :meth:`~wradlib.georef.pixel_to_map`)
-    coordinates : 2d array
-        array of pixel coordinates;
+    coordinates : :class:`numpy:numpy.ndarray`
+        2d array of pixel coordinates;
     z : string
         method to compute the z coordinates (height above ellipsoid):
 
@@ -1071,7 +1079,7 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
 
     Returns
     -------
-    coordinates_map : 4d array
+    coordinates_map : :class:`numpy:numpy.ndarray`
         4d array with map coordinates x,y,z
 
     """
@@ -1096,8 +1104,8 @@ def read_gdal_coordinates(dataset, mode='centers', z=True):
 
     Returns
     -------
-    coordinates : 3D np array
-        projected coordinates (x,y,z)
+    coordinates : :class:`numpy:numpy.ndarray`
+        Array of projected coordinates (x,y,z)
 
     Examples
     --------
@@ -1151,8 +1159,8 @@ def read_gdal_values(data=None, nodata=False):
 
     Returns
     -------
-    values : 2d array
-        array with values
+    values : :class:`numpy:numpy.ndarray`
+        2d array with values
 
     Examples
     --------
@@ -1184,15 +1192,15 @@ def reproject(*args, **kwargs):
 
     Parameters
     ----------
-    C : multidimensional np array
-        array of shape (...,2) or (...,3) with coordinates (x,y) or (x,y,z)
+    C : multidimensional :class:`numpy:numpy.ndarray`
+        Array of shape (...,2) or (...,3) with coordinates (x,y) or (x,y,z)
         respectively
-    X : nd array
-        array of x coordinates
-    Y : nd array
-        array of y coordinates
-    Z : nd array
-        array of z coordinates
+    X : :class:`numpy:numpy.ndarray`
+        Array of x coordinates
+    Y : :class:`numpy:numpy.ndarray`
+        Array of y coordinates
+    Z : :class:`numpy:numpy.ndarray`
+        Array of z coordinates
 
     Keyword Arguments
     -----------------
@@ -1203,13 +1211,13 @@ def reproject(*args, **kwargs):
 
     Returns
     -------
-    trans : nd array
-        array of reprojected coordinates x,y (...,2) or x,y,z (...,3)
-        depending on input array
-    X, Y : nd arrays
-        arrays of reprojected x,y coordinates, shape depending on input array
-    X, Y, Z: nd arrays
-        arrays of reprojected x,y,z coordinates, shape depending on input array
+    trans : :class:`numpy:numpy.ndarray`
+        Array of reprojected coordinates x,y (...,2) or x,y,z (...,3)
+        depending on input array.
+    X, Y : :class:`numpy:numpy.ndarray`
+        Arrays of reprojected x,y coordinates, shape depending on input array
+    X, Y, Z: :class:`numpy:numpy.ndarray`
+        Arrays of reprojected x,y,z coordinates, shape depending on input array
 
     Examples
     --------
@@ -1371,9 +1379,9 @@ def get_radolan_coords(lon, lat, trig=False):
     Parameters
     ----------
 
-    lon :   float, array of floats
+    lon :   float, :class:`numpy:numpy.ndarray` of floats
         longitude
-    lat :   float, array of floats
+    lat :   float, :class:`numpy:numpy.ndarray` of floats
         latitude
     trig : boolean
         if True, uses trigonometric formulas for calculation,
@@ -1473,38 +1481,37 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
 
     Returns
     -------
-    radolan_grid : numpy ndarray (rows, cols, 2)
-                   xy- or lonlat-grid
+    radolan_grid : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols, 2) xy- or lonlat-grid.
 
     Examples
     --------
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef  # noqa
-        >>> radolan_grid = georef.get_radolan_grid()
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (-523.4622, -4658.6447)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef  # noqa
+    >>> radolan_grid = georef.get_radolan_grid()
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (-523.4622, -4658.6447)
 
-        >>> # using pure trigonometric transformations
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(trig=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (-523.4622, -4658.6447)
+    >>> # using pure trigonometric transformations
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(trig=True)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (-523.4622, -4658.6447)
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (1500, 1400, 2), (-673.4622, -5008.6447)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(1500, 1400)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (1500, 1400, 2), (-673.4622, -5008.6447)
 
-        >>> # using osr spatial reference transformation
-        >>> import wradlib.georef as georef
-        >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
-        >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
-        (900, 900, 2), (3.5889, 46.9526)
+    >>> # using osr spatial reference transformation
+    >>> import wradlib.georef as georef
+    >>> radolan_grid = georef.get_radolan_grid(900, 900, wgs84=True)
+    >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
+    (900, 900, 2), (3.5889, 46.9526)
 
-    See :ref:`notebooks/radolan/radolan_grid.ipynb#\
-Polar-Stereographic-Projection`.
+    See :ref:`notebooks/radolan/radolan_grid.ipynb#Polar-Stereographic-Projection`.  # noqa
 
     Raises
     ------
@@ -1736,7 +1743,7 @@ def get_shape_coordinates(layer, **kwargs):
 
     Returns
     -------
-    shp : nested ndarray
+    shp : nested :class:`numpy:numpy.ndarray`
         Dimension of subarrays Nx2
         extracted shape coordinate points
     attrs : list
@@ -1767,6 +1774,158 @@ def get_shape_coordinates(layer, **kwargs):
     shp = np.squeeze(np.array(shp))
 
     return shp, attrs
+
+
+def correct_parallax(pr_xy, nbin, drt, alpha):
+    """Adjust the geo-locations of the PR pixels
+
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM.
+
+    The `pr_xy` coordinates of the PR beam footprints need to be in the
+    azimuthal equidistant projection of the ground radar. This ensures that the
+    ground radar is fixed at xy-coordinate (0, 0), and every PR bin has its
+    relative xy-coordinates with respect to the ground radar site.
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    pr_xy : :class:`numpy:numpy.ndarray`
+        Array of xy-coordinates of shape (nscans, nbeams, 2)
+    nbin : int
+        Number of bins along PR beam.
+    drt : float
+        Gate lenght of PR in meter.
+    alpha: :class:`numpy:numpy.ndarray`
+        Array of depression angles of the PR beams with shape (nbeams).
+
+    Returns
+    -------
+
+    pr_xyp : :class:`numpy:numpy.ndarray`
+        Array of parallax corrected coordinates
+        of shape (nscans, nbeams, nbins, 2).
+    r_pr_inv : :class:`numpy:numpy.ndarray`
+        Array of ranges from ground to PR platform of shape (nbins).
+    z_pr : :class:`numpy:numpy.ndarray`
+        Array of PR bin altitudes of shape (nbeams, nbins).
+    """
+    # get x,y-grids
+    pr_x = pr_xy[..., 0]
+    pr_y = pr_xy[..., 1]
+
+    # create range array from ground to sat
+    r_pr_inv = np.arange(nbin) * drt
+
+    # calculate height of bin
+    z_pr = r_pr_inv * np.cos(np.deg2rad(alpha))[:, np.newaxis]
+    # calculate bin ground xy-displacement length
+    ds = r_pr_inv * np.sin(np.deg2rad(alpha))[:, np.newaxis]
+
+    # calculate x,y-differences between ground coordinate
+    # and center ground coordinate [25th element]
+    center = int(np.floor(len(pr_x[-1]) / 2.))
+    xdiff = pr_x[:, center][:, np.newaxis] - pr_x
+    ydiff = pr_y[:, center][:, np.newaxis] - pr_y
+
+    # assuming ydiff and xdiff being a triangles adjacent and
+    # opposite this calculates the xy-angle of the PR scan
+    ang = np.arctan2(ydiff, xdiff)
+
+    # calculate displacement dx, dy from displacement length
+    dx = ds * np.cos(ang)[..., np.newaxis]
+    dy = ds * np.sin(ang)[..., np.newaxis]
+
+    # add displacement to PR ground coordinates
+    pr_xp = dx + pr_x[..., np.newaxis]
+    pr_yp = dy + pr_y[..., np.newaxis]
+
+    return np.stack((pr_xp, pr_yp), axis=3), r_pr_inv, z_pr
+
+
+def sat2pol(pr_xyz, gr_site_alt, re):
+    """Returns spherical coordinates of PR bins as seen from the GR location.
+
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM. With *GR*, we refer to terrestrial weather radars
+    (ground radars).
+
+    For this function to work, the `pr_xyz` coordinates of the PR bins need
+    to be in the azimuthal equidistant projection of the ground radar! This
+    ensures that the ground radar is fixed at xy-coordinate (0, 0), and every
+    PR bin has its relative xy-coordinates with respect to the ground radar
+    site.
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    pr_xyz : :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams, nbins, 3). Contains corrected
+        PR xy coordinates in GR azimuthal equidistant projection and altitude
+    gr_site_alt : float
+        Altitude of the GR site (in meters)
+    re : float
+        Effective Earth radius at GR site (in meters)
+
+    Returns
+    -------
+    r : :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams, nbins). Contains the slant
+        distance of PR bins from GR site.
+    theta: :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams, nbins). Contains the elevation
+        angle of PR bins as seen from GR site.
+    phi : :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams, nbins). Contains the azimuth
+        angles of PR bins as seen from GR site.
+    """
+    # calculate arc length
+    s = np.sqrt(np.sum(pr_xyz[..., 0:2] ** 2, axis=-1))
+
+    # calculate arc angle
+    gamma = s / re
+
+    # calculate theta (elevation-angle)
+    numer = np.cos(gamma) - (re + gr_site_alt) / (re + pr_xyz[..., 2])
+    denom = np.sin(gamma)
+    theta = np.rad2deg(np.arctan(numer / denom))
+
+    # calculate SlantRange r
+    r = (re + pr_xyz[..., 2]) * denom / np.cos(np.deg2rad(theta))
+
+    # calculate Azimuth phi
+    phi = 90 - np.rad2deg(np.arctan2(pr_xyz[..., 1], pr_xyz[..., 0]))
+    phi[phi <= 0] += 360
+
+    return r, theta, phi
+
+
+def dist_from_orbit(pr_alt, alpha, r_pr_inv):
+    """Returns range distances of PR bins (in meters) as seen from the orbit
+
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM.
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    pr_alt : float
+        PR orbit height in meters.
+    alpha: :class:`numpy:numpy.ndarray`
+       Array of depression angles of the PR beams with shape (nbeams).
+    r_pr_inv : :class:`numpy:numpy.ndarray`
+        Array of ranges from ground to PR platform of shape (nbins).
+
+    Returns
+    -------
+    ranges : :class:`numpy:numpy.ndarray`
+        Array of shape (nbeams, nbins) of PR bin range distances from
+        PR platform in orbit.
+    """
+    return pr_alt / np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv
 
 
 def _doctest_():

@@ -27,6 +27,7 @@ fields except that they exhibit the numpy ndarray interface.
     beam_height_ft_doviak
     pulse_volume
     beam_block_frac
+    get_bb_ratio
 
 """
 
@@ -40,21 +41,21 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
 
     Parameters
     ----------
-    ranges : array
-        the distances of each bin from the radar [m]
-    elevations : array
-        the elevation angles of each bin from the radar [degrees or radians]
+    ranges : :class:`numpy:numpy.ndarray`
+        The distances of each bin from the radar [m]
+    elevations : :class:`numpy:numpy.ndarray`
+        The elevation angles of each bin from the radar [degrees or radians]
     degrees : bool
-        if True (the default) elevation angles are given in degrees and will
+        If True (the default) elevation angles are given in degrees and will
         be converted to radians before calculation. If False no transformation
         will be done and elevations has to be given in radians.
     re : float
-        earth radius [m]
+        Earth radius [m]
 
     Returns
     -------
-    output : array
-        height of the beam [m]
+    output : :class:`numpy:numpy.ndarray`
+        Height of the beam [m]
 
     Note
     ----
@@ -80,22 +81,22 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
 
     Parameters
     ----------
-    ranges : array
-        the distances of each bin from the radar [m]
-    elevations : array
-        the elevation angles of each bin from the radar [degrees or radians]
+    ranges : :class:`numpy:numpy.ndarray`
+        The distances of each bin from the radar [m]
+    elevations : :class:`numpy:numpy.ndarray`
+        The elevation angles of each bin from the radar [degrees or radians]
     degrees : bool
-        if True (the default) elevation angles are assumed to be given in
+        If True (the default) elevation angles are assumed to be given in
         degrees and will
         be converted to radians before calculation. If False no transformation
         will be done and `elevations` has to be given in radians.
     re : float
-        earth radius [m]
+        Earth radius [m]
 
     Returns
     -------
-    output : array
-        height of the beam [m]
+    output : :class:`numpy:numpy.ndarray`
+        Height of the beam [m]
 
     Note
     ----
@@ -141,8 +142,8 @@ def pulse_volume(ranges, h, theta):
 
     Returns
     -------
-    output : array
-        volume of radar bins at each range in `ranges` [:math:`m^3`]
+    output : :class:`numpy:numpy.ndarray`
+        Volume of radar bins at each range in `ranges` [:math:`m^3`]
 
     Examples
     --------
@@ -166,14 +167,11 @@ def beam_block_frac(Th, Bh, a):
 
     Parameters
     ----------
-    Th : float
-        array of floats
+    Th : float | :class:`numpy:numpy.ndarray` of floats
         Terrain height [m]
-    Bh : float
-        array of floats
+    Bh : float | :class:`numpy:numpy.ndarray` of floats
         Beam height [m]
-    a : float
-        array of floats
+    a : float | :class:`numpy:numpy.ndarray` of floats
         Half power beam radius [m]
 
     Returns
@@ -225,12 +223,14 @@ def cum_beam_block_frac(pbb):
 
     Parameters
     ----------
-    pbb : 2-D array of floats of shape (num beams, num range bins)
+    pbb : :class:`numpy:numpy.ndarray`
+        2-D array of floats of shape (num beams, num range bins)
         Partial beam blockage fraction of a bin along a beam [m]
 
     Returns
     -------
-    cbb : array of floats of the ssame shape as pbb
+    cbb : :class:`numpy:numpy.ndarray`
+        Array of floats of the same shape as pbb
         Cumulative partial beam blockage fraction [unitless]
 
     Examples
@@ -260,6 +260,69 @@ def cum_beam_block_frac(pbb):
         cbb[ii, index:] = pbb[ii, index]
 
     return cbb
+
+
+def get_bb_ratio(bb_height, bb_width, quality, zp_r):
+    """Returns the Bright Band ratio of each PR bin
+
+    With *PR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM.
+
+    This function basically applies the Bright Band (BB) information as
+    provided by the corresponding PR datasets per beam, namely BB height and
+    width, as well as quality flags of the PR beams. A BB ratio of <= 0
+    indicates that a bin is located below the melting layer (ML), >=1
+    above the ML, and in between 0 and 1 inside the ML.
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    bb_height : :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams) containing the PR beams' BB heights
+        in meters.
+    bb_width : :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams) containing the PR beams' BB widths
+        in meters.
+    quality : :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams) containing the PR beams' BB quality
+        index.
+    zp_r : :class:`numpy:numpy.ndarray`
+        Array of PR bin altitudes of shape (nbeams, nbins).
+
+    Returns
+    -------
+    ratio : :class:`numpy:numpy.ndarray`
+        Array of shape (nscans, nbeams, nbins) containing the BB ratio of
+        every PR bin.
+        - ratio <= 0: below ml
+        - 0 < ratio < 1: between ml
+        - 1 <= ratio: above ml
+    ibb : :class:`numpy:numpy.ndarray`
+        Boolean array containing the indices of PR bins connected to the
+        BB.
+    """
+    # parameters for bb detection
+    ibb = (bb_height > 0) & (bb_width > 0) & (quality == 1)
+
+    # set non-bb-pixels to np.nan
+    bb_height = bb_height.copy()
+    bb_height[~ibb] = np.nan
+    bb_width = bb_width.copy()
+    bb_width[~ibb] = np.nan
+    # get median of bb-pixels
+    bb_height_m = np.nanmedian(bb_height)
+    bb_width_m = np.nanmedian(bb_width)
+
+    # approximation of melting layer top and bottom
+    zmlt = bb_height_m + bb_width_m / 2.
+    zmlb = bb_height_m - bb_width_m / 2.
+
+    # get ratio connected to brightband height
+    ratio = (zp_r - zmlb) / (zmlt - zmlb)
+    ratio = np.broadcast_to(ratio, (bb_width.shape[0],) + ratio.shape)
+
+    return ratio, ibb
 
 
 if __name__ == '__main__':

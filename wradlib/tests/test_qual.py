@@ -29,6 +29,31 @@ class HelperFunctionsTest(unittest.TestCase):
                                                    degrees=False),
                         np.array([3.49053756, 6.98225089])))
 
+    def test_get_bb_ratio(self):
+        heights = np.array([[1100, 1100], [1100, 1100],
+                            [1100, 1100], [1100, 1100]], dtype=np.float)
+        widths = np.array([[50, 50], [50, 50], [50, 50], [50, 50]],
+                          dtype=np.float)
+        quality = np.array([[1, 1], [1, 1], [1, 0], [0, 1]], dtype=np.float)
+        print(quality.shape, quality, quality.T)
+        z = np.array([[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
+                     dtype=np.float)
+        ratio_out = np.array([[[0., 0.5, 1., -3.5],
+                               [-1.5, 0.3, 0.7, 4.5]],
+                              [[0., 0.5, 1., -3.5],
+                               [-1.5, 0.3, 0.7, 4.5]],
+                              [[0., 0.5, 1., -3.5],
+                               [-1.5, 0.3, 0.7, 4.5]],
+                              [[0., 0.5, 1., -3.5],
+                               [-1.5, 0.3, 0.7, 4.5]]])
+        index_out = np.array([[True, True],
+                              [True, True],
+                              [True, False],
+                              [False, True]])
+        ratio, index = qual.get_bb_ratio(heights, widths, quality, z)
+        np.testing.assert_array_equal(ratio, ratio_out)
+        np.testing.assert_array_equal(index, index_out)
+
 
 class BeamBlockFracTest(unittest.TestCase):
     def setUp(self):
@@ -46,7 +71,7 @@ class BeamBlockFracTest(unittest.TestCase):
         self.beamheight = np.linspace(start, end, num=NARR)
         self.beamradius = np.ones(NARR) * beam
         self.terrainheight = np.linspace(start - beam, end + beam, num=NARR)
-        self.ones = np.ones((NARR - 1) / 2)
+        self.ones = np.ones(int((NARR - 1) / 2))
         self.sample_pbb = np.array([[0.1, 0.2, 0.3, 0.1, 0.2, 0.4, 0.1],
                                     [0.1, 0.2, 0.3, 0.1, 0.2, 0.4, 0.1]])
         self.sample_cbb = np.array([[0.1, 0.2, 0.3, 0.3, 0.3, 0.4, 0.4],

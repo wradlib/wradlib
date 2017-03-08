@@ -20,12 +20,12 @@ matrix:
         - PYTHON_VERSION="2.7"
         - COVERALLS="true"
         - DOC_BUILD="true"
-    - python: 3.4
-      env:
-        - PYTHON_VERSION="3.4"
     - python: 3.5
       env:
         - PYTHON_VERSION="3.5"
+    - python: 3.6
+      env:
+        - PYTHON_VERSION="3.6"
 
 install:
     - deactivate
@@ -39,14 +39,11 @@ before_script:
     - scripts/convert_notebooks.sh
 
 script:
-    - xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
-    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -d
-    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -e
-    - xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
+    - scripts/run_tests.sh
 
 after_success:
-    - scripts/render_notebooks.sh
     - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then scripts/render_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:

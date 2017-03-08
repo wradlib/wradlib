@@ -46,6 +46,10 @@ Calling the objects with actual data, however, will be very fast.
    ZonalStatsBase
    GridCellsToPoly
    GridPointsToPoly
+   mask_from_bbox
+   get_bbox
+   grid_centers_to_vertices
+   get_clip_mask
 
 """
 
@@ -1404,7 +1408,7 @@ def mask_from_bbox(x, y, bbox, polar=False):
     jll = (ixll % nx) - 1
     # find upper right corner index
     dists, ixur = tree.query([bbox["right"], bbox["top"]], k=1)
-    iur = (ixur / nx) + 1
+    iur = int(ixur / nx) + 1
     jur = (ixur % nx) + 1
 
     # for polar grids we need all 4 corners
@@ -1476,9 +1480,9 @@ def get_bbox(x, y):
     Parameters
     ----------
 
-    x : array
+    x : :class:`numpy:numpy.ndarray`
         x-coordinate values
-    y : array
+    y : :class:`numpy:numpy.ndarray`
         y-coordinate values
 
     """
@@ -1517,10 +1521,10 @@ def grid_centers_to_vertices(x, y, dx, dy):
 
     Parameters
     ----------
-    x : 2-d array
-        of x coordinates (same shape as the actual 2-D grid)
-    y : 2-d array
-        of y coordinates (same shape as the actual 2-D grid)
+    x : :class:`numpy:numpy.ndarray`
+        2-d array of x coordinates (same shape as the actual 2-D grid)
+    y : :class:`numpy:numpy.ndarray`
+        2-d array of y coordinates (same shape as the actual 2-D grid)
     dx : grid spacing in x direction
     dy : grid spacing in y direction
 
@@ -1541,6 +1545,46 @@ def grid_centers_to_vertices(x, y, dx, dy):
                        [left.ravel(), bottom.ravel()])).T.reshape((-1, 5, 2))
 
     return verts
+
+
+def get_clip_mask(coords, clippoly, srs):
+    """Returns boolean mask of points (coords) located inside polygon clippoly
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    coords : :class:`numpy:numpy.ndarray`
+        array of xy coords with shape [...,2]
+
+    clippoly : :class:`numpy:numpy.ndarray`
+        array of xy coords with shape (N,2) representing closed
+        polygon coordinates
+
+    srs: osr.SpatialReference
+
+    Returns
+    -------
+    src_mask : :class:`numpy:numpy.ndarray`
+        boolean array of shape coords.shape[0:-1]
+
+    """
+    clip = [clippoly]
+
+    zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]),
+                        clip, srs=srs)
+    obj = GridPointsToPoly(zd)
+
+    #    Get source indices within polygon from zonal object
+    #    (0 because we have only one zone)
+    pr_idx = obj.zdata.get_source_index(0)
+
+    # Subsetting in order to use only precipitating profiles
+    src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool)
+    mask = np.unravel_index(pr_idx, coords.shape[0:-1])
+    src_mask[mask] = True
+
+    return src_mask
 
 
 if __name__ == '__main__':

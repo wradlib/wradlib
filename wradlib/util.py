@@ -19,6 +19,7 @@ attributable to the other modules
    from_to
    filter_window_polar
    filter_window_cartesian
+   calculate_polynomial
 
 """
 import datetime as dt
@@ -48,7 +49,6 @@ def deprecated(replacement=None):
 
     Parameters
     ----------
-
     replacement: string
         function name of replacement function
 
@@ -267,8 +267,8 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
         timestamps which define the END of the source time steps
     tdelta_src : integer
         resolution of the source data (seconds)
-    src : 1-d array of floats
-        source values
+    src : :class:`numpy:numpy.ndarray`
+        1-d array of floats source values
     method : string
         Method of aggregation (either "sum" or "mean")
     minpercvalid : float
@@ -280,13 +280,16 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
 
     Returns
     -------
-    tstarts : array of datetime objects
+    tstarts : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         array of timestamps which defines the start of each target time
         step/window
-    tends : array of datetime objects
+    tends : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         array of timestamps which defines the end of each target time
         step/window
-    agg : array of aggregated values
+    agg : :class:`numpy:numpy.ndarray`
+        Array of aggregated values
         aggregated values for each target time step
 
     Examples
@@ -380,36 +383,35 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
 
     Parameters
     ----------
-
-    src : array of shape (..., original number of time steps,...)
+    src : :class:`numpy:numpy.ndarray`
+        Array of shape (..., original number of time steps,...)
         This is the time series data which should be aggregated. The position
         of the time dimension is indicated by the *taxis* argument. The number
         of time steps corresponds to the length of the time dimension.
-
     taxis : integer
         This is the position of the time dimension in array *src*.
-
-    dt_src : array of datetime objects
+    dt_src : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
         This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
         the upper limit of time step 1 and the lower limit of time step 2 and
         so on.
-
-    dt_trg : array of datetime objects
+    dt_trg : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *number of output time steps + 1* analogously to
         dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
         dt_trg[1] is the upper limit of output time step 1 and the lower limit
         of output time step 2 and so on.
-
-    func : numpy function name, e.g. 'sum', 'mean'
+    func : str
+        numpy function name, e.g. 'sum', 'mean'
         Defines the way the data should be aggregated. The string must
         correspond to a valid numpy function, e.g. 'sum', 'mean', 'min', 'max'.
 
     Returns
     -------
-
-    output : array of shape (..., len(dt_trg) - 1, ...)
+    output : :class:`numpy:numpy.ndarray`
+        Array of shape (..., len(dt_trg) - 1, ...)
         The length of the time dimension of the output array depends on the
         array *dt_trg* which defines the limits of the output time step
         intervals.
@@ -481,18 +483,19 @@ def sum_over_time_windows(src, dt_src, dt_trg, minpercvalid):
 
     Parameters
     ----------
-    src : array of shape (..., original number of time steps,...)
+    src : :class:`numpy:numpy.ndarray`
+        Array of shape (..., original number of time steps,...)
         This is the time series data which should be aggregated. The number
         of time steps corresponds to the length of the time dimension.
-
-    dt_src : array of datetime objects
+    dt_src : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
         This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
         the upper limit of time step 1 and the lower limit of time step 2 and
         so on.
-
-    dt_trg : array of datetime objects
+    dt_trg : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *number of output time steps + 1* analogously to
         dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
         dt_trg[1] is the upper limit of output time step 1 and the lower limit
@@ -533,19 +536,19 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
 
     Parameters
     ----------
-
-    src : array of shape (..., original number of time steps,...)
+    src : :class:`numpy:numpy.ndarray`
+        Array of shape (..., original number of time steps,...)
         This is the time series data which should be aggregated. The number
         of time steps corresponds to the length of the time dimension.
-
-    dt_src : array of datetime objects
+    dt_src : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
         This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
         the upper limit of time step 1 and the lower limit of time step 2 and
         so on.
-
-    dt_trg : array of datetime objects
+    dt_trg : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *number of output time steps + 1* analogously to
         dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
         dt_trg[1] is the upper limit of output time step 1 and the lower limit
@@ -554,7 +557,8 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
 
     Returns
     -------
-    output : array of shape (..., len(dt_trg) - 1, ...)
+    output : :class:`numpy:numpy.ndarray`
+        Array of shape (..., len(dt_trg) - 1, ...)
         The length of the time dimension of the output array depends on the
         array *dt_trg* which defines the limits of the output time step
         intervals.
@@ -611,18 +615,19 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600,
 
     Parameters
     ----------
-    src : array of shape (..., original number of time steps,...)
+    src : :class:`numpy:numpy.ndarray`
+        Array of shape (..., original number of time steps,...)
         This is the time series data which should be aggregated. The number
         of time steps corresponds to the length of the time dimension.
-
-    dt_src : array of datetime objects
+    dt_src : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *original number of time steps + 1* because dt_src
         defines the limits of the intervals corresponding to the time steps.
         This means: dt_src[0] is the lower limit of time step 1, dt_src[1] is
         the upper limit of time step 1 and the lower limit of time step 2 and
         so on.
-
-    dt_trg : array of datetime objects
+    dt_trg : :class:`numpy:numpy.ndarray`
+        Array of datetime objects
         Must be of length *number of output time steps + 1* analogously to
         dt_src. This means: dt_trg[0] is the lower limit of output time step 1,
         dt_trg[1] is the upper limit of output time step 1 and the lower limit
@@ -631,7 +636,8 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600,
 
     Returns
     -------
-    output : array of shape (..., len(dt_trg) - 1, ...)
+    output : :class:`numpy:numpy.ndarray`
+        Array of shape (..., len(dt_trg) - 1, ...)
         The length of the time dimension of the output array depends on the
         array *dt_trg* which defines the limits of the output time step
         intervals.
@@ -794,29 +800,26 @@ def timestamp2index(ts, delta, refts, **kwargs):
 
     Parameters
     ----------
-    ts        : str or datetime-object
-                The timestamp to determine the index for
-                If it is a string, it will be converted to datetime using the
-                function iso2datetime
-
-    delta     : str or timedelta object
-                The discretization of the time series (the amount of time that
-                elapsed between indices)
-                If used as a string, it needs to be given in the format
-                "keyword1=value1,keyword2=value2". Keywords must be understood
-                by the timedelta constructor (like days, hours,
-                minutes, seconds) and the values may only be integers.
-
-    refts     : str or datetime-object
-                The timestamp to determine the index for
-                If it is a string, it will be converted to datetime using the
-                function iso2datetime
+    ts : str or datetime-object
+        The timestamp to determine the index for.
+        If it is a string, it will be converted to datetime using the
+        function iso2datetime
+    delta : str or timedelta object
+        The discretization of the time series (the amount of time that
+        elapsed between indices)
+        If used as a string, it needs to be given in the format
+        "keyword1=value1,keyword2=value2". Keywords must be understood
+        by the timedelta constructor (like days, hours,
+        minutes, seconds) and the values may only be integers.
+    refts : str or datetime-object
+        The timestamp to determine the index for
+        If it is a string, it will be converted to datetime using the
+        function iso2datetime.
 
     Returns
     -------
-    index    : integer
-               The index of a discrete time series array of the given
-               parameters
+    index : integer
+        The index of a discrete time series array of the given parameters.
 
     Example
     -------
@@ -856,7 +859,7 @@ def _idvalid(data, isinvalid=None, minval=None, maxval=None):
 
     Parameters
     ----------
-    data : array of floats
+    data : :class:`numpy:numpy.ndarray` of floats
     isinvalid : list of what is considered an invalid value
 
     """
@@ -945,7 +948,7 @@ def trapezoid(data, x1, x2, x3, x4):
 
     Parameters
     ----------
-    data : array
+    data : :class:`numpy:numpy.ndarray`
         Array containing the data
     x1 : float
         x-value of the first vertex of the trapezoid
@@ -958,7 +961,7 @@ def trapezoid(data, x1, x2, x3, x4):
 
     Returns
     -------
-    d : array
+    d : :class:`numpy:numpy.ndarray`
         Array of values describing degree of membership in
         nonmeteorological target class.
 
@@ -985,9 +988,9 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
 
     Parameters
     ----------
-    data : array
+    data : :class:`numpy:numpy.ndarray`
         Array containing polar data (azimuth, range)
-    r : array
+    r : :class:`numpy:numpy.ndarray`
         Array containing range data
     az : array
         Array containing azimuth data
@@ -1003,11 +1006,11 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
 
     Returns
     -------
-    xs : array
+    xs : :class:`numpy:numpy.ndarray`
         meshgrid x array
-    ys : array
+    ys : :class:`numpy:numpy.ndarray`
         meshgrid y array
-    mip : array
+    mip : :class:`numpy:numpy.ndarray`
         Array containing the maximum intensity projection (range, range*2)
 
     """
@@ -1130,8 +1133,8 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
 
     Parameters
     ----------
-    img : 2d array
-        Array of values to which the filter is to be applied
+    img : :class:`numpy:numpy.ndarray`
+        2d array of values to which the filter is to be applied
     wsize : float
         Half size of the window centred on the pixel [m]
     fun : string
@@ -1143,8 +1146,8 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
 
     Returns
     -------
-    output : array_like
-        an array with the same shape as `img`, containing the filter's results.
+    output : :class:`numpy:numpy.ndarray`
+        Array with the same shape as `img`, containing the filter's results.
 
     """
     ascale = 2 * np.pi / img.shape[0]
@@ -1199,8 +1202,8 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
 
     Parameters
     ----------
-    img : 2d array
-        Array of values to which the filter is to be applied
+    img : :class:`numpy:numpy.ndarray`
+        2d array of values to which the filter is to be applied
     wsize : float
         Half size of the window centred on the pixel [m]
     fun : string
@@ -1210,8 +1213,8 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
 
     Returns
     -------
-    output : array_like
-        an array with the same shape as `img`, containing the filter's results.
+    output : :class:`numpy:numpy.ndarray`
+        Array with the same shape as `img`, containing the filter's results.
 
     """
     fun = getattr(filters, "%s_filter" % fun)
@@ -1226,7 +1229,8 @@ def roll2d_polar(img, shift=1, axis=0):
 
     Parameters
     ----------
-    img : 2d data array
+    img : :class:`numpy:numpy.ndarray`
+        2d data array
     shift : int
         shift to apply to the array
     axis : int
@@ -1291,14 +1295,14 @@ def half_power_radius(r, bwhalf):
 
     Parameters
     ----------
-    r : float, array of floats
+    r : float, :class:`numpy:numpy.ndarray` of floats
         Range from radar [m]
     bwhalf : float
         Half-power beam width [degrees]
 
     Returns
     -------
-    Rhalf : float, array of floats
+    Rhalf : float, :class:`numpy:numpy.ndarray` of floats
         Half-power radius [m]
 
     Examples
@@ -1323,15 +1327,15 @@ def find_bbox_indices(coords, bbox):
 
     Parameters
     ----------
-    coords : numpy ndarray
+    coords : :class:`numpy:numpy.ndarray`
         3 dimensional array (ny, nx, lon/lat) of floats
-    bbox : 4-element numpy array, list or tuple of floats
+    bbox : 4-element :class:`numpy:numpy.ndarray`, list or tuple of floats
         (llx,lly,urx,ury)
 
     Returns
     -------
-    bbind : 4-element tuple of int
-        (llx,lly,urx,ury)
+    bbind : tuple
+        4-element tuple of int (llx,lly,urx,ury)
     """
 
     # find indices
@@ -1382,6 +1386,35 @@ def get_wradlib_data_file(relfile):
         raise EnvironmentError("WRADLIB_DATA file '{0}' "
                                "does not exist".format(data_file))
     return data_file
+
+
+def calculate_polynomial(data, w):
+    """Calculate Polynomial
+
+    The functions calculates the following polynomial:
+
+    .. math::
+
+        P = \sum_{n=0}^{N} w(n) \cdot data^{n}
+
+    .. versionadded:: 0.10.0
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        Flat array of data values.
+    w : :class:`numpy:numpy.ndarray`
+        Array of shape (N) containing weights.
+
+    Returns
+    -------
+    poly : :class:`numpy:numpy.ndarray`
+        Flat array of processed data.
+    """
+    poly = np.zeros_like(data)
+    for i, c in enumerate(w):
+        poly += c * data**i
+    return poly
 
 
 if __name__ == '__main__':
