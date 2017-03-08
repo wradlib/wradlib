@@ -2,7 +2,7 @@ How to use the tutorials and examples?
 ======================================
 
 Examples: your entry point to wradlib
-------------------------------------
+-------------------------------------
 
 The documentation of :math:`\omega radlib` basically consists of two elements: the first element is the :doc:`library reference <reference>` which provides a systematic documentation of each function in wradlib's API. In order to use the library reference properly, you should have an idea what you're actually looking for. This is why new users mostly start with the second element, the :doc:`tutorials and examples <notebooks>`. Here you can look for application examples that are close to what you actually want to achieve, and than use these as a basis for further development. Once you understood an example, you also know what to look for in the :doc:`library reference <reference>`.   
 
@@ -12,7 +12,7 @@ Interactive examples with jupyter notebooks
 
 All :math:`\omega radlib` examples are distributed as `jupyter notebooks <http://jupyter.org/>`_. This way, you can interactively explore various   topics. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from :math:`\omega radlib`'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
 
-.. note:: Are you using :math:`\omega radlib` on the `Open Virtual Machine for Cross-Platform Weather Radar Science <http://openradar.github.io/>`_? Then skip the rest: just log in, run the command ``$ ./start_notebook.sh`` and direct your browser `here <http://127.0.0.1:8888/tree>`_. That's it. 
+.. note:: Are you using :math:`\omega radlib` on the `Open Virtual Machine for Cross-Platform Weather Radar Science <http://openradar.github.io/>`_? Then skip the rest: just log in, run the command ``$ ./start_notebook.sh`` and direct your browser to `http://127.0.0.1:8888/tree <http://127.0.0.1:8888/tree>`__. That's it.
 
 Otherwise, you need to make sure to
 

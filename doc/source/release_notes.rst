@@ -9,7 +9,28 @@ You can install the latest :math:`\omega radlib` release from PyPI via ``$ pip i
 Bleeding Edge
 -------------
 
-*Nothing, yet.*
+**Highlights**
+
+* Added functions to match the precipitation radar of GPM/TRMM platforms with ground radar observations in 3D (:meth:`wradlib.georef.correct_parallax`, :meth:`wradlib.georef.sat2pol`, :meth:`wradlib.georef.dist_from_orbit`, :meth:`wradlib.qual.get_bb_ratio`, :meth:`wradlib.trafo.s2ku`, :meth:`wradlib.trafo.ku2s`, :meth:`wradlib.util.calculate_polynomial`, :meth:`wradlib.zonalstats.get_clip_mask`)
+* Added example notebook of GPM/TRMM-GR matching
+* revised docs and build process
+
+**New features**
+
+* New notebook examples covering wradlib-tour, classification
+* Added reading WX-format to RADOLAN reader
+* Enhanced :meth:`wradlib.io.read_RADOLAN_composite` to also accept file-handles
+* Added reading groups to :meth:`wradlib.io.read_generic_netcdf`
+* Added :meth:`wradlib.qual.cu_beam_block_frac` to compute cumulative beam blockage
+* Added earth curvature display to beam blockage
+
+**Bugfixes**
+
+* Fix documentation inconsistencies
+* Fix calculation of pulse volume
+* Use dedicated OSR IsSame() in :meth:`wradlib.georef.transform_geometry`
+* several minor fixes
+
 
 Version 0.9.0
 -------------
@@ -17,7 +38,7 @@ Version 0.9.0
 **Highlights**
 
 * examples and tutorials are provided as jupyter notebooks
-* docs are directly created from notebooks (see full workflow `here <https://github.com/wradlib/wradlib/wiki/dev.-notebook-workflow>`_) 
+* docs are directly created from notebooks (see full workflow `here <https://github.com/wradlib/wradlib/wiki/dev.-notebook-workflow>`__)
 * structured notebooks with parent notebook, where appropriate
 * documentation reviewed and adapted
     - community.rst,
@@ -54,7 +75,7 @@ Version 0.8.0
 
 * As of now :math:`\omega radlib` is python3 compatible.
 * Docstrings, tests and examples as well as the documentation have been reviewed and fixed.
-* main :math:`\omega radlib` repository is now hosted `here on github <https://github.com/wradlib/wradlib>`_.
+* main :math:`\omega radlib` repository is now hosted `here on github <https://github.com/wradlib/wradlib>`__.
 * :math:`\omega radlib` docs are now hosted `on github, but with custom domain <http://wradlib.org/wradlib-docs/>`_.
 
 **New features**
@@ -86,7 +107,7 @@ Version 0.6.0
 
 **Highlights**
 
-:math:`\omega radlib` functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``,``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
+:math:`\omega radlib` functions concerned with georeferencing will only use projection information based on OSR objects. This version will help you to adapt your code base to this change before next minor release: Using deprecated PROJ.4 strings in call to the following functions/classes: ``vis.plot_ppi``, ``vis.plot_ppi_crosshair``, ``georef.projected_bincoords_from_radarspec``, ``verify.PolarNeighbours``, ``vpr.volcoords_from_polar``, ``vpr.volcoords_from_polar_irregular``, ``vpr.make_3D_grid`` will generate a DeprecationWarning and try to correct old calling method at runtime.
 
 Added ability to handle georeferenced raster and vector data
 

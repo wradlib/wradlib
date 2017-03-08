@@ -17,6 +17,7 @@ and example scripts distributed with the source code.
    notebooks/beamblockage/wradlib_beamblock.ipynb
    notebooks/classify.ipynb
    notebooks/georeferencing.ipynb
+   notebooks/match3d/wradlib_match_workflow.ipynb
    notebooks/develop.ipynb
    notebooks/interpolation/wradlib_ipol_example.ipynb
    notebooks/multisensor/wradlib_adjust_example.ipynb
