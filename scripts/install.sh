@@ -2,6 +2,12 @@
 # Copyright (c) 2016, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+
+# print the vars
+echo "TRAVIS_PULL_REQUEST " $TRAVIS_PULL_REQUEST
+echo "TRAVIS_SECURE_ENV_VARS " $TRAVIS_SECURE_ENV_VARS
+echo "TRAVIS_TAG " $TRAVIS_TAG ${TRAVIS_TAG:1}
+
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
     -O miniconda.sh
 chmod +x miniconda.sh

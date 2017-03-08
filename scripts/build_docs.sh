@@ -74,8 +74,8 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
 
     echo "Pushing Docs"
     cd doc-build
-    git config --global user.email "wradlib-docs@example.com"
-    git config --global user.name "wradlib-docs"
+    git config --global user.email "wradlib-docs@wradlib.org"
+    git config --global user.name "wradlib-docs-bot"
     git init
     touch README
     git add README
