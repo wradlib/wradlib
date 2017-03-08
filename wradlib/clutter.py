@@ -251,8 +251,7 @@ def histo_cut(prec_accum):
             prec_accum_masked)].ravel(), bins=50)
         # get the class with biggest occurence
         index = np.where(n == n.max())
-        index = index[0]
-
+        index = index[0][0]
         # separated stop criterion check in case one of the bounds
         # is already robust
         if abs(lower_bound - lower_bound_before) > 1:
