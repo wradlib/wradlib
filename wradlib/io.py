@@ -1061,7 +1061,7 @@ def read_gamic_scan_attributes(scan, scan_type):
         ele_start = np.round(ray_header['elevation_start'], 1)
         ele_stop = np.round(ray_header['elevation_stop'], 1)
         angle_step = np.round(sattrs['angle_step'], 1)
-        angle_step = np.round(sattrs['ele_stop'], 1) / angle_step
+        angle_step = int(np.round(sattrs['ele_stop'], 1) / angle_step)
         # Elevation corresponding to 1st ray
         if ele_start[0] < 0:
             ele_start = ele_start[1:]

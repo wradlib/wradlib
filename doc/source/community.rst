@@ -6,11 +6,11 @@ How to contribute to :math:`\omega radlib`?
 
 We need your help to enhance the capabilities of :math:`\omega radlib`! Is there an algorithm you would consider useful? Please **provide code (in any programming language) or documentation**. We will it a try to integrate this algorithm in :math:`\omega radlib`.
 
-However, **there is an even better way:** Start a `Pull Request <https://help.github.com/articles/creating-a-pull-request/>`_!
+However, **there is an even better way:** Start a `Pull Request <https://help.github.com/articles/creating-a-pull-request/>`__!
 
     * **Step 1:** `Fork <https://github.com/wradlib/wradlib>`_ your own :math:`\omega radlib` repository from the :math:`\omega radlib` `main repo <https://github.com/wradlib/wradlib>`_.
     * **Step 2:** Implement your changes into the forked repository. Test your code.
-    * **Step 3:** Now you want to feed these changes back into the main :math:`\omega radlib` development branch? Start a `Pull Request <https://help.github.com/articles/creating-a-pull-request>`_!
+    * **Step 3:** Now you want to feed these changes back into the main :math:`\omega radlib` development branch? Start a `Pull Request <https://help.github.com/articles/creating-a-pull-request>`__!
     * **Step 4:** We will review your changes. On approval, we will merge your fork back into the main :math:`\omega radlib` branch.
     * **Step 5:** Now everyone can benefit from your improvements.
 

@@ -107,10 +107,7 @@ class PolarNeighbours():
         assert tuple(vals.shape[-2:]) == (len(self.az), len(self.r)), \
             'The shape of your vals array does not correspond with ' \
             'the range and azimuths you provided for your polar data set'
-        shape = vals.shape
-        vals = vals.reshape(np.concatenate((shape[:-2],
-                                            np.array([len(self.az) *
-                                                      len(self.r)]))))
+        vals = vals.reshape(vals.shape[:-2] + (len(self.az) * len(self.r),))
         return vals[..., self.ix]
 
     def get_bincoords(self):
