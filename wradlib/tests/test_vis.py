@@ -62,15 +62,15 @@ class PolarPlotTest(unittest.TestCase):
                                     proj=self.proj, cg=True)
 
     def test_plot_cg_rhi(self):
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], cgplot=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, cgplot=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], refrac=False, cgplot=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False, cgplot=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], refrac=False, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False, cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
-                                th=np.arange(90), autoext=True, cgplot=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', cgplot=True)
+                                th=np.arange(90), autoext=True, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
-                                cgplot=True)
+                                cg=True)
 
     def test_plot_scan_strategy(self):
         pl.figure()

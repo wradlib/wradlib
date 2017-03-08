@@ -122,7 +122,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     """Plots a Plan Position Indicator (PPI).
 
     .. versionchanged:: 0.10.0
-       added contour, contourf plotting, added `cgplot`
+       added contour, contourf plotting, added `cg`
 
     .. versionchanged:: 0.6.0
        using osr objects instead of PROJ.4 strings as parameter
@@ -132,7 +132,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    Using `cgplot=True` the plotting is done in a curvelinear grid axes.
+    Using `cg=True` the plotting is done in a curvelinear grid axes.
     Additional data can be plotted in polar coordinates or cartesian
     coordinates depending which axes object is used.
 
@@ -223,7 +223,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     Note
     ----
-    If `cgplot` is True, the `cgax` - curvelinear Axes (r-theta-grid)
+    If `cg` is True, the `cgax` - curvelinear Axes (r-theta-grid)
     is returned. `caax` - Cartesian Axes (x-y-grid) and `paax` -
     parasite axes object for plotting polar data can be derived like this::
 
@@ -506,19 +506,19 @@ def plot_ppi_crosshair(site, ranges, angles=None,
 
 
 def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
-             rf=1., fig=None, ax=111, func='pcolormesh', cgplot=False,
+             rf=1., fig=None, ax=111, func='pcolormesh', cg=False,
              **kwargs):
     """Plots a Range Height Indicator (RHI).
 
     .. versionchanged:: 0.10.0
-       added contour, contourf plotting, added `cgplot`
+       added contour, contourf plotting, added `cg`
 
     The implementation of this plot routine is in cartesian axes and does all
     coordinate transforms beforehand. This allows zooming into the data as well
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    Using `cgplot=True` the plotting is done in a curvelinear grid axes.
+    Using `cg=True` the plotting is done in a curvelinear grid axes.
     Additional data can be plotted in polar coordinates or cartesian
     coordinates depending which axes object is used.
 
@@ -573,7 +573,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     func : str
         Name of plotting function to be used under the hood.
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
-    cgplot : True | False
+    cg : True | False
         If True, the data will be plotted on curvelinear axes.
 
     See also
@@ -590,7 +590,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
 
     Note
     ----
-    If `cgplot` is True, the `cgax` - curvelinear Axes (r-theta-grid)
+    If `cg` is True, the `cgax` - curvelinear Axes (r-theta-grid)
     is returned. `caax` - Cartesian Axes (x-y-grid) and `paax` -
     parasite axes object for plotting polar data can be derived like this::
 
@@ -668,7 +668,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
 
     # axes object given
     if isinstance(ax, mpl.axes.Axes):
-        if cgplot:
+        if cg:
             caax = ax.parasites[0]
             paax = ax.parasites[1]
     else:
@@ -678,7 +678,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
                 fig = pl.figure()
             else:
                 fig = pl.gcf()
-        if cgplot:
+        if cg:
             # create curvelinear axes
             ax, caax, paax = create_cg('RHI', fig, ax)
 
@@ -699,10 +699,10 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         # must be calculated specially
         xxx = georef.arc_distance_n(xx, yy) / rf
         yyy = georef.beam_height_n(xx, yy) / rf
-        if cgplot:
+        if cg:
             plax = caax
     else:
-        if cgplot:
+        if cg:
             xxx, yyy = np.meshgrid(y, x)
             yyy /= rf
             img = img.transpose()
@@ -717,7 +717,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     pm = plotfunc(xxx, yyy, img, **kwargs)
 
     # return references to important and eventually new objects
-    if cgplot:
+    if cg:
         # set bounds to maximum
         ax.set_ylim(0, np.max(x) / rf)
         ax.set_xlim(0, np.max(x) / rf)
