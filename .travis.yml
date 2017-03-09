@@ -42,7 +42,7 @@ script:
     - scripts/run_tests.sh
 
 after_success:
-    - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
+    - if [[ "$COVERALLS" == "true" ]]; then codecov || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then scripts/render_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
