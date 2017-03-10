@@ -880,10 +880,14 @@ def create_cg(st, fig=None, subplot=111):
     return cgax, caax, paax
 
 
+@util.deprecated(plot_ppi)
 def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
                 refrac=True, elev=0., fig=None, subplot=111,
                 **kwargs):
     """Plots a Plan Position Indicator (PPI) on a curvelinear grid.
+
+    .. deprecated:: 0.11
+    Use :meth:`~wradlib.vis.plot_ppi`
 
     The implementation of this plot routine is in curvelinear grid axes and
     does all coordinate transforms beforehand. This allows zooming into the
@@ -1028,9 +1032,13 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
     return cgax, caax, paax, pm
 
 
+@util.deprecated(plot_rhi)
 def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
                 rf=1., fig=None, subplot=111, **kwargs):
     """Plots a Range Height Indicator (RHI) on a curvelinear grid.
+
+    .. deprecated:: 0.11
+    Use :meth:`~wradlib.vis.plot_rhi`
 
     The implementation of this plot routine is in a curvelinear grid axes and
     does all coordinate transforms beforehand.

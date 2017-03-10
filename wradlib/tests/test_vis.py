@@ -72,6 +72,24 @@ class PolarPlotTest(unittest.TestCase):
         cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
                                 cg=True)
 
+    def test_dep_plot_cg_ppi(self):
+        cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, elev=2.0)
+        cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, autoext=False)
+        cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, refrac=False)
+
+    def test_dep_plot_cg_rhi(self):
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :])
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               th_res=0.5)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               refrac=False)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               autoext=False)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               r=np.arange(10),
+                                               th=np.arange(90),
+                                               autoext=True)
+
     def test_plot_scan_strategy(self):
         pl.figure()
         ranges = np.arange(0, 100000, 1000)
