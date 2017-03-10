@@ -20,10 +20,9 @@ class PolarPlotTest(unittest.TestCase):
         img[20, :] = 5  # spike
         img[60:120, 2:7] = 11  # precip field
         self.img = img
+        self.proj = georef.create_osr("dwd-radolan")
 
     def test_plot_ppi(self):
-        pl.figure()
-        proj = georef.create_osr("dwd-radolan")
         ax, pm = vis.plot_ppi(self.img, re=6371000., ke=(4. / 3.))
         ax, pm = vis.plot_ppi(self.img, autoext=False)
         vis.plot_ppi_crosshair(site=(0, 0),
@@ -31,43 +30,65 @@ class PolarPlotTest(unittest.TestCase):
                                angles=[0, 45, 90, 180, 270],
                                line=dict(color='white',
                                          linestyle='solid'))
-        pl.figure()
         ax, pm = vis.plot_ppi(self.img, site=(10., 45.), autoext=False,
-                              proj=proj)
+                              proj=self.proj)
         vis.plot_ppi_crosshair(site=(0, 0),
                                ranges=[2, 4, 8],
                                angles=[0, 45, 90, 180, 270],
-                               proj=proj,
+                               proj=self.proj,
                                line=dict(color='white',
                                          linestyle='solid'))
+        ax, pm = vis.plot_ppi(self.img, func='contour')
+        ax, pm = vis.plot_ppi(self.img, func='contourf')
 
     def test_plot_rhi(self):
-        pl.figure()
         ax, pm = vis.plot_rhi(self.img[0:90, :])
-        pl.figure()
         ax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5)
-        pl.figure()
         ax, pm = vis.plot_rhi(self.img[0:90, :], refrac=False)
-        pl.figure()
         ax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False)
-        pl.figure()
         ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
                               th=np.arange(90))
+        ax, pm = vis.plot_rhi(self.img[0:90, :], func='contour')
+        ax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf')
 
     def test_plot_cg_ppi(self):
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True)
+        cgax, pm = vis.plot_ppi(self.img, autoext=False, cg=True)
+        cgax, pm = vis.plot_ppi(self.img, refrac=False, cg=True)
+        cgax, pm = vis.plot_ppi(self.img, func='contour', cg=True)
+        cgax, pm = vis.plot_ppi(self.img, func='contourf', cg=True)
+        with self.assertWarns(UserWarning):
+            cgax, pm = vis.plot_ppi(self.img, func='contourf',
+                                    proj=self.proj, cg=True)
+
+    def test_plot_cg_rhi(self):
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], refrac=False, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
+                                th=np.arange(90), autoext=True, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
+                                cg=True)
+
+    def test_dep_plot_cg_ppi(self):
         cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, elev=2.0)
         cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, autoext=False)
         cgax, caax, paax, pm = vis.plot_cg_ppi(self.img, refrac=False)
 
-    def test_plot_cg_rhi(self):
+    def test_dep_plot_cg_rhi(self):
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :])
-        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :], th_res=0.5)
-        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :], refrac=False)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               th_res=0.5)
+        cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
+                                               refrac=False)
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
                                                autoext=False)
         cgax, caax, paax, pm = vis.plot_cg_rhi(self.img[0:90, :],
                                                r=np.arange(10),
-                                               th=np.arange(90), autoext=True)
+                                               th=np.arange(90),
+                                               autoext=True)
 
     def test_plot_scan_strategy(self):
         pl.figure()
