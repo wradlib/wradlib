@@ -18,14 +18,16 @@ matrix:
     - python: 2.7
       env:
         - PYTHON_VERSION="2.7"
-        - COVERALLS="true"
+        - COVERAGE="true"
         - DOC_BUILD="true"
     - python: 3.5
       env:
         - PYTHON_VERSION="3.5"
+        - COVERAGE="true"
     - python: 3.6
       env:
         - PYTHON_VERSION="3.6"
+        - COVERAGE="true"
 
 install:
     - deactivate
@@ -42,7 +44,7 @@ script:
     - scripts/run_tests.sh
 
 after_success:
-    - if [[ "$COVERALLS" == "true" ]]; then coveralls || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then scripts/render_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
