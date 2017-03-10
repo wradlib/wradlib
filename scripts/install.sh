@@ -54,9 +54,9 @@ fi
 conda install --yes flake8
 
 # Install coverage modules
-if [[ "$COVERALLS" == "true" ]]; then
+if [[ "$COVERAGE" == "true" ]]; then
+    conda install --yes coverage
     pip install codecov
-    # conda install --yes coverage python-coveralls
 fi
 
 python setup.py install
