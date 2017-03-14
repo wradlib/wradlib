@@ -11,15 +11,15 @@ Below you see the Travis Status of wradlib. A red status indicates that the curr
 ## Package Status ##
 
 [![Build Status](https://travis-ci.org/wradlib/wradlib.svg?branch=master)](https://travis-ci.org/wradlib/wradlib)
-[![Code Coverage](https://coveralls.io/repos/github/wradlib/wradlib/badge.svg?branch=master)](https://coveralls.io/github/wradlib/wradlib?branch=master)
+[![codecov](https://codecov.io/gh/wradlib/wradlib/branch/master/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib)
 
 ### Documentation ###
 
 For further information on wradlib (Gettings started, library reference, development setup, ...), please see our homepage:
 
-http://wradlib.github.io/wradlib-docs
+http://wradlib.org/wradlib-docs
 
-Specific informations for develeopers is availabel via the [wradlib-wiki](https://github.com/wradlib/wradlib/wiki).
+Specific informations for develeopers is available via the [wradlib-wiki](https://github.com/wradlib/wradlib/wiki).
 
 ### User forum ###
 
