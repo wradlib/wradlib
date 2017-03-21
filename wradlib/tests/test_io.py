@@ -402,7 +402,8 @@ class RainbowTest(unittest.TestCase):
         rb_file = wrl.util.get_wradlib_data_file(filename)
         rbdict = wrl.io.read_Rainbow(rb_file, loaddata=False)
         rbblob = rbdict['volume']['scan']['slice']['slicedata']['rawdata']
-        data = wrl.io.get_RB_blob_from_file(rb_file, rbblob)
+        with open(rb_file) as rb_fh:
+            data = wrl.io.get_RB_blob_from_file(rb_fh, rbblob)
         self.assertEqual(data.shape[0], int(rbblob['@rays']))
         self.assertEqual(data.shape[1], int(rbblob['@bins']))
         self.assertRaises(IOError,
@@ -412,7 +413,8 @@ class RainbowTest(unittest.TestCase):
     def test_get_RB_file_as_string(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
-        rb_string = wrl.io.get_RB_file_as_string(rb_file)
+        with open(rb_file) as rb_fh:
+            rb_string = wrl.io.get_RB_file_as_string(rb_fh)
         self.assertTrue(rb_string)
         self.assertRaises(IOError,
                           lambda: wrl.io.get_RB_file_as_string('rb_file'))
@@ -420,7 +422,8 @@ class RainbowTest(unittest.TestCase):
     def test_get_RB_header(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
-        rb_header = wrl.io.get_RB_header(rb_file)
+        with open(rb_file) as rb_fh:
+            rb_header = wrl.io.get_RB_header(rb_fh)
         self.assertEqual(rb_header['volume']['@version'], '5.34.16')
         self.assertRaises(IOError,
                           lambda: wrl.io.get_RB_header('rb_file'))
