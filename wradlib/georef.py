@@ -2014,25 +2014,47 @@ def set_raster_origin(data, coords, direction):
     same = (origin == direction)
     if not same:
         data = np.flipud(data)
+        # TODO: this assumes that the edge of
+        # the last row/column is missing
+        # but this may not be the case
         coords = np.flipud(coords) + [0, y_sp]
     return data, coords
 
 
 def extract_raster_dataset(dataset, nodata=None):
-    #data, coords, projection = None, nodata = -9999
+    """ Extract data, coordinates and projection information
+
+    Parameters
+    ----------
+    dataset : gdal.Dataset
+        raster dataset
+    nodata : scalar
+        Value to which the dataset nodata values are mapped.
+
+    Returns
+    -------
+    data : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols) or (rows, cols, bands) containing
+        the data values.
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols, 2) containing xy-coordinates.
+    projection : osr object
+        Spatial reference system of the used coordinates.
+    """
 
     # data values
     data = read_gdal_values(dataset, nodata=nodata)
 
     # coords
-    coordinates_pixel = pixel_coordinates(dataset.RasterXSize,
-                                          dataset.RasterYSize,
-                                          'edges')
-    coordinates = pixel_to_map(dataset.GetGeoTransform(),
-                               coordinates_pixel)
+    coords_pixel = pixel_coordinates(dataset.RasterXSize,
+                                     dataset.RasterYSize,
+                                     'edges')
+    coords = pixel_to_map(dataset.GetGeoTransform(),
+                          coords_pixel)
+
     projection = read_gdal_projection(dataset)
 
-    return data, coordinates, projection
+    return data, coords, projection
 
 
 
