@@ -2059,7 +2059,6 @@ def extract_raster_dataset(dataset, nodata=None):
     return data, coords, projection
 
 
-
 def _doctest_():
     import doctest
     print('doctesting')
