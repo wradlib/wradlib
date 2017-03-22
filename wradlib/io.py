@@ -2262,6 +2262,37 @@ def read_raster_data(filename, driver=None, **kwargs):
     return coords, values
 
 
+def write_raster_data(fpath, dataset, format, options=None):
+    """ Write raster dataset to file format
+
+    Parameters
+    ----------
+    fpath : string
+        A file path - should have file extension corresponding to format.
+    dataset : gdal.Dataset
+        gdal raster dataset
+    format : string
+        gdal raster format string
+        see `formats_list <http://www.gdal.org/formats_list.html>`_.
+    options : list
+        list of option strings for the corresponding format
+    """
+    # check for option list
+    if options is None:
+        options = []
+
+    driver = gdal.GetDriverByName(format)
+
+    metadata = driver.GetMetadata()
+
+    # check driver capability
+    if 'DCAP_CREATECOPY' in metadata and metadata['DCAP_CREATECOPY'] != 'YES':
+        assert "Driver %s doesn't support CreateCopy() method.".format(format)
+
+    target = driver.CreateCopy(fpath, dataset, 0, options)
+    del target
+
+
 def open_shape(filename, driver=None):
     """
     Open shapefile, return ogr dataset and layer
