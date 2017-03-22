@@ -1176,7 +1176,6 @@ def read_gdal_values(dataset=None, nodata=None):
         band = dataset.GetRasterBand(i + 1)
         nd = band.GetNoDataValue()
         data = band.ReadAsArray()
-        data[data == nd] = nodata
         if nodata is not None:
             nodata = band.GetNoDataValue()
             data[data == nodata] = nodata
