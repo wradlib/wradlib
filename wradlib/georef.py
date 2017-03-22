@@ -1961,8 +1961,8 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
 
     # create In-Memory Raster with correct dtype
     mem_drv = gdal.GetDriverByName('MEM')
-    dataset = mem_drv.Create('', cols, rows, bands,
-                        gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype))
+    gdal_type = gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype)
+    dataset = mem_drv.Create('', cols, rows, bands, gdal_type)
 
     # initialize geotransform
     x_ps, y_ps = coords[1, 1] - coords[0, 0]
@@ -1977,6 +1977,39 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
         dataset.GetRasterBand(i + 1).WriteArray(data[..., i])
 
     return dataset
+
+
+def set_raster_origin(data, coords, direction):
+    """ Converts Data and Coordinates Origin
+
+    .. versionadded 0.10.0
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols) or (rows, cols, bands) containing
+        the data values.
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols, 2) containing xy-coordinates.
+    direction : str
+        'lower' or 'upper', direction in which to convert data and coordinates.
+
+    Returns
+    -------
+    data : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols) or (rows, cols, bands) containing
+        the data values.
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols, 2) containing xy-coordinates.
+    """
+    x_sp, y_sp = coords[1, 1] - coords[0, 0]
+    origin = ('lower' if y_sp > 0 else 'upper')
+    same = (origin == direction)
+    if not same:
+        data = np.flipud(data)
+        coords = np.flipud(coords) + [0, y_sp]
+    return data, coords
+
 
 def _doctest_():
     import doctest
