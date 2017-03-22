@@ -1798,13 +1798,14 @@ def read_safnwc(filename):
 
     # name = os.path.basename(filename)[7:11]
     try:
-        proj = root.GetMetadata()["PROJECTION"]
+        proj = osr.SpatialReference()
+        proj.ImportFromProj4(ds.GetMetadata()["PROJECTION"])
     except Exception:
         raise NameError("No metadata for satellite file %s" % filename)
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
     geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"]
-    ds.SetProjection(proj)
+    ds.SetProjection(proj.ExportToWkt())
     ds.SetGeoTransform([float(x) for x in geotransform])
     return ds
 
