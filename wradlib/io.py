@@ -1962,6 +1962,48 @@ def _check_arguments(fpath, data):
                         os.path.dirname(fpath))
 
 
+def write_raster_data(fpath, dataset, format, options=None):
+    """ Write raster dataset to file format
+
+    .. versionadded 0.10.0
+
+    Parameters
+    ----------
+    fpath : string
+        A file path - should have file extension corresponding to format.
+    dataset : gdal.Dataset
+        gdal raster dataset
+    format : string
+        gdal raster format string
+    options : list
+        List of option strings for the corresponding format.
+
+    Note
+    ----
+    For format and options refer to
+    `formats_list <http://www.gdal.org/formats_list.html>`_.
+
+    Examples
+    --------
+    See :ref:`notebooks/fileio/wradlib_gis_export_example.ipynb`.
+    """
+    # check for option list
+    if options is None:
+        options = []
+
+    driver = gdal.GetDriverByName(format)
+
+    metadata = driver.GetMetadata()
+
+    # check driver capability
+    if 'DCAP_CREATECOPY' in metadata and metadata['DCAP_CREATECOPY'] != 'YES':
+        assert "Driver %s doesn't support CreateCopy() method.".format(format)
+
+    target = driver.CreateCopy(fpath, dataset, 0, options)
+    del target
+
+
+@util.deprecated(write_raster_data)
 def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
                nodata=-9999, proj=None, fmt="%.2f", to_esri=True):
     """Write a cartesian grid to an Arc/Info ASCII grid file.
@@ -2067,6 +2109,7 @@ def to_AAIGrid(fpath, data, xllcorner, yllcorner, cellsize,
     return 0
 
 
+@util.deprecated(write_raster_data)
 def to_GeoTIFF(fpath, data, geotransform, nodata=-9999, proj=None):
     """Write a cartesian grid to a GeoTIFF file.
 
@@ -2260,37 +2303,6 @@ def read_raster_data(filename, driver=None, **kwargs):
     dataset1 = None
 
     return coords, values
-
-
-def write_raster_data(fpath, dataset, format, options=None):
-    """ Write raster dataset to file format
-
-    Parameters
-    ----------
-    fpath : string
-        A file path - should have file extension corresponding to format.
-    dataset : gdal.Dataset
-        gdal raster dataset
-    format : string
-        gdal raster format string
-        see `formats_list <http://www.gdal.org/formats_list.html>`_.
-    options : list
-        list of option strings for the corresponding format
-    """
-    # check for option list
-    if options is None:
-        options = []
-
-    driver = gdal.GetDriverByName(format)
-
-    metadata = driver.GetMetadata()
-
-    # check driver capability
-    if 'DCAP_CREATECOPY' in metadata and metadata['DCAP_CREATECOPY'] != 'YES':
-        assert "Driver %s doesn't support CreateCopy() method.".format(format)
-
-    target = driver.CreateCopy(fpath, dataset, 0, options)
-    del target
 
 
 def open_shape(filename, driver=None):

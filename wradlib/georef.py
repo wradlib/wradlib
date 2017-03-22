@@ -1931,6 +1931,8 @@ def dist_from_orbit(pr_alt, alpha, r_pr_inv):
 def create_raster_dataset(data, coords, projection=None, nodata=-9999):
     """ Create In-Memory Raster Dataset
 
+    .. versionadded 0.10.0
+
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
