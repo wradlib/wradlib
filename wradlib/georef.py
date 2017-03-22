@@ -1141,14 +1141,14 @@ def read_gdal_projection(dset):
     See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
 
     """
-    proj4 = dset.GetProjection()
+    wkt = dset.GetProjection()
     srs = osr.SpatialReference()
-    srs.ImportFromProj4(proj4)
+    srs.ImportFromWkt(wkt)
     # src = None
     return srs
 
 
-def read_gdal_values(data=None, nodata=False):
+def read_gdal_values(dataset=None, nodata=None):
     """Read values from a gdal object.
 
     Parameters
@@ -1168,14 +1168,21 @@ def read_gdal_values(data=None, nodata=False):
     See :ref:`notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
 
     """
+    nbands = dataset.RasterCount
 
-    b1 = data.GetRasterBand(1)
-    values = b1.ReadAsArray()
-    if nodata:
-        nodata = b1.GetNoDataValue()
-        values = values.astype('float')
-        values[values == nodata] = np.nan
-    return (values)
+    # data values
+    bands = []
+    for i in range(nbands):
+        band = dataset.GetRasterBand(i + 1)
+        nd = band.GetNoDataValue()
+        data = band.ReadAsArray()
+        data[data == nd] = nodata
+        if nodata is not None:
+            nodata = band.GetNoDataValue()
+            data[data == nodata] = nodata
+        bands.append(data)
+
+    return np.squeeze(np.dstack(bands))
 
 
 def reproject(*args, **kwargs):
@@ -2009,6 +2016,24 @@ def set_raster_origin(data, coords, direction):
         data = np.flipud(data)
         coords = np.flipud(coords) + [0, y_sp]
     return data, coords
+
+
+def extract_raster_dataset(dataset, nodata=None):
+    #data, coords, projection = None, nodata = -9999
+
+    # data values
+    data = read_gdal_values(dataset, nodata=nodata)
+
+    # coords
+    coordinates_pixel = pixel_coordinates(dataset.RasterXSize,
+                                          dataset.RasterYSize,
+                                          'edges')
+    coordinates = pixel_to_map(dataset.GetGeoTransform(),
+                               coordinates_pixel)
+    projection = read_gdal_projection(dataset)
+
+    return data, coordinates, projection
+
 
 
 def _doctest_():
