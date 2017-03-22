@@ -2014,10 +2014,12 @@ def set_raster_origin(data, coords, direction):
     same = (origin == direction)
     if not same:
         data = np.flipud(data)
-        # TODO: this assumes that the edge of
-        # the last row/column is missing
-        # but this may not be the case
-        coords = np.flipud(coords) + [0, y_sp]
+        coords = np.flipud(coords)
+        # we need to shift y-coordinate if data and coordinates have the same
+        # number of rows and cols
+        if data.shape[:2] == coords.shape[:2]:
+            coords += [0, y_sp]
+
     return data, coords
 
 
