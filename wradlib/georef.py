@@ -1178,7 +1178,7 @@ def read_gdal_values(dataset=None, nodata=None):
         data = band.ReadAsArray()
         if nodata is not None:
             nodata = band.GetNoDataValue()
-            data[data == nodata] = nodata
+            data[data == nd] = nodata
         bands.append(data)
 
     return np.squeeze(np.dstack(bands))
