@@ -56,7 +56,7 @@ Georeferencing
 # a - azimuth (von süden aus gezählt)
 # h - Höhe über Horizont
 
-from osgeo import gdal, osr
+from osgeo import gdal, osr, gdal_array
 import numpy as np
 from sys import exit
 import warnings
@@ -1927,6 +1927,54 @@ def dist_from_orbit(pr_alt, alpha, r_pr_inv):
     """
     return pr_alt / np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv
 
+
+def create_raster_dataset(data, coords, projection=None, nodata=-9999):
+    """ Create In-Memory Raster Dataset
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols) or (rows, cols, bands) containing
+        the data values.
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols, 2) containing xy-coordinates.
+    projection : osr object
+        Spatial reference system of the used coordinates, defaults to None.
+
+    Returns
+    -------
+    dataset : gdal.Dataset
+        In-Memory raster dataset
+
+    Note
+    ----
+    The origin of the provided data and coordinates is UPPER LEFT.
+    """
+
+    # align data
+    data = data.copy()
+    if data.ndim == 2:
+        data = data[..., np.newaxis]
+    rows, cols, bands = data.shape
+
+    # create In-Memory Raster with correct dtype
+    mem_drv = gdal.GetDriverByName('MEM')
+    dataset = mem_drv.Create('', cols, rows, bands,
+                        gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype))
+
+    # initialize geotransform
+    x_ps, y_ps = coords[1, 1] - coords[0, 0]
+    geotran = [coords[0, 0, 0], x_ps, 0, coords[0, 0, 1], 0, y_ps]
+    dataset.SetGeoTransform(geotran)
+
+    if projection:
+        dataset.SetProjection(projection.ExportToWkt())
+
+    dataset.GetRasterBand(1).SetNoDataValue(nodata)
+    for i in range(bands):
+        dataset.GetRasterBand(i + 1).WriteArray(data[..., i])
+
+    return dataset
 
 def _doctest_():
     import doctest
