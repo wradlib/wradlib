@@ -15,6 +15,7 @@ import getopt
 import unittest
 import doctest
 import inspect
+from multiprocessing import Process, Queue
 
 VERBOSE = 2
 
@@ -80,12 +81,18 @@ def create_notebooks_testsuite():
             f = f[:-3]
             files.append(f)
 
-    # create empty testsuite
-    suite = unittest.TestSuite()
-    # add NotebookTests
-    suite.addTests(NotebookTest(input) for input in files)
+    # create one TestSuite per Notebook to treat testrunners
+    # memory overconsumption
+    suites = []
+    for file in files:
+        print(file)
+        if file != 'notebooks.attenuation.wradlib_attenuation':
+            continue
+        suite = unittest.TestSuite()
+        suite.addTest(NotebookTest(file))
+        suites.append(suite)
 
-    return suite
+    return suites
 
 
 def create_doctest_testsuite():
@@ -128,6 +135,11 @@ def create_unittest_testsuite():
     suite = [unittest.defaultTestLoader.loadTestsFromName(str)
              for str in files]
     return suite
+
+
+def single_suite_process(queue, test, verbosity):
+    res = unittest.TextTestRunner(verbosity=verbosity).run(test)
+    queue.put(res.wasSuccessful())
 
 
 def main(args):
@@ -225,18 +237,23 @@ def main(args):
     elif test_examples:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
     elif test_notebooks:
-        testSuite.append(unittest.TestSuite(create_notebooks_testsuite()))
+        testSuite.extend(create_notebooks_testsuite())
     elif test_docs:
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
     elif test_units:
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
 
     all_success = 1
-    for ts in testSuite:
-        result = unittest.TextTestRunner(verbosity=verbosity).run(ts)
+    for test in testSuite:
+        queue = Queue()
+        proc = Process(target=single_suite_process, args=(queue, test,
+                                                          verbosity))
+        proc.start()
+        result = queue.get()
+        proc.join()
         # if any test suite was not successful,
         # all_success should be 0 in the end
-        all_success = all_success & result.wasSuccessful()
+        all_success = all_success & result
 
     if all_success:
         sys.exit(0)

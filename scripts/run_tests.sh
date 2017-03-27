@@ -2,14 +2,17 @@
 # Copyright (c) 2017, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+Xvfb :99 &
+export DISPLAY=:99
+
 if [[ "$COVERAGE" == "true" ]]; then
-    xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
-    xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -d
-    xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -e
-    xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
+    coverage run --source wradlib testrunner.py -u
+    coverage run -a --source wradlib testrunner.py -d
+    coverage run -a --source wradlib testrunner.py -e
+    coverage run -a --source wradlib testrunner.py -n
 else
-    xvfb-run -a -w 5 python testrunner.py -u
-    xvfb-run -a -w 5 python testrunner.py -d
-    xvfb-run -a -w 5 python testrunner.py -e
-    xvfb-run -a -w 5 python testrunner.py -n
+    python testrunner.py -u
+    python testrunner.py -d
+    python testrunner.py -e
+    python testrunner.py -n
 fi
