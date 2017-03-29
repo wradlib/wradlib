@@ -2,14 +2,25 @@
 # Copyright (c) 2017, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+exit_status=0
+
 if [[ "$COVERAGE" == "true" ]]; then
-    xvfb-run -a -w 5 coverage run --source wradlib testrunner.py -u
-    xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -d
-    xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -e
-    xvfb-run -a -w 5 coverage run -a --source wradlib testrunner.py -n
+    #export COVERAGE_PROCESS_START=".coveragerc"
+    coverage run --source wradlib testrunner.py -u
+    (( exit_status = ($? || $exit_status) ))
+    coverage run --source wradlib testrunner.py -d
+    (( exit_status = ($? || $exit_status) ))
+    coverage run --source wradlib testrunner.py -e
+    (( exit_status = ($? || $exit_status) ))
+    coverage run --source wradlib testrunner.py -n
+    (( exit_status = ($? || $exit_status) ))
+    coverage combine
+
 else
-    xvfb-run -a -w 5 python testrunner.py -u
-    xvfb-run -a -w 5 python testrunner.py -d
-    xvfb-run -a -w 5 python testrunner.py -e
-    xvfb-run -a -w 5 python testrunner.py -n
+    python testrunner.py -u
+    python testrunner.py -d
+    python testrunner.py -e
+    python testrunner.py -n
 fi
+
+exit $exit_status
