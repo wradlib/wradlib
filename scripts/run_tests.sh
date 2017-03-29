@@ -22,3 +22,5 @@ else
     python testrunner.py -e
     python testrunner.py -n
 fi
+
+exit $exit_status
