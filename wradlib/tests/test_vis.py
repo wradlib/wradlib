@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-# Copyright (c) 2016, wradlib developers.
+# Copyright (c) 2016-2017, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import sys
 import unittest
 
 import wradlib.vis as vis
@@ -57,6 +58,10 @@ class PolarPlotTest(unittest.TestCase):
         cgax, pm = vis.plot_ppi(self.img, refrac=False, cg=True)
         cgax, pm = vis.plot_ppi(self.img, func='contour', cg=True)
         cgax, pm = vis.plot_ppi(self.img, func='contourf', cg=True)
+
+    @unittest.skipIf(sys.version_info < (3, 5),
+                     "not supported in this python version")
+    def test_plot_cg_ppi_py3k(self):
         with self.assertWarns(UserWarning):
             cgax, pm = vis.plot_ppi(self.img, func='contourf',
                                     proj=self.proj, cg=True)
