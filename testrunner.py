@@ -1,11 +1,11 @@
 # ------------------------------------------------------------------------------
-# Name:        runtest.py
-# Purpose:     testrunner for unittest, doctest and examples test
+# Name:        testrunner.py
+# Purpose:     testrunner for unittest, doctest, examples and notebook tests
 #
 # Author:      Kai Muehlbauer
 #
 # Created:     03.03.2014
-# Copyright:   (c) Kai Muehlbauer 2014
+# Copyright:   (c) wradlib developers 2017
 # Licence:     The MIT License
 # ------------------------------------------------------------------------------
 
@@ -15,6 +15,7 @@ import getopt
 import unittest
 import doctest
 import inspect
+from multiprocessing import Process, Queue
 
 VERBOSE = 2
 
@@ -80,12 +81,15 @@ def create_notebooks_testsuite():
             f = f[:-3]
             files.append(f)
 
-    # create empty testsuite
-    suite = unittest.TestSuite()
-    # add NotebookTests
-    suite.addTests(NotebookTest(input) for input in files)
+    # create one TestSuite per Notebook to treat testrunners
+    # memory overconsumption on travis-ci
+    suites = []
+    for file in files:
+        suite = unittest.TestSuite()
+        suite.addTest(NotebookTest(file))
+        suites.append(suite)
 
-    return suite
+    return suites
 
 
 def create_doctest_testsuite():
@@ -128,6 +132,11 @@ def create_unittest_testsuite():
     suite = [unittest.defaultTestLoader.loadTestsFromName(str)
              for str in files]
     return suite
+
+
+def single_suite_process(queue, test, verbosity):
+    res = unittest.TextTestRunner(verbosity=verbosity).run(test)
+    queue.put(res.wasSuccessful())
 
 
 def main(args):
@@ -225,18 +234,22 @@ def main(args):
     elif test_examples:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
     elif test_notebooks:
-        testSuite.append(unittest.TestSuite(create_notebooks_testsuite()))
+        testSuite.extend(unittest.TestSuite(create_notebooks_testsuite()))
     elif test_docs:
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
     elif test_units:
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
 
     all_success = 1
-    for ts in testSuite:
-        result = unittest.TextTestRunner(verbosity=verbosity).run(ts)
-        # if any test suite was not successful,
+    for test in testSuite:
+        queue = Queue()
+        proc = Process(target=single_suite_process, args=(queue, test,
+                                                          verbosity))
+        proc.start()
+        result = queue.get()
+        proc.join()
         # all_success should be 0 in the end
-        all_success = all_success & result.wasSuccessful()
+        all_success = all_success & result
 
     if all_success:
         sys.exit(0)

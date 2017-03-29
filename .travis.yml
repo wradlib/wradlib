@@ -39,6 +39,9 @@ before_script:
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
     - scripts/convert_notebooks.sh
+    - export DISPLAY=:99
+    - sh -e /etc/init.d/xvfb start
+    - sleep 3
 
 script:
     - scripts/run_tests.sh
