@@ -8,7 +8,7 @@ import wradlib.georef as georef
 import wradlib.util as util
 from wradlib.io import read_generic_hdf5, open_raster
 import numpy as np
-from osgeo import gdal, ogr, osr
+from osgeo import gdal, osr
 
 
 class CoordinateTransformTest(unittest.TestCase):
@@ -314,31 +314,21 @@ class GdalTests(unittest.TestCase):
          self.proj) = georef.extract_raster_dataset(self.ds)
 
     def test_read_gdal_coordinates(self):
-        coords = georef.read_gdal_coordinates(self.ds)
+        georef.read_gdal_coordinates(self.ds)
 
     def test_read_gdal_projection(self):
-        proj = georef.read_gdal_projection(self.ds)
+        georef.read_gdal_projection(self.ds)
 
     def test_read_gdal_values(self):
-        values = georef.read_gdal_values(self.ds)
+        georef.read_gdal_values(self.ds)
 
     def test_reproject_raster_dataset(self):
-        ds1 = georef.reproject_raster_dataset(self.ds, spacing=0.005,
-                                              resample=gdal.GRA_Bilinear,
-                                              align=True)
+        georef.reproject_raster_dataset(self.ds, spacing=0.005,
+                                        resample=gdal.GRA_Bilinear,
+                                        align=True)
 
     def test_resample_raster_dataset(self):
-        ds1 = georef.resample_raster_dataset(self.ds, spacing=0.005)
-        pass
-
-    def test_get_shape_points(self):
-        pass
-
-    def test_transform_geometry(self):
-        pass
-
-    def test_get_shape_coordinates(self):
-        pass
+        georef.resample_raster_dataset(self.ds, spacing=0.005)
 
     def test_create_raster_dataset(self):
         data, coords = georef.set_raster_origin(self.data.copy(),
@@ -366,7 +356,6 @@ class GdalTests(unittest.TestCase):
 
     def test_extract_raster_dataset(self):
         data, coords, proj = georef.extract_raster_dataset(self.ds)
-        pass
 
 
 class GetGridsTest(unittest.TestCase):

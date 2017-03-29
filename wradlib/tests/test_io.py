@@ -438,7 +438,8 @@ class RasterTest(unittest.TestCase):
     def test_open_raster(self):
         filename = 'geo/bonn_new.tif'
         geofile = wrl.util.get_wradlib_data_file(filename)
-        ds = wrl.io.open_raster(geofile)
+        wrl.io.open_raster(geofile)
+
 
 if __name__ == '__main__':
     unittest.main()
