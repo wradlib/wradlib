@@ -1,7 +1,8 @@
 # !/usr/bin/env python
-# Copyright (c) 2016, wradlib developers.
+# Copyright (c) 2016-2017, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import sys
 import unittest
 import wradlib.georef as georef
 import wradlib.util as util
@@ -183,11 +184,13 @@ class CoordinateHelperTest(unittest.TestCase):
         self.assertRaises(ValueError,
                           lambda: georef._check_polar_coords(r, az))
 
-        # only py3k
-        # r = np.array([50., 100., 150., 200.])
-        # az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
-        # self.assertWarns(UserWarning,
-        #                  lambda: georef._check_polar_coords(r, az))
+    @unittest.skipIf(sys.version_info < (3, 5),
+                     "not supported in this python version")
+    def test__check_polar_coords_py3k(self):
+        r = np.array([50., 100., 150., 200.])
+        az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
+        self.assertWarns(UserWarning,
+                         lambda: georef._check_polar_coords(r, az))
 
 
 class ProjectionsTest(unittest.TestCase):
