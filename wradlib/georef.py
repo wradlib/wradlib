@@ -2156,10 +2156,10 @@ def set_raster_origin(data, coords, direction):
     same = (origin == direction)
     if not same:
         data = np.flip(data, axis=-2)
-        coords = np.flip(coords, axis=-2)
+        coords = np.flip(coords, axis=-3)
         # we need to shift y-coordinate if data and coordinates have the same
         # number of rows and cols
-        if data.shape[1:] == coords.shape[:2]:
+        if data.shape[-2:] == coords.shape[:2]:
             coords += [0, y_sp]
 
     return data, coords
