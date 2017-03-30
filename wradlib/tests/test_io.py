@@ -408,7 +408,7 @@ class RainbowTest(unittest.TestCase):
             self.assertEqual(data.shape[1], int(rbblob['@bins']))
             self.assertRaises(IOError,
                               lambda: wrl.io.get_RB_blob_from_file('rb_fh',
-                                                               rbblob))
+                                                                   rbblob))
 
     def test_get_RB_file_as_string(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
