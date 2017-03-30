@@ -1639,8 +1639,6 @@ def get_RB_header(fid):
         if len(line) == 0:
             break
 
-    #fid.close()
-
     xmltodict = util.import_optional('xmltodict')
 
     return xmltodict.parse(header)
