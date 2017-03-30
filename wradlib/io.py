@@ -1559,8 +1559,10 @@ def get_RB_blob_from_file(fid, blobdict):
         Content of blob as numpy array
     """
 
-    datastring = fid.read()
-    fid.close()
+    try:
+        datastring = fid.read()
+    except:
+        raise IOError('Could not read from file handle')
 
     data = get_RB_blob_from_string(datastring, blobdict)
 
@@ -1581,8 +1583,10 @@ def get_RB_file_as_string(fid):
         File Contents as dataString
     """
 
-    dataString = fid.read()
-    fid.close()
+    try:
+        dataString = fid.read()
+    except:
+        raise IOError('Could not read from file handle')
 
     return dataString
 
@@ -1633,11 +1637,15 @@ def get_RB_header(fid):
     endXMLmarker = b"<!-- END XML -->"
     header = b""
     line = b""
-    while not line.startswith(endXMLmarker):
-        header += line[:-1]
-        line = fid.readline()
-        if len(line) == 0:
-            break
+
+    try:
+        while not line.startswith(endXMLmarker):
+            header += line[:-1]
+            line = fid.readline()
+            if len(line) == 0:
+                break
+    except:
+        raise IOError('Could not read from file handle')
 
     xmltodict = util.import_optional('xmltodict')
 
