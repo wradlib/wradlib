@@ -307,7 +307,17 @@ class RadolanTest(unittest.TestCase):
 
 class RainbowTest(unittest.TestCase):
     def test_read_rainbow(self):
-        pass
+        filename = 'rainbow/2013070308340000dBuZ.azi'
+        rb_file = wrl.util.get_wradlib_data_file(filename)
+        # Test reading from file name
+        rb_dict = wrl.io.read_Rainbow(rb_file)
+        self.assertEqual(rb_dict[u'volume'][u'@datetime'],
+                         u'2013-07-03T08:33:55')
+        # Test reading from file handle
+        with open(rb_file, 'rb') as rb_fh:
+            rb_dict = wrl.io.read_Rainbow(rb_fh)
+            self.assertEqual(rb_dict[u'volume'][u'@datetime'],
+                             u'2013-07-03T08:33:55')
 
     def test_find_key(self):
         indict = {'A': {'AA': {'AAA': 0, 'X': 1},
