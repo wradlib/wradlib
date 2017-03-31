@@ -6,21 +6,21 @@ exit_status=0
 
 if [[ "$COVERAGE" == "true" ]]; then
     #export COVERAGE_PROCESS_START=".coveragerc"
-    coverage run --source wradlib testrunner.py -u
+    coverage run --source wradlib testrunner.py -u -s
     (( exit_status = ($? || $exit_status) ))
-    coverage run --source wradlib testrunner.py -d
+    coverage run --source wradlib testrunner.py -d -s
     (( exit_status = ($? || $exit_status) ))
-    coverage run --source wradlib testrunner.py -e
+    coverage run --source wradlib testrunner.py -e -s
     (( exit_status = ($? || $exit_status) ))
-    coverage run --source wradlib testrunner.py -n
+    coverage run --source wradlib testrunner.py -n -s
     (( exit_status = ($? || $exit_status) ))
     coverage combine
 
 else
-    python testrunner.py -u
-    python testrunner.py -d
-    python testrunner.py -e
-    python testrunner.py -n
+    python testrunner.py -u -s
+    python testrunner.py -d -s
+    python testrunner.py -e -s
+    python testrunner.py -n -s
 fi
 
 exit $exit_status
