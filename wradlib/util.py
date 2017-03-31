@@ -19,6 +19,8 @@ attributable to the other modules
    from_to
    filter_window_polar
    filter_window_cartesian
+   find_bbox_indices
+   get_raster_origin
    calculate_polynomial
 
 """
@@ -1315,6 +1317,23 @@ def half_power_radius(r, bwhalf):
     return Rhalf
 
 
+def get_raster_origin(coords):
+    """
+
+    Parameters
+    ----------
+    coords : :class:`numpy:numpy.ndarray`
+        3 dimensional array (rows, cols, 2) of xy-coordinates
+
+    Returns
+    -------
+    out : str
+        'lower' or 'upper'
+
+    """
+    return 'lower' if (coords[1, 1] - coords[0, 0])[1] > 0 else 'upper'
+
+
 def find_bbox_indices(coords, bbox):
     """
     Find min/max-indices for NxMx2 array coords using bbox-values.
@@ -1324,6 +1343,10 @@ def find_bbox_indices(coords, bbox):
     after urx,ury. If no index is found 0 and N/M is returned.
 
     .. versionadded:: 0.6.0
+
+    .. versionchanged:: 0.10.0
+       Find indices no matter if the coordinate origin is `lower` or `upper`.
+
 
     Parameters
     ----------
@@ -1338,23 +1361,41 @@ def find_bbox_indices(coords, bbox):
         4-element tuple of int (llx,lly,urx,ury)
     """
 
-    # find indices
-    llx = np.searchsorted(coords[0, :, 0], bbox[0], side='left')
-    urx = np.searchsorted(coords[0, :, 0], bbox[2], side='right')
-    lly = np.searchsorted(coords[:, 0, 1], bbox[1], side='left')
-    ury = np.searchsorted(coords[:, 0, 1], bbox[3], side='right')
+    # sort arrays
+    x_sort = np.argsort(coords[0, :, 0])
+    y_sort = np.argsort(coords[:, 0, 1])
+
+    # find indices in sorted arrays
+    llx = np.searchsorted(coords[0, :, 0], bbox[0], side='left',
+                          sorter=x_sort)
+    urx = np.searchsorted(coords[0, :, 0], bbox[2], side='right',
+                          sorter=x_sort)
+    lly = np.searchsorted(coords[:, 0, 1], bbox[1], side='left',
+                          sorter=y_sort)
+    ury = np.searchsorted(coords[:, 0, 1], bbox[3], side='right',
+                          sorter=y_sort)
+
+    # get indices in original array
+    if llx < len(x_sort):
+        llx = x_sort[llx]
+    if urx < len(x_sort):
+        urx = x_sort[urx]
+    if lly < len(y_sort):
+        lly = y_sort[lly]
+    if ury < len(y_sort):
+        ury = y_sort[ury]
 
     # check at boundaries
     if llx:
         llx -= 1
-    if lly:
-        lly -= 1
-    if urx < coords.shape[1]:
-        urx += 1
-    if ury < coords.shape[0]:
-        ury += 1
+    if get_raster_origin(coords) is 'lower':
+        if lly:
+            lly -= 1
+    else:
+        if lly < coords.shape[0]:
+            lly += 1
 
-    bbind = (llx, lly, urx, ury)
+    bbind = (llx, min(lly, ury), urx, max(lly, ury))
 
     return bbind
 

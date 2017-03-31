@@ -262,9 +262,9 @@ DataSource`.
         cols = int((x_max - x_min) / pixel_size)
         rows = int((y_max - y_min) / pixel_size)
 
+        mem_drv = gdal.GetDriverByName('MEM')
         # Todo: at the moment, always writing floats
-        ds_out = gdal_create_dataset(driver, filename, cols, rows,
-                                     gdal.GDT_Float32, remove=remove)
+        ds_out = mem_drv.Create('', cols, rows, 1, gdal.GDT_Float32)
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
         proj = layer.GetSpatialRef()
         if proj is None:
@@ -273,7 +273,7 @@ DataSource`.
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
-        print("Rasterizing Layer")
+        print("Rasterize layers")
         if attr is not None:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
                                 options=["ATTRIBUTE={0}".format(attr),
@@ -283,6 +283,8 @@ DataSource`.
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
                                 options=["ALL_TOUCHED=TRUE"],
                                 callback=gdal.TermProgress)
+
+        io.write_raster_dataset(filename, ds_out, driver, remove=remove)
 
         del ds_out
 

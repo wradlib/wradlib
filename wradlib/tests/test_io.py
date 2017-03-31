@@ -12,7 +12,7 @@ import datetime
 import io
 
 
-class IOTest(unittest.TestCase):
+class DXTest(unittest.TestCase):
     # testing functions related to readDX
     def test__getTimestampFromFilename(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
@@ -36,6 +36,8 @@ class IOTest(unittest.TestCase):
     def test_readDX(self):
         pass
 
+
+class IOTest(unittest.TestCase):
     def test_writePolygon2Text(self):
         poly1 = [[0., 0., 0., 0.], [0., 1., 0., 1.], [1., 1., 0., 2.],
                  [0., 0., 0., 0.]]
@@ -424,6 +426,19 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rb_header['volume']['@version'], '5.34.16')
         self.assertRaises(IOError,
                           lambda: wrl.io.get_RB_header('rb_file'))
+
+
+class RasterTest(unittest.TestCase):
+    def test_write_raster_dataset(self):
+        filename = 'geo/bonn_new.tif'
+        geofile = wrl.util.get_wradlib_data_file(filename)
+        ds = wrl.io.open_raster(geofile)
+        wrl.io.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid')
+
+    def test_open_raster(self):
+        filename = 'geo/bonn_new.tif'
+        geofile = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.open_raster(geofile)
 
 
 if __name__ == '__main__':
