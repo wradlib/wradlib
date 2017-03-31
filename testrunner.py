@@ -158,7 +158,7 @@ def main(args):
             Run each suite as separate instance
 
         -e
-        --examples
+        --example
             Run only examples tests
 
         -d
@@ -168,6 +168,10 @@ def main(args):
         -u
         --unit
             Run only unit test
+
+        -s
+        --use-subprocess
+            Run every testsuite in a subprocess.
 
         -v level
             Set the level of verbosity.
@@ -186,12 +190,13 @@ def main(args):
     test_docs = 0
     test_notebooks = 0
     test_units = 0
+    test_subprocess = 0
     verbosity = VERBOSE
 
     try:
-        options, arg = getopt.getopt(args, 'aednuhv:',
-                                     ['all', 'examples', 'docs',
-                                      'notebooks', 'units', 'help'])
+        options, arg = getopt.getopt(args, 'aednushv:',
+                                     ['all', 'example', 'doc',
+                                      'notebook', 'unit', 'use-subprocess', 'help'])
     except getopt.GetoptError as e:
         err_exit(e.msg)
 
@@ -200,14 +205,16 @@ def main(args):
     for name, value in options:
         if name in ('-a', '--all'):
             test_all = 1
-        elif name in ('-e', '--examples'):
+        elif name in ('-e', '--example'):
             test_examples = 1
-        elif name in ('-d', '--docs'):
+        elif name in ('-d', '--doc'):
             test_docs = 1
-        elif name in ('-n', '--notebooks'):
+        elif name in ('-n', '--notebook'):
             test_notebooks = 1
-        elif name in ('-u', '--units'):
+        elif name in ('-u', '--unit'):
             test_units = 1
+        elif name in ('-s', '--use-subprocess'):
+            test_subprocess = 1
         elif name in ('-h', '--help'):
             err_exit(usage_message, 0)
         elif name == '-v':
@@ -241,15 +248,21 @@ def main(args):
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
 
     all_success = 1
-    for test in testSuite:
-        queue = Queue()
-        proc = Process(target=single_suite_process, args=(queue, test,
-                                                          verbosity))
-        proc.start()
-        result = queue.get()
-        proc.join()
-        # all_success should be 0 in the end
-        all_success = all_success & result
+    if test_subprocess:
+        for test in testSuite:
+            queue = Queue()
+            proc = Process(target=single_suite_process, args=(queue, test,
+                                                              verbosity))
+            proc.start()
+            result = queue.get()
+            proc.join()
+            # all_success should be 0 in the end
+            all_success = all_success & result
+    else:
+        for test in testSuite:
+            result = unittest.TextTestRunner(verbosity=verbosity).run(test)
+            # all_success should be 0 in the end
+            all_success = all_success & result.wasSuccessful()
 
     if all_success:
         sys.exit(0)
