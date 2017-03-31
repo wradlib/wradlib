@@ -196,7 +196,8 @@ def main(args):
     try:
         options, arg = getopt.getopt(args, 'aednushv:',
                                      ['all', 'example', 'doc',
-                                      'notebook', 'unit', 'use-subprocess', 'help'])
+                                      'notebook', 'unit', 'use-subprocess',
+                                      'help'])
     except getopt.GetoptError as e:
         err_exit(e.msg)
 
