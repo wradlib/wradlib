@@ -352,7 +352,7 @@ class GdalTests(unittest.TestCase):
         data, coords = georef.set_raster_origin(self.data.copy(),
                                                 self.coords.copy(), 'lower')
         np.testing.assert_array_equal(data, np.flip(self.data, axis=-2))
-        np.testing.assert_array_equal(coords, np.flip(self.coords, axis=-2))
+        np.testing.assert_array_equal(coords, np.flip(self.coords, axis=-3))
 
     def test_extract_raster_dataset(self):
         data, coords, proj = georef.extract_raster_dataset(self.ds)
