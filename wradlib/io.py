@@ -1542,15 +1542,15 @@ def get_RB_blob_from_string(datastring, blobdict):
     return data
 
 
-def get_RB_blob_from_file(fid, blobdict):
+def get_RB_blob_from_file(f, blobdict):
     """
     Read BLOB data from file and return it with correct
     dataWidth and shape
 
     Parameters
     ----------
-    fid : file handle
-        File handle of Data File
+    f : string or file handle
+        File handle of or path to Rainbow file
     blobdict : dict
         Blob Dict
 
@@ -1560,10 +1560,21 @@ def get_RB_blob_from_file(fid, blobdict):
         Content of blob as numpy array
     """
 
+    # Try to read the data from a file handle
     try:
+        f.seek(0, 0)
+        fid = f
         datastring = fid.read()
-    except:
-        raise IOError('Could not read from file handle')
+    except AttributeError:
+        # If we did not get a file handle, assume that we got a filename,
+        # get a file handle and read the data
+        try:
+            fid = open(f, "rb")
+            datastring = fid.read()
+            fid.close()
+        except IOError:
+            print("WRADLIB: Error opening Rainbow file ", f)
+            raise IOError
 
     data = get_RB_blob_from_string(datastring, blobdict)
 
@@ -1653,7 +1664,6 @@ def get_RB_header(fid):
     return xmltodict.parse(header)
 
 
-@util.apichange_kwarg('0.9.2', par='filename', typ=str, expar='f')
 def read_Rainbow(f, loaddata=True):
     """Reads Rainbow files files according to their structure
 
@@ -1684,6 +1694,9 @@ def read_Rainbow(f, loaddata=True):
     --------
 
     See :ref:`notebooks/fileio/wradlib_load_rainbow_example.ipynb`.
+
+    .. versionchanged 0.10.0
+       Added reading from file handles.
 
     """
 
