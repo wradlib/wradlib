@@ -218,8 +218,7 @@ class FindBboxIndicesTest(unittest.TestCase):
                                                self.grid.shape[0]]))
 
         bbind = util.find_bbox_indices(self.grid, self.inside1)
-        self.assertTrue(np.array_equal(bbind, [0, 0, self.grid.shape[1],
-                                               self.grid.shape[0]]))
+        self.assertTrue(np.array_equal(bbind, [0, 0, 5, 8]))
 
         bbind = util.find_bbox_indices(self.grid, self.inside2)
-        self.assertTrue(np.array_equal(bbind, [1, 1, 5, 8]))
+        self.assertTrue(np.array_equal(bbind, [1, 1, 4, 7]))

@@ -40,8 +40,9 @@ from scipy.interpolate import LinearNDInterpolator
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.interpolate import griddata
 import numpy as np
-import wradlib.util as util
 import warnings
+
+from . import util as util
 
 
 class MissingSourcesError(Exception):
@@ -1099,6 +1100,9 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
 
     .. versionadded:: 0.6.0
 
+    .. versionchanged:: 0.10.0
+       Accept data/coords with origin 'lower' or 'upper'.
+
     Keyword arguments are fed through to
     :func:`scipy:scipy.ndimage.map_coordinates`
 
@@ -1142,7 +1146,12 @@ Read-DEM-Raster-Data`.
     # can be transferred into separate function
     # if necessary
     xi = (nx - 1) * (xi - cxmin) / (cxmax - cxmin)
-    yi = (ny - 1) * (yi - cymin) / (cymax - cymin)
+
+    # check origin to calculate y index
+    if util.get_raster_origin(cartgrid) is 'lower':
+        yi = (ny - 1) * (yi - cymin) / (cymax - cymin)
+    else:
+        yi = ny - (ny - 1) * (yi - cymin) / (cymax - cymin)
 
     # interpolation by map_coordinates
     interp = map_coordinates(values, [yi, xi], **kwargs)

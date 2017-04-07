@@ -6,9 +6,9 @@ import sys
 import unittest
 import wradlib.georef as georef
 import wradlib.util as util
-from wradlib.io import read_generic_hdf5
+from wradlib.io import read_generic_hdf5, open_raster
 import numpy as np
-from osgeo import osr
+from osgeo import gdal, osr
 
 
 class CoordinateTransformTest(unittest.TestCase):
@@ -305,26 +305,57 @@ class PixMapTest(unittest.TestCase):
 
 
 class GdalTests(unittest.TestCase):
+    def setUp(self):
+        filename = 'geo/bonn_new.tif'
+        geofile = util.get_wradlib_data_file(filename)
+        self.ds = open_raster(geofile)
+        (self.data,
+         self.coords,
+         self.proj) = georef.extract_raster_dataset(self.ds)
+
     def test_read_gdal_coordinates(self):
-        pass
+        georef.read_gdal_coordinates(self.ds)
 
     def test_read_gdal_projection(self):
-        pass
+        georef.read_gdal_projection(self.ds)
 
     def test_read_gdal_values(self):
-        pass
+        georef.read_gdal_values(self.ds)
+
+    def test_reproject_raster_dataset(self):
+        georef.reproject_raster_dataset(self.ds, spacing=0.005,
+                                        resample=gdal.GRA_Bilinear,
+                                        align=True)
 
     def test_resample_raster_dataset(self):
-        pass
+        georef.resample_raster_dataset(self.ds, spacing=0.005)
 
-    def test_get_shape_points(self):
-        pass
+    def test_create_raster_dataset(self):
+        data, coords = georef.set_raster_origin(self.data.copy(),
+                                                self.coords.copy(),
+                                                'upper')
+        ds = georef.create_raster_dataset(data,
+                                          coords,
+                                          projection=self.proj,
+                                          nodata=-32768)
 
-    def test_transform_geometry(self):
-        pass
+        data, coords, proj = georef.extract_raster_dataset(ds)
+        np.testing.assert_array_equal(data, self.data)
+        np.testing.assert_array_almost_equal(coords, self.coords)
+        self.assertEqual(proj.ExportToWkt(), self.proj.ExportToWkt())
 
-    def test_get_shape_coordinates(self):
-        pass
+    def test_set_raster_origin(self):
+        data, coords = georef.set_raster_origin(self.data.copy(),
+                                                self.coords.copy(), 'upper')
+        np.testing.assert_array_equal(data, self.data)
+        np.testing.assert_array_equal(coords, self.coords)
+        data, coords = georef.set_raster_origin(self.data.copy(),
+                                                self.coords.copy(), 'lower')
+        np.testing.assert_array_equal(data, np.flip(self.data, axis=-2))
+        np.testing.assert_array_equal(coords, np.flip(self.coords, axis=-3))
+
+    def test_extract_raster_dataset(self):
+        data, coords, proj = georef.extract_raster_dataset(self.ds)
 
 
 class GetGridsTest(unittest.TestCase):
