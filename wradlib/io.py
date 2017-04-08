@@ -1542,15 +1542,15 @@ def get_RB_blob_from_string(datastring, blobdict):
     return data
 
 
-def get_RB_blob_from_file(filename, blobdict):
+def get_RB_blob_from_file(f, blobdict):
     """
     Read BLOB data from file and return it with correct
     dataWidth and shape
 
     Parameters
     ----------
-    filename : string
-        Filename of Data File
+    f : string or file handle
+        File handle of or path to Rainbow file
     blobdict : dict
         Blob Dict
 
@@ -1559,53 +1559,58 @@ def get_RB_blob_from_file(filename, blobdict):
     data : numpy array
         Content of blob as numpy array
     """
-    try:
-        fid = open(filename, "rb")
-    except IOError:
-        print("WRADLIB: Error opening Rainbow file ", filename)
-        raise IOError
 
-    datastring = fid.read()
-    fid.close()
+    # Try to read the data from a file handle
+    try:
+        f.seek(0, 0)
+        fid = f
+        datastring = fid.read()
+    except AttributeError:
+        # If we did not get a file handle, assume that we got a filename,
+        # get a file handle and read the data
+        try:
+            fid = open(f, "rb")
+            datastring = fid.read()
+            fid.close()
+        except IOError:
+            print("WRADLIB: Error opening Rainbow file ", f)
+            raise IOError
 
     data = get_RB_blob_from_string(datastring, blobdict)
 
     return data
 
 
-def get_RB_file_as_string(filename):
+def get_RB_file_as_string(fid):
     """ Read Rainbow File Contents in dataString
 
     Parameters
     ----------
-    filename : string
-        Filename of Data File
+    fid : file handle
+        File handle of Data File
 
     Returns
     -------
     dataString : string
         File Contents as dataString
     """
-    try:
-        fid = open(filename, "rb")
-    except IOError:
-        print("WRADLIB: Error opening Rainbow file ", filename)
-        raise IOError
 
-    dataString = fid.read()
-    fid.close()
+    try:
+        dataString = fid.read()
+    except:
+        raise IOError('Could not read from file handle')
 
     return dataString
 
 
-def get_RB_blobs_from_file(filename, rbdict):
+def get_RB_blobs_from_file(fid, rbdict):
     """Read all BLOBS found in given nested dict, loads them from file
     given by filename and add them to the dict at the appropriate position.
 
     Parameters
     ----------
-    filename : string
-        Filename of Data File
+    fid : file handle
+        File handle of Data File
     rbdict : dict
         Rainbow file Contents
 
@@ -1617,7 +1622,7 @@ def get_RB_blobs_from_file(filename, rbdict):
 
     blobs = list(find_key('@blobid', rbdict))
 
-    datastring = get_RB_file_as_string(filename)
+    datastring = get_RB_file_as_string(fid)
     for blob in blobs:
         data = get_RB_blob_from_string(datastring, blob)
         blob['data'] = data
@@ -1625,13 +1630,13 @@ def get_RB_blobs_from_file(filename, rbdict):
     return rbdict
 
 
-def get_RB_header(filename):
+def get_RB_header(fid):
     """Read Rainbow Header from filename, converts it to a dict and returns it
 
     Parameters
     ----------
-    filename : string
-        Filename of Data File
+    fid : file handle
+        File handle of Data File
 
     Returns
     -------
@@ -1639,31 +1644,28 @@ def get_RB_header(filename):
         Rainbow File Contents
 
     """
-    try:
-        fid = open(filename, "rb")
-    except IOError:
-        print("WRADLIB: Error opening Rainbow file ", filename)
-        raise IOError
 
     # load the header lines, i.e. the XML part
     endXMLmarker = b"<!-- END XML -->"
     header = b""
     line = b""
-    while not line.startswith(endXMLmarker):
-        header += line[:-1]
-        line = fid.readline()
-        if len(line) == 0:
-            break
 
-    fid.close()
+    try:
+        while not line.startswith(endXMLmarker):
+            header += line[:-1]
+            line = fid.readline()
+            if len(line) == 0:
+                break
+    except:
+        raise IOError('Could not read from file handle')
 
     xmltodict = util.import_optional('xmltodict')
 
     return xmltodict.parse(header)
 
 
-def read_Rainbow(filename, loaddata=True):
-    """"Reads Rainbow files files according to their structure
+def read_Rainbow(f, loaddata=True):
+    """Reads Rainbow files files according to their structure
 
     In contrast to other file readers under :meth:`wradlib.io`, this function
     will *not* return a two item tuple with (data, metadata). Instead, this
@@ -1677,8 +1679,8 @@ def read_Rainbow(filename, loaddata=True):
 
     Parameters
     ----------
-    filename : string
-        a rainbow file path
+    f : string or file handle
+        a rainbow file path or file handle of rainbow file
     loaddata : bool
         True | False, If False function returns only metadata
 
@@ -1693,12 +1695,28 @@ def read_Rainbow(filename, loaddata=True):
 
     See :ref:`notebooks/fileio/wradlib_load_rainbow_example.ipynb`.
 
+    .. versionchanged 0.10.0
+       Added reading from file handles.
+
     """
 
-    rbdict = get_RB_header(filename)
+    # Check if a file handle has been passed
+    try:
+        f.seek(0, 0)
+        fid = f
+    except AttributeError:
+        # If we did not get a file handle, assume that we got a filename and
+        #  get a file handle for the corresponding file
+        try:
+            fid = open(f, "rb")
+        except IOError:
+            print("WRADLIB: Error opening Rainbow file ", f)
+            raise IOError
+
+    rbdict = get_RB_header(fid)
 
     if loaddata:
-        rbdict = get_RB_blobs_from_file(filename, rbdict)
+        rbdict = get_RB_blobs_from_file(fid, rbdict)
 
     return rbdict
 
