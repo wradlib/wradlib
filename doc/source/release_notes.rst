@@ -9,27 +9,44 @@ You can install the latest :math:`\omega radlib` release from PyPI via ``$ pip i
 Bleeding Edge
 -------------
 
+*Nothing, so far*
+
+Version 0.10.0
+--------------
+
 **Highlights**
 
 * Added functions to match the precipitation radar of GPM/TRMM platforms with ground radar observations in 3D (:meth:`wradlib.georef.correct_parallax`, :meth:`wradlib.georef.sat2pol`, :meth:`wradlib.georef.dist_from_orbit`, :meth:`wradlib.qual.get_bb_ratio`, :meth:`wradlib.trafo.s2ku`, :meth:`wradlib.trafo.ku2s`, :meth:`wradlib.util.calculate_polynomial`, :meth:`wradlib.zonalstats.get_clip_mask`)
 * Added example notebook of GPM/TRMM-GR matching
-* revised docs and build process
+* Revised docs and build proces. Use codecov for coverage testing. Use suprocesses for testing on CI.
+* Merged :meth:`wradlib.vis.plot_cg_ppi` and :meth:`wradlib.vis.plot_cg_rhi` with :meth:`wradlib.vis.plot_ppi` and :meth:`wradlib.vis.plot_rhi`. Added contour and filled contour plotting.
+* Consolidate raster handling functions with respect to raster origin. Added :meth:`wradlib.georef.create_raster_dataset`, :meth:`wradlib.georef.extract_raster_dataset`, :meth:`wradlib.georef.set_raster_origin`, :meth:`wradlib.georef.reproject_raster_dataset`, :meth:`wradlib.io.write_raster_dataset` and :meth:`wradlib.util.get_raster_origin`.
 
 **New features**
 
 * New notebook examples covering wradlib-tour, classification
 * Added reading WX-format to RADOLAN reader
 * Enhanced :meth:`wradlib.io.read_RADOLAN_composite` to also accept file-handles
+* Enhanced :meth:`wradlib.io.read_Rainbow` to also accept file-handles
 * Added reading groups to :meth:`wradlib.io.read_generic_netcdf`
-* Added :meth:`wradlib.qual.cu_beam_block_frac` to compute cumulative beam blockage
+* Added :meth:`wradlib.qual.cum_beam_block_frac` to compute cumulative beam blockage
 * Added earth curvature display to beam blockage
+* Enhance :meth:`wradlib.georef.read_gdal_values` to read multiband data
 
 **Bugfixes**
 
 * Fix documentation inconsistencies
-* Fix calculation of pulse volume
+* Fix calculation of pulse volume in :meth:`wradlib.qual.pulse_volume`
 * Use dedicated OSR IsSame() in :meth:`wradlib.georef.transform_geometry`
-* several minor fixes
+* Fix :meth:`wradlib.util.find_bbox_indices` to account for origin.
+* Fix :meth:`wradlib.ipol.cart2irregular_spline` to account for data/coordinate origin.
+* Several minor fixes
+
+**Deprecated features**
+
+* :meth:`wradlib.io.to_AAIGrid` and :meth:`wradlib.georef.to_GeoTIFF`. Use :meth:`wradlib.io.write_raster_dataset`.
+* :meth:`wradlib.io.read_raster_dataset`
+* :meth:`wradlib.georef.resample_raster_dataset`. Use :meth:`wradlib.georef.reproject_raster_dataset`.
 
 
 Version 0.9.0
