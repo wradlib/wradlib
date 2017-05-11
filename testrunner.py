@@ -62,11 +62,12 @@ class NotebookTest(unittest.TestCase):
 
     def runTest(self):
         print(self.nbfile)
+        kernel = 'python%d' % sys.version_info[0]
         current_dir = os.path.dirname(self.nbfile)
 
         with open(self.nbfile) as f:
             nb = nbformat.read(f, as_version=4)
-            exproc = ExecutePreprocessor(timeout=300)
+            exproc = ExecutePreprocessor(kernel_name=kernel, timeout=300)
 
             try:
                 exproc.preprocess(nb, {'metadata': {'path': current_dir}})
