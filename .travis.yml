@@ -37,7 +37,7 @@ before_script:
     - flake8 .
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
-    - export WRADLIB_NOTEBOOKS=$HOME/notebooks-render
+    - export WRADLIB_NOTEBOOKS=$TRAVIS_BUILD_DIR/notebooks-render
     # duplicate notebooks folder
     - mkdir $WRADLIB_NOTEBOOKS && cp -R notebooks $WRADLIB_NOTEBOOKS/
     # convert notebooks
