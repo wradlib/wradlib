@@ -35,9 +35,12 @@ install:
 
 before_script:
     - flake8 .
-    # convert notebooks, render notebooks
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
+    - export WRADLIB_NOTEBOOKS=$HOME/notebooks-render
+    # duplicate notebooks folder
+    - mkdir $WRADLIB_NOTEBOOKS && cp -R notebooks $WRADLIB_NOTEBOOKS/
+    # convert notebooks
     - scripts/convert_notebooks.sh
     - export DISPLAY=:99
     - sh -e /etc/init.d/xvfb start
@@ -48,7 +51,7 @@ script:
 
 after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "failed"; fi
-    - if [[ "$DOC_BUILD" == "true" ]]; then scripts/render_notebooks.sh; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:

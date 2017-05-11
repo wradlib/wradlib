@@ -16,6 +16,9 @@ import unittest
 import doctest
 import inspect
 from multiprocessing import Process, Queue
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
+from nbconvert.preprocessors.execute import CellExecutionError
 
 VERBOSE = 2
 
@@ -53,32 +56,45 @@ def create_examples_testsuite():
 
 
 class NotebookTest(unittest.TestCase):
-    def __init__(self, module):
+    def __init__(self, nbfile):
         super(NotebookTest, self).__init__()
-        self.name = module
+        self.nbfile = nbfile
 
     def runTest(self):
-        print(self.name.split('.')[1:])
-        self.assertTrue(__import__(self.name))
+        print(self.nbfile)
+        current_dir = os.path.dirname(self.nbfile)
+
+        with open(self.nbfile) as f:
+            nb = nbformat.read(f, as_version=4)
+            exproc = ExecutePreprocessor(timeout=300)
+
+            try:
+                exproc.preprocess(nb, {'metadata': {'path': current_dir}})
+            except CellExecutionError as e:
+                raise e
+
+        with open(self.nbfile, 'wt') as f:
+            nbformat.write(nb, f)
+
+        self.assertTrue(True)
 
 
 def create_notebooks_testsuite():
     # gather information on notebooks
-    # all 'converted' notebooks in the notebooks folder
+    # all notebooks in the notebooks folder
     # are considered as tests
     # find notebook files in notebooks directory
-    root_dir = 'notebooks/'
+    root_dir = os.getenv('WRADLIB_NOTEBOOKS', 'notebooks/')
     files = []
-    skip = ['__init__.py']
+    skip = []
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-3:] != '.py':
+            if filename in skip or filename[-6:] != '.ipynb':
                 continue
-            if 'notebooks/.' in root:
+            # skip checkpoints
+            if '/.' in root:
                 continue
             f = os.path.join(root, filename)
-            f = f.replace('/', '.')
-            f = f[:-3]
             files.append(f)
 
     # create one TestSuite per Notebook to treat testrunners
