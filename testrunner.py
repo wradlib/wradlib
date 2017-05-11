@@ -11,6 +11,7 @@
 
 import sys
 import os
+import io
 import getopt
 import unittest
 import doctest
@@ -67,14 +68,14 @@ class NotebookTest(unittest.TestCase):
 
         with open(self.nbfile) as f:
             nb = nbformat.read(f, as_version=4)
-            exproc = ExecutePreprocessor(kernel_name=kernel, timeout=300)
+            exproc = ExecutePreprocessor(kernel_name=kernel, timeout=500)
 
             try:
                 exproc.preprocess(nb, {'metadata': {'path': current_dir}})
             except CellExecutionError as e:
                 raise e
 
-        with open(self.nbfile, 'wt') as f:
+        with io.open(self.nbfile, 'wt') as f:
             nbformat.write(nb, f)
 
         self.assertTrue(True)
