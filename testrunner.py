@@ -202,7 +202,7 @@ def main(args):
         -u
         --unit
             Run only unit test
-        
+
         -n
         --notebook
             Run only notebook test
@@ -210,7 +210,7 @@ def main(args):
         -s
         --use-subprocess
             Run every testsuite in a subprocess.
-        
+
         -c
         --coverage
             Run notebook tests with code coverage
