@@ -9,12 +9,12 @@ echo $notebooks
 
 # copy notebooks to doc/sources
 for nb in $notebooks; do
-    cp --parents $nb $TRAVIS_BUILD_DIR/doc/source/
+    cp --parents $nb $WRADLIB_BUILD_DIR/doc/source/
 done
 
 # copy images to docs too
 images=`find notebooks -path notebooks/*.ipynb_checkpoints -prune -o -name *.png -print`
 echo $images
 for im in $images; do
-    cp --parents $im $TRAVIS_BUILD_DIR/doc/source/
+    cp --parents $im $WRADLIB_BUILD_DIR/doc/source/
 done

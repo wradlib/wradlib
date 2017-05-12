@@ -7,7 +7,7 @@
 
 set -e
 
-cd "$TRAVIS_BUILD_DIR"
+cd "$WRADLIB_BUILD_DIR"
 
 # print the vars
 echo "TRAVIS_PULL_REQUEST " $TRAVIS_PULL_REQUEST
