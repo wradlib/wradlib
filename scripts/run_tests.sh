@@ -4,23 +4,41 @@
 
 exit_status=0
 
+# export location of .coveragerc
 if [[ "$COVERAGE" == "true" ]]; then
-    #export COVERAGE_PROCESS_START=".coveragerc"
-    coverage run --source wradlib testrunner.py -u -s
+    export COVERAGE_PROCESS_START=$WRADLIB_BUILD_DIR/.coveragerc
+    # run tests, retrieve exit status
+    ./testrunner.py -u -c -s
     (( exit_status = ($? || $exit_status) ))
-    coverage run --source wradlib testrunner.py -d -s
+    ./testrunner.py -d -c -s
     (( exit_status = ($? || $exit_status) ))
-    coverage run --source wradlib testrunner.py -e -s
+    ./testrunner.py -e -c -s
     (( exit_status = ($? || $exit_status) ))
-    coverage run --source wradlib testrunner.py -n -s
+    ./testrunner.py -n -c -s
     (( exit_status = ($? || $exit_status) ))
-    coverage combine
+
+    # copy .coverage files to cov-folder
+    cov=`find . -name *.coverage.* -print`
+    echo $cov
+    mkdir -p cov
+    for cv in $cov; do
+        mv $cv cov/.
+    done
+
+    # combine coverage, remove cov-folder
+    coverage combine cov
+    rm -rf cov
 
 else
-    python testrunner.py -u -s
-    python testrunner.py -d -s
-    python testrunner.py -e -s
-    python testrunner.py -n -s
+    # run tests, retrieve exit status
+    ./testrunner.py -u -s
+    (( exit_status = ($? || $exit_status) ))
+    ./testrunner.py -d -s
+    (( exit_status = ($? || $exit_status) ))
+    ./testrunner.py -e -s
+    (( exit_status = ($? || $exit_status) ))
+    ./testrunner.py -n -s
+    (( exit_status = ($? || $exit_status) ))
 fi
 
 exit $exit_status

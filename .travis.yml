@@ -12,6 +12,7 @@ env:
   global:
     # wradlib-docs
     - secure: "CjaL6vDvKqTaKClp6pqAlS7nyCN5WenEH0OS+zGvb2P7FF0bl5VU3xVZJl60OG0c7/ft/wsYSpFT9VzXZTuLo7+FOpiIuECOujYyAcFDU+NWS1YtRLYXj7z/8DV6VIl2BjQc/sOczF0Jv556UdNLOQP6b5KTxhx4xCCTHHQ1s1Lg14RVnUT+HiJGC8C5y0Fsh1GPTQywZ0aLAPWU7CQeRtsqH3PuBznRvmmfwkFKJhXAxdIj1lv9jBgwwpDgzPgPT7dMiGOkN0k8B5alMBRLB0SmEtabn1SHCSTExocze6SduxlGt1iPRJTY+VO9PxCmqDDiO8rD+Qya/TxnAU8Zgzxeq77ckG3er0dS4M6fsF/vre7E93VYRqI+e5XJCVsUzhlIoSrgq0OEa6UeRAJzahVXTFGhb/t4dpYjiW3yMwDUzK+gLYdClutBy7zIEu68h/4dwQDy9POEaL/8Zfwa0J64vJscOqTFj/9E4EjjQKVG8qT0QoIezTue6RMTK3BcBVRHSsACzemGKyIOzVjIbdxi9gLGf3wxRTiuzRzZ3SjC1LVaxzw982c/1xfrnJVhgU9pL+xb0yPvGNW8clZhVVEceuYRU+9zL77abDgBIxoUAzHB2LjDMCr2f3w89RQYQxDvmDsmLPXGyMQuLtIP1rIwC5+mydj9hP29KsIkgwQ="
+    - WRADLIB_BUILD_DIR=$TRAVIS_BUILD_DIR
 
 matrix:
     include:
@@ -35,9 +36,12 @@ install:
 
 before_script:
     - flake8 .
-    # convert notebooks, render notebooks
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
+    - export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/notebooks-render
+    # duplicate notebooks folder
+    - mkdir $WRADLIB_NOTEBOOKS && cp -R notebooks $WRADLIB_NOTEBOOKS/
+    # convert notebooks
     - scripts/convert_notebooks.sh
     - export DISPLAY=:99
     - sh -e /etc/init.d/xvfb start
@@ -48,8 +52,8 @@ script:
 
 after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "failed"; fi
-    - if [[ "$DOC_BUILD" == "true" ]]; then scripts/render_notebooks.sh; fi
-    - if [[ "$DOC_BUILD" == "true" ]]; then cd $TRAVIS_BUILD_DIR; scripts/build_docs.sh; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then cd $WRADLIB_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:
   # devel
