@@ -9,6 +9,4 @@ echo $notebooks
 # convert notebooks to python scripts
 for nb in $notebooks; do
     jupyter nbconvert --to script $nb
-    # this is for testrunner.py finding the notebook- tests
-    touch "${nb%/*}/__init__.py"
 done

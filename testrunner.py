@@ -1,21 +1,20 @@
-# ------------------------------------------------------------------------------
-# Name:        testrunner.py
-# Purpose:     testrunner for unittest, doctest, examples and notebook tests
-#
-# Author:      Kai Muehlbauer
-#
-# Created:     03.03.2014
-# Copyright:   (c) wradlib developers 2017
-# Licence:     The MIT License
-# ------------------------------------------------------------------------------
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (c) 2017, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 import sys
 import os
+import io
 import getopt
 import unittest
 import doctest
 import inspect
 from multiprocessing import Process, Queue
+import nbformat
+from nbconvert.preprocessors import ExecutePreprocessor
+from nbconvert.preprocessors.execute import CellExecutionError
+import coverage
 
 VERBOSE = 2
 
@@ -53,32 +52,59 @@ def create_examples_testsuite():
 
 
 class NotebookTest(unittest.TestCase):
-    def __init__(self, module):
+    def __init__(self, nbfile, cov):
         super(NotebookTest, self).__init__()
-        self.name = module
+        self.nbfile = nbfile
+        self.cov = cov
 
     def runTest(self):
-        print(self.name.split('.')[1:])
-        self.assertTrue(__import__(self.name))
+        print(self.nbfile)
+        kernel = 'python%d' % sys.version_info[0]
+        current_dir = os.path.dirname(self.nbfile)
+
+        with open(self.nbfile) as f:
+            nb = nbformat.read(f, as_version=4)
+            if self.cov:
+                covdict = {'cell_type': 'code', 'execution_count': 1,
+                           'metadata': {'collapsed': True}, 'outputs': [],
+                           'nbsphinx': 'hidden',
+                           'source': 'import coverage\n'
+                                     'coverage.process_startup()\n'}
+                nb['cells'].insert(0, nbformat.from_dict(covdict))
+
+            exproc = ExecutePreprocessor(kernel_name=kernel, timeout=500)
+
+            try:
+                exproc.preprocess(nb, {'metadata': {'path': current_dir}})
+            except CellExecutionError as e:
+                raise e
+
+        if self.cov:
+            nb['cells'].pop(0)
+
+        with io.open(self.nbfile, 'wt') as f:
+            nbformat.write(nb, f)
+
+        self.assertTrue(True)
 
 
-def create_notebooks_testsuite():
+def create_notebooks_testsuite(**kwargs):
     # gather information on notebooks
-    # all 'converted' notebooks in the notebooks folder
+    # all notebooks in the notebooks folder
     # are considered as tests
     # find notebook files in notebooks directory
-    root_dir = 'notebooks/'
+    cov = kwargs.pop('cov')
+    root_dir = os.getenv('WRADLIB_NOTEBOOKS', 'notebooks')
     files = []
-    skip = ['__init__.py']
+    skip = []
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-3:] != '.py':
+            if filename in skip or filename[-6:] != '.ipynb':
                 continue
-            if 'notebooks/.' in root:
+            # skip checkpoints
+            if '/.' in root:
                 continue
             f = os.path.join(root, filename)
-            f = f.replace('/', '.')
-            f = f[:-3]
             files.append(f)
 
     # create one TestSuite per Notebook to treat testrunners
@@ -86,7 +112,7 @@ def create_notebooks_testsuite():
     suites = []
     for file in files:
         suite = unittest.TestSuite()
-        suite.addTest(NotebookTest(file))
+        suite.addTest(NotebookTest(file, cov))
         suites.append(suite)
 
     return suites
@@ -134,8 +160,16 @@ def create_unittest_testsuite():
     return suite
 
 
-def single_suite_process(queue, test, verbosity):
+def single_suite_process(queue, test, verbosity, **kwargs):
+    test_cov = kwargs.pop('coverage', 0)
+    test_nb = kwargs.pop('notebooks', 0)
+    if test_cov and not test_nb:
+        cov = coverage.coverage()
+        cov.start()
     res = unittest.TextTestRunner(verbosity=verbosity).run(test)
+    if test_cov and not test_nb:
+        cov.stop()
+        cov.save()
     queue.put(res.wasSuccessful())
 
 
@@ -169,9 +203,17 @@ def main(args):
         --unit
             Run only unit test
 
+        -n
+        --notebook
+            Run only notebook test
+
         -s
         --use-subprocess
             Run every testsuite in a subprocess.
+
+        -c
+        --coverage
+            Run notebook tests with code coverage
 
         -v level
             Set the level of verbosity.
@@ -191,13 +233,14 @@ def main(args):
     test_notebooks = 0
     test_units = 0
     test_subprocess = 0
+    test_cov = 0
     verbosity = VERBOSE
 
     try:
-        options, arg = getopt.getopt(args, 'aednushv:',
+        options, arg = getopt.getopt(args, 'aednuschv:',
                                      ['all', 'example', 'doc',
                                       'notebook', 'unit', 'use-subprocess',
-                                      'help'])
+                                      'coverage', 'help'])
     except getopt.GetoptError as e:
         err_exit(e.msg)
 
@@ -216,6 +259,8 @@ def main(args):
             test_units = 1
         elif name in ('-s', '--use-subprocess'):
             test_subprocess = 1
+        elif name in ('-c', '--coverage'):
+            test_cov = 1
         elif name in ('-h', '--help'):
             err_exit(usage_message, 0)
         elif name == '-v':
@@ -236,13 +281,15 @@ def main(args):
 
     if test_all:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
-        testSuite.append(unittest.TestSuite(create_notebooks_testsuite()))
+        testSuite.append(unittest.
+                         TestSuite(create_notebooks_testsuite(cov=test_cov)))
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
         testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
     elif test_examples:
         testSuite.append(unittest.TestSuite(create_examples_testsuite()))
     elif test_notebooks:
-        testSuite.extend(unittest.TestSuite(create_notebooks_testsuite()))
+        testSuite.extend(unittest.
+                         TestSuite(create_notebooks_testsuite(cov=test_cov)))
     elif test_docs:
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
     elif test_units:
@@ -252,23 +299,31 @@ def main(args):
     if test_subprocess:
         for test in testSuite:
             queue = Queue()
-            proc = Process(target=single_suite_process, args=(queue, test,
-                                                              verbosity))
+            keywords = {'coverage': test_cov, 'notebooks': test_notebooks}
+            proc = Process(target=single_suite_process,
+                           args=(queue, test, verbosity),
+                           kwargs=keywords)
             proc.start()
             result = queue.get()
             proc.join()
             # all_success should be 0 in the end
             all_success = all_success & result
     else:
+        if test_cov and not test_notebooks:
+            cov = coverage.coverage()
+            cov.start()
         for test in testSuite:
             result = unittest.TextTestRunner(verbosity=verbosity).run(test)
             # all_success should be 0 in the end
             all_success = all_success & result.wasSuccessful()
+        if test_cov and not test_notebooks:
+            cov.stop()
+            cov.save()
 
     if all_success:
         sys.exit(0)
     else:
-        # This will retrun exit code 1
+        # This will return exit code 1
         sys.exit("At least one test has failed. "
                  "Please see test report for details.")
 
