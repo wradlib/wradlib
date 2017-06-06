@@ -53,6 +53,8 @@ Calling the objects with actual data, however, will be very fast.
 
 """
 
+from . import util as util
+
 import os
 import numpy as np
 from scipy.spatial import cKDTree
@@ -189,7 +191,8 @@ DataSource`.
             - transforming source grid points/polygons to ogr.geometries
               on ogr.layer
         """
-        ogr_src = ogr_create_datasource('Memory', 'out')
+        ogr_src = gdal_create_dataset('Memory', 'out',
+                                      gdal_type=gdal.OF_VECTOR)
 
         try:
             # is it ESRI Shapefile?
@@ -230,7 +233,8 @@ DataSource`.
             if True removes existing output file
 
         """
-        ds_out = ogr_create_datasource(driver, filename, remove=remove)
+        ds_out = gdal_create_dataset(driver, filename,
+                                     gdal_type=gdal.OF_VECTOR, remove=remove)
         ogr_copy_layer(self.ds, 0, ds_out)
 
         # flush everything
@@ -262,9 +266,10 @@ DataSource`.
         cols = int((x_max - x_min) / pixel_size)
         rows = int((y_max - y_min) / pixel_size)
 
-        mem_drv = gdal.GetDriverByName('MEM')
         # Todo: at the moment, always writing floats
-        ds_out = mem_drv.Create('', cols, rows, 1, gdal.GDT_Float32)
+        ds_out = gdal_create_dataset('MEM', '', cols, rows, 1,
+                                     gdal_type=gdal.GDT_Float32)
+
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
         proj = layer.GetSpatialRef()
         if proj is None:
@@ -464,20 +469,20 @@ class ZonalDataBase(object):
                                                 filt=('trg_index', idx))[0])
 
     def _create_dst_datasource(self, **kwargs):
-        """ Create destination target OGR.DataSource
+        """ Create destination target gdal.Dataset
 
         Creates one layer for each target polygon, consisting of
         the needed source data attributed with index and weights fields
 
         Returns
         -------
-        ds_mem : OGR.DataSource object
+        ds_mem : gdal.Dataset object
         """
 
         # TODO: kwargs necessary?
 
-        # create intermediate mem datasource
-        ds_mem = ogr_create_datasource('Memory', 'dst')
+        # create intermediate mem dataset
+        ds_mem = gdal_create_dataset('Memory', 'dst', gdal_type=gdal.OF_VECTOR)
 
         # get src geometry layer
         src_lyr = self.src.ds.GetLayerByName('src')
@@ -486,7 +491,7 @@ class ZonalDataBase(object):
         geom_type = src_lyr.GetGeomType()
 
         # create temp Buffer layer (time consuming)
-        ds_tmp = ogr_create_datasource('Memory', 'tmp')
+        ds_tmp = gdal_create_dataset('Memory', 'tmp', gdal_type=gdal.OF_VECTOR)
         ogr_copy_layer(self.trg.ds, 0, ds_tmp)
         tmp_trg_lyr = ds_tmp.GetLayer()
 
@@ -1025,10 +1030,15 @@ class GridPointsToPoly(ZonalStatsBase):
         super(GridPointsToPoly, self).__init__(src, **kwargs)
 
 
-def gdal_create_dataset(drv, name, cols, rows, gdal_type, remove=False):
+def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
+                        gdal_type=gdal.GDT_Unknown, remove=False):
     """Creates GDAL.DataSet object.
 
     .. versionadded:: 0.7.0
+
+    .. versionchanged:: 0.11.0
+        - changed parameters to keyword args
+        - added 'bands' as parameter
 
     Parameters
     ----------
@@ -1040,15 +1050,17 @@ def gdal_create_dataset(drv, name, cols, rows, gdal_type, remove=False):
         # of columns
     rows : int
         # of rows
+    bands : int
+        # of raster bands
     gdal_type : raster data type
         eg. gdal.GDT_Float32
     remove : bool
-        if True, existing OGR.DataSource will be
+        if True, existing gdal.Dataset will be
         removed before creation
 
     Returns
     -------
-    out : OGR.DataSource
+    out : gdal.Dataset
         object
 
     """
@@ -1061,15 +1073,19 @@ def gdal_create_dataset(drv, name, cols, rows, gdal_type, remove=False):
     if remove:
         if os.path.exists(name):
             driver.Delete(name)
-    ds = driver.Create(name, cols, rows, 1, gdal_type)
+    ds = driver.Create(name, cols, rows, bands, gdal_type)
 
     return ds
 
 
+@util.deprecated(gdal_create_dataset)
 def ogr_create_datasource(drv, name, remove=False):
     """Creates OGR.DataSource object.
 
     .. versionadded:: 0.7.0
+
+    .. deprecated:: 0.12.0
+        Use :func:`gdal_create_dataset` instead.
 
     Parameters
     ----------
@@ -1097,16 +1113,16 @@ def ogr_create_datasource(drv, name, remove=False):
 
 
 def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
-    """Creates OGR.Layer objects in OGR.DataSource object.
+    """Creates OGR.Layer objects in gdal.Dataset object.
 
     .. versionadded:: 0.7.0
 
-    Creates one OGR.Layer with given name in given OGR.DataSource object
+    Creates one OGR.Layer with given name in given gdal.Dataset object
     using given OGR.GeometryType and FieldDefinitions
 
     Parameters
     ----------
-    ds : OGR.DataSource
+    ds : gdal.Dataset
         object
     name : string
         OGRLayer name
@@ -1138,15 +1154,15 @@ def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
 
     .. versionadded:: 0.7.0
 
-    Copy OGR.Layer object from src_ds OGR.DataSource to dst_ds OGR.DataSource
+    Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
 
     Parameters
     ----------
-    src_ds : OGR.DataSource
+    src_ds : gdal.Dataset
         object
     index : int
         layer index
-    dst_ds : OGR.DataSource
+    dst_ds : gdal.Dataset
         object
     reset : bool
         if True resets src_layer
@@ -1166,15 +1182,15 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
 
     .. versionadded:: 0.8.0
 
-    Copy OGR.Layer object from src_ds OGR.DataSource to dst_ds OGR.DataSource
+    Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
 
     Parameters
     ----------
-    src_ds : OGR.DataSource
+    src_ds : gdal.Dataset
         object
     name : string
         layer name
-    dst_ds : OGR.DataSource
+    dst_ds : gdal.Dataset
         object
     reset : bool
         if True resets src_layer
@@ -1200,7 +1216,7 @@ def ogr_add_feature(ds, src, name=None):
 
     Parameters
     ----------
-    ds : OGR.DataSource
+    ds : gdal.Dataset
         object
     src : :func:`numpy:numpy.array`
         source data

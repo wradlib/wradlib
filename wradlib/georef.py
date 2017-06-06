@@ -1706,7 +1706,6 @@ def reproject_raster_dataset(src_ds, **kwargs):
     # create destination in-memory raster
     mem_drv = gdal.GetDriverByName('MEM')
 
-    print(rows, cols)
     # and set RasterSize according ro cols/rows
     dst_ds = mem_drv.Create('', cols, rows, 1, gdal.GDT_Float32)
 
