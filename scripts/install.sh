@@ -44,8 +44,6 @@ if [[ "$DOC_BUILD" == "true" ]]; then
     conda install --yes sphinx numpydoc
     conda install --yes sphinx_rtd_theme
     pip install sphinxcontrib-bibtex
-    # install notebook dependencies
-    conda install --yes runipy pandoc
     # install nbsphinx
     conda install --yes nbsphinx
 fi

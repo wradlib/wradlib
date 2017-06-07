@@ -2,6 +2,12 @@
 # Copyright (c) 2017, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+# start headless rendering with xvfb
+export DISPLAY=:99
+Xvfb :99 -screen 0 1280x1024x24 -nolisten tcp &
+xvfb=$!
+echo "Xvfb PID:" $xvfb
+
 exit_status=0
 
 # export location of .coveragerc
@@ -31,5 +37,9 @@ else
     ./testrunner.py -n -s
     (( exit_status = ($? || $exit_status) ))
 fi
+
+# shutdown xvfb
+kill -15 $xvfb
+wait $xvfb
 
 exit $exit_status
