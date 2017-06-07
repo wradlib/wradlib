@@ -17,17 +17,8 @@ if [[ "$COVERAGE" == "true" ]]; then
     ./testrunner.py -n -c -s
     (( exit_status = ($? || $exit_status) ))
 
-    # copy .coverage files to cov-folder
-    cov=`find . -name *.coverage.* -print`
-    echo $cov
-    mkdir -p cov
-    for cv in $cov; do
-        mv $cv cov/.
-    done
-
-    # combine coverage, remove cov-folder
-    coverage combine cov
-    rm -rf cov
+    # combine coverage
+    coverage combine
 
 else
     # run tests, retrieve exit status
