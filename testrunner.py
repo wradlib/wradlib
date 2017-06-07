@@ -60,7 +60,7 @@ class NotebookTest(unittest.TestCase):
     def runTest(self):
         print(self.nbfile)
         kernel = 'python%d' % sys.version_info[0]
-        current_dir = os.path.dirname(self.nbfile)
+        cur_dir = os.path.dirname(self.nbfile)
 
         with open(self.nbfile) as f:
             nb = nbformat.read(f, as_version=4)
@@ -69,13 +69,17 @@ class NotebookTest(unittest.TestCase):
                            'metadata': {'collapsed': True}, 'outputs': [],
                            'nbsphinx': 'hidden',
                            'source': 'import coverage\n'
-                                     'coverage.process_startup()\n'}
+                                     'coverage.process_startup()\n'
+                                     'import sys\n'
+                                     'sys.path.append("{0}")\n'.format(cur_dir)
+                           }
                 nb['cells'].insert(0, nbformat.from_dict(covdict))
 
             exproc = ExecutePreprocessor(kernel_name=kernel, timeout=500)
 
             try:
-                exproc.preprocess(nb, {'metadata': {'path': current_dir}})
+                run_dir = os.getenv('WRADLIB_BUILD_DIR', cur_dir)
+                exproc.preprocess(nb, {'metadata': {'path': run_dir}})
             except CellExecutionError as e:
                 raise e
 
