@@ -1998,7 +1998,7 @@ def write_raster_dataset(fpath, dataset, format, options=None, remove=False):
     options : list
         List of option strings for the corresponding format.
     remove : bool
-        if True, existing OGR.DataSource will be
+        if True, existing gdal.Dataset will be
         removed before creation
 
     Note
@@ -2334,7 +2334,7 @@ def read_raster_data(filename, driver=None, **kwargs):
 
 def open_shape(filename, driver=None):
     """
-    Open shapefile, return ogr dataset and layer
+    Open shapefile, return gdal.Dataset and OGR.Layer
 
     .. warning:: dataset and layer have to live in the same context,
                  if dataset is deleted all layer references will get lost
@@ -2350,7 +2350,7 @@ def open_shape(filename, driver=None):
 
     Returns
     -------
-    dataset : ogr.Dataset
+    dataset : gdal.Dataset
         dataset
     layer : ogr.Layer
         layer
@@ -2368,7 +2368,7 @@ def open_shape(filename, driver=None):
 
 def open_raster(filename, driver=None):
     """
-    Open raster file, return ogr dataset
+    Open raster file, return gdal.Dataset
 
     .. versionadded:: 0.6.0
 
@@ -2381,7 +2381,7 @@ def open_raster(filename, driver=None):
 
     Returns
     -------
-    dataset : ogr.Dataset
+    dataset : gdal.Dataset
         dataset
     """
 

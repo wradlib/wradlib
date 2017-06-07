@@ -242,25 +242,31 @@ class ZonalStatsUtilTest(unittest.TestCase):
         self.ogrobj = zonalstats.numpy_to_ogr(self.npobj, 'Polygon')
 
     def test_gdal_create_dataset(self):
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100,
-                                            gdal.GDT_Float32)
+        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
+                                            gdal_type=gdal.GDT_Float32)
         del ds
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100,
-                                            gdal.GDT_Float32, remove=True)
+        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
+                                            gdal_type=gdal.GDT_Float32,
+                                            remove=True)
         self.assertTrue(isinstance(ds, gdal.Dataset))
         self.assertRaises(IOError,
                           lambda: zonalstats
                           .gdal_create_dataset('GXF',
                                                'test.gxf',
-                                               100, 100,
-                                               gdal.GDT_Float32))
+                                               100, 100, 1,
+                                               gdal_type=gdal.GDT_Float32))
+        del ds
+        ds = zonalstats.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
+        self.assertTrue(isinstance(ds, gdal.Dataset))
 
     def test_ogr_create_datasource(self):
         ds = zonalstats.ogr_create_datasource('Memory', 'test')
         self.assertTrue(isinstance(ds, ogr.DataSource))
 
     def test_ogr_create_layer(self):
-        ds = zonalstats.ogr_create_datasource('Memory', 'test')
+        ds = zonalstats.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         self.assertRaises(TypeError,
                           lambda: zonalstats.ogr_create_layer(ds, 'test'))
         lyr = zonalstats.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
