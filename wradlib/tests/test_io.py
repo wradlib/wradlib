@@ -80,7 +80,8 @@ class HDF5Test(unittest.TestCase):
 class RadolanTest(unittest.TestCase):
     def test_get_radolan_header_token(self):
         keylist = ['BY', 'VS', 'SW', 'PR', 'INT', 'GP',
-                   'MS', 'LV', 'CS', 'MX', 'BG']
+                   'MS', 'LV', 'CS', 'MX', 'BG', 'ST',
+                   'VV', 'MF', 'QN']
         head = wrl.io.get_radolan_header_token()
         for key in keylist:
             self.assertIsNone(head[key])
@@ -99,6 +100,18 @@ class RadolanTest(unittest.TestCase):
         test_head['MS'] = (68, 128)
         test_head['BY'] = (19, 26)
 
+        head = wrl.io.get_radolan_header_token_pos(header)
+        self.assertDictEqual(head, test_head)
+
+        header = ('RQ210945100000517BY1620162VS 2SW 1.7.2PR E-01'
+                  'INT 60GP 900x 900VV 0MF 00000002QN 001'
+                  'MS 67<bln,drs,eis,emd,ess,fbg,fld,fra,ham,han,muc,'
+                  'neu,nhb,ros,tur,umd>')
+        test_head = {'BY': (19, 26), 'VS': (28, 30), 'SW': (32, 38),
+                     'PR': (40, 45), 'INT': (48, 51), 'GP': (53, 62),
+                     'MS': (85, 153), 'LV': None, 'CS': None, 'MX': None,
+                     'BG': None, 'ST': None, 'VV': (64, 66), 'MF': (68, 77),
+                     'QN': (79, 83)}
         head = wrl.io.get_radolan_header_token_pos(header)
         self.assertDictEqual(head, test_head)
 
@@ -249,14 +262,38 @@ class RadolanTest(unittest.TestCase):
             'indicator': 'near ground level', 'imagecount': 0,
             'datasize': 19889}
 
+        rq_header = ('RQ210945100000517BY1620162VS 2SW 1.7.2PR E-01'
+                     'INT 60GP 900x 900VV 0MF 00000002QN 001'
+                     'MS 67<bln,drs,eis,emd,ess,fbg,fld,fra,ham,han,muc,'
+                     'neu,nhb,ros,tur,umd>')
+
+        test_rq = {'producttype': 'RQ',
+                   'datetime': datetime.datetime(2017, 5, 21, 9, 45),
+                   'radarid': '10000', 'datasize': 1620008,
+                   'maxrange': '128 km', 'radolanversion': '1.7.2',
+                   'precision': 0.1, 'intervalseconds': 3600,
+                   'nrow': 900, 'ncol': 900,
+                   'radarlocations': ['bln', 'drs', 'eis', 'emd', 'ess',
+                                      'fbg', 'fld', 'fra', 'ham', 'han',
+                                      'muc', 'neu', 'nhb', 'ros', 'tur',
+                                      'umd'],
+                   'predictiontime': 0, 'moduleflag': 2,
+                   'quantification': 1}
+
         rx = wrl.io.parse_DWD_quant_composite_header(rx_header)
         pg = wrl.io.parse_DWD_quant_composite_header(pg_header)
+        rq = wrl.io.parse_DWD_quant_composite_header(rq_header)
 
         for key, value in rx.items():
             self.assertEqual(value, test_rx[key])
         for key, value in pg.items():
             if type(value) == np.ndarray:
                 self.assertTrue(np.allclose(value, test_pg[key]))
+            else:
+                self.assertEqual(value, test_pg[key])
+        for key, value in rq.items():
+            if type(value) == np.ndarray:
+                self.assertTrue(np.allclose(value, test_rq[key]))
             else:
                 self.assertEqual(value, test_pg[key])
 
