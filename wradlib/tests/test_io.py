@@ -295,7 +295,7 @@ class RadolanTest(unittest.TestCase):
             if type(value) == np.ndarray:
                 self.assertTrue(np.allclose(value, test_rq[key]))
             else:
-                self.assertEqual(value, test_pg[key])
+                self.assertEqual(value, test_rq[key])
 
     def test_read_RADOLAN_composite(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
