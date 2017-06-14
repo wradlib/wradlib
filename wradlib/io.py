@@ -481,7 +481,7 @@ def get_radolan_header_token():
     head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
             'INT': None, 'GP': None, 'MS': None, 'LV': None,
             'CS': None, 'MX': None, 'BG': None, 'ST': None,
-            'VV': None, 'MF': None}
+            'VV': None, 'MF': None, 'QN': None}
     return head
 
 
@@ -600,6 +600,8 @@ def parse_DWD_quant_composite_header(header):
                 out['predictiontime'] = int(header[v[0]:v[1]])
             if k == 'MF':
                 out['moduleflag'] = int(header[v[0]:v[1]])
+            if k == 'QN':
+                out['quantification'] = int(header[v[0]:v[1]])
     return out
 
 
