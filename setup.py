@@ -142,6 +142,7 @@ def configuration(parent_package='', top_path=None):
                        quiet=True)
 
     config.add_subpackage('wradlib')
+    config.add_subpackage('wradlib.io')
 
     return config
 

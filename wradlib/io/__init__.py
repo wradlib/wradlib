@@ -1,10 +1,23 @@
 """
+
 Raw Data I/O
-^^^^^^^^^^^^
+============
 
 Please have a look at the tutorial
 :ref:`notebooks/fileio/wradlib_radar_formats.ipynb`
 for an introduction on how to deal with different file formats.
+
+Read RADOLAN and DX
+^^^^^^^^^^^^^^^^^^^
+.. autosummary::
+    :toctree: generated/
+
+    readDX
+    read_RADOLAN_composite
+
+
+Other Data I/O
+^^^^^^^^^^^^^^
 
 .. autosummary::
    :nosignatures:
@@ -27,17 +40,9 @@ for an introduction on how to deal with different file formats.
    open_shape
 
 
-Read RADOLAN and DX
-^^^^^^^^^^^^^^^^^^^
-.. autosummary::
-    :toctree: generated/
-
-    readDX
-    read_RADOLAN_composite
 
 
 """
-
 
 from .io import *
 from .radolan import *
