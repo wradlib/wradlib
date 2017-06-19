@@ -1293,8 +1293,14 @@ def numpy_to_ogr(vert, geom_name):
     """
 
     if geom_name in ['Polygon', 'MultiPolygon']:
-        json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".\
-            format(geom_name, vert.tolist())
+        # if vert is nested ndarray (only 1dim),
+        # we need to handle every item separately
+        if vert.ndim == 1:
+            lst = [item.tolist() for item in vert]
+        else:
+            lst = [vert.tolist()]
+        json_str = "{{'type':{0!r},'coordinates':{1!r}}}".\
+            format(geom_name, lst)
     else:
         json_str = "{{'type':{0!r},'coordinates':{1!r}}}".\
             format(geom_name, vert.tolist())
