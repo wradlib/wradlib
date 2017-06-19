@@ -23,6 +23,6 @@ from .hdf import (read_generic_hdf5, read_OPERA_hdf5, read_GAMIC_hdf5,  # noqa
 from .netcdf import read_EDGE_netcdf, read_generic_netcdf  # noqa
 from .rainbow import read_Rainbow  # noqa
 from .radolan import (readDX, read_RADOLAN_composite,  # noqa
-                      read_radolan_header,  get_radolan_filehandle)  # noqa
-
+                      read_radolan_header,  get_radolan_filehandle,  # noqa
+                      parse_DWD_quant_composite_header)  # noqa
 __all__ = [s for s in dir() if not s.startswith('_')]
