@@ -17,7 +17,6 @@ Read NetCDF
 from __future__ import absolute_import
 import datetime as dt
 
-# from builtins import bytes, chr
 from collections import OrderedDict
 import numpy as np
 import netCDF4 as nc

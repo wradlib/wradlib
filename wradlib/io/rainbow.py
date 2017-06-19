@@ -17,7 +17,6 @@ from __future__ import absolute_import
 import sys
 
 import numpy as np
-# ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
 from .. import util as util
 
 

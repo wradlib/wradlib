@@ -15,7 +15,7 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.rainbow
 .. automodule:: wradlib.io.misc
 """
-from .misc import (writePolygon2Text, read_safnwc, read_raster_data,  # noqa
+from .misc import (writePolygon2Text, read_safnwc, # noqa
                  write_raster_dataset, open_shape, open_raster)  # noqa
 from .hdf import (read_generic_hdf5, read_OPERA_hdf5, read_GAMIC_hdf5,  # noqa
                   to_hdf5, from_hdf5)  # noqa
