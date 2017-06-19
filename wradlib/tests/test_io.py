@@ -218,7 +218,7 @@ class RadolanTest(unittest.TestCase):
         self.assertRaises(
             IOError,
             lambda: radolan.read_radolan_binary_array(rw_fid,
-                                                     attrs['datasize'] + 10))
+                                                      attrs['datasize'] + 10))
 
     def test_get_radolan_filehandle(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
@@ -399,7 +399,7 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rainbow.get_RB_data_attribute(data[1], 'bins'), 400)
         self.assertRaises(KeyError,
                           lambda: rainbow.get_RB_data_attribute(data[0],
-                                                               'Nonsense'))
+                                                                'Nonsense'))
         self.assertEqual(rainbow.get_RB_data_attribute(data[0], 'depth'), 16)
 
     def test_get_RB_blob_attribute(self):
@@ -412,7 +412,7 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rainbow.get_RB_blob_attribute(xmldict, 'blobid'), '0')
         self.assertRaises(KeyError,
                           lambda: rainbow.get_RB_blob_attribute(xmldict,
-                                                               'Nonsense'))
+                                                                'Nonsense'))
 
     def test_get_RB_data_shape(self):
         xmltodict = wrl.util.import_optional('xmltodict')
@@ -439,9 +439,12 @@ class RainbowTest(unittest.TestCase):
         outdata16 = np.array([12337, 12851, 13365, 13879, 14393],
                              dtype=np.uint16)
         outdata32 = np.array([808530483, 875902519], dtype=np.uint32)
-        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 8), outdata8))
-        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 16), outdata16))
-        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 32), outdata32))
+        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 8),
+                                    outdata8))
+        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 16),
+                                    outdata16))
+        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 32),
+                                    outdata32))
 
     def test_get_RB_blob_data(self):
         datastring = b'<BLOB blobid="0" size="737" compression="qt"></BLOB>'
@@ -460,14 +463,14 @@ class RainbowTest(unittest.TestCase):
             self.assertEqual(data.shape[1], int(rbblob['@bins']))
             self.assertRaises(IOError,
                               lambda: rainbow.get_RB_blob_from_file('rb_fh',
-                                                                   rbblob))
+                                                                    rbblob))
         # Check reading from file path
         data = rainbow.get_RB_blob_from_file(rb_file, rbblob)
         self.assertEqual(data.shape[0], int(rbblob['@rays']))
         self.assertEqual(data.shape[1], int(rbblob['@bins']))
         self.assertRaises(IOError,
                           lambda: rainbow.get_RB_blob_from_file('rb_fh',
-                                                               rbblob))
+                                                                rbblob))
 
     def test_get_RB_file_as_string(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
