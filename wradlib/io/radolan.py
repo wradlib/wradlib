@@ -14,6 +14,8 @@ Reading DX and RADOLAN data from German Weather Service
 
     readDX
     read_RADOLAN_composite
+    get_radolan_filehandle
+    read_radolan_header
 
 """
 
