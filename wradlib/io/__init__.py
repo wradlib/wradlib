@@ -1,5 +1,4 @@
 """
-
 Raw Data I/O
 ============
 
@@ -7,42 +6,21 @@ Please have a look at the tutorial
 :ref:`notebooks/fileio/wradlib_radar_formats.ipynb`
 for an introduction on how to deal with different file formats.
 
-Read RADOLAN and DX
-^^^^^^^^^^^^^^^^^^^
-.. autosummary::
-    :toctree: generated/
+.. toctree::
+    :maxdepth: 2
 
-    readDX
-    read_RADOLAN_composite
-
-
-Other Data I/O
-^^^^^^^^^^^^^^
-
-.. autosummary::
-   :nosignatures:
-   :toctree: generated/
-
-   writePolygon2Text
-   read_EDGE_netcdf
-   read_generic_hdf5
-   read_generic_netcdf
-   read_OPERA_hdf5
-   read_GAMIC_hdf5
-   read_Rainbow
-   read_safnwc
-   write_raster_dataset
-   to_AAIGrid
-   to_GeoTIFF
-   to_hdf5
-   from_hdf5
-   read_raster_data
-   open_shape
-
-
-
-
+.. automodule:: wradlib.io.radolan
+.. automodule:: wradlib.io.hdf
+.. automodule:: wradlib.io.netcdf
+.. automodule:: wradlib.io.rainbow
+.. automodule:: wradlib.io.misc
 """
+from .misc import (writePolygon2Text, read_safnwc, read_raster_data,  # noqa
+                 write_raster_dataset, open_shape, open_raster)  # noqa
+from .hdf import (read_generic_hdf5, read_OPERA_hdf5, read_GAMIC_hdf5,  # noqa
+                  to_hdf5, from_hdf5)  # noqa
+from .netcdf import read_EDGE_netcdf, read_generic_netcdf  # noqa
+from .rainbow import read_Rainbow  # noqa
+from .radolan import readDX, read_RADOLAN_composite  # noqa
 
-from .io import *
-from .radolan import *
+__all__ = [s for s in dir() if not s.startswith('_')]

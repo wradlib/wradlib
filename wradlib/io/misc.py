@@ -2,35 +2,20 @@
 # Copyright (c) 2016, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-# """
-# Raw Data I/O
-# ^^^^^^^^^^^^
-#
-# Please have a look at the tutorial
-# :ref:`notebooks/fileio/wradlib_radar_formats.ipynb`
-# for an introduction on how to deal with different file formats.
-#
-# .. autosummary::
-#    :nosignatures:
-#    :toctree: generated/
-#
-#    writePolygon2Text
-#    read_EDGE_netcdf
-#    read_generic_hdf5
-#    read_generic_netcdf
-#    read_OPERA_hdf5
-#    read_GAMIC_hdf5
-#    read_Rainbow
-#    read_safnwc
-#    write_raster_dataset
-#    to_AAIGrid
-#    to_GeoTIFF
-#    to_hdf5
-#    from_hdf5
-#    read_raster_data
-#    open_shape
-#
-# """
+"""
+Miscellaneous Data I/O
+^^^^^^^^^^^^^^^^^^^^^^
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   writePolygon2Text
+   read_safnwc
+   read_raster_data
+   write_raster_dataset
+   open_shape
+   open_raster
+"""
 
 # standard libraries
 from __future__ import absolute_import
@@ -41,18 +26,18 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
-try:
-    from StringIO import StringIO
-    import io
-except ImportError:
-    from io import StringIO  # noqa
-    import io
+# try:
+#     from StringIO import StringIO
+#     import io
+# except ImportError:
+#     from io import StringIO  # noqa
+#     import io
 
 # from builtins import bytes, chr
 from collections import OrderedDict
-import re
+# import re
 import os
-import warnings
+# import warnings
 
 # site packages
 import h5py

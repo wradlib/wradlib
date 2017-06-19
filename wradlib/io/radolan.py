@@ -2,31 +2,25 @@
 # Copyright (c) 2011-2017, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-# """
-#
-# wradlib.io.radolan
-# ^^^^^^^^^^^^^^^^^^
-#
-# Please have a look at the tutorial
-# :ref:`notebooks/fileio/wradlib_radar_formats.ipynb`
-# for an introduction on how to deal with different file formats.
-#
-# .. autosummary::
-#    :nosignatures:
-#    :toctree: generated/
-#
-#    readDX
-#    read_RADOLAN_composite
-# """
+"""
+Read RADOLAN and DX
+^^^^^^^^^^^^^^^^^^^
+
+Reading DX and RADOLAN data from German Weather Service
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+
+    readDX
+    read_RADOLAN_composite
+
+"""
 
 # standard libraries
 from __future__ import absolute_import
 import datetime as dt
 
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 try:
     from StringIO import StringIO
     import io
