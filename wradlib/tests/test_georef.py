@@ -307,15 +307,6 @@ class PixMapTest(unittest.TestCase):
         pass
 
 
-class ZonalStatsUtilTest(unittest.TestCase):
-    def setUp(self):
-        self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
-                               [2600100., 5630100.], [2600100., 5630000.],
-                               [2600000., 5630000.]])
-
-        self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
-
-
 class GdalTests(unittest.TestCase):
     def setUp(self):
         filename = 'geo/bonn_new.tif'
@@ -324,11 +315,6 @@ class GdalTests(unittest.TestCase):
         (self.data,
          self.coords,
          self.proj) = georef.extract_raster_dataset(self.ds)
-        self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
-                               [2600100., 5630100.], [2600100., 5630000.],
-                               [2600000., 5630000.]])
-
-        self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
 
     def test_read_gdal_coordinates(self):
         georef.read_gdal_coordinates(self.ds)
