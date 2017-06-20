@@ -15,12 +15,12 @@ Georeferencing
 .. automodule:: wradlib.georef.polar
 .. automodule:: wradlib.georef.projection
 .. automodule:: wradlib.georef.raster
+.. automodule:: wradlib.georef.vector
 .. automodule:: wradlib.georef.rect
 .. automodule:: wradlib.georef.satellite
 """
 
-from .misc import (beam_height_n, arc_distance_n, get_earth_radius,
-                   get_shape_coordinates)
+from .misc import (beam_height_n, arc_distance_n, get_earth_radius)
 
 from .polar import (polar2lonlat, polar2lonlatalt, polar2lonlatalt_n,
                     centroid2polyvert, polar2polyvert, polar2centroids,
@@ -39,5 +39,11 @@ from .raster import (pixel_coordinates, pixel_to_map, pixel_to_map3d,
                      reproject_raster_dataset)
 
 from .satellite import (correct_parallax, sat2pol, dist_from_orbit)
+
+from .vector import (get_shape_points, transform_geometry,
+                     get_shape_coordinates, ogr_create_layer, ogr_copy_layer,
+                     ogr_copy_layer_by_name, ogr_add_feature, ogr_add_geometry,
+                     numpy_to_ogr, ogr_to_numpy, ogr_geocol_to_numpy,
+                     get_centroid)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

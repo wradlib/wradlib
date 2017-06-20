@@ -31,6 +31,6 @@ from .radolan import (readDX, read_RADOLAN_composite,
                       read_radolan_header,  get_radolan_filehandle,
                       parse_DWD_quant_composite_header)
 from .gdal import (read_safnwc, write_raster_dataset,
-                   open_shape, open_raster)
+                   open_shape, open_raster, gdal_create_dataset)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

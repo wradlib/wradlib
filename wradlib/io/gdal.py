@@ -117,6 +117,54 @@ def read_safnwc(filename):
     return ds
 
 
+def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
+                        gdal_type=gdal.GDT_Unknown, remove=False):
+    """Creates GDAL.DataSet object.
+
+    .. versionadded:: 0.7.0
+
+    .. versionchanged:: 0.11.0
+        - changed parameters to keyword args
+        - added 'bands' as parameter
+
+    Parameters
+    ----------
+    drv : string
+        GDAL driver string
+    name : string
+        path to filename
+    cols : int
+        # of columns
+    rows : int
+        # of rows
+    bands : int
+        # of raster bands
+    gdal_type : raster data type
+        eg. gdal.GDT_Float32
+    remove : bool
+        if True, existing gdal.Dataset will be
+        removed before creation
+
+    Returns
+    -------
+    out : gdal.Dataset
+        object
+
+    """
+    driver = gdal.GetDriverByName(drv)
+    metadata = driver.GetMetadata()
+
+    if not metadata.get('DCAP_CREATE', False):
+        raise IOError("Driver %s doesn't support Create() method.".format(drv))
+
+    if remove:
+        if os.path.exists(name):
+            driver.Delete(name)
+    ds = driver.Create(name, cols, rows, bands, gdal_type)
+
+    return ds
+
+
 def write_raster_dataset(fpath, dataset, format, options=None, remove=False):
     """ Write raster dataset to file format
 
