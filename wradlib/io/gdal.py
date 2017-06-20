@@ -10,9 +10,9 @@ Raster and Vector I/O using GDAL
    :toctree: generated/
 
    open_shape
-   open_raster 
+   open_raster
    read_safnwc
-   write_raster_dataset 
+   write_raster_dataset
 """
 
 # standard libraries
@@ -83,6 +83,7 @@ def open_raster(filename, driver=None):
         gdal.GetDriverByName(driver)
 
     return dataset
+
 
 def read_safnwc(filename):
     """Read MSG SAFNWC hdf5 file into a gdal georeferenced object

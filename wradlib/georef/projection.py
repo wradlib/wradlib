@@ -306,6 +306,3 @@ def wkt_to_osr(wkt=None):
     else:
         proj = get_default_projection()
     return proj
-
-
-

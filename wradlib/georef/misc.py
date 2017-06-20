@@ -17,10 +17,7 @@ Miscellaneous
    get_shape_coordinates
 """
 
-from osgeo import gdal, osr, gdal_array
 import numpy as np
-from sys import exit
-import warnings
 
 from .projection import get_default_projection
 

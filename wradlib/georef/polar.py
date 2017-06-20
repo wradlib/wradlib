@@ -10,7 +10,7 @@ Polar Grid Functions
 .. autosummary::
    :nosignatures:
    :toctree: generated/
-   
+
    polar2lonlat
    polar2lonlatalt
    polar2lonlatalt_n
@@ -19,15 +19,13 @@ Polar Grid Functions
    centroid2polyvert
    projected_bincoords_from_radarspecs
    sweep_centroids
-
 """
 
-from osgeo import osr
 import numpy as np
 import warnings
 
 from .projection import proj4_to_osr, reproject
-from .misc import (hor2aeq, aeq2hor, beam_height_n, arc_distance_n,
+from .misc import (hor2aeq, beam_height_n, arc_distance_n,
                    get_earth_radius)
 
 
@@ -374,6 +372,7 @@ Georeferencing-and-Projection`.
     lon, lat = reproject(x, y, projection_source=rad, projection_target=sph)
 
     return lon, lat, alt
+
 
 def centroid2polyvert(centroid, delta):
     """Calculates the 2-D Polygon vertices necessary to form a rectangular
@@ -736,4 +735,3 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
     coordinates[:, :, 1] = np.transpose(np.tile(azimuths, (nbins, 1)))
     coordinates[:, :, 2] = elangle
     return coordinates
-
