@@ -7,9 +7,9 @@ import unittest
 import wradlib.georef as georef
 
 import wradlib.util as util
-from wradlib.io import read_generic_hdf5, open_raster
+from wradlib.io import read_generic_hdf5, open_raster, gdal_create_dataset
 import numpy as np
-from osgeo import gdal, osr
+from osgeo import gdal, osr, ogr
 
 
 class CoordinateTransformTest(unittest.TestCase):
@@ -307,6 +307,15 @@ class PixMapTest(unittest.TestCase):
         pass
 
 
+class ZonalStatsUtilTest(unittest.TestCase):
+    def setUp(self):
+        self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
+                               [2600100., 5630100.], [2600100., 5630000.],
+                               [2600000., 5630000.]])
+
+        self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
+
+
 class GdalTests(unittest.TestCase):
     def setUp(self):
         filename = 'geo/bonn_new.tif'
@@ -315,6 +324,11 @@ class GdalTests(unittest.TestCase):
         (self.data,
          self.coords,
          self.proj) = georef.extract_raster_dataset(self.ds)
+        self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
+                               [2600100., 5630100.], [2600100., 5630000.],
+                               [2600000., 5630000.]])
+
+        self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
 
     def test_read_gdal_coordinates(self):
         georef.read_gdal_coordinates(self.ds)
@@ -517,6 +531,28 @@ class SatelliteTest(unittest.TestCase):
                        424562.50748141])
         np.testing.assert_allclose(dists[0:10, 0], bd, rtol=1e-12)
         np.testing.assert_allclose(dists[0, 0:10], sd, rtol=1e-12)
+
+
+class VectorTest(unittest.TestCase):
+    def setUp(self):
+        self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
+                               [2600100., 5630100.], [2600100., 5630000.],
+                               [2600000., 5630000.]])
+
+        self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
+
+    def test_ogr_create_layer(self):
+        ds = gdal_create_dataset('Memory', 'test',
+                                 gdal_type=gdal.OF_VECTOR)
+        self.assertRaises(TypeError,
+                          lambda: georef.ogr_create_layer(ds, 'test'))
+        lyr = georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
+                                          fields=[('test', ogr.OFTReal)])
+        self.assertTrue(isinstance(lyr, ogr.Layer))
+
+    def test_ogr_to_numpy(self):
+        self.assertTrue(
+            np.allclose(georef.ogr_to_numpy(self.ogrobj), self.npobj))
 
 
 if __name__ == '__main__':

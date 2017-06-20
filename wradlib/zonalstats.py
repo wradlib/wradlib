@@ -505,8 +505,8 @@ class ZonalDataBase(object):
         # get target layer, iterate over polygons and calculate intersections
         tmp_trg_lyr.ResetReading()
 
-        self.tmp_lyr = io.ogr_create_layer(ds_mem, 'dst', srs=self._srs,
-                                           geom_type=geom_type)
+        self.tmp_lyr = georef.ogr_create_layer(ds_mem, 'dst', srs=self._srs,
+                                               geom_type=geom_type)
 
         print("Calculate Intersection source/target-layers")
         try:

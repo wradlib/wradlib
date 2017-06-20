@@ -5,6 +5,7 @@ import unittest
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
+from osgeo import gdal, ogr
 import numpy as np
 import zlib
 import gzip
@@ -502,6 +503,47 @@ class RasterTest(unittest.TestCase):
         filename = 'geo/bonn_new.tif'
         geofile = wrl.util.get_wradlib_data_file(filename)
         wrl.io.open_raster(geofile)
+
+
+class GdalTests(unittest.TestCase):
+    def setUp(self):
+        self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
+                               [2600100., 5630100.], [2600100., 5630000.],
+                               [2600000., 5630000.]])
+
+        self.ogrobj = wrl.georef.numpy_to_ogr(self.npobj, 'Polygon')
+
+    def test_gdal_create_dataset(self):
+        ds = wrl.io.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
+                                        gdal_type=gdal.GDT_Float32)
+        del ds
+        ds = wrl.io.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
+                                        gdal_type=gdal.GDT_Float32,
+                                        remove=True)
+        self.assertTrue(isinstance(ds, gdal.Dataset))
+        self.assertRaises(IOError,
+                          lambda: wrl.io
+                          .gdal_create_dataset('GXF',
+                                               'test.gxf',
+                                               100, 100, 1,
+                                               gdal_type=gdal.GDT_Float32))
+        del ds
+        ds = wrl.io.gdal_create_dataset('Memory', 'test',
+                                        gdal_type=gdal.OF_VECTOR)
+        self.assertTrue(isinstance(ds, gdal.Dataset))
+
+    def test_ogr_create_layer(self):
+        ds = wrl.io.gdal_create_dataset('Memory', 'test',
+                                        gdal_type=gdal.OF_VECTOR)
+        self.assertRaises(TypeError,
+                          lambda: wrl.georef.ogr_create_layer(ds, 'test'))
+        lyr = wrl.georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
+                                          fields=[('test', ogr.OFTReal)])
+        self.assertTrue(isinstance(lyr, ogr.Layer))
+
+    def test_ogr_to_numpy(self):
+        self.assertTrue(
+            np.allclose(wrl.georef.ogr_to_numpy(self.ogrobj), self.npobj))
 
 
 if __name__ == '__main__':
