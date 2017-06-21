@@ -121,6 +121,7 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     compose_grid = np.repeat(np.nan, len(trg) *
                              np.prod(data.shape[1:])).reshape(composegridshape)
     # push subgrid results into the large grid
+    # raises Error for numpy 1.13
     compose_grid[ix] = data_on_subgrid
     return compose_grid
 
