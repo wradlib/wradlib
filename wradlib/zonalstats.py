@@ -53,15 +53,13 @@ Calling the objects with actual data, however, will be very fast.
 
 """
 
-from . import util as util
-
-import os
 import numpy as np
 from scipy.spatial import cKDTree
 from matplotlib.path import Path
 import matplotlib.patches as patches
 from osgeo import gdal, ogr
 import wradlib.io as io
+import wradlib.georef as georef
 ogr.UseExceptions()
 gdal.UseExceptions()
 
@@ -130,7 +128,7 @@ DataSource`.
         sources = []
         for feature in lyr:
             geom = feature.GetGeometryRef()
-            poly = ogr_to_numpy(geom)
+            poly = georef.ogr_to_numpy(geom)
             sources.append(poly)
         return np.array(sources)
 
@@ -150,7 +148,7 @@ DataSource`.
         for i in idx:
             feature = lyr.GetFeature(i)
             geom = feature.GetGeometryRef()
-            poly = ogr_to_numpy(geom)
+            poly = georef.ogr_to_numpy(geom)
             sources.append(poly)
         return np.array(sources)
 
@@ -191,8 +189,8 @@ DataSource`.
             - transforming source grid points/polygons to ogr.geometries
               on ogr.layer
         """
-        ogr_src = gdal_create_dataset('Memory', 'out',
-                                      gdal_type=gdal.OF_VECTOR)
+        ogr_src = io.gdal_create_dataset('Memory', 'out',
+                                         gdal_type=gdal.OF_VECTOR)
 
         try:
             # is it ESRI Shapefile?
@@ -214,9 +212,9 @@ DataSource`.
             else:
                 geom_type = ogr.wkbPolygon
             fields = [('index', ogr.OFTInteger)]
-            ogr_create_layer(ogr_src, self._name, srs=self._srs,
-                             geom_type=geom_type, fields=fields)
-            ogr_add_feature(ogr_src, src, name=self._name)
+            georef.ogr_create_layer(ogr_src, self._name, srs=self._srs,
+                                    geom_type=geom_type, fields=fields)
+            georef.ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
 
@@ -233,9 +231,10 @@ DataSource`.
             if True removes existing output file
 
         """
-        ds_out = gdal_create_dataset(driver, filename,
-                                     gdal_type=gdal.OF_VECTOR, remove=remove)
-        ogr_copy_layer(self.ds, 0, ds_out)
+        ds_out = io.gdal_create_dataset(driver, filename,
+                                        gdal_type=gdal.OF_VECTOR,
+                                        remove=remove)
+        georef.ogr_copy_layer(self.ds, 0, ds_out)
 
         # flush everything
         del ds_out
@@ -267,8 +266,8 @@ DataSource`.
         rows = int((y_max - y_min) / pixel_size)
 
         # Todo: at the moment, always writing floats
-        ds_out = gdal_create_dataset('MEM', '', cols, rows, 1,
-                                     gdal_type=gdal.GDT_Float32)
+        ds_out = io.gdal_create_dataset('MEM', '', cols, rows, 1,
+                                        gdal_type=gdal.GDT_Float32)
 
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
         proj = layer.GetSpatialRef()
@@ -482,7 +481,8 @@ class ZonalDataBase(object):
         # TODO: kwargs necessary?
 
         # create intermediate mem dataset
-        ds_mem = gdal_create_dataset('Memory', 'dst', gdal_type=gdal.OF_VECTOR)
+        ds_mem = io.gdal_create_dataset('Memory', 'dst',
+                                        gdal_type=gdal.OF_VECTOR)
 
         # get src geometry layer
         src_lyr = self.src.ds.GetLayerByName('src')
@@ -491,8 +491,9 @@ class ZonalDataBase(object):
         geom_type = src_lyr.GetGeomType()
 
         # create temp Buffer layer (time consuming)
-        ds_tmp = gdal_create_dataset('Memory', 'tmp', gdal_type=gdal.OF_VECTOR)
-        ogr_copy_layer(self.trg.ds, 0, ds_tmp)
+        ds_tmp = io.gdal_create_dataset('Memory', 'tmp',
+                                        gdal_type=gdal.OF_VECTOR)
+        georef.ogr_copy_layer(self.trg.ds, 0, ds_tmp)
         tmp_trg_lyr = ds_tmp.GetLayer()
 
         for i in range(tmp_trg_lyr.GetFeatureCount()):
@@ -504,8 +505,8 @@ class ZonalDataBase(object):
         # get target layer, iterate over polygons and calculate intersections
         tmp_trg_lyr.ResetReading()
 
-        self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
-                                        geom_type=geom_type)
+        self.tmp_lyr = georef.ogr_create_layer(ds_mem, 'dst', srs=self._srs,
+                                               geom_type=geom_type)
 
         print("Calculate Intersection source/target-layers")
         try:
@@ -562,21 +563,21 @@ class ZonalDataBase(object):
         # get input file handles
         ds_in, tmp = io.open_shape(filename)
 
-        # claim memory driver
-        drv_in = ogr.GetDriverByName('Memory')
-
         # create all DataSources
         self.src = DataSource(name='src')
-        self.src.ds = drv_in.CreateDataSource('src')
+        self.src.ds = io.gdal_create_dataset('Memory', 'src',
+                                             gdal_type=gdal.OF_VECTOR)
         self.trg = DataSource(name='trg')
-        self.trg.ds = drv_in.CreateDataSource('trg')
+        self.trg.ds = io.gdal_create_dataset('Memory', 'trg',
+                                             gdal_type=gdal.OF_VECTOR)
         self.dst = DataSource(name='dst')
-        self.dst.ds = drv_in.CreateDataSource('dst')
+        self.dst.ds = io.gdal_create_dataset('Memory', 'dst',
+                                             gdal_type=gdal.OF_VECTOR)
 
         # copy all layers
-        ogr_copy_layer_by_name(ds_in, "src", self.src.ds)
-        ogr_copy_layer_by_name(ds_in, "trg", self.trg.ds)
-        ogr_copy_layer_by_name(ds_in, "dst", self.dst.ds)
+        georef.ogr_copy_layer_by_name(ds_in, "src", self.src.ds)
+        georef.ogr_copy_layer_by_name(ds_in, "trg", self.trg.ds)
+        georef.ogr_copy_layer_by_name(ds_in, "dst", self.dst.ds)
 
         # get spatial reference object
         self._srs = self.src.ds.GetLayer().GetSpatialRef()
@@ -617,7 +618,7 @@ class ZonalDataBase(object):
 
         # check for geometry
         if not type(trg) == ogr.Geometry:
-            trg = numpy_to_ogr(trg, 'Polygon')
+            trg = georef.numpy_to_ogr(trg, 'Polygon')
 
         # apply Buffer value
         trg = trg.Buffer(buf)
@@ -716,8 +717,8 @@ class ZonalDataPoly(ZonalDataBase):
             # checking GeometryCollection, convert to only Polygons,
             #  Multipolygons
             if geom.GetGeometryType() in [7]:
-                geocol = ogr_geocol_to_numpy(geom)
-                geom = numpy_to_ogr(geocol, 'MultiPolygon')
+                geocol = georef.ogr_geocol_to_numpy(geom)
+                geom = georef.numpy_to_ogr(geocol, 'MultiPolygon')
 
             # only geometries containing points
             if geom.IsEmpty():
@@ -725,7 +726,7 @@ class ZonalDataPoly(ZonalDataBase):
 
             if geom.GetGeometryType() in [3, 6, 12]:
                 idx = ogr_src.GetField('index')
-                ogr_add_geometry(dst, geom, [idx, trg_index])
+                georef.ogr_add_geometry(dst, geom, [idx, trg_index])
 
 
 class ZonalDataPoint(ZonalDataBase):
@@ -802,19 +803,19 @@ class ZonalDataPoint(ZonalDataBase):
         feat_cnt = layer.GetFeatureCount()
 
         if feat_cnt:
-            [ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
-                              [ogr_src.GetField('index'), trg_index])
+            [georef.ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
+                                     [ogr_src.GetField('index'), trg_index])
              for ogr_src in layer]
         else:
             layer.SetSpatialFilter(None)
             src_pts = np.array([ogr_src.GetGeometryRef().GetPoint_2D(0)
                                 for ogr_src in layer])
-            centroid = get_centroid(trg)
+            centroid = georef.get_centroid(trg)
             tree = cKDTree(src_pts)
             distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
             feat = layer.GetFeature(ixnext)
-            ogr_add_geometry(dst, feat.GetGeometryRef(),
-                             [feat.GetField('index'), trg_index])
+            georef.ogr_add_geometry(dst, feat.GetGeometryRef(),
+                                    [feat.GetField('index'), trg_index])
 
 
 class ZonalStatsBase(object):
@@ -1030,331 +1031,6 @@ class GridPointsToPoly(ZonalStatsBase):
         super(GridPointsToPoly, self).__init__(src, **kwargs)
 
 
-def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
-                        gdal_type=gdal.GDT_Unknown, remove=False):
-    """Creates GDAL.DataSet object.
-
-    .. versionadded:: 0.7.0
-
-    .. versionchanged:: 0.11.0
-        - changed parameters to keyword args
-        - added 'bands' as parameter
-
-    Parameters
-    ----------
-    drv : string
-        GDAL driver string
-    name : string
-        path to filename
-    cols : int
-        # of columns
-    rows : int
-        # of rows
-    bands : int
-        # of raster bands
-    gdal_type : raster data type
-        eg. gdal.GDT_Float32
-    remove : bool
-        if True, existing gdal.Dataset will be
-        removed before creation
-
-    Returns
-    -------
-    out : gdal.Dataset
-        object
-
-    """
-    driver = gdal.GetDriverByName(drv)
-    metadata = driver.GetMetadata()
-
-    if not metadata.get('DCAP_CREATE', False):
-        raise IOError("Driver %s doesn't support Create() method.".format(drv))
-
-    if remove:
-        if os.path.exists(name):
-            driver.Delete(name)
-    ds = driver.Create(name, cols, rows, bands, gdal_type)
-
-    return ds
-
-
-@util.deprecated(gdal_create_dataset)
-def ogr_create_datasource(drv, name, remove=False):
-    """Creates OGR.DataSource object.
-
-    .. versionadded:: 0.7.0
-
-    .. deprecated:: 0.12.0
-        Use :func:`gdal_create_dataset` instead.
-
-    Parameters
-    ----------
-    drv : string
-        GDAL/OGR driver string
-    name : string
-        path to filename
-    remove : bool
-        if True, existing OGR.DataSource will be
-        removed before creation
-
-    Returns
-    -------
-    out : OGR.DataSource
-        object
-
-    """
-    driver = ogr.GetDriverByName(drv)
-    if remove:
-        if os.path.exists(name):
-            driver.DeleteDataSource(name)
-    ds = driver.CreateDataSource(name)
-
-    return ds
-
-
-def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
-    """Creates OGR.Layer objects in gdal.Dataset object.
-
-    .. versionadded:: 0.7.0
-
-    Creates one OGR.Layer with given name in given gdal.Dataset object
-    using given OGR.GeometryType and FieldDefinitions
-
-    Parameters
-    ----------
-    ds : gdal.Dataset
-        object
-    name : string
-        OGRLayer name
-    srs : OSR.SpatialReference
-        object
-    geom_type : OGR GeometryType
-        (eg. ogr.wkbPolygon)
-    fields : list of 2 element tuples
-        (strings, OGR.DataType) field name, field type
-
-    Returns
-    -------
-    out : OGR.Layer
-        object
-    """
-    if geom_type is None:
-        raise TypeError("geometry_type needed")
-
-    lyr = ds.CreateLayer(name, srs=srs, geom_type=geom_type)
-    if fields is not None:
-        for fname, fvalue in fields:
-            lyr.CreateField(ogr.FieldDefn(fname, fvalue))
-
-    return lyr
-
-
-def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
-    """ Copy OGR.Layer object.
-
-    .. versionadded:: 0.7.0
-
-    Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
-
-    Parameters
-    ----------
-    src_ds : gdal.Dataset
-        object
-    index : int
-        layer index
-    dst_ds : gdal.Dataset
-        object
-    reset : bool
-        if True resets src_layer
-    """
-    # get and copy src geometry layer
-
-    src_lyr = src_ds.GetLayerByIndex(index)
-    if reset:
-        src_lyr.ResetReading()
-        src_lyr.SetSpatialFilter(None)
-        src_lyr.SetAttributeFilter(None)
-    dst_ds.CopyLayer(src_lyr, src_lyr.GetName())
-
-
-def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
-    """ Copy OGR.Layer object.
-
-    .. versionadded:: 0.8.0
-
-    Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
-
-    Parameters
-    ----------
-    src_ds : gdal.Dataset
-        object
-    name : string
-        layer name
-    dst_ds : gdal.Dataset
-        object
-    reset : bool
-        if True resets src_layer
-    """
-    # get and copy src geometry layer
-
-    src_lyr = src_ds.GetLayerByName(name)
-    if reset:
-        src_lyr.ResetReading()
-        src_lyr.SetSpatialFilter(None)
-        src_lyr.SetAttributeFilter(None)
-    dst_ds.CopyLayer(src_lyr, src_lyr.GetName())
-
-
-def ogr_add_feature(ds, src, name=None):
-    """ Creates OGR.Feature objects in OGR.Layer object.
-
-    .. versionadded:: 0.7.0
-
-    OGR.Features are built from numpy src points or polygons.
-
-    OGR.Features 'FID' and 'index' corresponds to source data element
-
-    Parameters
-    ----------
-    ds : gdal.Dataset
-        object
-    src : :func:`numpy:numpy.array`
-        source data
-    name : string
-        name of wanted Layer
-    """
-
-    if name is not None:
-        lyr = ds.GetLayerByName(name)
-    else:
-        lyr = ds.GetLayer()
-
-    defn = lyr.GetLayerDefn()
-    geom_name = ogr.GeometryTypeToName(lyr.GetGeomType())
-    fields = [defn.GetFieldDefn(i).GetName()
-              for i in range(defn.GetFieldCount())]
-    feat = ogr.Feature(defn)
-
-    for index, src_item in enumerate(src):
-        geom = numpy_to_ogr(src_item, geom_name)
-
-        if 'index' in fields:
-            feat.SetField('index', index)
-
-        feat.SetGeometry(geom)
-        lyr.CreateFeature(feat)
-
-
-def ogr_add_geometry(layer, geom, attrs):
-    """ Copies single OGR.Geometry object to an OGR.Layer object.
-
-    .. versionadded:: 0.7.0
-
-    Given OGR.Geometry is copied to new OGR.Feature and
-    written to given OGR.Layer by given index. Attributes are attached.
-
-    Parameters
-    ----------
-    layer : OGR.Layer
-        object
-    geom : OGR.Geometry
-        object
-    attrs : list
-        attributes referring to layer fields
-
-    """
-    defn = layer.GetLayerDefn()
-    feat = ogr.Feature(defn)
-
-    for i, item in enumerate(attrs):
-        feat.SetField(i, item)
-    feat.SetGeometry(geom)
-    layer.CreateFeature(feat)
-
-
-def numpy_to_ogr(vert, geom_name):
-    """Convert a vertex array to gdal/ogr geometry.
-
-    .. versionadded:: 0.7.0
-
-    Using JSON as a vehicle to efficiently deal with numpy arrays.
-
-    Parameters
-    ----------
-    vert : array_like
-        a numpy array of vertices of shape (num vertices, 2)
-    geom_name : string
-        Name of Geometry
-
-    Returns
-    -------
-    out : ogr.Geometry
-        object of type geom_name
-    """
-
-    if geom_name in ['Polygon', 'MultiPolygon']:
-        json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".\
-            format(geom_name, vert.tolist())
-    else:
-        json_str = "{{'type':{0!r},'coordinates':{1!r}}}".\
-            format(geom_name, vert.tolist())
-
-    return ogr.CreateGeometryFromJson(json_str)
-
-
-def ogr_to_numpy(ogrobj):
-    """Backconvert a gdal/ogr geometry to a numpy vertex array.
-
-    .. versionadded:: 0.7.0
-
-    Using JSON as a vehicle to efficiently deal with numpy arrays.
-
-    Parameters
-    ----------
-    ogrobj : ogr.Geometry
-        object
-
-    Returns
-    -------
-    out : :class:`numpy:numpy.ndarray`
-        a nested ndarray of vertices of shape (num vertices, 2)
-
-    """
-    jsonobj = eval(ogrobj.ExportToJson())
-
-    return np.squeeze(jsonobj['coordinates'])
-
-
-def ogr_geocol_to_numpy(ogrobj):
-    """Backconvert a gdal/ogr geometry Collection to a numpy vertex array.
-
-    .. versionadded:: 0.7.0
-
-    This extracts only Polygon geometries!
-
-    Using JSON as a vehicle to efficiently deal with numpy arrays.
-
-    Parameters
-    ----------
-    ogrobj : ogr.Geometry
-        Collection object
-
-    Returns
-    -------
-    out : :class:`numpy:numpy.ndarray`
-        a nested ndarray of vertices of shape (num vertices, 2)
-
-    """
-    jsonobj = eval(ogrobj.ExportToJson())
-
-    mpol = []
-    for item in jsonobj['geometries']:
-        if item['type'] == 'Polygon':
-            mpol.append(item['coordinates'])
-
-    return np.squeeze(mpol)
-
-
 def numpy_to_pathpatch(arr):
     """ Returns PathPatches from nested array
 
@@ -1508,24 +1184,6 @@ def get_bbox(x, y):
                 right=np.max(x),
                 bottom=np.min(y),
                 top=np.max(y))
-
-
-def get_centroid(polyg):
-    """Return centroid of a polygon
-
-    Parameters
-    ----------
-    polyg : :class:`numpy:numpy.ndarray`
-        of shape (num vertices, 2) or ogr.Geometry object
-
-    Returns
-    -------
-    out : x and y coordinate of the centroid
-
-    """
-    if not type(polyg) == ogr.Geometry:
-        polyg = numpy_to_ogr(polyg, 'Polygon')
-    return polyg.Centroid().GetPoint()[0:2]
 
 
 def grid_centers_to_vertices(x, y, dx, dy):

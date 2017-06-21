@@ -9,7 +9,7 @@ import wradlib.georef as georef
 import wradlib.zonalstats as zonalstats
 import wradlib.util as util
 import numpy as np
-from osgeo import osr, ogr, gdal
+from osgeo import osr
 
 
 class DataSourceTest(unittest.TestCase):
@@ -156,10 +156,10 @@ class ZonalDataTest(unittest.TestCase):
 
         self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data,
                                                srs=self.proj_gk)
-        # self.zdpoly.dump_vector('test_zdpoly')
+        self.zdpoly.dump_vector('test_zdpoly')
         self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data,
                                                  srs=self.proj_gk)
-        # self.zdpoint.dump_vector('test_zdpoint')
+        self.zdpoint.dump_vector('test_zdpoint')
 
         isec_poly0 = np.array([np.array([[2600000., 5630000.],
                                          [2600000., 5630057.83273596],
@@ -203,19 +203,23 @@ class ZonalDataTest(unittest.TestCase):
         self.assertEqual(self.zdpoint.srs, self.proj_gk)
 
     def test_isecs(self):
-        self.assertEqual(self.zdpoly.isecs.__str__(), self.isec_poly.__str__())
-        self.assertEqual(self.zdpoint.isecs.__str__(),
-                         self.isec_point.__str__())
+        # need to iterate over nested array for correct testing
+        for i in range(len(self.zdpoly.isecs)):
+            for k in range(len(self.zdpoly.isecs[i])):
+                np.testing.assert_array_almost_equal(self.zdpoly.isecs[i, k],
+                                                     self.isec_poly[i, k],
+                                                     decimal=3)
+        np.testing.assert_array_almost_equal(self.zdpoint.isecs,
+                                             self.isec_point, decimal=2)
 
     def test_get_isec(self):
-        self.assertEqual(self.zdpoly.get_isec(0).__str__(),
-                         self.isec_poly[0].__str__())
-        self.assertEqual(self.zdpoly.get_isec(1).__str__(),
-                         self.isec_poly[1].__str__())
-        self.assertEqual(self.zdpoint.get_isec(0).__str__(),
-                         self.isec_point[0].__str__())
-        self.assertEqual(self.zdpoint.get_isec(1).__str__(),
-                         self.isec_point[1].__str__())
+        for i in [0, 1]:
+            for k, arr in enumerate(self.zdpoly.get_isec(i)):
+                np.testing.assert_array_almost_equal(arr,
+                                                     self.isec_poly[i, k],
+                                                     decimal=3)
+            np.testing.assert_array_almost_equal(self.zdpoint.get_isec(i),
+                                                 self.isec_point[i], decimal=2)
 
     def test_get_source_index(self):
         self.assertTrue(np.allclose(self.zdpoly.get_source_index(0),
@@ -239,43 +243,7 @@ class ZonalStatsUtilTest(unittest.TestCase):
                                [2600100., 5630100.], [2600100., 5630000.],
                                [2600000., 5630000.]])
 
-        self.ogrobj = zonalstats.numpy_to_ogr(self.npobj, 'Polygon')
-
-    def test_gdal_create_dataset(self):
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
-                                            gdal_type=gdal.GDT_Float32)
-        del ds
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
-                                            gdal_type=gdal.GDT_Float32,
-                                            remove=True)
-        self.assertTrue(isinstance(ds, gdal.Dataset))
-        self.assertRaises(IOError,
-                          lambda: zonalstats
-                          .gdal_create_dataset('GXF',
-                                               'test.gxf',
-                                               100, 100, 1,
-                                               gdal_type=gdal.GDT_Float32))
-        del ds
-        ds = zonalstats.gdal_create_dataset('Memory', 'test',
-                                            gdal_type=gdal.OF_VECTOR)
-        self.assertTrue(isinstance(ds, gdal.Dataset))
-
-    def test_ogr_create_datasource(self):
-        ds = zonalstats.ogr_create_datasource('Memory', 'test')
-        self.assertTrue(isinstance(ds, ogr.DataSource))
-
-    def test_ogr_create_layer(self):
-        ds = zonalstats.gdal_create_dataset('Memory', 'test',
-                                            gdal_type=gdal.OF_VECTOR)
-        self.assertRaises(TypeError,
-                          lambda: zonalstats.ogr_create_layer(ds, 'test'))
-        lyr = zonalstats.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
-                                          fields=[('test', ogr.OFTReal)])
-        self.assertTrue(isinstance(lyr, ogr.Layer))
-
-    def test_ogr_to_numpy(self):
-        self.assertTrue(
-            np.allclose(zonalstats.ogr_to_numpy(self.ogrobj), self.npobj))
+        self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
 
     def test_angle_between(self):
         self.assertAlmostEqual(zonalstats.angle_between(355., 5.), 10.)
