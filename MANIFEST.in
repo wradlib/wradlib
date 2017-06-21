@@ -6,6 +6,7 @@ recursive-include notebooks *.ipynb
 recursive-include notebooks *.py
 recursive-exclude notebooks __init__.py
 recursive-exclude notebooks *.pyc
-prune */.ipynb_checkpoints
+prune notebooks/.ipynb_checkpoints
+prune notebooks/*/.ipynb_checkpoints
 recursive-include wradlib/tests *.py
 recursive-exclude wradlib/tests *.pyc
