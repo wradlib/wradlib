@@ -114,14 +114,13 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     ix = extract_circle(center, radius, trg)
     # interpolate on subgrid
     ip = interpol(src, trg[ix], *args, **kwargs)
-    data_on_subgrid = ip(data).reshape((len(ix), -1))
+    data_on_subgrid = ip(data).reshape((len(ix)))
     # create container for entire grid
     composegridshape = [len(trg)]
     composegridshape.extend(data.shape[1:])
     compose_grid = np.repeat(np.nan, len(trg) *
                              np.prod(data.shape[1:])).reshape(composegridshape)
     # push subgrid results into the large grid
-    # raises Error for numpy 1.13
     compose_grid[ix] = data_on_subgrid
     return compose_grid
 
