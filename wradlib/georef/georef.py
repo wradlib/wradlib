@@ -65,7 +65,7 @@ import numpy as np
 from sys import exit
 import warnings
 
-from . import util as util
+from .. import util as util
 
 
 def hor2aeq(a, h, phi):
