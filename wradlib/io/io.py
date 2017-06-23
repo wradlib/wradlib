@@ -45,10 +45,10 @@ except ImportError:
     import pickle
 try:
     from StringIO import StringIO
-    import io
+    import io as sio
 except ImportError:
     from io import StringIO  # noqa
-    import io
+    import io as sio
 
 # from builtins import bytes, chr
 from collections import OrderedDict
@@ -62,8 +62,8 @@ import numpy as np
 # ATTENTION: Needs to be imported AFTER h5py, otherwise ungraceful crash
 import netCDF4 as nc
 from osgeo import gdal, ogr, osr
-from . import util as util
-from . import georef as georef
+from .. import util as util
+from .. import georef as georef
 
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
@@ -295,7 +295,7 @@ def readDX(filename):
     raw = np.frombuffer(buf, dtype='uint16')
 
     # reading finished, close file, but only if we opened it.
-    if isinstance(filename, io.IOBase):
+    if isinstance(filename, sio.IOBase):
         f.close()
 
     # a new ray/beam starts with bit 14 set
@@ -705,7 +705,7 @@ def decode_radolan_runlength_array(binarr, attrs):
     arr : :func:`numpy:numpy.array`
         of decoded values
     """
-    buf = io.BytesIO(binarr)
+    buf = sio.BytesIO(binarr)
 
     # read and decode first line
     line = read_radolan_runlength_line(buf)

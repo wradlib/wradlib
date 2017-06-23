@@ -16,10 +16,10 @@ class DXTest(unittest.TestCase):
     # testing functions related to readDX
     def test__getTimestampFromFilename(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
-        self.assertEqual(wrl.io._getTimestampFromFilename(filename),
+        self.assertEqual(wrl.io.io._getTimestampFromFilename(filename),
                          datetime.datetime(2006, 8, 5, 0))
         filename = 'raa00-dx_10488-0608050000-drs---bin'
-        self.assertEqual(wrl.io._getTimestampFromFilename(filename),
+        self.assertEqual(wrl.io.io._getTimestampFromFilename(filename),
                          datetime.datetime(2006, 8, 5, 0))
 
     def test_getDXTimestamp(self):

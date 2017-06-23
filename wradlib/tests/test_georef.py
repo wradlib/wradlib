@@ -56,11 +56,11 @@ class CoordinateTransformTest(unittest.TestCase):
             self.result_n, rtol=1e-04))
 
     def test__latscale(self):
-        self.assertEqual(georef._latscale(), 111178.17148373958)
+        self.assertEqual(georef.georef._latscale(), 111178.17148373958)
 
     def test__lonscale(self):
         self.assertTrue(
-            np.allclose(georef._lonscale(np.arange(-90., 90., 10.)),
+            np.allclose(georef.georef._lonscale(np.arange(-90., 90., 10.)),
                         np.array(
                             [6.80769959e-12, 1.93058869e+04, 3.80251741e+04,
                              5.55890857e+04,
@@ -157,32 +157,32 @@ class CoordinateHelperTest(unittest.TestCase):
         r = np.array([50., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
         self.assertRaises(ValueError,
-                          lambda: georef._check_polar_coords(r, az))
+                          lambda: georef.georef._check_polar_coords(r, az))
 
         r = np.array([0, 50., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
         self.assertRaises(ValueError,
-                          lambda: georef._check_polar_coords(r, az))
+                          lambda: georef.georef._check_polar_coords(r, az))
 
         r = np.array([100., 50., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
         self.assertRaises(ValueError,
-                          lambda: georef._check_polar_coords(r, az))
+                          lambda: georef.georef._check_polar_coords(r, az))
 
         r = np.array([50., 100., 125., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
         self.assertRaises(ValueError,
-                          lambda: georef._check_polar_coords(r, az))
+                          lambda: georef.georef._check_polar_coords(r, az))
 
         r = np.array([50., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 361.])
         self.assertRaises(ValueError,
-                          lambda: georef._check_polar_coords(r, az))
+                          lambda: georef.georef._check_polar_coords(r, az))
 
         r = np.array([50., 100., 150., 200.])
         az = np.array([225., 270., 315., 0., 45., 90., 135., 180.])[::-1]
         self.assertRaises(ValueError,
-                          lambda: georef._check_polar_coords(r, az))
+                          lambda: georef.georef._check_polar_coords(r, az))
 
     @unittest.skipIf(sys.version_info < (3, 5),
                      "not supported in this python version")
@@ -190,7 +190,7 @@ class CoordinateHelperTest(unittest.TestCase):
         r = np.array([50., 100., 150., 200.])
         az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
         self.assertWarns(UserWarning,
-                         lambda: georef._check_polar_coords(r, az))
+                         lambda: georef.georef._check_polar_coords(r, az))
 
 
 class ProjectionsTest(unittest.TestCase):
