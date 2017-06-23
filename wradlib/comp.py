@@ -114,7 +114,7 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     ix = extract_circle(center, radius, trg)
     # interpolate on subgrid
     ip = interpol(src, trg[ix], *args, **kwargs)
-    data_on_subgrid = ip(data).reshape((len(ix), -1))
+    data_on_subgrid = ip(data).reshape((len(ix)))
     # create container for entire grid
     composegridshape = [len(trg)]
     composegridshape.extend(data.shape[1:])

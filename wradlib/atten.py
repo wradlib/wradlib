@@ -322,8 +322,8 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
         Exception, if attenuation exceeds ``thrs`` even with smallest possible
         linear coefficient (a_min) and no handling ``mode`` is set.
 
-    Examples
-    --------
+    Note
+    ----
     See :ref:`notebooks/attenuation/wradlib_attenuation.ipynb#Harrison`.
 
     Examples
@@ -829,7 +829,7 @@ def _interp_atten(pia, invalidbeams):
                                           extended_pia[~extended_invalid],
                                           kind='linear')
         # Interpolate where sectors are invalid.
-        pia[i, sub_invalid, -1] = intp(x[pia.shape[1]:2 * pia.shape[1] + 1]
+        pia[i, sub_invalid, -1] = intp(x[pia.shape[1]:2 * pia.shape[1]]
                                        [sub_invalid])
 
 
