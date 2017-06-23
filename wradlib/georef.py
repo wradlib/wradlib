@@ -617,7 +617,7 @@ def polar2polyvert(r, az, sitecoords):
     >>> import numpy as np
     >>> import matplotlib as mpl
     >>> import matplotlib.pyplot as pl
-    >>> #pl.interactive(True)
+    >>> pl.interactive(True)
     >>> # define the polar coordinates and the site coordinates in lat/lon
     >>> r = np.array([50., 100., 150., 200.])
     >>> # _check_polar_coords fails in next line
