@@ -11,6 +11,24 @@ Bleeding Edge
 
 *Nothing, so far*
 
+
+Version 0.10.1
+--------------
+
+**Highlights**
+
+* Introduced `execute`-workflow. Notebooks are now tested and rendered in one pass.
+* Meet `GDAL RFC46 <https://trac.osgeo.org/gdal/wiki/rfc46_gdal_ogr_unification>`_.
+
+**New features**
+
+* Enhanced :meth:`wradlib.io.parse_DWD_quant_composite_header` to handle `QN`-header.
+
+**Bugfixes**
+
+* Fix :meth:`wradlib.zonalstats.numpy_to_ogr` to handle nested ndarrays
+* Fix several functions for use with `numpy 1.13`
+
 Version 0.10.0
 --------------
 
