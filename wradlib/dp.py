@@ -725,7 +725,8 @@ def linear_despeckle(data, N=3, copy=False):
         test = arr + arr_plus1 + arr_minus1 + arr_plus2 + arr_minus2
         data[np.logical_and(np.logical_not(np.isnan(data)), test < 3)] = np.nan
     # remove isolated pixels at the first gate
-    data[np.isnan(np.take(data, range(1, 2), data.ndim - 1))] = np.nan
+    secondgate = np.squeeze(np.take(data, range(1, 2), data.ndim - 1))
+    data[..., 0][np.isnan(secondgate)] = np.nan
     return data
 
 
