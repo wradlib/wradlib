@@ -119,11 +119,11 @@ def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
                         gdal_type=gdal.GDT_Unknown, remove=False):
     """Creates GDAL.DataSet object.
 
-        .. versionadded:: 0.7.0
+    .. versionadded:: 0.7.0
 
-        .. versionchanged:: 0.11.0
-            - changed parameters to keyword args
-            - added 'bands' as parameter
+    .. versionchanged:: 0.11.0
+        - changed parameters to keyword args
+        - added 'bands' as parameter
 
     Parameters
     ----------
@@ -147,6 +147,7 @@ def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
     -------
     out : gdal.Dataset
         object
+
     """
     driver = gdal.GetDriverByName(drv)
     metadata = driver.GetMetadata()
