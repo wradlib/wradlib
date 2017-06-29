@@ -51,7 +51,9 @@ script:
     - scripts/run_tests.sh
 
 after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-unittests" -F unittests || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-doctests" -F doctests || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-notebooktests" -F notebooktests|| echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $WRADLIB_BUILD_DIR; scripts/build_docs.sh; fi
 
