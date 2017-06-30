@@ -10,15 +10,20 @@ if [[ "$COVERAGE" == "true" ]]; then
     # run tests, retrieve exit status
     ./testrunner.py -u -c -s
     (( exit_status = ($? || $exit_status) ))
+    coverage combine
+    coverage xml -o coverage-unittests.xml
     ./testrunner.py -d -c -s
     (( exit_status = ($? || $exit_status) ))
+    coverage combine
+    coverage xml -o coverage-doctests.xml
     ./testrunner.py -e -c -s
     (( exit_status = ($? || $exit_status) ))
+    coverage combine
+    coverage xml -o coverage-exampletests.xml
     ./testrunner.py -n -c -s
     (( exit_status = ($? || $exit_status) ))
-
-    # combine coverage
     coverage combine
+    coverage xml -o coverage-notebooktests.xml
 
 else
     # run tests, retrieve exit status
