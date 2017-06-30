@@ -1,12 +1,10 @@
 # run on container-based infrastructure
-sudo: false
+sudo: required
 
-language: python
+language: generic
 
-addons:
-    apt:
-        packages:
-            - gfortran
+services:
+    - docker
 
 env:
   global:
@@ -17,45 +15,52 @@ env:
 matrix:
     include:
     - python: 2.7
+      sudo: required
+      services: docker
       env:
         - PYTHON_VERSION="2.7"
         - COVERAGE="true"
         - DOC_BUILD="true"
     - python: 3.5
+      sudo: required
+      services: docker
       env:
         - PYTHON_VERSION="3.5"
         - COVERAGE="true"
     - python: 3.6
+      sudo: required
+      services: docker
       env:
         - PYTHON_VERSION="3.6"
         - COVERAGE="true"
 
+before_install:
+    - echo $PWD
+    - env
+    - ls -lart $HOME
+    - docker pull wradlib/wradlib-docker
+    - source scripts/docker_run.sh
+
 install:
-    - deactivate
-    - source scripts/install.sh
+    - git clone https://github.com/wradlib/wradlib-data.git
+    - source scripts/install_docker.sh
 
 before_script:
-    - flake8 .
-    - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
-    - export WRADLIB_DATA=$HOME/wradlib-data
-    - export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/notebooks-render
+    - docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; flake8"
     # duplicate notebooks folder
+    - export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/notebooks-render
     - mkdir $WRADLIB_NOTEBOOKS && cp -R notebooks $WRADLIB_NOTEBOOKS/
-    # convert notebooks
-    - scripts/convert_notebooks.sh
-    - export DISPLAY=:99
-    - sh -e /etc/init.d/xvfb start
-    - sleep 3
+    - docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; scripts/convert_notebooks.sh"
 
 script:
-    - scripts/run_tests.sh
+    - docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; scripts/run_tests.sh"
 
 after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-unittests.xml" -F unittests || echo "failed"; fi
-    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-doctests.xml" -F doctests || echo "failed"; fi
-    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-notebooktests.xml" -F notebooktests|| echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f '$WRADLIB_BUILD_DIR/coverage-unittests.xml' -F unittests" || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f '$WRADLIB_BUILD_DIR/coverage-doctests.xml' -F doctests" || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f '$WRADLIB_BUILD_DIR/coverage-notebooktests.xml' -F notebooktests" || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
-    - if [[ "$DOC_BUILD" == "true" ]]; then cd $WRADLIB_BUILD_DIR; scripts/build_docs.sh; fi
+    - if [[ "$DOC_BUILD" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; scripts/build_docs.sh"; fi
 
 deploy:
   # devel
