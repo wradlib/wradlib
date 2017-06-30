@@ -56,9 +56,9 @@ script:
     - docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; scripts/run_tests.sh"
 
 after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f '$WRADLIB_BUILD_DIR/coverage-unittests.xml' -F unittests" || echo "failed"; fi
-    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f '$WRADLIB_BUILD_DIR/coverage-doctests.xml' -F doctests" || echo "failed"; fi
-    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f '$WRADLIB_BUILD_DIR/coverage-notebooktests.xml' -F notebooktests" || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f coverage-unittests.xml -F unittests" || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f coverage-doctests.xml -F doctests" || echo "failed"; fi
+    - if [[ "$COVERAGE" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; codecov -f coverage-notebooktests.xml -F notebooktests" || echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then docker exec -i -u=$UID wradlib_build /bin/bash -c "source activate wradlib; cd /home/build; scripts/build_docs.sh"; fi
 
