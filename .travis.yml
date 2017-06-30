@@ -19,6 +19,7 @@ matrix:
       services: docker
       env:
         - PYTHON_VERSION="2.7"
+        - WRADLIB_DOCKER_TAG=latest_py27
         - COVERAGE="true"
         - DOC_BUILD="true"
     - python: 3.5
@@ -26,19 +27,21 @@ matrix:
       services: docker
       env:
         - PYTHON_VERSION="3.5"
+        - WRADLIB_DOCKER_TAG=latest_py35
         - COVERAGE="true"
     - python: 3.6
       sudo: required
       services: docker
       env:
         - PYTHON_VERSION="3.6"
+        - WRADLIB_DOCKER_TAG=latest_py36
         - COVERAGE="true"
 
 before_install:
     - echo $PWD
     - env
     - ls -lart $HOME
-    - docker pull wradlib/wradlib-docker
+    - docker pull wradlib/wradlib-docker:$WRADLIB_DOCKER_TAG
     - source scripts/docker_run.sh
 
 install:

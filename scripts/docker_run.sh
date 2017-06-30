@@ -9,6 +9,7 @@ echo "TRAVIS_TAG " $TRAVIS_TAG ${TRAVIS_TAG:1}
 echo "PYTHON_VERSION" $PYTHON_VERSION
 echo "COVERAGE" $COVERAGE
 echo "DOC_BUILD" $DOC_BUILD
+echo "WRADLIB_DOCKER_TAG" $WRADLIB_DOCKER_TAG
 
 # run docker container
 docker run -d -ti \
@@ -34,4 +35,4 @@ docker run -d -ti \
             -e TRAVIS_BUILD_DIR=/home/build/wradlib \
             -e TRAVIS_OS_NAME \
             -e TRAVIS_PYTHON_VERSION=$PYTHON_VERSION \
-            wradlib/wradlib-docker:latest /bin/bash
+            wradlib/wradlib-docker:WRADLIB_DOCKER_TAG /bin/bash
