@@ -35,4 +35,4 @@ docker run -d -ti \
             -e TRAVIS_BUILD_DIR=/home/build/wradlib \
             -e TRAVIS_OS_NAME \
             -e TRAVIS_PYTHON_VERSION=$PYTHON_VERSION \
-            wradlib/wradlib-docker:WRADLIB_DOCKER_TAG /bin/bash
+            wradlib/wradlib-docker:$WRADLIB_DOCKER_TAG /bin/bash
