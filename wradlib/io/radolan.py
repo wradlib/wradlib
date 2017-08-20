@@ -15,6 +15,9 @@ Reading DX and RADOLAN data from German Weather Service
     read_RADOLAN_composite
     get_radolan_filehandle
     read_radolan_header
+    parse_DWD_quant_composite_header
+    read_radolan_binary_array
+    decode_radolan_runlength_array
 """
 
 # standard libraries
