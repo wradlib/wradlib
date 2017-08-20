@@ -27,7 +27,9 @@ from .netcdf import read_EDGE_netcdf, read_generic_netcdf
 from .rainbow import read_Rainbow
 from .radolan import (readDX, read_RADOLAN_composite,
                       read_radolan_header,  get_radolan_filehandle,
-                      parse_DWD_quant_composite_header)
+                      parse_DWD_quant_composite_header,
+                      read_radolan_binary_array,
+                      decode_radolan_runlength_array)
 from .gdal import (read_safnwc, write_raster_dataset,
                    open_shape, open_raster, gdal_create_dataset)
 
