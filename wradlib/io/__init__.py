@@ -17,6 +17,7 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.netcdf
 .. automodule:: wradlib.io.rainbow
 .. automodule:: wradlib.io.gdal
+.. automodule:: wradlib.io.iris
 .. automodule:: wradlib.io.misc
 """
 
