@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2016, wradlib developers.
+# Copyright (c) 2016-2017, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
@@ -9,7 +9,7 @@ import wradlib.georef as georef
 import wradlib.zonalstats as zonalstats
 import wradlib.util as util
 import numpy as np
-from osgeo import osr, ogr, gdal
+from osgeo import osr
 
 
 class DataSourceTest(unittest.TestCase):
@@ -243,43 +243,7 @@ class ZonalStatsUtilTest(unittest.TestCase):
                                [2600100., 5630100.], [2600100., 5630000.],
                                [2600000., 5630000.]])
 
-        self.ogrobj = zonalstats.numpy_to_ogr(self.npobj, 'Polygon')
-
-    def test_gdal_create_dataset(self):
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
-                                            gdal_type=gdal.GDT_Float32)
-        del ds
-        ds = zonalstats.gdal_create_dataset('GTiff', 'test.tif', 100, 100, 1,
-                                            gdal_type=gdal.GDT_Float32,
-                                            remove=True)
-        self.assertTrue(isinstance(ds, gdal.Dataset))
-        self.assertRaises(IOError,
-                          lambda: zonalstats
-                          .gdal_create_dataset('GXF',
-                                               'test.gxf',
-                                               100, 100, 1,
-                                               gdal_type=gdal.GDT_Float32))
-        del ds
-        ds = zonalstats.gdal_create_dataset('Memory', 'test',
-                                            gdal_type=gdal.OF_VECTOR)
-        self.assertTrue(isinstance(ds, gdal.Dataset))
-
-    def test_ogr_create_datasource(self):
-        ds = zonalstats.ogr_create_datasource('Memory', 'test')
-        self.assertTrue(isinstance(ds, ogr.DataSource))
-
-    def test_ogr_create_layer(self):
-        ds = zonalstats.gdal_create_dataset('Memory', 'test',
-                                            gdal_type=gdal.OF_VECTOR)
-        self.assertRaises(TypeError,
-                          lambda: zonalstats.ogr_create_layer(ds, 'test'))
-        lyr = zonalstats.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
-                                          fields=[('test', ogr.OFTReal)])
-        self.assertTrue(isinstance(lyr, ogr.Layer))
-
-    def test_ogr_to_numpy(self):
-        self.assertTrue(
-            np.allclose(zonalstats.ogr_to_numpy(self.ogrobj), self.npobj))
+        self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
 
     def test_angle_between(self):
         self.assertAlmostEqual(zonalstats.angle_between(355., 5.), 10.)
