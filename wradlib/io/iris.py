@@ -209,10 +209,8 @@ class IrisFile(object):
 
         return ingest_data_hdrs
 
-    def get_ray(self):
+    def get_ray(self, data):
         ray_pos = 0
-
-        data = np.zeros((self.nbins + 6), dtype='int16')
 
         cmp_msb, cmp_val = self.get_compression_code()
 
@@ -242,7 +240,7 @@ class IrisFile(object):
                         "".format(cmp_val, ray_pos,
                                   self._rh.recpos, self._rh.recpos + 1))
                 if cmp_val + ray_pos > self.nbins + 6:
-                    return data[:6], data[6:]
+                    return data
                 data[ray_pos:ray_pos + cmp_val] = 0
 
             ray_pos += cmp_val
@@ -250,7 +248,7 @@ class IrisFile(object):
             # read next compression code
             cmp_msb, cmp_val = self.get_compression_code()
 
-        return data[:6], data[6:]
+        return data
 
     def get_sweep(self):
 
@@ -265,39 +263,30 @@ class IrisFile(object):
         rays = sum(rays_per_data_type)
         bins = self._product_hdr['product_end']['number_bins']
 
-        raw_sweep_data = np.zeros((rays, bins), dtype='int16')
-        azi_start = np.zeros(rays, dtype='int16')
-        azi_stop = np.zeros(rays, dtype='int16')
-        ele_start = np.zeros(rays, dtype='int16')
-        ele_stop = np.zeros(rays, dtype='int16')
-        rbins = np.zeros(rays, dtype='int16')
-        dtime = np.zeros(rays, dtype='uint16')
+        raw_data = np.zeros((rays, bins + 6), dtype='int16')
 
         for ray_i in range(rays):
             if self._debug:
                 print("{0}: Ray started at {1}, file offset: {2}"
                       "".format(ray_i, int(self._rh.recpos) - 1,
                                 self.filepos))
-            ret = self.get_ray()
-            if ret is None:
-                continue
-            else:
-                header = ret[0]
-                azi_start[ray_i] = header[0]
-                ele_start[ray_i] = header[1]
-                azi_stop[ray_i] = header[2]
-                ele_stop[ray_i] = header[3]
-                rbins[ray_i] = header[4]
-                dtime[ray_i] = header[5]
-                raw_sweep_data[ray_i] = ret[1]
+            ret = self.get_ray(raw_data[ray_i])
+            if ret is not None:
+                raw_data[ray_i] = ret
 
-        sweep['raw_sweep_data'] = raw_sweep_data
-        sweep['azi_start'] = azi_start
-        sweep['ele_start'] = ele_start
-        sweep['azi_stop'] = azi_stop
-        sweep['ele_stop'] = ele_stop
-        sweep['rbins'] = rbins
-        sweep['dtime'] = dtime
+        sweep_data = OrderedDict()
+        for i, prod in enumerate(self.data_types_names):
+            sweep_prod = OrderedDict()
+            sweep_prod['data'] = raw_data[i::self.data_types_count, 6:]
+            sweep_prod['azi_start'] = raw_data[i::self.data_types_count, 0]
+            sweep_prod['ele_start'] = raw_data[i::self.data_types_count, 1]
+            sweep_prod['azi_stop'] = raw_data[i::self.data_types_count, 2]
+            sweep_prod['ele_stop'] = raw_data[i::self.data_types_count, 3]
+            sweep_prod['rbins'] = raw_data[i::self.data_types_count, 4]
+            sweep_prod['dtime'] = raw_data[i::self.data_types_count, 5]
+            sweep_data[prod] = sweep_prod
+
+        sweep['raw_sweep_data'] = sweep_data
 
         return sweep
 
