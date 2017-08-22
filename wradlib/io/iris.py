@@ -115,7 +115,8 @@ class IrisFile(object):
 
     @property
     def nsweeps(self):
-        return self.ingest_header['task_configuration']['task_scan_info']['sweep_number']
+        head = self.ingest_header['task_configuration']['task_scan_info']
+        return head['sweep_number']
 
     @property
     def nbins(self):
@@ -194,21 +195,19 @@ class IrisFile(object):
             if cmp_msb:
                 if self.debug:
                     print(
-                        "--- Add {0} WORDS at "
-                        "range {1}, record {2}:{3}:".format(cmp_val, ray_pos,
-                                                            self.rh.recpos,
-                                                            self.rh.recpos + cmp_val))
+                        "--- Add {0} WORDS at range {1}, record {2}:{3}:"
+                        "".format(cmp_val, ray_pos, self.rh.recpos,
+                                  self.rh.recpos + cmp_val))
                 data[ray_pos:ray_pos + cmp_val] = self.read(cmp_val,
-                                                              dtype='int16')
+                                                            dtype='int16')
             # compressed zeros follow
             # can be skipped, if data array is created all zeros
             else:
                 if self.debug:
                     print(
-                        "--- Add {0} Zeros at range {1}, record {2}:{3}:".format(
-                            cmp_val,
-                            ray_pos,
-                            self.rh.recpos, self.rh.recpos + 1))
+                        "--- Add {0} Zeros at range {1}, record {2}:{3}:"
+                        "".format(cmp_val, ray_pos,
+                                  self.rh.recpos, self.rh.recpos + 1))
                 if cmp_val + ray_pos > self.nbins + 6:
                     return data[:6], data[6:]
                 data[ray_pos:ray_pos + cmp_val] = 0
@@ -234,23 +233,28 @@ class IrisFile(object):
         bins = self.product_hdr['product_end']['number_bins']
 
         raw_sweep_data = np.zeros((rays, bins), dtype='int16')
-        azi_start = np.zeros((rays), dtype='int16')
-        azi_stop = np.zeros((rays), dtype='int16')
-        ele_start = np.zeros((rays), dtype='int16')
-        ele_stop = np.zeros((rays), dtype='int16')
-        rbins = np.zeros((rays), dtype='int16')
-        dtime = np.zeros((rays), dtype='uint16')
+        azi_start = np.zeros(rays, dtype='int16')
+        azi_stop = np.zeros(rays, dtype='int16')
+        ele_start = np.zeros(rays, dtype='int16')
+        ele_stop = np.zeros(rays, dtype='int16')
+        rbins = np.zeros(rays, dtype='int16')
+        dtime = np.zeros(rays, dtype='uint16')
 
         for ray_i in range(rays):
             if self.debug:
-                print("{0}: Ray started at {1}".format(ray_i,
-                                                       int(self.rh.recpos) - 1))
+                print("{0}: Ray started at {1}"
+                      "".format(ray_i, int(self.rh.recpos) - 1))
             ret = self.get_ray()
             if ret is None:
                 continue
             else:
-                azi_start[ray_i], ele_start[ray_i], azi_stop[ray_i], \
-                ele_stop[ray_i], rbins[ray_i], dtime[ray_i] = ret[0]
+                header = ret[0]
+                azi_start[ray_i] = header[0]
+                ele_start[ray_i] = header[1]
+                azi_stop[ray_i] = header[2]
+                ele_stop[ray_i] = header[3]
+                rbins[ray_i] = header[4]
+                dtime[ray_i] = header[5]
                 raw_sweep_data[ray_i] = ret[1]
 
         sweep['raw_sweep_data'] = raw_sweep_data
@@ -283,10 +287,10 @@ def read_iris(filename, loaddata=True, debug=False):
     return data
 
 
-def decode_bin_angle(bin, width):
+def decode_bin_angle(bin_angle, width):
     """ Decode BIN angle
     """
-    return 360. * bin / 2**(width*8)
+    return 360. * bin_angle / 2**(width*8)
 
 
 # IRIS Data Types and corresponding python struct format characters
@@ -676,18 +680,18 @@ TASK_RANGE_INFO = OrderedDict([('range_first_bin', SINT4),
 # 4.3.60, page 61
 
 TASK_RHI_SCAN_INFO = OrderedDict([('lower_elevation_limit', UINT2),
-                                   ('upper_elevation_limit', UINT2),
-                                   ('list_of_azimuths', '80s'),
-                                   ('spare_0', '115s'),
-                                   ('start_first_sector_sweep', UINT1)])
+                                  ('upper_elevation_limit', UINT2),
+                                  ('list_of_azimuths', '80s'),
+                                  ('spare_0', '115s'),
+                                  ('start_first_sector_sweep', UINT1)])
 # task_ppi_scan_info Structure
 # 4.3.58, page 61
 
 TASK_PPI_SCAN_INFO = OrderedDict([('left_azimuth_limit', BIN2),
                                   ('right_azimuth_limit', BIN2),
-                                   ('list_of_elevations', '80s'),
-                                   ('spare_0', '115s'),
-                                   ('start_first_sector_sweep', UINT1)])
+                                  ('list_of_elevations', '80s'),
+                                  ('spare_0', '115s'),
+                                  ('start_first_sector_sweep', UINT1)])
 
 # task_file_scan_info Structure
 # 4.3.55, page 60
@@ -701,7 +705,7 @@ TASK_FILE_SCAN_INFO = OrderedDict([('first_azimuth_angle', UINT2),
 # 4.3.56, page 60
 
 TASK_MANUAL_SCAN_INFO = OrderedDict([('flags', UINT2),
-                                   ('spare_0', '198s')])
+                                     ('spare_0', '198s')])
 
 
 # task_scan_info Structure
@@ -805,153 +809,94 @@ LEN_INGEST_DATA_HEADER = _calcsize(INGEST_DATA_HEADER)
 # Sigmet data types
 # 4.9 Constants, Table 17
 
-SIGMET_DATA_TYPES = OrderedDict([(0, 'DB_XHDR'),  # Extended Headers
-                                 (1, 'DB_DBT'),  # Total H power (1 byte)
-                                 (2, 'DB_DBZ'),
-                                 # Clutter Corrected H reflectivity (1 byte)
-                                 (3, 'DB_VEL'),  # Velocity (1 byte)
-                                 (4, 'DB_WIDTH'),  # Width (1 byte)
-                                 (5, 'DB_ZDR'),
-                                 # Differential reflectivity (1 byte)
-                                 (6, 'DB_ORAIN'),
-                                 # Old Rainfall rate (stored as dBZ), not used
-                                 (7, 'DB_DBZC'),
-                                 # Fully corrected reflectivity (1 byte)
-                                 (8, 'DB_DBT2'),
-                                 # Uncorrected reflectivity (2 byte)
-                                 (9, 'DB_DBZ2'),
-                                 # Corrected reflectivity (2 byte)
-                                 (10, 'DB_VEL2'),  # Velocity (2 byte)
-                                 (11, 'DB_WIDTH2'),  # Width (2 byte)
-                                 (12, 'DB_ZDR2'),
-                                 # Differential reflectivity (2 byte)
-                                 (13, 'DB_RAINRATE2'),
-                                 # Rainfall rate (2 byte)
-                                 (14, 'DB_KDP'),
-                                 # Kdp (specific differential phase)(1 byte)
-                                 (15, 'DB_KDP2'),
-                                 # Kdp (specific differential phase)(2 byte)
-                                 (16, 'DB_PHIDP'),
-                                 # PHIdp (differential phase)(1 byte)
-                                 (17, 'DB_VELC'),
-                                 # Corrected Velocity (1 byte)
-                                 (18, 'DB_SQI'),  # SQI (1 byte)
-                                 (19, 'DB_RHOHV'),  # RhoHV(0) (1 byte)
-                                 (20, 'DB_RHOHV2'),  # RhoHV(0) (2 byte)
-                                 (21, 'DB_DBZC2'),
-                                 # Fully corrected reflectivity (2 byte)
-                                 (22, 'DB_VELC2'),
-                                 # Corrected Velocity (2 byte)
-                                 (23, 'DB_SQI2'),  # SQI (2 byte)
-                                 (24, 'DB_PHIDP2'),
-                                 # PHIdp (differential phase)(2 byte)
-                                 (25, 'DB_LDRH'),  # LDR H to V (1 byte)
-                                 (26, 'DB_LDRH2'),  # LDR H to V (2 byte)
-                                 (27, 'DB_LDRV'),  # LDR V to H (1 byte)
-                                 (28, 'DB_LDRV2'),  # LDR V to H (2 byte)
-                                 (29, 'DB_FLAGS'),
-                                 # Individual flag bits for each bin
-                                 (30, 'DB_FLAGS2'),
-                                 # (See bit definitions below)
-                                 (31, 'DB_FLOAT32'),  # Test of floating format
-                                 (32, 'DB_HEIGHT'),
-                                 # Height (1/10 km) (1 byte)
-                                 (33, 'DB_VIL2'),
-                                 # Linear liquid (.001mm) (2 byte)
-                                 (34, 'DB_NULL'),
-                                 # Data type is not applicable
-                                 (35, 'DB_SHEAR'),  # Wind Shear (1 byte)
-                                 (36, 'DB_DIVERGE2'),
-                                 # Divergence (.001 10**-4) (2-byte)
-                                 (37, 'DB_FLIQUID2'),
-                                 # Floated liquid (2 byte)
-                                 (38, 'DB_USER'),
-                                 # User type, unspecified data (1 byte)
-                                 (39, 'DB_OTHER'),
-                                 # Unspecified data, no color legend
-                                 (40, 'DB_DEFORM2'),
-                                 # Deformation (.001 10**-4) (2-byte)
-                                 (41, 'DB_VVEL2'),
-                                 # Vertical velocity (.01 m/s) (2-byte)
-                                 (41, 'DB_HVEL2'),
-                                 # Horizontal velocity (.01 m/s) (2-byte)
-                                 (43, 'DB_HDIR2'),
-                                 # Horizontal wind direction (.1 degree) (2-byte)
-                                 (44, 'DB_AXDIL2'),
-                                 # Axis of Dilation (.1 degree) (2-byte)
-                                 (45, 'DB_TIME2'),
-                                 # Time of data (seconds) (2-byte)
-                                 (46, 'DB_RHOH'),  # Rho H to V (1 byte)
-                                 (47, 'DB_RHOH2'),  # Rho H to V (2 byte)
-                                 (48, 'DB_RHOV'),  # Rho V to H (1 byte)
-                                 (49, 'DB_RHOV2'),  # Rho V to H (2 byte)
-                                 (50, 'DB_PHIH'),  # Phi H to V (1 byte)
-                                 (51, 'DB_PHIH2'),  # Phi H to V (2 byte)
-                                 (52, 'DB_PHIV'),  # Phi V to H (1 byte)
-                                 (53, 'DB_PHIV2'),  # Phi V to H (2 byte)
-                                 (54, 'DB_USER2'),
-                                 # User type, unspecified data (2 byte)
-                                 (55, 'DB_HCLASS'),
-                                 # Hydrometeor class (1 byte)
-                                 (56, 'DB_HCLASS2'),
-                                 # Hydrometeor class (2 byte)
-                                 (57, 'DB_ZDRC'),
-                                 # Corrected Differential reflectivity (1 byte)
-                                 (58, 'DB_ZDRC2'),
-                                 # Corrected Differential reflectivity (2 byte)
-                                 (59, 'DB_TEMPERATURE16'),
-                                 # Temperature (2 byte)
-                                 (60, 'DB_VIR16'),
-                                 # Vertically Integrated Reflectivity (2 byte)
-                                 (61, 'DB_DBTV8'),  # Total V Power (1 byte)
-                                 (62, 'DB_DBTV16'),
-                                 # Total V Power (2 byte)
-                                 (63, 'DB_DBZV8'),
-                                 # Clutter Corrected V Reflectivity (1 byte)
-                                 (64, 'DB_DBZV16'),
-                                 # Clutter Corrected V Reflectivity (2 byte)
-                                 (65, 'DB_SNR8'),
-                                 # Signal to Noise ratio (1 byte)
-                                 (66, 'DB_SNR16'),
-                                 # Signal to Noise ratio (2 byte)
-                                 (67, 'DB_ALBEDO8'),  # Albedo (1 byte)
-                                 (68, 'DB_ALBEDO16'),  # Albedo (2 byte)
-                                 (69, 'DB_VILD16'),  # VIL Density (2 byte)
-                                 (70, 'DB_TURB16'),  # Turbulence (2 byte)
-                                 (71, 'DB_DBTE8'),
-                                 # Total Power Enhanced (via H+V or HV) (1 byte)
-                                 (72, 'DB_DBTE16'),
-                                 # Total Power Enhanced (via H+V or HV) (2 byte)
-                                 (73, 'DB_DBZE8'),
-                                 # Clutter Corrected Reflectivity Enhanced (1 byte)
-                                 (74, 'DB_DBZE16'),
-                                 # Clutter Corrected Reflectivity Enhanced (2 byte)
-                                 (75, 'DB_PMI8'),
-                                 # Polarimetric meteo index (1 byte)
-                                 (76, 'DB_PMI16'),
-                                 # Polarimetric meteo index (2 byte)
-                                 (77, 'DB_LOG8'),
-                                 # The log receiver signal-to-noise ratio (1 byte)
-                                 (78, 'DB_LOG16'),
-                                 # The log receiver signal-to-noise ratio (2 byte)
-                                 (79, 'DB_CSP8'),
-                                 # Doppler channel clutter signal power (-CSR) (1 byte)
-                                 (80, 'DB_CSP16'),
-                                 # Doppler channel clutter signal power (-CSR) (2 byte)
-                                 (81, 'DB_CCOR8'),
-                                 # Cross correlation, uncorrected rhohv (1 byte)
-                                 (82, 'DB_CCOR16'),
-                                 # Cross correlation, uncorrected rhohv (2 byte)
-                                 (83, 'DB_AH8'),
-                                 # Attenuation of Zh (1 byte)
-                                 (84, 'DB_AH16'),
-                                 # Attenuation of Zh (2 byte)
-                                 (85, 'DB_AV8'),
-                                 # Attenuation of Zv (1 byte)
-                                 (86, 'DB_AV16'),
-                                 # Attenuation of Zv (2 byte)
-                                 (87, 'DB_AZDR8'),
-                                 # Attenuation of Zzdr (1 byte)
-                                 (88, 'DB_AZDR16'),
-                                 # Attenuation of Zzdr (2 byte)
-                                 ])
+SIGMET_DATA_TYPES = OrderedDict(
+    [(0, 'DB_XHDR'),  # Extended Headers
+     (1, 'DB_DBT'),  # Total H power (1 byte)
+     (2, 'DB_DBZ'),  # Clutter Corrected H reflectivity (1 byte)
+     (3, 'DB_VEL'),  # Velocity (1 byte)
+     (4, 'DB_WIDTH'),  # Width (1 byte)
+     (5, 'DB_ZDR'),  # Differential reflectivity (1 byte)
+     (6, 'DB_ORAIN'),  # Old Rainfall rate (stored as dBZ), not used
+     (7, 'DB_DBZC'),  # Fully corrected reflectivity (1 byte)
+     (8, 'DB_DBT2'),  # Uncorrected reflectivity (2 byte)
+     (9, 'DB_DBZ2'),  # Corrected reflectivity (2 byte)
+     (10, 'DB_VEL2'),  # Velocity (2 byte)
+     (11, 'DB_WIDTH2'),  # Width (2 byte)
+     (12, 'DB_ZDR2'),  # Differential reflectivity (2 byte)
+     (13, 'DB_RAINRATE2'),  # Rainfall rate (2 byte)
+     (14, 'DB_KDP'),  # Kdp (specific differential phase)(1 byte)
+     (15, 'DB_KDP2'),  # Kdp (specific differential phase)(2 byte)
+     (16, 'DB_PHIDP'),  # PHIdp (differential phase)(1 byte)
+     (17, 'DB_VELC'),  # Corrected Velocity (1 byte)
+     (18, 'DB_SQI'),  # SQI (1 byte)
+     (19, 'DB_RHOHV'),  # RhoHV(0) (1 byte)
+     (20, 'DB_RHOHV2'),  # RhoHV(0) (2 byte)
+     (21, 'DB_DBZC2'),  # Fully corrected reflectivity (2 byte)
+     (22, 'DB_VELC2'),  # Corrected Velocity (2 byte)
+     (23, 'DB_SQI2'),  # SQI (2 byte)
+     (24, 'DB_PHIDP2'),  # PHIdp (differential phase)(2 byte)
+     (25, 'DB_LDRH'),  # LDR H to V (1 byte)
+     (26, 'DB_LDRH2'),  # LDR H to V (2 byte)
+     (27, 'DB_LDRV'),  # LDR V to H (1 byte)
+     (28, 'DB_LDRV2'),  # LDR V to H (2 byte)
+     (29, 'DB_FLAGS'),  # Individual flag bits for each bin
+     (30, 'DB_FLAGS2'),  # (See bit definitions below)
+     (31, 'DB_FLOAT32'),  # Test of floating format
+     (32, 'DB_HEIGHT'),  # Height (1/10 km) (1 byte)
+     (33, 'DB_VIL2'),  # Linear liquid (.001mm) (2 byte)
+     (34, 'DB_NULL'),  # Data type is not applicable
+     (35, 'DB_SHEAR'),  # Wind Shear (1 byte)
+     (36, 'DB_DIVERGE2'),  # Divergence (.001 10**-4) (2-byte)
+     (37, 'DB_FLIQUID2'),  # Floated liquid (2 byte)
+     (38, 'DB_USER'),  # User type, unspecified data (1 byte)
+     (39, 'DB_OTHER'),  # Unspecified data, no color legend
+     (40, 'DB_DEFORM2'),  # Deformation (.001 10**-4) (2-byte)
+     (41, 'DB_VVEL2'),  # Vertical velocity (.01 m/s) (2-byte)
+     (41, 'DB_HVEL2'),  # Horizontal velocity (.01 m/s) (2-byte)
+     (43, 'DB_HDIR2'),  # Horizontal wind direction (.1 degree) (2-byte)
+     (44, 'DB_AXDIL2'),  # Axis of Dilation (.1 degree) (2-byte)
+     (45, 'DB_TIME2'),  # Time of data (seconds) (2-byte)
+     (46, 'DB_RHOH'),  # Rho H to V (1 byte)
+     (47, 'DB_RHOH2'),  # Rho H to V (2 byte)
+     (48, 'DB_RHOV'),  # Rho V to H (1 byte)
+     (49, 'DB_RHOV2'),  # Rho V to H (2 byte)
+     (50, 'DB_PHIH'),  # Phi H to V (1 byte)
+     (51, 'DB_PHIH2'),  # Phi H to V (2 byte)
+     (52, 'DB_PHIV'),  # Phi V to H (1 byte)
+     (53, 'DB_PHIV2'),  # Phi V to H (2 byte)
+     (54, 'DB_USER2'),  # User type, unspecified data (2 byte)
+     (55, 'DB_HCLASS'),  # Hydrometeor class (1 byte)
+     (56, 'DB_HCLASS2'),  # Hydrometeor class (2 byte)
+     (57, 'DB_ZDRC'),  # Corrected Differential reflectivity (1 byte)
+     (58, 'DB_ZDRC2'),  # Corrected Differential reflectivity (2 byte)
+     (59, 'DB_TEMPERATURE16'),  # Temperature (2 byte)
+     (60, 'DB_VIR16'),  # Vertically Integrated Reflectivity (2 byte)
+     (61, 'DB_DBTV8'),  # Total V Power (1 byte)
+     (62, 'DB_DBTV16'),  # Total V Power (2 byte)
+     (63, 'DB_DBZV8'),  # Clutter Corrected V Reflectivity (1 byte)
+     (64, 'DB_DBZV16'),  # Clutter Corrected V Reflectivity (2 byte)
+     (65, 'DB_SNR8'),  # Signal to Noise ratio (1 byte)
+     (66, 'DB_SNR16'),  # Signal to Noise ratio (2 byte)
+     (67, 'DB_ALBEDO8'),  # Albedo (1 byte)
+     (68, 'DB_ALBEDO16'),  # Albedo (2 byte)
+     (69, 'DB_VILD16'),  # VIL Density (2 byte)
+     (70, 'DB_TURB16'),  # Turbulence (2 byte)
+     (71, 'DB_DBTE8'),  # Total Power Enhanced (via H+V or HV) (1 byte)
+     (72, 'DB_DBTE16'),  # Total Power Enhanced (via H+V or HV) (2 byte)
+     (73, 'DB_DBZE8'),  # Clutter Corrected Reflectivity Enhanced (1 byte)
+     (74, 'DB_DBZE16'),  # Clutter Corrected Reflectivity Enhanced (2 byte)
+     (75, 'DB_PMI8'),  # Polarimetric meteo index (1 byte)
+     (76, 'DB_PMI16'),  # Polarimetric meteo index (2 byte)
+     (77, 'DB_LOG8'),  # The log receiver signal-to-noise ratio (1 byte)
+     (78, 'DB_LOG16'),  # The log receiver signal-to-noise ratio (2 byte)
+     (79, 'DB_CSP8'),  # Doppler channel clutter signal power (-CSR) (1 byte)
+     (80, 'DB_CSP16'),  # Doppler channel clutter signal power (-CSR) (2 byte)
+     (81, 'DB_CCOR8'),  # Cross correlation, uncorrected rhohv (1 byte)
+     (82, 'DB_CCOR16'),  # Cross correlation, uncorrected rhohv (2 byte)
+     (83, 'DB_AH8'),  # Attenuation of Zh (1 byte)
+     (84, 'DB_AH16'),  # Attenuation of Zh (2 byte)
+     (85, 'DB_AV8'),  # Attenuation of Zv (1 byte)
+     (86, 'DB_AV16'),  # Attenuation of Zv (2 byte)
+     (87, 'DB_AZDR8'),  # Attenuation of Zzdr (1 byte)
+     (88, 'DB_AZDR16'),  # Attenuation of Zzdr (2 byte)
+     ])
