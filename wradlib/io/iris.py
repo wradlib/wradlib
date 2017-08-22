@@ -66,74 +66,67 @@ class IrisFile(object):
     """
     def __init__(self, filename, debug=False):
 
-        self.debug = debug
+        self._debug = debug
         self._fh = np.memmap(filename)
-        self.record_number = 0
-        self.rh = IrisRecord(self.fh[0:RECORD_BYTES], 0)
+        self._record_number = 0
+        self._rh = IrisRecord(self._fh[0:RECORD_BYTES], 0)
 
         # read data headers
-        self.product_hdr = _unpack_dictionary(self.read_record(0)
-                                              [:LEN_PRODUCT_HDR],
-                                              PRODUCT_HDR)
+        self._product_hdr = _unpack_dictionary(self.read_record(0)
+                                               [:LEN_PRODUCT_HDR],
+                                               PRODUCT_HDR)
         # TODO: unpack task_{scantype}_scan_info based on scan type
         # from task_scan_info substructure
-        self.ingest_header = _unpack_dictionary(self.read_record(1)
-                                                [:LEN_INGEST_HEADER],
-                                                INGEST_HEADER)
-        self.raw_product_bhdrs = []
+        self._ingest_header = _unpack_dictionary(self.read_record(1)
+                                                 [:LEN_INGEST_HEADER],
+                                                 INGEST_HEADER)
+        self._raw_product_bhdrs = []
 
         # determine data types contained in the file
         self._data_types = self.get_data_types()
 
-        self.sweeps = OrderedDict()
-
-    def check_record(self):
-        chk = self.rh.record.shape[0] != RECORD_BYTES
-        if chk:
-            warnings.warn("Unexpected file end detected at record {0}"
-                          "".format(self.record_number),
-                          RuntimeWarning,
-                          stacklevel=3)
-        return chk
-
-    def next_record(self):
-        self.record_number += 1
-        start = self.record_number * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self.rh = IrisRecord(self.fh[start:stop], self.record_number)
-        return self.check_record()
-
-    def read_record(self, recnum):
-        start = recnum * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self.rh = IrisRecord(self.fh[start:stop], recnum)
-        return self.rh.record
-
-    def read(self, words=1, dtype='int16'):
-        dta = self.rh.read(words).view(dtype=dtype)
-        words -= len(dta)
-        if words > 0:
-            self.next_record()
-            self.get_raw_prod_bhdr()
-            dta = np.append(dta, self.rh.read(words).view(dtype=dtype))
-        return dta
+        self._sweeps = OrderedDict()
 
     @property
     def fh(self):
         return self._fh
 
     @property
+    def rh(self):
+        return self._rh
+
+    @property
+    def filepos(self):
+        return self._record_number * RECORD_BYTES + int(self._rh.recpos)
+
+    @property
+    def product_hdr(self):
+        return self._product_hdr
+
+    @property
+    def ingest_header(self):
+        return self._ingest_header
+
+    @property
+    def raw_product_bhdrs(self):
+        return self._raw_product_bhdrs
+
+    @property
+    def sweeps(self):
+        return self._sweeps
+
+    @property
     def nsweeps(self):
-        head = self.ingest_header['task_configuration']['task_scan_info']
+        head = self._ingest_header['task_configuration']['task_scan_info']
         return head['sweep_number']
 
     @property
     def nbins(self):
-        return self.product_hdr['product_end']['number_bins']
+        return self._product_hdr['product_end']['number_bins']
 
     @property
     def nrays(self):
-        return self.ingest_header['ingest_configuration']['number_rays_sweep']
+        return self._ingest_header['ingest_configuration']['number_rays_sweep']
 
     @property
     def data_types(self):
@@ -141,27 +134,58 @@ class IrisFile(object):
 
     @property
     def data_types_count(self):
-        return len(self.data_types)
+        return len(self._data_types)
 
     @property
     def data_types_names(self):
-        return [SIGMET_DATA_TYPES[i] for i in self.data_types]
+        return [SIGMET_DATA_TYPES[i] for i in self._data_types]
+
+    def _check_record(self):
+        chk = self._rh.record.shape[0] != RECORD_BYTES
+        if chk:
+            warnings.warn("Unexpected file end detected at record {0}"
+                          "".format(self._record_number),
+                          RuntimeWarning,
+                          stacklevel=3)
+        return chk
+
+    def next_record(self):
+        self._record_number += 1
+        start = self._record_number * RECORD_BYTES
+        stop = start + RECORD_BYTES
+        self._rh = IrisRecord(self.fh[start:stop], self._record_number)
+        return self._check_record()
+
+    def read_record(self, recnum):
+        start = recnum * RECORD_BYTES
+        stop = start + RECORD_BYTES
+        self._rh = IrisRecord(self.fh[start:stop], recnum)
+        return self._rh.record
+
+    def read(self, words=1, dtype='int16'):
+        data = self._rh.read(words).view(dtype=dtype)
+        words -= len(data)
+        if words > 0:
+            self.next_record()
+            self.get_raw_prod_bhdr()
+            data = np.append(data, self._rh.read(words).view(dtype=dtype))
+        return data
 
     def get_compression_code(self):
         cmp_val = self.read(dtype='int16')[0]
         cmp_msb = np.sign(cmp_val) == -1
         if cmp_msb:
             cmp_val = cmp_val + 32768
-        if self.debug:
-            print("--- Sub CMP Code:", cmp_msb, cmp_val, self.rh.recpos - 1,
-                  self.rh.recpos)
+        if self._debug:
+            print("--- Sub CMP Code:", cmp_msb, cmp_val, self._rh.recpos - 1,
+                  self._rh.recpos)
         return cmp_msb, cmp_val
 
     def get_data_types(self):
         """ Determine the available data types.
         """
         # determine the available fields
-        task_config = self.ingest_header['task_configuration']
+        task_config = self._ingest_header['task_configuration']
         task_dsp_info = task_config['task_dsp_info']
         word0 = task_dsp_info['dsp_data_mask0']['mask_word_0']
         word1 = task_dsp_info['dsp_data_mask0']['mask_word_1']
@@ -171,8 +195,8 @@ class IrisFile(object):
         return _data_types_from_dsp_mask([word0, word1, word2, word3])
 
     def get_raw_prod_bhdr(self):
-        self.raw_product_bhdrs.append(
-            _unpack_dictionary(self.rh.read(LEN_RAW_PROD_BHDR, width=1),
+        self._raw_product_bhdrs.append(
+            _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
                                RAW_PROD_BHDR))
 
     def get_ingest_data_headers(self):
@@ -180,7 +204,7 @@ class IrisFile(object):
         ingest_data_hdrs = OrderedDict()
         for i, dt in enumerate(self.data_types_names):
             ingest_data_hdrs[dt] = _unpack_dictionary(
-                self.rh.read(LEN_INGEST_DATA_HEADER, width=1),
+                self._rh.read(LEN_INGEST_DATA_HEADER, width=1),
                 INGEST_DATA_HEADER)
 
         return ingest_data_hdrs
@@ -194,7 +218,7 @@ class IrisFile(object):
 
         # ray is missing
         if (cmp_val == 1) & (cmp_msb == 0):
-            if self.debug:
+            if self._debug:
                 print("ray missing")
             return None
 
@@ -202,21 +226,21 @@ class IrisFile(object):
 
             # data words follow
             if cmp_msb:
-                if self.debug:
+                if self._debug:
                     print(
                         "--- Add {0} WORDS at range {1}, record {2}:{3}:"
-                        "".format(cmp_val, ray_pos, self.rh.recpos,
-                                  self.rh.recpos + cmp_val))
+                        "".format(cmp_val, ray_pos, self._rh.recpos,
+                                  self._rh.recpos + cmp_val))
                 data[ray_pos:ray_pos + cmp_val] = self.read(cmp_val,
                                                             dtype='int16')
             # compressed zeros follow
             # can be skipped, if data array is created all zeros
             else:
-                if self.debug:
+                if self._debug:
                     print(
                         "--- Add {0} Zeros at range {1}, record {2}:{3}:"
                         "".format(cmp_val, ray_pos,
-                                  self.rh.recpos, self.rh.recpos + 1))
+                                  self._rh.recpos, self._rh.recpos + 1))
                 if cmp_val + ray_pos > self.nbins + 6:
                     return data[:6], data[6:]
                 data[ray_pos:ray_pos + cmp_val] = 0
@@ -239,7 +263,7 @@ class IrisFile(object):
                               in sweep['ingest_data_hdrs'].values()]
 
         rays = sum(rays_per_data_type)
-        bins = self.product_hdr['product_end']['number_bins']
+        bins = self._product_hdr['product_end']['number_bins']
 
         raw_sweep_data = np.zeros((rays, bins), dtype='int16')
         azi_start = np.zeros(rays, dtype='int16')
@@ -250,10 +274,10 @@ class IrisFile(object):
         dtime = np.zeros(rays, dtype='uint16')
 
         for ray_i in range(rays):
-            if self.debug:
+            if self._debug:
                 print("{0}: Ray started at {1}, file offset: {2}"
-                      "".format(ray_i, int(self.rh.recpos) - 1,
-                      self.record_number * RECORD_BYTES + int(self.rh.recpos)))
+                      "".format(ray_i, int(self._rh.recpos) - 1,
+                                self.filepos))
             ret = self.get_ray()
             if ret is None:
                 continue
@@ -278,11 +302,11 @@ class IrisFile(object):
         return sweep
 
     def get_sweeps(self):
-        self.record_number = 1
+        self._record_number = 1
         for i in range(self.nsweeps):
             if self.next_record():
                 break
-            self.sweeps[i] = self.get_sweep()
+            self._sweeps[i] = self.get_sweep()
 
 
 def read_iris(filename, loaddata=True, debug=False):
@@ -534,7 +558,7 @@ PRODUCT_END = OrderedDict([('site_name', '16s'),
                            ('extended_product_header_offset', UINT4),
                            ('spare_4', '4s')])
 
-# product_hdr Structure
+# _product_hdr Structure
 # 4.3.26 page 41
 PRODUCT_HDR = OrderedDict([('structure_header', STRUCTURE_HEADER),
                            ('product_configuration', PRODUCT_CONFIGURATION),
@@ -778,7 +802,7 @@ TASK_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('task_end_info', TASK_END_INFO),
                                   ('comments', '720s')])
 
-# ingest_header Structure
+# _ingest_header Structure
 # 4.3.16, page 33
 
 INGEST_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
@@ -792,7 +816,7 @@ INGEST_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
 # raw_prod_bhdr Structure
 # 4.3.31, page 45
 
-RAW_PROD_BHDR = OrderedDict([('record_number', SINT2),
+RAW_PROD_BHDR = OrderedDict([('_record_number', SINT2),
                              ('sweep_number', SINT2),
                              ('first_ray_byte_offset', SINT2),
                              ('sweep_ray_number', SINT2),
