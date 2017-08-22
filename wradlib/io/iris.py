@@ -372,11 +372,11 @@ def _unpack_dictionary(buffer, dictionary):
     for k, v in dictionary.items():
         try:
             fmt += v
-        except TypeError as e:
+        except TypeError:
             # remember sub-structures
             sub[k] = v
             # check for type
-            if e.args[0].startswith('must be str'):
+            if isinstance(v, OrderedDict):
                 fmt += '{}s'.format(_calcsize(v))
             else:
                 fmt += '{}s'.format(struct.calcsize(v[0]))
@@ -409,10 +409,8 @@ def _calcsize(structure):
     for v in structure.values():
         try:
             fmt += v
-        except TypeError as e:
-            if e.args[0] in ["cannot concatenate 'str' and "
-                             "'OrderedDict' objects",
-                             "must be str, not collections.OrderedDict"]:
+        except TypeError:
+            if isinstance(v, OrderedDict):
                 size += _calcsize(v)
             else:
                 size += struct.calcsize(v[0])
