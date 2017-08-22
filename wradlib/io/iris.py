@@ -279,6 +279,10 @@ def read_iris(filename, loaddata=True, debug=False):
     data = OrderedDict()
     data['product_hdr'] = fh.product_hdr
     data['ingest_header'] = fh.ingest_header
+    data['nsweeps'] = fh.nsweeps
+    data['nrays'] = fh.nrays
+    data['nbins'] = fh.nbins
+    data['data_types'] = fh.data_types_names
     if loaddata:
         fh.get_sweeps()
         data['sweeps'] = fh.sweeps
@@ -291,8 +295,6 @@ def decode_bin_angle(bin_angle, width):
     """ Decode BIN angle
     """
     return 360. * bin_angle / 2**(width*8)
-
-
 
 
 # IRIS Data Types and corresponding python struct format characters
@@ -320,7 +322,7 @@ def _unpack_dictionary(buffer, dictionary):
     Parameters
     ----------
     buffer : array-like
-    dictionary : data structure in dictionary, keys are names and values are 
+    dictionary : data structure in dictionary, keys are names and values are
         structure formats
 
     Returns
