@@ -23,6 +23,7 @@ See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
 import numpy as np
 import struct
 from collections import OrderedDict
+import warnings
 
 
 RECORD_BYTES = 6144
@@ -68,9 +69,7 @@ class IrisFile(object):
         self.debug = debug
         self._fh = np.memmap(filename)
         self.record_number = 0
-        start = self.record_number * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self.rh = IrisRecord(self.fh[start:stop], self.record_number)
+        self.rh = IrisRecord(self.fh[0:RECORD_BYTES], 0)
 
         # read data headers
         self.product_hdr = _unpack_dictionary(self.read_record(0)
@@ -88,11 +87,21 @@ class IrisFile(object):
 
         self.sweeps = OrderedDict()
 
+    def check_record(self):
+        chk = self.rh.record.shape[0] != RECORD_BYTES
+        if chk:
+            warnings.warn("Unexpected file end detected at record {0}"
+                          "".format(self.record_number),
+                          RuntimeWarning,
+                          stacklevel=3)
+        return chk
+
     def next_record(self):
         self.record_number += 1
         start = self.record_number * RECORD_BYTES
         stop = start + RECORD_BYTES
         self.rh = IrisRecord(self.fh[start:stop], self.record_number)
+        return self.check_record()
 
     def read_record(self, recnum):
         start = recnum * RECORD_BYTES
@@ -242,8 +251,9 @@ class IrisFile(object):
 
         for ray_i in range(rays):
             if self.debug:
-                print("{0}: Ray started at {1}"
-                      "".format(ray_i, int(self.rh.recpos) - 1))
+                print("{0}: Ray started at {1}, file offset: {2}"
+                      "".format(ray_i, int(self.rh.recpos) - 1,
+                      self.record_number * RECORD_BYTES + int(self.rh.recpos)))
             ret = self.get_ray()
             if ret is None:
                 continue
@@ -270,7 +280,8 @@ class IrisFile(object):
     def get_sweeps(self):
         self.record_number = 1
         for i in range(self.nsweeps):
-            self.next_record()
+            if self.next_record():
+                break
             self.sweeps[i] = self.get_sweep()
 
 
