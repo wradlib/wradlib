@@ -29,8 +29,8 @@ RECORD_BYTES = 6144
 
 
 class IrisRecord(object):
-    """ Class holding a single record from a Sigmet IRIS file. 
-    
+    """ Class holding a single record from a Sigmet IRIS file.
+
     """
     def __init__(self, record, recnum):
         self.record = record.copy()
@@ -60,8 +60,8 @@ class IrisRecord(object):
 
 
 class IrisFile(object):
-    """ Class for retrieving data from Sigmet IRIS files. 
-    
+    """ Class for retrieving data from Sigmet IRIS files.
+
     """
     def __init__(self, filename, debug=False):
 
@@ -149,7 +149,7 @@ class IrisFile(object):
         return cmp_msb, cmp_val
 
     def get_data_types(self):
-        """ Determine the available data types. 
+        """ Determine the available data types.
         """
         # determine the available fields
         task_config = self.ingest_header['task_configuration']
@@ -258,10 +258,10 @@ class IrisFile(object):
                 raw_sweep_data[ray_i] = ret[1]
 
         sweep['raw_sweep_data'] = raw_sweep_data
-        sweep['azi_start'] = decode_bin_angle(azi_start.view('uint16'), 2)
-        sweep['ele_start'] = decode_bin_angle(ele_start.view('uint16'), 2)
-        sweep['azi_stop'] = decode_bin_angle(azi_stop.view('uint16'), 2)
-        sweep['ele_stop'] = decode_bin_angle(ele_stop.view('uint16'), 2)
+        sweep['azi_start'] = azi_start
+        sweep['ele_start'] = ele_start
+        sweep['azi_stop'] = azi_stop
+        sweep['ele_stop'] = ele_stop
         sweep['rbins'] = rbins
         sweep['dtime'] = dtime
 
@@ -293,6 +293,8 @@ def decode_bin_angle(bin_angle, width):
     return 360. * bin_angle / 2**(width*8)
 
 
+
+
 # IRIS Data Types and corresponding python struct format characters
 # 4.2 Scalar Definitions, Page 23
 # https://docs.python.org/3/library/struct.html#format-characters
@@ -314,7 +316,7 @@ UINT16_T = 'H'
 
 def _unpack_dictionary(buffer, dictionary):
     """ Unpacks binary data using the given dictionary structure.
-    
+
     Parameters
     ----------
     buffer : array-like
@@ -377,6 +379,7 @@ def _calcsize(structure):
                 size += struct.calcsize(v[0])
     size += struct.calcsize(fmt)
     return size
+
 
 # IRIS Data Structures
 
@@ -800,7 +803,6 @@ INGEST_DATA_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
 
 
 # some length's of data structures
-
 LEN_PRODUCT_HDR = _calcsize(PRODUCT_HDR)
 LEN_INGEST_HEADER = _calcsize(INGEST_HEADER)
 LEN_RAW_PROD_BHDR = _calcsize(RAW_PROD_BHDR)
