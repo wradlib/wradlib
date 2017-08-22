@@ -410,7 +410,9 @@ def _calcsize(structure):
         try:
             fmt += v
         except TypeError as e:
-            if e.args[0].startswith('must be str'):
+            if e.args[0] in ["cannot concatenate 'str' and "
+                             "'OrderedDict' objects",
+                             "must be str, not collections.OrderedDict"]:
                 size += _calcsize(v)
             else:
                 size += struct.calcsize(v[0])
