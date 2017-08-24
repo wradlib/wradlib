@@ -64,9 +64,10 @@ class IrisFile(object):
     """ Class for retrieving data from Sigmet IRIS files.
 
     """
-    def __init__(self, filename, debug=False):
+    def __init__(self, filename, loaddata=True, rawdata=True, debug=False):
 
         self._debug = debug
+        self._rawdata = rawdata
         self._fh = np.memmap(filename)
         self._record_number = 0
         self._rh = IrisRecord(self._fh[0:RECORD_BYTES], 0)
@@ -83,9 +84,12 @@ class IrisFile(object):
         self._raw_product_bhdrs = []
 
         # determine data types contained in the file
-        self._data_types = self.get_data_types()
+        self._data_types_numbers = self.get_data_types()
 
         self._sweeps = OrderedDict()
+        if loaddata:
+            self.get_sweeps()
+
 
     @property
     def fh(self):
@@ -130,15 +134,15 @@ class IrisFile(object):
 
     @property
     def data_types(self):
-        return self._data_types
+        return [SIGMET_DATA_TYPES[i] for i in self._data_types_numbers]
 
     @property
     def data_types_count(self):
-        return len(self._data_types)
+        return len(self._data_types_numbers)
 
     @property
     def data_types_names(self):
-        return [SIGMET_DATA_TYPES[i] for i in self._data_types]
+        return [SIGMET_DATA_TYPES[i]['name'] for i in self._data_types_numbers]
 
     def _check_record(self):
         chk = self._rh.record.shape[0] != RECORD_BYTES
@@ -275,20 +279,44 @@ class IrisFile(object):
                 raw_data[ray_i] = ret
 
         sweep_data = OrderedDict()
-        for i, prod in enumerate(self.data_types_names):
+        cnt = self.data_types_count
+        for i, prod in enumerate(self.data_types):
             sweep_prod = OrderedDict()
-            sweep_prod['data'] = raw_data[i::self.data_types_count, 6:]
-            sweep_prod['azi_start'] = raw_data[i::self.data_types_count, 0]
-            sweep_prod['ele_start'] = raw_data[i::self.data_types_count, 1]
-            sweep_prod['azi_stop'] = raw_data[i::self.data_types_count, 2]
-            sweep_prod['ele_stop'] = raw_data[i::self.data_types_count, 3]
-            sweep_prod['rbins'] = raw_data[i::self.data_types_count, 4]
-            sweep_prod['dtime'] = raw_data[i::self.data_types_count, 5]
-            sweep_data[prod] = sweep_prod
 
-        sweep['raw_sweep_data'] = sweep_data
+            sweep_prod['data'] = self.decode_data(raw_data[i::cnt, 6:], prod)
+            sweep_prod['azi_start'] = self.decode_data(raw_data[i::cnt, 0],
+                                                       DB_BIN2)
+            sweep_prod['ele_start'] = self.decode_data(raw_data[i::cnt, 1],
+                                                       DB_BIN2)
+            sweep_prod['azi_stop'] = self.decode_data(raw_data[i::cnt, 2],
+                                                      DB_BIN2)
+            sweep_prod['ele_stop'] = self.decode_data(raw_data[i::cnt, 3],
+                                                      DB_BIN2)
+            sweep_prod['rbins'] = raw_data[i::cnt, 4]
+            sweep_prod['dtime'] = raw_data[i::cnt, 5]
+            sweep_data[prod['name']] = sweep_prod
+
+        sweep['sweep_data'] = sweep_data
 
         return sweep
+
+    def decode_data(self, data, prod):
+        if self._rawdata:
+            return data
+        kw = {}
+        if prod['func']:
+            try:
+                kw.update(prod['kw'])
+            except KeyError:
+                pass
+            try:
+                rays, bins = data.shape
+                data = data.view(prod['type']).reshape(rays, -1)[:, :bins]
+            except ValueError:
+                data = data.view(prod['type'])
+            return prod['func'](data, **kw)
+        else:
+            return data
 
     def get_sweeps(self):
         self._record_number = 1
@@ -298,8 +326,8 @@ class IrisFile(object):
             self._sweeps[i] = self.get_sweep()
 
 
-def read_iris(filename, loaddata=True, debug=False):
-    fh = IrisFile(filename, debug=debug)
+def read_iris(filename, loaddata=True, rawdata=True, debug=False):
+    fh = IrisFile(filename, loaddata=loaddata, rawdata=rawdata, debug=debug)
     data = OrderedDict()
     data['product_hdr'] = fh.product_hdr
     data['ingest_header'] = fh.ingest_header
@@ -307,19 +335,44 @@ def read_iris(filename, loaddata=True, debug=False):
     data['nrays'] = fh.nrays
     data['nbins'] = fh.nbins
     data['data_types'] = fh.data_types_names
-    if loaddata:
-        fh.get_sweeps()
-        data['sweeps'] = fh.sweeps
+    data['sweeps'] = fh.sweeps
     data['raw_product_bhdrs'] = fh.raw_product_bhdrs
 
     return data
 
 
-def decode_bin_angle(bin_angle, width):
+def decode_bin_angle(bin_angle, mode=None):
     """ Decode BIN angle
     """
-    return 360. * bin_angle / 2**(width*8)
+    return 360. * bin_angle / 2**(mode*8)
 
+
+def decode_array(data, scale=1., offset=0, offset2=0):
+    return (data + offset) / scale + offset2
+
+
+def decode_rainrate2(data):
+    print("not decoding data")
+    return data
+
+
+def decode_kdp(data):
+    zero = data[data==-128]
+    data = -0.25 * np.sign(data) * 600 ** ((127 - np.abs(data)) / 126.)
+    data[zero] = 0
+    return data
+
+
+def decode_phidp(data, **kwargs):
+    return 180. * decode_array(data, **kwargs)
+
+
+def decode_phidp2(data, **kwargs):
+    return 360. * decode_array(data, **kwargs)
+
+
+def decode_sqi(data, **kwargs):
+    return np.sqrt(decode_array(data, **kwargs))
 
 # IRIS Data Types and corresponding python struct format characters
 # 4.2 Scalar Definitions, Page 23
@@ -837,94 +890,256 @@ LEN_INGEST_DATA_HEADER = _calcsize(INGEST_DATA_HEADER)
 # Sigmet data types
 # 4.9 Constants, Table 17
 
-SIGMET_DATA_TYPES = OrderedDict(
-    [(0, 'DB_XHDR'),  # Extended Headers
-     (1, 'DB_DBT'),  # Total H power (1 byte)
-     (2, 'DB_DBZ'),  # Clutter Corrected H reflectivity (1 byte)
-     (3, 'DB_VEL'),  # Velocity (1 byte)
-     (4, 'DB_WIDTH'),  # Width (1 byte)
-     (5, 'DB_ZDR'),  # Differential reflectivity (1 byte)
-     (6, 'DB_ORAIN'),  # Old Rainfall rate (stored as dBZ), not used
-     (7, 'DB_DBZC'),  # Fully corrected reflectivity (1 byte)
-     (8, 'DB_DBT2'),  # Uncorrected reflectivity (2 byte)
-     (9, 'DB_DBZ2'),  # Corrected reflectivity (2 byte)
-     (10, 'DB_VEL2'),  # Velocity (2 byte)
-     (11, 'DB_WIDTH2'),  # Width (2 byte)
-     (12, 'DB_ZDR2'),  # Differential reflectivity (2 byte)
-     (13, 'DB_RAINRATE2'),  # Rainfall rate (2 byte)
-     (14, 'DB_KDP'),  # Kdp (specific differential phase)(1 byte)
-     (15, 'DB_KDP2'),  # Kdp (specific differential phase)(2 byte)
-     (16, 'DB_PHIDP'),  # PHIdp (differential phase)(1 byte)
-     (17, 'DB_VELC'),  # Corrected Velocity (1 byte)
-     (18, 'DB_SQI'),  # SQI (1 byte)
-     (19, 'DB_RHOHV'),  # RhoHV(0) (1 byte)
-     (20, 'DB_RHOHV2'),  # RhoHV(0) (2 byte)
-     (21, 'DB_DBZC2'),  # Fully corrected reflectivity (2 byte)
-     (22, 'DB_VELC2'),  # Corrected Velocity (2 byte)
-     (23, 'DB_SQI2'),  # SQI (2 byte)
-     (24, 'DB_PHIDP2'),  # PHIdp (differential phase)(2 byte)
-     (25, 'DB_LDRH'),  # LDR H to V (1 byte)
-     (26, 'DB_LDRH2'),  # LDR H to V (2 byte)
-     (27, 'DB_LDRV'),  # LDR V to H (1 byte)
-     (28, 'DB_LDRV2'),  # LDR V to H (2 byte)
-     (29, 'DB_FLAGS'),  # Individual flag bits for each bin
-     (30, 'DB_FLAGS2'),  # (See bit definitions below)
-     (31, 'DB_FLOAT32'),  # Test of floating format
-     (32, 'DB_HEIGHT'),  # Height (1/10 km) (1 byte)
-     (33, 'DB_VIL2'),  # Linear liquid (.001mm) (2 byte)
-     (34, 'DB_NULL'),  # Data type is not applicable
-     (35, 'DB_SHEAR'),  # Wind Shear (1 byte)
-     (36, 'DB_DIVERGE2'),  # Divergence (.001 10**-4) (2-byte)
-     (37, 'DB_FLIQUID2'),  # Floated liquid (2 byte)
-     (38, 'DB_USER'),  # User type, unspecified data (1 byte)
-     (39, 'DB_OTHER'),  # Unspecified data, no color legend
-     (40, 'DB_DEFORM2'),  # Deformation (.001 10**-4) (2-byte)
-     (41, 'DB_VVEL2'),  # Vertical velocity (.01 m/s) (2-byte)
-     (41, 'DB_HVEL2'),  # Horizontal velocity (.01 m/s) (2-byte)
-     (43, 'DB_HDIR2'),  # Horizontal wind direction (.1 degree) (2-byte)
-     (44, 'DB_AXDIL2'),  # Axis of Dilation (.1 degree) (2-byte)
-     (45, 'DB_TIME2'),  # Time of data (seconds) (2-byte)
-     (46, 'DB_RHOH'),  # Rho H to V (1 byte)
-     (47, 'DB_RHOH2'),  # Rho H to V (2 byte)
-     (48, 'DB_RHOV'),  # Rho V to H (1 byte)
-     (49, 'DB_RHOV2'),  # Rho V to H (2 byte)
-     (50, 'DB_PHIH'),  # Phi H to V (1 byte)
-     (51, 'DB_PHIH2'),  # Phi H to V (2 byte)
-     (52, 'DB_PHIV'),  # Phi V to H (1 byte)
-     (53, 'DB_PHIV2'),  # Phi V to H (2 byte)
-     (54, 'DB_USER2'),  # User type, unspecified data (2 byte)
-     (55, 'DB_HCLASS'),  # Hydrometeor class (1 byte)
-     (56, 'DB_HCLASS2'),  # Hydrometeor class (2 byte)
-     (57, 'DB_ZDRC'),  # Corrected Differential reflectivity (1 byte)
-     (58, 'DB_ZDRC2'),  # Corrected Differential reflectivity (2 byte)
-     (59, 'DB_TEMPERATURE16'),  # Temperature (2 byte)
-     (60, 'DB_VIR16'),  # Vertically Integrated Reflectivity (2 byte)
-     (61, 'DB_DBTV8'),  # Total V Power (1 byte)
-     (62, 'DB_DBTV16'),  # Total V Power (2 byte)
-     (63, 'DB_DBZV8'),  # Clutter Corrected V Reflectivity (1 byte)
-     (64, 'DB_DBZV16'),  # Clutter Corrected V Reflectivity (2 byte)
-     (65, 'DB_SNR8'),  # Signal to Noise ratio (1 byte)
-     (66, 'DB_SNR16'),  # Signal to Noise ratio (2 byte)
-     (67, 'DB_ALBEDO8'),  # Albedo (1 byte)
-     (68, 'DB_ALBEDO16'),  # Albedo (2 byte)
-     (69, 'DB_VILD16'),  # VIL Density (2 byte)
-     (70, 'DB_TURB16'),  # Turbulence (2 byte)
-     (71, 'DB_DBTE8'),  # Total Power Enhanced (via H+V or HV) (1 byte)
-     (72, 'DB_DBTE16'),  # Total Power Enhanced (via H+V or HV) (2 byte)
-     (73, 'DB_DBZE8'),  # Clutter Corrected Reflectivity Enhanced (1 byte)
-     (74, 'DB_DBZE16'),  # Clutter Corrected Reflectivity Enhanced (2 byte)
-     (75, 'DB_PMI8'),  # Polarimetric meteo index (1 byte)
-     (76, 'DB_PMI16'),  # Polarimetric meteo index (2 byte)
-     (77, 'DB_LOG8'),  # The log receiver signal-to-noise ratio (1 byte)
-     (78, 'DB_LOG16'),  # The log receiver signal-to-noise ratio (2 byte)
-     (79, 'DB_CSP8'),  # Doppler channel clutter signal power (-CSR) (1 byte)
-     (80, 'DB_CSP16'),  # Doppler channel clutter signal power (-CSR) (2 byte)
-     (81, 'DB_CCOR8'),  # Cross correlation, uncorrected rhohv (1 byte)
-     (82, 'DB_CCOR16'),  # Cross correlation, uncorrected rhohv (2 byte)
-     (83, 'DB_AH8'),  # Attenuation of Zh (1 byte)
-     (84, 'DB_AH16'),  # Attenuation of Zh (2 byte)
-     (85, 'DB_AV8'),  # Attenuation of Zv (1 byte)
-     (86, 'DB_AV16'),  # Attenuation of Zv (2 byte)
-     (87, 'DB_AZDR8'),  # Attenuation of Zzdr (1 byte)
-     (88, 'DB_AZDR16'),  # Attenuation of Zzdr (2 byte)
-     ])
+SIGMET_DATA_TYPES = OrderedDict([
+    # Extended Headers
+    (0, {'name': 'DB_XHDR', 'func': None}),
+    # Total H power (1 byte)
+    (1, {'name': 'DB_DBT', 'type': '(2,) uint8', 'func': decode_array,
+         'kw': {'scale': 2., 'offset': -64.}}),
+    # Clutter Corrected H reflectivity (1 byte)
+    (2, {'name': 'DB_DBZ', 'type': '(2,) uint8', 'func': decode_array,
+         'kw': {'scale': 2., 'offset': -64.}}),
+    # Velocity (1 byte)
+    (3, {'name': 'DB_VEL', 'type': '(2,) uint8', 'func': decode_array,
+         'kw': {'scale': 127., 'offset': -128.}}),
+    # Width (1 byte)
+    (4, {'name': 'DB_WIDTH', 'type': '(2,) uint8', 'func': decode_array,
+         'kw': {'scale': 256.}}),
+    # Differential reflectivity (1 byte)
+    (5, {'name': 'DB_ZDR', 'type': '(2,) uint8', 'func': decode_array,
+         'kw': {'scale': 16., 'offset': -128.}}),
+    # Old Rainfall rate (stored as dBZ), not used
+    (6, {'name': 'DB_ORAIN', 'type': '(2,) uint8', 'func': None}),
+    # Fully corrected reflectivity (1 byte)
+    (7, {'name': 'DB_DBZC', 'type': '(2,) uint8', 'func': decode_array,
+         'kw': {'scale': 2., 'offset': -64.}}),
+    # Uncorrected reflectivity (2 byte)
+    (8, {'name': 'DB_DBT2', 'type': 'uint16', 'func': decode_array,
+         'kw': {'scale': 100., 'offset': -32768.}}),
+    # Corrected reflectivity (2 byte)
+    (9, {'name': 'DB_DBZ2', 'type': 'uint16', 'func': decode_array,
+         'kw': {'scale': 100., 'offset': -32768.}}),
+    # Velocity (2 byte)
+    (10, {'name': 'DB_VEL2', 'type': 'uint16', 'func': decode_array,
+         'kw': {'scale': 100., 'offset': -32768.}}),
+    # Width (2 byte)
+    (11, {'name': 'DB_WIDTH2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 100.}}),
+    # Differential reflectivity (2 byte)
+    (12, {'name': 'DB_ZDR2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 100., 'offset': -32768.}}),
+    # Rainfall rate (2 byte)
+    (13, {'name': 'DB_RAINRATE2', 'type': 'uint16', 'func': decode_rainrate2}),
+    # Kdp (specific differential phase)(1 byte)
+    (14, {'name': 'DB_KDP', 'type': '(2,) int8', 'func': decode_kdp,
+          'kw': {}}),
+    # Kdp (specific differential phase)(2 byte)
+    (15, {'name': 'DB_KDP2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 100., 'offset': -32768.}}),
+    # PHIdp (differential phase)(1 byte)
+    (16, {'name': 'DB_PHIDP', 'type': '(2,) uint8', 'func': decode_phidp,
+          'kw': {'scale': 254., 'offset': -1}}),
+    # Corrected Velocity (1 byte)
+    (17, {'name': 'DB_VELC', 'type': '(2,) uint8', 'func': None}),
+    # SQI (1 byte)
+    (18, {'name': 'DB_SQI', 'type': '(2,) uint8', 'func': decode_sqi,
+          'kw': {'scale': 253., 'offset': -1}}),
+    # RhoHV(0) (1 byte)
+    (19, {'name': 'DB_RHOHV', 'type': '(2,) uint8', 'func': decode_sqi,
+          'kw': {'scale': 253., 'offset': -1}}),
+    # RhoHV(0) (2 byte)
+    (20, {'name': 'DB_RHOHV2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 65536., 'offset': -1.}}),
+    # Fully corrected reflectivity (2 byte)
+    (21, {'name': 'DB_DBZC2', 'type': 'uint16', 'func': decode_array,
+         'kw': {'scale': 100., 'offset': -32768.}}),
+    # Corrected Velocity (2 byte)
+    (22, {'name': 'DB_VELC2', 'type': 'uint16', 'func': decode_array,
+         'kw': {'scale': 100., 'offset': -32768.}}),
+    # SQI (2 byte)
+    (23, {'name': 'DB_SQI2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 65536., 'offset': -1.}}),
+    # PHIdp (differential phase)(2 byte)
+    (24, {'name': 'DB_PHIDP2', 'type': 'uint16', 'func': decode_phidp2}),
+    # LDR H to V (1 byte)
+    (25, {'name': 'DB_LDRH', 'type': '(2,) uint8', 'func': decode_array,
+          'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
+    # LDR H to V (2 byte)
+    (26, {'name': 'DB_LDRH2', 'type': 'uint16', 'func': decode_array,
+         'kw': {'scale': 100., 'offset': -32768.}}),
+    # LDR V to H (1 byte)
+    (27, {'name': 'DB_LDRV', 'type': '(2,) uint8', 'func': decode_array,
+          'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
+    # LDR V to H (2 byte)
+    (28, {'name': 'DB_LDRV2', 'type': 'uint16', 'func': decode_array,
+         'kw': {'scale': 100., 'offset': -32768.}}),
+    # Individual flag bits for each bin
+    (29, {'name': 'DB_FLAGS', 'func': None}),
+    # (See bit definitions below)
+    (30, {'name': 'DB_FLAGS2', 'func': None}),
+    # Test of floating format
+    (31, {'name': 'DB_FLOAT32', 'func': None}),
+    # Height (1/10 km) (1 byte)
+    (32, {'name': 'DB_HEIGHT', 'type': '(2,) uint8',
+          'func': decode_array,
+          'kw': {'scale': 10., 'offset': -1.}}),
+    # Linear liquid (.001mm) (2 byte)
+    (33, {'name': 'DB_VIL2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 1000., 'offset': -1.}}),
+    # Data type is not applicable
+    (34, {'name': 'DB_NULL', 'func': None}),
+    # Wind Shear (1 byte)
+    (35, {'name': 'DB_SHEAR', 'type': '(2,) int8', 'func': decode_array,
+          'kw': {'scale': 5., 'offset': -128.}}),
+    # Divergence (.001 10**-4) (2-byte)
+    (36, {'name': 'DB_DIVERGE2', 'type': 'int16', 'func': decode_array,
+          'kw': {'scale': 10e-7}}),
+    # Floated liquid (2 byte)
+    (37, {'name': 'DB_FLIQUID2', 'type': 'uint16', 'func': None}),
+    # User type, unspecified data (1 byte)
+    (38, {'name': 'DB_USER', 'func': None}),
+    # Unspecified data, no color legend
+    (39, {'name': 'DB_OTHER', 'func': None}),
+    # Deformation (.001 10**-4) (2-byte)
+    (40, {'name': 'DB_DEFORM2', 'type': 'int16', 'func': decode_array,
+          'kw': {'scale': 10e-7}}),
+    # Vertical velocity (.01 m/s) (2-byte)
+    (41, {'name': 'DB_VVEL2', 'type': 'int16', 'func': decode_array,
+          'kw': {'scale': 100.}}),
+    # Horizontal velocity (.01 m/s) (2-byte)
+    (41, {'name': 'DB_HVEL2', 'func': decode_array,
+          'kw': {'scale': 100.}}),
+    # Horizontal wind direction (.1 degree) (2-byte)
+    (43, {'name': 'DB_HDIR2', 'type': 'int16', 'func': decode_array,
+          'kw': {'scale': 10.}}),
+    # Axis of Dilation (.1 degree) (2-byte)
+    (44, {'name': 'DB_AXDIL2', 'type': 'int16', 'func': decode_array,
+          'kw': {'scale': 10.}}),
+    # Time of data (seconds) (2-byte)
+    (45, {'name': 'DB_TIME2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 60., 'offset': -32768}}),
+    # Rho H to V (1 byte)
+    (46, {'name': 'DB_RHOH', 'type': '(2,) uint8', 'func': decode_sqi,
+          'kw': {'scale': 253., 'offset': -1}}),
+    # Rho H to V (2 byte)
+    (47, {'name': 'DB_RHOH2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 65536., 'offset': -1.}}),
+    # Rho V to H (1 byte)
+    (48, {'name': 'DB_RHOV', 'type': '(2,) uint8', 'func': decode_sqi,
+          'kw': {'scale': 253., 'offset': -1}}),
+    # Rho V to H (2 byte)
+    (49, {'name': 'DB_RHOV2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 65536., 'offset': -1.}}),
+    # Phi H to V (1 byte)
+    (50, {'name': 'DB_PHIH', 'type': '(2,) uint8', 'func': decode_phidp}),
+    # Phi H to V (2 byte)
+    (51, {'name': 'DB_PHIH2', 'type': 'uint16', 'func': decode_phidp2}),
+    # Phi V to H (1 byte)
+    (52, {'name': 'DB_PHIV', 'type': '(2,) uint8', 'func': decode_phidp}),
+    # Phi V to H (2 byte)
+    (53, {'name': 'DB_PHIV2', 'type': 'uint16', 'func': decode_phidp2}),
+    # User type, unspecified data (2 byte)
+    (54, {'name': 'DB_USER2', 'type': 'uint16', 'func': None}),
+    # Hydrometeor class (1 byte)
+    (55, {'name': 'DB_HCLASS', 'type': '(2,) uint8', 'func': None}),
+    # Hydrometeor class (2 byte)
+    (56, {'name': 'DB_HCLASS2', 'type': 'uint16', 'func': None}),
+    # Corrected Differential reflectivity (1 byte)
+    (57, {'name': 'DB_ZDRC', 'type': '(2,) uint8', 'func': decode_array,
+          'kw': {'scale': 16., 'offset': -128.}}),
+    # Corrected Differential reflectivity (2 byte)
+    (58, {'name': 'DB_ZDRC2', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 100., 'offset': -32768.}}),
+    # Temperature (2 byte)
+    (59, {'name': 'DB_TEMPERATURE16', 'type': 'uint16', 'func': None}),
+    # Vertically Integrated Reflectivity (2 byte)
+    (60, {'name': 'DB_VIR16', 'type': 'uint16', 'func': None}),
+    # Total V Power (1 byte)
+    (61, {'name': 'DB_DBTV8', 'type': '(2,) uint8',
+          'func': decode_array,
+          'kw': {'scale': 2., 'offset': -64.}}),
+    # Total V Power (2 byte)
+    (62, {'name': 'DB_DBTV16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 100., 'offset': -32768.}}),
+    # Clutter Corrected V Reflectivity (1 byte)
+    (63, {'name': 'DB_DBZV8', 'type': '(2,) uint8',
+          'func': decode_array,
+          'kw': {'scale': 2., 'offset': -64.}}),
+    # Clutter Corrected V Reflectivity (2 byte)
+    (64, {'name': 'DB_DBZV16', 'type': 'uint16',
+          'func': decode_array,
+          'kw': {'scale': 100., 'offset': -32768.}}),
+    # Signal to Noise ratio (1 byte)
+    (65, {'name': 'DB_SNR8', 'type': '(2,) uint8',
+          'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Signal to Noise ratio (2 byte)
+    (66, {'name': 'DB_SNR16', 'type': 'uint16',
+          'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Albedo (1 byte)
+    (67, {'name': 'DB_ALBEDO8', 'type': '(2,) uint8', 'func': None}),
+    # Albedo (2 byte)
+    (68, {'name': 'DB_ALBEDO16', 'type': 'uint16', 'func': None}),
+    # VIL Density (2 byte)
+    (69, {'name': 'DB_VILD16', 'type': 'uint16', 'func': None}),
+    # Turbulence (2 byte)
+    (70, {'name': 'DB_TURB16', 'type': 'uint16', 'func': None}),
+    # Total Power Enhanced (via H+V or HV) (1 byte)
+    (71, {'name': 'DB_DBTE8', 'type': '(2,) uint8', 'func': None}),
+    # Total Power Enhanced (via H+V or HV) (2 byte)
+    (72, {'name': 'DB_DBTE16', 'type': 'uint16', 'func': None}),
+    # Clutter Corrected Reflectivity Enhanced (1 byte)
+    (73, {'name': 'DB_DBZE8', 'type': '(2,) uint8', 'func': None}),
+    # Clutter Corrected Reflectivity Enhanced (2 byte)
+    (74, {'name': 'DB_DBZE16', 'type': 'uint16', 'func': None}),
+    # Polarimetric meteo index (1 byte)
+    (75, {'name': 'DB_PMI8', 'type': '(2,) uint8', 'func': decode_sqi,
+          'kw': {'scale': 253., 'offset': -1}}),
+    # Polarimetric meteo index (2 byte)
+    (76, {'name': 'DB_PMI16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 65536., 'offset': -1.}}),
+    # The log receiver signal-to-noise ratio (1 byte)
+    (77, {'name': 'DB_LOG8', 'type': '(2,) uint8', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # The log receiver signal-to-noise ratio (2 byte)
+    (78, {'name': 'DB_LOG16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Doppler channel clutter signal power (-CSR) (1 byte)
+    (79, {'name': 'DB_CSP8', 'type': '(2,) uint8', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Doppler channel clutter signal power (-CSR) (2 byte)
+    (80, {'name': 'DB_CSP16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Cross correlation, uncorrected rhohv (1 byte)
+    (81, {'name': 'DB_CCOR8', 'type': '(2,) uint8', 'func': decode_sqi,
+          'kw': {'scale': 253., 'offset': -1}}),
+    # Cross correlation, uncorrected rhohv (2 byte)
+    (82, {'name': 'DB_CCOR16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 65536., 'offset': -1.}}),
+    # Attenuation of Zh (1 byte)
+    (83, {'name': 'DB_AH8', 'type': '(2,) uint8', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Attenuation of Zh (2 byte)
+    (84, {'name': 'DB_AH16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Attenuation of Zv (1 byte)
+    (85, {'name': 'DB_AV8', 'type': '(2,) uint8', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Attenuation of Zv (2 byte)
+    (86, {'name': 'DB_AV16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Attenuation of Zzdr (1 byte)
+    (87, {'name': 'DB_AZDR8', 'type': '(2,) uint8',
+          'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}}),
+    # Attenuation of Zzdr (2 byte)
+    (88, {'name': 'DB_AZDR16', 'type': 'uint16', 'func': decode_array,
+          'kw': {'scale': 2., 'offset': -63.}})
+    ])
+
+# fake Sigmet data types
+DB_BIN2 = {'name': 'BIN2', 'type': 'uint16',
+           'func': decode_bin_angle, 'kw': {'mode': 2}}
+DB_BIN4 = {'name': 'BIN4', 'type': 'uint16',
+           'func': decode_bin_angle, 'kw': {'mode': 4}}
