@@ -64,7 +64,7 @@ class IrisFile(object):
     """ Class for retrieving data from Sigmet IRIS files.
 
     """
-    def __init__(self, filename, loaddata=True, rawdata=True, debug=False):
+    def __init__(self, filename, loaddata=True, rawdata=False, debug=False):
 
         self._debug = debug
         self._rawdata = rawdata
@@ -89,7 +89,6 @@ class IrisFile(object):
         self._sweeps = OrderedDict()
         if loaddata:
             self.get_sweeps()
-
 
     @property
     def fh(self):
@@ -344,7 +343,7 @@ def read_iris(filename, loaddata=True, rawdata=True, debug=False):
 def decode_bin_angle(bin_angle, mode=None):
     """ Decode BIN angle
     """
-    return 360. * bin_angle / 2**(mode*8)
+    return 360. * bin_angle / 2 ** (mode * 8)
 
 
 def decode_array(data, scale=1., offset=0, offset2=0):
@@ -357,7 +356,7 @@ def decode_rainrate2(data):
 
 
 def decode_kdp(data):
-    zero = data[data==-128]
+    zero = data[data == -128]
     data = -0.25 * np.sign(data) * 600 ** ((127 - np.abs(data)) / 126.)
     data[zero] = 0
     return data
@@ -373,6 +372,7 @@ def decode_phidp2(data, **kwargs):
 
 def decode_sqi(data, **kwargs):
     return np.sqrt(decode_array(data, **kwargs))
+
 
 # IRIS Data Types and corresponding python struct format characters
 # 4.2 Scalar Definitions, Page 23
@@ -921,7 +921,7 @@ SIGMET_DATA_TYPES = OrderedDict([
          'kw': {'scale': 100., 'offset': -32768.}}),
     # Velocity (2 byte)
     (10, {'name': 'DB_VEL2', 'type': 'uint16', 'func': decode_array,
-         'kw': {'scale': 100., 'offset': -32768.}}),
+          'kw': {'scale': 100., 'offset': -32768.}}),
     # Width (2 byte)
     (11, {'name': 'DB_WIDTH2', 'type': 'uint16', 'func': decode_array,
           'kw': {'scale': 100.}}),
@@ -952,10 +952,10 @@ SIGMET_DATA_TYPES = OrderedDict([
           'kw': {'scale': 65536., 'offset': -1.}}),
     # Fully corrected reflectivity (2 byte)
     (21, {'name': 'DB_DBZC2', 'type': 'uint16', 'func': decode_array,
-         'kw': {'scale': 100., 'offset': -32768.}}),
+          'kw': {'scale': 100., 'offset': -32768.}}),
     # Corrected Velocity (2 byte)
     (22, {'name': 'DB_VELC2', 'type': 'uint16', 'func': decode_array,
-         'kw': {'scale': 100., 'offset': -32768.}}),
+          'kw': {'scale': 100., 'offset': -32768.}}),
     # SQI (2 byte)
     (23, {'name': 'DB_SQI2', 'type': 'uint16', 'func': decode_array,
           'kw': {'scale': 65536., 'offset': -1.}}),
@@ -966,13 +966,13 @@ SIGMET_DATA_TYPES = OrderedDict([
           'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR H to V (2 byte)
     (26, {'name': 'DB_LDRH2', 'type': 'uint16', 'func': decode_array,
-         'kw': {'scale': 100., 'offset': -32768.}}),
+          'kw': {'scale': 100., 'offset': -32768.}}),
     # LDR V to H (1 byte)
     (27, {'name': 'DB_LDRV', 'type': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR V to H (2 byte)
     (28, {'name': 'DB_LDRV2', 'type': 'uint16', 'func': decode_array,
-         'kw': {'scale': 100., 'offset': -32768.}}),
+          'kw': {'scale': 100., 'offset': -32768.}}),
     # Individual flag bits for each bin
     (29, {'name': 'DB_FLAGS', 'func': None}),
     # (See bit definitions below)

@@ -507,5 +507,40 @@ class RasterTest(unittest.TestCase):
         wrl.io.open_raster(geofile)
 
 
+class IrisTest(unittest.TestCase):
+    def test_open_iris(self):
+        filename = 'sigmet/cor-main131125105503.RAW2049'
+        sigmetfile = wrl.util.get_wradlib_data_file(filename)
+        data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
+        self.assertIsInstance(data.fh, np.memmap)
+        data = wrl.io.IrisFile(sigmetfile, loaddata=True)
+        self.assertEqual(data._record_number, 511)
+        self.assertEqual(data.filepos, 3141076)
+
+    def test_read_iris(self):
+        filename = 'sigmet/cor-main131125105503.RAW2049'
+        sigmetfile = wrl.util.get_wradlib_data_file(filename)
+        data = wrl.io.read_iris(sigmetfile, loaddata=True)
+        data_keys = ['product_hdr', 'ingest_header', 'nsweeps', 'nrays',
+                     'nbins', 'data_types', 'sweeps', 'raw_product_bhdrs']
+        product_hdr_keys = ['structure_header', 'product_configuration',
+                            'product_end']
+        ingest_hdr_keys = ['structure_header', 'ingest_configuration',
+                           'task_configuration', 'spare_0', 'gparm',
+                           'reserved']
+        data_types = ['DB_DBZ', 'DB_VEL', 'DB_ZDR', 'DB_KDP', 'DB_PHIDP',
+                      'DB_RHOHV', 'DB_HCLASS']
+        self.assertEqual(list(data.keys()), data_keys)
+        self.assertEqual(list(data['product_hdr'].keys()), product_hdr_keys)
+        self.assertEqual(list(data['ingest_header'].keys()), ingest_hdr_keys)
+        self.assertEqual(data['data_types'], data_types)
+
+    def test_decode_bin_angle(self):
+        self.assertEqual(wrl.io.iris.decode_bin_angle(20000, 2), 109.86328125)
+        self.assertEqual(wrl.io.iris.decode_bin_angle(2000000000, 4),
+                         167.63806343078613)
+
+
 if __name__ == '__main__':
     unittest.main()
