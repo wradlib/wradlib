@@ -17,6 +17,8 @@ See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
    :nosignatures:
    :toctree: generated/
 
+   IrisRecord
+   IrisFile
    read_iris
 """
 
@@ -24,6 +26,7 @@ import numpy as np
 import struct
 from collections import OrderedDict
 import warnings
+import datetime as dt
 
 
 RECORD_BYTES = 6144
@@ -31,7 +34,6 @@ RECORD_BYTES = 6144
 
 class IrisRecord(object):
     """ Class holding a single record from a Sigmet IRIS file.
-
     """
     def __init__(self, record, recnum):
         self.record = record.copy()
@@ -75,12 +77,13 @@ class IrisFile(object):
         # read data headers
         self._product_hdr = _unpack_dictionary(self.read_record(0)
                                                [:LEN_PRODUCT_HDR],
-                                               PRODUCT_HDR)
-        # TODO: unpack task_{scantype}_scan_info based on scan type
-        # from task_scan_info substructure
+                                               PRODUCT_HDR,
+                                               rawdata)
         self._ingest_header = _unpack_dictionary(self.read_record(1)
                                                  [:LEN_INGEST_HEADER],
-                                                 INGEST_HEADER)
+                                                 INGEST_HEADER,
+                                                 rawdata)
+        self.get_task_type_scan_info()
         self._raw_product_bhdrs = []
 
         # determine data types contained in the file
@@ -197,6 +200,29 @@ class IrisFile(object):
 
         return _data_types_from_dsp_mask([word0, word1, word2, word3])
 
+    def get_task_type_scan_info(self):
+        task_info = self._ingest_header['task_configuration']['task_scan_info']
+        mode = task_info['antenna_scan_mode']
+        key = 'task_type_scan_info'
+        if mode in [1, 4]:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_PPI_SCAN_INFO,
+                                                self._rawdata)
+        elif mode == 2:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_RHI_SCAN_INFO,
+                                                self._rawdata)
+        elif mode == 3:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_MANUAL_SCAN_INFO,
+                                                self._rawdata)
+        elif mode == 5:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_FILE_SCAN_INFO,
+                                                self._rawdata)
+        else:
+            pass
+
     def get_raw_prod_bhdr(self):
         self._raw_product_bhdrs.append(
             _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
@@ -205,8 +231,8 @@ class IrisFile(object):
     def get_ingest_data_headers(self):
 
         ingest_data_hdrs = OrderedDict()
-        for i, dt in enumerate(self.data_types_names):
-            ingest_data_hdrs[dt] = _unpack_dictionary(
+        for i, dn in enumerate(self.data_types_names):
+            ingest_data_hdrs[dn] = _unpack_dictionary(
                 self._rh.read(LEN_INGEST_DATA_HEADER, width=1),
                 INGEST_DATA_HEADER)
 
@@ -284,13 +310,13 @@ class IrisFile(object):
 
             sweep_prod['data'] = self.decode_data(raw_data[i::cnt, 6:], prod)
             sweep_prod['azi_start'] = self.decode_data(raw_data[i::cnt, 0],
-                                                       DB_BIN2)
+                                                       BIN2)
             sweep_prod['ele_start'] = self.decode_data(raw_data[i::cnt, 1],
-                                                       DB_BIN2)
+                                                       BIN2)
             sweep_prod['azi_stop'] = self.decode_data(raw_data[i::cnt, 2],
-                                                      DB_BIN2)
+                                                      BIN2)
             sweep_prod['ele_stop'] = self.decode_data(raw_data[i::cnt, 3],
-                                                      DB_BIN2)
+                                                      BIN2)
             sweep_prod['rbins'] = raw_data[i::cnt, 4]
             sweep_prod['dtime'] = raw_data[i::cnt, 5]
             sweep_data[prod['name']] = sweep_prod
@@ -310,9 +336,9 @@ class IrisFile(object):
                 pass
             try:
                 rays, bins = data.shape
-                data = data.view(prod['type']).reshape(rays, -1)[:, :bins]
+                data = data.view(prod['dtype']).reshape(rays, -1)[:, :bins]
             except ValueError:
-                data = data.view(prod['type'])
+                data = data.view(prod['dtype'])
             return prod['func'](data, **kw)
         else:
             return data
@@ -374,26 +400,55 @@ def decode_sqi(data, **kwargs):
     return np.sqrt(decode_array(data, **kwargs))
 
 
+def decode_time(data):
+    time = _unpack_dictionary(data, YMDS_TIME)
+    return (dt.datetime(time['year'], time['month'], time['day']) +
+            dt.timedelta(seconds=time['seconds'],
+                         milliseconds=time['milliseconds']))
+
+
 # IRIS Data Types and corresponding python struct format characters
 # 4.2 Scalar Definitions, Page 23
 # https://docs.python.org/3/library/struct.html#format-characters
 
-SINT1 = 'b'
-SINT2 = 'h'
-SINT4 = 'i'
-UINT1 = 'B'
-UINT2 = 'H'
-UINT4 = 'I'
-FLT4 = 'f'
-FLT8 = 'd'
-BIN1 = 'B'
-BIN2 = 'H'
-BIN4 = 'I'
-MESSAGE = 'I'
-UINT16_T = 'H'
+SINT1 = {'fmt': 'b'}
+SINT2 = {'fmt': 'h'}
+SINT4 = {'fmt': 'i'}
+UINT1 = {'fmt': 'B'}
+UINT2 = {'fmt': 'H'}
+UINT4 = {'fmt': 'I'}
+FLT4 = {'fmt': 'f'}
+FLT8 = {'fmt': 'd'}
+BIN1 = {'name': 'BIN1', 'dtype': 'uint8', 'size': 'B',
+        'func': decode_bin_angle, 'fkw': {'mode': 1}}
+BIN2 = {'name': 'BIN2', 'dtype': 'uint16', 'size': 'H',
+        'func': decode_bin_angle, 'fkw': {'mode': 2}}
+BIN4 = {'name': 'BIN4', 'dtype': 'uint32', 'size': 'I',
+        'func': decode_bin_angle, 'fkw': {'mode': 4}}
+MESSAGE = {'fmt': 'I'}
+UINT16_T = {'fmt': 'H'}
 
 
-def _unpack_dictionary(buffer, dictionary):
+def _get_fmt_string(dictionary, retsub=False):
+    fmt = ''
+    sub = OrderedDict()
+    for k, v in dictionary.items():
+        try:
+            fmt += v['fmt']
+        except KeyError:
+            # remember sub-structures
+            sub[k] = v
+            try:
+                fmt += '{}s'.format(struct.calcsize(_get_fmt_string(v)))
+            except TypeError:
+                fmt += v['size']
+    if retsub:
+        return fmt, sub
+    else:
+        return fmt
+
+
+def _unpack_dictionary(buffer, dictionary, rawdata=False):
     """ Unpacks binary data using the given dictionary structure.
 
     Parameters
@@ -407,31 +462,33 @@ def _unpack_dictionary(buffer, dictionary):
     Ordered Dictionary with unpacked data
 
     """
-    fmt = ''
-    sub = OrderedDict()
-
-    # iterate over dictionary
-    for k, v in dictionary.items():
-        try:
-            fmt += v
-        except TypeError:
-            # remember sub-structures
-            sub[k] = v
-            # check for type
-            if isinstance(v, OrderedDict):
-                fmt += '{}s'.format(_calcsize(v))
-            else:
-                fmt += '{}s'.format(struct.calcsize(v[0]))
+    # get format and substructures of dictionary
+    fmt, sub = _get_fmt_string(dictionary, retsub=True)
 
     # unpack into OrderedDict
     data = OrderedDict(zip(dictionary, struct.unpack(fmt, buffer)))
 
-    # iterate over sub dictionaries
+    # remove spares
+    if not rawdata:
+        keys_to_remove = [k for k in data.keys() if k.startswith('spare')]
+        for k in keys_to_remove:
+            data.pop(k, None)
+
+    # iterate over sub dictionary and unpack/read/decode
     for k, v in sub.items():
+        if not rawdata:
+            # read/decode data
+            for k1 in ['read', 'func']:
+                try:
+                    data[k] = v[k1](data[k], **v[k1[0] + 'kw'])
+                except KeyError:
+                    pass
+        # unpack sub dictionary
         try:
-            data[k] = _unpack_dictionary(data[k], v)
-        except AttributeError:
-            data[k] = np.fromstring(data[k], dtype=v[1])
+            data[k] = _unpack_dictionary(data[k], v, rawdata=rawdata)
+        except TypeError:
+            pass
+
     return data
 
 
@@ -443,21 +500,6 @@ def _data_types_from_dsp_mask(words):
     for i, word in enumerate(words):
         data_types += [j+(i*32) for j in range(32) if word >> j & 1]
     return data_types
-
-
-def _calcsize(structure):
-    size = 0
-    fmt = ''
-    for v in structure.values():
-        try:
-            fmt += v
-        except TypeError:
-            if isinstance(v, OrderedDict):
-                size += _calcsize(v)
-            else:
-                size += struct.calcsize(v[0])
-    size += struct.calcsize(fmt)
-    return size
 
 
 # IRIS Data Structures
@@ -480,6 +522,12 @@ YMDS_TIME = OrderedDict([('seconds', SINT4),
                          ('month', SINT2),
                          ('day', SINT2)])
 
+LEN_YMDS_TIME = struct.calcsize(_get_fmt_string(YMDS_TIME))
+
+_YMDS_TIME = {'size': '{}s'.format(LEN_YMDS_TIME),
+              'func': decode_time,
+              'fkw': {}}
+
 # color_scale_def Structure
 # 4.3.5, page 26
 
@@ -488,7 +536,9 @@ COLOR_SCALE_DEF = OrderedDict([('iflags', UINT4),
                                ('istep', SINT4),
                                ('icolcnt', SINT2),
                                ('iset_and_scale', UINT2),
-                               ('ilevel_seams', np.array(['32s', 'uint16']))])
+                               ('ilevel_seams', {'size': '32s',
+                                                 'read': np.fromstring,
+                                                 'rkw': {'dtype': 'uint16'}})])
 
 # product_configuration Structure
 # 4.3.24, page 36
@@ -497,12 +547,12 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('product_type_code', UINT2),
                                      ('scheduling_code', UINT2),
                                      ('seconds_between_runs', SINT4),
-                                     ('generation_time', YMDS_TIME),
-                                     ('sweep_ingest_time', YMDS_TIME),
-                                     ('file_ingest_time', YMDS_TIME),
-                                     ('spare_0', '6s'),
-                                     ('product_name', '12s'),
-                                     ('task_name', '12s'),
+                                     ('generation_time', _YMDS_TIME),
+                                     ('sweep_ingest_time', _YMDS_TIME),
+                                     ('file_ingest_time', _YMDS_TIME),
+                                     ('spare_0', {'fmt': '6s'}),
+                                     ('product_name', {'fmt': '12s'}),
+                                     ('task_name', {'fmt': '12s'}),
                                      ('flag', UINT2),
                                      ('x_scale', SINT4),
                                      ('y_scale', SINT4),
@@ -514,33 +564,33 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('y_location', SINT4),
                                      ('z_location', SINT4),
                                      ('maximum_range', SINT4),
-                                     ('spare_1', '2s'),
+                                     ('spare_1', {'fmt': '2s'}),
                                      ('data_type', UINT2),
-                                     ('projection_name', '12s'),
+                                     ('projection_name', {'fmt': '12s'}),
                                      ('input_data_type', UINT2),
                                      ('projection_type', UINT1),
-                                     ('spare_2', '1s'),
+                                     ('spare_2', {'fmt': '1s'}),
                                      ('radial_smoother', SINT2),
                                      ('times_run', SINT2),
                                      ('zr_constant', SINT4),
                                      ('zr_exponent', SINT4),
                                      ('x_smoother', SINT2),
                                      ('y_smoother', SINT2),
-                                     ('product_specific_info', '80s'),
-                                     ('minor_task_suffixes', '16s'),
-                                     ('spare_3', '12s'),
+                                     ('product_specific_info', {'fmt': '80s'}),
+                                     ('minor_task_suffixes', {'fmt': '16s'}),
+                                     ('spare_3', {'fmt': '12s'}),
                                      ('color_scale_def', COLOR_SCALE_DEF)])
 # product_end Structure
 # 4.3.25, page 39
 
-PRODUCT_END = OrderedDict([('site_name', '16s'),
-                           ('iris_version_created', '8s'),
-                           ('ingest_iris_version', '8s'),
-                           ('ingest_time', YMDS_TIME),
-                           ('spare_0', '28s'),
+PRODUCT_END = OrderedDict([('site_name', {'fmt': '16s'}),
+                           ('iris_version_created', {'fmt': '8s'}),
+                           ('ingest_iris_version', {'fmt': '8s'}),
+                           ('ingest_time', _YMDS_TIME),
+                           ('spare_0', {'fmt': '28s'}),
                            ('GMT_minute_offset_local', SINT2),
-                           ('ingest_hardware_name_', '16s'),
-                           ('ingest_site_name_', '16s'),
+                           ('ingest_hardware_name_', {'fmt': '16s'}),
+                           ('ingest_site_name_', {'fmt': '16s'}),
                            ('GMT_minute_offset_standard', SINT2),
                            ('latitude', BIN4),
                            ('longitude', BIN4),
@@ -551,7 +601,7 @@ PRODUCT_END = OrderedDict([('site_name', '16s'),
                            ('signal_processor_type', UINT2),
                            ('trigger_rate', UINT2),
                            ('samples_used', SINT2),
-                           ('clutter_filter', '12s'),
+                           ('clutter_filter', {'fmt': '12s'}),
                            ('number_linear_filter', UINT2),
                            ('wavelength', SINT4),
                            ('truncation_height', SINT4),
@@ -577,7 +627,7 @@ PRODUCT_END = OrderedDict([('site_name', '16s'),
                            ('spare_bit4', UINT1),
                            ('spare_bit5', UINT1),
                            ('spare_bit6', UINT1),
-                           ('spare_1', '12s'),
+                           ('spare_1', {'fmt': '12s'}),
                            ('standard_parallel_1', BIN4),
                            ('standard_parallel_2', BIN4),
                            ('earth_radius', UINT4),
@@ -589,16 +639,16 @@ PRODUCT_END = OrderedDict([('site_name', '16s'),
                            ('latitude_projection', BIN4),
                            ('longitude_projection', BIN4),
                            ('product_sequence_number', SINT2),
-                           ('spare_2', '32s'),
+                           ('spare_2', {'fmt': '32s'}),
                            ('melting_level', SINT2),
                            ('radar_height_above_reference', SINT2),
                            ('number_elements', SINT2),
                            ('mean_wind_speed', UINT1),
                            ('mean_wind_direction', BIN1),
-                           ('spare_3', '2s'),
-                           ('tz_name', '8s'),
+                           ('spare_3', {'fmt': '2s'}),
+                           ('tz_name', {'fmt': '8s'}),
                            ('extended_product_header_offset', UINT4),
-                           ('spare_4', '4s')])
+                           ('spare_4', {'fmt': '4s'})])
 
 # _product_hdr Structure
 # 4.3.26 page 41
@@ -609,21 +659,21 @@ PRODUCT_HDR = OrderedDict([('structure_header', STRUCTURE_HEADER),
 # ingest_configuration Structure
 # 4.3.14, page 31
 
-INGEST_CONFIGURATION = OrderedDict([('filename', '80s'),
+INGEST_CONFIGURATION = OrderedDict([('filename', {'fmt': '80s'}),
                                     ('number_files', SINT2),
                                     ('number_sweeps_completed', SINT2),
                                     ('total_size', SINT4),
-                                    ('volume_scan_start_time', YMDS_TIME),
-                                    ('spare_0', '12s'),
+                                    ('volume_scan_start_time', _YMDS_TIME),
+                                    ('spare_0', {'fmt': '12s'}),
                                     ('ray_header_bytes', SINT2),
                                     ('extended_ray_header_bytes', SINT2),
                                     ('number_task_config_table', SINT2),
                                     ('playback_version', SINT2),
-                                    ('spare_1', '4s'),
-                                    ('iris_version', '8s'),
-                                    ('hardware_site', '16s'),
+                                    ('spare_1', {'fmt': '4s'}),
+                                    ('iris_version', {'fmt': '8s'}),
+                                    ('hardware_site', {'fmt': '16s'}),
                                     ('gmt_offset_minutes_local', SINT2),
-                                    ('site_name', '16s'),
+                                    ('site_name', {'fmt': '16s'}),
                                     ('gmt_offset_minutes_standard', SINT2),
                                     ('latitude_radar', BIN4),
                                     ('longitude_radar', BIN4),
@@ -642,11 +692,11 @@ INGEST_CONFIGURATION = OrderedDict([('filename', '80s'),
                                     ('antenna_offset_up', SINT4),
                                     ('fault_status', UINT4),
                                     ('melting_layer', SINT2),
-                                    ('spare_2', '2s'),
-                                    ('local_timezone', '8s'),
+                                    ('spare_2', {'fmt': '2s'}),
+                                    ('local_timezone', {'fmt': '8s'}),
                                     ('flags', UINT4),
-                                    ('configuration_name', '16s'),
-                                    ('spare_3', '228s')])
+                                    ('configuration_name', {'fmt': '16s'}),
+                                    ('spare_3', {'fmt': '228s'})])
 
 # task_sched Structure
 # 4.3.62, page 63
@@ -658,7 +708,7 @@ TASK_SCHED_INFO = OrderedDict([('start_time', SINT4),
                                ('time_used_last_run', SINT4),
                                ('day_last_run', SINT4),
                                ('flag', UINT2),
-                               ('spare_0', '94s')])
+                               ('spare_0', {'fmt': '94s'})])
 
 # dsp_data_mask Structure
 # 4.3.7, page 28
@@ -680,7 +730,7 @@ TASK_DSP_MODE_BATCH = OrderedDict([('low_prf', UINT2),
                                    ('reflectivity_unfolding_threshold', SINT2),
                                    ('velocity_unfolding_threshold', SINT2),
                                    ('width_unfolding_threshold', SINT2),
-                                   ('spare_0', '18s')])
+                                   ('spare_0', {'fmt': '18s'})])
 
 # task_dsp_info Structure
 # 4.3.52, page 57f
@@ -690,7 +740,7 @@ TASK_DSP_INFO = OrderedDict([('major_mode', UINT2),
                              ('dsp_data_mask0', DSP_DATA_MASK),
                              ('dsp_data_mask1', DSP_DATA_MASK),
                              ('task_dsp_mode', TASK_DSP_MODE_BATCH),
-                             ('spare_0', '52s'),
+                             ('spare_0', {'fmt': '52s'}),
                              ('prf', SINT4),
                              ('pulse_width', SINT4),
                              ('multi_prf_mode_flag', UINT2),
@@ -698,7 +748,7 @@ TASK_DSP_INFO = OrderedDict([('major_mode', UINT2),
                              ('agc_feedback_code', UINT2),
                              ('sample_size', SINT2),
                              ('gain_control_flag', UINT2),
-                             ('clutter_filter_name', '12s'),
+                             ('clutter_filter_name', {'fmt': '12s'}),
                              ('linear_filter_num_first_bin', UINT1),
                              ('log_filter_num_first_bin', UINT1),
                              ('attenuation_fixed_gain', SINT2),
@@ -707,9 +757,9 @@ TASK_DSP_INFO = OrderedDict([('major_mode', UINT2),
                              ('xmt_phase_sequence', UINT2),
                              ('ray_header_config_mask', UINT4),
                              ('playback_flags', UINT2),
-                             ('spare_1', '2s'),
-                             ('custom_ray_header_name', '16s'),
-                             ('spare_2', '120s')])
+                             ('spare_1', {'fmt': '2s'}),
+                             ('custom_ray_header_name', {'fmt': '16s'}),
+                             ('spare_2', {'fmt': '120s'})])
 
 # task_calib_info Structure
 # 4.3.50, page 56f
@@ -719,7 +769,7 @@ TASK_CALIB_INFO = OrderedDict([('reflectivity_slope', SINT2),
                                ('clutter_correction_threshold', SINT2),
                                ('sqi_threshold', SINT2),
                                ('power_threshold', SINT2),
-                               ('spare_0', '8s'),
+                               ('spare_0', {'fmt': '8s'}),
                                ('calibration_reflectivity', SINT2),
                                ('uncorrected_reflectivity_threshold_flags',
                                 UINT2),
@@ -728,9 +778,9 @@ TASK_CALIB_INFO = OrderedDict([('reflectivity_slope', SINT2),
                                ('velocity_threshold_flags', UINT2),
                                ('width_threshold_flags', UINT2),
                                ('zdr_threshold_flags', UINT2),
-                               ('spare_1', '6s'),
+                               ('spare_1', {'fmt': '6s'}),
                                ('flags_1', UINT2),
-                               ('spare_2', '2s'),
+                               ('spare_2', {'fmt': '2s'}),
                                ('ldr_bias', SINT2),
                                ('zdr_bias', SINT2),
                                ('nexrad_point_clutter_threshold', SINT2),
@@ -743,7 +793,7 @@ TASK_CALIB_INFO = OrderedDict([('reflectivity_slope', SINT2),
                                ('vertical_radar_constant', SINT2),
                                ('receiver_bandwidth', SINT2),
                                ('flags_2', UINT16_T),
-                               ('spare_3', '256s')])
+                               ('spare_3', {'fmt': '256s'})])
 
 # task_range_info Structure
 # 4.3.59, page 61
@@ -756,23 +806,29 @@ TASK_RANGE_INFO = OrderedDict([('range_first_bin', SINT4),
                                ('step_output_bins', SINT4),
                                ('variable_range_bin_spacing_flag', UINT2),
                                ('range_bin_averaging_flag', SINT2),
-                               ('spare_0', '136s')])
+                               ('spare_0', {'fmt': '136s'})])
 
 # task_rhi_scan_info Structure
 # 4.3.60, page 61
 
+_ANGLE_LIST = {'size': '80s',
+               'read': np.fromstring,
+               'rkw': {'dtype': 'uint16'},
+               'func': decode_bin_angle,
+               'fkw': {'mode': 2}}
+
 TASK_RHI_SCAN_INFO = OrderedDict([('lower_elevation_limit', UINT2),
                                   ('upper_elevation_limit', UINT2),
-                                  ('list_of_azimuths', '80s'),
-                                  ('spare_0', '115s'),
+                                  ('list_of_azimuths', _ANGLE_LIST),
+                                  ('spare_0', {'fmt': '115s'}),
                                   ('start_first_sector_sweep', UINT1)])
 # task_ppi_scan_info Structure
 # 4.3.58, page 61
 
 TASK_PPI_SCAN_INFO = OrderedDict([('left_azimuth_limit', BIN2),
                                   ('right_azimuth_limit', BIN2),
-                                  ('list_of_elevations', '80s'),
-                                  ('spare_0', '115s'),
+                                  ('list_of_elevations', _ANGLE_LIST),
+                                  ('spare_0', {'fmt': '115s'}),
                                   ('start_first_sector_sweep', UINT1)])
 
 # task_file_scan_info Structure
@@ -780,14 +836,15 @@ TASK_PPI_SCAN_INFO = OrderedDict([('left_azimuth_limit', BIN2),
 
 TASK_FILE_SCAN_INFO = OrderedDict([('first_azimuth_angle', UINT2),
                                    ('first_elevation_angle', UINT2),
-                                   ('filename_antenna_control', '12s'),
-                                   ('spare_0', '184s')])
+                                   ('filename_antenna_control',
+                                    {'fmt': '12s'}),
+                                   ('spare_0', {'fmt': '184s'})])
 
 # task_manual_scan_info Structure
 # 4.3.56, page 60
 
 TASK_MANUAL_SCAN_INFO = OrderedDict([('flags', UINT2),
-                                     ('spare_0', '198s')])
+                                     ('spare_0', {'fmt': '198s'})])
 
 
 # task_scan_info Structure
@@ -795,41 +852,41 @@ TASK_MANUAL_SCAN_INFO = OrderedDict([('flags', UINT2),
 
 TASK_SCAN_INFO = OrderedDict([('antenna_scan_mode', UINT2),
                               ('desired_angular_resolution', SINT2),
-                              ('spare_0', '2s'),
+                              ('spare_0', {'fmt': '2s'}),
                               ('sweep_number', SINT2),
-                              ('task_scan_type_info', '200s'),
-                              ('spare_1', '112s')])
+                              ('task_type_scan_info', {'fmt': '200s'}),
+                              ('spare_1', {'fmt': '112s'})])
 
 # task_misc_info Structure
 # 4.3.57, page 60
 
 TASK_MISC_INFO = OrderedDict([('wavelength', SINT4),
-                              ('tr_serial_number', '16s'),
+                              ('tr_serial_number', {'fmt': '16s'}),
                               ('transmit_power', SINT4),
                               ('flags', UINT2),
                               ('polarization_type', UINT2),
                               ('truncation_height', SINT4),
-                              ('spare_0', '18s'),
-                              ('spare_1', '12s'),
+                              ('spare_0', {'fmt': '18s'}),
+                              ('spare_1', {'fmt': '12s'}),
                               ('number_comment_bytes', SINT2),
                               ('horizontal_beam_width', BIN4),
                               ('vertical_beam_width', BIN4),
-                              ('customer_storage', '40s'),
-                              ('spare_2', '208s')])
+                              ('customer_storage', {'fmt': '40s'}),
+                              ('spare_2', {'fmt': '208s'})])
 
 # task_end_info Structure
 # 4.3.54, page 59
 
 TASK_END_INFO = OrderedDict([('task_major_number', SINT2),
                              ('task_minor_number', SINT2),
-                             ('task_configuration_file_name', '12s'),
-                             ('task_description', '80s'),
+                             ('task_configuration_file_name', {'fmt': '12s'}),
+                             ('task_description', {'fmt': '80s'}),
                              ('number_tasks', SINT4),
                              ('task_state', UINT2),
-                             ('spare_0', '2s'),
-                             ('task_data_time', YMDS_TIME),
-                             ('echo_class_identifiers', '6s'),
-                             ('spare_1', '198s')])
+                             ('spare_0', {'fmt': '2s'}),
+                             ('task_data_time', _YMDS_TIME),
+                             ('echo_class_identifiers', {'fmt': '6s'}),
+                             ('spare_1', {'fmt': '198s'})])
 
 # task_configuration Structure
 # 4.3.51, page 57
@@ -842,7 +899,7 @@ TASK_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('task_scan_info', TASK_SCAN_INFO),
                                   ('task_misc_info', TASK_MISC_INFO),
                                   ('task_end_info', TASK_END_INFO),
-                                  ('comments', '720s')])
+                                  ('comments', {'fmt': '720s'})])
 
 # _ingest_header Structure
 # 4.3.16, page 33
@@ -850,9 +907,9 @@ TASK_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
 INGEST_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
                              ('ingest_configuration', INGEST_CONFIGURATION),
                              ('task_configuration', TASK_CONFIGURATION),
-                             ('spare_0', '732s'),
-                             ('gparm', '128s'),
-                             ('reserved', '920s')])
+                             ('spare_0', {'fmt': '732s'}),
+                             ('gparm', {'fmt': '128s'}),
+                             ('reserved', {'fmt': '920s'})])
 
 
 # raw_prod_bhdr Structure
@@ -863,13 +920,13 @@ RAW_PROD_BHDR = OrderedDict([('_record_number', SINT2),
                              ('first_ray_byte_offset', SINT2),
                              ('sweep_ray_number', SINT2),
                              ('flags', UINT2),
-                             ('spare', '2s')])
+                             ('spare', {'fmt': '2s'})])
 
 # ingest_data_header Structure
 # 4.3.15, page 32
 
 INGEST_DATA_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
-                                  ('sweep_start_time', YMDS_TIME),
+                                  ('sweep_start_time', _YMDS_TIME),
                                   ('sweep_number', SINT2),
                                   ('number_rays_per_sweep', SINT2),
                                   ('first_ray_index', SINT2),
@@ -878,14 +935,14 @@ INGEST_DATA_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('fixed_angle', BIN2),
                                   ('bits_per_bin', SINT2),
                                   ('data_type', UINT2),
-                                  ('spare_0', '36s')])
+                                  ('spare_0', {'fmt': '36s'})])
 
 
 # some length's of data structures
-LEN_PRODUCT_HDR = _calcsize(PRODUCT_HDR)
-LEN_INGEST_HEADER = _calcsize(INGEST_HEADER)
-LEN_RAW_PROD_BHDR = _calcsize(RAW_PROD_BHDR)
-LEN_INGEST_DATA_HEADER = _calcsize(INGEST_DATA_HEADER)
+LEN_PRODUCT_HDR = struct.calcsize(_get_fmt_string(PRODUCT_HDR))
+LEN_INGEST_HEADER = struct.calcsize(_get_fmt_string(INGEST_HEADER))
+LEN_RAW_PROD_BHDR = struct.calcsize(_get_fmt_string(RAW_PROD_BHDR))
+LEN_INGEST_DATA_HEADER = struct.calcsize(_get_fmt_string(INGEST_DATA_HEADER))
 
 # Sigmet data types
 # 4.9 Constants, Table 17
@@ -894,84 +951,85 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Extended Headers
     (0, {'name': 'DB_XHDR', 'func': None}),
     # Total H power (1 byte)
-    (1, {'name': 'DB_DBT', 'type': '(2,) uint8', 'func': decode_array,
+    (1, {'name': 'DB_DBT', 'dtype': '(2,) uint8', 'func': decode_array,
          'kw': {'scale': 2., 'offset': -64.}}),
     # Clutter Corrected H reflectivity (1 byte)
-    (2, {'name': 'DB_DBZ', 'type': '(2,) uint8', 'func': decode_array,
+    (2, {'name': 'DB_DBZ', 'dtype': '(2,) uint8', 'func': decode_array,
          'kw': {'scale': 2., 'offset': -64.}}),
     # Velocity (1 byte)
-    (3, {'name': 'DB_VEL', 'type': '(2,) uint8', 'func': decode_array,
+    (3, {'name': 'DB_VEL', 'dtype': '(2,) uint8', 'func': decode_array,
          'kw': {'scale': 127., 'offset': -128.}}),
     # Width (1 byte)
-    (4, {'name': 'DB_WIDTH', 'type': '(2,) uint8', 'func': decode_array,
+    (4, {'name': 'DB_WIDTH', 'dtype': '(2,) uint8', 'func': decode_array,
          'kw': {'scale': 256.}}),
     # Differential reflectivity (1 byte)
-    (5, {'name': 'DB_ZDR', 'type': '(2,) uint8', 'func': decode_array,
+    (5, {'name': 'DB_ZDR', 'dtype': '(2,) uint8', 'func': decode_array,
          'kw': {'scale': 16., 'offset': -128.}}),
     # Old Rainfall rate (stored as dBZ), not used
-    (6, {'name': 'DB_ORAIN', 'type': '(2,) uint8', 'func': None}),
+    (6, {'name': 'DB_ORAIN', 'dtype': '(2,) uint8', 'func': None}),
     # Fully corrected reflectivity (1 byte)
-    (7, {'name': 'DB_DBZC', 'type': '(2,) uint8', 'func': decode_array,
+    (7, {'name': 'DB_DBZC', 'dtype': '(2,) uint8', 'func': decode_array,
          'kw': {'scale': 2., 'offset': -64.}}),
     # Uncorrected reflectivity (2 byte)
-    (8, {'name': 'DB_DBT2', 'type': 'uint16', 'func': decode_array,
+    (8, {'name': 'DB_DBT2', 'dtype': 'uint16', 'func': decode_array,
          'kw': {'scale': 100., 'offset': -32768.}}),
     # Corrected reflectivity (2 byte)
-    (9, {'name': 'DB_DBZ2', 'type': 'uint16', 'func': decode_array,
+    (9, {'name': 'DB_DBZ2', 'dtype': 'uint16', 'func': decode_array,
          'kw': {'scale': 100., 'offset': -32768.}}),
     # Velocity (2 byte)
-    (10, {'name': 'DB_VEL2', 'type': 'uint16', 'func': decode_array,
+    (10, {'name': 'DB_VEL2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # Width (2 byte)
-    (11, {'name': 'DB_WIDTH2', 'type': 'uint16', 'func': decode_array,
+    (11, {'name': 'DB_WIDTH2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100.}}),
     # Differential reflectivity (2 byte)
-    (12, {'name': 'DB_ZDR2', 'type': 'uint16', 'func': decode_array,
+    (12, {'name': 'DB_ZDR2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # Rainfall rate (2 byte)
-    (13, {'name': 'DB_RAINRATE2', 'type': 'uint16', 'func': decode_rainrate2}),
+    (13, {'name': 'DB_RAINRATE2', 'dtype': 'uint16',
+          'func': decode_rainrate2}),
     # Kdp (specific differential phase)(1 byte)
-    (14, {'name': 'DB_KDP', 'type': '(2,) int8', 'func': decode_kdp,
+    (14, {'name': 'DB_KDP', 'dtype': '(2,) int8', 'func': decode_kdp,
           'kw': {}}),
     # Kdp (specific differential phase)(2 byte)
-    (15, {'name': 'DB_KDP2', 'type': 'uint16', 'func': decode_array,
+    (15, {'name': 'DB_KDP2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # PHIdp (differential phase)(1 byte)
-    (16, {'name': 'DB_PHIDP', 'type': '(2,) uint8', 'func': decode_phidp,
+    (16, {'name': 'DB_PHIDP', 'dtype': '(2,) uint8', 'func': decode_phidp,
           'kw': {'scale': 254., 'offset': -1}}),
     # Corrected Velocity (1 byte)
-    (17, {'name': 'DB_VELC', 'type': '(2,) uint8', 'func': None}),
+    (17, {'name': 'DB_VELC', 'dtype': '(2,) uint8', 'func': None}),
     # SQI (1 byte)
-    (18, {'name': 'DB_SQI', 'type': '(2,) uint8', 'func': decode_sqi,
+    (18, {'name': 'DB_SQI', 'dtype': '(2,) uint8', 'func': decode_sqi,
           'kw': {'scale': 253., 'offset': -1}}),
     # RhoHV(0) (1 byte)
-    (19, {'name': 'DB_RHOHV', 'type': '(2,) uint8', 'func': decode_sqi,
+    (19, {'name': 'DB_RHOHV', 'dtype': '(2,) uint8', 'func': decode_sqi,
           'kw': {'scale': 253., 'offset': -1}}),
     # RhoHV(0) (2 byte)
-    (20, {'name': 'DB_RHOHV2', 'type': 'uint16', 'func': decode_array,
+    (20, {'name': 'DB_RHOHV2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 65536., 'offset': -1.}}),
     # Fully corrected reflectivity (2 byte)
-    (21, {'name': 'DB_DBZC2', 'type': 'uint16', 'func': decode_array,
+    (21, {'name': 'DB_DBZC2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # Corrected Velocity (2 byte)
-    (22, {'name': 'DB_VELC2', 'type': 'uint16', 'func': decode_array,
+    (22, {'name': 'DB_VELC2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # SQI (2 byte)
-    (23, {'name': 'DB_SQI2', 'type': 'uint16', 'func': decode_array,
+    (23, {'name': 'DB_SQI2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 65536., 'offset': -1.}}),
     # PHIdp (differential phase)(2 byte)
-    (24, {'name': 'DB_PHIDP2', 'type': 'uint16', 'func': decode_phidp2}),
+    (24, {'name': 'DB_PHIDP2', 'dtype': 'uint16', 'func': decode_phidp2}),
     # LDR H to V (1 byte)
-    (25, {'name': 'DB_LDRH', 'type': '(2,) uint8', 'func': decode_array,
+    (25, {'name': 'DB_LDRH', 'dtype': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR H to V (2 byte)
-    (26, {'name': 'DB_LDRH2', 'type': 'uint16', 'func': decode_array,
+    (26, {'name': 'DB_LDRH2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # LDR V to H (1 byte)
-    (27, {'name': 'DB_LDRV', 'type': '(2,) uint8', 'func': decode_array,
+    (27, {'name': 'DB_LDRV', 'dtype': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR V to H (2 byte)
-    (28, {'name': 'DB_LDRV2', 'type': 'uint16', 'func': decode_array,
+    (28, {'name': 'DB_LDRV2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # Individual flag bits for each bin
     (29, {'name': 'DB_FLAGS', 'func': None}),
@@ -980,166 +1038,160 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Test of floating format
     (31, {'name': 'DB_FLOAT32', 'func': None}),
     # Height (1/10 km) (1 byte)
-    (32, {'name': 'DB_HEIGHT', 'type': '(2,) uint8',
+    (32, {'name': 'DB_HEIGHT', 'dtype': '(2,) uint8',
           'func': decode_array,
           'kw': {'scale': 10., 'offset': -1.}}),
     # Linear liquid (.001mm) (2 byte)
-    (33, {'name': 'DB_VIL2', 'type': 'uint16', 'func': decode_array,
+    (33, {'name': 'DB_VIL2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 1000., 'offset': -1.}}),
     # Data type is not applicable
     (34, {'name': 'DB_NULL', 'func': None}),
     # Wind Shear (1 byte)
-    (35, {'name': 'DB_SHEAR', 'type': '(2,) int8', 'func': decode_array,
+    (35, {'name': 'DB_SHEAR', 'dtype': '(2,) int8', 'func': decode_array,
           'kw': {'scale': 5., 'offset': -128.}}),
     # Divergence (.001 10**-4) (2-byte)
-    (36, {'name': 'DB_DIVERGE2', 'type': 'int16', 'func': decode_array,
+    (36, {'name': 'DB_DIVERGE2', 'dtype': 'int16', 'func': decode_array,
           'kw': {'scale': 10e-7}}),
     # Floated liquid (2 byte)
-    (37, {'name': 'DB_FLIQUID2', 'type': 'uint16', 'func': None}),
+    (37, {'name': 'DB_FLIQUID2', 'dtype': 'uint16', 'func': None}),
     # User type, unspecified data (1 byte)
     (38, {'name': 'DB_USER', 'func': None}),
     # Unspecified data, no color legend
     (39, {'name': 'DB_OTHER', 'func': None}),
     # Deformation (.001 10**-4) (2-byte)
-    (40, {'name': 'DB_DEFORM2', 'type': 'int16', 'func': decode_array,
+    (40, {'name': 'DB_DEFORM2', 'dtype': 'int16', 'func': decode_array,
           'kw': {'scale': 10e-7}}),
     # Vertical velocity (.01 m/s) (2-byte)
-    (41, {'name': 'DB_VVEL2', 'type': 'int16', 'func': decode_array,
+    (41, {'name': 'DB_VVEL2', 'dtype': 'int16', 'func': decode_array,
           'kw': {'scale': 100.}}),
     # Horizontal velocity (.01 m/s) (2-byte)
     (41, {'name': 'DB_HVEL2', 'func': decode_array,
           'kw': {'scale': 100.}}),
     # Horizontal wind direction (.1 degree) (2-byte)
-    (43, {'name': 'DB_HDIR2', 'type': 'int16', 'func': decode_array,
+    (43, {'name': 'DB_HDIR2', 'dtype': 'int16', 'func': decode_array,
           'kw': {'scale': 10.}}),
     # Axis of Dilation (.1 degree) (2-byte)
-    (44, {'name': 'DB_AXDIL2', 'type': 'int16', 'func': decode_array,
+    (44, {'name': 'DB_AXDIL2', 'dtype': 'int16', 'func': decode_array,
           'kw': {'scale': 10.}}),
     # Time of data (seconds) (2-byte)
-    (45, {'name': 'DB_TIME2', 'type': 'uint16', 'func': decode_array,
+    (45, {'name': 'DB_TIME2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 60., 'offset': -32768}}),
     # Rho H to V (1 byte)
-    (46, {'name': 'DB_RHOH', 'type': '(2,) uint8', 'func': decode_sqi,
+    (46, {'name': 'DB_RHOH', 'dtype': '(2,) uint8', 'func': decode_sqi,
           'kw': {'scale': 253., 'offset': -1}}),
     # Rho H to V (2 byte)
-    (47, {'name': 'DB_RHOH2', 'type': 'uint16', 'func': decode_array,
+    (47, {'name': 'DB_RHOH2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 65536., 'offset': -1.}}),
     # Rho V to H (1 byte)
-    (48, {'name': 'DB_RHOV', 'type': '(2,) uint8', 'func': decode_sqi,
+    (48, {'name': 'DB_RHOV', 'dtype': '(2,) uint8', 'func': decode_sqi,
           'kw': {'scale': 253., 'offset': -1}}),
     # Rho V to H (2 byte)
-    (49, {'name': 'DB_RHOV2', 'type': 'uint16', 'func': decode_array,
+    (49, {'name': 'DB_RHOV2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 65536., 'offset': -1.}}),
     # Phi H to V (1 byte)
-    (50, {'name': 'DB_PHIH', 'type': '(2,) uint8', 'func': decode_phidp}),
+    (50, {'name': 'DB_PHIH', 'dtype': '(2,) uint8', 'func': decode_phidp}),
     # Phi H to V (2 byte)
-    (51, {'name': 'DB_PHIH2', 'type': 'uint16', 'func': decode_phidp2}),
+    (51, {'name': 'DB_PHIH2', 'dtype': 'uint16', 'func': decode_phidp2}),
     # Phi V to H (1 byte)
-    (52, {'name': 'DB_PHIV', 'type': '(2,) uint8', 'func': decode_phidp}),
+    (52, {'name': 'DB_PHIV', 'dtype': '(2,) uint8', 'func': decode_phidp}),
     # Phi V to H (2 byte)
-    (53, {'name': 'DB_PHIV2', 'type': 'uint16', 'func': decode_phidp2}),
+    (53, {'name': 'DB_PHIV2', 'dtype': 'uint16', 'func': decode_phidp2}),
     # User type, unspecified data (2 byte)
-    (54, {'name': 'DB_USER2', 'type': 'uint16', 'func': None}),
+    (54, {'name': 'DB_USER2', 'dtype': 'uint16', 'func': None}),
     # Hydrometeor class (1 byte)
-    (55, {'name': 'DB_HCLASS', 'type': '(2,) uint8', 'func': None}),
+    (55, {'name': 'DB_HCLASS', 'dtype': '(2,) uint8', 'func': None}),
     # Hydrometeor class (2 byte)
-    (56, {'name': 'DB_HCLASS2', 'type': 'uint16', 'func': None}),
+    (56, {'name': 'DB_HCLASS2', 'dtype': 'uint16', 'func': None}),
     # Corrected Differential reflectivity (1 byte)
-    (57, {'name': 'DB_ZDRC', 'type': '(2,) uint8', 'func': decode_array,
+    (57, {'name': 'DB_ZDRC', 'dtype': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 16., 'offset': -128.}}),
     # Corrected Differential reflectivity (2 byte)
-    (58, {'name': 'DB_ZDRC2', 'type': 'uint16', 'func': decode_array,
+    (58, {'name': 'DB_ZDRC2', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # Temperature (2 byte)
-    (59, {'name': 'DB_TEMPERATURE16', 'type': 'uint16', 'func': None}),
+    (59, {'name': 'DB_TEMPERATURE16', 'dtype': 'uint16', 'func': None}),
     # Vertically Integrated Reflectivity (2 byte)
-    (60, {'name': 'DB_VIR16', 'type': 'uint16', 'func': None}),
+    (60, {'name': 'DB_VIR16', 'dtype': 'uint16', 'func': None}),
     # Total V Power (1 byte)
-    (61, {'name': 'DB_DBTV8', 'type': '(2,) uint8',
+    (61, {'name': 'DB_DBTV8', 'dtype': '(2,) uint8',
           'func': decode_array,
           'kw': {'scale': 2., 'offset': -64.}}),
     # Total V Power (2 byte)
-    (62, {'name': 'DB_DBTV16', 'type': 'uint16', 'func': decode_array,
+    (62, {'name': 'DB_DBTV16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # Clutter Corrected V Reflectivity (1 byte)
-    (63, {'name': 'DB_DBZV8', 'type': '(2,) uint8',
+    (63, {'name': 'DB_DBZV8', 'dtype': '(2,) uint8',
           'func': decode_array,
           'kw': {'scale': 2., 'offset': -64.}}),
     # Clutter Corrected V Reflectivity (2 byte)
-    (64, {'name': 'DB_DBZV16', 'type': 'uint16',
+    (64, {'name': 'DB_DBZV16', 'dtype': 'uint16',
           'func': decode_array,
           'kw': {'scale': 100., 'offset': -32768.}}),
     # Signal to Noise ratio (1 byte)
-    (65, {'name': 'DB_SNR8', 'type': '(2,) uint8',
+    (65, {'name': 'DB_SNR8', 'dtype': '(2,) uint8',
           'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Signal to Noise ratio (2 byte)
-    (66, {'name': 'DB_SNR16', 'type': 'uint16',
+    (66, {'name': 'DB_SNR16', 'dtype': 'uint16',
           'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Albedo (1 byte)
-    (67, {'name': 'DB_ALBEDO8', 'type': '(2,) uint8', 'func': None}),
+    (67, {'name': 'DB_ALBEDO8', 'dtype': '(2,) uint8', 'func': None}),
     # Albedo (2 byte)
-    (68, {'name': 'DB_ALBEDO16', 'type': 'uint16', 'func': None}),
+    (68, {'name': 'DB_ALBEDO16', 'dtype': 'uint16', 'func': None}),
     # VIL Density (2 byte)
-    (69, {'name': 'DB_VILD16', 'type': 'uint16', 'func': None}),
+    (69, {'name': 'DB_VILD16', 'dtype': 'uint16', 'func': None}),
     # Turbulence (2 byte)
-    (70, {'name': 'DB_TURB16', 'type': 'uint16', 'func': None}),
+    (70, {'name': 'DB_TURB16', 'dtype': 'uint16', 'func': None}),
     # Total Power Enhanced (via H+V or HV) (1 byte)
-    (71, {'name': 'DB_DBTE8', 'type': '(2,) uint8', 'func': None}),
+    (71, {'name': 'DB_DBTE8', 'dtype': '(2,) uint8', 'func': None}),
     # Total Power Enhanced (via H+V or HV) (2 byte)
-    (72, {'name': 'DB_DBTE16', 'type': 'uint16', 'func': None}),
+    (72, {'name': 'DB_DBTE16', 'dtype': 'uint16', 'func': None}),
     # Clutter Corrected Reflectivity Enhanced (1 byte)
-    (73, {'name': 'DB_DBZE8', 'type': '(2,) uint8', 'func': None}),
+    (73, {'name': 'DB_DBZE8', 'dtype': '(2,) uint8', 'func': None}),
     # Clutter Corrected Reflectivity Enhanced (2 byte)
-    (74, {'name': 'DB_DBZE16', 'type': 'uint16', 'func': None}),
+    (74, {'name': 'DB_DBZE16', 'dtype': 'uint16', 'func': None}),
     # Polarimetric meteo index (1 byte)
-    (75, {'name': 'DB_PMI8', 'type': '(2,) uint8', 'func': decode_sqi,
+    (75, {'name': 'DB_PMI8', 'dtype': '(2,) uint8', 'func': decode_sqi,
           'kw': {'scale': 253., 'offset': -1}}),
     # Polarimetric meteo index (2 byte)
-    (76, {'name': 'DB_PMI16', 'type': 'uint16', 'func': decode_array,
+    (76, {'name': 'DB_PMI16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 65536., 'offset': -1.}}),
     # The log receiver signal-to-noise ratio (1 byte)
-    (77, {'name': 'DB_LOG8', 'type': '(2,) uint8', 'func': decode_array,
+    (77, {'name': 'DB_LOG8', 'dtype': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # The log receiver signal-to-noise ratio (2 byte)
-    (78, {'name': 'DB_LOG16', 'type': 'uint16', 'func': decode_array,
+    (78, {'name': 'DB_LOG16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Doppler channel clutter signal power (-CSR) (1 byte)
-    (79, {'name': 'DB_CSP8', 'type': '(2,) uint8', 'func': decode_array,
+    (79, {'name': 'DB_CSP8', 'dtype': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Doppler channel clutter signal power (-CSR) (2 byte)
-    (80, {'name': 'DB_CSP16', 'type': 'uint16', 'func': decode_array,
+    (80, {'name': 'DB_CSP16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Cross correlation, uncorrected rhohv (1 byte)
-    (81, {'name': 'DB_CCOR8', 'type': '(2,) uint8', 'func': decode_sqi,
+    (81, {'name': 'DB_CCOR8', 'dtype': '(2,) uint8', 'func': decode_sqi,
           'kw': {'scale': 253., 'offset': -1}}),
     # Cross correlation, uncorrected rhohv (2 byte)
-    (82, {'name': 'DB_CCOR16', 'type': 'uint16', 'func': decode_array,
+    (82, {'name': 'DB_CCOR16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 65536., 'offset': -1.}}),
     # Attenuation of Zh (1 byte)
-    (83, {'name': 'DB_AH8', 'type': '(2,) uint8', 'func': decode_array,
+    (83, {'name': 'DB_AH8', 'dtype': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zh (2 byte)
-    (84, {'name': 'DB_AH16', 'type': 'uint16', 'func': decode_array,
+    (84, {'name': 'DB_AH16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zv (1 byte)
-    (85, {'name': 'DB_AV8', 'type': '(2,) uint8', 'func': decode_array,
+    (85, {'name': 'DB_AV8', 'dtype': '(2,) uint8', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zv (2 byte)
-    (86, {'name': 'DB_AV16', 'type': 'uint16', 'func': decode_array,
+    (86, {'name': 'DB_AV16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zzdr (1 byte)
-    (87, {'name': 'DB_AZDR8', 'type': '(2,) uint8',
+    (87, {'name': 'DB_AZDR8', 'dtype': '(2,) uint8',
           'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zzdr (2 byte)
-    (88, {'name': 'DB_AZDR16', 'type': 'uint16', 'func': decode_array,
+    (88, {'name': 'DB_AZDR16', 'dtype': 'uint16', 'func': decode_array,
           'kw': {'scale': 2., 'offset': -63.}})
     ])
-
-# fake Sigmet data types
-DB_BIN2 = {'name': 'BIN2', 'type': 'uint16',
-           'func': decode_bin_angle, 'kw': {'mode': 2}}
-DB_BIN4 = {'name': 'BIN4', 'type': 'uint16',
-           'func': decode_bin_angle, 'kw': {'mode': 4}}
