@@ -88,6 +88,10 @@ class IrisFile(object):
 
         # determine data types contained in the file
         self._data_types_numbers = self.get_data_types()
+        self._product_type_code = self.get_product_type_code()
+
+        # TODO: implement product specific info
+        # self.get_product_specific_info()
 
         self._sweeps = OrderedDict()
         if loaddata:
@@ -139,6 +143,10 @@ class IrisFile(object):
         return [SIGMET_DATA_TYPES[i] for i in self._data_types_numbers]
 
     @property
+    def product_type(self):
+        return PRODUCT_DATA_TYPE_CODES[self._product_type_code]
+
+    @property
     def data_types_count(self):
         return len(self._data_types_numbers)
 
@@ -186,6 +194,10 @@ class IrisFile(object):
             print("--- Sub CMP Code:", cmp_msb, cmp_val, self._rh.recpos - 1,
                   self._rh.recpos)
         return cmp_msb, cmp_val
+
+    def get_product_type_code(self):
+        prod_conf = self.product_hdr['product_configuration']
+        return prod_conf['product_type_code']
 
     def get_data_types(self):
         """ Determine the available data types.
@@ -360,6 +372,7 @@ def read_iris(filename, loaddata=True, rawdata=True, debug=False):
     data['nrays'] = fh.nrays
     data['nbins'] = fh.nbins
     data['data_types'] = fh.data_types_names
+    data['product_type'] = fh.product_type
     data['sweeps'] = fh.sweeps
     data['raw_product_bhdrs'] = fh.raw_product_bhdrs
 
@@ -405,6 +418,10 @@ def decode_time(data):
     return (dt.datetime(time['year'], time['month'], time['day']) +
             dt.timedelta(seconds=time['seconds'],
                          milliseconds=time['milliseconds']))
+
+
+def decode_string(data):
+    return data.decode('utf-8').rstrip('\0')
 
 
 # IRIS Data Types and corresponding python struct format characters
@@ -507,6 +524,27 @@ def _data_types_from_dsp_mask(words):
 
 # IRIS Data Structures
 
+_STRING = {'read': decode_string,
+           'rkw': {}}
+
+
+def string_dict(size):
+    dic = _STRING.copy()
+    dic['size'] = size
+    return dic
+
+
+_ARRAY = {'read': np.fromstring,
+          'rkw': {}}
+
+
+def array_dict(size, dtype):
+    dic = _ARRAY.copy()
+    dic['size'] = size
+    dic['rkw']['dtype'] = dtype
+    return dic
+
+
 # structure_header Structure
 # 4.3.48 page 55
 
@@ -539,9 +577,7 @@ COLOR_SCALE_DEF = OrderedDict([('iflags', UINT4),
                                ('istep', SINT4),
                                ('icolcnt', SINT2),
                                ('iset_and_scale', UINT2),
-                               ('ilevel_seams', {'size': '32s',
-                                                 'read': np.fromstring,
-                                                 'rkw': {'dtype': 'uint16'}})])
+                               ('ilevel_seams', array_dict('32s', 'uint16'))])
 
 # product_configuration Structure
 # 4.3.24, page 36
@@ -554,8 +590,8 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('sweep_ingest_time', _YMDS_TIME),
                                      ('file_ingest_time', _YMDS_TIME),
                                      ('spare_0', {'fmt': '6s'}),
-                                     ('product_name', {'fmt': '12s'}),
-                                     ('task_name', {'fmt': '12s'}),
+                                     ('product_name', string_dict('12s')),
+                                     ('task_name', string_dict('12s')),
                                      ('flag', UINT2),
                                      ('x_scale', SINT4),
                                      ('y_scale', SINT4),
@@ -569,7 +605,7 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('maximum_range', SINT4),
                                      ('spare_1', {'fmt': '2s'}),
                                      ('data_type', UINT2),
-                                     ('projection_name', {'fmt': '12s'}),
+                                     ('projection_name', string_dict('12s')),
                                      ('input_data_type', UINT2),
                                      ('projection_type', UINT1),
                                      ('spare_2', {'fmt': '1s'}),
@@ -580,20 +616,22 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('x_smoother', SINT2),
                                      ('y_smoother', SINT2),
                                      ('product_specific_info', {'fmt': '80s'}),
-                                     ('minor_task_suffixes', {'fmt': '16s'}),
+                                     ('minor_task_suffixes',
+                                      string_dict('16s')),
                                      ('spare_3', {'fmt': '12s'}),
                                      ('color_scale_def', COLOR_SCALE_DEF)])
+
 # product_end Structure
 # 4.3.25, page 39
 
-PRODUCT_END = OrderedDict([('site_name', {'fmt': '16s'}),
-                           ('iris_version_created', {'fmt': '8s'}),
-                           ('ingest_iris_version', {'fmt': '8s'}),
+PRODUCT_END = OrderedDict([('site_name', string_dict('16s')),
+                           ('iris_version_created', string_dict('8s')),
+                           ('ingest_iris_version', string_dict('8s')),
                            ('ingest_time', _YMDS_TIME),
                            ('spare_0', {'fmt': '28s'}),
                            ('GMT_minute_offset_local', SINT2),
-                           ('ingest_hardware_name_', {'fmt': '16s'}),
-                           ('ingest_site_name_', {'fmt': '16s'}),
+                           ('ingest_hardware_name_', string_dict('16s')),
+                           ('ingest_site_name_', string_dict('16s')),
                            ('GMT_minute_offset_standard', SINT2),
                            ('latitude', BIN4),
                            ('longitude', BIN4),
@@ -604,7 +642,7 @@ PRODUCT_END = OrderedDict([('site_name', {'fmt': '16s'}),
                            ('signal_processor_type', UINT2),
                            ('trigger_rate', UINT2),
                            ('samples_used', SINT2),
-                           ('clutter_filter', {'fmt': '12s'}),
+                           ('clutter_filter', string_dict('12s')),
                            ('number_linear_filter', UINT2),
                            ('wavelength', SINT4),
                            ('truncation_height', SINT4),
@@ -649,7 +687,7 @@ PRODUCT_END = OrderedDict([('site_name', {'fmt': '16s'}),
                            ('mean_wind_speed', UINT1),
                            ('mean_wind_direction', BIN1),
                            ('spare_3', {'fmt': '2s'}),
-                           ('tz_name', {'fmt': '8s'}),
+                           ('tz_name', string_dict('8s')),
                            ('extended_product_header_offset', UINT4),
                            ('spare_4', {'fmt': '4s'})])
 
@@ -662,7 +700,7 @@ PRODUCT_HDR = OrderedDict([('structure_header', STRUCTURE_HEADER),
 # ingest_configuration Structure
 # 4.3.14, page 31
 
-INGEST_CONFIGURATION = OrderedDict([('filename', {'fmt': '80s'}),
+INGEST_CONFIGURATION = OrderedDict([('filename', string_dict('80s')),
                                     ('number_files', SINT2),
                                     ('number_sweeps_completed', SINT2),
                                     ('total_size', SINT4),
@@ -673,10 +711,10 @@ INGEST_CONFIGURATION = OrderedDict([('filename', {'fmt': '80s'}),
                                     ('number_task_config_table', SINT2),
                                     ('playback_version', SINT2),
                                     ('spare_1', {'fmt': '4s'}),
-                                    ('iris_version', {'fmt': '8s'}),
-                                    ('hardware_site', {'fmt': '16s'}),
+                                    ('iris_version', string_dict('8s')),
+                                    ('hardware_site', string_dict('16s')),
                                     ('gmt_offset_minutes_local', SINT2),
-                                    ('site_name', {'fmt': '16s'}),
+                                    ('site_name', string_dict('16s')),
                                     ('gmt_offset_minutes_standard', SINT2),
                                     ('latitude_radar', BIN4),
                                     ('longitude_radar', BIN4),
@@ -696,9 +734,9 @@ INGEST_CONFIGURATION = OrderedDict([('filename', {'fmt': '80s'}),
                                     ('fault_status', UINT4),
                                     ('melting_layer', SINT2),
                                     ('spare_2', {'fmt': '2s'}),
-                                    ('local_timezone', {'fmt': '8s'}),
+                                    ('local_timezone', string_dict('8s')),
                                     ('flags', UINT4),
-                                    ('configuration_name', {'fmt': '16s'}),
+                                    ('configuration_name', string_dict('16s')),
                                     ('spare_3', {'fmt': '228s'})])
 
 # task_sched Structure
@@ -751,7 +789,7 @@ TASK_DSP_INFO = OrderedDict([('major_mode', UINT2),
                              ('agc_feedback_code', UINT2),
                              ('sample_size', SINT2),
                              ('gain_control_flag', UINT2),
-                             ('clutter_filter_name', {'fmt': '12s'}),
+                             ('clutter_filter_name', string_dict('12s')),
                              ('linear_filter_num_first_bin', UINT1),
                              ('log_filter_num_first_bin', UINT1),
                              ('attenuation_fixed_gain', SINT2),
@@ -761,7 +799,7 @@ TASK_DSP_INFO = OrderedDict([('major_mode', UINT2),
                              ('ray_header_config_mask', UINT4),
                              ('playback_flags', UINT2),
                              ('spare_1', {'fmt': '2s'}),
-                             ('custom_ray_header_name', {'fmt': '16s'}),
+                             ('custom_ray_header_name', string_dict('16s')),
                              ('spare_2', {'fmt': '120s'})])
 
 # task_calib_info Structure
@@ -840,7 +878,7 @@ TASK_PPI_SCAN_INFO = OrderedDict([('left_azimuth_limit', BIN2),
 TASK_FILE_SCAN_INFO = OrderedDict([('first_azimuth_angle', UINT2),
                                    ('first_elevation_angle', UINT2),
                                    ('filename_antenna_control',
-                                    {'fmt': '12s'}),
+                                    string_dict('12s')),
                                    ('spare_0', {'fmt': '184s'})])
 
 # task_manual_scan_info Structure
@@ -864,7 +902,7 @@ TASK_SCAN_INFO = OrderedDict([('antenna_scan_mode', UINT2),
 # 4.3.57, page 60
 
 TASK_MISC_INFO = OrderedDict([('wavelength', SINT4),
-                              ('tr_serial_number', {'fmt': '16s'}),
+                              ('tr_serial_number', string_dict('16s')),
                               ('transmit_power', SINT4),
                               ('flags', UINT2),
                               ('polarization_type', UINT2),
@@ -882,8 +920,9 @@ TASK_MISC_INFO = OrderedDict([('wavelength', SINT4),
 
 TASK_END_INFO = OrderedDict([('task_major_number', SINT2),
                              ('task_minor_number', SINT2),
-                             ('task_configuration_file_name', {'fmt': '12s'}),
-                             ('task_description', {'fmt': '80s'}),
+                             ('task_configuration_file_name',
+                              string_dict('12s')),
+                             ('task_description', string_dict('80s')),
                              ('number_tasks', SINT4),
                              ('task_state', UINT2),
                              ('spare_0', {'fmt': '2s'}),
@@ -902,7 +941,7 @@ TASK_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('task_scan_info', TASK_SCAN_INFO),
                                   ('task_misc_info', TASK_MISC_INFO),
                                   ('task_end_info', TASK_END_INFO),
-                                  ('comments', {'fmt': '720s'})])
+                                  ('comments', string_dict('720s'))])
 
 # _ingest_header Structure
 # 4.3.16, page 33
@@ -1198,3 +1237,39 @@ SIGMET_DATA_TYPES = OrderedDict([
     (88, {'name': 'DB_AZDR16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}})
     ])
+
+
+PRODUCT_DATA_TYPE_CODES = OrderedDict([(1, 'PPI'),
+                                       (2, 'RHI'),
+                                       (3, 'CAPPI'),
+                                       (4, 'CROSS'),
+                                       (5, 'TOPS'),
+                                       (6, 'TRACK'),
+                                       (7, 'RAIN1'),
+                                       (8, 'RAINN'),
+                                       (9, 'VVP'),
+                                       (10, 'VIL'),
+                                       (11, 'SHEAR'),
+                                       (12, 'WARN'),
+                                       (13, 'CATCH'),
+                                       (14, 'RTI'),
+                                       (15, 'RAW'),
+                                       (16, 'MAX'),
+                                       (17, 'USER'),
+                                       (18, 'USERV'),
+                                       (19, 'OTHER'),
+                                       (20, 'STATUS'),
+                                       (21, 'SLINE'),
+                                       (22, 'WIND'),
+                                       (23, 'BEAM'),
+                                       (24, 'TEXT'),
+                                       (25, 'FCAST'),
+                                       (26, 'NDOP'),
+                                       (27, 'IMAGE'),
+                                       (28, 'COMP'),
+                                       (29, 'TDWR'),
+                                       (30, 'GAGE'),
+                                       (31, 'DWELL'),
+                                       (32, 'SRI'),
+                                       (33, 'BASE'),
+                                       (34, 'HMAX')])
