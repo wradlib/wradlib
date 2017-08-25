@@ -3,7 +3,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
-import wradlib.ipol as ipol
 import wradlib.adjust as adjust
 import numpy as np
 
@@ -32,9 +31,7 @@ class AdjustBaseTest(unittest.TestCase):
         self.mingages = mingages
 
     def test___init__(self):
-        adj = adjust.AdjustBase(self.obs_coords, self.raw_coords,
-                                nnear_raws=self.nnear_raws,
-                                mingages=self.mingages)
+        pass
 
     def test__checkip(self):
         pass
