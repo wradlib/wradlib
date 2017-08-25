@@ -19,6 +19,12 @@ class InterpolationTest(unittest.TestCase):
         self.trg_d = np.array([0., 1., 2., 3.])
         self.vals = np.array([[1., 2., 3.],
                               [3., 2., 1.]])
+        # Need to use different test data because Linear requires more points
+        # depending on their spatial constellation (in order to create a
+        # convex hull)
+        self.src_lin = np.array([[0., 0.], [4., 0], [1., 1.]])
+        self.trg_lin = np.array([[0., 0.], [2., 0.], [1., 0], [4., 0]])
+        self.vals_lin = np.array([[1., 2., 3.], [3., 2., 1.], [1., 1., 1.]])
 
     def test_parse_covariogram(self):
         cov_model = '1.0 Exp(10.5) + 2.3 Sph(20.4) + 5.0 Nug(0.)'
@@ -90,16 +96,62 @@ class InterpolationTest(unittest.TestCase):
             ipol.cov_cau([0., 5., 10.], sill=2., rng=10., alpha=0.5, beta=1.5),
             np.array([2., 0.40202025, 0.25])))
 
+    def test_Nearest_1(self):
+        """testing the basic behaviour of the Idw class"""
+        ip = ipol.Nearest(self.src, self.trg)
+        # input more than one dataset
+        res = ip(self.vals)
+        self.assertTrue(
+            np.allclose(res, np.array([[1., 2., 3.],
+                                       [1., 2., 3.],
+                                       [1., 2., 3.],
+                                       [3., 2., 1.]])))
+        # input only one flat array
+        res = ip(self.vals[:,2])
+        self.assertTrue(np.allclose(res, np.array([3., 3., 3., 1.])))
+
+    def test_Idw_1(self):
+        """testing the basic behaviour of the Idw class"""
+        ip = ipol.Idw(self.src, self.trg)
+        # input more than one dataset
+        res = ip(self.vals)
+        self.assertTrue(
+            np.allclose(res, np.array([[1., 2., 3.],
+                                       [2., 2., 2.],
+                                       [1.2, 2., 2.8],
+                                       [3., 2., 1.]])))
+        # input only one flat array
+        res = ip(self.vals[:,2])
+        self.assertTrue(np.allclose(res, np.array([3., 2., 2.8, 1.])))
+
+    def test_Linear_1(self):
+        """testing the basic behaviour of the Linear class"""
+
+        ip = ipol.Linear(self.src_lin, self.trg_lin)
+        # input more than one dataset
+        res = ip(self.vals_lin)
+        self.assertTrue(
+            np.allclose(res, np.array([[1., 2., 3.],
+                                       [2., 2., 2.],
+                                       [1.5, 2., 2.5],
+                                       [3., 2., 1.]])))
+        # input only one flat array
+        res = ip(self.vals[:, 2])
+        self.assertTrue(np.allclose(res, np.array([3., 2., 2.5, 1.])))
+
     def test_OrdinaryKriging_1(self):
         """testing the basic behaviour of the OrdinaryKriging class"""
 
         ip = ipol.OrdinaryKriging(self.src, self.trg, '1.0 Lin(2.0)')
-
+        # input more than one dataset
         res = ip(self.vals)
         self.assertTrue(np.all(res == np.array([[1., 2., 3.],
                                                 [2., 2., 2.],
                                                 [1.5, 2., 2.5],
                                                 [3., 2., 1.]])))
+        # input only one flat array
+        res = ip(self.vals[:, 2])
+        self.assertTrue(np.allclose(res, np.array([3., 2., 2.5, 1.])))
 
     def test_ExternalDriftKriging_1(self):
         """testing the basic behaviour of the ExternalDriftKriging class
@@ -109,11 +161,16 @@ class InterpolationTest(unittest.TestCase):
                                        src_drift=self.src_d,
                                        trg_drift=self.trg_d)
 
+        # input more than one dataset
         res = ip(self.vals)
         self.assertTrue(np.all(res == np.array([[1., 2., 3.],
                                                 [3., 2., 1.],
                                                 [5., 2., -1.],
                                                 [7., 2., -3.]])))
+        # input only one flat array
+        res = ip(self.vals[:, 2])
+        self.assertTrue(np.allclose(res, np.array([3., 1., -1., -3.])))
+
 
     def test_ExternalDriftKriging_2(self):
         """testing the basic behaviour of the ExternalDriftKriging class
@@ -134,6 +191,9 @@ class InterpolationTest(unittest.TestCase):
                                                 [3., 2., 1.],
                                                 [5., 2., -1.],
                                                 [7., 2., -3.]])))
+        # input only one flat array
+        res = ip(self.vals[:, 2])
+        self.assertTrue(np.allclose(res, np.array([3., 1., -1., -3.])))
 
     def test_ExternalDriftKriging_3(self):
         """testing the basic behaviour of the ExternalDriftKriging class
