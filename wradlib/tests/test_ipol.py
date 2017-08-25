@@ -107,7 +107,7 @@ class InterpolationTest(unittest.TestCase):
                                        [1., 2., 3.],
                                        [3., 2., 1.]])))
         # input only one flat array
-        res = ip(self.vals[:,2])
+        res = ip(self.vals[:, 2])
         self.assertTrue(np.allclose(res, np.array([3., 3., 3., 1.])))
 
     def test_Idw_1(self):
@@ -121,7 +121,7 @@ class InterpolationTest(unittest.TestCase):
                                        [1.2, 2., 2.8],
                                        [3., 2., 1.]])))
         # input only one flat array
-        res = ip(self.vals[:,2])
+        res = ip(self.vals[:, 2])
         self.assertTrue(np.allclose(res, np.array([3., 2., 2.8, 1.])))
 
     def test_Linear_1(self):
@@ -170,7 +170,6 @@ class InterpolationTest(unittest.TestCase):
         # input only one flat array
         res = ip(self.vals[:, 2])
         self.assertTrue(np.allclose(res, np.array([3., 1., -1., -3.])))
-
 
     def test_ExternalDriftKriging_2(self):
         """testing the basic behaviour of the ExternalDriftKriging class
