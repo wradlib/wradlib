@@ -226,7 +226,7 @@ class IrisFile(object):
     def get_raw_prod_bhdr(self):
         self._raw_product_bhdrs.append(
             _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
-                               RAW_PROD_BHDR))
+                               RAW_PROD_BHDR, self._rawdata))
 
     def get_ingest_data_headers(self):
 
@@ -234,7 +234,7 @@ class IrisFile(object):
         for i, dn in enumerate(self.data_types_names):
             ingest_data_hdrs[dn] = _unpack_dictionary(
                 self._rh.read(LEN_INGEST_DATA_HEADER, width=1),
-                INGEST_DATA_HEADER)
+                INGEST_DATA_HEADER, self._rawdata)
 
         return ingest_data_hdrs
 
@@ -331,7 +331,7 @@ class IrisFile(object):
         kw = {}
         if prod['func']:
             try:
-                kw.update(prod['kw'])
+                kw.update(prod['fkw'])
             except KeyError:
                 pass
             try:
@@ -470,7 +470,10 @@ def _unpack_dictionary(buffer, dictionary, rawdata=False):
 
     # remove spares
     if not rawdata:
-        keys_to_remove = [k for k in data.keys() if k.startswith('spare')]
+        keys_to_remove = [k for k in data.keys()
+                          if k.startswith('spare')]
+        keys_to_remove.extend([k for k in data.keys()
+                               if k.startswith('reserved')])
         for k in keys_to_remove:
             data.pop(k, None)
 
@@ -952,85 +955,85 @@ SIGMET_DATA_TYPES = OrderedDict([
     (0, {'name': 'DB_XHDR', 'func': None}),
     # Total H power (1 byte)
     (1, {'name': 'DB_DBT', 'dtype': '(2,) uint8', 'func': decode_array,
-         'kw': {'scale': 2., 'offset': -64.}}),
+         'fkw': {'scale': 2., 'offset': -64.}}),
     # Clutter Corrected H reflectivity (1 byte)
     (2, {'name': 'DB_DBZ', 'dtype': '(2,) uint8', 'func': decode_array,
-         'kw': {'scale': 2., 'offset': -64.}}),
+         'fkw': {'scale': 2., 'offset': -64.}}),
     # Velocity (1 byte)
     (3, {'name': 'DB_VEL', 'dtype': '(2,) uint8', 'func': decode_array,
-         'kw': {'scale': 127., 'offset': -128.}}),
+         'fkw': {'scale': 127., 'offset': -128.}}),
     # Width (1 byte)
     (4, {'name': 'DB_WIDTH', 'dtype': '(2,) uint8', 'func': decode_array,
-         'kw': {'scale': 256.}}),
+         'fkw': {'scale': 256.}}),
     # Differential reflectivity (1 byte)
     (5, {'name': 'DB_ZDR', 'dtype': '(2,) uint8', 'func': decode_array,
-         'kw': {'scale': 16., 'offset': -128.}}),
+         'fkw': {'scale': 16., 'offset': -128.}}),
     # Old Rainfall rate (stored as dBZ), not used
     (6, {'name': 'DB_ORAIN', 'dtype': '(2,) uint8', 'func': None}),
     # Fully corrected reflectivity (1 byte)
     (7, {'name': 'DB_DBZC', 'dtype': '(2,) uint8', 'func': decode_array,
-         'kw': {'scale': 2., 'offset': -64.}}),
+         'fkw': {'scale': 2., 'offset': -64.}}),
     # Uncorrected reflectivity (2 byte)
     (8, {'name': 'DB_DBT2', 'dtype': 'uint16', 'func': decode_array,
-         'kw': {'scale': 100., 'offset': -32768.}}),
+         'fkw': {'scale': 100., 'offset': -32768.}}),
     # Corrected reflectivity (2 byte)
     (9, {'name': 'DB_DBZ2', 'dtype': 'uint16', 'func': decode_array,
-         'kw': {'scale': 100., 'offset': -32768.}}),
+         'fkw': {'scale': 100., 'offset': -32768.}}),
     # Velocity (2 byte)
     (10, {'name': 'DB_VEL2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # Width (2 byte)
     (11, {'name': 'DB_WIDTH2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100.}}),
+          'fkw': {'scale': 100.}}),
     # Differential reflectivity (2 byte)
     (12, {'name': 'DB_ZDR2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # Rainfall rate (2 byte)
     (13, {'name': 'DB_RAINRATE2', 'dtype': 'uint16',
           'func': decode_rainrate2}),
     # Kdp (specific differential phase)(1 byte)
     (14, {'name': 'DB_KDP', 'dtype': '(2,) int8', 'func': decode_kdp,
-          'kw': {}}),
+          'fkw': {}}),
     # Kdp (specific differential phase)(2 byte)
     (15, {'name': 'DB_KDP2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # PHIdp (differential phase)(1 byte)
     (16, {'name': 'DB_PHIDP', 'dtype': '(2,) uint8', 'func': decode_phidp,
-          'kw': {'scale': 254., 'offset': -1}}),
+          'fkw': {'scale': 254., 'offset': -1}}),
     # Corrected Velocity (1 byte)
     (17, {'name': 'DB_VELC', 'dtype': '(2,) uint8', 'func': None}),
     # SQI (1 byte)
     (18, {'name': 'DB_SQI', 'dtype': '(2,) uint8', 'func': decode_sqi,
-          'kw': {'scale': 253., 'offset': -1}}),
+          'fkw': {'scale': 253., 'offset': -1}}),
     # RhoHV(0) (1 byte)
     (19, {'name': 'DB_RHOHV', 'dtype': '(2,) uint8', 'func': decode_sqi,
-          'kw': {'scale': 253., 'offset': -1}}),
+          'fkw': {'scale': 253., 'offset': -1}}),
     # RhoHV(0) (2 byte)
     (20, {'name': 'DB_RHOHV2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 65536., 'offset': -1.}}),
+          'fkw': {'scale': 65536., 'offset': -1.}}),
     # Fully corrected reflectivity (2 byte)
     (21, {'name': 'DB_DBZC2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # Corrected Velocity (2 byte)
     (22, {'name': 'DB_VELC2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # SQI (2 byte)
     (23, {'name': 'DB_SQI2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 65536., 'offset': -1.}}),
+          'fkw': {'scale': 65536., 'offset': -1.}}),
     # PHIdp (differential phase)(2 byte)
     (24, {'name': 'DB_PHIDP2', 'dtype': 'uint16', 'func': decode_phidp2}),
     # LDR H to V (1 byte)
     (25, {'name': 'DB_LDRH', 'dtype': '(2,) uint8', 'func': decode_array,
-          'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
+          'fkw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR H to V (2 byte)
     (26, {'name': 'DB_LDRH2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # LDR V to H (1 byte)
     (27, {'name': 'DB_LDRV', 'dtype': '(2,) uint8', 'func': decode_array,
-          'kw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
+          'fkw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR V to H (2 byte)
     (28, {'name': 'DB_LDRV2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # Individual flag bits for each bin
     (29, {'name': 'DB_FLAGS', 'func': None}),
     # (See bit definitions below)
@@ -1040,18 +1043,18 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Height (1/10 km) (1 byte)
     (32, {'name': 'DB_HEIGHT', 'dtype': '(2,) uint8',
           'func': decode_array,
-          'kw': {'scale': 10., 'offset': -1.}}),
+          'fkw': {'scale': 10., 'offset': -1.}}),
     # Linear liquid (.001mm) (2 byte)
     (33, {'name': 'DB_VIL2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 1000., 'offset': -1.}}),
+          'fkw': {'scale': 1000., 'offset': -1.}}),
     # Data type is not applicable
     (34, {'name': 'DB_NULL', 'func': None}),
     # Wind Shear (1 byte)
     (35, {'name': 'DB_SHEAR', 'dtype': '(2,) int8', 'func': decode_array,
-          'kw': {'scale': 5., 'offset': -128.}}),
+          'fkw': {'scale': 5., 'offset': -128.}}),
     # Divergence (.001 10**-4) (2-byte)
     (36, {'name': 'DB_DIVERGE2', 'dtype': 'int16', 'func': decode_array,
-          'kw': {'scale': 10e-7}}),
+          'fkw': {'scale': 10e-7}}),
     # Floated liquid (2 byte)
     (37, {'name': 'DB_FLIQUID2', 'dtype': 'uint16', 'func': None}),
     # User type, unspecified data (1 byte)
@@ -1060,34 +1063,34 @@ SIGMET_DATA_TYPES = OrderedDict([
     (39, {'name': 'DB_OTHER', 'func': None}),
     # Deformation (.001 10**-4) (2-byte)
     (40, {'name': 'DB_DEFORM2', 'dtype': 'int16', 'func': decode_array,
-          'kw': {'scale': 10e-7}}),
+          'fkw': {'scale': 10e-7}}),
     # Vertical velocity (.01 m/s) (2-byte)
     (41, {'name': 'DB_VVEL2', 'dtype': 'int16', 'func': decode_array,
-          'kw': {'scale': 100.}}),
+          'fkw': {'scale': 100.}}),
     # Horizontal velocity (.01 m/s) (2-byte)
     (41, {'name': 'DB_HVEL2', 'func': decode_array,
-          'kw': {'scale': 100.}}),
+          'fkw': {'scale': 100.}}),
     # Horizontal wind direction (.1 degree) (2-byte)
     (43, {'name': 'DB_HDIR2', 'dtype': 'int16', 'func': decode_array,
-          'kw': {'scale': 10.}}),
+          'fkw': {'scale': 10.}}),
     # Axis of Dilation (.1 degree) (2-byte)
     (44, {'name': 'DB_AXDIL2', 'dtype': 'int16', 'func': decode_array,
-          'kw': {'scale': 10.}}),
+          'fkw': {'scale': 10.}}),
     # Time of data (seconds) (2-byte)
     (45, {'name': 'DB_TIME2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 60., 'offset': -32768}}),
+          'fkw': {'scale': 60., 'offset': -32768}}),
     # Rho H to V (1 byte)
     (46, {'name': 'DB_RHOH', 'dtype': '(2,) uint8', 'func': decode_sqi,
-          'kw': {'scale': 253., 'offset': -1}}),
+          'fkw': {'scale': 253., 'offset': -1}}),
     # Rho H to V (2 byte)
     (47, {'name': 'DB_RHOH2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 65536., 'offset': -1.}}),
+          'fkw': {'scale': 65536., 'offset': -1.}}),
     # Rho V to H (1 byte)
     (48, {'name': 'DB_RHOV', 'dtype': '(2,) uint8', 'func': decode_sqi,
-          'kw': {'scale': 253., 'offset': -1}}),
+          'fkw': {'scale': 253., 'offset': -1}}),
     # Rho V to H (2 byte)
     (49, {'name': 'DB_RHOV2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 65536., 'offset': -1.}}),
+          'fkw': {'scale': 65536., 'offset': -1.}}),
     # Phi H to V (1 byte)
     (50, {'name': 'DB_PHIH', 'dtype': '(2,) uint8', 'func': decode_phidp}),
     # Phi H to V (2 byte)
@@ -1104,10 +1107,10 @@ SIGMET_DATA_TYPES = OrderedDict([
     (56, {'name': 'DB_HCLASS2', 'dtype': 'uint16', 'func': None}),
     # Corrected Differential reflectivity (1 byte)
     (57, {'name': 'DB_ZDRC', 'dtype': '(2,) uint8', 'func': decode_array,
-          'kw': {'scale': 16., 'offset': -128.}}),
+          'fkw': {'scale': 16., 'offset': -128.}}),
     # Corrected Differential reflectivity (2 byte)
     (58, {'name': 'DB_ZDRC2', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # Temperature (2 byte)
     (59, {'name': 'DB_TEMPERATURE16', 'dtype': 'uint16', 'func': None}),
     # Vertically Integrated Reflectivity (2 byte)
@@ -1115,26 +1118,26 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Total V Power (1 byte)
     (61, {'name': 'DB_DBTV8', 'dtype': '(2,) uint8',
           'func': decode_array,
-          'kw': {'scale': 2., 'offset': -64.}}),
+          'fkw': {'scale': 2., 'offset': -64.}}),
     # Total V Power (2 byte)
     (62, {'name': 'DB_DBTV16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # Clutter Corrected V Reflectivity (1 byte)
     (63, {'name': 'DB_DBZV8', 'dtype': '(2,) uint8',
           'func': decode_array,
-          'kw': {'scale': 2., 'offset': -64.}}),
+          'fkw': {'scale': 2., 'offset': -64.}}),
     # Clutter Corrected V Reflectivity (2 byte)
     (64, {'name': 'DB_DBZV16', 'dtype': 'uint16',
           'func': decode_array,
-          'kw': {'scale': 100., 'offset': -32768.}}),
+          'fkw': {'scale': 100., 'offset': -32768.}}),
     # Signal to Noise ratio (1 byte)
     (65, {'name': 'DB_SNR8', 'dtype': '(2,) uint8',
           'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Signal to Noise ratio (2 byte)
     (66, {'name': 'DB_SNR16', 'dtype': 'uint16',
           'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Albedo (1 byte)
     (67, {'name': 'DB_ALBEDO8', 'dtype': '(2,) uint8', 'func': None}),
     # Albedo (2 byte)
@@ -1153,45 +1156,45 @@ SIGMET_DATA_TYPES = OrderedDict([
     (74, {'name': 'DB_DBZE16', 'dtype': 'uint16', 'func': None}),
     # Polarimetric meteo index (1 byte)
     (75, {'name': 'DB_PMI8', 'dtype': '(2,) uint8', 'func': decode_sqi,
-          'kw': {'scale': 253., 'offset': -1}}),
+          'fkw': {'scale': 253., 'offset': -1}}),
     # Polarimetric meteo index (2 byte)
     (76, {'name': 'DB_PMI16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 65536., 'offset': -1.}}),
+          'fkw': {'scale': 65536., 'offset': -1.}}),
     # The log receiver signal-to-noise ratio (1 byte)
     (77, {'name': 'DB_LOG8', 'dtype': '(2,) uint8', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # The log receiver signal-to-noise ratio (2 byte)
     (78, {'name': 'DB_LOG16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Doppler channel clutter signal power (-CSR) (1 byte)
     (79, {'name': 'DB_CSP8', 'dtype': '(2,) uint8', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Doppler channel clutter signal power (-CSR) (2 byte)
     (80, {'name': 'DB_CSP16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Cross correlation, uncorrected rhohv (1 byte)
     (81, {'name': 'DB_CCOR8', 'dtype': '(2,) uint8', 'func': decode_sqi,
-          'kw': {'scale': 253., 'offset': -1}}),
+          'fkw': {'scale': 253., 'offset': -1}}),
     # Cross correlation, uncorrected rhohv (2 byte)
     (82, {'name': 'DB_CCOR16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 65536., 'offset': -1.}}),
+          'fkw': {'scale': 65536., 'offset': -1.}}),
     # Attenuation of Zh (1 byte)
     (83, {'name': 'DB_AH8', 'dtype': '(2,) uint8', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zh (2 byte)
     (84, {'name': 'DB_AH16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zv (1 byte)
     (85, {'name': 'DB_AV8', 'dtype': '(2,) uint8', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zv (2 byte)
     (86, {'name': 'DB_AV16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zzdr (1 byte)
     (87, {'name': 'DB_AZDR8', 'dtype': '(2,) uint8',
           'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}}),
+          'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zzdr (2 byte)
     (88, {'name': 'DB_AZDR16', 'dtype': 'uint16', 'func': decode_array,
-          'kw': {'scale': 2., 'offset': -63.}})
+          'fkw': {'scale': 2., 'offset': -63.}})
     ])
