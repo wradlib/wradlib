@@ -136,7 +136,7 @@ class InterpolationTest(unittest.TestCase):
                                        [1.5, 2., 2.5],
                                        [3., 2., 1.]])))
         # input only one flat array
-        res = ip(self.vals[:, 2])
+        res = ip(self.vals_lin[:, 2])
         self.assertTrue(np.allclose(res, np.array([3., 2., 2.5, 1.])))
 
     def test_OrdinaryKriging_1(self):
@@ -191,7 +191,8 @@ class InterpolationTest(unittest.TestCase):
                                                 [5., 2., -1.],
                                                 [7., 2., -3.]])))
         # input only one flat array
-        res = ip(self.vals[:, 2])
+        res = ip(self.vals[:, 2],
+                 src_drift=src_d[:, 2], trg_drift=trg_d[:, 2])
         self.assertTrue(np.allclose(res, np.array([3., 1., -1., -3.])))
 
     def test_ExternalDriftKriging_3(self):
