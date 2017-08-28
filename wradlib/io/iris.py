@@ -36,27 +36,56 @@ class IrisRecord(object):
     """ Class holding a single record from a Sigmet IRIS file.
     """
     def __init__(self, record, recnum):
+        """
+        
+        Parameters
+        ----------
+        record : array-like
+            Slice into memory mapped file.  
+        recnum : int
+        """
         self.record = record.copy()
         self._pos = 0
         self.recnum = recnum
 
     @property
     def pos(self):
+        """ Returns current byte offset.  
+        """
         return self._pos
 
     @pos.setter
     def pos(self, value):
+        """ Sets current byte offset.
+        """
         self._pos = value
 
     @property
     def recpos(self):
+        """ Returns current word offset.
+        """
         return int(self._pos / 2)
 
     @recpos.setter
     def recpos(self, value):
+        """ Sets current word offset.
+        """
         self._pos = value * 2
 
     def read(self, words, width=2):
+        """ Reads from Record.
+        
+        Parameters
+        ----------
+        words : unsigned int
+            Number of data words to be read.
+        width : unsigned int
+            Width (bytes) of data words to be read. Defaults to 2.
+
+        Returns
+        -------
+        ret : array-like
+        """
         ret = self.record[self._pos:self._pos + words * width]
         self.pos += words * width
         return ret
@@ -64,10 +93,21 @@ class IrisRecord(object):
 
 class IrisFile(object):
     """ Class for retrieving data from Sigmet IRIS files.
-
     """
     def __init__(self, filename, loaddata=True, rawdata=False, debug=False):
-
+        """
+        
+        Parameters
+        ----------
+        filename : basestring
+            Filename of Iris File
+        loaddata : bool
+            If true, reads data section from file.
+        rawdata : bool
+            If true, returns raw unconverted/undecoded data.
+        debug : bool
+            If true, print debug messages.
+        """
         self._debug = debug
         self._rawdata = rawdata
         self._fh = np.memmap(filename, mode='r')
@@ -107,54 +147,85 @@ class IrisFile(object):
 
     @property
     def filepos(self):
+        """ Returns current byte position of data file.
+        """
         return self._record_number * RECORD_BYTES + int(self._rh.recpos)
 
     @property
     def product_hdr(self):
+        """ Returns product_hdr dictionary.
+        """
         return self._product_hdr
 
     @property
     def ingest_header(self):
+        """ Returns ingest_header dictionary.
+        """
         return self._ingest_header
 
     @property
     def raw_product_bhdrs(self):
+        """ Returns raw_product_bhdrs dictionary.
+        """
         return self._raw_product_bhdrs
 
     @property
     def sweeps(self):
+        """ Returns dictionary of retrieved sweeps.
+        """
         return self._sweeps
 
     @property
     def nsweeps(self):
+        """ Returns number of sweeps.
+        """
         head = self._ingest_header['task_configuration']['task_scan_info']
         return head['sweep_number']
 
     @property
     def nbins(self):
+        """ Returns number of bins.
+        """
         return self._product_hdr['product_end']['number_bins']
 
     @property
     def nrays(self):
+        """ Returns number of rays.
+        """
         return self._ingest_header['ingest_configuration']['number_rays_sweep']
 
     @property
     def data_types(self):
+        """ Returns list of data type dictionaries.
+        """
         return [SIGMET_DATA_TYPES[i] for i in self._data_types_numbers]
 
     @property
     def product_type(self):
+        """ Returns product type.
+        """
         return PRODUCT_DATA_TYPE_CODES[self._product_type_code]
 
     @property
     def data_types_count(self):
+        """ Returns number of data types. 
+        """
         return len(self._data_types_numbers)
 
     @property
     def data_types_names(self):
+        """ Returns list of data type names.
+        """
         return [SIGMET_DATA_TYPES[i]['name'] for i in self._data_types_numbers]
 
     def _check_record(self):
+        """ Checks record for correct size. 
+        
+        Returns
+        -------
+        chk : bool
+            True, if record is truncated.
+        """
         chk = self._rh.record.shape[0] != RECORD_BYTES
         if chk:
             warnings.warn("Unexpected file end detected at record {0}"
@@ -164,6 +235,16 @@ class IrisFile(object):
         return chk
 
     def next_record(self):
+        """ Get next record from file.
+
+        This increases record_number count and initialises a new IrisRecord 
+        with the calculated start and stop file offsets.
+                
+        Returns
+        -------
+        chk : bool
+            True, if record is truncated.
+        """
         self._record_number += 1
         start = self._record_number * RECORD_BYTES
         stop = start + RECORD_BYTES
@@ -171,12 +252,39 @@ class IrisFile(object):
         return self._check_record()
 
     def read_record(self, recnum):
+        """ Read and return specified record from file. 
+        
+        Parameters
+        ----------
+        recnum : int
+            Record Number of record to retrieve.
+
+        Returns
+        -------
+        record : array-like
+            Numpy array containing record data. 
+
+        """
         start = recnum * RECORD_BYTES
         stop = start + RECORD_BYTES
         self._rh = IrisRecord(self.fh[start:stop], recnum)
         return self._rh.record
 
     def read(self, words=1, dtype='int16'):
+        """ Read from file
+        
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        dtype : str
+            dtype string specifying data format.
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+
+        """
         data = self._rh.read(words).view(dtype=dtype)
         words -= len(data)
         if words > 0:
@@ -186,6 +294,15 @@ class IrisFile(object):
         return data
 
     def get_compression_code(self):
+        """ Read and return data compression code
+        
+        Returns
+        -------
+        cmp_msb : bool
+            True, if MSB is set.
+        cmp_val : int
+            Value of data compression code.
+        """
         cmp_val = self.read(dtype='int16')[0]
         cmp_msb = np.sign(cmp_val) == -1
         if cmp_msb:
@@ -196,11 +313,13 @@ class IrisFile(object):
         return cmp_msb, cmp_val
 
     def get_product_type_code(self):
+        """ Returns product type code
+        """
         prod_conf = self.product_hdr['product_configuration']
         return prod_conf['product_type_code']
 
     def get_data_types(self):
-        """ Determine the available data types.
+        """ Returns the available data types.
         """
         # determine the available fields
         task_config = self._ingest_header['task_configuration']
@@ -213,6 +332,7 @@ class IrisFile(object):
         return _data_types_from_dsp_mask([word0, word1, word2, word3])
 
     def get_task_type_scan_info(self):
+        """ Retrieves task type info"""
         task_info = self._ingest_header['task_configuration']['task_scan_info']
         mode = task_info['antenna_scan_mode']
         key = 'task_type_scan_info'
@@ -236,12 +356,15 @@ class IrisFile(object):
             pass
 
     def get_raw_prod_bhdr(self):
+        """ Read, unpack and append raw product bhdr.
+        """
         self._raw_product_bhdrs.append(
             _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
                                RAW_PROD_BHDR, self._rawdata))
 
     def get_ingest_data_headers(self):
-
+        """ Read and return ingest data headers.
+        """
         ingest_data_hdrs = OrderedDict()
         for i, dn in enumerate(self.data_types_names):
             ingest_data_hdrs[dn] = _unpack_dictionary(
@@ -251,6 +374,14 @@ class IrisFile(object):
         return ingest_data_hdrs
 
     def get_ray(self, data):
+        """ Retrieve single ray.
+        
+        Returns
+        -------
+        data : array-like
+            Numpy array containing data of one ray.
+        
+        """
         ray_pos = 0
 
         cmp_msb, cmp_val = self.get_compression_code()
@@ -292,7 +423,13 @@ class IrisFile(object):
         return data
 
     def get_sweep(self):
-
+        """ Retrieve a single sweep.
+        
+        Returns
+        -------
+        sweep : OrderedDict
+            Dictionary containing sweep data.
+        """
         sweep = OrderedDict()
 
         self.get_raw_prod_bhdr()
@@ -338,6 +475,18 @@ class IrisFile(object):
         return sweep
 
     def decode_data(self, data, prod):
+        """ Decode data according given prod-dict
+        
+        Parameters
+        ----------
+        data : data to decode
+        prod : dict
+    
+        Returns
+        -------
+        data : decoded data
+
+        """
         if self._rawdata:
             return data
         kw = {}
@@ -356,6 +505,8 @@ class IrisFile(object):
             return data
 
     def get_sweeps(self):
+        """ Retrieve all sweeps from file
+        """
         self._record_number = 1
         for i in range(self.nsweeps):
             if self.next_record():
@@ -364,6 +515,24 @@ class IrisFile(object):
 
 
 def read_iris(filename, loaddata=True, rawdata=True, debug=False):
+    """ Read Iris file and return dictionary.
+    
+    Parameters
+    ----------
+    filename : str
+        Filename of data file.
+    loaddata : bool
+            If true, reads data section from file.
+    rawdata : bool
+        If true, returns raw unconverted/undecoded data.
+    debug : bool
+        If true, print debug messages.
+
+    Returns
+    -------
+    data : OrderedDict
+        Dictionary with data and metadata retrieved from file.
+    """
     fh = IrisFile(filename, loaddata=loaddata, rawdata=rawdata, debug=debug)
     data = OrderedDict()
     data['product_hdr'] = fh.product_hdr
@@ -386,6 +555,26 @@ def decode_bin_angle(bin_angle, mode=None):
 
 
 def decode_array(data, scale=1., offset=0, offset2=0):
+    """ Decode data array
+    
+    .. math::
+
+        decoded = \frac{data + offset}{scale} + offset 2
+        
+    Using the default values doesn't change the array.
+    
+    Parameters
+    ----------
+    data : array-like
+    scale : int
+    offset: int
+    offset2: int
+
+    Returns
+    -------
+    data : array-like
+        decoded data
+    """
     return (data + offset) / scale + offset2
 
 
@@ -395,6 +584,10 @@ def decode_rainrate2(data):
 
 
 def decode_kdp(data):
+    """ Decode DB_KDP 
+    
+    See 4.4.20 p.77
+    """
     zero = data[data == -128]
     data = -0.25 * np.sign(data) * 600 ** ((127 - np.abs(data)) / 126.)
     data[zero] = 0
@@ -402,18 +595,32 @@ def decode_kdp(data):
 
 
 def decode_phidp(data, **kwargs):
+    """ Decode DB_PHIDP 
+
+    See 4.4.28 p.79
+    """
     return 180. * decode_array(data, **kwargs)
 
 
 def decode_phidp2(data, **kwargs):
+    """ Decode DB_PHIDP2 
+
+    See 4.4.29 p.80
+    """
     return 360. * decode_array(data, **kwargs)
 
 
 def decode_sqi(data, **kwargs):
+    """ Decode DB_SQI
+
+    See 4.4.41 p.83
+    """
     return np.sqrt(decode_array(data, **kwargs))
 
 
 def decode_time(data):
+    """ Decode YMDS_TIME into datetime object
+    """
     time = _unpack_dictionary(data, YMDS_TIME)
     return (dt.datetime(time['year'], time['month'], time['day']) +
             dt.timedelta(seconds=time['seconds'],
@@ -421,6 +628,7 @@ def decode_time(data):
 
 
 def decode_string(data):
+    """ Decode string and strip NULL-bytes from end."""
     return data.decode('utf-8').rstrip('\0')
 
 
@@ -447,6 +655,22 @@ UINT16_T = {'fmt': 'H'}
 
 
 def _get_fmt_string(dictionary, retsub=False):
+    """ Get Format String from given dictionary
+    
+    Parameters
+    ----------
+    dictionary : dict
+        Dictionary containing data structure with fmt-strings
+    retsub : bool
+        if True, return sub structures.
+
+    Returns
+    -------
+    fmt : str
+        struct format string
+    sub : dict
+        Dictionary containing substructure
+    """
     fmt = ''
     sub = OrderedDict()
     for k, v in dictionary.items():
@@ -477,7 +701,6 @@ def _unpack_dictionary(buffer, dictionary, rawdata=False):
     Returns
     -------
     Ordered Dictionary with unpacked data
-
     """
     # get format and substructures of dictionary
     fmt, sub = _get_fmt_string(dictionary, retsub=True)
