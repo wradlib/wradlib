@@ -70,7 +70,7 @@ class IrisFile(object):
 
         self._debug = debug
         self._rawdata = rawdata
-        self._fh = np.memmap(filename)
+        self._fh = np.memmap(filename, mode='r')
         self._record_number = 0
         self._rh = IrisRecord(self._fh[0:RECORD_BYTES], 0)
 
@@ -371,8 +371,8 @@ def read_iris(filename, loaddata=True, rawdata=True, debug=False):
     data['nsweeps'] = fh.nsweeps
     data['nrays'] = fh.nrays
     data['nbins'] = fh.nbins
-    data['data_types'] = fh.data_types_names
     data['product_type'] = fh.product_type
+    data['data_types'] = fh.data_types_names
     data['sweeps'] = fh.sweeps
     data['raw_product_bhdrs'] = fh.raw_product_bhdrs
 
@@ -1060,7 +1060,8 @@ SIGMET_DATA_TYPES = OrderedDict([
     (23, {'name': 'DB_SQI2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 65536., 'offset': -1.}}),
     # PHIdp (differential phase)(2 byte)
-    (24, {'name': 'DB_PHIDP2', 'dtype': 'uint16', 'func': decode_phidp2}),
+    (24, {'name': 'DB_PHIDP2', 'dtype': 'uint16', 'func': decode_phidp2,
+          'fkw': {'scale': 65534., 'offset': -1.}}),
     # LDR H to V (1 byte)
     (25, {'name': 'DB_LDRH', 'dtype': '(2,) uint8', 'func': decode_array,
           'fkw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
@@ -1133,11 +1134,13 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Phi H to V (1 byte)
     (50, {'name': 'DB_PHIH', 'dtype': '(2,) uint8', 'func': decode_phidp}),
     # Phi H to V (2 byte)
-    (51, {'name': 'DB_PHIH2', 'dtype': 'uint16', 'func': decode_phidp2}),
+    (51, {'name': 'DB_PHIH2', 'dtype': 'uint16', 'func': decode_phidp2,
+          'fkw': {'scale': 65534., 'offset': -1.}}),
     # Phi V to H (1 byte)
     (52, {'name': 'DB_PHIV', 'dtype': '(2,) uint8', 'func': decode_phidp}),
     # Phi V to H (2 byte)
-    (53, {'name': 'DB_PHIV2', 'dtype': 'uint16', 'func': decode_phidp2}),
+    (53, {'name': 'DB_PHIV2', 'dtype': 'uint16', 'func': decode_phidp2,
+          'fkw': {'scale': 65534., 'offset': -1.}}),
     # User type, unspecified data (2 byte)
     (54, {'name': 'DB_USER2', 'dtype': 'uint16', 'func': None}),
     # Hydrometeor class (1 byte)
