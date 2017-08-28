@@ -205,7 +205,7 @@ class Nearest(IpolBase):
         You can interpolate multiple datasets of source values (`vals`) at
         once: the `vals` array should have the shape (number of source points,
         number of source datasets). If you want to interpolate only one set
-        of source values, `vals can have the shape (number of source points,
+        of source values, `vals` can have the shape (number of source points,
         1) or just (number of source points,) - which is a flat/1-D array.
         The output will have the same number of dimensions as `vals`, i.e.
         it will be a flat 1-D array in case `vals` is a 1-D array.
@@ -292,7 +292,7 @@ class Idw(IpolBase):
         You can interpolate multiple datasets of source values (`vals`) at
         once: the `vals` array should have the shape (number of source points,
         number of source datasets). If you want to interpolate only one set
-        of source values, `vals can have the shape (number of source points,
+        of source values, `vals` can have the shape (number of source points,
         1) or just (number of source points,) - which is a flat/1-D array.
         The output will have the same number of dimensions as `vals`, i.e.
         it will be a flat 1-D array in case `vals` is a 1-D array.
@@ -386,7 +386,7 @@ class Linear(IpolBase):
         You can interpolate multiple datasets of source values (`vals`) at
         once: the `vals` array should have the shape (number of source points,
         number of source datasets). If you want to interpolate only one set
-        of source values, `vals can have the shape (number of source points,
+        of source values, `vals` can have the shape (number of source points,
         1) or just (number of source points,) - which is a flat/1-D array.
         The output will have the same number of dimensions as `vals`, i.e.
         it will be a flat 1-D array in case `vals` is a 1-D array.
@@ -671,7 +671,7 @@ class OrdinaryKriging(IpolBase):
         You can interpolate multiple datasets of source values (`vals`) at
         once: the `vals` array should have the shape (number of source points,
         number of source datasets). If you want to interpolate only one set
-        of source values, `vals can have the shape (number of source points,
+        of source values, `vals` can have the shape (number of source points,
         1) or just (number of source points,) - which is a flat/1-D array.
         The output will have the same number of dimensions as `vals`, i.e.
         it will be a flat 1-D array in case `vals` is a 1-D array.
@@ -837,7 +837,7 @@ class ExternalDriftKriging(IpolBase):
         You can interpolate multiple datasets of source values (`vals`) at
         once: the `vals` array should have the shape (number of source points,
         number of source datasets). If you want to interpolate only one set
-        of source values, `vals can have the shape (number of source points,
+        of source values, `vals` can have the shape (number of source points,
         1) or just (number of source points,) - which is a flat/1-D array.
         The output will have the same number of dimensions as `vals`, i.e.
         it will be a flat 1-D array in case `vals` is a 1-D array.
