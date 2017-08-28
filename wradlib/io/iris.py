@@ -581,6 +581,15 @@ def decode_rainrate2(data):
     return data
 
 
+def decode_vel(data, **kwargs):
+    """ Decode DB_VEL
+
+    See 4.4.46 p.85
+    """
+    # todo: multiply by nyquist
+    return decode_array(data, **kwargs)
+
+
 def decode_kdp(data):
     """ Decode DB_KDP
 
@@ -670,17 +679,19 @@ def _get_fmt_string(dictionary, retsub=False):
         Dictionary containing substructure
     """
     fmt = ''
-    sub = OrderedDict()
+    if retsub:
+        sub = OrderedDict()
     for k, v in dictionary.items():
         try:
             fmt += v['fmt']
         except KeyError:
             # remember sub-structures
-            sub[k] = v
-            try:
-                fmt += '{}s'.format(struct.calcsize(_get_fmt_string(v)))
-            except TypeError:
+            if retsub:
+                sub[k] = v
+            if 'size' in v:
                 fmt += v['size']
+            else:
+                fmt += '{}s'.format(struct.calcsize(_get_fmt_string(v)))
     if retsub:
         return fmt, sub
     else:
@@ -1220,7 +1231,7 @@ SIGMET_DATA_TYPES = OrderedDict([
     (2, {'name': 'DB_DBZ', 'dtype': '(2,) uint8', 'func': decode_array,
          'fkw': {'scale': 2., 'offset': -64.}}),
     # Velocity (1 byte)
-    (3, {'name': 'DB_VEL', 'dtype': '(2,) uint8', 'func': decode_array,
+    (3, {'name': 'DB_VEL', 'dtype': '(2,) uint8', 'func': decode_vel,
          'fkw': {'scale': 127., 'offset': -128.}}),
     # Width (1 byte)
     (4, {'name': 'DB_WIDTH', 'dtype': '(2,) uint8', 'func': decode_array,
