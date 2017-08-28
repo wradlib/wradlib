@@ -37,11 +37,11 @@ class IrisRecord(object):
     """
     def __init__(self, record, recnum):
         """
-        
+
         Parameters
         ----------
         record : array-like
-            Slice into memory mapped file.  
+            Slice into memory mapped file.
         recnum : int
         """
         self.record = record.copy()
@@ -50,7 +50,7 @@ class IrisRecord(object):
 
     @property
     def pos(self):
-        """ Returns current byte offset.  
+        """ Returns current byte offset.
         """
         return self._pos
 
@@ -74,7 +74,7 @@ class IrisRecord(object):
 
     def read(self, words, width=2):
         """ Reads from Record.
-        
+
         Parameters
         ----------
         words : unsigned int
@@ -96,7 +96,7 @@ class IrisFile(object):
     """
     def __init__(self, filename, loaddata=True, rawdata=False, debug=False):
         """
-        
+
         Parameters
         ----------
         filename : basestring
@@ -208,7 +208,7 @@ class IrisFile(object):
 
     @property
     def data_types_count(self):
-        """ Returns number of data types. 
+        """ Returns number of data types.
         """
         return len(self._data_types_numbers)
 
@@ -219,8 +219,8 @@ class IrisFile(object):
         return [SIGMET_DATA_TYPES[i]['name'] for i in self._data_types_numbers]
 
     def _check_record(self):
-        """ Checks record for correct size. 
-        
+        """ Checks record for correct size.
+
         Returns
         -------
         chk : bool
@@ -237,9 +237,9 @@ class IrisFile(object):
     def next_record(self):
         """ Get next record from file.
 
-        This increases record_number count and initialises a new IrisRecord 
+        This increases record_number count and initialises a new IrisRecord
         with the calculated start and stop file offsets.
-                
+
         Returns
         -------
         chk : bool
@@ -252,8 +252,8 @@ class IrisFile(object):
         return self._check_record()
 
     def read_record(self, recnum):
-        """ Read and return specified record from file. 
-        
+        """ Read and return specified record from file.
+
         Parameters
         ----------
         recnum : int
@@ -262,7 +262,7 @@ class IrisFile(object):
         Returns
         -------
         record : array-like
-            Numpy array containing record data. 
+            Numpy array containing record data.
 
         """
         start = recnum * RECORD_BYTES
@@ -272,7 +272,7 @@ class IrisFile(object):
 
     def read(self, words=1, dtype='int16'):
         """ Read from file
-        
+
         Parameters
         ----------
         words : int
@@ -283,7 +283,6 @@ class IrisFile(object):
         -------
         data : array-like
             numpy array of data
-
         """
         data = self._rh.read(words).view(dtype=dtype)
         words -= len(data)
@@ -294,8 +293,8 @@ class IrisFile(object):
         return data
 
     def get_compression_code(self):
-        """ Read and return data compression code
-        
+        """ Read and return data compression code.
+
         Returns
         -------
         cmp_msb : bool
@@ -375,12 +374,11 @@ class IrisFile(object):
 
     def get_ray(self, data):
         """ Retrieve single ray.
-        
+
         Returns
         -------
         data : array-like
             Numpy array containing data of one ray.
-        
         """
         ray_pos = 0
 
@@ -424,7 +422,7 @@ class IrisFile(object):
 
     def get_sweep(self):
         """ Retrieve a single sweep.
-        
+
         Returns
         -------
         sweep : OrderedDict
@@ -475,13 +473,13 @@ class IrisFile(object):
         return sweep
 
     def decode_data(self, data, prod):
-        """ Decode data according given prod-dict
-        
+        """ Decode data according given prod-dict.
+
         Parameters
         ----------
         data : data to decode
         prod : dict
-    
+
         Returns
         -------
         data : decoded data
@@ -516,7 +514,7 @@ class IrisFile(object):
 
 def read_iris(filename, loaddata=True, rawdata=True, debug=False):
     """ Read Iris file and return dictionary.
-    
+
     Parameters
     ----------
     filename : str
@@ -556,13 +554,13 @@ def decode_bin_angle(bin_angle, mode=None):
 
 def decode_array(data, scale=1., offset=0, offset2=0):
     """ Decode data array
-    
+
     .. math::
 
-        decoded = \frac{data + offset}{scale} + offset 2
-        
+        decoded = \frac{data + offset}{scale} + offset2
+
     Using the default values doesn't change the array.
-    
+
     Parameters
     ----------
     data : array-like
@@ -584,8 +582,8 @@ def decode_rainrate2(data):
 
 
 def decode_kdp(data):
-    """ Decode DB_KDP 
-    
+    """ Decode DB_KDP
+
     See 4.4.20 p.77
     """
     zero = data[data == -128]
@@ -595,7 +593,7 @@ def decode_kdp(data):
 
 
 def decode_phidp(data, **kwargs):
-    """ Decode DB_PHIDP 
+    """ Decode DB_PHIDP
 
     See 4.4.28 p.79
     """
@@ -603,7 +601,7 @@ def decode_phidp(data, **kwargs):
 
 
 def decode_phidp2(data, **kwargs):
-    """ Decode DB_PHIDP2 
+    """ Decode DB_PHIDP2
 
     See 4.4.29 p.80
     """
@@ -655,14 +653,14 @@ UINT16_T = {'fmt': 'H'}
 
 
 def _get_fmt_string(dictionary, retsub=False):
-    """ Get Format String from given dictionary
-    
+    """ Get Format String from given dictionary.
+
     Parameters
     ----------
     dictionary : dict
-        Dictionary containing data structure with fmt-strings
+        Dictionary containing data structure with fmt-strings.
     retsub : bool
-        if True, return sub structures.
+        If True, return sub structures.
 
     Returns
     -------
