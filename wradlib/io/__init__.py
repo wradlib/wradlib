@@ -17,6 +17,7 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.netcdf
 .. automodule:: wradlib.io.rainbow
 .. automodule:: wradlib.io.gdal
+.. automodule:: wradlib.io.iris
 .. automodule:: wradlib.io.misc
 """
 
@@ -32,5 +33,6 @@ from .radolan import (readDX, read_RADOLAN_composite,
                       decode_radolan_runlength_array)
 from .gdal import (read_safnwc, write_raster_dataset,
                    open_shape, open_raster, gdal_create_dataset)
+from .iris import (IrisFile, read_iris)
 
 __all__ = [s for s in dir() if not s.startswith('_')]
