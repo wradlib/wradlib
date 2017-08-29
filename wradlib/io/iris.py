@@ -528,7 +528,7 @@ class IrisFile(object):
             self._sweeps[i] = self.get_sweep()
 
 
-def read_iris(filename, loaddata=True, rawdata=True, debug=False):
+def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     """ Read Iris file and return dictionary.
 
     Parameters
