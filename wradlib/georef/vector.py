@@ -12,17 +12,17 @@ Vector Functions (GDAL)
    :toctree: generated/
 
    get_shape_coordinates
-   get_shape_points,
-   transform_geometry,
-   get_shape_coordinates,
-   ogr_create_layer,
-   ogr_copy_layer,
-   ogr_copy_layer_by_name,
-   ogr_add_feature,
-   ogr_add_geometry,
-   numpy_to_ogr,
-   ogr_to_numpy,
-   ogr_geocol_to_numpy,
+   get_shape_points
+   transform_geometry
+   get_shape_coordinates
+   ogr_create_layer
+   ogr_copy_layer
+   ogr_copy_layer_by_name
+   ogr_add_feature
+   ogr_add_geometry
+   numpy_to_ogr
+   ogr_to_numpy
+   ogr_geocol_to_numpy
    get_centroid
 """
 
