@@ -521,7 +521,7 @@ class IrisTest(unittest.TestCase):
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
-        data = wrl.io.read_iris(sigmetfile, loaddata=True)
+        data = wrl.io.read_iris(sigmetfile, loaddata=True, rawdata=True)
         data_keys = ['product_hdr', 'ingest_header', 'nsweeps', 'nrays',
                      'nbins', 'product_type', 'data_types', 'sweeps',
                      'raw_product_bhdrs']
