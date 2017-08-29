@@ -125,23 +125,30 @@ class IrisFile(object):
                                                [:LEN_PRODUCT_HDR],
                                                PRODUCT_HDR,
                                                rawdata)
-        self._ingest_header = _unpack_dictionary(self.read_record(1)
-                                                 [:LEN_INGEST_HEADER],
-                                                 INGEST_HEADER,
-                                                 rawdata)
-        self.get_task_type_scan_info()
-        self._raw_product_bhdrs = []
-
-        # determine data types contained in the file
-        self._data_types_numbers = self.get_data_types()
+        # get product code
         self._product_type_code = self.get_product_type_code()
+        self.get_product_specific_info()
 
-        # TODO: implement product specific info
-        # self.get_product_specific_info()
+        # read RAW files (code 15)
+        if self._product_type_code == 15:
+            self._ingest_header = _unpack_dictionary(self.read_record(1)
+                                                     [:LEN_INGEST_HEADER],
+                                                     INGEST_HEADER,
+                                                     rawdata)
+            self.get_task_type_scan_info()
+            self._raw_product_bhdrs = []
 
-        self._sweeps = OrderedDict()
-        if loaddata:
-            self.get_sweeps()
+            # determine data types contained in the file
+            self._data_types_numbers = self.get_data_types()
+
+            self._sweeps = OrderedDict()
+            if loaddata:
+                self.get_sweeps()
+        # read product files
+        else:
+            self._product = OrderedDict()
+            if loaddata:
+                self.get_product()
 
     @property
     def fh(self):
@@ -180,6 +187,12 @@ class IrisFile(object):
         """ Returns dictionary of retrieved sweeps.
         """
         return self._sweeps
+
+    @property
+    def product(self):
+        """ Returns dictionary of retrieved product.
+        """
+        return self._product
 
     @property
     def nsweeps(self):
@@ -322,6 +335,36 @@ class IrisFile(object):
         """
         prod_conf = self.product_hdr['product_configuration']
         return prod_conf['product_type_code']
+
+    def get_product_specific_info(self):
+        """ Retrieves product specific info
+        """
+        psi = self.product_hdr['product_configuration']
+        key = 'product_specific_info'
+        pt = self.product_type
+        try:
+            psi_structure = PRODUCT_SPECIFIC_INFO[pt]['dic']
+        except KeyError:
+            warnings.warn("wradlib: Product Type '{}' "
+                          "not implemented.".format(pt))
+        else:
+            len = struct.calcsize(_get_fmt_string(psi_structure))
+            psi[key] = _unpack_dictionary(psi[key][:len], psi_structure)
+
+    def get_product(self):
+        """ Retrieves product data.
+        """
+        pt = self.product_type
+        if pt in list(PRODUCT_SPECIFIC_INFO.keys()):
+            if PRODUCT_SPECIFIC_INFO[pt]['type'] == 'cartesian':
+                product_config = self.product_hdr['product_configuration']
+                x = product_config['x_size']
+                y = product_config['y_size']
+                z = product_config['z_size']
+                start = LEN_PRODUCT_HDR
+                stop = start + x * y * z
+                product = self.fh[start:stop].view(dtype='uint8').copy()
+                self._product[self.product_type] = product.reshape((z, y, x))
 
     def get_data_types(self):
         """ Returns the available data types.
@@ -513,7 +556,6 @@ class IrisFile(object):
                     nyquist *= (self.ingest_header['task_configuration']
                                 ['task_dsp_info']['multi_prf_mode_flag'] + 1)
                 kw.update({'nyquist': nyquist})
-
             return prod['func'](data, **kw)
         else:
             return data
@@ -550,14 +592,17 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     fh = IrisFile(filename, loaddata=loaddata, rawdata=rawdata, debug=debug)
     data = OrderedDict()
     data['product_hdr'] = fh.product_hdr
-    data['ingest_header'] = fh.ingest_header
-    data['nsweeps'] = fh.nsweeps
-    data['nrays'] = fh.nrays
-    data['nbins'] = fh.nbins
+    if fh.product_type == 'RAW':
+        data['ingest_header'] = fh.ingest_header
+        data['nsweeps'] = fh.nsweeps
+        data['nrays'] = fh.nrays
+        data['nbins'] = fh.nbins
+        data['sweeps'] = fh.sweeps
+        data['data_types'] = fh.data_types_names
+        data['raw_product_bhdrs'] = fh.raw_product_bhdrs
+    else:
+        data['product'] = fh.product
     data['product_type'] = fh.product_type
-    data['data_types'] = fh.data_types_names
-    data['sweeps'] = fh.sweeps
-    data['raw_product_bhdrs'] = fh.raw_product_bhdrs
 
     return data
 
@@ -835,6 +880,47 @@ COLOR_SCALE_DEF = OrderedDict([('iflags', UINT4),
                                ('icolcnt', SINT2),
                                ('iset_and_scale', UINT2),
                                ('ilevel_seams', array_dict('32s', 'uint16'))])
+
+# max_psi_struct Structure
+# 4.3.17, page 33
+
+MAX_PSI = OrderedDict([('spare_0', {'fmt': '4s'}),
+                       ('bottom_of_interval', SINT4),
+                       ('top_of_interval', SINT4),
+                       ('number_sidepanel_pixels', SINT4),
+                       ('horizontal_smoother', SINT2),
+                       ('vertical_smoother', SINT2)])
+
+# raw_psi_struct Structure
+# 4.3.32, page 45
+
+RAW_PSI = OrderedDict([('data_type_mask_word0', UINT4),
+                       ('range_last_bin', SINT4),
+                       ('format_conversion_flag', UINT4),
+                       ('flag', UINT4),
+                       ('sweep_number_separate_files', SINT4),
+                       ('xhdr_type', UINT4),
+                       ('data_type_mask_word1', UINT4),
+                       ('data_type_mask_word2', UINT4),
+                       ('data_type_mask_word3', UINT4),
+                       ('data_type_mask_word4', UINT4),
+                       ('playback_version', UINT4)])
+
+# cappi_psi_struct Structure
+# 4.3.2, page 24
+
+CAPPI_PSI = OrderedDict([('shear_flags', UINT4),
+                         ('height', SINT4),
+                         ('flags', UINT2),
+                         ('shear_azimuth_smoothing', BIN2),
+                         ('shear_vvp_name', string_dict('12s')),
+                         ('shear_vvp_max_age', UINT4)])
+
+PRODUCT_SPECIFIC_INFO = OrderedDict([('MAX', {'dic': MAX_PSI,
+                                              'type': 'cartesian'}),
+                                     ('RAW', {'dic': RAW_PSI, 'type': 'raw'}),
+                                     ('CAPPI', {'dic': CAPPI_PSI,
+                                                'type': 'cartesian'})])
 
 # product_configuration Structure
 # 4.3.24, page 36
@@ -1235,6 +1321,11 @@ INGEST_DATA_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('bits_per_bin', SINT2),
                                   ('data_type', UINT2),
                                   ('spare_0', {'fmt': '36s'})])
+
+# protect_setup Structure
+# 4.3.29, page 44
+
+PROTECT_SETUP = OrderedDict([('one_protected_region', {'fmt': '1024s'})])
 
 
 # some length's of data structures

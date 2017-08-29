@@ -523,8 +523,8 @@ class IrisTest(unittest.TestCase):
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
         data = wrl.io.read_iris(sigmetfile, loaddata=True, rawdata=True)
         data_keys = ['product_hdr', 'ingest_header', 'nsweeps', 'nrays',
-                     'nbins', 'product_type', 'data_types', 'sweeps',
-                     'raw_product_bhdrs']
+                     'nbins', 'sweeps', 'data_types', 'raw_product_bhdrs',
+                     'product_type']
         product_hdr_keys = ['structure_header', 'product_configuration',
                             'product_end']
         ingest_hdr_keys = ['structure_header', 'ingest_configuration',
@@ -532,6 +532,12 @@ class IrisTest(unittest.TestCase):
                            'reserved']
         data_types = ['DB_DBZ', 'DB_VEL', 'DB_ZDR', 'DB_KDP', 'DB_PHIDP',
                       'DB_RHOHV', 'DB_HCLASS']
+
+        print(list(data.keys()), data_keys)
+        print(list(data['product_hdr'].keys()), product_hdr_keys)
+        print(list(data['ingest_header'].keys()), ingest_hdr_keys)
+        print(data['data_types'], data_types)
+
         self.assertEqual(list(data.keys()), data_keys)
         self.assertEqual(list(data['product_hdr'].keys()), product_hdr_keys)
         self.assertEqual(list(data['ingest_header'].keys()), ingest_hdr_keys)
