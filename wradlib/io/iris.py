@@ -13,6 +13,12 @@ IRIS (Vaisala Sigmet Interactive Radar Information System)
 
 See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
 
+To read from IRIS files numpy.memmap is used to get access to the data.
+The IRIS header (PRODUCT_HDR, INGEST_HEADER) is read in any case into dedicated
+OrderedDict's. Reading sweep data can be skipped by setting `loaddata=False`.
+By default the data is decoded on the fly. Using `rawdata=True` the data will
+be kept undecoded.
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -498,6 +504,16 @@ class IrisFile(object):
                 data = data.view(prod['dtype']).reshape(rays, -1)[:, :bins]
             except ValueError:
                 data = data.view(prod['dtype'])
+            if prod['func'] == decode_vel or prod['func'] == decode_width:
+                wavelength = self.product_hdr['product_end']['wavelength']
+                prf = self.product_hdr['product_end']['prf']
+
+                nyquist = wavelength * prf / (10000. * 4.)
+                if prod['func'] == decode_vel:
+                    nyquist *= (self.ingest_header['task_configuration']
+                                ['task_dsp_info']['multi_prf_mode_flag'] + 1)
+                kw.update({'nyquist': nyquist})
+
             return prod['func'](data, **kw)
         else:
             return data
@@ -586,8 +602,17 @@ def decode_vel(data, **kwargs):
 
     See 4.4.46 p.85
     """
-    # todo: multiply by nyquist
-    return decode_array(data, **kwargs)
+    nyquist = kwargs.pop('nyquist')
+    return decode_array(data, **kwargs) * nyquist
+
+
+def decode_width(data, **kwargs):
+    """ Decode DB_WIDTH
+
+    See 4.4.50 p.87
+    """
+    nyquist = kwargs.pop('nyquist')
+    return decode_array(data, **kwargs) * nyquist
 
 
 def decode_kdp(data):
@@ -1234,7 +1259,7 @@ SIGMET_DATA_TYPES = OrderedDict([
     (3, {'name': 'DB_VEL', 'dtype': '(2,) uint8', 'func': decode_vel,
          'fkw': {'scale': 127., 'offset': -128.}}),
     # Width (1 byte)
-    (4, {'name': 'DB_WIDTH', 'dtype': '(2,) uint8', 'func': decode_array,
+    (4, {'name': 'DB_WIDTH', 'dtype': '(2,) uint8', 'func': decode_width,
          'fkw': {'scale': 256.}}),
     # Differential reflectivity (1 byte)
     (5, {'name': 'DB_ZDR', 'dtype': '(2,) uint8', 'func': decode_array,
