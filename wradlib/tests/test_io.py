@@ -522,9 +522,9 @@ class IrisTest(unittest.TestCase):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
         data = wrl.io.read_iris(sigmetfile, loaddata=True, rawdata=True)
-        data_keys = ['product_hdr', 'ingest_header', 'nsweeps', 'nrays',
-                     'nbins', 'sweeps', 'data_types', 'raw_product_bhdrs',
-                     'product_type']
+        data_keys = ['product_hdr', 'product_type', 'data_type',
+                     'ingest_header', 'nsweeps', 'nrays', 'nbins',
+                     'sweeps', 'data_types', 'raw_product_bhdrs']
         product_hdr_keys = ['structure_header', 'product_configuration',
                             'product_end']
         ingest_hdr_keys = ['structure_header', 'ingest_configuration',

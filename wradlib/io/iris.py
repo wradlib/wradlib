@@ -14,10 +14,10 @@ IRIS (Vaisala Sigmet Interactive Radar Information System)
 See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
 
 To read from IRIS files numpy.memmap is used to get access to the data.
-The IRIS header (PRODUCT_HDR, INGEST_HEADER) is read in any case into dedicated
-OrderedDict's. Reading sweep data can be skipped by setting `loaddata=False`.
-By default the data is decoded on the fly. Using `rawdata=True` the data will
-be kept undecoded.
+The IRIS header, PRODUCT_HDR and INGEST_HEADER (only RAW) is read in any case
+into dedicated OrderedDict's. Reading sweep or product data can be skipped by
+setting `loaddata=False`. By default all data is decoded on the fly.
+Using `rawdata=True` the data will be kept undecoded.
 
 .. autosummary::
    :nosignatures:
@@ -125,8 +125,9 @@ class IrisFile(object):
                                                [:LEN_PRODUCT_HDR],
                                                PRODUCT_HDR,
                                                rawdata)
-        # get product code
+        # get product code and data type
         self._product_type_code = self.get_product_type_code()
+        self._data_type = self.get_data_type()
         self.get_product_specific_info()
 
         # read RAW files (code 15)
@@ -212,6 +213,18 @@ class IrisFile(object):
         """ Returns number of rays.
         """
         return self._ingest_header['ingest_configuration']['number_rays_sweep']
+
+    @property
+    def data_type(self):
+        """ Returns data type dictionary.
+        """
+        return SIGMET_DATA_TYPES[self._data_type]
+
+    @property
+    def data_type_name(self):
+        """ Returns data type name.
+        """
+        return SIGMET_DATA_TYPES[self._data_type]['name']
 
     @property
     def data_types(self):
@@ -363,8 +376,18 @@ class IrisFile(object):
                 z = product_config['z_size']
                 start = LEN_PRODUCT_HDR
                 stop = start + x * y * z
-                product = self.fh[start:stop].view(dtype='uint8').copy()
-                self._product[self.product_type] = product.reshape((z, y, x))
+                # decode data as per data_type
+                dt = self.data_type
+                dt['dtype'] = 'uint8'
+                product = self.fh[start:stop].copy()
+                product = self.decode_data(product, dt)
+                self._product[pt] = product.reshape((z, y, x))
+
+    def get_data_type(self):
+        """ Returns the file data type.
+        """
+        product_config = self.product_hdr['product_configuration']
+        return product_config['data_type']
 
     def get_data_types(self):
         """ Returns the available data types.
@@ -592,6 +615,8 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     fh = IrisFile(filename, loaddata=loaddata, rawdata=rawdata, debug=debug)
     data = OrderedDict()
     data['product_hdr'] = fh.product_hdr
+    data['product_type'] = fh.product_type
+    data['data_type'] = fh.data_type_name
     if fh.product_type == 'RAW':
         data['ingest_header'] = fh.ingest_header
         data['nsweeps'] = fh.nsweeps
@@ -602,8 +627,6 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
         data['raw_product_bhdrs'] = fh.raw_product_bhdrs
     else:
         data['product'] = fh.product
-    data['product_type'] = fh.product_type
-
     return data
 
 
@@ -1436,7 +1459,7 @@ SIGMET_DATA_TYPES = OrderedDict([
     (33, {'name': 'DB_VIL2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 1000., 'offset': -1.}}),
     # Data type is not applicable
-    (34, {'name': 'DB_NULL', 'func': None}),
+    (34, {'name': 'DB_RAW', 'func': None}),
     # Wind Shear (1 byte)
     (35, {'name': 'DB_SHEAR', 'dtype': '(2,) int8', 'func': decode_array,
           'fkw': {'scale': 5., 'offset': -128.}}),
