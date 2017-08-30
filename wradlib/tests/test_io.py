@@ -507,5 +507,124 @@ class RasterTest(unittest.TestCase):
         wrl.io.open_raster(geofile)
 
 
+class IrisTest(unittest.TestCase):
+    def test_open_iris(self):
+        filename = 'sigmet/cor-main131125105503.RAW2049'
+        sigmetfile = wrl.util.get_wradlib_data_file(filename)
+        data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
+        self.assertIsInstance(data.fh, np.memmap)
+        data = wrl.io.IrisFile(sigmetfile, loaddata=True)
+        self.assertEqual(data._record_number, 511)
+        self.assertEqual(data.filepos, 3141076)
+
+    def test_read_iris(self):
+        filename = 'sigmet/cor-main131125105503.RAW2049'
+        sigmetfile = wrl.util.get_wradlib_data_file(filename)
+        data = wrl.io.read_iris(sigmetfile, loaddata=True, rawdata=True)
+        data_keys = ['product_hdr', 'ingest_header', 'nsweeps', 'nrays',
+                     'nbins', 'product_type', 'data_types', 'sweeps',
+                     'raw_product_bhdrs']
+        product_hdr_keys = ['structure_header', 'product_configuration',
+                            'product_end']
+        ingest_hdr_keys = ['structure_header', 'ingest_configuration',
+                           'task_configuration', 'spare_0', 'gparm',
+                           'reserved']
+        data_types = ['DB_DBZ', 'DB_VEL', 'DB_ZDR', 'DB_KDP', 'DB_PHIDP',
+                      'DB_RHOHV', 'DB_HCLASS']
+        self.assertEqual(list(data.keys()), data_keys)
+        self.assertEqual(list(data['product_hdr'].keys()), product_hdr_keys)
+        self.assertEqual(list(data['ingest_header'].keys()), ingest_hdr_keys)
+        self.assertEqual(data['data_types'], data_types)
+
+    def test_IrisRecord(self):
+        filename = 'sigmet/cor-main131125105503.RAW2049'
+        sigmetfile = wrl.util.get_wradlib_data_file(filename)
+        data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
+        self.assertEqual(data.rh.pos, 0)
+        self.assertEqual(data.rh.recpos, 0)
+        self.assertEqual(data.rh.recnum, 1)
+        rlist = [23, 0, 4, 0, 20, 19, 0, 0, 0, 0,
+                 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        np.testing.assert_array_equal(data.rh.read(10, 2), rlist)
+        self.assertEqual(data.rh.pos, 20)
+        self.assertEqual(data.rh.recpos, 10)
+        data.rh.pos -= 20
+        np.testing.assert_array_equal(data.rh.read(20, 1), rlist)
+        data.rh.recpos -= 10
+        np.testing.assert_array_equal(data.rh.read(5, 4), rlist)
+
+    def test_decode_bin_angle(self):
+        self.assertEqual(wrl.io.iris.decode_bin_angle(20000, 2), 109.86328125)
+        self.assertEqual(wrl.io.iris.decode_bin_angle(2000000000, 4),
+                         167.63806343078613)
+
+    def decode_array(self):
+        data = np.arange(0, 11)
+        np.testing.assert_array_equal(wrl.io.iris.decode_array(data),
+                                      [0., 1., 2., 3., 4., 5.,
+                                       6., 7., 8., 9., 10.])
+        np.testing.assert_array_equal(wrl.io.iris.decode_array(data,
+                                                               offset=1.),
+                                      [1., 2., 3., 4., 5., 6.,
+                                       7., 8., 9., 10., 11.])
+        np.testing.assert_array_equal(wrl.io.iris.decode_array(data,
+                                                               scale=0.5),
+                                      [0, 2., 4., 6., 8., 10.,
+                                       12., 14., 16., 18., 20.])
+        np.testing.assert_array_equal(wrl.io.iris.decode_array(data, offset=1.,
+                                                               scale=0.5),
+                                      [2., 4., 6., 8., 10., 12.,
+                                       14., 16., 18., 20., 22.])
+        np.testing.assert_array_equal(wrl.io.iris.decode_array(data, offset=1.,
+                                                               scale=0.5,
+                                                               offset2=-2.),
+                                      [0, 2., 4., 6., 8., 10.,
+                                       12., 14., 16., 18., 20.])
+
+    def test_decode_kdp(self):
+        np.testing.assert_array_almost_equal(
+            wrl.io.iris.decode_kdp(np.arange(-5, 5, dtype='int8')),
+            [122.43229241, 128.80858242, 135.51695046,
+             142.57469119, 150., -0., -150., -142.57469119,
+             -135.51695046, -128.80858242])
+
+    def test_decode_phidp(self):
+        np.testing.assert_array_almost_equal(
+            wrl.io.iris.decode_phidp(np.arange(0, 10, dtype='uint8'),
+                                     scale=254., offset=-1),
+            [-0.70866142, 0., 0.70866142, 1.41732283, 2.12598425, 2.83464567,
+             3.54330709, 4.2519685, 4.96062992, 5.66929134])
+
+    def test_decode_phidp2(self):
+        np.testing.assert_array_almost_equal(
+            wrl.io.iris.decode_phidp2(np.arange(0, 10, dtype='uint16'),
+                                      scale=65534., offset=-1),
+            [-0.00549333, 0., 0.00549333, 0.01098666, 0.01648, 0.02197333,
+             0.02746666, 0.03295999, 0.03845332, 0.04394665])
+
+    def test_decode_sqi(self):
+        np.testing.assert_array_almost_equal(
+            wrl.io.iris.decode_sqi(np.arange(0, 10, dtype='uint8'),
+                                   scale=253., offset=-1),
+            [np.nan, 0., 0.06286946, 0.08891084, 0.1088931, 0.12573892,
+             0.14058039, 0.1539981, 0.16633696, 0.17782169])
+
+    def test_decode_time(self):
+        timestring = b'\xd1\x9a\x00\x000\t\xdd\x07\x0b\x00\x19\x00'
+        self.assertEqual(wrl.io.iris.decode_time(timestring).isoformat(),
+                         '2013-11-25T11:00:35.352000')
+
+    def test_decode_string(self):
+        self.assertEqual(wrl.io.iris.decode_string(b'EEST\x00\x00\x00\x00'),
+                         'EEST')
+
+    def test__get_fmt_string(self):
+        fmt = '12sHHi12s12s12s6s12s12sHiiiiiiiiii2sH12sHB1shhiihh80s16s12s48s'
+        self.assertEqual(wrl.io.iris._get_fmt_string(
+            wrl.io.iris.PRODUCT_CONFIGURATION), fmt)
+
+
 if __name__ == '__main__':
     unittest.main()
