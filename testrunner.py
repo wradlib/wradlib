@@ -57,8 +57,10 @@ class NotebookTest(unittest.TestCase):
         self.nbfile = nbfile
         self.cov = cov
 
+    def id(self):
+        return self.nbfile
+
     def runTest(self):
-        print(self.nbfile)
         kernel = 'python%d' % sys.version_info[0]
         cur_dir = os.path.dirname(self.nbfile)
 
@@ -147,21 +149,8 @@ def create_doctest_testsuite():
 
 def create_unittest_testsuite():
     # gather information on tests (unittest etc)
-    files = []
-    skip = ['__init__.py']
     root_dir = 'wradlib/tests/'
-    for root, _, filenames in os.walk(root_dir):
-        for filename in filenames:
-            if filename in skip or filename[-3:] != '.py':
-                continue
-            f = os.path.join(root, filename)
-            f = f.replace('/', '.')
-            f = f[:-3]
-            files.append(f)
-            print(f)
-    suite = [unittest.defaultTestLoader.loadTestsFromName(str)
-             for str in files]
-    return suite
+    return unittest.defaultTestLoader.discover(root_dir)
 
 
 def single_suite_process(queue, test, verbosity, **kwargs):
@@ -170,18 +159,39 @@ def single_suite_process(queue, test, verbosity, **kwargs):
     if test_cov and not test_nb:
         cov = coverage.coverage()
         cov.start()
-    res = unittest.TextTestRunner(verbosity=verbosity).run(test)
+    all_success = 1
+    for ts in test:
+        if ts.countTestCases() != 0:
+            res = unittest.TextTestRunner(verbosity=verbosity).run(ts)
+            all_success = all_success & res.wasSuccessful()
     if test_cov and not test_nb:
         cov.stop()
         cov.save()
-    queue.put(res.wasSuccessful())
+    queue.put(all_success)
+
+
+def keep_tests(suite, arg):
+    newsuite = unittest.TestSuite()
+    try:
+        for tc in suite:
+            try:
+                if tc.id().find(arg) != -1:
+                    newsuite.addTest(tc)
+            except AttributeError:
+                new = keep_tests(tc, arg)
+                if new.countTestCases() != 0:
+                    newsuite.addTest(new)
+    except TypeError:
+        pass
+    return newsuite
 
 
 def main(args):
-    usage_message = """Usage: python testrunner.py options
+    usage_message = """Usage: python testrunner.py options arg
 
     If run without options, testrunner displays the usage message.
     If all tests suites should be run,, use the -a option.
+    If arg is given, only tests containing arg are run.
 
     options:
 
@@ -284,24 +294,24 @@ def main(args):
     testSuite = []
 
     if test_all:
-        testSuite.append(unittest.TestSuite(create_examples_testsuite()))
-        testSuite.append(unittest.
-                         TestSuite(create_notebooks_testsuite(cov=test_cov)))
-        testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
-        testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
+        testSuite.append(create_examples_testsuite())
+        testSuite.append(create_notebooks_testsuite(cov=test_cov))
+        testSuite.append(create_doctest_testsuite())
+        testSuite.append(create_unittest_testsuite())
     elif test_examples:
-        testSuite.append(unittest.TestSuite(create_examples_testsuite()))
+        testSuite.append(create_examples_testsuite())
     elif test_notebooks:
-        testSuite.extend(unittest.
-                         TestSuite(create_notebooks_testsuite(cov=test_cov)))
+        testSuite.append(create_notebooks_testsuite(cov=test_cov))
     elif test_docs:
         testSuite.append(unittest.TestSuite(create_doctest_testsuite()))
     elif test_units:
-        testSuite.append(unittest.TestSuite(create_unittest_testsuite()))
+        testSuite.append(create_unittest_testsuite())
 
     all_success = 1
     if test_subprocess:
         for test in testSuite:
+            if arg:
+                test = keep_tests(test, arg[0])
             queue = Queue()
             keywords = {'coverage': test_cov, 'notebooks': test_notebooks}
             proc = Process(target=single_suite_process,
@@ -316,10 +326,15 @@ def main(args):
         if test_cov and not test_notebooks:
             cov = coverage.coverage()
             cov.start()
-        for test in testSuite:
-            result = unittest.TextTestRunner(verbosity=verbosity).run(test)
-            # all_success should be 0 in the end
-            all_success = all_success & result.wasSuccessful()
+        for ts in testSuite:
+            if arg:
+                ts = keep_tests(ts, arg[0])
+            for test in ts:
+                if test.countTestCases() != 0:
+                    result = unittest.TextTestRunner(verbosity=verbosity).\
+                        run(test)
+                    # all_success should be 0 in the end
+                    all_success = all_success & result.wasSuccessful()
         if test_cov and not test_notebooks:
             cov.stop()
             cov.save()
