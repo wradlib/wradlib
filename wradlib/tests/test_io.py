@@ -517,6 +517,7 @@ class IrisTest(unittest.TestCase):
         data = wrl.io.IrisFile(sigmetfile, loaddata=True)
         self.assertEqual(data._record_number, 511)
         self.assertEqual(data.filepos, 3141076)
+        data = wrl.io.IrisFile(sigmetfile, loaddata=True, debug=True)
 
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
@@ -533,10 +534,13 @@ class IrisTest(unittest.TestCase):
         data_types = ['DB_DBZ', 'DB_VEL', 'DB_ZDR', 'DB_KDP', 'DB_PHIDP',
                       'DB_RHOHV', 'DB_HCLASS']
 
+        data_type = 'DB_RAW'
+
         self.assertEqual(list(data.keys()), data_keys)
         self.assertEqual(list(data['product_hdr'].keys()), product_hdr_keys)
         self.assertEqual(list(data['ingest_header'].keys()), ingest_hdr_keys)
         self.assertEqual(data['data_types'], data_types)
+        self.assertEqual(data['data_type'], data_type)
 
     def test_IrisRecord(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
