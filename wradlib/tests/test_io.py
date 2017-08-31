@@ -12,6 +12,7 @@ import tempfile
 import os
 import datetime
 import io
+import sys
 
 
 class DXTest(unittest.TestCase):
@@ -517,7 +518,13 @@ class IrisTest(unittest.TestCase):
         data = wrl.io.IrisFile(sigmetfile, loaddata=True)
         self.assertEqual(data._record_number, 511)
         self.assertEqual(data.filepos, 3141076)
-        data = wrl.io.IrisFile(sigmetfile, loaddata=True, debug=True)
+
+        # test debugging output, but supress it
+        with open(os.devnull, "w") as devnull:
+            old_stdout = sys.stdout
+            sys.stdout = devnull
+            data = wrl.io.IrisFile(sigmetfile, loaddata=True, debug=True)
+        sys.stdout = old_stdout
 
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
