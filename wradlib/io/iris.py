@@ -142,6 +142,8 @@ class IrisFile(object):
         self._sweeps = OrderedDict()
         if loaddata:
             self.get_sweeps()
+        else:
+            self.get_sweep_headers()
 
     @property
     def fh(self):
@@ -526,6 +528,19 @@ class IrisFile(object):
             if self.next_record():
                 break
             self._sweeps[i] = self.get_sweep()
+
+    def get_sweep_headers(self):
+        """ Retrieve all sweep ingest_data_headers from file
+        """
+        self._record_number = 1
+        for i in range(self.nsweeps):
+            while not self.next_record():
+                self.get_raw_prod_bhdr()
+                if self.raw_product_bhdrs[-1]['sweep_number'] != i:
+                    sweep = OrderedDict()
+                    sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
+                    self._sweeps[i] = sweep
+                    break
 
 
 def read_iris(filename, loaddata=True, rawdata=False, debug=False):
