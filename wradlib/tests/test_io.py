@@ -541,6 +541,8 @@ class IrisTest(unittest.TestCase):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
         data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        # reset record after init
+        data.read_record(1)
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
         self.assertEqual(data.rh.pos, 0)
         self.assertEqual(data.rh.recpos, 0)
