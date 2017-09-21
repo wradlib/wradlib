@@ -537,6 +537,14 @@ class IrisTest(unittest.TestCase):
         self.assertEqual(list(data['ingest_header'].keys()), ingest_hdr_keys)
         self.assertEqual(data['data_types'], data_types)
 
+        data_types = ['DB_DBZ', 'DB_VEL']
+        sweeps = [1, 3, 8]
+        loaddata = {'moment': data_types, 'sweep': sweeps}
+        data = wrl.io.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
+        self.assertEqual(list(data['sweeps'][1]['sweep_data'].keys()),
+                         data_types)
+        self.assertEqual(list(data['sweeps'].keys()), sweeps)
+
     def test_IrisRecord(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
