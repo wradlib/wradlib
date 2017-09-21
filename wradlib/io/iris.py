@@ -107,8 +107,13 @@ class IrisFile(object):
         ----------
         filename : basestring
             Filename of Iris File
-        loaddata : bool
-            If true, reads data section from file.
+        loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                            'sweep': [0, 3, 9]}
         rawdata : bool
             If true, returns raw unconverted/undecoded data.
         debug : bool
@@ -278,7 +283,7 @@ class IrisFile(object):
         self._rh = IrisRecord(self.fh[start:stop], recnum)
         return self._rh.record
 
-    def read(self, words=1, dtype='int16', skip=False):
+    def read(self, words=1, dtype='int16'):
         """ Read from file
 
         Parameters
@@ -363,7 +368,7 @@ class IrisFile(object):
             pass
 
     def get_raw_prod_bhdr(self, ):
-        """ Read, unpack and append raw product bhdr.
+        """ Read and unpack raw product bhdr.
         """
         return _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
                                   RAW_PROD_BHDR, self._rawdata)
@@ -429,6 +434,11 @@ class IrisFile(object):
 
     def get_sweep(self, moment):
         """ Retrieve a single sweep.
+
+        Parameters
+        ----------
+        moment : list of strings
+            Data Types to retrieve.
 
         Returns
         -------
@@ -541,6 +551,16 @@ class IrisFile(object):
 
     def get_sweeps(self, loaddata):
         """ Retrieve all sweeps from file
+
+        Parameters
+        ----------
+        loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                            'sweep': [0, 3, 9]}
         """
         dt_names = [d['name'] for d in self.data_types]
         rsweeps = range(self.nsweeps)
@@ -582,8 +602,14 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     ----------
     filename : str
         Filename of data file.
-    loaddata : bool
-            If true, reads data section from file.
+    loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                            'sweep': [0, 3, 9]}
+
     rawdata : bool
         If true, returns raw unconverted/undecoded data.
     debug : bool
