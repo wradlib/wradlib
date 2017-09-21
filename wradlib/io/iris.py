@@ -107,8 +107,13 @@ class IrisFile(object):
         ----------
         filename : basestring
             Filename of Iris File
-        loaddata : bool
-            If true, reads data section from file.
+        loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                            'sweep': [0, 3, 9]}
         rawdata : bool
             If true, returns raw unconverted/undecoded data.
         debug : bool
@@ -141,7 +146,9 @@ class IrisFile(object):
 
         self._sweeps = OrderedDict()
         if loaddata:
-            self.get_sweeps()
+            self.get_sweeps(loaddata)
+        else:
+            self.get_sweep_headers()
 
     @property
     def fh(self):
@@ -294,7 +301,7 @@ class IrisFile(object):
         words -= len(data)
         if words > 0:
             self.next_record()
-            self.get_raw_prod_bhdr()
+            self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
             data = np.append(data, self._rh.read(words).view(dtype=dtype))
         return data
 
@@ -360,12 +367,11 @@ class IrisFile(object):
         else:
             pass
 
-    def get_raw_prod_bhdr(self):
-        """ Read, unpack and append raw product bhdr.
+    def get_raw_prod_bhdr(self, ):
+        """ Read and unpack raw product bhdr.
         """
-        self._raw_product_bhdrs.append(
-            _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
-                               RAW_PROD_BHDR, self._rawdata))
+        return _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
+                                  RAW_PROD_BHDR, self._rawdata)
 
     def get_ingest_data_headers(self):
         """ Read and return ingest data headers.
@@ -426,8 +432,13 @@ class IrisFile(object):
 
         return data
 
-    def get_sweep(self):
+    def get_sweep(self, moment):
         """ Retrieve a single sweep.
+
+        Parameters
+        ----------
+        moment : list of strings
+            Data Types to retrieve.
 
         Returns
         -------
@@ -436,29 +447,49 @@ class IrisFile(object):
         """
         sweep = OrderedDict()
 
-        self.get_raw_prod_bhdr()
         sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
 
-        rays_per_data_type = [d['number_rays_file_expected'] for d
-                              in sweep['ingest_data_hdrs'].values()]
+        # get boolean True for moment in available data_types
+        skip = [True if k in moment else False
+                for k in sweep['ingest_data_hdrs'].keys()]
 
-        rays = sum(rays_per_data_type)
+        # get rays per available data type
+        rays_per_data_type = [d['number_rays_file_expected']
+                              for d in sweep['ingest_data_hdrs'].values()]
+
+        # get rays per selected data type
+        rays_per_selected_type = [d['number_rays_file_expected']
+                                  if k in moment else 0 for k, d in
+                                  sweep['ingest_data_hdrs'].items()]
+
+        # get available selected data types
+        selected_type = []
+        for i, k in enumerate(sweep['ingest_data_hdrs'].keys()):
+            if k in moment:
+                selected_type.append(self.data_types[i])
+
+        # get boolean True for selected available rays
+        raylist = skip * rays_per_data_type[0]
+
+        # get sum of rays for selected available data types
+        rays = sum(rays_per_selected_type)
         bins = self._product_hdr['product_end']['number_bins']
 
         raw_data = np.zeros((rays, bins + 6), dtype='int16')
-
-        for ray_i in range(rays):
-            if self._debug:
-                print("{0}: Ray started at {1}, file offset: {2}"
-                      "".format(ray_i, int(self._rh.recpos) - 1,
-                                self.filepos))
-            ret = self.get_ray(raw_data[ray_i])
-            if ret is not None:
-                raw_data[ray_i] = ret
+        single_data = np.zeros((bins + 6), dtype='int16')
+        cnt = 0
+        for i, ray_i in enumerate(raylist):
+            if ray_i:
+                ret = self.get_ray(raw_data[cnt])
+                if ret is not None:
+                    raw_data[cnt] = ret
+                cnt += 1
+            else:
+                self.get_ray(single_data)
 
         sweep_data = OrderedDict()
-        cnt = self.data_types_count
-        for i, prod in enumerate(self.data_types):
+        cnt = len(selected_type)
+        for i, prod in enumerate(selected_type):
             sweep_prod = OrderedDict()
 
             sweep_prod['data'] = self.decode_data(raw_data[i::cnt, 6:], prod)
@@ -518,14 +549,50 @@ class IrisFile(object):
         else:
             return data
 
-    def get_sweeps(self):
+    def get_sweeps(self, loaddata):
         """ Retrieve all sweeps from file
+
+        Parameters
+        ----------
+        loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                            'sweep': [0, 3, 9]}
+        """
+        dt_names = [d['name'] for d in self.data_types]
+        rsweeps = range(self.nsweeps)
+
+        try:
+            sweep = loaddata.pop('sweep', rsweeps)
+            moment = loaddata.pop('moment', dt_names)
+        except AttributeError:
+            sweep = rsweeps
+            moment = dt_names
+
+        self._record_number = 1
+        for i in sweep:
+            while not self.next_record():
+                raw_prod_bhdr = self.get_raw_prod_bhdr()
+                if raw_prod_bhdr['sweep_number'] == i+1:
+                    self.raw_product_bhdrs.append(raw_prod_bhdr)
+                    self._sweeps[i] = self.get_sweep(moment)
+                    break
+
+    def get_sweep_headers(self):
+        """ Retrieve all sweep ingest_data_headers from file
         """
         self._record_number = 1
         for i in range(self.nsweeps):
-            if self.next_record():
-                break
-            self._sweeps[i] = self.get_sweep()
+            while not self.next_record():
+                self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
+                if self.raw_product_bhdrs[-1]['sweep_number'] != i:
+                    sweep = OrderedDict()
+                    sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
+                    self._sweeps[i] = sweep
+                    break
 
 
 def read_iris(filename, loaddata=True, rawdata=False, debug=False):
@@ -535,8 +602,14 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     ----------
     filename : str
         Filename of data file.
-    loaddata : bool
-            If true, reads data section from file.
+    loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                            'sweep': [0, 3, 9]}
+
     rawdata : bool
         If true, returns raw unconverted/undecoded data.
     debug : bool
