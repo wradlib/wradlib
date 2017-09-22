@@ -112,8 +112,7 @@ class IrisFile(object):
                 If false, retrievs only ingest_data_headers, but no data.
                 If kwdict, retrieves according to given kwdict::
 
-                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                            'sweep': [0, 3, 9]}
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'sweep': [0, 3, 9]}
         rawdata : bool
             If true, returns raw unconverted/undecoded data.
         debug : bool
@@ -121,6 +120,7 @@ class IrisFile(object):
         """
         self._debug = debug
         self._rawdata = rawdata
+        self._loaddata = loaddata
         self._fh = np.memmap(filename, mode='r')
         self._record_number = 0
         self._rh = IrisRecord(self._fh[0:RECORD_BYTES], 0)
@@ -130,25 +130,10 @@ class IrisFile(object):
                                                [:LEN_PRODUCT_HDR],
                                                PRODUCT_HDR,
                                                rawdata)
-        self._ingest_header = _unpack_dictionary(self.read_record(1)
-                                                 [:LEN_INGEST_HEADER],
-                                                 INGEST_HEADER,
-                                                 rawdata)
-        self.get_task_type_scan_info()
-        self._raw_product_bhdrs = []
-
-        # determine data types contained in the file
-        self._data_types_numbers = self.get_data_types()
+        # determine product type contained in the file
         self._product_type_code = self.get_product_type_code()
-
         # TODO: implement product specific info
-        # self.get_product_specific_info()
-
-        self._sweeps = OrderedDict()
-        if loaddata:
-            self.get_sweeps(loaddata)
-        else:
-            self.get_sweep_headers()
+        self.get_product_specific_info()
 
     @property
     def fh(self):
@@ -169,6 +154,207 @@ class IrisFile(object):
         """ Returns product_hdr dictionary.
         """
         return self._product_hdr
+
+    @property
+    def product_type(self):
+        """ Returns product type.
+        """
+        return PRODUCT_DATA_TYPE_CODES[self._product_type_code]
+
+    def get_product_type_code(self):
+        """ Returns product type code
+        """
+        prod_conf = self.product_hdr['product_configuration']
+        return prod_conf['product_type_code']
+
+    def _check_record(self):
+        """ Checks record for correct size.
+
+        Returns
+        -------
+        chk : bool
+            True, if record is truncated.
+        """
+        chk = self._rh.record.shape[0] != RECORD_BYTES
+        return chk
+
+    def next_record(self):
+        """ Get next record from file.
+
+        This increases record_number count and initialises a new IrisRecord
+        with the calculated start and stop file offsets.
+
+        Returns
+        -------
+        chk : bool
+            True, if record is truncated.
+        """
+        self._record_number += 1
+        start = self._record_number * RECORD_BYTES
+        stop = start + RECORD_BYTES
+        self._rh = IrisRecord(self.fh[start:stop], self._record_number)
+        return self._check_record()
+
+    def read_record(self, recnum):
+        """ Read and return specified record from file.
+
+        Parameters
+        ----------
+        recnum : int
+            Record Number of record to retrieve.
+
+        Returns
+        -------
+        record : array-like
+            Numpy array containing record data.
+
+        """
+        start = recnum * RECORD_BYTES
+        stop = start + RECORD_BYTES
+        self._rh = IrisRecord(self.fh[start:stop], recnum)
+        return self._rh.record
+
+    def get_product_specific_info(self):
+        """ Retrieves product specific info"""
+        # Todo: check, if we can move this into the subclasses
+        config = self._product_hdr['product_configuration']
+        pt = self.product_type
+        key = 'product_specific_info'
+        print(pt)
+        try:
+            config[key] = _unpack_dictionary(config[key],
+                                             pt['struct'],
+                                             self._rawdata)
+        except:
+            warnings.warn("product type {0} not implemented"
+                          "".format(pt['name']),
+                          RuntimeWarning,
+                          stacklevel=3)
+        # if pt in ['CAPPI']:
+        #     pass
+        # elif pt in ['CATCH']:
+        #     pass
+        # elif pt in ['XSECT', 'USERV']:
+        #     pass
+        # elif pt in ['FCAST']:
+        #     pass
+        # elif pt in ['MAX']:
+        #     pass
+        #     config[key] = _unpack_dictionary(config[key],
+        #                                      MAX_PSI_STRUCT,
+        #                                      self._rawdata)
+        # elif pt in ['RAIN1', 'RAINN']:
+        #     pass
+        # elif pt in ['RAW']:
+        #     pass
+        #     config[key] = _unpack_dictionary(config[key],
+        #                                      RAW_PSI_STRUCT,
+        #                                      self._rawdata)
+        # elif pt in ['RHI']:
+        #     pass
+        # elif pt in ['SHEAR']:
+        #     pass
+        # elif pt in ['SLINE']:
+        #     pass
+        # elif pt in ['SLINE']:
+        #     pass
+        # elif pt in ['TDWR']:
+        #     pass
+        # elif pt in ['TOPS', 'BASE', 'HMAX', 'THICK']:
+        #     pass
+        # elif pt in ['TRACK']:
+        #     pass
+        # elif pt in ['VAD']:
+        #     pass
+        # elif pt in ['VIL']:
+        #     pass
+        # elif pt in ['VVP']:
+        #     pass
+        # elif pt in ['WARN']:
+        #     pass
+        # elif pt in ['WIND']:
+        #     pass
+        # elif pt in ['USER', 'OTHER', 'TEXT']:
+        #     pass
+        # else:
+        #     print('UNKNOWN')
+
+    def decode_data(self, data, prod):
+        """ Decode data according given prod-dict.
+
+        Parameters
+        ----------
+        data : data to decode
+        prod : dict
+
+        Returns
+        -------
+        data : decoded data
+
+        """
+        if self._rawdata:
+            return data
+        kw = {}
+        if prod['func']:
+            try:
+                kw.update(prod['fkw'])
+            except KeyError:
+                pass
+            try:
+                rays, bins = data.shape
+                data = data.view(prod['dtype']).reshape(rays, -1)[:, :bins]
+            except ValueError:
+                data = data.view(prod['dtype'])
+            if prod['func'] == decode_vel or prod['func'] == decode_width:
+                wavelength = self.product_hdr['product_end']['wavelength']
+                prf = self.product_hdr['product_end']['prf']
+
+                nyquist = wavelength * prf / (10000. * 4.)
+                #if prod['func'] == decode_vel:
+                #    nyquist *= (self.ingest_header['task_configuration']
+                #                ['task_dsp_info']['multi_prf_mode_flag'] + 1)
+                kw.update({'nyquist': nyquist})
+
+            return prod['func'](data, **kw)
+        else:
+            return data
+
+
+class IrisRawFile(IrisFile):
+    """ Class for retrieving data from Sigmet IRIS files.
+    """
+    def __init__(self, filename, **kwargs):
+        """
+
+        Parameters
+        ----------
+        filename : basestring
+            Filename of Iris File
+        loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'sweep': [0, 3, 9]}
+        rawdata : bool
+            If true, returns raw unconverted/undecoded data.
+        debug : bool
+            If true, print debug messages.
+        """
+        super(IrisRawFile, self).__init__(filename, **kwargs)
+
+        self._ingest_header = _unpack_dictionary(self.read_record(1)
+                                                 [:LEN_INGEST_HEADER],
+                                                 INGEST_HEADER,
+                                                 self._rawdata)
+        self._data_types_numbers = self.get_data_types()
+        self.get_task_type_scan_info()
+        self._raw_product_bhdrs = []
+        self._sweeps = OrderedDict()
+        if self._loaddata:
+            self.get_sweeps()
+        else:
+            self.get_sweep_headers()
 
     @property
     def ingest_header(self):
@@ -214,12 +400,6 @@ class IrisFile(object):
         return [SIGMET_DATA_TYPES[i] for i in self._data_types_numbers]
 
     @property
-    def product_type(self):
-        """ Returns product type.
-        """
-        return PRODUCT_DATA_TYPE_CODES[self._product_type_code]
-
-    @property
     def data_types_count(self):
         """ Returns number of data types.
         """
@@ -240,56 +420,22 @@ class IrisFile(object):
             True, if record is truncated.
         """
         chk = self._rh.record.shape[0] != RECORD_BYTES
-        if chk:
+        if chk & (self.product_type['name'] == 'RAW'):
             warnings.warn("Unexpected file end detected at record {0}"
                           "".format(self._record_number),
                           RuntimeWarning,
                           stacklevel=3)
         return chk
 
-    def next_record(self):
-        """ Get next record from file.
-
-        This increases record_number count and initialises a new IrisRecord
-        with the calculated start and stop file offsets.
-
-        Returns
-        -------
-        chk : bool
-            True, if record is truncated.
-        """
-        self._record_number += 1
-        start = self._record_number * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self._rh = IrisRecord(self.fh[start:stop], self._record_number)
-        return self._check_record()
-
-    def read_record(self, recnum):
-        """ Read and return specified record from file.
-
-        Parameters
-        ----------
-        recnum : int
-            Record Number of record to retrieve.
-
-        Returns
-        -------
-        record : array-like
-            Numpy array containing record data.
-
-        """
-        start = recnum * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self._rh = IrisRecord(self.fh[start:stop], recnum)
-        return self._rh.record
-
-    def read(self, words=1, dtype='int16'):
+    def read(self, words=1, width=2, dtype='int16'):
         """ Read from file
 
         Parameters
         ----------
         words : int
             Number of data words to read.
+        width : int
+            Size of the data word to read in bytes.
         dtype : str
             dtype string specifying data format.
         Returns
@@ -297,12 +443,14 @@ class IrisFile(object):
         data : array-like
             numpy array of data
         """
-        data = self._rh.read(words).view(dtype=dtype)
+        data = self._rh.read(words, width=width).view(dtype=dtype)
         words -= len(data)
-        if words > 0:
+        while words > 0:
             self.next_record()
             self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
-            data = np.append(data, self._rh.read(words).view(dtype=dtype))
+            next = self._rh.read(words, width=width).view(dtype=dtype)
+            data = np.append(data, next)
+            words -= len(next)
         return data
 
     def get_compression_code(self):
@@ -323,12 +471,6 @@ class IrisFile(object):
             print("--- Sub CMP Code:", cmp_msb, cmp_val, self._rh.recpos - 1,
                   self._rh.recpos)
         return cmp_msb, cmp_val
-
-    def get_product_type_code(self):
-        """ Returns product type code
-        """
-        prod_conf = self.product_hdr['product_configuration']
-        return prod_conf['product_type_code']
 
     def get_data_types(self):
         """ Returns the available data types.
@@ -549,7 +691,7 @@ class IrisFile(object):
         else:
             return data
 
-    def get_sweeps(self, loaddata):
+    def get_sweeps(self):
         """ Retrieve all sweeps from file
 
         Parameters
@@ -565,9 +707,11 @@ class IrisFile(object):
         dt_names = [d['name'] for d in self.data_types]
         rsweeps = range(1, self.nsweeps + 1)
 
+        loaddata = self._loaddata
+        print("NAmes:", dt_names)
         try:
-            sweep = loaddata.pop('sweep', rsweeps)
-            moment = loaddata.pop('moment', dt_names)
+            sweep = loaddata.copy().pop('sweep', rsweeps)
+            moment = loaddata.copy().pop('moment', dt_names)
         except AttributeError:
             sweep = rsweeps
             moment = dt_names
@@ -608,6 +752,88 @@ class IrisFile(object):
             self._sweeps[sw] = sweep
 
 
+class IrisProductFile(IrisFile):
+    """ Class for retrieving data from Sigmet IRIS files.
+    """
+    def __init__(self, filename, **kwargs):
+        """
+
+        Parameters
+        ----------
+        filename : basestring
+            Filename of Iris File
+        loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'sweep': [0, 3, 9]}
+        rawdata : bool
+            If true, returns raw unconverted/undecoded data.
+        debug : bool
+            If true, print debug messages.
+        """
+        super(IrisProductFile, self).__init__(filename, **kwargs)
+
+        if self._loaddata:
+            self.get_cartesian_data()
+
+    @property
+    def images(self):
+        """ Returns cartesian images.
+        """
+        return self._images
+
+    def read(self, words=1, width=1, dtype='int16'):
+        """ Read from file
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        width : int
+            Size of the data word to read in bytes.
+        dtype : str
+            dtype string specifying data format.
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        data = self._rh.read(words, width=width).view(dtype=dtype)
+        words -= len(data)
+        while words > 0:
+            self.next_record()
+            next = self._rh.read(words, width=width).view(dtype=dtype)
+            data = np.append(data, next)
+            words -= len(next)
+        return data
+
+    def get_cartesian_data(self):
+        """ Retrieves cartesian data from file
+        """
+        # set filepointer accordingly
+        self._record_number = 0
+        self._rh = IrisRecord(self._fh[0:RECORD_BYTES], 0)
+        self._rh.pos = 640
+
+        product_hdr = self.product_hdr
+        config = product_hdr['product_configuration']
+        x_size = config['x_size']
+        y_size = config['y_size']
+        z_size = config['z_size']
+        cnt = x_size * y_size *z_size
+        if product_hdr['product_end']['extended_product_header_offset']:
+            warnings.warn("Not Implemented - Extended data available \n"
+                          "not loading dataset",
+                          RuntimeWarning,
+                          stacklevel=3)
+        else:
+            data = self.read(cnt, dtype='int8')
+            data.shape = (z_size, y_size, x_size)
+            self._images = np.flip(data, axis=1)
+
+
 def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     """ Read Iris file and return dictionary.
 
@@ -633,17 +859,27 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     data : OrderedDict
         Dictionary with data and metadata retrieved from file.
     """
-    fh = IrisFile(filename, loaddata=loaddata, rawdata=rawdata, debug=debug)
+    fh = IrisFile(filename, loaddata=False, rawdata=False, debug=False)
+    print(fh.product_type['name'])
+    if fh.product_type['name'] in ['RAW', 'PPI']:
+        fh = IrisRawFile(filename, loaddata=loaddata, rawdata=rawdata, debug=debug)
+    elif fh.product_type['name'] == 'MAX':
+        fh = IrisProductFile(filename, loaddata=loaddata, rawdata=rawdata,
+                         debug=debug)
+
     data = OrderedDict()
     data['product_hdr'] = fh.product_hdr
-    data['ingest_header'] = fh.ingest_header
-    data['nsweeps'] = fh.nsweeps
-    data['nrays'] = fh.nrays
-    data['nbins'] = fh.nbins
-    data['product_type'] = fh.product_type
-    data['data_types'] = fh.data_types_names
-    data['sweeps'] = fh.sweeps
-    data['raw_product_bhdrs'] = fh.raw_product_bhdrs
+    data['product_type'] = fh.product_type['name']
+    if fh.product_type['name'] in ['RAW', 'PPI']:
+        data['ingest_header'] = fh.ingest_header
+        data['nsweeps'] = fh.nsweeps
+        data['nrays'] = fh.nrays
+        data['nbins'] = fh.nbins
+        data['data_types'] = fh.data_types_names
+        data['sweeps'] = fh.sweeps
+        data['raw_product_bhdrs'] = fh.raw_product_bhdrs
+    else:
+        data['images'] = fh.images
 
     return data
 
@@ -849,6 +1085,8 @@ def _unpack_dictionary(buffer, dictionary, rawdata=False):
                     data[k] = v[k1](data[k], **v[k1[0] + 'kw'])
                 except KeyError:
                     pass
+                except UnicodeDecodeError:
+                    pass
         # unpack sub dictionary
         try:
             data[k] = _unpack_dictionary(data[k], v, rawdata=rawdata)
@@ -914,6 +1152,183 @@ LEN_YMDS_TIME = struct.calcsize(_get_fmt_string(YMDS_TIME))
 _YMDS_TIME = {'size': '{}s'.format(LEN_YMDS_TIME),
               'func': decode_time,
               'fkw': {}}
+
+# product_specific_info Structure(s)
+
+# cappi_psi_struct (if CAPPI)
+CAPPI_PSI_STRUCT = OrderedDict([('shear_flags', UINT4),
+                                ('cappi_height', SINT4),
+                                ('flags', UINT2),
+                                ('azimuth_shear_smoothing', BIN2),
+                                ('vvp_shear_correction_name', string_dict(12)),
+                                ('vvp_shear_correction_max_age', UINT4)])
+
+# catch_psi_struct (if CATCH)
+CATCH_PSI_STRUCT = OrderedDict([('flags', UINT4),
+                                ('hours_accumulation', UINT4),
+                                ('threshold_offset', SINT4),
+                                ('threshold faction', SINT4),
+                                ('rain1_name', string_dict(12)),
+                                ('catchment_file', string_dict(16)),
+                                ('seconds_accumulation', UINT4),
+                                ('rain1_min_z', UINT4),
+                                ('rain1_span_seconds', UINT4),
+                                ('average_gage_correction_factor', UINT4)])
+
+# cross_psi_struct (if XSECT or USERV)
+CROSS_PSI_STRUCT = OrderedDict([('azimuth_angle', BIN2),
+                                ('spare_0', {'fmt': '10s'}),
+                                ('east_center_coordinate', SINT4),
+                                ('north_center_coordinate', SINT4),
+                                ('user_miscellaneous', SINT4)])
+
+# fcast_psi_struct (if FCAST)
+FCAST_PSI_STRUCT = OrderedDict([('correlation_threshold', UINT4),
+                                ('data_threshold', SINT4),
+                                ('mean_speed', SINT4),
+                                ('mean_speed_direction', BIN4),
+                                ('max_time_between_inputs', UINT4),
+                                ('max_allowable_velocity', SINT4),
+                                ('flags', UINT4),
+                                ('output_resolution', SINT4),
+                                ('input_product_type', UINT4),
+                                ('input_product_name', string_dict(12))])
+
+# maximum_psi_struct (if MAX)
+MAX_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '4s'}),
+                              ('interval_bottom', SINT4),
+                              ('interval_top', SINT4),
+                              ('side_panels_num_pixels', SINT4),
+                              ('side_panels_hor_smoother', SINT4),
+                              ('side_panels_ver_smoother', SINT4),
+                              ('spare_1', {'fmt': '56s'})])
+
+# ppi_psi_struct (if PPI)
+PPI_PSI_STRUCT = OrderedDict([('elevation_angle', BIN2)])
+
+# rain_psi_struct (if RAIN1 or RAINN)
+RAIN_PSI_STRUCT = OrderedDict([('min_Z_to_accumulate', UINT4),
+                               ('average_gage_correction_factor', UINT2),
+                               ('seconds_accumulation', UINT2),
+                               ('flags', UINT2),
+                               ('hours_to_accumulate', SINT2),
+                               ('input_product_name', string_dict(12)),
+                               ('span_of input files', UINT4)])
+
+# raw_psi_struct (if RAW)
+RAW_PSI_STRUCT = OrderedDict([('data_type_mask0', UINT4),
+                              ('range_last_bin', SINT4),
+                              ('format_conversion_flag', UINT4),
+                              ('flags', UINT4),
+                              ('sweep_number', SINT4),
+                              ('xhdr_type', UINT4),
+                              ('data_type_mask1', UINT4),
+                              ('data_type_mask2', UINT4),
+                              ('data_type_mask3', UINT4),
+                              ('data_type_mask4', UINT4),
+                              ('playback_version', UINT4),
+                              ('spare_0', {'fmt': '36s'})])
+
+# rhi_psi_struct (if RHI)
+RHI_PSI_STRUCT = OrderedDict([('azimuth_angle', BIN2)])
+
+# shear_psi_struct (if SHEAR)
+SHEAR_PSI_STRUCT = OrderedDict([('azimuthal_smoothing_angle', BIN4),
+                                ('elevation_angle', BIN2),
+                                ('spare_0', {'fmt': '2s'}),
+                                ('flags', UINT4),
+                                ('vvp_product_name', string_dict(12)),
+                                ('vvp_product_max_age', UINT4)])
+
+# sline_psi_struct (if SLINE)
+SLINE_PSI_STRUCT = OrderedDict([('area', SINT4),
+                                ('shear_threshold', SINT4),
+                                ('bit_flags_protected_areas', UINT4),
+                                ('max_forecast_time', SINT4),
+                                ('max_age_motion_calculation', UINT4),
+                                ('max_allowed_velocity', SINT4),
+                                ('flags', UINT4),
+                                ('azimuthal_smoothing_angle', BIN4),
+                                ('elevation_binary_angle', BIN4),
+                                ('elevation_binary_angle', BIN4),
+                                ('name_vvp_task', string_dict(12)),
+                                ('vvp_max_age', UINT4),
+                                ('curve_fit_std_threshold', SINT4),
+                                ('min_length_sline', UINT4)])
+
+# tdwr_psi_struct (if TDWR)
+TDWR_PSI_STRUCT = OrderedDict([('flags', UINT4),
+                               ('max_range', UINT4),
+                               ('source_id', string_dict(4)),
+                               ('center_field_wind_direction', string_dict(3)),
+                               ('spare_0', {'fmt': '1s'}),
+                               ('center_field_wind_speed', string_dict(2)),
+                               ('center_field_gust_speed', string_dict(2)),
+                               ('mask_protected_areas_checked', UINT4),
+                               ('warning_count', UINT4),
+                               ('sline_count', UINT4)])
+
+# top_psi_struct (if TOPS, BASE, HMAX, or THICK)
+TOP_PSI_STRUCT = OrderedDict([('flags', UINT4),
+                              ('z_treshold', SINT2)])
+
+# track_psi_struct (if TRACK)
+TRACK_PSI_STRUCT = OrderedDict([('centroid_area_threshold', SINT4),
+                                ('centroid_threshold level', SINT4),
+                                ('protected_area_mask', UINT4),
+                                ('max_forecast_time', SINT4),
+                                ('max_age_motion_calculation', UINT4),
+                                ('max_motion_allowed', SINT4),
+                                ('flags', UINT4),
+                                ('max_span_track_points', SINT4),
+                                ('input_product_type', UINT4),
+                                ('input_product_name', string_dict(12)),
+                                ('point_connecting_error_allowance', SINT4)])
+
+# vad_psi_struct (if VAD)
+VAD_PSI_STRUCT = OrderedDict([('min_slant_range', SINT4),
+                              ('max_slant_range', SINT4),
+                              ('flags', UINT4),
+                              ('number_elevation_angles', UINT4)])
+
+# vil_psi_struct (if VIL)
+# missing in documentation
+
+# vvp_psi_struct (if VVP)
+VVP_PSI_STRUCT = OrderedDict([('min_range', SINT4),
+                              ('max_range', SINT4),
+                              ('min_height', SINT4),
+                              ('max_height', SINT4),
+                              ('num_intervals', SINT2),
+                              ('min_velocity', UINT2),
+                              ('quota_num_bins_interval', SINT4),
+                              ('mask_wind_parameters', SINT4)])
+
+# warn_psi_struct (if WARN)
+WARN_PSI_STRUCT = OrderedDict([('centroid_area_threshold', SINT4),
+                               ('threshold_levels',  array_dict('12s', 'int32')),
+                               ('data_valid_times', array_dict('6s', 'int16')),
+                               ('spare_0', {'fmt': '2s'}),
+                               ('symbol_to_display', string_dict(12)),
+                               ('product_file_names', string_dict(36)),
+                               ('product_types', array_dict('3s', 'uint8')),
+                               ('spare_1', {'fmt': '1s'}),
+                               ('protected_area_flag', UINT4)])
+
+# wind_psi_struct (if WIND)
+WIND_PSI_STRUCT = OrderedDict([('min_height', SINT4),
+                               ('max_height', SINT4),
+                               ('min_range', SINT4),
+                               ('max_range', SINT4),
+                               ('num_range_points', SINT4),
+                               ('num_panel_points', SINT4),
+                               ('sector_length', SINT4),
+                               ('sector_width_binary_angle', BIN4)])
+
+# spare (if USER, OTHER, TEXT)
+SPARE_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '80s'})])
+
+
 
 # color_scale_def Structure
 # 4.3.5, page 26
@@ -1587,38 +2002,71 @@ SIGMET_DATA_TYPES = OrderedDict([
           'fkw': {'scale': 2., 'offset': -63.}})
     ])
 
-
-PRODUCT_DATA_TYPE_CODES = OrderedDict([(1, 'PPI'),
-                                       (2, 'RHI'),
-                                       (3, 'CAPPI'),
-                                       (4, 'CROSS'),
-                                       (5, 'TOPS'),
-                                       (6, 'TRACK'),
-                                       (7, 'RAIN1'),
-                                       (8, 'RAINN'),
-                                       (9, 'VVP'),
-                                       (10, 'VIL'),
-                                       (11, 'SHEAR'),
-                                       (12, 'WARN'),
-                                       (13, 'CATCH'),
-                                       (14, 'RTI'),
-                                       (15, 'RAW'),
-                                       (16, 'MAX'),
-                                       (17, 'USER'),
-                                       (18, 'USERV'),
-                                       (19, 'OTHER'),
-                                       (20, 'STATUS'),
-                                       (21, 'SLINE'),
-                                       (22, 'WIND'),
-                                       (23, 'BEAM'),
-                                       (24, 'TEXT'),
-                                       (25, 'FCAST'),
-                                       (26, 'NDOP'),
-                                       (27, 'IMAGE'),
-                                       (28, 'COMP'),
-                                       (29, 'TDWR'),
-                                       (30, 'GAGE'),
-                                       (31, 'DWELL'),
-                                       (32, 'SRI'),
-                                       (33, 'BASE'),
-                                       (34, 'HMAX')])
+PRODUCT_DATA_TYPE_CODES = OrderedDict([(1, {'name': 'PPI',
+                                            'struct': PPI_PSI_STRUCT}),
+                                       (2, {'name': 'RHI',
+                                            'struct': RHI_PSI_STRUCT}),
+                                       (3, {'name': 'CAPPI',
+                                            'struct': CAPPI_PSI_STRUCT}),
+                                       (4, {'name': 'CROSS',
+                                            'struct': CROSS_PSI_STRUCT}),
+                                       (5, {'name': 'TOPS',
+                                            'struct': TOP_PSI_STRUCT}),
+                                       (6, {'name': 'TRACK',
+                                            'struct': TRACK_PSI_STRUCT}),
+                                       (7, {'name': 'RAIN1',
+                                            'struct': RAIN_PSI_STRUCT}),
+                                       (8, {'name': 'RAINN',
+                                            'struct': RAIN_PSI_STRUCT}),
+                                       (9, {'name': 'VVP',
+                                            'struct': VVP_PSI_STRUCT}),
+                                       (10, {'name': 'VIL',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (11, {'name': 'SHEAR',
+                                             'struct': SHEAR_PSI_STRUCT}),
+                                       (12, {'name': 'WARN',
+                                             'struct': WARN_PSI_STRUCT}),
+                                       (13, {'name': 'CATCH',
+                                             'struct': CATCH_PSI_STRUCT}),
+                                       (14, {'name': 'RTI',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (15, {'name': 'PPI',
+                                             'struct': RAW_PSI_STRUCT}),
+                                       (16, {'name': 'MUX',
+                                             'struct': MAX_PSI_STRUCT}),
+                                       (17, {'name': 'USER',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (18, {'name': 'USERV',
+                                             'struct': CROSS_PSI_STRUCT}),
+                                       (19, {'name': 'OTHER',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (20, {'name': 'STATUS',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (21, {'name': 'SLINE',
+                                             'struct': SLINE_PSI_STRUCT}),
+                                       (22, {'name': 'WIND',
+                                             'struct': WIND_PSI_STRUCT}),
+                                       (23, {'name': 'BEAM',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (24, {'name': 'TEXT',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (25, {'name': 'FCAST',
+                                             'struct': FCAST_PSI_STRUCT}),
+                                       (26, {'name': 'NDOP',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (27, {'name': 'IMAGE',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (28, {'name': 'COMP',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (29, {'name': 'TDWR',
+                                             'struct': TDWR_PSI_STRUCT}),
+                                       (30, {'name': 'GAGE',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (31, {'name': 'DWELL',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (32, {'name': 'SRI',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (33, {'name': 'BASE',
+                                             'struct': TOP_PSI_STRUCT}),
+                                       (34, {'name': 'HMAX',
+                                             'struct': TOP_PSI_STRUCT})])
