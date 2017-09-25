@@ -563,7 +563,7 @@ class IrisFile(object):
                             'sweep': [0, 3, 9]}
         """
         dt_names = [d['name'] for d in self.data_types]
-        rsweeps = range(self.nsweeps)
+        rsweeps = range(1, self.nsweeps + 1)
 
         try:
             sweep = loaddata.pop('sweep', rsweeps)
@@ -573,26 +573,35 @@ class IrisFile(object):
             moment = dt_names
 
         self._record_number = 1
-        for i in sweep:
-            while not self.next_record():
-                raw_prod_bhdr = self.get_raw_prod_bhdr()
-                if raw_prod_bhdr['sweep_number'] == i+1:
-                    self.raw_product_bhdrs.append(raw_prod_bhdr)
-                    self._sweeps[i] = self.get_sweep(moment)
-                    break
+        sw = 0
+        while sw < self.nsweeps and not self.next_record():
+            raw_prod_bhdr = self.get_raw_prod_bhdr()
+            sw = raw_prod_bhdr['sweep_number']
+            # continue to next record if not belonging to wanted sweeps
+            if sw not in sweep:
+                continue
+            self.raw_product_bhdrs.append(raw_prod_bhdr)
+            self._sweeps[sw] = self.get_sweep(moment)
 
     def get_sweep_headers(self):
         """ Retrieve all sweep ingest_data_headers from file
         """
         self._record_number = 1
-        for i in range(self.nsweeps):
-            while not self.next_record():
-                self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
-                if self.raw_product_bhdrs[-1]['sweep_number'] != i:
-                    sweep = OrderedDict()
-                    sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
-                    self._sweeps[i] = sweep
-                    break
+        sw = 0
+        while sw < self.nsweeps and not self.next_record():
+            # get raw_prod_bhdr
+            raw_prod_bhdr = self.get_raw_prod_bhdr()
+            # continue to next record if belonging to same sweep
+            if raw_prod_bhdr['sweep_number'] == sw:
+                continue
+            # else set current sweep number
+            else:
+                sw = raw_prod_bhdr['sweep_number']
+            # read headers and add to _sweeps
+            self.raw_product_bhdrs.append(raw_prod_bhdr)
+            sweep = OrderedDict()
+            sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
+            self._sweeps[sw] = sweep
 
 
 def read_iris(filename, loaddata=True, rawdata=False, debug=False):
@@ -727,9 +736,12 @@ def decode_time(data):
     """ Decode YMDS_TIME into datetime object
     """
     time = _unpack_dictionary(data, YMDS_TIME)
-    return (dt.datetime(time['year'], time['month'], time['day']) +
-            dt.timedelta(seconds=time['seconds'],
-                         milliseconds=time['milliseconds']))
+    try:
+        return (dt.datetime(time['year'], time['month'], time['day']) +
+                dt.timedelta(seconds=time['seconds'],
+                             milliseconds=time['milliseconds']))
+    except ValueError:
+        return None
 
 
 def decode_string(data):
