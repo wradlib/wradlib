@@ -574,7 +574,9 @@ class IrisFile(object):
 
         self._record_number = 1
         sw = 0
-        while sw < self.nsweeps and not self.next_record():
+        ingest_conf = self.ingest_header['ingest_configuration']
+        sw_completed = ingest_conf['number_sweeps_completed']
+        while sw < sw_completed and not self.next_record():
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             sw = raw_prod_bhdr['sweep_number']
             # continue to next record if not belonging to wanted sweeps
@@ -588,7 +590,9 @@ class IrisFile(object):
         """
         self._record_number = 1
         sw = 0
-        while sw < self.nsweeps and not self.next_record():
+        ingest_conf = self.ingest_header['ingest_configuration']
+        sw_completed = ingest_conf['number_sweeps_completed']
+        while sw < sw_completed and not self.next_record():
             # get raw_prod_bhdr
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             # continue to next record if belonging to same sweep
