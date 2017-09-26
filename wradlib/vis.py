@@ -505,8 +505,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     return ax
 
 
-def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
-             rf=1., fig=None, ax=111, func='pcolormesh', cg=False,
+def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
+             refrac=True, rf=1., fig=None, ax=111, func='pcolormesh', cg=False,
              **kwargs):
     """Plots a Range Height Indicator (RHI).
 
@@ -545,6 +545,9 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         plot_rhi will plot the beams accordingly. Otherwise the behavior of
         :func:`matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
         to each other, which might lead to unexpected results.
+    yoffset : float
+        Altitude offset that would typically represent the altitude of
+        the radar antenna. Units must be consistent with units of `r`.
     autoext : True | False
         This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw
         the bins.
@@ -711,6 +714,8 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
             # otherwise plane trigonometry will do
             xxx = xx * np.cos(np.radians(yy)) / rf
             yyy = xx * np.sin(np.radians(yy)) / rf
+
+    yyy += yoffset / rf
 
     # plot the stuff
     plotfunc = getattr(plax, func)
