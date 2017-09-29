@@ -1269,11 +1269,13 @@ def string_dict(size):
 _ARRAY = {'read': np.fromstring,
           'rkw': {}}
 
+
 def array_dict(size, dtype):
     dic = _ARRAY.copy()
     dic['size'] = '{0}s'.format(size * get_dtype_size(dtype))
     dic['rkw']['dtype'] = dtype
     return copy.deepcopy(dic)
+
 
 # structure_header Structure
 # 4.3.48 page 55
