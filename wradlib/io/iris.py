@@ -33,7 +33,7 @@ import struct
 from collections import OrderedDict
 import warnings
 import datetime as dt
-
+import copy
 
 RECORD_BYTES = 6144
 
@@ -112,7 +112,7 @@ class IrisFile(object):
                 If false, retrievs only ingest_data_headers, but no data.
                 If kwdict, retrieves according to given kwdict::
 
-                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'sweep': [0, 3, 9]}
+                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'data': [0, 3, 9]}
         rawdata : bool
             If true, returns raw unconverted/undecoded data.
         debug : bool
@@ -122,18 +122,29 @@ class IrisFile(object):
         self._rawdata = rawdata
         self._loaddata = loaddata
         self._fh = np.memmap(filename, mode='r')
-        self._record_number = 0
-        self._rh = IrisRecord(self._fh[0:RECORD_BYTES], 0)
+        self.init_record(0)
 
         # read data headers
-        self._product_hdr = _unpack_dictionary(self.read_record(0)
-                                               [:LEN_PRODUCT_HDR],
-                                               PRODUCT_HDR,
-                                               rawdata)
+        self._product_hdr = _unpack_dictionary(
+            self.bytes_from_record(LEN_PRODUCT_HDR, width=1),
+            PRODUCT_HDR,
+            rawdata)
         # determine product type contained in the file
         self._product_type_code = self.get_product_type_code()
-        # TODO: implement product specific info
+        # get product specific information
         self.get_product_specific_info()
+
+    @property
+    def loaddata(self):
+        return self._loaddata
+
+    @property
+    def rawdata(self):
+        return self._rawdata
+
+    @property
+    def debug(self):
+        return self._debug
 
     @property
     def fh(self):
@@ -143,11 +154,23 @@ class IrisFile(object):
     def rh(self):
         return self._rh
 
+    @rh.setter
+    def rh(self, value):
+        self._rh = value
+
+    @property
+    def record_number(self):
+        return self._record_number
+
+    @record_number.setter
+    def record_number(self, value):
+        self._record_number = value
+
     @property
     def filepos(self):
         """ Returns current byte position of data file.
         """
-        return self._record_number * RECORD_BYTES + int(self._rh.recpos)
+        return self._record_number * RECORD_BYTES + int(self._rh.pos)
 
     @property
     def product_hdr(self):
@@ -160,6 +183,13 @@ class IrisFile(object):
         """ Returns product type.
         """
         return PRODUCT_DATA_TYPE_CODES[self._product_type_code]
+
+    @property
+    def data_type(self):
+        """ Returns product type.
+        """
+        data_type = self.product_hdr['product_configuration']['data_type']
+        return SIGMET_DATA_TYPES[data_type]
 
     def get_product_type_code(self):
         """ Returns product type code
@@ -175,10 +205,15 @@ class IrisFile(object):
         chk : bool
             True, if record is truncated.
         """
-        chk = self._rh.record.shape[0] != RECORD_BYTES
-        return chk
+        return self.rh.record.shape[0] != RECORD_BYTES
 
-    def next_record(self):
+    def init_record(self, recnum):
+        self.record_number = recnum
+        start = self.record_number * RECORD_BYTES
+        stop = start + RECORD_BYTES
+        self.rh = IrisRecord(self.fh[start:stop], self.record_number)
+
+    def init_next_record(self):
         """ Get next record from file.
 
         This increases record_number count and initialises a new IrisRecord
@@ -189,95 +224,57 @@ class IrisFile(object):
         chk : bool
             True, if record is truncated.
         """
-        self._record_number += 1
-        start = self._record_number * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self._rh = IrisRecord(self.fh[start:stop], self._record_number)
-        return self._check_record()
+        self.record_number += 1
+        self.init_record(self.record_number)
 
-    def read_record(self, recnum):
-        """ Read and return specified record from file.
+    def array_from_record(self, words, width, dtype):
+        return self.rh.read(words, width=width).view(dtype=dtype)
+
+    def bytes_from_record(self, words, width):
+        return self.rh.read(words, width=width)
+
+    def read_from_record(self, words, dtype):
+        """ Read from file
 
         Parameters
         ----------
-        recnum : int
-            Record Number of record to retrieve.
-
+        words : int
+            Number of data words to read.
+        width : int
+            Size of the data word to read in bytes.
+        dtype : str
+            dtype string specifying data format.
         Returns
         -------
-        record : array-like
-            Numpy array containing record data.
-
+        data : array-like
+            numpy array of data
         """
-        start = recnum * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self._rh = IrisRecord(self.fh[start:stop], recnum)
-        return self._rh.record
+        width = get_dtype_size(dtype)
+        data = self.array_from_record(words, width, dtype)
+        words -= len(data)
+        while words > 0:
+            self.init_next_record()
+            self._check_record()
+            next = self.array_from_record(words, width, dtype)
+            data = np.append(data, next)
+            words -= len(next)
+        return data
 
     def get_product_specific_info(self):
         """ Retrieves product specific info"""
-        # Todo: check, if we can move this into the subclasses
-        config = self._product_hdr['product_configuration']
+        config = self.product_hdr['product_configuration']
         pt = self.product_type
         key = 'product_specific_info'
-        print(pt)
         try:
             config[key] = _unpack_dictionary(config[key],
                                              pt['struct'],
-                                             self._rawdata)
-        except:
-            warnings.warn("product type {0} not implemented"
-                          "".format(pt['name']),
+                                             self.rawdata)
+        except KeyError:
+            warnings.warn("product type {0} not implemented, \n"
+                          "only header information "
+                          "available".format(pt['name']),
                           RuntimeWarning,
                           stacklevel=3)
-        # if pt in ['CAPPI']:
-        #     pass
-        # elif pt in ['CATCH']:
-        #     pass
-        # elif pt in ['XSECT', 'USERV']:
-        #     pass
-        # elif pt in ['FCAST']:
-        #     pass
-        # elif pt in ['MAX']:
-        #     pass
-        #     config[key] = _unpack_dictionary(config[key],
-        #                                      MAX_PSI_STRUCT,
-        #                                      self._rawdata)
-        # elif pt in ['RAIN1', 'RAINN']:
-        #     pass
-        # elif pt in ['RAW']:
-        #     pass
-        #     config[key] = _unpack_dictionary(config[key],
-        #                                      RAW_PSI_STRUCT,
-        #                                      self._rawdata)
-        # elif pt in ['RHI']:
-        #     pass
-        # elif pt in ['SHEAR']:
-        #     pass
-        # elif pt in ['SLINE']:
-        #     pass
-        # elif pt in ['SLINE']:
-        #     pass
-        # elif pt in ['TDWR']:
-        #     pass
-        # elif pt in ['TOPS', 'BASE', 'HMAX', 'THICK']:
-        #     pass
-        # elif pt in ['TRACK']:
-        #     pass
-        # elif pt in ['VAD']:
-        #     pass
-        # elif pt in ['VIL']:
-        #     pass
-        # elif pt in ['VVP']:
-        #     pass
-        # elif pt in ['WARN']:
-        #     pass
-        # elif pt in ['WIND']:
-        #     pass
-        # elif pt in ['USER', 'OTHER', 'TEXT']:
-        #     pass
-        # else:
-        #     print('UNKNOWN')
 
     def decode_data(self, data, prod):
         """ Decode data according given prod-dict.
@@ -300,61 +297,78 @@ class IrisFile(object):
                 kw.update(prod['fkw'])
             except KeyError:
                 pass
-            try:
-                rays, bins = data.shape
-                data = data.view(prod['dtype']).reshape(rays, -1)[:, :bins]
-            except ValueError:
-                data = data.view(prod['dtype'])
-            if prod['func'] == decode_vel or prod['func'] == decode_width:
-                wavelength = self.product_hdr['product_end']['wavelength']
-                prf = self.product_hdr['product_end']['prf']
-
-                nyquist = wavelength * prf / (10000. * 4.)
-                #if prod['func'] == decode_vel:
-                #    nyquist *= (self.ingest_header['task_configuration']
-                #                ['task_dsp_info']['multi_prf_mode_flag'] + 1)
-                kw.update({'nyquist': nyquist})
-
-            return prod['func'](data, **kw)
+            return prod['func'](data.view(prod['dtype']), **kw)
         else:
             return data
 
 
-class IrisRawFile(IrisFile):
-    """ Class for retrieving data from Sigmet IRIS files.
+class IrisWrapperFile(IrisFile):
+    """ Class Wrapper for retrieving data from Sigmet IRIS files.
     """
-    def __init__(self, filename, **kwargs):
-        """
 
+    def __init__(self, irisfile, **kwargs):
+        """
         Parameters
         ----------
-        filename : basestring
-            Filename of Iris File
-        loaddata : bool | kwdict
-                If true, retrieves whole data section from file.
-                If false, retrievs only ingest_data_headers, but no data.
-                If kwdict, retrieves according to given kwdict::
-
-                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'sweep': [0, 3, 9]}
-        rawdata : bool
-            If true, returns raw unconverted/undecoded data.
-        debug : bool
-            If true, print debug messages.
+        irisfile : IrisFile class instance handle
+            class instance handle
         """
-        super(IrisRawFile, self).__init__(filename, **kwargs)
+        if isinstance(irisfile, IrisFile):
+            self.init(irisfile)
+        else:
+            super(IrisWrapperFile, self).__init__(irisfile, **kwargs)
 
-        self._ingest_header = _unpack_dictionary(self.read_record(1)
-                                                 [:LEN_INGEST_HEADER],
-                                                 INGEST_HEADER,
-                                                 self._rawdata)
+    def init(self, irisfile):
+        self._debug = irisfile._debug
+        self._rawdata = irisfile._rawdata
+        self._loaddata = irisfile._loaddata
+        self._fh = irisfile._fh
+        self._record_number = irisfile._record_number
+        self._rh = irisfile._rh
+
+        # read data headers
+        self._product_hdr = irisfile._product_hdr
+
+        # determine product type contained in the file
+        self._product_type_code = irisfile._product_type_code
+
+    @property
+    def data(self):
+        """ Returns product data.
+        """
+        return self._data
+
+    def get_data(self):
+        return NotImplemented
+
+
+class IrisRawFile(IrisWrapperFile):
+    """ Class for retrieving data from Sigmet IRIS files.
+    """
+
+    def __init__(self, irisfile, **kwargs):
+        """
+        Parameters
+        ----------
+        irisfile : IrisWrapperFile class instance handle
+            class instance handle
+        """
+        super(IrisRawFile, self).__init__(irisfile, **kwargs)
+
+        self.init_record(1)
+        self._ingest_header = _unpack_dictionary(
+            self.bytes_from_record(LEN_INGEST_HEADER, width=1),
+            INGEST_HEADER,
+            self._rawdata)
         self._data_types_numbers = self.get_data_types()
         self.get_task_type_scan_info()
         self._raw_product_bhdrs = []
-        self._sweeps = OrderedDict()
-        if self._loaddata:
-            self.get_sweeps()
+
+        self._data = OrderedDict()
+        if self.loaddata:
+            self.get_data()
         else:
-            self.get_sweep_headers()
+            self.get_data_headers()
 
     @property
     def ingest_header(self):
@@ -372,7 +386,7 @@ class IrisRawFile(IrisFile):
     def sweeps(self):
         """ Returns dictionary of retrieved sweeps.
         """
-        return self._sweeps
+        return self._data
 
     @property
     def nsweeps(self):
@@ -420,14 +434,14 @@ class IrisRawFile(IrisFile):
             True, if record is truncated.
         """
         chk = self._rh.record.shape[0] != RECORD_BYTES
-        if chk & (self.product_type['name'] == 'RAW'):
+        if chk:
             warnings.warn("Unexpected file end detected at record {0}"
                           "".format(self._record_number),
                           RuntimeWarning,
                           stacklevel=3)
         return chk
 
-    def read(self, words=1, width=2, dtype='int16'):
+    def read_from_record(self, words, dtype):
         """ Read from file
 
         Parameters
@@ -443,12 +457,14 @@ class IrisRawFile(IrisFile):
         data : array-like
             numpy array of data
         """
-        data = self._rh.read(words, width=width).view(dtype=dtype)
+        width = get_dtype_size(dtype)
+        data = self.array_from_record(words, width, dtype)
         words -= len(data)
         while words > 0:
-            self.next_record()
+            self.init_next_record()
+            self._check_record()
             self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
-            next = self._rh.read(words, width=width).view(dtype=dtype)
+            next = self.array_from_record(words, width, dtype)
             data = np.append(data, next)
             words -= len(next)
         return data
@@ -463,7 +479,7 @@ class IrisRawFile(IrisFile):
         cmp_val : int
             Value of data compression code.
         """
-        cmp_val = self.read(dtype='int16')[0]
+        cmp_val = self.read_from_record(1, 'int16')[0]
         cmp_msb = np.sign(cmp_val) == -1
         if cmp_msb:
             cmp_val = cmp_val + 32768
@@ -509,7 +525,7 @@ class IrisRawFile(IrisFile):
         else:
             pass
 
-    def get_raw_prod_bhdr(self, ):
+    def get_raw_prod_bhdr(self):
         """ Read and unpack raw product bhdr.
         """
         return _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
@@ -553,8 +569,9 @@ class IrisRawFile(IrisFile):
                         "--- Add {0} WORDS at range {1}, record {2}:{3}:"
                         "".format(cmp_val, ray_pos, self._rh.recpos,
                                   self._rh.recpos + cmp_val))
-                data[ray_pos:ray_pos + cmp_val] = self.read(cmp_val,
-                                                            dtype='int16')
+                data[ray_pos:ray_pos + cmp_val] = \
+                    self.read_from_record(cmp_val,
+                                          'int16')
             # compressed zeros follow
             # can be skipped, if data array is created all zeros
             else:
@@ -633,7 +650,6 @@ class IrisRawFile(IrisFile):
         cnt = len(selected_type)
         for i, prod in enumerate(selected_type):
             sweep_prod = OrderedDict()
-
             sweep_prod['data'] = self.decode_data(raw_data[i::cnt, 6:], prod)
             sweep_prod['azi_start'] = self.decode_data(raw_data[i::cnt, 0],
                                                        BIN2)
@@ -667,6 +683,10 @@ class IrisRawFile(IrisFile):
         if self._rawdata:
             return data
         kw = {}
+        if get_dtype_size(prod['dtype']) == 1:
+            dtype = '(2,) {0}'.format(prod['dtype'])
+        else:
+            dtype = '{0}'.format(prod['dtype'])
         if prod['func']:
             try:
                 kw.update(prod['fkw'])
@@ -674,9 +694,9 @@ class IrisRawFile(IrisFile):
                 pass
             try:
                 rays, bins = data.shape
-                data = data.view(prod['dtype']).reshape(rays, -1)[:, :bins]
+                data = data.view(dtype).reshape(rays, -1)[:, :bins]
             except ValueError:
-                data = data.view(prod['dtype'])
+                data = data.view(dtype)
             if prod['func'] == decode_vel or prod['func'] == decode_width:
                 wavelength = self.product_hdr['product_end']['wavelength']
                 prf = self.product_hdr['product_end']['prf']
@@ -691,7 +711,7 @@ class IrisRawFile(IrisFile):
         else:
             return data
 
-    def get_sweeps(self):
+    def get_data(self):
         """ Retrieve all sweeps from file
 
         Parameters
@@ -707,36 +727,35 @@ class IrisRawFile(IrisFile):
         dt_names = [d['name'] for d in self.data_types]
         rsweeps = range(1, self.nsweeps + 1)
 
-        loaddata = self._loaddata
-        print("NAmes:", dt_names)
+        loaddata = self.loaddata
         try:
-            sweep = loaddata.copy().pop('sweep', rsweeps)
+            sweep = loaddata.copy().pop('data', rsweeps)
             moment = loaddata.copy().pop('moment', dt_names)
         except AttributeError:
             sweep = rsweeps
             moment = dt_names
 
-        self._record_number = 1
+        self.init_record(1)
         sw = 0
         ingest_conf = self.ingest_header['ingest_configuration']
         sw_completed = ingest_conf['number_sweeps_completed']
-        while sw < sw_completed and not self.next_record():
+        while sw < sw_completed and not self.init_next_record():
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             sw = raw_prod_bhdr['sweep_number']
             # continue to next record if not belonging to wanted sweeps
             if sw not in sweep:
                 continue
             self.raw_product_bhdrs.append(raw_prod_bhdr)
-            self._sweeps[sw] = self.get_sweep(moment)
+            self._data[sw] = self.get_sweep(moment)
 
-    def get_sweep_headers(self):
+    def get_data_headers(self):
         """ Retrieve all sweep ingest_data_headers from file
         """
-        self._record_number = 1
+        self.init_record(1)
         sw = 0
         ingest_conf = self.ingest_header['ingest_configuration']
         sw_completed = ingest_conf['number_sweeps_completed']
-        while sw < sw_completed and not self.next_record():
+        while sw < sw_completed and not self.init_next_record():
             # get raw_prod_bhdr
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             # continue to next record if belonging to same sweep
@@ -745,93 +764,200 @@ class IrisRawFile(IrisFile):
             # else set current sweep number
             else:
                 sw = raw_prod_bhdr['sweep_number']
-            # read headers and add to _sweeps
+            # read headers and add to _data
             self.raw_product_bhdrs.append(raw_prod_bhdr)
             sweep = OrderedDict()
             sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
-            self._sweeps[sw] = sweep
+            self._data[sw] = sweep
 
 
-class IrisProductFile(IrisFile):
+class IrisProductFile(IrisWrapperFile):
     """ Class for retrieving data from Sigmet IRIS files.
     """
-    def __init__(self, filename, **kwargs):
-        """
 
+    def __init__(self, irisfile):
+        """
         Parameters
         ----------
-        filename : basestring
-            Filename of Iris File
-        loaddata : bool | kwdict
-                If true, retrieves whole data section from file.
-                If false, retrievs only ingest_data_headers, but no data.
-                If kwdict, retrieves according to given kwdict::
-
-                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'sweep': [0, 3, 9]}
-        rawdata : bool
-            If true, returns raw unconverted/undecoded data.
-        debug : bool
-            If true, print debug messages.
+        irisfile : IrisWrapperFile class instance handle
+            class instance handle
         """
-        super(IrisProductFile, self).__init__(filename, **kwargs)
+        super(IrisProductFile, self).__init__(irisfile)
 
-        if self._loaddata:
-            self.get_cartesian_data()
+        self._data = OrderedDict()
+        if self.loaddata:
+            self.get_data()
 
-    @property
-    def images(self):
-        """ Returns cartesian images.
-        """
-        return self._images
+    def get_protect_setup(self):
+        protected_setup = self.read_from_record(1024, 'uint8')
+        protected_regions = OrderedDict()
+        for i in range(32):
+            region = _unpack_dictionary(protected_setup[i * 32:i * 32 + 32],
+                                        ONE_PROTECTED_REGION, self._rawdata)
+            if not region['region_name'].isspace():
+                protected_regions[i] = region
 
-    def read(self, words=1, width=1, dtype='int16'):
-        """ Read from file
+        return protected_regions
 
-        Parameters
-        ----------
-        words : int
-            Number of data words to read.
-        width : int
-            Size of the data word to read in bytes.
-        dtype : str
-            dtype string specifying data format.
-        Returns
-        -------
-        data : array-like
-            numpy array of data
-        """
-        data = self._rh.read(words, width=width).view(dtype=dtype)
-        words -= len(data)
-        while words > 0:
-            self.next_record()
-            next = self._rh.read(words, width=width).view(dtype=dtype)
-            data = np.append(data, next)
-            words -= len(next)
-        return data
+    def get_results(self, results, num, structure):
+        cnt = struct.calcsize(_get_fmt_string(structure))
+        for i in range(num):
+            dta = self.read_from_record(cnt, 'uint8')
+            res = _unpack_dictionary(dta, structure,
+                                     self._rawdata)
+            results[i] = res
 
-    def get_cartesian_data(self):
+    def get_data(self):
         """ Retrieves cartesian data from file
         """
         # set filepointer accordingly
-        self._record_number = 0
-        self._rh = IrisRecord(self._fh[0:RECORD_BYTES], 0)
+        self.init_record(0)
         self._rh.pos = 640
+        if 'protect_setup' in self.product_type:
+            self._protect_setup = self.get_protect_setup()
+        product_end = self.product_hdr['product_end']
+        product_config = self.product_hdr['product_configuration']
+        num_elements = product_end['number_elements']
+        specific_info = product_config['product_specific_info']
+
+        result = OrderedDict()
+        if self.product_type['name'] in ['FCAST', 'NDOP']:
+            x_size = product_config.get('x_size')
+            y_size = product_config.get('y_size')
+            z_size = product_config.get('z_size', 1)
+
+            cnt = struct.calcsize(_get_fmt_string(self.product_type['result']))
+            z = []
+            for zi in range(z_size):
+                y = []
+                for yi in range(y_size):
+                    x = []
+                    for xi in range(x_size):
+                        dta = self.read_from_record(cnt, 'uint8')
+                        res = _unpack_dictionary(dta,
+                                                 self.product_type['result'],
+                                                 self._rawdata)
+                        x.append(res)
+                    y.append(x)
+                z.append(y)
+            result[0] = np.array(z)
+        # get vvp num_elements
+        elif self.product_type['name'] in ['VVP']:
+            num_elements = specific_info['num_intervals']
+            self.get_results(result, num_elements, self.product_type['result'])
+        # get wind num_elements
+        elif self.product_type['name'] in ['WIND']:
+            num_elements = specific_info['num_panel_points'] * \
+                           specific_info['num_range_points']
+            cnt = struct.calcsize(_get_fmt_string(VVP_RESULTS))
+            dta = self.read_from_record(cnt, 'uint8')
+            res = _unpack_dictionary(dta, VVP_RESULTS,
+                                     self._rawdata)
+            result['VVP'] = res
+            self.get_results(result, num_elements, self.product_type['result'])
+        else:
+            if num_elements:
+                self.get_results(result, num_elements,
+                                 self.product_type['result'])
+            else:
+                warnings.warn(
+                    "{0} - No product result "
+                    "array(s) available".format(self.product_type['name']),
+                    RuntimeWarning,
+                    stacklevel=3)
+        self._data = result
+
+
+class IrisCartesianProductFile(IrisWrapperFile):
+    """ Class for retrieving data from Sigmet IRIS files.
+    """
+
+    def __init__(self, irisfile):
+        """
+        Parameters
+        ----------
+        irisfile : IrisWrapperFile class instance handle
+            class instance handle
+        """
+        super(IrisCartesianProductFile, self).__init__(irisfile)
+
+        self._data = OrderedDict()
+        if self.loaddata:
+            self.get_data()
+
+    def fix_ext_header(self, ext):
+        prod_conf = self.product_hdr['product_configuration']
+        ext.update({'x_size': ext.pop('x_size', prod_conf.get('x_size'))})
+        ext.update({'y_size': ext.pop('y_size', prod_conf.get('y_size'))})
+        ext.update({'z_size': ext.pop('z_size', prod_conf.get('z_size', 1))})
+        ext.update({'data_type': ext.pop('iris_type',
+                                         prod_conf.get('data_type'))})
+
+    def get_extended_header(self):
+        # hack, get from actual position to end of record
+        ext = self._rh.record[self._rh._pos:]
+        if len(ext) == 0:
+            return False
+        search = [0x00, 0xff]
+        ext = np.where((ext[:-1] == search[0]) & (ext[1:] == search[1]))[0][0]
+        EXTENDED_HEADER = OrderedDict([('extended_header', string_dict(ext))])
+        ext_str = _unpack_dictionary(self.bytes_from_record(ext, 1),
+                                     EXTENDED_HEADER,
+                                     self._rawdata)['extended_header']
+        # skip search bytes
+        self.bytes_from_record(2, 1)
+        ext_hdr = OrderedDict()
+        for d in ext_str.split('\n'):
+            kv = d.split('=')
+            try:
+                ext_hdr[kv[0]] = int(kv[1])
+            except ValueError:
+                ext_hdr[kv[0]] = kv[1]
+            except:
+                pass
+        self.fix_ext_header(ext_hdr)
+        return ext_hdr
+
+    def get_image(self, header):
+        print(header)
+        prod = SIGMET_DATA_TYPES[header.get('data_type')]
+        x_size = header.get('x_size')
+        y_size = header.get('y_size')
+        z_size = header.get('z_size')
+        cnt = x_size * y_size * z_size
+        data = self.read_from_record(cnt, prod['dtype'])
+        data = self.decode_data(data, prod=prod)
+        data.shape = (z_size, y_size, x_size)
+        return np.flip(data, axis=1)
+
+    def get_data(self):
+        """ Retrieves cartesian data from file
+        """
+        # set filepointer accordingly
+        self.init_record(0)
+        self.rh.pos = 640
 
         product_hdr = self.product_hdr
-        config = product_hdr['product_configuration']
-        x_size = config['x_size']
-        y_size = config['y_size']
-        z_size = config['z_size']
-        cnt = x_size * y_size *z_size
-        if product_hdr['product_end']['extended_product_header_offset']:
-            warnings.warn("Not Implemented - Extended data available \n"
-                          "not loading dataset",
+        product_end = product_hdr['product_end']
+        if product_hdr['product_end']['number_elements']:
+            warnings.warn("{0} Not Implemented - Product results "
+                          "array available \nnot loading "
+                          "dataset".format(self.product_type['name']),
                           RuntimeWarning,
                           stacklevel=3)
         else:
-            data = self.read(cnt, dtype='int8')
-            data.shape = (z_size, y_size, x_size)
-            self._images = np.flip(data, axis=1)
+            self._data[0] = self.get_image(
+                product_hdr['product_configuration'])
+            if product_end['extended_product_header_offset']:
+                ext_hdr = OrderedDict()
+                i = 0
+                ext = self.get_extended_header()
+                while ext:
+                    ext_hdr[i + 1] = ext
+                    i += 1
+                    self._data[i] = self.get_image(ext)
+                    ext = self.get_extended_header()
+                self.product_hdr['extended_header'] = ext_hdr
 
 
 def read_iris(filename, loaddata=True, rawdata=False, debug=False):
@@ -859,30 +985,49 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
     data : OrderedDict
         Dictionary with data and metadata retrieved from file.
     """
-    fh = IrisFile(filename, loaddata=False, rawdata=False, debug=False)
-    print(fh.product_type['name'])
-    if fh.product_type['name'] in ['RAW', 'PPI']:
-        fh = IrisRawFile(filename, loaddata=loaddata, rawdata=rawdata, debug=debug)
-    elif fh.product_type['name'] == 'MAX':
-        fh = IrisProductFile(filename, loaddata=loaddata, rawdata=rawdata,
-                         debug=debug)
-
+    irisfile = IrisFile(filename, loaddata=loaddata, rawdata=rawdata,
+                        debug=debug)
     data = OrderedDict()
-    data['product_hdr'] = fh.product_hdr
-    data['product_type'] = fh.product_type['name']
-    if fh.product_type['name'] in ['RAW', 'PPI']:
+    data['product_hdr'] = irisfile.product_hdr
+    data['product_type'] = irisfile.product_type['name']
+    if irisfile.product_type['name'] in ['RAW']:
+        fh = IrisRawFile(irisfile)
         data['ingest_header'] = fh.ingest_header
         data['nsweeps'] = fh.nsweeps
         data['nrays'] = fh.nrays
         data['nbins'] = fh.nbins
         data['data_types'] = fh.data_types_names
-        data['sweeps'] = fh.sweeps
+        data['data'] = fh.data
         data['raw_product_bhdrs'] = fh.raw_product_bhdrs
+    elif irisfile.product_type['name'] in ['MAX', 'TOPS', 'HMAX', 'BASE',
+                                           'THICK', 'PPI', 'RHI', 'CAPPI',
+                                           'RAINN', 'RAIN1', 'CROSS', 'SHEAR',
+                                           'SRI', 'RTI', 'VIL', 'LAYER',
+                                           'BEAM', 'MLHGT']:
+        fh = IrisCartesianProductFile(irisfile)
+        data['data'] = fh.data
+    elif irisfile.product_type['name'] in ['CATCH', 'FCAST', 'NDOP', 'SLINE',
+                                           'TDWR', 'TRACK', 'VAD', 'VVP',
+                                           'WARN', 'WIND']:
+        fh = IrisProductFile(irisfile)
+        data['data'] = fh.data
     else:
-        data['images'] = fh.images
-
+        print("Product Type {0} "
+              "not implemented".format(irisfile.product_type['name']))
     return data
 
+
+def get_dtype_size(dtype):
+    return np.zeros((1), dtype=dtype).dtype.itemsize
+
+
+def to_float(data):
+    exp = data >> 12
+    mantissa = (data & 0xfff).astype(np.float)
+    return mantissa * 2 ** exp
+
+
+# TODO: mask nodata and area not scanned
 
 def decode_bin_angle(bin_angle, mode=None):
     """ Decode BIN angle
@@ -890,7 +1035,7 @@ def decode_bin_angle(bin_angle, mode=None):
     return 360. * bin_angle / 2 ** (mode * 8)
 
 
-def decode_array(data, scale=1., offset=0, offset2=0):
+def decode_array(data, scale=1., offset=0, offset2=0, tofloat=False):
     """ Decode data array
 
     .. math::
@@ -911,6 +1056,8 @@ def decode_array(data, scale=1., offset=0, offset2=0):
     data : array-like
         decoded data
     """
+    if tofloat:
+        data = to_float(data)
     return (data + offset) / scale + offset2
 
 
@@ -1082,6 +1229,7 @@ def _unpack_dictionary(buffer, dictionary, rawdata=False):
             # read/decode data
             for k1 in ['read', 'func']:
                 try:
+                    # print("K/V:", k, v)
                     data[k] = v[k1](data[k], **v[k1[0] + 'kw'])
                 except KeyError:
                     pass
@@ -1102,7 +1250,7 @@ def _data_types_from_dsp_mask(words):
     """
     data_types = []
     for i, word in enumerate(words):
-        data_types += [j+(i*32) for j in range(32) if word >> j & 1]
+        data_types += [j + (i * 32) for j in range(32) if word >> j & 1]
     return data_types
 
 
@@ -1114,24 +1262,21 @@ _STRING = {'read': decode_string,
 
 def string_dict(size):
     dic = _STRING.copy()
-    dic['size'] = size
+    dic['size'] = '{0}s'.format(size)
     return dic
 
 
 _ARRAY = {'read': np.fromstring,
           'rkw': {}}
 
-
 def array_dict(size, dtype):
     dic = _ARRAY.copy()
-    dic['size'] = size
+    dic['size'] = '{0}s'.format(size * get_dtype_size(dtype))
     dic['rkw']['dtype'] = dtype
-    return dic
-
+    return copy.deepcopy(dic)
 
 # structure_header Structure
 # 4.3.48 page 55
-
 STRUCTURE_HEADER = OrderedDict([('structure_identifier', SINT2),
                                 ('format_version', SINT2),
                                 ('bytes_in_structure', SINT4),
@@ -1140,7 +1285,6 @@ STRUCTURE_HEADER = OrderedDict([('structure_identifier', SINT2),
 
 # ymds_time Structure
 # 4.3.77, page 70
-
 YMDS_TIME = OrderedDict([('seconds', SINT4),
                          ('milliseconds', UINT2),
                          ('year', SINT2),
@@ -1153,7 +1297,23 @@ _YMDS_TIME = {'size': '{}s'.format(LEN_YMDS_TIME),
               'func': decode_time,
               'fkw': {}}
 
-# product_specific_info Structure(s)
+# product_specific_info Structure(s) _PSI_ with connected _RESULTS
+
+# beam_psi_struct
+# 4.3.1, page 24
+BEAM_PSI_STRUCT = OrderedDict([('min_range', UINT4),
+                               ('max_range', UINT4),
+                               ('left_azimuth', BIN4),
+                               ('right_azimuth', BIN4),
+                               ('lower_elevation', BIN4),
+                               ('upper_elevation', BIN4),
+                               ('azimuth_smoothing', BIN4),
+                               ('elevation_smoothing', BIN4),
+                               ('az_of_sun_at_start', BIN4),
+                               ('el_of_sun_at_start', BIN4),
+                               ('az_of_sun_at_end', BIN4),
+                               ('el_of_sun_at_end', BIN4),
+                               ('spare_0', {'fmt': '32s'})])
 
 # cappi_psi_struct (if CAPPI)
 CAPPI_PSI_STRUCT = OrderedDict([('shear_flags', UINT4),
@@ -1161,7 +1321,8 @@ CAPPI_PSI_STRUCT = OrderedDict([('shear_flags', UINT4),
                                 ('flags', UINT2),
                                 ('azimuth_shear_smoothing', BIN2),
                                 ('vvp_shear_correction_name', string_dict(12)),
-                                ('vvp_shear_correction_max_age', UINT4)])
+                                ('vvp_shear_correction_max_age', UINT4),
+                                ('spare_0', {'fmt': '52s'})])
 
 # catch_psi_struct (if CATCH)
 CATCH_PSI_STRUCT = OrderedDict([('flags', UINT4),
@@ -1173,14 +1334,33 @@ CATCH_PSI_STRUCT = OrderedDict([('flags', UINT4),
                                 ('seconds_accumulation', UINT4),
                                 ('rain1_min_z', UINT4),
                                 ('rain1_span_seconds', UINT4),
-                                ('average_gage_correction_factor', UINT4)])
+                                ('average_gage_correction_factor', UINT4),
+                                ('spare_0', {'fmt': '20s'})])
+
+# catch_results Struct
+# 4.3.4, page 25
+CATCH_RESULTS = OrderedDict([('catchment_area_name', string_dict(16)),
+                             ('catchment_area_number', UINT4),
+                             ('latitude_of_label', BIN4),
+                             ('longitude_of_label', BIN4),
+                             ('catchment_area', SINT4),
+                             ('num_pixels', SINT4),
+                             ('num_pixels_scanned', SINT4),
+                             ('flags_0', UINT4),
+                             ('rainfall_accumulation', UINT2),
+                             ('rainfall_accumulation_warning_threshold',
+                              UINT2),
+                             ('spare_0', {'fmt': '52s'}),
+                             ('input_rainfall_accumulation',
+                              array_dict(96, 'uint16'))])
 
 # cross_psi_struct (if XSECT or USERV)
 CROSS_PSI_STRUCT = OrderedDict([('azimuth_angle', BIN2),
                                 ('spare_0', {'fmt': '10s'}),
                                 ('east_center_coordinate', SINT4),
                                 ('north_center_coordinate', SINT4),
-                                ('user_miscellaneous', SINT4)])
+                                ('user_miscellaneous', SINT4),
+                                ('spare_1', {'fmt': '56s'})])
 
 # fcast_psi_struct (if FCAST)
 FCAST_PSI_STRUCT = OrderedDict([('correlation_threshold', UINT4),
@@ -1192,7 +1372,8 @@ FCAST_PSI_STRUCT = OrderedDict([('correlation_threshold', UINT4),
                                 ('flags', UINT4),
                                 ('output_resolution', SINT4),
                                 ('input_product_type', UINT4),
-                                ('input_product_name', string_dict(12))])
+                                ('input_product_name', string_dict(12)),
+                                ('spare_0', {'fmt': '32s'})])
 
 # maximum_psi_struct (if MAX)
 MAX_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '4s'}),
@@ -1203,8 +1384,50 @@ MAX_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '4s'}),
                               ('side_panels_ver_smoother', SINT4),
                               ('spare_1', {'fmt': '56s'})])
 
+# mlhgt_psi_struct (if MLGHT)
+# 4.3.18, page 34
+MLHGT_PSI_STRUCT = \
+    OrderedDict([('flags', UINT4),
+                 ('averaged_ml_altitude', SINT2),
+                 ('interval_ml_altitudes', SINT2),
+                 ('vertical_grid_spacing', SINT2),
+                 ('num_az_sectors', UINT2),
+                 ('relaxation_time_mlhgt_confidence', UINT4),
+                 ('modeled_fraction_melt_classifications', UINT2),
+                 ('modeled_fraction_nomelt_classifications', UINT2),
+                 ('min_confidence', UINT2),
+                 ('spare_0', {'fmt': '58s'})])
+
+# ndop_input Struct
+# 4.3.19, page 34
+NDOP_INPUT = OrderedDict([('task_name', string_dict(12)),
+                          ('site_code', string_dict(3)),
+                          ('flags_0', UINT1)])
+
+# ndop_psi_struct (if NDOP)
+# 4.3.20, page 35
+NDOP_PSI_STRUCT = OrderedDict([('ndop_input_0', NDOP_INPUT),
+                               ('ndop_input_1', NDOP_INPUT),
+                               ('ndop_input_2', NDOP_INPUT),
+                               ('time_window', SINT4),
+                               ('cappi_height', SINT4),
+                               ('output_resolution', SINT4),
+                               ('min_permitted_crossing_angle', BIN4),
+                               ('flags_0', UINT4),
+                               ('output_site_code', string_dict(4)),
+                               ('spare_0', {'fmt': '8s'})])
+
+# ndop_results Struct
+# 4.3.20, page 35
+NDOP_RESULTS = OrderedDict([('velocity_east', UINT2),
+                            ('velocity_north', UINT2),
+                            ('change_rate', UINT2),
+                            ('signal_quality_index', UINT1),
+                            ('spare_0', {'fmt': '5s'})])
+
 # ppi_psi_struct (if PPI)
-PPI_PSI_STRUCT = OrderedDict([('elevation_angle', BIN2)])
+PPI_PSI_STRUCT = OrderedDict([('elevation_angle', BIN2),
+                              ('spare_0', {'fmt': '78s'})])
 
 # rain_psi_struct (if RAIN1 or RAINN)
 RAIN_PSI_STRUCT = OrderedDict([('min_Z_to_accumulate', UINT4),
@@ -1213,7 +1436,8 @@ RAIN_PSI_STRUCT = OrderedDict([('min_Z_to_accumulate', UINT4),
                                ('flags', UINT2),
                                ('hours_to_accumulate', SINT2),
                                ('input_product_name', string_dict(12)),
-                               ('span_of input files', UINT4)])
+                               ('span_of input files', UINT4),
+                               ('spare_0', {'fmt': '52s'})])
 
 # raw_psi_struct (if RAW)
 RAW_PSI_STRUCT = OrderedDict([('data_type_mask0', UINT4),
@@ -1230,7 +1454,17 @@ RAW_PSI_STRUCT = OrderedDict([('data_type_mask0', UINT4),
                               ('spare_0', {'fmt': '36s'})])
 
 # rhi_psi_struct (if RHI)
-RHI_PSI_STRUCT = OrderedDict([('azimuth_angle', BIN2)])
+RHI_PSI_STRUCT = OrderedDict([('azimuth_angle', BIN2),
+                              ('spare_0', {'fmt': '78s'})])
+
+# rti_psi-struct
+# 4.3.35, page 46
+RTI_PSI_STRUCT = OrderedDict([('nominal_sweep_angle', BIN4),
+                              ('starting_time_offset', UINT4),
+                              ('ending_time_offset', UINT4),
+                              ('azimuth_first_ray', BIN4),
+                              ('*elevation_first_ray', BIN4),
+                              ('spare_0', {'fmt': '60s'})])
 
 # shear_psi_struct (if SHEAR)
 SHEAR_PSI_STRUCT = OrderedDict([('azimuthal_smoothing_angle', BIN4),
@@ -1238,7 +1472,8 @@ SHEAR_PSI_STRUCT = OrderedDict([('azimuthal_smoothing_angle', BIN4),
                                 ('spare_0', {'fmt': '2s'}),
                                 ('flags', UINT4),
                                 ('vvp_product_name', string_dict(12)),
-                                ('vvp_product_max_age', UINT4)])
+                                ('vvp_product_max_age', UINT4),
+                                ('spare_1', {'fmt': '52s'})])
 
 # sline_psi_struct (if SLINE)
 SLINE_PSI_STRUCT = OrderedDict([('area', SINT4),
@@ -1249,12 +1484,13 @@ SLINE_PSI_STRUCT = OrderedDict([('area', SINT4),
                                 ('max_allowed_velocity', SINT4),
                                 ('flags', UINT4),
                                 ('azimuthal_smoothing_angle', BIN4),
-                                ('elevation_binary_angle', BIN4),
-                                ('elevation_binary_angle', BIN4),
+                                ('elevation_binary_angle1', BIN4),
+                                ('elevation_binary_angle2', BIN4),
                                 ('name_vvp_task', string_dict(12)),
                                 ('vvp_max_age', UINT4),
                                 ('curve_fit_std_threshold', SINT4),
-                                ('min_length_sline', UINT4)])
+                                ('min_length_sline', UINT4),
+                                ('spare_0', {'fmt': '16s'})])
 
 # tdwr_psi_struct (if TDWR)
 TDWR_PSI_STRUCT = OrderedDict([('flags', UINT4),
@@ -1266,11 +1502,13 @@ TDWR_PSI_STRUCT = OrderedDict([('flags', UINT4),
                                ('center_field_gust_speed', string_dict(2)),
                                ('mask_protected_areas_checked', UINT4),
                                ('warning_count', UINT4),
-                               ('sline_count', UINT4)])
+                               ('sline_count', UINT4),
+                               ('spare_1', {'fmt': '48s'})])
 
 # top_psi_struct (if TOPS, BASE, HMAX, or THICK)
 TOP_PSI_STRUCT = OrderedDict([('flags', UINT4),
-                              ('z_treshold', SINT2)])
+                              ('z_treshold', SINT2),
+                              ('spare_0', {'fmt': '74s'})])
 
 # track_psi_struct (if TRACK)
 TRACK_PSI_STRUCT = OrderedDict([('centroid_area_threshold', SINT4),
@@ -1283,18 +1521,58 @@ TRACK_PSI_STRUCT = OrderedDict([('centroid_area_threshold', SINT4),
                                 ('max_span_track_points', SINT4),
                                 ('input_product_type', UINT4),
                                 ('input_product_name', string_dict(12)),
-                                ('point_connecting_error_allowance', SINT4)])
+                                ('point_connecting_error_allowance', SINT4),
+                                ('spare_0', {'fmt': '28s'})])
+
+# track_results_struct
+# 4.3.68, page 65
+TRACK_RESULTS = OrderedDict([('latitude', BIN4),
+                             ('longitude', BIN4),
+                             ('height', SINT4),
+                             ('flags_0', UINT4),
+                             ('centroid_area', SINT4),
+                             ('equal_area_ellipse_major_axis', SINT4),
+                             ('equal_area_ellipse_minor_axis', SINT4),
+                             ('ellipse_orientation_angle', BIN4),
+                             ('protected_area_mask_of_areas_hit', UINT4),
+                             ('max_value_within_area', SINT4),
+                             ('spare_0', {'fmt': '8s'}),
+                             ('average_value_within_area', SINT4),
+                             ('spare_1', {'fmt': '8s'}),
+                             ('input_data_scale_factor', SINT4),
+                             ('track_index_number', SINT4),
+                             ('text', string_dict(32)),
+                             ('time', YMDS_TIME),
+                             ('eta_protected_areas', array_dict(32, 'int32')),
+                             ('input_data_type', UINT4),
+                             ('spare_2', {'fmt': '8s'}),
+                             ('propagation_speed', SINT4),
+                             ('propagation_direction', BIN4),
+                             ('text_size', UINT4),
+                             ('color', UINT4),
+                             ('spare_3', {'fmt': '32s'})])
 
 # vad_psi_struct (if VAD)
 VAD_PSI_STRUCT = OrderedDict([('min_slant_range', SINT4),
                               ('max_slant_range', SINT4),
                               ('flags', UINT4),
-                              ('number_elevation_angles', UINT4)])
+                              ('number_elevation_angles', UINT4),
+                              ('spare_0', {'fmt': '64s'})])
+
+# vad_results Structure
+VAD_RESULTS = OrderedDict([('elevation_angle', BIN2),
+                           ('azimuth_angle', BIN2),
+                           ('num_bins_averaged', UINT2),
+                           ('average_velocity', UINT2),
+                           ('standard_deviation', UINT2),
+                           ('elevation_index', UINT2),
+                           ('spare_0', {'fmt': '8s'})])
 
 # vil_psi_struct (if VIL)
 # missing in documentation
 
 # vvp_psi_struct (if VVP)
+# 4.3.71, page 67
 VVP_PSI_STRUCT = OrderedDict([('min_range', SINT4),
                               ('max_range', SINT4),
                               ('min_height', SINT4),
@@ -1302,20 +1580,72 @@ VVP_PSI_STRUCT = OrderedDict([('min_range', SINT4),
                               ('num_intervals', SINT2),
                               ('min_velocity', UINT2),
                               ('quota_num_bins_interval', SINT4),
-                              ('mask_wind_parameters', SINT4)])
+                              ('mask_wind_parameters', SINT4),
+                              ('spare_0', {'fmt': '52s'})])
+
+# vvp_results Struct
+# 4.3.72, page 67
+VVP_RESULTS = OrderedDict([('number_data_points', SINT4),
+                           ('center_interval_height', SINT4),
+                           ('number_reflectivity_data_points', SINT4),
+                           ('spare_0', {'fmt': '8s'}),
+                           ('wind_speed', SINT2),
+                           ('wind_speed_std', SINT2),
+                           ('wind_direction', SINT2),
+                           ('wind_direction_std', SINT2),
+                           ('vertical_wind_speed', SINT2),
+                           ('vertical_wind_speed_std', SINT2),
+                           ('horizontal_divergence', SINT2),
+                           ('horizontal_divergence_std', SINT2),
+                           ('radial_velocity_std', SINT2),
+                           ('linear_averaged_reflectivity', SINT2),
+                           ('log_averaged_reflectivity_std', SINT2),
+                           ('deformation', SINT2),
+                           ('deformation_std', SINT2),
+                           ('axis_of_dilatation', SINT2),
+                           ('axis_of_dilatation_std', SINT2),
+                           ('log_averaged_reflectivity', SINT2),
+                           ('linear_averaged_reflectivity_std', SINT2),
+                           ('spare_0', {'fmt': '30s'})])
 
 # warn_psi_struct (if WARN)
+# 4.3.73, page 68
 WARN_PSI_STRUCT = OrderedDict([('centroid_area_threshold', SINT4),
-                               ('threshold_levels',  array_dict('12s', 'int32')),
-                               ('data_valid_times', array_dict('6s', 'int16')),
+                               ('threshold_levels', array_dict(3, 'int32')),
+                               ('data_valid_times', array_dict(3, 'int16')),
                                ('spare_0', {'fmt': '2s'}),
                                ('symbol_to_display', string_dict(12)),
                                ('product_file_names', string_dict(36)),
-                               ('product_types', array_dict('3s', 'uint8')),
+                               ('product_types', array_dict(3, 'uint8')),
                                ('spare_1', {'fmt': '1s'}),
                                ('protected_area_flag', UINT4)])
 
+# warning_results Struct
+# 4.3.74, page 68
+WARNING_RESULTS = OrderedDict([('latitude', BIN4),
+                               ('longitude', BIN4),
+                               ('height', SINT4),
+                               ('flags_0', UINT4),
+                               ('centroid_area', SINT4),
+                               ('equal_area_ellipse_major_axis', SINT4),
+                               ('equal_area_ellipse_minor_axis', SINT4),
+                               ('ellipse_orientation_angle', BIN4),
+                               ('protected_area_mask_of_areas_hit', UINT4),
+                               ('max_value_within_area',
+                                array_dict(3, 'int32')),
+                               ('average_value_within_area',
+                                array_dict(3, 'int32')),
+                               ('input_data_scale_factor', SINT4),
+                               ('spare_0', {'fmt': '4s'}),
+                               ('text', string_dict(16)),
+                               ('spare_1', {'fmt': '156s'}),
+                               ('input_data_type', array_dict(3, 'uint32')),
+                               ('propagation_speed', SINT4),
+                               ('propagation_direction', BIN4),
+                               ('spare_2', {'fmt': '40s'})])
+
 # wind_psi_struct (if WIND)
+# 4.3.75, page 69
 WIND_PSI_STRUCT = OrderedDict([('min_height', SINT4),
                                ('max_height', SINT4),
                                ('min_range', SINT4),
@@ -1323,12 +1653,37 @@ WIND_PSI_STRUCT = OrderedDict([('min_height', SINT4),
                                ('num_range_points', SINT4),
                                ('num_panel_points', SINT4),
                                ('sector_length', SINT4),
-                               ('sector_width_binary_angle', BIN4)])
+                               ('sector_width_binary_angle', BIN4),
+                               ('spare_0', {'fmt': '48s'})])
+
+# wind_results Struct
+# 4.3.76, page 70
+WIND_RESULTS = OrderedDict([('num_possible_hits', SINT4),
+                            ('num__data_points_used', SINT4),
+                            ('center_sector_range', SINT4),
+                            ('center_sector_azimuth', BIN2),
+                            ('east_velocity', SINT2),
+                            ('east_velocity_std', SINT2),
+                            ('north_velocity', SINT2),
+                            ('north_velocity_std', SINT2),
+                            ('spare_0', {'fmt': '10s'})])
 
 # spare (if USER, OTHER, TEXT)
 SPARE_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '80s'})])
 
+# one_protected_region Structure
+# 4.3.33, page 35
+ONE_PROTECTED_REGION = OrderedDict([('east_center', SINT4),
+                                    ('north_center', SINT4),
+                                    ('east_west_size', SINT4),
+                                    ('north_south_size', SINT4),
+                                    ('angle_of_orientation', BIN2),
+                                    ('spare_0', {'fmt': '2s'}),
+                                    ('region_name', string_dict(12))])
 
+# protect_setup Structure
+# 4.3.29, page 44
+PROTECT_SETUP = OrderedDict([('one_protected_region', {'fmt', '1024s'})])
 
 # color_scale_def Structure
 # 4.3.5, page 26
@@ -1338,7 +1693,7 @@ COLOR_SCALE_DEF = OrderedDict([('iflags', UINT4),
                                ('istep', SINT4),
                                ('icolcnt', SINT2),
                                ('iset_and_scale', UINT2),
-                               ('ilevel_seams', array_dict('32s', 'uint16'))])
+                               ('ilevel_seams', array_dict(16, 'uint16'))])
 
 # product_configuration Structure
 # 4.3.24, page 36
@@ -1351,8 +1706,8 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('sweep_ingest_time', _YMDS_TIME),
                                      ('file_ingest_time', _YMDS_TIME),
                                      ('spare_0', {'fmt': '6s'}),
-                                     ('product_name', string_dict('12s')),
-                                     ('task_name', string_dict('12s')),
+                                     ('product_name', string_dict(12)),
+                                     ('task_name', string_dict(12)),
                                      ('flag', UINT2),
                                      ('x_scale', SINT4),
                                      ('y_scale', SINT4),
@@ -1366,7 +1721,7 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('maximum_range', SINT4),
                                      ('spare_1', {'fmt': '2s'}),
                                      ('data_type', UINT2),
-                                     ('projection_name', string_dict('12s')),
+                                     ('projection_name', string_dict(12)),
                                      ('input_data_type', UINT2),
                                      ('projection_type', UINT1),
                                      ('spare_2', {'fmt': '1s'}),
@@ -1378,21 +1733,21 @@ PRODUCT_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                      ('y_smoother', SINT2),
                                      ('product_specific_info', {'fmt': '80s'}),
                                      ('minor_task_suffixes',
-                                      string_dict('16s')),
+                                      string_dict(16)),
                                      ('spare_3', {'fmt': '12s'}),
                                      ('color_scale_def', COLOR_SCALE_DEF)])
 
 # product_end Structure
 # 4.3.25, page 39
 
-PRODUCT_END = OrderedDict([('site_name', string_dict('16s')),
-                           ('iris_version_created', string_dict('8s')),
-                           ('ingest_iris_version', string_dict('8s')),
+PRODUCT_END = OrderedDict([('site_name', string_dict(16)),
+                           ('iris_version_created', string_dict(8)),
+                           ('ingest_iris_version', string_dict(8)),
                            ('ingest_time', _YMDS_TIME),
                            ('spare_0', {'fmt': '28s'}),
                            ('GMT_minute_offset_local', SINT2),
-                           ('ingest_hardware_name_', string_dict('16s')),
-                           ('ingest_site_name_', string_dict('16s')),
+                           ('ingest_hardware_name_', string_dict(16)),
+                           ('ingest_site_name_', string_dict(16)),
                            ('GMT_minute_offset_standard', SINT2),
                            ('latitude', BIN4),
                            ('longitude', BIN4),
@@ -1403,7 +1758,7 @@ PRODUCT_END = OrderedDict([('site_name', string_dict('16s')),
                            ('signal_processor_type', UINT2),
                            ('trigger_rate', UINT2),
                            ('samples_used', SINT2),
-                           ('clutter_filter', string_dict('12s')),
+                           ('clutter_filter', string_dict(12)),
                            ('number_linear_filter', UINT2),
                            ('wavelength', SINT4),
                            ('truncation_height', SINT4),
@@ -1448,7 +1803,7 @@ PRODUCT_END = OrderedDict([('site_name', string_dict('16s')),
                            ('mean_wind_speed', UINT1),
                            ('mean_wind_direction', BIN1),
                            ('spare_3', {'fmt': '2s'}),
-                           ('tz_name', string_dict('8s')),
+                           ('tz_name', string_dict(8)),
                            ('extended_product_header_offset', UINT4),
                            ('spare_4', {'fmt': '4s'})])
 
@@ -1461,7 +1816,7 @@ PRODUCT_HDR = OrderedDict([('structure_header', STRUCTURE_HEADER),
 # ingest_configuration Structure
 # 4.3.14, page 31
 
-INGEST_CONFIGURATION = OrderedDict([('filename', string_dict('80s')),
+INGEST_CONFIGURATION = OrderedDict([('filename', string_dict(80)),
                                     ('number_files', SINT2),
                                     ('number_sweeps_completed', SINT2),
                                     ('total_size', SINT4),
@@ -1472,10 +1827,10 @@ INGEST_CONFIGURATION = OrderedDict([('filename', string_dict('80s')),
                                     ('number_task_config_table', SINT2),
                                     ('playback_version', SINT2),
                                     ('spare_1', {'fmt': '4s'}),
-                                    ('iris_version', string_dict('8s')),
-                                    ('hardware_site', string_dict('16s')),
+                                    ('iris_version', string_dict(8)),
+                                    ('hardware_site', string_dict(16)),
                                     ('gmt_offset_minutes_local', SINT2),
-                                    ('site_name', string_dict('16s')),
+                                    ('site_name', string_dict(16)),
                                     ('gmt_offset_minutes_standard', SINT2),
                                     ('latitude_radar', BIN4),
                                     ('longitude_radar', BIN4),
@@ -1495,9 +1850,9 @@ INGEST_CONFIGURATION = OrderedDict([('filename', string_dict('80s')),
                                     ('fault_status', UINT4),
                                     ('melting_layer', SINT2),
                                     ('spare_2', {'fmt': '2s'}),
-                                    ('local_timezone', string_dict('8s')),
+                                    ('local_timezone', string_dict(8)),
                                     ('flags', UINT4),
-                                    ('configuration_name', string_dict('16s')),
+                                    ('configuration_name', string_dict(16)),
                                     ('spare_3', {'fmt': '228s'})])
 
 # task_sched Structure
@@ -1550,7 +1905,7 @@ TASK_DSP_INFO = OrderedDict([('major_mode', UINT2),
                              ('agc_feedback_code', UINT2),
                              ('sample_size', SINT2),
                              ('gain_control_flag', UINT2),
-                             ('clutter_filter_name', string_dict('12s')),
+                             ('clutter_filter_name', string_dict(12)),
                              ('linear_filter_num_first_bin', UINT1),
                              ('log_filter_num_first_bin', UINT1),
                              ('attenuation_fixed_gain', SINT2),
@@ -1560,7 +1915,7 @@ TASK_DSP_INFO = OrderedDict([('major_mode', UINT2),
                              ('ray_header_config_mask', UINT4),
                              ('playback_flags', UINT2),
                              ('spare_1', {'fmt': '2s'}),
-                             ('custom_ray_header_name', string_dict('16s')),
+                             ('custom_ray_header_name', string_dict(16)),
                              ('spare_2', {'fmt': '120s'})])
 
 # task_calib_info Structure
@@ -1639,7 +1994,7 @@ TASK_PPI_SCAN_INFO = OrderedDict([('left_azimuth_limit', BIN2),
 TASK_FILE_SCAN_INFO = OrderedDict([('first_azimuth_angle', UINT2),
                                    ('first_elevation_angle', UINT2),
                                    ('filename_antenna_control',
-                                    string_dict('12s')),
+                                    string_dict(12)),
                                    ('spare_0', {'fmt': '184s'})])
 
 # task_manual_scan_info Structure
@@ -1647,7 +2002,6 @@ TASK_FILE_SCAN_INFO = OrderedDict([('first_azimuth_angle', UINT2),
 
 TASK_MANUAL_SCAN_INFO = OrderedDict([('flags', UINT2),
                                      ('spare_0', {'fmt': '198s'})])
-
 
 # task_scan_info Structure
 # 4.3.61, page 62
@@ -1663,7 +2017,7 @@ TASK_SCAN_INFO = OrderedDict([('antenna_scan_mode', UINT2),
 # 4.3.57, page 60
 
 TASK_MISC_INFO = OrderedDict([('wavelength', SINT4),
-                              ('tr_serial_number', string_dict('16s')),
+                              ('tr_serial_number', string_dict(16)),
                               ('transmit_power', SINT4),
                               ('flags', UINT2),
                               ('polarization_type', UINT2),
@@ -1682,8 +2036,8 @@ TASK_MISC_INFO = OrderedDict([('wavelength', SINT4),
 TASK_END_INFO = OrderedDict([('task_major_number', SINT2),
                              ('task_minor_number', SINT2),
                              ('task_configuration_file_name',
-                              string_dict('12s')),
-                             ('task_description', string_dict('80s')),
+                              string_dict(12)),
+                             ('task_description', string_dict(80)),
                              ('number_tasks', SINT4),
                              ('task_state', UINT2),
                              ('spare_0', {'fmt': '2s'}),
@@ -1702,7 +2056,7 @@ TASK_CONFIGURATION = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('task_scan_info', TASK_SCAN_INFO),
                                   ('task_misc_info', TASK_MISC_INFO),
                                   ('task_end_info', TASK_END_INFO),
-                                  ('comments', string_dict('720s'))])
+                                  ('comments', string_dict(720))])
 
 # _ingest_header Structure
 # 4.3.16, page 33
@@ -1713,7 +2067,6 @@ INGEST_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
                              ('spare_0', {'fmt': '732s'}),
                              ('gparm', {'fmt': '128s'}),
                              ('reserved', {'fmt': '920s'})])
-
 
 # raw_prod_bhdr Structure
 # 4.3.31, page 45
@@ -1740,7 +2093,6 @@ INGEST_DATA_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('data_type', UINT2),
                                   ('spare_0', {'fmt': '36s'})])
 
-
 # some length's of data structures
 LEN_PRODUCT_HDR = struct.calcsize(_get_fmt_string(PRODUCT_HDR))
 LEN_INGEST_HEADER = struct.calcsize(_get_fmt_string(INGEST_HEADER))
@@ -1754,24 +2106,24 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Extended Headers
     (0, {'name': 'DB_XHDR', 'func': None}),
     # Total H power (1 byte)
-    (1, {'name': 'DB_DBT', 'dtype': '(2,) uint8', 'func': decode_array,
+    (1, {'name': 'DB_DBT', 'dtype': 'uint8', 'func': decode_array,
          'fkw': {'scale': 2., 'offset': -64.}}),
     # Clutter Corrected H reflectivity (1 byte)
-    (2, {'name': 'DB_DBZ', 'dtype': '(2,) uint8', 'func': decode_array,
+    (2, {'name': 'DB_DBZ', 'dtype': 'uint8', 'func': decode_array,
          'fkw': {'scale': 2., 'offset': -64.}}),
     # Velocity (1 byte)
-    (3, {'name': 'DB_VEL', 'dtype': '(2,) uint8', 'func': decode_vel,
+    (3, {'name': 'DB_VEL', 'dtype': 'uint8', 'func': decode_vel,
          'fkw': {'scale': 127., 'offset': -128.}}),
     # Width (1 byte)
-    (4, {'name': 'DB_WIDTH', 'dtype': '(2,) uint8', 'func': decode_width,
+    (4, {'name': 'DB_WIDTH', 'dtype': 'uint8', 'func': decode_width,
          'fkw': {'scale': 256.}}),
     # Differential reflectivity (1 byte)
-    (5, {'name': 'DB_ZDR', 'dtype': '(2,) uint8', 'func': decode_array,
+    (5, {'name': 'DB_ZDR', 'dtype': 'uint8', 'func': decode_array,
          'fkw': {'scale': 16., 'offset': -128.}}),
     # Old Rainfall rate (stored as dBZ), not used
-    (6, {'name': 'DB_ORAIN', 'dtype': '(2,) uint8', 'func': None}),
+    (6, {'name': 'DB_ORAIN', 'dtype': 'uint8', 'func': None}),
     # Fully corrected reflectivity (1 byte)
-    (7, {'name': 'DB_DBZC', 'dtype': '(2,) uint8', 'func': decode_array,
+    (7, {'name': 'DB_DBZC', 'dtype': 'uint8', 'func': decode_array,
          'fkw': {'scale': 2., 'offset': -64.}}),
     # Uncorrected reflectivity (2 byte)
     (8, {'name': 'DB_DBT2', 'dtype': 'uint16', 'func': decode_array,
@@ -1792,21 +2144,21 @@ SIGMET_DATA_TYPES = OrderedDict([
     (13, {'name': 'DB_RAINRATE2', 'dtype': 'uint16',
           'func': decode_rainrate2}),
     # Kdp (specific differential phase)(1 byte)
-    (14, {'name': 'DB_KDP', 'dtype': '(2,) int8', 'func': decode_kdp,
+    (14, {'name': 'DB_KDP', 'dtype': 'int8', 'func': decode_kdp,
           'fkw': {}}),
     # Kdp (specific differential phase)(2 byte)
     (15, {'name': 'DB_KDP2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 100., 'offset': -32768.}}),
     # PHIdp (differential phase)(1 byte)
-    (16, {'name': 'DB_PHIDP', 'dtype': '(2,) uint8', 'func': decode_phidp,
+    (16, {'name': 'DB_PHIDP', 'dtype': 'uint8', 'func': decode_phidp,
           'fkw': {'scale': 254., 'offset': -1}}),
     # Corrected Velocity (1 byte)
-    (17, {'name': 'DB_VELC', 'dtype': '(2,) uint8', 'func': None}),
+    (17, {'name': 'DB_VELC', 'dtype': 'uint8', 'func': None}),
     # SQI (1 byte)
-    (18, {'name': 'DB_SQI', 'dtype': '(2,) uint8', 'func': decode_sqi,
+    (18, {'name': 'DB_SQI', 'dtype': 'uint8', 'func': decode_sqi,
           'fkw': {'scale': 253., 'offset': -1}}),
     # RhoHV(0) (1 byte)
-    (19, {'name': 'DB_RHOHV', 'dtype': '(2,) uint8', 'func': decode_sqi,
+    (19, {'name': 'DB_RHOHV', 'dtype': 'uint8', 'func': decode_sqi,
           'fkw': {'scale': 253., 'offset': -1}}),
     # RhoHV(0) (2 byte)
     (20, {'name': 'DB_RHOHV2', 'dtype': 'uint16', 'func': decode_array,
@@ -1824,13 +2176,13 @@ SIGMET_DATA_TYPES = OrderedDict([
     (24, {'name': 'DB_PHIDP2', 'dtype': 'uint16', 'func': decode_phidp2,
           'fkw': {'scale': 65534., 'offset': -1.}}),
     # LDR H to V (1 byte)
-    (25, {'name': 'DB_LDRH', 'dtype': '(2,) uint8', 'func': decode_array,
+    (25, {'name': 'DB_LDRH', 'dtype': 'uint8', 'func': decode_array,
           'fkw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR H to V (2 byte)
     (26, {'name': 'DB_LDRH2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 100., 'offset': -32768.}}),
     # LDR V to H (1 byte)
-    (27, {'name': 'DB_LDRV', 'dtype': '(2,) uint8', 'func': decode_array,
+    (27, {'name': 'DB_LDRV', 'dtype': 'uint8', 'func': decode_array,
           'fkw': {'scale': 5., 'offset': -1., 'offset2': -45.0}}),
     # LDR V to H (2 byte)
     (28, {'name': 'DB_LDRV2', 'dtype': 'uint16', 'func': decode_array,
@@ -1842,22 +2194,23 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Test of floating format
     (31, {'name': 'DB_FLOAT32', 'func': None}),
     # Height (1/10 km) (1 byte)
-    (32, {'name': 'DB_HEIGHT', 'dtype': '(2,) uint8',
+    (32, {'name': 'DB_HEIGHT', 'dtype': 'uint8',
           'func': decode_array,
           'fkw': {'scale': 10., 'offset': -1.}}),
     # Linear liquid (.001mm) (2 byte)
     (33, {'name': 'DB_VIL2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 1000., 'offset': -1.}}),
     # Data type is not applicable
-    (34, {'name': 'DB_NULL', 'func': None}),
+    (34, {'name': 'DB_RAW', 'func': None}),
     # Wind Shear (1 byte)
-    (35, {'name': 'DB_SHEAR', 'dtype': '(2,) int8', 'func': decode_array,
+    (35, {'name': 'DB_SHEAR', 'dtype': 'int8', 'func': decode_array,
           'fkw': {'scale': 5., 'offset': -128.}}),
     # Divergence (.001 10**-4) (2-byte)
     (36, {'name': 'DB_DIVERGE2', 'dtype': 'int16', 'func': decode_array,
           'fkw': {'scale': 10e-7}}),
     # Floated liquid (2 byte)
-    (37, {'name': 'DB_FLIQUID2', 'dtype': 'uint16', 'func': None}),
+    (37, {'name': 'DB_FLIQUID2', 'dtype': 'uint16', 'func': decode_array,
+          'fkw': {'scale': 1000., 'tofloat': True}}),
     # User type, unspecified data (1 byte)
     (38, {'name': 'DB_USER', 'func': None}),
     # Unspecified data, no color legend
@@ -1869,7 +2222,7 @@ SIGMET_DATA_TYPES = OrderedDict([
     (41, {'name': 'DB_VVEL2', 'dtype': 'int16', 'func': decode_array,
           'fkw': {'scale': 100.}}),
     # Horizontal velocity (.01 m/s) (2-byte)
-    (41, {'name': 'DB_HVEL2', 'func': decode_array,
+    (42, {'name': 'DB_HVEL2', 'func': decode_array,
           'fkw': {'scale': 100.}}),
     # Horizontal wind direction (.1 degree) (2-byte)
     (43, {'name': 'DB_HDIR2', 'dtype': 'int16', 'func': decode_array,
@@ -1881,35 +2234,35 @@ SIGMET_DATA_TYPES = OrderedDict([
     (45, {'name': 'DB_TIME2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 60., 'offset': -32768}}),
     # Rho H to V (1 byte)
-    (46, {'name': 'DB_RHOH', 'dtype': '(2,) uint8', 'func': decode_sqi,
+    (46, {'name': 'DB_RHOH', 'dtype': 'uint8', 'func': decode_sqi,
           'fkw': {'scale': 253., 'offset': -1}}),
     # Rho H to V (2 byte)
     (47, {'name': 'DB_RHOH2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 65536., 'offset': -1.}}),
     # Rho V to H (1 byte)
-    (48, {'name': 'DB_RHOV', 'dtype': '(2,) uint8', 'func': decode_sqi,
+    (48, {'name': 'DB_RHOV', 'dtype': 'uint8', 'func': decode_sqi,
           'fkw': {'scale': 253., 'offset': -1}}),
     # Rho V to H (2 byte)
     (49, {'name': 'DB_RHOV2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 65536., 'offset': -1.}}),
     # Phi H to V (1 byte)
-    (50, {'name': 'DB_PHIH', 'dtype': '(2,) uint8', 'func': decode_phidp}),
+    (50, {'name': 'DB_PHIH', 'dtype': 'uint8', 'func': decode_phidp}),
     # Phi H to V (2 byte)
     (51, {'name': 'DB_PHIH2', 'dtype': 'uint16', 'func': decode_phidp2,
           'fkw': {'scale': 65534., 'offset': -1.}}),
     # Phi V to H (1 byte)
-    (52, {'name': 'DB_PHIV', 'dtype': '(2,) uint8', 'func': decode_phidp}),
+    (52, {'name': 'DB_PHIV', 'dtype': 'uint8', 'func': decode_phidp}),
     # Phi V to H (2 byte)
     (53, {'name': 'DB_PHIV2', 'dtype': 'uint16', 'func': decode_phidp2,
           'fkw': {'scale': 65534., 'offset': -1.}}),
     # User type, unspecified data (2 byte)
     (54, {'name': 'DB_USER2', 'dtype': 'uint16', 'func': None}),
     # Hydrometeor class (1 byte)
-    (55, {'name': 'DB_HCLASS', 'dtype': '(2,) uint8', 'func': None}),
+    (55, {'name': 'DB_HCLASS', 'dtype': 'uint8', 'func': None}),
     # Hydrometeor class (2 byte)
     (56, {'name': 'DB_HCLASS2', 'dtype': 'uint16', 'func': None}),
     # Corrected Differential reflectivity (1 byte)
-    (57, {'name': 'DB_ZDRC', 'dtype': '(2,) uint8', 'func': decode_array,
+    (57, {'name': 'DB_ZDRC', 'dtype': 'uint8', 'func': decode_array,
           'fkw': {'scale': 16., 'offset': -128.}}),
     # Corrected Differential reflectivity (2 byte)
     (58, {'name': 'DB_ZDRC2', 'dtype': 'uint16', 'func': decode_array,
@@ -1919,14 +2272,14 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Vertically Integrated Reflectivity (2 byte)
     (60, {'name': 'DB_VIR16', 'dtype': 'uint16', 'func': None}),
     # Total V Power (1 byte)
-    (61, {'name': 'DB_DBTV8', 'dtype': '(2,) uint8',
+    (61, {'name': 'DB_DBTV8', 'dtype': 'uint8',
           'func': decode_array,
           'fkw': {'scale': 2., 'offset': -64.}}),
     # Total V Power (2 byte)
     (62, {'name': 'DB_DBTV16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 100., 'offset': -32768.}}),
     # Clutter Corrected V Reflectivity (1 byte)
-    (63, {'name': 'DB_DBZV8', 'dtype': '(2,) uint8',
+    (63, {'name': 'DB_DBZV8', 'dtype': 'uint8',
           'func': decode_array,
           'fkw': {'scale': 2., 'offset': -64.}}),
     # Clutter Corrected V Reflectivity (2 byte)
@@ -1934,7 +2287,7 @@ SIGMET_DATA_TYPES = OrderedDict([
           'func': decode_array,
           'fkw': {'scale': 100., 'offset': -32768.}}),
     # Signal to Noise ratio (1 byte)
-    (65, {'name': 'DB_SNR8', 'dtype': '(2,) uint8',
+    (65, {'name': 'DB_SNR8', 'dtype': 'uint8',
           'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Signal to Noise ratio (2 byte)
@@ -1942,7 +2295,7 @@ SIGMET_DATA_TYPES = OrderedDict([
           'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Albedo (1 byte)
-    (67, {'name': 'DB_ALBEDO8', 'dtype': '(2,) uint8', 'func': None}),
+    (67, {'name': 'DB_ALBEDO8', 'dtype': 'uint8', 'func': None}),
     # Albedo (2 byte)
     (68, {'name': 'DB_ALBEDO16', 'dtype': 'uint16', 'func': None}),
     # VIL Density (2 byte)
@@ -1950,59 +2303,61 @@ SIGMET_DATA_TYPES = OrderedDict([
     # Turbulence (2 byte)
     (70, {'name': 'DB_TURB16', 'dtype': 'uint16', 'func': None}),
     # Total Power Enhanced (via H+V or HV) (1 byte)
-    (71, {'name': 'DB_DBTE8', 'dtype': '(2,) uint8', 'func': None}),
+    (71, {'name': 'DB_DBTE8', 'dtype': 'uint8', 'func': None}),
     # Total Power Enhanced (via H+V or HV) (2 byte)
     (72, {'name': 'DB_DBTE16', 'dtype': 'uint16', 'func': None}),
     # Clutter Corrected Reflectivity Enhanced (1 byte)
-    (73, {'name': 'DB_DBZE8', 'dtype': '(2,) uint8', 'func': None}),
+    (73, {'name': 'DB_DBZE8', 'dtype': 'uint8', 'func': None}),
     # Clutter Corrected Reflectivity Enhanced (2 byte)
     (74, {'name': 'DB_DBZE16', 'dtype': 'uint16', 'func': None}),
     # Polarimetric meteo index (1 byte)
-    (75, {'name': 'DB_PMI8', 'dtype': '(2,) uint8', 'func': decode_sqi,
+    (75, {'name': 'DB_PMI8', 'dtype': 'uint8', 'func': decode_sqi,
           'fkw': {'scale': 253., 'offset': -1}}),
     # Polarimetric meteo index (2 byte)
     (76, {'name': 'DB_PMI16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 65536., 'offset': -1.}}),
     # The log receiver signal-to-noise ratio (1 byte)
-    (77, {'name': 'DB_LOG8', 'dtype': '(2,) uint8', 'func': decode_array,
+    (77, {'name': 'DB_LOG8', 'dtype': 'uint8', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # The log receiver signal-to-noise ratio (2 byte)
     (78, {'name': 'DB_LOG16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Doppler channel clutter signal power (-CSR) (1 byte)
-    (79, {'name': 'DB_CSP8', 'dtype': '(2,) uint8', 'func': decode_array,
+    (79, {'name': 'DB_CSP8', 'dtype': 'uint8', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Doppler channel clutter signal power (-CSR) (2 byte)
     (80, {'name': 'DB_CSP16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Cross correlation, uncorrected rhohv (1 byte)
-    (81, {'name': 'DB_CCOR8', 'dtype': '(2,) uint8', 'func': decode_sqi,
+    (81, {'name': 'DB_CCOR8', 'dtype': 'uint8', 'func': decode_sqi,
           'fkw': {'scale': 253., 'offset': -1}}),
     # Cross correlation, uncorrected rhohv (2 byte)
     (82, {'name': 'DB_CCOR16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 65536., 'offset': -1.}}),
     # Attenuation of Zh (1 byte)
-    (83, {'name': 'DB_AH8', 'dtype': '(2,) uint8', 'func': decode_array,
+    (83, {'name': 'DB_AH8', 'dtype': 'uint8', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zh (2 byte)
     (84, {'name': 'DB_AH16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zv (1 byte)
-    (85, {'name': 'DB_AV8', 'dtype': '(2,) uint8', 'func': decode_array,
+    (85, {'name': 'DB_AV8', 'dtype': 'uint8', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zv (2 byte)
     (86, {'name': 'DB_AV16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zzdr (1 byte)
-    (87, {'name': 'DB_AZDR8', 'dtype': '(2,) uint8',
+    (87, {'name': 'DB_AZDR8', 'dtype': 'uint8',
           'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}}),
     # Attenuation of Zzdr (2 byte)
     (88, {'name': 'DB_AZDR16', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 2., 'offset': -63.}})
-    ])
+])
 
-PRODUCT_DATA_TYPE_CODES = OrderedDict([(1, {'name': 'PPI',
+PRODUCT_DATA_TYPE_CODES = OrderedDict([(0, {'name': 'NULL',
+                                            'struct': SPARE_PSI_STRUCT}),
+                                       (1, {'name': 'PPI',
                                             'struct': PPI_PSI_STRUCT}),
                                        (2, {'name': 'RHI',
                                             'struct': RHI_PSI_STRUCT}),
@@ -2013,26 +2368,32 @@ PRODUCT_DATA_TYPE_CODES = OrderedDict([(1, {'name': 'PPI',
                                        (5, {'name': 'TOPS',
                                             'struct': TOP_PSI_STRUCT}),
                                        (6, {'name': 'TRACK',
-                                            'struct': TRACK_PSI_STRUCT}),
+                                            'struct': TRACK_PSI_STRUCT,
+                                            'result': TRACK_RESULTS,
+                                            'protect_setup': True}),
                                        (7, {'name': 'RAIN1',
                                             'struct': RAIN_PSI_STRUCT}),
                                        (8, {'name': 'RAINN',
                                             'struct': RAIN_PSI_STRUCT}),
                                        (9, {'name': 'VVP',
-                                            'struct': VVP_PSI_STRUCT}),
+                                            'struct': VVP_PSI_STRUCT,
+                                            'result': VVP_RESULTS}),
                                        (10, {'name': 'VIL',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (11, {'name': 'SHEAR',
                                              'struct': SHEAR_PSI_STRUCT}),
                                        (12, {'name': 'WARN',
-                                             'struct': WARN_PSI_STRUCT}),
+                                             'struct': WARN_PSI_STRUCT,
+                                             'result': WARNING_RESULTS,
+                                             'protect_setup': True}),
                                        (13, {'name': 'CATCH',
-                                             'struct': CATCH_PSI_STRUCT}),
+                                             'struct': CATCH_PSI_STRUCT,
+                                             'result': CATCH_RESULTS}),
                                        (14, {'name': 'RTI',
-                                             'struct': SPARE_PSI_STRUCT}),
-                                       (15, {'name': 'PPI',
+                                             'struct': RTI_PSI_STRUCT}),
+                                       (15, {'name': 'RAW',
                                              'struct': RAW_PSI_STRUCT}),
-                                       (16, {'name': 'MUX',
+                                       (16, {'name': 'MAX',
                                              'struct': MAX_PSI_STRUCT}),
                                        (17, {'name': 'USER',
                                              'struct': SPARE_PSI_STRUCT}),
@@ -2043,23 +2404,28 @@ PRODUCT_DATA_TYPE_CODES = OrderedDict([(1, {'name': 'PPI',
                                        (20, {'name': 'STATUS',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (21, {'name': 'SLINE',
-                                             'struct': SLINE_PSI_STRUCT}),
+                                             'struct': SLINE_PSI_STRUCT,
+                                             'protect_setup': True}),
                                        (22, {'name': 'WIND',
-                                             'struct': WIND_PSI_STRUCT}),
+                                             'struct': WIND_PSI_STRUCT,
+                                             'result': WIND_RESULTS}),
                                        (23, {'name': 'BEAM',
-                                             'struct': SPARE_PSI_STRUCT}),
+                                             'struct': BEAM_PSI_STRUCT}),
                                        (24, {'name': 'TEXT',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (25, {'name': 'FCAST',
-                                             'struct': FCAST_PSI_STRUCT}),
+                                             'struct': FCAST_PSI_STRUCT,
+                                             'result': NDOP_RESULTS}),
                                        (26, {'name': 'NDOP',
-                                             'struct': SPARE_PSI_STRUCT}),
+                                             'struct': NDOP_PSI_STRUCT,
+                                             'result': NDOP_RESULTS}),
                                        (27, {'name': 'IMAGE',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (28, {'name': 'COMP',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (29, {'name': 'TDWR',
-                                             'struct': TDWR_PSI_STRUCT}),
+                                             'struct': TDWR_PSI_STRUCT,
+                                             'protect_setup': True}),
                                        (30, {'name': 'GAGE',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (31, {'name': 'DWELL',
@@ -2069,4 +2435,17 @@ PRODUCT_DATA_TYPE_CODES = OrderedDict([(1, {'name': 'PPI',
                                        (33, {'name': 'BASE',
                                              'struct': TOP_PSI_STRUCT}),
                                        (34, {'name': 'HMAX',
-                                             'struct': TOP_PSI_STRUCT})])
+                                             'struct': TOP_PSI_STRUCT}),
+                                       (35, {'name': 'VAD',
+                                             'struct': VAD_PSI_STRUCT,
+                                             'result': VAD_RESULTS}),
+                                       (36, {'name': 'THICK',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (37, {'name': 'SATELLITE',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (38, {'name': 'LAYER',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (39, {'name': 'SWS',
+                                             'struct': SPARE_PSI_STRUCT}),
+                                       (40, {'name': 'MLHGT',
+                                             'struct': MLHGT_PSI_STRUCT})])
