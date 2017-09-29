@@ -511,19 +511,20 @@ class IrisTest(unittest.TestCase):
     def test_open_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
-        data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=False)
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
         self.assertIsInstance(data.fh, np.memmap)
-        data = wrl.io.IrisFile(sigmetfile, loaddata=True)
+        data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=True)
+        print(data._record_number)
         self.assertEqual(data._record_number, 511)
-        self.assertEqual(data.filepos, 3141076)
+        self.assertEqual(data.filepos, 3142568)
 
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
         data = wrl.io.read_iris(sigmetfile, loaddata=True, rawdata=True)
-        data_keys = ['product_hdr', 'ingest_header', 'nsweeps', 'nrays',
-                     'nbins', 'product_type', 'data_types', 'sweeps',
+        data_keys = ['product_hdr', 'product_type', 'ingest_header', 'nsweeps',
+                     'nrays', 'nbins', 'data_types', 'data',
                      'raw_product_bhdrs']
         product_hdr_keys = ['structure_header', 'product_configuration',
                             'product_end']
@@ -538,19 +539,19 @@ class IrisTest(unittest.TestCase):
         self.assertEqual(data['data_types'], data_types)
 
         data_types = ['DB_DBZ', 'DB_VEL']
-        sweeps = [1, 3, 8]
-        loaddata = {'moment': data_types, 'sweep': sweeps}
+        selected_data = [1, 3, 8]
+        loaddata = {'moment': data_types, 'data': selected_data}
         data = wrl.io.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
-        self.assertEqual(list(data['sweeps'][1]['sweep_data'].keys()),
+        self.assertEqual(list(data['data'][1]['sweep_data'].keys()),
                          data_types)
-        self.assertEqual(list(data['sweeps'].keys()), sweeps)
+        self.assertEqual(list(data['data'].keys()), selected_data)
 
     def test_IrisRecord(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
         data = wrl.io.IrisFile(sigmetfile, loaddata=False)
         # reset record after init
-        data.read_record(1)
+        data.init_record(1)
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
         self.assertEqual(data.rh.pos, 0)
         self.assertEqual(data.rh.recpos, 0)
