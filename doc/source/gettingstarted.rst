@@ -40,7 +40,7 @@ Now you can use the ``conda`` package and environment manager (`conda documentat
 
     (wradlib) $ conda install wradlib
 
-#. Make sure the GDAL_DATA environment variable (needed for georeferencing) is set within your environment. If not, you can set it like this:
+#. Make sure the GDAL_DATA environment variable (needed for georeferencing) is set within your environment.
 
     Linux/OSX::
 
