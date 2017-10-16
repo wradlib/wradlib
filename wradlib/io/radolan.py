@@ -625,6 +625,9 @@ def read_radolan_header(fid):
     header = ''
     while True:
         mychar = fid.read(1)
+        if not mychar:
+            raise EOFError('Unexpected EOF detected while reading '
+                           'RADOLAN header')
         if mychar == b'\x03':
             break
         header += str(mychar.decode())
