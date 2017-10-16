@@ -231,6 +231,9 @@ class RadolanTest(unittest.TestCase):
                      b'INT  60GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,'
                      b'asd,neu,nhb,oft,tur,isn,fbg,mem>')
 
+        buf = io.BytesIO(rx_header)
+        self.assertRaises(EOFError, lambda: radolan.read_radolan_header(buf))
+
         buf = io.BytesIO(rx_header + b"\x03")
         header = radolan.read_radolan_header(buf)
         self.assertEqual(header, rx_header.decode())
