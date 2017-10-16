@@ -208,10 +208,15 @@ class IrisFile(object):
         return self.rh.record.shape[0] != RECORD_BYTES
 
     def init_record(self, recnum):
-        self.record_number = recnum
-        start = self.record_number * RECORD_BYTES
+        start = recnum * RECORD_BYTES
         stop = start + RECORD_BYTES
-        self.rh = IrisRecord(self.fh[start:stop], self.record_number)
+        rh = IrisRecord(self.fh[start:stop], recnum)
+        if rh.record.shape[0] == RECORD_BYTES:
+            self.record_number = recnum
+            self.rh = rh
+            return False
+        else:
+            return True
 
     def init_next_record(self):
         """ Get next record from file.
@@ -224,8 +229,7 @@ class IrisFile(object):
         chk : bool
             True, if record is truncated.
         """
-        self.record_number += 1
-        self.init_record(self.record_number)
+        return self.init_record(self.record_number + 1)
 
     def array_from_record(self, words, width, dtype):
         return self.rh.read(words, width=width).view(dtype=dtype)
@@ -683,15 +687,15 @@ class IrisRawFile(IrisWrapperFile):
         if self._rawdata:
             return data
         kw = {}
-        if get_dtype_size(prod['dtype']) == 1:
-            dtype = '(2,) {0}'.format(prod['dtype'])
-        else:
-            dtype = '{0}'.format(prod['dtype'])
         if prod['func']:
             try:
                 kw.update(prod['fkw'])
             except KeyError:
                 pass
+            if get_dtype_size(prod['dtype']) == 1:
+                dtype = '(2,) {0}'.format(prod['dtype'])
+            else:
+                dtype = '{0}'.format(prod['dtype'])
             try:
                 rays, bins = data.shape
                 data = data.view(dtype).reshape(rays, -1)[:, :bins]
@@ -739,7 +743,7 @@ class IrisRawFile(IrisWrapperFile):
         sw = 0
         ingest_conf = self.ingest_header['ingest_configuration']
         sw_completed = ingest_conf['number_sweeps_completed']
-        while sw < sw_completed and not self.init_next_record():
+        while not self.init_next_record() and sw < sw_completed:
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             sw = raw_prod_bhdr['sweep_number']
             # continue to next record if not belonging to wanted sweeps
@@ -755,7 +759,7 @@ class IrisRawFile(IrisWrapperFile):
         sw = 0
         ingest_conf = self.ingest_header['ingest_configuration']
         sw_completed = ingest_conf['number_sweeps_completed']
-        while sw < sw_completed and not self.init_next_record():
+        while not self.init_next_record() and sw < sw_completed:
             # get raw_prod_bhdr
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             # continue to next record if belonging to same sweep
