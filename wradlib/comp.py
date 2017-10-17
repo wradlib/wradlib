@@ -199,10 +199,15 @@ def compose_weighted(radargrids, qualitygrids):
     """
     radarinfo = np.array(radargrids)
     qualityinfo = np.array(qualitygrids)
+    # overall nanmask
+    nanmask = np.all(np.isnan(radarinfo), axis=0)
+    # quality grids must contain values only where radarinfo does
+    qualityinfo[np.isnan(radarinfo)] = np.nan
 
     qualityinfo /= np.nansum(qualityinfo, axis=0)
 
     composite = np.nansum(radarinfo * qualityinfo, axis=0)
+    composite[nanmask] = np.nan
 
     return composite
 
