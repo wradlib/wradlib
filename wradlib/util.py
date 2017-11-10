@@ -787,7 +787,7 @@ def iso2datetime(iso):
         return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S.%f")
     except (ValueError, TypeError):
         return dt.datetime.strptime(iso, "%Y-%m-%dT%H:%M:%S")
-    except:
+    except Exception:
         print("Could not convert argument <%r> to datetime. "
               "Probably not an isostring. See following traceback:" % iso)
         raise

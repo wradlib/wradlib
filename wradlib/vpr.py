@@ -383,7 +383,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     #   check elevs array, first: must be one-dimensional
     try:
         elevs = np.array(elevs)
-    except:
+    except Exception:
         print("Could not create an array from argument <elevs>.")
         print("The following exception was raised:")
         raise
@@ -393,7 +393,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     # or one for each?
     try:
         azimuths = np.array(azimuths)
-    except:
+    except Exception:
         print("Could not create an array from argument <azimuths>.")
         print("The following exception was raised:")
         raise
@@ -409,7 +409,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     # now: is there one ranges array for all elevation angles or one for each?
     try:
         ranges = np.array(ranges)
-    except:
+    except Exception:
         print("Could not create an array from argument <ranges>.")
         print("The following exception was raised:")
         raise

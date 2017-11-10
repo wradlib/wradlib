@@ -11,6 +11,24 @@ Bleeding Edge
 
 *Nothing, so far*
 
+Version 0.11.0
+--------------
+
+**Highlights**
+
+* Reorganize modules `io` and `georef`.
+* Add IRIS-Reader to `io` module.
+
+**New features**
+
+* Enhanced: report code coverage on a per test-basis (unit, doc, notebook)
+* Enhanced: select tests per substring - argument with `testrunner.py`
+
+**Bugfixes**
+
+* Fix latex functions in notebooks
+* Fix NaNs are considered adequately in weighted composition
+* Several minor fixes in codebase and docs
 
 Version 0.10.1
 --------------
