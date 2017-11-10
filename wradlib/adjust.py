@@ -834,7 +834,7 @@ def _get_statfunc(funcname):
             # then try to find a function in this module with name funcname
             if funcname == 'best':
                 newfunc = best
-        except:
+        except Exception:
             # if no function can be found, raise an Exception
             raise NameError('Unknown function name option: ' + funcname)
     return newfunc

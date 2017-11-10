@@ -917,7 +917,7 @@ class IrisCartesianProductFile(IrisWrapperFile):
                 ext_hdr[kv[0]] = int(kv[1])
             except ValueError:
                 ext_hdr[kv[0]] = kv[1]
-            except:
+            except Exception:
                 pass
         self.fix_ext_header(ext_hdr)
         return ext_hdr
