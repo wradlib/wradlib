@@ -164,14 +164,15 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     phia = sitecoords[1]
     thea = sitecoords[0]
 
-    l = np.deg2rad(90. - phia)
+    polar_angle = np.deg2rad(90. - phia)
     r = rng / re
 
     easterly = az <= 180.
     # westerly = ~easterly
     a = np.deg2rad(np.where(easterly, az, az - 180.))
 
-    m = np.arccos(np.cos(r) * np.cos(l) + np.sin(r) * np.sin(l) * np.cos(a))
+    m = np.arccos(np.cos(r) * np.cos(polar_angle) +
+                  np.sin(r) * np.sin(polar_angle) * np.cos(a))
     g = np.arcsin((np.sin(r) * np.sin(a)) / (np.sin(m)))
 
     return thea + np.rad2deg(np.where(easterly, g, -g)), 90. - np.rad2deg(m)
@@ -235,7 +236,7 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     centlat = sitecoords[1]
     try:
         centalt = sitecoords[2]
-    except:
+    except Exception:
         centalt = 0.
     # local earth radius
     re = re + centalt
@@ -339,7 +340,7 @@ Georeferencing-and-Projection`.
     # if site altitude is present, use it, else assume it to be zero
     try:
         centalt = sitecoords[2]
-    except:
+    except Exception:
         centalt = 0.
 
     # if no radius is given, get the approximate radius of the WGS84

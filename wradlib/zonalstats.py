@@ -606,7 +606,7 @@ class ZonalDataBase(object):
                     lyr = self.trg.ds.GetLayerByName('trg')
                     feat = lyr.GetFeature(idx)
                     trg = feat.GetGeometryRef()
-                except:
+                except Exception:
                     raise TypeError("No target polygon found at index {0}".
                                     format(idx))
             else:

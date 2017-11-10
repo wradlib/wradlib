@@ -41,7 +41,8 @@ class AttenuationIterationError(Exception):
     pass
 
 
-def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
+def correctAttenuationHB(gateset,
+                         coefficients={'a': 1.67e-4, 'b': 0.7, 'l_rg': 1.0},
                          mode='except',
                          thrs=59.0):
     """Gate-by-Gate attenuation correction according to
@@ -62,7 +63,7 @@ def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
     b : float
         exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
         set to 0.7.
-    l : float
+    gate_length : float
         length of a range gate [km]. Per default set to 1.0.
     mode : string
         controls how the function reacts, if the sum of signal and attenuation
@@ -98,14 +99,9 @@ def correctAttenuationHB(gateset, coefficients=dict(a=1.67e-4, b=0.7, l=1.0),
 Hitschfeld-and-Bordan`.
 
     """
-    if coefficients is None:
-        _coefficients = {'a': 1.67e-4, 'b': 0.7, 'l': 1.0}
-    else:
-        _coefficients = coefficients
-
-    a = _coefficients['a']
-    b = _coefficients['b']
-    l = _coefficients['l']
+    a = coefficients['a']
+    b = coefficients['b']
+    gate_length = coefficients['gate_length']
 
     pia = np.empty(gateset.shape)
     pia[..., 0] = 0.
@@ -118,9 +114,10 @@ Hitschfeld-and-Bordan`.
     for gate in range(gateset.shape[-1] - 1):
         # calculate k in dB/km from k-Z relation
         # c.f. Krämer2008(p. 147)
-        k = a * (10.0 ** ((gateset[..., gate] + ksum) / 10.0)) ** b * 2.0 * l
+        k = a * (10.0 ** ((gateset[..., gate] + ksum) / 10.0)) \
+                ** b * 2.0 * gate_length
         # k = 10**(log10(a)+0.1*bin*b)
-        # dBkn = 10*math.log10(a) + (bin+ksum)*b + 10*math.log10(2*l)
+        # dBkn = 10*math.log10(a) + (bin+ksum)*b + 10*math.log10(2*gate_length)
         ksum += k
 
         pia[..., gate + 1] = ksum
@@ -141,7 +138,7 @@ Hitschfeld-and-Bordan`.
 
 
 def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
-                              b=0.7, n=30, l=1.0, mode='zero',
+                              b=0.7, n=30, gate_length=1.0, mode='zero',
                               thrs_dBZ=59.0):
     """Gate-by-Gate attenuation correction according to :cite:`Kraemer2008`.
 
@@ -175,7 +172,7 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
 
-    l : float
+    gate_length : float
         length of a range gate [km]. Per default set to 1.0.
 
     mode : string
@@ -233,7 +230,7 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
         sub_pia = pia[beams2correct]
         for gate in range(gateset.shape[-1] - 1):
             k = ai * (10.0 ** ((sub_gateset[..., gate] + sub_pia[
-                ..., gate]) / 10.0)) ** b * 2.0 * l
+                ..., gate]) / 10.0)) ** b * 2.0 * gate_length
             sub_pia[..., gate + 1] = sub_pia[..., gate] + k
         # integration of the calculated attenuation subset to the whole
         # attenuation matrix
@@ -260,7 +257,7 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
 
 def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
-                         n=30, l=1.0, mode='zero', thrs_dBZ=59.0,
+                         n=30, gate_length=1.0, mode='zero', thrs_dBZ=59.0,
                          max_PIA=20.0):
     """Gate-by-Gate attenuation correction based on :cite:`Kraemer2008`,
     expanded by :cite:`Jacobi2012`.
@@ -287,7 +284,7 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
         set to 0.7.
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
-    l : float
+    gate_length : float
         length of a range gate [km]. Per default set to 1.0.
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
@@ -368,7 +365,7 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
         sub_pia = pia[beams2correct]
         for gate in range(gateset.shape[-1] - 1):
             k = ai * (10.0 ** ((sub_gateset[..., gate] + sub_pia[
-                ..., gate]) / 10.0)) ** b * 2.0 * l
+                ..., gate]) / 10.0)) ** b * 2.0 * gate_length
             sub_pia[..., gate + 1] = sub_pia[..., gate] + k
         # integration of the calculated attenuation subset
         # to the whole attenuation matrix
@@ -401,7 +398,8 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
 
 
 def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
-                                  b_max=0.7, b_min=0.2, na=30, nb=5, l=1.0,
+                                  b_max=0.7, b_min=0.2, na=30, nb=5,
+                                  gate_length=1.0,
                                   mode='error',
                                   constraints=None, constr_args=None,
                                   diagnostics={}):
@@ -434,7 +432,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         set to 0.7.
     n : integer
         number of iterations from a_max to a_min. Per default set to 30.
-    l : float
+    gate_length : float
         length of a range gate [km]. Per default set to 1.0.
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
@@ -540,7 +538,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
             sub_k = k[beams2correct]
             for gate in range(gateset.shape[-1] - 1):
                 kn = ai * (10.0 ** ((sub_gateset[..., gate] + sub_k[
-                    ..., gate]) / 10.0)) ** bi * 2.0 * l
+                    ..., gate]) / 10.0)) ** bi * 2.0 * gate_length
                 sub_k[..., gate + 1] = sub_k[..., gate] + kn
             # integration of the calculated attenuation subset
             # to the whole attenuation matrix
@@ -598,17 +596,19 @@ def constraint_pia(gateset, pia, thrs_pia):
 # -----------------------------------------------------------------------------
 # new implementation of Kraemer algorithm
 # -----------------------------------------------------------------------------
-def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, l=1.):
+def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, gate_length=1.):
     """Gate-by-Gate forward correction as described in
     :cite:`Kraemer2008`"""
     pia = np.zeros(gateset.shape)
     for gate in range(gateset.shape[-1] - 1):
-        k = a * idecibel(gateset[..., gate] + pia[..., gate]) ** b * 2.0 * l
+        k = a * idecibel(gateset[..., gate] + pia[..., gate]) ** b \
+            * 2.0 * gate_length
         pia[..., gate + 1] = pia[..., gate] + k
     return pia
 
 
-def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
+def calc_attenuation_backward(gateset, a, b, gate_length,
+                              a_ref, tdiff, maxiter):
     """Gate-by-Gate backward correction as described in
     :cite:`Kraemer2008`"""
     k = np.zeros(gateset.shape)
@@ -619,7 +619,7 @@ def calc_attenuation_backward(gateset, a, b, l, a_ref, tdiff, maxiter):
         for j in range(maxiter):
             kleft = a * (idecibel(gateset[..., gate][toprocess] +
                                   k[..., gate + 1][toprocess] -
-                                  kright[toprocess])) ** b * 2.0 * l
+                                  kright[toprocess])) ** b * 2.0 * gate_length
             diff = np.abs(kleft - kright)
             kright[toprocess] = kleft
             toprocess[diff < tdiff] = False
@@ -639,7 +639,7 @@ def bisectReferenceAttenuation(gateset,
                                a_max=1.67e-4,
                                a_min=2.33e-5,
                                b_start=0.7,
-                               l=1.0,
+                               gate_length=1.0,
                                mode='difference',
                                thrs=0.25,
                                max_iterations=10):
@@ -677,7 +677,7 @@ def bisectReferenceAttenuation(gateset,
         ``max_iterations``.
 
         Per default set to 0.7.
-    l : float
+    gate_length : float
         Radial length of a range gate [km].
 
         Per default set to 1.0.
@@ -721,7 +721,7 @@ def bisectReferenceAttenuation(gateset,
     # for pia calculation are the same.
     while not np.all(a_hi == a_lo):
         a_mid = (a_hi + a_lo) / 2
-        pia = calc_attenuation_forward(gateset, a_mid, b, l)
+        pia = calc_attenuation_forward(gateset, a_mid, b, gate_length)
         # Find indices where calculated and reference pia match sufficient.
         if mode == 'difference':
             overshoot = (pia[..., -1] - pia_ref) > thrs
@@ -835,7 +835,8 @@ def _interp_atten(pia, invalidbeams):
 
 def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
                                    n_a=4,
-                                   b_max=0.7, b_min=0.65, n_b=6, l=1.,
+                                   b_max=0.7, b_min=0.65, n_b=6,
+                                   gate_length=1.,
                                    constraints=None, constraint_args=None,
                                    sector_thr=10):
     """Gate-by-Gate attenuation correction based on the iterative approach of
@@ -887,7 +888,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Number of iterations from ``b_max`` to ``b_min``.
 
         Per default set to 6.
-    l : float
+    gate_length : float
         Radial length of a range gate [km].
 
         Per default set to 1.0.
@@ -974,7 +975,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
             a = a_max - delta_a * i
             # Generate subset of beams that have to be corrected.
             sub_gateset = tmp_gateset[beams2correct]
-            sub_pia = calc_attenuation_forward(sub_gateset, a, b, l)
+            sub_pia = calc_attenuation_forward(sub_gateset, a, b, gate_length)
             pia[beams2correct] = sub_pia
             a_used[beams2correct] = a
             b_used[beams2correct] = b
@@ -1007,7 +1008,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
             a_max=a_max,
             a_min=a_min,
             b_start=b_max,
-            l=l,
+            gate_length=gate_length,
             mode='difference',
             thrs=0.25,
             max_iterations=10)

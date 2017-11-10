@@ -342,7 +342,7 @@ def get_RB_file_as_string(fid):
 
     try:
         dataString = fid.read()
-    except:
+    except Exception:
         raise IOError('Could not read from file handle')
 
     return dataString
@@ -400,7 +400,7 @@ def get_RB_header(fid):
             line = fid.readline()
             if len(line) == 0:
                 break
-    except:
+    except Exception:
         raise IOError('Could not read from file handle')
 
     xmltodict = util.import_optional('xmltodict')

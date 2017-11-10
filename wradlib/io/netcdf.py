@@ -83,7 +83,7 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
                                attrs['Height'])
         attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
         attrs['max_range'] = data.shape[1] * binwidth
-    except:
+    except Exception:
         raise
     finally:
         dset.close()
@@ -164,7 +164,7 @@ def read_netcdf_group(ncid):
             if v[:].dtype.kind == 'S':
                 try:
                     tmp['data'] = nc.chartostring(v[:])
-                except:
+                except Exception:
                     tmp['data'] = v[:]
             else:
                 tmp['data'] = v[:]
