@@ -289,8 +289,10 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         y = np.append(d2, d2[0])
         data = np.vstack((data, data[0][np.newaxis, ...]))
         # move to center
-        x += (x[1] - x[0]) / 2
-        y += (y[1] - y[0]) / 2
+        x += (x[1] - x[0]) / 2.
+        # get angle difference correct if y[1]=360-res/2 and y[0]=0+res/2
+        ydiff = np.abs((y[1] - y[0]) % 360)
+        y += ydiff / 2.
 
     if refrac & (proj is None):
         # with refraction correction, significant at higher elevations
