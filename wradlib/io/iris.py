@@ -702,10 +702,13 @@ class IrisRawFile(IrisWrapperFile):
                 data = data.view(dtype).reshape(rays, -1)[:, :bins]
             except ValueError:
                 data = data.view(dtype)
-            if prod['func'] == decode_vel or prod['func'] == decode_width:
+            if prod['func'] in [decode_vel, decode_width, decode_kdp]:
                 wavelength = self.product_hdr['product_end']['wavelength']
-                prf = self.product_hdr['product_end']['prf']
+                if prod['func'] == decode_kdp:
+                    kw.update({'wavelength': wavelength * 100})
+                    return prod['func'](data, **kw)
 
+                prf = self.product_hdr['product_end']['prf']
                 nyquist = wavelength * prf / (10000. * 4.)
                 if prod['func'] == decode_vel:
                     nyquist *= (self.ingest_header['task_configuration']
@@ -1089,13 +1092,15 @@ def decode_width(data, **kwargs):
     return decode_array(data, **kwargs) * nyquist
 
 
-def decode_kdp(data):
+def decode_kdp(data, **kwargs):
     """ Decode DB_KDP
 
     See 4.4.20 p.77
     """
+    wavelength = kwargs.pop('wavelength')
     zero = data[data == -128]
     data = -0.25 * np.sign(data) * 600 ** ((127 - np.abs(data)) / 126.)
+    data /= wavelength
     data[zero] = 0
     return data
 
