@@ -32,7 +32,7 @@ from .radolan import (readDX, read_RADOLAN_composite,
                       read_radolan_binary_array,
                       decode_radolan_runlength_array)
 from .gdal import (read_safnwc, write_raster_dataset,
-                   open_shape, open_raster, gdal_create_dataset)
+                   open_shape, open_vector, open_raster, gdal_create_dataset)
 from .iris import (IrisFile, read_iris)
 
 __all__ = [s for s in dir() if not s.startswith('_')]
