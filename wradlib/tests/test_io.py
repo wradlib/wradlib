@@ -598,10 +598,11 @@ class IrisTest(unittest.TestCase):
 
     def test_decode_kdp(self):
         np.testing.assert_array_almost_equal(
-            wrl.io.iris.decode_kdp(np.arange(-5, 5, dtype='int8')),
-            [122.43229241, 128.80858242, 135.51695046,
-             142.57469119, 150., -0., -150., -142.57469119,
-             -135.51695046, -128.80858242])
+            wrl.io.iris.decode_kdp(np.arange(-5, 5, dtype='int8'),
+                                   wavelength=10.),
+            [12.243229, 12.880858, 13.551695,
+             14.257469, 15., -0., -15., -14.257469,
+             -13.551695, -12.880858])
 
     def test_decode_phidp(self):
         np.testing.assert_array_almost_equal(
