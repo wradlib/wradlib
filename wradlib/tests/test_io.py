@@ -512,7 +512,7 @@ class RasterTest(unittest.TestCase):
 
 class VectorTest(unittest.TestCase):
     def test_open_vector(self):
-        filename = 'shapefiles/agger/agger_merge.geojson'
+        filename = 'shapefiles/agger/agger_merge.shp'
         geofile = wrl.util.get_wradlib_data_file(filename)
         wrl.io.open_vector(geofile)
 
