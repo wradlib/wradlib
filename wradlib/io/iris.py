@@ -197,26 +197,24 @@ class IrisFile(object):
         prod_conf = self.product_hdr['product_configuration']
         return prod_conf['product_type_code']
 
+    @property
+    def filesize(self):
+        """ Returns filesize.
+        """
+        return self.product_hdr['structure_header']['bytes_in_structure']
+
     def _check_record(self):
         """ Checks record for correct size.
-
-        Returns
-        -------
-        chk : bool
-            True, if record is truncated.
+            Need to be implemented in the drived classes
         """
-        return self.rh.record.shape[0] != RECORD_BYTES
+        return True
 
     def init_record(self, recnum):
         start = recnum * RECORD_BYTES
         stop = start + RECORD_BYTES
-        rh = IrisRecord(self.fh[start:stop], recnum)
-        if rh.record.shape[0] == RECORD_BYTES:
-            self.record_number = recnum
-            self.rh = rh
-            return False
-        else:
-            return True
+        self.record_number = recnum
+        self.rh = IrisRecord(self.fh[start:stop], recnum)
+        return self._check_record()
 
     def init_next_record(self):
         """ Get next record from file.
@@ -258,7 +256,6 @@ class IrisFile(object):
         words -= len(data)
         while words > 0:
             self.init_next_record()
-            self._check_record()
             next = self.array_from_record(words, width, dtype)
             data = np.append(data, next)
             words -= len(next)
@@ -435,14 +432,19 @@ class IrisRawFile(IrisWrapperFile):
         Returns
         -------
         chk : bool
-            True, if record is truncated.
+            False, if record is truncated.
         """
-        chk = self._rh.record.shape[0] != RECORD_BYTES
-        if chk:
-            warnings.warn("Unexpected file end detected at record {0}"
-                          "".format(self._record_number),
-                          RuntimeWarning,
-                          stacklevel=3)
+        # we do not know filesize before reading first record,
+        # so we try and pass
+        try:
+            if self.record_number >= self.filesize / RECORD_BYTES:
+                return False
+        except AttributeError:
+            pass
+        chk = self._rh.record.shape[0] == RECORD_BYTES
+        if not chk:
+            raise EOFError("Unexpected file end detected at "
+                           "record {}".format(self.rh.recnum))
         return chk
 
     def read_from_record(self, words, dtype):
@@ -466,7 +468,6 @@ class IrisRawFile(IrisWrapperFile):
         words -= len(data)
         while words > 0:
             self.init_next_record()
-            self._check_record()
             self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
             next = self.array_from_record(words, width, dtype)
             data = np.append(data, next)
@@ -743,7 +744,7 @@ class IrisRawFile(IrisWrapperFile):
         sw = 0
         ingest_conf = self.ingest_header['ingest_configuration']
         sw_completed = ingest_conf['number_sweeps_completed']
-        while not self.init_next_record() and sw < sw_completed:
+        while self.init_next_record() and sw < sw_completed:
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             sw = raw_prod_bhdr['sweep_number']
             # continue to next record if not belonging to wanted sweeps
@@ -759,7 +760,7 @@ class IrisRawFile(IrisWrapperFile):
         sw = 0
         ingest_conf = self.ingest_header['ingest_configuration']
         sw_completed = ingest_conf['number_sweeps_completed']
-        while not self.init_next_record() and sw < sw_completed:
+        while self.init_next_record() and sw < sw_completed:
             # get raw_prod_bhdr
             raw_prod_bhdr = self.get_raw_prod_bhdr()
             # continue to next record if belonging to same sweep

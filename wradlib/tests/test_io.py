@@ -518,8 +518,8 @@ class IrisTest(unittest.TestCase):
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
         self.assertIsInstance(data.fh, np.memmap)
         data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=True)
-        self.assertEqual(data._record_number, 511)
-        self.assertEqual(data.filepos, 3142568)
+        self.assertEqual(data._record_number, 512)
+        self.assertEqual(data.filepos, 3145728)
 
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
