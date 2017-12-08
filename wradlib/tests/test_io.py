@@ -510,6 +510,13 @@ class RasterTest(unittest.TestCase):
         wrl.io.open_raster(geofile)
 
 
+class VectorTest(unittest.TestCase):
+    def test_open_vector(self):
+        filename = 'shapefiles/agger/agger_merge.shp'
+        geofile = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.open_vector(geofile)
+
+
 class IrisTest(unittest.TestCase):
     def test_open_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'

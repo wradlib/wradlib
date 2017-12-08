@@ -10,6 +10,7 @@ Raster and Vector I/O using GDAL
    :toctree: generated/
 
    open_shape
+   open_vector
    open_raster
    read_safnwc
    write_raster_dataset
@@ -23,7 +24,43 @@ import os
 # site packages
 from osgeo import gdal, ogr, osr
 
+# wradlib modules
+from .. import util as util
 
+
+def open_vector(filename, driver=None):
+    """Open vector file, return gdal.Dataset and OGR.Layer
+
+        .. warning:: dataset and layer have to live in the same context,
+            if dataset is deleted all layer references will get lost
+
+        .. versionadded:: 0.12.0
+
+    Parameters
+    ----------
+    filename : string
+        vector file name
+    driver : string
+        gdal driver string
+
+    Returns
+    -------
+    dataset : gdal.Dataset
+        dataset
+    layer : ogr.Layer
+        layer
+    """
+    dataset = gdal.OpenEx(filename)
+
+    if driver:
+        gdal.GetDriverByName(driver)
+
+    layer = dataset.GetLayer()
+
+    return dataset, layer
+
+
+@util.deprecated(open_vector)
 def open_shape(filename, driver=None):
     """Open shapefile, return gdal.Dataset and OGR.Layer
 
@@ -75,7 +112,7 @@ def open_raster(filename, driver=None):
         dataset
     """
 
-    dataset = gdal.Open(filename)
+    dataset = gdal.OpenEx(filename)
 
     if driver:
         gdal.GetDriverByName(driver)
