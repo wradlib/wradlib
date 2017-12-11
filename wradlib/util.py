@@ -29,7 +29,6 @@ from datetime import tzinfo, timedelta
 from time import mktime
 import warnings
 import functools
-import sys
 import os
 
 import numpy as np
