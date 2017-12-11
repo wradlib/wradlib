@@ -29,6 +29,7 @@ from datetime import tzinfo, timedelta
 from time import mktime
 import warnings
 import functools
+import sys
 import os
 
 import numpy as np
@@ -54,11 +55,12 @@ def deprecated(replacement=None):
     replacement: string
         function name of replacement function
 
-    >>> # Todo: warnings are sent to stderr instead of stdout
-    >>> # so they are not seen here
-    >>> from wradlib.util import deprecated
+    >>> # output stderr on stdout, to capture warning message
     >>> import sys
+    >>> save = sys.stderr
     >>> sys.stderr = sys.stdout  # noqa
+
+    >>> from wradlib.util import deprecated
     >>> @deprecated()
     ... def foo(x):
     ...     return x
@@ -76,6 +78,8 @@ def deprecated(replacement=None):
 use <function newfun at 0x...> instead
       #!/usr/bin/env python
 
+    >>> # reset sys.stderr
+    >>> sys.stderr = save
     """
 
     def outer(fun):
@@ -210,7 +214,7 @@ def import_optional(module):
     Trying to import a module that does not exists, does not produce
     any errors. Only when some function is used, the code triggers an error
     >>> m = import_optional('nonexistentmodule')  # noqa
-    >>> m.log10(100)  # doctest +ELLIPSIS
+    >>> m.log10(100)  #doctest: +ELLIPSIS
     Traceback (most recent call last):
     ...
     AttributeError: Module "nonexistentmodule" is not installed.
@@ -421,7 +425,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     Examples
     --------
     >>> src = np.arange(8 * 4).reshape((8, 4))
-    >>> print('source time series:') # doctest: +SKIP
+    >>> print('source time series:') #doctest: +SKIP
     >>> print(src)
     [[ 0  1  2  3]
      [ 4  5  6  7]
@@ -433,7 +437,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
      [28 29 30 31]]
     >>> dt_src = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + \
     dt.timedelta(hours=i) for i in range(9)]
-    >>> print('source time interval limits:') # doctest: +SKIP
+    >>> print('source time interval limits:') #doctest: +SKIP
     >>> for tim in dt_src: print(tim)
     2008-06-02 00:00:00
     2008-06-02 01:00:00
@@ -444,7 +448,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     2008-06-02 06:00:00
     2008-06-02 07:00:00
     2008-06-02 08:00:00
-    >>> print('target time interval limits:') # doctest: +SKIP
+    >>> print('target time interval limits:') #doctest: +SKIP
     >>> dt_trg = [dt.datetime.strptime('2008-06-02', '%Y-%m-%d' ) + \
     dt.timedelta(seconds=i*3600*4) for i in range(4)]
     >>> for tim in dt_trg: print(tim)
@@ -452,7 +456,7 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     2008-06-02 04:00:00
     2008-06-02 08:00:00
     2008-06-02 12:00:00
-    >>> print('target time series') # doctest: +SKIP
+    >>> print('target time series') #doctest: +SKIP
     >>> print(aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'))
     [[  24.   28.   32.   36.]
      [  88.   92.   96.  100.]
