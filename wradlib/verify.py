@@ -158,10 +158,10 @@ class ErrorMetrics():
     >>> obs = np.random.uniform(0, 10, 100)
     >>> est = np.random.uniform(0, 10, 100)
     >>> metrics = ErrorMetrics(obs, est)
-    >>> metrics.all() # doctest: +SKIP
-    >>> metrics.pprint() # doctest: +SKIP
-    >>> ax = metrics.plot() # doctest: +SKIP
-    >>> metrics.report() # doctest: +SKIP
+    >>> metrics.all() #doctest: +SKIP
+    >>> metrics.pprint() #doctest: +SKIP
+    >>> ax = metrics.plot() #doctest: +SKIP
+    >>> metrics.report() #doctest: +SKIP
 
     See :ref:`notebooks/verification/wradlib_verify_example.ipynb` and
     :ref:`notebooks/multisensor/wradlib_adjust_example.ipynb`.
