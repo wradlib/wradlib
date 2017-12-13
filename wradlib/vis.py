@@ -254,6 +254,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         kw_polar2lonlatalt_n['re'] = kwargs.pop('re')
     if 'ke' in kwargs:
         kw_polar2lonlatalt_n['ke'] = kwargs.pop('ke')
+    kwargs['zorder'] = kwargs.pop('zorder', 0)
 
     if (proj is not None) & cg:
         cg = False
@@ -618,6 +619,9 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     --------
     See :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
     """
+    # kwargs handling
+    kwargs['zorder'] = kwargs.pop('zorder', 0)
+
     # autogenerate axis dimensions
     if r is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
