@@ -217,7 +217,7 @@ def read_gdal_values(dataset=None, nodata=None):
             data[data == nd] = nodata
         bands.append(data)
 
-    return np.squeeze(np.stack(bands))
+    return np.squeeze(np.array(bands))
 
 
 def create_raster_dataset(data, coords, projection=None, nodata=-9999):
