@@ -11,6 +11,23 @@ Bleeding Edge
 
 *Nothing, so far*
 
+Version 0.11.1
+--------------
+
+**New features**
+
+* add `open_vector` to `wradlib.io.gdal`, deprecate `open_shape`
+* add `test_open_vector`, use `gdal.OpenEx`
+
+**Bugfixes**
+
+* raise Exception if file is corrupt in `wradlib.io.iris.iris.py`
+* divide by wavelength in `decode_kdp` in `wradlib.io.iris.iris.py`
+* correctly calculate azimuth difference in `wradlib.vis.plot_ppi`
+* add `zorder` handling to `vis.plot_ppi` and `vis.plot_rhi`
+* add documentation of `lat_minmax`-handling to `wradlib_plot_curvelinear_grids.ipynb`
+* use np.array instead of np.stack to be backwards compatible
+
 Version 0.11.0
 --------------
 
