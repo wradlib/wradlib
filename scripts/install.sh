@@ -13,15 +13,16 @@ wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh \
 chmod +x miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
 export PATH=$HOME/miniconda/bin:$PATH
+
+# Add conda-forge channel
+conda config --add channels conda-forge
+
 conda update --yes conda
 conda update --yes conda
 
 # Create a testenv with the correct Python version
 conda create -n wradlib --yes pip python=$PYTHON_VERSION
 source activate wradlib
-
-# Add conda-forge channel
-conda config --add channels conda-forge
 
 # Install wradlib dependencies
 conda install --yes gdal numpy scipy matplotlib netcdf4 h5py
