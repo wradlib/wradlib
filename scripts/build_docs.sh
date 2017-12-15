@@ -77,16 +77,27 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     git config --global user.email "wradlib-docs@wradlib.org"
     git config --global user.name "wradlib-docs-bot"
     git init
+    git status
+    echo "git config - finished"
     touch README
     git add README
     git commit -m "Initial commit" --allow-empty
+    git status
     git branch gh-pages
     git checkout gh-pages
+    echo "git init - finished"
     touch .nojekyll
+    git status
     git add --all .
+    git status
     git commit -m "Version" --allow-empty
+    git status
+    echo "git commit - finished"
     git remote add origin https://$GH_TOKEN@github.com/wradlib/wradlib-docs.git &> /dev/null
+    git status
     git push origin gh-pages -fq &> /dev/null
+    git status
+    echo "git push - finished"
 
 else
 
