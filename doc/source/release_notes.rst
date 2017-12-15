@@ -27,6 +27,7 @@ Version 0.11.1
 * add `zorder` handling to `vis.plot_ppi` and `vis.plot_rhi`
 * add documentation of `lat_minmax`-handling to `wradlib_plot_curvelinear_grids.ipynb`
 * use np.array instead of np.stack to be backwards compatible
+* fix stderr output in `wradlib.util.deprecated` doctest, minor doctest fixes
 
 Version 0.11.0
 --------------
