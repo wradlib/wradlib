@@ -28,8 +28,9 @@ class TestAttenuation(unittest.TestCase):
         """basic test for correct numbers"""
         a = 2e-4
         b = 0.7
-        l = 1.
-        result = atten.calc_attenuation_forward(self.gateset, a, b, l)
+        gate_length = 1.
+        result = atten.calc_attenuation_forward(self.gateset, a, b,
+                                                gate_length)
         self.assertTrue(np.allclose(result, self.gateset_result))
 
     def test_sector_filter_1(self):

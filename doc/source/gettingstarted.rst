@@ -18,15 +18,13 @@ If your Anaconda Python installation is working, the following command (in a con
 
 Now you can use the ``conda`` package and environment manager (`conda documentation <http://conda.pydata.org/docs/#>`_) to setup your :math:`\omega radlib` installation.
 
-#. Clone the root environment or create one from scratch::
-
-    $ conda create --name wradlib --clone root
-    or
-    $ conda create --name wradlib python=2.7
-
 #. Add the conda-forge channel, where :math:`\omega radlib` and its dependencies are located. Read more about the community effort `conda-forge <https://conda-forge.github.io/>`_::
 
     $ conda config --add channels conda-forge
+
+#. Create a new environment from scratch::
+
+    $ conda create --name wradlib python=3.6
 
 #. Activate the :math:`\omega radlib` environment
 
@@ -42,7 +40,17 @@ Now you can use the ``conda`` package and environment manager (`conda documentat
 
     (wradlib) $ conda install wradlib
 
-#. Make sure the GDAL_DATA environment variable (needed for georeferencing) is set within your environment. If not, you can set it like this:
+#. Make sure the GDAL_DATA environment variable (needed for georeferencing) is set within your environment.
+
+    Linux/OSX::
+
+        (wradlib) $ echo $GDAL_DATA
+
+    Windows CMD.exe::
+
+        [wradlib] > echo %GDAL_DATA%
+
+#. If not, you can set it like this:
 
     Linux/OSX::
 
@@ -57,15 +65,15 @@ Now you have a ``conda`` environment with a working :math:`\omega radlib` instal
 Test the integrity of your :math:`\omega radlib` installation by opening a console window and typing calling the python interpreter::
 
     $ python
-    Python 3.5.1 |Continuum Analytics, Inc.| (default, Dec  7 2015, 11:16:01)
-    [GCC 4.4.7 20120313 (Red Hat 4.4.7-1)] on linux
+    Python 3.6.2 | packaged by conda-forge | (default, Jul 23 2017, 22:59:30)
+    [GCC 4.8.2 20140120 (Red Hat 4.8.2-15)] on linux
     Type "help", "copyright", "credits" or "license" for more information.
 
 The Python prompt should appear. Then type::
 
     >>> import wradlib
     >>> wradlib.__version__
-    '0.8.0'
+    '0.10.1'
 
 If everything is ok, this will show the running :math:`\omega radlib` version. If the :math:`\omega radlib` package is not found by the interpreter, you will get::
 

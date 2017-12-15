@@ -61,6 +61,7 @@ class NotebookTest(unittest.TestCase):
         return self.nbfile
 
     def runTest(self):
+        print(self.id())
         kernel = 'python%d' % sys.version_info[0]
         cur_dir = os.path.dirname(self.nbfile)
 

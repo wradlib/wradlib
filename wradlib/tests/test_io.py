@@ -231,6 +231,9 @@ class RadolanTest(unittest.TestCase):
                      b'INT  60GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,'
                      b'asd,neu,nhb,oft,tur,isn,fbg,mem>')
 
+        buf = io.BytesIO(rx_header)
+        self.assertRaises(EOFError, lambda: radolan.read_radolan_header(buf))
+
         buf = io.BytesIO(rx_header + b"\x03")
         header = radolan.read_radolan_header(buf)
         self.assertEqual(header, rx_header.decode())
@@ -507,23 +510,30 @@ class RasterTest(unittest.TestCase):
         wrl.io.open_raster(geofile)
 
 
+class VectorTest(unittest.TestCase):
+    def test_open_vector(self):
+        filename = 'shapefiles/agger/agger_merge.shp'
+        geofile = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.open_vector(geofile)
+
+
 class IrisTest(unittest.TestCase):
     def test_open_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
-        data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=False)
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
         self.assertIsInstance(data.fh, np.memmap)
-        data = wrl.io.IrisFile(sigmetfile, loaddata=True)
-        self.assertEqual(data._record_number, 511)
-        self.assertEqual(data.filepos, 3141076)
+        data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=True)
+        self.assertEqual(data._record_number, 512)
+        self.assertEqual(data.filepos, 3145728)
 
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
         data = wrl.io.read_iris(sigmetfile, loaddata=True, rawdata=True)
-        data_keys = ['product_hdr', 'ingest_header', 'nsweeps', 'nrays',
-                     'nbins', 'product_type', 'data_types', 'sweeps',
+        data_keys = ['product_hdr', 'product_type', 'ingest_header', 'nsweeps',
+                     'nrays', 'nbins', 'data_types', 'data',
                      'raw_product_bhdrs']
         product_hdr_keys = ['structure_header', 'product_configuration',
                             'product_end']
@@ -537,10 +547,20 @@ class IrisTest(unittest.TestCase):
         self.assertEqual(list(data['ingest_header'].keys()), ingest_hdr_keys)
         self.assertEqual(data['data_types'], data_types)
 
+        data_types = ['DB_DBZ', 'DB_VEL']
+        selected_data = [1, 3, 8]
+        loaddata = {'moment': data_types, 'data': selected_data}
+        data = wrl.io.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
+        self.assertEqual(list(data['data'][1]['sweep_data'].keys()),
+                         data_types)
+        self.assertEqual(list(data['data'].keys()), selected_data)
+
     def test_IrisRecord(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
         data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        # reset record after init
+        data.init_record(1)
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
         self.assertEqual(data.rh.pos, 0)
         self.assertEqual(data.rh.recpos, 0)
@@ -585,10 +605,11 @@ class IrisTest(unittest.TestCase):
 
     def test_decode_kdp(self):
         np.testing.assert_array_almost_equal(
-            wrl.io.iris.decode_kdp(np.arange(-5, 5, dtype='int8')),
-            [122.43229241, 128.80858242, 135.51695046,
-             142.57469119, 150., -0., -150., -142.57469119,
-             -135.51695046, -128.80858242])
+            wrl.io.iris.decode_kdp(np.arange(-5, 5, dtype='int8'),
+                                   wavelength=10.),
+            [12.243229, 12.880858, 13.551695,
+             14.257469, 15., -0., -15., -14.257469,
+             -13.551695, -12.880858])
 
     def test_decode_phidp(self):
         np.testing.assert_array_almost_equal(

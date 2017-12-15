@@ -254,6 +254,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         kw_polar2lonlatalt_n['re'] = kwargs.pop('re')
     if 'ke' in kwargs:
         kw_polar2lonlatalt_n['ke'] = kwargs.pop('ke')
+    kwargs['zorder'] = kwargs.pop('zorder', 0)
 
     if (proj is not None) & cg:
         cg = False
@@ -289,8 +290,10 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         y = np.append(d2, d2[0])
         data = np.vstack((data, data[0][np.newaxis, ...]))
         # move to center
-        x += (x[1] - x[0]) / 2
-        y += (y[1] - y[0]) / 2
+        x += (x[1] - x[0]) / 2.
+        # get angle difference correct if y[1]=360-res/2 and y[0]=0+res/2
+        ydiff = np.abs((y[1] - y[0]) % 360)
+        y += ydiff / 2.
 
     if refrac & (proj is None):
         # with refraction correction, significant at higher elevations
@@ -505,8 +508,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     return ax
 
 
-def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
-             rf=1., fig=None, ax=111, func='pcolormesh', cg=False,
+def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
+             refrac=True, rf=1., fig=None, ax=111, func='pcolormesh', cg=False,
              **kwargs):
     """Plots a Range Height Indicator (RHI).
 
@@ -545,6 +548,9 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
         plot_rhi will plot the beams accordingly. Otherwise the behavior of
         :func:`matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
         to each other, which might lead to unexpected results.
+    yoffset : float
+        Altitude offset that would typically represent the altitude of
+        the radar antenna. Units must be consistent with units of `r`.
     autoext : True | False
         This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw
         the bins.
@@ -613,6 +619,9 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
     --------
     See :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
     """
+    # kwargs handling
+    kwargs['zorder'] = kwargs.pop('zorder', 0)
+
     # autogenerate axis dimensions
     if r is None:
         d1 = np.arange(data.shape[1], dtype=np.float)
@@ -711,6 +720,8 @@ def plot_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
             # otherwise plane trigonometry will do
             xxx = xx * np.cos(np.radians(yy)) / rf
             yyy = xx * np.sin(np.radians(yy)) / rf
+
+    yyy += yoffset / rf
 
     # plot the stuff
     plotfunc = getattr(plax, func)
