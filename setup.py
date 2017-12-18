@@ -50,7 +50,7 @@ PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 0
 MINOR = 11
 MICRO = 2
-ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
