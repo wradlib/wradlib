@@ -11,6 +11,13 @@ Bleeding Edge
 
 *Nothing, so far*
 
+Version 0.11.2
+--------------
+
+**Bugfixes**
+
+* correct calculation of wavelength (1/100 of cm) `wradlib.io.iris.iris.py`
+
 Version 0.11.1
 --------------
 
