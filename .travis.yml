@@ -1,5 +1,9 @@
 # run on container-based infrastructure
-sudo: false
+# sudo: false
+sudo: required
+dist: trusty
+group: deprecated-2017Q4
+
 
 language: python
 
