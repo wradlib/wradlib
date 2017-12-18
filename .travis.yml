@@ -56,6 +56,7 @@ after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-notebooktests.xml" -F notebooktests|| echo "failed"; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
     - if [[ "$DOC_BUILD" == "true" ]]; then cd $WRADLIB_BUILD_DIR; scripts/build_docs.sh; fi
+    - cd $WRADLIB_BUILD_DIR
 
 deploy:
   # devel
