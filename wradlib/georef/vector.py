@@ -5,7 +5,7 @@
 
 """
 Vector Functions (GDAL)
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
    :nosignatures:
