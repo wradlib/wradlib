@@ -705,7 +705,7 @@ class IrisRawFile(IrisWrapperFile):
             if prod['func'] in [decode_vel, decode_width, decode_kdp]:
                 wavelength = self.product_hdr['product_end']['wavelength']
                 if prod['func'] == decode_kdp:
-                    kw.update({'wavelength': wavelength * 100})
+                    kw.update({'wavelength': wavelength / 100})
                     return prod['func'](data, **kw)
 
                 prf = self.product_hdr['product_end']['prf']
