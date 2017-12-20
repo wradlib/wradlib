@@ -7,6 +7,25 @@
 
 set -e
 
+export PING_SLEEP=30s
+export WORKDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+export BUILD_OUTPUT=$WORKDIR/build.out
+
+touch $BUILD_OUTPUT
+
+dump_output() {
+   echo Tailing the last 500 lines of output:
+   tail -500 $BUILD_OUTPUT
+}
+error_handler() {
+  echo ERROR: An error was encountered with the build.
+  dump_output
+  exit 1
+}
+
+# If an error occurs, run our error handler to output a tail of the build.
+trap 'error_handler' ERR
+
 cd "$WRADLIB_BUILD_DIR"
 
 # print the vars
@@ -67,10 +86,11 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     else
         echo "Building Devel Docs"
         TAG='latest'
+        export TAG=$TAG
     fi
 
     # build docs
-    sphinx-build -b html doc/source doc-build/$TAG
+    sphinx-build -b html doc/source doc-build/$TAG >> $BUILD_OUTPUT
 
     echo "Pushing Docs"
     cd doc-build
@@ -85,8 +105,8 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     touch .nojekyll
     git add --all .
     git commit -m "Version" --allow-empty
-    git remote add origin https://$GH_TOKEN@github.com/wradlib/wradlib-docs.git &> /dev/null
-    git push origin gh-pages -fq &> /dev/null
+    git remote add origin https://$GH_TOKEN@github.com/wradlib/wradlib-docs.git >> $BUILD_OUTPUT
+    git push origin gh-pages -fq >> $BUILD_OUTPUT
 
 else
 
@@ -95,5 +115,12 @@ else
     echo "Not Pushing Docs"
 
 fi
+
+# The build finished without returning an error so dump a tail of the output.
+dump_output
+
+# Nicely terminate the ping output loop.
+kill $PING_LOOP_PID
+rm -rf $BUILD_OUTPUT
 
 exit 0
