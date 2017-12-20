@@ -126,5 +126,3 @@ dump_output
 # Nicely terminate the ping output loop.
 kill $PING_LOOP_PID
 rm -rf $BUILD_OUTPUT
-
-exit 0
