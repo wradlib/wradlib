@@ -41,43 +41,43 @@ export PATH=$HOME/miniconda/bin:$PATH
 # Add conda-forge channel
 conda config --add channels conda-forge
 
-conda update --yes conda >> $BUILD_OUTPUT
-conda update --yes conda >> $BUILD_OUTPUT
+conda update --yes conda >> $BUILD_OUTPUT 2>&1
+conda update --yes conda >> $BUILD_OUTPUT 2>&1
 
 # Create a testenv with the correct Python version
-conda create -n wradlib --yes pip python=$PYTHON_VERSION >> $BUILD_OUTPUT
+conda create -n wradlib --yes pip python=$PYTHON_VERSION >> $BUILD_OUTPUT 2>&1
 source activate wradlib
 
 # Install wradlib dependencies
-conda install --yes gdal numpy scipy matplotlib netcdf4 h5py >> $BUILD_OUTPUT
+conda install --yes gdal numpy scipy matplotlib netcdf4 h5py >> $BUILD_OUTPUT 2>&1
 conda list
 ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
 # Install optional wradlib dependencies
-conda install --yes xmltodict >> $BUILD_OUTPUT
+conda install --yes xmltodict >> $BUILD_OUTPUT 2>&1
 
 # Install wradlib-data
-git clone https://github.com/wradlib/wradlib-data.git $HOME/wradlib-data >> $BUILD_OUTPUT
+git clone https://github.com/wradlib/wradlib-data.git $HOME/wradlib-data >> $BUILD_OUTPUT 2>&1
 echo $PWD
 ls -lart $HOME
 ls -lart $HOME/wradlib-data
 
 # Install nbconvert
-conda install --yes notebook nbconvert >> $BUILD_OUTPUT
+conda install --yes notebook nbconvert >> $BUILD_OUTPUT 2>&1
 
 # Install wradlib docu dependencies
 if [[ "$DOC_BUILD" == "true" ]]; then
-    conda install --yes sphinx numpydoc sphinx_rtd_theme runipy pandoc nbsphinx >> $BUILD_OUTPUT
-    pip install sphinxcontrib-bibtex >> $BUILD_OUTPUT
+    conda install --yes sphinx numpydoc sphinx_rtd_theme runipy pandoc nbsphinx >> $BUILD_OUTPUT 2>&1
+    pip install sphinxcontrib-bibtex >> $BUILD_OUTPUT 2>&1
 fi
 
 # Install flake8 PEP checker
-conda install --yes flake8 >> $BUILD_OUTPUT
+conda install --yes flake8 >> $BUILD_OUTPUT 2>&1
 
 # Install coverage modules
 if [[ "$COVERAGE" == "true" ]]; then
-    conda install --yes coverage >> $BUILD_OUTPUT
-    pip install codecov >> $BUILD_OUTPUT
+    conda install --yes coverage >> $BUILD_OUTPUT 2>&1
+    pip install codecov >> $BUILD_OUTPUT 2>&1
 fi
 
 python setup.py install
@@ -90,7 +90,7 @@ python -c "import numpy; print(numpy.__version__)"
 python -c "import numpy; print(numpy.__path__)"
 
 # The build finished without returning an error so dump a tail of the output.
-dump_output
+# dump_output
 
 # Nicely terminate the ping output loop.
 kill $PING_LOOP_PID

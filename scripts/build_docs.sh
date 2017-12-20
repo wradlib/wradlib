@@ -94,7 +94,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     fi
 
     # build docs
-    sphinx-build -b html doc/source doc-build/$TAG >> $BUILD_OUTPUT
+    sphinx-build -b html doc/source doc-build/$TAG >> $BUILD_OUTPUT 2>&1
 
     echo "Pushing Docs"
     cd doc-build
@@ -109,19 +109,19 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     touch .nojekyll
     git add --all .
     git commit -m "Version" --allow-empty
-    git remote add origin https://$GH_TOKEN@github.com/wradlib/wradlib-docs.git >> $BUILD_OUTPUT
-    git push origin gh-pages -fq >> $BUILD_OUTPUT
+    git remote add origin https://$GH_TOKEN@github.com/wradlib/wradlib-docs.git >> $BUILD_OUTPUT 2>&1
+    git push origin gh-pages -fq >> $BUILD_OUTPUT 2>&1
 
 else
 
     echo "Building Local Docs"
-    sphinx-build -b html doc/source doc-build/latest >> $BUILD_OUTPUT
+    sphinx-build -b html doc/source doc-build/latest >> $BUILD_OUTPUT 2>&1
     echo "Not Pushing Docs"
 
 fi
 
 # The build finished without returning an error so dump a tail of the output.
-dump_output
+# dump_output
 
 # Nicely terminate the ping output loop.
 kill $PING_LOOP_PID
