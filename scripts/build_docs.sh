@@ -111,7 +111,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
 else
 
     echo "Building Local Docs"
-    sphinx-build -b html doc/source doc-build/latest
+    sphinx-build -b html doc/source doc-build/latest >> $BUILD_OUTPUT
     echo "Not Pushing Docs"
 
 fi
