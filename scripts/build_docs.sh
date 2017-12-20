@@ -26,6 +26,10 @@ error_handler() {
 # If an error occurs, run our error handler to output a tail of the build.
 trap 'error_handler' ERR
 
+# Set up a repeating loop to send some output to Travis.
+bash -c "while true; do echo \$(date) - building ...; sleep $PING_SLEEP; done" &
+PING_LOOP_PID=$!
+
 cd "$WRADLIB_BUILD_DIR"
 
 # print the vars
