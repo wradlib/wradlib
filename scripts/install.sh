@@ -78,6 +78,13 @@ fi
 
 python setup.py install
 
+# print some stuff
+python --version
+pip --version
+
+python -c "import numpy; print(numpy.__version__)"
+python -c "import numpy; print(numpy.__path__)"
+
 # The build finished without returning an error so dump a tail of the output.
 dump_output
 
@@ -85,9 +92,4 @@ dump_output
 kill $PING_LOOP_PID
 rm -rf $BUILD_OUTPUT
 
-# print some stuff
-python --version
-pip --version
-
-python -c "import numpy; print(numpy.__version__)"
-python -c "import numpy; print(numpy.__path__)"
+exit 0
