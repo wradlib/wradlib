@@ -134,6 +134,9 @@ exclude_patterns = ['_build', '**.ipynb_checkpoints']
 # This allows sphinx-directives used within notebooks
 nbsphinx_allow_directives = True
 
+# do not execute notebooks ever while building docs
+nbsphinx_execute = 'never'
+
 # The reST default role (used for this markup: `text`)
 # to use for all documents.
 # default_role = None

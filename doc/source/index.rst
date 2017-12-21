@@ -25,7 +25,7 @@ This documentation is under steady development. It provides a complete library r
 .. toctree::
    :maxdepth: 2
    
-   gettingstarted   
+   gettingstarted
    notebooks
    reference
    community
