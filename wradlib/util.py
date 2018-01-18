@@ -308,7 +308,7 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
     >>> src = [1, 1, 1, 1, 1]
     >>> tstarts, tends, agg = aggregate_equidistant_tseries(tstart, tend, \
     tdelta, tends_src, tdelta_src, src, minpercvalid=50.)
-    >>> print(agg)
+    >>> print(agg) # doctest: +NORMALIZE_WHITESPACE
     [  4.  nan  nan  nan]
 
     """
@@ -456,7 +456,8 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     2008-06-02 08:00:00
     2008-06-02 12:00:00
     >>> print('target time series') #doctest: +SKIP
-    >>> print(aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'))
+    >>> agg = aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum')
+    >>> print(agg) # doctest: +NORMALIZE_WHITESPACE
     [[  24.   28.   32.   36.]
      [  88.   92.   96.  100.]
      [  nan   nan   nan   nan]]

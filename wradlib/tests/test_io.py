@@ -173,14 +173,14 @@ class RadolanTest(unittest.TestCase):
         testline = (b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9'
                     b'\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n')
         testattrs = {'ncol': 460, 'nodataflag': 0}
-        arr = np.fromstring(testline, np.uint8).astype(np.uint8)
+        arr = np.frombuffer(testline, np.uint8).astype(np.uint8)
         line = radolan.decode_radolan_runlength_line(arr, testattrs)
         self.assertTrue(np.allclose(line, testarr))
 
     def test_read_radolan_runlength_line(self):
         testline = (b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9'
                     b'\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n')
-        testarr = np.fromstring(testline, np.uint8).astype(np.uint8)
+        testarr = np.frombuffer(testline, np.uint8).astype(np.uint8)
         fid, temp_path = tempfile.mkstemp()
         tmp_id = open(temp_path, 'wb')
         tmp_id.write(testline)
