@@ -1276,7 +1276,7 @@ def string_dict(size):
     return dic
 
 
-_ARRAY = {'read': np.fromstring,
+_ARRAY = {'read': np.frombuffer,
           'rkw': {}}
 
 
@@ -1981,7 +1981,7 @@ TASK_RANGE_INFO = OrderedDict([('range_first_bin', SINT4),
 # 4.3.60, page 61
 
 _ANGLE_LIST = {'size': '80s',
-               'read': np.fromstring,
+               'read': np.frombuffer,
                'rkw': {'dtype': 'uint16'},
                'func': decode_bin_angle,
                'fkw': {'mode': 2}}
