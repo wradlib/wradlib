@@ -267,7 +267,7 @@ def xyz_to_polar(xyz, alt=0, proj=None):
     # spherical earth
     try:
         re = get_earth_radius(proj.GetProjParm('latitude_of_center'), proj)
-    except:
+    except Exception:
         re = 6370040.
 
     # calculate xy-distance

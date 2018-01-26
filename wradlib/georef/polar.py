@@ -386,12 +386,6 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
 Georeferencing-and-Projection`.
 
     """
-    # if site altitude is present, use it, else assume it to be zero
-    try:
-        centalt = sitecoords[2]
-    except Exception:
-        centalt = 0.
-
     # if no radius is given, get the approximate radius of the WGS84
     # ellipsoid for the site's latitude
     if re is None:

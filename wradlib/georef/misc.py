@@ -174,7 +174,8 @@ def distance_height(r, theta, alt, re=6370040., ke=4./3.):
     """
     reff = ke*re
     theta = np.radians(theta)
-    height = np.sqrt(r ** 2 + (reff + alt) ** 2 + 2 * r * (reff + alt) * np.sin(theta)) - reff
+    height = np.sqrt(r ** 2 + (reff + alt) ** 2 + 2 * r * (reff + alt) *
+                     np.sin(theta)) - reff
     dist = reff * np.arcsin((r * np.cos(theta)) /
                             (reff + height))
     return dist, height
