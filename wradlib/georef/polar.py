@@ -13,6 +13,7 @@ Polar Grid Functions
 
    polar2lonlat
    polar2lonlatalt
+   polar_to_xyz
    polar2lonlatalt_n
    polar2centroids
    polar2polyvert
@@ -26,8 +27,8 @@ import numpy as np
 import warnings
 
 from .projection import proj4_to_osr, reproject
-from .misc import (hor2aeq, beam_height_n, arc_distance_n,
-                   get_earth_radius)
+from .misc import (hor2aeq, get_default_projection, get_earth_radius,
+                   distance_height)
 
 
 def _latscale(re=6370040.):
@@ -259,6 +260,54 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     return lons, lats, alts
 
 
+def polar_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
+    """Transforms spherical coordinates (r, phi, theta) to cartesian
+    coordinates (x, y, z) centered at sitecoords.
+
+    .. versionadded:: 0.11.2
+
+    Parameters
+    ----------
+    r : :class:`numpy:numpy.ndarray`
+        Contains the radial distances.
+    phi : :class:`numpy:numpy.ndarray`
+        Contains the azimuthal angles.
+    theta: :class:`numpy:numpy.ndarray`
+        Contains the elevation angles.
+    sitecoords : a sequence of three floats
+        the lon / lat coordinates of the radar location and its altitude
+        a.m.s.l. (in meters)
+        if sitecoords is of length two, altitude is assumed to be zero
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths.
+
+    Returns
+    -------
+    xyz : :class:`numpy:numpy.ndarray`
+        Array of shape (..., 3). Contains cartesian coordinates.
+    """
+    # if site altitude is present, use it, else assume it to be zero
+    try:
+        centalt = sitecoords[2]
+    except Exception:
+        centalt = 0.
+
+    # if no radius is given, get the approximate radius of the WGS84
+    # ellipsoid for the site's latitude
+    if re is None:
+        re = get_earth_radius(sitecoords[1])
+    dist, z = distance_height(r, theta, centalt, re, ke)
+    x = dist * np.cos(np.radians(90 - phi))
+    y = dist * np.sin(np.radians(90 - phi))
+
+    return np.dstack((x, y, z))
+
+
 def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates taking elevation angle and refractivity into account.
@@ -275,7 +324,7 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
         Array of azimuth angles containing values between 0 and 360°.
         These are assumed to start with 0° pointing north and counted
         positive clockwise!
-    th : scalar or :class:`numpy:numpy.ndarray` of the same shape as az
+    elev : scalar or :class:`numpy:numpy.ndarray` of the same shape as az
         Elevation angles in degrees starting with 0° at horizontal to 90°
         pointing vertically upwards from the radar
     sitecoords : a sequence of two or three floats
@@ -348,32 +397,24 @@ Georeferencing-and-Projection`.
     if re is None:
         re = get_earth_radius(sitecoords[1])
 
-    # local earth radius
-    re = re + centalt
+    # x, y, z is calculated via the formulas of Doviak
+    xyz = polar_to_xyz(r, az, elev, sitecoords, re, ke)
 
-    # altitude is calculated using the formulas of Doviak
-    alt = beam_height_n(r, elev, re, ke) + centalt
-    # same goes for the on-ground distance
-    arc = arc_distance_n(r, elev, re, ke)
+    # use wgs84 ellipsoid
+    sph = get_default_projection()
 
-    # define the two projections
-    # for the radar it's azimuthal equidistant projection
-    rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={re:f} ' +
-                        '+b={re:f}').format(lon=sitecoords[0],
-                                            lat=sitecoords[1],
-                                            re=re))
-    # for output we'd like to have spherical coordinates
-    sph = proj4_to_osr('+proj=latlong +a={re:f} +b={re:f}'.format(re=re))
-
-    # projected coordinates such as aeqd must be passed as x,y cartesian
-    # coordinates and thus we have to convert the polar ones
-    x = arc * np.cos(np.radians(90 - az))
-    y = arc * np.sin(np.radians(90 - az))
+    # Set up aeqd-projection sitecoord-centered
+    rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
+                        '+lat_0={lat:f} +a={a:f} ' +
+                        '+b={b:f}').format(lon=sitecoords[0],
+                                           lat=sitecoords[1],
+                                           a=sph.GetSemiMajor(),
+                                           b=sph.GetSemiMinor()))
 
     # then it's just a matter of invoking reproject
-    lon, lat = reproject(x, y, projection_source=rad, projection_target=sph)
+    coords = reproject(xyz, projection_source=rad, projection_target=sph)
 
-    return lon, lat, alt
+    return coords[..., 0], coords[..., 1], coords[..., 2]
 
 
 def centroid2polyvert(centroid, delta):

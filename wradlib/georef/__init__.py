@@ -20,13 +20,14 @@ Georeferencing
 """
 
 from .misc import (beam_height_n, arc_distance_n, get_earth_radius,
-                   get_shape_coordinates)
+                   get_shape_coordinates, distance_height)
 
 from .polar import (polar2lonlat, polar2lonlatalt, polar2lonlatalt_n,
                     centroid2polyvert, polar2polyvert, polar2centroids,
+                    polar_to_xyz,
                     projected_bincoords_from_radarspecs, sweep_centroids)
 
-from .rect import (get_radolan_coords, get_radolan_grid)
+from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_polar)
 
 from .projection import (create_osr, proj4_to_osr, reproject,
                          get_default_projection, epsg_to_osr,

@@ -469,8 +469,9 @@ def reproject_raster_dataset(src_ds, **kwargs):
     src_band = src_ds.GetRasterBand(1)
     nodata = src_band.GetNoDataValue()
     dst_band = dst_ds.GetRasterBand(1)
-    dst_band.SetNoDataValue(nodata)
-    dst_band.WriteArray(np.ones((rows, cols)) * nodata)
+    if nodata is not None:
+        dst_band.SetNoDataValue(nodata)
+        dst_band.WriteArray(np.ones((rows, cols)) * nodata)
     dst_band.FlushCache()
 
     # resample and reproject dataset

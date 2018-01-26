@@ -13,11 +13,13 @@ Rectangular Grid Functions
 
     get_radolan_coords
     get_radolan_grid
+    xyz_to_polar
 """
 
 import numpy as np
 
 from .projection import (create_osr, reproject, get_default_projection)
+from .misc import get_earth_radius
 
 
 def get_radolan_coords(lon, lat, trig=False):
@@ -230,3 +232,60 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
                                      projection_target=proj_wgs)
 
     return radolan_grid
+
+
+def xyz_to_polar(xyz, alt=0, proj=None):
+    """Returns spherical representation (r, theta, phi) of given cartesian
+    coordinates (x, y, z) with respect to the reference altitude (asl)
+    considering earth's geometry (proj).
+
+    .. versionadded:: 0.11.2
+
+    Parameters
+    ----------
+    xyz : :class:`numpy:numpy.ndarray`
+        Array of shape (..., 3). Contains cartesian coordinates.
+    alt : float
+        Altitude (in meters)
+        defaults to 0.
+    proj : osr object
+        projection of the source coordinates (aeqd) with spheroid model
+        defaults to None.
+
+    Returns
+    -------
+    r : :class:`numpy:numpy.ndarray`
+        Array of xyz.shape. Contains the radial distances.
+    theta: :class:`numpy:numpy.ndarray`
+        Array of xyz.shape. Contains the elevation angles.
+    phi : :class:`numpy:numpy.ndarray`
+        Array of xyz.shape. Contains the azimuthal angles.
+    """
+
+    # get the approximate radius of the projection's ellipsoid
+    # for the latitude_of_center, if no projection is given assume
+    # spherical earth
+    try:
+        re = get_earth_radius(proj.GetProjParm('latitude_of_center'), proj)
+    except:
+        re = 6370040.
+
+    # calculate xy-distance
+    s = np.sqrt(np.sum(xyz[..., 0:2] ** 2, axis=-1))
+
+    # calculate earth's arc angle
+    gamma = s / re
+
+    # calculate elevation angle theta
+    numer = np.cos(gamma) - (re + alt) / (re + xyz[..., 2])
+    denom = np.sin(gamma)
+    theta = np.rad2deg(np.arctan(numer / denom))
+
+    # calculate radial distance r
+    r = (re + xyz[..., 2]) * denom / np.cos(np.deg2rad(theta))
+
+    # calculate azimuth angle phi
+    phi = 90 - np.rad2deg(np.arctan2(xyz[..., 1], xyz[..., 0]))
+    phi[phi <= 0] += 360
+
+    return r, phi, theta
