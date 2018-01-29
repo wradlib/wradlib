@@ -310,7 +310,9 @@ def polar_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     x = dist * np.cos(np.radians(90 - phi))
     y = dist * np.sin(np.radians(90 - phi))
 
-    return np.dstack((x, y, z))
+    return np.concatenate((x[..., np.newaxis],
+                           y[..., np.newaxis],
+                           z[..., np.newaxis]), axis=-1)
 
 
 def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
@@ -378,10 +380,10 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     ...
      9.0000, 48.0000,  0.0000
      9.0000, 48.0000,  0.0000
-     9.0000, 48.9989, 725.7160
-    10.4927, 47.9903, 725.7160
-     9.0000, 47.0011, 725.7160
-     7.5076, 47.9903, 1694.2234
+     9.0000, 48.9981, 725.7160
+    10.4872, 47.9904, 725.7160
+     9.0000, 47.0017, 725.7160
+     7.5131, 47.9904, 1694.2234
 
     Here, the coordinates of the east and west directions won't come to lie on
     the latitude of the site because the beam doesn't travel along the latitude
@@ -402,7 +404,7 @@ Georeferencing-and-Projection`.
 
     # x, y, z is calculated via the formulas of Doviak
     xyz = polar_to_xyz(r, az, elev, sitecoords, re, ke)
-
+    print(xyz.shape)
     # use wgs84 ellipsoid
     sph = get_default_projection()
 
@@ -416,6 +418,8 @@ Georeferencing-and-Projection`.
 
     # then it's just a matter of invoking reproject
     coords = reproject(xyz, projection_source=rad, projection_target=sph)
+    print(xyz.shape, coords.shape)
+
     return coords[..., 0], coords[..., 1], coords[..., 2]
 
 
