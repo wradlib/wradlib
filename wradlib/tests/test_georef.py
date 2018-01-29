@@ -52,7 +52,8 @@ class CoordinateTransformTest(unittest.TestCase):
             self.result, rtol=1e-03))
 
     def test_polar2lonlatalt_n(self):
-        lon, lat, alt = georef.polar2lonlatalt_n(self.r, self.az, self.th, self.csite)
+        lon, lat, alt = georef.polar2lonlatalt_n(self.r, self.az,
+                                                 self.th, self.csite)
         self.assertTrue(np.allclose(lon, self.result_n[0]))
         self.assertTrue(np.allclose(lat, self.result_n[1]))
         self.assertTrue(np.allclose(alt, self.result_n[2]))
