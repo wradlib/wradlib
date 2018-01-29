@@ -297,11 +297,16 @@ def polar_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     except Exception:
         centalt = 0.
 
+    r = np.asarray(r)
+    theta = np.asarray(theta)
+    phi = np.asarray(phi)
+
     # if no radius is given, get the approximate radius of the WGS84
     # ellipsoid for the site's latitude
     if re is None:
         re = get_earth_radius(sitecoords[1])
     dist, z = distance_height(r, theta, centalt, re, ke)
+
     x = dist * np.cos(np.radians(90 - phi))
     y = dist * np.sin(np.radians(90 - phi))
 
@@ -392,6 +397,10 @@ Georeferencing-and-Projection`.
         re = get_earth_radius(sitecoords[1])
 
     # x, y, z is calculated via the formulas of Doviak
+    r = np.asarray(r)
+    az = np.asarray(az)
+    elev = np.asarray(elev)
+    print("NDIM:", r.ndim, az.ndim, elev.ndim)
     xyz = polar_to_xyz(r, az, elev, sitecoords, re, ke)
 
     # use wgs84 ellipsoid
@@ -407,7 +416,6 @@ Georeferencing-and-Projection`.
 
     # then it's just a matter of invoking reproject
     coords = reproject(xyz, projection_source=rad, projection_target=sph)
-
     return coords[..., 0], coords[..., 1], coords[..., 2]
 
 

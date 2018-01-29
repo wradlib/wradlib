@@ -477,27 +477,27 @@ def plot_ppi_crosshair(site, ranges, angles=None,
                         psite[1] + rr * np.sin(np.radians(90 - az)))
 
     # mark the site, just in case nothing else would be drawn
-    ax.plot(*psite, marker='+', **linekw)
+    ax.plot(*psite[:2], marker='+', **linekw)
 
     # draw the lines
     for i in range(len(angles)):
         ax.add_line(mpl.lines.Line2D(nsewx[i, :], nsewy[i, :], **linekw))
 
     # draw the range circles
-    for r in ranges:
-        if proj:
-            # produce an approximation of the circle
-            x, y = georef.reproject(*georef.polar2lonlatalt_n(r,
-                                                              np.arange(360),
-                                                              elev,
-                                                              site)[:2],
-                                    projection_target=proj)
-            ax.add_patch(patches.Polygon(np.concatenate([x[:, None],
-                                                         y[:, None]],
-                                                        axis=1),
-                                         **circkw))
-        else:
-            # in the unprojected case, we may use 'true' circles.
+    if proj:
+        # produce an approximation of the circle
+        x, y = np.meshgrid(ranges, np.arange(360))
+        x, y = georef.reproject(*georef.polar2lonlatalt_n(x,
+                                                          y,
+                                                          elev,
+                                                          site)[:2],
+                                projection_target=proj)
+        poly = np.dstack((x.T, y.T))
+        for p in poly:
+            ax.add_patch(patches.Polygon(p, **circkw))
+    else:
+        # in the unprojected case, we may use 'true' circles.
+        for r in ranges:
             ax.add_patch(patches.Circle(psite, r, **circkw))
 
     # there should be not much wrong, setting the axes aspect to equal
