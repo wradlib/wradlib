@@ -24,9 +24,9 @@ class CoordinateTransformTest(unittest.TestCase):
              np.array([0., 0., 967.03198482, 967.03198482, 967.03198482,
                        1935.45679527])))
         self.result_n = tuple(
-            (np.array([9., 9., 9., 10.49189531, 9., 7.50810469]),
-             np.array([48., 48., 48.99839742, 47.99034027, 47.00160258,
-                       47.99034027]),
+            (np.array([9., 9., 9., 10.48716091, 9., 7.51306531]),
+             np.array([48., 48., 48.99814438, 47.99037251, 47.00168131,
+                       47.99037544]),
              np.array([0., 0., 725.7159843, 725.7159843, 725.7159843,
                        1694.22337134])))
 
@@ -52,9 +52,10 @@ class CoordinateTransformTest(unittest.TestCase):
             self.result, rtol=1e-03))
 
     def test_polar2lonlatalt_n(self):
-        self.assertTrue(np.allclose(
-            georef.polar2lonlatalt_n(self.r, self.az, self.th, self.csite),
-            self.result_n, rtol=1e-04))
+        lon, lat, alt = georef.polar2lonlatalt_n(self.r, self.az, self.th, self.csite)
+        self.assertTrue(np.allclose(lon, self.result_n[0]))
+        self.assertTrue(np.allclose(lat, self.result_n[1]))
+        self.assertTrue(np.allclose(alt, self.result_n[2]))
 
     def test__latscale(self):
         self.assertEqual(georef.polar._latscale(), 111178.17148373958)

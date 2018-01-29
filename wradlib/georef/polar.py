@@ -396,11 +396,11 @@ Georeferencing-and-Projection`.
     if re is None:
         re = get_earth_radius(sitecoords[1])
 
-    # x, y, z is calculated via the formulas of Doviak
     r = np.asarray(r)
     az = np.asarray(az)
     elev = np.asarray(elev)
-    print("NDIM:", r.ndim, az.ndim, elev.ndim)
+
+    # x, y, z is calculated via the formulas of Doviak
     xyz = polar_to_xyz(r, az, elev, sitecoords, re, ke)
 
     # use wgs84 ellipsoid
