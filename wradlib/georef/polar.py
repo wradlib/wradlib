@@ -29,6 +29,7 @@ import warnings
 from .projection import proj4_to_osr, reproject
 from .misc import (hor2aeq, get_default_projection, get_earth_radius,
                    distance_height)
+from ..util import deprecated
 
 
 def _latscale(re=6370040.):
@@ -260,20 +261,24 @@ def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     return lons, lats, alts
 
 
-def polar_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
+def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     """Transforms spherical coordinates (r, phi, theta) to cartesian
-    coordinates (x, y, z) centered at sitecoords.
+    coordinates (x, y, z) centered at sitecoords (aeqd).
+
+    It takes the shortening of the great circle
+    distance with increasing elevation angle as well as the resulting
+    increase in height into account.
 
     .. versionadded:: 0.11.2
 
     Parameters
     ----------
     r : :class:`numpy:numpy.ndarray`
-        Contains the radial distances.
+        Contains the radial distances in meters.
     phi : :class:`numpy:numpy.ndarray`
-        Contains the azimuthal angles.
+        Contains the azimuthal angles in degree.
     theta: :class:`numpy:numpy.ndarray`
-        Contains the elevation angles.
+        Contains the elevation angles in degree.
     sitecoords : a sequence of three floats
         the lon / lat coordinates of the radar location and its altitude
         a.m.s.l. (in meters)
@@ -290,6 +295,9 @@ def polar_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     -------
     xyz : :class:`numpy:numpy.ndarray`
         Array of shape (..., 3). Contains cartesian coordinates.
+    rad : osr object
+        Destination Spatial Reference System (Projection).
+        Defaults to wgs84 (epsg 4326).
     """
     # if site altitude is present, use it, else assume it to be zero
     try:
@@ -297,24 +305,119 @@ def polar_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     except Exception:
         centalt = 0.
 
-    r = np.asarray(r)
-    theta = np.asarray(theta)
-    phi = np.asarray(phi)
-
     # if no radius is given, get the approximate radius of the WGS84
     # ellipsoid for the site's latitude
     if re is None:
         re = get_earth_radius(sitecoords[1])
-    dist, z = distance_height(r, theta, centalt, re, ke)
+        # Set up aeqd-projection sitecoord-centered, wgs84 datum and ellipsoid
+        rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
+                            '+lat_0={lat:f} +ellps=WGS84 +datum=WGS84 ' +
+                            '+units=m no_defs').format(lon=sitecoords[0],
+                                                       lat=sitecoords[1]))
+    else:
+        # Set up aeqd-projection sitecoord-centered, assuming spherical earth
+        rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
+                            '+lat_0={lat:f} +a={a:f} +b={b:f}' +
+                            '+units=m no_defs').format(lon=sitecoords[0],
+                                                       lat=sitecoords[1],
+                                                       a=re, b=re))
+
+    r = np.asarray(r)
+    theta = np.asarray(theta)
+    phi = np.asarray(phi)
+
+    dist, z = distance_height(r, theta, centalt, re=re, ke=ke)
 
     x = dist * np.cos(np.radians(90 - phi))
     y = dist * np.sin(np.radians(90 - phi))
 
-    return np.concatenate((x[..., np.newaxis],
-                           y[..., np.newaxis],
-                           z[..., np.newaxis]), axis=-1)
+    xyz = np.concatenate((x[..., np.newaxis],
+                          y[..., np.newaxis],
+                          z[..., np.newaxis]), axis=-1)
+
+    return xyz, rad
 
 
+def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4./3.):
+    """Transforms spherical coordinates (r, phi, theta) to projected
+    coordinates centered at sitecoords in given projection.
+
+    It takes the shortening of the great circle
+    distance with increasing elevation angle as well as the resulting
+    increase in height into account.
+
+    .. versionadded:: 0.11.2
+
+    Parameters
+    ----------
+    r : :class:`numpy:numpy.ndarray`
+        Contains the radial distances.
+    phi : :class:`numpy:numpy.ndarray`
+        Contains the azimuthal angles.
+    theta: :class:`numpy:numpy.ndarray`
+        Contains the elevation angles.
+    sitecoords : a sequence of three floats
+        the lon / lat coordinates of the radar location and its altitude
+        a.m.s.l. (in meters)
+        if sitecoords is of length two, altitude is assumed to be zero
+    proj : osr object
+        Destination Spatial Reference System (Projection).
+        Defaults to wgs84 (epsg 4326).
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths.
+
+    Returns
+    -------
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (..., 3). Contains projected map coordinates.
+
+        Examples
+    --------
+
+    A few standard directions (North, South, North, East, South, West) with
+    different distances (amounting to roughly 1°) from a site
+    located at 48°N 9°E
+
+    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
+    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
+    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
+    >>> csite = (9.0, 48.0)
+    >>> coords = spherical_to_proj(r, az, th, csite)
+    >>> for coord in coords:
+    ...     print( '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(*coord))
+    ...
+     9.0000, 48.0000,  0.0000
+     9.0000, 48.0000,  0.0000
+     9.0000, 48.9981, 725.7160
+    10.4872, 47.9904, 725.7160
+     9.0000, 47.0017, 725.7160
+     7.5131, 47.9904, 1694.2234
+
+    Here, the coordinates of the east and west directions won't come to lie on
+    the latitude of the site because the beam doesn't travel along the latitude
+    circle but along a great circle.
+
+    See :ref:`notebooks/basics/wradlib_workflow.ipynb#\
+Georeferencing-and-Projection`.
+
+    """
+    if proj is None:
+        proj = get_default_projection()
+
+    xyz, rad = spherical_to_xyz(r, phi, theta, sitecoords, re=re, ke=ke)
+
+    # reproject aeqd to destination projection
+    coords = reproject(xyz, projection_source=rad, projection_target=proj)
+
+    return coords
+
+
+@deprecated(spherical_to_proj)
 def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates taking elevation angle and refractivity into account.
@@ -393,32 +496,15 @@ def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
 Georeferencing-and-Projection`.
 
     """
-    # if no radius is given, get the approximate radius of the WGS84
-    # ellipsoid for the site's latitude
-    if re is None:
-        re = get_earth_radius(sitecoords[1])
-
     r = np.asarray(r)
     az = np.asarray(az)
     elev = np.asarray(elev)
 
-    # x, y, z is calculated via the formulas of Doviak
-    xyz = polar_to_xyz(r, az, elev, sitecoords, re, ke)
-    print(xyz.shape)
     # use wgs84 ellipsoid
     sph = get_default_projection()
 
-    # Set up aeqd-projection sitecoord-centered
-    rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
-                        '+lat_0={lat:f} +a={a:f} ' +
-                        '+b={b:f}').format(lon=sitecoords[0],
-                                           lat=sitecoords[1],
-                                           a=sph.GetSemiMajor(),
-                                           b=sph.GetSemiMinor()))
-
-    # then it's just a matter of invoking reproject
-    coords = reproject(xyz, projection_source=rad, projection_target=sph)
-    print(xyz.shape, coords.shape)
+    # coords is calculated via the formulas of Doviak
+    coords = spherical_to_proj(r, az, elev, sitecoords, sph, re=re, ke=ke)
 
     return coords[..., 0], coords[..., 1], coords[..., 2]
 

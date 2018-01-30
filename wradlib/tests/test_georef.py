@@ -10,6 +10,10 @@ from wradlib.io import read_generic_hdf5, open_raster, gdal_create_dataset
 import numpy as np
 from osgeo import gdal, osr, ogr
 
+np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
+                    precision=8, suppress=False, threshold=1000,
+                    formatter=None)
+
 
 class CoordinateTransformTest(unittest.TestCase):
     def setUp(self):
@@ -17,6 +21,11 @@ class CoordinateTransformTest(unittest.TestCase):
         self.az = np.array([0., 180., 0., 90., 180., 270.])
         self.th = np.array([0., 0., 0., 0., 0., 0.5])
         self.csite = (9.0, 48.0)
+        self.result_xyz = tuple(
+            (np.array([0., 0., 0., 110993.6738, 0., -110976.7856]),
+             np.array([0., -0., 110993.6738, 0., -110976.7856, -0.]),
+             np.array([0., 0., 725.7159843, 725.7159843, 725.7159843,
+                       1694.22337134])))
         self.result = tuple(
             (np.array([9., 9., 9., 10.49189531, 9., 7.50810469]),
              np.array([48., 48., 48.99839742, 47.99034027, 47.00160258,
@@ -50,6 +59,37 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(
             georef.polar2lonlatalt(self.r, self.az, self.th, self.csite),
             self.result, rtol=1e-03))
+
+    def test_spherical_to_xyz(self):
+        coords, rad = georef.spherical_to_xyz(self.r, self.az,
+                                              self.th, self.csite)
+        self.assertTrue(np.allclose(coords[..., 0], self.result_xyz[0],
+                        rtol=1e-03))
+        self.assertTrue(np.allclose(coords[..., 1], self.result_xyz[1],
+                        rtol=1e-03))
+        self.assertTrue(np.allclose(coords[..., 2], self.result_xyz[2],
+                        rtol=1e-03))
+
+    def test_distance_height(self):
+        dist, height = georef.distance_height(np.arange(10., 101., 10.)
+                                              * 1000., 2., 0)
+        dist1 = np.array([9993.49302358, 19986.13717891, 29977.90491409,
+                          39968.76869178, 49958.70098959, 59947.6743006,
+                          69935.66113377, 79922.63401441, 89908.5654846,
+                          99893.4281037])
+        height1 = np.array([354.87448647, 721.50702113, 1099.8960815,
+                            1490.04009656, 1891.93744678, 2305.58646416,
+                            2730.98543223, 3168.13258613, 3617.02611263,
+                            4077.66415017])
+        np.testing.assert_allclose(dist, dist1)
+        np.testing.assert_allclose(height, height1)
+
+    def test_spherical_to_proj(self):
+        coords = georef.spherical_to_proj(self.r, self.az,
+                                          self.th, self.csite)
+        self.assertTrue(np.allclose(coords[..., 0], self.result_n[0]))
+        self.assertTrue(np.allclose(coords[..., 1], self.result_n[1]))
+        self.assertTrue(np.allclose(coords[..., 2], self.result_n[2]))
 
     def test_polar2lonlatalt_n(self):
         lon, lat, alt = georef.polar2lonlatalt_n(self.r, self.az,
