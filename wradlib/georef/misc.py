@@ -18,8 +18,11 @@ Miscellaneous
 """
 
 import numpy as np
+from deprecation import deprecated
 
 from .projection import get_default_projection
+from ..version import short_version
+
 
 # Seitenlänge Zenit - Himmelsnordpol: 90°-phi
 # Seitenlänge Himmelsnordpol - Gestirn: 90°-delta
@@ -34,7 +37,8 @@ from .projection import get_default_projection
 # a - azimuth (von süden aus gezählt)
 # h - Höhe über Horizont
 
-
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def hor2aeq(a, h, phi):
     """"""
     delta = np.arcsin(np.sin(h) * np.sin(phi) - np.cos(h) *
@@ -43,6 +47,8 @@ def hor2aeq(a, h, phi):
     return delta, tau
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def aeq2hor(tau, delta, phi):
     """"""
     h = np.arcsin(np.cos(delta) * np.cos(tau) * np.cos(phi) +

@@ -30,6 +30,7 @@ from time import mktime
 import warnings
 import functools
 import os
+from deprecation import deprecated
 
 import numpy as np
 from scipy import interpolate
@@ -37,10 +38,14 @@ from scipy.ndimage import filters
 from scipy.spatial import cKDTree
 from osgeo import ogr
 
+from . version import short_version
+
 warnings.simplefilter('always', DeprecationWarning)
 # warnings.simplefilter('always', FutureWarning)
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def deprecated(replacement=None):
     """A decorator which can be used to mark functions as deprecated.
     replacement is a callable that will be called with the same args

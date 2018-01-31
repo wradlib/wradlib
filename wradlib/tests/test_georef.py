@@ -9,6 +9,7 @@ import wradlib.util as util
 from wradlib.io import read_generic_hdf5, open_raster, gdal_create_dataset
 import numpy as np
 from osgeo import gdal, osr, ogr
+from deprecation import fail_if_not_removed
 
 np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
                     precision=8, suppress=False, threshold=1000,
@@ -39,22 +40,26 @@ class CoordinateTransformTest(unittest.TestCase):
              np.array([0., 0., 725.7159843, 725.7159843, 725.7159843,
                        1694.22337134])))
 
+    @fail_if_not_removed
     def test_hor2aeq(self):
         self.assertTrue(np.allclose(georef.misc.hor2aeq(0.25, 0.5, 0.75),
                                     (-0.29983281824238966,
                                      0.22925926995789672)))
 
+    @fail_if_not_removed
     def test_aeq2hor(self):
         self.assertTrue(np.allclose(georef.misc.aeq2hor(0.22925926995789672,
                                                         -0.29983281824238966,
                                                         0.75),
                                     (0.25, 0.5)))
 
+    @fail_if_not_removed
     def test_polar2lonlat(self):
         self.assertTrue(
             np.allclose(georef.polar2lonlat(self.r, self.az, self.csite),
                         self.result[:2]))
 
+    @fail_if_not_removed
     def test_polar2lonlatalt(self):
         self.assertTrue(np.allclose(
             georef.polar2lonlatalt(self.r, self.az, self.th, self.csite),
@@ -91,6 +96,7 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(coords[..., 1], self.result_n[1]))
         self.assertTrue(np.allclose(coords[..., 2], self.result_n[2]))
 
+    @fail_if_not_removed
     def test_polar2lonlatalt_n(self):
         lon, lat, alt = georef.polar2lonlatalt_n(self.r, self.az,
                                                  self.th, self.csite)
@@ -98,9 +104,11 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(lat, self.result_n[1]))
         self.assertTrue(np.allclose(alt, self.result_n[2]))
 
+    @fail_if_not_removed
     def test__latscale(self):
         self.assertEqual(georef.polar._latscale(), 111178.17148373958)
 
+    @fail_if_not_removed
     def test__lonscale(self):
         self.assertTrue(
             np.allclose(georef.polar._lonscale(np.arange(-90., 90., 10.)),
@@ -155,6 +163,7 @@ class CoordinateHelperTest(unittest.TestCase):
                        [2.5, 2.5],
                        [1.5, 2.5]]])))
 
+    @fail_if_not_removed
     def test_polar2polyvert(self):
         self.assertTrue(np.allclose(
             georef.polar2polyvert(np.array([10000., 10100.]),
@@ -180,6 +189,7 @@ class CoordinateHelperTest(unittest.TestCase):
                        [9.051524, 48.0830875],
                        [9.12427234, 48.03435375]]])))
 
+    @fail_if_not_removed
     def test_polar2centroids(self):
         r = np.array([10000., 10100.])
         az = np.array([45., 90.])

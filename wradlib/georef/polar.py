@@ -11,6 +11,10 @@ Polar Grid Functions
    :nosignatures:
    :toctree: generated/
 
+   spherical_to_xyz
+   spherical_to_proj
+   spherical_to_polyvert
+   spherical_to_centroids
    polar2lonlat
    polar2lonlatalt
    polar_to_xyz
@@ -25,25 +29,33 @@ Polar Grid Functions
 
 import numpy as np
 import warnings
+from deprecation import deprecated
 
 from .projection import proj4_to_osr, reproject
 from .misc import (hor2aeq, get_default_projection, get_earth_radius,
                    distance_height)
-from ..util import deprecated
+
+from ..version import short_version
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def _latscale(re=6370040.):
     """Return meters per degree latitude assuming spherical earth
     """
     return 2 * np.pi * re / 360.
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def _lonscale(lat, re=6370040.):
     """Return meters per degree longitude assuming spherical earth
     """
     return (2 * np.pi * re / 360.) * np.cos(np.deg2rad(lat))
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def polar2lonlat(r, az, sitecoords, re=6370040):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates.
@@ -131,6 +143,8 @@ def polar2lonlat(r, az, sitecoords, re=6370040):
     return lonc, latc
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def __pol2lonlat(rng, az, sitecoords, re=6370040):
     """Alternative implementation using spherical geometry only.
 
@@ -180,6 +194,8 @@ def __pol2lonlat(rng, az, sitecoords, re=6370040):
     return thea + np.rad2deg(np.where(easterly, g, -g)), 90. - np.rad2deg(m)
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
     """Transforms polar coordinates to lon/lat/altitude coordinates.
 
@@ -417,7 +433,9 @@ Georeferencing-and-Projection`.
     return coords
 
 
-@deprecated(spherical_to_proj)
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.georef.spherical_to_proj` instead.")
 def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates taking elevation angle and refractivity into account.
@@ -577,6 +595,9 @@ def centroid2polyvert(centroid, delta):
     return np.asanyarray(centroid)[..., None, :] + d * np.asanyarray(delta)
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.georef.spherical_to_polyvert` instead.")
 def polar2polyvert(r, az, sitecoords):
     """
     Generate 2-D polygon vertices directly from polar coordinates.
@@ -664,6 +685,104 @@ def polar2polyvert(r, az, sitecoords):
     return vertices
 
 
+def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
+    """
+    Generate 3-D polygon vertices directly from spherical coordinates
+    (r, phi, theta).
+
+    This is an alternative to :meth:`~wradlib.georef.centroid2polyvert` which
+    does not use centroids, but generates the polygon vertices by simply
+    connecting the corners of the radar bins.
+
+    Both azimuth and range arrays are assumed to be equidistant and to contain
+    only unique values. For further information refer to the documentation of
+    :meth:`~wradlib.georef.spherical_to_xyz`.
+
+    Parameters
+    ----------
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]; r defines the exterior boundaries of the range
+        bins! (not the centroids). Thus, values must be positive!
+    phi : :class:`numpy:numpy.ndarray`
+        Array of azimuth angles containing values between 0° and 360°.
+        The angles are assumed to describe the pointing direction fo the main
+        beam lobe!
+        The first angle can start at any values, but make sure the array is
+        sorted continuously positively clockwise and the angles are
+        equidistant. An angle if 0 degree is pointing north.
+    theta : float
+        Elevation angle of scan
+    sitecoords : a sequence of three floats
+        the lon/lat/alt coordinates of the radar location
+    proj : osr object
+        Destination Projection
+
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        A 3-d array of polygon vertices with shape(num_vertices,
+        num_vertex_nodes, 2). The last dimension carries the xyz-coordinates
+        either in `aeqd` or given proj.
+    proj : osr object
+        only returned if proj is None
+
+    Examples
+    --------
+    >>> import wradlib.georef as georef  # noqa
+    >>> import numpy as np
+    >>> import matplotlib as mpl
+    >>> import matplotlib.pyplot as pl
+    >>> #pl.interactive(True)
+    >>> # define the polar coordinates and the site coordinates in lat/lon
+    >>> r = np.array([50., 100., 150., 200.]) * 1000
+    >>> # _check_polar_coords fails in next line
+    >>> # az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
+    >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
+    >>> el = 1.0
+    >>> sitecoords = (9.0, 48.0, 0)
+    >>> polygons, proj = georef.spherical_to_polyvert(r, az, el, sitecoords)
+    >>> # plot the resulting mesh
+    >>> fig = pl.figure()
+    >>> ax = fig.add_subplot(111)
+    >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)  # noqa
+    >>> polycoll = mpl.collections.PolyCollection(polygons[...,:2], closed=True, facecolors='None')  # noqa
+    >>> ret = ax.add_collection(polycoll, autolim=True)
+    >>> pl.autoscale()
+    >>> pl.show()
+
+    """
+    # prepare the range and azimuth array so they describe the boundaries of
+    # a bin, not the centroid
+    r, phi = _check_polar_coords(r, phi)
+    r = np.insert(r, 0, r[0] - _get_range_resolution(r))
+    phi = phi - 0.5 * _get_azimuth_resolution(phi)
+    phi = np.append(phi, phi[0])
+    phi = np.where(phi < 0, phi + 360., phi)
+
+    # generate a grid of polar coordinates of bin corners
+    r, phi = np.meshgrid(r, phi)
+
+    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords)
+    if proj is not None:
+        coords = reproject(coords, projection_source=rad,
+                           projection_target=proj)
+
+    llc = coords[:-1, :-1]
+    ulc = coords[:-1, 1:]
+    urc = coords[1:, 1:]
+    lrc = coords[1:, :-1]
+
+    vertices = np.stack((llc, ulc, urc, lrc, llc), axis=-2).reshape((-1, 5, 3))
+
+    if proj is None:
+        return vertices, rad
+    else:
+        return vertices
+
+
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.georef.spherical_to_centroids` instead.")
 def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
     """
     Computes the lat/lon centroids of the radar bins from the polar
@@ -720,6 +839,69 @@ def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
     lon, lat = polar2lonlat(r, az, sitecoords)
 
     return lon, lat
+
+
+def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
+    """
+    Generate 3-D centroids of the radar bins from the sperical
+    coordinates (r, phi, theta).
+
+    Both azimuth and range arrays are assumed to be equidistant and to contain
+    only unique values. The ranges are assumed to define the exterior
+    boundaries of the range bins (thus they must be positive). The angles are
+    assumed to describe the pointing direction fo the main beam lobe.
+
+    For further information refer to the documentation of
+    :meth:`~wradlib.georef.polar2lonlat`.
+
+    Parameters
+    ----------
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]; r defines the exterior boundaries of the range
+        bins! (not the centroids). Thus, values must be positive!
+    phi : :class:`numpy:numpy.ndarray`
+        Array of azimuth angles containing values between 0° and 360°.
+        The angles are assumed to describe the pointing direction fo the main
+        beam lobe!
+        The first angle can start at any values, but make sure the array is
+        sorted continuously positively clockwise and the angles are
+        equidistant. An angle if 0 degree is pointing north.
+    theta : float
+        Elevation angle of scan
+    sitecoords : a sequence of three floats
+        the lon/lat/alt coordinates of the radar location
+    proj : osr object
+        Destination Projection
+
+    Returns
+    -------
+    output : centroids :class:`numpy:numpy.ndarray`
+        A 3-d array of bin centroids with shape(num_rays, num_bins, 3).
+        The last dimension carries the xyz-coordinates
+        either in `aeqd` or given proj.
+    proj : osr object
+        only returned if proj is None
+
+    Note
+    ----
+    Azimuth angles of 360 deg are internally converted to 0 deg.
+
+    """
+    # make sure the range and azimuth angles have the right properties
+    r, phi = _check_polar_coords(r, phi)
+
+    r = r - 0.5 * _get_range_resolution(r)
+
+    # generate a polar grid and convert to lat/lon
+    r, phi = np.meshgrid(r, phi)
+
+    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords)
+
+    if proj is None:
+        return coords, rad
+    else:
+        return reproject(coords, projection_source=rad,
+                         projection_target=proj)
 
 
 def _check_polar_coords(r, az):
@@ -808,6 +990,9 @@ def _get_azimuth_resolution(x):
     return res[0]
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.georef.spherical_to_centroids` instead.")
 def projected_bincoords_from_radarspecs(r, az, sitecoords, proj,
                                         range_res=None):
     """
