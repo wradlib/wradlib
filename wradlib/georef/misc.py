@@ -130,7 +130,7 @@ def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
                                (ke * re + beam_height_n(r, theta, re, ke)))
 
 
-def distance_height(r, theta, alt, re=6370040., ke=4./3.):
+def distance_height(r, theta, alt=None, re=6370040., ke=4./3.):
     r"""Calculates distance and height of a radar bin taking the refractivity
     of the atmosphere into account.
 
@@ -154,8 +154,11 @@ def distance_height(r, theta, alt, re=6370040., ke=4./3.):
     r : :class:`numpy:numpy.ndarray`
         Array of ranges [m]
     theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
-        of r elevation angles in degrees with 0° at horizontal and +90°
+        of r
+        elevation angles in degrees with 0° at horizontal and +90°
         pointing vertically upwards from the radar
+    alt : float
+        altitude of radar site [m]
     re : float
         earth's radius [m]
     ke : float
@@ -172,6 +175,8 @@ def distance_height(r, theta, alt, re=6370040., ke=4./3.):
         height of the beam in [m]
 
     """
+    if alt is None:
+        alt = 0.
     reff = ke*re
     theta = np.radians(theta)
     height = np.sqrt(r ** 2 + (reff + alt) ** 2 + 2 * r * (reff + alt) *

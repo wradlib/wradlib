@@ -115,7 +115,7 @@ register_projection(NorthPolarAxes)
 
 
 def plot_ppi(data, r=None, az=None, autoext=True,
-             site=(0, 0), proj=None, elev=0.,
+             site=(0, 0, 0), proj=None, elev=0.,
              fig=None, ax=111, func='pcolormesh',
              cg=False, rf=1., refrac=False,
              **kwargs):
@@ -139,7 +139,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     ``**kwargs` may be used to try to influence the
     :func:`matplotlib.pyplot.pcolormesh`, :func:`matplotlib.pyplot.contour`,
     :func:`matplotlib.pyplot.contourf` and
-    :meth:`wradlib.georef.polar2lonlatalt_n` routines under the hood.
+    :meth:`wradlib.georef.spherical_to_proj` routines under the hood.
 
     There is one major caveat concerning the values of `r` and `az`.
     Due to the way :func:`matplotlib.pyplot.pcolormesh` works, `r` should give
@@ -249,11 +249,11 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     """
     # kwargs handling
-    kw_polar2lonlatalt_n = {}
+    kw_spherical = {}
     if 're' in kwargs:
-        kw_polar2lonlatalt_n['re'] = kwargs.pop('re')
+        kw_spherical['re'] = kwargs.pop('re')
     if 'ke' in kwargs:
-        kw_polar2lonlatalt_n['ke'] = kwargs.pop('ke')
+        kw_spherical['ke'] = kwargs.pop('ke')
     kwargs['zorder'] = kwargs.pop('zorder', 0)
 
     if (proj is not None) & cg:
@@ -298,7 +298,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     if refrac & (proj is None):
         # with refraction correction, significant at higher elevations
         # calculate new range values
-        x = georef.arc_distance_n(x, elev)
+        x, _ = georef.distance_height(x, elev, site[2], **kw_spherical)
 
     # axes object is given
     if isinstance(ax, mpl.axes.Axes):
@@ -341,11 +341,14 @@ def plot_ppi(data, r=None, az=None, autoext=True,
             # if we produced a default, this one is still in 'kilometers'
             # therefore we need to get from km to m
             xx *= 1000
-        # latitude longitudes from the polar data still stored in xx and yy
-        lon, lat, alt = georef.polar2lonlatalt_n(xx, yy, elev, site,
-                                                 **kw_polar2lonlatalt_n)
+
         # projected to the final coordinate system
-        xx, yy = georef.reproject(lon, lat, projection_target=proj)
+        kw_spherical['proj'] = proj
+        coords = georef.spherical_to_proj(xx, yy, elev, site, **kw_spherical)
+
+        xx = coords[..., 0]
+        yy = coords[..., 1]
+
     else:
         if cg:
             yy = yy / rf
@@ -461,13 +464,10 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         # these lines might not be straigt so we approximate them with 10
         # segments. Produce polar coordinates
         rr, az = np.meshgrid(np.linspace(0, ranges[-1], 10), angles)
-        # and reproject using polar2lonlatalt to convert from polar
-        # to geographic
-        nsewx, nsewy = georef.reproject(*georef.polar2lonlatalt_n(rr,
-                                                                  az,
-                                                                  elev,
-                                                                  site)[:2],
-                                        projection_target=proj)
+        # convert from spherical to projection
+        coords = georef.spherical_to_proj(rr, az, elev, site, proj=proj)
+        nsewx = coords[..., 0]
+        nsewy = coords[..., 1]
     else:
         # no projection
         psite = site
@@ -487,12 +487,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     if proj:
         # produce an approximation of the circle
         x, y = np.meshgrid(ranges, np.arange(360))
-        x, y = georef.reproject(*georef.polar2lonlatalt_n(x,
-                                                          y,
-                                                          elev,
-                                                          site)[:2],
-                                projection_target=proj)
-        poly = np.dstack((x.T, y.T))
+        poly = georef.spherical_to_proj(x, y, elev, site, proj=proj)[..., :2]
+        poly = np.swapaxes(poly, 0, 1)
         for p in poly:
             ax.add_patch(patches.Polygon(p, **circkw))
     else:
@@ -706,8 +702,9 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     if refrac:
         # observing air refractivity, so ground distances and beam height
         # must be calculated specially
-        xxx = georef.arc_distance_n(xx, yy) / rf
-        yyy = georef.beam_height_n(xx, yy) / rf
+        xxx, yyy = georef.distance_height(xx, yy, yoffset)
+        xxx /= rf
+        yyy /= rf
         if cg:
             plax = caax
     else:
@@ -721,7 +718,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
             xxx = xx * np.cos(np.radians(yy)) / rf
             yyy = xx * np.sin(np.radians(yy)) / rf
 
-    yyy += yoffset / rf
+        yyy += yoffset / rf
 
     # plot the stuff
     plotfunc = getattr(plax, func)
@@ -1250,11 +1247,10 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     polc = util.meshgridN(ranges, az, elevs)
 
     # get mean height over radar
-    lon, lat, alt = georef.polar2lonlatalt_n(polc[0].ravel(), polc[1].ravel(),
-                                             polc[2].ravel(), site)
-    alt = alt.reshape(len(ranges), len(elevs))
+    coords, _ = georef.spherical_to_xyz(polc[0], polc[1], polc[2], site)
+    coords = np.squeeze(coords)
+    alt = coords[..., 2]
     r = polc[0].reshape(len(ranges), len(elevs))
-
     if ax is None:
         returnax = False
         fig = pl.figure()

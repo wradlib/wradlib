@@ -342,13 +342,11 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     elevs = np.array([elevs]).ravel()
     # create polar grid
     el, az, r = util.meshgridN(elevs, azimuths, ranges)
-    # get geographical coordinates
-    lons, lats, z = georef.polar2lonlatalt_n(r, az, el,
-                                             sitecoords, re=6370040.)
-    # get projected horizontal coordinates
-    x, y = georef.reproject(lons, lats, projection_target=proj)
-    # create standard shape
-    coords = np.vstack((x.ravel(), y.ravel(), z.ravel())).transpose()
+
+    # get projected coordinates
+    coords = georef.spherical_to_proj(r, az, el, sitecoords, proj=proj)
+    coords = coords.reshape(-1, 3)
+
     return coords
 
 
@@ -441,13 +439,10 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
         el = np.append(el, np.repeat(elev, len(azimuths[i]) * len(ranges[i])))
         az = np.append(az, az_tmp.ravel())
         r = np.append(r, r_tmp.ravel())
-    # get geographical coordinates
-    lons, lats, z = georef.polar2lonlatalt_n(r, az, el,
-                                             sitecoords, re=6370040.)
-    # get projected horizontal coordinates
-    x, y = georef.reproject(lons, lats, projection_target=proj)
-    # create standard shape
-    coords = np.vstack((x.ravel(), y.ravel(), z.ravel())).transpose()
+    # get projected coordinates
+    coords = georef.spherical_to_proj(r, az, el, sitecoords, proj=proj)
+    coords = coords.reshape(-1, 3)
+
     return coords
 
 
