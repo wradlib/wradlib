@@ -300,6 +300,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     if refrac & (proj is None):
         # with refraction correction, significant at higher elevations
         # calculate new range values
+        re = kwargs.pop('re', 6370040.)
+        ke = kwargs.pop('ke', 4 / 3.)
         x = georef.bin_distance(x, elev, site[2], re, ke=ke)
 
     # axes object is given
