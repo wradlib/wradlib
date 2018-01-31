@@ -189,6 +189,33 @@ class CoordinateHelperTest(unittest.TestCase):
                        [9.051524, 48.0830875],
                        [9.12427234, 48.03435375]]])))
 
+    def test_spherical_to_polyvert(self):
+        sph = georef.get_default_projection()
+        polyvert = georef.spherical_to_polyvert(np.array([10000., 10100.]),
+                                                np.array([45., 90.]), 0,
+                                                (9., 48.), proj=sph)
+        arr = np.asarray([[[9.05084865, 48.08224715, 6.],
+                           [9.05136309, 48.0830778, 6.],
+                           [9.1238846, 48.03435008, 6.],
+                           [9.12264494, 48.03400725, 6.],
+                           [9.05084865, 48.08224715, 6.]],
+                          [[9.05136309, 48.0830778, 6.],
+                           [9.05187756, 48.08390846, 6.],
+                           [9.12512428, 48.03469291, 6.],
+                           [9.1238846, 48.03435008, 6.],
+                           [9.05136309, 48.0830778, 6.]],
+                          [[9.12264494, 48.03400725, 6.],
+                           [9.1238846, 48.03435008, 6.],
+                           [9.05136309, 48.0830778, 6.],
+                           [9.05084865, 48.08224715, 6.],
+                           [9.12264494, 48.03400725, 6.]],
+                          [[9.1238846, 48.03435008, 6.],
+                           [9.12512428, 48.03469291, 6.],
+                           [9.05187756, 48.08390846, 6.],
+                           [9.05136309, 48.0830778, 6.],
+                           [9.1238846, 48.03435008, 6.]]])
+        self.assertTrue(np.allclose(polyvert, arr, rtol=1e-12))
+
     @fail_if_not_removed
     def test_polar2centroids(self):
         r = np.array([10000., 10100.])
@@ -201,6 +228,19 @@ class CoordinateHelperTest(unittest.TestCase):
                                            np.array(
                                                [[48.06324434, 48.06387957],
                                                 [47.99992237, 47.9999208]])))))
+
+    def test_spherical_to_centroids(self):
+        r = np.array([10000., 10100.])
+        az = np.array([45., 90.])
+        sitecoords = (9., 48., 0.)
+        sph = georef.get_default_projection()
+        centroids = georef.spherical_to_centroids(r, az, 0, sitecoords,
+                                                  proj=sph)
+        arr = np.asarray([[[9.09439583, 48.06323717, 6.],
+                           [9.09534571, 48.06387232, 6.]],
+                          [[9.1333325, 47.99992262, 6.],
+                           [9.13467253, 47.99992106, 6.]]])
+        self.assertTrue(np.allclose(centroids, arr))
 
     def test_sweep_centroids(self):
         self.assertTrue(np.allclose(georef.sweep_centroids(1, 100., 1, 2.0),
