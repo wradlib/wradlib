@@ -19,8 +19,8 @@ Georeferencing
 .. automodule:: wradlib.georef.satellite
 """
 
-from .misc import (beam_height_n, arc_distance_n, get_earth_radius,
-                   get_shape_coordinates, distance_height)
+from .misc import (beam_height_n, arc_distance_n, bin_altitude, bin_distance,
+                   get_earth_radius, get_shape_coordinates, site_distance)
 
 from .polar import (polar2lonlat, polar2lonlatalt, polar2lonlatalt_n,
                     centroid2polyvert, polar2polyvert, polar2centroids,

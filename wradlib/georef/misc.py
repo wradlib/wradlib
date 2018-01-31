@@ -13,8 +13,10 @@ Miscellaneous
 
    beam_height_n
    arc_distance_n
+   bin_altitude
+   bin_distance
+   site_distance
    get_earth_radius
-   distance_height
 """
 
 import numpy as np
@@ -57,6 +59,9 @@ def aeq2hor(tau, delta, phi):
     return a, h
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.georef.bin_altitude` instead")
 def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
     r"""Calculates the height of a radar beam taking the refractivity of the
     atmosphere into account.
@@ -93,6 +98,9 @@ def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
                    2 * r * ke * re * np.sin(np.radians(theta))) - ke * re
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.georef.bin_distance` instead")
 def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
     r"""Calculates the great circle distance of a radar beam over a sphere,
     taking the refractivity of the atmosphere into account.
@@ -136,23 +144,15 @@ def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
                                (ke * re + beam_height_n(r, theta, re, ke)))
 
 
-def distance_height(r, theta, alt=None, re=6370040., ke=4./3.):
-    r"""Calculates distance and height of a radar bin taking the refractivity
-    of the atmosphere into account.
+def bin_altitude(r, theta, sitealt, re, ke=4./3.):
+    r"""Calculates the height of a radar bin taking the refractivity of the
+    atmosphere into account.
 
-    Based on :cite:`Doviak1993` the beam height is calculated as
-
-    .. math::
-
-        h = \sqrt{r^2 + (k_e r_e + alt)^2 + 2 r (k_e r_e + alt) \sin\theta}
-        - k_e r_e
-
-    and the arc distance is calculated as
+    Based on :cite:`Doviak1993` the bin altitude is calculated as
 
     .. math::
 
-        s = k_e r_e \arcsin\left(
-        \frac{r \cos\theta}{k_e r_e + h)}\right)
+        h = \sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \sin\theta} - k_e r_e
 
 
     Parameters
@@ -160,36 +160,107 @@ def distance_height(r, theta, alt=None, re=6370040., ke=4./3.):
     r : :class:`numpy:numpy.ndarray`
         Array of ranges [m]
     theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
-        of r
-        elevation angles in degrees with 0° at horizontal and +90°
+        of r elevation angles in degrees with 0° at horizontal and +90°
         pointing vertically upwards from the radar
-    alt : float
-        altitude of radar site [m]
     re : float
         earth's radius [m]
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependent. The default of 4/3 is a good approximation for most
-        weather radar wavelengths.
+        weather radar wavelengths
 
     Returns
     -------
-    dist : float
-        great circle arc distance [m]
-    height : float
-        height of the beam in [m]
+    altitude : float
+        height of the radar bin in [m]
 
     """
-    if alt is None:
-        alt = 0.
-    reff = ke*re
+    reff = ke * re
+    sr = reff + sitealt
+    return np.sqrt(r ** 2 + sr ** 2 +
+                   2 * r * sr * np.sin(np.radians(theta))) - reff
+
+
+def bin_distance(r, theta, sitealt, re, ke=4./3.):
+    r"""Calculates the great circle distance from radar site to a radar bin
+    over spherical earth, taking the refractivity of the atmosphere
+    into account.
+
+    .. math::
+
+        s = k_e r_e \arctan\left(
+        \frac{r \cos\theta}{r \cos\theta + k_e r_e + h}\right)
+
+    where :math:`h` would be the radar site altitude amsl.
+
+    Parameters
+    ----------
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]
+    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
+        of r elevation angles in degrees with 0° at horizontal and +90°
+        pointing vertically upwards from the radar
+    sitealt : float
+        site altitude [m] amsl.
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths
+
+    Returns
+    -------
+    distance : float
+        great circle arc distance [m]
+    """
+    reff = ke * re
+    sr = reff + sitealt
     theta = np.radians(theta)
-    height = np.sqrt(r ** 2 + (reff + alt) ** 2 + 2 * r * (reff + alt) *
-                     np.sin(theta)) - reff
-    dist = reff * np.arcsin((r * np.cos(theta)) /
-                            (reff + height))
-    return dist, height
+    return reff * np.arctan(r * np.cos(theta) / (r * np.sin(theta) + sr))
+
+
+def site_distance(r, theta, binalt, re=None, ke=4./3.):
+    r"""Calculates the great circle distance from a bin at a certain altitude
+    to the radar site over spherical earth, taking the refractivity
+    of the atmosphere into account.
+
+    Based on :cite:`Doviak1993` the site distance may be calculated as
+
+    .. math::
+
+        s = k_e r_e \arcsin\left(
+        \frac{r \cos\theta}{k_e r_e + h_n(r, \theta, r_e, k_e)}\right)
+
+    where :math:`h_n` would be provided by
+    :meth:`~wradlib.georef.bin_altitude`
+
+    Parameters
+    ----------
+    r : :class:`numpy:numpy.ndarray`
+        Array of ranges [m]
+    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
+        of r elevation angles in degrees with 0° at horizontal and +90°
+        pointing vertically upwards from the radar
+    binalt : :class:`numpy:numpy.ndarray`
+        site altitude [m] amsl. same shape as r.
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths
+
+    Returns
+    -------
+    distance : float
+        great circle arc distance [m]
+    """
+    reff = ke * re
+    return reff * np.arcsin(r * np.cos(np.radians(theta)) / (reff + binalt))
 
 
 def get_earth_radius(latitude, sr=None):

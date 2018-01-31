@@ -176,7 +176,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         beam propagation will be taken into account. If False, simple
         trigonometry will be used to calculate beam propagation.
         Functionality for this will be provided by function
-        :meth:`wradlib.georef.arc_distance_n`. Therefore, if `refrac` is True,
+        :meth:`wradlib.georef.bin_distance`. Therefore, if `refrac` is True,
         `r` must be given in meters.
     site : tuple
         Tuple of coordinates of the radar site.
@@ -251,9 +251,11 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # kwargs handling
     kw_spherical = {}
     if 're' in kwargs:
-        kw_spherical['re'] = kwargs.pop('re')
+        re = kwargs.pop('re')
+        kw_spherical['re'] = re
     if 'ke' in kwargs:
-        kw_spherical['ke'] = kwargs.pop('ke')
+        ke = kwargs.pop('ke')
+        kw_spherical['ke'] = ke
     kwargs['zorder'] = kwargs.pop('zorder', 0)
 
     if (proj is not None) & cg:
@@ -298,7 +300,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     if refrac & (proj is None):
         # with refraction correction, significant at higher elevations
         # calculate new range values
-        x, _ = georef.distance_height(x, elev, site[2], **kw_spherical)
+        x = georef.bin_distance(x, elev, site[2], re, ke=ke)
 
     # axes object is given
     if isinstance(ax, mpl.axes.Axes):
@@ -702,7 +704,10 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     if refrac:
         # observing air refractivity, so ground distances and beam height
         # must be calculated specially
-        xxx, yyy = georef.distance_height(xx, yy, yoffset)
+        re = kwargs.pop('re', 6370040.)
+        ke = kwargs.pop('ke', 4/3.)
+        yyy = georef.bin_altitude(xx, yy, yoffset, re, ke=ke)
+        xxx = georef.site_distance(xx, yy, yyy, re, ke=ke)
         xxx /= rf
         yyy /= rf
         if cg:

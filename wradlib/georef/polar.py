@@ -33,7 +33,7 @@ from deprecation import deprecated
 
 from .projection import proj4_to_osr, reproject
 from .misc import (hor2aeq, get_default_projection, get_earth_radius,
-                   distance_height)
+                   bin_altitude, site_distance)
 
 from ..version import short_version
 
@@ -342,7 +342,8 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     theta = np.asarray(theta)
     phi = np.asarray(phi)
 
-    dist, z = distance_height(r, theta, centalt, re=re, ke=ke)
+    z = bin_altitude(r, theta, centalt, re, ke=ke)
+    dist = site_distance(r, theta, z, re, ke=ke)
 
     x = dist * np.cos(np.radians(90 - phi))
     y = dist * np.sin(np.radians(90 - phi))

@@ -75,19 +75,34 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(coords[..., 2], self.result_xyz[2],
                         rtol=1e-03))
 
-    def test_distance_height(self):
-        dist, height = georef.distance_height(np.arange(10., 101., 10.)
-                                              * 1000., 2., 0)
-        dist1 = np.array([9993.49302358, 19986.13717891, 29977.90491409,
-                          39968.76869178, 49958.70098959, 59947.6743006,
-                          69935.66113377, 79922.63401441, 89908.5654846,
-                          99893.4281037])
-        height1 = np.array([354.87448647, 721.50702113, 1099.8960815,
-                            1490.04009656, 1891.93744678, 2305.58646416,
-                            2730.98543223, 3168.13258613, 3617.02611263,
-                            4077.66415017])
-        np.testing.assert_allclose(dist, dist1)
-        np.testing.assert_allclose(height, height1)
+    def test_bin_altitude(self):
+        altitude = georef.bin_altitude(np.arange(10., 101., 10.)
+                                       * 1000., 2., 0, 6370040.)
+        altref = np.array([354.87448647, 721.50702113, 1099.8960815,
+                           1490.04009656, 1891.93744678, 2305.58646416,
+                           2730.98543223, 3168.13258613, 3617.02611263,
+                           4077.66415017])
+        np.testing.assert_allclose(altref, altitude)
+
+    def test_bin_distance(self):
+        distance = georef.bin_distance(np.arange(10., 101., 10.)* 1000., 2.,
+                                       0, 6370040.)
+        distref = np.array([9993.49302358, 19986.13717891, 29977.90491409,
+                            39968.76869178, 49958.70098959, 59947.6743006,
+                            69935.66113377, 79922.63401441, 89908.5654846,
+                            99893.4281037])
+        np.testing.assert_allclose(distref, distance)
+
+    def test_site_distance(self):
+        altitude = georef.bin_altitude(np.arange(10., 101., 10.) * 1000., 2.,
+                                       0, 6370040.)
+        distance = georef.site_distance(np.arange(10., 101., 10.)* 1000., 2.,
+                                        altitude, 6370040.)
+        distref = np.array([9993.49302358, 19986.13717891, 29977.90491409,
+                            39968.76869178, 49958.70098959, 59947.6743006,
+                            69935.66113377, 79922.63401441, 89908.5654846,
+                            99893.4281037])
+        np.testing.assert_allclose(distref, distance)
 
     def test_spherical_to_proj(self):
         coords = georef.spherical_to_proj(self.r, self.az,
