@@ -85,7 +85,7 @@ class CoordinateTransformTest(unittest.TestCase):
         np.testing.assert_allclose(altref, altitude)
 
     def test_bin_distance(self):
-        distance = georef.bin_distance(np.arange(10., 101., 10.)* 1000., 2.,
+        distance = georef.bin_distance(np.arange(10., 101., 10.) * 1000., 2.,
                                        0, 6370040.)
         distref = np.array([9993.49302358, 19986.13717891, 29977.90491409,
                             39968.76869178, 49958.70098959, 59947.6743006,
@@ -96,7 +96,7 @@ class CoordinateTransformTest(unittest.TestCase):
     def test_site_distance(self):
         altitude = georef.bin_altitude(np.arange(10., 101., 10.) * 1000., 2.,
                                        0, 6370040.)
-        distance = georef.site_distance(np.arange(10., 101., 10.)* 1000., 2.,
+        distance = georef.site_distance(np.arange(10., 101., 10.) * 1000., 2.,
                                         altitude, 6370040.)
         distref = np.array([9993.49302358, 19986.13717891, 29977.90491409,
                             39968.76869178, 49958.70098959, 59947.6743006,
