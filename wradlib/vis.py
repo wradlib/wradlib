@@ -31,6 +31,7 @@ Standard plotting and mapping procedures
 # standard libraries
 import os.path as path
 import warnings
+from deprecation import deprecated
 
 # site packages
 import numpy as np
@@ -50,6 +51,7 @@ from matplotlib.collections import LineCollection, PolyCollection
 # wradlib modules
 from . import georef as georef
 from . import util as util
+from .version import short_version
 
 
 class NorthPolarAxes(PolarAxes):
@@ -895,7 +897,9 @@ def create_cg(st, fig=None, subplot=111):
     return cgax, caax, paax
 
 
-@util.deprecated(plot_ppi)
+@deprecated(deprecated_in="0.10.0", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.vis.plot_ppi` with `cg=True` instead.")
 def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
                 refrac=True, elev=0., fig=None, subplot=111,
                 **kwargs):
@@ -1047,7 +1051,9 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
     return cgax, caax, paax, pm
 
 
-@util.deprecated(plot_rhi)
+@deprecated(deprecated_in="0.10.0", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.vis.plot_ppi` with `cg=True` instead.")
 def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
                 rf=1., fig=None, subplot=111, **kwargs):
     """Plots a Range Height Indicator (RHI) on a curvelinear grid.

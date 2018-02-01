@@ -68,8 +68,8 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     # calculate x,y-differences between ground coordinate
     # and center ground coordinate [25th element]
     center = int(np.floor(len(pr_x[-1]) / 2.))
-    xdiff = pr_x[:, center][:, np.newaxis] - pr_x
-    ydiff = pr_y[:, center][:, np.newaxis] - pr_y
+    xdiff = pr_x - pr_x[:, center][:, np.newaxis]
+    ydiff = pr_y - pr_y[:, center][:, np.newaxis]
 
     # assuming ydiff and xdiff being a triangles adjacent and
     # opposite this calculates the xy-angle of the PR scan
@@ -79,9 +79,9 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     dx = ds * np.cos(ang)[..., np.newaxis]
     dy = ds * np.sin(ang)[..., np.newaxis]
 
-    # add displacement to PR ground coordinates
-    pr_xp = dx + pr_x[..., np.newaxis]
-    pr_yp = dy + pr_y[..., np.newaxis]
+    # subtract displacement from PR ground coordinates
+    pr_xp = pr_x[..., np.newaxis] - dx
+    pr_yp = pr_y[..., np.newaxis] - dy
 
     return np.stack((pr_xp, pr_yp), axis=3), r_pr_inv, z_pr
 

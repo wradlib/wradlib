@@ -138,6 +138,7 @@ class CoordinateTransformTest(unittest.TestCase):
                              5.55890857e+04,
                              3.80251741e+04, 1.93058869e+04])))
 
+    @fail_if_not_removed
     def test_beam_height_n(self):
         self.assertTrue(np.allclose(
             georef.beam_height_n(np.arange(10., 101., 10.) * 1000., 2.),
@@ -146,6 +147,7 @@ class CoordinateTransformTest(unittest.TestCase):
                       2730.98543223, 3168.13258613, 3617.02611263,
                       4077.66415017])))
 
+    @fail_if_not_removed
     def test_arc_distance_n(self):
         self.assertTrue(np.allclose(
             georef.arc_distance_n(np.arange(10., 101., 10.) * 1000., 2.),
