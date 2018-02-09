@@ -234,7 +234,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     return radolan_grid
 
 
-def xyz_to_polar(xyz, alt=0, proj=None):
+def xyz_to_polar(xyz, alt=0, proj=None, ke=4./3.):
     """Returns spherical representation (r, theta, phi) of given cartesian
     coordinates (x, y, z) with respect to the reference altitude (asl)
     considering earth's geometry (proj).
@@ -274,18 +274,23 @@ def xyz_to_polar(xyz, alt=0, proj=None):
     s = np.sqrt(np.sum(xyz[..., 0:2] ** 2, axis=-1))
 
     # calculate earth's arc angle
-    gamma = s / re
+    gamma = s / (re * ke)
 
     # calculate elevation angle theta
-    numer = np.cos(gamma) - (re + alt) / (re + xyz[..., 2])
+    numer = np.cos(gamma) - (re * ke + alt) / (re * ke + xyz[..., 2])
     denom = np.sin(gamma)
-    theta = np.rad2deg(np.arctan(numer / denom))
+    theta = np.arctan(numer / denom)
 
     # calculate radial distance r
-    r = (re + xyz[..., 2]) * denom / np.cos(np.deg2rad(theta))
+    r = (re * ke + xyz[..., 2]) * denom / np.cos(theta)
+    # another method using gamma only, but slower
+    # keep it here for reference
+    # f1 = (re * ke + xyz[..., 2])
+    # f2 = (re * ke + alt)
+    # r = np.sqrt(f1**2 + f2**2  - 2 * f1 * f2 * np.cos(gamma))
 
     # calculate azimuth angle phi
     phi = 90 - np.rad2deg(np.arctan2(xyz[..., 1], xyz[..., 0]))
     phi[phi <= 0] += 360
 
-    return r, phi, theta
+    return r, phi, np.degrees(theta)

@@ -2,25 +2,41 @@ import wradlib as wrl
 import datetime as dt
 import numpy as np
 from osgeo import gdal
+from netCDF4 import Dataset
 # flake8: noqa
 
 
-def read_gpm(filename):
+def read_gpm(filename, bbox):
 
-    pr_data = wrl.io.read_generic_hdf5(filename)
+    pr_data = Dataset(filename, mode="r")
+    #print(pr_data.keys())#variables['Year'][:])
+    #pr_data = wrl.io.read_generic_hdf5(filename)
+    #print(pr_data)
 
-    lon = pr_data['NS/Longitude']['data']
-    lat = pr_data['NS/Latitude']['data']
+    lon = pr_data['NS'].variables['Longitude']
+    lat = pr_data['NS'].variables['Latitude']
+    #print(lon.shape, lat.shape)
 
-    year = pr_data['NS/ScanTime/Year']['data']
-    month = pr_data['NS/ScanTime/Month']['data']
-    dayofmonth = pr_data['NS/ScanTime/DayOfMonth']['data']
-    dayofyear = pr_data['NS/ScanTime/DayOfYear']['data']
-    hour = pr_data['NS/ScanTime/Hour']['data']
-    minute = pr_data['NS/ScanTime/Minute']['data']
-    second = pr_data['NS/ScanTime/Second']['data']
-    secondofday = pr_data['NS/ScanTime/SecondOfDay']['data']
-    millisecond = pr_data['NS/ScanTime/MilliSecond']['data']
+    poly = [[bbox['left'], bbox['bottom']],
+            [bbox['left'], bbox['top']],
+            [bbox['right'], bbox['top']],
+            [bbox['right'], bbox['bottom']],
+            [bbox['left'], bbox['bottom']]]
+    mask = wrl.zonalstats.get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    mask = np.nonzero(np.count_nonzero(mask, axis=1))
+    lon = lon[mask]
+    lat = lat[mask]
+
+
+    year = pr_data['NS']['ScanTime'].variables['Year'][mask]
+    month = pr_data['NS']['ScanTime'].variables['Month'][mask]
+    dayofmonth = pr_data['NS']['ScanTime'].variables['DayOfMonth'][mask]
+    dayofyear = pr_data['NS']['ScanTime'].variables['DayOfYear'][mask]
+    hour = pr_data['NS']['ScanTime'].variables['Hour'][mask]
+    minute = pr_data['NS']['ScanTime'].variables['Minute'][mask]
+    second = pr_data['NS']['ScanTime'].variables['Second'][mask]
+    secondofday = pr_data['NS']['ScanTime'].variables['SecondOfDay'][mask]
+    millisecond = pr_data['NS']['ScanTime'].variables['MilliSecond'][mask]
     date_array = zip(year, month, dayofmonth,
                      hour, minute, second,
                      millisecond.astype(np.int32) * 1000)
@@ -28,19 +44,24 @@ def read_gpm(filename):
         [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in
          date_array])
 
-    sfc = pr_data['NS/PRE/landSurfaceType']['data']
-    pflag = pr_data['NS/PRE/flagPrecip']['data']
+    sfc = pr_data['NS']['PRE'].variables['landSurfaceType'][mask]
+    pflag = pr_data['NS']['PRE'].variables['flagPrecip'][mask]
 
-    bbflag = pr_data['NS/CSF/flagBB']['data']
-    zbb = pr_data['NS/CSF/heightBB']['data']
-    print(zbb.dtype)
-    bbwidth = pr_data['NS/CSF/widthBB']['data']
-    qbb = pr_data['NS/CSF/qualityBB']['data']
-    qtype = pr_data['NS/CSF/qualityTypePrecip']['data']
-    ptype = pr_data['NS/CSF/typePrecip']['data']
+    bbflag = pr_data['NS']['CSF'].variables['flagBB'][mask]
+    zbb = pr_data['NS']['CSF'].variables['heightBB'][mask]
+    #print(zbb.dtype)
+    bbwidth = pr_data['NS']['CSF'].variables['widthBB'][mask]
+    qbb = pr_data['NS']['CSF'].variables['qualityBB'][mask]
+    qtype = pr_data['NS']['CSF'].variables['qualityTypePrecip'][mask]
+    ptype = pr_data['NS']['CSF'].variables['typePrecip'][mask]
 
-    quality = pr_data['NS/scanStatus/dataQuality']['data']
-    refl = pr_data['NS/SLV/zFactorCorrected']['data']
+    quality = pr_data['NS']['scanStatus'].variables['dataQuality'][mask]
+    refl = pr_data['NS']['SLV'].variables['zFactorCorrected'][mask]
+    #print(pr_data['NS']['SLV'].variables['zFactorCorrected'])
+
+    zenith = pr_data['NS']['PRE'].variables['localZenithAngle'][mask]
+
+    pr_data.close()
 
     # Check for bad data
     if max(quality) != 0:
@@ -60,8 +81,7 @@ def read_gpm(filename):
     nbin = tmp[2]
 
     # Reverse direction along the beam
-    # TODO: Why is this reversed?
-    refl = refl[::-1]
+    refl = np.flip(refl, axis=-1)
 
     # Change pflag=1 to pflag=2 to be consistent with 'Rain certain' in TRMM
     pflag[pflag == 1] = 2
@@ -90,30 +110,43 @@ def read_gpm(filename):
                      'date': pr_time, 'lon': lon, 'lat': lat,
                      'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
                      'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
-                     'refl': refl})
+                     'refl': refl, 'zenith':zenith})
 
     return gpm_data
 
 
-def read_trmm(filename1, filename2):
+def read_trmm(filename1, filename2, bbox):
 
     # trmm 2A23 and 2A25 data is hdf4
     # it can be read with `read_generic_netcdf`
-    pr_data1 = wrl.io.read_generic_netcdf(filename1)
-    pr_data2 = wrl.io.read_generic_netcdf(filename2)
+    #pr_data1 = wrl.io.read_generic_netcdf(filename1)
+    pr_data1 = Dataset(filename1, mode="r")
+    #pr_data2 = wrl.io.read_generic_netcdf(filename2)
+    pr_data2 = Dataset(filename2, mode="r")
 
-    lon = pr_data1['variables']['Longitude']['data']
-    lat = pr_data1['variables']['Latitude']['data']
+    lon = pr_data1.variables['Longitude']
+    lat = pr_data1.variables['Latitude']
 
-    year = pr_data1['variables']['Year']['data']
-    month = pr_data1['variables']['Month']['data']
-    dayofmonth = pr_data1['variables']['DayOfMonth']['data']
-    dayofyear = pr_data1['variables']['DayOfYear']['data']
-    hour = pr_data1['variables']['Hour']['data']
-    minute = pr_data1['variables']['Minute']['data']
-    second = pr_data1['variables']['Second']['data']
-    secondofday = pr_data1['variables']['scanTime_sec']['data']
-    millisecond = pr_data1['variables']['MilliSecond']['data']
+    poly = [[bbox['left'], bbox['bottom']],
+            [bbox['left'], bbox['top']],
+            [bbox['right'], bbox['top']],
+            [bbox['right'], bbox['bottom']],
+            [bbox['left'], bbox['bottom']]]
+    mask = wrl.zonalstats.get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    mask = np.nonzero(np.count_nonzero(mask, axis=1))
+    lon = pr_data1.variables['Longitude'][mask]
+    lat = pr_data1.variables['Latitude'][mask]
+
+
+    year = pr_data1.variables['Year'][mask]
+    month = pr_data1.variables['Month'][mask]
+    dayofmonth = pr_data1.variables['DayOfMonth'][mask]
+    dayofyear = pr_data1.variables['DayOfYear'][mask]
+    hour = pr_data1.variables['Hour'][mask]
+    minute = pr_data1.variables['Minute'][mask]
+    second = pr_data1.variables['Second'][mask]
+    secondofday = pr_data1.variables['scanTime_sec'][mask]
+    millisecond = pr_data1.variables['MilliSecond'][mask]
     date_array = zip(year, month, dayofmonth,
                      hour, minute, second,
                      millisecond.astype(np.int32) * 1000)
@@ -121,16 +154,19 @@ def read_trmm(filename1, filename2):
         [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in
          date_array])
 
-    pflag = pr_data1['variables']['rainFlag']['data']
-    ptype = pr_data1['variables']['rainType']['data']
+    pflag = pr_data1.variables['rainFlag'][mask]
+    ptype = pr_data1.variables['rainType'][mask]
 
-    status = pr_data1['variables']['status']['data']
-    zbb = pr_data1['variables']['HBB']['data'].astype(np.float32)
-    bbwidth = pr_data1['variables']['BBwidth']['data'].astype(np.float32)
+    status = pr_data1.variables['status'][mask]
+    zbb = pr_data1.variables['HBB'][mask].astype(np.float32)
+    bbwidth = pr_data1.variables['BBwidth'][mask].astype(np.float32)
 
-    quality = pr_data2['variables']['dataQuality']['data']
-    refl = pr_data2['variables']['correctZFactor']['data'] / 100.
-    print(refl.dtype, refl)
+    quality = pr_data2.variables['dataQuality'][mask]
+    refl = pr_data2.variables['correctZFactor'][mask] / 100.
+    zenith = pr_data2.variables['scLocalZenith'][mask]
+
+    pr_data1.close()
+    pr_data2.close()
 
     # Ground clutter
     refl[refl == -8888.] = np.nan
@@ -208,7 +244,7 @@ def read_trmm(filename1, filename2):
                       'date': pr_time, 'lon': lon, 'lat': lat,
                       'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
                       'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
-                      'refl': refl})
+                      'refl': refl, 'zenith': zenith})
 
     return trmm_data
 

@@ -16,12 +16,14 @@ Satellite Functions
    dist_from_orbit
 """
 import numpy as np
+from deprecation import deprecated
+from ..version import short_version
 
 
 def correct_parallax(pr_xy, nbin, drt, alpha):
     """Adjust the geo-locations of the PR pixels
 
-    With *PR*, we refer to precipitation radars based on space-born platforms
+    With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
 
     The `pr_xy` coordinates of the PR beam footprints need to be in the
@@ -40,7 +42,8 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     drt : float
         Gate lenght of PR in meter.
     alpha: :class:`numpy:numpy.ndarray`
-        Array of depression angles of the PR beams with shape (nbeams).
+        Array of local zenith angles of the SR beams
+        with shape (nscans, nbeams).
 
     Returns
     -------
@@ -51,7 +54,7 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     r_pr_inv : :class:`numpy:numpy.ndarray`
         Array of ranges from ground to PR platform of shape (nbins).
     z_pr : :class:`numpy:numpy.ndarray`
-        Array of PR bin altitudes of shape (nbeams, nbins).
+        Array of SR bin altitudes of shape (nscans, nbeams, nbins).
     """
     # get x,y-grids
     pr_x = pr_xy[..., 0]
@@ -61,9 +64,9 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     r_pr_inv = np.arange(nbin) * drt
 
     # calculate height of bin
-    z_pr = r_pr_inv * np.cos(np.deg2rad(alpha))[:, np.newaxis]
+    z_pr = r_pr_inv * np.cos(np.deg2rad(alpha))[..., np.newaxis]
     # calculate bin ground xy-displacement length
-    ds = r_pr_inv * np.sin(np.deg2rad(alpha))[:, np.newaxis]
+    ds = r_pr_inv * np.sin(np.deg2rad(alpha))[..., np.newaxis]
 
     # calculate x,y-differences between ground coordinate
     # and center ground coordinate [25th element]
@@ -86,6 +89,9 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     return np.stack((pr_xp, pr_yp), axis=3), r_pr_inv, z_pr
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version,
+            details="Use `wradlib.georef.xyz_to_polar` instead.")
 def sat2pol(pr_xyz, gr_site_alt, re):
     """Returns spherical coordinates of PR bins as seen from the GR location.
 
@@ -144,7 +150,7 @@ def sat2pol(pr_xyz, gr_site_alt, re):
     return r, theta, phi
 
 
-def dist_from_orbit(pr_alt, alpha, r_pr_inv):
+def dist_from_orbit(pr_alt, alpha, beta, r_pr_inv, re):
     """Returns range distances of PR bins (in meters) as seen from the orbit
 
     With *PR*, we refer to precipitation radars based on space-born platforms
@@ -157,7 +163,10 @@ def dist_from_orbit(pr_alt, alpha, r_pr_inv):
     pr_alt : float
         PR orbit height in meters.
     alpha: :class:`numpy:numpy.ndarray`
-       Array of depression angles of the PR beams with shape (nbeams).
+        Array of local zenith angles of the SR beams
+        with shape (nscans, nbeams).
+    beta: :class:`numpy:numpy.ndarray`
+        Off-Nadir scan angle with shape (nbeams).
     r_pr_inv : :class:`numpy:numpy.ndarray`
         Array of ranges from ground to PR platform of shape (nbins).
 
@@ -167,4 +176,6 @@ def dist_from_orbit(pr_alt, alpha, r_pr_inv):
         Array of shape (nbeams, nbins) of PR bin range distances from
         PR platform in orbit.
     """
-    return pr_alt / np.cos(np.radians(alpha))[:, np.newaxis] - r_pr_inv
+    ro = ((re + pr_alt) * np.cos(np.radians(alpha - beta[np.newaxis, :]))
+          - re) / np.cos(np.radians(alpha))
+    return ro[..., np.newaxis] - r_pr_inv
