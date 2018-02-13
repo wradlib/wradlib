@@ -533,7 +533,6 @@ class SatelliteTest(unittest.TestCase):
         pr_lon = pr_data['NS/Longitude']['data']
         pr_lat = pr_data['NS/Latitude']['data']
         zenith = pr_data['NS/PRE/localZenithAngle']['data']
-        print(zenith.shape)
         wgs84 = georef.get_default_projection()
         a = wgs84.GetSemiMajor()
         b = wgs84.GetSemiMinor()
