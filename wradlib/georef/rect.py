@@ -251,6 +251,11 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
     proj : osr object
         projection of the source coordinates (aeqd) with spheroid model
         defaults to None.
+    ke : float
+        Adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths
 
     Returns
     -------

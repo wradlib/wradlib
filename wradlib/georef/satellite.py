@@ -20,27 +20,27 @@ from deprecation import deprecated
 from ..version import short_version
 
 
-def correct_parallax(pr_xy, nbin, drt, alpha):
-    """Adjust the geo-locations of the PR pixels
+def correct_parallax(sr_xy, nbin, drt, alpha):
+    """Adjust the geo-locations of the SR pixels
 
     With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
 
-    The `pr_xy` coordinates of the PR beam footprints need to be in the
+    The `sr_xy` coordinates of the SR beam footprints need to be in the
     azimuthal equidistant projection of the ground radar. This ensures that the
-    ground radar is fixed at xy-coordinate (0, 0), and every PR bin has its
+    ground radar is fixed at xy-coordinate (0, 0), and every SR bin has its
     relative xy-coordinates with respect to the ground radar site.
 
     .. versionadded:: 0.10.0
 
     Parameters
     ----------
-    pr_xy : :class:`numpy:numpy.ndarray`
+    sr_xy : :class:`numpy:numpy.ndarray`
         Array of xy-coordinates of shape (nscans, nbeams, 2)
     nbin : int
-        Number of bins along PR beam.
+        Number of bins along SR beam.
     drt : float
-        Gate lenght of PR in meter.
+        Gate lenght of SR in meter.
     alpha: :class:`numpy:numpy.ndarray`
         Array of local zenith angles of the SR beams
         with shape (nscans, nbeams).
@@ -48,45 +48,45 @@ def correct_parallax(pr_xy, nbin, drt, alpha):
     Returns
     -------
 
-    pr_xyp : :class:`numpy:numpy.ndarray`
+    sr_xyp : :class:`numpy:numpy.ndarray`
         Array of parallax corrected coordinates
         of shape (nscans, nbeams, nbins, 2).
-    r_pr_inv : :class:`numpy:numpy.ndarray`
-        Array of ranges from ground to PR platform of shape (nbins).
-    z_pr : :class:`numpy:numpy.ndarray`
+    r_sr_inv : :class:`numpy:numpy.ndarray`
+        Array of ranges from ground to SR platform of shape (nbins).
+    z_sr : :class:`numpy:numpy.ndarray`
         Array of SR bin altitudes of shape (nscans, nbeams, nbins).
     """
     # get x,y-grids
-    pr_x = pr_xy[..., 0]
-    pr_y = pr_xy[..., 1]
+    sr_x = sr_xy[..., 0]
+    sr_y = sr_xy[..., 1]
 
-    # create range array from ground to sat
-    r_pr_inv = np.arange(nbin) * drt
+    # create range array from ground to satellite
+    r_sr_inv = np.arange(nbin) * drt
 
     # calculate height of bin
-    z_pr = r_pr_inv * np.cos(np.deg2rad(alpha))[..., np.newaxis]
+    z_sr = r_sr_inv * np.cos(np.deg2rad(alpha))[..., np.newaxis]
     # calculate bin ground xy-displacement length
-    ds = r_pr_inv * np.sin(np.deg2rad(alpha))[..., np.newaxis]
+    ds = r_sr_inv * np.sin(np.deg2rad(alpha))[..., np.newaxis]
 
     # calculate x,y-differences between ground coordinate
     # and center ground coordinate [25th element]
-    center = int(np.floor(len(pr_x[-1]) / 2.))
-    xdiff = pr_x - pr_x[:, center][:, np.newaxis]
-    ydiff = pr_y - pr_y[:, center][:, np.newaxis]
+    center = int(np.floor(len(sr_x[-1]) / 2.))
+    xdiff = sr_x - sr_x[:, center][:, np.newaxis]
+    ydiff = sr_y - sr_y[:, center][:, np.newaxis]
 
     # assuming ydiff and xdiff being a triangles adjacent and
-    # opposite this calculates the xy-angle of the PR scan
+    # opposite this calculates the xy-angle of the SR scan
     ang = np.arctan2(ydiff, xdiff)
 
     # calculate displacement dx, dy from displacement length
     dx = ds * np.cos(ang)[..., np.newaxis]
     dy = ds * np.sin(ang)[..., np.newaxis]
 
-    # subtract displacement from PR ground coordinates
-    pr_xp = pr_x[..., np.newaxis] - dx
-    pr_yp = pr_y[..., np.newaxis] - dy
+    # subtract displacement from SR ground coordinates
+    sr_xp = sr_x[..., np.newaxis] - dx
+    sr_yp = sr_y[..., np.newaxis] - dy
 
-    return np.stack((pr_xp, pr_yp), axis=3), r_pr_inv, z_pr
+    return np.stack((sr_xp, sr_yp), axis=3), r_sr_inv, z_sr
 
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
@@ -150,32 +150,34 @@ def sat2pol(pr_xyz, gr_site_alt, re):
     return r, theta, phi
 
 
-def dist_from_orbit(pr_alt, alpha, beta, r_pr_inv, re):
-    """Returns range distances of PR bins (in meters) as seen from the orbit
+def dist_from_orbit(sr_alt, alpha, beta, r_sr_inv, re):
+    """Returns range distances of SR bins (in meters) as seen from the orbit
 
-    With *PR*, we refer to precipitation radars based on space-born platforms
+    With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
 
     .. versionadded:: 0.10.0
 
     Parameters
     ----------
-    pr_alt : float
-        PR orbit height in meters.
+    sr_alt : float
+        SR orbit height in meters.
     alpha: :class:`numpy:numpy.ndarray`
         Array of local zenith angles of the SR beams
         with shape (nscans, nbeams).
     beta: :class:`numpy:numpy.ndarray`
         Off-Nadir scan angle with shape (nbeams).
-    r_pr_inv : :class:`numpy:numpy.ndarray`
-        Array of ranges from ground to PR platform of shape (nbins).
+    r_sr_inv : :class:`numpy:numpy.ndarray`
+        Array of ranges from ground to SR platform of shape (nbins).
+    re : float
+        earth radius [m]
 
     Returns
     -------
     ranges : :class:`numpy:numpy.ndarray`
         Array of shape (nbeams, nbins) of PR bin range distances from
-        PR platform in orbit.
+        SR platform in orbit.
     """
-    ro = ((re + pr_alt) * np.cos(np.radians(alpha - beta[np.newaxis, :]))
+    ro = ((re + sr_alt) * np.cos(np.radians(alpha - beta[np.newaxis, :]))
           - re) / np.cos(np.radians(alpha))
-    return ro[..., np.newaxis] - r_pr_inv
+    return ro[..., np.newaxis] - r_sr_inv

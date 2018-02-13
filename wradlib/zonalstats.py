@@ -1223,7 +1223,7 @@ def grid_centers_to_vertices(x, y, dx, dy):
     return verts
 
 
-def get_clip_mask(coords, clippoly, srs):
+def get_clip_mask(coords, clippoly, srs=None):
     """Returns boolean mask of points (coords) located inside polygon clippoly
 
     .. versionadded:: 0.10.0
@@ -1251,8 +1251,8 @@ def get_clip_mask(coords, clippoly, srs):
                         clip, srs=srs)
     obj = GridPointsToPoly(zd)
 
-    #    Get source indices within polygon from zonal object
-    #    (0 because we have only one zone)
+    # Get source indices within polygon from zonal object
+    # (0 because we have only one zone)
     pr_idx = obj.zdata.get_source_index(0)
 
     # Subsetting in order to use only precipitating profiles
