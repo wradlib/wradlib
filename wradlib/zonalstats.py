@@ -58,6 +58,7 @@ from scipy.spatial import cKDTree
 from matplotlib.path import Path
 import matplotlib.patches as patches
 from osgeo import gdal, ogr
+import warnings
 import wradlib.io as io
 import wradlib.georef as georef
 ogr.UseExceptions()
@@ -416,6 +417,13 @@ class ZonalDataBase(object):
             self.trg = DataSource(trg, name='trg', srs=srs, **kwargs)
             self.dst = DataSource(name='dst')
             self.dst.ds = self._create_dst_datasource()
+        self._count_intersections = self.dst.ds.GetLayer().GetFeatureCount()
+
+    @property
+    def count_intersections(self):
+        """ Returns number of intersections
+        """
+        return self._count_intersections
 
     @property
     def srs(self):
@@ -849,6 +857,9 @@ ZonalStats`.
 
         if src is not None:
             if isinstance(src, ZonalDataBase):
+                if not src.count_intersections:
+                    raise ValueError('No intersections found in destination '
+                                     'layer of ZonalDataBase object.')
                 self._zdata = src
             else:
                 raise TypeError('Parameter mismatch in calling ZonalDataBase')
@@ -1249,16 +1260,21 @@ def get_clip_mask(coords, clippoly, srs=None):
 
     zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]),
                         clip, srs=srs)
-    obj = GridPointsToPoly(zd)
-
-    # Get source indices within polygon from zonal object
-    # (0 because we have only one zone)
-    pr_idx = obj.zdata.get_source_index(0)
 
     # Subsetting in order to use only precipitating profiles
     src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool)
-    mask = np.unravel_index(pr_idx, coords.shape[0:-1])
-    src_mask[mask] = True
+
+    try:
+        obj = GridPointsToPoly(zd)
+
+        # Get source indices within polygon from zonal object
+        # (0 because we have only one zone)
+        pr_idx = obj.zdata.get_source_index(0)
+        mask = np.unravel_index(pr_idx, coords.shape[0:-1])
+        src_mask[mask] = True
+
+    except ValueError as err:
+        warnings.warn("{0}".format(err))
 
     return src_mask
 
