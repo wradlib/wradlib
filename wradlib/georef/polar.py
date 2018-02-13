@@ -17,7 +17,6 @@ Polar Grid Functions
    spherical_to_centroids
    polar2lonlat
    polar2lonlatalt
-   polar_to_xyz
    polar2lonlatalt_n
    polar2centroids
    polar2polyvert
