@@ -522,7 +522,7 @@ class GetGridsTest(unittest.TestCase):
         r, phi, theta = georef.xyz_to_spherical(xyz)
         self.assertAlmostEqual(r[0], 1732.11878135)
         self.assertAlmostEqual(phi[0], 45.)
-        self.assertAlmostEqual(theta[0], 35.25802956 )
+        self.assertAlmostEqual(theta[0], 35.25802956)
 
 
 class SatelliteTest(unittest.TestCase):
@@ -569,7 +569,6 @@ class SatelliteTest(unittest.TestCase):
                                836.58785786, 956.10040898, 1075.6129601])
 
     def test_correct_parallax(self):
-        alpha = abs(-17.04 + np.arange(self.nray) * self.bw_pr)
         xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin,
                                            self.dr, self.alpha)
         self.xyz = np.concatenate((xy, z[..., np.newaxis]), axis=-1)
@@ -585,7 +584,7 @@ class SatelliteTest(unittest.TestCase):
                           1000., 1125.])
         z_out = np.array([0., 118.78164113, 237.56328225, 356.34492338,
                           475.1265645, 593.90820563, 712.68984675,
-                          831.47148788, 950.25312901,1069.03477013])
+                          831.47148788, 950.25312901, 1069.03477013])
 
         np.testing.assert_allclose(xy[60:62, 0:2, 0:2, :], pr_out, rtol=1e-12)
         np.testing.assert_allclose(r[0:10], r_out, rtol=1e-12)
@@ -620,9 +619,6 @@ class SatelliteTest(unittest.TestCase):
                                            self.dr, self.alpha)
         dists = georef.dist_from_orbit(self.zt, self.alpha, beta, r,
                                        re=self.re)
-        print(dists.shape)
-        print(dists[0:10, 0, 0])
-        print(dists[0, 0:10, 0])
         bd = np.array([426553.58667772, 426553.50342119, 426553.49658156,
                        426553.51025979, 426553.43461609, 426553.42515894,
                        426553.46559985, 426553.37020786, 426553.44407286,
