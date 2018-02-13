@@ -13,7 +13,7 @@ Rectangular Grid Functions
 
     get_radolan_coords
     get_radolan_grid
-    xyz_to_polar
+    xyz_to_spherical
 """
 
 import numpy as np
@@ -234,7 +234,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     return radolan_grid
 
 
-def xyz_to_polar(xyz, alt=0, proj=None, ke=4./3.):
+def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
     """Returns spherical representation (r, theta, phi) of given cartesian
     coordinates (x, y, z) with respect to the reference altitude (asl)
     considering earth's geometry (proj).

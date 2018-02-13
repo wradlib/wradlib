@@ -28,7 +28,7 @@ from .polar import (polar2lonlat, polar2lonlatalt, polar2lonlatalt_n,
                     spherical_to_centroids,
                     projected_bincoords_from_radarspecs, sweep_centroids)
 
-from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_polar)
+from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
 
 from .projection import (create_osr, proj4_to_osr, reproject,
                          get_default_projection, epsg_to_osr,
