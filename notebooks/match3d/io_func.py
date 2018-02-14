@@ -168,10 +168,13 @@ def read_trmm(filename1, filename2, bbox):
     pr_data1.close()
     pr_data2.close()
 
+    # mask array
+    refl = np.ma.array(refl)
+
     # Ground clutter
-    refl[refl == -8888.] = np.nan
+    refl[refl == -8888.] = np.ma.masked
     # Misssing data
-    refl[refl == -9999.] = np.nan
+    refl[refl == -9999.] = np.ma.masked
     # Scaling
     refl /= 100.
 
@@ -191,8 +194,7 @@ def read_trmm(filename1, filename2, bbox):
     nbin = tmp[2]
 
     # Reverse direction along the beam
-    # TODO: Why is this reversed?
-    refl = refl[::-1]
+    refl = np.flip(refl, axis=-1)
 
     # Simplify the precipitation flag
     ipos = (pflag >= 10) & (pflag <= 20)
