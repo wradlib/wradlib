@@ -11,6 +11,46 @@ Bleeding Edge
 
 *Nothing, so far*
 
+
+Version 0.11.3
+--------------
+
+**Highlights**
+
+* complete rework of radar georeferencing code parts
+* updated 3d volume matching notebook
+
+**New features**
+
+* add `georef.polar.spherical_to_xyz`, `georef.polar.spherical_to_proj`, `georef.polar.spherical_to_polyvert` and `georef.polar.spherical_to_centroids`
+* add `georef.rect.xyz_to_spherical`
+* add `georef.misc.bin_altitude`, `georef.misc.bin_distance` and `georef.misc.site_distance`
+* add `io.hdf.read_gpm` and `io.hdf.read_trmm`
+* add `count_intersections` property to `ZonalDataBase`
+
+**Bugfixes**
+
+* raise `ValueError` in `ZonalStatsBase` if destination layer is empty
+* raise `Warning` in `zonalstats.get_clip_mask` if no intersection
+* fix vis-functions to use new georeferencing
+
+**Deprecated features**
+
+* `georef.polar._lonscale`
+* `georef.polar._latscale`
+* `georef.polar.polar2lonlat`
+* `georef.polar.__pol2lonlat`
+* `georef.polar.polar2lonlatalt`
+* `georef.polar.polar2lonlatalt_n`
+* `georef.polar.polar2polyvert`
+* `georef.polar.polar2centroids`
+* `georef.polar.projected_bincoords_from_radarspecs`
+* `georef.misc.hor2aeq`, `georef.misc.aqe2hor`, `georef.misc.beam_height_n`, `georef.misc.arc_distance_n`
+* `georef.satellite.sat2pol`
+* `vis.plot_cg_ppi`, `vis.plot_cg_rhi`
+* `util.deprecated`
+
+
 Version 0.11.2
 --------------
 

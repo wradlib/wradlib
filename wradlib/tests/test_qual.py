@@ -35,8 +35,10 @@ class HelperFunctionsTest(unittest.TestCase):
         widths = np.array([[50, 50], [50, 50], [50, 50], [50, 50]],
                           dtype=np.float)
         quality = np.array([[1, 1], [1, 1], [1, 0], [0, 1]], dtype=np.float)
-        print(quality.shape, quality, quality.T)
-        z = np.array([[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
+        z = np.array([[[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
+                      [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
+                      [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
+                      [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]]],
                      dtype=np.float)
         ratio_out = np.array([[[0., 0.5, 1., -3.5],
                                [-1.5, 0.3, 0.7, 4.5]],

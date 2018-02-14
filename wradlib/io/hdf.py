@@ -14,6 +14,8 @@ HDF Data I/O
    read_GAMIC_hdf5
    to_hdf5
    from_hdf5
+   read_gpm
+   read_trmm
 """
 
 # standard libraries
@@ -22,7 +24,11 @@ import sys
 
 # site packages
 import h5py
+from netCDF4 import Dataset
 import numpy as np
+import datetime as dt
+
+from ..zonalstats import get_clip_mask
 
 
 def browse_hdf5_group(grp):
@@ -439,3 +445,236 @@ def from_hdf5(fpath, dataset="data"):
         metadata[key] = f[dataset].attrs[key]
     f.close()
     return data, metadata
+
+
+def read_gpm(filename, bbox):
+    pr_data = Dataset(filename, mode="r")
+    lon = pr_data['NS'].variables['Longitude']
+    lat = pr_data['NS'].variables['Latitude']
+
+    poly = [[bbox['left'], bbox['bottom']],
+            [bbox['left'], bbox['top']],
+            [bbox['right'], bbox['top']],
+            [bbox['right'], bbox['bottom']],
+            [bbox['left'], bbox['bottom']]]
+    mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    mask = np.nonzero(np.count_nonzero(mask, axis=1))
+    lon = lon[mask]
+    lat = lat[mask]
+
+    year = pr_data['NS']['ScanTime'].variables['Year'][mask]
+    month = pr_data['NS']['ScanTime'].variables['Month'][mask]
+    dayofmonth = pr_data['NS']['ScanTime'].variables['DayOfMonth'][mask]
+    # dayofyear = pr_data['NS']['ScanTime'].variables['DayOfYear'][mask]
+    hour = pr_data['NS']['ScanTime'].variables['Hour'][mask]
+    minute = pr_data['NS']['ScanTime'].variables['Minute'][mask]
+    second = pr_data['NS']['ScanTime'].variables['Second'][mask]
+    # secondofday = pr_data['NS']['ScanTime'].variables['SecondOfDay'][mask]
+    millisecond = pr_data['NS']['ScanTime'].variables['MilliSecond'][mask]
+    date_array = zip(year, month, dayofmonth,
+                     hour, minute, second,
+                     millisecond.astype(np.int32) * 1000)
+    pr_time = np.array(
+        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in
+         date_array])
+
+    sfc = pr_data['NS']['PRE'].variables['landSurfaceType'][mask]
+    pflag = pr_data['NS']['PRE'].variables['flagPrecip'][mask]
+
+    # bbflag = pr_data['NS']['CSF'].variables['flagBB'][mask]
+    zbb = pr_data['NS']['CSF'].variables['heightBB'][mask]
+    # print(zbb.dtype)
+    bbwidth = pr_data['NS']['CSF'].variables['widthBB'][mask]
+    qbb = pr_data['NS']['CSF'].variables['qualityBB'][mask]
+    qtype = pr_data['NS']['CSF'].variables['qualityTypePrecip'][mask]
+    ptype = pr_data['NS']['CSF'].variables['typePrecip'][mask]
+
+    quality = pr_data['NS']['scanStatus'].variables['dataQuality'][mask]
+    refl = pr_data['NS']['SLV'].variables['zFactorCorrected'][mask]
+    # print(pr_data['NS']['SLV'].variables['zFactorCorrected'])
+
+    zenith = pr_data['NS']['PRE'].variables['localZenithAngle'][mask]
+
+    pr_data.close()
+
+    # Check for bad data
+    if max(quality) != 0:
+        raise ValueError('GPM contains Bad Data')
+
+    pflag = pflag.astype(np.int8)
+
+    # Determine the dimensions
+    ndim = refl.ndim
+    if ndim != 3:
+        raise ValueError('GPM Dimensions do not match! '
+                         'Needed 3, given {0}'.format(ndim))
+
+    tmp = refl.shape
+    nscan = tmp[0]
+    nray = tmp[1]
+    nbin = tmp[2]
+
+    # Reverse direction along the beam
+    refl = np.flip(refl, axis=-1)
+
+    # Change pflag=1 to pflag=2 to be consistent with 'Rain certain' in TRMM
+    pflag[pflag == 1] = 2
+
+    # Simplify the precipitation types
+    ptype = (ptype / 1e7).astype(np.int16)
+
+    # Simplify the surface types
+    imiss = (sfc == -9999)
+    sfc = (sfc / 1e2).astype(np.int16) + 1
+    sfc[imiss] = 0
+
+    # Set a quality indicator for the BB and precip type data
+    # TODO: Why is the `quality` variable overwritten?
+
+    quality = np.zeros((nscan, nray), dtype=np.uint8)
+
+    i1 = ((qbb == 0) | (qbb == 1)) & (qtype == 1)
+    quality[i1] = 1
+
+    i2 = ((qbb > 1) | (qtype > 2))
+    quality[i2] = 2
+
+    gpm_data = {}
+    gpm_data.update({'nscan': nscan, 'nray': nray, 'nbin': nbin,
+                     'date': pr_time, 'lon': lon, 'lat': lat,
+                     'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
+                     'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
+                     'refl': refl, 'zenith': zenith})
+
+    return gpm_data
+
+
+def read_trmm(filename1, filename2, bbox):
+    # trmm 2A23 and 2A25 data is hdf4
+    pr_data1 = Dataset(filename1, mode="r")
+    pr_data2 = Dataset(filename2, mode="r")
+
+    lon = pr_data1.variables['Longitude']
+    lat = pr_data1.variables['Latitude']
+
+    poly = [[bbox['left'], bbox['bottom']],
+            [bbox['left'], bbox['top']],
+            [bbox['right'], bbox['top']],
+            [bbox['right'], bbox['bottom']],
+            [bbox['left'], bbox['bottom']]]
+    mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    mask = np.nonzero(np.count_nonzero(mask, axis=1))
+    lon = pr_data1.variables['Longitude'][mask]
+    lat = pr_data1.variables['Latitude'][mask]
+
+    year = pr_data1.variables['Year'][mask]
+    month = pr_data1.variables['Month'][mask]
+    dayofmonth = pr_data1.variables['DayOfMonth'][mask]
+    # dayofyear = pr_data1.variables['DayOfYear'][mask]
+    hour = pr_data1.variables['Hour'][mask]
+    minute = pr_data1.variables['Minute'][mask]
+    second = pr_data1.variables['Second'][mask]
+    # secondofday = pr_data1.variables['scanTime_sec'][mask]
+    millisecond = pr_data1.variables['MilliSecond'][mask]
+    date_array = zip(year, month, dayofmonth,
+                     hour, minute, second,
+                     millisecond.astype(np.int32) * 1000)
+    pr_time = np.array(
+        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in
+         date_array])
+
+    pflag = pr_data1.variables['rainFlag'][mask]
+    ptype = pr_data1.variables['rainType'][mask]
+
+    status = pr_data1.variables['status'][mask]
+    zbb = pr_data1.variables['HBB'][mask].astype(np.float32)
+    bbwidth = pr_data1.variables['BBwidth'][mask].astype(np.float32)
+
+    quality = pr_data2.variables['dataQuality'][mask]
+    refl = pr_data2.variables['correctZFactor'][mask] / 100.
+    zenith = pr_data2.variables['scLocalZenith'][mask]
+
+    pr_data1.close()
+    pr_data2.close()
+
+    # mask array
+    refl = np.ma.array(refl)
+
+    # Ground clutter
+    refl[refl == -8888.] = np.ma.masked
+    # Misssing data
+    refl[refl == -9999.] = np.ma.masked
+    # Scaling
+    refl /= 100.
+
+    # Check for bad data
+    if max(quality) != 0:
+        raise ValueError('TRMM contains Bad Data')
+
+    # Determine the dimensions
+    ndim = refl.ndim
+    if ndim != 3:
+        raise ValueError('TRMM Dimensions do not match!'
+                         'Needed 3, given {0}'.format(ndim))
+
+    tmp = refl.shape
+    nscan = tmp[0]
+    nray = tmp[1]
+    nbin = tmp[2]
+
+    # Reverse direction along the beam
+    refl = np.flip(refl, axis=-1)
+
+    # Simplify the precipitation flag
+    ipos = (pflag >= 10) & (pflag <= 20)
+    icer = (pflag >= 20)
+    pflag[ipos] = 1
+    pflag[icer] = 2
+
+    # Simplify the precipitation types
+    istr = (ptype >= 100) & (ptype <= 200)
+    icon = (ptype >= 200) & (ptype <= 300)
+    ioth = (ptype >= 300)
+    inone = (ptype == -88)
+    imiss = (ptype == -99)
+    ptype[istr] = 1
+    ptype[icon] = 2
+    ptype[ioth] = 3
+    ptype[inone] = 0
+    ptype[imiss] = -1
+
+    # Extract the surface type
+    sfc = np.zeros((nscan, nray), dtype=np.uint8)
+    i0 = (status == 168)
+    sfc[i0] = 0
+    i1 = (status % 10 == 0)
+    sfc[i1] = 1
+    i2 = ((status - 1) % 10 == 0)
+    sfc[i2] = 2
+    i3 = ((status - 3) % 10 == 0)
+    sfc[i3] = 3
+    i4 = ((status - 4) % 10 == 0)
+    sfc[i4] = 4
+    i5 = ((status - 5) % 10 == 0)
+    sfc[i5] = 5
+    i9 = ((status - 9) % 10 == 0)
+    sfc[i9] = 9
+
+    # Extract 2A23 quality
+    # TODO: Why is the `quality` variable overwritten?
+    quality = np.zeros((nscan, nray), dtype=np.uint8)
+    i0 = (status == 168)
+    quality[i0] = 0
+    i1 = (status < 50)
+    quality[i1] = 1
+    i2 = ((status >= 50) & (status < 109))
+    quality[i2] = 2
+
+    trmm_data = {}
+    trmm_data.update({'nscan': nscan, 'nray': nray, 'nbin': nbin,
+                      'date': pr_time, 'lon': lon, 'lat': lat,
+                      'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
+                      'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
+                      'refl': refl, 'zenith': zenith})
+
+    return trmm_data
