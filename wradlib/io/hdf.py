@@ -14,6 +14,8 @@ HDF Data I/O
    read_GAMIC_hdf5
    to_hdf5
    from_hdf5
+   read_gpm
+   read_trmm
 """
 
 # standard libraries
