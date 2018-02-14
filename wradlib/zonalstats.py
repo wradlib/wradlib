@@ -203,22 +203,23 @@ DataSource`.
             ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, self._name)
             if self._srs is None:
                 self._srs = ogr_src_lyr.GetSpatialRef()
-        except IOError:
+        except RuntimeError as err:
             # no ESRI shape file
-            raise
-        # all failed? then it should be sequence or numpy array
-        except RuntimeError:
-            src = np.array(src)
-            # create memory datasource, layer and create features
-            if src.ndim == 2:
-                geom_type = ogr.wkbPoint
-            # no Polygons, just Points
+            if 'not a string' not in err.args:
+                raise
             else:
-                geom_type = ogr.wkbPolygon
-            fields = [('index', ogr.OFTInteger)]
-            ogr_create_layer(ogr_src, self._name, srs=self._srs,
-                             geom_type=geom_type, fields=fields)
-            ogr_add_feature(ogr_src, src, name=self._name)
+                # all failed? then it should be sequence or numpy array
+                src = np.array(src)
+                # create memory datasource, layer and create features
+                if src.ndim == 2:
+                    geom_type = ogr.wkbPoint
+                # no Polygons, just Points
+                else:
+                    geom_type = ogr.wkbPolygon
+                fields = [('index', ogr.OFTInteger)]
+                ogr_create_layer(ogr_src, self._name, srs=self._srs,
+                                 geom_type=geom_type, fields=fields)
+                ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
 

@@ -34,7 +34,7 @@ class DataSourceTest(unittest.TestCase):
         filename = util.get_wradlib_data_file('shapefiles/agger/'
                                               'agger_merge.shp')
         self.assertEqual(len(zonalstats.DataSource(filename).data), 13)
-        self.assertRaises(IOError,
+        self.assertRaises(RuntimeError,
                           lambda: zonalstats.DataSource('test_zonalstats.py'))
 
     def test_data(self):
@@ -89,9 +89,8 @@ class DataSourceTest(unittest.TestCase):
         filename = util.get_wradlib_data_file('shapefiles/agger/'
                                               'agger_merge.shp')
         test = zonalstats.DataSource(filename, proj)
-        self.assertRaises(AttributeError, test.dump_raster(
-            tempfile.NamedTemporaryFile(mode='w+b').name, 'netCDF',
-            pixel_size=100.))
+        test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name,
+                         driver='netCDF', pixel_size=100.)
 
 
 @unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
