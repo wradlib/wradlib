@@ -58,8 +58,13 @@ from scipy.spatial import cKDTree
 from matplotlib.path import Path
 import matplotlib.patches as patches
 from osgeo import gdal, ogr
-import wradlib.io as io
-import wradlib.georef as georef
+import warnings
+
+from .io import open_vector, gdal_create_dataset, write_raster_dataset
+from .georef import (get_centroid, numpy_to_ogr, ogr_add_feature,
+                     ogr_add_geometry, ogr_copy_layer, ogr_create_layer,
+                     ogr_to_numpy, ogr_geocol_to_numpy, ogr_copy_layer_by_name)
+
 ogr.UseExceptions()
 gdal.UseExceptions()
 
@@ -128,7 +133,7 @@ DataSource`.
         sources = []
         for feature in lyr:
             geom = feature.GetGeometryRef()
-            poly = georef.ogr_to_numpy(geom)
+            poly = ogr_to_numpy(geom)
             sources.append(poly)
         return np.array(sources)
 
@@ -148,7 +153,7 @@ DataSource`.
         for i in idx:
             feature = lyr.GetFeature(i)
             geom = feature.GetGeometryRef()
-            poly = georef.ogr_to_numpy(geom)
+            poly = ogr_to_numpy(geom)
             sources.append(poly)
         return np.array(sources)
 
@@ -189,32 +194,32 @@ DataSource`.
             - transforming source grid points/polygons to ogr.geometries
               on ogr.layer
         """
-        ogr_src = io.gdal_create_dataset('Memory', 'out',
-                                         gdal_type=gdal.OF_VECTOR)
+        ogr_src = gdal_create_dataset('Memory', 'out',
+                                      gdal_type=gdal.OF_VECTOR)
 
         try:
             # is it ESRI Shapefile?
-            ds_in, tmp_lyr = io.open_shape(src, driver=ogr.
-                                           GetDriverByName('ESRI Shapefile'))
+            ds_in, tmp_lyr = open_vector(src, driver='ESRI Shapefile')
             ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, self._name)
             if self._srs is None:
                 self._srs = ogr_src_lyr.GetSpatialRef()
-        except IOError:
+        except RuntimeError as err:
             # no ESRI shape file
-            raise
-        # all failed? then it should be sequence or numpy array
-        except RuntimeError:
-            src = np.array(src)
-            # create memory datasource, layer and create features
-            if src.ndim == 2:
-                geom_type = ogr.wkbPoint
-            # no Polygons, just Points
+            if 'not a string' not in err.args:
+                raise
             else:
-                geom_type = ogr.wkbPolygon
-            fields = [('index', ogr.OFTInteger)]
-            georef.ogr_create_layer(ogr_src, self._name, srs=self._srs,
-                                    geom_type=geom_type, fields=fields)
-            georef.ogr_add_feature(ogr_src, src, name=self._name)
+                # all failed? then it should be sequence or numpy array
+                src = np.array(src)
+                # create memory datasource, layer and create features
+                if src.ndim == 2:
+                    geom_type = ogr.wkbPoint
+                # no Polygons, just Points
+                else:
+                    geom_type = ogr.wkbPolygon
+                fields = [('index', ogr.OFTInteger)]
+                ogr_create_layer(ogr_src, self._name, srs=self._srs,
+                                 geom_type=geom_type, fields=fields)
+                ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
 
@@ -231,10 +236,10 @@ DataSource`.
             if True removes existing output file
 
         """
-        ds_out = io.gdal_create_dataset(driver, filename,
-                                        gdal_type=gdal.OF_VECTOR,
-                                        remove=remove)
-        georef.ogr_copy_layer(self.ds, 0, ds_out)
+        ds_out = gdal_create_dataset(driver, filename,
+                                     gdal_type=gdal.OF_VECTOR,
+                                     remove=remove)
+        ogr_copy_layer(self.ds, 0, ds_out)
 
         # flush everything
         del ds_out
@@ -266,8 +271,8 @@ DataSource`.
         rows = int((y_max - y_min) / pixel_size)
 
         # Todo: at the moment, always writing floats
-        ds_out = io.gdal_create_dataset('MEM', '', cols, rows, 1,
-                                        gdal_type=gdal.GDT_Float32)
+        ds_out = gdal_create_dataset('MEM', '', cols, rows, 1,
+                                     gdal_type=gdal.GDT_Float32)
 
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
         proj = layer.GetSpatialRef()
@@ -288,7 +293,7 @@ DataSource`.
                                 options=["ALL_TOUCHED=TRUE"],
                                 callback=gdal.TermProgress)
 
-        io.write_raster_dataset(filename, ds_out, driver, remove=remove)
+        write_raster_dataset(filename, ds_out, driver, remove=remove)
 
         del ds_out
 
@@ -416,6 +421,13 @@ class ZonalDataBase(object):
             self.trg = DataSource(trg, name='trg', srs=srs, **kwargs)
             self.dst = DataSource(name='dst')
             self.dst.ds = self._create_dst_datasource()
+        self._count_intersections = self.dst.ds.GetLayer().GetFeatureCount()
+
+    @property
+    def count_intersections(self):
+        """ Returns number of intersections
+        """
+        return self._count_intersections
 
     @property
     def srs(self):
@@ -481,8 +493,8 @@ class ZonalDataBase(object):
         # TODO: kwargs necessary?
 
         # create intermediate mem dataset
-        ds_mem = io.gdal_create_dataset('Memory', 'dst',
-                                        gdal_type=gdal.OF_VECTOR)
+        ds_mem = gdal_create_dataset('Memory', 'dst',
+                                     gdal_type=gdal.OF_VECTOR)
 
         # get src geometry layer
         src_lyr = self.src.ds.GetLayerByName('src')
@@ -491,9 +503,9 @@ class ZonalDataBase(object):
         geom_type = src_lyr.GetGeomType()
 
         # create temp Buffer layer (time consuming)
-        ds_tmp = io.gdal_create_dataset('Memory', 'tmp',
-                                        gdal_type=gdal.OF_VECTOR)
-        georef.ogr_copy_layer(self.trg.ds, 0, ds_tmp)
+        ds_tmp = gdal_create_dataset('Memory', 'tmp',
+                                     gdal_type=gdal.OF_VECTOR)
+        ogr_copy_layer(self.trg.ds, 0, ds_tmp)
         tmp_trg_lyr = ds_tmp.GetLayer()
 
         for i in range(tmp_trg_lyr.GetFeatureCount()):
@@ -505,10 +517,9 @@ class ZonalDataBase(object):
         # get target layer, iterate over polygons and calculate intersections
         tmp_trg_lyr.ResetReading()
 
-        self.tmp_lyr = georef.ogr_create_layer(ds_mem, 'dst', srs=self._srs,
-                                               geom_type=geom_type)
+        self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
+                                        geom_type=geom_type)
 
-        print("Calculate Intersection source/target-layers")
         try:
             tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr,
                                      options=['SKIP_FAILURES=YES',
@@ -561,23 +572,23 @@ class ZonalDataBase(object):
             path to vector file
         """
         # get input file handles
-        ds_in, tmp = io.open_shape(filename)
+        ds_in, tmp = open_vector(filename)
 
         # create all DataSources
         self.src = DataSource(name='src')
-        self.src.ds = io.gdal_create_dataset('Memory', 'src',
-                                             gdal_type=gdal.OF_VECTOR)
+        self.src.ds = gdal_create_dataset('Memory', 'src',
+                                          gdal_type=gdal.OF_VECTOR)
         self.trg = DataSource(name='trg')
-        self.trg.ds = io.gdal_create_dataset('Memory', 'trg',
-                                             gdal_type=gdal.OF_VECTOR)
+        self.trg.ds = gdal_create_dataset('Memory', 'trg',
+                                          gdal_type=gdal.OF_VECTOR)
         self.dst = DataSource(name='dst')
-        self.dst.ds = io.gdal_create_dataset('Memory', 'dst',
-                                             gdal_type=gdal.OF_VECTOR)
+        self.dst.ds = gdal_create_dataset('Memory', 'dst',
+                                          gdal_type=gdal.OF_VECTOR)
 
         # copy all layers
-        georef.ogr_copy_layer_by_name(ds_in, "src", self.src.ds)
-        georef.ogr_copy_layer_by_name(ds_in, "trg", self.trg.ds)
-        georef.ogr_copy_layer_by_name(ds_in, "dst", self.dst.ds)
+        ogr_copy_layer_by_name(ds_in, "src", self.src.ds)
+        ogr_copy_layer_by_name(ds_in, "trg", self.trg.ds)
+        ogr_copy_layer_by_name(ds_in, "dst", self.dst.ds)
 
         # get spatial reference object
         self._srs = self.src.ds.GetLayer().GetSpatialRef()
@@ -618,7 +629,7 @@ class ZonalDataBase(object):
 
         # check for geometry
         if not type(trg) == ogr.Geometry:
-            trg = georef.numpy_to_ogr(trg, 'Polygon')
+            trg = numpy_to_ogr(trg, 'Polygon')
 
         # apply Buffer value
         trg = trg.Buffer(buf)
@@ -717,8 +728,8 @@ class ZonalDataPoly(ZonalDataBase):
             # checking GeometryCollection, convert to only Polygons,
             #  Multipolygons
             if geom.GetGeometryType() in [7]:
-                geocol = georef.ogr_geocol_to_numpy(geom)
-                geom = georef.numpy_to_ogr(geocol, 'MultiPolygon')
+                geocol = ogr_geocol_to_numpy(geom)
+                geom = numpy_to_ogr(geocol, 'MultiPolygon')
 
             # only geometries containing points
             if geom.IsEmpty():
@@ -726,7 +737,7 @@ class ZonalDataPoly(ZonalDataBase):
 
             if geom.GetGeometryType() in [3, 6, 12]:
                 idx = ogr_src.GetField('index')
-                georef.ogr_add_geometry(dst, geom, [idx, trg_index])
+                ogr_add_geometry(dst, geom, [idx, trg_index])
 
 
 class ZonalDataPoint(ZonalDataBase):
@@ -803,19 +814,19 @@ class ZonalDataPoint(ZonalDataBase):
         feat_cnt = layer.GetFeatureCount()
 
         if feat_cnt:
-            [georef.ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
-                                     [ogr_src.GetField('index'), trg_index])
+            [ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
+                              [ogr_src.GetField('index'), trg_index])
              for ogr_src in layer]
         else:
             layer.SetSpatialFilter(None)
             src_pts = np.array([ogr_src.GetGeometryRef().GetPoint_2D(0)
                                 for ogr_src in layer])
-            centroid = georef.get_centroid(trg)
+            centroid = get_centroid(trg)
             tree = cKDTree(src_pts)
             distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
             feat = layer.GetFeature(ixnext)
-            georef.ogr_add_geometry(dst, feat.GetGeometryRef(),
-                                    [feat.GetField('index'), trg_index])
+            ogr_add_geometry(dst, feat.GetGeometryRef(),
+                             [feat.GetField('index'), trg_index])
 
 
 class ZonalStatsBase(object):
@@ -849,6 +860,9 @@ ZonalStats`.
 
         if src is not None:
             if isinstance(src, ZonalDataBase):
+                if not src.count_intersections:
+                    raise ValueError('No intersections found in destination '
+                                     'layer of ZonalDataBase object.')
                 self._zdata = src
             else:
                 raise TypeError('Parameter mismatch in calling ZonalDataBase')
@@ -1223,7 +1237,7 @@ def grid_centers_to_vertices(x, y, dx, dy):
     return verts
 
 
-def get_clip_mask(coords, clippoly, srs):
+def get_clip_mask(coords, clippoly, srs=None):
     """Returns boolean mask of points (coords) located inside polygon clippoly
 
     .. versionadded:: 0.10.0
@@ -1249,16 +1263,21 @@ def get_clip_mask(coords, clippoly, srs):
 
     zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]),
                         clip, srs=srs)
-    obj = GridPointsToPoly(zd)
-
-    #    Get source indices within polygon from zonal object
-    #    (0 because we have only one zone)
-    pr_idx = obj.zdata.get_source_index(0)
 
     # Subsetting in order to use only precipitating profiles
     src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool)
-    mask = np.unravel_index(pr_idx, coords.shape[0:-1])
-    src_mask[mask] = True
+
+    try:
+        obj = GridPointsToPoly(zd)
+
+        # Get source indices within polygon from zonal object
+        # (0 because we have only one zone)
+        pr_idx = obj.zdata.get_source_index(0)
+        mask = np.unravel_index(pr_idx, coords.shape[0:-1])
+        src_mask[mask] = True
+
+    except ValueError as err:
+        warnings.warn("{0}".format(err))
 
     return src_mask
 

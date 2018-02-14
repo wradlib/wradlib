@@ -288,7 +288,7 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
         Array of shape (nscans, nbeams) containing the PR beams' BB quality
         index.
     zp_r : :class:`numpy:numpy.ndarray`
-        Array of PR bin altitudes of shape (nbeams, nbins).
+        Array of PR bin altitudes of shape (nscans, nbeams, nbins).
 
     Returns
     -------
@@ -320,7 +320,6 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
 
     # get ratio connected to brightband height
     ratio = (zp_r - zmlb) / (zmlt - zmlb)
-    ratio = np.broadcast_to(ratio, (bb_width.shape[0],) + ratio.shape)
 
     return ratio, ibb
 

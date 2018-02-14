@@ -49,7 +49,7 @@ conda create -n wradlib --yes pip python=$PYTHON_VERSION >> $BUILD_OUTPUT 2>&1
 source activate wradlib
 
 # Install wradlib dependencies
-conda install --yes gdal numpy scipy matplotlib netcdf4 h5py >> $BUILD_OUTPUT 2>&1
+conda install --yes gdal numpy scipy matplotlib netcdf4 h5py deprecation >> $BUILD_OUTPUT 2>&1
 conda list
 ls -lart $HOME/miniconda/envs/wradlib/share/gdal
 
