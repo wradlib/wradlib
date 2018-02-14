@@ -26,6 +26,7 @@ Version 0.11.3
 * add `georef.rect.xyz_to_spherical`
 * add `georef.misc.bin_altitude`, `georef.misc.bin_distance` and `georef.misc.site_distance`
 * add `io.hdf.read_gpm` and `io.hdf.read_trmm`
+* add `count_intersections` property to `ZonalDataBase`
 
 **Bugfixes**
 

@@ -519,7 +519,6 @@ class ZonalDataBase(object):
         self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
                                         geom_type=geom_type)
 
-        #print("Calculate Intersection source/target-layers")
         try:
             tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr,
                                      options=['SKIP_FAILURES=YES',
