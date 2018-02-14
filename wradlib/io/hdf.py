@@ -30,6 +30,7 @@ import datetime as dt
 
 from ..zonalstats import get_clip_mask
 
+
 def browse_hdf5_group(grp):
     """Browses one hdf5 file level
     """
@@ -464,11 +465,11 @@ def read_gpm(filename, bbox):
     year = pr_data['NS']['ScanTime'].variables['Year'][mask]
     month = pr_data['NS']['ScanTime'].variables['Month'][mask]
     dayofmonth = pr_data['NS']['ScanTime'].variables['DayOfMonth'][mask]
-    dayofyear = pr_data['NS']['ScanTime'].variables['DayOfYear'][mask]
+    # dayofyear = pr_data['NS']['ScanTime'].variables['DayOfYear'][mask]
     hour = pr_data['NS']['ScanTime'].variables['Hour'][mask]
     minute = pr_data['NS']['ScanTime'].variables['Minute'][mask]
     second = pr_data['NS']['ScanTime'].variables['Second'][mask]
-    secondofday = pr_data['NS']['ScanTime'].variables['SecondOfDay'][mask]
+    # secondofday = pr_data['NS']['ScanTime'].variables['SecondOfDay'][mask]
     millisecond = pr_data['NS']['ScanTime'].variables['MilliSecond'][mask]
     date_array = zip(year, month, dayofmonth,
                      hour, minute, second,
@@ -480,7 +481,7 @@ def read_gpm(filename, bbox):
     sfc = pr_data['NS']['PRE'].variables['landSurfaceType'][mask]
     pflag = pr_data['NS']['PRE'].variables['flagPrecip'][mask]
 
-    bbflag = pr_data['NS']['CSF'].variables['flagBB'][mask]
+    # bbflag = pr_data['NS']['CSF'].variables['flagBB'][mask]
     zbb = pr_data['NS']['CSF'].variables['heightBB'][mask]
     # print(zbb.dtype)
     bbwidth = pr_data['NS']['CSF'].variables['widthBB'][mask]
@@ -550,10 +551,7 @@ def read_gpm(filename, bbox):
 
 def read_trmm(filename1, filename2, bbox):
     # trmm 2A23 and 2A25 data is hdf4
-    # it can be read with `read_generic_netcdf`
-    # pr_data1 = wrl.io.read_generic_netcdf(filename1)
     pr_data1 = Dataset(filename1, mode="r")
-    # pr_data2 = wrl.io.read_generic_netcdf(filename2)
     pr_data2 = Dataset(filename2, mode="r")
 
     lon = pr_data1.variables['Longitude']
@@ -572,11 +570,11 @@ def read_trmm(filename1, filename2, bbox):
     year = pr_data1.variables['Year'][mask]
     month = pr_data1.variables['Month'][mask]
     dayofmonth = pr_data1.variables['DayOfMonth'][mask]
-    dayofyear = pr_data1.variables['DayOfYear'][mask]
+    # dayofyear = pr_data1.variables['DayOfYear'][mask]
     hour = pr_data1.variables['Hour'][mask]
     minute = pr_data1.variables['Minute'][mask]
     second = pr_data1.variables['Second'][mask]
-    secondofday = pr_data1.variables['scanTime_sec'][mask]
+    # secondofday = pr_data1.variables['scanTime_sec'][mask]
     millisecond = pr_data1.variables['MilliSecond'][mask]
     date_array = zip(year, month, dayofmonth,
                      hour, minute, second,
@@ -680,4 +678,3 @@ def read_trmm(filename1, filename2, bbox):
                       'refl': refl, 'zenith': zenith})
 
     return trmm_data
-

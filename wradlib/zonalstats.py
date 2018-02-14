@@ -218,7 +218,7 @@ DataSource`.
                 geom_type = ogr.wkbPolygon
             fields = [('index', ogr.OFTInteger)]
             ogr_create_layer(ogr_src, self._name, srs=self._srs,
-                                    geom_type=geom_type, fields=fields)
+                             geom_type=geom_type, fields=fields)
             ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
