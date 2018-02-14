@@ -199,8 +199,7 @@ DataSource`.
 
         try:
             # is it ESRI Shapefile?
-            ds_in, tmp_lyr = open_vector(src, driver=ogr.
-                                         GetDriverByName('ESRI Shapefile'))
+            ds_in, tmp_lyr = open_vector(src, driver='ESRI Shapefile')
             ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, self._name)
             if self._srs is None:
                 self._srs = ogr_src_lyr.GetSpatialRef()
@@ -520,7 +519,7 @@ class ZonalDataBase(object):
         self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
                                         geom_type=geom_type)
 
-        print("Calculate Intersection source/target-layers")
+        #print("Calculate Intersection source/target-layers")
         try:
             tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr,
                                      options=['SKIP_FAILURES=YES',

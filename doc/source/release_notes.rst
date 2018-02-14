@@ -25,16 +25,13 @@ Version 0.11.3
 * add `georef.polar.spherical_to_xyz`, `georef.polar.spherical_to_proj`, `georef.polar.spherical_to_polyvert` and `georef.polar.spherical_to_centroids`
 * add `georef.rect.xyz_to_spherical`
 * add `georef.misc.bin_altitude`, `georef.misc.bin_distance` and `georef.misc.site_distance`
+* add `io.hdf.read_gpm` and `io.hdf.read_trmm`
 
 **Bugfixes**
 
-* raise Exception if file is corrupt in `wradlib.io.iris.iris.py`
-* divide by wavelength in `decode_kdp` in `wradlib.io.iris.iris.py`
-* correctly calculate azimuth difference in `wradlib.vis.plot_ppi`
-* add `zorder` handling to `vis.plot_ppi` and `vis.plot_rhi`
-* add documentation of `lat_minmax`-handling to `wradlib_plot_curvelinear_grids.ipynb`
-* use np.array instead of np.stack to be backwards compatible
-* fix stderr output in `wradlib.util.deprecated` doctest, minor doctest fixes
+* raise `ValueError` in `ZonalStatsBase` if destination layer is empty
+* raise `Warning` in `zonalstats.get_clip_mask` if no intersection
+* fix vis-functions to use new georeferencing
 
 **Deprecated features**
 
