@@ -49,6 +49,17 @@ Version 0.11.3
 * `georef.satellite.sat2pol`
 * `vis.plot_cg_ppi`, `vis.plot_cg_rhi`
 * `util.deprecated`
+* `util.aggregate_equidistant_tseries`
+* `util.aggregate_in_time`
+* `util.sum_over_time_windows`
+* `util.mean_over_time_windows`
+* `util.average_over_time_windows`
+* `util._get_func`
+* `util._tdelta2seconds`
+* `util._get_tdelta`
+* `util.iso2datetime`
+* `util.timestamp2index`
+
 
 
 Version 0.11.2
