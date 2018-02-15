@@ -239,6 +239,8 @@ latest/gettingstarted.html#optional-dependencies
     return mod
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
                                   src, method="sum", minpercvalid=100.):
     """Aggregates an equidistant time series to equidistant target time windows.
@@ -388,6 +390,8 @@ def aggregate_equidistant_tseries(tstart, tend, tdelta, tends_src, tdelta_src,
     return tstarts, tends, agg
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     """Aggregate time series data to a coarser temporal resolution.
 
@@ -489,6 +493,8 @@ def aggregate_in_time(src, dt_src, dt_trg, taxis=0, func='sum'):
     return trg
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def sum_over_time_windows(src, dt_src, dt_trg, minpercvalid):
     """Returns the sums of time series <src> within the time windows dt_trg
 
@@ -541,6 +547,8 @@ def sum_over_time_windows(src, dt_src, dt_trg, minpercvalid):
     return accum
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
     """UNDER DEVELOPMENT: Aggregate time series data to a coarser temporal
     resolution.
@@ -610,6 +618,8 @@ def mean_over_time_windows(src, dt_src, dt_trg, minbasepoints=1):
     return trg
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600,
                               helper_interval=300, **ipargs):
     """UNDER DEVELOPMENT: Computes the average of a time series over given
@@ -694,6 +704,8 @@ def average_over_time_windows(src, dt_src, dt_trg, maxdist=3600,
     return trg
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def _get_func(funcname):
     """
     Retrieve the numpy function with name <funcname>
@@ -753,6 +765,8 @@ def from_to(tstart, tend, tdelta):
     return tsteps
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def _tdelta2seconds(tdelta):
     """
     Convert a dt.timedelta object to seconds
@@ -765,6 +779,8 @@ def _tdelta2seconds(tdelta):
     return tdelta.days * 86400 + tdelta.seconds
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def _get_tdelta(tstart, tend, as_secs=False):
     """Returns the difference between two datetimes
     """
@@ -778,6 +794,8 @@ def _get_tdelta(tstart, tend, as_secs=False):
         return _tdelta2seconds(tend - tstart)
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def iso2datetime(iso):
     """Converts an ISO formatted time string to a datetime object.
 
@@ -802,6 +820,8 @@ def iso2datetime(iso):
         raise
 
 
+@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
+            current_version=short_version)
 def timestamp2index(ts, delta, refts, **kwargs):
     """Calculates the array index for a certain time in an equidistant
     time-series given the reference time (where the index would be 0)

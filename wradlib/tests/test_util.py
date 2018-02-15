@@ -10,6 +10,7 @@ import datetime as dt
 
 
 class HelperFunctionsTest(unittest.TestCase):
+    @util.deprecated.fail_if_not_removed
     def test__get_func(self):
         self.assertEqual(util._get_func('arange').__class__,
                          np.arange.__class__)
@@ -20,6 +21,7 @@ class HelperFunctionsTest(unittest.TestCase):
     def test__shape2size(self):
         self.assertEqual(util._shape2size((10, 10, 10)), 10 * 10 * 10)
 
+    @util.deprecated.fail_if_not_removed
     def test__tdelta2seconds(self):
         self.assertEqual(util._tdelta2seconds(dt.datetime(2001, 1, 1, 1) -
                                               dt.datetime(2000, 1, 1)),
@@ -28,6 +30,7 @@ class HelperFunctionsTest(unittest.TestCase):
                                               dt.datetime(2001, 1, 1)),
                          365 * 24 * 60 * 60 + 3600)
 
+    @util.deprecated.fail_if_not_removed
     def test__get_tdelta(self):
         tstart = dt.datetime(2000, 1, 1)
         tend = dt.datetime(2001, 1, 1, 1)
