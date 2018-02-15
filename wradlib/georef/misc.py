@@ -172,8 +172,8 @@ def bin_altitude(r, theta, sitealt, re, ke=4./3.):
 
     Returns
     -------
-    altitude : float
-        height of the radar bin in [m]
+    altitude : :class:`numpy:numpy.ndarray`
+        Array of heights of the radar bins in [m]
 
     """
     reff = ke * re
@@ -213,8 +213,8 @@ def bin_distance(r, theta, sitealt, re, ke=4./3.):
 
     Returns
     -------
-    distance : float
-        great circle arc distance [m]
+    distance : :class:`numpy:numpy.ndarray`
+        Array of great circle arc distances [m]
     """
     reff = ke * re
     sr = reff + sitealt
@@ -256,8 +256,8 @@ def site_distance(r, theta, binalt, re=None, ke=4./3.):
 
     Returns
     -------
-    distance : float
-        great circle arc distance [m]
+    distance : :class:`numpy:numpy.ndarray`
+        Array of great circle arc distances [m]
     """
     reff = ke * re
     return reff * np.arcsin(r * np.cos(np.radians(theta)) / (reff + binalt))
