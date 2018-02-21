@@ -20,11 +20,13 @@ Miscellaneous
 """
 
 import numpy as np
+import deprecation
 from deprecation import deprecated
 
 from .projection import get_default_projection
 from ..version import short_version
 
+deprecation.message_location = "top"
 
 # Seitenlänge Zenit - Himmelsnordpol: 90°-phi
 # Seitenlänge Himmelsnordpol - Gestirn: 90°-delta
@@ -38,6 +40,7 @@ from ..version import short_version
 # tau = theta - alpha - stundenwinkel
 # a - azimuth (von süden aus gezählt)
 # h - Höhe über Horizont
+
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version)
@@ -61,17 +64,16 @@ def aeq2hor(tau, delta, phi):
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.georef.bin_altitude` instead")
+            details="Use :func:`bin_altitude` instead")
 def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
-    r"""Calculates the height of a radar beam taking the refractivity of the
+    """Calculates the height of a radar beam taking the refractivity of the \
     atmosphere into account.
 
     Based on :cite:`Doviak1993` the beam height is calculated as
 
     .. math::
 
-        h = \sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \sin\theta} - k_e r_e
-
+        h = \\sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \\sin\\theta} - k_e r_e
 
     Parameters
     ----------
@@ -100,17 +102,17 @@ def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.georef.bin_distance` instead")
+            details="Use :func:`bin_distance` instead")
 def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
-    r"""Calculates the great circle distance of a radar beam over a sphere,
+    """Calculates the great circle distance of a radar beam over a sphere, \
     taking the refractivity of the atmosphere into account.
 
     Based on :cite:`Doviak1993` the arc distance may be calculated as
 
     .. math::
 
-        s = k_e r_e \arcsin\left(
-        \frac{r \cos\theta}{k_e r_e + h_n(r, \theta, r_e, k_e)}\right)
+        s = k_e r_e \\arcsin\\left(
+        \\frac{r \\cos\\theta}{k_e r_e + h_n(r, \\theta, r_e, k_e)}\\right)
 
     where :math:`h_n` would be provided by
     :meth:`~wradlib.georef.beam_height_n`
@@ -145,14 +147,14 @@ def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
 
 
 def bin_altitude(r, theta, sitealt, re, ke=4./3.):
-    r"""Calculates the height of a radar bin taking the refractivity of the
+    """Calculates the height of a radar bin taking the refractivity of the \
     atmosphere into account.
 
     Based on :cite:`Doviak1993` the bin altitude is calculated as
 
     .. math::
 
-        h = \sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \sin\theta} - k_e r_e
+        h = \\sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \\sin\\theta} - k_e r_e
 
 
     Parameters
@@ -183,14 +185,13 @@ def bin_altitude(r, theta, sitealt, re, ke=4./3.):
 
 
 def bin_distance(r, theta, sitealt, re, ke=4./3.):
-    r"""Calculates the great circle distance from radar site to a radar bin
-    over spherical earth, taking the refractivity of the atmosphere
-    into account.
+    """Calculates great circle distance from radar site to radar bin over \
+    spherical earth, taking the refractivity of the atmosphere into account.
 
     .. math::
 
-        s = k_e r_e \arctan\left(
-        \frac{r \cos\theta}{r \cos\theta + k_e r_e + h}\right)
+        s = k_e r_e \\arctan\\left(
+        \\frac{r \\cos\\theta}{r \\cos\\theta + k_e r_e + h}\\right)
 
     where :math:`h` would be the radar site altitude amsl.
 
@@ -223,19 +224,19 @@ def bin_distance(r, theta, sitealt, re, ke=4./3.):
 
 
 def site_distance(r, theta, binalt, re=None, ke=4./3.):
-    r"""Calculates the great circle distance from a bin at a certain altitude
-    to the radar site over spherical earth, taking the refractivity
-    of the atmosphere into account.
+    """Calculates great circle distance from bin at certain altitude to the \
+    radar site over spherical earth, taking the refractivity of the \
+    atmosphere into account.
 
     Based on :cite:`Doviak1993` the site distance may be calculated as
 
     .. math::
 
-        s = k_e r_e \arcsin\left(
-        \frac{r \cos\theta}{k_e r_e + h_n(r, \theta, r_e, k_e)}\right)
+        s = k_e r_e \\arcsin\\left(
+        \\frac{r \\cos\\theta}{k_e r_e + h_n(r, \\theta, r_e, k_e)}\\right)
 
     where :math:`h_n` would be provided by
-    :meth:`~wradlib.georef.bin_altitude`
+    :func:`~wradlib.georef.misc.bin_altitude`.
 
     Parameters
     ----------
@@ -264,21 +265,20 @@ def site_distance(r, theta, binalt, re=None, ke=4./3.):
 
 
 def get_earth_radius(latitude, sr=None):
-    r"""
-    Get the radius of the Earth (in km) for a given Spheroid model (sr) at a
-    given position
+    """Get the radius of the Earth (in km) for a given Spheroid model (sr) at \
+    a given position.
 
     .. math::
 
-        R^2 = \frac{a^4 \cos(f)^2 + b^4 \sin(f)^2}
-        {a^2 \cos(f)^2 + b^2 \sin(f)^2}
+        R^2 = \\frac{a^4 \\cos(f)^2 + b^4 \\sin(f)^2}
+        {a^2 \\cos(f)^2 + b^2 \\sin(f)^2}
 
     Parameters
     ----------
     sr : osr object
-        spatial reference;
+        spatial reference
     latitude : float
-        geodetic latitude in degrees;
+        geodetic latitude in degrees
 
     Returns
     -------
@@ -299,8 +299,7 @@ def get_earth_radius(latitude, sr=None):
 
 
 def get_shape_points(geom):
-    """
-    Extract coordinate points from given ogr geometry as generator object
+    """Extract coordinate points from given ogr geometry as generator object
 
     If geometries are nested, function recurses.
 

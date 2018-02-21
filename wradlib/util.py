@@ -30,6 +30,7 @@ from time import mktime
 import warnings
 import functools
 import os
+import deprecation
 from deprecation import deprecated
 
 import numpy as np
@@ -39,6 +40,8 @@ from scipy.spatial import cKDTree
 from osgeo import ogr
 
 from . version import short_version
+
+deprecation.message_location = "top"
 
 warnings.simplefilter('always', DeprecationWarning)
 # warnings.simplefilter('always', FutureWarning)
@@ -1102,7 +1105,7 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
 
 
 def filter_window_polar(img, wsize, fun, rscale, random=False):
-    r"""Apply a filter of an approximated square window of half size `fsize`
+    """Apply a filter of an approximated square window of half size `fsize` \
     on a given polar image `img`.
 
     Parameters
@@ -1171,7 +1174,7 @@ def prob_round(x, prec=0):
 
 
 def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
-    r"""Apply a filter of square window size `fsize` on a given
+    """Apply a filter of square window size `fsize` on a given \
     cartesian image `img`.
 
     Parameters
@@ -1198,7 +1201,7 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
 
 
 def roll2d_polar(img, shift=1, axis=0):
-    r"""Roll a 2D polar array [azimuth,range] by a given `shift` for
+    """Roll a 2D polar array [azimuth,range] by a given `shift` for \
     the given `axis`
 
     Parameters
@@ -1236,8 +1239,7 @@ def roll2d_polar(img, shift=1, axis=0):
 
 
 class UTC(tzinfo):
-    """
-    UTC implementation for tzinfo.
+    """UTC implementation for tzinfo.
 
     See e.g. http://python.active-venture.com/lib/datetime-tzinfo.html
 
@@ -1290,7 +1292,7 @@ def half_power_radius(r, bwhalf):
 
 
 def get_raster_origin(coords):
-    """
+    """Return raster origin
 
     Parameters
     ----------
@@ -1307,8 +1309,7 @@ def get_raster_origin(coords):
 
 
 def find_bbox_indices(coords, bbox):
-    """
-    Find min/max-indices for NxMx2 array coords using bbox-values.
+    """Find min/max-indices for NxMx2 array coords using bbox-values.
 
     The bounding box is defined by two points (llx,lly and urx,ury)
     It finds the first indices before llx,lly and the first indices
@@ -1408,7 +1409,7 @@ def calculate_polynomial(data, w):
 
     .. math::
 
-        P = \sum_{n=0}^{N} w(n) \cdot data^{n}
+       P = \\sum_{n=0}^{N} w(n) \\cdot data^{n}
 
     .. versionadded:: 0.10.0
 
