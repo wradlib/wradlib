@@ -1048,7 +1048,7 @@ def decode_array(data, scale=1., offset=0, offset2=0, tofloat=False):
 
     .. math::
 
-        decoded = \frac{data + offset}{scale} + offset2
+        decoded = \\frac{data + offset}{scale} + offset2
 
     Using the default values doesn't change the array.
 

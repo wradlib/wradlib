@@ -26,7 +26,7 @@ from . import util as util
 
 
 def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
-    r"""First part of the Gabella filter looking for large reflectivity
+    """First part of the Gabella filter looking for large reflectivity \
     gradients.
 
     This function checks for each pixel in `img` how many pixels surrounding
@@ -81,7 +81,7 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
 
 
 def filter_gabella_b(img, thrs=0.):
-    r"""Second part of the Gabella filter comparing area to circumference of
+    """Second part of the Gabella filter comparing area to circumference of \
     contiguous echo regions.
 
     Parameters
@@ -138,7 +138,7 @@ def filter_gabella_b(img, thrs=0.):
 
 def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
                    rm_nans=True, radial=False, cartesian=False):
-    r"""Clutter identification filter developed by :cite:`Gabella2002`.
+    """Clutter identification filter developed by :cite:`Gabella2002`.
 
     This is a two-part identification algorithm using echo continuity and
     minimum echo area to distinguish between meteorological (rain) and non-
@@ -194,7 +194,7 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
 
 
 def histo_cut(prec_accum):
-    r"""Histogram based clutter identification.
+    """Histogram based clutter identification.
 
     This identification algorithm uses the histogram of temporal accumulated
     rainfall. It iteratively detects classes whose frequency falls below a
@@ -279,7 +279,7 @@ def histo_cut(prec_accum):
 
 
 def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
-    """Fuzzy echo classification and clutter identification based on
+    """Fuzzy echo classification and clutter identification based on \
     polarimetric moments.
 
     The implementation is based on :cite:`Vulpiani2012`. At the
@@ -442,7 +442,7 @@ def _weight_array(data, weight):
 
 def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
                      smoothing=None, grid="polar", scale=None):
-    r"""Identification of non-meteorological echoes based on cloud type.
+    """Identification of non-meteorological echoes based on cloud type.
 
     Parameters
     ----------
@@ -490,7 +490,7 @@ def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
 
 
 def filter_window_distance(img, rscale, fsize=1500, tr1=7):
-    r"""2d filter looking for large reflectivity
+    """2d filter looking for large reflectivity
     gradients.
 
     This function counts for each bin in `img` the percentage of surrounding
