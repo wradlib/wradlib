@@ -28,13 +28,15 @@ Polar Grid Functions
 
 import numpy as np
 import warnings
+import deprecation
 from deprecation import deprecated
-
 from .projection import proj4_to_osr, reproject
 from .misc import (hor2aeq, get_default_projection, get_earth_radius,
                    bin_altitude, site_distance)
 
 from ..version import short_version
+
+deprecation.message_location = "top"
 
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
@@ -392,7 +394,7 @@ def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4./3.):
     coords : :class:`numpy:numpy.ndarray`
         Array of shape (..., 3). Contains projected map coordinates.
 
-        Examples
+    Examples
     --------
 
     A few standard directions (North, South, North, East, South, West) with
@@ -435,7 +437,7 @@ Georeferencing-and-Projection`.
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.georef.spherical_to_proj` instead.")
+            details="Use :func:`spherical_to_proj` instead.")
 def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
     """Transforms polar coordinates (of a PPI) to longitude/latitude \
     coordinates taking elevation angle and refractivity into account.
@@ -597,7 +599,7 @@ def centroid2polyvert(centroid, delta):
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.georef.spherical_to_polyvert` instead.")
+            details="Use :func:`spherical_to_polyvert` instead.")
 def polar2polyvert(r, az, sitecoords):
     """
     Generate 2-D polygon vertices directly from polar coordinates.
@@ -782,7 +784,7 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.georef.spherical_to_centroids` instead.")
+            details="Use :func:`spherical_to_centroids` instead.")
 def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
     """
     Computes the lat/lon centroids of the radar bins from the polar
@@ -992,7 +994,7 @@ def _get_azimuth_resolution(x):
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.georef.spherical_to_centroids` instead.")
+            details="Use :func:`spherical_to_centroids` instead.")
 def projected_bincoords_from_radarspecs(r, az, sitecoords, proj,
                                         range_res=None):
     """

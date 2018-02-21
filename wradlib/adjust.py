@@ -476,7 +476,9 @@ class AdjustMixed(AdjustBase):
     AdjustMultiply). The formal representation of the error model according
     to :cite:`Pfaff2010` is:
 
-        :math:`R_{gage} = R_{radar} \cdot (1 + \delta) + \epsilon`
+    .. math::
+
+       R_{gage} = R_{radar} \\cdot (1 + \\delta) +0 \\epsilon
 
     :math:`\delta` and :math:`\epsilon` have to be assumed to be independent
     and normally distributed. The present implementation is based on a Least
@@ -501,7 +503,8 @@ class AdjustMixed(AdjustBase):
     (e.g. NaN, Inf or other typical missing data flags such as -9999).
     However, in case e.g. the observation data contain missing values, the
     computation of the inverse distance weights needs to be repeated in
-    __call__ which is at the expense of performance.
+    :func:`~wradlib.adjust.AdjustMixed.__call__` which is at the expense of
+    performance.
 
     Note
     ----

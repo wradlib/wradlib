@@ -431,8 +431,8 @@ def _make_cov(func, params):
 
 
 def cov_nug(h, sill, rng):
-    r"""nugget covariance function
-    :math:`\gamma(h) = s ` for :math:`h \leq r`, 0 otherwise
+    """nugget covariance function
+    :math:`\\gamma(h) = s ` for :math:`h \\leq r`, 0 otherwise
     Therefore, usually rng is set to 0
     """
     h = np.asanyarray(h)
@@ -509,10 +509,9 @@ def cov_cau(h, sill=1., rng=1., alpha=1., beta=1.0):
 
 
 class OrdinaryKriging(IpolBase):
-    r"""
-    OrdinaryKriging(src, trg, cov='1.0 Exp(10000.)', nnearest=12)
+    """Interpolate using Ordinary Kriging.
 
-    Interpolate using Ordinary Kriging
+    OrdinaryKriging(src, trg, cov='1.0 Exp(10000.)', nnearest=12)
 
     (Co-)Variogram definitions are given in the syntax that ``gstat`` uses.
     It allows nesting of different basic variogram types using linear

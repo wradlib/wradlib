@@ -118,18 +118,18 @@ def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
 
 
 def pulse_volume(ranges, h, theta):
-    r"""Calculates the sampling volume of the radar beam per bin depending on
+    """Calculates the sampling volume of the radar beam per bin depending on \
     range and aperture.
 
     We assume a cone frustum which has the volume
-    :math:`V=(\pi/3) \cdot h \cdot (R^2 + R \cdot r + r^2)`.
+    :math:`V=(\\pi/3) \\cdot h \\cdot (R^2 + R \\cdot r + r^2)`.
     R and r are the radii of the two frustum surface circles. Assuming that the
     pulse width is small compared to the range, we get
-    :math:`R=r= \tan ( 0.5 \cdot \theta \cdot \pi/180 ) \cdot range`
+    :math:`R=r= \\tan ( 0.5 \\cdot \\theta \\cdot \\pi/180 ) \\cdot range`
     with theta being the aperture angle (beam width).
     Thus, the pulse volume simply becomes the volume of a cylinder with
-    :math:`V=\pi \cdot h \cdot range^2 \cdot \tan(
-    0.5 \cdot \theta \cdot \pi/180)^2`
+    :math:`V=\\pi \\cdot h \\cdot range^2 \\cdot \\tan(
+    0.5 \\cdot \\theta \\cdot \\pi/180)^2`
 
     Parameters
     ----------

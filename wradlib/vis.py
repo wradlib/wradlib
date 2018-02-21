@@ -31,6 +31,7 @@ Standard plotting and mapping procedures
 # standard libraries
 import os.path as path
 import warnings
+import deprecation
 from deprecation import deprecated
 
 # site packages
@@ -53,6 +54,7 @@ from . import georef as georef
 from . import util as util
 from .version import short_version
 
+deprecation.message_location = "top"
 
 class NorthPolarAxes(PolarAxes):
     """
@@ -899,14 +901,11 @@ def create_cg(st, fig=None, subplot=111):
 
 @deprecated(deprecated_in="0.10.0", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.vis.plot_ppi` with `cg=True` instead.")
+            details="Use :func:`plot_ppi` with `cg=True` instead.")
 def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
                 refrac=True, elev=0., fig=None, subplot=111,
                 **kwargs):
     """Plots a Plan Position Indicator (PPI) on a curvelinear grid.
-
-    .. deprecated:: 0.11
-    Use :meth:`~wradlib.vis.plot_ppi`
 
     The implementation of this plot routine is in curvelinear grid axes and
     does all coordinate transforms beforehand. This allows zooming into the
@@ -1053,13 +1052,10 @@ def plot_cg_ppi(data, r=None, az=None, rf=1.0, autoext=True,
 
 @deprecated(deprecated_in="0.10.0", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.vis.plot_ppi` with `cg=True` instead.")
+            details="Use :func:`plot_rhi` with `cg=True` instead.")
 def plot_cg_rhi(data, r=None, th=None, th_res=None, autoext=True, refrac=True,
                 rf=1., fig=None, subplot=111, **kwargs):
     """Plots a Range Height Indicator (RHI) on a curvelinear grid.
-
-    .. deprecated:: 0.11
-    Use :meth:`~wradlib.vis.plot_rhi`
 
     The implementation of this plot routine is in a curvelinear grid axes and
     does all coordinate transforms beforehand.

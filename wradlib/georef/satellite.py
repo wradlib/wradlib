@@ -16,8 +16,11 @@ Satellite Functions
    dist_from_orbit
 """
 import numpy as np
+import deprecation
 from deprecation import deprecated
 from ..version import short_version
+
+deprecation.message_location = "top"
 
 
 def correct_parallax(sr_xy, nbin, drt, alpha):
@@ -91,7 +94,7 @@ def correct_parallax(sr_xy, nbin, drt, alpha):
 
 @deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.georef.xyz_to_spherical` instead.")
+            details="Use :func:`xyz_to_spherical` instead.")
 def sat2pol(pr_xyz, gr_site_alt, re):
     """Returns spherical coordinates of PR bins as seen from the GR location.
 

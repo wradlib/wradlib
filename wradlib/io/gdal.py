@@ -20,12 +20,15 @@ Raster and Vector I/O using GDAL
 from __future__ import absolute_import
 
 import os
+import deprecation
 from deprecation import deprecated
 
 # site packages
 from osgeo import gdal, ogr, osr
 
 from ..version import short_version
+
+deprecation.message_location = "top"
 
 
 def open_vector(filename, driver=None):
@@ -62,7 +65,7 @@ def open_vector(filename, driver=None):
 
 @deprecated(deprecated_in="0.11.1", removed_in="1.0.0",
             current_version=short_version,
-            details="Use `wradlib.io.open_vector` instead.")
+            details="Use :func:`open_vector` instead.")
 def open_shape(filename, driver=None):
     """Open shapefile, return gdal.Dataset and OGR.Layer
 
