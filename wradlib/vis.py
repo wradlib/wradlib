@@ -56,6 +56,7 @@ from .version import short_version
 
 deprecation.message_location = "top"
 
+
 class NorthPolarAxes(PolarAxes):
     """
     A variant of PolarAxes where theta starts pointing north and goes
