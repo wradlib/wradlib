@@ -104,18 +104,22 @@ class ZonalDataTest(unittest.TestCase):
         a = np.array(range(0, 360, 1))
         rays = a.shape[0]
         bins = r.shape[0]
-        # create polar grid polygon vertices in lat,lon
-        radar_ll = georef.polar2polyvert(r, a, (lon, lat))
-
-        # create polar grid centroids in lat,lon
-        rlon, rlat = georef.polar2centroids(r, a, (lon, lat))
-        radar_llc = np.dstack((rlon, rlat))
 
         # setup OSR objects
         self.proj_gk = osr.SpatialReference()
         self.proj_gk.ImportFromEPSG(31466)
         self.proj_ll = osr.SpatialReference()
         self.proj_ll.ImportFromEPSG(4326)
+
+        # create polar grid polygon vertices in lat,lon
+        radar_ll = georef.spherical_to_polyvert(r, a, 0, (lon, lat),
+                                                proj=self.proj_ll)[..., 0:2]
+
+        # create polar grid centroids in lat,lon
+        coords = georef.spherical_to_centroids(r, a, 0, (lon, lat),
+                                               proj=self.proj_ll)
+
+        radar_llc = coords[..., 0:2]
 
         # project ll grids to GK2
         self.radar_gk = georef.reproject(radar_ll,
@@ -155,44 +159,42 @@ class ZonalDataTest(unittest.TestCase):
 
         self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data,
                                                srs=self.proj_gk)
-        # self.zdpoly.dump_vector('test_zdpoly')
+        #self.zdpoly.dump_vector('test_zdpoly')
         self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data,
                                                  srs=self.proj_gk)
-        # self.zdpoint.dump_vector('test_zdpoint')
+        #self.zdpoint.dump_vector('test_zdpoint')
 
         isec_poly0 = np.array([np.array([[2600000., 5630000.],
-                                         [2600000., 5630057.83273596],
-                                         [2600018.65014816, 5630000.],
-                                         [2600000., 5630000.]]),
-                               np.array([[2600000., 5630057.83273596],
                                          [2600000., 5630100.],
-                                         [2600091.80406488, 5630100.],
-                                         [2600100., 5630074.58501104],
+                                         [2600009.61316135, 5630100.],
+                                         [2600041.77967969, 5630000.],
+                                         [2600000., 5630000.]]),
+                               np.array([[2600009.61316135, 5630100.],
+                                         [2600100., 5630100.],
                                          [2600100., 5630000.],
-                                         [2600018.65014816, 5630000.],
-                                         [2600000., 5630057.83273596]]),
+                                         [2600041.77967969, 5630000.],
+                                         [2600009.61316135, 5630100.]]),
                                np.array([[2600091.80406488, 5630100.],
                                          [2600100., 5630100.],
                                          [2600100., 5630074.58501104],
                                          [2600091.80406488, 5630100.]])])
         isec_poly1 = np.array([np.array([[2600100., 5630000.],
-                                         [2600100., 5630074.58501104],
-                                         [2600124.05249566, 5630000.],
-                                         [2600100., 5630000.]]),
-                               np.array([[2600100., 5630074.58501104],
                                          [2600100., 5630100.],
-                                         [2600197.20644071, 5630100.],
-                                         [2600200., 5630091.33737992],
+                                         [2600114.66730696, 5630100.],
+                                         [2600146.83383364, 5630000.],
+                                         [2600100., 5630000.]]),
+                               np.array([[2600114.66730696, 5630100.],
+                                         [2600200., 5630100.],
                                          [2600200., 5630000.],
-                                         [2600124.05249566, 5630000.],
-                                         [2600100., 5630074.58501104]]),
+                                         [2600146.83383364, 5630000.],
+                                         [2600114.66730696, 5630100.]]),
                                np.array([[2600197.20644071, 5630100.],
                                          [2600200., 5630100.],
                                          [2600200., 5630091.33737992],
                                          [2600197.20644071, 5630100.]])])
 
-        isec_point0 = np.array([[2600062.31245173, 5630031.20266055]])
-        isec_point1 = np.array([[2600157.8352244, 5630061.85098382]])
+        isec_point0 = np.array([[2600077.28933235, 5630056.08798069]])
+        isec_point1 = np.array([[2600172.4965408, 5630086.71283403]])
 
         self.isec_poly = np.array([isec_poly0, isec_poly1])
         self.isec_point = np.array([isec_point0, isec_point1])
@@ -207,28 +209,29 @@ class ZonalDataTest(unittest.TestCase):
             for k in range(len(self.zdpoly.isecs[i])):
                 np.testing.assert_array_almost_equal(self.zdpoly.isecs[i, k],
                                                      self.isec_poly[i, k],
-                                                     decimal=3)
+                                                     decimal=7)
+
         np.testing.assert_array_almost_equal(self.zdpoint.isecs,
-                                             self.isec_point, decimal=2)
+                                             self.isec_point, decimal=7)
 
     def test_get_isec(self):
         for i in [0, 1]:
             for k, arr in enumerate(self.zdpoly.get_isec(i)):
                 np.testing.assert_array_almost_equal(arr,
                                                      self.isec_poly[i, k],
-                                                     decimal=3)
+                                                     decimal=7)
             np.testing.assert_array_almost_equal(self.zdpoint.get_isec(i),
-                                                 self.isec_point[i], decimal=2)
+                                                 self.isec_point[i], decimal=7)
 
     def test_get_source_index(self):
-        self.assertTrue(np.allclose(self.zdpoly.get_source_index(0),
-                                    np.array([2254, 2255, 2256])))
-        self.assertTrue(np.allclose(self.zdpoly.get_source_index(1),
-                                    np.array([2255, 2256, 2257])))
-        self.assertTrue(
-            np.allclose(self.zdpoint.get_source_index(0), np.array([2255])))
-        self.assertTrue(
-            np.allclose(self.zdpoint.get_source_index(1), np.array([2256])))
+        np.testing.assert_array_equal(self.zdpoly.get_source_index(0),
+                                      np.array([2254, 2255]))
+        np.testing.assert_array_equal(self.zdpoly.get_source_index(1),
+                                      np.array([2255, 2256]))
+        np.testing.assert_array_equal(self.zdpoint.get_source_index(0),
+                                      np.array([2255]))
+        np.testing.assert_array_equal(self.zdpoint.get_source_index(1),
+                                      np.array([2256]))
 
 
 class ZonalStatsTest(unittest.TestCase):
