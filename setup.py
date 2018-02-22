@@ -46,10 +46,10 @@ DOWNLOAD_URL = "https://github.com/wradlib/wradlib"
 LICENSE = 'MIT'
 CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
-MAJOR = 0
-MINOR = 11
-MICRO = 3
-ISRELEASED = True
+MAJOR = 1
+MINOR = 0
+MICRO = 0
+ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
