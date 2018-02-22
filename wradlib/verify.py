@@ -30,9 +30,10 @@ from . import util as util
 
 
 class PolarNeighbours():
-    """
-    For a set of projected point coordinates, extract the neighbouring bin
-    values from a data set in polar coordinates. Use as follows:
+    """For a set of projected point coordinates, extract the neighbouring bin \
+    values from a data set in polar coordinates.
+
+    Use as follows:
 
     First, create an instance of PolarNeighbours by passing all the information
     needed to georeference the polar radar data to the points of interest
@@ -46,19 +47,21 @@ class PolarNeighbours():
 
     Parameters
     ----------
-    r : array of floats
+    r : :class:`numpy:numpy.ndarray`
         (see georef for documentation)
-    az : array of floats
+    az : :class:`numpy:numpy.ndarray`
         (see georef for documentation)
     sitecoords : sequence of floats
         (see georef for documentation)
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
         (see georef for documentation)
-    x : array of floats
-        x coordinates of the points in map projection corresponding to proj
-    y : array of floats
-        y coordinates of the points in map projection corresponding to proj
+    x : :class:`numpy:numpy.ndarray`
+        array of x coordinates of the points in map projection
+        corresponding to proj
+    y : :class:`numpy:numpy.ndarray`
+        array of y coordinates of the points in map projection
+        corresponding to proj
     nnear : int
         number of neighbouring radar bins you would like to find
 
@@ -87,18 +90,19 @@ class PolarNeighbours():
         self.dist, self.ix = tree.query(list(zip(x, y)), k=nnear)
 
     def extract(self, vals):
-        """
-        Extracts the values from an array of shape (azimuth angles,
-        range gages) which correspond to the indices computed during
+        """Extracts the values from an array of shape (azimuth angles, \
+        range gages) which correspond to the indices computed during \
         initialisation
 
         Parameters
         ----------
-        vals : array of shape (..., number of azimuth, number of range gates)
+        vals : :class:`numpy:numpy.ndarray`
+            array of shape (..., number of azimuth, number of range gates)
 
         Returns
         -------
-        output : array of shape (..., number of points, nnear)
+        output : :class:`numpy:numpy.ndarray`
+            array of shape (..., number of points, nnear)
 
         """
         assert vals.ndim >= 2, \
@@ -111,31 +115,31 @@ class PolarNeighbours():
         return vals[..., self.ix]
 
     def get_bincoords(self):
-        """
-        Returns all bin coordinates in map projection
+        """Returns all bin coordinates in map projection
 
         Returns
         -------
-        output : array of x coordinates, array of y coordinates
+        output : tuple
+            array of x coordinates, array of y coordinates
 
         """
         return self.binx, self.biny
 
     def get_bincoords_at_points(self):
-        """
-        Returns bin coordinates only in the neighbourhood of points
+        """Returns bin coordinates only in the neighbourhood of points
 
         Returns
         -------
-        output : array of x coordinates, array of y coordinates
+        output : tuple
+            array of x coordinates, array of y coordinates
 
         """
         return self.binx[self.ix], self.biny[self.ix]
 
 
 class ErrorMetrics():
-    """Compute quality metrics from a set of observations (obs) and
-    estimates (est).
+    """Compute quality metrics from a set of observations (``obs``) and \
+    estimates (``est``).
 
     First create an instance of the class using the set of observations and
     estimates. Then compute quality metrics using the class methods.
@@ -145,10 +149,10 @@ class ErrorMetrics():
 
     Parameters
     ----------
-    obs: array of floats
-        observations (e.g. rain gage observations)
-    est: array of floats
-        estimates (e.g. radar, adjusted radar, ...)
+    obs: :class:`numpy:numpy.ndarray`
+        array of observations (e.g. rain gage observations)
+    est: :class:`numpy:numpy.ndarray`
+        array of estimates (e.g. radar, adjusted radar, ...)
     minval : float
         threshold value in order to compute metrics only for values larger
         than minval

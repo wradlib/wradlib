@@ -147,8 +147,7 @@ def idecibel(x):
 
 
 def r2depth(x, interval):
-    """
-    Computes rainfall depth (mm) from rainfall intensity (mm/h)
+    """Computes rainfall depth (mm) from rainfall intensity (mm/h)
 
     Parameters
     ----------
@@ -178,12 +177,13 @@ def kdp2r(kdp, f, a=129., b=0.85):
     Note
     ----
     **Please note that this way, rainfall intensities can become negative.**
-    This is an intended behaviour in order to account for noisy Kdp values.
+    This is an intended behaviour in order to account for noisy :math:`K_{DP}`
+    values.
 
     Parameters
     ----------
     kdp : float
-        Kdp as array of floats
+        :math:`K_{DP}` as array of floats
     f : float
         radar frequency [GHz]
 

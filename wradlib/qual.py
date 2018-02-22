@@ -35,8 +35,9 @@ import numpy as np
 
 
 def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
-    """Calculates the height of a radar beam above the antenna according to
-    the 4/3 (four-thirds -> ft) effective Earth radius model.
+    """Calculates the height of a radar beam above the antenna.
+
+    According to the 4/3 (four-thirds -> ft) effective Earth radius model.
     The formula was taken from :cite:`Collier1996`.
 
     Parameters
@@ -75,8 +76,9 @@ def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
 
 
 def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
-    """Calculates the height of a radar beam above the antenna according to
-    the 4/3 (four-thirds -> ft) effective Earth radius model.
+    """Calculates the height of a radar beam above the antenna.
+
+    According to the 4/3 (four-thirds -> ft) effective Earth radius model.
     The formula was taken from :cite:`Doviak1993`.
 
     Parameters
@@ -133,7 +135,7 @@ def pulse_volume(ranges, h, theta):
 
     Parameters
     ----------
-    ranges : array
+    ranges : :class:`numpy:numpy.ndarray`
         the distances of each bin from the radar [m]
     h : float
         pulse width (which corresponds to the range resolution [m])
@@ -265,12 +267,12 @@ def cum_beam_block_frac(pbb):
 def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     """Returns the Bright Band ratio of each PR bin
 
-    With *PR*, we refer to precipitation radars based on space-born platforms
+    With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
 
     This function basically applies the Bright Band (BB) information as
-    provided by the corresponding PR datasets per beam, namely BB height and
-    width, as well as quality flags of the PR beams. A BB ratio of <= 0
+    provided by the corresponding SR datasets per beam, namely BB height and
+    width, as well as quality flags of the SR beams. A BB ratio of <= 0
     indicates that a bin is located below the melting layer (ML), >=1
     above the ML, and in between 0 and 1 inside the ML.
 
@@ -279,27 +281,27 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     Parameters
     ----------
     bb_height : :class:`numpy:numpy.ndarray`
-        Array of shape (nscans, nbeams) containing the PR beams' BB heights
+        Array of shape (nscans, nbeams) containing the SR beams' BB heights
         in meters.
     bb_width : :class:`numpy:numpy.ndarray`
-        Array of shape (nscans, nbeams) containing the PR beams' BB widths
+        Array of shape (nscans, nbeams) containing the SR beams' BB widths
         in meters.
     quality : :class:`numpy:numpy.ndarray`
-        Array of shape (nscans, nbeams) containing the PR beams' BB quality
+        Array of shape (nscans, nbeams) containing the SR beams' BB quality
         index.
     zp_r : :class:`numpy:numpy.ndarray`
-        Array of PR bin altitudes of shape (nscans, nbeams, nbins).
+        Array of SR bin altitudes of shape (nscans, nbeams, nbins).
 
     Returns
     -------
     ratio : :class:`numpy:numpy.ndarray`
         Array of shape (nscans, nbeams, nbins) containing the BB ratio of
-        every PR bin.
+        every SR bin.
         - ratio <= 0: below ml
         - 0 < ratio < 1: between ml
         - 1 <= ratio: above ml
     ibb : :class:`numpy:numpy.ndarray`
-        Boolean array containing the indices of PR bins connected to the
+        Boolean array containing the indices of SR bins connected to the
         BB.
     """
     # parameters for bb detection

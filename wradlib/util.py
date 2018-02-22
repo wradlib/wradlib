@@ -65,11 +65,11 @@ def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
         Version from when the changes take effect
     par : string
         Name of parameter which is affected
-    typ : Python type
+    typ : dtype
         Data type of parameter which is affected
     expar : string
         Name of parameter to be used in future
-    exfunc : function
+    exfunc : func
         Function which can convert from old to new parameter
     msg : string
         additional warning message
@@ -959,8 +959,7 @@ def trapezoid(data, x1, x2, x3, x4):
 
 def maximum_intensity_projection(data, r=None, az=None, angle=None,
                                  elev=None, autoext=True):
-    """
-    Computes the maximum intensity projection along an arbitrary cut
+    """Computes the maximum intensity projection along an arbitrary cut
     through the ppi from polar data.
 
     Parameters
@@ -992,7 +991,7 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
 
     """
 
-    from wradlib.georef import beam_height_n as beam_height_n
+    from wradlib.georef import bin_altitude as bin_altitude
 
     # this may seem odd at first, but d1 and d2 are also used in several
     # plotting functions and thus it may be easier to compare the functions
@@ -1035,7 +1034,7 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
     # get height values from polar data and build cartesian height array
     # add delta to last element to compensate for open bound (np.digitize)
     hp = np.zeros((y.shape[0], x.shape[0]))
-    hc = beam_height_n(x, elev)
+    hc = bin_altitude(x, elev)
     hp[:] = hc
     hc[-1] += 0.0001
 
