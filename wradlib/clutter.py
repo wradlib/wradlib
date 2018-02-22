@@ -48,7 +48,8 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     Returns
     -------
     output : array_like
-        an array with the same shape as ``img``, containing the filter's results.
+        an array with the same shape as ``img``, containing the
+        filter's results.
 
     See Also
     --------
