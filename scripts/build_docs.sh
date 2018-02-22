@@ -4,7 +4,6 @@
 # Adapted from the continuous_integration/build_docs.sh file from the pyart project
 # https://github.com/ARM-DOE/pyart/
 
-
 set -e
 
 export PING_SLEEP=30s
@@ -36,6 +35,7 @@ cd "$WRADLIB_BUILD_DIR"
 echo "TRAVIS_PULL_REQUEST " $TRAVIS_PULL_REQUEST
 echo "TRAVIS_SECURE_ENV_VARS " $TRAVIS_SECURE_ENV_VARS
 echo "TRAVIS_TAG " $TRAVIS_TAG ${TRAVIS_TAG:1}
+echo "TRAVIS_BRANCH " $TRAVIS_BRANCH
 
 # remove possible build residues
 rm -rf doc-build
@@ -47,14 +47,21 @@ mkdir doc-build
 # create docs and upload to wradlib-docs repo if this is not a pull request and
 # secure token is available.
 # else build local docs
-if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' ]; then
+#if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' ]; then
+if [ $TRAVIS_SECURE_ENV_VARS == 'true' ]; then
+
+    if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
+        DOCS_REPO=wradlib-docs.git
+    else
+        DOCS_REPO=wradlib-docs-devel
+    fi
 
     # clone wradlib-docs
-    echo "Cloning wradlib-docs repo"
-    git clone https://github.com/wradlib/wradlib-docs.git
+    echo "cloning $DOCS_REPO"
+    git clone https://github.com/wradlib/$DOCS_REPO.git
 
     # get tagged versions from cloned repo
-    cd wradlib-docs
+    cd $DOCS_REPO
     TAGGED_VERSIONS=`for f in [0-9]*; do echo "$f"; done `
     cd ..
     # export variable, used in conf.py
@@ -62,11 +69,11 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     export TAGGED_VERSIONS=$TAGGED_VERSIONS
 
     # move index.html to build directory
-    mv wradlib-docs/index.html doc-build/.
+    mv $DOCS_REPO/index.html doc-build/.
 
     # copy tagged doc folders to build directory
     for folder in $TAGGED_VERSIONS; do
-        mv wradlib-docs/$folder doc-build/.
+        mv $DOCS_REPO/$folder doc-build/.
     done
 
     # check travis_tag
@@ -109,7 +116,7 @@ if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ $TRAVIS_SECURE_ENV_VARS == 'true' 
     touch .nojekyll
     git add --all . >> $BUILD_OUTPUT 2>&1
     git commit -m "Version" >> $BUILD_OUTPUT 2>&1 
-    git push https://$GH_TOKEN@github.com/wradlib/wradlib-docs.git gh-pages -fq >> $BUILD_OUTPUT 2>&1
+    git push https://$GH_TOKEN@github.com/wradlib/$DOCS_REPO.git gh-pages -fq >> $BUILD_OUTPUT 2>&1
 
 else
 

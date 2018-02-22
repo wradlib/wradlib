@@ -52,43 +52,45 @@ import numpy as np
 
 
 def extract_circle(center, radius, coords):
-    """
-    Extract the indices of coords which fall within a circle
-    defined by center and radius
+    """Extract the indices of ``coords`` which fall within a circle \
+    defined by ``center`` and ``radius``.
 
     Parameters
     ----------
     center : float
     radius : float
-    coords : array of float with shape (numpoints,2)
+    coords : :class:`numpy:numpy.ndarray`
+        array of float with shape (numpoints, 2)
 
     Returns
     -------
-    output : 1-darray of integers
-        index array referring to the coords array
+    output : :class:`numpy:numpy.ndarray`
+        1-darray of integers, index array referring to the ``coords`` array
 
     """
     return np.where(((coords - center) ** 2).sum(axis=-1) < radius ** 2)[0]
 
 
 def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
-    """
-    Interpolate data from a radar location to the composite grid or set of
+    """Interpolate data from a radar location to the composite grid or set of \
     locations
 
     Parameters
     ----------
-    src : ndarray of float of shape (numpoints, ndim)
+    src : :class:`numpy:numpy.ndarray`
+        array of float of shape (numpoints, ndim),
         cartesian x / y coordinates of the radar bins
-    trg : ndarray of float of shape (numpoints, ndim)
+    trg : :class:`numpy:numpy.ndarray`
+        array of float of shape (numpoints, ndim),
         cartesian x / y coordinates of the composite
     radius : float
         the radius of the radar circle (same units as src and trg)
-    center : array of float
-        the location coordinates of the radar
-    data : ndarray of float
-        the data that should be transferred to composite
-    interpol : an interpolation class name from :meth:`wradlib.ipol`
+    center : :class:`numpy:numpy.ndarray`
+        array of float, the location coordinates of the radar
+    data : :class:`numpy:numpy.ndarray`
+        array of float, the data that should be transferred to composite
+    interpol : object
+        an interpolation class name from :mod:`wradlib.ipol`
         e.g. :class:`~wradlib.ipol.Nearest` or :class:`~wradlib.ipol.Idw`
 
     Other Parameters
@@ -101,8 +103,9 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
 
     Returns
     -------
-    output : ndarray of float
-        data of the radar circle which is interpolated on the composite grid
+    output : :class:`numpy:numpy.ndarray`
+        array of float, data of the radar circle which is interpolated on
+        the composite grid
 
     Examples
     --------
@@ -146,7 +149,7 @@ def compose_ko(radargrids, qualitygrids):
 
     Returns
     -------
-    composite : array
+    composite : :class:`numpy:numpy.ndarray`
 
     """
     # first add a fallback array for all pixels having missing values in all
@@ -185,7 +188,7 @@ def compose_weighted(radargrids, qualitygrids):
 
     Returns
     -------
-    composite : array
+    composite : :class:`numpy:numpy.ndarray`
 
     Examples
     --------
@@ -194,7 +197,8 @@ def compose_weighted(radargrids, qualitygrids):
 
     See Also
     --------
-    compose_ko : for more description about the shape of the input arrays
+    :func:`~wradlib.comp.compose_ko` : for more description about the shape of
+    the input arrays
 
     """
     radarinfo = np.array(radargrids)

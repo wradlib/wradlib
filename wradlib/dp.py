@@ -18,16 +18,16 @@ Please note that the actual application of polarimetric moments is implemented
 in the corresponding wradlib modules, e.g.:
 
     - fuzzy echo classification from polarimetric moments
-      (:meth:`wradlib.clutter.classify_echo_fuzzy`)
-    - attenuation correction (:meth:`wradlib.atten.pia_from_kdp`)
-    - direct precipitation retrieval from Kdp (:meth:`wradlib.trafo.kdp2r`)
+      (:func:`wradlib.clutter.classify_echo_fuzzy`)
+    - attenuation correction (:func:`wradlib.atten.pia_from_kdp`)
+    - direct precipitation retrieval from Kdp (:func:`wradlib.trafo.kdp2r`)
 
 Establishing a valid :math:`Phi_{DP}` profile for :math:`K_{DP}` retrieval
 involves despeckling (linear_despeckle), phase unfolding, and iterative
 retrieval of :math:`Phi_{DP}` form :math:`K_{DP}`.
 The main workflow and its single steps is based on a publication by
 :cite:`Vulpiani2012`. For convenience, the entire workflow has been
-put together in the function :meth:`wradlib.dp.process_raw_phidp_vulpiani`.
+put together in the function :func:`wradlib.dp.process_raw_phidp_vulpiani`.
 
 Once a valid :math:`Phi_{DP}` profile has been established, the
 `kdp_from_phidp` functions can be used to retrieve :math:`K_{DP}`.
@@ -83,23 +83,26 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
     ----------
     phidp : array
         array of shape (n azimuth angles, n range gates)
-    dr : gate length in km
-    N_despeckle : integer
-        *N* parameter of function dp.linear_despeckle
+    dr : float
+        gate length in km
+    N_despeckle : int
+        ``N`` parameter of :func:`~wradlib.dp.linear_despeckle`
     L : integer
-        *L* parameter of :meth:`~wradlib.dp.kdp_from_phidp_convolution`
-    niter : integer
-        Number of iterations in which phidp is retrieved from kdp
-        and vice versa
-    copy : boolean
-        if True, the original phidp array will remain unchanged
+        ``L`` parameter of :func:`~wradlib.dp.kdp_from_phidp_convolution`
+    niter : int
+        Number of iterations in which :math:`Phi_{DP}` is retrieved from
+        :math:`K_{DP}` and vice versa
+    copy : bool
+        if True, the original :math:`Phi_{DP}` array will remain unchanged
 
     Returns
     -------
-    phidp : array of shape (n azimuth angles, n range gates)
-        reconstructed phidp
-    kdp : array of shape (n azimuth angles, n range gates)
-        kdp estimate corresponding to phidp output
+    phidp : :class:`numpy:numpy.ndarray`
+        array of shape (n azimuth angles, n range gates) reconstructed
+        :math:`Phi_{DP}`
+    kdp : :class:`numpy:numpy.ndarray`
+        array of shape (n azimuth angles, n range gates)
+        ``kdp`` estimate corresponding to ``phidp`` output
 
     Examples
     --------
@@ -146,15 +149,17 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
 
 
 def unfold_phi_vulpiani(phidp, kdp):
-    """Alternative phase unfolding which completely relies on Kdp.
+    """Alternative phase unfolding which completely relies on :math:`K_{DP}`.
 
     This unfolding should be used in oder to iteratively reconstruct
-    phidp and Kdp (see :cite:`Vulpiani2012`).
+    :math:`Phi_{DP}` and :math:`K_{DP}` (see :cite:`Vulpiani2012`).
 
     Parameters
     ----------
-    phidp : array of floats
-    kdp : array of floats
+    phidp : :class:`numpy:numpy.ndarray`
+        array of floats
+    kdp : :class:`numpy:numpy.ndarray`
+        array of floats
 
     """
     # unfold phidp
@@ -174,11 +179,12 @@ def unfold_phi_vulpiani(phidp, kdp):
 
 
 def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
-    """Fills missing data in a 1d profile
+    """Fills missing data in a 1D profile.
 
     Parameters
     ----------
-    dat : array of shape (n azimuth angles, n range gates)
+    dat : :class:`numpy:numpy.ndarray`
+        array of shape (n azimuth angles, n range gates)
     kind : string
         Defines how the filling is done.
     fill_value : float
@@ -208,15 +214,15 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
 
 
 def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
-    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving
+    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving \
     window range finite difference derivative.
 
     See :cite:`Vulpiani2012` for details about this approach.
 
-    Please note that the moving window size *L* is specified as the number of
+    Please note that the moving window size ``L`` is specified as the number of
     range gates. Thus, this argument might need adjustment in case the
     range resolution changes.
-    In the original publication (:cite:`Vulpiani2012`), the value L=7 was
+    In the original publication (:cite:`Vulpiani2012`), the value ``L=7`` was
     chosen for a range resolution of 1km.
 
     Warning
@@ -227,12 +233,13 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
 
     Parameters
     ----------
-    phidp : multi-dimensional array
-        Note that the range dimension must be the last dimension of
-        the input array.
-    L : integer
+    phidp : :class:`numpy:numpy.ndarray`
+        multi-dimensional array, note that the range dimension must be the
+        last dimension of the input array.
+    L : int
         Width of the window (as number of range gates)
-    dr : gate length in km
+    dr : float
+        gate length in km
     """
     assert (L % 2) == 1, \
         "Window size N for function kdp_from_phidp must be an odd number."
@@ -246,10 +253,10 @@ def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
 
 
 def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
-    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving
+    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving \
     window linear regression.
 
-    Please note that the moving window size *L* is specified as the number of
+    Please note that the moving window size ``L`` is specified as the number of
     range gates. Thus, this argument might need adjustment in case the range
     resolution changes.
     In the original publication (:cite:`Vulpiani2012`), the value L=7
@@ -263,12 +270,13 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
 
     Parameters
     ----------
-    phidp : multi-dimensional array
-        Note that the range dimension must be the last dimension of the
-        input array.
-    L : integer
+    phidp : :class:`numpy:numpy.ndarray`
+        multi-dimensional array, note that the range dimension must be the
+        last dimension of the input array.
+    L : int
         Width of the window (as number of range gates)
-    dr : gate length in km
+    dr : float
+        gate length in km
 
     Examples
     --------
@@ -328,7 +336,7 @@ def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
 
 
 def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
-    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a sobel
+    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a sobel \
     filter where possible and linear regression otherwise.
 
     The results are quite similar to the moving window linear regression, but
@@ -336,15 +344,15 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
     though. The Sobel filter is applied everywhere but will return NaNs in case
     only one value in the moving window is NaN. The remaining NaN values are
     then dealt with by using local linear regression
-    (see :meth:`~wradlib.dp.kdp_from_phidp_linregress`).
+    (see :func:`~wradlib.dp.kdp_from_phidp_linregress`).
 
     This Sobel filter solution has been provided by Scott Collis at
     StackOverflow :cite:`Sobel-linfit`
 
-    Please note that the moving window size *L* is specified as the number of
+    Please note that the moving window size ``L`` is specified as the number of
     range gates. Thus, this argument might need adjustment in case the range
     resolution changes.
-    In the original publication (:cite:`Vulpiani2012`), the value L=7
+    In the original publication (:cite:`Vulpiani2012`), the value ``L=7``
     was chosen for a range resolution of 1km.
 
     Warning
@@ -355,12 +363,13 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
 
     Parameters
     ----------
-    phidp : multi-dimensional array
-        Note that the range dimension must be the last dimension of the
-        input array.
-    L : integer
+    phidp : :class:`numpy:numpy.ndarray`
+        multi-dimensional array, note that the range dimension must be the
+        last dimension of the input array.
+    L : int
         Width of the window (as number of range gates)
-    dr : gate length in km
+    dr : float
+        gate length in km
 
     Examples
     --------
@@ -436,7 +445,7 @@ def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
 
 
 def sobel(x, window_len=7):
-    """Sobel differential filter for calculating KDP.
+    """Sobel differential filter for calculating :math:`K_{DP}`.
 
     This solution has been taken from StackOverflow :cite:`Sobel-linfit`
 
@@ -454,7 +463,7 @@ def sobel(x, window_len=7):
 
 
 def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
-    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a
+    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a \
     convolution filter where possible and linear regression otherwise.
 
     The results are very similar to the moving window linear regression, but
@@ -466,12 +475,12 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     The filter provides fast :math:`K_{DP}` retrieval but will return NaNs in
     case at least one value in the moving window is NaN. The remaining gates
     are treated by using local linear regression where possible
-    (see :meth:`~wradlib.dp.kdp_from_phidp_linregress`).
+    (see :func:`~wradlib.dp.kdp_from_phidp_linregress`).
 
-    Please note that the moving window size *L* is specified as the number of
+    Please note that the moving window size ``L`` is specified as the number of
     range gates. Thus, this argument might need adjustment in case the
     range resolution changes.
-    In the original publication (:cite:`Vulpiani2012`), the value L=7
+    In the original publication (:cite:`Vulpiani2012`), the value ``L=7``
     was chosen for a range resolution of 1km.
 
     Warning
@@ -482,12 +491,13 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
 
     Parameters
     ----------
-    phidp : multi-dimensional array
-        Note that the range dimension must be the last dimension of the
-        input array.
-    L : integer
+    phidp : :class:`numpy:numpy.ndarray`
+        multi-dimensional array, note that the range dimension must be the
+        last dimension of the input array.
+    L : int
         Width of the window (as number of range gates)
-    dr : gate length in km
+    dr : float
+        gate length in km
 
     Examples
     --------
@@ -571,8 +581,7 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):
-    """
-    Unfolds differential phase by adjusting values that exceeded maximum
+    """Unfolds differential phase by adjusting values that exceeded maximum \
     ambiguous range.
 
     Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
@@ -584,12 +593,15 @@ def unfold_phi(phidp, rho, width=5, copy=False):
 
     Parameters
     ----------
-    phidp : array of shape (...,nr) with nr being the number of range bins
-    rho : array of same shape as phidp
-    width : integer
+    phidp : :class:`numpy:numpy.ndarray`
+        array of shape (...,nr) with nr being the number of range bins
+    rho : :class:`numpy:numpy.ndarray`
+        array of same shape as ``phidp``
+    width : int
        Width of the analysis window
-    copy : boolean
-       Leaves original phidp array unchanged if set to True (default: False)
+    copy : bool
+       Leaves original ``phidp`` array unchanged if set to True
+       (default: False)
     """
     # Check whether fast Fortran implementation is available
     speedup = util.import_optional("wradlib.speedup")
@@ -620,8 +632,7 @@ def unfold_phi(phidp, rho, width=5, copy=False):
 
 
 def unfold_phi_naive(phidp, rho, width=5, copy=False):
-    """
-    Unfolds differential phase by adjusting values that exceeded maximum
+    """Unfolds differential phase by adjusting values that exceeded maximum \
     ambiguous range.
 
     Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
@@ -633,12 +644,15 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
 
     Parameters
     ----------
-    phidp : array of shape (...,nr) with nr being the number of range bins
-    rho : array of same shape as phidp
-    width : integer
+    phidp : :class:`numpy:numpy.ndarray`
+        array of shape (...,nr) with nr being the number of range bins
+    rho : :class:`numpy:numpy.ndarray`
+        array of same shape as ``phidp``
+    width : int
        Width of the analysis window
-    copy : boolean
-       Leaves original phidp array unchanged if set to True (default: False)
+    copy : bool
+        Leaves original ``phidp`` array unchanged if set to True
+        (default: False)
 
     """
     shape = phidp.shape
@@ -694,14 +708,13 @@ def linear_despeckle(data, N=3, copy=False):
 
     Parameters
     ----------
-    data : multi-dimensional array
+    data : :class:`numpy:numpy.ndarray`
         Note that the range dimension must be the last dimension of the
         input array.
-
-    N : integer (must be either 3 or 5, 3 by default)
+    N : int
+        (must be either 3 or 5, 3 by default),
         Width of the window in which we check for speckle
-
-    copy : Boolean
+    copy : bool
         If True, the input array will remain unchanged.
 
     """
@@ -731,19 +744,22 @@ def linear_despeckle(data, N=3, copy=False):
 
 
 def texture(data):
-    """
+    """Compute the texture of data.
+
     Compute the texture of the data by comparing values with a 3x3 neighborhood
-    (based on :cite:`Gourley2007`).
-    NaN values in the original array have NaN textures.
+    (based on :cite:`Gourley2007`). NaN values in the original array have
+    NaN textures.
 
     Parameters
     ----------
-    data : multi-dimensional array with shape (..., number of beams, number
+    data : :class:`numpy:numpy.ndarray`
+        multi-dimensional array with shape (..., number of beams, number
         of range bins)
 
     Returns
     ------
-    texture : array of textures with the same shape as data
+    texture : :class:`numpy:numpy.ndarray`
+        array of textures with the same shape as data
 
     """
     x1 = np.roll(data, 1, -2)  # center:2
@@ -787,11 +803,13 @@ def contiguous_regions(condition):
 
     Parameters
     ----------
-    condition : 1d boolean array
+    condition : :class:`numpy:numpy.ndarray`
+        1d boolean array
 
     Returns
     -------
-    output : a 2D array where the first column is the start index of the region
+    output : :class:`numpy:numpy.ndarray`
+        a 2D array where the first column is the start index of the region
         and the second column is the end index.
     """
 

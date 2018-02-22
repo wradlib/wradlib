@@ -48,8 +48,8 @@ CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 0
 MINOR = 11
-MICRO = 3
-ISRELEASED = True
+MICRO = 4
+ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 

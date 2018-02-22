@@ -58,9 +58,9 @@ deprecation.message_location = "top"
 
 
 class NorthPolarAxes(PolarAxes):
-    """
-    A variant of PolarAxes where theta starts pointing north and goes
+    """A variant of PolarAxes where theta starts pointing north and goes \
     clockwise.
+
     Obsolete since matplotlib version 1.1.0, where the same behaviour may
     be achieved with a reconfigured standard PolarAxes object.
     """
@@ -137,71 +137,72 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    Using `cg=True` the plotting is done in a curvelinear grid axes.
+    Using ``cg=True`` the plotting is done in a curvelinear grid axes.
     Additional data can be plotted in polar coordinates or cartesian
     coordinates depending which axes object is used.
 
-    ``**kwargs` may be used to try to influence the
+    ``**kwargs`` may be used to try to influence the
     :func:`matplotlib.pyplot.pcolormesh`, :func:`matplotlib.pyplot.contour`,
     :func:`matplotlib.pyplot.contourf` and
-    :meth:`wradlib.georef.spherical_to_proj` routines under the hood.
+    :func:`wradlib.georef.polar.spherical_to_proj` routines under the hood.
 
-    There is one major caveat concerning the values of `r` and `az`.
-    Due to the way :func:`matplotlib.pyplot.pcolormesh` works, `r` should give
-    the location of the start of each range bin, while `az` should give the
-    angle also at the begin (i.e. 'leftmost') of the beam.
+    There is one major caveat concerning the values of ``r`` and ``az``.
+    Due to the way :func:`matplotlib.pyplot.pcolormesh` works, ``r`` should
+    give the location of the start of each range bin, while ``az`` should give
+    the angle also at the begin (i.e. 'leftmost') of the beam.
     This might be in contrast to other conventions, which might define ranges
     and angles at the center of bin and beam.
-    This affects especially the default values set for `r` and `az`, but ìt
-    should be possible to accommodate all other conventions by setting `r` and
-    `az` properly.
+    This affects especially the default values set for ``r`` and ``az``, but ìt
+    should be possible to accommodate all other conventions by setting ``r``
+    and ``az`` properly.
 
     Parameters
     ----------
-    data : np.array
+    data : :class:`numpy:numpy.ndarray`
         The data to be plotted. It is assumed that the first dimension is over
         the azimuth angles, while the second dimension is over the range bins
-    r : np.array
+    r : :class:`numpy:numpy.ndarray`
         The ranges. Units may be chosen arbitrarily, unless proj is set. In
         that case the units must be meters. If None, a default is
-        calculated from the dimensions of `data`.
+        calculated from the dimensions of ``data``.
     rf: float
         If present, factor for scaling range axes, defaults to 1.
-    az : np.array
+    az : :class:`numpy:numpy.ndarray`
         The azimuth angles in degrees. If None, a default is
-        calculated from the dimensions of `data`.
-    autoext : True | False
+        calculated from the dimensions of ``data``.
+    autoext : bool
         This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw the
         bins.
         As this function needs one set of coordinates more than would usually
-        be provided by `r` and `az`, setting ´autoext´ to True automatically
-        extends r and az so that all of `data` will be plotted.
-    refrac: True | False
+        be provided by ``r`` and ``az``, setting ``autoext`` to True
+        automatically extends ``r`` and ``az`` so that all of ``data`` will
+        be plotted.
+    refrac: bool
         If True, the effect of refractivity of the earth's atmosphere on the
         beam propagation will be taken into account. If False, simple
         trigonometry will be used to calculate beam propagation.
         Functionality for this will be provided by function
-        :meth:`wradlib.georef.bin_distance`. Therefore, if `refrac` is True,
-        `r` must be given in meters.
+        :func:`wradlib.georef.misc.bin_distance`. Therefore, if ``refrac`` is
+        True, ``r`` must be given in meters.
     site : tuple
         Tuple of coordinates of the radar site.
-        If `proj` is not used, this simply becomes the offset for the origin
+        If ``proj`` is not used, this simply becomes the offset for the origin
         of the coordinate system.
-        If `proj` is used, values must be given as (longitude, latitude)
+        If ``proj`` is used, values must be given as (longitude, latitude)
         tuple of geographical coordinates.
     proj : osr spatial reference object
         GDAL OSR Spatial Reference Object describing projection
-        If this parameter is not None, `site` must be set. Then the function
+        If this parameter is not None, ``site`` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
         coordinate system defined by the projection string.
-    elev : float or array of same shape as az
+    elev : float or array of same shape as ``az``
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
-    fig : matplotlib Figure object
+    fig : :class:`matplotlib:matplotlib.figure.Figure`
         If given, the RHI will be plotted into this figure object. Axes are
         created as needed. If None, a new figure object will be created or
-        current figure will be used, depending on "ax".
-    ax : matplotlib Axes object | matplotlib grid definition
+        current figure will be used, depending on ``ax``.
+    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid definition
         If matplotlib Axes object is given, the PPI will be plotted into this
         axes object.
         If matplotlib grid definition is given (nrows/ncols/plotnumber),
@@ -210,33 +211,34 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     func : str
         Name of plotting function to be used under the hood.
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
-    cg : True | False
+    cg : bool
         If True, the data will be plotted on curvelinear axes.
 
     See also
     --------
-    wradlib.georef.reproject - for information on projection strings
-    wradlib.georef.create_osr - generate pre-defined projection strings
+    :func:`wradlib.georef.projection.reproject`
+    :func:`wradlib.georef.projection.create_osr`
 
     Returns
     -------
-    ax : matplotlib Axes object
+    ax : :class:`matplotlib:matplotlib.axes.Axes`
         The axes object into which the PPI was plotted
-    pm : mmatplotlib QuadMesh object | matplotlib QuadContourSet
-        The result of the pcolormesh operation. Necessary, if you want to
+    pm : :class:`matplotlib:matplotlib.collections.QuadMesh` | \
+        :class:`matplotlib:matplotlib.contour.QuadContourSet`
+        The result of the plotting function. Necessary, if you want to
         add a colorbar to the plot.
 
     Note
     ----
-    If `cg` is True, the `cgax` - curvelinear Axes (r-theta-grid)
-    is returned. `caax` - Cartesian Axes (x-y-grid) and `paax` -
+    If ``cg`` is True, the ``cgax`` - curvelinear Axes (r-theta-grid)
+    is returned. ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
     parasite axes object for plotting polar data can be derived like this::
 
         caax = cgax.parasites[0]
         paax = cgax.parasites[1]
 
-    The function `create_cg` uses the Matplotlib AXISARTIST namespace
-    `mpl_toolkits.axisartist \
+    The function :func:`~wradlib.vis.create_cg` uses the Matplotlib AXISARTIST
+    namespace `mpl_toolkits.axisartist \
     <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
 
     Here are some limitations to normal Matplotlib Axes. While using the
@@ -401,8 +403,9 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         tuple of geographical coordinates.
     ranges : list
         List of ranges, for which range circles should be drawn.
-        If `proj` is None arbitrary units may be used (such that they fit with
-        the underlying PPI plot. Otherwise the ranges must be given in meters.
+        If ``proj`` is None arbitrary units may be used (such that they fit
+        with the underlying PPI plot.
+        Otherwise the ranges must be given in meters.
     angles : list
         List of angles (in degrees) for which straight lines should be drawn.
         These lines will be drawn starting from the center and until the
@@ -418,7 +421,7 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     elev : float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
-    ax : matplotlib Axes object
+    ax : :class:`matplotlib:matplotlib.axes.Axes`
         If given, the crosshair will be plotted into this axes object. If None
         matplotlib's current axes (function gca()) concept will be used to
         determine the axes.
@@ -436,11 +439,11 @@ def plot_ppi_crosshair(site, ranges, angles=None,
 
     See also
     --------
-    wradlib.vis.plot_ppi - plotting a PPI in cartesian coordinates
+    :func:`~wradlib.vis.plot_ppi` - plotting a PPI in cartesian coordinates
 
     Returns
     -------
-    ax : matplotlib Axes object
+    ax :  :class:`matplotlib:matplotlib.axes.Axes`
         The axes object into which the PPI was plotted
 
     Examples
@@ -526,56 +529,56 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     as making it easier to plot additional data (like gauge locations) without
     having to convert them to the radar's polar coordinate system.
 
-    Using `cg=True` the plotting is done in a curvelinear grid axes.
+    Using ``cg=True`` the plotting is done in a curvelinear grid axes.
     Additional data can be plotted in polar coordinates or cartesian
     coordinates depending which axes object is used.
 
-    `**kwargs` may be used to try to influence the
+    ``**kwargs`` may be used to try to influence the
     :func:`matplotlib.pyplot.pcolormesh`, :func:`matplotlib.pyplot.contour`
     and :func:`matplotlib.pyplot.contourf` routines under the hood.
 
     Parameters
     ----------
-    data : np.array
+    data : :class:`numpy:numpy.ndarray`
         The data to be plotted. It is assumed that the first dimension is over
         the elevation angles, while the second dimension is over the range bins
-    r : np.array
+    r : :class:`numpy:numpy.ndarray`
         The ranges. Units may be chosen arbitrarily. If None, a default is
-        calculated from the dimensions of `data`.
+        calculated from the dimensions of ``data``.
     rf: float
         If present, factor for scaling range axis, defaults to 1.
-    th : np.array
+    th : :class:`numpy:numpy.ndarray`
         The elevation angles in degrees. If None, a default is
-        calculated from the dimensions of `data`.
-    th_res : float or np.array of same shape as `th`
+        calculated from the dimensions of ``data``.
+    th_res : float or np.array of same shape as ``th``
         In RHI's it happens that the elevation angles are spaced wider than
-        the beam width. If this beam width (in degrees) is given in `th_res`,
+        the beam width. If this beam width (in degrees) is given in ``th_res``,
         plot_rhi will plot the beams accordingly. Otherwise the behavior of
         :func:`matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
         to each other, which might lead to unexpected results.
     yoffset : float
         Altitude offset that would typically represent the altitude of
-        the radar antenna. Units must be consistent with units of `r`.
-    autoext : True | False
+        the radar antenna. Units must be consistent with units of ``r``.
+    autoext : bool
         This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw
         the bins.
         As this function needs one set of coordinates more than would usually
-        provided by `r` and `az`, setting ´autoext´ to True automatically
-        extends r and az so that all of `data` will be plotted.
-    refrac : True | False
+        provided by ``r`` and ``az``, setting ``autoext`` to True automatically
+        extends ``r`` and ``az`` so that all of ``data`` will be plotted.
+    refrac : bool
         If True, the effect of refractivity of the earth's atmosphere on the
         beam propagation will be taken into account. If False, simple
         trigonometry will be used to calculate beam propagation.
         Functionality for this will be provided by functions
-        :meth:`wradlib.georef.arc_distance_n` and
-        :meth:`wradlib.georef.beam_height_n`, which assume distances to be
-        given in meters. Therefore, if `refrac` is True, `r` must be given
+        :func:`wradlib.georef.misc.site_distance` and
+        :func:`wradlib.georef.misc.bin_altitude`, which assume distances to be
+        given in meters. Therefore, if ``refrac`` is True, ``r`` must be given
         in meters.
-    fig : matplotlib Figure object
+    fig : :class:`matplotlib:matplotlib.figure.Figure`
         If given, the RHI will be plotted into this figure object. Axes are
         created as needed. If None, a new figure object will be created or
-        current figure will be used, depending on "ax".
-    ax : matplotlib Axes object | matplotlib grid definition
+        current figure will be used, depending on ``ax``.
+    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid definition
         If matplotlib Axes object is given, the RHI will be plotted into this
         axes object.
         If matplotlib grid definition is given (nrows/ncols/plotnumber),
@@ -584,32 +587,33 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     func : str
         Name of plotting function to be used under the hood.
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
-    cg : True | False
+    cg : bool
         If True, the data will be plotted on curvelinear axes.
 
     See also
     --------
-    create_cg : creation of curvelinear grid axes objects
+    :func:`wradlib.vis.create_cg` : creation of curvelinear grid axes objects
 
     Returns
     -------
-    ax : matplotlib Axes object
+    ax : :class:`matplotlib:matplotlib.axes.Axes`
         The axes object into which the RHI was plotted.
-    pm : matplotlib QuadMesh object | matplotlib QuadContourSet object
-        The result of the plot operation. Necessary, if you want to
+    pm : :class:`matplotlib:matplotlib.collections.QuadMesh` | \
+        :class:`matplotlib:matplotlib.contour.QuadContourSet`
+        The result of the plotting function. Necessary, if you want to
         add a colorbar to the plot.
 
     Note
     ----
-    If `cg` is True, the `cgax` - curvelinear Axes (r-theta-grid)
-    is returned. `caax` - Cartesian Axes (x-y-grid) and `paax` -
+    If ``cg`` is True, the ``cgax`` - curvelinear Axes (r-theta-grid)
+    is returned. ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
     parasite axes object for plotting polar data can be derived like this::
 
         caax = cgax.parasites[0]
         paax = cgax.parasites[1]
 
-    The function `create_cg` uses the Matplotlib AXISARTIST namespace
-    `mpl_toolkits.axisartist \
+    The function :func:`~wradlib.vis.create_cg` uses the Matplotlib AXISARTIST
+    namespace `mpl_toolkits.axisartist \
     <http://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
 
     Here are some limitations to normal Matplotlib Axes. While using the
@@ -618,7 +622,6 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     most of the limitations can be overcome.
     See `Matplotlib AxesGrid Toolkit User’s Guide \
     <http://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
-
 
     Examples
     --------
@@ -771,7 +774,8 @@ def create_cg(st, fig=None, subplot=111):
         If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None a new figure object will be created or
         current figure will be used, depending on "subplot".
-    subplot : matplotlib grid definition, gridspec definition
+    subplot : :class:`matplotlib:matplotlib.gridspec.GridSpec`, \
+        matplotlib grid definition
         nrows/ncols/plotnumber, see examples section
         defaults to '111', only one subplot
 
@@ -1294,20 +1298,29 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
 
 def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
                        title="", saveto="", **kwargs):
-    """Plot 2-D plan view of <dataxy> together with
-    vertical sections <dataxz> and <datazy>
+    """Plot 2-D plan view of ``dataxy`` together with vertical sections
+    ``dataxz`` and ``datazy``
 
     Parameters
     ----------
-    x : array of x-axis coordinates
-    y : array of y-axis coordinates
-    z : array of z-axis coordinates
-    dataxy : 2d array of shape (len(x), len(y))
-    datazx : 2d array of shape (len(z), len(x))
-    datazy : 2d array of shape (len(z), len(y))
-    unit : string (unit of data arrays)
+    x : :class:`numpy:numpy.ndarray`
+        array of x-axis coordinates
+    y : :class:`numpy:numpy.ndarray`
+        array of y-axis coordinates
+    z : :class:`numpy:numpy.ndarray`
+        array of z-axis coordinates
+    dataxy : :class:`numpy:numpy.ndarray`
+        2d array of shape (len(x), len(y))
+    datazx : :class:`numpy:numpy.ndarray`
+        2d array of shape (len(z), len(x))
+    datazy : :class:`numpy:numpy.ndarray`2d
+        array of shape (len(z), len(y))
+    unit : string
+        unit of data arrays
     title: string
-    saveto : file path if figure should be saved
+        figure title
+    saveto : string
+        file path if figure should be saved
 
     Keyword Arguments
     -----------------
@@ -1393,7 +1406,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
 def plot_max_plan_and_vert(x, y, z, data, unit="", title="",
                            saveto="", **kwargs):
     """Plot according to <plot_plan_and_vert> with the maximum values
-    along the three axes of <data>
+    along the three axes of ``data``
 
     Examples
     --------
@@ -1411,8 +1424,10 @@ def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M',
 
     Parameters
     ----------
-    dtimes : array of datetime objects (time steps)
-    data : 2D array of shape ( num time steps, num data series )
+    dtimes : :class:`numpy:numpy.ndarray`
+        array of datetime objects (time steps)
+    data : :class:`numpy:numpy.ndarray`
+        2D array of shape ( num time steps, num data series )
     labels : list of strings (names of data series)
     title : string
     kwargs : keyword arguments related to :func:`matplotlib.pyplot.plot`
@@ -1462,8 +1477,7 @@ def set_ticklabel_size(ax, size):
 
 
 def add_lines(ax, lines, **kwargs):
-    """
-    Add lines (points in the form Nx2) to axes
+    """Add lines (points in the form Nx2) to axes
 
     Add lines (points in the form Nx2) to existing axes ax
     using :class:`matplotlib:matplotlib.collections.LineCollection`.
@@ -1473,7 +1487,8 @@ def add_lines(ax, lines, **kwargs):
     Parameters
     ----------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
-    lines : nested :class:`numpy:numpy.ndarray` Nx2 array(s)
+    lines : :class:`numpy:numpy.ndarray`
+        nested Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.LineCollection`
 
     Examples
@@ -1490,9 +1505,7 @@ def add_lines(ax, lines, **kwargs):
 
 
 def add_patches(ax, patch_array, **kwargs):
-    """
-    Add patches (points in the form Nx2) to axes
-
+    """Add patches (points in the form Nx2) to axes
 
     Add patches (points in the form Nx2) to existing axes ax
     using :class:`matplotlib:matplotlib.collections.PolyCollection`.
@@ -1502,7 +1515,9 @@ def add_patches(ax, patch_array, **kwargs):
     Parameters
     ----------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
-    patch_array : nested :class:`numpy:numpy.ndarray` Nx2 array(s)
+        the axes object to plot on
+    patch_array : :class:`numpy:numpy.ndarray`
+        nested Nx2 array(s)
     kwargs : :class:`matplotlib:matplotlib.collections.PolyCollection`
 
     Examples

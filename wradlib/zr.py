@@ -89,7 +89,7 @@ def r2z(r, a=200., b=1.6):
 
 
 def _z2rEnhanced(z):
-    """Calculates rainrates from radar reflectivities using the enhanced
+    """Calculates rainrates from radar reflectivities using the enhanced \
     three-part Z-R-relationship used by the DWD (as of 2009).
 
     This function does the actual calculations without any padding.
@@ -185,9 +185,11 @@ def _z2rEnhanced(z):
 
 def _z2rEnhanced_md(z):
     """multidimensional version
+
     assuming the two last dimensions represent an image
     This version should also be a bit more performant than the original because
-    it uses less for-loops"""
+    it uses less for-loops
+    """
     # get the shape of the input
     dimy = z.shape[-2]
     dimx = z.shape[-1]
@@ -253,7 +255,9 @@ def _z2rEnhanced_md(z):
 
 def z2rEsifilter(data):
     """calculates the shower index for the enhanced z-r relation
-    to be used as the callable for a scipy.ndimate.filters.generic_filter
+
+    to be used as the callable for
+    :func:`scipy:scipy.ndimagefilters.generic_filter`
     """
     if data[4] < 36.5:
         tdata = data.reshape((3, 3))
@@ -269,9 +273,10 @@ def z2rEsifilter(data):
 
 def _z2rEnhanced_mdfilt(z):
     """multidimensional version
+
     assuming the two last dimensions represent a 2-D image
-    Uses scipy.ndimage.filters.generic_filter to reduce the number of for-loops
-    even more.
+    Uses :func:`scipy:scipy.ndimagefilters.generic_filter` to reduce the number
+    of for-loops even more.
     """
     # get the shape of the input
     # dimy = z.shape[-2]
@@ -310,9 +315,10 @@ def _z2rEnhanced_mdfilt(z):
 
 def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
     """multidimensional version
+
     assuming the two last dimensions represent a 2-D image
-    Uses scipy.ndimage.filters.correlate to reduce the number of for-loops
-    even more.
+    Uses :func:`scipy:scipy.ndimage.filters.correlate` to reduce the number of
+    for-loops even more.
     """
     # get the shape of the input
     # dimy = z.shape[-2]
@@ -373,7 +379,7 @@ def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
 
 
 def z2rEnhanced(z):
-    """Calculates rainrates from radar reflectivities using the enhanced
+    """Calculates rainrates from radar reflectivities using the enhanced \
     three-part Z-R-relationship used by the DWD (as of 2009)
 
     To be used with polar representations so that one dimension is cyclical.
@@ -388,9 +394,9 @@ def z2rEnhanced(z):
 
     Returns
     -------
-    r : array
+    r : :class:`numpy:numpy.ndarray`
         r  - array of shape z.shape - calculated rain rates
-    si : array
+    si : :class:`numpy:numpy.ndarray`
         si - array of shape z.shape - calculated shower index
         for control purposes. May be omitted in later versions
 
