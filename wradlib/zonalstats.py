@@ -6,18 +6,18 @@
 Zonal Statistics
 ^^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.7.0
-
 This module supports you in computing statistics over spatial zones. A typical
 application would be to compute mean areal precipitation for a catchment by
 using precipitation estimates from a radar grid in polar coordinates or from
 precipitation estimates in a Cartesian grid.
 
-The general usage is similar to the ipol and adjustment modules:
+The general usage is similar to the :mod:`wradlib.ipol` and
+:mod:`wradlib.adjust`:
 
-You have to create an instance of a class (derived from ZonalDataBase) by using
+You have to create an instance of a class (derived from
+:class:`~wradlib.zonalstats.ZonalDataBase`) by using
 the spatial information of your source and target objects (e.g. radar bins and
-catchment polygons). The Zonal Data within this object can be saved as an
+catchment polygons). The Zonal Data within this object can be saved eg. as an
 ESRI Shapefile.
 
 This object is then called with another class to compute zonal statistics for
@@ -72,8 +72,6 @@ gdal.UseExceptions()
 class DataSource(object):
     """ DataSource class for handling ogr/gdal vector data
 
-    .. versionadded:: 0.7.0
-
     DataSource handles creates in-memory (vector) ogr DataSource object with
     one layer for point or polygon geometries.
 
@@ -82,8 +80,8 @@ class DataSource(object):
     data : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         ESRI Shapefile filename containing source points/polygons
 
-    srs : ogr.SpatialReferenceSystem object
-        SRS describing projection of given data
+    srs : object
+        ogr.SpatialReferenceSystem SRS describing projection of given data
 
     Warning
     -------
@@ -363,10 +361,10 @@ DataSource`.
 
 
 class ZonalDataBase(object):
-    """
-    The base class for managing 2-dimensional zonal data for target polygons
-    from source points or polygons. Provides the basic design for all other
-    classes.
+    """Base class for managing 2-dimensional zonal data.
+
+    For target polygons from eihter source points or source polygons.
+    Provides the basic design for all other classes.
 
     If no source points or polygons can be associated to a target polygon (e.g.
     no intersection), the created destination layer will be empty.
@@ -380,8 +378,6 @@ class ZonalDataBase(object):
 
     By using OGR there are no restrictions for the used source grids.
 
-    .. versionadded:: 0.7.0
-
     Warning
     -------
     Writing shapefiles with the wrong locale settings can have impact on the
@@ -391,7 +387,6 @@ class ZonalDataBase(object):
     ----------
     src : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         ESRI Shapefile filename containing source points/polygons
-
     trg : sequence of target polygons (shape Nx2, num vertices x 2) or
         ESRI Shapefile filename containing target polygons
 
@@ -402,7 +397,8 @@ class ZonalDataBase(object):
         Points/Polygons  will be considered inside the target if they are
         contained in the buffer.
 
-    srs : OGR.SpatialReference
+    srs : object
+        OGR.SpatialReference
         will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
@@ -487,7 +483,8 @@ class ZonalDataBase(object):
 
         Returns
         -------
-        ds_mem : gdal.Dataset object
+        ds_mem : object
+            gdal.Dataset object
         """
 
         # TODO: kwargs necessary?
@@ -645,8 +642,6 @@ class ZonalDataBase(object):
 class ZonalDataPoly(ZonalDataBase):
     """ ZonalData object for source polygons
 
-    .. versionadded:: 0.7.0
-
     Parameters
     ----------
     src : sequence of source polygons (shape NxMx2) or
@@ -662,7 +657,8 @@ class ZonalDataPoly(ZonalDataBase):
         Polygons will be considered inside the target if they are contained
         in the buffer.
 
-    srs : OGR.SpatialReference
+    srs : object
+        OGR.SpatialReference
         will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
@@ -677,11 +673,9 @@ class ZonalDataPoly(ZonalDataBase):
 
         Returns
         -------
-
         ret : tuple
             (index, weight) arrays
-
-        """
+       """
         trg = self.trg.ds.GetLayer()
         cnt = trg.GetFeatureCount()
         ret = [[] for _ in range(2)]
@@ -700,10 +694,10 @@ class ZonalDataPoly(ZonalDataBase):
 
         Parameters
         ----------
-        dst : OGR.Layer
-            destination layer
-        trg : OGR.Geometry
-            target polygon
+        dst : object
+            OGR.Layer - destination layer
+        trg : object
+            OGR.Geometry - target polygon
         """
         # TODO: kwargs necessary?
 
@@ -743,13 +737,10 @@ class ZonalDataPoly(ZonalDataBase):
 class ZonalDataPoint(ZonalDataBase):
     """ ZonalData object for source points
 
-    .. versionadded:: 0.7.0
-
     Parameters
     ----------
     src : sequence of source points (shape Nx2) or
         ESRI Shapefile filename containing source points
-
     trg : sequence of target polygons (shape Nx2, num vertices x 2) or
         ESRI Shapefile filename containing target polygons
 
@@ -760,7 +751,8 @@ class ZonalDataPoint(ZonalDataBase):
         Points will be considered inside the target if they are contained
         in the buffer.
 
-    srs : OGR.SpatialReference
+    srs : object
+        OGR.SpatialReference
         will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
@@ -794,10 +786,10 @@ class ZonalDataPoint(ZonalDataBase):
 
         Parameters
         ----------
-        dst : OGR.Layer
-            destination layer
-        trg : OGR.Geometry
-            target polygon
+        dst : object
+            OGR.Layer - destination layer
+        trg : object
+            OGR.Geometry - target polygon
         """
         # TODO: kwargs necessary?
 
@@ -832,8 +824,6 @@ class ZonalDataPoint(ZonalDataBase):
 class ZonalStatsBase(object):
     """Base class for all 2-dimensional zonal statistics.
 
-    .. versionadded:: 0.7.0
-
     The base class for computing 2-dimensional zonal statistics for target
     polygons from source points or polygons as built up with ZonalDataBase
     and derived classes. Provides the basic design for all other classes.
@@ -843,10 +833,10 @@ class ZonalStatsBase(object):
 
     Parameters
     ----------
-    src : ZonalDataPoly
-        object or filename pointing to ZonalDataPoly ESRI shapefile
-        containing necessary ZonalData
-        ZonalData is available as 'zdata'-property inside class instance.
+    src : object | string
+        ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI
+        shapefile containing necessary ZonalData
+        ZonalData is available as ``zdata``-property inside class instance.
 
     Examples
     --------
@@ -941,13 +931,13 @@ ZonalStats`.
         return vals
 
     def mean(self, vals):
-        """
-        Evaluate (weighted) zonal mean for values given at the source points.
+        """Evaluate (weighted) zonal mean for values given at the source \
+        points.
 
         Parameters
         ----------
-        vals : 1-d :class:`numpy:numpy.ndarray`
-            of type float with the same length as self.src
+        vals : :class:`numpy:numpy.ndarray`
+            1-d array of type float with the same length as self.src
             Values at the source element for which to compute zonal statistics
 
         """
@@ -964,14 +954,13 @@ ZonalStats`.
         return out
 
     def var(self, vals):
-        """
-        Evaluate (weighted) zonal variance for values given at the source
+        """Evaluate (weighted) zonal variance for values given at the source \
         points.
 
         Parameters
         ----------
-        vals : 1-d :class:`numpy:numpy.ndarray`
-            of type float with the same length as self.src
+        vals : :class:`numpy:numpy.ndarray`
+            1-d  array of type float with the same length as self.src
             Values at the source element for which to compute
             zonal statistics
 
@@ -994,13 +983,11 @@ ZonalStats`.
 class GridCellsToPoly(ZonalStatsBase):
     """Compute weighted average for target polygons based on areal weights.
 
-    .. versionadded:: 0.7.0
-
     Parameters
     ----------
-    src : ZonalDataPoly
-        object or filename pointing to ZonalDataPoly ESRI shapefile
-        containing necessary Zonal Data
+    src : :class:`~wradlib.zonalstats.ZonalDataPoly` | str
+        ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI
+        shapefile containing necessary Zonal Data
 
     Keyword arguments
     -----------------
@@ -1022,13 +1009,11 @@ class GridCellsToPoly(ZonalStatsBase):
 class GridPointsToPoly(ZonalStatsBase):
     """Compute zonal average from all points in or close to the target polygon.
 
-    .. versionadded:: 0.7.0
-
     Parameters
     ----------
-    src : ZonalDataPoint
-        object or filename pointing to ZonalDataPoly ESRI shapefile
-        containing necessary Zonal Data
+    src : :class:`~wradlib.zonalstats.ZonalDataPoint` | str
+        ZonalDataPoint object or filename pointing to ZonalDataPoly ESRI
+        shapefile containing necessary Zonal Data
 
     Keyword arguments
     -----------------
@@ -1051,12 +1036,12 @@ def numpy_to_pathpatch(arr):
     Parameters
     ----------
     arr : :class:`numpy:numpy.ndarray`
-        numpy array of Polygon/Multipolygon vertices
+        array of Polygon/Multipolygon vertices
 
     Returns
     -------
     array : :class:`numpy:numpy.ndarray`
-        of matplotlib.patches.PathPatch objects
+        array of matplotlib.patches.PathPatch objects
     """
     paths = []
     for item in arr:
@@ -1080,16 +1065,12 @@ def mask_from_bbox(x, y, bbox, polar=False):
     Use this function to create a 2-d boolean mask from 2-d arrays of grids
     points.
 
-    .. versionadded:: 0.7.0
-
     Parameters
     ----------
     x : :class:`numpy:numpy.ndarray`
-        of shape (num rows, num columns)
-        x (Cartesian) coordinates
+        x (Cartesian) coordinates of shape (num rows, num columns)
     y : :class:`numpy:numpy.ndarray`
-        of shape (num rows, num columns)
-        y (Cartesian) coordinates
+        y (Cartesian) coordinates of shape (num rows, num columns)
     bbox : dict
         dictionary with keys "left", "right", "bottom", "top"
         These must refer to the same Cartesian reference system as x and y
@@ -1098,9 +1079,9 @@ def mask_from_bbox(x, y, bbox, polar=False):
 
     Returns
     -------
-    out : mask, shape
-          mask is a boolean array that is True if the point is inside the bbox
-          shape is the shape of the True subgrid
+    mask, shape : :class:`numpy:numpy.ndarray`, tuple
+              mask is a boolean array that is True if the point is inside the
+              bbox, shape is the shape of the True subgrid
 
     """
     ny, nx = x.shape
@@ -1215,8 +1196,10 @@ def grid_centers_to_vertices(x, y, dx, dy):
         2-d array of x coordinates (same shape as the actual 2-D grid)
     y : :class:`numpy:numpy.ndarray`
         2-d array of y coordinates (same shape as the actual 2-D grid)
-    dx : grid spacing in x direction
-    dy : grid spacing in y direction
+    dx : float
+        grid spacing in x direction
+    dy : float
+        grid spacing in y direction
 
     Returns
     -------
@@ -1238,20 +1221,17 @@ def grid_centers_to_vertices(x, y, dx, dy):
 
 
 def get_clip_mask(coords, clippoly, srs=None):
-    """Returns boolean mask of points (coords) located inside polygon clippoly
-
-    .. versionadded:: 0.10.0
+    """Returns boolean mask of points ``coords`` inside polygon ``clippoly``
 
     Parameters
     ----------
     coords : :class:`numpy:numpy.ndarray`
         array of xy coords with shape [...,2]
-
     clippoly : :class:`numpy:numpy.ndarray`
         array of xy coords with shape (N,2) representing closed
         polygon coordinates
-
-    srs: osr.SpatialReference
+    srs: object
+        osr.SpatialReference
 
     Returns
     -------

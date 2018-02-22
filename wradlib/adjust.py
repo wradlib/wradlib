@@ -26,10 +26,13 @@ procedures. The general idea is that we quantify the error of the
 remotely sensed rainfall at the rain gage locations, assuming the rain
 gage observation to be accurate.
 
-The error can be assumed to be purely additive (AdjustAdd), purely
-multiplicative (AdjustMultiply, AdjustMFB) or a mixture of both (AdjustMixed).
-If the error is assumed to be heterogeneous in space (AdjustAdd,
-AdjustMultiply, AdjustMixed), the error at the rain gage locations is
+The error can be assumed to be purely additive
+(:class:`~wradlib.adjust.AdjustAdd`), purely multiplicative
+(:class:`~wradlib.adjust.AdjustMultiply`, :class:`~wradlib.adjust.AdjustMFB`)
+or a mixture of both (:class:`~wradlib.adjust.AdjustMixed`).
+If the error is assumed to be heterogeneous in space
+(:class:`~wradlib.adjust.AdjustAdd`, :class:`~wradlib.adjust.AdjustMultiply`,
+:class:`~wradlib.adjust.AdjustMixed`), the error at the rain gage locations is
 interpolated to the radar bin locations and then used to adjust (correct)
 the raw radar rainfall estimates. In case of the AdjustMFB approach, though,
 the multiplicative error is assumed to be homogeneous in space.
@@ -47,15 +50,17 @@ arrays containing the actual data::
     adjuster = AdjustAdd(obs_coords, raw_coords)
     adjusted = adjuster(obs, raw)
 
-Both obs and raw need to be flat (1-dimensional) arrays of shape (n,) that have
-the same length as the the obs_coords and raw_coords arrays, respectively.
+Both ``obs`` and ``raw`` need to be flat (1-dimensional) arrays of shape (n,)
+that have the same length as the the ``obs_coords`` and ``raw_coords`` arrays,
+respectively.
 
 The user can specify the approach that should be used to interpolate the error
 in space, as well as the keyword arguments which control the behaviour of the
 interpolation approach. For this purpose, all interpolation classes from the
-wradlib.ipol module are available and can be passed by using the ``Ipclass``
-argument. The default interpolation class is Inverse Distance Weighting
-(wradlib.ipol.Idw). If you want to use e.g. linear barycentric interpolation::
+:mod:`wradlib.ipol` module are available and can be passed by using the
+``Ipclass`` argument. The default interpolation class is
+Inverse Distance Weighting (:class:`~wradlib.ipol.Idw`). If you want to use
+e.g. linear barycentric interpolation::
 
     import wradlib.ipol as ipol
     adjuster = AdjustAdd(obs_coords, raw_coords, Ipclass=ipol.Linear)
@@ -77,10 +82,11 @@ Another helpful feature is an easy-to-use method for leave-one-out
 cross-validation :cite:`Cross-validation`. Cross validation is a standard
 procedure for verifying rain gage adjustment or interpolation procedures. You
 can start the cross validation in the same way as you start the actual
-adjustment, however, you call the ``xvalidate`` method instead. The result of
-the cross validation are pairs of observation and the corresponding adjustment
-result at the observation location. Using the wradlib.verify module, you can
-compute error metrics for the cross validation results::
+adjustment, however, you call the :meth:`~wradlib.adjust.AdjustBase.xvalidate`
+method instead. The result of the cross validation are pairs of observation
+and the corresponding adjustment result at the observation location. Using the
+:mod:`wradlib.verify` module, you can compute error metrics for the cross
+validation results::
 
     adjuster = AdjustAdd(obs_coords, raw_coords)
     observed, estimated = adjuster.xvalidate(obs, raw)
@@ -116,8 +122,8 @@ import wradlib.util as util
 class AdjustBase(ipol.IpolBase):
     """The basic adjustment class that inherits to all other classes.
 
-    All methods except the ``__call__`` method are inherited to the following
-    adjustment classes.
+    All methods except the :meth:`~wradlib.adjust.AdjustBase.__call__` method
+    are inherited to the following adjustment classes.
 
     Parameters
     ----------
@@ -133,41 +139,41 @@ class AdjustBase(ipol.IpolBase):
         Defaults to 'median'. Must be either 'mean', 'median', or 'best'.
         This parameter controls the statistic that is used to compute the value
         of the radar observation AT a rain gauge based on the neighbourhood
-        specified by parameter nnear_raws.
+        specified by parameter ``nnear_raws``.
     mingages : integer
         Defaults to 5. Minimum number of valid gages required for an
         adjustment. If less valid gauges are available, the adjustment
         procedure will return unadjusted raw values. If you do not want to use
-        this feature, you need to set mingages=0.
+        this feature, you need to set ``mingages=0``.
     minval : float
         If the gage or radar observation is below this threshold, the location
         will not be used for adjustment. For additive adjustment, this value
         should be set to zero (default value). For multiplicative adjustment,
-        values larger than zeros might be chosen in order to minimize
+        values larger than zero might be chosen in order to minimize
         artifacts.
     mfb_args : dictionary
         **Only used for AdjustMFB** - This set of parameters controls how the
         mean field bias is computed. Items of the dictionary are:
 
         - *method*: string
-          defaults to "linregr" which fits a regression line through observed
+          defaults to 'linregr' which fits a regression line through observed
           and estimated values and than gets the bias from the inverse of
           the slope.
-          Other values: "mean" or "median" compute the mean or the median of
+          Other values: 'mean' or 'median' compute the mean or the median of
           the ratios between gauge and radar observations.
         - *minslope*, *minr*, *maxp*:
-          When using method="linregr", these parameters control whether a
+          When using method='linregr', these parameters control whether a
           linear regression turned out to be robust (minimum allowable slope,
           minimum allowable correlation, maximim allowable p-value). If the
           regression result is not considered robust, no adjustment will
           take place.
 
-    Ipclass : an interpolation class from wradib.ipol
-        **Not used for AdjustMFB** - default value is wradlib.ipol.Idw
-        (Inverse Distance Weighting).
+    Ipclass : an interpolation class from :mod:`wradlib.ipol`
+        **Not used for AdjustMFB** - default value is
+        :class:`~wradlib.ipol.Idw` (Inverse Distance Weighting).
     ipargs : keyword arguments to create an instance of Ipclass
-        **Not used for AdjustMFB** - for wradlib.ipol.Idw, these keyword
-        arguments would e.g. be nnear or p.
+        **Not used for AdjustMFB** - for :class:`~wradlib.ipol.Idw`, these
+        keyword arguments would e.g. be ``nnear`` or ``p``.
 
     Examples
     --------
@@ -259,14 +265,14 @@ class AdjustBase(ipol.IpolBase):
             return self.ip
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """Returns an array of *raw* values that are adjusted by *obs*.
+        """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Parameters
         ----------
         obs : flat (1-D) array of floats with shape (num gauges,)
             These are the gage observations used for adjustment. This array
             needs to be of the same length as the array "obs_coords" used to
-            initialize the adjustmetn object.
+            initialize the adjustment object.
         raw : flat (1-D) array of floats with shape (num radar cells,)
             These are the raw (unadjusted) radar rainfall values. This array
             needs to be of the same length as the array "raw_coords" used to
@@ -312,7 +318,7 @@ class AdjustBase(ipol.IpolBase):
         This method will be inherited to other Adjust classes. It should thus
         be applicable to all adjustment procedures without any modification.
         This way, the actual adjustment procedure has only to be defined *once*
-        in the __call__ method.
+        in the :meth:`~wradlib.adjust.AdjustBase.__call__` method.
 
         The output of this method can be evaluated by using the
         `verify.ErrorMetrics` class.
@@ -364,17 +370,18 @@ class AdjustAdd(AdjustBase):
 
     AdjustAdd automatically takes care of invalid gage or radar observations
     (e.g. NaN, Inf or other typical missing data flags such as -9999).
-    However, in case e.g. the observation data contain missing values, the
+    However, in case e.g. the observation data contains missing values, the
     computation of the inverse distance weights needs to be repeated in
-    __call__ which is at the expense of performance.
+    :meth:`~wradlib.adjust.AdjustAdd.__call__` which is at the expense of
+    performance.
 
     Note
     ----
-    Inherits from AdjustBase
+    Inherits from :class:`wradlib.adjust.AdjustBase`
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :meth:`wradlib.adjust.AdjustBase`.
+    :class:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -383,11 +390,11 @@ class AdjustAdd(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """Returns an array of *raw* values that are adjusted by *obs*.
+        """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
-        Detailed instructions on the parameters *obs* and *raw* are provided
-        :meth:`wradlib.adjust.AdjustBase.__call__`.
+        Detailed instructions on the parameters ``obs`` and ``raw`` are
+        provided in :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -423,11 +430,12 @@ class AdjustMultiply(AdjustBase):
     observations (e.g. NaN, Inf or other typical missing data flags such as
     -9999). However, in case e.g. the observation data contain missing values,
     the computation of the inverse distance weights needs to be repeated in
-    __call__ which is at the expense of performance.
+    :meth:`~wradlib.adjust.AdjustMultiply.__call__` which is at the expense of
+    performance.
 
     Note
     ----
-    Inherits from AdjustBase
+    Inherits from :class:`wradlib.adjust.AdjustBase`
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
@@ -440,11 +448,11 @@ class AdjustMultiply(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """Returns an array of *raw* values that are adjusted by *obs*.
+        """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
-        Detailed instructions on the parameters *obs* and *raw* are provided
-        :meth:`wradlib.adjust.AdjustBase.__call__`.
+        Detailed instructions on the parameters ``obs`` and ``raw`` are
+        provided in :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -472,9 +480,10 @@ class AdjustMixed(AdjustBase):
 
     The mixed error model assumes that you have both a multiplicative and an
     additive error term. The intention is to overcome the drawbacks of the
-    purely additive and multiplicative approaches (see AdjustAdd and
-    AdjustMultiply). The formal representation of the error model according
-    to :cite:`Pfaff2010` is:
+    purely additive and multiplicative approaches (see
+    :class:`~wradlib.adjust.AdjustAdd` and
+    :class:`~wradlib.adjust.AdjustMultiply`). The formal representation of the
+    error model according to :cite:`Pfaff2010` is:
 
     .. math::
 
@@ -482,15 +491,15 @@ class AdjustMixed(AdjustBase):
 
     :math:`\delta` and :math:`\epsilon` have to be assumed to be independent
     and normally distributed. The present implementation is based on a Least
-    Squares estimation of delta and epsilon for each rain gage location.
-    :math:`\delta` and :math:`\epsilon` are then interpolated and used to
-    correct the radar rainfall field.
+    Squares estimation of :math:`\delta` and :math:`\epsilon` for each rain
+    gage location. :math:`\delta` and :math:`\epsilon` are then interpolated
+    and used to correct the radar rainfall field.
 
     The least squares implementation uses the equation for the error model plus
     the condition to minimize (:math:`\delta^2 + \epsilon^2`) for each gage
-    location. The idea behind this is that epsilon dominates the adjustment for
-    small deviations between radar and gage while delta dominates in case of
-    large deviations.
+    location. The idea behind this is that :math:`\epsilon` dominates the
+    adjustment for small deviations between radar and gage while :math:`\delta`
+    dominates in case of large deviations.
 
     **Usage**:
     First, an instance of AdjustMixed has to be created. Calling this instance
@@ -508,11 +517,11 @@ class AdjustMixed(AdjustBase):
 
     Note
     ----
-    Inherits from AdjustBase
+    Inherits from :class:`wradlib.adjust.AdjustBase`
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :meth:`wradlib.adjust.AdjustBase`.
+    :class:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -523,11 +532,11 @@ class AdjustMixed(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """Returns an array of *raw* values that are adjusted by *obs*.
+        """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
-        Detailed instructions on the parameters *obs* and *raw* are provided
-        :meth:`wradlib.adjust.AdjustBase.__call__`.
+        Detailed instructions on the parameters ``obs`` and ``raw`` are
+        provided in :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -553,9 +562,8 @@ class AdjustMixed(AdjustBase):
 
 
 class AdjustMFB(AdjustBase):
-    """
-    Multiplicative gage adjustment using *one* correction factor for the entire
-    domain.
+    """Multiplicative gage adjustment using *one* correction factor for the \
+    entire domain.
 
     This method is also known as the Mean Field Bias correction.
 
@@ -566,11 +574,11 @@ class AdjustMFB(AdjustBase):
 
     Note
     ----
-    Inherits from AdjustBase
+    Inherits from :class:`wradlib.adjust.AdjustBase`
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :meth:`wradlib.adjust.AdjustBase`.
+    :class:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -579,11 +587,11 @@ class AdjustMFB(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """Returns an array of *raw* values that are adjusted by *obs*.
+        """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
-        Detailed instructions on the parameters *obs* and *raw* are provided
-        :meth:`wradlib.adjust.AdjustBase.__call__`.
+        Detailed instructions on the parameters ``obs`` and ``raw`` are
+        provided in :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -634,8 +642,7 @@ class AdjustMFB(AdjustBase):
 
 
 class AdjustNone(AdjustBase):
-    """
-    Same behaviour as the other adjustment classes, but simply returns the
+    """Same behaviour as the other adjustment classes, but simply returns the \
     unadjusted data.
 
     This class can be used for benchmark verification experiments as a control
@@ -643,11 +650,11 @@ class AdjustNone(AdjustBase):
 
     Note
     ----
-    Inherits from AdjustBase
+    Inherits from :class:`wradlib.adjust.AdjustBase`
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :meth:`wradlib.adjust.AdjustBase`.
+    :class:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -656,11 +663,11 @@ class AdjustNone(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """Returns an array of *raw* values that are adjusted by *obs*.
+        """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
-        Detailed instructions on the parameters *obs* and *raw* are provided
-        :meth:`wradlib.adjust.AdjustBase.__call__`.
+        Detailed instructions on the parameters ``obs`` and ``raw`` are
+        provided in :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -675,7 +682,7 @@ class AdjustNone(AdjustBase):
 
 
 class GageOnly(AdjustBase):
-    """Same behaviour as the other adjustment classes, but returns an
+    """Same behaviour as the other adjustment classes, but returns an \
     interpolation of rain gage observations
 
     First, an instance of GageOnly has to be created. Calling this instance
@@ -688,15 +695,16 @@ class GageOnly(AdjustBase):
     (e.g. NaN, Inf or other typical missing data flags such as -9999).
     However, in case e.g. the observation data contain missing values, the
     computation of the inverse distance weights needs to be repeated in
-    __call__ which is at the expense of performance.
+    :func:`~wradlib.adjust.GageOnly.__call__` which is at the expense of
+    performance.
 
     Note
     ----
-    Inherits from AdjustBase
+    Inherits from :class:`wradlib.adjust.AdjustBase`
 
     For a complete overview of parameters for the initialisation of adjustment
     objects, as well as an extensive example, please see
-    :meth:`wradlib.adjust.AdjustBase`.
+    :class:`wradlib.adjust.AdjustBase`.
 
     Returns
     -------
@@ -704,11 +712,11 @@ class GageOnly(AdjustBase):
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
-        """Returns an array of *raw* values that are adjusted by *obs*.
+        """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
-        Detailed instructions on the parameters *obs* and *raw* are provided
-        :meth:`wradlib.adjust.AdjustBase.__call__`.
+        Detailed instructions on the parameters ``obs`` and ``raw`` are
+        provided in :meth:`wradlib.adjust.AdjustBase.__call__`.
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
@@ -728,8 +736,7 @@ class GageOnly(AdjustBase):
 
 
 class Raw_at_obs():
-    """
-    Get the raw values in the neighbourhood of the observation points
+    """Get the raw values in the neighbourhood of the observation points
 
     Parameters
     ----------
@@ -772,8 +779,7 @@ class Raw_at_obs():
 
 
 def _get_neighbours_ix(obs_coords, raw_coords, nnear):
-    """
-    Returns <nnear> neighbour indices per <obs_coords> coordinate pair
+    """Returns ``nnear`` neighbour indices per ``obs_coords`` coordinate pair
 
     Parameters
     ----------
@@ -782,7 +788,8 @@ def _get_neighbours_ix(obs_coords, raw_coords, nnear):
     raw_coords : array of float of shape (num_points,ndim)
         from these coordinate pairs the neighbours are selected
     nnear : integer
-        number of neighbours to be selected per coordinate pair of obs_coords
+        number of neighbours to be selected per coordinate pair of
+        ``obs_coords``
 
     """
     # plant a tree
@@ -792,8 +799,7 @@ def _get_neighbours_ix(obs_coords, raw_coords, nnear):
 
 
 def _get_neighbours(obs_coords, raw_coords, raw, nnear):
-    """
-    Returns <nnear> neighbour values per <obs_coords> coordinate pair
+    """Returns ``nnear`` neighbour values per ``obs_coords`` coordinate pair
 
     Parameters
     ----------
@@ -802,9 +808,10 @@ def _get_neighbours(obs_coords, raw_coords, raw, nnear):
     raw_coords : array of float of shape (num_points,ndim)
         from these coordinate pairs the neighbours are selected
     raw : array of float of shape (num_points,...)
-        this is the data corresponding to the coordinate pairs raw_coords
+        this is the data corresponding to the coordinate pairs ``raw_coords``
     nnear : integer
-        number of neighbours to be selected per coordinate pair of obs_coords
+        number of neighbours to be selected per coordinate pair of
+        ``obs_coords``
 
     """
     # plant a tree
@@ -816,8 +823,7 @@ def _get_neighbours(obs_coords, raw_coords, raw, nnear):
 
 
 def _get_statfunc(funcname):
-    """
-    Returns a function that corresponds to parameter <funcname>
+    """Returns a function that corresponds to parameter ``funcname``
 
     Parameters
     ----------
@@ -844,8 +850,7 @@ def _get_statfunc(funcname):
 
 
 def best(x, y):
-    """
-    Find the values of y which corresponds best to x
+    """Find the values of y which corresponds best to x
 
     If x is an array, the comparison is carried out for each element of x
 

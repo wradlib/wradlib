@@ -29,8 +29,8 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     """First part of the Gabella filter looking for large reflectivity \
     gradients.
 
-    This function checks for each pixel in `img` how many pixels surrounding
-    it in a window of `wsize` are by `tr1` smaller than the central pixel.
+    This function checks for each pixel in ``img`` how many pixels surrounding
+    it in a window of ``wsize`` are by ``tr1`` smaller than the central pixel.
 
     Parameters
     ----------
@@ -40,20 +40,22 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
         Size of the window surrounding the central pixel
     tr1 : float
         Threshold value
-    cartesian : boolean
+    cartesian : bool
         Specify if the input grid is Cartesian or polar
-    radial : boolean
+    radial : bool
         Specify if only radial information should be used
 
     Returns
     -------
     output : array_like
-        an array with the same shape as `img`, containing the filter's results.
+        an array with the same shape as ``img``, containing the
+        filter's results.
 
     See Also
     --------
-    filter_gabella_b : the second part of the filter
-    filter_gabella : the complete filter
+    :func:`~wradlib.clutter.filter_gabella` - the complete filter
+
+    :func:`~wradlib.clutter.filter_gabella_b` - the second part of the filter
 
     Examples
     --------
@@ -99,8 +101,9 @@ def filter_gabella_b(img, thrs=0.):
 
     See Also
     --------
-    filter_gabella_a : the first part of the filter
-    filter_gabella : the complete filter
+    :func:`~wradlib.clutter.filter_gabella` - the complete filter
+
+    :func:`~wradlib.clutter.filter_gabella_a` - the first part of the filter
 
     Examples
     --------
@@ -153,11 +156,12 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
     tr1 : float
     n_p : int
     tr2 : float
-    rm_nans : boolean
+    rm_nans : bool
         True replaces nans with Inf
         False takes nans into acount
-    radial : boolean
-        True to use radial information only in filter_gabella_a.
+    radial : bool
+        True to use radial information only in
+        :func:`~wradlib.clutter.filter_gabella_a`.
     cartesian : boolean
         True if cartesian data are used, polar assumed if False.
 
@@ -168,8 +172,9 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
 
     See Also
     --------
-    filter_gabella_a : the first part of the filter
-    filter_gabella_b : the second part of the filter
+    :func:`~wradlib.clutter.filter_gabella_a` - the first part of the filter
+
+    :func:`~wradlib.clutter.filter_gabella_b` - the second part of the filter
 
     Examples
     --------
@@ -212,7 +217,7 @@ def histo_cut(prec_accum):
 
     Returns
     -------
-    output : array
+    output : array_like
         boolean array with pixels identified as clutter/shadings set to True.
 
     Examples
@@ -309,15 +314,18 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
     Parameters
     ----------
-    dat : dictionary of arrays
-       Contains the data of the decision variables. The shapes of the arrays
-       should be (..., number of beams, number of gates) and the shapes need
-       to be identical or be broadcastable.
-    weights : dictionary of floats
-       Defines the weights of the decision variables.
-    trpz : dictionary of lists of floats
-       Contains the arguments of the trapezoidal membership functions for each
-       decision variable
+    dat : dict
+        dictionary of arrays.
+        Contains the data of the decision variables. The shapes of the arrays
+        should be (..., number of beams, number of gates) and the shapes need
+        to be identical or be broadcastable.
+    weights : dict
+        dictionray of floats.
+        Defines the weights of the decision variables.
+    trpz : dict
+        dictionary of lists of floats.
+        Contains the arguments of the trapezoidal membership functions for each
+        decision variable
     thresh : float
        Threshold below which membership in non-meteorological membership class
        is assumed.
@@ -452,12 +460,12 @@ def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
         image with collocated cloud value from MSG SAFNWC PGE02 product
     thrs : float
         Threshold above which to identify clutter
-    snow : boolean
+    snow : bool
         Swith to use PGE02 class "land/sea snow" for clutter identification
-    low : boolean
+    low : bool
         Swith to use PGE02 class "low/very low stratus/cumulus" for
         clutter identification
-    cirrus : boolean
+    cirrus : bool
         Swith to use PGE02 class "very thin cirrus" and "fractional clouds"
         for clutter identification
     smoothing : float
@@ -490,11 +498,10 @@ def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
 
 
 def filter_window_distance(img, rscale, fsize=1500, tr1=7):
-    """2d filter looking for large reflectivity
-    gradients.
+    """2d filter looking for large reflectivity gradients.
 
-    This function counts for each bin in `img` the percentage of surrounding
-    bins in a window of half size `fsize` which are not `tr1` smaller than
+    This function counts for each bin in ``img`` the percentage of surrounding
+    bins in a window of half size ``fsize`` which are not ``tr1`` smaller than
     the central bin. The window is defined using geometrical distance.
 
     Parameters
@@ -511,13 +518,14 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
     Returns
     -------
     output : array_like
-        an array with the same shape as `img`, containing the filter's results.
+        an array with the same shape as ``img``, containing the
+        filter's results.
 
     See Also
     --------
-    filter_gabella_a : Original version of the filter
-    filter_gabella_b : filter using a echo area
+    :func:`~wradlib.clutter.filter_gabella_a` - Original version of the filter
 
+    :func:`~wradlib.clutter.filter_gabella_b` - filter using a echo area
     """
     ascale = 2 * np.pi / img.shape[0]
     count = np.ones(img.shape, dtype=int)

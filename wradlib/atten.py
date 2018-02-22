@@ -16,6 +16,7 @@ Attenuation Correction
     correctAttenuationHJ
     constraint_dBZ
     constraint_pia
+    correctAttenuationConstrained
     correctAttenuationConstrained2
     correctRadomeAttenuationEmpirical
     pia_from_kdp
@@ -44,12 +45,12 @@ def correctAttenuationHB(gateset,
                          coefficients={'a': 1.67e-4, 'b': 0.7, 'l_rg': 1.0},
                          mode='except',
                          thrs=59.0):
-    """Gate-by-Gate attenuation correction according to
+    """Gate-by-Gate attenuation correction according to \
     :cite:`Hitschfeld1954`
 
     Parameters
     ----------
-    gateset : array
+    gateset : :class:`numpy:numpy.ndarray`
         multidimensional array. The range gates (over which iteration has to
         be performed) are supposed to vary along
         the *last* dimension so, e.g., for a set of `l` radar images stored in
@@ -82,7 +83,7 @@ def correctAttenuationHB(gateset,
 
     Returns
     -------
-    pia : array
+    pia : :class:`numpy:numpy.ndarray
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate.
 
@@ -143,7 +144,7 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Parameters
     ----------
-    gateset : array
+    gateset : :class:`numpy:numpy.ndarray`
         Multidimensional array, where the range gates (over which iteration has
         to be performed) are supposed to vary along the *last* dimension so,
         e.g., for a set of `l` radar images stored in polar form with `m`
@@ -152,28 +153,22 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
-
     a_max : float
         initial value for linear coefficient of the k-Z relation
         ( :math:`k=a \cdot Z^{b}` ). Per default set to 1.67e-4.
-
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of a in case of
         signal overflow (sum of signal and attenuation exceeds
         the threshold ``thrs``).
         Per default set to 2.33e-5.
-
     b : float
         exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
         set to 0.7.
-
-    n : integer
+    n : int
         number of iterations from a_max to a_min. Per default set to 30.
-
     gate_length : float
         length of a range gate [km]. Per default set to 1.0.
-
     mode : string
         Controls how the function reacts in case of signal overflow (sum of
         signal and attenuation exceeds the threshold ``thrs``).
@@ -187,14 +182,13 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
         'nan' : set offending gates to nan
 
         Per default set to 'zero'. Any other mode will raise an Exception.
-
     thrs_dBZ : float
         Threshold, for the attenuation corrected signal [dBZ], which is deemed
         unplausible. Per default set to 59.0 dBZ.
 
     Returns
     -------
-    pia : array
+    pia : :class:`numpy:numpy.ndarray
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate.
 
@@ -258,12 +252,12 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
                          n=30, gate_length=1.0, mode='zero', thrs_dBZ=59.0,
                          max_PIA=20.0):
-    """Gate-by-Gate attenuation correction based on :cite:`Kraemer2008`,
+    """Gate-by-Gate attenuation correction based on :cite:`Kraemer2008`, \
     expanded by :cite:`Jacobi2012`.
 
     Parameters
     ----------
-    gateset : array
+    gateset : :class:`numpy:numpy.ndarray`
         Multidimensional array, where the range gates (over which iteration has
         to be performed) are supposed to vary along the last array-dimension
         and the azimuths are supposed to vary along the next to last
@@ -281,7 +275,7 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
     b : float
         exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
         set to 0.7.
-    n : integer
+    n : int
         number of iterations from a_max to a_min. Per default set to 30.
     gate_length : float
         length of a range gate [km]. Per default set to 1.0.
@@ -306,7 +300,7 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
 
     Returns
     -------
-    pia : array
+    pia : :class:`numpy:numpy.ndarray`
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate. In case the input array (gateset)
         contains NaNs the corresponding beams of the output array will be
@@ -402,13 +396,12 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
                                   mode='error',
                                   constraints=None, constr_args=None,
                                   diagnostics={}):
-    """Gate-by-Gate attenuation correction based on the iterative approach of
-    :cite:`Kraemer2008` with a generalized and arbitrary number
-    of constraints.
+    """Gate-by-Gate attenuation correction based on the iterative approach of \
+    :cite:`Kraemer2008` with a generalized and arbitrary number of constraints.
 
     Parameters
     ----------
-    gateset : array
+    gateset : :class:`numpy:numpy.ndarray`
         Multidimensional array, where the range gates (over which iteration has
         to be performed) are supposed to vary along the *last* dimension so,
         e.g., for a set of `l` radar images stored in polar form with `m`
@@ -429,7 +422,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     b : float
         exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
         set to 0.7.
-    n : integer
+    n : int
         number of iterations from a_max to a_min. Per default set to 30.
     gate_length : float
         length of a range gate [km]. Per default set to 1.0.
@@ -444,7 +437,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         - 'nan' : set offending gates to nan
 
         Per default set to 'zero'. Any other mode will raise an Exception.
-    constraints : list
+    constraints : list(func)
         list of constraint functions. The signature of these functions has to
         be constraint_function(`gateset`, `k`, \*`constr_args`). Their return
         value must be a boolean array of shape gateset.shape[:-1] set to True
@@ -453,7 +446,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         list of lists, which are to be passed to the individual constraint
         functions using the \*args mechanism
         (len(constr_args) == len(constraints))
-    diagnostics : dictionary
+    diagnostics : dict
         dictionary of variables, which are usually not returned by the function
         but may be of interest for research or during testing. Defaults to {},
         in which case no diagnostics are generated. If a dictionary with
@@ -468,7 +461,7 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Returns
     -------
-    k : array
+    k : :class:`numpy:numpy.ndarray`
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate.
 
@@ -580,14 +573,17 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
 def constraint_dBZ(gateset, pia, thrs_dBZ):
     """Constraint callback function for correctAttenuationConstrained.
-    Selects beams, in which at least one pixel exceeds `thrs_dBZ` [dBZ].
+
+    Selects beams, in which at least one pixel exceeds ``thrs_dBZ`` [dBZ].
     """
     return np.max(gateset + pia, axis=-1) > thrs_dBZ
 
 
 def constraint_pia(gateset, pia, thrs_pia):
     """Constraint callback function for correctAttenuationConstrained.
-    Selects beams, in which the path integrated attenuation exceeds `thrs_pia`.
+
+    Selects beams, in which the path integrated attenuation exceeds
+    ``thrs_pia``.
     """
     return np.max(pia, axis=-1) > thrs_pia
 
@@ -642,19 +638,19 @@ def bisectReferenceAttenuation(gateset,
                                mode='difference',
                                thrs=0.25,
                                max_iterations=10):
-    """Find the optimal attenuation coefficients for a gateset to achieve a
-    given reference attenuation using a the forward correction algorithm in
+    """Find the optimal attenuation coefficients for a gateset to achieve a \
+    given reference attenuation using a the forward correction algorithm in \
     combination with the bisection method.
 
     Parameters
     ----------
-    gateset : array
+    gateset : :class:`numpy:numpy.ndarray`
         Multidimensional array, where the range gates (over which iteration has
         to be performed) are supposed to vary along the last array-dimension.
 
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
-    pia_ref : array
+    pia_ref : :class:`numpy:numpy.ndarray`
         Array of the same number of dimensions as ``gateset``, but the size of
         the last dimension is 1, as it constitutes the reference pia [dB]of the
         last rangegate of every beam.
@@ -680,7 +676,8 @@ def bisectReferenceAttenuation(gateset,
         Radial length of a range gate [km].
 
         Per default set to 1.0.
-    mode : string {‘ratio’ or ‘difference’}
+    mode : string
+        {‘ratio’ or ‘difference’}
         Kind of tolerance of calculated pia in relation to reference pia.
 
         Per default set to 'difference'.
@@ -691,7 +688,7 @@ def bisectReferenceAttenuation(gateset,
         respectively.
 
         Per default set to 0.25.
-    max_iterations : integer
+    max_iterations : int
         Number of bisection iteration before the exponential coefficient b of
         the k-Z relation will be decreased and the bisection starts again.
 
@@ -699,13 +696,13 @@ def bisectReferenceAttenuation(gateset,
 
     Returns
     -------
-    pia : array
+    pia : :class:`numpy:numpy.ndarray`
         Array with the same shape as ``gateset`` containing the calculated path
         integrated attenuation [dB] for each range gate.
-    a_mid : array
+    a_mid : :class:`numpy:numpy.ndarray`
         Array with the same shape as ``pia_ref`` containing the finally used
         linear k-Z relation coefficient a for successful pia calculation.
-    b : array
+    b : :class:`numpy:numpy.ndarray`
         Array with the same shape as ``pia_ref`` containing the finally used
         exponential k-Z relation coefficient b for successful pia calculation.
     """
@@ -748,7 +745,7 @@ def bisectReferenceAttenuation(gateset,
 
 
 def _sector_filter(mask, min_sector_size):
-    """Calculate an array of same shape as mask, which is set to 1 in case of
+    """Calculate an array of same shape as mask, which is set to 1 in case of \
     at least min_sector_size adjacent values, otherwise it is set to 0.
     """
 
@@ -838,15 +835,16 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
                                    gate_length=1.,
                                    constraints=None, constraint_args=None,
                                    sector_thr=10):
-    """Gate-by-Gate attenuation correction based on the iterative approach of
-    :cite:`Kraemer2008` with a generalized and scalable number
-    of constraints. Differing from the original approach, the method for
+    """Gate-by-Gate attenuation correction based on the iterative approach of \
+    :cite:`Kraemer2008` with a generalized and scalable number of constraints.
+
+    Differing from the original approach, the method for
     recalculating constraint breaching small sectors is based on a bisection
     forward calculating method, and not on backwards attenuation calculation.
 
     Parameters
     ----------
-    gateset : array
+    gateset : :class:`numpy:numpy.ndarray`
         Multidimensional array, where the range gates (over which iteration has
         to be performed) are supposed to vary along the last array-dimension
         and the azimuths are supposed to vary along the next to last
@@ -866,7 +864,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         conditions ``constraints``.
 
         Per default set to 2.33e-5.
-    n_a : integer
+    n_a : int
         Number of iterations from ``a_max`` to ``a_min``.
 
         Per default set to 4.
@@ -883,7 +881,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         reached the lower limit ``a_min``.
 
         Per default set to 0.65.
-    n_b : integer
+    n_b : int
         Number of iterations from ``b_max`` to ``b_min``.
 
         Per default set to 6.
@@ -900,7 +898,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         List of lists, which are to be passed to the individual constraint
         functions using the \*args mechanism
         (len(constr_args) == len(constraints)).
-    sector_thr : integer
+    sector_thr : int
         Number of adjacent beams, for which in case of breaching the
         constraints the attenuation with downward iterated ``a`` and ``b`` -
         parameters is recalculated. For more narrow sectors the integrated
@@ -909,7 +907,7 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Returns
     -------
-    pia : array
+    pia : :class:`numpy:numpy.ndarray`
         Array with the same shape as ``gateset`` containing the calculated path
         integrated attenuation [dB] for each range gate.
 
@@ -1021,15 +1019,14 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
 def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
                                       hydrophobicity=0.165, n_r=2,
                                       stat=np.mean):
-    """Estimate two-way wet radome losses as an empirical
-    function of frequency and rainfall rate for both standard and
+    """Estimate two-way wet radome losses.
+
+    Empirical function of frequency and rainfall rate for both standard and
     hydrophobic radomes based on the approach of :cite:`Merceret2000`.
-
-
 
     Parameters
     ----------
-    gateset : array
+    gateset : :class:`numpy:numpy.ndarray`
         Multidimensional array, where the range gates (over which
         iteration has to be performed) are supposed to vary along the
         last array-dimension and the azimuths are supposed to vary
@@ -1058,11 +1055,11 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
             - 0.0575 for hydrophobic radomes.
 
             Per default set to 0.165.
-    n_r : integer
+    n_r : int
         The radius of rangebins within the rain-intensity is
         statistically evaluated as the representative rain-intensity
         over radome.
-    stat : class
+    stat : object
         A name of a numpy function for statistical aggregation of the
         central rangebins defined by n_r.
 
@@ -1070,7 +1067,7 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
 
     Returns
     -------
-    k : array
+    k : :class:`numpy:numpy.ndarray`
         Array with the same shape as ``gateset`` containing the
         calculated two-way transmission loss [dB] for each range gate.
         In case the input array (gateset) contains NaNs the
@@ -1095,14 +1092,15 @@ def correctRadomeAttenuationEmpirical(gateset, frequency=5.64,
 
 
 def pia_from_kdp(kdp, dr, gamma=0.08):
-    """Retrieving path integrated attenuation from
-    specific differential phase (Kdp).
+    """Retrieving path integrated attenuation from specific differential \
+    phase (Kdp).
 
     The default value of gamma is based on :cite:`Carey2000`.
 
     Parameters
     ----------
-    kdp : array specific differential phase
+    kdp : :class:`numpy:numpy.ndarray`
+       array specific differential phase
        Range dimension must be the last dimension.
     dr : gate length (km)
     gamma : float
@@ -1111,8 +1109,8 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
 
     Returns
     -------
-    output : array of same shape as kdp containing
-        the path integrated attenuation
+    output : :class:`numpy:numpy.ndarray`
+        array of same shape as kdp containing the path integrated attenuation
     """
     alpha = gamma * kdp
     return 2 * np.cumsum(alpha, axis=-1) * dr
