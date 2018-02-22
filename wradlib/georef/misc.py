@@ -11,8 +11,6 @@ Miscellaneous
    :nosignatures:
    :toctree: generated/
 
-   beam_height_n
-   arc_distance_n
    bin_altitude
    bin_distance
    site_distance
@@ -21,129 +19,8 @@ Miscellaneous
 
 import numpy as np
 import deprecation
-from deprecation import deprecated
 
 from .projection import get_default_projection
-from ..version import short_version
-
-deprecation.message_location = "top"
-
-# Seitenlänge Zenit - Himmelsnordpol: 90°-phi
-# Seitenlänge Himmelsnordpol - Gestirn: 90°-delta
-# Seitenlänge Zenit - Gestirn: 90°-h
-# Winkel Himmelsnordpol - Zenit - Gestirn: 180°-a
-# Winkel Zenit - Himmelsnordpol - Gestirn: tau
-
-# alpha - rektaszension
-# delta - deklination
-# theta - sternzeit
-# tau = theta - alpha - stundenwinkel
-# a - azimuth (von süden aus gezählt)
-# h - Höhe über Horizont
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version)
-def hor2aeq(a, h, phi):
-    """"""
-    delta = np.arcsin(np.sin(h) * np.sin(phi) - np.cos(h) *
-                      np.cos(a) * np.cos(phi))
-    tau = np.arcsin(np.cos(h) * np.sin(a) / np.cos(delta))
-    return delta, tau
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version)
-def aeq2hor(tau, delta, phi):
-    """"""
-    h = np.arcsin(np.cos(delta) * np.cos(tau) * np.cos(phi) +
-                  np.sin(delta) * np.sin(phi))
-    a = np.arcsin(np.cos(delta) * np.sin(tau) / np.cos(h))
-    return a, h
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version,
-            details="Use :func:`bin_altitude` instead")
-def beam_height_n(r, theta, re=6370040., ke=4. / 3.):
-    """Calculates the height of a radar beam taking the refractivity of the \
-    atmosphere into account.
-
-    Based on :cite:`Doviak1993` the beam height is calculated as
-
-    .. math::
-
-        h = \\sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \\sin\\theta} - k_e r_e
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]
-    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
-        of r elevation angles in degrees with 0° at horizontal and +90°
-        pointing vertically upwards from the radar
-    re : float
-        earth's radius [m]
-    ke : float
-        adjustment factor to account for the refractivity gradient that
-        affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
-        weather radar wavelengths
-
-    Returns
-    -------
-    height : float
-        height of the beam in [m]
-
-    """
-    return np.sqrt(r ** 2 + (ke * re) ** 2 +
-                   2 * r * ke * re * np.sin(np.radians(theta))) - ke * re
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version,
-            details="Use :func:`bin_distance` instead")
-def arc_distance_n(r, theta, re=6370040., ke=4. / 3.):
-    """Calculates the great circle distance of a radar beam over a sphere, \
-    taking the refractivity of the atmosphere into account.
-
-    Based on :cite:`Doviak1993` the arc distance may be calculated as
-
-    .. math::
-
-        s = k_e r_e \\arcsin\\left(
-        \\frac{r \\cos\\theta}{k_e r_e + h_n(r, \\theta, r_e, k_e)}\\right)
-
-    where :math:`h_n` would be provided by
-    :meth:`~wradlib.georef.beam_height_n`
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]
-    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
-        of r elevation angles in degrees with 0° at horizontal and +90°
-        pointing vertically upwards from the radar
-    re : float
-        earth's radius [m]
-    ke : float
-        adjustment factor to account for the refractivity gradient that
-        affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
-        weather radar wavelengths
-
-    Returns
-    -------
-    distance : float
-        great circle arc distance [m]
-
-    See Also
-    --------
-    beam_height_n
-
-    """
-    return ke * re * np.arcsin((r * np.cos(np.radians(theta))) /
-                               (ke * re + beam_height_n(r, theta, re, ke)))
 
 
 def bin_altitude(r, theta, sitealt, re, ke=4./3.):

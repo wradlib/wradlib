@@ -6,9 +6,9 @@ Getting Started
 Installation
 ------------
 
-In order to run :math:`\omega radlib`, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We recommend to install `Anaconda <https://www.continuum.io/why-anaconda/>`_ as it installs Python, a number of required packages, and other useful tools (e.g. spyder).
+In order to run :math:`\omega radlib`, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages (`Dependencies`_). We recommend to install `Anaconda <https://www.anaconda.com/what-is-anaconda/>`_ as it installs Python, a number of required packages, and other useful tools (e.g. spyder).
 
-Using Anaconda the installation process is harmonised across platforms. Download and install the latest Anaconda distribution from https://www.continuum.io/downloads for your specific OS.
+Using Anaconda the installation process is harmonised across platforms. Download and install the latest Anaconda distribution from https://www.anaconda.com/download/ for your specific OS.
 We are constantly performing tests with these distributions (for python2.7 and python3 respectively).
 
 If your Anaconda Python installation is working, the following command (in a console) should work::
@@ -16,9 +16,9 @@ If your Anaconda Python installation is working, the following command (in a con
     $ python --version
     Python 3.5.1 :: Continuum Analytics, Inc.
 
-Now you can use the ``conda`` package and environment manager (`conda documentation <http://conda.pydata.org/docs/#>`_) to setup your :math:`\omega radlib` installation.
+Now you can use the ``conda`` package and environment manager (`conda documentation <https://conda.io/docs/>`_) to setup your :math:`\omega radlib` installation.
 
-#. Add the conda-forge channel, where :math:`\omega radlib` and its dependencies are located. Read more about the community effort `conda-forge <https://conda-forge.github.io/>`_::
+#. Add the conda-forge channel, where :math:`\omega radlib` and its dependencies are located. Read more about the community effort `conda-forge <https://conda-forge.org/>`_::
 
     $ conda config --add channels conda-forge
 
@@ -88,7 +88,7 @@ Bleeding edge code
 
 .. warning:: The :math:`\omega radlib` version on `PyPI <https://pypi.python.org/pypi/wradlib>`_ might lag behind the actual developments. You can use the bleeding edge code from the :math:`\omega radlib` `repository <https://github.com/wradlib/wradlib>`_. Note, however, that you need to make sure yourself that all `Dependencies`_ are met (see below).
 
-`Download <https://github.com/wradlib/wradlib/archive/master.zip>`_ the source, unzip, and run::
+`Download <https://codeload.github.com/wradlib/wradlib/zip/master>`_ the source, unzip, and run::
 
     $ python setup.py install
 

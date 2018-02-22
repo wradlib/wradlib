@@ -12,7 +12,7 @@ Interactive examples with jupyter notebooks
 
 All :math:`\omega radlib` examples are distributed as `jupyter notebooks <http://jupyter.org/>`_. This way, you can interactively explore various   topics. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from :math:`\omega radlib`'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
 
-.. note:: Are you using :math:`\omega radlib` on the `Open Virtual Machine for Cross-Platform Weather Radar Science <http://openradar.github.io/>`_? Then skip the rest: just log in, run the command ``$ ./start_notebook.sh`` and direct your browser to `http://127.0.0.1:8888/tree <http://127.0.0.1:8888/tree>`__. That's it.
+.. note:: Are you using :math:`\omega radlib` on the `Open Virtual Machine for Cross-Platform Weather Radar Science <http://openradarscience.org/>`_? Then skip the rest: just log in, run the command ``$ ./start_notebook.sh`` and direct your browser to `http://127.0.0.1:8888/tree <http://127.0.0.1:8888/tree>`__. That's it.
 
 Otherwise, you need to make sure to
 
@@ -48,7 +48,7 @@ In both cases, a browser window will open (typically at http://localhost:8888/tr
 How can I get the example notebooks?
 ------------------------------------
 
-The notebooks are distributed with each :math:`\omega radlib` release on `PyPI <https://pypi.python.org/pypi/wradlib>`_ (beginning with version 0.9.0). Alternatively, you can `download <https://github.com/wradlib/wradlib/archive/master.zip>`_ the latest ("bleeding edge") notebooks from our `GitHub repository <https://github.com/wradlib/wradlib>`_. In both cases, you find everything in the directory ``/notebooks`` (after extracting the downloaded archives).
+The notebooks are distributed with each :math:`\omega radlib` release on `PyPI <https://pypi.python.org/pypi/wradlib>`_ (beginning with version 0.9.0). Alternatively, you can `download <https://codeload.github.com/wradlib/wradlib/zip/master>`_ the latest ("bleeding edge") notebooks from our `GitHub repository <https://github.com/wradlib/wradlib>`_. In both cases, you find everything in the directory ``/notebooks`` (after extracting the downloaded archives).
 
 
 .. _ref_get_data:
@@ -56,7 +56,7 @@ The notebooks are distributed with each :math:`\omega radlib` release on `PyPI <
 How can I get the example data?
 -------------------------------
 
-Most notebooks use example data. These data are provided in a separate repository and you need to "install" them manually. *"Installing"* actually means: Download the data archive `here <https://github.com/wradlib/wradlib-data/archive/master.zip>`_ and extract it into any arbitrary directory. Now you need to set an environment variable pointing to that directory:
+Most notebooks use example data. These data are provided in a separate repository and you need to "install" them manually. *"Installing"* actually means: Download the data archive `here <https://codeload.github.com/wradlib/wradlib-data/zip/master>`_ and extract it into any arbitrary directory. Now you need to set an environment variable pointing to that directory:
 
 **Under Windows**, open a console and execute ``setx WRADLIB_DATA <full path to wradlib-data>``.
 
@@ -72,7 +72,7 @@ After this procedure, the example notebooks will automagically pull the required
 How to install jupyter?
 -----------------------
 
-As already pointed out above, you can just look at the rendered notebooks :doc:`online docs <notebooks>`. In order to use them interactively, you need to install ``jupyter``. ``jupyter`` is shipped with `Anaconda's <https://www.continuum.io/downloads>`_ distribution by default. If you installed wradlib into Anaconda's *default (root) environment*, you are already done. If you installed wradlib in a seperate *virtual environment* (as recommended :doc:`here <gettingstarted>`), you need to install ``jupyter`` in that virtual environment, too::
+As already pointed out above, you can just look at the rendered notebooks :doc:`online docs <notebooks>`. In order to use them interactively, you need to install ``jupyter``. ``jupyter`` is shipped with `Anaconda's <https://www.anaconda.com/download/>`_ distribution by default. If you installed wradlib into Anaconda's *default (root) environment*, you are already done. If you installed wradlib in a seperate *virtual environment* (as recommended :doc:`here <gettingstarted>`), you need to install ``jupyter`` in that virtual environment, too::
 
 	Under Windows:
 	> activate wradlib

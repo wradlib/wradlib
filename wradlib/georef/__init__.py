@@ -19,14 +19,12 @@ Georeferencing
 .. automodule:: wradlib.georef.satellite
 """
 
-from .misc import (beam_height_n, arc_distance_n, bin_altitude, bin_distance,
+from .misc import (bin_altitude, bin_distance,
                    get_earth_radius, get_shape_coordinates, site_distance)
 
-from .polar import (polar2lonlat, polar2lonlatalt, polar2lonlatalt_n,
-                    centroid2polyvert, polar2polyvert, polar2centroids,
-                    spherical_to_xyz, spherical_to_proj, spherical_to_polyvert,
-                    spherical_to_centroids,
-                    projected_bincoords_from_radarspecs, sweep_centroids)
+from .polar import (centroid2polyvert, spherical_to_xyz, spherical_to_proj,
+                    spherical_to_polyvert, spherical_to_centroids,
+                    sweep_centroids)
 
 from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
 
@@ -40,7 +38,7 @@ from .raster import (pixel_coordinates, pixel_to_map, pixel_to_map3d,
                      set_raster_origin, extract_raster_dataset,
                      reproject_raster_dataset)
 
-from .satellite import (correct_parallax, sat2pol, dist_from_orbit)
+from .satellite import (correct_parallax, dist_from_orbit)
 
 from .vector import (get_shape_points, transform_geometry,
                      get_shape_coordinates, ogr_create_layer, ogr_copy_layer,
