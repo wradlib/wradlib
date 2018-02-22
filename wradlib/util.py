@@ -1034,7 +1034,7 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
     # get height values from polar data and build cartesian height array
     # add delta to last element to compensate for open bound (np.digitize)
     hp = np.zeros((y.shape[0], x.shape[0]))
-    hc = bin_altitude(x, elev)
+    hc = bin_altitude(x, elev, 0, re=6370040.)
     hp[:] = hc
     hc[-1] += 0.0001
 
