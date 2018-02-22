@@ -18,7 +18,6 @@ Miscellaneous
 """
 
 import numpy as np
-import deprecation
 
 from .projection import get_default_projection
 

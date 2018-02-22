@@ -22,7 +22,7 @@ from __future__ import absolute_import
 import os
 
 # site packages
-from osgeo import gdal, ogr, osr
+from osgeo import gdal, osr
 
 
 def open_vector(filename, driver=None):

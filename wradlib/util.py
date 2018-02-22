@@ -14,8 +14,6 @@ attributable to the other modules
    :nosignatures:
    :toctree: generated/
 
-   aggregate_in_time
-   aggregate_equidistant_tseries
    from_to
    filter_window_polar
    filter_window_cartesian
@@ -26,18 +24,13 @@ attributable to the other modules
 """
 import datetime as dt
 from datetime import tzinfo, timedelta
-from time import mktime
 import warnings
 import functools
 import os
 
 import numpy as np
-from scipy import interpolate
 from scipy.ndimage import filters
-from scipy.spatial import cKDTree
 from osgeo import ogr
-
-from . version import short_version
 
 warnings.simplefilter('always', DeprecationWarning)
 # warnings.simplefilter('always', FutureWarning)

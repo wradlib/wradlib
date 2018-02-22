@@ -48,7 +48,6 @@ from matplotlib.collections import LineCollection, PolyCollection
 # wradlib modules
 from . import georef as georef
 from . import util as util
-from .version import short_version
 
 
 class NorthPolarAxes(PolarAxes):

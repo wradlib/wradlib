@@ -109,7 +109,6 @@ class CoordinateHelperTest(unittest.TestCase):
                        [2.5, 2.5],
                        [1.5, 2.5]]])))
 
-
     def test_spherical_to_polyvert(self):
         sph = georef.get_default_projection()
         polyvert = georef.spherical_to_polyvert(np.array([10000., 10100.]),
