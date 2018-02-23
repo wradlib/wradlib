@@ -179,8 +179,6 @@ def get_shape_points(geom):
 
     If geometries are nested, function recurses.
 
-    .. versionadded:: 0.6.0
-
     Parameters
     ----------
     geom : ogr.Geometry
@@ -214,8 +212,6 @@ def transform_geometry(geom, dest_srs):
     It transforms coordinates to a given destination osr spatial reference
     if a geotransform is neccessary.
 
-    .. versionadded:: 0.6.0
-
     Parameters
     ----------
     geom : ogr.geometry
@@ -242,8 +238,6 @@ def get_shape_coordinates(layer, **kwargs):
 
     It transforms coordinates to a given destination osr spatial reference if
     dest_srs is given and a geotransform is neccessary.
-
-    .. versionadded:: 0.6.0
 
     Parameters
     ----------

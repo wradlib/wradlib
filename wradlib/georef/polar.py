@@ -15,7 +15,7 @@ Polar Grid Functions
    spherical_to_proj
    spherical_to_polyvert
    spherical_to_centroids
-   centroid2polyvert
+   centroid_to_polyvert
    sweep_centroids
 
 """
@@ -34,8 +34,6 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     It takes the shortening of the great circle
     distance with increasing elevation angle as well as the resulting
     increase in height into account.
-
-    .. versionadded:: 0.11.2
 
     Parameters
     ----------
@@ -113,8 +111,6 @@ def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4./3.):
     distance with increasing elevation angle as well as the resulting
     increase in height into account.
 
-    .. versionadded:: 0.11.2
-
     Parameters
     ----------
     r : :class:`numpy:numpy.ndarray`
@@ -184,7 +180,7 @@ Georeferencing-and-Projection`.
     return coords
 
 
-def centroid2polyvert(centroid, delta):
+def centroid_to_polyvert(centroid, delta):
     """Calculates the 2-D Polygon vertices necessary to form a rectangular
     polygon around the centroid's coordinates.
 
@@ -197,7 +193,7 @@ def centroid2polyvert(centroid, delta):
                List of 2-D coordinates of the center point of the rectangle.
     delta :    scalar or :class:`numpy:numpy.ndarray`
                Symmetric distances of the vertices from the centroid in each
-               direction. If `delta` is scalar, it is assumed to apply to
+               direction. If ``delta`` is scalar, it is assumed to apply to
                both dimensions.
 
     Returns
@@ -209,19 +205,19 @@ def centroid2polyvert(centroid, delta):
     ----
     The function can currently only deal with 2-D data (If you come up with a
     higher dimensional version of 'clockwise' you're welcome to add it).
-    The data is then assumed to be organized within the `centroid` array with
+    The data is then assumed to be organized within the ``centroid`` array with
     the last dimension being the 2-D coordinates of each point.
 
     Examples
     --------
 
-    >>> centroid2polyvert([0., 1.], [0.5, 1.5])
+    >>> centroid_to_polyvert([0., 1.], [0.5, 1.5])
     array([[-0.5, -0.5],
            [-0.5,  2.5],
            [ 0.5,  2.5],
            [ 0.5, -0.5],
            [-0.5, -0.5]])
-    >>> centroid2polyvert(np.arange(4).reshape((2,2)), 0.5)
+    >>> centroid_to_polyvert(np.arange(4).reshape((2,2)), 0.5)
     array([[[-0.5,  0.5],
             [-0.5,  1.5],
             [ 0.5,  1.5],
@@ -257,13 +253,13 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     Generate 3-D polygon vertices directly from spherical coordinates
     (r, phi, theta).
 
-    This is an alternative to :meth:`~wradlib.georef.centroid2polyvert` which
-    does not use centroids, but generates the polygon vertices by simply
+    This is an alternative to :func:`~wradlib.georef.centroid_to_polyvert`
+    which does not use centroids, but generates the polygon vertices by simply
     connecting the corners of the radar bins.
 
     Both azimuth and range arrays are assumed to be equidistant and to contain
     only unique values. For further information refer to the documentation of
-    :meth:`~wradlib.georef.spherical_to_xyz`.
+    :func:`~wradlib.georef.spherical_to_xyz`.
 
     Parameters
     ----------

@@ -39,8 +39,6 @@ warnings.simplefilter('always', DeprecationWarning)
 def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
     """A decorator to generate a DeprectationWarning.
 
-    .. versionadded:: 0.4.1
-
     This decorator function generates a DeprecationWarning if a given kwarg
     is changed/deprecated in a future version.
 
@@ -651,8 +649,6 @@ def half_power_radius(r, bwhalf):
     """
     Half-power radius.
 
-    .. versionadded:: 0.6.0
-
     ported from PyRadarMet
 
     Battan (1973),
@@ -702,12 +698,6 @@ def find_bbox_indices(coords, bbox):
     The bounding box is defined by two points (llx,lly and urx,ury)
     It finds the first indices before llx,lly and the first indices
     after urx,ury. If no index is found 0 and N/M is returned.
-
-    .. versionadded:: 0.6.0
-
-    .. versionchanged:: 0.10.0
-       Find indices no matter if the coordinate origin is `lower` or `upper`.
-
 
     Parameters
     ----------
@@ -798,8 +788,6 @@ def calculate_polynomial(data, w):
     .. math::
 
        P = \\sum_{n=0}^{N} w(n) \\cdot data^{n}
-
-    .. versionadded:: 0.10.0
 
     Parameters
     ----------

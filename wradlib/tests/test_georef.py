@@ -87,9 +87,9 @@ class CoordinateTransformTest(unittest.TestCase):
 
 
 class CoordinateHelperTest(unittest.TestCase):
-    def test_centroid2polyvert(self):
+    def test_centroid_to_polyvert(self):
         self.assertTrue(
-            np.allclose(georef.centroid2polyvert([0., 1.], [0.5, 1.5]),
+            np.allclose(georef.centroid_to_polyvert([0., 1.], [0.5, 1.5]),
                         np.array([[-0.5, -0.5],
                                   [-0.5, 2.5],
                                   [0.5, 2.5],
@@ -97,7 +97,7 @@ class CoordinateHelperTest(unittest.TestCase):
                                   [-0.5, -0.5]])))
 
         self.assertTrue(np.allclose(
-            georef.centroid2polyvert(np.arange(4).reshape((2, 2)), 0.5),
+            georef.centroid_to_polyvert(np.arange(4).reshape((2, 2)), 0.5),
             np.array([[[-0.5, 0.5],
                        [-0.5, 1.5],
                        [0.5, 1.5],

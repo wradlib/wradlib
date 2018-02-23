@@ -29,8 +29,6 @@ def correct_parallax(sr_xy, nbin, drt, alpha):
     ground radar is fixed at xy-coordinate (0, 0), and every SR bin has its
     relative xy-coordinates with respect to the ground radar site.
 
-    .. versionadded:: 0.10.0
-
     Parameters
     ----------
     sr_xy : :class:`numpy:numpy.ndarray`
@@ -92,8 +90,6 @@ def dist_from_orbit(sr_alt, alpha, beta, r_sr_inv, re):
 
     With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
-
-    .. versionadded:: 0.10.0
 
     Parameters
     ----------

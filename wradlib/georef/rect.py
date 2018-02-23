@@ -26,8 +26,6 @@ def get_radolan_coords(lon, lat, trig=False):
     """
     Calculates x,y coordinates of radolan grid from lon, lat
 
-    .. versionadded:: 0.4.0
-
     Parameters
     ----------
 
@@ -71,8 +69,6 @@ def get_radolan_coords(lon, lat, trig=False):
 
 def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
-
-    .. versionadded:: 0.4.0
 
     Returns the x,y coordinates of the radolan grid positions
     (lower left corner of every pixel). The radolan grid is a
@@ -238,8 +234,6 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
     """Returns spherical representation (r, theta, phi) of given cartesian
     coordinates (x, y, z) with respect to the reference altitude (asl)
     considering earth's geometry (proj).
-
-    .. versionadded:: 0.11.2
 
     Parameters
     ----------

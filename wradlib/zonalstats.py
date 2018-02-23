@@ -156,7 +156,7 @@ DataSource`.
         return np.array(sources)
 
     def get_data_by_att(self, attr=None, value=None):
-        """ Returns DataSource geometries filtered by given attribute/value
+        """Returns DataSource geometries filtered by given attribute/value
 
         Parameters
         ----------
@@ -172,7 +172,7 @@ DataSource`.
         return self._get_data()
 
     def get_data_by_geom(self, geom=None):
-        """ Returns DataSource geometries filtered by given OGR geometry
+        """Returns DataSource geometries filtered by given OGR geometry
 
         Parameters
         ----------
@@ -185,7 +185,7 @@ DataSource`.
         return self._get_data()
 
     def _check_src(self, src):
-        """ Basic check of source elements (sequence of points or polygons).
+        """Basic check of source elements (sequence of points or polygons).
 
             - array cast of source elements
             - create ogr_src datasource/layer holding src points/polygons
@@ -222,7 +222,7 @@ DataSource`.
         return ogr_src
 
     def dump_vector(self, filename, driver='ESRI Shapefile', remove=True):
-        """ Output layer to OGR Vector File
+        """Output layer to OGR Vector File
 
         Parameters
         ----------
@@ -244,7 +244,7 @@ DataSource`.
 
     def dump_raster(self, filename, driver='GTiff', attr=None,
                     pixel_size=1., remove=True):
-        """ Output layer to GDAL Rasterfile
+        """Output layer to GDAL Rasterfile
 
         Parameters
         ----------
@@ -296,7 +296,7 @@ DataSource`.
         del ds_out
 
     def set_attribute(self, name, values):
-        """ Add/Set given Attribute with given values
+        """Add/Set given Attribute with given values
 
         Parameters
         ----------
@@ -319,7 +319,7 @@ DataSource`.
             lyr.SetFeature(item)
 
     def get_attributes(self, attrs, filt=None):
-        """ Read attributes
+        """Read attributes
 
         Parameters
         ----------
@@ -339,7 +339,7 @@ DataSource`.
         return ret
 
     def get_geom_properties(self, props, filt=None):
-        """ Read attributes
+        """Read attributes
 
         Parameters
         ----------
@@ -421,19 +421,19 @@ class ZonalDataBase(object):
 
     @property
     def count_intersections(self):
-        """ Returns number of intersections
+        """Returns number of intersections
         """
         return self._count_intersections
 
     @property
     def srs(self):
-        """ Returns SpatialReferenceSystem object
+        """Returns SpatialReferenceSystem object
         """
         return self._srs
 
     @property
     def isecs(self):
-        """ Returns intersections
+        """Returns intersections
 
         Returns
         -------
@@ -445,7 +445,7 @@ class ZonalDataBase(object):
                                           GetFeatureCount())])
 
     def get_isec(self, idx):
-        """ Returns intersections
+        """Returns intersections
 
         Parameters
         ----------
@@ -460,7 +460,7 @@ class ZonalDataBase(object):
         return self._get_intersection(idx=idx)
 
     def get_source_index(self, idx):
-        """ Returns source indices referring to target polygon idx
+        """Returns source indices referring to target polygon idx
 
         Parameters
         ----------
@@ -476,7 +476,7 @@ class ZonalDataBase(object):
                                                 filt=('trg_index', idx))[0])
 
     def _create_dst_datasource(self, **kwargs):
-        """ Create destination target gdal.Dataset
+        """Create destination target gdal.Dataset
 
         Creates one layer for each target polygon, consisting of
         the needed source data attributed with index and weights fields
@@ -538,12 +538,12 @@ class ZonalDataBase(object):
         return ds_mem
 
     def _create_dst_features(self, dst, trg, **kwargs):
-        """ Create OGR.Features in Destination OGR.Layer
+        """Create OGR.Features in Destination OGR.Layer
         """
         raise NotImplementedError
 
     def dump_vector(self, filename, driver='ESRI Shapefile', remove=True):
-        """ Output source/target grid points/polygons to ESRI_Shapefile
+        """Output source/target grid points/polygons to ESRI_Shapefile
 
         target layer features are attributed with source index and weight
 
@@ -561,7 +561,7 @@ class ZonalDataBase(object):
         self.dst.dump_vector(filename, driver, remove=False)
 
     def load_vector(self, filename):
-        """ Load source/target grid points/polygons into in-memory Shapefile
+        """Load source/target grid points/polygons into in-memory Shapefile
 
         Parameters
         ----------
@@ -597,7 +597,7 @@ class ZonalDataBase(object):
         del ds_in
 
     def _get_idx_weights(self):
-        """ Retrieve index and weight from dst DataSource
+        """Retrieve index and weight from dst DataSource
         """
         raise NotImplementedError
 
@@ -640,7 +640,7 @@ class ZonalDataBase(object):
 
 
 class ZonalDataPoly(ZonalDataBase):
-    """ ZonalData object for source polygons
+    """ZonalData object for source polygons
 
     Parameters
     ----------
@@ -667,7 +667,7 @@ class ZonalDataPoly(ZonalDataBase):
     See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
     def _get_idx_weights(self):
-        """ Retrieve index and weight from dst DataSource
+        """Retrieve index and weight from dst DataSource
 
         Iterates over all trg DataSource Polygons
 
@@ -690,7 +690,7 @@ class ZonalDataPoly(ZonalDataBase):
         return tuple(ret)
 
     def _create_dst_features(self, dst, trg, **kwargs):
-        """ Create needed OGR.Features in dst OGR.Layer
+        """Create needed OGR.Features in dst OGR.Layer
 
         Parameters
         ----------
@@ -735,7 +735,7 @@ class ZonalDataPoly(ZonalDataBase):
 
 
 class ZonalDataPoint(ZonalDataBase):
-    """ ZonalData object for source points
+    """ZonalData object for source points
 
     Parameters
     ----------
@@ -761,7 +761,7 @@ class ZonalDataPoint(ZonalDataBase):
     See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
     def _get_idx_weights(self):
-        """ Retrieve index and weight from dst DataSource
+        """Retrieve index and weight from dst DataSource
 
         Iterates over all trg DataSource Polygons
 
@@ -782,7 +782,7 @@ class ZonalDataPoint(ZonalDataBase):
         return tuple(ret)
 
     def _create_dst_features(self, dst, trg, **kwargs):
-        """ Create needed OGR.Features in dst OGR.Layer
+        """Create needed OGR.Features in dst OGR.Layer
 
         Parameters
         ----------
@@ -1031,7 +1031,7 @@ class GridPointsToPoly(ZonalStatsBase):
 
 
 def numpy_to_pathpatch(arr):
-    """ Returns PathPatches from nested array
+    """Returns PathPatches from nested array
 
     Parameters
     ----------

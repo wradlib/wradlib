@@ -223,8 +223,6 @@ def read_gdal_values(dataset=None, nodata=None):
 def create_raster_dataset(data, coords, projection=None, nodata=-9999):
     """ Create In-Memory Raster Dataset
 
-    .. versionadded 0.10.0
-
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
@@ -275,8 +273,6 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
 
 def set_raster_origin(data, coords, direction):
     """ Converts Data and Coordinates Origin
-
-    .. versionadded 0.10.0
 
     Parameters
     ----------
@@ -348,8 +344,6 @@ def extract_raster_dataset(dataset, nodata=None):
 
 def reproject_raster_dataset(src_ds, **kwargs):
     """Reproject/Resample given dataset according to keyword arguments
-
-    .. versionadded:: 0.10.0
 
     # function inspired from github project
     # https://github.com/profLewis/geogg122

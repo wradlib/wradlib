@@ -38,8 +38,6 @@ def get_shape_points(geom):
 
     If geometries are nested, function recurses.
 
-    .. versionadded:: 0.6.0
-
     Parameters
     ----------
     geom : ogr.Geometry
@@ -73,8 +71,6 @@ def transform_geometry(geom, dest_srs):
     It transforms coordinates to a given destination osr spatial reference
     if a geotransform is neccessary.
 
-    .. versionadded:: 0.6.0
-
     Parameters
     ----------
     geom : ogr.geometry
@@ -101,8 +97,6 @@ def get_shape_coordinates(layer, **kwargs):
 
     It transforms coordinates to a given destination osr spatial reference if
     dest_srs is given and a geotransform is neccessary.
-
-    .. versionadded:: 0.6.0
 
     Parameters
     ----------
@@ -153,8 +147,6 @@ def get_shape_coordinates(layer, **kwargs):
 def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
     """Creates OGR.Layer objects in gdal.Dataset object.
 
-    .. versionadded:: 0.7.0
-
     Creates one OGR.Layer with given name in given gdal.Dataset object
     using given OGR.GeometryType and FieldDefinitions
 
@@ -190,8 +182,6 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
 def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
     """ Copy OGR.Layer object.
 
-    .. versionadded:: 0.7.0
-
     Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
 
     Parameters
@@ -218,8 +208,6 @@ def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
 def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
     """ Copy OGR.Layer object.
 
-    .. versionadded:: 0.8.0
-
     Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
 
     Parameters
@@ -245,8 +233,6 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
 
 def ogr_add_feature(ds, src, name=None):
     """ Creates OGR.Feature objects in OGR.Layer object.
-
-    .. versionadded:: 0.7.0
 
     OGR.Features are built from numpy src points or polygons.
 
@@ -286,8 +272,6 @@ def ogr_add_feature(ds, src, name=None):
 def ogr_add_geometry(layer, geom, attrs):
     """ Copies single OGR.Geometry object to an OGR.Layer object.
 
-    .. versionadded:: 0.7.0
-
     Given OGR.Geometry is copied to new OGR.Feature and
     written to given OGR.Layer by given index. Attributes are attached.
 
@@ -312,8 +296,6 @@ def ogr_add_geometry(layer, geom, attrs):
 
 def numpy_to_ogr(vert, geom_name):
     """Convert a vertex array to gdal/ogr geometry.
-
-    .. versionadded:: 0.7.0
 
     Using JSON as a vehicle to efficiently deal with numpy arrays.
 
@@ -343,8 +325,6 @@ def numpy_to_ogr(vert, geom_name):
 def ogr_to_numpy(ogrobj):
     """Backconvert a gdal/ogr geometry to a numpy vertex array.
 
-    .. versionadded:: 0.7.0
-
     Using JSON as a vehicle to efficiently deal with numpy arrays.
 
     Parameters
@@ -365,8 +345,6 @@ def ogr_to_numpy(ogrobj):
 
 def ogr_geocol_to_numpy(ogrobj):
     """Backconvert a gdal/ogr geometry Collection to a numpy vertex array.
-
-    .. versionadded:: 0.7.0
 
     This extracts only Polygon geometries!
 

@@ -22,7 +22,7 @@ Georeferencing
 from .misc import (bin_altitude, bin_distance,
                    get_earth_radius, get_shape_coordinates, site_distance)
 
-from .polar import (centroid2polyvert, spherical_to_xyz, spherical_to_proj,
+from .polar import (centroid_to_polyvert, spherical_to_xyz, spherical_to_proj,
                     spherical_to_polyvert, spherical_to_centroids,
                     sweep_centroids)
 

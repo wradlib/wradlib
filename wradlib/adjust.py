@@ -489,16 +489,16 @@ class AdjustMixed(AdjustBase):
 
        R_{gage} = R_{radar} \\cdot (1 + \\delta) +0 \\epsilon
 
-    :math:`\delta` and :math:`\epsilon` have to be assumed to be independent
+    :math:`\\delta` and :math:`\\epsilon` have to be assumed to be independent
     and normally distributed. The present implementation is based on a Least
-    Squares estimation of :math:`\delta` and :math:`\epsilon` for each rain
-    gage location. :math:`\delta` and :math:`\epsilon` are then interpolated
+    Squares estimation of :math:`\\delta` and :math:`\\epsilon` for each rain
+    gage location. :math:`\\delta` and :math:`\\epsilon` are then interpolated
     and used to correct the radar rainfall field.
 
     The least squares implementation uses the equation for the error model plus
-    the condition to minimize (:math:`\delta^2 + \epsilon^2`) for each gage
-    location. The idea behind this is that :math:`\epsilon` dominates the
-    adjustment for small deviations between radar and gage while :math:`\delta`
+    the condition to minimize (:math:`\\delta^2 + \\epsilon^2`) for each gage
+    location. The idea behind this is that :math:`\\epsilon` dominates the
+    adjustment for small deviations between radar and gage while :math:`\\delta`
     dominates in case of large deviations.
 
     **Usage**:
@@ -566,11 +566,6 @@ class AdjustMFB(AdjustBase):
     entire domain.
 
     This method is also known as the Mean Field Bias correction.
-
-    .. versionchanged:: 0.6.0
-       Introduced a dictionary of control parameters 'mfb_args' which are
-       passed during initialisation of adjustment objects.
-       Keyword argument 'biasby' of the call function has been removed.
 
     Note
     ----

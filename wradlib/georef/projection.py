@@ -26,8 +26,6 @@ from sys import exit
 def create_osr(projname, **kwargs):
     """Conveniently supports the construction of osr spatial reference objects
 
-    .. versionadded:: 0.6.0
-
     Currently, the following projection names (argument *projname*)
     are supported:
 
@@ -262,8 +260,6 @@ def get_default_projection():
 def epsg_to_osr(epsg=None):
     """Create osr spatial reference object from EPSG number
 
-    .. versionadded:: 0.6.0
-
     Parameters
     ----------
     epsg : int
@@ -285,8 +281,6 @@ def epsg_to_osr(epsg=None):
 
 def wkt_to_osr(wkt=None):
     """Create osr spatial reference object from WKT string
-
-    .. versionadded:: 0.6.0
 
     Parameters
     ----------

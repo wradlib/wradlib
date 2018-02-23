@@ -11,6 +11,10 @@ import wradlib.util as util
 import numpy as np
 from osgeo import osr
 
+np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
+                    precision=8, suppress=False, threshold=1000,
+                    formatter=None)
+
 
 class DataSourceTest(unittest.TestCase):
     def setUp(self):
@@ -159,42 +163,42 @@ class ZonalDataTest(unittest.TestCase):
 
         self.zdpoly = zonalstats.ZonalDataPoly(self.radar_gk, self.data,
                                                srs=self.proj_gk)
-        #self.zdpoly.dump_vector('test_zdpoly')
+        # self.zdpoly.dump_vector('test_zdpoly')
         self.zdpoint = zonalstats.ZonalDataPoint(self.radar_gkc, self.data,
                                                  srs=self.proj_gk)
-        #self.zdpoint.dump_vector('test_zdpoint')
+        # self.zdpoint.dump_vector('test_zdpoint')
 
         isec_poly0 = np.array([np.array([[2600000., 5630000.],
                                          [2600000., 5630100.],
-                                         [2600009.61316135, 5630100.],
-                                         [2600041.77967969, 5630000.],
+                                         [2600009.61157242, 5630100.],
+                                         [2600041.77844048, 5630000.],
                                          [2600000., 5630000.]]),
-                               np.array([[2600009.61316135, 5630100.],
+                               np.array([[2600009.61157242, 5630100.],
                                          [2600100., 5630100.],
                                          [2600100., 5630000.],
-                                         [2600041.77967969, 5630000.],
-                                         [2600009.61316135, 5630100.]]),
+                                         [2600041.77844048, 5630000.],
+                                         [2600009.61157242, 5630100.]]),
                                np.array([[2600091.80406488, 5630100.],
                                          [2600100., 5630100.],
                                          [2600100., 5630074.58501104],
                                          [2600091.80406488, 5630100.]])])
         isec_poly1 = np.array([np.array([[2600100., 5630000.],
                                          [2600100., 5630100.],
-                                         [2600114.66730696, 5630100.],
-                                         [2600146.83383364, 5630000.],
+                                         [2600114.66582085, 5630100.],
+                                         [2600146.83254704, 5630000.],
                                          [2600100., 5630000.]]),
-                               np.array([[2600114.66730696, 5630100.],
+                               np.array([[2600114.66582085, 5630100.],
                                          [2600200., 5630100.],
                                          [2600200., 5630000.],
-                                         [2600146.83383364, 5630000.],
-                                         [2600114.66730696, 5630100.]]),
+                                         [2600146.83254704, 5630000.],
+                                         [2600114.66582085, 5630100.]]),
                                np.array([[2600197.20644071, 5630100.],
                                          [2600200., 5630100.],
                                          [2600200., 5630091.33737992],
                                          [2600197.20644071, 5630100.]])])
 
-        isec_point0 = np.array([[2600077.28933235, 5630056.08798069]])
-        isec_point1 = np.array([[2600172.4965408, 5630086.71283403]])
+        isec_point0 = np.array([[2600077.2899581, 5630056.0874306]])
+        isec_point1 = np.array([[2600172.498418 , 5630086.7127034]])
 
         self.isec_poly = np.array([isec_poly0, isec_poly1])
         self.isec_point = np.array([isec_point0, isec_point1])

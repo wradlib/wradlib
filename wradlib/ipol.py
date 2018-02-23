@@ -386,15 +386,15 @@ class Linear(IpolBase):
 # -----------------------------------------------------------------------------
 def parse_covariogram(cov_model):
     """"""
-    patterns = [re.compile('([\d\.]+) Nug\(([\d\.]+)\)'),  # nugget
-                re.compile('([\d\.]+) Lin\(([\d\.]+)\)'),  # linear
-                re.compile('([\d\.]+) Sph\(([\d\.]+)\)'),  # spherical
-                re.compile('([\d\.]+) Exp\(([\d\.]+)\)'),  # exponential
-                re.compile('([\d\.]+) Gau\(([\d\.]+)\)'),  # gaussian
-                re.compile('([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'),  # matern
-                re.compile('([\d\.]+) Pow\(([\d\.]+)\)'),  # power
+    patterns = [re.compile(r'([\d\.]+) Nug\(([\d\.]+)\)'),  # nugget
+                re.compile(r'([\d\.]+) Lin\(([\d\.]+)\)'),  # linear
+                re.compile(r'([\d\.]+) Sph\(([\d\.]+)\)'),  # spherical
+                re.compile(r'([\d\.]+) Exp\(([\d\.]+)\)'),  # exponential
+                re.compile(r'([\d\.]+) Gau\(([\d\.]+)\)'),  # gaussian
+                re.compile(r'([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'),  # matern
+                re.compile(r'([\d\.]+) Pow\(([\d\.]+)\)'),  # power
                 # cauchy
-                re.compile('([\d\.]+) Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),
+                re.compile(r'([\d\.]+) Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),
                 ]
 
     cov_funs = [cov_nug,
@@ -1059,8 +1059,6 @@ def cart2irregular_interp(cartgrid, values, newgrid, **kwargs):
     ``cartgrid`` to new coordinates defined by ``newgrid`` using \
     nearest neighbour, linear or cubic interpolation
 
-    .. versionadded:: 0.6.0
-
     Slow for large arrays
 
     Keyword arguments are fed to :func:`scipy:scipy.interpolate.griddata`
@@ -1101,11 +1099,6 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     """Map array ``values`` defined by cartesian coordinate array \
     ``cartgrid`` to new coordinates defined by ``newgrid`` using \
     spline interpolation.
-
-    .. versionadded:: 0.6.0
-
-    .. versionchanged:: 0.10.0
-       Accept data/coords with origin 'lower' or 'upper'.
 
     Keyword arguments are fed through to
     :func:`scipy:scipy.ndimage.map_coordinates`

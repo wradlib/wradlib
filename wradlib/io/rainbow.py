@@ -411,9 +411,6 @@ def get_RB_header(fid):
 def read_Rainbow(f, loaddata=True):
     """Reads Rainbow files files according to their structure
 
-    .. versionchanged 0.10.0
-       Added reading from file handles.
-
     In contrast to other file readers under :meth:`wradlib.io`, this function
     will *not* return a two item tuple with (data, metadata). Instead, this
     function returns ONE dictionary that contains all the file contents - both

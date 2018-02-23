@@ -119,12 +119,6 @@ def plot_ppi(data, r=None, az=None, autoext=True,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
 
-    .. versionchanged:: 0.10.0
-       added contour, contourf plotting, added `cg`
-
-    .. versionchanged:: 0.6.0
-       using osr objects instead of PROJ.4 strings as parameter
-
     The implementation of this plot routine is in cartesian axes and does all
     coordinate transforms beforehand. This allows zooming into the data as well
     as making it easier to plot additional data (like gauge locations) without
@@ -383,9 +377,6 @@ def plot_ppi_crosshair(site, ranges, angles=None,
                        proj=None, elev=0., ax=None, **kwargs):
     """Plots a Crosshair for a Plan Position Indicator (PPI).
 
-    .. versionchanged:: 0.6.0
-       using osr objects instead of PROJ.4 strings as parameter
-
     Parameters
     ----------
     site : tuple
@@ -513,9 +504,6 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
              refrac=True, rf=1., fig=None, ax=111, func='pcolormesh', cg=False,
              **kwargs):
     """Plots a Range Height Indicator (RHI).
-
-    .. versionchanged:: 0.10.0
-       added contour, contourf plotting, added `cg`
 
     The implementation of this plot routine is in cartesian axes and does all
     coordinate transforms beforehand. This allows zooming into the data as well
@@ -1134,8 +1122,6 @@ def add_lines(ax, lines, **kwargs):
     Add lines (points in the form Nx2) to existing axes ax
     using :class:`matplotlib:matplotlib.collections.LineCollection`.
 
-    .. versionadded:: 0.6.0
-
     Parameters
     ----------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
@@ -1161,8 +1147,6 @@ def add_patches(ax, patch_array, **kwargs):
 
     Add patches (points in the form Nx2) to existing axes ax
     using :class:`matplotlib:matplotlib.collections.PolyCollection`.
-
-    .. versionadded:: 0.6.0
 
     Parameters
     ----------
