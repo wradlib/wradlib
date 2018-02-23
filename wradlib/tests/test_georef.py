@@ -9,7 +9,6 @@ import wradlib.util as util
 from wradlib.io import read_generic_hdf5, open_raster, gdal_create_dataset
 import numpy as np
 from osgeo import gdal, osr, ogr
-from deprecation import fail_if_not_removed
 
 np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
                     precision=8, suppress=False, threshold=1000,
@@ -39,31 +38,6 @@ class CoordinateTransformTest(unittest.TestCase):
                        47.99037544]),
              np.array([0., 0., 725.7159843, 725.7159843, 725.7159843,
                        1694.22337134])))
-
-    @fail_if_not_removed
-    def test_hor2aeq(self):
-        self.assertTrue(np.allclose(georef.misc.hor2aeq(0.25, 0.5, 0.75),
-                                    (-0.29983281824238966,
-                                     0.22925926995789672)))
-
-    @fail_if_not_removed
-    def test_aeq2hor(self):
-        self.assertTrue(np.allclose(georef.misc.aeq2hor(0.22925926995789672,
-                                                        -0.29983281824238966,
-                                                        0.75),
-                                    (0.25, 0.5)))
-
-    @fail_if_not_removed
-    def test_polar2lonlat(self):
-        self.assertTrue(
-            np.allclose(georef.polar2lonlat(self.r, self.az, self.csite),
-                        self.result[:2]))
-
-    @fail_if_not_removed
-    def test_polar2lonlatalt(self):
-        self.assertTrue(np.allclose(
-            georef.polar2lonlatalt(self.r, self.az, self.th, self.csite),
-            self.result, rtol=1e-03))
 
     def test_spherical_to_xyz(self):
         coords, rad = georef.spherical_to_xyz(self.r, self.az,
@@ -111,56 +85,11 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(coords[..., 1], self.result_n[1]))
         self.assertTrue(np.allclose(coords[..., 2], self.result_n[2]))
 
-    @fail_if_not_removed
-    def test_polar2lonlatalt_n(self):
-        lon, lat, alt = georef.polar2lonlatalt_n(self.r, self.az,
-                                                 self.th, self.csite)
-        self.assertTrue(np.allclose(lon, self.result_n[0]))
-        self.assertTrue(np.allclose(lat, self.result_n[1]))
-        self.assertTrue(np.allclose(alt, self.result_n[2]))
-
-    @fail_if_not_removed
-    def test__latscale(self):
-        self.assertEqual(georef.polar._latscale(), 111178.17148373958)
-
-    @fail_if_not_removed
-    def test__lonscale(self):
-        self.assertTrue(
-            np.allclose(georef.polar._lonscale(np.arange(-90., 90., 10.)),
-                        np.array(
-                            [6.80769959e-12, 1.93058869e+04, 3.80251741e+04,
-                             5.55890857e+04,
-                             7.14639511e+04, 8.51674205e+04, 9.62831209e+04,
-                             1.04473307e+05,
-                             1.09489125e+05, 1.11178171e+05, 1.09489125e+05,
-                             1.04473307e+05,
-                             9.62831209e+04, 8.51674205e+04, 7.14639511e+04,
-                             5.55890857e+04,
-                             3.80251741e+04, 1.93058869e+04])))
-
-    @fail_if_not_removed
-    def test_beam_height_n(self):
-        self.assertTrue(np.allclose(
-            georef.beam_height_n(np.arange(10., 101., 10.) * 1000., 2.),
-            np.array([354.87448647, 721.50702113, 1099.8960815,
-                      1490.04009656, 1891.93744678, 2305.58646416,
-                      2730.98543223, 3168.13258613, 3617.02611263,
-                      4077.66415017])))
-
-    @fail_if_not_removed
-    def test_arc_distance_n(self):
-        self.assertTrue(np.allclose(
-            georef.arc_distance_n(np.arange(10., 101., 10.) * 1000., 2.),
-            np.array(
-                [9993.49302358, 19986.13717891, 29977.90491409, 39968.76869178,
-                 49958.70098959, 59947.6743006, 69935.66113377, 79922.63401441,
-                 89908.5654846, 99893.4281037])))
-
 
 class CoordinateHelperTest(unittest.TestCase):
-    def test_centroid2polyvert(self):
+    def test_centroid_to_polyvert(self):
         self.assertTrue(
-            np.allclose(georef.centroid2polyvert([0., 1.], [0.5, 1.5]),
+            np.allclose(georef.centroid_to_polyvert([0., 1.], [0.5, 1.5]),
                         np.array([[-0.5, -0.5],
                                   [-0.5, 2.5],
                                   [0.5, 2.5],
@@ -168,7 +97,7 @@ class CoordinateHelperTest(unittest.TestCase):
                                   [-0.5, -0.5]])))
 
         self.assertTrue(np.allclose(
-            georef.centroid2polyvert(np.arange(4).reshape((2, 2)), 0.5),
+            georef.centroid_to_polyvert(np.arange(4).reshape((2, 2)), 0.5),
             np.array([[[-0.5, 0.5],
                        [-0.5, 1.5],
                        [0.5, 1.5],
@@ -179,32 +108,6 @@ class CoordinateHelperTest(unittest.TestCase):
                        [2.5, 3.5],
                        [2.5, 2.5],
                        [1.5, 2.5]]])))
-
-    @fail_if_not_removed
-    def test_polar2polyvert(self):
-        self.assertTrue(np.allclose(
-            georef.polar2polyvert(np.array([10000., 10100.]),
-                                  np.array([45., 90.]), (9., 48.)),
-            np.array([[[9.05100794, 48.08225674],
-                       [9.051524, 48.0830875],
-                       [9.12427234, 48.03435375],
-                       [9.12302879, 48.03401088],
-                       [9.05100794, 48.08225674]],
-                      [[9.051524, 48.0830875],
-                       [9.05204008, 48.08391826],
-                       [9.12551589, 48.03469661],
-                       [9.12427234, 48.03435375],
-                       [9.051524, 48.0830875]],
-                      [[9.12302879, 48.03401088],
-                       [9.12427234, 48.03435375],
-                       [9.051524, 48.0830875],
-                       [9.05100794, 48.08225674],
-                       [9.12302879, 48.03401088]],
-                      [[9.12427234, 48.03435375],
-                       [9.12551589, 48.03469661],
-                       [9.05204008, 48.08391826],
-                       [9.051524, 48.0830875],
-                       [9.12427234, 48.03435375]]])))
 
     def test_spherical_to_polyvert(self):
         sph = georef.get_default_projection()
@@ -232,19 +135,6 @@ class CoordinateHelperTest(unittest.TestCase):
                            [9.05136309, 48.0830778, 6.],
                            [9.1238846, 48.03435008, 6.]]])
         self.assertTrue(np.allclose(polyvert, arr, rtol=1e-12))
-
-    @fail_if_not_removed
-    def test_polar2centroids(self):
-        r = np.array([10000., 10100.])
-        az = np.array([45., 90.])
-        sitecoords = (9., 48.)
-        self.assertTrue(np.allclose(georef.polar2centroids(r, az, sitecoords),
-                                    tuple((np.array([[9.09469143, 9.09564428],
-                                                     [9.13374952,
-                                                      9.13509373]]),
-                                           np.array(
-                                               [[48.06324434, 48.06387957],
-                                                [47.99992237, 47.9999208]])))))
 
     def test_spherical_to_centroids(self):
         r = np.array([10000., 10100.])
@@ -588,29 +478,6 @@ class SatelliteTest(unittest.TestCase):
         np.testing.assert_allclose(xy[60:62, 0:2, 0:2, :], pr_out, rtol=1e-12)
         np.testing.assert_allclose(r[0:10], r_out, rtol=1e-12)
         np.testing.assert_allclose(z[0, 0, 0:10], z_out, rtol=1e-10)
-
-    @fail_if_not_removed
-    def test_sat2pol(self):
-        xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin,
-                                           self.dr, self.alpha)
-        xyz = np.concatenate((xy, z[..., np.newaxis]), axis=-1)
-        r, elev, az = georef.sat2pol(xyz, 0, self.re)
-        r_out = np.array([[[39343.74363176, 39345.91501987],
-                           [40013.90434027, 40021.08420567]],
-                          [[34422.90332678, 34425.06939237],
-                           [35145.74417377, 35153.62048744]]])
-        elev_out = np.array([[[-0.13263554, 0.04032758],
-                              [-0.13489479, 0.03585438]],
-                             [[-0.11604639, 0.08164167],
-                              [-0.11848323, 0.07590922]]])
-        az_out = np.array([[[335.0721129, 335.12876132],
-                            [342.93549037, 342.98811858]],
-                           [[335.07185631, 335.13660255],
-                            [344.03305953, 344.09275445]]])
-        np.testing.assert_allclose(r[60:62, 0:2, 0:2], r_out, rtol=1e-12)
-        np.testing.assert_allclose(elev[60:62, 0:2, 0:2], elev_out,
-                                   rtol=1e-7)
-        np.testing.assert_allclose(az[60:62, 0:2, 0:2], az_out, rtol=1e-10)
 
     def test_dist_from_orbit(self):
         beta = abs(-17.04 + np.arange(self.nray) * self.bw_pr)

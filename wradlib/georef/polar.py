@@ -15,267 +15,16 @@ Polar Grid Functions
    spherical_to_proj
    spherical_to_polyvert
    spherical_to_centroids
-   polar2lonlat
-   polar2lonlatalt
-   polar2lonlatalt_n
-   polar2centroids
-   polar2polyvert
-   centroid2polyvert
-   projected_bincoords_from_radarspecs
+   centroid_to_polyvert
    sweep_centroids
 
 """
 
 import numpy as np
 import warnings
-import deprecation
-from deprecation import deprecated
 from .projection import proj4_to_osr, reproject
-from .misc import (hor2aeq, get_default_projection, get_earth_radius,
+from .misc import (get_default_projection, get_earth_radius,
                    bin_altitude, site_distance)
-
-from ..version import short_version
-
-deprecation.message_location = "top"
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version)
-def _latscale(re=6370040.):
-    """Return meters per degree latitude assuming spherical earth
-    """
-    return 2 * np.pi * re / 360.
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version)
-def _lonscale(lat, re=6370040.):
-    """Return meters per degree longitude assuming spherical earth
-    """
-    return (2 * np.pi * re / 360.) * np.cos(np.deg2rad(lat))
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version)
-def polar2lonlat(r, az, sitecoords, re=6370040):
-    """Transforms polar coordinates (of a PPI) to longitude/latitude \
-    coordinates.
-
-    This function assumes that the transformation from the polar radar
-    coordinate system to the earth's spherical coordinate system may be done
-    in the same way as astronomical observations are transformed from the
-    horizon's coordinate system to the equatorial coordinate system.
-
-    The conversion formulas used were taken from Wikipedia
-    :cite:`Nautisches-Dreieck` and are only valid as long as the radar's
-    elevation angle is small, as one main assumption of this method is, that
-    the 'zenith-star'-side of the nautic triangle can be described by the radar
-    range divided by the earths radius. For larger elevation angles, this side
-    would have to be reduced.
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]
-    az : :class:`numpy:numpy.ndarray`
-        Array of azimuth angles containing values between 0° and 360°.
-        These are assumed to start with 0° pointing north and counted positive
-        clockwise!
-    sitecoords : a sequence of two floats
-        the lon / lat coordinates of the radar location
-    re : float
-        earth's radius [m]
-
-    Returns
-    -------
-    lon, lat : tuple
-        Tuple of two :class:`numpy:numpy.ndarray` containing the spherical
-        longitude and latitude coordinates.
-
-    Note
-    ----
-    Be aware that the coordinates returned by this function are valid for
-    a sphere. When using them in GIS make sure to distinguish that from
-    the usually assumed WGS coordinate systems where the coordinates are based
-    on a more complex ellipsoid.
-
-    Examples
-    --------
-
-    A few standard directions (North, South, North, East, South, West) with
-    different distances (amounting to roughly 1°) from a site
-    located at 48°N 9°E
-
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> csite = (9.0, 48.0)
-    >>> # csite = (0.0, 0.0)
-    >>> lon1, lat1= polar2lonlat(r, az, csite)
-    >>> for x, y in zip(lon1, lat1):
-    ...     print('{0:6.2f}, {1:6.2f}'.format(x, y))
-      9.00,  48.00
-      9.00,  48.00
-      9.00,  49.00
-     10.49,  47.99
-      9.00,  47.00
-      7.51,  47.99
-
-    The coordinates of the east and west directions won't come to lie on the
-    latitude of the site because doesn't travel along the latitude circle but
-    along a great circle.
-
-
-    """
-
-    # phi = 48.58611111 * pi/180.  # drs:  51.12527778 ; fbg: 47.87444444 ;
-    # tur: 48.58611111 ; muc: 48.3372222
-    # lon = 9.783888889 * pi/180.  # drs:  13.76972222 ; fbg: 8.005 ;
-    # tur: 9.783888889 ; muc: 11.61277778
-    phi = np.deg2rad(sitecoords[1])
-    lam = np.deg2rad(sitecoords[0])
-
-    a = np.deg2rad(-(180. + az))
-    h = 0.5 * np.pi - r / re
-
-    delta, tau = hor2aeq(a, h, phi)
-    latc = np.rad2deg(delta)
-    lonc = np.rad2deg(lam + tau)
-
-    return lonc, latc
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version)
-def __pol2lonlat(rng, az, sitecoords, re=6370040):
-    """Alternative implementation using spherical geometry only.
-
-    apparently it produces the same results as polar2lonlat.
-    I wrote it because I suddenly doubted that the assumptions of the nautic
-    triangle were wrong. I leave it here, in case someone might find it useful.
-
-    Examples
-    --------
-
-    A few standard directions (North, South, North, East, South, West) with
-    different distances (amounting to roughly 1°) from a site
-    located at 48°N 9°E
-
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,]) * 1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> csite = (9.0, 48.0)
-    >>> lon1, lat1= __pol2lonlat(r, az, csite)
-    >>> for x, y in zip(lon1, lat1):
-    ...     print('{0:6.2f}, {1:6.2f}'.format(x, y))
-      9.00,  48.00
-      9.00,  48.00
-      9.00,  49.00
-     10.49,  47.99
-      9.00,  47.00
-      7.51,  47.99
-
-    The coordinates of the east and west directions won't come to lie on the
-    latitude of the site because doesn't travel along the latitude circle but
-    along a great circle.
-
-    """
-    phia = sitecoords[1]
-    thea = sitecoords[0]
-
-    polar_angle = np.deg2rad(90. - phia)
-    r = rng / re
-
-    easterly = az <= 180.
-    # westerly = ~easterly
-    a = np.deg2rad(np.where(easterly, az, az - 180.))
-
-    m = np.arccos(np.cos(r) * np.cos(polar_angle) +
-                  np.sin(r) * np.sin(polar_angle) * np.cos(a))
-    g = np.arcsin((np.sin(r) * np.sin(a)) / (np.sin(m)))
-
-    return thea + np.rad2deg(np.where(easterly, g, -g)), 90. - np.rad2deg(m)
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version)
-def polar2lonlatalt(r, az, elev, sitecoords, re=6370040.):
-    """Transforms polar coordinates to lon/lat/altitude coordinates.
-
-    Explicitely accounts for the beam's elevation angle and for the altitude
-    of the radar location.
-
-    This is an alternative implementation based on VisAD code
-    (see VisAD-Radar3DCoordinateSystem :cite:`VisAD-Radar3DCoordinateSystem`
-    and VisAD-Home :cite:`VisAD-Home` ).
-
-    VisAD code has been translated to Python from Java.
-
-    Nomenclature tries to stick to VisAD code for the sake of comparibility,
-    however, names of arguments are the same as for polar2lonlat...
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]
-    az : :class:`numpy:numpy.ndarray`
-        Array of azimuth angles containing values between 0° and 360°.
-        These are assumed to start with 0° pointing north and counted positive
-        clockwise!
-    sitecoords : a sequence of three floats
-        the lon / lat coordinates of the radar location and its altitude
-        a.m.s.l. (in meters)
-        if sitecoords is of length two, altitude is assumed to be zero
-    re : float
-        earth's radius [m]
-
-    Returns
-    -------
-    output : tuple
-        Tuple of three :class:`numpy:numpy.ndarray`
-        (longitudes, latitudes, altitudes).
-
-    Examples
-    --------
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
-    >>> csite = (9.0, 48.0)
-    >>> lon1, lat1, alt1 = polar2lonlatalt(r, az, th, csite)
-    >>> for x, y, z in zip(lon1, lat1, alt1):
-    ...     print('{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z))
-    ...
-     9.0000, 48.0000,  0.0000
-     9.0000, 48.0000,  0.0000
-     9.0000, 48.9983, 967.0320
-    10.4919, 48.0000, 967.0320
-     9.0000, 47.0017, 967.0320
-     7.5084, 48.0000, 1935.4568
-
-    """
-    centlon = sitecoords[0]
-    centlat = sitecoords[1]
-    try:
-        centalt = sitecoords[2]
-    except Exception:
-        centalt = 0.
-    # local earth radius
-    re = re + centalt
-
-    cosaz = np.cos(np.deg2rad(az))
-    sinaz = np.sin(np.deg2rad(az))
-    # assume azimuth = 0 at north, then clockwise
-    coselev = np.cos(np.deg2rad(elev))
-    sinelev = np.sin(np.deg2rad(elev))
-    rp = np.sqrt(re * re + r * r + 2.0 * sinelev * re * r)
-
-    # altitudes
-    alts = rp - re + centalt
-
-    angle = np.arcsin(coselev * r / rp)  # really sin(elev+90)
-    radp = re * angle
-    lats = centlat + cosaz * radp / _latscale()
-    lons = centlon + sinaz * radp / _lonscale(centlat)
-
-    return lons, lats, alts
 
 
 def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
@@ -285,8 +34,6 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     It takes the shortening of the great circle
     distance with increasing elevation angle as well as the resulting
     increase in height into account.
-
-    .. versionadded:: 0.11.2
 
     Parameters
     ----------
@@ -364,8 +111,6 @@ def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4./3.):
     distance with increasing elevation angle as well as the resulting
     increase in height into account.
 
-    .. versionadded:: 0.11.2
-
     Parameters
     ----------
     r : :class:`numpy:numpy.ndarray`
@@ -435,101 +180,7 @@ Georeferencing-and-Projection`.
     return coords
 
 
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version,
-            details="Use :func:`spherical_to_proj` instead.")
-def polar2lonlatalt_n(r, az, elev, sitecoords, re=None, ke=4. / 3.):
-    """Transforms polar coordinates (of a PPI) to longitude/latitude \
-    coordinates taking elevation angle and refractivity into account.
-
-    It takes the shortening of the great circle
-    distance with increasing  elevation angle as well as the resulting
-    increase in height into account.
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]
-    az : :class:`numpy:numpy.ndarray`
-        Array of azimuth angles containing values between 0 and 360°.
-        These are assumed to start with 0° pointing north and counted
-        positive clockwise!
-    elev : scalar or :class:`numpy:numpy.ndarray` of the same shape as az
-        Elevation angles in degrees starting with 0° at horizontal to 90°
-        pointing vertically upwards from the radar
-    sitecoords : a sequence of two or three floats
-        The lon / lat coordinates of the radar location, the third value,
-        if present, will be interpreted as the height of the site above the
-        geoid (i.e. sphere)
-    re : float
-        Earth's radius [m], if None, `get_earth_radius` will be used to
-        determine the equivalent radius of the WGS84 ellipsoid for the
-        latitude given in sitecoords.
-    ke : float
-        Adjustment factor to account for the refractivity gradient that
-        affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
-        weather radar wavelengths
-
-    Returns
-    -------
-    lon, lat, alt : tuple of :class:`numpy:numpy.ndarray`
-        Three arrays containing the spherical longitude and latitude
-        coordinates as well as the altitude of the beam.
-
-    Note
-    ----
-    The function uses osgeo/gdal functionality to reproject from azimuthal
-    equidistant projection to spherical geographical coordinates.
-    The earth model for this conversion is therefore spherical.
-    This should not introduce too much error for common radar coverages, but
-    you should be aware of this, when trying to do high resolution spatial
-    analyses.
-
-    Examples
-    --------
-
-    A few standard directions (North, South, North, East, South, West) with
-    different distances (amounting to roughly 1°) from a site
-    located at 48°N 9°E
-
-    >>> r  = np.array([0.,   0., 111., 111., 111., 111.,])*1000
-    >>> az = np.array([0., 180.,   0.,  90., 180., 270.,])
-    >>> th = np.array([0.,   0.,   0.,   0.,   0.,  0.5,])
-    >>> csite = (9.0, 48.0)
-    >>> lon1, lat1, alt1 = polar2lonlatalt_n(r, az, th, csite)
-    >>> for x, y, z in zip(lon1, lat1, alt1):
-    ...     print( '{0:7.4f}, {1:7.4f}, {2:7.4f}'.format(x, y, z))
-    ...
-     9.0000, 48.0000,  0.0000
-     9.0000, 48.0000,  0.0000
-     9.0000, 48.9981, 725.7160
-    10.4872, 47.9904, 725.7160
-     9.0000, 47.0017, 725.7160
-     7.5131, 47.9904, 1694.2234
-
-    Here, the coordinates of the east and west directions won't come to lie on
-    the latitude of the site because the beam doesn't travel along the latitude
-    circle but along a great circle.
-
-    See :ref:`notebooks/basics/wradlib_workflow.ipynb#\
-Georeferencing-and-Projection`.
-
-    """
-    r = np.asarray(r)
-    az = np.asarray(az)
-    elev = np.asarray(elev)
-
-    # use wgs84 ellipsoid
-    sph = get_default_projection()
-
-    # coords is calculated via the formulas of Doviak
-    coords = spherical_to_proj(r, az, elev, sitecoords, sph, re=re, ke=ke)
-
-    return coords[..., 0], coords[..., 1], coords[..., 2]
-
-
-def centroid2polyvert(centroid, delta):
+def centroid_to_polyvert(centroid, delta):
     """Calculates the 2-D Polygon vertices necessary to form a rectangular
     polygon around the centroid's coordinates.
 
@@ -542,7 +193,7 @@ def centroid2polyvert(centroid, delta):
                List of 2-D coordinates of the center point of the rectangle.
     delta :    scalar or :class:`numpy:numpy.ndarray`
                Symmetric distances of the vertices from the centroid in each
-               direction. If `delta` is scalar, it is assumed to apply to
+               direction. If ``delta`` is scalar, it is assumed to apply to
                both dimensions.
 
     Returns
@@ -554,19 +205,19 @@ def centroid2polyvert(centroid, delta):
     ----
     The function can currently only deal with 2-D data (If you come up with a
     higher dimensional version of 'clockwise' you're welcome to add it).
-    The data is then assumed to be organized within the `centroid` array with
+    The data is then assumed to be organized within the ``centroid`` array with
     the last dimension being the 2-D coordinates of each point.
 
     Examples
     --------
 
-    >>> centroid2polyvert([0., 1.], [0.5, 1.5])
+    >>> centroid_to_polyvert([0., 1.], [0.5, 1.5])
     array([[-0.5, -0.5],
            [-0.5,  2.5],
            [ 0.5,  2.5],
            [ 0.5, -0.5],
            [-0.5, -0.5]])
-    >>> centroid2polyvert(np.arange(4).reshape((2,2)), 0.5)
+    >>> centroid_to_polyvert(np.arange(4).reshape((2,2)), 0.5)
     array([[[-0.5,  0.5],
             [-0.5,  1.5],
             [ 0.5,  1.5],
@@ -597,108 +248,18 @@ def centroid2polyvert(centroid, delta):
     return np.asanyarray(centroid)[..., None, :] + d * np.asanyarray(delta)
 
 
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version,
-            details="Use :func:`spherical_to_polyvert` instead.")
-def polar2polyvert(r, az, sitecoords):
-    """
-    Generate 2-D polygon vertices directly from polar coordinates.
-
-    This is an alternative to :meth:`~wradlib.georef.centroid2polyvert` which
-    does not use centroids, but generates the polygon vertices by simply
-    connecting the corners of the radar bins.
-
-    Both azimuth and range arrays are assumed to be equidistant and to contain
-    only unique values. For further information refer to the documentation of
-    :meth:`~wradlib.georef.polar2lonlat`.
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]; r defines the exterior boundaries of the range
-        bins! (not the centroids). Thus, values must be positive!
-    az : :class:`numpy:numpy.ndarray`
-        Array of azimuth angles containing values between 0° and 360°.
-        The angles are assumed to describe the pointing direction fo the main
-        beam lobe!
-        The first angle can start at any values, but make sure the array is
-        sorted continuously positively clockwise and the angles are
-        equidistant. An angle if 0 degree is pointing north.
-    sitecoords : a sequence of two floats
-        the lon / lat coordinates of the radar location
-
-    Returns
-    -------
-    output : :class:`numpy:numpy.ndarray`
-        A 3-d array of polygon vertices in lon/lat with shape(num_vertices,
-        num_vertex_nodes, 2). The last dimension carries the longitudes on
-        the first position, the latitudes on the second (lon: output[:,:,0],
-        lat: output[:,:,1]
-
-    Examples
-    --------
-    >>> import wradlib.georef as georef  # noqa
-    >>> import numpy as np
-    >>> import matplotlib as mpl
-    >>> import matplotlib.pyplot as pl
-    >>> #pl.interactive(True)
-    >>> # define the polar coordinates and the site coordinates in lat/lon
-    >>> r = np.array([50., 100., 150., 200.])
-    >>> # _check_polar_coords fails in next line
-    >>> # az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
-    >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
-    >>> sitecoords = (9.0, 48.0)
-    >>> polygons = georef.polar2polyvert(r, az, sitecoords)
-    >>> # plot the resulting mesh
-    >>> fig = pl.figure()
-    >>> ax = fig.add_subplot(111)
-    >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)  # noqa
-    >>> polycoll = mpl.collections.PolyCollection(polygons,closed=True, facecolors='None')  # noqa
-    >>> ret = ax.add_collection(polycoll, autolim=True)
-    >>> pl.autoscale()
-    >>> pl.show()
-
-    """
-    # prepare the range and azimuth array so they describe the boundaries of
-    # a bin, not the centroid
-    r, az = _check_polar_coords(r, az)
-    r = np.insert(r, 0, r[0] - _get_range_resolution(r))
-    az = az - 0.5 * _get_azimuth_resolution(az)
-    az = np.append(az, az[0])
-    az = np.where(az < 0, az + 360., az)
-
-    # generate a grid of polar coordinates of bin corners
-    r, az = np.meshgrid(r, az)
-    # convert polar coordinates to lat/lon
-    lon, lat = polar2lonlat(r, az, sitecoords)
-
-    llc = np.transpose(np.vstack((lon[:-1, :-1].ravel(),
-                                  lat[:-1, :-1].ravel())))
-    ulc = np.transpose(np.vstack((lon[:-1, 1:].ravel(),
-                                  lat[:-1, 1:].ravel())))
-    urc = np.transpose(np.vstack((lon[1:, 1:].ravel(),
-                                  lat[1:, 1:].ravel())))
-    lrc = np.transpose(np.vstack((lon[1:, :-1].ravel(),
-                                  lat[1:, :-1].ravel())))
-
-    vertices = np.concatenate((llc, ulc, urc, lrc, llc)).reshape((-1, 5, 2),
-                                                                 order='F')
-
-    return vertices
-
-
 def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     """
     Generate 3-D polygon vertices directly from spherical coordinates
     (r, phi, theta).
 
-    This is an alternative to :meth:`~wradlib.georef.centroid2polyvert` which
-    does not use centroids, but generates the polygon vertices by simply
+    This is an alternative to :func:`~wradlib.georef.centroid_to_polyvert`
+    which does not use centroids, but generates the polygon vertices by simply
     connecting the corners of the radar bins.
 
     Both azimuth and range arrays are assumed to be equidistant and to contain
     only unique values. For further information refer to the documentation of
-    :meth:`~wradlib.georef.spherical_to_xyz`.
+    :func:`~wradlib.georef.spherical_to_xyz`.
 
     Parameters
     ----------
@@ -780,67 +341,6 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
         return vertices, rad
     else:
         return vertices
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version,
-            details="Use :func:`spherical_to_centroids` instead.")
-def polar2centroids(r=None, az=None, sitecoords=None, range_res=None):
-    """
-    Computes the lat/lon centroids of the radar bins from the polar
-    coordinates.
-
-    Both azimuth and range arrays are assumed to be equidistant and to contain
-    only unique values. The ranges are assumed to define the exterior
-    boundaries of the range bins (thus they must be positive). The angles are
-    assumed to describe the pointing direction fo the main beam lobe.
-
-    For further information refer to the documentation of
-    :meth:`~wradlib.georef.polar2lonlat`.
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]; r defines the exterior boundaries of the range
-        bins! (not the centroids). Thus, values must be positive!
-    az : :class:`numpy:numpy.ndarray`
-        Array of azimuth angles containing values between 0° and 360°.
-        The angles are assumed to describe the pointing direction fo the main
-        beam lobe!
-        The first angle can start at any values, but make sure the array is
-        sorted continuously positively clockwise and the angles are
-        equidistant. An angle if 0 degree is pointing north.
-    sitecoords : a sequence of two floats
-        the lon / lat coordinates of the radar location
-    range_res : float
-        range resolution of radar measurement [m] in case it cannot be derived
-        from r (single entry in r-array)
-
-    Returns
-    -------
-    output : tuple
-        Tuple of 2 :class:`numpy:numpy.ndarray` which describe the bin
-        centroids longitude and latitude.
-
-    Note
-    ----
-    Azimuth angles of 360 deg are internally converted to 0 deg.
-
-    """
-    # make sure the range and azimuth angles have the right properties
-    r, az = _check_polar_coords(r, az)
-
-    # to get the centroid, we only have to move the exterior bin boundaries by
-    # half the resolution
-    if range_res:
-        r = r - 0.5 * range_res
-    else:
-        r = r - 0.5 * _get_range_resolution(r)
-    # generate a polar grid and convert to lat/lon
-    r, az = np.meshgrid(r, az)
-    lon, lat = polar2lonlat(r, az, sitecoords)
-
-    return lon, lat
 
 
 def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
@@ -990,43 +490,6 @@ def _get_azimuth_resolution(x):
         raise ValueError('The resolution of the azimuth angle array '
                          'is ambiguous.')
     return res[0]
-
-
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version,
-            details="Use :func:`spherical_to_centroids` instead.")
-def projected_bincoords_from_radarspecs(r, az, sitecoords, proj,
-                                        range_res=None):
-    """
-    Convenience function to compute projected bin coordinates directly from
-    radar site coordinates and range/azimuth specs
-
-    .. versionchanged:: 0.6.0
-       using osr objects instead of PROJ.4 strings
-
-    Parameters
-    ----------
-    r : :class:`numpy:numpy.ndarray`
-        Array of ranges [m]; r defines the exterior boundaries of the range
-        bins! (not the centroids). Thus, values must be positive!
-    az : :class:`numpy:numpy.ndarray`
-    sitecoords : tuple
-        array of azimuth angles containing values between 0° and 360°.
-        The angles are assumed to describe the pointing direction fo the main
-        beam lobe! The first angle can start at any values, but make sure the
-        array is sorted continuously positively clockwise and the angles are
-        equidistant. An angle if 0 degree is pointing north.
-    proj : osr.SpatialReference
-        GDAL OSR Spatial Reference Object describing projection
-    range_res : float
-        range resolution of radar measurement [m] in case it cannot be derived
-        from r (single entry in r-array)
-
-    """
-    cent_lon, cent_lat = polar2centroids(r, az, sitecoords,
-                                         range_res=range_res)
-    x, y = reproject(cent_lon, cent_lat, projection_target=proj)
-    return x.ravel(), y.ravel()
 
 
 def sweep_centroids(nrays, rscale, nbins, elangle):
