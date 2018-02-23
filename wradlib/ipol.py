@@ -394,7 +394,8 @@ def parse_covariogram(cov_model):
                 re.compile(r'([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'),  # matern
                 re.compile(r'([\d\.]+) Pow\(([\d\.]+)\)'),  # power
                 # cauchy
-                re.compile(r'([\d\.]+) Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),
+                re.compile(r'([\d\.]+) Cau\(([\d\.]+)\)'
+                           r'\^([\d\.]+)\^([\d\.]+)'),
                 ]
 
     cov_funs = [cov_nug,

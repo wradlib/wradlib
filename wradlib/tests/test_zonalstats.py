@@ -198,7 +198,7 @@ class ZonalDataTest(unittest.TestCase):
                                          [2600197.20644071, 5630100.]])])
 
         isec_point0 = np.array([[2600077.2899581, 5630056.0874306]])
-        isec_point1 = np.array([[2600172.498418 , 5630086.7127034]])
+        isec_point1 = np.array([[2600172.498418, 5630086.7127034]])
 
         self.isec_poly = np.array([isec_poly0, isec_poly1])
         self.isec_point = np.array([isec_point0, isec_point1])

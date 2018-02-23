@@ -32,11 +32,12 @@ matrix:
         - COVERAGE="true"
 
 install:
+    - pip install flake8
+    - flake8 .
     - deactivate
     - source scripts/install.sh
 
 before_script:
-    - flake8 .
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
     - export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/notebooks-render

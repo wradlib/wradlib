@@ -498,8 +498,8 @@ class AdjustMixed(AdjustBase):
     The least squares implementation uses the equation for the error model plus
     the condition to minimize (:math:`\\delta^2 + \\epsilon^2`) for each gage
     location. The idea behind this is that :math:`\\epsilon` dominates the
-    adjustment for small deviations between radar and gage while :math:`\\delta`
-    dominates in case of large deviations.
+    adjustment for small deviations between radar and gage while
+    :math:`\\delta` dominates in case of large deviations.
 
     **Usage**:
     First, an instance of AdjustMixed has to be created. Calling this instance
