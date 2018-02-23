@@ -62,7 +62,9 @@ if [ $TRAVIS_SECURE_ENV_VARS == 'true' ]; then
 
     # get tagged versions from cloned repo
     cd $DOCS_REPO
-    TAGGED_VERSIONS=`for f in [0-9]*; do echo "$f"; done `
+    #TAGGED_VERSIONS=`for f in [0-9]*; do echo "$f"; done `
+    TAGGED_VERSIONS=`find . -type d -regex '\./[0-9]+.[0-9]+.[0-9]+'`
+    TAGGED_VERSIONS=`for f in $TAGGED_VERSIONS; do echo "${f##*/}"; done`
     cd ..
     # export variable, used in conf.py
     echo "TAGGED_VERSIONS " $TAGGED_VERSIONS
