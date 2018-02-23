@@ -57,7 +57,7 @@ class MissingTargetsError(Exception):
     pass
 
 
-class IpolBase():
+class IpolBase:
     """
     IpolBase(src, trg)
 
@@ -108,6 +108,8 @@ class IpolBase():
         assert len(vals) == self.numsources, \
             ('Length of value array %d does not correspond to number '
              'of source points %d' % (len(vals), self.numsources))
+        self.valsshape = vals.shape
+        self.valsndim = vals.ndim
 
     def _make_coord_arrays(self, x):
         """
@@ -200,6 +202,14 @@ class Nearest(IpolBase):
         """
         Evaluate interpolator for values given at the source points.
 
+        You can interpolate multiple datasets of source values (`vals`) at
+        once: the `vals` array should have the shape (number of source points,
+        number of source datasets). If you want to interpolate only one set
+        of source values, `vals` can have the shape (number of source points,
+        1) or just (number of source points,) - which is a flat/1-D array.
+        The output will have the same number of dimensions as `vals`, i.e.
+        it will be a flat 1-D array in case `vals` is a 1-D array.
+
         Parameters
         ----------
         vals : ndarray of float, shape (numsourcepoints, ...)
@@ -278,6 +288,14 @@ class Idw(IpolBase):
     def __call__(self, vals):
         """
         Evaluate interpolator for values given at the source points.
+
+        You can interpolate multiple datasets of source values (`vals`) at
+        once: the `vals` array should have the shape (number of source points,
+        number of source datasets). If you want to interpolate only one set
+        of source values, `vals` can have the shape (number of source points,
+        1) or just (number of source points,) - which is a flat/1-D array.
+        The output will have the same number of dimensions as `vals`, i.e.
+        it will be a flat 1-D array in case `vals` is a 1-D array.
 
         Parameters
         ----------
@@ -364,6 +382,14 @@ class Linear(IpolBase):
     def __call__(self, vals, fill_value=np.nan):
         """
         Evaluate interpolator for values given at the source points.
+
+        You can interpolate multiple datasets of source values (`vals`) at
+        once: the `vals` array should have the shape (number of source points,
+        number of source datasets). If you want to interpolate only one set
+        of source values, `vals` can have the shape (number of source points,
+        1) or just (number of source points,) - which is a flat/1-D array.
+        The output will have the same number of dimensions as `vals`, i.e.
+        it will be a flat 1-D array in case `vals` is a 1-D array.
 
         Parameters
         ----------
@@ -641,6 +667,14 @@ class OrdinaryKriging(IpolBase):
         """
         Evaluate interpolator for values given at the source points.
 
+        You can interpolate multiple datasets of source values (`vals`) at
+        once: the `vals` array should have the shape (number of source points,
+        number of source datasets). If you want to interpolate only one set
+        of source values, `vals` can have the shape (number of source points,
+        1) or just (number of source points,) - which is a flat/1-D array.
+        The output will have the same number of dimensions as `vals`, i.e.
+        it will be a flat 1-D array in case `vals` is a 1-D array.
+
         Parameters
         ----------
         vals : ndarray of float, shape (numsourcepoints, numfields)
@@ -662,7 +696,10 @@ class OrdinaryKriging(IpolBase):
         ip = np.add.reduce(weights[:, :-1, np.newaxis] * v[self.ix, ...],
                            axis=1)
 
-        return ip
+        if vals.ndim == 1:
+            return ip.ravel()
+        else:
+            return ip
 
 
 class ExternalDriftKriging(IpolBase):
@@ -796,6 +833,14 @@ class ExternalDriftKriging(IpolBase):
         """
         Evaluate interpolator for values given at the source points.
 
+        You can interpolate multiple datasets of source values (`vals`) at
+        once: the `vals` array should have the shape (number of source points,
+        number of source datasets). If you want to interpolate only one set
+        of source values, `vals` can have the shape (number of source points,
+        1) or just (number of source points,) - which is a flat/1-D array.
+        The output will have the same number of dimensions as `vals`, i.e.
+        it will be a flat 1-D array in case `vals` is a 1-D array.
+
         Parameters
         ----------
         vals : ndarray of float, shape (numsourcepoints, numfields)
@@ -863,7 +908,10 @@ class ExternalDriftKriging(IpolBase):
                 self.weights.append(weights)
                 self.estimation_variance.append(variances)
 
-        return ip
+        if vals.ndim == 1:
+            return ip.ravel()
+        else:
+            return ip
 
 
 # -----------------------------------------------------------------------------
