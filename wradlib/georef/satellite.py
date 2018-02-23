@@ -16,11 +16,6 @@ Satellite Functions
    dist_from_orbit
 """
 import numpy as np
-import deprecation
-from deprecation import deprecated
-from ..version import short_version
-
-deprecation.message_location = "top"
 
 
 def correct_parallax(sr_xy, nbin, drt, alpha):
@@ -33,8 +28,6 @@ def correct_parallax(sr_xy, nbin, drt, alpha):
     azimuthal equidistant projection of the ground radar. This ensures that the
     ground radar is fixed at xy-coordinate (0, 0), and every SR bin has its
     relative xy-coordinates with respect to the ground radar site.
-
-    .. versionadded:: 0.10.0
 
     Parameters
     ----------
@@ -92,74 +85,11 @@ def correct_parallax(sr_xy, nbin, drt, alpha):
     return np.stack((sr_xp, sr_yp), axis=3), r_sr_inv, z_sr
 
 
-@deprecated(deprecated_in="0.11.3", removed_in="1.0.0",
-            current_version=short_version,
-            details="Use :func:`xyz_to_spherical` instead.")
-def sat2pol(pr_xyz, gr_site_alt, re):
-    """Returns spherical coordinates of PR bins as seen from the GR location.
-
-    With *PR*, we refer to precipitation radars based on space-born platforms
-    such as TRMM or GPM. With *GR*, we refer to terrestrial weather radars
-    (ground radars).
-
-    For this function to work, the `pr_xyz` coordinates of the PR bins need
-    to be in the azimuthal equidistant projection of the ground radar! This
-    ensures that the ground radar is fixed at xy-coordinate (0, 0), and every
-    PR bin has its relative xy-coordinates with respect to the ground radar
-    site.
-
-    .. versionadded:: 0.10.0
-
-    Parameters
-    ----------
-    pr_xyz : :class:`numpy:numpy.ndarray`
-        Array of shape (nscans, nbeams, nbins, 3). Contains corrected
-        PR xy coordinates in GR azimuthal equidistant projection and altitude
-    gr_site_alt : float
-        Altitude of the GR site (in meters)
-    re : float
-        Effective Earth radius at GR site (in meters)
-
-    Returns
-    -------
-    r : :class:`numpy:numpy.ndarray`
-        Array of shape (nscans, nbeams, nbins). Contains the slant
-        distance of PR bins from GR site.
-    theta: :class:`numpy:numpy.ndarray`
-        Array of shape (nscans, nbeams, nbins). Contains the elevation
-        angle of PR bins as seen from GR site.
-    phi : :class:`numpy:numpy.ndarray`
-        Array of shape (nscans, nbeams, nbins). Contains the azimuth
-        angles of PR bins as seen from GR site.
-    """
-    # calculate arc length
-    s = np.sqrt(np.sum(pr_xyz[..., 0:2] ** 2, axis=-1))
-
-    # calculate arc angle
-    gamma = s / re
-
-    # calculate theta (elevation-angle)
-    numer = np.cos(gamma) - (re + gr_site_alt) / (re + pr_xyz[..., 2])
-    denom = np.sin(gamma)
-    theta = np.rad2deg(np.arctan(numer / denom))
-
-    # calculate SlantRange r
-    r = (re + pr_xyz[..., 2]) * denom / np.cos(np.deg2rad(theta))
-
-    # calculate Azimuth phi
-    phi = 90 - np.rad2deg(np.arctan2(pr_xyz[..., 1], pr_xyz[..., 0]))
-    phi[phi <= 0] += 360
-
-    return r, theta, phi
-
-
 def dist_from_orbit(sr_alt, alpha, beta, r_sr_inv, re):
     """Returns range distances of SR bins (in meters) as seen from the orbit
 
     With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
-
-    .. versionadded:: 0.10.0
 
     Parameters
     ----------

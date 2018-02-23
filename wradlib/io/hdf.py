@@ -137,8 +137,6 @@ def read_OPERA_hdf5(fname):
 def read_gamic_scan_attributes(scan, scan_type):
     """Read attributes from one particular scan from a GAMIC hdf5 file
 
-    Provided by courtesy of Kai Muehlbauer (University of Bonn).
-
     Parameters
     ----------
     scan : object
@@ -220,8 +218,6 @@ def read_gamic_scan_attributes(scan, scan_type):
 def read_gamic_scan(scan, scan_type, wanted_moments):
     """Read data from one particular scan from GAMIC hdf5 file
 
-    Provided by courtesy of Kai Muehlbauer (University of Bonn).
-
     Parameters
     ----------
     scan : object
@@ -283,11 +279,10 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
 
 
 def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
-    """Data reader for hdf5 files produced by the commercial
+    """Data reader for hdf5 files produced by the commercial \
     GAMIC Enigma V3 MURAN software
 
-    Provided by courtesy of Kai Muehlbauer (University of Bonn). See GAMIC
-    homepage for further info (http://www.gamic.com).
+    See GAMIC homepage for further info (https://www.gamic.com).
 
     Parameters
     ----------

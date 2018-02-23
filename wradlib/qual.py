@@ -159,8 +159,6 @@ def pulse_volume(ranges, h, theta):
 def beam_block_frac(Th, Bh, a):
     """Partial beam blockage fraction.
 
-    .. versionadded:: 0.6.0
-
     Note
     ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
@@ -221,8 +219,6 @@ def cum_beam_block_frac(pbb):
     along a beam will always be at least as high as the maximum PBB of the
     preceeding bins.
 
-    .. versionadded:: 0.10.0
-
     Parameters
     ----------
     pbb : :class:`numpy:numpy.ndarray`
@@ -275,8 +271,6 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     width, as well as quality flags of the SR beams. A BB ratio of <= 0
     indicates that a bin is located below the melting layer (ML), >=1
     above the ML, and in between 0 and 1 inside the ML.
-
-    .. versionadded:: 0.10.0
 
     Parameters
     ----------

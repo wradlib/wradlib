@@ -22,8 +22,8 @@ for an introduction on how to deal with different file formats.
 """
 
 from .misc import (writePolygon2Text,  to_pickle, from_pickle)
-from .gdal import (read_safnwc, write_raster_dataset,
-                   open_shape, open_vector, open_raster, gdal_create_dataset)
+from .gdal import (read_safnwc, write_raster_dataset, open_vector, open_raster,
+                   gdal_create_dataset)
 from .hdf import (read_generic_hdf5, read_OPERA_hdf5, read_GAMIC_hdf5,
                   to_hdf5, from_hdf5, read_gpm, read_trmm)
 from .netcdf import read_EDGE_netcdf, read_generic_netcdf

@@ -7,43 +7,11 @@ import numpy as np
 import wradlib.util as util
 import unittest
 import datetime as dt
-from deprecation import fail_if_not_removed
 
 
 class HelperFunctionsTest(unittest.TestCase):
-    @fail_if_not_removed
-    def test__get_func(self):
-        self.assertEqual(util._get_func('arange').__class__,
-                         np.arange.__class__)
-        self.assertEqual(util._get_func('arange').__module__,
-                         np.arange.__module__)
-        self.assertRaises(AttributeError, lambda: util._get_func('aranged'))
-
     def test__shape2size(self):
         self.assertEqual(util._shape2size((10, 10, 10)), 10 * 10 * 10)
-
-    @fail_if_not_removed
-    def test__tdelta2seconds(self):
-        self.assertEqual(util._tdelta2seconds(dt.datetime(2001, 1, 1, 1) -
-                                              dt.datetime(2000, 1, 1)),
-                         366 * 24 * 60 * 60 + 3600)
-        self.assertEqual(util._tdelta2seconds(dt.datetime(2002, 1, 1, 1) -
-                                              dt.datetime(2001, 1, 1)),
-                         365 * 24 * 60 * 60 + 3600)
-
-    @fail_if_not_removed
-    def test__get_tdelta(self):
-        tstart = dt.datetime(2000, 1, 1)
-        tend = dt.datetime(2001, 1, 1, 1)
-        tstart_str = "2000-01-01 00:00:00"
-        tend_str = "2001-01-01 01:00:00"
-        self.assertEqual(util._get_tdelta(tstart, tend), tend - tstart)
-        self.assertEqual(util._get_tdelta(tstart_str, tend_str), tend - tstart)
-        self.assertRaises(ValueError,
-                          lambda: util._get_tdelta(tstart_str,
-                                                   tend_str + ".00000"))
-        self.assertEqual(util._get_tdelta(tstart_str, tend_str, as_secs=True),
-                         366 * 24 * 60 * 60 + 3600)
 
     def test__idvalid(self):
         data = np.array(

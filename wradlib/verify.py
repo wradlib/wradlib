@@ -42,9 +42,6 @@ class PolarNeighbours():
     Second, use the method *extract* in order to extract the values from a data
     array which corresponds to the polar coordinates.
 
-    .. versionchanged:: 0.5.0
-       using osr objects instead of PROJ.4 strings as parameter
-
     Parameters
     ----------
     r : :class:`numpy:numpy.ndarray`
@@ -78,12 +75,12 @@ class PolarNeighbours():
         self.r = r
         self.x = x
         self.y = y
-        # compute the centroid coordinates in lat/lon
-        bin_lon, bin_lat = georef.polar2centroids(r, az, sitecoords)
-        # reproject the centroids to cartesian map coordinates
-        binx, biny = georef.reproject(bin_lon, bin_lat,
-                                      projection_target=proj)
-        self.binx, self.biny = binx.ravel(), biny.ravel()
+        # compute the centroid coordinates in proj
+        bin_coords = georef.spherical_to_centroids(r, az, 0,
+                                                   sitecoords,
+                                                   proj=proj)
+        self.binx = bin_coords[..., 0].ravel()
+        self.biny = bin_coords[..., 1].ravel()
         # compute the KDTree
         tree = KDTree(list(zip(self.binx, self.biny)))
         # query the tree for nearest neighbours

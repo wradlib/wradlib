@@ -43,8 +43,6 @@ class s2ku():
 
     From S-band (2.8GHz) to Ku-band (13.8GHz)
 
-    .. versionadded:: 0.10.0
-
     See :cite:`Liao2009` for reference.
     """
     snow = np.array([0.185074, 1.01378, -0.00189212])
@@ -55,8 +53,6 @@ class ku2s():
     """ Class to hold coefficients for Radar Reflectivity Conversion
 
     From Ku-band (13.8 GHz) to S-band (2.8 GHz)
-
-    .. versionadded:: 0.10.0
 
     See :cite:`Cao2013` for reference.
 
@@ -111,7 +107,7 @@ def rvp2dBZ(x):
 def decibel(x):
     """Calculates the decibel representation of the input values
 
-    :math:`dBZ=10 \cdot \log_{10} z`
+    :math:`dBZ=10 \\cdot \\log_{10} z`
 
     Parameters
     ----------
@@ -130,7 +126,7 @@ def decibel(x):
 def idecibel(x):
     """Calculates the inverse of input decibel values
 
-    :math:`z=10^{x \over 10}`
+    :math:`z=10^{x \\over 10}`
 
     Parameters
     ----------
@@ -207,8 +203,6 @@ def kdp2r(kdp, f, a=129., b=0.85):
 def si2kmh(vals):
     """Conversion from SI wind speed units to km/hr.
 
-    .. versionadded:: 0.6.0
-
     Note
     ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
@@ -236,8 +230,6 @@ def si2kmh(vals):
 
 def si2mph(vals):
     """Conversion from SI wind speed units to miles/hr
-
-    ..versionadded:: 0.6.0
 
     Note
     ----
@@ -268,8 +260,6 @@ def si2mph(vals):
 def si2kts(vals):
     """Conversion from SI wind speed units to knots
 
-    ..versionadded:: 0.6.0
-
     Note
     ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
@@ -298,8 +288,6 @@ def si2kts(vals):
 
 def kmh2si(vals):
     """Conversion from km/hr to SI wind speed units
-
-    ..versionadded:: 0.6.0
 
     Note
     ----
@@ -330,8 +318,6 @@ def kmh2si(vals):
 def mph2si(vals):
     """Conversion from miles/hr to SI wind speed units
 
-    ..versionadded:: 0.6.0
-
     Note
     ----
     Code was migrated from https://github.com/nguy/PyRadarMet.
@@ -360,8 +346,6 @@ def mph2si(vals):
 
 def kts2si(vals):
     """Conversion from knots to SI wind speed units
-
-    ..versionadded:: 0.6.0
 
     Note
     ----
