@@ -13,11 +13,11 @@ IRIS (Vaisala Sigmet Interactive Radar Information System)
 
 See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
 
-To read from IRIS files numpy.memmap is used to get access to the data.
-The IRIS header (PRODUCT_HDR, INGEST_HEADER) is read in any case into dedicated
-OrderedDict's. Reading sweep data can be skipped by setting `loaddata=False`.
-By default the data is decoded on the fly. Using `rawdata=True` the data will
-be kept undecoded.
+To read from IRIS files :class:`numpy:numpy.memmap` is used to get access to
+the data. The IRIS header (`PRODUCT_HDR`, `INGEST_HEADER`) is read in any case
+into dedicated OrderedDict's. Reading sweep data can be skipped by setting
+`loaddata=False`. By default the data is decoded on the fly.
+Using `rawdata=True` the data will be kept undecoded.
 
 .. autosummary::
    :nosignatures:
@@ -25,6 +25,9 @@ be kept undecoded.
 
    IrisRecord
    IrisFile
+   IrisRawFile
+   IrisProductFile
+   IrisCartesianProductFile
    read_iris
 """
 
@@ -112,7 +115,8 @@ class IrisFile(object):
                 If false, retrievs only ingest_data_headers, but no data.
                 If kwdict, retrieves according to given kwdict::
 
-                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'], 'data': [0, 3, 9]}
+                    loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                                'data': [0, 3, 9]}
         rawdata : bool
             If true, returns raw unconverted/undecoded data.
         debug : bool
@@ -122,6 +126,8 @@ class IrisFile(object):
         self._rawdata = rawdata
         self._loaddata = loaddata
         self._fh = np.memmap(filename, mode='r')
+        self._rh = None
+        self._record_number = None
         self.init_record(0)
 
         # read data headers
@@ -136,10 +142,14 @@ class IrisFile(object):
 
     @property
     def loaddata(self):
+        """Returns `loaddata` switch.
+        """
         return self._loaddata
 
     @property
     def rawdata(self):
+        """Returns `rawdata` switch.
+        """
         return self._rawdata
 
     @property
@@ -148,68 +158,87 @@ class IrisFile(object):
 
     @property
     def fh(self):
+        """Returns file-memmap object.
+        """
         return self._fh
 
     @property
     def rh(self):
+        """Returns current record object.
+        """
         return self._rh
 
     @rh.setter
     def rh(self, value):
+        """Sets current record object.
+        """
         self._rh = value
 
     @property
     def record_number(self):
+        """Returns current record number.
+        """
         return self._record_number
 
     @record_number.setter
     def record_number(self, value):
+        """Sets current record number.
+        """
         self._record_number = value
 
     @property
     def filepos(self):
-        """ Returns current byte position of data file.
+        """Returns current byte position of data file.
         """
         return self._record_number * RECORD_BYTES + int(self._rh.pos)
 
     @property
     def product_hdr(self):
-        """ Returns product_hdr dictionary.
+        """Returns product_hdr dictionary.
         """
         return self._product_hdr
 
     @property
+    def product_type_code(self):
+        """Returns product type code.
+        """
+        return self._product_type_code
+
+    @property
     def product_type(self):
-        """ Returns product type.
+        """Returns product type.
         """
         return PRODUCT_DATA_TYPE_CODES[self._product_type_code]
 
     @property
     def data_type(self):
-        """ Returns product type.
+        """Returns product configuration data type.
         """
         data_type = self.product_hdr['product_configuration']['data_type']
         return SIGMET_DATA_TYPES[data_type]
 
     def get_product_type_code(self):
-        """ Returns product type code
+        """Returns product type code.
         """
         prod_conf = self.product_hdr['product_configuration']
         return prod_conf['product_type_code']
 
     @property
     def filesize(self):
-        """ Returns filesize.
+        """Returns filesize.
         """
         return self.product_hdr['structure_header']['bytes_in_structure']
 
     def _check_record(self):
-        """ Checks record for correct size.
-            Need to be implemented in the drived classes
+        """Checks record for correct size.
+
+        Need to be implemented in the derived classes
         """
         return True
 
     def init_record(self, recnum):
+        """Initialize record using given number.
+        """
         start = recnum * RECORD_BYTES
         stop = start + RECORD_BYTES
         self.record_number = recnum
@@ -217,7 +246,7 @@ class IrisFile(object):
         return self._check_record()
 
     def init_next_record(self):
-        """ Get next record from file.
+        """Get next record from file.
 
         This increases record_number count and initialises a new IrisRecord
         with the calculated start and stop file offsets.
@@ -230,13 +259,7 @@ class IrisFile(object):
         return self.init_record(self.record_number + 1)
 
     def array_from_record(self, words, width, dtype):
-        return self.rh.read(words, width=width).view(dtype=dtype)
-
-    def bytes_from_record(self, words, width):
-        return self.rh.read(words, width=width)
-
-    def read_from_record(self, words, dtype):
-        """ Read from file
+        """Retrieve array from current record.
 
         Parameters
         ----------
@@ -246,6 +269,41 @@ class IrisFile(object):
             Size of the data word to read in bytes.
         dtype : str
             dtype string specifying data format.
+
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        return self.rh.read(words, width=width).view(dtype=dtype)
+
+    def bytes_from_record(self, words, width):
+        """Retrieve bytes from current record.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        width : int
+            Size of the data word to read in bytes.
+
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        return self.rh.read(words, width=width)
+
+    def read_from_record(self, words, dtype):
+        """Read from file.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        dtype : str
+            dtype string specifying data format.
+
         Returns
         -------
         data : array-like
@@ -256,13 +314,13 @@ class IrisFile(object):
         words -= len(data)
         while words > 0:
             self.init_next_record()
-            next = self.array_from_record(words, width, dtype)
-            data = np.append(data, next)
-            words -= len(next)
+            next_data = self.array_from_record(words, width, dtype)
+            data = np.append(data, next_data)
+            words -= len(next_data)
         return data
 
     def get_product_specific_info(self):
-        """ Retrieves product specific info"""
+        """Retrieves product specific info"""
         config = self.product_hdr['product_configuration']
         pt = self.product_type
         key = 'product_specific_info'
@@ -278,7 +336,7 @@ class IrisFile(object):
                           stacklevel=3)
 
     def decode_data(self, data, prod):
-        """ Decode data according given prod-dict.
+        """Decode data according given prod-dict.
 
         Parameters
         ----------
@@ -304,7 +362,7 @@ class IrisFile(object):
 
 
 class IrisWrapperFile(IrisFile):
-    """ Class Wrapper for retrieving data from Sigmet IRIS files.
+    """Class Wrapper for retrieving data from Sigmet IRIS files.
     """
 
     def __init__(self, irisfile, **kwargs):
@@ -320,18 +378,18 @@ class IrisWrapperFile(IrisFile):
             super(IrisWrapperFile, self).__init__(irisfile, **kwargs)
 
     def init(self, irisfile):
-        self._debug = irisfile._debug
-        self._rawdata = irisfile._rawdata
-        self._loaddata = irisfile._loaddata
-        self._fh = irisfile._fh
-        self._record_number = irisfile._record_number
-        self._rh = irisfile._rh
+        self._debug = irisfile.debug
+        self._rawdata = irisfile.rawdata
+        self._loaddata = irisfile.loaddata
+        self._fh = irisfile.fh
+        self._record_number = irisfile.record_number
+        self._rh = irisfile.rh
 
         # read data headers
-        self._product_hdr = irisfile._product_hdr
+        self._product_hdr = irisfile.product_hdr
 
         # determine product type contained in the file
-        self._product_type_code = irisfile._product_type_code
+        self._product_type_code = irisfile.product_type_code
 
     @property
     def data(self):
@@ -344,7 +402,7 @@ class IrisWrapperFile(IrisFile):
 
 
 class IrisRawFile(IrisWrapperFile):
-    """ Class for retrieving data from Sigmet IRIS files.
+    """Class for retrieving data from Sigmet IRIS RAW files.
     """
 
     def __init__(self, irisfile, **kwargs):
@@ -355,7 +413,6 @@ class IrisRawFile(IrisWrapperFile):
             class instance handle
         """
         super(IrisRawFile, self).__init__(irisfile, **kwargs)
-
         self.init_record(1)
         self._ingest_header = _unpack_dictionary(
             self.bytes_from_record(LEN_INGEST_HEADER, width=1),
@@ -373,61 +430,61 @@ class IrisRawFile(IrisWrapperFile):
 
     @property
     def ingest_header(self):
-        """ Returns ingest_header dictionary.
+        """Returns `ingest_header` dictionary.
         """
         return self._ingest_header
 
     @property
     def raw_product_bhdrs(self):
-        """ Returns raw_product_bhdrs dictionary.
+        """Returns `raw_product_bhdrs` dictionary.
         """
         return self._raw_product_bhdrs
 
     @property
     def sweeps(self):
-        """ Returns dictionary of retrieved sweeps.
+        """Returns dictionary of retrieved sweeps.
         """
         return self._data
 
     @property
     def nsweeps(self):
-        """ Returns number of sweeps.
+        """Returns number of sweeps.
         """
         head = self._ingest_header['task_configuration']['task_scan_info']
         return head['sweep_number']
 
     @property
     def nbins(self):
-        """ Returns number of bins.
+        """Returns number of bins.
         """
         return self._product_hdr['product_end']['number_bins']
 
     @property
     def nrays(self):
-        """ Returns number of rays.
+        """Returns number of rays.
         """
         return self._ingest_header['ingest_configuration']['number_rays_sweep']
 
     @property
     def data_types(self):
-        """ Returns list of data type dictionaries.
+        """Returns list of data type dictionaries.
         """
         return [SIGMET_DATA_TYPES[i] for i in self._data_types_numbers]
 
     @property
     def data_types_count(self):
-        """ Returns number of data types.
+        """Returns number of data types.
         """
         return len(self._data_types_numbers)
 
     @property
     def data_types_names(self):
-        """ Returns list of data type names.
+        """Returns list of data type names.
         """
         return [SIGMET_DATA_TYPES[i]['name'] for i in self._data_types_numbers]
 
     def _check_record(self):
-        """ Checks record for correct size.
+        """Checks record for correct size.
 
         Returns
         -------
@@ -448,7 +505,7 @@ class IrisRawFile(IrisWrapperFile):
         return chk
 
     def read_from_record(self, words, dtype):
-        """ Read from file
+        """Read from record/file.
 
         Parameters
         ----------
@@ -475,7 +532,7 @@ class IrisRawFile(IrisWrapperFile):
         return data
 
     def get_compression_code(self):
-        """ Read and return data compression code.
+        """Read and return data compression code.
 
         Returns
         -------
@@ -494,7 +551,7 @@ class IrisRawFile(IrisWrapperFile):
         return cmp_msb, cmp_val
 
     def get_data_types(self):
-        """ Returns the available data types.
+        """Returns the available data types.
         """
         # determine the available fields
         task_config = self._ingest_header['task_configuration']
@@ -507,7 +564,7 @@ class IrisRawFile(IrisWrapperFile):
         return _data_types_from_dsp_mask([word0, word1, word2, word3])
 
     def get_task_type_scan_info(self):
-        """ Retrieves task type info"""
+        """Retrieves task type info"""
         task_info = self._ingest_header['task_configuration']['task_scan_info']
         mode = task_info['antenna_scan_mode']
         key = 'task_type_scan_info'
@@ -531,13 +588,13 @@ class IrisRawFile(IrisWrapperFile):
             pass
 
     def get_raw_prod_bhdr(self):
-        """ Read and unpack raw product bhdr.
+        """Read and unpack raw product bhdr.
         """
         return _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
                                   RAW_PROD_BHDR, self._rawdata)
 
     def get_ingest_data_headers(self):
-        """ Read and return ingest data headers.
+        """Read and return ingest data headers.
         """
         ingest_data_hdrs = OrderedDict()
         for i, dn in enumerate(self.data_types_names):
@@ -548,7 +605,7 @@ class IrisRawFile(IrisWrapperFile):
         return ingest_data_hdrs
 
     def get_ray(self, data):
-        """ Retrieve single ray.
+        """Retrieve single ray.
 
         Returns
         -------
@@ -597,7 +654,7 @@ class IrisRawFile(IrisWrapperFile):
         return data
 
     def get_sweep(self, moment):
-        """ Retrieve a single sweep.
+        """Retrieve a single sweep.
 
         Parameters
         ----------
@@ -673,7 +730,7 @@ class IrisRawFile(IrisWrapperFile):
         return sweep
 
     def decode_data(self, data, prod):
-        """ Decode data according given prod-dict.
+        """Decode data according given prod-dict.
 
         Parameters
         ----------
@@ -720,7 +777,7 @@ class IrisRawFile(IrisWrapperFile):
             return data
 
     def get_data(self):
-        """ Retrieve all sweeps from file
+        """Retrieve all sweeps from file.
 
         Parameters
         ----------
@@ -729,8 +786,8 @@ class IrisRawFile(IrisWrapperFile):
                 If false, retrievs only ingest_data_headers, but no data.
                 If kwdict, retrieves according to given kwdict::
 
-                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                            'sweep': [0, 3, 9]}
+                    loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                                'sweep': [0, 3, 9]}
         """
         dt_names = [d['name'] for d in self.data_types]
         rsweeps = range(1, self.nsweeps + 1)
@@ -757,7 +814,7 @@ class IrisRawFile(IrisWrapperFile):
             self._data[sw] = self.get_sweep(moment)
 
     def get_data_headers(self):
-        """ Retrieve all sweep ingest_data_headers from file
+        """Retrieve all sweep `ingest_data_header` from file.
         """
         self.init_record(1)
         sw = 0
@@ -780,7 +837,7 @@ class IrisRawFile(IrisWrapperFile):
 
 
 class IrisProductFile(IrisWrapperFile):
-    """ Class for retrieving data from Sigmet IRIS files.
+    """Class for retrieving data from Sigmet IRIS Product files.
     """
 
     def __init__(self, irisfile):
@@ -816,7 +873,7 @@ class IrisProductFile(IrisWrapperFile):
             results[i] = res
 
     def get_data(self):
-        """ Retrieves cartesian data from file
+        """Retrieves cartesian data from file.
         """
         # set filepointer accordingly
         self.init_record(0)
@@ -877,7 +934,7 @@ class IrisProductFile(IrisWrapperFile):
 
 
 class IrisCartesianProductFile(IrisWrapperFile):
-    """ Class for retrieving data from Sigmet IRIS files.
+    """ Class for retrieving data from Sigmet IRIS Cartesian Product files.
     """
 
     def __init__(self, irisfile):
@@ -903,9 +960,10 @@ class IrisCartesianProductFile(IrisWrapperFile):
 
     def get_extended_header(self):
         # hack, get from actual position to end of record
-        ext = self._rh.record[self._rh._pos:]
+        ext = self.rh.record[self.rh.pos:]
         if len(ext) == 0:
             return False
+        # extended header token
         search = [0x00, 0xff]
         ext = np.where((ext[:-1] == search[0]) & (ext[1:] == search[1]))[0][0]
         EXTENDED_HEADER = OrderedDict([('extended_header', string_dict(ext))])
@@ -927,7 +985,19 @@ class IrisCartesianProductFile(IrisWrapperFile):
         return ext_hdr
 
     def get_image(self, header):
-        print(header)
+        """Retrieve cartesian image.
+
+        Parameters
+        ----------
+        header : dict
+            header dictionary
+
+        Returns
+        -------
+        data : :class:`numpy:numpy.ndarray`
+            3D array of cartesian data
+
+        """
         prod = SIGMET_DATA_TYPES[header.get('data_type')]
         x_size = header.get('x_size')
         y_size = header.get('y_size')
@@ -939,7 +1009,7 @@ class IrisCartesianProductFile(IrisWrapperFile):
         return np.flip(data, axis=1)
 
     def get_data(self):
-        """ Retrieves cartesian data from file
+        """ Retrieves cartesian data from file.
         """
         # set filepointer accordingly
         self.init_record(0)
@@ -969,7 +1039,7 @@ class IrisCartesianProductFile(IrisWrapperFile):
 
 
 def read_iris(filename, loaddata=True, rawdata=False, debug=False):
-    """ Read Iris file and return dictionary.
+    """Read Iris file and return dictionary.
 
     Parameters
     ----------
@@ -1026,10 +1096,34 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
 
 
 def get_dtype_size(dtype):
-    return np.zeros((1), dtype=dtype).dtype.itemsize
+    """Return size in byte of given ``dtype``.
+
+    Parameters
+    ----------
+    dtype : str
+        dtype string
+
+    Returns
+    -------
+    size : int
+        dtype size in byte
+    """
+    return np.zeros(1, dtype=dtype).dtype.itemsize
 
 
 def to_float(data):
+    """Decode floating point value.
+
+    Parameters
+    ----------
+    data : int
+        encoded data
+
+    Returns
+    -------
+    decoded : float
+        decoded floating point data
+    """
     exp = data >> 12
     mantissa = (data & 0xfff).astype(np.float)
     return mantissa * 2 ** exp
@@ -1038,13 +1132,13 @@ def to_float(data):
 # TODO: mask nodata and area not scanned
 
 def decode_bin_angle(bin_angle, mode=None):
-    """ Decode BIN angle
+    """Decode BIN angle.
     """
     return 360. * bin_angle / 2 ** (mode * 8)
 
 
 def decode_array(data, scale=1., offset=0, offset2=0, tofloat=False):
-    """ Decode data array
+    """Decode data array.
 
     .. math::
 
@@ -1058,6 +1152,7 @@ def decode_array(data, scale=1., offset=0, offset2=0, tofloat=False):
     scale : int
     offset: int
     offset2: int
+    tofloat: bool
 
     Returns
     -------
@@ -1075,7 +1170,7 @@ def decode_rainrate2(data):
 
 
 def decode_vel(data, **kwargs):
-    """ Decode DB_VEL
+    """Decode `DB_VEL`.
 
     See 4.4.46 p.85
     """
@@ -1084,7 +1179,7 @@ def decode_vel(data, **kwargs):
 
 
 def decode_width(data, **kwargs):
-    """ Decode DB_WIDTH
+    """Decode `DB_WIDTH`.
 
     See 4.4.50 p.87
     """
@@ -1093,7 +1188,7 @@ def decode_width(data, **kwargs):
 
 
 def decode_kdp(data, **kwargs):
-    """ Decode DB_KDP
+    """Decode `DB_KDP`.
 
     See 4.4.20 p.77
     """
@@ -1106,7 +1201,7 @@ def decode_kdp(data, **kwargs):
 
 
 def decode_phidp(data, **kwargs):
-    """ Decode DB_PHIDP
+    """Decode `DB_PHIDP`.
 
     See 4.4.28 p.79
     """
@@ -1114,7 +1209,7 @@ def decode_phidp(data, **kwargs):
 
 
 def decode_phidp2(data, **kwargs):
-    """ Decode DB_PHIDP2
+    """Decode `DB_PHIDP2`.
 
     See 4.4.29 p.80
     """
@@ -1122,7 +1217,7 @@ def decode_phidp2(data, **kwargs):
 
 
 def decode_sqi(data, **kwargs):
-    """ Decode DB_SQI
+    """Decode `DB_SQI`
 
     See 4.4.41 p.83
     """
@@ -1130,7 +1225,7 @@ def decode_sqi(data, **kwargs):
 
 
 def decode_time(data):
-    """ Decode YMDS_TIME into datetime object
+    """Decode `YMDS_TIME` into datetime object.
     """
     time = _unpack_dictionary(data, YMDS_TIME)
     try:
@@ -1142,7 +1237,7 @@ def decode_time(data):
 
 
 def decode_string(data):
-    """ Decode string and strip NULL-bytes from end."""
+    """Decode string and strip NULL-bytes from end."""
     return data.decode('utf-8').rstrip('\0')
 
 
@@ -1169,7 +1264,7 @@ UINT16_T = {'fmt': 'H'}
 
 
 def _get_fmt_string(dictionary, retsub=False):
-    """ Get Format String from given dictionary.
+    """Get Format String from given dictionary.
 
     Parameters
     ----------
@@ -1206,7 +1301,7 @@ def _get_fmt_string(dictionary, retsub=False):
 
 
 def _unpack_dictionary(buffer, dictionary, rawdata=False):
-    """ Unpacks binary data using the given dictionary structure.
+    """Unpacks binary data using the given dictionary structure.
 
     Parameters
     ----------
@@ -1255,8 +1350,7 @@ def _unpack_dictionary(buffer, dictionary, rawdata=False):
 
 
 def _data_types_from_dsp_mask(words):
-    """
-    Return a list of the data types from the words in the data_type mask.
+    """Return a list of the data types from the words in the data_type mask.
     """
     data_types = []
     for i, word in enumerate(words):
