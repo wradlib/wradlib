@@ -511,8 +511,6 @@ class IrisRawFile(IrisWrapperFile):
         ----------
         words : int
             Number of data words to read.
-        width : int
-            Size of the data word to read in bytes.
         dtype : str
             dtype string specifying data format.
         Returns
@@ -526,9 +524,9 @@ class IrisRawFile(IrisWrapperFile):
         while words > 0:
             self.init_next_record()
             self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
-            next = self.array_from_record(words, width, dtype)
-            data = np.append(data, next)
-            words -= len(next)
+            next_data = self.array_from_record(words, width, dtype)
+            data = np.append(data, next_data)
+            words -= len(next_data)
         return data
 
     def get_compression_code(self):
@@ -778,16 +776,6 @@ class IrisRawFile(IrisWrapperFile):
 
     def get_data(self):
         """Retrieve all sweeps from file.
-
-        Parameters
-        ----------
-        loaddata : bool | kwdict
-                If true, retrieves whole data section from file.
-                If false, retrievs only ingest_data_headers, but no data.
-                If kwdict, retrieves according to given kwdict::
-
-                    loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                                'sweep': [0, 3, 9]}
         """
         dt_names = [d['name'] for d in self.data_types]
         rsweeps = range(1, self.nsweeps + 1)
@@ -1116,12 +1104,12 @@ def to_float(data):
 
     Parameters
     ----------
-    data : int
+    data : :class:`numpy:numpy.ndarray`
         encoded data
 
     Returns
     -------
-    decoded : float
+    decoded : :class:`numpy:numpy.ndarray`
         decoded floating point data
     """
     exp = data >> 12
