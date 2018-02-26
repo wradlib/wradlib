@@ -980,8 +980,8 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
                 If false, retrievs only ingest_data_headers, but no data.
                 If kwdict, retrieves according to given kwdict::
 
-                loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                            'sweep': [0, 3, 9]}
+                    loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                                'sweep': [0, 3, 9]}
 
     rawdata : bool
         If true, returns raw unconverted/undecoded data.
