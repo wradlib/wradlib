@@ -12,7 +12,6 @@ Satellite Functions
    :toctree: generated/
 
    correct_parallax
-   sat2pol
    dist_from_orbit
 """
 import numpy as np

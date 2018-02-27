@@ -21,9 +21,10 @@ else:
 DOCLINES = __doc__.split("\n")
 
 CLASSIFIERS = """\
-Development Status :: 4 - Beta
+Development Status :: 5 - Production/Stable
 Intended Audience :: Science/Research
 Intended Audience :: Developers
+Intended Audience :: Education
 License :: OSI Approved :: MIT License
 Programming Language :: Python
 Programming Language :: Python :: 2
@@ -33,7 +34,9 @@ Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
 Topic :: Scientific/Engineering
 Topic :: Scientific/Engineering :: Atmospheric Science
-Operating System :: OS Independent
+Operating System :: POSIX :: Linux
+Operating System :: MacOS :: MacOS X
+Operating System :: Microsoft :: Windows
 """
 
 NAME = 'wradlib'
@@ -48,9 +51,9 @@ CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 1
 MINOR = 0
-MICRO = 0
+PATCH = 0
 ISRELEASED = False
-VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 
 
 # Return the git revision as a string
@@ -86,8 +89,7 @@ if os.path.exists('MANIFEST'):
 
 # This is a bit hackish: we are setting a global variable so that the main
 # wradlib __init__ can detect if it is being loaded by the setup routine, to
-# avoid attempting to load components that aren't built yet. While ugly, it's
-# a lot more robust than what was previously being used.
+# avoid attempting to load components that aren't built yet.
 builtins.__WRADLIB_SETUP__ = True
 
 

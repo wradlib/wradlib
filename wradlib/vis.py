@@ -239,7 +239,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     Examples
     --------
     See :ref:`notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
-    and :ref:`notebooks/visualisation/wwradlib_plot_curvelinear_grids.ipynb`.
+    and :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
 
     """
     # kwargs handling
@@ -938,7 +938,7 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
 
 def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
                        title="", saveto="", **kwargs):
-    """Plot 2-D plan view of ``dataxy`` together with vertical sections
+    """Plot 2-D plan view of ``dataxy`` together with vertical sections \
     ``dataxz`` and ``datazy``
 
     Parameters
@@ -953,8 +953,8 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
         2d array of shape (len(x), len(y))
     datazx : :class:`numpy:numpy.ndarray`
         2d array of shape (len(z), len(x))
-    datazy : :class:`numpy:numpy.ndarray`2d
-        array of shape (len(z), len(y))
+    datazy : :class:`numpy:numpy.ndarray`
+        2d array of shape (len(z), len(y))
     unit : string
         unit of data arrays
     title: string

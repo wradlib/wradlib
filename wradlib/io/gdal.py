@@ -9,7 +9,6 @@ Raster and Vector I/O using GDAL
    :nosignatures:
    :toctree: generated/
 
-   open_shape
    open_vector
    open_raster
    read_safnwc
