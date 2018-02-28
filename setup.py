@@ -156,7 +156,7 @@ def setup_package():
 
     try:
         from numpy.distutils.core import setup
-    except:
+    except ImportError:
         from distutils.core import setup
 
     with open('requirements.txt', 'r') as f:
