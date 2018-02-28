@@ -167,7 +167,7 @@ import sphinx_rtd_theme  # noqa
 
 html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-html_style = 'wradlib.css'
+#html_style = 'wradlib.css'
 html_theme_options = {'sticky_navigation': True}
 
 # Theme options are theme-specific and customize the look and feel of a theme
