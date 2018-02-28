@@ -1,6 +1,7 @@
 include LICENSE.txt
 include MANIFEST.in
 include requirements.txt
+include requirements_devel.txt
 include testrunner.py
 recursive-include notebooks *.ipynb
 recursive-include notebooks *.py

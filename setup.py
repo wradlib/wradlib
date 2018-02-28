@@ -150,10 +150,20 @@ def configuration(parent_package='', top_path=None):
 
 
 def setup_package():
+
     # rewrite version file
     write_version_py()
 
-    from numpy.distutils.core import setup
+    try:
+        from numpy.distutils.core import setup
+    except ImportError:
+        from distutils.core import setup
+
+    with open('requirements.txt', 'r') as f:
+        INSTALL_REQUIRES = [rq for rq in f.read().split('\n') if rq != '']
+
+    with open('requirements_devel.txt', 'r') as f:
+        DEVEL_REQUIRES = [rq for rq in f.read().split('\n') if rq != '']
 
     setup(
         name=NAME,
@@ -167,6 +177,8 @@ def setup_package():
         license=LICENSE,
         classifiers=CLASSIFIERS,
         platforms=PLATFORMS,
+        install_requires=INSTALL_REQUIRES,
+        extras_require={'dev': DEVEL_REQUIRES},
         configuration=configuration,
     )
 
