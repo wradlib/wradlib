@@ -187,11 +187,14 @@ def keep_tests(suite, arg):
     return newsuite
 
 
-def main(args):
+def main():
+
+    args = sys.argv[1:]
+
     usage_message = """Usage: python testrunner.py options arg
 
     If run without options, testrunner displays the usage message.
-    If all tests suites should be run,, use the -a option.
+    If all tests suites should be run, use the -a option.
     If arg is given, only tests containing arg are run.
 
     options:
@@ -287,11 +290,6 @@ def main(args):
             test_notebooks or test_units):
         err_exit('must specify one of: -a -e -d -n -u')
 
-    # change to main package path, where testrunner.py lives
-    path = os.path.dirname(__file__)
-    if path:
-        os.chdir(path)
-
     testSuite = []
 
     if test_all:
@@ -354,4 +352,4 @@ def err_exit(message, rc=2):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()

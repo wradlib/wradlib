@@ -134,30 +134,12 @@ if not release:
         a.close()
 
 
-def configuration(parent_package='', top_path=None):
-    from numpy.distutils.misc_util import Configuration
-    config = Configuration(None, parent_package, top_path)
-    config.set_options(ignore_setup_xxx_py=True,
-                       assume_default_configuration=True,
-                       delegate_options_to_subpackages=True,
-                       quiet=True)
-
-    config.add_subpackage('wradlib')
-    config.add_subpackage('wradlib.io')
-    config.add_subpackage('wradlib.georef')
-
-    return config
-
-
 def setup_package():
 
     # rewrite version file
     write_version_py()
 
-    try:
-        from numpy.distutils.core import setup
-    except ImportError:
-        from distutils.core import setup
+    from setuptools import setup, find_packages
 
     with open('requirements.txt', 'r') as f:
         INSTALL_REQUIRES = [rq for rq in f.read().split('\n') if rq != '']
@@ -165,7 +147,7 @@ def setup_package():
     with open('requirements_devel.txt', 'r') as f:
         DEVEL_REQUIRES = [rq for rq in f.read().split('\n') if rq != '']
 
-    setup(
+    metadata = dict(
         name=NAME,
         maintainer=MAINTAINER,
         maintainer_email=MAINTAINER_EMAIL,
@@ -179,8 +161,15 @@ def setup_package():
         platforms=PLATFORMS,
         install_requires=INSTALL_REQUIRES,
         extras_require={'dev': DEVEL_REQUIRES},
-        configuration=configuration,
+        packages=find_packages(),
+        entry_points={
+            'console_scripts': [
+                'testrunner=scripts.testrunner:main'
+            ]
+        },
     )
+
+    setup(**metadata)
 
 
 if __name__ == '__main__':
