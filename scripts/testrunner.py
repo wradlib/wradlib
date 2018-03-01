@@ -14,7 +14,6 @@ from multiprocessing import Process, Queue
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbconvert.preprocessors.execute import CellExecutionError
-import coverage
 
 VERBOSE = 2
 
@@ -53,15 +52,12 @@ def create_examples_testsuite():
 
 class NotebookTest(unittest.TestCase):
     def __init__(self, nbfile, cov):
-        super(NotebookTest, self).__init__()
+        setattr(self.__class__, nbfile, staticmethod(self._runTest))
+        super(NotebookTest, self).__init__(nbfile)
         self.nbfile = nbfile
         self.cov = cov
 
-    def id(self):
-        return self.nbfile
-
-    def runTest(self):
-        print(self.id())
+    def _runTest(self):
         kernel = 'python%d' % sys.version_info[0]
         cur_dir = os.path.dirname(self.nbfile)
 
@@ -278,6 +274,7 @@ def main():
         elif name in ('-s', '--use-subprocess'):
             test_subprocess = 1
         elif name in ('-c', '--coverage'):
+            import coverage
             test_cov = 1
         elif name in ('-h', '--help'):
             err_exit(usage_message, 0)
