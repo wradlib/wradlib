@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# adapted from https://github.com/ARM-DOE/pyart/blob/master/setup.py
 """wradlib - An Open Source Library for Weather Radar Data Processing
 
 wradlib is designed to assist you in the most important steps of
@@ -11,7 +10,7 @@ clutter or attenuation) and visualising the data.
 
 import os
 import sys
-import subprocess
+from subprocess import check_output, CalledProcessError
 
 if sys.version_info[0] < 3:
     import __builtin__ as builtins
@@ -58,34 +57,13 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 
 # Return the git revision as a string
 def git_version():
-    def _minimal_ext_cmd(cmd):
-        # construct minimal environment
-        env = {}
-        for k in ['SYSTEMROOT', 'PATH']:
-            v = os.environ.get(k)
-            if v is not None:
-                env[k] = v
-        # LANGUAGE is used on win32
-        env['LANGUAGE'] = 'C'
-        env['LANG'] = 'C'
-        env['LC_ALL'] = 'C'
-        out = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
-        return out
-
     try:
-        out = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
-        GIT_REVISION = out.strip().decode('ascii')
-    except OSError:
-        GIT_REVISION = "Unknown"
-
+        rev = check_output(['git', 'rev-parse', 'HEAD'])
+        GIT_REVISION = rev.strip().decode('ascii')
+    except (CalledProcessError, FileNotFoundError):
+        GIT_REVISION = 'unknown'
     return GIT_REVISION
 
-
-# BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
-# update it when the contents of directories change.
-if os.path.exists('MANIFEST'):
-    os.remove('MANIFEST')
 
 # This is a bit hackish: we are setting a global variable so that the main
 # wradlib __init__ can detect if it is being loaded by the setup routine, to
