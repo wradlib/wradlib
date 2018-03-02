@@ -320,7 +320,7 @@ def main():
             all_success = all_success & result
     else:
         if test_cov and not test_notebooks:
-            cov = coverage.coverage()
+            cov = coverage.coverage()  # noqa
             cov.start()
         for ts in testSuite:
             if arg:
