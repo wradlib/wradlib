@@ -40,9 +40,9 @@ install:
 before_script:
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
-    - export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/notebooks-render
+    #- export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/notebooks-render
     # duplicate notebooks folder
-    - mkdir $WRADLIB_NOTEBOOKS && cp -R notebooks $WRADLIB_NOTEBOOKS/
+    #- mkdir $WRADLIB_NOTEBOOKS && cp -R notebooks $WRADLIB_NOTEBOOKS/
     # convert notebooks
     - scripts/convert_notebooks.sh
     - export DISPLAY=:99
@@ -55,9 +55,9 @@ script:
 after_success:
     - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-unittests.xml" -F unittests || echo "failed"; fi
     - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-doctests.xml" -F doctests || echo "failed"; fi
-    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-notebooktests.xml" -F notebooktests|| echo "failed"; fi
-    - if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
-    - if [[ "$DOC_BUILD" == "true" ]]; then cd $WRADLIB_BUILD_DIR; scripts/build_docs.sh; fi
+    #- if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-notebooktests.xml" -F notebooktests|| echo "failed"; fi
+    #- if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
+    #- if [[ "$DOC_BUILD" == "true" ]]; then cd $WRADLIB_BUILD_DIR; scripts/build_docs.sh; fi
 
 deploy:
   # devel

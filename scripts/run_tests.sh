@@ -8,22 +8,22 @@ exit_status=0
 if [[ "$COVERAGE" == "true" ]]; then
     export COVERAGE_PROCESS_START=$WRADLIB_BUILD_DIR/.coveragerc
     # run tests, retrieve exit status
-    ./testrunner.py -u -c -s
+    testrunner -u -c -s
     (( exit_status = ($? || $exit_status) ))
     coverage combine
     coverage xml -o coverage-unittests.xml
-    ./testrunner.py -d -c -s
+    testrunner -d -c -s
     (( exit_status = ($? || $exit_status) ))
     coverage combine
     coverage xml -o coverage-doctests.xml
-    ./testrunner.py -e -c -s
-    (( exit_status = ($? || $exit_status) ))
-    coverage combine
-    coverage xml -o coverage-exampletests.xml
-    ./testrunner.py -n -c -s
-    (( exit_status = ($? || $exit_status) ))
-    coverage combine
-    coverage xml -o coverage-notebooktests.xml
+    #testrunner -e -c -s
+    #(( exit_status = ($? || $exit_status) ))
+    #coverage combine
+    #coverage xml -o coverage-exampletests.xml
+    #./testrunner.py -n -c -s
+    #(( exit_status = ($? || $exit_status) ))
+    #coverage combine
+    #coverage xml -o coverage-notebooktests.xml
 
 else
     # run tests, retrieve exit status
@@ -31,10 +31,10 @@ else
     (( exit_status = ($? || $exit_status) ))
     ./testrunner.py -d -s
     (( exit_status = ($? || $exit_status) ))
-    ./testrunner.py -e -s
-    (( exit_status = ($? || $exit_status) ))
-    ./testrunner.py -n -s
-    (( exit_status = ($? || $exit_status) ))
+    #./testrunner.py -e -s
+    #(( exit_status = ($? || $exit_status) ))
+    #./testrunner.py -n -s
+    #(( exit_status = ($? || $exit_status) ))
 fi
 
 exit $exit_status
