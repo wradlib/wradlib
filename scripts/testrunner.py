@@ -154,7 +154,7 @@ def single_suite_process(queue, test, verbosity, **kwargs):
     test_cov = kwargs.pop('coverage', 0)
     test_nb = kwargs.pop('notebooks', 0)
     if test_cov and not test_nb:
-        cov = coverage.coverage()
+        cov = coverage.coverage()  # noqa
         cov.start()
     all_success = 1
     for ts in test:
