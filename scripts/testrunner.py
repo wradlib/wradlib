@@ -14,6 +14,7 @@ from multiprocessing import Process, Queue
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbconvert.preprocessors.execute import CellExecutionError
+import coverage
 
 VERBOSE = 2
 
@@ -154,7 +155,7 @@ def single_suite_process(queue, test, verbosity, **kwargs):
     test_cov = kwargs.pop('coverage', 0)
     test_nb = kwargs.pop('notebooks', 0)
     if test_cov and not test_nb:
-        cov = coverage.coverage()  # noqa
+        cov = coverage.coverage()
         cov.start()
     all_success = 1
     for ts in test:
@@ -274,7 +275,6 @@ def main():
         elif name in ('-s', '--use-subprocess'):
             test_subprocess = 1
         elif name in ('-c', '--coverage'):
-            import coverage
             test_cov = 1
         elif name in ('-h', '--help'):
             err_exit(usage_message, 0)
@@ -320,7 +320,7 @@ def main():
             all_success = all_success & result
     else:
         if test_cov and not test_notebooks:
-            cov = coverage.coverage()  # noqa
+            cov = coverage.coverage()
             cov.start()
         for ts in testSuite:
             if arg:
