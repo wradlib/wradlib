@@ -60,7 +60,7 @@ def git_version():
     try:
         rev = check_output(['git', 'rev-parse', 'HEAD'])
         GIT_REVISION = rev.strip().decode('ascii')
-    except (CalledProcessError, FileNotFoundError):
+    except (CalledProcessError, OSError):
         GIT_REVISION = 'unknown'
     return GIT_REVISION
 

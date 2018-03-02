@@ -14,6 +14,7 @@ from multiprocessing import Process, Queue
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbconvert.preprocessors.execute import CellExecutionError
+import coverage
 
 VERBOSE = 2
 
@@ -274,7 +275,6 @@ def main():
         elif name in ('-s', '--use-subprocess'):
             test_subprocess = 1
         elif name in ('-c', '--coverage'):
-            import coverage
             test_cov = 1
         elif name in ('-h', '--help'):
             err_exit(usage_message, 0)
