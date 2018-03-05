@@ -1,6 +1,6 @@
-# Copyright (c) 2016, wradlib developers.
+#!/usr/bin/env python
+# Copyright (c) 2011-2018, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
-# adapted from https://github.com/ARM-DOE/pyart/blob/master/pyart/__init__.py
 
 """
 wradlib

@@ -20,8 +20,6 @@ matrix:
       env:
         - PYTHON_VERSION="2.7"
         - COVERAGE="true"
-        - DOC_BUILD="true"
-        - DEPLOY="true"
     - python: 3.5
       env:
         - PYTHON_VERSION="3.5"
@@ -30,6 +28,7 @@ matrix:
       env:
         - PYTHON_VERSION="3.6"
         - COVERAGE="true"
+        - DEPLOY="true"
 
 install:
     - pip install flake8
@@ -40,11 +39,6 @@ install:
 before_script:
     - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
     - export WRADLIB_DATA=$HOME/wradlib-data
-    #- export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/notebooks-render
-    # duplicate notebooks folder
-    #- mkdir $WRADLIB_NOTEBOOKS && cp -R notebooks $WRADLIB_NOTEBOOKS/
-    # convert notebooks
-    - scripts/convert_notebooks.sh
     - export DISPLAY=:99
     - sh -e /etc/init.d/xvfb start
     - sleep 3
@@ -53,27 +47,9 @@ script:
     - scripts/run_tests.sh
 
 after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-unittests.xml" -F unittests || echo "failed"; fi
-    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-doctests.xml" -F doctests || echo "failed"; fi
-    #- if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage-notebooktests.xml" -F notebooktests|| echo "failed"; fi
-    #- if [[ "$DOC_BUILD" == "true" ]]; then scripts/copy_notebooks.sh; fi
-    #- if [[ "$DOC_BUILD" == "true" ]]; then cd $WRADLIB_BUILD_DIR; scripts/build_docs.sh; fi
+    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests || echo "failed"; fi
 
 deploy:
-  # devel
-  - provider: pypi
-    server: https://test.pypi.org/legacy/
-    distributions: sdist
-    skip_cleanup: true
-    user: wradlib
-    password:
-      secure: rKiAS61oDiuV2uJvkP2aiXt8hb7boU2p35RWiTLS8b5pSo/BWysThOIf1jmz5GQIpI8uYU+5GajlgtGVq8GmOxprexDgwTfMFF2bsblfUuZwYM3R1tPQuo2poAZ1/m0jPCul60vJJ31B2wEzsneo4tvbM4a7mAoBMMA5auli5o3eVo4P8xnXziMbw/l53bnl+ZYv7qocbt9RIsrgckAdfjLkZy8gAgDxcYXGGybg6K8VN/twSZGMIJfOvjkONhOtRfsiUc8fEu2hF6+HjQfSC07jue4KDPzo3s9hrAS6+fB0v8MV4UsB710VsrqoPuIfhBRo+xj8tW7Y2MPzJq/6kPBrVoQwV7gLTxZ7IWy5y4/Si78rxhXZIKDzo2VS4tNq1wo6xfGXv8pbzal7TOljqzK+ekXJBsXgdVUiGisZJLHTnPr0rkjwY7qzW+mqPqnpLLTCoHYWQE9AlrEQI3jP1FejGB5iyv/A3kDhjaerFkXlu5TXfkE44EpoKp8uURCNdzNiFoACv/68w3BJmWI0IkQR+YWZEBQm0xySMj8zLd5qrhqX/0u2crEC2uUPEQnkwNF1X8fOz3KFozY68KYsvSmIqKPlJFWSpzXYzMzqFnpvSumgb+g8FK/UppmMpukeQXTVSMGHY9k0Hi6I/WoGgmlDMksRB4fMUG0nZXdOqyM=
-    on:
-      branch: master
-      tags: false
-      repo: wradlib/wradlib
-      condition: $TRAVIS_PYTHON_VERSION = "2.7"
-
   # tagged
   - provider: pypi
     server: https://upload.pypi.org/legacy/
@@ -86,5 +62,4 @@ deploy:
       branch: master
       tags: true
       repo: wradlib/wradlib
-      condition: $TRAVIS_PYTHON_VERSION = "2.7"
-
+      condition: $TRAVIS_PYTHON_VERSION = "3.6"

@@ -5,3 +5,4 @@ h5py
 netCDF4
 gdal
 deprecation
+xmltodict
