@@ -19,26 +19,24 @@ matrix:
     - python: 2.7
       env:
         - PYTHON_VERSION="2.7"
-        - COVERAGE="true"
     - python: 3.5
       env:
         - PYTHON_VERSION="3.5"
-        - COVERAGE="true"
     - python: 3.6
       env:
         - PYTHON_VERSION="3.6"
-        - COVERAGE="true"
         - DEPLOY="true"
 
 install:
+    # test PEP8 compliance first to speed up
     - pip install flake8
     - flake8 .
     - deactivate
+    # install build environment
     - source scripts/install.sh
 
 before_script:
-    - export GDAL_DATA=$HOME/miniconda/envs/wradlib/share/gdal
-    - export WRADLIB_DATA=$HOME/wradlib-data
+    # start virtual framebuffer Xserver for headless testing
     - export DISPLAY=:99
     - sh -e /etc/init.d/xvfb start
     - sleep 3
@@ -47,7 +45,7 @@ script:
     - scripts/run_tests.sh
 
 after_success:
-    - if [[ "$COVERAGE" == "true" ]]; then codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests || echo "failed"; fi
+    - codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests
 
 deploy:
   # tagged
