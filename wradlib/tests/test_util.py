@@ -89,10 +89,9 @@ class HelperFunctionsTest(unittest.TestCase):
         data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
 
         # calculate max intensity proj
-        _ = util.maximum_intensity_projection(data, r=d1, az=d2,
-                                              angle=angle,
-                                              elev=elev)
-        _ = util.maximum_intensity_projection(data, autoext=False)
+        util.maximum_intensity_projection(data, r=d1, az=d2,
+                                          angle=angle, elev=elev)
+        util.maximum_intensity_projection(data, autoext=False)
 
 
 # -------------------------------------------------------------------------------
