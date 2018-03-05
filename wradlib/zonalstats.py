@@ -339,12 +339,12 @@ DataSource`.
         return ret
 
     def get_geom_properties(self, props, filt=None):
-        """Read attributes
+        """Read properties
 
         Parameters
         ----------
         props : list
-            Attribute Names to retrieve
+            Property Names to retrieve
         filt : tuple
             (attname,value) for Attribute Filter
 

@@ -84,6 +84,18 @@ class DataSourceTest(unittest.TestCase):
         self.assertEqual(self.ds.get_attributes(['test'], filt=('index', 1)),
                          self.values2[1])
 
+    def test_get_geom_properties(self):
+        proj = osr.SpatialReference()
+        proj.ImportFromEPSG(31466)
+        filename = util.get_wradlib_data_file('shapefiles/agger/'
+                                              'agger_merge.shp')
+        test = zonalstats.DataSource(filename, proj)
+        np.testing.assert_array_equal([[76722499.98474795]],
+                                      test.get_geom_properties(['Area'],
+                                                               filt=('FID', 1)))
+
+        self.assertTrue(False)
+
     def test_dump_vector(self):
         self.ds.dump_vector(tempfile.NamedTemporaryFile(mode='w+b').name)
 
@@ -95,6 +107,8 @@ class DataSourceTest(unittest.TestCase):
         test = zonalstats.DataSource(filename, proj)
         test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name,
                          driver='netCDF', pixel_size=100.)
+        test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name,
+                         driver='netCDF', pixel_size=100., attr='FID')
 
 
 @unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
