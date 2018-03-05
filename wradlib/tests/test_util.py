@@ -77,6 +77,23 @@ class HelperFunctionsTest(unittest.TestCase):
         mod = util.import_optional('h8x')
         self.assertRaises(AttributeError, lambda: mod.test())
 
+    def test_maximum_intensity_projection(self):
+        angle = 0.0
+        elev = 0.0
+
+        filename = util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+        data = np.loadtxt(filename)
+        # we need to have meter here for the georef function inside mip
+        d1 = np.arange(data.shape[1], dtype=np.float) * 1000
+        d2 = np.arange(data.shape[0], dtype=np.float)
+        data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
+
+        # calculate max intensity proj
+        _ = util.maximum_intensity_projection(data, r=d1, az=d2,
+                                              angle=angle,
+                                              elev=elev)
+        _ = util.maximum_intensity_projection(data, autoext=False)
+
 
 # -------------------------------------------------------------------------------
 # testing the filter helper function

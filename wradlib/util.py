@@ -310,7 +310,6 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
         meshgrid y array
     mip : :class:`numpy:numpy.ndarray`
         Array containing the maximum intensity projection (range, range*2)
-
     """
 
     from wradlib.georef import bin_altitude as bin_altitude
