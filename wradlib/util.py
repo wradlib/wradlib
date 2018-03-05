@@ -24,8 +24,6 @@ attributable to the other modules
 """
 import datetime as dt
 from datetime import tzinfo, timedelta
-import warnings
-import functools
 import os
 
 import numpy as np
