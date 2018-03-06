@@ -93,10 +93,22 @@ class HelperFunctionsTest(unittest.TestCase):
                                           angle=angle, elev=elev)
         util.maximum_intensity_projection(data, autoext=False)
 
+    def test_roll2d_polar(self):
+        filename = util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+        data = np.loadtxt(filename)
+        result1 = util.roll2d_polar(data, 1, axis=0)
+        result2 = util.roll2d_polar(data, -1, axis=0)
+        result3 = util.roll2d_polar(data, 1, axis=1)
+        result4 = util.roll2d_polar(data, -1, axis=1)
 
-# -------------------------------------------------------------------------------
-# testing the filter helper function
-# -------------------------------------------------------------------------------
+        np.testing.assert_equal(result1, np.roll(data, 1, axis=0))
+        np.testing.assert_equal(result2, np.roll(data, -1, axis=0))
+        np.testing.assert_equal(result3[:, 1:],
+                                np.roll(data, 1, axis=1)[:, 1:])
+        np.testing.assert_equal(result4[:, :-1],
+                                np.roll(data, -1, axis=1)[:, :-1])
+
+
 class TestUtil(unittest.TestCase):
     def setUp(self):
         np.random.seed(42)
