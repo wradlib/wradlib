@@ -61,9 +61,8 @@ from osgeo import gdal, ogr
 import warnings
 
 from .io import open_vector, gdal_create_dataset, write_raster_dataset
-from .georef import (get_centroid, numpy_to_ogr, ogr_add_feature,
-                     ogr_add_geometry, ogr_copy_layer, ogr_create_layer,
-                     ogr_to_numpy, ogr_geocol_to_numpy, ogr_copy_layer_by_name)
+from .georef import (numpy_to_ogr, ogr_add_feature, ogr_copy_layer,
+                     ogr_create_layer, ogr_to_numpy, ogr_copy_layer_by_name)
 
 ogr.UseExceptions()
 gdal.UseExceptions()

@@ -90,9 +90,10 @@ class DataSourceTest(unittest.TestCase):
         filename = util.get_wradlib_data_file('shapefiles/agger/'
                                               'agger_merge.shp')
         test = zonalstats.DataSource(filename, proj)
-        np.testing.assert_array_equal([[76722499.98474795]],
-                                      test.get_geom_properties(['Area'],
-                                                               filt=('FID', 1)))
+        np.testing.assert_array_equal(
+            [[76722499.98474795]],
+            test.get_geom_properties(['Area'],
+                                     filt=('FID', 1)))
 
     def test_dump_vector(self):
         self.ds.dump_vector(tempfile.NamedTemporaryFile(mode='w+b').name)
@@ -350,7 +351,7 @@ class ZonalStatsBaseTest(unittest.TestCase):
     def test__init__(self):
         self.assertRaises(NotImplementedError,
                           lambda: zonalstats.ZonalStatsBase(self.zdb))
-        zdp = zonalstats.ZonalStatsBase(self.zdp)
+        zonalstats.ZonalStatsBase(self.zdp)
         self.assertRaises(TypeError, lambda: zonalstats.ZonalStatsBase('test'))
         self.assertRaises(TypeError, lambda: zonalstats.ZonalStatsBase())
         self.assertRaises(TypeError,
