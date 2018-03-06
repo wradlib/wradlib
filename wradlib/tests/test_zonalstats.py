@@ -94,8 +94,6 @@ class DataSourceTest(unittest.TestCase):
                                       test.get_geom_properties(['Area'],
                                                                filt=('FID', 1)))
 
-        self.assertTrue(False)
-
     def test_dump_vector(self):
         self.ds.dump_vector(tempfile.NamedTemporaryFile(mode='w+b').name)
 
@@ -109,6 +107,275 @@ class DataSourceTest(unittest.TestCase):
                          driver='netCDF', pixel_size=100.)
         test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name,
                          driver='netCDF', pixel_size=100., attr='FID')
+
+
+@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
+class ZonalDataBaseTest(unittest.TestCase):
+    def setUp(self):
+
+        # GK3-Projection
+        self.proj = osr.SpatialReference()
+        self.proj.ImportFromEPSG(31466)
+
+        # create synthetic box
+        self.box0 = np.array([[2600000., 5630000.], [2600000., 5640000.],
+                              [2610000., 5640000.], [2610000., 5630000.],
+                              [2600000., 5630000.]])
+
+        self.box1 = np.array([[2610000., 5630000.], [2610000., 5640000.],
+                              [2620000., 5640000.], [2620000., 5630000.],
+                              [2610000., 5630000.]])
+
+        self.box3 = np.array([[2595000., 5625000.], [2595000., 5635000.],
+                              [2605000., 5635000.], [2605000., 5625000.],
+                              [2595000., 5625000.]])
+
+        self.box4 = np.array([[2615000., 5635000.], [2615000., 5645000.],
+                              [2625000., 5645000.], [2625000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box5 = np.array([[2600000., 5635000.], [2605000., 5635000.],
+                              [2605000., 5630000.], [2600000., 5630000.],
+                              [2600000., 5635000.]])
+
+        self.box6 = np.array([[2615000., 5635000.], [2615000., 5640000.],
+                              [2620000., 5640000.], [2620000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box7 = np.array([[2715000., 5635000.], [2715000., 5640000.],
+                              [2720000., 5640000.], [2720000., 5635000.],
+                              [2715000., 5635000.]])
+
+        self.src = np.array([self.box0, self.box1])
+        self.trg = np.array([self.box3, self.box4])
+        self.dst = np.array([[self.box5], [self.box6]])
+        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.f = tempfile.NamedTemporaryFile(mode='w+b').name
+        self.zdb.dump_vector(self.f)
+
+    def test___init__(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.assertIsInstance(zdb.src, zonalstats.DataSource)
+        self.assertIsInstance(zdb.trg, zonalstats.DataSource)
+        self.assertIsInstance(zdb.dst, zonalstats.DataSource)
+        self.assertEqual(zdb._count_intersections, 2)
+
+    def test_coun_intersections(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.assertEqual(zdb.count_intersections, 2)
+
+    def test_srs(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.assertEqual(zdb.srs, self.proj)
+
+    def test_isecs(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        np.testing.assert_equal(zdb.isecs, self.dst)
+
+    def test_get_isec(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        np.testing.assert_equal(zdb.get_isec(0), [self.box5])
+        np.testing.assert_equal(zdb.get_isec(1), [self.box6])
+
+    def test_get_source_index(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.assertEqual(zdb.get_source_index(0), 0)
+        self.assertEqual(zdb.get_source_index(1), 1)
+
+    def test_dump_vector(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        f = tempfile.NamedTemporaryFile(mode='w+b').name
+        zdb.dump_vector(f)
+
+    def test_load_vector(self):
+        zonalstats.ZonalDataBase(self.f)
+
+    def test__get_intersection(self):
+        zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.assertRaises(TypeError, lambda: zdb._get_intersection())
+        np.testing.assert_equal(zdb._get_intersection(trg=self.box3),
+                                [self.box5])
+        np.testing.assert_equal(zdb._get_intersection(idx=0),
+                                [self.box5])
+        self.assertRaises(TypeError,
+                          lambda: zdb._get_intersection(idx=2))
+        zdb = zonalstats.ZonalDataBase(self.src, [self.box7], srs=self.proj)
+        zdb.trg = None
+        self.assertRaises(TypeError,
+                          lambda: zdb._get_intersection(idx=0))
+
+
+@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
+class ZonalDataPolyTest(unittest.TestCase):
+    def setUp(self):
+
+        # GK3-Projection
+        self.proj = osr.SpatialReference()
+        self.proj.ImportFromEPSG(31466)
+
+        # create synthetic box
+        self.box0 = np.array([[2600000., 5630000.], [2600000., 5640000.],
+                              [2610000., 5640000.], [2610000., 5630000.],
+                              [2600000., 5630000.]])
+
+        self.box1 = np.array([[2610000., 5630000.], [2610000., 5640000.],
+                              [2620000., 5640000.], [2620000., 5630000.],
+                              [2610000., 5630000.]])
+
+        self.box3 = np.array([[2595000., 5625000.], [2595000., 5635000.],
+                              [2605000., 5635000.], [2605000., 5625000.],
+                              [2595000., 5625000.]])
+
+        self.box4 = np.array([[2615000., 5635000.], [2615000., 5645000.],
+                              [2625000., 5645000.], [2625000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box5 = np.array([[2600000., 5635000.], [2605000., 5635000.],
+                              [2605000., 5630000.], [2600000., 5630000.],
+                              [2600000., 5635000.]])
+
+        self.box6 = np.array([[2615000., 5635000.], [2615000., 5640000.],
+                              [2620000., 5640000.], [2620000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box7 = np.array([[2715000., 5635000.], [2715000., 5640000.],
+                              [2720000., 5640000.], [2720000., 5635000.],
+                              [2715000., 5635000.]])
+
+        self.src = np.array([self.box0, self.box1])
+        self.trg = np.array([self.box3, self.box4])
+        self.dst = np.array([[self.box5], [self.box6]])
+        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.f = tempfile.NamedTemporaryFile(mode='w+b').name
+        self.zdb.dump_vector(self.f)
+
+    def test__get_idx_weights(self):
+        zdp = zonalstats.ZonalDataPoly(self.src, self.trg, srs=self.proj)
+        self.assertEqual(zdp._get_idx_weights(),
+                         ([np.array([0]), np.array([1])],
+                          [np.array([25000000.]), np.array([25000000.])]))
+
+
+@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
+class ZonalDataPointTest(unittest.TestCase):
+    def setUp(self):
+
+        # GK3-Projection
+        self.proj = osr.SpatialReference()
+        self.proj.ImportFromEPSG(31466)
+
+        # create synthetic box
+        self.point0 = np.array([2600000., 5630000.])
+
+        self.point1 = np.array([2620000., 5640000.])
+
+        self.box3 = np.array([[2595000., 5625000.], [2595000., 5635000.],
+                              [2605000., 5635000.], [2605000., 5625000.],
+                              [2595000., 5625000.]])
+
+        self.box4 = np.array([[2615000., 5635000.], [2615000., 5645000.],
+                              [2625000., 5645000.], [2625000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box5 = np.array([[2600000., 5635000.], [2605000., 5635000.],
+                              [2605000., 5630000.], [2600000., 5630000.],
+                              [2600000., 5635000.]])
+
+        self.box6 = np.array([[2615000., 5635000.], [2615000., 5640000.],
+                              [2620000., 5640000.], [2620000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box7 = np.array([[2715000., 5635000.], [2715000., 5640000.],
+                              [2720000., 5640000.], [2720000., 5635000.],
+                              [2715000., 5635000.]])
+
+        self.src = np.array([self.point0, self.point1])
+        self.trg = np.array([self.box3, self.box4])
+        self.dst = np.array([[self.point0], [self.point1]])
+        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.f = tempfile.NamedTemporaryFile(mode='w+b').name
+        self.zdb.dump_vector(self.f)
+
+    def test__get_idx_weights(self):
+        zdp = zonalstats.ZonalDataPoint(self.src, self.trg, srs=self.proj)
+        print(zdp._get_idx_weights())
+        self.assertEqual(zdp._get_idx_weights(),
+                         ([np.array([0]), np.array([1])],
+                          [np.array([1.]), np.array([1.])]))
+
+
+@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
+class ZonalStatsBaseTest(unittest.TestCase):
+    def setUp(self):
+
+        # GK3-Projection
+        self.proj = osr.SpatialReference()
+        self.proj.ImportFromEPSG(31466)
+
+        # create synthetic box
+        self.box0 = np.array([[2600000., 5630000.], [2600000., 5640000.],
+                              [2610000., 5640000.], [2610000., 5630000.],
+                              [2600000., 5630000.]])
+
+        self.box1 = np.array([[2610000., 5630000.], [2610000., 5640000.],
+                              [2620000., 5640000.], [2620000., 5630000.],
+                              [2610000., 5630000.]])
+
+        self.box3 = np.array([[2595000., 5625000.], [2595000., 5635000.],
+                              [2605000., 5635000.], [2605000., 5625000.],
+                              [2595000., 5625000.]])
+
+        self.box4 = np.array([[2615000., 5635000.], [2615000., 5645000.],
+                              [2625000., 5645000.], [2625000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box5 = np.array([[2600000., 5635000.], [2605000., 5635000.],
+                              [2605000., 5630000.], [2600000., 5630000.],
+                              [2600000., 5635000.]])
+
+        self.box6 = np.array([[2615000., 5635000.], [2615000., 5640000.],
+                              [2620000., 5640000.], [2620000., 5635000.],
+                              [2615000., 5635000.]])
+
+        self.box7 = np.array([[2715000., 5635000.], [2715000., 5640000.],
+                              [2720000., 5640000.], [2720000., 5635000.],
+                              [2715000., 5635000.]])
+
+        self.src = np.array([self.box0, self.box1])
+        self.trg = np.array([self.box3, self.box4])
+        self.dst = np.array([[self.box5], [self.box6]])
+        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
+        self.zdp = zonalstats.ZonalDataPoly(self.src, self.trg, srs=self.proj)
+
+    def test__init__(self):
+        self.assertRaises(NotImplementedError,
+                          lambda: zonalstats.ZonalStatsBase(self.zdb))
+        zdp = zonalstats.ZonalStatsBase(self.zdp)
+        self.assertRaises(TypeError, lambda: zonalstats.ZonalStatsBase('test'))
+        self.assertRaises(TypeError, lambda: zonalstats.ZonalStatsBase())
+        self.assertRaises(TypeError,
+                          lambda: zonalstats.ZonalStatsBase(ix=np.arange(10),
+                                                            w=np.arange(11)))
+
+    def test_w(self):
+        zdp = zonalstats.ZonalStatsBase(self.zdp)
+        np.testing.assert_equal(zdp.w, np.array([[25000000.], [25000000.]]))
+        np.testing.assert_equal(zdp.ix, np.array([[0], [1]]))
+
+    def test__check_vals(self):
+        zdp = zonalstats.ZonalStatsBase(self.zdp)
+        self.assertRaises(AssertionError,
+                          lambda: zdp._check_vals(np.arange(3)))
+
+    def test_mean(self):
+        zdp = zonalstats.ZonalStatsBase(self.zdp)
+        np.testing.assert_equal(zdp.mean(np.arange(10, 21, 10)),
+                                np.array([10, 20]))
+
+    def test_var(self):
+        zdp = zonalstats.ZonalStatsBase(self.zdp)
+        np.testing.assert_equal(zdp.var(np.arange(10, 21, 10)),
+                                np.array([0, 0]))
 
 
 @unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
@@ -250,11 +517,6 @@ class ZonalDataTest(unittest.TestCase):
                                       np.array([2255]))
         np.testing.assert_array_equal(self.zdpoint.get_source_index(1),
                                       np.array([2256]))
-
-
-class ZonalStatsTest(unittest.TestCase):
-    # TODO: create tests for ZonalStatsBase class and descendants
-    pass
 
 
 class ZonalStatsUtilTest(unittest.TestCase):
