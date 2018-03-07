@@ -686,6 +686,9 @@ class VectorTest(unittest.TestCase):
         y = georef.ogr_to_numpy(self.ogrobj)
         np.testing.assert_allclose(x, y)
 
+    @unittest.skipIf(sys.version_info < (3, 2),
+                     "not supported in this python version")
+    def test_get_vector_points_warning(self):
         point = ogr.Geometry(ogr.wkbPoint)
         point.AddPoint(1198054.34, 648493.09)
         self.assertWarns(UserWarning,
@@ -718,19 +721,17 @@ class VectorTest(unittest.TestCase):
         x, attrs = georef.get_vector_coordinates(self.layer,
                                                  dest_srs=self.wgs84)
 
-        point = ogr.Geometry(ogr.wkbPoint)
-        point.AddPoint(1198054.34, 648493.09)
-        self.assertWarns(UserWarning,
-                         lambda: list(georef.get_vector_points(point)))
-
     def test_transform_geometry(self):
-        func = georef.transform_geometry
-        self.assertWarns(UserWarning,
-                         lambda: func(self.ogrobj, dest_srs=self.wgs84))
-
         geom = georef.transform_geometry(self.projobj, dest_srs=self.wgs84)
         x = list(georef.get_vector_points(geom))[0]
         np.testing.assert_allclose(x, self.lonlat)
+
+    @unittest.skipIf(sys.version_info < (3, 2),
+                     "not supported in this python version")
+    def test_transform_geometry_warning(self):
+        func = georef.transform_geometry
+        self.assertWarns(UserWarning,
+                         lambda: func(self.ogrobj, dest_srs=self.wgs84))
 
     def test_ogr_copy_layer(self):
         ds = gdal_create_dataset('Memory', 'test',
