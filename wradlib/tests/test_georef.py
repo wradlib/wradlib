@@ -6,7 +6,8 @@ import sys
 import unittest
 import wradlib.georef as georef
 import wradlib.util as util
-from wradlib.io import read_generic_hdf5, open_raster, gdal_create_dataset
+from wradlib.io import (read_generic_hdf5, open_raster, gdal_create_dataset,
+                        open_vector)
 import numpy as np
 from osgeo import gdal, osr, ogr
 
@@ -48,6 +49,16 @@ class CoordinateTransformTest(unittest.TestCase):
                         rtol=1e-03))
         self.assertTrue(np.allclose(coords[..., 2], self.result_xyz[2],
                         rtol=1e-03))
+        re = georef.get_earth_radius(self.csite[1])
+        coords, rad = georef.spherical_to_xyz(self.r, self.az,
+                                              self.th, self.csite,
+                                              re=re)
+        self.assertTrue(np.allclose(coords[..., 0], self.result_xyz[0],
+                                    rtol=1e-03))
+        self.assertTrue(np.allclose(coords[..., 1], self.result_xyz[1],
+                                    rtol=1e-03))
+        self.assertTrue(np.allclose(coords[..., 2], self.result_xyz[2],
+                                    rtol=1e-03))
 
     def test_bin_altitude(self):
         altitude = georef.bin_altitude(np.arange(10., 101., 10.)
@@ -88,15 +99,15 @@ class CoordinateTransformTest(unittest.TestCase):
 
 class CoordinateHelperTest(unittest.TestCase):
     def test_centroid_to_polyvert(self):
-        self.assertTrue(
-            np.allclose(georef.centroid_to_polyvert([0., 1.], [0.5, 1.5]),
-                        np.array([[-0.5, -0.5],
-                                  [-0.5, 2.5],
-                                  [0.5, 2.5],
-                                  [0.5, -0.5],
-                                  [-0.5, -0.5]])))
-
-        self.assertTrue(np.allclose(
+        np.testing.assert_array_equal(
+            georef.centroid_to_polyvert(np.array([0., 1.]),
+                                        [0.5, 1.5]),
+            np.array([[-0.5, -0.5],
+                      [-0.5, 2.5],
+                      [0.5, 2.5],
+                      [0.5, -0.5],
+                      [-0.5, -0.5]]))
+        np.testing.assert_array_equal(
             georef.centroid_to_polyvert(np.arange(4).reshape((2, 2)), 0.5),
             np.array([[[-0.5, 0.5],
                        [-0.5, 1.5],
@@ -107,7 +118,10 @@ class CoordinateHelperTest(unittest.TestCase):
                        [1.5, 3.5],
                        [2.5, 3.5],
                        [2.5, 2.5],
-                       [1.5, 2.5]]])))
+                       [1.5, 2.5]]]))
+        self.assertRaises(ValueError,
+                          lambda: georef.centroid_to_polyvert([[0.], [1.]],
+                                                              [0.5, 1.5]))
 
     def test_spherical_to_polyvert(self):
         sph = georef.get_default_projection()
@@ -135,6 +149,30 @@ class CoordinateHelperTest(unittest.TestCase):
                            [9.05136309, 48.0830778, 6.],
                            [9.1238846, 48.03435008, 6.]]])
         self.assertTrue(np.allclose(polyvert, arr, rtol=1e-12))
+        polyvert, pr = georef.spherical_to_polyvert(np.array([10000., 10100.]),
+                                                    np.array([45., 90.]), 0,
+                                                    (9., 48.))
+        arr = np.asarray([[[3.7885640e+03, 9.1464023e+03, 6.],
+                           [3.8268320e+03, 9.2387900e+03, 6.],
+                           [9.2387900e+03, 3.8268323e+03, 6.],
+                           [9.1464023e+03, 3.7885645e+03, 6.],
+                           [3.7885640e+03, 9.1464023e+03, 6.]],
+                          [[3.8268320e+03, 9.2387900e+03, 6.],
+                           [3.8651003e+03, 9.3311777e+03, 6.],
+                           [9.3311777e+03, 3.8651006e+03, 6.],
+                           [9.2387900e+03, 3.8268323e+03, 6.],
+                           [3.8268320e+03, 9.2387900e+03, 6.]],
+                          [[9.1464023e+03, 3.7885645e+03, 6.],
+                           [9.2387900e+03, 3.8268323e+03, 6.],
+                           [3.8268320e+03, 9.2387900e+03, 6.],
+                           [3.7885640e+03, 9.1464023e+03, 6.],
+                           [9.1464023e+03, 3.7885645e+03, 6.]],
+                          [[9.2387900e+03, 3.8268323e+03, 6.],
+                           [9.3311777e+03, 3.8651006e+03, 6.],
+                           [3.8651003e+03, 9.3311777e+03, 6.],
+                           [3.8268320e+03, 9.2387900e+03, 6.],
+                           [9.2387900e+03, 3.8268323e+03, 6.]]])
+        np.testing.assert_array_almost_equal(polyvert, arr, decimal=4)
 
     def test_spherical_to_centroids(self):
         r = np.array([10000., 10100.])
@@ -147,7 +185,14 @@ class CoordinateHelperTest(unittest.TestCase):
                            [9.09534571, 48.06387232, 6.]],
                           [[9.1333325, 47.99992262, 6.],
                            [9.13467253, 47.99992106, 6.]]])
-        self.assertTrue(np.allclose(centroids, arr))
+        np.testing.assert_array_almost_equal(centroids, arr)
+
+        centroids, pr = georef.spherical_to_centroids(r, az, 0, sitecoords)
+        arr = np.asarray([[[7.0357090e+03, 7.0357090e+03, 6.],
+                           [7.1064194e+03, 7.1064194e+03, 6.]],
+                          [[9.9499951e+03, 0., 6.],
+                           [1.0049995e+04, 0., 6.]]])
+        np.testing.assert_array_almost_equal(centroids, arr, decimal=4)
 
     def test_sweep_centroids(self):
         self.assertTrue(np.allclose(georef.sweep_centroids(1, 100., 1, 2.0),
@@ -160,6 +205,11 @@ class CoordinateHelperTest(unittest.TestCase):
                           lambda: georef.polar._check_polar_coords(r, az))
 
         r = np.array([0, 50., 100., 150., 200.])
+        az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
+        self.assertRaises(ValueError,
+                          lambda: georef.polar._check_polar_coords(r, az))
+
+        r = np.array([50., 100., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
         self.assertRaises(ValueError,
                           lambda: georef.polar._check_polar_coords(r, az))
@@ -183,6 +233,19 @@ class CoordinateHelperTest(unittest.TestCase):
         az = np.array([225., 270., 315., 0., 45., 90., 135., 180.])[::-1]
         self.assertRaises(ValueError,
                           lambda: georef.polar._check_polar_coords(r, az))
+
+    def test__get_range_resolution(self):
+        r = np.array([50.])
+        self.assertRaises(ValueError,
+                          lambda: georef.polar._get_range_resolution(r))
+        r = np.array([50., 100., 150., 190., 250.])
+        self.assertRaises(ValueError,
+                          lambda: georef.polar._get_range_resolution(r))
+
+    def test__get_azimuth_resolution(self):
+        az = np.array([0., 45., 90., 135., 180., 224., 270., 315.])
+        self.assertRaises(ValueError,
+                          lambda: georef.polar._get_azimuth_resolution(az))
 
     @unittest.skipIf(sys.version_info < (3, 5),
                      "not supported in this python version")
@@ -217,6 +280,29 @@ class ProjectionsTest(unittest.TestCase):
                               (1. + np.sin(np.radians(90.)))))
         self.assertEqual(georef.create_osr('dwd-radolan').ExportToWkt(),
                          radolan_wkt)
+        aeqd_wkt = ('PROJCS["unnamed",'
+                    'GEOGCS["WGS 84",'
+                    'DATUM["unknown",'
+                    'SPHEROID["WGS84",6378137,298.257223563]],'
+                    'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],'
+                    'PROJECTION["Azimuthal_Equidistant"],'
+                    'PARAMETER["latitude_of_center",{0:-f}],'
+                    'PARAMETER["longitude_of_center",{1:-f}],'
+                    'PARAMETER["false_easting",{2:-f}],'
+                    'PARAMETER["false_northing",{3:-f}]]'.
+                    format(49., 5., 0, 0))
+
+        self.assertEqual(georef.create_osr('aeqd',
+                                           lon_0=5.,
+                                           lat_0=49).ExportToWkt(),
+                         aeqd_wkt)
+        self.assertEqual(georef.create_osr('aeqd',
+                                           lon_0=5.,
+                                           lat_0=49,
+                                           x_0=0,
+                                           y_0=0).ExportToWkt(),
+                         aeqd_wkt)
+        self.assertRaises(ValueError, lambda: georef.create_osr('lambert'))
 
     def test_proj4_to_osr(self):
         srs = georef.proj4_to_osr('+proj=lcc +lat_1=46.8 +lat_0=46.8 +lon_0=0 '
@@ -228,6 +314,8 @@ class ProjectionsTest(unittest.TestCase):
         srs2 = osr.SpatialReference()
         srs2.ImportFromProj4(p4)
         self.assertTrue(srs.IsSame(srs2))
+        self.assertRaises(ValueError,
+                          lambda: georef.proj4_to_osr("+proj=lcc1"))
 
     def test_get_earth_radius(self):
         self.assertEqual(georef.get_earth_radius(50.), 6365631.51753728)
@@ -237,12 +325,38 @@ class ProjectionsTest(unittest.TestCase):
         proj_gk.ImportFromEPSG(31466)
         proj_wgs84 = osr.SpatialReference()
         proj_wgs84.ImportFromEPSG(4326)
-        x, y = georef.reproject(7., 53., projection_source=proj_wgs84,
-                                projection_target=proj_gk)
+        x, y, z = georef.reproject(7., 53., 0., projection_source=proj_wgs84,
+                                   projection_target=proj_gk)
         lon, lat = georef.reproject(x, y, projection_source=proj_gk,
                                     projection_target=proj_wgs84)
         self.assertAlmostEqual(lon, 7.0)
         self.assertAlmostEqual(lat, 53.0)
+
+        lonlat = georef.reproject(np.stack((x, y), axis=-1),
+                                  projection_source=proj_gk,
+                                  projection_target=proj_wgs84)
+        self.assertAlmostEqual(lonlat[0], 7.0)
+        self.assertAlmostEqual(lonlat[1], 53.0)
+
+        self.assertRaises(TypeError,
+                          lambda: georef.reproject(np.stack((x, y, x, y),
+                                                            axis=-1)))
+
+        lon, lat, alt = georef.reproject(x, y, z, projection_source=proj_gk,
+                                         projection_target=proj_wgs84)
+        self.assertAlmostEqual(lon, 7., places=5)
+        self.assertAlmostEqual(lat, 53., places=3)
+        self.assertAlmostEqual(alt, 0., places=3)
+
+        self.assertRaises(TypeError,
+                          lambda: georef.reproject(x, y, x, y))
+        self.assertRaises(TypeError,
+                          lambda: georef.reproject([np.arange(10)],
+                                                   [np.arange(11)]))
+        self.assertRaises(TypeError,
+                          lambda: georef.reproject([np.arange(10)],
+                                                   [np.arange(10)],
+                                                   [np.arange(11)]))
 
     def test_get_default_projection(self):
         self.assertEqual(georef.get_default_projection().ExportToWkt(),
@@ -312,20 +426,34 @@ class GdalTests(unittest.TestCase):
         (self.data,
          self.coords,
          self.proj) = georef.extract_raster_dataset(self.ds)
+        self.x_sp, self.y_sp = self.coords[1, 1] - self.coords[0, 0]
 
     def test_read_gdal_coordinates(self):
-        georef.read_gdal_coordinates(self.ds)
+        coords = georef.read_gdal_coordinates(self.ds)
+        self.assertEqual(coords.shape[-1], 3)
+        coords = georef.read_gdal_coordinates(self.ds, z=False)
+        self.assertEqual(coords.shape[-1], 2)
 
     def test_read_gdal_projection(self):
         georef.read_gdal_projection(self.ds)
 
     def test_read_gdal_values(self):
         georef.read_gdal_values(self.ds)
+        georef.read_gdal_values(self.ds, nodata=9999.)
 
     def test_reproject_raster_dataset(self):
         georef.reproject_raster_dataset(self.ds, spacing=0.005,
                                         resample=gdal.GRA_Bilinear,
                                         align=True)
+        georef.reproject_raster_dataset(self.ds, size=(1000, 1000),
+                                        resample=gdal.GRA_Bilinear,
+                                        align=True)
+        self.assertRaises(NameError,
+                          lambda: georef.reproject_raster_dataset(self.ds))
+        dst = georef.epsg_to_osr(31466)
+        georef.reproject_raster_dataset(self.ds, spacing=100.,
+                                        resample=gdal.GRA_Bilinear,
+                                        align=True, projection_target=dst)
 
     def test_create_raster_dataset(self):
         data, coords = georef.set_raster_origin(self.data.copy(),
@@ -342,14 +470,25 @@ class GdalTests(unittest.TestCase):
         self.assertEqual(proj.ExportToWkt(), self.proj.ExportToWkt())
 
     def test_set_raster_origin(self):
-        data, coords = georef.set_raster_origin(self.data.copy(),
-                                                self.coords.copy(), 'upper')
+        testfunc = georef.set_raster_origin
+        data, coords = testfunc(self.data.copy(),
+                                self.coords.copy(), 'upper')
         np.testing.assert_array_equal(data, self.data)
         np.testing.assert_array_equal(coords, self.coords)
-        data, coords = georef.set_raster_origin(self.data.copy(),
-                                                self.coords.copy(), 'lower')
+        data, coords = testfunc(self.data.copy(),
+                                self.coords.copy(), 'lower')
         np.testing.assert_array_equal(data, np.flip(self.data, axis=-2))
         np.testing.assert_array_equal(coords, np.flip(self.coords, axis=-3))
+
+        data, coords = testfunc(self.data.copy()[:, :3600],
+                                self.coords.copy()[:3600, :3600],
+                                'lower')
+        np.testing.assert_array_equal(data, np.flip(self.data[:, :3600],
+                                                    axis=-2))
+
+        np.testing.assert_array_equal(coords,
+                                      np.flip(self.coords[:3600, :3600] +
+                                              [0, self.y_sp], axis=-3))
 
     def test_extract_raster_dataset(self):
         data, coords, proj = georef.extract_raster_dataset(self.ds)
@@ -383,6 +522,13 @@ class GetGridsTest(unittest.TestCase):
         radolan_grid_xy = georef.reproject(self.radolan_grid_ll,
                                            projection_source=proj_wgs,
                                            projection_target=proj_stereo)
+
+        # check source and target arrays for equality
+        self.assertTrue(np.allclose(radolan_grid_ll, self.radolan_grid_ll))
+        self.assertTrue(np.allclose(radolan_grid_xy, self.radolan_grid_xy))
+
+        radolan_grid_xy = georef.get_radolan_grid(900, 900)
+        radolan_grid_ll = georef.get_radolan_grid(900, 900, wgs84=True)
 
         # check source and target arrays for equality
         self.assertTrue(np.allclose(radolan_grid_ll, self.radolan_grid_ll))
@@ -499,11 +645,27 @@ class SatelliteTest(unittest.TestCase):
 
 class VectorTest(unittest.TestCase):
     def setUp(self):
+        self.proj = osr.SpatialReference()
+        self.proj.ImportFromEPSG(31466)
+        self.wgs84 = georef.get_default_projection()
+
         self.npobj = np.array([[2600000., 5630000.], [2600000., 5630100.],
                                [2600100., 5630100.], [2600100., 5630000.],
                                [2600000., 5630000.]])
+        self.lonlat = np.array([[7.41779154, 50.79679579],
+                                [7.41781875, 50.79769443],
+                                [7.4192367, 50.79767718],
+                                [7.41920947, 50.79677854],
+                                [7.41779154, 50.79679579]])
 
         self.ogrobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
+        self.ogrobj.AssignSpatialReference(None)
+        self.projobj = georef.numpy_to_ogr(self.npobj, 'Polygon')
+        self.projobj.AssignSpatialReference(self.proj)
+
+        filename = util.get_wradlib_data_file('shapefiles/agger/'
+                                              'agger_merge.shp')
+        self.ds, self.layer = open_vector(filename)
 
     def test_ogr_create_layer(self):
         ds = gdal_create_dataset('Memory', 'test',
@@ -517,6 +679,142 @@ class VectorTest(unittest.TestCase):
     def test_ogr_to_numpy(self):
         self.assertTrue(
             np.allclose(georef.ogr_to_numpy(self.ogrobj), self.npobj))
+
+    def test_get_vector_points(self):
+        # this also tests equality with `ogr_to_numpy`
+        x = np.array(list(georef.get_vector_points(self.ogrobj))[0])
+        y = georef.ogr_to_numpy(self.ogrobj)
+        np.testing.assert_allclose(x, y)
+
+        point = ogr.Geometry(ogr.wkbPoint)
+        point.AddPoint(1198054.34, 648493.09)
+        self.assertWarns(UserWarning,
+                         lambda: list(georef.get_vector_points(point)))
+
+    def test_get_vector_coordinates(self):
+        # this also tests equality with `ogr_to_numpy`
+
+        x, attrs = georef.get_vector_coordinates(self.layer, key='FID')
+        self.assertEqual(attrs, list(range(13)))
+
+        x, attrs = georef.get_vector_coordinates(self.layer)
+        y = []
+        self.layer.ResetReading()
+        for i in range(self.layer.GetFeatureCount()):
+            feature = self.layer.GetNextFeature()
+            if feature:
+                geom = feature.GetGeometryRef()
+                y.append(georef.ogr_to_numpy(geom))
+        y = np.array(y)
+        for x1, y1 in zip(x, y):
+            np.testing.assert_allclose(x1, y1)
+
+        self.layer.ResetReading()
+        x, attrs = georef.get_vector_coordinates(self.layer,
+                                                 source_srs=self.proj,
+                                                 dest_srs=self.wgs84)
+
+        self.layer.ResetReading()
+        x, attrs = georef.get_vector_coordinates(self.layer,
+                                                 dest_srs=self.wgs84)
+
+        point = ogr.Geometry(ogr.wkbPoint)
+        point.AddPoint(1198054.34, 648493.09)
+        self.assertWarns(UserWarning,
+                         lambda: list(georef.get_vector_points(point)))
+
+    def test_transform_geometry(self):
+        func = georef.transform_geometry
+        self.assertWarns(UserWarning,
+                         lambda: func(self.ogrobj, dest_srs=self.wgs84))
+
+        geom = georef.transform_geometry(self.projobj, dest_srs=self.wgs84)
+        x = list(georef.get_vector_points(geom))[0]
+        np.testing.assert_allclose(x, self.lonlat)
+
+    def test_ogr_copy_layer(self):
+        ds = gdal_create_dataset('Memory', 'test',
+                                 gdal_type=gdal.OF_VECTOR)
+        georef.ogr_copy_layer(self.ds, 0, ds)
+        self.assertTrue(isinstance(ds.GetLayer(), ogr.Layer))
+
+    def test_ogr_copy_layer_by_name(self):
+        ds = gdal_create_dataset('Memory', 'test',
+                                 gdal_type=gdal.OF_VECTOR)
+        georef.ogr_copy_layer_by_name(self.ds, 'agger_merge', ds)
+        self.assertTrue(isinstance(ds.GetLayer(), ogr.Layer))
+
+        self.assertRaises(ValueError,
+                          lambda: georef.ogr_copy_layer_by_name(self.ds,
+                                                                'agger_merge1',
+                                                                ds))
+
+    def test_ogr_add_feature(self):
+        ds = gdal_create_dataset('Memory', 'test',
+                                 gdal_type=gdal.OF_VECTOR)
+        georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
+                                fields=[('index', ogr.OFTReal)])
+
+        point = np.array([1198054.34, 648493.09])
+        parr = np.array([point, point, point])
+        georef.ogr_add_feature(ds, parr)
+        georef.ogr_add_feature(ds, parr, name='test')
+
+    def test_ogr_add_geometry(self):
+        ds = gdal_create_dataset('Memory', 'test',
+                                 gdal_type=gdal.OF_VECTOR)
+        lyr = georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
+                                      fields=[('test', ogr.OFTReal)])
+        point = ogr.Geometry(ogr.wkbPoint)
+        point.AddPoint(1198054.34, 648493.09)
+        georef.ogr_add_geometry(lyr, point, [42.42])
+
+    def test_geocol_to_numpy(self):
+        # Create a geometry collection
+        geomcol = ogr.Geometry(ogr.wkbGeometryCollection)
+
+        # Create polygon
+        ring = ogr.Geometry(ogr.wkbLinearRing)
+        ring.AddPoint(1179091.1646903288, 712782.8838459781)
+        ring.AddPoint(1161053.0218226474, 667456.2684348812)
+        ring.AddPoint(1214704.933941905, 641092.8288590391)
+        ring.AddPoint(1228580.428455506, 682719.3123998424)
+        ring.AddPoint(1218405.0658121984, 721108.1805541387)
+        ring.AddPoint(1179091.1646903288, 712782.8838459781)
+
+        poly = ogr.Geometry(ogr.wkbPolygon)
+        poly.AddGeometry(ring)
+
+        geomcol.AddGeometry(poly)
+
+        # Add a point
+        point = ogr.Geometry(ogr.wkbPoint)
+        point.AddPoint(-122.23, 47.09)
+        geomcol.AddGeometry(point)
+
+        # Add a line
+        line = ogr.Geometry(ogr.wkbLineString)
+        line.AddPoint(-122.60, 47.14)
+        line.AddPoint(-122.48, 47.23)
+        geomcol.AddGeometry(line)
+
+        arr = georef.ogr_geocol_to_numpy(geomcol)[..., 0:2]
+
+        res = np.array([[1179091.1646903288, 712782.8838459781],
+                        [1161053.0218226474, 667456.2684348812],
+                        [1214704.933941905, 641092.8288590391],
+                        [1228580.428455506, 682719.3123998424],
+                        [1218405.0658121984, 721108.1805541387],
+                        [1179091.1646903288, 712782.8838459781]])
+
+        np.testing.assert_allclose(arr, res)
+
+    def test_get_centroid(self):
+        cent1 = georef.get_centroid(self.npobj)
+        cent2 = georef.get_centroid(self.ogrobj)
+
+        self.assertEqual(cent1, (2600050.0, 5630050.0))
+        self.assertEqual(cent2, (2600050.0, 5630050.0))
 
 
 if __name__ == '__main__':

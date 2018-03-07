@@ -11,10 +11,9 @@ Vector Functions (GDAL)
    :nosignatures:
    :toctree: generated/
 
-   get_shape_coordinates
-   get_shape_points
+   get_vector_coordinates
+   get_vector_points
    transform_geometry
-   get_shape_coordinates
    ogr_create_layer
    ogr_copy_layer
    ogr_copy_layer_by_name
@@ -28,13 +27,14 @@ Vector Functions (GDAL)
 
 import numpy as np
 from osgeo import gdal, ogr
+from .projection import get_default_projection
+import warnings
 ogr.UseExceptions()
 gdal.UseExceptions()
 
 
-def get_shape_points(geom):
-    """
-    Extract coordinate points from given ogr geometry as generator object
+def get_vector_points(geom):
+    """Extract coordinate points from given ogr geometry as generator object
 
     If geometries are nested, function recurses.
 
@@ -49,7 +49,7 @@ def get_shape_points(geom):
     """
 
     type = geom.GetGeometryType()
-    if type:
+    if type > 1:
         # 1D Geometries, LINESTRINGS
         if type == 2:
             result = np.array(geom.GetPoints())
@@ -58,15 +58,15 @@ def get_shape_points(geom):
         elif type > 2:
             # iterate over geometries and recurse
             for item in geom:
-                for result in get_shape_points(item):
+                for result in get_vector_points(item):
                     yield result
     else:
-        print("Unknown Geometry")
+        warnings.warn("unsupported geometry type detected in "
+                      "wradlib.georef.get_vector_points - skipping")
 
 
-def transform_geometry(geom, dest_srs):
-    """
-    Perform geotransformation to given destination SpatialReferenceSystem
+def transform_geometry(geom, dest_srs, **kwargs):
+    """Perform geotransformation to given destination SpatialReferenceSystem
 
     It transforms coordinates to a given destination osr spatial reference
     if a geotransform is neccessary.
@@ -74,26 +74,39 @@ def transform_geometry(geom, dest_srs):
     Parameters
     ----------
     geom : ogr.geometry
-    dest_srs: osr.SpatialReference
+    dest_srs : osr.SpatialReference
         Destination Projection
+
+    Keywords
+    --------
+    source_srs : osr.SpatialReference
+        Source Projection
 
     Returns
     -------
     geom : ogr.Geometry
         Transformed Geometry
     """
+    gsrs = geom.GetSpatialReference()
+    srs = kwargs.get('source_srs', gsrs)
+
+    # srs is None assume wgs84 lonlat, but warn too
+    if srs is None:
+        srs = get_default_projection()
+        warnings.warn("geometry without spatial reference - assuming wgs84")
 
     # transform if not the same spatial reference system
-    if not geom.GetSpatialReference().IsSame(dest_srs):
+    if not srs.IsSame(dest_srs):
+        if gsrs is None:
+            geom.AssignSpatialReference(srs)
         geom.TransformTo(dest_srs)
 
     return geom
 
 
-def get_shape_coordinates(layer, **kwargs):
-    """
-    Function iterates over gdal ogr layer features and packs extracted shape
-    coordinate points into nested ndarray
+def get_vector_coordinates(layer, **kwargs):
+    """Function iterates over gdal ogr layer features and packs extracted \
+    vector coordinate points into nested ndarray
 
     It transforms coordinates to a given destination osr spatial reference if
     dest_srs is given and a geotransform is neccessary.
@@ -104,6 +117,8 @@ def get_shape_coordinates(layer, **kwargs):
 
     Keywords
     --------
+    source_srs : osr.SpatialReference
+        Source Projection
     dest_srs: osr.SpatialReference
         Destination Projection
     key : string
@@ -120,6 +135,7 @@ def get_shape_coordinates(layer, **kwargs):
 
     shp = []
 
+    source_srs = kwargs.get('source_srs', None)
     dest_srs = kwargs.get('dest_srs', None)
     key = kwargs.get('key', None)
     if key:
@@ -134,9 +150,9 @@ def get_shape_coordinates(layer, **kwargs):
                 attrs.append(feature[key])
             geom = feature.GetGeometryRef()
             if dest_srs:
-                transform_geometry(geom, dest_srs)
+                transform_geometry(geom, dest_srs, source_srs=source_srs)
             # get list of xy-coordinates
-            reslist = list(get_shape_points(geom))
+            reslist = list(get_vector_points(geom))
             shp.append(np.squeeze(np.array(reslist)))
 
     shp = np.squeeze(np.array(shp))
@@ -224,6 +240,8 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
     # get and copy src geometry layer
 
     src_lyr = src_ds.GetLayerByName(name)
+    if src_lyr is None:
+        raise ValueError("OGR layer 'name' not found in dataset")
     if reset:
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)
@@ -362,9 +380,9 @@ def ogr_geocol_to_numpy(ogrobj):
 
     """
     jsonobj = eval(ogrobj.ExportToJson())
-
     mpol = []
     for item in jsonobj['geometries']:
+        print(item['type'])
         if item['type'] == 'Polygon':
             mpol.append(item['coordinates'])
 

@@ -19,8 +19,7 @@ Georeferencing
 .. automodule:: wradlib.georef.satellite
 """
 
-from .misc import (bin_altitude, bin_distance,
-                   get_earth_radius, get_shape_coordinates, site_distance)
+from .misc import (bin_altitude, bin_distance, site_distance, get_earth_radius)
 
 from .polar import (centroid_to_polyvert, spherical_to_xyz, spherical_to_proj,
                     spherical_to_polyvert, spherical_to_centroids,
@@ -40,8 +39,8 @@ from .raster import (pixel_coordinates, pixel_to_map, pixel_to_map3d,
 
 from .satellite import (correct_parallax, dist_from_orbit)
 
-from .vector import (get_shape_points, transform_geometry,
-                     get_shape_coordinates, ogr_create_layer, ogr_copy_layer,
+from .vector import (get_vector_points, transform_geometry,
+                     get_vector_coordinates, ogr_create_layer, ogr_copy_layer,
                      ogr_copy_layer_by_name, ogr_add_feature, ogr_add_geometry,
                      numpy_to_ogr, ogr_to_numpy, ogr_geocol_to_numpy,
                      get_centroid)
