@@ -145,7 +145,7 @@ def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
 
     if not metadata.get('DCAP_CREATE', False):
         raise TypeError("WRADLIB: Driver {} doesn't support "
-                      "Create() method.".format(drv))
+                        "Create() method.".format(drv))
 
     if remove:
         if os.path.exists(name):
