@@ -6,6 +6,7 @@ import unittest.mock
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
+from subprocess import check_call
 import numpy as np
 import zlib
 import gzip
@@ -78,6 +79,18 @@ class HDF5Test(unittest.TestCase):
         res, resmeta = wrl.io.from_hdf5(tmp.name)
         self.assertTrue(np.allclose(arr, res))
         self.assertDictEqual(metadata, resmeta)
+
+    def test_read_safnwc(self):
+        filename = 'hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5'
+        safnwcfile = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.read_safnwc(safnwcfile)
+
+        command = 'rm -rf test1.h5'
+        check_call(command, shell=True)
+        command = 'h5copy -i {} -o test1.h5 -s CT -d CT'.format(safnwcfile)
+        check_call(command, shell=True)
+
+        self.assertRaises(KeyError, lambda: wrl.io.read_safnwc('test1.h5'))
 
 
 class RadolanTest(unittest.TestCase):
@@ -520,16 +533,36 @@ class RainbowTest(unittest.TestCase):
 
 
 class RasterTest(unittest.TestCase):
+    def test_gdal_create_dataset(self):
+        testfunc = wrl.io.gdal_create_dataset
+        tmp = tempfile.NamedTemporaryFile(mode='w+b').name
+        self.assertRaises(TypeError,
+                          lambda: testfunc('AIG', tmp))
+        from osgeo import gdal
+        self.assertRaises(TypeError,
+                          lambda: testfunc('AAIGrid', tmp,
+                                           cols=10, rows=10, bands=1,
+                                           gdal_type=gdal.GDT_Float32))
+        testfunc('GTiff', tmp, cols=10, rows=10, bands=1,
+                 gdal_type=gdal.GDT_Float32)
+        testfunc('GTiff', tmp, cols=10, rows=10, bands=1,
+                 gdal_type=gdal.GDT_Float32, remove=True)
+
     def test_write_raster_dataset(self):
         filename = 'geo/bonn_new.tif'
         geofile = wrl.util.get_wradlib_data_file(filename)
         ds = wrl.io.open_raster(geofile)
         wrl.io.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid')
+        wrl.io.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid',
+                                    remove=True)
+        self.assertRaises(TypeError,
+                          lambda: wrl.io.write_raster_dataset(geofile + 'asc1',
+                                                              ds, 'AIG'))
 
     def test_open_raster(self):
         filename = 'geo/bonn_new.tif'
         geofile = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.open_raster(geofile)
+        wrl.io.open_raster(geofile, 'GTiff')
 
 
 class VectorTest(unittest.TestCase):
@@ -537,6 +570,7 @@ class VectorTest(unittest.TestCase):
         filename = 'shapefiles/agger/agger_merge.shp'
         geofile = wrl.util.get_wradlib_data_file(filename)
         wrl.io.open_vector(geofile)
+        wrl.io.open_vector(geofile, 'ESRI Shapefile')
 
 
 class IrisTest(unittest.TestCase):
