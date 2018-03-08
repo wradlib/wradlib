@@ -13,6 +13,7 @@ import tempfile
 import os
 import datetime
 import io
+import sys
 
 
 class DXTest(unittest.TestCase):
@@ -561,8 +562,8 @@ class RainbowTest(unittest.TestCase):
     @unittest.skipIf(sys.version_info < (3, 3),
                      "not supported in this python version")
     def test_get_RB_data_layout_big(self):
-        import unittest.mock
-        with unittest.mock.patch('sys.byteorder', 'big'):
+        from unittest.mock import patch
+        with patch('sys.byteorder', 'big'):
             self.assertEqual(rainbow.get_RB_data_layout(8), (1, '<u1'))
             self.assertEqual(rainbow.get_RB_data_layout(16), (2, '<u2'))
             self.assertEqual(rainbow.get_RB_data_layout(32), (4, '<u4'))
