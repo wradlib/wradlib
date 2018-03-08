@@ -2,7 +2,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
-import unittest.mock
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
@@ -558,6 +557,11 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rainbow.get_RB_data_layout(16), (2, '>u2'))
         self.assertEqual(rainbow.get_RB_data_layout(32), (4, '>u4'))
         self.assertRaises(ValueError, lambda: rainbow.get_RB_data_layout(128))
+
+    @unittest.skipIf(sys.version_info < (3, 3),
+                     "not supported in this python version")
+    def test_get_RB_data_layout_big(self):
+        import unittest.mock
         with unittest.mock.patch('sys.byteorder', 'big'):
             self.assertEqual(rainbow.get_RB_data_layout(8), (1, '<u1'))
             self.assertEqual(rainbow.get_RB_data_layout(16), (2, '<u2'))
