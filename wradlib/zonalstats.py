@@ -61,9 +61,8 @@ from osgeo import gdal, ogr
 import warnings
 
 from .io import open_vector, gdal_create_dataset, write_raster_dataset
-from .georef import (get_centroid, numpy_to_ogr, ogr_add_feature,
-                     ogr_add_geometry, ogr_copy_layer, ogr_create_layer,
-                     ogr_to_numpy, ogr_geocol_to_numpy, ogr_copy_layer_by_name)
+from .georef import (numpy_to_ogr, ogr_add_feature, ogr_copy_layer,
+                     ogr_create_layer, ogr_to_numpy, ogr_copy_layer_by_name)
 
 ogr.UseExceptions()
 gdal.UseExceptions()
@@ -339,12 +338,12 @@ DataSource`.
         return ret
 
     def get_geom_properties(self, props, filt=None):
-        """Read attributes
+        """Read properties
 
         Parameters
         ----------
         props : list
-            Attribute Names to retrieve
+            Property Names to retrieve
         filt : tuple
             (attname,value) for Attribute Filter
 
@@ -363,7 +362,7 @@ DataSource`.
 class ZonalDataBase(object):
     """Base class for managing 2-dimensional zonal data.
 
-    For target polygons from eihter source points or source polygons.
+    For target polygons from either source points or source polygons.
     Provides the basic design for all other classes.
 
     If no source points or polygons can be associated to a target polygon (e.g.
@@ -537,11 +536,6 @@ class ZonalDataBase(object):
 
         return ds_mem
 
-    def _create_dst_features(self, dst, trg, **kwargs):
-        """Create OGR.Features in Destination OGR.Layer
-        """
-        raise NotImplementedError
-
     def dump_vector(self, filename, driver='ESRI Shapefile', remove=True):
         """Output source/target grid points/polygons to ESRI_Shapefile
 
@@ -632,7 +626,7 @@ class ZonalDataBase(object):
         trg = trg.Buffer(buf)
 
         if idx is None:
-            intersecs = self.src.get_data_by_geom(trg)
+            intersecs = self.dst.get_data_by_geom(trg)
         else:
             intersecs = self.dst.get_data_by_att('trg_index', idx)
 
@@ -689,50 +683,6 @@ class ZonalDataPoly(ZonalDataBase):
                 ret[i].append(np.array(l))
         return tuple(ret)
 
-    def _create_dst_features(self, dst, trg, **kwargs):
-        """Create needed OGR.Features in dst OGR.Layer
-
-        Parameters
-        ----------
-        dst : object
-            OGR.Layer - destination layer
-        trg : object
-            OGR.Geometry - target polygon
-        """
-        # TODO: kwargs necessary?
-
-        # claim and reset source ogr layer
-        layer = self.src.ds.GetLayerByName('src')
-        layer.ResetReading()
-
-        # if given, we apply a buffer value to the target polygon filter
-        trg_index = trg.GetField('index')
-        trg = trg.GetGeometryRef()
-        trg = trg.Buffer(self._buffer)
-        layer.SetSpatialFilter(trg)
-
-        # iterate over layer features
-        for ogr_src in layer:
-            geom = ogr_src.GetGeometryRef()
-
-            # calculate intersection, if not fully contained
-            if not trg.Contains(geom):
-                geom = trg.Intersection(geom)
-
-            # checking GeometryCollection, convert to only Polygons,
-            #  Multipolygons
-            if geom.GetGeometryType() in [7]:
-                geocol = ogr_geocol_to_numpy(geom)
-                geom = numpy_to_ogr(geocol, 'MultiPolygon')
-
-            # only geometries containing points
-            if geom.IsEmpty():
-                continue
-
-            if geom.GetGeometryType() in [3, 6, 12]:
-                idx = ogr_src.GetField('index')
-                ogr_add_geometry(dst, geom, [idx, trg_index])
-
 
 class ZonalDataPoint(ZonalDataBase):
     """ZonalData object for source points
@@ -780,45 +730,6 @@ class ZonalDataPoint(ZonalDataBase):
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
         return tuple(ret)
-
-    def _create_dst_features(self, dst, trg, **kwargs):
-        """Create needed OGR.Features in dst OGR.Layer
-
-        Parameters
-        ----------
-        dst : object
-            OGR.Layer - destination layer
-        trg : object
-            OGR.Geometry - target polygon
-        """
-        # TODO: kwargs necessary?
-
-        # claim and reset source ogr layer
-        layer = self.src.ds.GetLayerByName('src')
-        layer.ResetReading()
-
-        # if given, we apply a buffer value to the target polygon filter
-        trg_index = trg.GetField('index')
-        trg = trg.GetGeometryRef()
-        trg = trg.Buffer(self._buffer)
-        layer.SetSpatialFilter(trg)
-
-        feat_cnt = layer.GetFeatureCount()
-
-        if feat_cnt:
-            [ogr_add_geometry(dst, ogr_src.GetGeometryRef(),
-                              [ogr_src.GetField('index'), trg_index])
-             for ogr_src in layer]
-        else:
-            layer.SetSpatialFilter(None)
-            src_pts = np.array([ogr_src.GetGeometryRef().GetPoint_2D(0)
-                                for ogr_src in layer])
-            centroid = get_centroid(trg)
-            tree = cKDTree(src_pts)
-            distnext, ixnext = tree.query([centroid[0], centroid[1]], k=1)
-            feat = layer.GetFeature(ixnext)
-            ogr_add_geometry(dst, feat.GetGeometryRef(),
-                             [feat.GetField('index'), trg_index])
 
 
 class ZonalStatsBase(object):
@@ -904,9 +815,8 @@ ZonalStats`.
                 raise TypeError("parameters ix and w must be of equal length")
             return np.array(ix), np.array(w)
         else:
-            print("ix and w are complementary parameters and "
-                  "must both be given")
-            raise TypeError
+            raise TypeError("ix and w are complementary parameters and "
+                            "must both be given")
 
     def _check_vals(self, vals):
         """TODO Basic check of target elements (sequence of polygons).
