@@ -880,7 +880,7 @@ class NetcdfTest(unittest.TestCase):
                           lambda: wrl.io.read_generic_netcdf('test'))
         filename = 'sigmet/cor-main131125105503.RAW2049'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(OSError,
+        self.assertRaises(IOError,
                           lambda: wrl.io.read_generic_netcdf(ncfile))
 
         filename = 'hdf5/IDR66_20100206_111233.vol.h5'
