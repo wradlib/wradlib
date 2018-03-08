@@ -30,10 +30,17 @@ class HelperFunctionsTest(unittest.TestCase):
         self.assertFalse(util.issequence('str'))
 
     def test_trapezoid(self):
-        pass
+        data = np.arange(0., 30.1, 0.1)
+        correct = np.arange(0., 1., 0.01)
+        correct = np.concatenate((correct, np.ones(101), correct[::-1]))
+        result = util.trapezoid(data, 0., 10., 20., 30.)
+        np.testing.assert_array_almost_equal(result, correct, decimal=9)
 
     def test_prob_round(self):
-        pass
+        np.random.seed(42)
+        np.testing.assert_equal(42., util.prob_round(42.4242))
+        np.random.seed(44)
+        np.testing.assert_equal(43., util.prob_round(42.4242))
 
     def test_get_wradlib_data_path(self):
         wrl_data_path = os.environ.get('WRADLIB_DATA', None)
@@ -64,12 +71,47 @@ class HelperFunctionsTest(unittest.TestCase):
         poly = util.calculate_polynomial(data, w)
         np.testing.assert_allclose(poly, out, rtol=1e-12)
 
+    def test_import_optional(self):
+        m = util.import_optional('math')
+        np.testing.assert_equal(m.log10(100), 2.0)
+        mod = util.import_optional('h8x')
+        self.assertRaises(AttributeError, lambda: mod.test())
 
-# -------------------------------------------------------------------------------
-# testing the filter helper function
-# -------------------------------------------------------------------------------
+    def test_maximum_intensity_projection(self):
+        angle = 0.0
+        elev = 0.0
+
+        filename = util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+        data = np.loadtxt(filename)
+        # we need to have meter here for the georef function inside mip
+        d1 = np.arange(data.shape[1], dtype=np.float) * 1000
+        d2 = np.arange(data.shape[0], dtype=np.float)
+        data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
+
+        # calculate max intensity proj
+        util.maximum_intensity_projection(data, r=d1, az=d2,
+                                          angle=angle, elev=elev)
+        util.maximum_intensity_projection(data, autoext=False)
+
+    def test_roll2d_polar(self):
+        filename = util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+        data = np.loadtxt(filename)
+        result1 = util.roll2d_polar(data, 1, axis=0)
+        result2 = util.roll2d_polar(data, -1, axis=0)
+        result3 = util.roll2d_polar(data, 1, axis=1)
+        result4 = util.roll2d_polar(data, -1, axis=1)
+
+        np.testing.assert_equal(result1, np.roll(data, 1, axis=0))
+        np.testing.assert_equal(result2, np.roll(data, -1, axis=0))
+        np.testing.assert_equal(result3[:, 1:],
+                                np.roll(data, 1, axis=1)[:, 1:])
+        np.testing.assert_equal(result4[:, :-1],
+                                np.roll(data, -1, axis=1)[:, :-1])
+
+
 class TestUtil(unittest.TestCase):
     def setUp(self):
+        np.random.seed(42)
         img = np.zeros((36, 10), dtype=np.float32)
         img[2, 2] = 1  # isolated pixel
         img[5, 6:8] = 1  # line
@@ -79,11 +121,12 @@ class TestUtil(unittest.TestCase):
         self.img = img
 
     def test_filter_window_polar(self):
-        np.set_printoptions(precision=3)
         rscale = 250
         # nrays, nbins = self.img.shape
         # ascale = 2 * np.pi / self.img.shape[0]
         mean = util.filter_window_polar(self.img, 300, "maximum", rscale)
+        mean2 = util.filter_window_polar(self.img, 300, "maximum", rscale,
+                                         random=True)
         correct = np.array([[0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
                             [0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
                             [0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
@@ -121,7 +164,45 @@ class TestUtil(unittest.TestCase):
                             [1., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
                             [0., 1., 1., 0., 0., 0., 0., 0., 0., 0.]])
 
-        self.assertTrue((mean == correct).all())
+        correct2 = np.array([[0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
+                             [0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
+                             [0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
+                             [0., 1., 1., 1., 0., 0., 0., 0., 0., 0.],
+                             [0., 1., 1., 1., 0., 1., 1., 1., 1., 0.],
+                             [0., 1., 1., 0., 0., 1., 1., 1., 1., 0.],
+                             [1., 1., 0., 0., 0., 1., 1., 1., 1., 0.],
+                             [1., 0., 0., 1., 1., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 1., 1., 1., 1., 1., 0., 0.],
+                             [1., 0., 0., 1., 1., 1., 1., 1., 0., 0.],
+                             [1., 0., 0., 1., 1., 1., 1., 1., 0., 0.],
+                             [1., 0., 0., 1., 1., 1., 1., 1., 0., 0.],
+                             [1., 0., 0., 1., 1., 1., 1., 1., 0., 0.],
+                             [1., 0., 0., 1., 1., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 1., 1., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 1., 1., 1., 1., 0., 0., 0., 0., 0.],
+                             [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                             [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                             [1., 1., 1., 1., 1., 1., 1., 1., 1., 1.],
+                             [1., 1., 1., 1., 1., 0., 0., 0., 0., 0.],
+                             [1., 1., 1., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [1., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+                             [0., 1., 1., 0., 0., 0., 0., 0., 0., 0.]])
+
+        np.testing.assert_array_equal(mean, correct)
+        np.testing.assert_array_equal(mean2, correct2)
 
     def test_half_power_radius(self):
         hpr = util.half_power_radius(np.arange(0, 100000, 10000), 1.0)

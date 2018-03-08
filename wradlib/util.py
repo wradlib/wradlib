@@ -24,76 +24,11 @@ attributable to the other modules
 """
 import datetime as dt
 from datetime import tzinfo, timedelta
-import warnings
-import functools
 import os
 
 import numpy as np
 from scipy.ndimage import filters
 from osgeo import ogr
-
-warnings.simplefilter('always', DeprecationWarning)
-# warnings.simplefilter('always', FutureWarning)
-
-
-def apichange_kwarg(ver, par, typ, expar=None, exfunc=None, msg=None):
-    """A decorator to generate a DeprectationWarning.
-
-    This decorator function generates a DeprecationWarning if a given kwarg
-    is changed/deprecated in a future version.
-
-    The warning is only issued, when the kwarg is actually used in the
-    function call.
-
-    Parameters
-    ----------
-
-    ver : string
-        Version from when the changes take effect
-    par : string
-        Name of parameter which is affected
-    typ : dtype
-        Data type of parameter which is affected
-    expar : string
-        Name of parameter to be used in future
-    exfunc : func
-        Function which can convert from old to new parameter
-    msg : string
-        additional warning message
-
-    """
-
-    def outer(func):
-        @functools.wraps(func)
-        def inner(*args, **kwargs):
-            para = kwargs.pop(par, None)
-            key = par
-            if para:
-                wmsg = "\nPrevious behaviour of parameter '%s' in " \
-                       "function '%s.%s' is deprecated " \
-                       "\nand will be changed in version '%s'." % \
-                       (par, func.__module__, func.__name__, ver)
-                if expar:
-                    wmsg += "\nUse parameter %s instead." % expar
-                if exfunc:
-                    wmsg += "\nWrong parameter types will be " \
-                            "automatically converted by using %s.%s." % \
-                            (exfunc.__module__, exfunc.__name__)
-                if msg:
-                    wmsg += "\n%s" % msg
-                if isinstance(para, typ):
-                    if exfunc:
-                        para = exfunc(para)
-                    if expar:
-                        key = expar
-                    warnings.warn(wmsg, category=DeprecationWarning,
-                                  stacklevel=2)
-                kwargs.update({key: para})
-            return func(*args, **kwargs)
-
-        return inner
-
-    return outer
 
 
 class OptionalModuleStub(object):
@@ -375,7 +310,6 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
         meshgrid y array
     mip : :class:`numpy:numpy.ndarray`
         Array containing the maximum intensity projection (range, range*2)
-
     """
 
     from wradlib.georef import bin_altitude as bin_altitude
