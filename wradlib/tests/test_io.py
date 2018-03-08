@@ -871,7 +871,7 @@ class NetcdfTest(unittest.TestCase):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
         wrl.io.read_generic_netcdf(ncfile)
-        self.assertRaises(FileNotFoundError,
+        self.assertRaises(IOError,
                           lambda: wrl.io.read_generic_netcdf('test'))
         filename = 'sigmet/cor-main131125105503.RAW2049'
         ncfile = wrl.util.get_wradlib_data_file(filename)
