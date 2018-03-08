@@ -263,7 +263,7 @@ def readDX(filename):
     raw = np.frombuffer(buf, dtype='uint16')
 
     # reading finished, close file, but only if we opened it.
-    if isinstance(filename, io.IOBase):
+    if isinstance(f, io.IOBase):
         f.close()
 
     # a new ray/beam starts with bit 14 set

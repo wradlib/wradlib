@@ -34,11 +34,39 @@ class DXTest(unittest.TestCase):
         self.assertEqual(radolan.getDXTimestamp(filename).__str__(),
                          '2006-08-05 00:00:00+00:00')
 
+    def test_parse_DX_header(self):
+        header = (b'DX021655109080608BY54213VS 2CO0CD2CS0EP0.30.30.40.50.'
+                  b'50.40.40.4MS999~ 54( 120,  46) 43-31 44 44 50 50 54 52 '
+                 b'52 42 39 36  ~ 53(  77,  39) 34-31 32 44 39 48 53 44 45 '
+                 b'35 28 28  ~ 53(  98,  88)-31-31-31 53 53 52 53 53 53 32-31 '
+                 b'18  ~ 57(  53,  25)-31-31 41 52 57 54 52 45 42 34 20 20  ~ '
+                 b'55(  37,  38)-31-31 55 48 43 39 50 51 42 15 15  5  ~ '
+                 b'56( 124,  19)-31 56 56 56 52 53 50 50 41 44 27 28  ~ '
+                 b'47(  62,  40)-31-31 46 42 43 40 47 41 34 27 16 10  ~ '
+                 b'46( 112,  62)-31-31 30 33 44 46 46 46 46 33 38 23  ~ '
+                 b'44( 100, -54)-31-31 41 41 38 44 43 43 28 35 30  6  ~ '
+                 b'47( 104,  75)-31-31 45 47 38 41 41 30 30 15 15  8  ^ '
+                 b'58( 104, -56) 58 58 58 58 53 37 37  9 15-31-31-31  ^ '
+                 b'58( 123,  16) 56-31 58 58 46 52 49 35 44 14 32  0  ^ '
+                 b'57(  39,  38)-31 55 53 57 55 27 29 18 11  1  1-31  ^ '
+                 b'54( 100,  85)-31-31 54 54 46 50-31-31 17-31-31-31  ^ '
+                 b'53(  71,  39)-31-31 46 53 52 34 34 40 32 32 23  0  ^ '
+                 b'53( 118,  49)-31-31 51 51 53 52 48 42 39 29 24-31  ` '
+                 b'28(  90,  43)-31-31 27 27 28 27 27 19 24 19  9  9  ` '
+                 b'42( 114,  53)-31-31 36 36 40 42 40 40 34 34 37 30  ` '
+                 b'54(  51,  27)-31-31 49 49 54 51 45 39 40 34..')
+        head = ''
+        for c in io.BytesIO(header):
+            head += str(c.decode())
+        attrs = radolan.parse_DX_header(head)
+
     def test_unpackDX(self):
         pass
 
     def test_readDX(self):
-        pass
+        filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
+        dxfile = wrl.util.get_wradlib_data_file(filename)
+        data, attrs = radolan.readDX(dxfile)
 
 
 class IOTest(unittest.TestCase):
@@ -186,10 +214,14 @@ class RadolanTest(unittest.TestCase):
 
         testline = (b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9'
                     b'\xf9\xf9\xf9\xf9\xf9\xf9\xd9\n')
+        testline1 = (b'\x10\n')
         testattrs = {'ncol': 460, 'nodataflag': 0}
         arr = np.frombuffer(testline, np.uint8).astype(np.uint8)
         line = radolan.decode_radolan_runlength_line(arr, testattrs)
         self.assertTrue(np.allclose(line, testarr))
+        arr = np.frombuffer(testline1, np.uint8).astype(np.uint8)
+        line = radolan.decode_radolan_runlength_line(arr, testattrs)
+        self.assertTrue(np.allclose(line, [0] * 460))
 
     def test_read_radolan_runlength_line(self):
         testline = (b'\x10\x98\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9\xf9'
@@ -239,6 +271,12 @@ class RadolanTest(unittest.TestCase):
         rw_file = wrl.util.get_wradlib_data_file(filename)
         rw_fid = radolan.get_radolan_filehandle(rw_file)
         self.assertEqual(rw_file, rw_fid.name)
+
+        command = 'gunzip -k -f {}'.format(rw_file)
+        check_call(command, shell=True)
+
+        rw_fid = radolan.get_radolan_filehandle(rw_file[:-3])
+        self.assertEqual(rw_file[:-3], rw_fid.name)
 
     def test_read_radolan_header(self):
         rx_header = (b'RW030950100000814BY1620130VS 3SW   2.13.1PR E-01'
@@ -299,9 +337,29 @@ class RadolanTest(unittest.TestCase):
                    'predictiontime': 0, 'moduleflag': 2,
                    'quantification': 1}
 
+        sq_header = ('SQ102050100000814BY1620231VS 3SW   2.13.1PR E-01'
+                     'INT 360GP 900x 900MS 62<boo,ros,emd,hnr,umd,pro,ess,'
+                     'asd,neu,nhb,oft,tur,isn,fbg,mem> ST 92<asd 6,boo 6,'
+                     'emd 6,ess 6,fbg 6,hnr 6,isn 6,mem 6,neu 6,nhb 6,oft 6,'
+                     'pro 6,ros 6,tur 6,umd 6>')
+
+        test_sq = {'producttype': 'SQ',
+                   'datetime': datetime.datetime(2014, 8, 10, 20, 50),
+                   'radarid': '10000', 'datasize': 1620001,
+                   'maxrange': '150 km', 'radolanversion': '2.13.1',
+                   'precision': 0.1, 'intervalseconds': 21600, 'nrow': 900,
+                   'ncol': 900,
+                   'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'umd', 'pro',
+                                      'ess', 'asd', 'neu', 'nhb', 'oft', 'tur',
+                                      'isn', 'fbg', 'mem'],
+                   'radardays': ['asd 6', 'boo 6', 'emd 6', 'ess 6', 'fbg 6',
+                                 'hnr 6', 'isn 6', 'mem 6', 'neu 6', 'nhb 6',
+                                 'oft 6', 'pro 6', 'ros 6', 'tur 6', 'umd 6']}
+
         rx = radolan.parse_DWD_quant_composite_header(rx_header)
         pg = radolan.parse_DWD_quant_composite_header(pg_header)
         rq = radolan.parse_DWD_quant_composite_header(rq_header)
+        sq = radolan.parse_DWD_quant_composite_header(sq_header)
 
         for key, value in rx.items():
             self.assertEqual(value, test_rx[key])
@@ -315,6 +373,11 @@ class RadolanTest(unittest.TestCase):
                 self.assertTrue(np.allclose(value, test_rq[key]))
             else:
                 self.assertEqual(value, test_rq[key])
+        for key, value in sq.items():
+            if type(value) == np.ndarray:
+                self.assertTrue(np.allclose(value, test_sq[key]))
+            else:
+                self.assertEqual(value, test_sq[key])
 
     def test_read_RADOLAN_composite(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
@@ -361,6 +424,16 @@ class RadolanTest(unittest.TestCase):
             else:
                 self.assertEqual(value, test_attrs[key])
         self.assertRaises(KeyError, lambda: attrs['nodataflag'])
+
+        filename = 'radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz'
+        rx_file = wrl.util.get_wradlib_data_file(filename)
+        # test for loaddata=False
+        data, attrs = radolan.read_RADOLAN_composite(rx_file)
+
+        filename = 'radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz'
+        pc_file = wrl.util.get_wradlib_data_file(filename)
+        # test for loaddata=False
+        data, attrs = radolan.read_RADOLAN_composite(pc_file)
 
 
 class RainbowTest(unittest.TestCase):
