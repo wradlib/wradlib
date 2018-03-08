@@ -74,17 +74,19 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     if re is None:
         re = get_earth_radius(sitecoords[1])
         # Set up aeqd-projection sitecoord-centered, wgs84 datum and ellipsoid
+        # use world azimuthal equidistant projection
         rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
                             '+lat_0={lat:f} +ellps=WGS84 +datum=WGS84 ' +
-                            '+units=m no_defs').format(lon=sitecoords[0],
-                                                       lat=sitecoords[1]))
+                            '+units=m +no_defs').format(lon=sitecoords[0],
+                                                        lat=sitecoords[1]))
     else:
         # Set up aeqd-projection sitecoord-centered, assuming spherical earth
+        # use Sphere azimuthal equidistant projection
         rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
                             '+lat_0={lat:f} +a={a:f} +b={b:f}' +
-                            '+units=m no_defs').format(lon=sitecoords[0],
-                                                       lat=sitecoords[1],
-                                                       a=re, b=re))
+                            '+units=m +no_defs').format(lon=sitecoords[0],
+                                                        lat=sitecoords[1],
+                                                        a=re, b=re))
 
     r = np.asarray(r)
     theta = np.asarray(theta)
@@ -232,9 +234,9 @@ def centroid_to_polyvert(centroid, delta):
 
     """
     cent = np.asanyarray(centroid)
-    if (cent.shape[0] == 2) and (cent.shape[-1] != 2):
-        cent = np.transpose(cent)
-    assert cent.shape[-1] == 2
+    if cent.shape[-1] != 2:
+        raise ValueError("Parameter 'centroid' dimensions need "
+                         "to be (..., 2)")
     dshape = [1] * cent.ndim
     dshape.insert(-1, 5)
     dshape[-1] = 2

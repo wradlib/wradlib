@@ -39,16 +39,14 @@ def pixel_coordinates(nx, ny, mode="centers"):
     ny : int
         ysize
     mode : string
-        `centers` or `centroids` to return the pixel centers coordinates
-        otherwise the pixel edges coordinates will be returned
+        `centers` or `edges` to return the pixel coordinates
+        defaults to centers
     Returns
     -------
     coordinates : :class:`numpy:numpy.ndarray`
          Array of shape (ny,nx) with pixel coordinates (x,y)
 
     """
-    if mode == "centroids":
-        mode = "centers"
     x = np.linspace(0, nx, num=nx + 1)
     y = np.linspace(0, ny, num=ny + 1)
     if mode == "centers":
@@ -299,7 +297,7 @@ def set_raster_origin(data, coords, direction):
         data = np.flip(data, axis=-2)
         coords = np.flip(coords, axis=-3)
         # we need to shift y-coordinate if data and coordinates have the same
-        # number of rows and cols
+        # number of rows and cols (only the ll or ul raster coords are given)
         if data.shape[-2:] == coords.shape[:2]:
             coords += [0, y_sp]
 

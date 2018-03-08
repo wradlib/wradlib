@@ -18,9 +18,8 @@ Projection Functions
    wkt_to_osr
 """
 
-from osgeo import osr
+from osgeo import osr, ogr
 import numpy as np
-from sys import exit
 
 
 def create_osr(projname, **kwargs):
@@ -114,9 +113,9 @@ Georeferencing-and-Projection`.
         proj.ImportFromWkt(radolan_wkt.format(scale))
 
     else:
-        print("No convenience support for projection %r, yet." % projname)
-        print("You need to create projection by using other means...")
-        exit(1)
+        raise ValueError("No convenience support for projection %r, "
+                         "yet.\nYou need to create projection by using "
+                         "other means..." % projname)
 
     return proj
 
@@ -135,12 +134,14 @@ def proj4_to_osr(proj4str):
     See :ref:`notebooks/radolan/radolan_grid.ipynb#PROJ.4`.
 
     """
-    proj = None
-    if proj4str:
-        proj = osr.SpatialReference()
-        proj.ImportFromProj4(proj4str)
-    else:
-        proj = get_default_projection()
+    proj = osr.SpatialReference()
+    proj.ImportFromProj4(proj4str)
+    proj.AutoIdentifyEPSG()
+    proj.Fixup()
+    proj.FixupOrdering()
+    if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
+        raise ValueError("proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
+                         "and can't be imported as OSR object")
     return proj
 
 
@@ -257,7 +258,7 @@ def get_default_projection():
     return proj
 
 
-def epsg_to_osr(epsg=None):
+def epsg_to_osr(epsg=None, **kwargs):
     """Create osr spatial reference object from EPSG number
 
     Parameters
