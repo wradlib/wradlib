@@ -776,5 +776,37 @@ class IrisTest(unittest.TestCase):
             wrl.io.iris.PRODUCT_CONFIGURATION), fmt)
 
 
+class NetcdfTest(unittest.TestCase):
+    def test_read_EDGE_netcdf(self):
+        filename = 'netcdf/edge_netcdf.nc'
+        edgefile = wrl.util.get_wradlib_data_file(filename)
+        data, attrs = wrl.io.read_EDGE_netcdf(edgefile)
+        data, attrs = wrl.io.read_EDGE_netcdf(edgefile, enforce_equidist=True)
+
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        self.assertRaises(Exception, lambda: wrl.io.read_EDGE_netcdf(ncfile))
+        self.assertRaises(Exception, lambda: wrl.io.read_EDGE_netcdf('test'))
+
+    def test_read_generic_netcdf(self):
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.read_generic_netcdf(ncfile)
+        self.assertRaises(FileNotFoundError,
+                          lambda: wrl.io.read_generic_netcdf('test'))
+        filename = 'sigmet/cor-main131125105503.RAW2049'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        self.assertRaises(OSError,
+                          lambda: wrl.io.read_generic_netcdf(ncfile))
+
+        filename = 'hdf5/IDR66_20100206_111233.vol.h5'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.read_generic_netcdf(ncfile)
+
+        filename = 'netcdf/example_cfradial_ppi.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.read_generic_netcdf(ncfile)
+
+
 if __name__ == '__main__':
     unittest.main()
