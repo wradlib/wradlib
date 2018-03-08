@@ -31,12 +31,6 @@ import datetime as dt
 from ..zonalstats import get_clip_mask
 
 
-def browse_hdf5_group(grp):
-    """Browses one hdf5 file level
-    """
-    pass
-
-
 def read_generic_hdf5(fname):
     """Reads hdf5 files according to their structure
 

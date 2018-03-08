@@ -120,6 +120,85 @@ class HDF5Test(unittest.TestCase):
 
         self.assertRaises(KeyError, lambda: wrl.io.read_safnwc('test1.h5'))
 
+    def test_read_gpm(self):
+        filename1 = ('gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-'
+                     'S095002-E095137.004383.V05A.HDF5')
+        gpm_file = wrl.util.get_wradlib_data_file(filename1)
+        filename2 = ('hdf5/IDR66_20141206_094829.vol.h5')
+        gr2gpm_file = wrl.util.get_wradlib_data_file(filename2)
+        gr_data = wrl.io.read_generic_netcdf(gr2gpm_file)
+        dset = gr_data['dataset{0}'.format(2)]
+        nray_gr = dset['where']['nrays']
+        ngate_gr = dset['where']['nbins'].astype("i4")
+        elev_gr = dset['where']['elangle']
+        dr_gr = dset['where']['rscale']
+        lon0_gr = gr_data['where']['lon']
+        lat0_gr = gr_data['where']['lat']
+        alt0_gr = gr_data['where']['height']
+        coord = wrl.georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
+        coords = wrl.georef.spherical_to_proj(coord[..., 0],
+                                              np.degrees(coord[..., 1]),
+                                              coord[..., 2],
+                                              (lon0_gr, lat0_gr, alt0_gr))
+        lon = coords[..., 0]
+        lat = coords[..., 1]
+        bbox = wrl.zonalstats.get_bbox(lon, lat)
+        wrl.io.read_gpm(gpm_file, bbox)
+
+    def test_read_trmm(self):
+        # define TRMM data sets
+        trmm_2a23_file = wrl.util.get_wradlib_data_file(
+            'trmm/2A-CS-151E24S154E30S.TRMM.PR.2A23.20100206-'
+            'S111425-E111526.069662.7.HDF')
+        trmm_2a25_file = wrl.util.get_wradlib_data_file(
+            'trmm/2A-CS-151E24S154E30S.TRMM.PR.2A25.20100206-'
+            'S111425-E111526.069662.7.HDF')
+
+        filename2 = ('hdf5/IDR66_20141206_094829.vol.h5')
+        gr2gpm_file = wrl.util.get_wradlib_data_file(filename2)
+        gr_data = wrl.io.read_generic_netcdf(gr2gpm_file)
+        dset = gr_data['dataset{0}'.format(2)]
+        nray_gr = dset['where']['nrays']
+        ngate_gr = dset['where']['nbins'].astype("i4")
+        elev_gr = dset['where']['elangle']
+        dr_gr = dset['where']['rscale']
+        lon0_gr = gr_data['where']['lon']
+        lat0_gr = gr_data['where']['lat']
+        alt0_gr = gr_data['where']['height']
+        coord = wrl.georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
+        coords = wrl.georef.spherical_to_proj(coord[..., 0],
+                                              np.degrees(coord[..., 1]),
+                                              coord[..., 2],
+                                              (lon0_gr, lat0_gr, alt0_gr))
+        lon = coords[..., 0]
+        lat = coords[..., 1]
+        bbox = wrl.zonalstats.get_bbox(lon, lat)
+
+        wrl.io.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
+
+    def test_read_generic_hdf5(self):
+        filename = ('hdf5/IDR66_20141206_094829.vol.h5')
+        h5_file = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.read_generic_hdf5(h5_file)
+
+    def test_read_OPERA_hdf5(self):
+        filename = ('hdf5/IDR66_20141206_094829.vol.h5')
+        h5_file = wrl.util.get_wradlib_data_file(filename)
+        wrl.io.read_OPERA_hdf5(h5_file)
+
+    def test_read_GAMIC_hdf5(self):
+        ppi = ('hdf5/2014-08-10--182000.ppi.mvol')
+        rhi = ('hdf5/2014-06-09--185000.rhi.mvol')
+        filename = ('gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-'
+                    'S095002-E095137.004383.V05A.HDF5')
+
+        h5_file = wrl.util.get_wradlib_data_file(ppi)
+        wrl.io.read_GAMIC_hdf5(h5_file)
+        h5_file = wrl.util.get_wradlib_data_file(rhi)
+        wrl.io.read_GAMIC_hdf5(h5_file)
+        h5_file = wrl.util.get_wradlib_data_file(filename)
+        self.assertRaises(KeyError, lambda: wrl.io.read_GAMIC_hdf5(h5_file))
+
 
 class RadolanTest(unittest.TestCase):
     def test_get_radolan_header_token(self):
