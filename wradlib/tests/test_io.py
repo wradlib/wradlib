@@ -2,6 +2,7 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
+import unittest.mock
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
@@ -353,6 +354,7 @@ class RainbowTest(unittest.TestCase):
     def test_read_rainbow(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
+        self.assertRaises(IOError, lambda: rainbow.read_Rainbow('test'))
         # Test reading from file name
         rb_dict = rainbow.read_Rainbow(rb_file)
         self.assertEqual(rb_dict[u'volume'][u'@datetime'],
@@ -366,8 +368,10 @@ class RainbowTest(unittest.TestCase):
     def test_find_key(self):
         indict = {'A': {'AA': {'AAA': 0, 'X': 1},
                         'AB': {'ABA': 2, 'X': 3},
-                        'AC': {'ACA': 4, 'X': 5}}}
-        outdict = [{'X': 1, 'AAA': 0}, {'X': 5, 'ACA': 4}, {'ABA': 2, 'X': 3}]
+                        'AC': {'ACA': 4, 'X': 5},
+                        'AD': [{'ADA': 4, 'X': 2}]}}
+        outdict = [{'X': 1, 'AAA': 0}, {'X': 5, 'ACA': 4},
+                   {'ABA': 2, 'X': 3}, {'ADA': 4, 'X': 2}]
         try:
             self.assertCountEqual(list(rainbow.find_key('X', indict)),
                                   outdict)
@@ -389,6 +393,10 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rainbow.get_RB_data_layout(16), (2, '>u2'))
         self.assertEqual(rainbow.get_RB_data_layout(32), (4, '>u4'))
         self.assertRaises(ValueError, lambda: rainbow.get_RB_data_layout(128))
+        with unittest.mock.patch('sys.byteorder', 'big'):
+            self.assertEqual(rainbow.get_RB_data_layout(8), (1, '<u1'))
+            self.assertEqual(rainbow.get_RB_data_layout(16), (2, '<u2'))
+            self.assertEqual(rainbow.get_RB_data_layout(32), (4, '<u4'))
 
     def test_get_RB_data_attribute(self):
         xmltodict = wrl.util.import_optional('xmltodict')
@@ -432,11 +440,15 @@ class RainbowTest(unittest.TestCase):
                                 'columns="400" min="-31.5" max="95.5" '
                                 'depth="6"/> #<defect blobid="3" type="dBuZ" '
                                 'columns="400" min="-31.5" max="95.5" '
-                                'depth="6"/> #</slicedata>'))
+                                'depth="6"/> #<rawdata2 '
+                                'blobid="4" rows="800" type="dBuZ" '
+                                'columns="400" min="-31.5" max="95.5" '
+                                'depth="8"/> #</slicedata>'))
         data = list(rainbow.find_key('@blobid', data))
         self.assertEqual(rainbow.get_RB_data_shape(data[0]), 361)
         self.assertEqual(rainbow.get_RB_data_shape(data[1]), (361, 400))
         self.assertEqual(rainbow.get_RB_data_shape(data[2]), (800, 400, 6))
+        self.assertEqual(rainbow.get_RB_data_shape(data[4]), (800, 400))
         self.assertRaises(KeyError, lambda: rainbow.get_RB_data_shape(data[3]))
 
     def test_map_RB_data(self):
@@ -451,6 +463,9 @@ class RainbowTest(unittest.TestCase):
                                     outdata16))
         self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 32),
                                     outdata32))
+        flagdata = b'1'
+        self.assertTrue(np.allclose(rainbow.map_RB_data(flagdata, 1),
+                                    [0, 0, 1, 1, 0, 0, 0, 1]))
 
     def test_get_RB_blob_data(self):
         datastring = b'<BLOB blobid="0" size="737" compression="qt"></BLOB>'
@@ -488,13 +503,20 @@ class RainbowTest(unittest.TestCase):
                               lambda: rainbow.get_RB_file_as_string('rb_fh'))
 
     def test_get_RB_header(self):
+        rb_header = (b'<volume version="5.34.16" '
+                     b'datetime="2013-07-03T08:33:55"'
+                     b' type="azi" owner="RainAnalyzer"> '
+                     b'<scan name="analyzer.azi" time="08:34:00" '
+                     b'date="2013-07-03">')
+
+        buf = io.BytesIO(rb_header)
+        self.assertRaises(IOError, lambda: rainbow.get_RB_header(buf))
+
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
         with open(rb_file, 'rb') as rb_fh:
             rb_header = rainbow.get_RB_header(rb_fh)
             self.assertEqual(rb_header['volume']['@version'], '5.34.16')
-            self.assertRaises(IOError,
-                              lambda: rainbow.get_RB_header('rb_fh'))
 
 
 class RasterTest(unittest.TestCase):

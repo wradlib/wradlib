@@ -394,14 +394,11 @@ def get_RB_header(fid):
     header = b""
     line = b""
 
-    try:
-        while not line.startswith(endXMLmarker):
-            header += line[:-1]
-            line = fid.readline()
-            if len(line) == 0:
-                break
-    except Exception:
-        raise IOError('Could not read from file handle')
+    while not line.startswith(endXMLmarker):
+        header += line[:-1]
+        line = fid.readline()
+        if len(line) == 0:
+            raise IOError("WRADLIB: Rainbow Fileheader Corrupt")
 
     xmltodict = util.import_optional('xmltodict')
 
@@ -448,8 +445,8 @@ def read_Rainbow(f, loaddata=True):
         try:
             fid = open(f, "rb")
         except IOError:
-            print("WRADLIB: Error opening Rainbow file ", f)
-            raise IOError
+            raise IOError("WRADLIB: Error opening Rainbow "
+                          "file '{}' ".format(f))
 
     rbdict = get_RB_header(fid)
 
