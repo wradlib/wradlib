@@ -20,7 +20,6 @@ Standard plotting and mapping procedures
    plot_scan_strategy
    plot_plan_and_vert
    plot_max_plan_and_vert
-   plot_tseries
    add_lines
    add_patches
 
@@ -35,81 +34,18 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as pl
 from matplotlib import patches
-from matplotlib.projections import PolarAxes, register_projection
-from matplotlib.transforms import Affine2D, Bbox, IdentityTransform
+from matplotlib.projections import PolarAxes
+from matplotlib.transforms import Affine2D
 from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
                                      GridHelperCurveLinear)
 from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
 import mpl_toolkits.axisartist.angle_helper as ah
 from matplotlib.ticker import NullFormatter, FuncFormatter
-import matplotlib.dates as mdates
 from matplotlib.collections import LineCollection, PolyCollection
 
 # wradlib modules
 from . import georef as georef
 from . import util as util
-
-
-class NorthPolarAxes(PolarAxes):
-    """A variant of PolarAxes where theta starts pointing north and goes \
-    clockwise.
-
-    Obsolete since matplotlib version 1.1.0, where the same behaviour may
-    be achieved with a reconfigured standard PolarAxes object.
-    """
-    name = 'northpolar'
-
-    class NorthPolarTransform(PolarAxes.PolarTransform):
-        def transform(self, tr):
-            xy = np.zeros(tr.shape, np.float_)
-            t = tr[:, 0:1]
-            r = tr[:, 1:2]
-            x = xy[:, 0:1]
-            y = xy[:, 1:2]
-            x[:] = r * np.sin(t)
-            y[:] = r * np.cos(t)
-            return xy
-
-        transform_non_affine = transform
-
-        def inverted(self):
-            return NorthPolarAxes.InvertedNorthPolarTransform()
-
-    class InvertedNorthPolarTransform(PolarAxes.InvertedPolarTransform):
-        def transform(self, xy):
-            x = xy[:, 0:1]
-            y = xy[:, 1:]
-            r = np.sqrt(x * x + y * y)
-            theta = np.arctan2(y, x)
-            return np.concatenate((theta, r), 1)
-
-        def inverted(self):
-            return NorthPolarAxes.NorthPolarTransform()
-
-    def _set_lim_and_transforms(self):
-        PolarAxes._set_lim_and_transforms(self)
-        self.transProjection = self.NorthPolarTransform()
-        self.transData = (
-            self.transScale +
-            self.transProjection +
-            (self.transProjectionAffine + self.transAxes))
-        self._xaxis_transform = (
-            self.transProjection +
-            self.PolarAffine(IdentityTransform(), Bbox.unit()) +
-            self.transAxes)
-        self._xaxis_text1_transform = (
-            self._theta_label1_position +
-            self._xaxis_transform)
-        self._yaxis_transform = (
-            Affine2D().scale(np.pi * 2.0, 1.0) +
-            self.transData)
-        self._yaxis_text1_transform = (
-            self._r_label1_position +
-            Affine2D().scale(1.0 / 360.0, 1.0) +
-            self._yaxis_transform)
-
-
-register_projection(NorthPolarAxes)
 
 
 def plot_ppi(data, r=None, az=None, autoext=True,
@@ -801,9 +737,12 @@ def create_cg(st, fig=None, subplot=111):
                                                         2, 2.5, 5, 10]
 
     if st == 'PPI':
+        # Set theta start to north
+        tr_rotate = Affine2D().translate(-90, 0)
+        # set theta running clockwise
+        tr_scale = Affine2D().scale(-np.pi / 180, 1)
         # create transformation
-        tr = (Affine2D().scale(np.pi / 180, 1) +
-              NorthPolarAxes.NorthPolarTransform())
+        tr = tr_rotate + tr_scale + PolarAxes.PolarTransform()
 
         # build up curvelinear grid
         extreme_finder = ah.ExtremeFinderCycle(20, 20,
@@ -1026,7 +965,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
         # add a title - here, we have to create a new axes object which will
         # be invisible then the invisible axes will get a title
         tax = pl.axes((left, bottom + width + height + 0.01,
-                       width + height, 0.01), frameon=False, axisbg="none")
+                       width + height, 0.01), frameon=False, facecolor="none")
         tax.get_xaxis().set_visible(False)
         tax.get_yaxis().set_visible(False)
         pl.title(title)
@@ -1055,65 +994,6 @@ def plot_max_plan_and_vert(x, y, z, data, unit="", title="",
     plot_plan_and_vert(x, y, z, np.max(data, axis=-3), np.max(data, axis=-2),
                        np.max(data, axis=-1),
                        unit, title, saveto, **kwargs)
-
-
-def plot_tseries(dtimes, data, ax=None, labels=None, datefmt='%b %d, %H:%M',
-                 colors=None, ylabel="", title="", fontsize="medium",
-                 saveto="", **kwargs):
-    """Plot time series data (e.g. gage recordings)
-
-    Parameters
-    ----------
-    dtimes : :class:`numpy:numpy.ndarray`
-        array of datetime objects (time steps)
-    data : :class:`numpy:numpy.ndarray`
-        2D array of shape ( num time steps, num data series )
-    labels : list of strings (names of data series)
-    title : string
-    kwargs : keyword arguments related to :func:`matplotlib.pyplot.plot`
-
-    """
-    if ax is None:
-        returnax = False
-        fig = pl.figure()
-        ax = fig.add_subplot(1, 1, 1, title=title)
-    else:
-        returnax = True
-    # if labels==None:
-    #    labels = ["series%d"%i for i in range(1, data.shape[1]+1)]
-    # for i, label in enumerate(labels):
-    #    ax.plot_date(mpl.dates.date2num(dtimes),data[:,i],label=label,
-    #                 color=colors[i], **kwargs)
-    ax.plot_date(mpl.dates.date2num(dtimes), data, **kwargs)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter(datefmt))
-    pl.setp(ax.get_xticklabels(), visible=True)
-    pl.setp(ax.get_xticklabels(), rotation=-30, horizontalalignment='left')
-    ax.set_ylabel(ylabel, size=fontsize)
-    ax = set_ticklabel_size(ax, fontsize)
-    ax.legend(loc='best')
-
-    if returnax:
-        return ax
-
-    if saveto == "":
-        # show plot
-        pl.show()
-        if not pl.isinteractive():
-            # close figure explicitely if pylab is not in interactive mode
-            pl.close()
-    else:
-        # save plot to file
-        if (path.exists(path.dirname(saveto))) or (path.dirname(saveto) == ''):
-            pl.savefig(saveto)
-            pl.close()
-
-
-def set_ticklabel_size(ax, size):
-    """
-    """
-    for label in ax.get_xticklabels() + ax.get_yticklabels():
-        label.set_fontsize(size)
-    return ax
 
 
 def add_lines(ax, lines, **kwargs):
