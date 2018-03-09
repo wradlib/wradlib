@@ -23,6 +23,7 @@ from scipy.spatial import KDTree
 from scipy import stats
 import matplotlib.pyplot as pl
 from pprint import pprint
+import warnings
 
 # wradlib modules
 from . import georef as georef
@@ -171,17 +172,18 @@ class ErrorMetrics():
 
     def __init__(self, obs, est, minval=None):
         # Check input
-        assert len(obs) == len(est), \
-            "obs and est need to have the same length. " \
-            "len(obs)=%d, len(est)=%d" % (len(obs), len(est))
+        if len(obs) != len(est):
+            raise ValueError("WRADLIB: obs and est need to have the "
+                             "same length. len(obs)={}, "
+                             "len(est)={}".format(len(obs), len(est)))
         # only remember those entries which have both valid observations
         # AND estimates
         ix = np.intersect1d(util._idvalid(obs, minval=minval),
                             util._idvalid(est, minval=minval))
         self.n = len(ix)
         if self.n == 0:
-            print("WARNING: No valid pairs of observed and "
-                  "estimated available for ErrorMetrics!")
+            warnings.warn("WRADLIB: No valid pairs of observed and "
+                          "estimated available for ErrorMetrics!")
             self.obs = np.array([])
             self.est = np.array([])
         else:
