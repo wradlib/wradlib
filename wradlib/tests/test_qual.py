@@ -9,26 +9,6 @@ import unittest
 
 
 class HelperFunctionsTest(unittest.TestCase):
-    def test_beam_height_ft(self):
-        self.assertTrue(np.allclose(qual.beam_height_ft(np.array([100, 200]),
-                                                        np.array([2.0])),
-                                    np.array([3.49053756, 6.98225089])))
-        self.assertTrue(np.allclose(qual.beam_height_ft(np.array([100, 200]),
-                                                        np.deg2rad([2.0]),
-                                                        degrees=False),
-                                    np.array([3.49053756, 6.98225089])))
-
-    def test_beamheight_ft_doviak(self):
-        self.assertTrue(
-            np.allclose(qual.beam_height_ft_doviak(np.array([100, 200]),
-                                                   np.array([2.0])),
-                        np.array([3.49053756, 6.98225089])))
-        self.assertTrue(
-            np.allclose(qual.beam_height_ft_doviak(np.array([100, 200]),
-                                                   np.deg2rad([2.0]),
-                                                   degrees=False),
-                        np.array([3.49053756, 6.98225089])))
-
     def test_get_bb_ratio(self):
         heights = np.array([[1100, 1100], [1100, 1100],
                             [1100, 1100], [1100, 1100]], dtype=np.float)
@@ -55,6 +35,14 @@ class HelperFunctionsTest(unittest.TestCase):
         ratio, index = qual.get_bb_ratio(heights, widths, quality, z)
         np.testing.assert_array_equal(ratio, ratio_out)
         np.testing.assert_array_equal(index, index_out)
+
+    def test_pulse_volume(self):
+        vol_out = np.array([0.00000000e+00, 2.39258109e+06, 9.57032436e+06,
+                            2.15332298e+07, 3.82812974e+07, 5.98145272e+07,
+                            8.61329192e+07, 1.17236473e+08, 1.53125190e+08,
+                            1.93799068e+08])
+        np.testing.assert_allclose(
+            qual.pulse_volume(np.arange(0, 100000, 10000), 100, 1), vol_out)
 
 
 class BeamBlockFracTest(unittest.TestCase):

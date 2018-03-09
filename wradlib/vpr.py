@@ -91,7 +91,6 @@ import scipy
 from . import georef as georef
 from . import ipol as ipol
 from . import util as util
-from . import qual as qual
 
 
 class CartesianVolume():
@@ -317,11 +316,12 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     # distances of 3-D grid nodes from radar site (center)
     dist_from_rad = np.sqrt(((gridcoords - center) ** 2).sum(axis=-1))
     # below the radar
-    # TODO: use qual.beam_height_ft_doviak
-    below = gridcoords[:, 2] < (qual.beam_height_ft(dist_from_rad, minelev) +
+    below = gridcoords[:, 2] < (georef.bin_altitude(dist_from_rad, minelev, 0,
+                                                    re=6371000) +
                                 center[:, 2])
     # above the radar
-    above = gridcoords[:, 2] > (qual.beam_height_ft(dist_from_rad, maxelev) +
+    above = gridcoords[:, 2] > (georef.bin_altitude(dist_from_rad, maxelev, 0,
+                                                    re=6371000) +
                                 center[:, 2])
     # out of range
     out_of_range = dist_from_rad > maxrange

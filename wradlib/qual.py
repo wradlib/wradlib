@@ -23,8 +23,6 @@ fields except that they exhibit the numpy ndarray interface.
    :nosignatures:
    :toctree: generated/
 
-    beam_height_ft
-    beam_height_ft_doviak
     pulse_volume
     beam_block_frac
     get_bb_ratio
@@ -32,91 +30,6 @@ fields except that they exhibit the numpy ndarray interface.
 """
 
 import numpy as np
-
-
-def beam_height_ft(ranges, elevations, degrees=True, re=6371000):
-    """Calculates the height of a radar beam above the antenna.
-
-    According to the 4/3 (four-thirds -> ft) effective Earth radius model.
-    The formula was taken from :cite:`Collier1996`.
-
-    Parameters
-    ----------
-    ranges : :class:`numpy:numpy.ndarray`
-        The distances of each bin from the radar [m]
-    elevations : :class:`numpy:numpy.ndarray`
-        The elevation angles of each bin from the radar [degrees or radians]
-    degrees : bool
-        If True (the default) elevation angles are given in degrees and will
-        be converted to radians before calculation. If False no transformation
-        will be done and elevations has to be given in radians.
-    re : float
-        Earth radius [m]
-
-    Returns
-    -------
-    output : :class:`numpy:numpy.ndarray`
-        Height of the beam [m]
-
-    Note
-    ----
-    The shape of `elevations` and `ranges` may differ in which case numpy's
-    broadcasting rules will apply and the shape of `output` will be that of
-    the broadcast arrays. See the numpy documentation on how broadcasting
-    works.
-
-    """
-    if degrees:
-        elev = np.deg2rad(elevations)
-    else:
-        elev = elevations
-
-    return ((ranges ** 2 * np.cos(elev) ** 2) /
-            (2 * (4. / 3.) * re)) + ranges * np.sin(elev)
-
-
-def beam_height_ft_doviak(ranges, elevations, degrees=True, re=6371000):
-    """Calculates the height of a radar beam above the antenna.
-
-    According to the 4/3 (four-thirds -> ft) effective Earth radius model.
-    The formula was taken from :cite:`Doviak1993`.
-
-    Parameters
-    ----------
-    ranges : :class:`numpy:numpy.ndarray`
-        The distances of each bin from the radar [m]
-    elevations : :class:`numpy:numpy.ndarray`
-        The elevation angles of each bin from the radar [degrees or radians]
-    degrees : bool
-        If True (the default) elevation angles are assumed to be given in
-        degrees and will
-        be converted to radians before calculation. If False no transformation
-        will be done and `elevations` has to be given in radians.
-    re : float
-        Earth radius [m]
-
-    Returns
-    -------
-    output : :class:`numpy:numpy.ndarray`
-        Height of the beam [m]
-
-    Note
-    ----
-    The shape of `elevations` and `ranges` may differ in which case numpy's
-    broadcasting rules will apply and the shape of `output` will be that of
-    the broadcast arrays. See the numpy documentation on how broadcasting
-    works.
-
-    """
-    if degrees:
-        elev = np.deg2rad(elevations)
-    else:
-        elev = elevations
-
-    reft = (4. / 3.) * re
-
-    return np.sqrt(ranges ** 2 + reft ** 2 +
-                   2 * ranges * reft * np.sin(elev)) - reft
 
 
 def pulse_volume(ranges, h, theta):
