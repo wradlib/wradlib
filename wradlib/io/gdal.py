@@ -96,17 +96,19 @@ def read_safnwc(filename):
     ds1 = gdal.Open('HDF5:' + filename + '://CT')
     ds = gdal.GetDriverByName('MEM').CreateCopy('out', ds1, 0)
 
-    # name = os.path.basename(filename)[7:11]
     try:
         proj = osr.SpatialReference()
         proj.ImportFromProj4(ds.GetMetadata()["PROJECTION"])
-    except Exception:
-        raise NameError("No metadata for satellite file %s" % filename)
+    except KeyError:
+        raise KeyError("WRADLIB: Projection is missing for satellite "
+                       "file {}".format(filename))
+
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
     geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"]
     ds.SetProjection(proj.ExportToWkt())
     ds.SetGeoTransform([float(x) for x in geotransform])
+
     return ds
 
 
@@ -142,7 +144,8 @@ def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
     metadata = driver.GetMetadata()
 
     if not metadata.get('DCAP_CREATE', False):
-        raise IOError("Driver %s doesn't support Create() method.".format(drv))
+        raise TypeError("WRADLIB: Driver {} doesn't support "
+                        "Create() method.".format(drv))
 
     if remove:
         if os.path.exists(name):
@@ -186,8 +189,10 @@ def write_raster_dataset(fpath, dataset, format, options=None, remove=False):
     metadata = driver.GetMetadata()
 
     # check driver capability
-    if 'DCAP_CREATECOPY' in metadata and metadata['DCAP_CREATECOPY'] != 'YES':
-        assert "Driver %s doesn't support CreateCopy() method.".format(format)
+    if not ('DCAP_CREATECOPY' in metadata and
+            metadata['DCAP_CREATECOPY'] == 'YES'):
+        raise TypeError("WRADLIB: Raster Driver {} doesn't support "
+                        "CreateCopy() method.".format(format))
 
     if remove:
         if os.path.exists(fpath):

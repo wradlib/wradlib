@@ -45,48 +45,45 @@ def read_EDGE_netcdf(filename, enforce_equidist=False):
     output : :func:`numpy:numpy.array`
         of image data (dBZ), dictionary of attributes
     """
-    try:
-        # read the data from file
-        dset = nc.Dataset(filename)
-        data = dset.variables[dset.TypeName][:]
-        # Check azimuth angles and rotate image
-        az = dset.variables['Azimuth'][:]
-        # These are the indices of the minimum and maximum azimuth angle
-        ix_minaz = np.argmin(az)
-        ix_maxaz = np.argmax(az)
-        if enforce_equidist:
-            az = np.linspace(np.round(az[ix_minaz], 2),
-                             np.round(az[ix_maxaz], 2), len(az))
-        else:
-            az = np.roll(az, -ix_minaz)
-        # rotate accordingly
-        data = np.roll(data, -ix_minaz, axis=0)
-        data = np.where(data == dset.getncattr('MissingData'), np.nan, data)
-        # Ranges
-        binwidth = ((dset.getncattr('MaximumRange-value') * 1000.) /
-                    len(dset.dimensions['Gate']))
-        r = np.arange(binwidth,
-                      (dset.getncattr('MaximumRange-value') * 1000.) +
-                      binwidth, binwidth)
-        # collect attributes
-        attrs = {}
-        for attrname in dset.ncattrs():
-            attrs[attrname] = dset.getncattr(attrname)
-        # # Limiting the returned range
-        # if range_lim and range_lim / binwidth <= data.shape[1]:
-        #     data = data[:,:range_lim / binwidth]
-        #     r = r[:range_lim / binwidth]
-        # Set additional metadata attributes
-        attrs['az'] = az
-        attrs['r'] = r
-        attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'],
-                               attrs['Height'])
-        attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
-        attrs['max_range'] = data.shape[1] * binwidth
-    except Exception:
-        raise
-    finally:
-        dset.close()
+    # read the data from file
+    dset = nc.Dataset(filename)
+    data = dset.variables[dset.TypeName][:]
+    # Check azimuth angles and rotate image
+    az = dset.variables['Azimuth'][:]
+    # These are the indices of the minimum and maximum azimuth angle
+    ix_minaz = np.argmin(az)
+    ix_maxaz = np.argmax(az)
+    if enforce_equidist:
+        az = np.linspace(np.round(az[ix_minaz], 2),
+                         np.round(az[ix_maxaz], 2), len(az))
+    else:
+        az = np.roll(az, -ix_minaz)
+    # rotate accordingly
+    data = np.roll(data, -ix_minaz, axis=0)
+    data = np.where(data == dset.getncattr('MissingData'), np.nan, data)
+    # Ranges
+    binwidth = ((dset.getncattr('MaximumRange-value') * 1000.) /
+                len(dset.dimensions['Gate']))
+    r = np.arange(binwidth,
+                  (dset.getncattr('MaximumRange-value') * 1000.) +
+                  binwidth, binwidth)
+    # collect attributes
+    attrs = {}
+    for attrname in dset.ncattrs():
+        attrs[attrname] = dset.getncattr(attrname)
+    # # Limiting the returned range
+    # if range_lim and range_lim / binwidth <= data.shape[1]:
+    #     data = data[:,:range_lim / binwidth]
+    #     r = r[:range_lim / binwidth]
+    # Set additional metadata attributes
+    attrs['az'] = az
+    attrs['r'] = r
+    attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'],
+                           attrs['Height'])
+    attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
+    attrs['max_range'] = data.shape[1] * binwidth
+
+    dset.close()
 
     return data, attrs
 
@@ -209,13 +206,7 @@ def read_generic_netcdf(fname):
     --------
     See :ref:`notebooks/fileio/wradlib_generic_netcdf_example.ipynb`.
     """
-    try:
-        ncid = nc.Dataset(fname, 'r')
-    except RuntimeError:
-        print("wradlib1: Could not read %s." % fname)
-        print("Check whether file exists, and whether it is a netCDF file.")
-        print("Raising exception...")
-        raise
+    ncid = nc.Dataset(fname, 'r')
 
     out = read_netcdf_group(ncid)
 
