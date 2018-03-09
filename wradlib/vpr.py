@@ -91,7 +91,6 @@ import scipy
 from . import georef as georef
 from . import ipol as ipol
 from . import util as util
-from . import qual as qual
 
 
 class CartesianVolume():
