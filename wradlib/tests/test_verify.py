@@ -6,7 +6,7 @@ import sys
 import unittest
 import numpy as np
 import matplotlib.pyplot as pl
-pl.interactive(True)
+pl.interactive(True)  # noqa
 from .. import verify
 from .. import georef
 
@@ -14,9 +14,7 @@ from .. import georef
 class PolarNeighboursTest(unittest.TestCase):
     def setUp(self):
         self.r = np.arange(1, 100, 10)
-        #print(self.r)
         self.az = np.arange(0, 360, 90)
-        #print(self.az)
         self.site = (9.7839, 48.5861)
         self.proj = georef.epsg_to_osr(31467)
         # Coordinates of the rain gages in Gauss-Krueger 3 coordinates
