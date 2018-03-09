@@ -16,7 +16,7 @@ class ComposeTest(unittest.TestCase):
         filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
         dx_file = get_wradlib_data_file(filename)
         self.data, metadata = readDX(dx_file)
-        radar_location = (8.005, 47.8744, 1517)  # (lon, lat, alt) in decimal degree and meters
+        radar_location = (8.005, 47.8744, 1517)
         elevation = 0.5  # in degree
         azimuths = np.arange(0, 360)  # in degrees
         ranges = np.arange(0, 128000., 1000.)  # in meters
@@ -50,11 +50,11 @@ class ComposeTest(unittest.TestCase):
                        11., 11., np.nan, np.nan, 11., 11., 11., 11., np.nan,
                        11., 11., 11., np.nan, np.nan, np.nan, 11., np.nan,
                        np.nan])
-        q1 = np.array([np.nan, np.nan, 3.47408756e+09, np.nan, np.nan, np.nan, 
-                       8.75744493e+08, 8.75744493e+08, 1.55045236e+09, np.nan, 
-                       3.47408756e+09, 8.75744493e+08, 5.98145272e+04, 
-                       1.55045236e+09, np.nan, np.nan, 1.55045236e+09, 
-                       1.55045236e+09, 1.55045236e+09, np.nan, np.nan, np.nan, 
+        q1 = np.array([np.nan, np.nan, 3.47408756e+09, np.nan, np.nan, np.nan,
+                       8.75744493e+08, 8.75744493e+08, 1.55045236e+09, np.nan,
+                       3.47408756e+09, 8.75744493e+08, 5.98145272e+04,
+                       1.55045236e+09, np.nan, np.nan, 1.55045236e+09,
+                       1.55045236e+09, 1.55045236e+09, np.nan, np.nan, np.nan,
                        np.nan, np.nan, np.nan])
         q2 = np.array([np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,
                        1.55045236e+09, 1.55045236e+09, 1.55045236e+09, np.nan,
