@@ -232,7 +232,6 @@ def _z2rEnhanced_mdfilt(z, mode='mirror'):
     si[bt3644] = -2.
 
     si1 = (si >= 0.)
-
     si2 = si1 & (si < 3.5)
     si3 = si1 & ~si2 & (si <= 7.5)
     si4 = si > 7.5
@@ -263,7 +262,6 @@ def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
                                           mode=xmode, origin=-1))
     db_diffy = np.abs(filters.correlate1d(db, [1, -1], axis=-2,
                                           mode=ymode, origin=-1))
-    # {‘reflect’, ‘constant’, ‘nearest’, ‘mirror’, ‘wrap’}, optional
     diffxmode = 'wrap' if xmode == 'wrap' else 'constant'
     diffymode = 'wrap' if ymode == 'wrap' else 'constant'
     diffx_sum1 = filters.correlate1d(db_diffx, [1, 1, 1],
