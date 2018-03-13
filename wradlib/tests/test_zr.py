@@ -28,6 +28,12 @@ class ZRConversionTest(unittest.TestCase):
 
     def test_z2rEnhanced(self):
         res_rr, res_si = zr.z2rEnhanced(trafo.idecibel(self.img))
+        res_rr2, res_si2 = zr.z2rEnhanced(trafo.idecibel(self.img),
+                                          algo='mdfilt', mode='mirror')
+        res_rr3, res_si3 = zr.z2rEnhanced(trafo.idecibel(self.img),
+                                          algo='mdcorr', xmode='mirror',
+                                          ymode='mirror')
+
         rr = np.array([[3.64633237e-02, 1.77564547e-01, 1.77564547e-01,
                         3.17838962e-02, 3.17838962e-02, 1.62407903e-02,
                         2.37427600e+01, 2.37427600e+01, 2.37427600e+01,
@@ -63,7 +69,10 @@ class ZRConversionTest(unittest.TestCase):
                        [4.57142861, 4.00000004, 4.00000004, 3.08333336,
                         1.25000001, 8.75000003, 12.50000004, 12.08333337,
                         11.25000003, 7.50000002, 0.]])
-        self.assertTrue(np.allclose(rr, res_rr))
+        np.testing.assert_allclose(rr, res_rr)
+        np.testing.assert_allclose(rr, res_rr2)
+        np.testing.assert_allclose(rr, res_rr3)
+
         self.assertTrue(np.allclose(si, res_si))
 
 
