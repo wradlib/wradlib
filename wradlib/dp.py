@@ -44,10 +44,7 @@ all input arrays.
    :toctree: generated/
 
     process_raw_phidp_vulpiani
-    kdp_from_phidp_finitediff
-    kdp_from_phidp_linregress
-    kdp_from_phidp_convolution
-    kdp_from_phidp_sobel
+    kdp_from_phidp
     unfold_phi_vulpiani
     unfold_phi
     linear_despeckle
@@ -64,7 +61,7 @@ from . import util as util
 
 
 def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
-                               niter=2, copy=False):
+                               niter=2, copy=False, **kwargs):
     """Establish consistent :math:`Phi_{DP}` profiles from raw data.
 
     This approach is based on :cite:`Vulpiani2012` and involves a
@@ -116,7 +113,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
     # despeckle
     phidp = linear_despeckle(phidp, N_despeckle)
     # kdp retrieval first guess
-    kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
+    kdp = kdp_from_phidp(phidp, dr=dr, L=L, **kwargs)
     # remove extreme values
     kdp[kdp > 20] = 0
     kdp[np.logical_and(kdp < -2, kdp > -20)] = 0
@@ -128,7 +125,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
     phidp[phidp > 360] = np.nan
 
     # kdp retrieval second guess
-    kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
+    kdp = kdp_from_phidp(phidp, dr=dr, L=L, **kwargs)
     kdp = _fill_sweep(kdp)
 
     # remove remaining extreme values
@@ -140,7 +137,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
         # phidp from kdp through integration
         phidp = 2 * np.cumsum(kdp, axis=-1) * dr
         # kdp from phidp by convolution
-        kdp = kdp_from_phidp_convolution(phidp, dr=dr, L=L)
+        kdp = kdp_from_phidp(phidp, dr=dr, L=L, **kwargs)
         # convert all NaNs to zeros (normally, this line can be assumed
         # to be redundant)
         kdp = _fill_sweep(kdp)
@@ -213,269 +210,24 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
     return dat.reshape(shape)
 
 
-def kdp_from_phidp_finitediff(phidp, L=7, dr=1.):
-    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving \
-    window range finite difference derivative.
+def kdp_from_phidp(phidp, L=7, dr=1., method=None):
+    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
 
-    See :cite:`Vulpiani2012` for details about this approach.
+    In normal operation the method uses convolution to estimate :math:`K_{DP}`
+    (the derivative of :math:`Phi_{DP}` with Low-noise Lanczos differentiators.
+    The results are very similar to the fallback moving window linear
+    regression (`method=slow`), but the former is *much* faster, depending on
+    the percentage of NaN values in the beam, though.
 
-    Please note that the moving window size ``L`` is specified as the number of
-    range gates. Thus, this argument might need adjustment in case the
-    range resolution changes.
-    In the original publication (:cite:`Vulpiani2012`), the value ``L=7`` was
-    chosen for a range resolution of 1km.
+    For further reading please see `Differentiation by integration using \
+    orthogonal polynomials, a survey <https://arxiv.org/pdf/1102.5219>`_ \
+    and `Low-noise Lanczos differentiators <http://www.holoborodko.com/\
+    pavel/numerical-methods/numerical-derivative/lanczos-low-noise-\
+    differentiators/>`_.
 
-    Warning
-    -------
-    The function is designed for speed by allowing to process
-    multiple dimensions in one step. For this purpose, the RANGE dimension
-    needs to be the LAST dimension of the input array.
-
-    Parameters
-    ----------
-    phidp : :class:`numpy:numpy.ndarray`
-        multi-dimensional array, note that the range dimension must be the
-        last dimension of the input array.
-    L : int
-        Width of the window (as number of range gates)
-    dr : float
-        gate length in km
-    """
-    assert (L % 2) == 1, \
-        "Window size N for function kdp_from_phidp must be an odd number."
-    # Make really sure L is an integer
-    L = int(L)
-    kdp = np.zeros(phidp.shape)
-    for r in range(int(L / 2), phidp.shape[-1] - int(L / 2)):
-        kdp[..., r] = (phidp[..., r + int(L / 2)] -
-                       phidp[..., r - int(L / 2)]) / (L - 1)
-    return kdp / 2. / dr
-
-
-def kdp_from_phidp_linregress(phidp, L=7, dr=1.):
-    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a moving \
-    window linear regression.
-
-    Please note that the moving window size ``L`` is specified as the number of
-    range gates. Thus, this argument might need adjustment in case the range
-    resolution changes.
-    In the original publication (:cite:`Vulpiani2012`), the value L=7
-    was chosen for a range resolution of 1km.
-
-    Warning
-    -------
-    The function is designed for speed by allowing to process
-    multiple dimensions in one step. For this purpose, the RANGE dimension
-    needs to be the LAST dimension of the input array.
-
-    Parameters
-    ----------
-    phidp : :class:`numpy:numpy.ndarray`
-        multi-dimensional array, note that the range dimension must be the
-        last dimension of the input array.
-    L : int
-        Width of the window (as number of range gates)
-    dr : float
-        gate length in km
-
-    Examples
-    --------
-    >>> import wradlib
-    >>> import numpy as np
-    >>> import pylab as pl
-    >>> pl.interactive(True)
-    >>> kdp_true = np.sin(3 * np.arange(0, 10, 0.1))
-    >>> phidp_true = np.cumsum(kdp_true)
-    >>> phidp_raw = phidp_true + np.random.uniform(-1, 1, len(phidp_true))
-    >>> gaps = np.concatenate([range(10, 20), range(30, 40), range(60, 80)])
-    >>> phidp_raw[gaps] = np.nan
-    >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
-    >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
-    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
-    >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
-    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
-
-    """
-    assert (L % 2) == 1, \
-        "Window size N for function kdp_from_phidp must be an odd number."
-
-    shape = phidp.shape
-    phidp = phidp.reshape((-1, shape[-1]))
-
-    # Make really sure L is an integer
-    L = int(L)
-
-    x = np.arange(phidp.shape[-1])
-    valids = ~np.isnan(phidp)
-    kdp = np.zeros(phidp.shape) * np.nan
-
-    for beam in range(len(phidp)):
-        for r in range(int(L / 2), phidp.shape[-1] - int(L / 2)):
-            # iterate over gates
-            ix = np.arange(r - L / 2, r + L / 2 + 1, dtype=np.int)
-            if np.sum(valids[beam, ix]) < L / 2:
-                # not enough valid values inside our window
-                continue
-            kdp[beam, r] = linregress(x[ix][valids[beam, ix]],
-                                      phidp[beam, ix[valids[beam, ix]]])[0]
-        # take care of the start and end of the beam
-        #   start
-        ix = np.arange(0, L)
-        if np.sum(valids[beam, ix]) >= L / 2:
-            kdp[beam, ix] = linregress(x[ix][valids[beam, ix]],
-                                       phidp[beam, ix[valids[beam, ix]]])[0]
-        # end
-        ix = np.arange(shape[-1] - L, shape[-1])
-        if np.sum(valids[beam, ix]) >= L / 2:
-            kdp[beam, ix] = linregress(x[ix][valids[beam, ix]],
-                                       phidp[beam, ix[valids[beam, ix]]])[0]
-
-    # accounting for forward/backward propagation AND gate length
-    return kdp.reshape(shape) / 2. / dr
-
-
-def kdp_from_phidp_sobel(phidp, L=7, dr=1.):
-    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a sobel \
-    filter where possible and linear regression otherwise.
-
-    The results are quite similar to the moving window linear regression, but
-    this is much faster, depending on the percentage of NaN values in the beam,
-    though. The Sobel filter is applied everywhere but will return NaNs in case
-    only one value in the moving window is NaN. The remaining NaN values are
-    then dealt with by using local linear regression
-    (see :func:`~wradlib.dp.kdp_from_phidp_linregress`).
-
-    This Sobel filter solution has been provided by Scott Collis at
-    StackOverflow :cite:`Sobel-linfit`
-
-    Please note that the moving window size ``L`` is specified as the number of
-    range gates. Thus, this argument might need adjustment in case the range
-    resolution changes.
-    In the original publication (:cite:`Vulpiani2012`), the value ``L=7``
-    was chosen for a range resolution of 1km.
-
-    Warning
-    -------
-    The function is designed for speed by allowing to process
-    multiple dimensions in one step. For this purpose, the RANGE dimension
-    needs to be the LAST dimension of the input array.
-
-    Parameters
-    ----------
-    phidp : :class:`numpy:numpy.ndarray`
-        multi-dimensional array, note that the range dimension must be the
-        last dimension of the input array.
-    L : int
-        Width of the window (as number of range gates)
-    dr : float
-        gate length in km
-
-    Examples
-    --------
-    >>> import wradlib
-    >>> import numpy as np
-    >>> import pylab as pl
-    >>> pl.interactive(True)
-    >>> kdp_true = np.sin(3 * np.arange(0, 10, 0.1))
-    >>> phidp_true = np.cumsum(kdp_true)
-    >>> phidp_raw = phidp_true + np.random.uniform(-1, 1, len(phidp_true))
-    >>> gaps = np.concatenate([range(10, 20), range(30, 40), range(60, 80)])
-    >>> phidp_raw[gaps] = np.nan
-    >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
-    >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
-    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
-    >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
-    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
-
-    """
-    assert (L % 2) == 1, \
-        "Window size N for function kdp_from_phidp must be an odd number."
-
-    shape = phidp.shape
-    phidp = phidp.reshape((-1, shape[-1]))
-
-    # Make really sure L is an integer
-    L = int(L)
-
-    kdp = np.zeros(phidp.shape) * np.nan
-
-    # do it fast using the sobel filter
-    for beam in range(len(phidp)):
-        kdp[beam, :] = sobel(phidp[beam, :], window_len=L)
-
-    # find remaining NaN values with valid neighbours
-    x = np.arange(phidp.shape[-1])
-    invalidkdp = np.isnan(kdp)
-    validphidp = ~np.isnan(phidp)
-    kernel = np.ones(L, dtype="i4")
-    # and do the slow moving window linear regression
-    for beam in range(len(phidp)):
-        # number of valid neighbours around one gate
-        nvalid = np.convolve(validphidp[beam], kernel, "same") > L / 2
-        # find those gates which have invalid Kdp AND enough valid neighbours
-        nangates = np.where(invalidkdp[beam] & nvalid)[0]
-        # now iterate over those
-        for r in nangates:
-            ix = np.arange(min(0, r - L / 2), max(shape[-1], r + L / 2 + 1))
-            # check again (just to make sure...)
-            if np.sum(validphidp[beam, ix]) < L / 2:
-                # not enough valid values inside our window
-                continue
-            kdp[beam, r] = linregress(x[ix][validphidp[beam, ix]],
-                                      phidp[beam,
-                                            ix[validphidp[beam, ix]]])[0]
-        # take care of the start and end of the beam
-        #   start
-        ix = np.arange(0, L)
-        if np.sum(validphidp[beam, ix]) >= L / 2:
-            kdp[beam, ix] = linregress(x[ix][validphidp[beam, ix]],
-                                       phidp[beam,
-                                             ix[validphidp[beam, ix]]])[0]
-        # end
-        ix = np.arange(shape[-1] - L, shape[-1])
-        if np.sum(validphidp[beam, ix]) >= L / 2:
-            kdp[beam, ix] = linregress(x[ix][validphidp[beam, ix]],
-                                       phidp[beam,
-                                             ix[validphidp[beam, ix]]])[0]
-
-    # accounting for forward/backward propagation AND gate length
-    return kdp.reshape(shape) / 2. / dr
-
-
-def sobel(x, window_len=7):
-    """Sobel differential filter for calculating :math:`K_{DP}`.
-
-    This solution has been taken from StackOverflow :cite:`Sobel-linfit`
-
-    Returns
-    -------
-    output : differential signal (unscaled for gate spacing)
-
-    """
-    s = np.r_[x[window_len - 1:0:-1], x, x[-1:-window_len:-1]]
-    w = 2.0 * np.arange(window_len) / (window_len - 1.0) - 1.0
-    w = w / (abs(w).sum())
-    y = np.convolve(w, s, mode='valid')
-    return (-1.0 * y[int(window_len / 2):len(x) + int(window_len / 2)] /
-            (window_len / 3.0))
-
-
-def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
-    """Alternative :math:`K_{DP}` from :math:`Phi_{DP}` by applying a \
-    convolution filter where possible and linear regression otherwise.
-
-    The results are very similar to the moving window linear regression, but
-    the convolution is *much* faster, depending on the percentage of NaN values
-    in the beam, though.
-
-    The convolution filter was suggested by Kai Mühlbauer (University of Bonn).
-
-    The filter provides fast :math:`K_{DP}` retrieval but will return NaNs in
-    case at least one value in the moving window is NaN. The remaining gates
-    are treated by using local linear regression where possible
-    (see :func:`~wradlib.dp.kdp_from_phidp_linregress`).
+    The fast method provides fast :math:`K_{DP}` retrieval but will return NaNs
+    in case at least one value in the moving window is NaN. The remaining gates
+    are treated by using local linear regression where possible.
 
     Please note that the moving window size ``L`` is specified as the number of
     range gates. Thus, this argument might need adjustment in case the
@@ -498,6 +250,9 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
         Width of the window (as number of range gates)
     dr : float
         gate length in km
+    method : str
+        If None uses fast convolution based differentiation, if 'slow' uses
+        linear regression.
 
     Examples
     --------
@@ -511,14 +266,13 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     >>> phidp_raw = phidp_true + np.random.uniform(-1, 1, len(phidp_true))
     >>> gaps = np.concatenate([range(10, 20), range(30, 40), range(60, 80)])
     >>> phidp_raw[gaps] = np.nan
-    >>> kdp_re = wradlib.dp.kdp_from_phidp_linregress(phidp_raw)
+    >>> kdp_re = wradlib.dp.kdp_from_phidp(phidp_raw)
     >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
     >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
     >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
     >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
     >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> pl.show()
-
     """
     assert (L % 2) == 1, \
         "Window size N for function kdp_from_phidp must be an odd number."
@@ -529,10 +283,11 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
     # Make really sure L is an integer
     L = int(L)
 
-    window = 2. * np.arange(L) / (L - 1.0) - 1.0
-    window = window / (abs(window).sum())
-    window = window[::-1]
-    kdp = convolve1d(phidp, window, axis=1) / (len(window) / 3.0)
+    if method == 'slow':
+        kdp = np.zeros(phidp.shape) * np.nan
+    else:
+        window = lanczos_differentiator(L)
+        kdp = convolve1d(phidp, window, axis=1)
 
     # find remaining NaN values with valid neighbours
     invalidkdp = np.isnan(kdp)
@@ -542,12 +297,12 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
 
     # Otherwise continue
     x = np.arange(phidp.shape[-1])
-    validphidp = ~np.isnan(phidp)
+    valids = ~np.isnan(phidp)
     kernel = np.ones(L, dtype="i4")
     # and do the slow moving window linear regression
     for beam in range(len(phidp)):
         # number of valid neighbours around one gate
-        nvalid = np.convolve(validphidp[beam], kernel, "same") > L / 2
+        nvalid = np.convolve(valids[beam], kernel, "same") > L / 2
         # find those gates which have invalid Kdp AND enough valid neighbours
         nangates = np.where(invalidkdp[beam] & nvalid)[0]
         # now iterate over those
@@ -555,29 +310,37 @@ def kdp_from_phidp_convolution(phidp, L=7, dr=1.):
             ix = np.arange(max(0, r - int(L / 2)),
                            min(r + int(L / 2) + 1, shape[-1]))
             # check again (just to make sure...)
-            if np.sum(validphidp[beam, ix]) < L / 2:
+            if np.sum(valids[beam, ix]) < L / 2:
                 # not enough valid values inside our window
                 continue
-            kdp[beam, r] = linregress(x[ix][validphidp[beam, ix]],
-                                      phidp[beam, ix[validphidp[beam, ix]]])[0]
+            kdp[beam, r] = linregress(x[ix][valids[beam, ix]],
+                                      phidp[beam, ix[valids[beam, ix]]])[0]
         # take care of the start and end of the beam
         #   start
         ix = np.arange(0, L)
-        if np.sum(validphidp[beam, ix]) >= 2:
-            kdp[beam, 0:int(L / 2)] = linregress(x[ix][validphidp[beam, ix]],
+        if np.sum(valids[beam, ix]) >= 2:
+            kdp[beam, 0:int(L / 2)] = linregress(x[ix][valids[beam, ix]],
                                                  phidp[beam,
-                                                       ix[validphidp[beam,
-                                                                     ix]]])[0]
+                                                       ix[valids[beam,
+                                                                 ix]]])[0]
         # end
         ix = np.arange(shape[-1] - L, shape[-1])
-        if np.sum(validphidp[beam, ix]) >= 2:
-            kdp[beam, -int(L / 2):] = linregress(x[ix][validphidp[beam, ix]],
+        if np.sum(valids[beam, ix]) >= 2:
+            kdp[beam, -int(L / 2):] = linregress(x[ix][valids[beam, ix]],
                                                  phidp[beam,
-                                                       ix[validphidp[beam,
-                                                                     ix]]])[0]
+                                                       ix[valids[beam,
+                                                                 ix]]])[0]
 
     # accounting for forward/backward propagation AND gate length
     return kdp.reshape(shape) / 2. / dr
+
+
+def lanczos_differentiator(N):
+    m = (N - 1) / 2
+    denom = m * (m + 1.) * (2 * m + 1.)
+    k = np.arange(1, m + 1)
+    f = 3 * k / denom
+    return np.r_[f[::-1], [0], -f]
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):
@@ -793,45 +556,6 @@ def texture(data):
     num[np.isnan(data)] = np.nan
 
     return np.sqrt(num / xa_valid_count)
-
-
-def contiguous_regions(condition):
-    """Finds contiguous True regions of the boolean array "condition".
-
-    This function was adopted from an StackOverflow answer as proposed
-    by Joe Kington in 2010 :cite:`Consecutive-values`.
-
-    Parameters
-    ----------
-    condition : :class:`numpy:numpy.ndarray`
-        1d boolean array
-
-    Returns
-    -------
-    output : :class:`numpy:numpy.ndarray`
-        a 2D array where the first column is the start index of the region
-        and the second column is the end index.
-    """
-
-    # Find the indices of changes in "condition"
-    d = np.diff(condition)
-    idx, = d.nonzero()
-
-    # We need to start things after the change in "condition". Therefore,
-    # we'll shift the index by 1 to the right.
-    idx += 1
-
-    if condition[0]:
-        # If the start of condition is True prepend a 0
-        idx = np.r_[0, idx]
-
-    if condition[-1]:
-        # If the end of condition is True, append the length of the array
-        idx = np.r_[idx, condition.size]  # Edit
-
-    # Reshape the result into two columns
-    idx.shape = (-1, 2)
-    return idx
 
 
 # TO UTILS
