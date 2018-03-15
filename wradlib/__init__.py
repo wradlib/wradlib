@@ -33,7 +33,6 @@ else:
     from . import clutter  # noqa
     from . import comp  # noqa
     from . import dp  # noqa
-    from . import fill  # noqa
     from . import georef  # noqa
     from . import io  # noqa
     from . import ipol  # noqa
