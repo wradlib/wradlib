@@ -16,8 +16,6 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         self.az = np.arange(0., 360., 1.)
         self.r = np.arange(0, 100000, 1000)
         self.el = 2.5
-        self.coords = vpr.volcoords_from_polar(self.site, self.el, self.az,
-                                               self.r, self.proj)
 
     def test_out_of_range(self):
         pass
@@ -26,19 +24,54 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         pass
 
     def test_volcoords_from_polar(self):
-        coords = vpr.volcoords_from_polar(self.site, self.el, self.az, self.r,  # noqa
+        coords = vpr.volcoords_from_polar(self.site, self.el, self.az, self.r,
                                           self.proj)
-        pass
+        self.assertEqual(coords.shape, (36000, 3))
 
     def test_volcoords_from_polar_irregular(self):
-        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0],  # noqa
+        # oneazforall, onerange4all, one elev
+        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el],
                                                     self.az, self.r,
                                                     self.proj)
-        pass
+        self.assertEqual(coords.shape, (36000, 3))
+
+        # oneazforall, onerange4all, two elev
+        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0],
+                                                    self.az, self.r,
+                                                    self.proj)
+        self.assertEqual(coords.shape, (72000, 3))
+
+        # onerange4all, two elev
+        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0],
+                                                    [self.az, self.az], self.r,
+                                                    self.proj)
+        self.assertEqual(coords.shape, (72000, 3))
+
+        # oneazforall, two elev
+        coords = vpr.volcoords_from_polar_irregular(self.site, [self.el, 5.0],
+                                                    self.az, [self.r, self.r],
+                                                    self.proj)
+
+        self.assertEqual(coords.shape, (72000, 3))
 
     def test_synthetic_polar_volume(self):
-        vol = vpr.synthetic_polar_volume(self.coords)  # noqa
-        pass
+        nbins = [320, 240, 240, 240, 240, 340, 340, 300, 300,
+                 240, 240, 240, 240, 240]
+        rscale = [1000, 1000, 1000, 1000, 1000, 500, 500, 500, 500, 500, 500,
+                  500, 500, 500]
+        elev = [0.3, 0.4, 0.8, 1.1, 2., 3., 4.5, 6., 8., 10.,
+                12., 15., 20., 25.]
+
+        xyz = np.array([]).reshape((-1, 3))
+        for i, vals in enumerate(zip(nbins, rscale, elev)):
+            az = np.arange(0., 360., 360. / 360)
+            r = np.arange(0, vals[0] * vals[1], vals[1])
+            xyz_ = vpr.volcoords_from_polar(self.site, vals[2],
+                                            az, r, self.proj)
+            xyz = np.vstack((xyz, xyz_))
+
+        vol = vpr.synthetic_polar_volume(xyz)
+        self.assertEqual(vol.shape, (1353600,))
 
     def test_vpr_interpolator(self):
         pass
@@ -63,14 +96,75 @@ class VPRHelperFunctionsTest(unittest.TestCase):
 
 
 class CartesianVolumeTest(unittest.TestCase):
+    def setUp(self):
+        self.site = (7.0, 53.0, 100.)
+        self.proj = georef.epsg_to_osr(31467)
+
     def test_CartesianVolume(self):
         pass
 
     def test_CAPPI(self):
-        pass
+        nbins = [320, 240, 240, 240, 240, 340, 340, 300, 300,
+                 240, 240, 240, 240, 240]
+        rscale = [1000, 1000, 1000, 1000, 1000, 500, 500, 500, 500, 500, 500,
+                  500, 500, 500]
+        elev = [0.3, 0.4, 0.8, 1.1, 2., 3., 4.5, 6., 8., 10.,
+                12., 15., 20., 25.]
+
+        xyz = np.array([]).reshape((-1, 3))
+        for i, vals in enumerate(zip(nbins, rscale, elev)):
+            az = np.arange(0., 360., 360. / 360)
+            r = np.arange(0, vals[0] * vals[1], vals[1])
+            xyz_ = vpr.volcoords_from_polar(self.site, vals[2],
+                                            az, r, self.proj)
+            xyz = np.vstack((xyz, xyz_))
+
+        data = vpr.synthetic_polar_volume(xyz)
+
+        maxrange = 200000.
+        minelev = 0.1
+        maxelev = 25.
+        maxalt = 5000.
+        horiz_res = 2000.
+        vert_res = 250.
+        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj, maxrange,
+                                            maxalt, horiz_res, vert_res)
+
+        # interpolate to Cartesian 3-D volume grid
+        gridder = vpr.CAPPI(xyz, trgxyz, trgshape, maxrange, minelev,
+                            maxelev)
+        np.ma.masked_invalid(gridder(data).reshape(trgshape))
 
     def test_PseudoCAPPI(self):
-        pass
+        nbins = [320, 240, 240, 240, 240, 340, 340, 300, 300,
+                 240, 240, 240, 240, 240]
+        rscale = [1000, 1000, 1000, 1000, 1000, 500, 500, 500, 500, 500, 500,
+                  500, 500, 500]
+        elev = [0.3, 0.4, 0.8, 1.1, 2., 3., 4.5, 6., 8., 10.,
+                12., 15., 20., 25.]
+
+        xyz = np.array([]).reshape((-1, 3))
+        for i, vals in enumerate(zip(nbins, rscale, elev)):
+            az = np.arange(0., 360., 360. / 360)
+            r = np.arange(0, vals[0] * vals[1], vals[1])
+            xyz_ = vpr.volcoords_from_polar(self.site, vals[2],
+                                            az, r, self.proj)
+            xyz = np.vstack((xyz, xyz_))
+
+        data = vpr.synthetic_polar_volume(xyz)
+
+        maxrange = 200000.
+        minelev = 0.1
+        maxelev = 25.
+        maxalt = 5000.
+        horiz_res = 2000.
+        vert_res = 250.
+        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj, maxrange,
+                                            maxalt, horiz_res, vert_res)
+
+        gridder = vpr.PseudoCAPPI(xyz, trgxyz, trgshape, maxrange, minelev,
+                                  maxelev)
+        np.ma.masked_invalid(gridder(data).reshape(trgshape))
 
 
 if __name__ == '__main__':
