@@ -75,10 +75,10 @@ class TestAttenuation(unittest.TestCase):
         atten.correctAttenuationKraemer(gateset)
         atten.correctAttenuationKraemer(gateset, mode='warn')
         atten.correctAttenuationKraemer(gateset, mode='nan')
-        #testfunc = atten.correctAttenuationKraemer
-        #self.assertRaises(atten.AttenuationOverflowError,
-        #                  lambda: testfunc(gateset,
-        #                                   mode='except'))
+        # testfunc = atten.correctAttenuationKraemer
+        # self.assertRaises(atten.AttenuationOverflowError,
+        #                   lambda: testfunc(gateset,
+        #                                    mode='except'))
 
     def test_correctAttenuationHJ(self):
         filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
