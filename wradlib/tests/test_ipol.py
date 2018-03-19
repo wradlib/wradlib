@@ -258,6 +258,45 @@ class InterpolationTest(unittest.TestCase):
                           np.arange(20).reshape((2, 2, 5)))
 
 
+class WrapperFunctionTest(unittest.TestCase):
+    def test_interpolate(self):
+        src = np.arange(10)[:, None]
+        trg = np.linspace(0, 20, 40)[:, None]
+        vals = np.hstack((np.sin(src), 10. + np.sin(src)))
+        vals[3:5, 1] = np.nan
+        print(np.any(np.isnan(vals.ravel())))
+        ipol_result = ipol.interpolate(src, trg, vals, ipol.Idw, nnearest=2)
+
+        np.testing.assert_allclose(ipol_result[3:5, 1],
+                                   np.array([10.880571, 10.909137]))
+
+        ipol_result = ipol.interpolate(src, trg, vals[:, 1], ipol.Idw,
+                                       nnearest=2)
+        np.testing.assert_allclose(ipol_result[3:5],
+                                   np.array([10.880571, 10.909137]))
+
+        vals = np.dstack((np.sin(src), 10. + np.sin(src)))
+        vals[3:5, :, 1] = np.nan
+        self.assertRaises(NotImplementedError,
+                          lambda: ipol.interpolate(src, trg, vals, ipol.Idw,
+                                                   nnearest=2))
+
+    def test_interpolate_polar(self):
+        data = np.arange(12.).reshape(4, 3)
+        masked_values = (data == 2) | (data == 9)
+        filled_a = ipol.interpolate_polar(data, mask=masked_values,
+                                          Interpolator=ipol.Linear)
+        testfunc = ipol.interpolate_polar
+        self.assertRaises(ipol.MissingTargetsError,
+                          lambda: testfunc(data, mask=None,
+                                           Interpolator=ipol.Linear))
+        mdata = np.ma.array(data, mask=masked_values)
+        filled_b = ipol.interpolate_polar(mdata,
+                                          Interpolator=ipol.Linear)
+
+        np.testing.assert_allclose(filled_a, filled_b)
+
+
 class Regular2IrregularTest(unittest.TestCase):
     def setUp(self):
         NX = 2
@@ -285,14 +324,12 @@ class Regular2IrregularTest(unittest.TestCase):
     def test_cart2irregular_interp(self):
         newvalues = ipol.cart2irregular_interp(self.cartgrid, self.values,
                                                self.newgrid, method='linear')
-        print(newvalues)
         self.assertTrue(np.allclose(newvalues, self.result))
 
     def test_cart2irregular_spline(self):
         newvalues = ipol.cart2irregular_spline(self.cartgrid, self.values,
                                                self.newgrid, order=1,
                                                prefilter=False)
-        print(newvalues)
         self.assertTrue(np.allclose(newvalues, self.result))
 
     def test_cart2irregular_equality(self):

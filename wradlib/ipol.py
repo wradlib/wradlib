@@ -413,15 +413,16 @@ class Linear(IpolBase):
 # -----------------------------------------------------------------------------
 def parse_covariogram(cov_model):
     """"""
-    patterns = [re.compile('([\d\.]+) Nug\(([\d\.]+)\)'),  # nugget
-                re.compile('([\d\.]+) Lin\(([\d\.]+)\)'),  # linear
-                re.compile('([\d\.]+) Sph\(([\d\.]+)\)'),  # spherical
-                re.compile('([\d\.]+) Exp\(([\d\.]+)\)'),  # exponential
-                re.compile('([\d\.]+) Gau\(([\d\.]+)\)'),  # gaussian
-                re.compile('([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'),  # matern
-                re.compile('([\d\.]+) Pow\(([\d\.]+)\)'),  # power
+    patterns = [re.compile(r'([\d\.]+) Nug\(([\d\.]+)\)'),  # nugget
+                re.compile(r'([\d\.]+) Lin\(([\d\.]+)\)'),  # linear
+                re.compile(r'([\d\.]+) Sph\(([\d\.]+)\)'),  # spherical
+                re.compile(r'([\d\.]+) Exp\(([\d\.]+)\)'),  # exponential
+                re.compile(r'([\d\.]+) Gau\(([\d\.]+)\)'),  # gaussian
+                re.compile(r'([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'),  # matern
+                re.compile(r'([\d\.]+) Pow\(([\d\.]+)\)'),  # power
                 # cauchy
-                re.compile('([\d\.]+) Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),
+                re.compile(r'([\d\.]+) '
+                           r'Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),
                 ]
 
     cov_funs = [cov_nug,
@@ -1004,15 +1005,15 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
             tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
             result[ix_broken_targets, i] = tmp.ravel()
     else:
-        if not np.any(np.isnan(vals.ravel())):
-            raise Exception(
-                'At the moment, <interpolate> can only deal with NaN values '
-                'in <vals> if vals has less than 3 dimension.')
+        if np.any(np.isnan(vals.ravel())):
+            raise NotImplementedError('WRADLIB: At the moment, <interpolate> '
+                                      'can only deal with NaN values in <vals>'
+                                      ' if <vals> has less than 3 dimension.')
         else:
             # if no NaN value are in <vals> we can safely apply the
             # Interpolator as is
             ip = Interpolator(src, trg, *args, **kwargs)
-            result = ip(vals[ix_valid])
+            result = ip(vals)
     return result
 
 
