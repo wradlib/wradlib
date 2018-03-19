@@ -396,7 +396,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
         print("The following exception was raised:")
         raise
     assert (elevs.ndim == 1) and (elevs.dtype != np.dtype("object")), \
-        "Argument <elevs> in wradlib.wolcoords_from_polar must be a 1-D array."
+        "Argument <elevs> in wradlib.volcoords_from_polar must be a 1-D array."
     # now: is there one azimuths array for all elevation angles
     # or one for each?
     try:
