@@ -176,6 +176,18 @@ class AdjustMFBTest(unittest.TestCase):
         shouldbe = np.array([4., 4.])
         self.assertTrue(np.allclose(res, shouldbe))
 
+        adj = adjust.AdjustMFB(self.obs_coords, self.raw_coords,
+                               nnear_raws=self.nnear_raws,
+                               mingages=self.mingages,
+                               mfb_args=dict(method="median"))
+        adj(self.obs, self.raw)
+        adj = adjust.AdjustMFB(self.obs_coords, self.raw_coords,
+                               nnear_raws=self.nnear_raws,
+                               mingages=self.mingages,
+                               mfb_args=dict(method="linregr", minslope=1.0,
+                                             minr='0.7', maxp=0.5))
+        adj(self.obs, self.raw)
+
 
 class AdjustNoneTest(unittest.TestCase):
     def setUp(self):
@@ -219,14 +231,16 @@ class AdjustHelperTest(unittest.TestCase):
     def test__get_neighbours_ix(self):
         pass
 
-    def test__get_neighbours(self):
-        pass
-
     def test__get_statfunc(self):
-        pass
+        adjust._get_statfunc('median')
+        adjust._get_statfunc('best')
+        self.assertRaises(NameError,
+                          lambda: adjust._get_statfunc('wradlib'))
 
     def test_best(self):
-        pass
+        x = 7.5
+        y = np.array([0., 1., 0., 1., 0., 7.7, 8., 8., 8., 8.])
+        self.assertEqual(adjust.best(x, y), 7.7)
 
 
 if __name__ == '__main__':

@@ -793,30 +793,6 @@ def _get_neighbours_ix(obs_coords, raw_coords, nnear):
     return tree.query(obs_coords, k=nnear)[1]
 
 
-def _get_neighbours(obs_coords, raw_coords, raw, nnear):
-    """Returns ``nnear`` neighbour values per ``obs_coords`` coordinate pair
-
-    Parameters
-    ----------
-    obs_coords : array of float of shape (num_points,ndim)
-        in the neighbourhood of these coordinate pairs we look for neighbours
-    raw_coords : array of float of shape (num_points,ndim)
-        from these coordinate pairs the neighbours are selected
-    raw : array of float of shape (num_points,...)
-        this is the data corresponding to the coordinate pairs ``raw_coords``
-    nnear : integer
-        number of neighbours to be selected per coordinate pair of
-        ``obs_coords``
-
-    """
-    # plant a tree
-    tree = cKDTree(raw_coords)
-    # retrieve nearest neighbour indices
-    ix = tree.query(obs_coords, k=nnear)[1]
-    # return the values of the nearest neighbours
-    return raw[ix]
-
-
 def _get_statfunc(funcname):
     """Returns a function that corresponds to parameter ``funcname``
 
@@ -834,11 +810,10 @@ def _get_statfunc(funcname):
         def newfunc(x, y):
             return func(y, axis=1)
     except Exception:
-        try:
-            # then try to find a function in this module with name funcname
-            if funcname == 'best':
-                newfunc = best
-        except Exception:
+        # then try to find a function in this module with name funcname
+        if funcname == 'best':
+            newfunc = best
+        else:
             # if no function can be found, raise an Exception
             raise NameError('Unknown function name option: ' + funcname)
     return newfunc
@@ -873,29 +848,6 @@ def best(x, y):
     else:
         axis = 1
     return y[np.arange(len(y)), np.argmin(np.abs(x - y), axis=axis)]
-
-
-# def get_raw_at_obs(obs_coords, raw_coords, obs, raw, nnear=9, stat='median'):
-#    """
-#    Get the raw values in the neighbourhood of the observation points
-#
-#    Parameters
-#    ----------
-#
-#    obs_coords :
-#
-#    raw: Dataset of raw values (which shall be adjusted by obs)
-#    nnear: number of neighbours which should be considered in the vicinity of
-#        each point in obs
-#    stat: a numpy statistical function which should be used to summarize the
-#        values of raw in the neighbourhood of obs
-#
-#    """
-#    # get the values of the raw neighbours of obs
-#    # raw_neighbs = _get_neighbours(obs_coords, raw_coords, raw, nnear)
-#    # and summarize the values of these neighbours by using a statistics
-#    # option
-#    return _get_statfunc(stat)(raw_neighbs)
 
 
 if __name__ == '__main__':
