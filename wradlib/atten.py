@@ -42,7 +42,8 @@ class AttenuationIterationError(Exception):
 
 
 def correctAttenuationHB(gateset,
-                         coefficients={'a': 1.67e-4, 'b': 0.7, 'l_rg': 1.0},
+                         coefficients={'a': 1.67e-4, 'b': 0.7,
+                                       'gate_length': 1.0},
                          mode='except',
                          thrs=59.0):
     """Gate-by-Gate attenuation correction according to \
@@ -58,10 +59,10 @@ def correctAttenuationHB(gateset,
         shape can be either (l,m,n) or (m,l,n)
         data has to be provided in decibel representation of reflectivity [dBZ]
     a : float
-        proportionality factor of the k-Z relation ( :math:`k=a \cdot Z^{b}` ).
+        proportionality factor of the k-Z relation (:math:`k=a \\cdot Z^{b}`).
         Per default set to 1.67e-4.
     b : float
-        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
         set to 0.7.
     gate_length : float
         length of a range gate [km]. Per default set to 1.0.
@@ -155,15 +156,15 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
         [dBZ].
     a_max : float
         initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ). Per default set to 1.67e-4.
+        ( :math:`k=a \\cdot Z^{b}` ). Per default set to 1.67e-4.
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of a in case of
+        ( :math:`k=a \\cdot Z^{b}` ) in the downwards iteration of a in case of
         signal overflow (sum of signal and attenuation exceeds
         the threshold ``thrs``).
         Per default set to 2.33e-5.
     b : float
-        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
         set to 0.7.
     n : int
         number of iterations from a_max to a_min. Per default set to 30.
@@ -265,15 +266,15 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
         reflectivity [dBZ].
     a_max : float
         initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ). Per default set to 1.67e-4.
+        ( :math:`k=a \\cdot Z^{b}` ). Per default set to 1.67e-4.
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of a in case of
+        ( :math:`k=a \\cdot Z^{b}` ) in the downwards iteration of a in case of
         signal overflow (sum of signal and attenuation exceeds
         the threshold ``thrs``).
         Per default set to 2.33e-5.
     b : float
-        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
         set to 0.7.
     n : int
         number of iterations from a_max to a_min. Per default set to 30.
@@ -412,15 +413,15 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         [dBZ].
     a_max : float
         initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ). Per default set to 1.67e-4.
+        ( :math:`k=a \\cdot Z^{b}` ). Per default set to 1.67e-4.
     a_min : float
         minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of a in case of
+        ( :math:`k=a \\cdot Z^{b}` ) in the downwards iteration of a in case of
         signal overflow (sum of signal and attenuation exceeds
         the threshold ``thrs``).
         Per default set to 2.33e-5.
     b : float
-        exponent of the k-Z relation ( :math:`k=a \cdot Z^{b}` ). Per default
+        exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
         set to 0.7.
     n : int
         number of iterations from a_max to a_min. Per default set to 30.
@@ -439,12 +440,12 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Per default set to 'zero'. Any other mode will raise an Exception.
     constraints : list(func)
         list of constraint functions. The signature of these functions has to
-        be constraint_function(`gateset`, `k`, \*`constr_args`). Their return
+        be constraint_function(`gateset`, `k`, *`constr_args`). Their return
         value must be a boolean array of shape gateset.shape[:-1] set to True
         for beams, which do not fulfill the constraint.
     constr_args : list
         list of lists, which are to be passed to the individual constraint
-        functions using the \*args mechanism
+        functions using the *args mechanism
         (len(constr_args) == len(constraints))
     diagnostics : dict
         dictionary of variables, which are usually not returned by the function
@@ -656,17 +657,17 @@ def bisectReferenceAttenuation(gateset,
         last rangegate of every beam.
     a_max : float
         Upper bound of the bisection interval within the linear coefficient a
-        of the k-Z relation has to be. ( :math:`k=a \cdot Z^{b}` ).
+        of the k-Z relation has to be. ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 1.67e-4.
     a_min : float
         Lower bound of the bisection interval within the linear coefficient a
-        of the k-Z relation has to be. ( :math:`k=a \cdot Z^{b}` ).
+        of the k-Z relation has to be. ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 2.33e-5.
     b_start : float
         Initial value for exponential coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ). This value will be lowered incremental
+        ( :math:`k=a \\cdot Z^{b}` ). This value will be lowered incremental
         by 0.01 if no solution was found within the bisection interval of
         ``a_max`` and ``a_min`` within the number of given iterations
         ``max_iterations``.
@@ -854,12 +855,12 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         [dBZ].
     a_max : float
         Initial value for linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ).
+        ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 1.67e-4.
     a_min : float
         Minimal allowed linear coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of 'a' in case
+        ( :math:`k=a \\cdot Z^{b}` ) in the downwards iteration of 'a' in case
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints``.
 
@@ -870,12 +871,12 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Per default set to 4.
     b_max : float
         Initial value for exponential coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ).
+        ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 0.7.
     b_min : float
         Minimal allowed exponential coefficient of the k-Z relation
-        ( :math:`k=a \cdot Z^{b}` ) in the downwards iteration of 'b' in case
+        ( :math:`k=a \\cdot Z^{b}` ) in the downwards iteration of 'b' in case
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints`` and the linear coefficient 'a' has already
         reached the lower limit ``a_min``.
@@ -891,12 +892,12 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Per default set to 1.0.
     constraints : list
         List of constraint functions. The signature of these functions has to
-        be constraint_function(`gateset`, `k`, \*`constr_args`). Their return
+        be constraint_function(`gateset`, `k`, *`constr_args`). Their return
         value must be a boolean array of shape gateset.shape[:-1] set to True
         for beams, which do not fulfill the constraint.
     constraint_args : list
         List of lists, which are to be passed to the individual constraint
-        functions using the \*args mechanism
+        functions using the *args mechanism
         (len(constr_args) == len(constraints)).
     sector_thr : int
         Number of adjacent beams, for which in case of breaching the
