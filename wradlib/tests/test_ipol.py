@@ -279,7 +279,7 @@ class WrapperFunctionTest(unittest.TestCase):
         vals[3:5, :, 1] = np.nan
         self.assertRaises(NotImplementedError,
                           lambda: ipol.interpolate(src, trg, vals, ipol.Idw,
-                                       nnearest=2))
+                                                   nnearest=2))
 
     def test_interpolate_polar(self):
         data = np.arange(12.).reshape(4, 3)
