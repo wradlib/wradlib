@@ -27,7 +27,13 @@ class ComposeTest(unittest.TestCase):
         self.y = coords[..., 1]
 
     def test_extract_circle(self):
-        pass
+        xgrid = np.linspace(self.x.min(), self.x.mean(), 100)
+        ygrid = np.linspace(self.y.min(), self.y.mean(), 100)
+        grid_xy = np.meshgrid(xgrid, ygrid)
+        grid_xy = np.vstack((grid_xy[0].ravel(),
+                             grid_xy[1].ravel())).transpose()
+        comp.extract_circle(np.array([self.x.mean(), self.y.mean()]), 128000.,
+                            grid_xy)
 
     def test_togrid(self):
         xgrid = np.linspace(self.x.min(), self.x.mean(), 100)
