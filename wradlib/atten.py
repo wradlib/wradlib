@@ -96,9 +96,8 @@ def correctAttenuationHB(gateset,
 
     Examples
     --------
-    See :ref:`notebooks/attenuation/wradlib_attenuation.ipynb#\
+    See :ref:`/notebooks/attenuation/wradlib_attenuation.ipynb#\
 Hitschfeld-and-Bordan`.
-
     """
     a = coefficients['a']
     b = coefficients['b']
@@ -201,7 +200,7 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 
     Examples
     --------
-    See :ref:`notebooks/attenuation/wradlib_attenuation.ipynb#Kraemer`.
+    See :ref:`/notebooks/attenuation/wradlib_attenuation.ipynb#Kraemer`.
     """
 
     if np.max(np.isnan(gateset)):
@@ -315,7 +314,7 @@ def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
 
     Note
     ----
-    See :ref:`notebooks/attenuation/wradlib_attenuation.ipynb#Harrison`.
+    See :ref:`/notebooks/attenuation/wradlib_attenuation.ipynb#Harrison`.
 
     Examples
     --------

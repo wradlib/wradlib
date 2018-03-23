@@ -214,7 +214,7 @@ class CAPPI(CartesianVolume):
 
     Examples
     --------
-    See :ref:`notebooks/workflow/recipe2.ipynb`.
+    See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
     def _get_mask(self, gridcoords, polcoords, gridshape,
@@ -349,7 +349,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
 
     Examples
     --------
-    See :ref:`notebooks/workflow/recipe2.ipynb`.
+    See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
     # make sure that elevs is an array
     elevs = np.array([elevs]).ravel()

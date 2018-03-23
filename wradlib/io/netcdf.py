@@ -204,7 +204,7 @@ def read_generic_netcdf(fname):
 
     Examples
     --------
-    See :ref:`notebooks/fileio/wradlib_generic_netcdf_example.ipynb`.
+    See :ref:`/notebooks/fileio/wradlib_generic_netcdf_example.ipynb`.
     """
     ncid = nc.Dataset(fname, 'r')
 

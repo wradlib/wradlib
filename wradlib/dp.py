@@ -104,7 +104,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
     Examples
     --------
 
-    See :ref:`notebooks/verification/wradlib_verify_example.ipynb`.
+    See :ref:`/notebooks/verification/wradlib_verify_example.ipynb`.
 
     """
     if copy:
@@ -221,9 +221,9 @@ def kdp_from_phidp(phidp, L=7, dr=1., method=None):
 
     For further reading please see `Differentiation by integration using \
     orthogonal polynomials, a survey <https://arxiv.org/pdf/1102.5219>`_ \
-    and `Low-noise Lanczos differentiators <http://www.holoborodko.com/\
-    pavel/numerical-methods/numerical-derivative/lanczos-low-noise-\
-    differentiators/>`_.
+    and `Low-noise Lanczos differentiators \
+    <http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/\
+lanczos-low-noise-differentiators/>`_.
 
     The fast method provides fast :math:`K_{DP}` retrieval but will return NaNs
     in case at least one value in the moving window is NaN. The remaining gates

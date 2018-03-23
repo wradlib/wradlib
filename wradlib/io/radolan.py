@@ -215,7 +215,7 @@ def readDX(filename):
 
     Examples
     --------
-    See :ref:`notebooks/fileio/wradlib_reading_dx.ipynb`.
+    See :ref:`/notebooks/fileio/wradlib_reading_dx.ipynb`.
     """
 
     azimuthbitmask = 2 ** (14 - 1)
@@ -674,7 +674,7 @@ def read_RADOLAN_composite(f, missing=-9999, loaddata=True):
 
     Examples
     --------
-    See :ref:`notebooks/radolan/radolan_format.ipynb`.
+    See :ref:`/notebooks/radolan/radolan_format.ipynb`.
     """
 
     NODATA = missing

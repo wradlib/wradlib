@@ -89,8 +89,8 @@ class DataSource(object):
 
     Examples
     --------
-    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#\
-DataSource`.
+    See \
+    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#DataSource`.
     """
 
     def __init__(self, data=None, srs=None, **kwargs):
@@ -403,7 +403,8 @@ class ZonalDataBase(object):
 
     Examples
     --------
-    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
+    See \
+    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
 
     """
     def __init__(self, src, trg=None, buf=0., srs=None, **kwargs):
@@ -658,7 +659,8 @@ class ZonalDataPoly(ZonalDataBase):
 
     Examples
     --------
-    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
+    See \
+    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
     def _get_idx_weights(self):
         """Retrieve index and weight from dst DataSource
@@ -708,7 +710,8 @@ class ZonalDataPoint(ZonalDataBase):
 
     Examples
     --------
-    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
+    See \
+    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
     def _get_idx_weights(self):
         """Retrieve index and weight from dst DataSource
@@ -751,8 +754,8 @@ class ZonalStatsBase(object):
 
     Examples
     --------
-    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#\
-ZonalStats`.
+    See \
+    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`.
     """
     def __init__(self, src=None, ix=None, w=None):
 
@@ -904,8 +907,9 @@ class GridCellsToPoly(ZonalStatsBase):
 
     Examples
     --------
-    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
-    and :ref:`notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
+    See \
+    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
+    and :ref:`/notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
     """
     def __init__(self, src=None, **kwargs):
         if src is not None:
@@ -930,8 +934,9 @@ class GridPointsToPoly(ZonalStatsBase):
 
     Examples
     --------
-    See :ref:`notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
-    and :ref:`notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
+    See \
+    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
+    and :ref:`/notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
     """
     def __init__(self, src, **kwargs):
         if src is not None:

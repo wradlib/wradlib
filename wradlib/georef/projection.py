@@ -58,10 +58,8 @@ def create_osr(projname, **kwargs):
 
     Examples
     --------
-
-    See :ref:`notebooks/basics/wradlib_workflow.ipynb#\
+    See :ref:`/notebooks/basics/wradlib_workflow.ipynb#\
 Georeferencing-and-Projection`.
-
     """
 
     aeqd_wkt = ('PROJCS["unnamed",'
@@ -131,7 +129,7 @@ def proj4_to_osr(proj4str):
     Examples
     --------
 
-    See :ref:`notebooks/radolan/radolan_grid.ipynb#PROJ.4`.
+    See :ref:`/notebooks/radolan/radolan_grid.ipynb#PROJ.4`.
 
     """
     proj = osr.SpatialReference()
@@ -189,7 +187,7 @@ def reproject(*args, **kwargs):
     Examples
     --------
 
-    See :ref:`notebooks/georeferencing/wradlib_georef_example.ipynb`.
+    See :ref:`/notebooks/georeferencing/wradlib_georef_example.ipynb`.
 
     """
     if len(args) == 1:

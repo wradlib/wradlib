@@ -175,7 +175,7 @@ class Nearest(IpolBase):
 
     Examples
     --------
-    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
+    See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
 
 
     Note
@@ -248,7 +248,7 @@ class Idw(IpolBase):
 
     Examples
     --------
-    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
+    See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
 
     Note
     ----
@@ -365,7 +365,7 @@ class Linear(IpolBase):
 
     Examples
     --------
-    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
+    See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
     def __init__(self, src, trg):
@@ -593,7 +593,7 @@ class OrdinaryKriging(IpolBase):
 
     Examples
     --------
-    See :ref:`notebooks/interpolation/wradlib_ipol_example.ipynb`.
+    See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
     def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12):
@@ -1172,7 +1172,7 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
 
     Examples
     --------
-    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb#\
+    See :ref:`/notebooks/beamblockage/wradlib_beamblock.ipynb#\
 Preprocessing-the-digitial-elevation-model`.
     """
 

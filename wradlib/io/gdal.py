@@ -179,7 +179,7 @@ def write_raster_dataset(fpath, dataset, format, options=None, remove=False):
 
     Examples
     --------
-    See :ref:`notebooks/fileio/wradlib_gis_export_example.ipynb`.
+    See :ref:`/notebooks/fileio/wradlib_gis_export_example.ipynb`.
     """
     # check for option list
     if options is None:

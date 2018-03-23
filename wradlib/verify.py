@@ -66,7 +66,7 @@ class PolarNeighbours():
     Examples
     --------
 
-    See :ref:`notebooks/verification/wradlib_verify_example.ipynb`.
+    See :ref:`/notebooks/verification/wradlib_verify_example.ipynb`.
 
     """
 
@@ -165,8 +165,8 @@ class ErrorMetrics():
     >>> ax = metrics.plot() #doctest: +SKIP
     >>> metrics.report() #doctest: +SKIP
 
-    See :ref:`notebooks/verification/wradlib_verify_example.ipynb` and
-    :ref:`notebooks/multisensor/wradlib_adjust_example.ipynb`.
+    See :ref:`/notebooks/verification/wradlib_verify_example.ipynb` and
+    :ref:`/notebooks/multisensor/wradlib_adjust_example.ipynb`.
 
     """
 

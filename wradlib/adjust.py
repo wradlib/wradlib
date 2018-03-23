@@ -178,7 +178,7 @@ class AdjustBase(ipol.IpolBase):
     Examples
     --------
 
-    See :ref:`notebooks/multisensor/wradlib_adjust_example.ipynb`.
+    See :ref:`/notebooks/multisensor/wradlib_adjust_example.ipynb`.
 
     """
 

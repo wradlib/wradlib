@@ -174,8 +174,8 @@ def plot_ppi(data, r=None, az=None, autoext=True,
 
     Examples
     --------
-    See :ref:`notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
-    and :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+    See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
+    and :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
 
     """
     # kwargs handling
@@ -368,7 +368,7 @@ def plot_ppi_crosshair(site, ranges, angles=None,
 
     Examples
     --------
-    See :ref:`notebooks/visualisation/wradlib_plot_ppi_example.ipynb`.
+    See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`.
 
     """
     # if we didn't get an axes object, find the current one
@@ -542,7 +542,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
 
     Examples
     --------
-    See :ref:`notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+    See :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
     """
     # kwargs handling
     kwargs['zorder'] = kwargs.pop('zorder', 0)
@@ -989,7 +989,7 @@ def plot_max_plan_and_vert(x, y, z, data, unit="", title="",
 
     Examples
     --------
-    See :ref:`notebooks/workflow/recipe2.ipynb`.
+    See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
     plot_plan_and_vert(x, y, z, np.max(data, axis=-3), np.max(data, axis=-2),
                        np.max(data, axis=-1),
@@ -1011,7 +1011,7 @@ def add_lines(ax, lines, **kwargs):
 
     Examples
     --------
-    See :ref:`notebooks/visualisation/wradlib_overlay.ipynb`.
+    See :ref:`/notebooks/visualisation/wradlib_overlay.ipynb`.
     """
     try:
         ax.add_collection(LineCollection([lines], **kwargs))
@@ -1038,7 +1038,7 @@ def add_patches(ax, patch_array, **kwargs):
 
     Examples
     --------
-    See :ref:`notebooks/visualisation/wradlib_overlay.ipynb`.
+    See :ref:`/notebooks/visualisation/wradlib_overlay.ipynb`.
     """
 
     try:

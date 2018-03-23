@@ -63,7 +63,7 @@ def pulse_volume(ranges, h, theta):
     Examples
     --------
 
-    See :ref:`notebooks/workflow/recipe1.ipynb`.
+    See :ref:`/notebooks/workflow/recipe1.ipynb`.
 
     """
     return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta/2.))) ** 2
@@ -96,7 +96,7 @@ def beam_block_frac(Th, Bh, a):
     --------
     >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
 
-    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb`.
+    See :ref:`/notebooks/beamblockage/wradlib_beamblock.ipynb`.
 
     Note
     ----
@@ -149,7 +149,7 @@ def cum_beam_block_frac(pbb):
     >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
     >>> CBB = cum_beam_block_frac(PBB) #doctest: +SKIP
 
-    See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb`.
+    See :ref:`/notebooks/beamblockage/wradlib_beamblock.ipynb`.
 
     """
 

@@ -432,7 +432,7 @@ def read_Rainbow(f, loaddata=True):
 
     Examples
     --------
-    See :ref:`notebooks/fileio/wradlib_load_rainbow_example.ipynb`.
+    See :ref:`/notebooks/fileio/wradlib_load_rainbow_example.ipynb`.
     """
 
     # Check if a file handle has been passed

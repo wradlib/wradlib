@@ -53,7 +53,7 @@ def read_generic_hdf5(fname):
 
     Examples
     --------
-    See :ref:`notebooks/fileio/wradlib_radar_formats.ipynb#Generic-HDF5`.
+    See :ref:`/notebooks/fileio/wradlib_radar_formats.ipynb#Generic-HDF5`.
     """
     f = h5py.File(fname, "r")
     fcontent = {}
@@ -296,7 +296,7 @@ def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     Examples
     --------
-    See :ref:`notebooks/fileio/wradlib_radar_formats.ipynb#GAMIC-HDF5`.
+    See :ref:`/notebooks/fileio/wradlib_radar_formats.ipynb#GAMIC-HDF5`.
     """
 
     # check elevations
