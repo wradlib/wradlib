@@ -253,7 +253,7 @@ def correctAttenuationKraemer(gateset, a_max=1.67e-4, a_min=2.33e-5,
 def correctAttenuationHJ(gateset, a_max=1.67e-4, a_min=2.33e-5, b=0.7,
                          n=30, gate_length=1.0, mode='zero', thrs_dBZ=59.0,
                          max_PIA=20.0):
-    """Gate-by-Gate attenuation correction based on :cite:`Kraemer2008`, \
+    """Gate-by-Gate attenuation correction based on :cite:`Harrison2000`, \
     expanded by :cite:`Jacobi2012`.
 
     Parameters
@@ -440,12 +440,12 @@ def correctAttenuationConstrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Per default set to 'zero'. Any other mode will raise an Exception.
     constraints : list(func)
         list of constraint functions. The signature of these functions has to
-        be constraint_function(`gateset`, `k`, *`constr_args`). Their return
+        be constraint_function(`gateset`, `k`, `*constr_args`). Their return
         value must be a boolean array of shape gateset.shape[:-1] set to True
         for beams, which do not fulfill the constraint.
     constr_args : list
         list of lists, which are to be passed to the individual constraint
-        functions using the *args mechanism
+        functions using the `*args` mechanism
         (len(constr_args) == len(constraints))
     diagnostics : dict
         dictionary of variables, which are usually not returned by the function
@@ -892,12 +892,12 @@ def correctAttenuationConstrained2(gateset, a_max=1.67e-4, a_min=2.33e-5,
         Per default set to 1.0.
     constraints : list
         List of constraint functions. The signature of these functions has to
-        be constraint_function(`gateset`, `k`, *`constr_args`). Their return
+        be constraint_function(`gateset`, `k`, `*constr_args`). Their return
         value must be a boolean array of shape gateset.shape[:-1] set to True
         for beams, which do not fulfill the constraint.
     constraint_args : list
         List of lists, which are to be passed to the individual constraint
-        functions using the *args mechanism
+        functions using the `*args` mechanism
         (len(constr_args) == len(constraints)).
     sector_thr : int
         Number of adjacent beams, for which in case of breaching the

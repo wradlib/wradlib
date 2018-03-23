@@ -1173,7 +1173,7 @@ def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
     Examples
     --------
     See :ref:`notebooks/beamblockage/wradlib_beamblock.ipynb#\
-Read-DEM-Raster-Data`.
+Preprocessing-the-digitial-elevation-model`.
     """
 
     # TODO: dimension checking

@@ -29,7 +29,7 @@ comparable. Basically, a CAPPI is simply one slice out of a 3-D volume grid.
 Analoguous, we will refer to the elements in a three dimensional Cartesian grid
 as *voxels*. In wradlib, you can create
 CAPPIS (:class:`~wradlib.vpr.CAPPI`) and Pseudo CAPPIs
-(:classh:`~wradlib.vpr.PseudoCAPPI`) for different altitudes at once.
+(:class:`~wradlib.vpr.PseudoCAPPI`) for different altitudes at once.
 
 Here's an example how a set of CAPPIs can be created from synthetic polar
 volume data::
@@ -109,7 +109,7 @@ class CartesianVolume():
         The maximum radar range (must be the same for each elevation angle)
     Ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
-    ipargs : **kwargs
+    ipargs : `**kwargs`
         keyword arguments corresponding to ``Ipclass``
 
     Returns
@@ -209,7 +209,7 @@ class CAPPI(CartesianVolume):
         The maximum radar range (must be the same for each elevation angle)
     Ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
-    ipargs : **kwargs
+    ipargs : `**kwargs`
         keyword arguments corresponding to ``Ipclass``
 
     Examples
@@ -257,7 +257,7 @@ class PseudoCAPPI(CartesianVolume):
         The maximum radar range (must be the same for each elevation angle)
     Ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
-    ipargs : **kwargs
+    ipargs : `**kwargs`
         keyword arguments corresponding to ``Ipclass``
 
     """
