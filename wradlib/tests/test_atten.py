@@ -57,67 +57,59 @@ class TestAttenuation(unittest.TestCase):
     #     self.assertTrue(np.all(result == ref))
     #     #pass
 
-    def test_correctAttenuationHB(self):
+    def test_correct_attenuation_hb(self):
         filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
         filename = util.get_wradlib_data_file(filestr)
         gateset, attrs = io.readDX(filename)
-        atten.correctAttenuationHB(gateset, mode='warn')
-        atten.correctAttenuationHB(gateset, mode='nan')
-        atten.correctAttenuationHB(gateset, mode='zero')
+        atten.correct_attenuation_hb(gateset, mode='warn')
+        atten.correct_attenuation_hb(gateset, mode='nan')
+        atten.correct_attenuation_hb(gateset, mode='zero')
         self.assertRaises(atten.AttenuationOverflowError,
-                          lambda: atten.correctAttenuationHB(gateset,
-                                                             mode='except'))
+                          lambda: atten.correct_attenuation_hb(gateset,
+                                                               mode='except'))
 
-    def test_correctAttenuationKraemer(self):
+    def test_correct_attenuation_constrained(self):
         filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
         filename = util.get_wradlib_data_file(filestr)
         gateset, attrs = io.readDX(filename)
-        atten.correctAttenuationKraemer(gateset)
-        atten.correctAttenuationKraemer(gateset, mode='warn')
-        atten.correctAttenuationKraemer(gateset, mode='nan')
-        # testfunc = atten.correctAttenuationKraemer
-        # self.assertRaises(atten.AttenuationOverflowError,
-        #                   lambda: testfunc(gateset,
-        #                                    mode='except'))
+        atten.correct_attenuation_constrained(gateset)
 
-    def test_correctAttenuationHJ(self):
-        filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-        filename = util.get_wradlib_data_file(filestr)
-        gateset, attrs = io.readDX(filename)
-        atten.correctAttenuationHJ(gateset, a_max=4.565e-5, b=0.73125, n=1,
-                                   mode='cap', thrs_dBZ=100.0,
-                                   max_PIA=4.82)
-        atten.correctAttenuationHJ(gateset, a_max=4.565e-5,
-                                   b=0.73125, n=1, mode='warn',
-                                   thrs_dBZ=100.0, max_PIA=4.82)
-        atten.correctAttenuationHJ(gateset,  a_max=4.565e-5,
-                                   b=0.73125, n=1, mode='nan',
-                                   thrs_dBZ=100.0, max_PIA=4.82)
-        atten.correctAttenuationHJ(gateset,  a_max=4.565e-5,
-                                   b=0.73125, n=1, mode='zero',
-                                   thrs_dBZ=100.0, max_PIA=4.82)
-        self.assertRaises(atten.AttenuationOverflowError,
-                          lambda: atten.correctAttenuationHJ(gateset,
-                                                             a_max=4.565e-5,
-                                                             b=0.73125, n=1,
-                                                             mode='except',
-                                                             thrs_dBZ=100.0,
-                                                             max_PIA=4.82))
+    def test_correct_radome_attenuation_empirical(self):
+        goodresult = np.array([[[0.0114712, 0.0114712, 0.0114712, 0.0114712,
+                                 0.0114712],
+                                [0.0114712, 0.0114712, 0.0114712, 0.0114712,
+                                 0.0114712]],
+                               [[0.86021834, 0.86021834, 0.86021834,
+                                 0.86021834, 0.86021834],
+                                [0.86021834, 0.86021834, 0.86021834,
+                                 0.86021834, 0.86021834]]])
+        result = atten.correct_radome_attenuation_empirical(self.gateset)
+        self.assertTrue(np.allclose(result, goodresult))
 
-    def test_correctAttenuationConstrainer(self):
-        filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-        filename = util.get_wradlib_data_file(filestr)
-        gateset, attrs = io.readDX(filename)
-        atten.correctAttenuationConstrained(gateset)
-        atten.correctAttenuationConstrained(gateset, mode='warn')
-        atten.correctAttenuationConstrained(gateset, mode='nan')
-        atten.correctAttenuationConstrained(gateset, mode='zero')
-
-    def test_correctAttenuationConstrained2(self):
-        filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-        filename = util.get_wradlib_data_file(filestr)
-        gateset, attrs = io.readDX(filename)
-        atten.correctAttenuationConstrained2(gateset)
+    def test_bisect_reference_attenuation(self):
+        goodresult = np.array([[[0.00000000e+00, 1.90300000e-04,
+                                 4.98939928e-04, 9.99520182e-04,
+                                 1.81143180e-03],
+                                [0.00000000e+00, 2.13520112e-03,
+                                 5.59928382e-03, 1.12205058e-02,
+                                 2.03453241e-02]],
+                               [[0.00000000e+00, 2.39573506e-02,
+                                 6.29619483e-02, 1.26618942e-01,
+                                 2.30923218e-01],
+                                [0.00000000e+00, 4.34978358e-02,
+                                 1.12575637e-01, 2.22703609e-01,
+                                 3.99374943e-01]]])
+        goodamid = np.array([[9.51500000e-05, 9.51500000e-05],
+                             [9.51500000e-05, 2.33043854e-05]])
+        goodb = np.array([[0.7, 0.7], [0.7, 0.66]])
+        result, amid, b = atten.bisect_reference_attenuation(self.gateset,
+                                                             pia_ref=np.array(
+                                                                 [[0.0001,
+                                                                   0.01],
+                                                                  [0.1, 0.2]]))
+        self.assertTrue(np.allclose(result, goodresult))
+        self.assertTrue(np.allclose(amid, goodamid))
+        self.assertTrue(np.allclose(b, goodb))
 
 
 if __name__ == '__main__':
