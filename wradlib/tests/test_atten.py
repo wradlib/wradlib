@@ -106,7 +106,7 @@ class TestAttenuation(unittest.TestCase):
                                                              pia_ref=np.array(
                                                                  [[0.0001,
                                                                    0.01],
-                                                                  [0.1, 1.]]))
+                                                                  [0.1, 0.2]]))
         self.assertTrue(np.allclose(result, goodresult))
         self.assertTrue(np.allclose(amid, goodamid))
         self.assertTrue(np.allclose(b, goodb))
