@@ -10,14 +10,17 @@ Below you see the Travis Status of wradlib. A red status indicates that the curr
 
 ## Package Status ##
 
-[![Build Status](https://travis-ci.org/wradlib/wradlib.svg?branch=master)](https://travis-ci.org/wradlib/wradlib)
-[![codecov](https://codecov.io/gh/wradlib/wradlib/branch/master/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib)
+- [![Build Status](https://travis-ci.org/wradlib/wradlib.svg?branch=master)](https://travis-ci.org/wradlib/wradlib)
+- [![codecov](https://codecov.io/gh/wradlib/wradlib/branch/master/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib)
+- [![ReadTheDocs Status](https://readthedocs.org/projects/pip/badge/)](http://docs.wradlib.org/en/latest/)
+- [![Anaconda Status](https://anaconda.org/conda-forge/wradlib/badges/version.svg)](https://anaconda.org/conda-forge/wradlib/)
+- [![Anaconda Latest](https://anaconda.org/conda-forge/wradlib/badges/latest_release_date.svg)](https://anaconda.org/conda-forge/wradlib/)
 
 ### Documentation ###
 
 For further information on wradlib (Gettings started, library reference, development setup, ...), please see our homepage:
 
-http://wradlib.org/wradlib-docs
+http://wradlib.org
 
 Specific informations for develeopers is available via the [wradlib-wiki](https://github.com/wradlib/wradlib/wiki).
 
