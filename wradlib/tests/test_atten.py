@@ -100,7 +100,7 @@ class TestAttenuation(unittest.TestCase):
                                  1.12575637e-01, 2.22703609e-01,
                                  3.99374943e-01]]])
         goodamid = np.array([[9.51500000e-05, 9.51500000e-05],
-                              [9.51500000e-05, 2.33043854e-05]])
+                             [9.51500000e-05, 2.33043854e-05]])
         goodb = np.array([[0.7, 0.7], [0.7, 0.66]])
         result, amid, b = atten.bisect_reference_attenuation(self.gateset,
                                                              pia_ref=np.array(
