@@ -69,7 +69,7 @@ def pulse_volume(ranges, h, theta):
     return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta/2.))) ** 2
 
 
-def beam_block_frac(Th, Bh, a):
+def beam_block_frac(th, bh, a):
     """Partial beam blockage fraction.
 
     Note
@@ -80,21 +80,21 @@ def beam_block_frac(Th, Bh, a):
 
     Parameters
     ----------
-    Th : float | :class:`numpy:numpy.ndarray` of floats
+    th : float | :class:`numpy:numpy.ndarray` of floats
         Terrain height [m]
-    Bh : float | :class:`numpy:numpy.ndarray` of floats
+    bh : float | :class:`numpy:numpy.ndarray` of floats
         Beam height [m]
     a : float | :class:`numpy:numpy.ndarray` of floats
         Half power beam radius [m]
 
     Returns
     -------
-    PBB : float
+    pbb : float
         Partial beam blockage fraction [unitless]
 
     Examples
     --------
-    >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
+    >>> pbb = beam_block_frac(th,bh,a) #doctest: +SKIP
 
     See :ref:`/notebooks/beamblockage/wradlib_beamblock.ipynb`.
 
@@ -112,16 +112,16 @@ def beam_block_frac(Th, Bh, a):
 
     # First find the difference between the terrain and height of
     # radar beam (Bech et al. (2003), Fig.3)
-    y = Th - Bh
+    y = th - bh
 
-    Numer = (y * np.sqrt(a ** 2 - y ** 2)) + \
+    numer = (y * np.sqrt(a ** 2 - y ** 2)) + \
             (a ** 2 * np.arcsin(y / a)) + (np.pi * a ** 2 / 2.)
 
-    Denom = np.pi * a ** 2
+    denom = np.pi * a ** 2
 
-    PBB = Numer / Denom
+    pbb = numer / denom
 
-    return PBB
+    return pbb
 
 
 def cum_beam_block_frac(pbb):
@@ -146,8 +146,8 @@ def cum_beam_block_frac(pbb):
 
     Examples
     --------
-    >>> PBB = beam_block_frac(Th,Bh,a) #doctest: +SKIP
-    >>> CBB = cum_beam_block_frac(PBB) #doctest: +SKIP
+    >>> pbb = beam_block_frac(th, bh, a) #doctest: +SKIP
+    >>> cbb = cum_beam_block_frac(pbb) #doctest: +SKIP
 
     See :ref:`/notebooks/beamblockage/wradlib_beamblock.ipynb`.
 

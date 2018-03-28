@@ -430,12 +430,12 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     q_rho2 = np.nan_to_num(q_rho2)
 
     # Membership in meteorological class after combining all variables
-    Q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) +
+    q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) +
          (q_rho * w_rho) + (q_phi * w_phi) + (q_rho2 * w_rho2)) / \
         (w_map + w_dop + w_zdr + w_rho + w_phi + w_rho2)
 
     # flag low quality
-    return np.where(Q < thresh, True, False), nan_mask
+    return np.where(q < thresh, True, False), nan_mask
 
 
 def _weight_array(data, weight):

@@ -15,9 +15,9 @@ into rainfall rates and vice versa
    :nosignatures:
    :toctree: generated/
 
-   z2r
-   r2z
-   z2rEnhanced
+   z_to_r
+   r_to_z
+   z_to_r_enhanced
 
 
 """
@@ -26,7 +26,7 @@ import scipy.ndimage.filters as filters
 from .trafo import decibel
 
 
-def z2r(z, a=200., b=1.6):
+def z_to_r(z, a=200., b=1.6):
     """Conversion from reflectivities to rain rates.
 
     Calculates rain rates from radar reflectivities using
@@ -59,7 +59,7 @@ def z2r(z, a=200., b=1.6):
     return (z / a) ** (1. / b)
 
 
-def r2z(r, a=200., b=1.6):
+def r_to_z(r, a=200., b=1.6):
     """Calculates reflectivity from rain rates using
     a power law Z/R relationship Z = a*R**b
 
@@ -88,7 +88,7 @@ def r2z(r, a=200., b=1.6):
     return a * r ** b
 
 
-def _z2rEnhanced(z):
+def _z_to_r_enhanced(z):
     """Calculates rainrates from radar reflectivities using the enhanced \
     three-part Z-R-relationship used by the DWD (as of 2009).
 
@@ -137,10 +137,10 @@ def _z2rEnhanced(z):
     # if the reflectivity is larger than 44dBZ, then there is no need to
     # calculate the shower index
     gt44 = np.where(db > 44.)
-    r[gt44] = z2r(z[gt44], a=77., b=1.9)
+    r[gt44] = z_to_r(z[gt44], a=77., b=1.9)
     # the same is true for values between 36.5 and 44 dBZ
     bt3644 = np.where(np.logical_and(db >= 36.5, db <= 44.))
-    r[bt3644] = z2r(z[bt3644], a=200., b=1.6)
+    r[bt3644] = z_to_r(z[bt3644], a=200., b=1.6)
 
     # now iterate over the array and look for the remaining values
     # TODO : this could be a starting point for further optimization, if we
@@ -172,18 +172,18 @@ def _z2rEnhanced(z):
                      (diffxcut.size + diffycut.size)
                 # apply the three different Z/R relations
                 if mn < 3.5:
-                    r[i, j] = z2r(z[i, j], a=125., b=1.4)
+                    r[i, j] = z_to_r(z[i, j], a=125., b=1.4)
                 elif mn <= 7.5:
-                    r[i, j] = z2r(z[i, j], a=200., b=1.6)
+                    r[i, j] = z_to_r(z[i, j], a=200., b=1.6)
                 else:
-                    r[i, j] = z2r(z[i, j], a=320., b=1.4)
+                    r[i, j] = z_to_r(z[i, j], a=320., b=1.4)
                 # save the shower index
                 si[i, j] = mn
     # return the results
     return r, si
 
 
-def z2rEsifilter(data):
+def z_to_r_esifilter(data):
     """calculates the shower index for the enhanced z-r relation
 
     to be used as the callable for
@@ -201,7 +201,7 @@ def z2rEsifilter(data):
         return -1.
 
 
-def _z2rEnhanced_mdfilt(z, mode='mirror'):
+def _z_to_r_enhanced_mdfilt(z, mode='mirror'):
     """multidimensional version
 
     assuming the two last dimensions represent a 2-D image
@@ -221,14 +221,14 @@ def _z2rEnhanced_mdfilt(z, mode='mirror'):
     size[-2:] = [3, 3]
     size[:-2] = [1] * len(size[:-2])
     size = tuple(size)
-    si = filters.generic_filter(db, z2rEsifilter, size=size, mode=mode)
+    si = filters.generic_filter(db, z_to_r_esifilter, size=size, mode=mode)
 
     gt44 = db > 44.
-    r[gt44] = z2r(z[gt44], a=77, b=1.9)
+    r[gt44] = z_to_r(z[gt44], a=77, b=1.9)
     si[gt44] = -1.
     # the same is true for values between 36.5 and 44 dBZ
     bt3644 = (db >= 36.5) & (db <= 44.)
-    r[bt3644] = z2r(z[bt3644], a=200, b=1.6)
+    r[bt3644] = z_to_r(z[bt3644], a=200, b=1.6)
     si[bt3644] = -2.
 
     si1 = (si >= 0.)
@@ -236,14 +236,14 @@ def _z2rEnhanced_mdfilt(z, mode='mirror'):
     si3 = si1 & ~si2 & (si <= 7.5)
     si4 = si > 7.5
 
-    r[si2] = z2r(z[si2], a=125, b=1.4)
-    r[si3] = z2r(z[si3], a=200, b=1.6)
-    r[si4] = z2r(z[si4], a=320, b=1.4)
+    r[si2] = z_to_r(z[si2], a=125, b=1.4)
+    r[si3] = z_to_r(z[si3], a=200, b=1.6)
+    r[si4] = z_to_r(z[si4], a=320, b=1.4)
 
     return r, si
 
 
-def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
+def _z_to_r_enhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
     """multidimensional version
 
     assuming the two last dimensions represent a 2-D image
@@ -288,11 +288,11 @@ def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
     r = np.zeros(z.shape)
 
     gt44 = db > 44.
-    r[gt44] = z2r(z[gt44], a=77, b=1.9)
+    r[gt44] = z_to_r(z[gt44], a=77, b=1.9)
     si[gt44] = -1.
     # the same is true for values between 36.5 and 44 dBZ
     bt3644 = (db >= 36.5) & (db <= 44.)
-    r[bt3644] = z2r(z[bt3644], a=200, b=1.6)
+    r[bt3644] = z_to_r(z[bt3644], a=200, b=1.6)
     si[bt3644] = -2.
 
     si1 = (si >= 0.)
@@ -300,14 +300,14 @@ def _z2rEnhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
     si3 = si1 & ~si2 & (si <= 7.5)
     si4 = si > 7.5
 
-    r[si2] = z2r(z[si2], a=125, b=1.4)
-    r[si3] = z2r(z[si3], a=200, b=1.6)
-    r[si4] = z2r(z[si4], a=320, b=1.4)
+    r[si2] = z_to_r(z[si2], a=125, b=1.4)
+    r[si3] = z_to_r(z[si3], a=200, b=1.6)
+    r[si4] = z_to_r(z[si4], a=320, b=1.4)
 
     return r, si
 
 
-def z2rEnhanced(z, algo='plain', **kwargs):
+def z_to_r_enhanced(z, algo='plain', **kwargs):
     """Calculates rainrates from radar reflectivities using the enhanced \
     three-part Z-R-relationship used by the DWD (as of 2009)
 
@@ -341,12 +341,12 @@ def z2rEnhanced(z, algo='plain', **kwargs):
 
     # do the actual calculation
     if algo == 'mdfilt':
-        padr, padsi = _z2rEnhanced_mdfilt(padz, **kwargs)
+        padr, padsi = _z_to_r_enhanced_mdfilt(padz, **kwargs)
     elif algo == 'mdcorr':
-        padr, padsi = _z2rEnhanced_mdcorr(padz, **kwargs)
+        padr, padsi = _z_to_r_enhanced_mdcorr(padz, **kwargs)
     else:
         # fallback
-        padr, padsi = _z2rEnhanced(padz)
+        padr, padsi = _z_to_r_enhanced(padz)
 
     # return the unpadded field
     return padr[1:-1, :], padsi[1:-1, :]

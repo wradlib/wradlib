@@ -16,19 +16,19 @@ to dBZ-values to Z-values and vice versa.
    :nosignatures:
    :toctree: generated/
 
-   rvp2dBZ
+   rvp_to_dbz
    decibel
    idecibel
-   r2depth
-   kdp2r
-   si2kmh
-   si2mph
-   si2kts
-   kmh2si
-   mph2si
-   kts2si
-   ku2s
-   s2ku
+   r_to_depth
+   kdp_to_r
+   si_to_kmh
+   si_to_mph
+   si_2_kts
+   kmh_to_si
+   mph_to_si
+   kts_to_si
+   KuBandToS
+   SBandToKu
 
 """
 import numpy as np
@@ -38,7 +38,7 @@ meters_per_mile = 1609.344
 meters_per_nautical_mile = 1852.
 
 
-class s2ku():
+class SBandToKu():
     """Class to hold coefficients for Radar Reflectivity Conversion
 
     From S-band (2.8GHz) to Ku-band (13.8GHz)
@@ -49,7 +49,7 @@ class s2ku():
     rain = np.array([-1.50393, 1.07274, 0.000165393])
 
 
-class ku2s():
+class KuBandToS():
     """ Class to hold coefficients for Radar Reflectivity Conversion
 
     From Ku-band (13.8 GHz) to S-band (2.8 GHz)
@@ -86,7 +86,7 @@ class ku2s():
            6.71e-7,  6.33e-7,  9.52e-7,  0.00e+0]])
 
 
-def rvp2dBZ(x):
+def rvp_to_dbz(x):
     """Calculates dBZ-values from DWD RVP6 values as given in DX-product
     files.
 
@@ -97,8 +97,8 @@ def rvp2dBZ(x):
 
     Examples
     --------
-    >>> from wradlib.trafo import rvp2dBZ
-    >>> print(rvp2dBZ(65.))
+    >>> from wradlib.trafo import rvp_to_dbz
+    >>> print(rvp_to_dbz(65.))
     0.0
     """
     return x * 0.5 - 32.5
@@ -142,7 +142,7 @@ def idecibel(x):
     return 10. ** (x / 10.)
 
 
-def r2depth(x, interval):
+def r_to_depth(x, interval):
     """Computes rainfall depth (mm) from rainfall intensity (mm/h)
 
     Parameters
@@ -163,7 +163,7 @@ def r2depth(x, interval):
     return x * interval / 3600.
 
 
-def kdp2r(kdp, f, a=129., b=0.85):
+def kdp_to_r(kdp, f, a=129., b=0.85):
     """Estimating rainfall intensity directly from specific differential phase.
 
     The general power law expression has been suggested by :cite:`Ryzhkov2005`.
@@ -200,7 +200,7 @@ def kdp2r(kdp, f, a=129., b=0.85):
     return np.sign(kdp) * a * (np.abs(kdp) / f) ** b
 
 
-def si2kmh(vals):
+def si_to_kmh(vals):
     """Conversion from SI wind speed units to km/hr.
 
     Note
@@ -221,14 +221,14 @@ def si2kmh(vals):
 
     Examples
     --------
-    >>> from wradlib.trafo import si2kmh
-    >>> print(si2kmh(1.))
+    >>> from wradlib.trafo import si_to_kmh
+    >>> print(si_to_kmh(1.))
     3.6
     """
     return vals * 3600. / 1000.
 
 
-def si2mph(vals):
+def si_to_mph(vals):
     """Conversion from SI wind speed units to miles/hr
 
     Note
@@ -249,15 +249,15 @@ def si2mph(vals):
 
     Examples
     --------
-    >>> from wradlib.trafo import si2mph
-    >>> print(np.round(si2mph(1.), 3))
+    >>> from wradlib.trafo import si_to_mph
+    >>> print(np.round(si_to_mph(1.), 3))
     2.237
 
     """
     return vals * 3600. / meters_per_mile
 
 
-def si2kts(vals):
+def si_2_kts(vals):
     """Conversion from SI wind speed units to knots
 
     Note
@@ -278,15 +278,15 @@ def si2kts(vals):
 
     Examples
     --------
-    >>> from wradlib.trafo import si2kts
-    >>> print(np.round(si2kts(1.), 3))
+    >>> from wradlib.trafo import si_2_kts
+    >>> print(np.round(si_2_kts(1.), 3))
     1.944
 
     """
     return vals * 3600. / meters_per_nautical_mile
 
 
-def kmh2si(vals):
+def kmh_to_si(vals):
     """Conversion from km/hr to SI wind speed units
 
     Note
@@ -307,15 +307,15 @@ def kmh2si(vals):
 
     Examples
     --------
-    >>> from wradlib.trafo import kmh2si
-    >>> print(np.round(kmh2si(10.), 3))
+    >>> from wradlib.trafo import kmh_to_si
+    >>> print(np.round(kmh_to_si(10.), 3))
     2.778
 
     """
     return vals * 1000. / 3600.
 
 
-def mph2si(vals):
+def mph_to_si(vals):
     """Conversion from miles/hr to SI wind speed units
 
     Note
@@ -336,15 +336,15 @@ def mph2si(vals):
 
     Examples
     --------
-    >>> from wradlib.trafo import mph2si
-    >>> print(np.round(mph2si(10.), 2))
+    >>> from wradlib.trafo import mph_to_si
+    >>> print(np.round(mph_to_si(10.), 2))
     4.47
 
     """
     return vals * meters_per_mile / 3600.
 
 
-def kts2si(vals):
+def kts_to_si(vals):
     """Conversion from knots to SI wind speed units
 
     Note
@@ -365,8 +365,8 @@ def kts2si(vals):
 
     Examples
     --------
-    >>> from wradlib.trafo import kts2si
-    >>> print(np.round(kts2si(1.), 3))
+    >>> from wradlib.trafo import kts_to_si
+    >>> print(np.round(kts_to_si(1.), 3))
     0.514
 
     """
