@@ -34,8 +34,8 @@ class KDPFromPHIDPTest(unittest.TestCase):
         dp.kdp_from_phidp(self.phidp_raw, dr=self.dr, method='slow')
 
     def test_linear_despeckle(self):
-        dp.linear_despeckle(self.phidp_raw, N=3, copy=True)
-        dp.linear_despeckle(self.phidp_raw, N=5, copy=True)
+        dp.linear_despeckle(self.phidp_raw, ndespeckle=3, copy=True)
+        dp.linear_despeckle(self.phidp_raw, ndespeckle=5, copy=True)
 
     def test_unfold_phi_naive(self):
         dp.unfold_phi_naive(self.phidp_raw, self.rho)

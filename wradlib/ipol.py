@@ -27,8 +27,8 @@ This includes for example:
    ExternalDriftKriging
    interpolate
    interpolate_polar
-   cart2irregular_interp
-   cart2irregular_spline
+   cart_to_irregular_interp
+   cart_to_irregular_spline
 
 """
 
@@ -316,7 +316,7 @@ class Idw(IpolBase):
         self._check_shape(vals)
         outshape = list(vals.shape)
         outshape[0] = len(self.dists)
-        interpol = (np.repeat(np.nan, util._shape2size(outshape)).
+        interpol = (np.repeat(np.nan, util._shape_to_size(outshape)).
                     reshape(tuple(outshape)).astype('f4'))
         # weights is the container for the weights (a list)
         weights = list(range(len(self.dists)))
@@ -505,15 +505,15 @@ def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
         c = cov_gau(h, sill, rng)
     else:
         # modified bessel function of second kind of order v
-        Kv = scipy.special.kv
+        kv = scipy.special.kv
         # Gamma function
-        Tau = scipy.special.gamma
+        tau = scipy.special.gamma
 
         fac1 = h / rng * 2.0 * np.sqrt(shp)
-        fac2 = (Tau(shp) * 2.0 ** (shp - 1.0))
+        fac2 = (tau(shp) * 2.0 ** (shp - 1.0))
 
         c = np.where(h != 0, sill * 1.0 /
-                     fac2 * fac1 ** shp * Kv(shp, fac1), sill)
+                     fac2 * fac1 ** shp * kv(shp, fac1), sill)
 
     return c
 
@@ -922,7 +922,7 @@ class ExternalDriftKriging(IpolBase):
 # -----------------------------------------------------------------------------
 # Wrapper functions
 # -----------------------------------------------------------------------------
-def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
+def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     """
     Convenience function to use the interpolation classes in an efficient way
 
@@ -960,15 +960,15 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
         Data point coordinates of the target points.
     vals : ndarray of float, shape (numsourcepoints, ...)
         Values at the source points which to interpolate
-    Interpolator : a class which inherits from IpolBase
+    ipclass : a class which inherits from IpolBase
 
     Other Parameters
     ----------------
-    *args : arguments of Interpolator (see class documentation)
+    *args : arguments of ipclass (see class documentation)
 
     Keyword Arguments
     -----------------
-    **kwargs : keyword arguments of Interpolator (see class documentation)
+    **kwargs : keyword arguments of ipclass (see class documentation)
 
     Examples
     --------
@@ -989,11 +989,11 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
         # source values are one dimensional, we have just
         # to remove invalid data
         ix_valid = np.where(np.isfinite(vals))[0]
-        ip = Interpolator(src[ix_valid], trg, *args, **kwargs)
+        ip = ipclass(src[ix_valid], trg, *args, **kwargs)
         result = ip(vals[ix_valid])
     elif vals.ndim == 2:
         # this implementation for 2 dimensions needs generalization
-        ip = Interpolator(src, trg, *args, **kwargs)
+        ip = ipclass(src, trg, *args, **kwargs)
         result = ip(vals)
         nan_in_result = np.where(np.isnan(result))
         # nan_in_vals = np.where(np.isnan(vals))
@@ -1001,10 +1001,10 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
             ix_good = np.where(np.isfinite(vals[..., i]))[0]
             ix_broken_targets = (nan_in_result[0]
                                  [np.where(nan_in_result[-1] == i)[0]])
-            ip = Interpolator(src[ix_good],
-                              trg[nan_in_result[0]
-                              [np.where(nan_in_result[-1] == i)[0]]],
-                              *args, **kwargs)
+            ip = ipclass(src[ix_good],
+                         trg[nan_in_result[0]
+                         [np.where(nan_in_result[-1] == i)[0]]],
+                         *args, **kwargs)
             tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
             result[ix_broken_targets, i] = tmp.ravel()
     else:
@@ -1014,13 +1014,13 @@ def interpolate(src, trg, vals, Interpolator, *args, **kwargs):
                                       ' if <vals> has less than 3 dimension.')
         else:
             # if no NaN value are in <vals> we can safely apply the
-            # Interpolator as is
-            ip = Interpolator(src, trg, *args, **kwargs)
+            # ipclass as is
+            ip = ipclass(src, trg, *args, **kwargs)
             result = ip(vals)
     return result
 
 
-def interpolate_polar(data, mask=None, Interpolator=Nearest):
+def interpolate_polar(data, mask=None, ipclass=Nearest):
     """
     Convenience function to interpolate polar data
 
@@ -1034,7 +1034,7 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
         boolean array with pixels to be interpolated set to True;
 
         must have the same shape as data
-    Interpolator : a class which inherits from IpolBase
+    ipclass : a class which inherits from IpolBase
 
     Returns
     -------
@@ -1049,11 +1049,11 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
     >>> data = np.arange(12.).reshape(4,3)
     >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
-    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, Interpolator = wrl.ipol.Linear)  # noqa
+    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, ipclass = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_a)
     >>> # the same result can be achieved by using an masked array instead of an explicit mask  # noqa
     >>> mdata = np.ma.array(data, mask = masked_values)
-    >>> filled_b = wrl.ipol.interpolate_polar(mdata, Interpolator = wrl.ipol.Linear)  # noqa
+    >>> filled_b = wrl.ipol.interpolate_polar(mdata, ipclass = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_b)
 
 
@@ -1086,7 +1086,7 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
     values_list = np.delete(data, clutter_indices)
     filled_data = data.copy().ravel()
     # interpolate masked bins
-    filling = interpolate(src_coord, trg_coord, values_list, Interpolator)
+    filling = interpolate(src_coord, trg_coord, values_list, ipclass)
     # fill data with the interpolations
     filled_data[clutter_indices] = filling.astype(filled_data.dtype)
     # in case of nans as processed at the rim when interpolating linear,
@@ -1096,12 +1096,12 @@ def interpolate_polar(data, mask=None, Interpolator=Nearest):
                               biny[np.where(np.isnan(filled_data))]])
                      .transpose())
         filling = interpolate(src_coord, trg_coord, values_list,
-                              Interpolator=Nearest)
+                              ipclass=Nearest)
         filled_data[np.where(np.isnan(filled_data))] = filling
     return filled_data.reshape(data.shape[0], data.shape[1])
 
 
-def cart2irregular_interp(cartgrid, values, newgrid, **kwargs):
+def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     """
     Interpolate array ``values`` defined by cartesian coordinate array
     ``cartgrid`` to new coordinates defined by ``newgrid`` using
@@ -1145,7 +1145,7 @@ def cart2irregular_interp(cartgrid, values, newgrid, **kwargs):
     return interp
 
 
-def cart2irregular_spline(cartgrid, values, newgrid, **kwargs):
+def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
     """
     Map array ``values`` defined by cartesian coordinate array ``cartgrid``
     to new coordinates defined by ``newgrid`` using spline interpolation.

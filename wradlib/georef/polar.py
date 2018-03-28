@@ -66,7 +66,7 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
     # if site altitude is present, use it, else assume it to be zero
     try:
         centalt = sitecoords[2]
-    except Exception:
+    except IndexError:
         centalt = 0.
 
     # if no radius is given, get the approximate radius of the WGS84
@@ -294,7 +294,7 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     --------
     >>> import wradlib.georef as georef  # noqa
     >>> import numpy as np
-    >>> import matplotlib as mpl
+    >>> from matplotlib import collections
     >>> import matplotlib.pyplot as pl
     >>> #pl.interactive(True)
     >>> # define the polar coordinates and the site coordinates in lat/lon
@@ -309,7 +309,7 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     >>> fig = pl.figure()
     >>> ax = fig.add_subplot(111)
     >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)  # noqa
-    >>> polycoll = mpl.collections.PolyCollection(polygons[...,:2], closed=True, facecolors='None')  # noqa
+    >>> polycoll = collections.PolyCollection(polygons[...,:2], closed=True, facecolors='None')  # noqa
     >>> ret = ax.add_collection(polycoll, autolim=True)
     >>> pl.autoscale()
     >>> pl.show()

@@ -21,16 +21,16 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.misc
 """
 
-from .misc import (writePolygon2Text,  to_pickle, from_pickle)
+from .misc import (write_polygon_to_text, to_pickle, from_pickle)
 from .gdal import (read_safnwc, write_raster_dataset, open_vector, open_raster,
                    gdal_create_dataset)
-from .hdf import (read_generic_hdf5, read_OPERA_hdf5, read_GAMIC_hdf5,
+from .hdf import (read_generic_hdf5, read_opera_hdf5, read_gamic_hdf5,
                   to_hdf5, from_hdf5, read_gpm, read_trmm)
-from .netcdf import read_EDGE_netcdf, read_generic_netcdf
-from .rainbow import read_Rainbow
-from .radolan import (readDX, read_RADOLAN_composite,
-                      read_radolan_header,  get_radolan_filehandle,
-                      parse_DWD_quant_composite_header,
+from .netcdf import read_edge_netcdf, read_generic_netcdf
+from .rainbow import read_rainbow
+from .radolan import (read_dx, read_radolan_composite,
+                      read_radolan_header, get_radolan_filehandle,
+                      parse_dwd_composite_header,
                       read_radolan_binary_array,
                       decode_radolan_runlength_array)
 from .iris import (IrisFile, read_iris)

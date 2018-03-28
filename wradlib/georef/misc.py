@@ -40,6 +40,8 @@ def bin_altitude(r, theta, sitealt, re, ke=4./3.):
     theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
         of r elevation angles in degrees with 0° at horizontal and +90°
         pointing vertically upwards from the radar
+    sitealt : float
+        Altitude in [m] a.s.l. of the referencing radar site
     re : float
         earth's radius [m]
     ke : float
@@ -164,11 +166,11 @@ def get_earth_radius(latitude, sr=None):
     """
     if sr is None:
         sr = get_default_projection()
-    RADIUS_E = sr.GetSemiMajor()
-    RADIUS_P = sr.GetSemiMinor()
+    radius_e = sr.GetSemiMajor()
+    radius_p = sr.GetSemiMinor()
     latitude = np.radians(latitude)
-    radius = np.sqrt((np.power(RADIUS_E, 4) * np.power(np.cos(latitude), 2) +
-                      np.power(RADIUS_P, 4) * np.power(np.sin(latitude), 2)) /
-                     (np.power(RADIUS_E, 2) * np.power(np.cos(latitude), 2) +
-                      np.power(RADIUS_P, 2) * np.power(np.sin(latitude), 2)))
-    return (radius)
+    radius = np.sqrt((np.power(radius_e, 4) * np.power(np.cos(latitude), 2) +
+                      np.power(radius_p, 4) * np.power(np.sin(latitude), 2)) /
+                     (np.power(radius_e, 2) * np.power(np.cos(latitude), 2) +
+                      np.power(radius_p, 2) * np.power(np.sin(latitude), 2)))
+    return radius

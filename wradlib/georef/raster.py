@@ -58,7 +58,7 @@ def pixel_coordinates(nx, ny, mode="centers"):
     coordinates = np.empty(X.shape + (2,))
     coordinates[:, :, 0] = X
     coordinates[:, :, 1] = Y
-    return (coordinates)
+    return coordinates
 
 
 def pixel_to_map(geotransform, coordinates):
@@ -91,7 +91,7 @@ def pixel_to_map(geotransform, coordinates):
     coordinates_map[..., 1] = (geotransform[3] +
                                geotransform[4] * coordinates[..., 0] +
                                geotransform[5] * coordinates[..., 1])
-    return (coordinates_map)
+    return coordinates_map
 
 
 def pixel_to_map3d(geotransform, coordinates, z=None):
@@ -121,7 +121,7 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
     coordinates_map = np.empty(coordinates.shape[:-1] + (3,))
     coordinates_map[..., 0:2] = pixel_to_map(geotransform, coordinates)
     coordinates_map[..., 2] = np.zeros(coordinates.shape[:-1])
-    return (coordinates_map)
+    return coordinates_map
 
 
 def read_gdal_coordinates(dataset, mode='centers', z=True):
@@ -154,7 +154,7 @@ def read_gdal_coordinates(dataset, mode='centers', z=True):
         coordinates = pixel_to_map3d(geotransform, coordinates_pixel)
     else:
         coordinates = pixel_to_map(geotransform, coordinates_pixel)
-    return (coordinates)
+    return coordinates
 
 
 def read_gdal_projection(dset):
@@ -187,9 +187,9 @@ def read_gdal_values(dataset=None, nodata=None):
 
     Parameters
     ----------
-    data : gdal object
-    nodata : boolean
-        option to deal with nodata values replacing it with nans.
+    dataset : gdal object
+    nodata : float
+        replace nodata values
 
     Returns
     -------
@@ -230,6 +230,8 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
         Array of shape (rows, cols, 2) containing xy-coordinates.
     projection : osr object
         Spatial reference system of the used coordinates, defaults to None.
+    nodata : int
+        Value of NODATA
 
     Returns
     -------
@@ -350,6 +352,9 @@ def reproject_raster_dataset(src_ds, **kwargs):
     ----------
     src_ds : gdal.Dataset
         raster image with georeferencing (GeoTransform at least)
+
+    Keyword Arguments
+    -----------------
     spacing : float
         float or tuple of two floats
         pixel spacing of destination dataset, same unit as pixel coordinates

@@ -20,19 +20,19 @@ class ZRConversionTest(unittest.TestCase):
 
         self.img = img
 
-    def test_z2r(self):
-        self.assertEqual(zr.z2r(trafo.idecibel(10.)), 0.1537645610180688)
+    def test_z_to_r(self):
+        self.assertEqual(zr.z_to_r(trafo.idecibel(10.)), 0.1537645610180688)
 
-    def test_r2z(self):
-        self.assertEqual(zr.r2z(0.15), 9.611164492610417)
+    def test_r_to_z(self):
+        self.assertEqual(zr.r_to_z(0.15), 9.611164492610417)
 
-    def test_z2rEnhanced(self):
-        res_rr, res_si = zr.z2rEnhanced(trafo.idecibel(self.img))
-        res_rr2, res_si2 = zr.z2rEnhanced(trafo.idecibel(self.img),
-                                          algo='mdfilt', mode='mirror')
-        res_rr3, res_si3 = zr.z2rEnhanced(trafo.idecibel(self.img),
-                                          algo='mdcorr', xmode='mirror',
-                                          ymode='mirror')
+    def test_z_to_r_enhanced(self):
+        res_rr, res_si = zr.z_to_r_enhanced(trafo.idecibel(self.img))
+        res_rr2, res_si2 = zr.z_to_r_enhanced(trafo.idecibel(self.img),
+                                              algo='mdfilt', mode='mirror')
+        res_rr3, res_si3 = zr.z_to_r_enhanced(trafo.idecibel(self.img),
+                                              algo='mdcorr', xmode='mirror',
+                                              ymode='mirror')
 
         rr = np.array([[3.64633237e-02, 1.77564547e-01, 1.77564547e-01,
                         3.17838962e-02, 3.17838962e-02, 1.62407903e-02,

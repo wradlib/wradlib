@@ -9,7 +9,7 @@ Miscellaneous Data I/O
    :nosignatures:
    :toctree: generated/
 
-   writePolygon2Text
+   write_polygon_to_text
    to_pickle
    from_pickle
 """
@@ -23,14 +23,14 @@ except ImportError:
     import pickle
 
 
-def _write_polygon2txt(f, idx, vertices):
+def _write_polygon_to_txt(f, idx, vertices):
     f.write('%i %i\n' % idx)
     for i, vert in enumerate(vertices):
         f.write('%i ' % (i,))
         f.write('%f %f %f %f\n' % tuple(vert))
 
 
-def writePolygon2Text(fname, polygons):
+def write_polygon_to_text(fname, polygons):
     """Writes Polygons to a Text file which can be interpreted by ESRI \
     ArcGIS's "Create Features from Text File (Samples)" tool.
 
@@ -61,7 +61,7 @@ def writePolygon2Text(fname, polygons):
         poly1 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
         poly2 = [[0.,0.,0.,0.],[0.,1.,0.,1.],[1.,1.,0.,2.],[0.,0.,0.,0.]]
         polygons = [poly1, poly2]
-        writePolygon2Text('polygons.txt', polygons)
+        write_polygon_to_text('polygons.txt', polygons)
     The resulting text file will look like this::
         Polygon
         0 0
@@ -80,7 +80,7 @@ def writePolygon2Text(fname, polygons):
         f.write('Polygon\n')
         count = 0
         for vertices in polygons:
-            _write_polygon2txt(f, (count, 0), vertices)
+            _write_polygon_to_txt(f, (count, 0), vertices)
             count += 1
         f.write('END\n')
 

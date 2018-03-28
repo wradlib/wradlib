@@ -17,24 +17,24 @@ import sys
 
 
 class DXTest(unittest.TestCase):
-    # testing functions related to readDX
-    def test__getTimestampFromFilename(self):
+    # testing functions related to read_dx
+    def test__get_timestamp_from_filename(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
-        self.assertEqual(radolan._getTimestampFromFilename(filename),
+        self.assertEqual(radolan._get_timestamp_from_filename(filename),
                          datetime.datetime(2006, 8, 5, 0))
         filename = 'raa00-dx_10488-0608050000-drs---bin'
-        self.assertEqual(radolan._getTimestampFromFilename(filename),
+        self.assertEqual(radolan._get_timestamp_from_filename(filename),
                          datetime.datetime(2006, 8, 5, 0))
 
-    def test_getDXTimestamp(self):
+    def test_get_dx_timestamp(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
-        self.assertEqual(radolan.getDXTimestamp(filename).__str__(),
+        self.assertEqual(radolan.get_dx_timestamp(filename).__str__(),
                          '2006-08-05 00:00:00+00:00')
         filename = 'raa00-dx_10488-0608050000-drs---bin'
-        self.assertEqual(radolan.getDXTimestamp(filename).__str__(),
+        self.assertEqual(radolan.get_dx_timestamp(filename).__str__(),
                          '2006-08-05 00:00:00+00:00')
 
-    def test_parse_DX_header(self):
+    def test_parse_dx_header(self):
         header = (b'DX021655109080608BY54213VS 2CO0CD2CS0EP0.30.30.40.50.'
                   b'50.40.40.4MS999~ 54( 120,  46) 43-31 44 44 50 50 54 52 '
                   b'52 42 39 36  ~ 53(  77,  39) 34-31 32 44 39 48 53 44 45 '
@@ -58,19 +58,19 @@ class DXTest(unittest.TestCase):
         head = ''
         for c in io.BytesIO(header):
             head += str(c.decode())
-        radolan.parse_DX_header(head)
+        radolan.parse_dx_header(head)
 
-    def test_unpackDX(self):
+    def test_unpack_dx(self):
         pass
 
-    def test_readDX(self):
+    def test_read_dx(self):
         filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
         dxfile = wrl.util.get_wradlib_data_file(filename)
-        data, attrs = radolan.readDX(dxfile)
+        data, attrs = radolan.read_dx(dxfile)
 
 
 class IOTest(unittest.TestCase):
-    def test_writePolygon2Text(self):
+    def test_write_polygon_to_text(self):
         poly1 = [[0., 0., 0., 0.], [0., 1., 0., 1.], [1., 1., 0., 2.],
                  [0., 0., 0., 0.]]
         poly2 = [[0., 0., 0., 0.], [0., 1., 0., 1.], [1., 1., 0., 2.],
@@ -85,7 +85,7 @@ class IOTest(unittest.TestCase):
                '2 1.000000 1.000000 0.000000 2.000000\n',
                '3 0.000000 0.000000 0.000000 0.000000\n', 'END\n']
         tmp = tempfile.NamedTemporaryFile()
-        wrl.io.writePolygon2Text(tmp.name, polygons)
+        wrl.io.write_polygon_to_text(tmp.name, polygons)
         self.assertEqual(open(tmp.name, 'r').readlines(), res)
 
 
@@ -181,23 +181,23 @@ class HDF5Test(unittest.TestCase):
         h5_file = wrl.util.get_wradlib_data_file(filename)
         wrl.io.read_generic_hdf5(h5_file)
 
-    def test_read_OPERA_hdf5(self):
+    def test_read_opera_hdf5(self):
         filename = ('hdf5/IDR66_20141206_094829.vol.h5')
         h5_file = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.read_OPERA_hdf5(h5_file)
+        wrl.io.read_opera_hdf5(h5_file)
 
-    def test_read_GAMIC_hdf5(self):
+    def test_read_gamic_hdf5(self):
         ppi = ('hdf5/2014-08-10--182000.ppi.mvol')
         rhi = ('hdf5/2014-06-09--185000.rhi.mvol')
         filename = ('gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-'
                     'S095002-E095137.004383.V05A.HDF5')
 
         h5_file = wrl.util.get_wradlib_data_file(ppi)
-        wrl.io.read_GAMIC_hdf5(h5_file)
+        wrl.io.read_gamic_hdf5(h5_file)
         h5_file = wrl.util.get_wradlib_data_file(rhi)
-        wrl.io.read_GAMIC_hdf5(h5_file)
+        wrl.io.read_gamic_hdf5(h5_file)
         h5_file = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(KeyError, lambda: wrl.io.read_GAMIC_hdf5(h5_file))
+        self.assertRaises(KeyError, lambda: wrl.io.read_gamic_hdf5(h5_file))
 
 
 class RadolanTest(unittest.TestCase):
@@ -322,7 +322,7 @@ class RadolanTest(unittest.TestCase):
         pg_file = wrl.util.get_wradlib_data_file(filename)
         pg_fid = radolan.get_radolan_filehandle(pg_file)
         header = radolan.read_radolan_header(pg_fid)
-        attrs = radolan.parse_DWD_quant_composite_header(header)
+        attrs = radolan.parse_dwd_composite_header(header)
         data = radolan.read_radolan_binary_array(pg_fid, attrs['datasize'])
         attrs['nodataflag'] = 255
         arr = radolan.decode_radolan_runlength_array(data, attrs)
@@ -333,13 +333,13 @@ class RadolanTest(unittest.TestCase):
         rw_file = wrl.util.get_wradlib_data_file(filename)
         rw_fid = radolan.get_radolan_filehandle(rw_file)
         header = radolan.read_radolan_header(rw_fid)
-        attrs = radolan.parse_DWD_quant_composite_header(header)
+        attrs = radolan.parse_dwd_composite_header(header)
         data = radolan.read_radolan_binary_array(rw_fid, attrs['datasize'])
         self.assertEqual(len(data), attrs['datasize'])
 
         rw_fid = radolan.get_radolan_filehandle(rw_file)
         header = radolan.read_radolan_header(rw_fid)
-        attrs = radolan.parse_DWD_quant_composite_header(header)
+        attrs = radolan.parse_dwd_composite_header(header)
         self.assertRaises(
             IOError,
             lambda: radolan.read_radolan_binary_array(rw_fid,
@@ -369,7 +369,7 @@ class RadolanTest(unittest.TestCase):
         header = radolan.read_radolan_header(buf)
         self.assertEqual(header, rx_header.decode())
 
-    def test_parse_DWD_quant_composite_header(self):
+    def test_parse_dwd_composite_header(self):
         rx_header = ('RW030950100000814BY1620130VS 3SW   2.13.1PR E-01INT  60'
                      'GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,asd,neu,nhb,'
                      'oft,tur,isn,fbg,mem>')
@@ -435,10 +435,10 @@ class RadolanTest(unittest.TestCase):
                                  'hnr 6', 'isn 6', 'mem 6', 'neu 6', 'nhb 6',
                                  'oft 6', 'pro 6', 'ros 6', 'tur 6', 'umd 6']}
 
-        rx = radolan.parse_DWD_quant_composite_header(rx_header)
-        pg = radolan.parse_DWD_quant_composite_header(pg_header)
-        rq = radolan.parse_DWD_quant_composite_header(rq_header)
-        sq = radolan.parse_DWD_quant_composite_header(sq_header)
+        rx = radolan.parse_dwd_composite_header(rx_header)
+        pg = radolan.parse_dwd_composite_header(pg_header)
+        rq = radolan.parse_dwd_composite_header(rq_header)
+        sq = radolan.parse_dwd_composite_header(sq_header)
 
         for key, value in rx.items():
             self.assertEqual(value, test_rx[key])
@@ -458,7 +458,7 @@ class RadolanTest(unittest.TestCase):
             else:
                 self.assertEqual(value, test_sq[key])
 
-    def test_read_RADOLAN_composite(self):
+    def test_read_radolan_composite(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
         rw_file = wrl.util.get_wradlib_data_file(filename)
         test_attrs = {'maxrange': '150 km',
@@ -473,7 +473,7 @@ class RadolanTest(unittest.TestCase):
                       'datasize': 1620000, 'radarid': '10000'}
 
         # test for complete file
-        data, attrs = radolan.read_RADOLAN_composite(rw_file)
+        data, attrs = radolan.read_radolan_composite(rw_file)
         self.assertEqual(data.shape, (900, 900))
 
         for key, value in attrs.items():
@@ -485,7 +485,7 @@ class RadolanTest(unittest.TestCase):
         # Do the same for the case where a file handle is passed
         # instead of a file name
         with gzip.open(rw_file) as fh:
-            data, attrs = radolan.read_RADOLAN_composite(fh)
+            data, attrs = radolan.read_radolan_composite(fh)
             self.assertEqual(data.shape, (900, 900))
 
         for key, value in attrs.items():
@@ -495,7 +495,7 @@ class RadolanTest(unittest.TestCase):
                 self.assertEqual(value, test_attrs[key])
 
         # test for loaddata=False
-        data, attrs = radolan.read_RADOLAN_composite(rw_file, loaddata=False)
+        data, attrs = radolan.read_radolan_composite(rw_file, loaddata=False)
         self.assertEqual(data, None)
         for key, value in attrs.items():
             if type(value) == np.ndarray:
@@ -507,26 +507,26 @@ class RadolanTest(unittest.TestCase):
         filename = 'radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz'
         rx_file = wrl.util.get_wradlib_data_file(filename)
         # test for loaddata=False
-        data, attrs = radolan.read_RADOLAN_composite(rx_file)
+        data, attrs = radolan.read_radolan_composite(rx_file)
 
         filename = 'radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz'
         pc_file = wrl.util.get_wradlib_data_file(filename)
         # test for loaddata=False
-        data, attrs = radolan.read_RADOLAN_composite(pc_file)
+        data, attrs = radolan.read_radolan_composite(pc_file)
 
 
 class RainbowTest(unittest.TestCase):
     def test_read_rainbow(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(IOError, lambda: rainbow.read_Rainbow('test'))
+        self.assertRaises(IOError, lambda: rainbow.read_rainbow('test'))
         # Test reading from file name
-        rb_dict = rainbow.read_Rainbow(rb_file)
+        rb_dict = rainbow.read_rainbow(rb_file)
         self.assertEqual(rb_dict[u'volume'][u'@datetime'],
                          u'2013-07-03T08:33:55')
         # Test reading from file handle
         with open(rb_file, 'rb') as rb_fh:
-            rb_dict = rainbow.read_Rainbow(rb_fh)
+            rb_dict = rainbow.read_rainbow(rb_fh)
             self.assertEqual(rb_dict[u'volume'][u'@datetime'],
                              u'2013-07-03T08:33:55')
 
@@ -553,22 +553,22 @@ class RainbowTest(unittest.TestCase):
         cstring = zlib.compress(dstring)
         self.assertEqual(rainbow.decompress(cstring), dstring)
 
-    def test_get_RB_data_layout(self):
-        self.assertEqual(rainbow.get_RB_data_layout(8), (1, '>u1'))
-        self.assertEqual(rainbow.get_RB_data_layout(16), (2, '>u2'))
-        self.assertEqual(rainbow.get_RB_data_layout(32), (4, '>u4'))
-        self.assertRaises(ValueError, lambda: rainbow.get_RB_data_layout(128))
+    def test_get_rb_data_layout(self):
+        self.assertEqual(rainbow.get_rb_data_layout(8), (1, '>u1'))
+        self.assertEqual(rainbow.get_rb_data_layout(16), (2, '>u2'))
+        self.assertEqual(rainbow.get_rb_data_layout(32), (4, '>u4'))
+        self.assertRaises(ValueError, lambda: rainbow.get_rb_data_layout(128))
 
     @unittest.skipIf(sys.version_info < (3, 3),
                      "not supported in this python version")
-    def test_get_RB_data_layout_big(self):
+    def test_get_rb_data_layout_big(self):
         from unittest.mock import patch
         with patch('sys.byteorder', 'big'):
-            self.assertEqual(rainbow.get_RB_data_layout(8), (1, '<u1'))
-            self.assertEqual(rainbow.get_RB_data_layout(16), (2, '<u2'))
-            self.assertEqual(rainbow.get_RB_data_layout(32), (4, '<u4'))
+            self.assertEqual(rainbow.get_rb_data_layout(8), (1, '<u1'))
+            self.assertEqual(rainbow.get_rb_data_layout(16), (2, '<u2'))
+            self.assertEqual(rainbow.get_rb_data_layout(32), (4, '<u4'))
 
-    def test_get_RB_data_attribute(self):
+    def test_get_rb_data_attribute(self):
         xmltodict = wrl.util.import_optional('xmltodict')
         data = xmltodict.parse(('<slicedata time="13:30:05" date="2013-04-26">'
                                 '#<rayinfo refid="startangle" blobid="0" '
@@ -577,29 +577,29 @@ class RainbowTest(unittest.TestCase):
                                 'bins="400" min="-31.5" max="95.5" '
                                 'depth="8"/> #</slicedata>'))
         data = list(rainbow.find_key('@blobid', data))
-        self.assertEqual(rainbow.get_RB_data_attribute(data[0], 'blobid'), 0)
-        self.assertEqual(rainbow.get_RB_data_attribute(data[1], 'blobid'), 1)
-        self.assertEqual(rainbow.get_RB_data_attribute(data[0], 'rays'), 361)
-        self.assertEqual(rainbow.get_RB_data_attribute(data[1], 'rays'), 361)
-        self.assertEqual(rainbow.get_RB_data_attribute(data[1], 'bins'), 400)
+        self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'blobid'), 0)
+        self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'blobid'), 1)
+        self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'rays'), 361)
+        self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'rays'), 361)
+        self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'bins'), 400)
         self.assertRaises(KeyError,
-                          lambda: rainbow.get_RB_data_attribute(data[0],
+                          lambda: rainbow.get_rb_data_attribute(data[0],
                                                                 'Nonsense'))
-        self.assertEqual(rainbow.get_RB_data_attribute(data[0], 'depth'), 16)
+        self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'depth'), 16)
 
-    def test_get_RB_blob_attribute(self):
+    def test_get_rb_blob_attribute(self):
         xmltodict = wrl.util.import_optional('xmltodict')
         xmldict = xmltodict.parse(
             '<BLOB blobid="0" size="737" compression="qt"></BLOB>')
-        self.assertEqual(rainbow.get_RB_blob_attribute(xmldict, 'compression'),
+        self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'compression'),
                          'qt')
-        self.assertEqual(rainbow.get_RB_blob_attribute(xmldict, 'size'), '737')
-        self.assertEqual(rainbow.get_RB_blob_attribute(xmldict, 'blobid'), '0')
+        self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'size'), '737')
+        self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'blobid'), '0')
         self.assertRaises(KeyError,
-                          lambda: rainbow.get_RB_blob_attribute(xmldict,
+                          lambda: rainbow.get_rb_blob_attribute(xmldict,
                                                                 'Nonsense'))
 
-    def test_get_RB_data_shape(self):
+    def test_get_rb_data_shape(self):
         xmltodict = wrl.util.import_optional('xmltodict')
         data = xmltodict.parse(('<slicedata time="13:30:05" date="2013-04-26">'
                                 '#<rayinfo refid="startangle" blobid="0" '
@@ -615,64 +615,64 @@ class RainbowTest(unittest.TestCase):
                                 'columns="400" min="-31.5" max="95.5" '
                                 'depth="8"/> #</slicedata>'))
         data = list(rainbow.find_key('@blobid', data))
-        self.assertEqual(rainbow.get_RB_data_shape(data[0]), 361)
-        self.assertEqual(rainbow.get_RB_data_shape(data[1]), (361, 400))
-        self.assertEqual(rainbow.get_RB_data_shape(data[2]), (800, 400, 6))
-        self.assertEqual(rainbow.get_RB_data_shape(data[4]), (800, 400))
-        self.assertRaises(KeyError, lambda: rainbow.get_RB_data_shape(data[3]))
+        self.assertEqual(rainbow.get_rb_data_shape(data[0]), 361)
+        self.assertEqual(rainbow.get_rb_data_shape(data[1]), (361, 400))
+        self.assertEqual(rainbow.get_rb_data_shape(data[2]), (800, 400, 6))
+        self.assertEqual(rainbow.get_rb_data_shape(data[4]), (800, 400))
+        self.assertRaises(KeyError, lambda: rainbow.get_rb_data_shape(data[3]))
 
-    def test_map_RB_data(self):
+    def test_map_rb_data(self):
         indata = b'0123456789'
         outdata8 = np.array([48, 49, 50, 51, 52, 53, 54, 55, 56, 57],
                             dtype=np.uint8)
         outdata16 = np.array([12337, 12851, 13365, 13879, 14393],
                              dtype=np.uint16)
         outdata32 = np.array([808530483, 875902519], dtype=np.uint32)
-        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 8), outdata8))
-        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 16),
+        self.assertTrue(np.allclose(rainbow.map_rb_data(indata, 8), outdata8))
+        self.assertTrue(np.allclose(rainbow.map_rb_data(indata, 16),
                                     outdata16))
-        self.assertTrue(np.allclose(rainbow.map_RB_data(indata, 32),
+        self.assertTrue(np.allclose(rainbow.map_rb_data(indata, 32),
                                     outdata32))
         flagdata = b'1'
-        self.assertTrue(np.allclose(rainbow.map_RB_data(flagdata, 1),
+        self.assertTrue(np.allclose(rainbow.map_rb_data(flagdata, 1),
                                     [0, 0, 1, 1, 0, 0, 0, 1]))
 
-    def test_get_RB_blob_data(self):
+    def test_get_rb_blob_data(self):
         datastring = b'<BLOB blobid="0" size="737" compression="qt"></BLOB>'
         self.assertRaises(EOFError,
-                          lambda: rainbow.get_RB_blob_data(datastring, 1))
+                          lambda: rainbow.get_rb_blob_data(datastring, 1))
 
-    def test_get_RB_blob_from_file(self):
+    def test_get_rb_blob_from_file(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
-        rbdict = rainbow.read_Rainbow(rb_file, loaddata=False)
+        rbdict = rainbow.read_rainbow(rb_file, loaddata=False)
         rbblob = rbdict['volume']['scan']['slice']['slicedata']['rawdata']
         # Check reading from file handle
         with open(rb_file, 'rb') as rb_fh:
-            data = rainbow.get_RB_blob_from_file(rb_fh, rbblob)
+            data = rainbow.get_rb_blob_from_file(rb_fh, rbblob)
             self.assertEqual(data.shape[0], int(rbblob['@rays']))
             self.assertEqual(data.shape[1], int(rbblob['@bins']))
             self.assertRaises(IOError,
-                              lambda: rainbow.get_RB_blob_from_file('rb_fh',
+                              lambda: rainbow.get_rb_blob_from_file('rb_fh',
                                                                     rbblob))
         # Check reading from file path
-        data = rainbow.get_RB_blob_from_file(rb_file, rbblob)
+        data = rainbow.get_rb_blob_from_file(rb_file, rbblob)
         self.assertEqual(data.shape[0], int(rbblob['@rays']))
         self.assertEqual(data.shape[1], int(rbblob['@bins']))
         self.assertRaises(IOError,
-                          lambda: rainbow.get_RB_blob_from_file('rb_fh',
+                          lambda: rainbow.get_rb_blob_from_file('rb_fh',
                                                                 rbblob))
 
-    def test_get_RB_file_as_string(self):
+    def test_get_rb_file_as_string(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
         with open(rb_file, 'rb') as rb_fh:
-            rb_string = rainbow.get_RB_file_as_string(rb_fh)
+            rb_string = rainbow.get_rb_file_as_string(rb_fh)
             self.assertTrue(rb_string)
             self.assertRaises(IOError,
-                              lambda: rainbow.get_RB_file_as_string('rb_fh'))
+                              lambda: rainbow.get_rb_file_as_string('rb_fh'))
 
-    def test_get_RB_header(self):
+    def test_get_rb_header(self):
         rb_header = (b'<volume version="5.34.16" '
                      b'datetime="2013-07-03T08:33:55"'
                      b' type="azi" owner="RainAnalyzer"> '
@@ -680,12 +680,12 @@ class RainbowTest(unittest.TestCase):
                      b'date="2013-07-03">')
 
         buf = io.BytesIO(rb_header)
-        self.assertRaises(IOError, lambda: rainbow.get_RB_header(buf))
+        self.assertRaises(IOError, lambda: rainbow.get_rb_header(buf))
 
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
         with open(rb_file, 'rb') as rb_fh:
-            rb_header = rainbow.get_RB_header(rb_fh)
+            rb_header = rainbow.get_rb_header(rb_fh)
             self.assertEqual(rb_header['volume']['@version'], '5.34.16')
 
 
@@ -861,16 +861,16 @@ class IrisTest(unittest.TestCase):
 
 
 class NetcdfTest(unittest.TestCase):
-    def test_read_EDGE_netcdf(self):
+    def test_read_edge_netcdf(self):
         filename = 'netcdf/edge_netcdf.nc'
         edgefile = wrl.util.get_wradlib_data_file(filename)
-        data, attrs = wrl.io.read_EDGE_netcdf(edgefile)
-        data, attrs = wrl.io.read_EDGE_netcdf(edgefile, enforce_equidist=True)
+        data, attrs = wrl.io.read_edge_netcdf(edgefile)
+        data, attrs = wrl.io.read_edge_netcdf(edgefile, enforce_equidist=True)
 
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(Exception, lambda: wrl.io.read_EDGE_netcdf(ncfile))
-        self.assertRaises(Exception, lambda: wrl.io.read_EDGE_netcdf('test'))
+        self.assertRaises(Exception, lambda: wrl.io.read_edge_netcdf(ncfile))
+        self.assertRaises(Exception, lambda: wrl.io.read_edge_netcdf('test'))
 
     def test_read_generic_netcdf(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
