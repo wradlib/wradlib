@@ -20,7 +20,7 @@ in the corresponding wradlib modules, e.g.:
     - fuzzy echo classification from polarimetric moments
       (:func:`wradlib.clutter.classify_echo_fuzzy`)
     - attenuation correction (:func:`wradlib.atten.pia_from_kdp`)
-    - direct precipitation retrieval from Kdp (:func:`wradlib.trafo.kdp2r`)
+    - direct precipitation retrieval from Kdp (:func:`wradlib.trafo.kdp_to_r`)
 
 Establishing a valid :math:`Phi_{DP}` profile for :math:`K_{DP}` retrieval
 involves despeckling (linear_despeckle), phase unfolding, and iterative

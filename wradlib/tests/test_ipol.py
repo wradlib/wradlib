@@ -285,14 +285,14 @@ class WrapperFunctionTest(unittest.TestCase):
         data = np.arange(12.).reshape(4, 3)
         masked_values = (data == 2) | (data == 9)
         filled_a = ipol.interpolate_polar(data, mask=masked_values,
-                                          ipolclass=ipol.Linear)
+                                          ipclass=ipol.Linear)
         testfunc = ipol.interpolate_polar
         self.assertRaises(ipol.MissingTargetsError,
                           lambda: testfunc(data, mask=None,
-                                           ipolclass=ipol.Linear))
+                                           ipclass=ipol.Linear))
         mdata = np.ma.array(data, mask=masked_values)
         filled_b = ipol.interpolate_polar(mdata,
-                                          ipolclass=ipol.Linear)
+                                          ipclass=ipol.Linear)
 
         np.testing.assert_allclose(filled_a, filled_b)
 

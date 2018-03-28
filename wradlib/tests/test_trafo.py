@@ -35,31 +35,31 @@ class TransformationTest(unittest.TestCase):
 
     def test_r2depth(self):
         self.assertTrue(
-            np.allclose(trafo.r2depth(self.r, 720), np.array([1., 2., 4.])))
+            np.allclose(trafo.r_to_depth(self.r, 720), np.array([1., 2., 4.])))
         self.assertTrue(
-            np.allclose(trafo.r2depth(self.r, 360), np.array([0.5, 1., 2.])))
+            np.allclose(trafo.r_to_depth(self.r, 360), np.array([0.5, 1., 2.])))
 
     def test_kdp2r(self):
-        self.assertTrue(np.allclose(trafo.kdp2r(self.kdp, 9.45), np.array(
+        self.assertTrue(np.allclose(trafo.kdp_to_r(self.kdp, 9.45), np.array(
             [0., 19.11933017, 34.46261032, 75.09260608])))
 
     def test_si2kmh(self):
-        self.assertTrue(np.allclose(trafo.si2kmh(self.speedsi), self.speedkmh))
+        self.assertTrue(np.allclose(trafo.si_to_kmh(self.speedsi), self.speedkmh))
 
     def test_si2mph(self):
-        self.assertTrue(np.allclose(trafo.si2mph(self.speedsi), self.speedmph))
+        self.assertTrue(np.allclose(trafo.si_to_mph(self.speedsi), self.speedmph))
 
     def test_si2kts(self):
-        self.assertTrue(np.allclose(trafo.si2kts(self.speedsi), self.speedkts))
+        self.assertTrue(np.allclose(trafo.si_2_kts(self.speedsi), self.speedkts))
 
     def test_kmh2si(self):
-        self.assertTrue(np.allclose(trafo.kmh2si(self.speedkmh), self.speedsi))
+        self.assertTrue(np.allclose(trafo.kmh_to_si(self.speedkmh), self.speedsi))
 
     def test_mph2si(self):
-        self.assertTrue(np.allclose(trafo.mph2si(self.speedmph), self.speedsi))
+        self.assertTrue(np.allclose(trafo.mph_to_si(self.speedmph), self.speedsi))
 
     def test_kts2si(self):
-        self.assertTrue(np.allclose(trafo.kts2si(self.speedkts), self.speedsi))
+        self.assertTrue(np.allclose(trafo.kts_to_si(self.speedkts), self.speedsi))
 
 
 if __name__ == '__main__':

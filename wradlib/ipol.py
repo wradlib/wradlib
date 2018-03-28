@@ -919,7 +919,7 @@ class ExternalDriftKriging(IpolBase):
 # -----------------------------------------------------------------------------
 # Wrapper functions
 # -----------------------------------------------------------------------------
-def interpolate(src, trg, vals, ipolclass, *args, **kwargs):
+def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     """
     Convenience function to use the interpolation classes in an efficient way
 
@@ -957,15 +957,15 @@ def interpolate(src, trg, vals, ipolclass, *args, **kwargs):
         Data point coordinates of the target points.
     vals : ndarray of float, shape (numsourcepoints, ...)
         Values at the source points which to interpolate
-    ipolclass : a class which inherits from IpolBase
+    ipclass : a class which inherits from IpolBase
 
     Other Parameters
     ----------------
-    *args : arguments of ipolclass (see class documentation)
+    *args : arguments of ipclass (see class documentation)
 
     Keyword Arguments
     -----------------
-    **kwargs : keyword arguments of ipolclass (see class documentation)
+    **kwargs : keyword arguments of ipclass (see class documentation)
 
     Examples
     --------
@@ -986,11 +986,11 @@ def interpolate(src, trg, vals, ipolclass, *args, **kwargs):
         # source values are one dimensional, we have just
         # to remove invalid data
         ix_valid = np.where(np.isfinite(vals))[0]
-        ip = ipolclass(src[ix_valid], trg, *args, **kwargs)
+        ip = ipclass(src[ix_valid], trg, *args, **kwargs)
         result = ip(vals[ix_valid])
     elif vals.ndim == 2:
         # this implementation for 2 dimensions needs generalization
-        ip = ipolclass(src, trg, *args, **kwargs)
+        ip = ipclass(src, trg, *args, **kwargs)
         result = ip(vals)
         nan_in_result = np.where(np.isnan(result))
         # nan_in_vals = np.where(np.isnan(vals))
@@ -998,7 +998,7 @@ def interpolate(src, trg, vals, ipolclass, *args, **kwargs):
             ix_good = np.where(np.isfinite(vals[..., i]))[0]
             ix_broken_targets = (nan_in_result[0]
                                  [np.where(nan_in_result[-1] == i)[0]])
-            ip = ipolclass(src[ix_good],
+            ip = ipclass(src[ix_good],
                            trg[nan_in_result[0]
                            [np.where(nan_in_result[-1] == i)[0]]],
                            *args, **kwargs)
@@ -1011,13 +1011,13 @@ def interpolate(src, trg, vals, ipolclass, *args, **kwargs):
                                       ' if <vals> has less than 3 dimension.')
         else:
             # if no NaN value are in <vals> we can safely apply the
-            # ipolclass as is
-            ip = ipolclass(src, trg, *args, **kwargs)
+            # ipclass as is
+            ip = ipclass(src, trg, *args, **kwargs)
             result = ip(vals)
     return result
 
 
-def interpolate_polar(data, mask=None, ipolclass=Nearest):
+def interpolate_polar(data, mask=None, ipclass=Nearest):
     """
     Convenience function to interpolate polar data
 
@@ -1031,7 +1031,7 @@ def interpolate_polar(data, mask=None, ipolclass=Nearest):
         boolean array with pixels to be interpolated set to True;
 
         must have the same shape as data
-    ipolclass : a class which inherits from IpolBase
+    ipclass : a class which inherits from IpolBase
 
     Returns
     -------
@@ -1046,11 +1046,11 @@ def interpolate_polar(data, mask=None, ipolclass=Nearest):
     >>> data = np.arange(12.).reshape(4,3)
     >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
-    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, ipolclass = wrl.ipol.Linear)  # noqa
+    >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, ipclass = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_a)
     >>> # the same result can be achieved by using an masked array instead of an explicit mask  # noqa
     >>> mdata = np.ma.array(data, mask = masked_values)
-    >>> filled_b = wrl.ipol.interpolate_polar(mdata, ipolclass = wrl.ipol.Linear)  # noqa
+    >>> filled_b = wrl.ipol.interpolate_polar(mdata, ipclass = wrl.ipol.Linear)  # noqa
     >>> ax, pm = wrl.vis.plot_ppi(filled_b)
 
 
@@ -1083,7 +1083,7 @@ def interpolate_polar(data, mask=None, ipolclass=Nearest):
     values_list = np.delete(data, clutter_indices)
     filled_data = data.copy().ravel()
     # interpolate masked bins
-    filling = interpolate(src_coord, trg_coord, values_list, ipolclass)
+    filling = interpolate(src_coord, trg_coord, values_list, ipclass)
     # fill data with the interpolations
     filled_data[clutter_indices] = filling.astype(filled_data.dtype)
     # in case of nans as processed at the rim when interpolating linear,
@@ -1093,7 +1093,7 @@ def interpolate_polar(data, mask=None, ipolclass=Nearest):
                               biny[np.where(np.isnan(filled_data))]])
                      .transpose())
         filling = interpolate(src_coord, trg_coord, values_list,
-                              ipolclass=Nearest)
+                              ipclass=Nearest)
         filled_data[np.where(np.isnan(filled_data))] = filling
     return filled_data.reshape(data.shape[0], data.shape[1])
 
