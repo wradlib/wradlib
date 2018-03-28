@@ -18,7 +18,7 @@ import sys
 
 class DXTest(unittest.TestCase):
     # testing functions related to read_dx
-    def test__getTimestampFromFilename(self):
+    def test__get_timestamp_from_filename(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
         self.assertEqual(radolan._get_timestamp_from_filename(filename),
                          datetime.datetime(2006, 8, 5, 0))
@@ -26,7 +26,7 @@ class DXTest(unittest.TestCase):
         self.assertEqual(radolan._get_timestamp_from_filename(filename),
                          datetime.datetime(2006, 8, 5, 0))
 
-    def test_getDXTimestamp(self):
+    def test_get_dx_timestamp(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
         self.assertEqual(radolan.get_dx_timestamp(filename).__str__(),
                          '2006-08-05 00:00:00+00:00')
@@ -34,7 +34,7 @@ class DXTest(unittest.TestCase):
         self.assertEqual(radolan.get_dx_timestamp(filename).__str__(),
                          '2006-08-05 00:00:00+00:00')
 
-    def test_parse_DX_header(self):
+    def test_parse_dx_header(self):
         header = (b'DX021655109080608BY54213VS 2CO0CD2CS0EP0.30.30.40.50.'
                   b'50.40.40.4MS999~ 54( 120,  46) 43-31 44 44 50 50 54 52 '
                   b'52 42 39 36  ~ 53(  77,  39) 34-31 32 44 39 48 53 44 45 '
@@ -60,10 +60,10 @@ class DXTest(unittest.TestCase):
             head += str(c.decode())
         radolan.parse_dx_header(head)
 
-    def test_unpackDX(self):
+    def test_unpack_dx(self):
         pass
 
-    def test_readDX(self):
+    def test_read_dx(self):
         filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
         dxfile = wrl.util.get_wradlib_data_file(filename)
         data, attrs = radolan.read_dx(dxfile)
