@@ -64,7 +64,7 @@ volume data::
     # create an instance of the CAPPI class and
     # use it to create a series of CAPPIs
     gridder = wradlib.vpr.CAPPI(polxyz, xyz, maxrange=ranges.max(),
-                                gridshape=gridshape, Ipclass=wradlib.ipol.Idw)
+                                gridshape=gridshape, ipclass=wradlib.ipol.Idw)
     gridded = np.ma.masked_invalid( gridder(poldata) ).reshape(gridshape)
 
     # plot results
@@ -78,7 +78,7 @@ volume data::
    :toctree: generated/
 
    volcoords_from_polar
-   make_3D_grid
+   make_3d_grid
    CartesianVolume
    CAPPI
    PseudoCAPPI
@@ -110,7 +110,7 @@ class CartesianVolume():
     Ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : `**kwargs`
-        keyword arguments corresponding to ``Ipclass``
+        keyword arguments corresponding to ``ipclass``
 
     Returns
     -------
@@ -121,7 +121,7 @@ class CartesianVolume():
 
     def __init__(self, polcoords, gridcoords, gridshape=None,
                  maxrange=None, minelev=None, maxelev=None,
-                 Ipclass=ipol.Idw, **ipargs):
+                 ipclass=ipol.Idw, **ipargs):
         # TODO: rename Ipclas to ipclass
         # radar location in Cartesian coordinates
         # TODO: pass projected radar location as argument
@@ -134,7 +134,7 @@ class CartesianVolume():
                                    maxrange, minelev, maxelev)
         # create an instance of the Interpolation class
         self.trgix = np.where(np.logical_not(self.mask))
-        self.ip = Ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
+        self.ip = ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
 
     def __call__(self, data):
         """Interpolates the polar data to 3-dimensional Cartesian coordinates
@@ -207,10 +207,10 @@ class CAPPI(CartesianVolume):
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    Ipclass : object
+    ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : `**kwargs`
-        keyword arguments corresponding to ``Ipclass``
+        keyword arguments corresponding to ``ipclass``
 
     Examples
     --------
@@ -255,10 +255,10 @@ class PseudoCAPPI(CartesianVolume):
         size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    Ipclass : object
+    ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : `**kwargs`
-        keyword arguments corresponding to ``Ipclass``
+        keyword arguments corresponding to ``ipclass``
 
     """
 
@@ -456,7 +456,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     return coords
 
 
-def make_3D_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
+def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     """Generate Cartesian coordinates for a regular 3-D grid based on \
     radar specs.
 

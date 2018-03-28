@@ -138,21 +138,21 @@ def parse_dx_header(header):
     out["datetime"] = out["datetime"].replace(tzinfo=util.UTC())
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
-    pos_BY = header.find("BY")
-    pos_VS = header.find("VS")
-    pos_CO = header.find("CO")
-    pos_CD = header.find("CD")
-    pos_CS = header.find("CS")
-    pos_EP = header.find("EP")
-    pos_MS = header.find("MS")
+    pos_by = header.find("BY")
+    pos_vs = header.find("VS")
+    pos_co = header.find("CO")
+    pos_cd = header.find("CD")
+    pos_cs = header.find("CS")
+    pos_ep = header.find("EP")
+    pos_ms = header.find("MS")
 
-    out['bytes'] = int(header[pos_BY + 2:pos_BY + 7])
-    out['version'] = header[pos_VS + 2:pos_VS + 4]
-    out['cluttermap'] = int(header[pos_CO + 2:pos_CO + 3])
-    out['dopplerfilter'] = int(header[pos_CD + 2:pos_CD + 3])
-    out['statfilter'] = int(header[pos_CS + 2:pos_CS + 3])
-    out['elevprofile'] = [float(header[pos_EP + 2 + 3 * i:pos_EP + 2 + 3 * (i + 1)]) for i in range(8)]  # noqa
-    out['message'] = header[pos_MS + 5:pos_MS + 5 + int(header[pos_MS + 2:pos_MS + 5])]  # noqa
+    out['bytes'] = int(header[pos_by + 2:pos_by + 7])
+    out['version'] = header[pos_vs + 2:pos_vs + 4]
+    out['cluttermap'] = int(header[pos_co + 2:pos_co + 3])
+    out['dopplerfilter'] = int(header[pos_cd + 2:pos_cd + 3])
+    out['statfilter'] = int(header[pos_cs + 2:pos_cs + 3])
+    out['elevprofile'] = [float(header[pos_ep + 2 + 3 * i:pos_ep + 2 + 3 * (i + 1)]) for i in range(8)]  # noqa
+    out['message'] = header[pos_ms + 5:pos_ms + 5 + int(header[pos_ms + 2:pos_ms + 5])]  # noqa
 
     return out
 

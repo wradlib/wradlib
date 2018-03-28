@@ -59,7 +59,7 @@ from scipy.ndimage.filters import convolve1d
 from . import util as util
 
 
-def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
+def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
                                niter=2, copy=False, **kwargs):
     """Establish consistent :math:`Phi_{DP}` profiles from raw data.
 
@@ -81,10 +81,10 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
         array of shape (n azimuth angles, n range gates)
     dr : float
         gate length in km
-    N_despeckle : int
-        ``N`` parameter of :func:`~wradlib.dp.linear_despeckle`
-    L : integer
-        ``L`` parameter of :func:`~wradlib.dp.kdp_from_phidp_convolution`
+    ndespeckle : int
+        ``ndespeckle`` parameter of :func:`~wradlib.dp.linear_despeckle`
+    winlen : integer
+        ``winlen`` parameter of :func:`~wradlib.dp.kdp_from_phidp`
     niter : int
         Number of iterations in which :math:`Phi_{DP}` is retrieved from
         :math:`K_{DP}` and vice versa
@@ -110,9 +110,9 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
         phidp = phidp.copy()
 
     # despeckle
-    phidp = linear_despeckle(phidp, N_despeckle)
+    phidp = linear_despeckle(phidp, ndespeckle)
     # kdp retrieval first guess
-    kdp = kdp_from_phidp(phidp, dr=dr, L=L, **kwargs)
+    kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
     # remove extreme values
     kdp[kdp > 20] = 0
     kdp[np.logical_and(kdp < -2, kdp > -20)] = 0
@@ -124,7 +124,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
     phidp[phidp > 360] = np.nan
 
     # kdp retrieval second guess
-    kdp = kdp_from_phidp(phidp, dr=dr, L=L, **kwargs)
+    kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
     kdp = _fill_sweep(kdp)
 
     # remove remaining extreme values
@@ -136,7 +136,7 @@ def process_raw_phidp_vulpiani(phidp, dr, N_despeckle=5, L=7,
         # phidp from kdp through integration
         phidp = 2 * np.cumsum(kdp, axis=-1) * dr
         # kdp from phidp by convolution
-        kdp = kdp_from_phidp(phidp, dr=dr, L=L, **kwargs)
+        kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
         # convert all NaNs to zeros (normally, this line can be assumed
         # to be redundant)
         kdp = _fill_sweep(kdp)
@@ -209,7 +209,7 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
     return dat.reshape(shape)
 
 
-def kdp_from_phidp(phidp, L=7, dr=1., method=None):
+def kdp_from_phidp(phidp, winlen=7, dr=1., method=None):
     """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
 
     In normal operation the method uses convolution to estimate :math:`K_{DP}`
@@ -228,10 +228,10 @@ lanczos-low-noise-differentiators/>`_.
     in case at least one value in the moving window is NaN. The remaining gates
     are treated by using local linear regression where possible.
 
-    Please note that the moving window size ``L`` is specified as the number of
+    Please note that the moving window size ``winlen`` is specified as the number of
     range gates. Thus, this argument might need adjustment in case the
     range resolution changes.
-    In the original publication (:cite:`Vulpiani2012`), the value ``L=7``
+    In the original publication (:cite:`Vulpiani2012`), the value ``winlen=7``
     was chosen for a range resolution of 1km.
 
     Warning
@@ -245,7 +245,7 @@ lanczos-low-noise-differentiators/>`_.
     phidp : :class:`numpy:numpy.ndarray`
         multi-dimensional array, note that the range dimension must be the
         last dimension of the input array.
-    L : int
+    winlen : int
         Width of the window (as number of range gates)
     dr : float
         gate length in km
@@ -273,19 +273,19 @@ lanczos-low-noise-differentiators/>`_.
     >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> pl.show()
     """
-    assert (L % 2) == 1, \
+    assert (winlen % 2) == 1, \
         "Window size N for function kdp_from_phidp must be an odd number."
 
     shape = phidp.shape
     phidp = phidp.reshape((-1, shape[-1]))
 
-    # Make really sure L is an integer
-    L = int(L)
+    # Make really sure winlen is an integer
+    winlen = int(winlen)
 
     if method == 'slow':
         kdp = np.zeros(phidp.shape) * np.nan
     else:
-        window = lanczos_differentiator(L)
+        window = lanczos_differentiator(winlen)
         kdp = convolve1d(phidp, window, axis=1)
 
     # find remaining NaN values with valid neighbours
@@ -297,36 +297,36 @@ lanczos-low-noise-differentiators/>`_.
     # Otherwise continue
     x = np.arange(phidp.shape[-1])
     valids = ~np.isnan(phidp)
-    kernel = np.ones(L, dtype="i4")
+    kernel = np.ones(winlen, dtype="i4")
     # and do the slow moving window linear regression
     for beam in range(len(phidp)):
         # number of valid neighbours around one gate
-        nvalid = np.convolve(valids[beam], kernel, "same") > L / 2
+        nvalid = np.convolve(valids[beam], kernel, "same") > winlen / 2
         # find those gates which have invalid Kdp AND enough valid neighbours
         nangates = np.where(invalidkdp[beam] & nvalid)[0]
         # now iterate over those
         for r in nangates:
-            ix = np.arange(max(0, r - int(L / 2)),
-                           min(r + int(L / 2) + 1, shape[-1]))
+            ix = np.arange(max(0, r - int(winlen / 2)),
+                           min(r + int(winlen / 2) + 1, shape[-1]))
             # check again (just to make sure...)
-            if np.sum(valids[beam, ix]) < L / 2:
+            if np.sum(valids[beam, ix]) < winlen / 2:
                 # not enough valid values inside our window
                 continue
             kdp[beam, r] = linregress(x[ix][valids[beam, ix]],
                                       phidp[beam, ix[valids[beam, ix]]])[0]
         # take care of the start and end of the beam
         #   start
-        ix = np.arange(0, L)
+        ix = np.arange(0, winlen)
         if np.sum(valids[beam, ix]) >= 2:
-            kdp[beam, 0:int(L / 2)] = linregress(x[ix][valids[beam, ix]],
-                                                 phidp[beam,
+            kdp[beam, 0:int(winlen / 2)] = linregress(x[ix][valids[beam, ix]],
+                                                      phidp[beam,
                                                        ix[valids[beam,
                                                                  ix]]])[0]
         # end
-        ix = np.arange(shape[-1] - L, shape[-1])
+        ix = np.arange(shape[-1] - winlen, shape[-1])
         if np.sum(valids[beam, ix]) >= 2:
-            kdp[beam, -int(L / 2):] = linregress(x[ix][valids[beam, ix]],
-                                                 phidp[beam,
+            kdp[beam, -int(winlen / 2):] = linregress(x[ix][valids[beam, ix]],
+                                                      phidp[beam,
                                                        ix[valids[beam,
                                                                  ix]]])[0]
 
@@ -334,8 +334,8 @@ lanczos-low-noise-differentiators/>`_.
     return kdp.reshape(shape) / 2. / dr
 
 
-def lanczos_differentiator(N):
-    m = (N - 1) / 2
+def lanczos_differentiator(winlen):
+    m = (winlen - 1) / 2
     denom = m * (m + 1.) * (2 * m + 1.)
     k = np.arange(1, m + 1)
     f = 3 * k / denom
@@ -460,7 +460,7 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     return phidp
 
 
-def linear_despeckle(data, N=3, copy=False):
+def linear_despeckle(data, ndespeckle=3, copy=False):
     """Remove floating pixels in between NaNs in a multi-dimensional array.
 
     Warning
@@ -473,15 +473,15 @@ def linear_despeckle(data, N=3, copy=False):
     data : :class:`numpy:numpy.ndarray`
         Note that the range dimension must be the last dimension of the
         input array.
-    N : int
+    ndespeckle : int
         (must be either 3 or 5, 3 by default),
         Width of the window in which we check for speckle
     copy : bool
         If True, the input array will remain unchanged.
 
     """
-    assert N in (3, 5), \
-        "Window size N for function linear_despeckle must be 3 or 5."
+    assert ndespeckle in (3, 5), \
+        "Window size ndespeckle for function linear_despeckle must be 3 or 5."
     if copy:
         data = data.copy()
     axis = data.ndim - 1
@@ -489,7 +489,7 @@ def linear_despeckle(data, N=3, copy=False):
     arr[np.isnan(data)] = 0
     arr_plus1 = np.roll(arr, shift=1, axis=axis)
     arr_minus1 = np.roll(arr, shift=-1, axis=axis)
-    if N == 3:
+    if ndespeckle == 3:
         # for a window of size 3
         test = arr + arr_plus1 + arr_minus1
         data[np.logical_and(np.logical_not(np.isnan(data)), test < 2)] = np.nan

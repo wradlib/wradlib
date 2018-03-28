@@ -58,12 +58,12 @@ The user can specify the approach that should be used to interpolate the error
 in space, as well as the keyword arguments which control the behaviour of the
 interpolation approach. For this purpose, all interpolation classes from the
 :mod:`wradlib.ipol` module are available and can be passed by using the
-``Ipclass`` argument. The default interpolation class is
+``ipclass`` argument. The default interpolation class is
 Inverse Distance Weighting (:class:`~wradlib.ipol.Idw`). If you want to use
 e.g. linear barycentric interpolation::
 
     import wradlib.ipol as ipol
-    adjuster = AdjustAdd(obs_coords, raw_coords, Ipclass=ipol.Linear)
+    adjuster = AdjustAdd(obs_coords, raw_coords, ipclass=ipol.Linear)
     adjusted = adjuster(obs, raw)
 
 Warning
@@ -103,7 +103,7 @@ validation results::
    AdjustMultiply
    AdjustAdd
    AdjustMixed
-   Raw_at_obs
+   RawAtObs
    GageOnly
    AdjustNone
 
@@ -171,7 +171,7 @@ class AdjustBase(ipol.IpolBase):
     Ipclass : an interpolation class from :mod:`wradlib.ipol`
         **Not used for AdjustMFB** - default value is
         :class:`~wradlib.ipol.Idw` (Inverse Distance Weighting).
-    ipargs : keyword arguments to create an instance of Ipclass
+    ipargs : keyword arguments to create an instance of ipclass
         **Not used for AdjustMFB** - for :class:`~wradlib.ipol.Idw`, these
         keyword arguments would e.g. be ``nnear`` or ``p``.
 
@@ -184,7 +184,7 @@ class AdjustBase(ipol.IpolBase):
 
     def __init__(self, obs_coords, raw_coords,
                  nnear_raws=9, stat='median', mingages=5, minval=0.,
-                 mfb_args=None, Ipclass=ipol.Idw, **ipargs):
+                 mfb_args=None, ipclass=ipol.Idw, **ipargs):
 
         # Check arguments
         if mfb_args is None:
@@ -213,24 +213,24 @@ class AdjustBase(ipol.IpolBase):
 
         # interpolation class and its keyword arguments
         # ((needed for AdjustAdd, AdjustMultiply, AdjustMixed)
-        self.Ipclass = Ipclass
+        self.ipclass = ipclass
         self.ipargs = ipargs
         # create a default instance of interpolator
-        self.ip = Ipclass(src=self.obs_coords, trg=self.raw_coords, **ipargs)
+        self.ip = ipclass(src=self.obs_coords, trg=self.raw_coords, **ipargs)
 
         # This method will quickly retrieve the actual radar values
         # at the gage locations
-        self.get_raw_at_obs = Raw_at_obs(self.obs_coords,
-                                         self.raw_coords,
-                                         nnear=nnear_raws,
-                                         stat=stat)
+        self.get_raw_at_obs = RawAtObs(self.obs_coords,
+                                       self.raw_coords,
+                                       nnear=nnear_raws,
+                                       stat=stat)
 
     def _checkip(self, ix, targets):
         """INTERNAL: Return a revised instance of the Interpolator class.
 
         When an instance of an Adjust... class is created, an instance of the
         desired
-        Interpolation class (argument Ipclass) is created as attribute
+        Interpolation class (argument ipclass) is created as attribute
         *self.ip*). However, this instance is only valid in case all
         observation points (attribute *self.obs_coords*) have valid
         observation-radar pairs. In case points are missing (or in case the
@@ -260,7 +260,7 @@ class AdjustBase(ipol.IpolBase):
             targets_default = True
         # second, compute inverse distance neighbours
         if (not len(ix) == len(self.obs_coords)) or (not targets_default):
-            return self.Ipclass(self.obs_coords[ix], targets, **self.ipargs)
+            return self.ipclass(self.obs_coords[ix], targets, **self.ipargs)
         else:
             return self.ip
 
@@ -338,8 +338,8 @@ class AdjustBase(ipol.IpolBase):
 
         """
         rawatobs, ix = self._get_valid_pairs(obs, raw)
-        self.get_raws_directly_at_obs = Raw_at_obs(self.obs_coords,
-                                                   self.raw_coords, nnear=1)
+        self.get_raws_directly_at_obs = RawAtObs(self.obs_coords,
+                                                 self.raw_coords, nnear=1)
         raws_directly_at_obs = self.get_raws_directly_at_obs(raw)
         ix = np.intersect1d(ix, util._idvalid(raws_directly_at_obs,
                                               minval=self.minval))
@@ -730,7 +730,7 @@ class GageOnly(AdjustBase):
         return ip(obs[ix])
 
 
-class Raw_at_obs():
+class RawAtObs():
     """Get the raw values in the neighbourhood of the observation points
 
     Parameters

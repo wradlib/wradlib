@@ -161,8 +161,8 @@ def get_rb_blob_data(datastring, blobid):
     xmltodict = util.import_optional('xmltodict')
 
     start = 0
-    searchString = '<BLOB blobid="{0}"'.format(blobid)
-    start = datastring.find(searchString.encode(), start)
+    search_string = '<BLOB blobid="{0}"'.format(blobid)
+    start = datastring.find(search_string.encode(), start)
     if start == -1:
         raise EOFError('Blob ID {0} not found!'.format(blobid))
     end = datastring.find(b'>', start)
@@ -327,7 +327,7 @@ def get_rb_blob_from_file(f, blobdict):
 
 
 def get_rb_file_as_string(fid):
-    """ Read Rainbow File Contents in dataString
+    """ Read Rainbow File Contents in data_string
 
     Parameters
     ----------
@@ -336,16 +336,16 @@ def get_rb_file_as_string(fid):
 
     Returns
     -------
-    dataString : string
-        File Contents as dataString
+    data_string : string
+        File Contents as data_string
     """
 
     try:
-        dataString = fid.read()
+        data_string = fid.read()
     except Exception:
         raise IOError('Could not read from file handle')
 
-    return dataString
+    return data_string
 
 
 def get_rb_blobs_from_file(fid, rbdict):
@@ -390,11 +390,11 @@ def get_rb_header(fid):
     """
 
     # load the header lines, i.e. the XML part
-    endXMLmarker = b"<!-- END XML -->"
+    end_xml_marker = b"<!-- END XML -->"
     header = b""
     line = b""
 
-    while not line.startswith(endXMLmarker):
+    while not line.startswith(end_xml_marker):
         header += line[:-1]
         line = fid.readline()
         if len(line) == 0:

@@ -24,8 +24,8 @@ import logging
 import numpy as np
 import scipy.ndimage
 import scipy.interpolate
-from wradlib.trafo import idecibel
-from wradlib.zr import z2r
+from . import trafo as trafo
+from . import zr as zr
 
 logger = logging.getLogger('attcorr')
 
@@ -174,7 +174,7 @@ def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, gate_length=1.):
     """
     pia = np.zeros(gateset.shape)
     for gate in range(gateset.shape[-1] - 1):
-        k = a * idecibel(gateset[..., gate] + pia[..., gate]) ** b \
+        k = a * trafo.idecibel(gateset[..., gate] + pia[..., gate]) ** b \
             * 2.0 * gate_length
         pia[..., gate + 1] = pia[..., gate] + k
     return pia
@@ -603,7 +603,7 @@ def correct_radome_attenuation_empirical(gateset, frequency=5.64,
     center_m = np.ma.masked_array(center, np.isnan(center))
     # Calculate rainrate in the center-range based on statistical method stat
     # and with standard ZR-relation.
-    rain_over_radome = z2r(idecibel(stat(center_m, axis=-1)))
+    rain_over_radome = zr.z_to_r(trafo.idecibel(stat(center_m, axis=-1)))
     # Estimate the empirical two-way transmission loss due to
     # radome-attenuation.
     k = 2 * hydrophobicity * rain_over_radome * np.tanh(frequency / 10.) ** 2

@@ -954,9 +954,9 @@ class IrisCartesianProductFile(IrisWrapperFile):
         # extended header token
         search = [0x00, 0xff]
         ext = np.where((ext[:-1] == search[0]) & (ext[1:] == search[1]))[0][0]
-        EXTENDED_HEADER = OrderedDict([('extended_header', string_dict(ext))])
+        extended_header = OrderedDict([('extended_header', string_dict(ext))])
         ext_str = _unpack_dictionary(self.bytes_from_record(ext, 1),
-                                     EXTENDED_HEADER,
+                                     extended_header,
                                      self._rawdata)['extended_header']
         # skip search bytes
         self.bytes_from_record(2, 1)

@@ -90,7 +90,7 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         maxalt = 5000.
         horiz_res = 2000.
         vert_res = 250.
-        vpr.make_3D_grid(self.site, self.proj, maxrange, maxalt, horiz_res,
+        vpr.make_3d_grid(self.site, self.proj, maxrange, maxalt, horiz_res,
                          vert_res)
         pass
 
@@ -127,7 +127,7 @@ class CartesianVolumeTest(unittest.TestCase):
         maxalt = 5000.
         horiz_res = 2000.
         vert_res = 250.
-        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj, maxrange,
+        trgxyz, trgshape = vpr.make_3d_grid(self.site, self.proj, maxrange,
                                             maxalt, horiz_res, vert_res)
 
         # interpolate to Cartesian 3-D volume grid
@@ -159,7 +159,7 @@ class CartesianVolumeTest(unittest.TestCase):
         maxalt = 5000.
         horiz_res = 2000.
         vert_res = 250.
-        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj, maxrange,
+        trgxyz, trgshape = vpr.make_3d_grid(self.site, self.proj, maxrange,
                                             maxalt, horiz_res, vert_res)
 
         gridder = vpr.PseudoCAPPI(xyz, trgxyz, trgshape, maxrange, minelev,

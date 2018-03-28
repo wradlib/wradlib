@@ -25,7 +25,7 @@ class TransformationTest(unittest.TestCase):
         self.speedkts = np.array([0., 1.94384449, 97.19222462])
 
     def test_rvp2dBZ(self):
-        self.assertTrue(np.allclose(trafo.rvp2dBZ(self.rvp), self.dbz))
+        self.assertTrue(np.allclose(trafo.rvp_to_dbz(self.rvp), self.dbz))
 
     def test_decibel(self):
         self.assertTrue(np.allclose(trafo.decibel(self.lin), self.dec))

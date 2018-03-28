@@ -16,7 +16,7 @@ to dBZ-values to Z-values and vice versa.
    :nosignatures:
    :toctree: generated/
 
-   rvp2dBZ
+   rvp_to_dbz
    decibel
    idecibel
    r2depth
@@ -27,8 +27,8 @@ to dBZ-values to Z-values and vice versa.
    kmh2si
    mph2si
    kts2si
-   ku2s
-   s2ku
+   KuBandToS
+   SBandToKu
 
 """
 import numpy as np
@@ -38,7 +38,7 @@ meters_per_mile = 1609.344
 meters_per_nautical_mile = 1852.
 
 
-class s2ku():
+class SBandToKu():
     """Class to hold coefficients for Radar Reflectivity Conversion
 
     From S-band (2.8GHz) to Ku-band (13.8GHz)
@@ -49,7 +49,7 @@ class s2ku():
     rain = np.array([-1.50393, 1.07274, 0.000165393])
 
 
-class ku2s():
+class KuBandToS():
     """ Class to hold coefficients for Radar Reflectivity Conversion
 
     From Ku-band (13.8 GHz) to S-band (2.8 GHz)
@@ -86,7 +86,7 @@ class ku2s():
            6.71e-7,  6.33e-7,  9.52e-7,  0.00e+0]])
 
 
-def rvp2dBZ(x):
+def rvp_to_dbz(x):
     """Calculates dBZ-values from DWD RVP6 values as given in DX-product
     files.
 
@@ -97,8 +97,8 @@ def rvp2dBZ(x):
 
     Examples
     --------
-    >>> from wradlib.trafo import rvp2dBZ
-    >>> print(rvp2dBZ(65.))
+    >>> from wradlib.trafo import rvp_to_dbz
+    >>> print(rvp_to_dbz(65.))
     0.0
     """
     return x * 0.5 - 32.5

@@ -285,19 +285,19 @@ class WrapperFunctionTest(unittest.TestCase):
         data = np.arange(12.).reshape(4, 3)
         masked_values = (data == 2) | (data == 9)
         filled_a = ipol.interpolate_polar(data, mask=masked_values,
-                                          Interpolator=ipol.Linear)
+                                          ipolclass=ipol.Linear)
         testfunc = ipol.interpolate_polar
         self.assertRaises(ipol.MissingTargetsError,
                           lambda: testfunc(data, mask=None,
-                                           Interpolator=ipol.Linear))
+                                           ipolclass=ipol.Linear))
         mdata = np.ma.array(data, mask=masked_values)
         filled_b = ipol.interpolate_polar(mdata,
-                                          Interpolator=ipol.Linear)
+                                          ipolclass=ipol.Linear)
 
         np.testing.assert_allclose(filled_a, filled_b)
 
 
-class Regular2IrregularTest(unittest.TestCase):
+class RegularToIrregularTest(unittest.TestCase):
     def setUp(self):
         NX = 2
         nx = np.linspace(-NX + 0.5, NX - 0.5, num=2 * NX, endpoint=True)
@@ -321,25 +321,25 @@ class Regular2IrregularTest(unittest.TestCase):
                                 [-0.47140452, -1.41421356],
                                 [-0.47140452, -1.41421356]])
 
-    def test_cart2irregular_interp(self):
-        newvalues = ipol.cart2irregular_interp(self.cartgrid, self.values,
-                                               self.newgrid, method='linear')
+    def test_cart_to_irregular_interp(self):
+        newvalues = ipol.cart_to_irregular_interp(self.cartgrid, self.values,
+                                                  self.newgrid, method='linear')
         self.assertTrue(np.allclose(newvalues, self.result))
 
-    def test_cart2irregular_spline(self):
-        newvalues = ipol.cart2irregular_spline(self.cartgrid, self.values,
-                                               self.newgrid, order=1,
-                                               prefilter=False)
+    def test_cart_to_irregular_spline(self):
+        newvalues = ipol.cart_to_irregular_spline(self.cartgrid, self.values,
+                                                  self.newgrid, order=1,
+                                                  prefilter=False)
         self.assertTrue(np.allclose(newvalues, self.result))
 
-    def test_cart2irregular_equality(self):
+    def test_cart_to_irregular_equality(self):
         self.assertTrue(
-            np.allclose(ipol.cart2irregular_interp(self.cartgrid, self.values,
-                                                   self.newgrid,
-                                                   method='linear'),
-                        ipol.cart2irregular_spline(self.cartgrid, self.values,
-                                                   self.newgrid,
-                                                   order=1, prefilter=False)))
+            np.allclose(ipol.cart_to_irregular_interp(self.cartgrid, self.values,
+                                                      self.newgrid,
+                                                      method='linear'),
+                        ipol.cart_to_irregular_spline(self.cartgrid, self.values,
+                                                      self.newgrid,
+                                                      order=1, prefilter=False)))
 
 
 if __name__ == '__main__':
