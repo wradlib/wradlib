@@ -108,7 +108,7 @@ latest/gettingstarted.html#optional-dependencies
     return mod
 
 
-def _shape2size(shape):
+def _shape_to_size(shape):
     """
     Compute the size which corresponds to a shape
     """
@@ -176,7 +176,7 @@ def _idvalid(data, isinvalid=None, minval=None, maxval=None):
     return np.where(np.logical_not(ix))[0]
 
 
-def meshgridN(*arrs):
+def meshgrid_n(*arrs):
     """N-dimensional meshgrid
 
     Just pass sequences of coordinates arrays
@@ -233,7 +233,7 @@ def issequence(x):
     try:
         # can we get a length on the object
         len(x)
-    except Exception:
+    except TypeError:
         return False
     # is the object not a string?
     out = np.all(np.isreal(x))
@@ -602,12 +602,12 @@ def half_power_radius(r, bwhalf):
 
     Examples
     --------
-    Rhalf = half_power_radius(r,bwhalf)
+    rhalf = half_power_radius(r,bwhalf)
     """
 
-    Rhalf = (r * np.deg2rad(bwhalf)) / 2.
+    rhalf = (r * np.deg2rad(bwhalf)) / 2.
 
-    return Rhalf
+    return rhalf
 
 
 def get_raster_origin(coords):

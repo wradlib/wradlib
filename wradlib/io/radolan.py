@@ -11,11 +11,11 @@ Reading DX and RADOLAN data from German Weather Service
     :nosignatures:
     :toctree: generated/
 
-    readDX
-    read_RADOLAN_composite
+    read_dx
+    read_radolan_composite
     get_radolan_filehandle
     read_radolan_header
-    parse_DWD_quant_composite_header
+    parse_dwd_composite_header
     read_radolan_binary_array
     decode_radolan_runlength_array
 """
@@ -43,15 +43,15 @@ from .. import util as util
 dwdpattern = re.compile('raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin')
 
 
-def _getTimestampFromFilename(filename):
-    """Helper function doing the actual work of getDXTimestamp"""
+def _get_timestamp_from_filename(filename):
+    """Helper function doing the actual work of get_dx_timestamp"""
     time = dwdpattern.search(filename).group(3)
     if len(time) == 10:
         time = '20' + time
     return dt.datetime.strptime(time, '%Y%m%d%H%M')
 
 
-def getDXTimestamp(name):
+def get_dx_timestamp(name):
     """Converts a dx-timestamp (as part of a dx-product filename) to a
     python datetime.object.
 
@@ -59,19 +59,15 @@ def getDXTimestamp(name):
     ----------
     name : string
         representing a DWD product name
-    tz : timezone object
-        (see pytz package or datetime module for explanation)
-        in case the timezone of the data is not UTC
-    opt : currently unused
 
     Returns
     -------
     time : timezone-aware datetime.datetime object
     """
-    return _getTimestampFromFilename(name).replace(tzinfo=util.UTC())
+    return _get_timestamp_from_filename(name).replace(tzinfo=util.UTC())
 
 
-def unpackDX(raw):
+def unpack_dx(raw):
     """function removes DWD-DX-product bit-13 zero packing"""
     # data is encoded in the first 12 bits
     data = 4095
@@ -122,7 +118,7 @@ def unpackDX(raw):
     return np.array(beam)
 
 
-def parse_DX_header(header):
+def parse_dx_header(header):
     """Internal function to retrieve and interpret the ASCII header of a DWD
     DX product file.
 
@@ -161,7 +157,7 @@ def parse_DX_header(header):
     return out
 
 
-def readDX(filename):
+def read_dx(filename):
     """Data reader for German Weather Service DX product raw radar data files.
 
     This product uses a simple algorithm to compress zero values to reduce data
@@ -241,7 +237,7 @@ def readDX(filename):
             break
         header += str(mychar.decode())
 
-    attrs = parse_DX_header(header)
+    attrs = parse_dx_header(header)
 
     # position file at end of header
     f.seek(len(header))
@@ -285,7 +281,7 @@ def readDX(filename):
     # iterate over all beams
     for i in range(newazimuths.size - 1):
         # unpack zeros
-        beam = unpackDX(raw[newazimuths[i] + 3:newazimuths[i + 1]])
+        beam = unpack_dx(raw[newazimuths[i] + 3:newazimuths[i + 1]])
         beams.append(beam)
         elevs.append((raw[newazimuths[i] + 2] & databitmask) / 10.)
         azims.append((raw[newazimuths[i] + 1] & databitmask) / 10.)
@@ -356,7 +352,7 @@ def get_radolan_header_token_pos(header):
     return head
 
 
-def parse_DWD_quant_composite_header(header):
+def parse_dwd_composite_header(header):
     """Parses the ASCII header of a DWD quantitative composite file
 
     Parameters
@@ -634,7 +630,7 @@ def read_radolan_header(fid):
     return header
 
 
-def read_RADOLAN_composite(f, missing=-9999, loaddata=True):
+def read_radolan_composite(f, missing=-9999, loaddata=True):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
@@ -651,7 +647,7 @@ def read_RADOLAN_composite(f, missing=-9999, loaddata=True):
     This function already evaluates and applies the so-called
     PR factor which is specified in the header section of the RADOLAN files.
     The raw values in an RY file are in the unit 0.01 mm/5min, while
-    read_RADOLAN_composite returns values in mm/5min (i. e. factor 100 higher).
+    read_radolan_composite returns values in mm/5min (i. e. factor 100 higher).
     The factor is also returned as part of attrs dictionary under
     keyword "precision".
 
@@ -687,7 +683,7 @@ def read_RADOLAN_composite(f, missing=-9999, loaddata=True):
         f = get_radolan_filehandle(f)
         header = read_radolan_header(f)
 
-    attrs = parse_DWD_quant_composite_header(header)
+    attrs = parse_dwd_composite_header(header)
 
     if not loaddata:
         f.close()

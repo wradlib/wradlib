@@ -316,7 +316,7 @@ class Idw(IpolBase):
         self._check_shape(vals)
         outshape = list(vals.shape)
         outshape[0] = len(self.dists)
-        interpol = (np.repeat(np.nan, util._shape2size(outshape)).
+        interpol = (np.repeat(np.nan, util._shape_to_size(outshape)).
                     reshape(tuple(outshape)).astype('f4'))
         # weights is the container for the weights (a list)
         weights = list(range(len(self.dists)))

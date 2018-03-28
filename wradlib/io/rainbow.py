@@ -9,7 +9,7 @@ Read Rainbow
    :nosignatures:
    :toctree: generated/
 
-   read_Rainbow
+   read_rainbow
 """
 
 # standard libraries
@@ -62,7 +62,7 @@ def decompress(data):
     return zlib.decompress(data)
 
 
-def get_RB_data_layout(datadepth):
+def get_rb_data_layout(datadepth):
     """Calculates DataWidth and DataType from given DataDepth of
     RAINBOW radar data
 
@@ -95,7 +95,7 @@ def get_RB_data_layout(datadepth):
     return datawidth, datatype
 
 
-def get_RB_data_attribute(xmldict, attr):
+def get_rb_data_attribute(xmldict, attr):
     """Get Attribute `attr` from dict `xmldict`
 
     Parameters
@@ -120,7 +120,7 @@ def get_RB_data_attribute(xmldict, attr):
     return sattr
 
 
-def get_RB_blob_attribute(blobdict, attr):
+def get_rb_blob_attribute(blobdict, attr):
     """Get Attribute `attr` from dict `blobdict`
 
     Parameters
@@ -143,7 +143,7 @@ def get_RB_blob_attribute(blobdict, attr):
     return value
 
 
-def get_RB_blob_data(datastring, blobid):
+def get_rb_blob_data(datastring, blobid):
     """ Read BLOB data from datastring and return it
 
     Parameters
@@ -170,8 +170,8 @@ def get_RB_blob_data(datastring, blobid):
 
     # cheat the xml parser by making xml well-known
     xmldict = xmltodict.parse(xmlstring.decode() + '</BLOB>')
-    cmpr = get_RB_blob_attribute(xmldict, 'compression')
-    size = int(get_RB_blob_attribute(xmldict, 'size'))
+    cmpr = get_rb_blob_attribute(xmldict, 'compression')
+    size = int(get_rb_blob_attribute(xmldict, 'size'))
     data = datastring[end + 2:end + 2 + size]  # read blob data to string
 
     # decompress if necessary
@@ -182,7 +182,7 @@ def get_RB_blob_data(datastring, blobid):
     return data
 
 
-def map_RB_data(data, datadepth):
+def map_rb_data(data, datadepth):
     """ Map BLOB data to correct DataWidth and Type and convert it
     to numpy array
 
@@ -203,7 +203,7 @@ def map_RB_data(data, datadepth):
         flagdepth = datadepth
         datadepth = 8
 
-    datawidth, datatype = get_RB_data_layout(datadepth)
+    datawidth, datatype = get_rb_data_layout(datadepth)
 
     # import from data buffer well aligned to data array
     data = np.ndarray(shape=(int(len(data) / datawidth),),
@@ -215,7 +215,7 @@ def map_RB_data(data, datadepth):
     return data
 
 
-def get_RB_data_shape(blobdict):
+def get_rb_data_shape(blobdict):
     """Retrieve correct BLOB data shape from blobdict
 
     Parameters
@@ -231,8 +231,8 @@ def get_RB_data_shape(blobdict):
     # this is a bit hacky, but we do not know beforehand,
     # so we extract this on the run
     try:
-        dim0 = get_RB_data_attribute(blobdict, 'rays')
-        dim1 = get_RB_data_attribute(blobdict, 'bins')
+        dim0 = get_rb_data_attribute(blobdict, 'rays')
+        dim1 = get_rb_data_attribute(blobdict, 'bins')
         # if rays and bins are found, return both
         return dim0, dim1
     except KeyError as e1:
@@ -242,9 +242,9 @@ def get_RB_data_shape(blobdict):
         except UnboundLocalError:
             try:
                 # if both rays and bins not found assuming pixmap
-                dim0 = get_RB_data_attribute(blobdict, 'rows')
-                dim1 = get_RB_data_attribute(blobdict, 'columns')
-                dim2 = get_RB_data_attribute(blobdict, 'depth')
+                dim0 = get_rb_data_attribute(blobdict, 'rows')
+                dim1 = get_rb_data_attribute(blobdict, 'columns')
+                dim2 = get_rb_data_attribute(blobdict, 'depth')
                 if dim2 < 8:
                     # if flagged data return rows x columns x depth
                     return dim0, dim1, dim2
@@ -258,7 +258,7 @@ def get_RB_data_shape(blobdict):
                 raise
 
 
-def get_RB_blob_from_string(datastring, blobdict):
+def get_rb_blob_from_string(datastring, blobdict):
     """Read BLOB data from datastring and return it as numpy array with correct
     dataWidth and shape
 
@@ -275,20 +275,20 @@ def get_RB_blob_from_string(datastring, blobdict):
         Content of blob as numpy array
     """
 
-    blobid = get_RB_data_attribute(blobdict, 'blobid')
-    data = get_RB_blob_data(datastring, blobid)
+    blobid = get_rb_data_attribute(blobdict, 'blobid')
+    data = get_rb_blob_data(datastring, blobid)
 
     # map data to correct datatype and width
-    datadepth = get_RB_data_attribute(blobdict, 'depth')
-    data = map_RB_data(data, datadepth)
+    datadepth = get_rb_data_attribute(blobdict, 'depth')
+    data = map_rb_data(data, datadepth)
 
     # reshape data
-    data.shape = get_RB_data_shape(blobdict)
+    data.shape = get_rb_data_shape(blobdict)
 
     return data
 
 
-def get_RB_blob_from_file(f, blobdict):
+def get_rb_blob_from_file(f, blobdict):
     """Read BLOB data from file and return it with correct
     dataWidth and shape
 
@@ -321,12 +321,12 @@ def get_RB_blob_from_file(f, blobdict):
             print("WRADLIB: Error opening Rainbow file ", f)
             raise IOError
 
-    data = get_RB_blob_from_string(datastring, blobdict)
+    data = get_rb_blob_from_string(datastring, blobdict)
 
     return data
 
 
-def get_RB_file_as_string(fid):
+def get_rb_file_as_string(fid):
     """ Read Rainbow File Contents in dataString
 
     Parameters
@@ -348,7 +348,7 @@ def get_RB_file_as_string(fid):
     return dataString
 
 
-def get_RB_blobs_from_file(fid, rbdict):
+def get_rb_blobs_from_file(fid, rbdict):
     """Read all BLOBS found in given nested dict, loads them from file
     given by filename and add them to the dict at the appropriate position.
 
@@ -367,15 +367,15 @@ def get_RB_blobs_from_file(fid, rbdict):
 
     blobs = list(find_key('@blobid', rbdict))
 
-    datastring = get_RB_file_as_string(fid)
+    datastring = get_rb_file_as_string(fid)
     for blob in blobs:
-        data = get_RB_blob_from_string(datastring, blob)
+        data = get_rb_blob_from_string(datastring, blob)
         blob['data'] = data
 
     return rbdict
 
 
-def get_RB_header(fid):
+def get_rb_header(fid):
     """Read Rainbow Header from filename, converts it to a dict and returns it
 
     Parameters
@@ -405,7 +405,7 @@ def get_RB_header(fid):
     return xmltodict.parse(header)
 
 
-def read_Rainbow(f, loaddata=True):
+def read_rainbow(f, loaddata=True):
     """Reads Rainbow files files according to their structure
 
     In contrast to other file readers under :meth:`wradlib.io`, this function
@@ -448,8 +448,8 @@ def read_Rainbow(f, loaddata=True):
             raise IOError("WRADLIB: Error opening Rainbow "
                           "file '{}' ".format(f))
 
-    rbdict = get_RB_header(fid)
+    rbdict = get_rb_header(fid)
 
     if loaddata:
-        rbdict = get_RB_blobs_from_file(fid, rbdict)
+        rbdict = get_rb_blobs_from_file(fid, rbdict)
     return rbdict

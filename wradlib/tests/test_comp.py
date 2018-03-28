@@ -8,14 +8,14 @@ from .. import comp
 from .. import georef
 from .. import ipol
 from ..util import get_wradlib_data_file
-from ..io import readDX
+from ..io import read_dx
 
 
 class ComposeTest(unittest.TestCase):
     def setUp(self):
         filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
         dx_file = get_wradlib_data_file(filename)
-        self.data, metadata = readDX(dx_file)
+        self.data, metadata = read_dx(dx_file)
         radar_location = (8.005, 47.8744, 1517)
         elevation = 0.5  # in degree
         azimuths = np.arange(0, 360)  # in degrees

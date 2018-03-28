@@ -31,9 +31,8 @@ import warnings
 
 # site packages
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as pl
-from matplotlib import patches
+from matplotlib import patches, axes, lines
 from matplotlib.projections import PolarAxes
 from matplotlib.transforms import Affine2D
 from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
@@ -235,7 +234,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         x = georef.bin_distance(x, elev, site[2], re, ke=ke)
 
     # axes object is given
-    if isinstance(ax, mpl.axes.Axes):
+    if isinstance(ax, axes.Axes):
         if cg:
             caax = ax.parasites[0]
             paax = ax.parasites[1]
@@ -413,7 +412,7 @@ def plot_ppi_crosshair(site, ranges, angles=None,
 
     # draw the lines
     for i in range(len(angles)):
-        ax.add_line(mpl.lines.Line2D(nsewx[i, :], nsewy[i, :], **linekw))
+        ax.add_line(lines.Line2D(nsewx[i, :], nsewy[i, :], **linekw))
 
     # draw the range circles
     if proj:
@@ -601,7 +600,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
         y += (y[1] - y[0]) / 2
 
     # axes object given
-    if isinstance(ax, mpl.axes.Axes):
+    if isinstance(ax, axes.Axes):
         if cg:
             caax = ax.parasites[0]
             paax = ax.parasites[1]
@@ -833,11 +832,17 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     ranges : array of ranges
     elevs : array of elevation angles
     site : tuple of site coordinates (longitude, latitude, altitude)
+    vert_res : float
+        Vertical resolution in [m]
+    maxalt : float
+        Maximum altitude in [m]
+    ax : :class:`matplotlib:matplotlib.axes.Axes`
+        The axes object to be plotted to.
     """
     # just a dummy
     az = np.array([90.])
 
-    polc = util.meshgridN(ranges, az, elevs)
+    polc = util.meshgrid_n(ranges, az, elevs)
 
     # get mean height over radar
     coords, _ = georef.spherical_to_xyz(polc[0], polc[1], polc[2], site)

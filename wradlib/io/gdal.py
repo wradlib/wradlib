@@ -155,7 +155,7 @@ def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
     return ds
 
 
-def write_raster_dataset(fpath, dataset, format, options=None, remove=False):
+def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
     """ Write raster dataset to file format
 
     Parameters
@@ -164,7 +164,7 @@ def write_raster_dataset(fpath, dataset, format, options=None, remove=False):
         A file path - should have file extension corresponding to format.
     dataset : gdal.Dataset
         gdal raster dataset
-    format : string
+    rformat : string
         gdal raster format string
     options : list
         List of option strings for the corresponding format.
@@ -185,14 +185,14 @@ def write_raster_dataset(fpath, dataset, format, options=None, remove=False):
     if options is None:
         options = []
 
-    driver = gdal.GetDriverByName(format)
+    driver = gdal.GetDriverByName(rformat)
     metadata = driver.GetMetadata()
 
     # check driver capability
     if not ('DCAP_CREATECOPY' in metadata and
             metadata['DCAP_CREATECOPY'] == 'YES'):
         raise TypeError("WRADLIB: Raster Driver {} doesn't support "
-                        "CreateCopy() method.".format(format))
+                        "CreateCopy() method.".format(rformat))
 
     if remove:
         if os.path.exists(fpath):

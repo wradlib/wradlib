@@ -475,7 +475,7 @@ class ZonalDataBase(object):
         return np.array(self.dst.get_attributes(['src_index'],
                                                 filt=('trg_index', idx))[0])
 
-    def _create_dst_datasource(self, **kwargs):
+    def _create_dst_datasource(self):
         """Create destination target gdal.Dataset
 
         Creates one layer for each target polygon, consisting of
@@ -486,9 +486,6 @@ class ZonalDataBase(object):
         ds_mem : object
             gdal.Dataset object
         """
-
-        # TODO: kwargs necessary?
-
         # create intermediate mem dataset
         ds_mem = gdal_create_dataset('Memory', 'dst',
                                      gdal_type=gdal.OF_VECTOR)

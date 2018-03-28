@@ -9,7 +9,7 @@ Read NetCDF
    :nosignatures:
    :toctree: generated/
 
-   read_EDGE_netcdf
+   read_edge_netcdf
    read_generic_netcdf
 """
 
@@ -22,7 +22,7 @@ import numpy as np
 import netCDF4 as nc
 
 
-def read_EDGE_netcdf(filename, enforce_equidist=False):
+def read_edge_netcdf(filename, enforce_equidist=False):
     """Data reader for netCDF files exported by the EDGE radar software
 
     The corresponding NetCDF files from the EDGE software typically contain

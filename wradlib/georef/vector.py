@@ -48,14 +48,14 @@ def get_vector_points(geom):
         expands to Nx2 dimensional nested point arrays
     """
 
-    type = geom.GetGeometryType()
-    if type > 1:
+    geomtype = geom.GetGeometryType()
+    if geomtype > 1:
         # 1D Geometries, LINESTRINGS
-        if type == 2:
+        if geomtype == 2:
             result = np.array(geom.GetPoints())
             yield result
         # RINGS, POLYGONS, MULTIPOLYGONS, MULTILINESTRINGS
-        elif type > 2:
+        elif geomtype > 2:
             # iterate over geometries and recurse
             for item in geom:
                 for result in get_vector_points(item):
@@ -77,8 +77,8 @@ def transform_geometry(geom, dest_srs, **kwargs):
     dest_srs : osr.SpatialReference
         Destination Projection
 
-    Keywords
-    --------
+    Keyword Arguments
+    -----------------
     source_srs : osr.SpatialReference
         Source Projection
 
@@ -115,8 +115,8 @@ def get_vector_coordinates(layer, **kwargs):
     ----------
     layer : ogr.Layer
 
-    Keywords
-    --------
+    Keyword Arguments
+    -----------------
     source_srs : osr.SpatialReference
         Source Projection
     dest_srs: osr.SpatialReference

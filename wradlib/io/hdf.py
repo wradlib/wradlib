@@ -10,8 +10,8 @@ HDF Data I/O
    :toctree: generated/
 
    read_generic_hdf5
-   read_OPERA_hdf5
-   read_GAMIC_hdf5
+   read_opera_hdf5
+   read_gamic_hdf5
    to_hdf5
    from_hdf5
    read_gpm
@@ -78,7 +78,7 @@ def read_generic_hdf5(fname):
     return fcontent
 
 
-def read_OPERA_hdf5(fname):
+def read_opera_hdf5(fname):
     """Reads hdf5 files according to OPERA conventions
 
     Please refer to the OPERA data model documentation :cite:`OPERA-data-model`
@@ -272,7 +272,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
     return data, sattrs
 
 
-def read_GAMIC_hdf5(filename, wanted_elevations=None, wanted_moments=None):
+def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
     """Data reader for hdf5 files produced by the commercial \
     GAMIC Enigma V3 MURAN software
 
