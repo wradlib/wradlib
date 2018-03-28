@@ -60,7 +60,7 @@ class TestAttenuation(unittest.TestCase):
     def test_correct_attenuation_hb(self):
         filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
         filename = util.get_wradlib_data_file(filestr)
-        gateset, attrs = io.readDX(filename)
+        gateset, attrs = io.read_dx(filename)
         atten.correct_attenuation_hb(gateset, mode='warn')
         atten.correct_attenuation_hb(gateset, mode='nan')
         atten.correct_attenuation_hb(gateset, mode='zero')
@@ -71,7 +71,7 @@ class TestAttenuation(unittest.TestCase):
     def test_correct_attenuation_constrained(self):
         filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
         filename = util.get_wradlib_data_file(filestr)
-        gateset, attrs = io.readDX(filename)
+        gateset, attrs = io.read_dx(filename)
         atten.correct_attenuation_constrained(gateset)
 
     def test_correct_radome_attenuation_empirical(self):
