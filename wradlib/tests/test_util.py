@@ -108,6 +108,27 @@ class HelperFunctionsTest(unittest.TestCase):
         np.testing.assert_equal(result4[:, :-1],
                                 np.roll(data, -1, axis=1)[:, :-1])
 
+    def test_medfilt_along_axis(self):
+        x = np.arange(10).reshape((2, 5)).astype("f4")
+        shouldbe = np.array([[0., 1., 2., 3., 3.],
+                             [5., 6., 7., 8., 8.]])
+        result = util.medfilt_along_axis(x, 3)
+        np.testing.assert_allclose(result, shouldbe)
+
+    def test_gradient_along_axis(self):
+        x = np.arange(10).reshape((2, 5)).astype("f4") ** 2
+        result = util.gradient_along_axis(x)
+        shouldbe = np.array([[1., 11., 2., 4., 6., 7.],
+                             [1., 11., 12., 14., 16., 17.]])
+        np.testing.assert_allclose(result, shouldbe)
+
+    def test_gradient_from_smoothed(self):
+        x = np.arange(10).reshape((2, 5)).astype("f4") ** 2
+        result = util.gradient_from_smoothed(x)
+        shouldbe = np.array([[1., 11., 2., 1.5, 0., 0.],
+                             [1., 11., 12., 6.5, 0., 0.]])
+        np.testing.assert_allclose(result, shouldbe)
+
 
 class TestUtil(unittest.TestCase):
     def setUp(self):

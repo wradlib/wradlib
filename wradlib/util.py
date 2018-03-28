@@ -29,6 +29,7 @@ import os
 import numpy as np
 from scipy.ndimage import filters
 from osgeo import ogr
+from scipy.signal import medfilt
 
 
 class OptionalModuleStub(object):
@@ -739,6 +740,34 @@ def calculate_polynomial(data, w):
     for i, c in enumerate(w):
         poly += c * data**i
     return poly
+
+
+def medfilt_along_axis(x, n, axis=-1):
+    """Applies median filter smoothing on one axis of an N-dimensional array.
+    """
+    kernel_size = np.array(x.shape)
+    kernel_size[:] = 1
+    kernel_size[axis] = n
+    return medfilt(x, kernel_size)
+
+
+def gradient_along_axis(x):
+    """Computes gradient along last axis of an N-dimensional array
+    """
+    axis = -1
+    newshape = np.array(x.shape)
+    newshape[axis] = 1
+    diff_begin = (x[..., 1] - x[..., 0]).reshape(newshape)
+    diff_end = (x[..., -1] - x[..., -2]).reshape(newshape)
+    diffs = ((x - np.roll(x, 2, axis)) / 2.)
+    diffs = np.append(diffs[..., 2:], diff_end, axis=axis)
+    return np.insert(diffs, 0, diff_begin, axis=axis)
+
+
+def gradient_from_smoothed(x, n=5):
+    """Computes gradient of smoothed data along final axis of an array
+    """
+    return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
 
 
 if __name__ == '__main__':
