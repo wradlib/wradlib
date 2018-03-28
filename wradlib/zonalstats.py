@@ -44,8 +44,8 @@ Calling the objects with actual data, however, will be very fast.
    ZonalDataPoint
    ZonalDataPoly
    ZonalStatsBase
-   GridCellsToPoly
-   GridPointsToPoly
+   ZonalStatsPoly
+   ZonalStatsPoint
    mask_from_bbox
    get_bbox
    grid_centers_to_vertices
@@ -888,9 +888,7 @@ class ZonalStatsBase(object):
         return out
 
 
-# should we rename class?
-# GridCellStats ?
-class GridCellsToPoly(ZonalStatsBase):
+class ZonalStatsPoly(ZonalStatsBase):
     """Compute weighted average for target polygons based on areal weights.
 
     Parameters
@@ -912,12 +910,10 @@ class GridCellsToPoly(ZonalStatsBase):
         if src is not None:
             if not isinstance(src, ZonalDataPoly):
                 src = ZonalDataPoly(src, **kwargs)
-        super(GridCellsToPoly, self).__init__(src, **kwargs)
+        super(ZonalStatsPoly, self).__init__(src, **kwargs)
 
 
-# should we rename class?
-# GridPointStats ?
-class GridPointsToPoly(ZonalStatsBase):
+class ZonalStatsPoint(ZonalStatsBase):
     """Compute zonal average from all points in or close to the target polygon.
 
     Parameters
@@ -939,7 +935,7 @@ class GridPointsToPoly(ZonalStatsBase):
         if src is not None:
             if not isinstance(src, ZonalDataPoint):
                 src = ZonalDataPoint(src, **kwargs)
-        super(GridPointsToPoly, self).__init__(src, **kwargs)
+        super(ZonalStatsPoint, self).__init__(src, **kwargs)
 
 
 def numpy_to_pathpatch(arr):
@@ -1160,7 +1156,7 @@ def get_clip_mask(coords, clippoly, srs=None):
     src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool)
 
     try:
-        obj = GridPointsToPoly(zd)
+        obj = ZonalStatsPoint(zd)
 
         # Get source indices within polygon from zonal object
         # (0 because we have only one zone)
