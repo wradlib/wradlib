@@ -496,8 +496,8 @@ def synthetic_polar_volume(coords):
     """
     x = coords[:, 0] * 10 / np.max(coords[:, 0])
     y = coords[:, 1] * 10 / np.max(coords[:, 1])
-    z = coords[:, 2] * 10 / np.max(coords[:, 2])
-    out = np.abs(np.sin(x * y * z) / (x * y * z))
+    z = coords[:, 2] / 1000.
+    out = np.abs(np.sin(x * y)) * np.exp(-z)
     out = out * 100. / out.max()
     return out
 

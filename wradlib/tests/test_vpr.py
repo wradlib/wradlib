@@ -99,72 +99,49 @@ class CartesianVolumeTest(unittest.TestCase):
     def setUp(self):
         self.site = (7.0, 53.0, 100.)
         self.proj = georef.epsg_to_osr(31467)
+        self.az = np.arange(0., 360., 2.) + 1.
+        self.r = np.arange(0., 50000., 1000.)
+        self.elev = np.array([1., 3., 5., 10.])
+        self.xyz = vpr.volcoords_from_polar(self.site, self.elev,
+                                            self.az, self.r, self.proj)
+        self.data = vpr.synthetic_polar_volume(self.xyz)
 
     def test_CartesianVolume(self):
         pass
 
     def test_CAPPI(self):
-        nbins = [320, 240, 240, 240, 240, 340, 340, 300, 300,
-                 240, 240, 240, 240, 240]
-        rscale = [1000, 1000, 1000, 1000, 1000, 500, 500, 500, 500, 500, 500,
-                  500, 500, 500]
-        elev = [0.3, 0.4, 0.8, 1.1, 2., 3., 4.5, 6., 8., 10.,
-                12., 15., 20., 25.]
-
-        xyz = np.array([]).reshape((-1, 3))
-        for i, vals in enumerate(zip(nbins, rscale, elev)):
-            az = np.arange(0., 360., 360. / 360)
-            r = np.arange(0, vals[0] * vals[1], vals[1])
-            xyz_ = vpr.volcoords_from_polar(self.site, vals[2],
-                                            az, r, self.proj)
-            xyz = np.vstack((xyz, xyz_))
-
-        data = vpr.synthetic_polar_volume(xyz)
-
-        maxrange = 200000.
-        minelev = 0.1
-        maxelev = 25.
-        maxalt = 5000.
-        horiz_res = 2000.
-        vert_res = 250.
-        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj, maxrange,
-                                            maxalt, horiz_res, vert_res)
+        maxrange = 50000.
+        minelev = 1.
+        maxelev = 10.
+        maxalt = 8000.
+        horiz_res = 4000.
+        vert_res = 1000.
+        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj,
+                                            maxrange, maxalt,
+                                            horiz_res, vert_res)
 
         # interpolate to Cartesian 3-D volume grid
-        gridder = vpr.CAPPI(xyz, trgxyz, trgshape, maxrange, minelev,
-                            maxelev)
-        np.ma.masked_invalid(gridder(data).reshape(trgshape))
+        gridder = vpr.CAPPI(self.xyz, trgxyz, trgshape, maxrange,
+                            minelev, maxelev)
+        out = np.ma.masked_invalid(gridder(self.data).reshape(trgshape))
+        self.assertEqual(out.shape, (9, 26, 26))
 
     def test_PseudoCAPPI(self):
-        nbins = [320, 240, 240, 240, 240, 340, 340, 300, 300,
-                 240, 240, 240, 240, 240]
-        rscale = [1000, 1000, 1000, 1000, 1000, 500, 500, 500, 500, 500, 500,
-                  500, 500, 500]
-        elev = [0.3, 0.4, 0.8, 1.1, 2., 3., 4.5, 6., 8., 10.,
-                12., 15., 20., 25.]
+        maxrange = 50000.
+        minelev = 1.
+        maxelev = 10.
+        maxalt = 8000.
+        horiz_res = 4000.
+        vert_res = 1000.
+        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj,
+                                            maxrange, maxalt,
+                                            horiz_res, vert_res)
 
-        xyz = np.array([]).reshape((-1, 3))
-        for i, vals in enumerate(zip(nbins, rscale, elev)):
-            az = np.arange(0., 360., 360. / 360)
-            r = np.arange(0, vals[0] * vals[1], vals[1])
-            xyz_ = vpr.volcoords_from_polar(self.site, vals[2],
-                                            az, r, self.proj)
-            xyz = np.vstack((xyz, xyz_))
-
-        data = vpr.synthetic_polar_volume(xyz)
-
-        maxrange = 200000.
-        minelev = 0.1
-        maxelev = 25.
-        maxalt = 5000.
-        horiz_res = 2000.
-        vert_res = 250.
-        trgxyz, trgshape = vpr.make_3D_grid(self.site, self.proj, maxrange,
-                                            maxalt, horiz_res, vert_res)
-
-        gridder = vpr.PseudoCAPPI(xyz, trgxyz, trgshape, maxrange, minelev,
-                                  maxelev)
-        np.ma.masked_invalid(gridder(data).reshape(trgshape))
+        # interpolate to Cartesian 3-D volume grid
+        gridder = vpr.PseudoCAPPI(self.xyz, trgxyz, trgshape, maxrange,
+                                  minelev, maxelev)
+        out = np.ma.masked_invalid(gridder(self.data).reshape(trgshape))
+        self.assertEqual(out.shape, (9, 26, 26))
 
 
 if __name__ == '__main__':
