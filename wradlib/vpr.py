@@ -107,7 +107,7 @@ class CartesianVolume():
         shape of the Cartesian grid (num x, num y, num z)
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    Ipclass : object
+    ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : `**kwargs`
         keyword arguments corresponding to ``ipclass``
@@ -115,14 +115,16 @@ class CartesianVolume():
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float ndarray of shape (num levels, num x coordinates,
-        num y coordinates)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+
+    Examples
+    --------
+    See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
     def __init__(self, polcoords, gridcoords, gridshape=None,
                  maxrange=None, minelev=None, maxelev=None,
                  ipclass=ipol.Idw, **ipargs):
-        # TODO: rename Ipclas to ipclass
         # radar location in Cartesian coordinates
         # TODO: pass projected radar location as argument
         # (allows processing of incomplete polar volumes)
@@ -168,10 +170,20 @@ class CartesianVolume():
 
         Parameters
         ----------
-        gridcoords :
-        polcoords :
-        gridshape :
-        maxrange :
+        gridcoords : :class:`numpy:numpy.ndarray`
+            of shape (num voxels, 3)
+        polcoords : :class:`numpy:numpy.ndarray`
+            of shape (num bins, 3)
+        gridshape : tuple
+            shape of the Cartesian grid (num x, num y, num z)
+        maxrange : float
+            The maximum radar range
+            (must be the same for each elevation angle,
+            and same unit as gridcoords)
+        minelev : float
+            The minimum elevation angle of the volume (degree)
+        maxelev : float
+            The maximum elevation angle of the volume (degree)
 
         Returns
         -------
@@ -212,6 +224,16 @@ class CAPPI(CartesianVolume):
     ipargs : `**kwargs`
         keyword arguments corresponding to ``ipclass``
 
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+
+    See Also
+    --------
+    out_of_range
+    blindspots
+
     Examples
     --------
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
@@ -219,7 +241,10 @@ class CAPPI(CartesianVolume):
 
     def _get_mask(self, gridcoords, polcoords, gridshape,
                   maxrange, minelev, maxelev):
-        """Masks the "blind" voxels of the Cartesian 3D-volume grid
+        """Masks the "blind" voxels of the Cartesian 3D-volume
+
+        For the CAPPI, blind voxels are below `minelev` and above `maxelev`
+        and beyond `maxrange`.
         """
         below, above, out_of_range = blindspots(self.radloc, gridcoords,
                                                 minelev, maxelev, maxrange)
@@ -260,11 +285,25 @@ class PseudoCAPPI(CartesianVolume):
     ipargs : `**kwargs`
         keyword arguments corresponding to ``ipclass``
 
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+
+    See Also
+    --------
+    out_of_range
+
+    Examples
+    --------
+    See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
     def _get_mask(self, gridcoords, polcoords, gridshape,
                   maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
+
+        For the Pseudo CAPPI, blind voxels are only those beyond `maxrange`.
         """
         return np.logical_not(np.logical_not(out_of_range(self.radloc,
                                                           gridcoords,
@@ -272,16 +311,16 @@ class PseudoCAPPI(CartesianVolume):
 
 
 def out_of_range(center, gridcoords, maxrange):
-    """Flags the region outside the radar range
+    """Masks the region outside the radar range
 
-    Paramters
+    Parameters
     ---------
     center : tuple
         radar location
     gridcoords : :class:`numpy:numpy.ndarray`
         array of 3-D coordinates with shape (num voxels, 3)
     maxrange : float
-        maximum range (meters)
+        maximum range (same unit as gridcoords)
 
     Returns
     -------
@@ -293,7 +332,7 @@ def out_of_range(center, gridcoords, maxrange):
 
 
 def blindspots(center, gridcoords, minelev, maxelev, maxrange):
-    """Blind regions of the radar, marked on a 3-D grid
+    """Masks blind regions of the radar, marked on a 3-D grid
 
     The radar is blind below the radar, above the radar and beyond the range.
     The function returns three boolean arrays which indicate whether (1) the
@@ -301,12 +340,17 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     (3) the grid node is beyond the maximum range.
 
     Parameters
-    ----------
-    center
-    gridcoords
-    minelev
-    maxelev
-    maxrange
+    ---------
+    center : tuple
+        radar location
+    gridcoords : :class:`numpy:numpy.ndarray`
+        array of 3-D coordinates with shape (num voxels, 3)
+    minelev : float
+        The minimum elevation angle of the volume (degree)
+    maxelev : float
+        The maximum elevation angle of the volume (degree)
+    maxrange : float
+        maximum range (same unit as gridcoords)
 
     Returns
     -------
@@ -463,13 +507,17 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     Parameters
     ----------
     sitecoords : tuple
+        Radar location coordinates in lon, lat
     proj : object
         GDAL OSR Spatial Reference Object describing projection
-
-    maxrange
-    maxalt
-    horiz_res
-    vert_res
+    maxrange : float
+        maximum radar range (meters)
+    maxalt : float
+        maximum altitude to which the 3-d grid should extent
+    horiz_res : float
+        horizontal resolution of the 3-d grid
+    vert_res : float
+        vertical resolution of the 3-d grid
 
     Returns
     -------
@@ -492,7 +540,7 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
 
 
 def synthetic_polar_volume(coords):
-    """Returns a synthetic polar volume
+    """Returns a totally arbitrary synthetic polar volume
     """
     x = coords[:, 0] * 10 / np.max(coords[:, 0])
     y = coords[:, 1] * 10 / np.max(coords[:, 1])
