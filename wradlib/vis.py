@@ -31,7 +31,6 @@ import warnings
 
 # site packages
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as pl
 from matplotlib import patches, axes, lines
 from matplotlib.projections import PolarAxes
