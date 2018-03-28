@@ -323,7 +323,8 @@ class RegularToIrregularTest(unittest.TestCase):
 
     def test_cart_to_irregular_interp(self):
         newvalues = ipol.cart_to_irregular_interp(self.cartgrid, self.values,
-                                                  self.newgrid, method='linear')
+                                                  self.newgrid,
+                                                  method='linear')
         self.assertTrue(np.allclose(newvalues, self.result))
 
     def test_cart_to_irregular_spline(self):
@@ -334,12 +335,15 @@ class RegularToIrregularTest(unittest.TestCase):
 
     def test_cart_to_irregular_equality(self):
         self.assertTrue(
-            np.allclose(ipol.cart_to_irregular_interp(self.cartgrid, self.values,
+            np.allclose(ipol.cart_to_irregular_interp(self.cartgrid,
+                                                      self.values,
                                                       self.newgrid,
                                                       method='linear'),
-                        ipol.cart_to_irregular_spline(self.cartgrid, self.values,
+                        ipol.cart_to_irregular_spline(self.cartgrid,
+                                                      self.values,
                                                       self.newgrid,
-                                                      order=1, prefilter=False)))
+                                                      order=1,
+                                                      prefilter=False)))
 
 
 if __name__ == '__main__':

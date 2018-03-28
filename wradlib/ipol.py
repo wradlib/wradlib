@@ -1000,7 +1000,7 @@ def interpolate(src, trg, vals, ipolclass, *args, **kwargs):
                                  [np.where(nan_in_result[-1] == i)[0]])
             ip = ipolclass(src[ix_good],
                            trg[nan_in_result[0]
-                              [np.where(nan_in_result[-1] == i)[0]]],
+                           [np.where(nan_in_result[-1] == i)[0]]],
                            *args, **kwargs)
             tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
             result[ix_broken_targets, i] = tmp.ravel()

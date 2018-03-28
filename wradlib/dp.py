@@ -320,15 +320,15 @@ lanczos-low-noise-differentiators/>`_.
         if np.sum(valids[beam, ix]) >= 2:
             kdp[beam, 0:int(winlen / 2)] = linregress(x[ix][valids[beam, ix]],
                                                       phidp[beam,
-                                                       ix[valids[beam,
-                                                                 ix]]])[0]
+                                                            ix[valids[beam,
+                                                                      ix]]])[0]
         # end
         ix = np.arange(shape[-1] - winlen, shape[-1])
         if np.sum(valids[beam, ix]) >= 2:
             kdp[beam, -int(winlen / 2):] = linregress(x[ix][valids[beam, ix]],
                                                       phidp[beam,
-                                                       ix[valids[beam,
-                                                                 ix]]])[0]
+                                                            ix[valids[beam,
+                                                                      ix]]])[0]
 
     # accounting for forward/backward propagation AND gate length
     return kdp.reshape(shape) / 2. / dr
