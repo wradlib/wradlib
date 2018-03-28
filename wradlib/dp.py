@@ -54,7 +54,6 @@ all input arrays.
 
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.signal import medfilt
 from scipy.stats import linregress
 from scipy.ndimage.filters import convolve1d
 from . import util as util
@@ -376,7 +375,7 @@ def unfold_phi(phidp, rho, width=5, copy=False):
     if copy:
         phidp = phidp.copy()
     rho = rho.reshape((-1, shape[-1]))
-    gradphi = gradient_from_smoothed(phidp)
+    gradphi = util.gradient_from_smoothed(phidp)
 
     beams, rs = phidp.shape
 
@@ -425,7 +424,7 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     if copy:
         phidp = phidp.copy()
     rho = rho.reshape((-1, shape[-1]))
-    gradphi = gradient_from_smoothed(phidp)
+    gradphi = util.gradient_from_smoothed(phidp)
 
     beams, rs = phidp.shape
 
@@ -556,37 +555,6 @@ def texture(data):
     num[np.isnan(data)] = np.nan
 
     return np.sqrt(num / xa_valid_count)
-
-
-# TO UTILS
-def medfilt_along_axis(x, N, axis=-1):
-    """Applies median filter smoothing on one axis of an N-dimensional array.
-    """
-    kernel_size = np.array(x.shape)
-    kernel_size[:] = 1
-    kernel_size[axis] = N
-    return medfilt(x, kernel_size)
-
-
-# TO UTILS
-def gradient_along_axis(x):
-    """Computes gradient along last axis of an N-dimensional array
-    """
-    axis = -1
-    newshape = np.array(x.shape)
-    newshape[axis] = 1
-    diff_begin = (x[..., 1] - x[..., 0]).reshape(newshape)
-    diff_end = (x[..., -1] - x[..., -2]).reshape(newshape)
-    diffs = ((x - np.roll(x, 2, axis)) / 2.)
-    diffs = np.append(diffs[..., 2:], diff_end, axis=axis)
-    return np.insert(diffs, 0, diff_begin, axis=axis)
-
-
-# TO UTILS
-def gradient_from_smoothed(x, N=5):
-    """Computes gradient of smoothed data along final axis of an array
-    """
-    return gradient_along_axis(medfilt_along_axis(x, N)).astype("f4")
 
 
 if __name__ == '__main__':
