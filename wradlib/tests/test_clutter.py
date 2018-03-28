@@ -90,11 +90,11 @@ class ClassifyEchoFuzzyTest(unittest.TestCase):
                                              '_0204050607.hdf5')
         # We need to organize our data as a dictionary
         dat = {}
-        dat["rho"], attrs_rho = io.read_EDGE_netcdf(rhofile)
-        dat["phi"], attrs_phi = io.read_EDGE_netcdf(phifile)
-        dat["ref"], attrs_ref = io.read_EDGE_netcdf(reffile)
-        dat["dop"], attrs_dop = io.read_EDGE_netcdf(dopfile)
-        dat["zdr"], attrs_zdr = io.read_EDGE_netcdf(zdrfile)
+        dat["rho"], attrs_rho = io.read_edge_netcdf(rhofile)
+        dat["phi"], attrs_phi = io.read_edge_netcdf(phifile)
+        dat["ref"], attrs_ref = io.read_edge_netcdf(reffile)
+        dat["dop"], attrs_dop = io.read_edge_netcdf(dopfile)
+        dat["zdr"], attrs_zdr = io.read_edge_netcdf(zdrfile)
         dat["map"] = io.from_hdf5(mapfile)[0][0]
         self.dat = dat
 
@@ -114,7 +114,7 @@ class FilterCloudtypeTest(unittest.TestCase):
         # read the radar volume scan
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
         filename = util.get_wradlib_data_file(filename)
-        pvol = io.read_OPERA_hdf5(filename)
+        pvol = io.read_opera_hdf5(filename)
         nrays = int(pvol["dataset1/where"]["nrays"])
         nbins = int(pvol["dataset1/where"]["nbins"])
         val = pvol["dataset%d/data1/data" % (1)]

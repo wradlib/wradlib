@@ -10,8 +10,8 @@ import datetime as dt
 
 
 class HelperFunctionsTest(unittest.TestCase):
-    def test__shape2size(self):
-        self.assertEqual(util._shape2size((10, 10, 10)), 10 * 10 * 10)
+    def test__shape_to_size(self):
+        self.assertEqual(util._shape_to_size((10, 10, 10)), 10 * 10 * 10)
 
     def test__idvalid(self):
         data = np.array(

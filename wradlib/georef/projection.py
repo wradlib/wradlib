@@ -256,7 +256,7 @@ def get_default_projection():
     return proj
 
 
-def epsg_to_osr(epsg=None, **kwargs):
+def epsg_to_osr(epsg=None):
     """Create osr spatial reference object from EPSG number
 
     Parameters

@@ -354,7 +354,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     # make sure that elevs is an array
     elevs = np.array([elevs]).ravel()
     # create polar grid
-    el, az, r = util.meshgridN(elevs, azimuths, ranges)
+    el, az, r = util.meshgrid_n(elevs, azimuths, ranges)
 
     # get projected coordinates
     coords = georef.spherical_to_proj(r, az, el, sitecoords, proj=proj)
