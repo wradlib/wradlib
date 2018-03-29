@@ -86,7 +86,6 @@ volume data::
 """
 
 import numpy as np
-import scipy
 
 from . import georef as georef
 from . import ipol as ipol
