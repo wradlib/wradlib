@@ -75,7 +75,7 @@ class NotebookTest(unittest.TestCase):
                            }
                 nb['cells'].insert(0, nbformat.from_dict(covdict))
 
-            exproc = ExecutePreprocessor(kernel_name=kernel, timeout=500)
+            exproc = ExecutePreprocessor(kernel_name=kernel, timeout=600)
 
             try:
                 run_dir = os.getenv('WRADLIB_BUILD_DIR', cur_dir)
