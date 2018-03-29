@@ -436,18 +436,23 @@ def from_hdf5(fpath, dataset="data"):
     return data, metadata
 
 
-def read_gpm(filename, bbox):
+def read_gpm(filename, bbox=None):
     pr_data = Dataset(filename, mode="r")
     lon = pr_data['NS'].variables['Longitude']
     lat = pr_data['NS'].variables['Latitude']
 
-    poly = [[bbox['left'], bbox['bottom']],
-            [bbox['left'], bbox['top']],
-            [bbox['right'], bbox['top']],
-            [bbox['right'], bbox['bottom']],
-            [bbox['left'], bbox['bottom']]]
-    mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    if bbox is not None:
+        poly = [[bbox['left'], bbox['bottom']],
+                [bbox['left'], bbox['top']],
+                [bbox['right'], bbox['top']],
+                [bbox['right'], bbox['bottom']],
+                [bbox['left'], bbox['bottom']]]
+        mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    else:
+        mask = np.ones_like(lon, dtype=bool)
+
     mask = np.nonzero(np.count_nonzero(mask, axis=1))
+
     lon = lon[mask]
     lat = lat[mask]
 
@@ -538,7 +543,7 @@ def read_gpm(filename, bbox):
     return gpm_data
 
 
-def read_trmm(filename1, filename2, bbox):
+def read_trmm(filename1, filename2, bbox=None):
     # trmm 2A23 and 2A25 data is hdf4
     pr_data1 = Dataset(filename1, mode="r")
     pr_data2 = Dataset(filename2, mode="r")
@@ -546,13 +551,18 @@ def read_trmm(filename1, filename2, bbox):
     lon = pr_data1.variables['Longitude']
     lat = pr_data1.variables['Latitude']
 
-    poly = [[bbox['left'], bbox['bottom']],
-            [bbox['left'], bbox['top']],
-            [bbox['right'], bbox['top']],
-            [bbox['right'], bbox['bottom']],
-            [bbox['left'], bbox['bottom']]]
-    mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    if bbox is not None:
+        poly = [[bbox['left'], bbox['bottom']],
+                [bbox['left'], bbox['top']],
+                [bbox['right'], bbox['top']],
+                [bbox['right'], bbox['bottom']],
+                [bbox['left'], bbox['bottom']]]
+        mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+    else:
+        mask = np.ones_like(lon, dtype=bool)
+
     mask = np.nonzero(np.count_nonzero(mask, axis=1))
+
     lon = pr_data1.variables['Longitude'][mask]
     lat = pr_data1.variables['Latitude'][mask]
 
