@@ -176,8 +176,9 @@ class ErrorMetrics():
             raise ValueError("WRADLIB: obs and est need to have the "
                              "same length. len(obs)={}, "
                              "len(est)={}".format(len(obs), len(est)))
-        # only remember those entries which have both valid observations
-        # AND estimates
+        self.est = est
+        self.obs = obs
+        # remember those pairs which both have valid obs and est
         self.ix = np.intersect1d(util._idvalid(obs, minval=minval),
                                  util._idvalid(est, minval=minval))
         self.n = len(self.ix)
