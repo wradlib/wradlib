@@ -15,12 +15,12 @@ attributable to the other modules
    :toctree: generated/
 
    from_to
+   maximum_intensity_projection
    filter_window_polar
    filter_window_cartesian
    find_bbox_indices
    get_raster_origin
    calculate_polynomial
-
 """
 import datetime as dt
 from datetime import tzinfo, timedelta
@@ -282,7 +282,7 @@ def trapezoid(data, x1, x2, x3, x4):
 
 def maximum_intensity_projection(data, r=None, az=None, angle=None,
                                  elev=None, autoext=True):
-    """Computes the maximum intensity projection along an arbitrary cut
+    """Computes the maximum intensity projection along an arbitrary cut \
     through the ppi from polar data.
 
     Parameters

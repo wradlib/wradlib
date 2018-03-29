@@ -20,7 +20,7 @@ Source code, testing, bug tracking as well as docs and wiki are handled via GitH
 
 * wradlib's documentation source is contained in [wradlib-docs](https://github.com/wradlib/wradlib-docs) repository, and mainly written in reStructuredText.
 * Jupyter Notebooks in [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks) repository are utilized to extend the documentation with examples and tutorials.
-* wradlib uses [Sphinx](http://sphinx-doc.org/) and [nbsphinx](https://github.com/spatialaudio/nbsphinx) to compile docs.
+* wradlib uses [Sphinx](http://sphinx-doc.org/) and [nbsphinx](https://github.com/spatialaudio/nbsphinx) to compile docs on [readthedocs.org](https://readthedocs.org/projects/wradlib-docs/).
 
 ## Issue tracking
 
@@ -29,7 +29,7 @@ used wradlib as well as Python and OS version, error messages and instructions t
 
 ## Forking wradlib
 
-For this purpose, you need to have a [GitHub Account](https://github.com/signup/free) and [Git](https://git-scm.com/). Then fork wradlib, make changes and create a pull request. A [step-by-step guide](http://wradlib.org/wradlib-docs/latest/community.html#how-to-contribute-to) can be found in the docs.
+For this purpose, you need to have a [GitHub Account](https://github.com/signup/free) and [Git](https://git-scm.com/). Then fork wradlib, make changes and create a pull request. A [step-by-step guide](http://docs.wradlib.org/en/latest/community.html#how-to-contribute-to) can be found in the docs.
 
 ## Development
 

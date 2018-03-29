@@ -70,7 +70,7 @@ volume data::
     # plot results
     levels = np.linspace(0,100,25)
     wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels,
-                                       cmap=pl.cm.spectral)
+                                       cmap=pl.cm.viridis)
 
 
 .. autosummary::

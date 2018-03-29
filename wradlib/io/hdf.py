@@ -437,6 +437,25 @@ def from_hdf5(fpath, dataset="data"):
 
 
 def read_gpm(filename, bbox=None):
+    """Reads GPM files for matching with GR
+
+    Parameters
+    ----------
+    filename : string
+        path of the GPM file
+    bbox : dict
+        dictionary with bounding box coordinates (lon, lat),
+        defaults to None
+
+    Returns
+    -------
+    gpm_data : dict
+        dictionary of gpm data
+
+    Examples
+    --------
+    See :ref:`/notebooks/match3d/wradlib_match_workflow.ipynb`.
+    """
     pr_data = Dataset(filename, mode="r")
     lon = pr_data['NS'].variables['Longitude']
     lat = pr_data['NS'].variables['Latitude']
@@ -544,6 +563,27 @@ def read_gpm(filename, bbox=None):
 
 
 def read_trmm(filename1, filename2, bbox=None):
+    """Reads TRMM files for matching with GR
+
+    Parameters
+    ----------
+    filename1 : string
+        path of the TRMM 2A23 file
+    filename2 : string
+        path of the TRMM 2A25 file
+    bbox : dict
+        dictionary with bounding box coordinates (lon, lat),
+        defaults to None
+
+    Returns
+    -------
+    trmm_data : dict
+        dictionary of trmm data
+
+    Examples
+    --------
+    See :ref:`/notebooks/match3d/wradlib_match_workflow.ipynb`.
+    """
     # trmm 2A23 and 2A25 data is hdf4
     pr_data1 = Dataset(filename1, mode="r")
     pr_data2 = Dataset(filename2, mode="r")

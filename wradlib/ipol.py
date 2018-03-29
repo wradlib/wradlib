@@ -1107,8 +1107,6 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     ``cartgrid`` to new coordinates defined by ``newgrid`` using
     nearest neighbour, linear or cubic interpolation
 
-    .. versionadded:: 0.6.0
-
     Slow for large arrays
 
     Keyword arguments are fed to :func:`scipy:scipy.interpolate.griddata`
@@ -1149,11 +1147,6 @@ def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
     """
     Map array ``values`` defined by cartesian coordinate array ``cartgrid``
     to new coordinates defined by ``newgrid`` using spline interpolation.
-
-    .. versionadded:: 0.6.0
-
-    .. versionchanged:: 0.10.0
-       Accept data/coords with origin 'lower' or 'upper'.
 
     Keyword arguments are fed through to
     :func:`scipy:scipy.ndimage.map_coordinates`

@@ -345,9 +345,6 @@ def extract_raster_dataset(dataset, nodata=None):
 def reproject_raster_dataset(src_ds, **kwargs):
     """Reproject/Resample given dataset according to keyword arguments
 
-    # function inspired from github project
-    # https://github.com/profLewis/geogg122
-
     Parameters
     ----------
     src_ds : gdal.Dataset
