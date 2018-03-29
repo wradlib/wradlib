@@ -25,6 +25,7 @@ fields except that they exhibit the numpy ndarray interface.
 
     pulse_volume
     beam_block_frac
+    cum_beam_block_frac
     get_bb_ratio
 
 """
