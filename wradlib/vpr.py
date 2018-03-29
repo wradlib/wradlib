@@ -373,7 +373,7 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
 
 
 def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
-    """Create Cartesian coordinates for the polar volume bins
+    """Create Cartesian coordinates for regular polar volumes
 
     Parameters
     ----------
@@ -409,7 +409,8 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
 
 def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
                                    ranges, proj=None):
-    """Create Cartesian coordinates for the polar volume bins
+    """Create Cartesian coordinates for polar volumes with irregular \
+    sweep specifications
 
     Parameters
     ----------
