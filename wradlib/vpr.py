@@ -511,20 +511,21 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     proj : object
         GDAL OSR Spatial Reference Object describing projection
     maxrange : float
-        maximum radar range (meters)
+        maximum radar range (same unit as SRS defined by ``proj``,
+        typically meters)
     maxalt : float
-        maximum altitude to which the 3-d grid should extent
+        maximum altitude to which the 3-d grid should extent (meters)
     horiz_res : float
-        horizontal resolution of the 3-d grid
+        horizontal resolution of the 3-d grid (same unit as
+        SRS defined by ``proj``, typically meters)
     vert_res : float
-        vertical resolution of the 3-d grid
+        vertical resolution of the 3-d grid (meters)
 
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`, tuple
         float array of shape (num grid points, 3), a tuple of
         3 representing the grid shape
-
     """
     center = georef.reproject(sitecoords[0], sitecoords[1],
                               projection_target=proj)
@@ -540,7 +541,17 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
 
 
 def synthetic_polar_volume(coords):
-    """Returns a totally arbitrary synthetic polar volume
+    """Returns a totally arbitrary synthetic polar volume - just for testing
+
+    Parameters
+    ----------
+    coords : :class:`numpy:numpy.ndarray`
+        (num volume bins, 3), as returned by volcoords_from_polar
+
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        float array of shape (num volume bins, 3)
     """
     x = coords[:, 0] * 10 / np.max(coords[:, 0])
     y = coords[:, 1] * 10 / np.max(coords[:, 1])
@@ -550,33 +561,38 @@ def synthetic_polar_volume(coords):
     return out
 
 
-def vpr_interpolator(data, heights, method='linear'):
-    """"""
-    if method.lower() == 'linear':
-        return scipy.interpolate.interp1d(heights, data, kind='linear')
-    if method.lower() == 'nearest':
-        return scipy.interpolate.interp1d(heights, data,
-                                          kind='nearest',
-                                          bounds_error=False,
-                                          fill_value=data[0])
-    else:
-        raise NotImplementedError('Method: {0:s} unkown'.format(method))
+def norm_vpr_stats(volume, reference_layer, stat=np.mean, **kwargs):
+    """Returns the average normalised vertical profile of a volume or \
+    any other desired statistics
 
+    Given a Cartesian 3-d ``volume`` and an arbitrary ``reference layer``
+    index, the function normalises all vertical profiles represented by the
+    volume and computes a static of all profiles (e.g. an average vertical
+    profile using the default ``stat``).
 
-def correct_vpr(data, heights, vpr, target_height=0.):
-    """"""
-    return (data * vpr(target_height)) / vpr(heights)
+    Parameters
+    ----------
+    volume : :class:`numpy:numpy.ndarray` or
+        :class:`numpy.ma.core.MaskedArray`
+        Cartesian 3-d grid with shape (num vertical layers, num x intervals,
+        num y intervals)
+    reference_layer : integer
+        This index defines the vertical layers of ``volume`` that is used to
+        normalise all vertical profiles
+    stat : function
+        typically a numpy statistics function (defaults to numpy.mean)
+    kwargs : further keyword arguments taken by ``stat``
 
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray` or :class:`numpy.ma.core.MaskedArray`
+        of shape (num vertical layers,) which provides the statistic from
+        ``stat`` applied over all normalised vertical profiles (e.g. the
+        mean normalised vertical profile if numpy.mean is used)
 
-def mean_norm_vpr_from_volume(volume, reference_idx):
-    """"""
-    return norm_vpr_stats(volume, reference_idx, np.mean)
-
-
-def norm_vpr_stats(volume, reference_idx, stat, **kwargs):
-    # tmp = volume / volume[...,reference_idx]
-    tmp = volume / volume[reference_idx]
-    return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), **kwargs)
+    """
+    tmp = volume / volume[reference_layer]
+    return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), axis=1, **kwargs)
 
 
 if __name__ == '__main__':

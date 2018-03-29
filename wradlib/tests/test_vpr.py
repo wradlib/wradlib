@@ -70,17 +70,10 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         vol = vpr.synthetic_polar_volume(xyz)
         self.assertEqual(vol.shape, (216000,))
 
-    def test_vpr_interpolator(self):
-        pass
-
-    def test_correct_vpr(self):
-        pass
-
-    def test_mean_norm_from_vpr(self):
-        pass
-
     def test_norm_vpr_stats(self):
-        pass
+        vol = np.arange(2 * 3 * 4).astype("f4").reshape((4, 3, 2)) ** 2
+        prof = vpr.norm_vpr_stats(vol, 1)
+        np.allclose(prof, np.array([0.09343848, 1., 3.0396144, 6.2122827]))
 
     def test_make_3d_grid(self):
         maxrange = 50000.
