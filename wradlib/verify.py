@@ -143,6 +143,9 @@ class ErrorMetrics():
     A dictionary of all available quality metrics is returned using the
     ``all`` method, or printed to the screen using the ``pprint`` method.
 
+    The ``ix`` member variable indicates valid pairs of ``obs`` and ``est``,
+    based on NaNs and ``minval``.
+
     Parameters
     ----------
     obs: :class:`numpy:numpy.ndarray`
@@ -160,6 +163,7 @@ class ErrorMetrics():
     >>> metrics = ErrorMetrics(obs, est)
     >>> metrics.all() #doctest: +SKIP
     >>> metrics.pprint() #doctest: +SKIP
+    >>> metrics.ix #doctest: +SKIP
 
     See :ref:`/notebooks/verification/wradlib_verify_example.ipynb` and
     :ref:`/notebooks/multisensor/wradlib_adjust_example.ipynb`.
