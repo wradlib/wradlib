@@ -86,7 +86,6 @@ volume data::
 """
 
 import numpy as np
-import scipy
 
 from . import georef as georef
 from . import ipol as ipol
@@ -107,7 +106,7 @@ class CartesianVolume():
         shape of the Cartesian grid (num x, num y, num z)
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    Ipclass : object
+    ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : `**kwargs`
         keyword arguments corresponding to ``ipclass``
@@ -115,14 +114,16 @@ class CartesianVolume():
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float ndarray of shape (num levels, num x coordinates,
-        num y coordinates)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+
+    Examples
+    --------
+    See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
     def __init__(self, polcoords, gridcoords, gridshape=None,
                  maxrange=None, minelev=None, maxelev=None,
                  ipclass=ipol.Idw, **ipargs):
-        # TODO: rename Ipclas to ipclass
         # radar location in Cartesian coordinates
         # TODO: pass projected radar location as argument
         # (allows processing of incomplete polar volumes)
@@ -168,10 +169,20 @@ class CartesianVolume():
 
         Parameters
         ----------
-        gridcoords :
-        polcoords :
-        gridshape :
-        maxrange :
+        gridcoords : :class:`numpy:numpy.ndarray`
+            of shape (num voxels, 3)
+        polcoords : :class:`numpy:numpy.ndarray`
+            of shape (num bins, 3)
+        gridshape : tuple
+            shape of the Cartesian grid (num x, num y, num z)
+        maxrange : float
+            The maximum radar range
+            (must be the same for each elevation angle,
+            and same unit as gridcoords)
+        minelev : float
+            The minimum elevation angle of the volume (degree)
+        maxelev : float
+            The maximum elevation angle of the volume (degree)
 
         Returns
         -------
@@ -212,6 +223,16 @@ class CAPPI(CartesianVolume):
     ipargs : `**kwargs`
         keyword arguments corresponding to ``ipclass``
 
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+
+    See Also
+    --------
+    out_of_range
+    blindspots
+
     Examples
     --------
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
@@ -219,7 +240,10 @@ class CAPPI(CartesianVolume):
 
     def _get_mask(self, gridcoords, polcoords, gridshape,
                   maxrange, minelev, maxelev):
-        """Masks the "blind" voxels of the Cartesian 3D-volume grid
+        """Masks the "blind" voxels of the Cartesian 3D-volume
+
+        For the CAPPI, blind voxels are below `minelev` and above `maxelev`
+        and beyond `maxrange`.
         """
         below, above, out_of_range = blindspots(self.radloc, gridcoords,
                                                 minelev, maxelev, maxrange)
@@ -260,11 +284,25 @@ class PseudoCAPPI(CartesianVolume):
     ipargs : `**kwargs`
         keyword arguments corresponding to ``ipclass``
 
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+
+    See Also
+    --------
+    out_of_range
+
+    Examples
+    --------
+    See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
     def _get_mask(self, gridcoords, polcoords, gridshape,
                   maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
+
+        For the Pseudo CAPPI, blind voxels are only those beyond `maxrange`.
         """
         return np.logical_not(np.logical_not(out_of_range(self.radloc,
                                                           gridcoords,
@@ -272,16 +310,16 @@ class PseudoCAPPI(CartesianVolume):
 
 
 def out_of_range(center, gridcoords, maxrange):
-    """Flags the region outside the radar range
+    """Masks the region outside the radar range
 
-    Paramters
+    Parameters
     ---------
     center : tuple
         radar location
     gridcoords : :class:`numpy:numpy.ndarray`
         array of 3-D coordinates with shape (num voxels, 3)
     maxrange : float
-        maximum range (meters)
+        maximum range (same unit as gridcoords)
 
     Returns
     -------
@@ -293,7 +331,7 @@ def out_of_range(center, gridcoords, maxrange):
 
 
 def blindspots(center, gridcoords, minelev, maxelev, maxrange):
-    """Blind regions of the radar, marked on a 3-D grid
+    """Masks blind regions of the radar, marked on a 3-D grid
 
     The radar is blind below the radar, above the radar and beyond the range.
     The function returns three boolean arrays which indicate whether (1) the
@@ -301,12 +339,17 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     (3) the grid node is beyond the maximum range.
 
     Parameters
-    ----------
-    center
-    gridcoords
-    minelev
-    maxelev
-    maxrange
+    ---------
+    center : tuple
+        radar location
+    gridcoords : :class:`numpy:numpy.ndarray`
+        array of 3-D coordinates with shape (num voxels, 3)
+    minelev : float
+        The minimum elevation angle of the volume (degree)
+    maxelev : float
+        The maximum elevation angle of the volume (degree)
+    maxrange : float
+        maximum range (same unit as gridcoords)
 
     Returns
     -------
@@ -329,7 +372,7 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
 
 
 def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
-    """Create Cartesian coordinates for the polar volume bins
+    """Create Cartesian coordinates for regular polar volumes
 
     Parameters
     ----------
@@ -365,7 +408,8 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
 
 def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
                                    ranges, proj=None):
-    """Create Cartesian coordinates for the polar volume bins
+    """Create Cartesian coordinates for polar volumes with irregular \
+    sweep specifications
 
     Parameters
     ----------
@@ -463,20 +507,25 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     Parameters
     ----------
     sitecoords : tuple
+        Radar location coordinates in lon, lat
     proj : object
         GDAL OSR Spatial Reference Object describing projection
-
-    maxrange
-    maxalt
-    horiz_res
-    vert_res
+    maxrange : float
+        maximum radar range (same unit as SRS defined by ``proj``,
+        typically meters)
+    maxalt : float
+        maximum altitude to which the 3-d grid should extent (meters)
+    horiz_res : float
+        horizontal resolution of the 3-d grid (same unit as
+        SRS defined by ``proj``, typically meters)
+    vert_res : float
+        vertical resolution of the 3-d grid (meters)
 
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`, tuple
         float array of shape (num grid points, 3), a tuple of
         3 representing the grid shape
-
     """
     center = georef.reproject(sitecoords[0], sitecoords[1],
                               projection_target=proj)
@@ -492,43 +541,58 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
 
 
 def synthetic_polar_volume(coords):
-    """Returns a synthetic polar volume
+    """Returns a totally arbitrary synthetic polar volume - just for testing
+
+    Parameters
+    ----------
+    coords : :class:`numpy:numpy.ndarray`
+        (num volume bins, 3), as returned by volcoords_from_polar
+
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray`
+        float array of shape (num volume bins, 3)
     """
     x = coords[:, 0] * 10 / np.max(coords[:, 0])
     y = coords[:, 1] * 10 / np.max(coords[:, 1])
-    z = coords[:, 2] * 10 / np.max(coords[:, 2])
-    out = np.abs(np.sin(x * y * z) / (x * y * z))
+    z = coords[:, 2] / 1000.
+    out = np.abs(np.sin(x * y)) * np.exp(-z)
     out = out * 100. / out.max()
     return out
 
 
-def vpr_interpolator(data, heights, method='linear'):
-    """"""
-    if method.lower() == 'linear':
-        return scipy.interpolate.interp1d(heights, data, kind='linear')
-    if method.lower() == 'nearest':
-        return scipy.interpolate.interp1d(heights, data,
-                                          kind='nearest',
-                                          bounds_error=False,
-                                          fill_value=data[0])
-    else:
-        raise NotImplementedError('Method: {0:s} unkown'.format(method))
+def norm_vpr_stats(volume, reference_layer, stat=np.mean, **kwargs):
+    """Returns the average normalised vertical profile of a volume or \
+    any other desired statistics
 
+    Given a Cartesian 3-d ``volume`` and an arbitrary ``reference layer``
+    index, the function normalises all vertical profiles represented by the
+    volume and computes a static of all profiles (e.g. an average vertical
+    profile using the default ``stat``).
 
-def correct_vpr(data, heights, vpr, target_height=0.):
-    """"""
-    return (data * vpr(target_height)) / vpr(heights)
+    Parameters
+    ----------
+    volume : :class:`numpy:numpy.ndarray` or
+        :class:`numpy.ma.core.MaskedArray`
+        Cartesian 3-d grid with shape (num vertical layers, num x intervals,
+        num y intervals)
+    reference_layer : integer
+        This index defines the vertical layers of ``volume`` that is used to
+        normalise all vertical profiles
+    stat : function
+        typically a numpy statistics function (defaults to numpy.mean)
+    kwargs : further keyword arguments taken by ``stat``
 
+    Returns
+    -------
+    output : :class:`numpy:numpy.ndarray` or :class:`numpy.ma.core.MaskedArray`
+        of shape (num vertical layers,) which provides the statistic from
+        ``stat`` applied over all normalised vertical profiles (e.g. the
+        mean normalised vertical profile if numpy.mean is used)
 
-def mean_norm_vpr_from_volume(volume, reference_idx):
-    """"""
-    return norm_vpr_stats(volume, reference_idx, np.mean)
-
-
-def norm_vpr_stats(volume, reference_idx, stat, **kwargs):
-    # tmp = volume / volume[...,reference_idx]
-    tmp = volume / volume[reference_idx]
-    return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), **kwargs)
+    """
+    tmp = volume / volume[reference_layer]
+    return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), axis=1, **kwargs)
 
 
 if __name__ == '__main__':

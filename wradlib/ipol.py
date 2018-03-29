@@ -743,6 +743,9 @@ class ExternalDriftKriging(IpolBase):
     If any of them is given on initialization its values may be overridden
     by passing new values to the __call__ method.
 
+    Examples
+    --------
+    See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
     def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12,

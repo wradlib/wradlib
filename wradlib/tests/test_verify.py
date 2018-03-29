@@ -90,18 +90,6 @@ class ErrorMetricsTest(unittest.TestCase):
         metrics = verify.ErrorMetrics(self.obs, self.est)
         metrics.pprint()
 
-    def test_plot(self):
-        metrics = verify.ErrorMetrics(self.obs, self.est)
-        metrics.plot()
-        metrics = verify.ErrorMetrics(self.obs, self.non)
-        metrics.plot()
-
-    def test_report(self):
-        metrics = verify.ErrorMetrics(self.obs, self.est)
-        metrics.report()
-        metrics = verify.ErrorMetrics(self.obs, self.non)
-        metrics.report()
-
 
 if __name__ == '__main__':
     unittest.main()

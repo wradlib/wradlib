@@ -21,7 +21,6 @@ estimates to ground truth.
 import numpy as np
 from scipy.spatial import KDTree
 from scipy import stats
-import matplotlib.pyplot as pl
 from pprint import pprint
 import warnings
 
@@ -142,8 +141,10 @@ class ErrorMetrics():
     First create an instance of the class using the set of observations and
     estimates. Then compute quality metrics using the class methods.
     A dictionary of all available quality metrics is returned using the
-    *all* method. Method *report* pretty prints all these metrics over a
-    scatter plot.
+    ``all`` method, or printed to the screen using the ``pprint`` method.
+
+    The ``ix`` member variable indicates valid pairs of ``obs`` and ``est``,
+    based on NaNs and ``minval``.
 
     Parameters
     ----------
@@ -162,8 +163,7 @@ class ErrorMetrics():
     >>> metrics = ErrorMetrics(obs, est)
     >>> metrics.all() #doctest: +SKIP
     >>> metrics.pprint() #doctest: +SKIP
-    >>> ax = metrics.plot() #doctest: +SKIP
-    >>> metrics.report() #doctest: +SKIP
+    >>> metrics.ix #doctest: +SKIP
 
     See :ref:`/notebooks/verification/wradlib_verify_example.ipynb` and
     :ref:`/notebooks/multisensor/wradlib_adjust_example.ipynb`.
@@ -176,40 +176,39 @@ class ErrorMetrics():
             raise ValueError("WRADLIB: obs and est need to have the "
                              "same length. len(obs)={}, "
                              "len(est)={}".format(len(obs), len(est)))
-        # only remember those entries which have both valid observations
-        # AND estimates
-        ix = np.intersect1d(util._idvalid(obs, minval=minval),
-                            util._idvalid(est, minval=minval))
-        self.n = len(ix)
+        self.est = est
+        self.obs = obs
+        # remember those pairs which both have valid obs and est
+        self.ix = np.intersect1d(util._idvalid(obs, minval=minval),
+                                 util._idvalid(est, minval=minval))
+        self.n = len(self.ix)
         if self.n == 0:
             warnings.warn("WRADLIB: No valid pairs of observed and "
                           "estimated available for ErrorMetrics!")
-            self.obs = np.array([])
-            self.est = np.array([])
-        else:
-            self.obs = obs[ix]
-            self.est = est[ix]
-        self.resids = self.est - self.obs
+        self.resids = self.est[self.ix] - self.obs[self.ix]
 
     def corr(self):
         """Correlation coefficient
         """
-        return np.round(np.corrcoef(self.obs, self.est)[0, 1], 2)
+        return np.round(np.corrcoef(self.obs[self.ix],
+                                    self.est[self.ix])[0, 1], 2)
 
     def r2(self):
         """Coefficient of determination
         """
-        return np.round((np.corrcoef(self.obs, self.est)[0, 1]) ** 2, 2)
+        return np.round((np.corrcoef(self.obs[self.ix],
+                                     self.est[self.ix])[0, 1]) ** 2, 2)
 
     def spearman(self):
         """Spearman rank correlation coefficient
         """
-        return np.round(stats.stats.spearmanr(self.obs, self.est)[0], 2)
+        return np.round(stats.stats.spearmanr(self.obs[self.ix],
+                                              self.est[self.ix])[0], 2)
 
     def nash(self):
         """Nash-Sutcliffe Efficiency
         """
-        return np.round(1. - (self.mse() / np.var(self.obs)), 2)
+        return np.round(1. - (self.mse() / np.var(self.obs[self.ix])), 2)
 
     def sse(self):
         """Sum of Squared Errors
@@ -239,12 +238,12 @@ class ErrorMetrics():
     def ratio(self):
         """Mean ratio between observed and estimated
         """
-        return np.round(np.mean(self.est / self.obs), 2)
+        return np.round(np.mean(self.est[self.ix] / self.obs[self.ix]), 2)
 
     def pbias(self):
         """Percent bias
         """
-        return np.round(self.meanerr() * 100. / np.mean(self.obs), 1)
+        return np.round(self.meanerr() * 100. / np.mean(self.obs[self.ix]), 1)
 
     def all(self):
         """Returns a dictionary of all error metrics
@@ -263,76 +262,10 @@ class ErrorMetrics():
 
         return out
 
-    def plot(self, ax=None, unit="", maxval=None):
-        """Scatter plot of estimates vs observations
-
-        Parameters
-        ----------
-        ax : a matplotlib axes object to plot on
-           if None, a new axes object will be created
-        unit : string
-           measurement unit of the observations / estimates
-        maxval : maximum value for plot range, defaults to max(obs, est)
-        """
-        if self.n == 0:
-            print("No valid data, no plot.")
-            return None
-        doplot = False
-        if ax is None:
-            fig = pl.figure()
-            ax = fig.add_subplot(111, aspect=1.)
-            doplot = True
-        ax.plot(self.obs, self.est, mfc="None", mec="black", marker="o", lw=0)
-        if maxval is None:
-            maxval = np.max(np.append(self.obs, self.est))
-        pl.xlim(xmin=0., xmax=maxval)
-        pl.ylim(ymin=0., ymax=maxval)
-        ax.plot([0, maxval], [0, maxval], "-", color="grey")
-        pl.xlabel("Observations (%s)" % unit)
-        pl.ylabel("Estimates (%s)" % unit)
-        if (not pl.isinteractive()) and doplot:
-            pl.show()
-        return ax
-
     def pprint(self):
         """Pretty prints a summary of error metrics
         """
         pprint(self.all())
-
-    def report(self, metrics=None, ax=None, unit="", maxval=None):
-        """Pretty prints selected error metrics over a scatter plot
-
-        Parameters
-        ----------
-        metrics : sequence of strings
-           names of the metrics which should be included in the report
-           defaults to ["rmse","r2","meanerr"]
-        ax : a matplotlib axes object to plot on
-           if None, a new axes object will be created
-        unit : string
-           measurement unit of the observations / estimates
-
-        """
-        if self.n == 0:
-            print("No valid data, no report.")
-            return None
-        if metrics is None:
-            metrics = ["rmse", "nash", "pbias"]
-        doplot = False
-        if ax is None:
-            fig = pl.figure()
-            ax = fig.add_subplot(111, aspect=1.)
-            doplot = True
-        ax = self.plot(ax=ax, unit=unit, maxval=maxval)
-        if maxval is None:
-            maxval = np.max(np.append(self.obs, self.est))
-        xtext = 0.6 * maxval
-        ytext = (0.1 + np.arange(0, len(metrics), 0.1)) * maxval
-        mymetrics = self.all()
-        for i, metric in enumerate(metrics):
-            pl.text(xtext, ytext[i], "%s: %s" % (metric, mymetrics[metric]))
-        if not pl.isinteractive() and doplot:
-            pl.show()
 
 
 if __name__ == '__main__':
