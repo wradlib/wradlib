@@ -61,11 +61,14 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 # Return the git revision as a string
 def git_version():
     try:
-        rev = check_output(['git', 'rev-parse', 'HEAD'])
+        rev = check_output(['git', 'describe', '--tags', '--long'])
+        hash = check_output(['git', 'rev-parse', 'HEAD'])
         GIT_REVISION = rev.strip().decode('ascii')
+        GIT_HASH = hash.strip().decode('ascii')
     except (CalledProcessError, OSError):
         GIT_REVISION = 'unknown'
-    return GIT_REVISION
+        GIT_HASH = 'unknown'
+    return GIT_REVISION, GIT_HASH
 
 
 # This is a bit hackish: we are setting a global variable so that the main
@@ -77,39 +80,48 @@ builtins.__WRADLIB_SETUP__ = True
 def write_version_py(filename='wradlib/version.py'):
     cnt = """
 # THIS FILE IS GENERATED FROM WRADLIB SETUP.PY
-short_version = '%(version)s'
+short_version = '%(short_version)s'
 version = '%(version)s'
 full_version = '%(full_version)s'
 git_revision = '%(git_revision)s'
 release = %(isrelease)s
-if not release:
-    version = full_version
 """
     # Adding the git rev number needs to be done inside write_version_py(),
     # otherwise the import of wradlib.version messes up the build under
     # Python 3.
-    FULLVERSION = VERSION
+    SHORT_VERSION = VERSION
+    FULL_VERSION = VERSION
+    GIT_REVISION = VERSION + '-unknown'
+    GIT_HASH = 'unknown'
+    ISRELEASED = "'unknown'"
+
     if os.path.exists('.git'):
-        GIT_REVISION = git_version()
+        GIT_REVISION, GIT_HASH = git_version()
     elif os.path.exists('wradlib/version.py'):
         # must be a source distribution, use existing version file
         try:
-            from wradlib.version import git_revision as GIT_REVISION
+            from wradlib.version import full_version as GIT_REVISION
+            from wradlib.version import git_revision as GIT_HASH
         except ImportError:
-            raise ImportError("Unable to import git_revision. Try removing "
-                              "wradlib/version.py and the build directory "
-                              "before building.")
-    else:
-        GIT_REVISION = "Unknown"
+            raise ImportError('Unable to import git_revision. Try removing '
+                              'wradlib/version.py and the build directory '
+                              'before building.')
 
-    if not ISRELEASED:
-        FULLVERSION += '.dev+' + GIT_REVISION[:7]
+    # get commit count, 0 means tagged commit -> release
+    try:
+        ISRELEASED = not bool(int(GIT_REVISION.split('-')[1]))
+        if not ISRELEASED:
+            FULL_VERSION = GIT_REVISION
+    except ValueError:
+        pass
 
+    print(VERSION, FULL_VERSION, GIT_REVISION, GIT_HASH, ISRELEASED)
     a = open(filename, 'w')
     try:
-        a.write(cnt % {'version': VERSION,
-                       'full_version': FULLVERSION,
-                       'git_revision': GIT_REVISION,
+        a.write(cnt % {'short_version': SHORT_VERSION,
+                       'version': FULL_VERSION,
+                       'full_version': GIT_REVISION,
+                       'git_revision': GIT_HASH,
                        'isrelease': str(ISRELEASED)})
     finally:
         a.close()
