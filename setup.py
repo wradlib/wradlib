@@ -61,10 +61,10 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 # Return the git revision as a string
 def git_version():
     try:
-        rev = check_output(['git', 'describe', '--tags', '--long'])
-        hash = check_output(['git', 'rev-parse', 'HEAD'])
-        GIT_REVISION = rev.strip().decode('ascii')
-        GIT_HASH = hash.strip().decode('ascii')
+        git_rev = check_output(['git', 'describe', '--tags', '--long'])
+        git_hash = check_output(['git', 'rev-parse', 'HEAD'])
+        GIT_REVISION = git_rev.strip().decode('ascii')
+        GIT_HASH = git_hash.strip().decode('ascii')
     except (CalledProcessError, OSError):
         GIT_REVISION = 'unknown'
         GIT_HASH = 'unknown'
