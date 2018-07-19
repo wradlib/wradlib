@@ -468,7 +468,7 @@ def read_gpm(filename, bbox=None):
                 [bbox['left'], bbox['bottom']]]
         mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
     else:
-        mask = np.ones_like(lon, dtype=bool)
+        mask = np.ones_like(lon, dtype=bool, subok=False)
 
     mask = np.nonzero(np.count_nonzero(mask, axis=1))
 
