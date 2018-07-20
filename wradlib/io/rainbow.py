@@ -444,9 +444,9 @@ def read_rainbow(f, loaddata=True):
     except AttributeError:
         # If we did not get a file handle, assume that we got a filename and
         # use with-statement to retrieve the file content
-        with open(f, "rb") as f:
-            rbdict = get_rb_header(f)
-        if loaddata:
-            rbdict = get_rb_blobs_from_file(f, rbdict)
+        with open(f, "rb") as fid:
+            rbdict = get_rb_header(fid)
+            if loaddata:
+                rbdict = get_rb_blobs_from_file(fid, rbdict)
 
     return rbdict
