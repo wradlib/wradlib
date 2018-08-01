@@ -796,7 +796,7 @@ def create_cg(st, fig=None, subplot=111):
 
     # PPIs always plottetd with equal aspect
     if st == 'PPI':
-        cgax.set_aspect('equal', adjustable='box-forced')
+        cgax.set_aspect('equal', adjustable='box')
 
     # get twin axis for cartesian grid
     caax = cgax.twin()
