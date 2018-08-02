@@ -438,18 +438,15 @@ def read_rainbow(f, loaddata=True):
     # Check if a file handle has been passed
     try:
         f.seek(0, 0)
-        fid = f
+        rbdict = get_rb_header(f)
+        if loaddata:
+            rbdict = get_rb_blobs_from_file(f, rbdict)
     except AttributeError:
         # If we did not get a file handle, assume that we got a filename and
-        #  get a file handle for the corresponding file
-        try:
-            fid = open(f, "rb")
-        except IOError:
-            raise IOError("WRADLIB: Error opening Rainbow "
-                          "file '{}' ".format(f))
+        # use with-statement to retrieve the file content
+        with open(f, "rb") as fid:
+            rbdict = get_rb_header(fid)
+            if loaddata:
+                rbdict = get_rb_blobs_from_file(fid, rbdict)
 
-    rbdict = get_rb_header(fid)
-
-    if loaddata:
-        rbdict = get_rb_blobs_from_file(fid, rbdict)
     return rbdict
