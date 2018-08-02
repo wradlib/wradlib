@@ -236,8 +236,12 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     # axes object is given
     if isinstance(ax, axes.Axes):
         if cg:
-            caax = ax.parasites[0]
-            paax = ax.parasites[1]
+            try:
+                caax = ax.parasites[0]
+                paax = ax.parasites[1]
+            except AttributeError:
+                raise TypeError("WRADLIB: If `cg=True` `ax` need to be of type"
+                                " `mpl_toolkits.axisartist.SubplotHost`")
     else:
         if fig is None:
             if ax is 111:
@@ -602,8 +606,12 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     # axes object given
     if isinstance(ax, axes.Axes):
         if cg:
-            caax = ax.parasites[0]
-            paax = ax.parasites[1]
+            try:
+                caax = ax.parasites[0]
+                paax = ax.parasites[1]
+            except AttributeError:
+                raise TypeError("WRADLIB: If `cg=True` `ax` need to be of type"
+                                " `mpl_toolkits.axisartist.SubplotHost`")
     else:
         if fig is None:
             # create new figure if there is only one subplot
@@ -788,7 +796,7 @@ def create_cg(st, fig=None, subplot=111):
 
     # PPIs always plottetd with equal aspect
     if st == 'PPI':
-        cgax.set_aspect('equal', adjustable='box-forced')
+        cgax.set_aspect('equal', adjustable='box')
 
     # get twin axis for cartesian grid
     caax = cgax.twin()

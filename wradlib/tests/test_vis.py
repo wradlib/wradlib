@@ -67,6 +67,10 @@ class PolarPlotTest(unittest.TestCase):
     def test_plot_cg_ppi(self):
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True)
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=cgax)
+        fig, ax = pl.subplots(2, 2)
+        self.assertRaises(TypeError,
+                          lambda: vis.plot_ppi(self.img, elev=2.0,
+                                               cg=True, ax=ax[0, 0]))
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=111)
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=121)
         cgax, pm = vis.plot_ppi(self.img, autoext=False, cg=True)
@@ -84,6 +88,10 @@ class PolarPlotTest(unittest.TestCase):
     def test_plot_cg_rhi(self):
         cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True, ax=cgax)
+        fig, ax = pl.subplots(2, 2)
+        self.assertRaises(TypeError,
+                          lambda: vis.plot_rhi(self.img[0:90, :],
+                                               cg=True, ax=ax[0, 0]))
         cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], refrac=False, cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False, cg=True)
