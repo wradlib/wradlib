@@ -28,7 +28,7 @@ import os
 
 import numpy as np
 from scipy.ndimage import filters
-from osgeo import ogr
+from osgeo import gdal, ogr
 from scipy.signal import medfilt
 
 
@@ -690,10 +690,14 @@ def has_geos():
     pnt1 = ogr.CreateGeometryFromWkt('POINT(10 20)')
     pnt2 = ogr.CreateGeometryFromWkt('POINT(30 20)')
     ogrex = ogr.GetUseExceptions()
+    gdalex = gdal.GetUseExceptions()
+    gdal.DontUseExceptions()
     ogr.DontUseExceptions()
     hasgeos = pnt1.Union(pnt2) is not None
     if ogrex:
         ogr.UseExceptions()
+    if gdalex:
+        gdal.UseExceptions()
     return hasgeos
 
 
