@@ -76,7 +76,7 @@ fi
 
 # Install twine for pypi upload
 if [[ "$DEPLOY" == "true" ]]; then
-    conda install --yes twine
+    conda install --yes twine numpy
 fi
 
 # Install wradlib
