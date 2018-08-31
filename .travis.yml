@@ -10,8 +10,6 @@ addons:
 
 env:
   global:
-    # wradlib-docs
-    - secure: "CjaL6vDvKqTaKClp6pqAlS7nyCN5WenEH0OS+zGvb2P7FF0bl5VU3xVZJl60OG0c7/ft/wsYSpFT9VzXZTuLo7+FOpiIuECOujYyAcFDU+NWS1YtRLYXj7z/8DV6VIl2BjQc/sOczF0Jv556UdNLOQP6b5KTxhx4xCCTHHQ1s1Lg14RVnUT+HiJGC8C5y0Fsh1GPTQywZ0aLAPWU7CQeRtsqH3PuBznRvmmfwkFKJhXAxdIj1lv9jBgwwpDgzPgPT7dMiGOkN0k8B5alMBRLB0SmEtabn1SHCSTExocze6SduxlGt1iPRJTY+VO9PxCmqDDiO8rD+Qya/TxnAU8Zgzxeq77ckG3er0dS4M6fsF/vre7E93VYRqI+e5XJCVsUzhlIoSrgq0OEa6UeRAJzahVXTFGhb/t4dpYjiW3yMwDUzK+gLYdClutBy7zIEu68h/4dwQDy9POEaL/8Zfwa0J64vJscOqTFj/9E4EjjQKVG8qT0QoIezTue6RMTK3BcBVRHSsACzemGKyIOzVjIbdxi9gLGf3wxRTiuzRzZ3SjC1LVaxzw982c/1xfrnJVhgU9pL+xb0yPvGNW8clZhVVEceuYRU+9zL77abDgBIxoUAzHB2LjDMCr2f3w89RQYQxDvmDsmLPXGyMQuLtIP1rIwC5+mydj9hP29KsIkgwQ="
     - WRADLIB_BUILD_DIR=$TRAVIS_BUILD_DIR
 
 matrix:
@@ -46,6 +44,7 @@ script:
 
 after_success:
     - codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests
+    - scripts/trigger_readthedocs.sh
 
 deploy:
   # tagged
