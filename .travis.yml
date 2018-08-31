@@ -44,7 +44,7 @@ script:
 
 after_success:
     - codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests
-    - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then curl -X POST -d "token=$RTD_TOKEN" $RTD_URL; fi'
+    - scripts/trigger_readthedocs.sh
 
 deploy:
   # tagged
