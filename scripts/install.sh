@@ -30,6 +30,9 @@ if ! [ -x "$(command -v conda)" ]; then
         export PATH=$HOME/miniconda/bin:$PATH
         WRADLIB_ENV="travis_wradlib"
         WRADLIB_PYTHON=$PYTHON_VERSION
+
+        # special packages directory for caching in travis-ci
+        conda config --add pkgs_dirs $HOME/condacache/pkgs
     fi
 else
     # check if envname parameter is available
@@ -59,9 +62,6 @@ if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
     source deactivate
 fi
 conda update --yes conda
-
-# special packages directory for caching
-conda config --add pkgs_dirs ~/condacache/pkgs
 
 # Create environment with the correct Python version
 conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON
