@@ -3,11 +3,6 @@ sudo: false
 
 language: python
 
-addons:
-    apt:
-        packages:
-            - gfortran
-
 env:
   global:
     - WRADLIB_BUILD_DIR=$TRAVIS_BUILD_DIR
