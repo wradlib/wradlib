@@ -60,6 +60,9 @@ if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
 fi
 conda update --yes conda
 
+# special packages directory for caching
+conda config --add pkgs_dirs ~/condacache/pkgs
+
 # Create environment with the correct Python version
 conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON
 source activate $WRADLIB_ENV

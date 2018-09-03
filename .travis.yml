@@ -25,6 +25,10 @@ matrix:
         - PYTHON_VERSION="3.6"
         - DEPLOY="true"
 
+cache:
+  directories:
+    - $HOME/condacache/pkgs
+
 install:
     # test PEP8 compliance first to speed up
     - pip install flake8
