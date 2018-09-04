@@ -309,7 +309,7 @@ def get_radolan_header_token():
     head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
             'INT': None, 'GP': None, 'MS': None, 'LV': None,
             'CS': None, 'MX': None, 'BG': None, 'ST': None,
-            'VV': None, 'MF': None, 'QN': None}
+            'VV': None, 'MF': None, 'QN': None, 'VR': None}
     return head
 
 

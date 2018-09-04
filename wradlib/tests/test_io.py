@@ -234,7 +234,7 @@ class RadolanTest(unittest.TestCase):
                      'PR': (40, 45), 'INT': (48, 51), 'GP': (53, 62),
                      'MS': (85, 153), 'LV': None, 'CS': None, 'MX': None,
                      'BG': None, 'ST': None, 'VV': (64, 66), 'MF': (68, 77),
-                     'QN': (79, 83)}
+                     'QN': (79, 83), 'VR': None}
         head = radolan.get_radolan_header_token_pos(header)
         self.assertDictEqual(head, test_head)
 
