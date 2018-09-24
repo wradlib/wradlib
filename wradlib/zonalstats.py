@@ -62,7 +62,7 @@ import warnings
 
 from .io import open_vector, gdal_create_dataset, write_raster_dataset
 from .georef import (numpy_to_ogr, ogr_add_feature, ogr_copy_layer,
-                     ogr_create_layer, ogr_to_numpy, ogr_copy_layer_by_name)
+                     ogr_create_layer, ogr_to_numpy)
 
 ogr.UseExceptions()
 gdal.UseExceptions()
