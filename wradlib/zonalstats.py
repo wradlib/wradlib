@@ -93,21 +93,34 @@ class DataSource(object):
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#DataSource`.
     """
 
-    def __init__(self, data=None, srs=None, **kwargs):
+    def __init__(self, data=None, srs=None, name='layer', source=0, **kwargs):
         self._srs = srs
-        self._name = kwargs.get('name', 'layer')
+        self._name = name
         if data is not None:
-            self._ds = self._check_src(data)
+            try:
+                self._ds = self._check_src(data)
+            except TypeError:
+                self.load_vector(data, source=source)
+
+        else:
+            self._ds = None
 
     @property
     def ds(self):
         """ Returns DataSource
         """
+        self._check_ds()
         return self._ds
 
     @ds.setter
     def ds(self, value):
         self._ds = value
+
+    def _check_ds(self):
+        """ Raise ValueError if empty DataSource
+        """
+        if self._ds is None:
+            raise ValueError("Trying to access empty Datasource.")
 
     @property
     def data(self):
@@ -194,29 +207,17 @@ class DataSource(object):
         ogr_src = gdal_create_dataset('Memory', 'out',
                                       gdal_type=gdal.OF_VECTOR)
 
-        try:
-            # is it ESRI Shapefile?
-            ds_in, tmp_lyr = open_vector(src, driver='ESRI Shapefile')
-            ogr_src_lyr = ogr_src.CopyLayer(tmp_lyr, self._name)
-            if self._srs is None:
-                self._srs = ogr_src_lyr.GetSpatialRef()
-        except RuntimeError as err:
-            # no ESRI shape file
-            if 'not a string' not in err.args:
-                raise
-            else:
-                # all failed? then it should be sequence or numpy array
-                src = np.array(src)
-                # create memory datasource, layer and create features
-                if src.ndim == 2:
-                    geom_type = ogr.wkbPoint
-                # no Polygons, just Points
-                else:
-                    geom_type = ogr.wkbPolygon
-                fields = [('index', ogr.OFTInteger)]
-                ogr_create_layer(ogr_src, self._name, srs=self._srs,
-                                 geom_type=geom_type, fields=fields)
-                ogr_add_feature(ogr_src, src, name=self._name)
+        src = np.array(src)
+        # create memory datasource, layer and create features
+        if src.ndim == 2:
+            geom_type = ogr.wkbPoint
+        # no Polygons, just Points
+        else:
+            geom_type = ogr.wkbPolygon
+        fields = [('index', ogr.OFTInteger)]
+        ogr_create_layer(ogr_src, self._name, srs=self._srs,
+                         geom_type=geom_type, fields=fields)
+        ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
 
@@ -240,6 +241,36 @@ class DataSource(object):
 
         # flush everything
         del ds_out
+
+    def load_vector(self, filename, source=0, driver='ESRI Shapefile'):
+        """Read Layer from OGR Vector File
+
+        Parameters
+        ----------
+        filename : string
+            path to shape-filename
+        source : int or string
+            number or name of wanted layer, defaults to 0
+        driver : string
+            driver string
+        """
+
+        self.ds = gdal_create_dataset('Memory', self._name,
+                                      gdal_type=gdal.OF_VECTOR)
+
+        # get input file handles
+        ds_in, tmp_lyr = open_vector(filename, driver=driver, layer=source)
+
+        # copy layer
+        ogr_src_lyr = self.ds.CopyLayer(tmp_lyr, self._name)
+
+        # get spatial reference object
+        srs = ogr_src_lyr.GetSpatialRef()
+        if srs is not None:
+            self._srs = ogr_src_lyr.GetSpatialRef()
+
+        # flush everything
+        del ds_in
 
     def dump_raster(self, filename, driver='GTiff', attr=None,
                     pixel_size=1., remove=True):
@@ -304,7 +335,6 @@ class DataSource(object):
         values : :class:`numpy:numpy.ndarray`
             Values to fill in attributes
         """
-
         lyr = self.ds.GetLayerByIndex(0)
         lyr.ResetReading()
         # todo: automatically check for value type
@@ -385,9 +415,10 @@ class ZonalDataBase(object):
     Parameters
     ----------
     src : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
-        ESRI Shapefile filename containing source points/polygons
+        ESRI Shapefile filename containing source points/polygons or
+        DataSource object
     trg : sequence of target polygons (shape Nx2, num vertices x 2) or
-        ESRI Shapefile filename containing target polygons
+        ESRI Shapefile filename containing target polygons or DataSource object
 
     Keyword arguments
     -----------------
@@ -410,13 +441,24 @@ class ZonalDataBase(object):
     def __init__(self, src, trg=None, buf=0., srs=None, **kwargs):
         self._buffer = buf
         self._srs = srs
+
         if trg is None:
+            # try to read complete dump (src, trg, dst)
             self.load_vector(src)
         else:
-            self.src = DataSource(src, name='src', srs=srs, **kwargs)
-            self.trg = DataSource(trg, name='trg', srs=srs, **kwargs)
+            if isinstance(src, DataSource):
+                self.src = src
+            else:
+                self.src = DataSource(src, name='src', srs=srs, **kwargs)
+
+            if isinstance(trg, DataSource):
+                self.trg = trg
+            else:
+                self.trg = DataSource(trg, name='trg', srs=srs, **kwargs)
+
             self.dst = DataSource(name='dst')
             self.dst.ds = self._create_dst_datasource()
+
         self._count_intersections = self.dst.ds.GetLayer().GetFeatureCount()
 
     @property
@@ -560,33 +602,12 @@ class ZonalDataBase(object):
         filename : string
             path to vector file
         """
-        # get input file handles
-        ds_in, tmp = open_vector(filename)
-
-        # create all DataSources
-        self.src = DataSource(name='src')
-        self.src.ds = gdal_create_dataset('Memory', 'src',
-                                          gdal_type=gdal.OF_VECTOR)
-        self.trg = DataSource(name='trg')
-        self.trg.ds = gdal_create_dataset('Memory', 'trg',
-                                          gdal_type=gdal.OF_VECTOR)
-        self.dst = DataSource(name='dst')
-        self.dst.ds = gdal_create_dataset('Memory', 'dst',
-                                          gdal_type=gdal.OF_VECTOR)
-
-        # copy all layers
-        ogr_copy_layer_by_name(ds_in, "src", self.src.ds)
-        ogr_copy_layer_by_name(ds_in, "trg", self.trg.ds)
-        ogr_copy_layer_by_name(ds_in, "dst", self.dst.ds)
+        self.src = DataSource(filename, name='src', source='src')
+        self.trg = DataSource(filename, name='trg', source='trg')
+        self.dst = DataSource(filename, name='dst', source='dst')
 
         # get spatial reference object
         self._srs = self.src.ds.GetLayer().GetSpatialRef()
-        self.src._srs = self.src.ds.GetLayer().GetSpatialRef()
-        self.trg._srs = self.trg.ds.GetLayer().GetSpatialRef()
-        self.dst._srs = self.trg.ds.GetLayer().GetSpatialRef()
-
-        # flush everything
-        del ds_in
 
     def _get_idx_weights(self):
         """Retrieve index and weight from dst DataSource
