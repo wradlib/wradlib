@@ -103,7 +103,7 @@ class DataSourceTest(unittest.TestCase):
         proj.ImportFromEPSG(31466)
         filename = util.get_wradlib_data_file('shapefiles/agger/'
                                               'agger_merge.shp')
-        test = zonalstats.DataSource(filename, proj)
+        test = zonalstats.DataSource(filename, srs=proj)
         test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name,
                          driver='netCDF', pixel_size=100.)
         test.dump_raster(tempfile.NamedTemporaryFile(mode='w+b').name,
@@ -160,8 +160,21 @@ class ZonalDataBaseTest(unittest.TestCase):
         self.assertIsInstance(zdb.trg, zonalstats.DataSource)
         self.assertIsInstance(zdb.dst, zonalstats.DataSource)
         self.assertEqual(zdb._count_intersections, 2)
+        zd = zonalstats.DataSource(self.src, name='src', srs=self.proj)
+        zdb = zonalstats.ZonalDataBase(zd, self.trg, srs=self.proj)
+        self.assertIsInstance(zdb.src, zonalstats.DataSource)
+        self.assertIsInstance(zdb.trg, zonalstats.DataSource)
+        self.assertIsInstance(zdb.dst, zonalstats.DataSource)
+        self.assertEqual(zdb._count_intersections, 2)
+        zd1 = zonalstats.DataSource(self.src, name='src', srs=self.proj)
+        zd2 = zonalstats.DataSource(self.trg, name='trg', srs=self.proj)
+        zdb = zonalstats.ZonalDataBase(zd1, zd2, srs=self.proj)
+        self.assertIsInstance(zdb.src, zonalstats.DataSource)
+        self.assertIsInstance(zdb.trg, zonalstats.DataSource)
+        self.assertIsInstance(zdb.dst, zonalstats.DataSource)
+        self.assertEqual(zdb._count_intersections, 2)
 
-    def test_coun_intersections(self):
+    def test_count_intersections(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
         self.assertEqual(zdb.count_intersections, 2)
 

@@ -24,7 +24,7 @@ import os
 from osgeo import gdal, osr
 
 
-def open_vector(filename, driver=None):
+def open_vector(filename, driver=None, layer=0):
     """Open vector file, return gdal.Dataset and OGR.Layer
 
         .. warning:: dataset and layer have to live in the same context,
@@ -36,6 +36,7 @@ def open_vector(filename, driver=None):
         vector file name
     driver : string
         gdal driver string
+    layer : int or string
 
     Returns
     -------
@@ -49,7 +50,7 @@ def open_vector(filename, driver=None):
     if driver:
         gdal.GetDriverByName(driver)
 
-    layer = dataset.GetLayer()
+    layer = dataset.GetLayer(layer)
 
     return dataset, layer
 

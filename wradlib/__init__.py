@@ -21,7 +21,8 @@ if __WRADLIB_SETUP__:
 else:
     # Make sure that deprecation warnings get printed by default
     import warnings as _warnings
-    _warnings.simplefilter("always", DeprecationWarning)
+    _warnings.filterwarnings('always', category=DeprecationWarning,
+                             module='wradlib')
 
     # versioning
     from .version import git_revision as __git_revision__  # noqa
