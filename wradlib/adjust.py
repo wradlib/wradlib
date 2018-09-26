@@ -398,7 +398,7 @@ class AdjustAdd(AdjustBase):
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
-        if None in [ix, rawatobs]:
+        if (ix is None) or (rawatobs is None):
             # Check for valid observation-radar pairs in case this method has
             # not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
@@ -456,7 +456,7 @@ class AdjustMultiply(AdjustBase):
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
-        if None in [ix, rawatobs]:
+        if (ix is None) or (rawatobs is None):
             # Check for valid observation-radar pairs in case this method has
             # not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
@@ -540,7 +540,7 @@ class AdjustMixed(AdjustBase):
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
-        if None in [ix, rawatobs]:
+        if (ix is None) or (rawatobs is None):
             # Check for valid observation-radar pairs in case this method has
             # not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
@@ -590,7 +590,7 @@ class AdjustMFB(AdjustBase):
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
-        if None in [ix, rawatobs]:
+        if (ix is None) or (rawatobs is None):
             # Check for valid observation-radar pairs in case this method has
             # not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
@@ -666,7 +666,7 @@ class AdjustNone(AdjustBase):
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
-        if None in [ix, rawatobs]:
+        if (ix is None) or (rawatobs is None):
             # Check for valid observation-radar pairs in case this method has
             # not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
@@ -715,7 +715,7 @@ class GageOnly(AdjustBase):
 
         """
         # ----------------GENERIC PART FOR MOST __call__ methods---------------
-        if None in [ix, rawatobs]:
+        if (ix is None) or (rawatobs is None):
             # Check for valid observation-radar pairs in case this method has
             # not been called from self.xvalidate
             rawatobs, ix = self._get_valid_pairs(obs, raw)
