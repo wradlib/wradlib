@@ -351,7 +351,7 @@ class Idw(IpolBase):
 
         # shape handling (time, ensemble etc)
         wshape = weights.shape
-        weights.shape = wshape + ((vals.ndim - 1) *(1,))
+        weights.shape = wshape + ((vals.ndim - 1) * (1,))
 
         # expand vals to trg grid
         trgvals = vals[self.ix]
@@ -1045,9 +1045,9 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     #         result[ix_broken_targets, i] = tmp.ravel()
     # else:
     #     if np.any(np.isnan(vals.ravel())):
-    #         raise NotImplementedError('WRADLIB: At the moment, <interpolate> '
-    #                                   'can only deal with NaN values in <vals>'
-    #                                   ' if <vals> has less than 3 dimension.')
+    #         raise NotImplementedError('WRADLIB: At the moment, <interpolate> '  # noqa
+    #                                   'can only deal with NaN values in <vals>'  # noqa
+    #                                   ' if <vals> has less than 3 dimension.')  # noqa
     #     else:
     #         # if no NaN value are in <vals> we can safely apply the
     #         # ipclass as is

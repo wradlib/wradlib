@@ -277,7 +277,7 @@ class WrapperFunctionTest(unittest.TestCase):
 
         vals = np.dstack((np.sin(src), 10. + np.sin(src)))
         vals[3:5, :, 1] = np.nan
-        #self.assertRaises(NotImplementedError,
+        # self.assertRaises(NotImplementedError,
         #                  lambda: ipol.interpolate(src, trg, vals, ipol.Idw,
         #                                           nnearest=2))
 
