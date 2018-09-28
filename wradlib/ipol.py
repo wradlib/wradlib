@@ -73,7 +73,7 @@ class IpolBase:
 
     """
 
-    def __init__(self, src, trg):
+    def __init__(self, src, trg, **kwargs):
         src = self._make_coord_arrays(src)
         trg = self._make_coord_arrays(trg)
         self.numsources = len(src)
@@ -168,10 +168,14 @@ class Nearest(IpolBase):
 
     Parameters
     ----------
-    src : ndarray of floats, shape (npoints, ndims)
+    src : ndarray of floats, shape (npoints, ndims) or cKDTree object
         Data point coordinates of the source points.
     trg : ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : keyword arguments of ipclass (see class documentation)
 
     Examples
     --------
@@ -184,18 +188,27 @@ class Nearest(IpolBase):
 
     """
 
-    def __init__(self, src, trg):
-        src = self._make_coord_arrays(src)
+    def __init__(self, src, trg, **kwargs):
+
+        if isinstance(src, cKDTree):
+            self.tree = src
+        else:
+            src = self._make_coord_arrays(src)
+            if len(src) == 0:
+                raise MissingSourcesError
+            # plant a tree, use unbalanced tree as default
+            self.tree = cKDTree(self._make_coord_arrays(src),
+                                kwargs.pop('balanced_tree', False),
+                                **kwargs)
+
+        self.numsources = self.tree.n
+
         trg = self._make_coord_arrays(trg)
-        # remember some things
         self.numtargets = len(trg)
         if self.numtargets == 0:
             raise MissingTargetsError
-        self.numsources = len(src)
-        if self.numsources == 0:
-            raise MissingSourcesError
-        # plant a tree
-        self.tree = cKDTree(src)
+
+        # query tree
         self.dists, self.ix = self.tree.query(trg, k=1)
 
     def __call__(self, vals, maxdist=None):
@@ -246,6 +259,10 @@ class Idw(IpolBase):
     nnearest : integer - max. number of neighbours to be considered
     p : float - inverse distance power used in 1/dist**p
 
+    Keyword Arguments
+    -----------------
+    **kwargs : keyword arguments of ipclass (see class documentation)
+
     Examples
     --------
     See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
@@ -255,17 +272,26 @@ class Idw(IpolBase):
     Uses :class:`scipy:scipy.spatial.cKDTree`
 
     """
+    def __init__(self, src, trg, nnearest=4, p=2., **kwargs):
 
-    def __init__(self, src, trg, nnearest=4, p=2.):
-        src = self._make_coord_arrays(src)
+        if isinstance(src, cKDTree):
+            self.tree = src
+        else:
+            src = self._make_coord_arrays(src)
+            if len(src) == 0:
+                raise MissingSourcesError
+            # plant a tree, use unbalanced tree as default
+            self.tree = cKDTree(self._make_coord_arrays(src),
+                                kwargs.pop('balanced_tree', False),
+                                **kwargs)
+
+        self.numsources = self.tree.n
+
         trg = self._make_coord_arrays(trg)
-        # remember some things
         self.numtargets = len(trg)
         if self.numtargets == 0:
             raise MissingTargetsError
-        self.numsources = len(src)
-        if self.numsources == 0:
-            raise MissingSourcesError
+
         if nnearest > self.numsources:
             warnings.warn(
                 "wradlib.ipol.Idw: <nnearest> is larger than number of "
@@ -277,15 +303,15 @@ class Idw(IpolBase):
         else:
             self.nnearest = nnearest
         self.p = p
-        # plant a tree
-        self.tree = cKDTree(src)
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest)
+        # query tree
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest,
+                                              n_jobs=-1)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
             self.ix = self.ix[:, np.newaxis]
 
-    def __call__(self, vals):
+    def __call__(self, vals, maxdist=None):
         """
         Evaluate interpolator for values given at the source points.
 
@@ -301,51 +327,45 @@ class Idw(IpolBase):
         ----------
         vals : ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
-        maxdist : the maximum distance up to which an interpolated values is
-            assigned - if maxdist is exceeded, np.nan will be assigned
-            If maxdist==None, values will be assigned everywhere
+
+        maxdist : float
+            the maximum distance up to which points will be included into the
+            interpolation calculation
 
         Returns
         -------
         output : ndarray of float with shape (numtargetpoints,...)
 
         """
-
-        # self distances: a list of arrays of distances of the nearest points
-        # which are indicated by self.ix
         self._check_shape(vals)
-        outshape = list(vals.shape)
-        outshape[0] = len(self.dists)
-        interpol = (np.repeat(np.nan, util._shape_to_size(outshape)).
-                    reshape(tuple(outshape)).astype('f4'))
-        # weights is the container for the weights (a list)
-        weights = list(range(len(self.dists)))
-        # sources is the container for the source point indices
-        src_ix = list(range(len(self.dists)))
-        # jinterpol is the jth element of interpol
-        jinterpol = 0
-        for dist, ix in zip(self.dists, self.ix):
-            valid_dists = np.where(np.isfinite(dist))[0]
-            dist = dist[valid_dists]
-            ix = ix[valid_dists]
-            if self.nnearest == 1:
-                # defaults to nearest neighbour
-                wz = vals[ix]
-                w = 1.
-            elif dist[0] < 1e-10:
-                # if a target point coincides with a source point
-                wz = vals[ix[0]]
-                w = 1.
-            else:
-                # weight z values by (1/dist)**p --
-                w = 1. / dist ** self.p
-                w /= np.sum(w)
-                wz = np.dot(w, vals[ix])
-            interpol[jinterpol] = wz.ravel()
-            weights[jinterpol] = w
-            src_ix[jinterpol] = ix
-            jinterpol += 1
-        return interpol  # if self.qdim > 1  else interpol[0]
+
+        weights = 1.0 / self.dists ** self.p
+
+        # if maxdist isn't given, take the maximum distance
+        if maxdist is not None:
+            outside = self.dists > maxdist
+            weights[outside] = 0
+
+        # take care of point coincidence
+        weights[np.isposinf(weights)] = 1e12
+
+        # shape handling (time, ensemble etc)
+        wshape = weights.shape
+        weights.shape = wshape + ((vals.ndim - 1) *(1,))
+
+        # expand vals to trg grid
+        trgvals = vals[self.ix]
+
+        # nan handling
+        isnan = np.isnan(trgvals)
+        weights = np.broadcast_to(weights, isnan.shape)
+        masked_weights = np.ma.array(weights, mask=isnan)
+
+        # interpolation
+        interpol = (np.nansum(weights * trgvals, axis=1) /
+                    np.sum(masked_weights, axis=1))
+
+        return interpol
 
 
 class Linear(IpolBase):
@@ -985,39 +1005,55 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     >>> line2 = plt.plot(src, vals, 'ro')
 
     """
-    if vals.ndim == 1:
-        # source values are one dimensional, we have just
-        # to remove invalid data
-        ix_valid = np.where(np.isfinite(vals))[0]
-        ip = ipclass(src[ix_valid], trg, *args, **kwargs)
-        result = ip(vals[ix_valid])
-    elif vals.ndim == 2:
-        # this implementation for 2 dimensions needs generalization
-        ip = ipclass(src, trg, *args, **kwargs)
-        result = ip(vals)
-        nan_in_result = np.where(np.isnan(result))
-        # nan_in_vals = np.where(np.isnan(vals))
-        for i in np.unique(nan_in_result[-1]):
-            ix_good = np.where(np.isfinite(vals[..., i]))[0]
-            ix_broken_targets = (nan_in_result[0]
-                                 [np.where(nan_in_result[-1] == i)[0]])
-            ip = ipclass(src[ix_good],
-                         trg[nan_in_result[0]
-                         [np.where(nan_in_result[-1] == i)[0]]],
-                         *args, **kwargs)
-            tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
-            result[ix_broken_targets, i] = tmp.ravel()
+    maxdist = kwargs.pop('maxdist', None)
+    ip = ipclass(src, trg, *args, **kwargs)
+    # if vals.ndim == 1:
+    #     # source values are one dimensional, we have just
+    #     # to remove invalid data
+    #     ix_valid = np.where(np.isfinite(vals))[0]
+    #     ip = ipclass(src[ix_valid], trg, *args, **kwargs)
+    # elif vals.ndim == 2:
+    #     ip = ipclass(src, trg, *args, **kwargs)
+
+    if isinstance(ip, Idw):
+        return ip(vals, maxdist=maxdist)
     else:
-        if np.any(np.isnan(vals.ravel())):
-            raise NotImplementedError('WRADLIB: At the moment, <interpolate> '
-                                      'can only deal with NaN values in <vals>'
-                                      ' if <vals> has less than 3 dimension.')
-        else:
-            # if no NaN value are in <vals> we can safely apply the
-            # ipclass as is
-            ip = ipclass(src, trg, *args, **kwargs)
-            result = ip(vals)
-    return result
+        return ip(vals)
+    #     # this implementation for 2 dimensions needs generalization
+    #     ix_valid = np.where(np.isfinite(vals))[0]
+    #     print(ix_valid)
+    #     ip = ipclass(src, trg, *args, **kwargs)
+    #     result = ip(vals)
+    #     print("VR:", vals.shape, result.shape)
+    #     nan_in_result = np.where(np.isnan(result))
+    #     # nan_in_vals = np.where(np.isnan(vals))
+    #     print(nan_in_result)
+    #     #return result
+    #     for i in np.unique(nan_in_result[-1]):
+    #         print(i)
+    #         ix_good = np.where(np.isfinite(vals[..., i]))[0]
+    #         print(ix_good)
+    #         ix_broken_targets = (nan_in_result[0]
+    #                              [np.where(nan_in_result[-1] == i)[0]])
+    #         print(ix_broken_targets)
+    #         ip = ipclass(src[ix_good],
+    #                      trg[nan_in_result[0]
+    #                      [np.where(nan_in_result[-1] == i)[0]]],
+    #                      *args, **kwargs)
+    #         tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
+    #         print(tmp)
+    #         result[ix_broken_targets, i] = tmp.ravel()
+    # else:
+    #     if np.any(np.isnan(vals.ravel())):
+    #         raise NotImplementedError('WRADLIB: At the moment, <interpolate> '
+    #                                   'can only deal with NaN values in <vals>'
+    #                                   ' if <vals> has less than 3 dimension.')
+    #     else:
+    #         # if no NaN value are in <vals> we can safely apply the
+    #         # ipclass as is
+    #         ip = ipclass(src, trg, *args, **kwargs)
+    #         result = ip(vals)
+    # return result
 
 
 def interpolate_polar(data, mask=None, ipclass=Nearest):
