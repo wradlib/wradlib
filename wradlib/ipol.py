@@ -197,8 +197,8 @@ class Nearest(IpolBase):
             if len(src) == 0:
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
+            kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
             self.tree = cKDTree(self._make_coord_arrays(src),
-                                kwargs.pop('balanced_tree', False),
                                 **kwargs)
 
         self.numsources = self.tree.n
@@ -281,8 +281,8 @@ class Idw(IpolBase):
             if len(src) == 0:
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
+            kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
             self.tree = cKDTree(self._make_coord_arrays(src),
-                                kwargs.pop('balanced_tree', False),
                                 **kwargs)
 
         self.numsources = self.tree.n
