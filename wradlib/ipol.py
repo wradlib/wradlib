@@ -197,8 +197,7 @@ class Nearest(IpolBase):
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = cKDTree(self._make_coord_arrays(src),
-                                **kwargs)
+            self.tree = cKDTree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -307,8 +306,7 @@ class Idw(IpolBase):
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = cKDTree(self._make_coord_arrays(src),
-                                **kwargs)
+            self.tree = cKDTree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -837,7 +835,8 @@ class ExternalDriftKriging(IpolBase):
     """
 
     def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12,
-                 src_drift=None, trg_drift=None, **kwargs):
+                 src_drift=None, trg_drift=None, remove_missing=False,
+                 **kwargs):
         """"""
         if isinstance(src, cKDTree):
             self.tree = src
@@ -851,6 +850,7 @@ class ExternalDriftKriging(IpolBase):
             self.tree = cKDTree(self.src, **kwargs)
 
         self.numsources = self.tree.n
+        self.remove_missing=remove_missing
         self.trg = self._make_coord_arrays(trg)
         self.src_drift = src_drift
         self.trg_drift = trg_drift
@@ -993,7 +993,16 @@ class ExternalDriftKriging(IpolBase):
             self.weights = wght
             self.estimation_variance = variances
             weights = np.array(self.weights)
-            ip = np.add.reduce(weights[:, :-2, np.newaxis] * v[self.ix, ...],
+
+            trgvals = v[self.ix]
+            if self.remove_missing:
+                isnan = np.isnan(trgvals)
+                weights = np.broadcast_to(weights[:, :-2][..., np.newaxis],
+                                          isnan.shape)
+                masked_weights = np.ma.array(weights, mask=isnan)
+                ip = np.nansum(masked_weights * trgvals, axis=1)
+            else:
+                ip = np.nansum(weights[:, :-2][..., np.newaxis] * trgvals,
                                axis=1)
         # otherwise we need to setup and solve the kriging system for each
         # field individually
@@ -1006,8 +1015,16 @@ class ExternalDriftKriging(IpolBase):
                                               trg_d[:, i].squeeze())
 
                 weights = np.array(wght)
-                ip[:, i] = np.add.reduce(weights[:, :-2] * v[self.ix, i],
-                                         axis=1)
+
+                trgvals = v[self.ix, i]
+                if self.remove_missing:
+                    isnan = np.isnan(trgvals)
+                    weights = np.broadcast_to(weights[:, :-2], isnan.shape)
+                    masked_weights = np.ma.array(weights, mask=isnan)
+                    ip[:, i] = np.nansum(masked_weights * trgvals, axis=1)
+                else:
+                    ip[:, i] = np.nansum(weights[:, :-2] * trgvals, axis=1)
+
                 self.weights.append(weights)
                 self.estimation_variance.append(variances)
 
@@ -1083,59 +1100,39 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     >>> line2 = plt.plot(src, vals, 'ro')
 
     """
-    maxdist = kwargs.pop('maxdist', None)
-
-    if ipclass == Idw:
+    if vals.ndim == 1:
+        # source values are one dimensional, we have just
+        # to remove invalid data
+        ix_valid = np.where(np.isfinite(vals))[0]
+        ip = ipclass(src[ix_valid], trg, *args, **kwargs)
+        result = ip(vals[ix_valid])
+    elif vals.ndim == 2:
+        # this implementation for 2 dimensions needs generalization
         ip = ipclass(src, trg, *args, **kwargs)
+        result = ip(vals)
+        nan_in_result = np.where(np.isnan(result))
+        # nan_in_vals = np.where(np.isnan(vals))
+        for i in np.unique(nan_in_result[-1]):
+            ix_good = np.where(np.isfinite(vals[..., i]))[0]
+            ix_broken_targets = (nan_in_result[0]
+            [np.where(nan_in_result[-1] == i)[0]])
+            ip = ipclass(src[ix_good],
+                         trg[nan_in_result[0]
+                         [np.where(nan_in_result[-1] == i)[0]]],
+                         *args, **kwargs)
+            tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
+            result[ix_broken_targets, i] = tmp.ravel()
     else:
-        ip = ipclass(src, trg, *args, **kwargs)
-    # if vals.ndim == 1:
-    #     # source values are one dimensional, we have just
-    #     # to remove invalid data
-    #     ix_valid = np.where(np.isfinite(vals))[0]
-    #     ip = ipclass(src[ix_valid], trg, *args, **kwargs)
-    # elif vals.ndim == 2:
-    #     ip = ipclass(src, trg, *args, **kwargs)
-
-    if isinstance(ip, Idw) or isinstance(ip, Nearest):
-        return ip(vals, maxdist=maxdist)
-    else:
-        return ip(vals)
-    #     # this implementation for 2 dimensions needs generalization
-    #     ix_valid = np.where(np.isfinite(vals))[0]
-    #     print(ix_valid)
-    #     ip = ipclass(src, trg, *args, **kwargs)
-    #     result = ip(vals)
-    #     print("VR:", vals.shape, result.shape)
-    #     nan_in_result = np.where(np.isnan(result))
-    #     # nan_in_vals = np.where(np.isnan(vals))
-    #     print(nan_in_result)
-    #     #return result
-    #     for i in np.unique(nan_in_result[-1]):
-    #         print(i)
-    #         ix_good = np.where(np.isfinite(vals[..., i]))[0]
-    #         print(ix_good)
-    #         ix_broken_targets = (nan_in_result[0]
-    #                              [np.where(nan_in_result[-1] == i)[0]])
-    #         print(ix_broken_targets)
-    #         ip = ipclass(src[ix_good],
-    #                      trg[nan_in_result[0]
-    #                      [np.where(nan_in_result[-1] == i)[0]]],
-    #                      *args, **kwargs)
-    #         tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
-    #         print(tmp)
-    #         result[ix_broken_targets, i] = tmp.ravel()
-    # else:
-    #     if np.any(np.isnan(vals.ravel())):
-    #         raise NotImplementedError('WRADLIB: At the moment, <interpolate> '  # noqa
-    #                                   'can only deal with NaN values in <vals>'  # noqa
-    #                                   ' if <vals> has less than 3 dimension.')  # noqa
-    #     else:
-    #         # if no NaN value are in <vals> we can safely apply the
-    #         # ipclass as is
-    #         ip = ipclass(src, trg, *args, **kwargs)
-    #         result = ip(vals)
-    # return result
+        if np.any(np.isnan(vals.ravel())):
+            raise NotImplementedError('WRADLIB: At the moment, <interpolate> '
+                                      'can only deal with NaN values in <vals>'
+                                      ' if <vals> has less than 3 dimension.')
+        else:
+            # if no NaN value are in <vals> we can safely apply the
+            # ipclass as is
+            ip = ipclass(src, trg, *args, **kwargs)
+            result = ip(vals)
+    return result
 
 
 def interpolate_polar(data, mask=None, ipclass=Nearest):

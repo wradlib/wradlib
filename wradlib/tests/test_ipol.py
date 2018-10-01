@@ -272,7 +272,7 @@ class WrapperFunctionTest(unittest.TestCase):
         ipol_result = ipol.interpolate(src, trg, vals[:, 1], ipol.Idw,
                                        remove_missing=True, nnearest=2)
         np.testing.assert_allclose(ipol_result[3:5],
-                                   np.array([10.880571, 10.909297]))
+                                   np.array([10.880571, 10.909136]))
 
         vals = np.dstack((np.sin(src), 10. + np.sin(src)))
         vals[3:5, :, 1] = np.nan
