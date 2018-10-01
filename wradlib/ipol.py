@@ -850,7 +850,7 @@ class ExternalDriftKriging(IpolBase):
             self.tree = cKDTree(self.src, **kwargs)
 
         self.numsources = self.tree.n
-        self.remove_missing=remove_missing
+        self.remove_missing = remove_missing
         self.trg = self._make_coord_arrays(trg)
         self.src_drift = src_drift
         self.trg_drift = trg_drift
@@ -1114,8 +1114,8 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
         # nan_in_vals = np.where(np.isnan(vals))
         for i in np.unique(nan_in_result[-1]):
             ix_good = np.where(np.isfinite(vals[..., i]))[0]
-            ix_broken_targets = (nan_in_result[0]
-            [np.where(nan_in_result[-1] == i)[0]])
+            tmp = np.where(nan_in_result[-1] == i)[0]
+            ix_broken_targets = (nan_in_result[0][tmp])
             ip = ipclass(src[ix_good],
                          trg[nan_in_result[0]
                          [np.where(nan_in_result[-1] == i)[0]]],
