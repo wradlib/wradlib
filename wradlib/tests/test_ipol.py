@@ -126,14 +126,9 @@ class InterpolationTest(unittest.TestCase):
 
     def test_Linear_1(self):
         """testing the basic behaviour of the Linear class"""
-        print(self.src_lin.shape, self.trg_lin.shape, self.vals_lin.shape)
         ip = ipol.Linear(self.src_lin, self.trg_lin)
         # input more than one dataset
         res = ip(self.vals_lin)
-        print(res.shape, np.array([[1., 2., 3.],
-                                       [2., 2., 2.],
-                                       [1.5, 2., 2.5],
-                                       [3., 2., 1.]]).shape)
         self.assertTrue(
             np.allclose(res, np.array([[1., 2., 3.],
                                        [2., 2., 2.],
@@ -268,7 +263,6 @@ class WrapperFunctionTest(unittest.TestCase):
         trg = np.linspace(0, 20, 40)[:, None]
         vals = np.hstack((np.sin(src), 10. + np.sin(src)))
         vals[3:5, 1] = np.nan
-        print(np.any(np.isnan(vals.ravel())))
         ipol_result = ipol.interpolate(src, trg, vals, ipol.Idw,
                                        remove_missing=True, nnearest=2)
 
