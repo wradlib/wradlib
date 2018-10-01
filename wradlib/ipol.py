@@ -459,10 +459,10 @@ class Linear(IpolBase):
         isnan = np.isnan(vals)
         if self.remove_missing & np.count_nonzero(isnan):
             ip = LinearNDInterpolator(self.src[~isnan, ...],
-                                      vals[~isnan, None],
+                                      vals[~isnan],
                                       fill_value=fill_value)
         else:
-            ip = LinearNDInterpolator(self.src, vals[..., None],
+            ip = LinearNDInterpolator(self.src, vals,
                                       fill_value=fill_value)
         return ip(self.trg)
 
@@ -666,12 +666,12 @@ class OrdinaryKriging(IpolBase):
             self.src = self.tree.data
         else:
             self.src = self._make_coord_arrays(src)
+            if len(src) == 0:
+                raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
             self.tree = cKDTree(self.src, **kwargs)
 
-        if len(self.src) == 0:
-            raise MissingSourcesError
         self.numsources = self.tree.n
 
         self.remove_missing = remove_missing
@@ -844,11 +844,11 @@ class ExternalDriftKriging(IpolBase):
             self.src = self.tree.data
         else:
             self.src = self._make_coord_arrays(src)
+            if len(src) == 0:
+                raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
             self.tree = cKDTree(self.src, **kwargs)
-        if len(self.src) == 0:
-            raise MissingSourcesError
 
         self.numsources = self.tree.n
         self.trg = self._make_coord_arrays(trg)
