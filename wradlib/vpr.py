@@ -237,7 +237,6 @@ class CAPPI(CartesianVolume):
     --------
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
-
     def _get_mask(self, gridcoords, polcoords, gridshape,
                   maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume
