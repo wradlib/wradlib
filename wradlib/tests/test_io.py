@@ -204,7 +204,7 @@ class RadolanTest(unittest.TestCase):
     def test_get_radolan_header_token(self):
         keylist = ['BY', 'VS', 'SW', 'PR', 'INT', 'GP',
                    'MS', 'LV', 'CS', 'MX', 'BG', 'ST',
-                   'VV', 'MF', 'QN']
+                   'VV', 'MF', 'QN', 'VR', 'U']
         head = radolan.get_radolan_header_token()
         for key in keylist:
             self.assertIsNone(head[key])
@@ -234,7 +234,7 @@ class RadolanTest(unittest.TestCase):
                      'PR': (40, 45), 'INT': (48, 51), 'GP': (53, 62),
                      'MS': (85, 153), 'LV': None, 'CS': None, 'MX': None,
                      'BG': None, 'ST': None, 'VV': (64, 66), 'MF': (68, 77),
-                     'QN': (79, 83), 'VR': None}
+                     'QN': (79, 83), 'VR': None, 'U': None}
         head = radolan.get_radolan_header_token_pos(header)
         self.assertDictEqual(head, test_head)
 
@@ -435,10 +435,27 @@ class RadolanTest(unittest.TestCase):
                                  'hnr 6', 'isn 6', 'mem 6', 'neu 6', 'nhb 6',
                                  'oft 6', 'pro 6', 'ros 6', 'tur 6', 'umd 6']}
 
+        yw_header = ('YW070235100001014BY1980156VS 3SW   2.18.3PR E-02'
+                     'INT   5U0GP1100x 900MF 00000000VR2017.002'
+                     'MS 61<boo,ros,emd,hnr,umd,pro,ess,asd,neu,'
+                     'nhb,oft,tur,isn,fbg,mem>')
+
+        test_yw = {'producttype': 'YW',
+                   'datetime': datetime.datetime(2014, 10, 7, 2, 35),
+                   'radarid': '10000', 'datasize': 1980000,
+                   'maxrange': '150 km', 'radolanversion': '2.18.3',
+                   'precision': 0.01, 'intervalseconds': 300,
+                   'intervalunit': 0, 'nrow': 1100, 'ncol': 900,
+                   'moduleflag': 0, 'reanalysisversion': '2017.002',
+                   'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'umd', 'pro',
+                                      'ess', 'asd', 'neu', 'nhb', 'oft', 'tur',
+                                      'isn', 'fbg', 'mem']}
+
         rx = radolan.parse_dwd_composite_header(rx_header)
         pg = radolan.parse_dwd_composite_header(pg_header)
         rq = radolan.parse_dwd_composite_header(rq_header)
         sq = radolan.parse_dwd_composite_header(sq_header)
+        yw = radolan.parse_dwd_composite_header(yw_header)
 
         for key, value in rx.items():
             self.assertEqual(value, test_rx[key])
@@ -457,6 +474,11 @@ class RadolanTest(unittest.TestCase):
                 self.assertTrue(np.allclose(value, test_sq[key]))
             else:
                 self.assertEqual(value, test_sq[key])
+        for key, value in yw.items():
+            if type(value) == np.ndarray:
+                self.assertTrue(np.allclose(value, test_yw[key]))
+            else:
+                self.assertEqual(value, test_yw[key])
 
     def test_read_radolan_composite(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'

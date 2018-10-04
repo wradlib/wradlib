@@ -309,7 +309,8 @@ def get_radolan_header_token():
     head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
             'INT': None, 'GP': None, 'MS': None, 'LV': None,
             'CS': None, 'MX': None, 'BG': None, 'ST': None,
-            'VV': None, 'MF': None, 'QN': None, 'VR': None}
+            'VV': None, 'MF': None, 'QN': None, 'VR': None,
+            'U': None}
     return head
 
 
@@ -396,6 +397,10 @@ def parse_dwd_composite_header(header):
                 out["precision"] = float('1' + header[v[0]:v[1]].strip())
             if k == 'INT':
                 out["intervalseconds"] = int(header[v[0]:v[1]]) * 60
+            if k == 'U':
+                out["intervalunit"] = int(header[v[0]:v[1]])
+                if out["intervalunit"] == 1:
+                    out["intervalseconds"] *= 1440
             if k == 'GP':
                 dimstrings = header[v[0]:v[1]].strip().split("x")
                 out["nrow"] = int(dimstrings[0])
@@ -430,6 +435,8 @@ def parse_dwd_composite_header(header):
                 out['moduleflag'] = int(header[v[0]:v[1]])
             if k == 'QN':
                 out['quantification'] = int(header[v[0]:v[1]])
+            if k == 'VR':
+                out['reanalysisversion'] = header[v[0]:v[1]].strip()
     return out
 
 
