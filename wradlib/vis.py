@@ -800,27 +800,24 @@ def create_cg(st, fig=None, subplot=111):
 
     # get twin axis for cartesian grid
     caax = cgax.twin()
-    # move axis annotation from right to left and top to bottom
+    # move axis annotation from right to left and top to bottom for
+    # cartesian axis
     caax.toggle_axisline()
 
-    # make ticklabels of right and top axis visible,
-    cgax.axis["right"].major_ticklabels.set_visible(True)
-    cgax.axis["top"].major_ticklabels.set_visible(True)
-    cgax.axis["right"].get_helper().nth_coord_ticks = 0
+    # make right and top axis visible and show ticklabels (curvelinear axis)
+    cgax.axis["top", "right"].set_visible(True)
+    cgax.axis["top", "right"].major_ticklabels.set_visible(True)
+
+    # make ticklabels of left and bottom axis invisible (curvelinear axis)
+    cgax.axis["left", "bottom"].major_ticklabels.set_visible(False)
+
+    # and also set tickmarklength to zero for better presentation
+    # (curvelinear axis)
+    cgax.axis["top", "right", "left", "bottom"].major_ticks.set_ticksize(0)
+
+    # show theta (angles) on top and right axis
     cgax.axis["top"].get_helper().nth_coord_ticks = 0
-
-    # and also set tickmarklength to zero for better presentation
-    cgax.axis["right"].major_ticks.set_ticksize(0)
-    cgax.axis["top"].major_ticks.set_ticksize(0)
-
-    # make ticklabels of left and bottom axis invisible,
-    # because we are drawing them
-    cgax.axis["left"].major_ticklabels.set_visible(False)
-    cgax.axis["bottom"].major_ticklabels.set_visible(False)
-
-    # and also set tickmarklength to zero for better presentation
-    cgax.axis["left"].major_ticks.set_ticksize(0)
-    cgax.axis["bottom"].major_ticks.set_ticksize(0)
+    cgax.axis["right"].get_helper().nth_coord_ticks = 0
 
     # generate and add parasite axes with given transform
     paax = ParasiteAxesAuxTrans(cgax, tr, "equal")
