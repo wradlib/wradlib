@@ -25,6 +25,8 @@ matrix:
         - PYTHON_VERSION="3.6"
         - DEPLOY="true"
     - python: 3.7
+      sudo: required
+      dist: xenial
       env:
         - PYTHON_VERSION="3.7"
 
