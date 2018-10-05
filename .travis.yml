@@ -24,6 +24,9 @@ matrix:
       env:
         - PYTHON_VERSION="3.6"
         - DEPLOY="true"
+    - python: 3.7
+      env:
+        - PYTHON_VERSION="3.7"
 
 install:
     # test PEP8 compliance first to speed up
