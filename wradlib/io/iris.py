@@ -116,7 +116,7 @@ class IrisFile(object):
                 If kwdict, retrieves according to given kwdict::
 
                     loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                                'data': [0, 3, 9]}
+                                'sweep': [1, 3, 9]}
         rawdata : bool
             If true, returns raw unconverted/undecoded data.
         debug : bool
@@ -782,7 +782,7 @@ class IrisRawFile(IrisWrapperFile):
 
         loaddata = self.loaddata
         try:
-            sweep = loaddata.copy().pop('data', rsweeps)
+            sweep = loaddata.copy().pop('sweep', rsweeps)
             moment = loaddata.copy().pop('moment', dt_names)
         except AttributeError:
             sweep = rsweeps
@@ -1039,7 +1039,7 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False):
                 If kwdict, retrieves according to given kwdict::
 
                     loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                                'sweep': [0, 3, 9]}
+                                'sweep': [1, 3, 9]}
 
     rawdata : bool
         If true, returns raw unconverted/undecoded data.

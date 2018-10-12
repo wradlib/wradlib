@@ -784,7 +784,7 @@ class IrisTest(unittest.TestCase):
 
         data_types = ['DB_DBZ', 'DB_VEL']
         selected_data = [1, 3, 8]
-        loaddata = {'moment': data_types, 'data': selected_data}
+        loaddata = {'moment': data_types, 'sweep': selected_data}
         data = wrl.io.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
         self.assertEqual(list(data['data'][1]['sweep_data'].keys()),
                          data_types)
