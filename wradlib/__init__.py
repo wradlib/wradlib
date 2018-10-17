@@ -31,6 +31,7 @@ else:
     # import subpackages
     from . import adjust  # noqa
     from . import atten  # noqa
+    from . import classify  # noqa
     from . import clutter  # noqa
     from . import comp  # noqa
     from . import dp  # noqa

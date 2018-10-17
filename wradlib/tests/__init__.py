@@ -9,6 +9,7 @@ wradlib_tests
 
 from . import test_adjust  # noqa
 from . import test_atten  # noqa
+from . import test_classify  # noqa
 from . import test_clutter  # noqa
 from . import test_comp  # noqa
 from . import test_dp  # noqa
