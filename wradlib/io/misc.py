@@ -12,6 +12,7 @@ Miscellaneous Data I/O
    write_polygon_to_text
    to_pickle
    from_pickle
+   get_radiosonde
 """
 
 # standard libraries
@@ -21,6 +22,12 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+import numpy as np
+import urllib
+import warnings
+import datetime as dt
+from io import StringIO
 
 
 def _write_polygon_to_txt(f, idx, vertices):
@@ -100,3 +107,98 @@ def from_pickle(fpath):
     obj = pickle.load(pkl_file)
     pkl_file.close()
     return obj
+
+
+def get_radiosonde(wmoid, date, cols=None):
+    """Download radiosonde data from internet.
+
+    Based on http://weather.uwyo.edu/upperair/sounding.html.
+
+    Parameters
+    ----------
+    wmoid : int
+        WMO radiosonde ID
+    date : datetime object
+        Date and Time
+
+    Keyword Arguments
+    -----------------
+    cols : tuple
+        tuple of int or strings describing the columns to consider,
+        defaults to None (all columns)
+
+    Returns
+    -------
+    data : :class:`numpy:numpy.ndarray`
+        Structured array of radiosonde data
+    meta : dict
+        radiosonde metadata
+    """
+    year = date.strftime("%Y")
+    month = date.strftime("%m")
+    day = date.strftime("%d")
+    hour = date.strftime("%H")
+
+    # Radiosondes are only at noon and midnight
+    hour = "12" if (6 < int(hour) < 18) else "00"
+
+    # url
+    url_str = ("http://weather.uwyo.edu/cgi-bin/sounding?"
+               "TYPE=TEXT%3ALIST&"
+               "YEAR={0}&MONTH={1}&"
+               "FROM={2}{3}&TO={2}{3}&STNM={4}&"
+               "ICE=1".format(year, month, day, hour, wmoid))
+
+    # html request
+    with urllib.request.urlopen(url_str) as url_request:
+        response = url_request.read()
+
+    # decode string
+    url_text = response.decode("utf-8")
+
+    # first line (eg errormessage)
+    if url_text.find("<H2>") == -1:
+        err = url_text.split('\n', 1)[1].split('\n', 1)[0]
+        raise ValueError(err)
+
+    # extract relevant information
+    url_data = url_text.split("<PRE>")[1].split("</PRE>")[0]
+    url_meta = url_text.split("<PRE>")[2].split("</PRE>")[0]
+
+    # extract empty lines, names, units and data
+    _, _, names, units, _, url_data = url_data.split('\n', 5)
+
+    names = names.split()
+    units = units.split()
+
+    unitdict = {name: unit for (name, unit) in zip(names, units)}
+
+    # read data
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=UserWarning)
+        data = np.genfromtxt(StringIO(url_data),
+                             names=names,
+                             dtype=float,
+                             usecols=cols,
+                             autostrip=True,
+                             invalid_raise=False)
+
+    # read metadata
+    meta = {}
+    for i, row in enumerate(StringIO(url_meta)):
+        if i == 0:
+            continue
+        k, v = row.split(':')
+        k = k.strip()
+        v = v.strip()
+        if i == 2:
+            v = int(v)
+        elif i == 3:
+            v = dt.datetime.strptime(v, '%y%m%d/%H%M')
+        elif i > 3:
+            v = float(v)
+        meta[k] = v
+
+    meta['quantity'] = {item: unitdict[item] for item in data.dtype.names}
+
+    return data, meta

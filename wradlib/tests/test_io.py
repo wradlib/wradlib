@@ -69,7 +69,7 @@ class DXTest(unittest.TestCase):
         data, attrs = radolan.read_dx(dxfile)
 
 
-class IOTest(unittest.TestCase):
+class MiscTest(unittest.TestCase):
     def test_write_polygon_to_text(self):
         poly1 = [[0., 0., 0., 0.], [0., 1., 0., 1.], [1., 1., 0., 2.],
                  [0., 0., 0., 0.]]
@@ -88,14 +88,68 @@ class IOTest(unittest.TestCase):
         wrl.io.write_polygon_to_text(tmp.name, polygons)
         self.assertEqual(open(tmp.name, 'r').readlines(), res)
 
-
-class PickleTest(unittest.TestCase):
     def test_pickle(self):
         arr = np.zeros((124, 248), dtype=np.int16)
         tmp = tempfile.NamedTemporaryFile()
         wrl.io.to_pickle(tmp.name, arr)
         res = wrl.io.from_pickle(tmp.name)
         self.assertTrue(np.allclose(arr, res))
+
+    @unittest.skipIf(sys.version_info < (3, 0),
+                     "not supported in this python version")
+    def test_get_radiosonde(self):
+        date = datetime.datetime(2013, 7, 1, 15, 30)
+        res1 = np.array([(1000., 153., 17.4, 13.5, 13.5, 78., 78., 9.81, 200.,
+                          6., 290.6, 318.5, 292.3)],
+                        dtype=[('PRES', '<f8'), ('HGHT', '<f8'),
+                               ('TEMP', '<f8'), ('DWPT', '<f8'),
+                               ('FRPT', '<f8'), ('RELH', '<f8'),
+                               ('RELI', '<f8'), ('MIXR', '<f8'),
+                               ('DRCT', '<f8'), ('SKNT', '<f8'),
+                               ('THTA', '<f8'), ('THTE', '<f8'),
+                               ('THTV', '<f8')])
+
+        res2 = {'Station identifier': 'EDZE',
+                'Station number': 10410,
+                'Observation time': datetime.datetime(2013, 7, 1, 12, 0),
+                'Station latitude': 51.4,
+                'Station longitude': 6.96,
+                'Station elevation': 153.0,
+                'Showalter index': 6.1,
+                'Lifted index': 0.58,
+                'LIFT computed using virtual temperature': 0.52,
+                'SWEAT index': 77.7,
+                'K index': 11.7,
+                'Cross totals index': 13.7,
+                'Vertical totals index': 28.7,
+                'Totals totals index': 42.4,
+                'Convective Available Potential Energy': 6.9,
+                'CAPE using virtual temperature': 17.78,
+                'Convective Inhibition': 0.0,
+                'CINS using virtual temperature': 0.0,
+                'Equilibrum Level': 597.86,
+                'Equilibrum Level using virtual temperature': 589.7,
+                'Level of Free Convection': 931.41,
+                'LFCT using virtual temperature': 934.07,
+                'Bulk Richardson Number': 0.24,
+                'Bulk Richardson Number using CAPV': 0.62,
+                'Temp [K] of the Lifted Condensation Level': 284.16,
+                'Pres [hPa] of the Lifted Condensation Level': 934.07,
+                'Mean mixed layer potential temperature': 289.76,
+                'Mean mixed layer mixing ratio': 8.92,
+                '1000 hPa to 500 hPa thickness': 5537.0,
+                'Precipitable water [mm] for entire sounding': 19.02}
+
+        res3 = {'PRES': 'hPa', 'HGHT': 'm', 'TEMP': 'C', 'DWPT': 'C',
+                'FRPT': 'C', 'RELH': '%', 'RELI': '%', 'MIXR': 'g/kg',
+                'DRCT': 'deg', 'SKNT': 'knot', 'THTA': 'K', 'THTE': 'K',
+                'THTV': 'K'}
+
+        data, meta = wrl.io.get_radiosonde(10410, date)
+        self.assertEqual(data[0], res1[0])
+        quant = meta.pop('quantity')
+        self.assertEqual(meta, res2)
+        self.assertEqual(quant, res3)
 
 
 class HDF5Test(unittest.TestCase):
