@@ -32,20 +32,20 @@ def msf_index_indep(msf, idp, obs):
 
     Parameters
     ----------
-    msf : np.ndarray
+    msf : :class:`numpy:numpy.ndarray`
         Array of size (hmc-classes, observables, indep-ranges, 4) containing
         the values of the trapezoidal msf values for every hmc-class and
         observable within the independent observable range.
-    idp : np.array
+    idp : :class:`numpy:numpy.ndarray`
         Array of length of the independent observable containing the ranges
         of the independent observable.
-    obs : np.ndarray
+    obs : :class:`numpy:numpy.ndarray`
         Array of arbitrary shape containing the data of the independent
         observable (eg. (rays, bins) or (scan, rays, bins)).
 
     Returns
     -------
-    out : np.ndarray
+    out : :class:`numpy:numpy.ndarray`
         Array of shape (hmc-classes, observables, obs.shape, 4) containing the
         membership function values for every radar-bin for every hmc-class and
         observable.
@@ -68,17 +68,17 @@ def trapezoid(msf, obs):
 
     Parameters
     ----------
-    msf : np.ndarray
+    msf : :class:`numpy:numpy.ndarray`
         Array which is of size (obs.shape, 4), containing the trapezoidal
         membership function values for every `obs` point for one particular
         hydrometeor class.
-    obs : np.ndarray
+    obs : :class:`numpy:numpy.ndarray`
         Array of arbitrary size and dimensions containing
         the data from which the membership shall be calculated.
 
     Returns
     -------
-    out : np.ndarray
+    out : :class:`numpy:numpy.ndarray`
         Array which is of (obs.shape) containing calculated membership
         probabilities.
     """
@@ -103,17 +103,17 @@ def fuzzyfi(msf, obs):
 
     Parameters
     ----------
-    msf : np.ndarray
+    msf : :class:`numpy:numpy.ndarray`
         Array which is of size (hmc-class, obs.shape, 4), containing the
         trapezoidal membership function values for every `obs` point for
         every hydrometeor class.
-    obs : np.ndarray
+    obs : :class:`numpy:numpy.ndarray`
         Array of arbitrary size and dimensions containing
         the data from which the memberships shall be calculated.
 
     Returns
     -------
-    out : np.ndarray
+    out : :class:`numpy:numpy.ndarray`
         Array which is of (hmc-class, obs.shape) containing calculated
         membership probabilities.
     """
@@ -130,16 +130,16 @@ def probability(data, weights):
 
     Parameters
     ----------
-    data : np.ndarray
+    data : :class:`numpy:numpy.ndarray`
         Array which is of size (hmc-class, obs, data.shape), containing the
         membership probability values.
-    weights : np.array
+    weights : :class:`numpy:numpy.ndarray`
         Array of length (observables) containing the weights for
         each observable.
 
     Returns
     -------
-    out : np.ndarray
+    out : :class:`numpy:numpy.ndarray`
         Array which is of (hmc-class, data.shape) containing weighted
         hmc-membership probabilities.
     """
