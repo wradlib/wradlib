@@ -151,6 +151,18 @@ class MiscTest(unittest.TestCase):
         self.assertEqual(meta, res2)
         self.assertEqual(quant, res3)
 
+    def test_get_membership_functions(self):
+        filename = wrl.util.get_wradlib_data_file('misc/msf_xband.gz')
+        msf = wrl.io.get_membership_functions(filename)
+        res = np.array(
+            [[6.000e+00, 5.000e+00, 1.000e+01, 3.500e+01, 4.000e+01],
+             [6.000e+00, -7.458e-01, -4.457e-01, 5.523e-01, 8.523e-01],
+             [6.000e+00, 7.489e-01, 7.689e-01, 9.236e-01, 9.436e-01],
+             [6.000e+00, -5.037e-01, -1.491e-01, -1.876e-01, 1.673e-01],
+             [6.000e+00, -5.000e+00, 0.000e+00, 4.000e+01, 2.000e+03]])
+        self.assertEqual(msf.shape, (11, 5, 55, 5))
+        np.testing.assert_array_equal(msf[0, :, 8, :], res)
+
 
 class HDF5Test(unittest.TestCase):
     def test_to_hdf5(self):
