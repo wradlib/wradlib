@@ -13,6 +13,7 @@ Miscellaneous Data I/O
    to_pickle
    from_pickle
    get_radiosonde
+   get_membership_functions
 """
 
 # standard libraries
@@ -28,6 +29,8 @@ import urllib
 import warnings
 import datetime as dt
 from io import StringIO
+
+from .. import util as util
 
 
 def _write_polygon_to_txt(f, idx, vertices):
@@ -202,3 +205,35 @@ def get_radiosonde(wmoid, date, cols=None):
     meta['quantity'] = {item: unitdict[item] for item in data.dtype.names}
 
     return data, meta
+
+
+def get_membership_functions(filename):
+    """Reads membership function parameters from wradlib-data file.
+
+    Parameters
+    ----------
+    filename : filename
+        Filename of wradlib-data file
+
+    Returns
+    -------
+    msf : :class:`numpy:numpy.ndarray`
+        Array of membership funcions with shape (hm-classes, observables,
+        indep-ranges, 5)
+    """
+    gzip = util.import_optional('gzip')
+
+    with gzip.open(filename, 'rb') as f:
+        nclass = int(f.readline().decode().split(':')[1].strip())
+        nobs = int(f.readline().decode().split(':')[1].strip())
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=UserWarning)
+            data = np.genfromtxt(f, skip_header=10, autostrip=True,
+                                 invalid_raise=False)
+
+    data = np.reshape(data, (nobs, int(data.shape[0] / nobs), data.shape[1]))
+    msf = np.reshape(data, (data.shape[0], nclass, int(data.shape[1] / nclass),
+                            data.shape[2]))
+    msf = np.swapaxes(msf, 0, 1)
+
+    return msf
