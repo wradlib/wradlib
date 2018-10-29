@@ -499,7 +499,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     return coords
 
 
-def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
+def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res,
+                 minalt=0.):
     """Generate Cartesian coordinates for a regular 3-D grid based on \
     radar specs.
 
@@ -520,6 +521,11 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     vert_res : float
         vertical resolution of the 3-d grid (meters)
 
+    Keyword Arguments
+    -----------------
+    minalt : float
+        minimum altitude to which the 3-d grid should extent (meters)
+
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`, tuple
@@ -533,7 +539,7 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res):
     lly = center[1] - maxrange
     x = np.arange(llx, llx + 2 * maxrange + horiz_res, horiz_res)
     y = np.arange(lly, lly + 2 * maxrange + horiz_res, horiz_res)
-    z = np.arange(0., maxalt + vert_res, vert_res)
+    z = np.arange(minalt, maxalt + vert_res, vert_res)
     xyz = util.gridaspoints(z, y, x)
     shape = (len(z), len(y), len(x))
     return xyz, shape
