@@ -14,12 +14,6 @@ env:
 
 matrix:
     include:
-    - python: 2.7
-      env:
-        - PYTHON_VERSION="2.7"
-    - python: 3.5
-      env:
-        - PYTHON_VERSION="3.5"
     - python: 3.6
       env:
         - PYTHON_VERSION="3.6"
