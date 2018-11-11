@@ -14,6 +14,7 @@ for an introduction on how to deal with different file formats.
 
 .. automodule:: wradlib.io.radolan
 .. automodule:: wradlib.io.hdf
+.. automodule:: wradlib.io.odim
 .. automodule:: wradlib.io.netcdf
 .. automodule:: wradlib.io.rainbow
 .. automodule:: wradlib.io.gdal
@@ -35,5 +36,6 @@ from .radolan import (read_dx, read_radolan_composite,
                       read_radolan_binary_array,
                       decode_radolan_runlength_array)
 from .iris import (IrisFile, read_iris)
+from .odim import (OdimPvol, OdimImage)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

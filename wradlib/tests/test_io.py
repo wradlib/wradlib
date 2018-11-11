@@ -5,6 +5,7 @@ import unittest
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
+from wradlib.io import odim
 from subprocess import check_call
 import numpy as np
 import zlib
@@ -978,6 +979,70 @@ class NetcdfTest(unittest.TestCase):
         filename = 'netcdf/example_cfradial_ppi.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
         wrl.io.read_generic_netcdf(ncfile)
+
+
+class TestOdim(unittest.TestCase):
+
+    def sample_base(self):
+        source = 'NOD:bewid'
+        nominal = datetime.datetime.strptime('20130101030000', '%Y%m%d%H%M%S')
+        return source, nominal
+
+    def sample_coding(self, ndata):
+        gain = [20] * ndata
+        offset = [50] * ndata
+        nodata = [-1] * ndata
+        return gain, offset, nodata
+
+    def sample_volume(self):
+        attrs = {}
+        attrs['source'], attrs['nominal'] = self.sample_base()
+        attrs['quantity'] = ['DBZH', 'VRADH', 'WRADH']
+        attrs['product'] = ['SCAN'] * 5
+        attrs['values'] = np.random.random((5, 3, 360, 500)) * 5000
+        attrs['values'][0, :, 0, 0] = np.nan
+        start = [attrs['nominal'] + datetime.timedelta(secs) for secs in
+                 range(0, 100, 20)]
+        attrs['timestamp'] = [(s, s + datetime.timedelta(20)) for s in start]
+        attrs['gain'], attrs['offset'], attrs['nodata'] = self.sample_coding(
+            ndata=3)
+        attrs['elangle'] = list(range(1, 6))
+        attrs['rscale'] = list(range(1, 6))
+        return attrs
+
+    def sample_image(self):
+        attrs = {}
+        attrs['source'], attrs['nominal'] = self.sample_base()
+        attrs['quantity'] = ['ACRR']
+        attrs['product'] = ['SURF', 'MAX']
+        attrs['values'] = np.random.randint(0, 255, (2, 500, 500))
+        attrs['timestamp'] = [(attrs['nominal'], attrs['nominal'])] * 2
+        attrs['geotransform'] = [-250000, 1000, 0, 250000, 0, -1000]
+        proj4str = ('+proj=aeqd +lat_0=51.1 +lon_0=5.2 +x_0=0 +y_0=0 '
+                    '+datum=WGS84 +units=m +no_defs')
+        projection = wrl.georef.proj4_to_osr(proj4str)
+        attrs['projection'] = projection
+        return attrs
+
+    def test_read_write_odim_pvol(self):
+        tmp = tempfile.NamedTemporaryFile()
+        filename = tmp.name
+        attrs = self.sample_volume()
+        pvol = odim.OdimPvol(**attrs)
+        pvol.write(filename)
+        copy = odim.OdimPvol()
+        copy.read(filename)
+        assert pvol == copy
+
+    def test_read_write_odim_image(self):
+        tmp = tempfile.NamedTemporaryFile()
+        filename = tmp.name
+        attrs = self.sample_image()
+        image = odim.OdimImage(**attrs)
+        image.write(filename)
+        copy = odim.OdimImage()
+        copy.read(filename)
+        assert image == copy
 
 
 if __name__ == '__main__':
