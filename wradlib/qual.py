@@ -110,19 +110,38 @@ def beam_block_frac(th, bh, a):
 
     The heights must be the same units!
     """
+    isfloat = (isinstance(th, float)
+               and isinstance(bh, float)
+               and isinstance(a, float))
+
+    # convert to numpy array in any case
+    th = np.atleast_1d(th)
+    bh = np.atleast_1d(bh)
+    a = np.atleast_1d(a)
 
     # First find the difference between the terrain and height of
     # radar beam (Bech et al. (2003), Fig.3)
     y = th - bh
 
-    numer = (y * np.sqrt(a ** 2 - y ** 2)) + \
-            (a ** 2 * np.arcsin(y / a)) + (np.pi * a ** 2 / 2.)
+    # check if beam is clear or blocked
+    ya = y / a
+    clear = ya < -1.
+    block = ya > 1.
 
-    denom = np.pi * a ** 2
+    numer = (ya * np.sqrt(a ** 2 - y ** 2)) + \
+            (a * np.arcsin(ya)) + (np.pi * a / 2.)
+
+    denom = np.pi * a
 
     pbb = numer / denom
 
-    return pbb
+    pbb[clear] = 0.
+    pbb[block] = 1.
+
+    if isfloat:
+        return pbb[0]
+    else:
+        return pbb
 
 
 def cum_beam_block_frac(pbb):
