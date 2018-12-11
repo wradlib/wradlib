@@ -54,7 +54,7 @@ CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 1
 MINOR = 2
-PATCH = 0
+PATCH = 1
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 
 
