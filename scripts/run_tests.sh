@@ -7,7 +7,7 @@ set -e
 if [[ "$TRAVIS" == "true" ]]; then
     # export location of .coveragerc
     export COVERAGE_PROCESS_START=$WRADLIB_BUILD_DIR/.coveragerc
-    nosetests -v --with-timer --with-doctest --with-coverage --cover-erase  --cover-xml --cover-package=wradlib
+    pytest --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib wradlib
 else
-    nosetests -v --with-doctest
+    pytest --verbose --doctest-modules --durations=15 wradlib
 fi
