@@ -30,6 +30,9 @@ if ! [ -x "$(command -v conda)" ]; then
         export PATH=$HOME/miniconda/bin:$PATH
         WRADLIB_ENV="travis_wradlib"
         WRADLIB_PYTHON=$PYTHON_VERSION
+
+        # special packages directory for caching in travis-ci
+        conda config --add pkgs_dirs $HOME/condacache/pkgs
     fi
 else
     # check if envname parameter is available
