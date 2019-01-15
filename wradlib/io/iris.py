@@ -67,10 +67,23 @@ def to_float(data):
     -------
     decoded : :class:`numpy:numpy.ndarray`
         decoded floating point data
+
+    Update
+    -------
+    DB_FLIQUID2 decodes changes depends on IRIS manuals, 4.4.12 - Page 75
+    ftp://ftp.sigmet.com/outgoing/manuals/IRIS_Programmers_Manual.pdf
     """
+
+    mantissa  = np.array(data,dtype='uint32')
     exp = data >> 12
-    mantissa = (data & 0xfff).astype(np.float)
-    return mantissa * 2 ** exp
+    ind_non0 = exp > 0
+    mantissa[ind_non0] = np.array(data[ind_non0] & 0xfff + 4096,dtype='uint32')
+    mantissa[ind_non0] = mantissa[ind_non0] << (exp[ind_non0]-1)
+    return mantissa
+
+#    exp = data >> 12
+#    mantissa = (data & 0xfff).astype(np.float)
+#    return mantissa * 2 ** exp
 
 
 # TODO: mask nodata and area not scanned
