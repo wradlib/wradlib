@@ -16,6 +16,7 @@ matrix:
     - python: 3.7
       sudo: required
       dist: xenial
+      services: xvfb
       env:
         - PYTHON_VERSION="3.7"
 
@@ -31,14 +32,12 @@ install:
     # install build environment
     - source scripts/install.sh
 
-before_script:
-    # start virtual framebuffer Xserver for headless testing
-    - export DISPLAY=:99
-    - sh -e /etc/init.d/xvfb start
-    - sleep 3
-
 script:
-    - scripts/run_tests.sh
+    - if [ "${PYTHON}" == "3.6" ]; then
+        xvfb-run scripts/run_tests.sh;
+      else
+        scripts/run_tests.sh;
+      fi;
 
 after_success:
     - codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests

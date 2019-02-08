@@ -58,10 +58,14 @@ echo "conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 
 # Add conda-forge channel
 conda config --add channels conda-forge
+# Remove defaults channel
+conda config --remove channels defaults
+
 if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
     source deactivate
 fi
 conda update --yes conda
+
 
 # Create environment with the correct Python version
 conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON
@@ -79,11 +83,12 @@ fi
 
 # Install twine for pypi upload
 if [[ "$DEPLOY" == "true" ]]; then
-    conda install --yes twine numpy
+    conda install --yes twine
 fi
 
 # Install wradlib
-python setup.py install
+python setup.py sdist
+python -m pip install . --no-deps --ignore-installed --no-cache-dir
 
 # print some stuff
 python --version

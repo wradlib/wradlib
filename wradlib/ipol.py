@@ -1308,7 +1308,7 @@ Preprocessing-the-digitial-elevation-model`.
     xi = (nx - 1) * (xi - cxmin) / (cxmax - cxmin)
 
     # check origin to calculate y index
-    if util.get_raster_origin(cartgrid) is 'lower':
+    if util.get_raster_origin(cartgrid) == 'lower':
         yi = (ny - 1) * (yi - cymin) / (cymax - cymin)
     else:
         yi = ny - (ny - 1) * (yi - cymin) / (cymax - cymin)
