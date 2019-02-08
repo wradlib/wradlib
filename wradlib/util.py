@@ -674,7 +674,7 @@ def find_bbox_indices(coords, bbox):
     # check at boundaries
     if llx:
         llx -= 1
-    if get_raster_origin(coords) is 'lower':
+    if get_raster_origin(coords) == 'lower':
         if lly:
             lly -= 1
     else:

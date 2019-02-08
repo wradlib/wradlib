@@ -244,7 +244,7 @@ def plot_ppi(data, r=None, az=None, autoext=True,
                                 " `mpl_toolkits.axisartist.SubplotHost`")
     else:
         if fig is None:
-            if ax is 111:
+            if ax == 111:
                 # create new figure if there is only one subplot
                 fig = pl.figure()
             else:
@@ -615,7 +615,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     else:
         if fig is None:
             # create new figure if there is only one subplot
-            if ax is 111:
+            if ax == 111:
                 fig = pl.figure()
             else:
                 fig = pl.gcf()
@@ -783,7 +783,7 @@ def create_cg(st, fig=None, subplot=111):
     # if there is no figure object given
     if fig is None:
         # create new figure if there is only one subplot
-        if subplot is 111:
+        if subplot == 111:
             fig = pl.figure()
         # otherwise get current figure or create new figure
         else:
