@@ -33,7 +33,11 @@ install:
     - source scripts/install.sh
 
 script:
-    - xvfb-run scripts/run_tests.sh
+    - if [ "${PYTHON}" == "3.6" ]; then
+        xvfb-run scripts/run_tests.sh;
+      else
+        scripts/run_tests.sh;
+      fi;
 
 after_success:
     - codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests
