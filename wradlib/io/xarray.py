@@ -510,8 +510,9 @@ class XRadVol(collections.MutableMapping):
         return self._source.__repr__()
 
     def __del__(self):
-        for h in self._ds_handles[::-1]:
-            h.close()
+        for h in self._ds_handles[::-1][:-1]:
+            del h
+        self._ds_handles[0].close()
 
     def to_cfradial2(self, filename):
         """ Save volume to Cf/Radial2.0 compliant file.
@@ -690,6 +691,7 @@ class CfRadial(XRadVol):
             sweep_group_name.append('sweep_{}'.format(i + 1))
         self['root'] = root1.assign(
             {'sweep_group_name': (['sweep'], sweep_group_name)})
+        self._ds_handles.append(self['root'])
         setattr(self, 'root', self['root'])
 
         keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
@@ -704,6 +706,7 @@ class CfRadial(XRadVol):
             tslice = slice(start_idx[i], end_idx[i])
             self[sw] = data.isel(time=tslice,
                                  sweep=slice(i, i + 1)).squeeze('sweep')
+            self._ds_handles.append(self[sw])
             setattr(self, sw, self[sw])
 
 
