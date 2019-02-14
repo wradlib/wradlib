@@ -72,7 +72,7 @@ conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON
 source activate $WRADLIB_ENV
 
 # Install wradlib dependencies
-conda install --yes gdal numpy scipy matplotlib netcdf4 h5py deprecation xmltodict coverage codecov pytest pytest-cov
+conda install --yes gdal numpy scipy matplotlib netcdf4 h5py xarray deprecation xmltodict coverage codecov pytest pytest-cov
 conda list
 
 # Install wradlib-data if not set

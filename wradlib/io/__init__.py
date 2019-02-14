@@ -19,6 +19,8 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.gdal
 .. automodule:: wradlib.io.iris
 .. automodule:: wradlib.io.misc
+.. automodule:: wradlib.io.xarray
+
 """
 
 from .misc import (write_polygon_to_text, to_pickle, from_pickle,
@@ -35,5 +37,6 @@ from .radolan import (read_dx, read_radolan_composite,
                       read_radolan_binary_array,
                       decode_radolan_runlength_array)
 from .iris import (IrisFile, read_iris)
+from .xarray import (CfRadial, OdimH5)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

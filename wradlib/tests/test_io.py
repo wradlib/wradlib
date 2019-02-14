@@ -980,5 +980,24 @@ class NetcdfTest(unittest.TestCase):
         wrl.io.read_generic_netcdf(ncfile)
 
 
+class XarrayTests(unittest.TestCase):
+    def test_read_cfradial(self):
+        fixed_angles = np.array([0.4999, 1.0986, 1.8018, 2.5983, 3.598,
+                                 4.7021,  6.4984, 9.1022, 12.7991])
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        cf = wrl.io.CfRadial(ncfile)
+        np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
+                                             fixed_angles)
+
+    def test_read_odim(self):
+        fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.])
+        filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        cf = wrl.io.OdimH5(ncfile)
+        np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
+                                             fixed_angles)
+
+
 if __name__ == '__main__':
     unittest.main()
