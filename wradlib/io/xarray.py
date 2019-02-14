@@ -197,7 +197,7 @@ class GamicAccessor(object):
             # we can use a cache on our accessor objects, because accessors
             # themselves are cached on instances that access them.
             ngates = self._obj.attrs['bin_count']
-            range_start = self._obj.attrs['range_start']
+            # range_start = self._obj.attrs['range_start']
             range_samples = self._obj.attrs['range_samples']
             range_step = self._obj.attrs['range_step']
             bin_range = range_step * range_samples
@@ -302,12 +302,13 @@ class OdimAccessor(object):
             ngates = self._obj.attrs['nbins']
             range_start = self._obj.attrs['rstart'] * 1000.
             bin_range = self._obj.attrs['rscale']
-            range_data = np.arange(range_start + bin_range / 2.,
+            cent_first = range_start + bin_range / 2.
+            range_data = np.arange(cent_first,
                                    range_start + bin_range * ngates,
                                    bin_range,
                                    dtype='float32')
             range_attrs[
-                'meters_to_center_of_first_gate'] = range_start + bin_range / 2.
+                'meters_to_center_of_first_gate'] = cent_first
             range_attrs[
                 'meters_between_gates'] = bin_range
 
@@ -510,10 +511,7 @@ class XRadVol(collections.MutableMapping):
 
     def __del__(self):
         for h in self._ds_handles[::-1]:
-            try:
-                h.close()
-            except:
-                pass
+            h.close()
 
     def to_cfradial2(self, filename):
         """ Save volume to Cf/Radial2.0 compliant file.
@@ -615,7 +613,7 @@ class XRadVol(collections.MutableMapping):
             h5_ds_how = h5_dataset.create_group('how')
             try:
                 ds_how = self['odim']['dsets'][ds_list[idx]]['how'].attrs
-            except:
+            except KeyError:
                 ds_how = {'scan_index': ds.sweep_number + 1,
                           'scan_count': len(sweepnames),
                           }
@@ -722,7 +720,7 @@ class OdimH5(XRadVol):
         self._disk_format = self._ncf.disk_format
         self._file_format = self._ncf.file_format
         self._data_model = self._ncf.data_model
-        if self._disk_format is not 'HDF5':
+        if self._disk_format != 'HDF5':
             raise TypeError(
                 'wradlib: File {} is neither "NETCDF4" (using HDF5 groups) '
                 'nor plain "HDF5".'.format(filename))
