@@ -47,6 +47,11 @@ moments_mapping = {
            'short_name': 'ZV',
            'units': 'unitless',
            'gamic': None},
+    'DBZ': {'standard_name': 'radar_equivalent_reflectivity_factor',
+            'long_name': 'Equivalent reflectivity factor',
+            'short_name': 'DBZ',
+            'units': 'dBZ',
+            'gamic': None},
     'DBTH': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
              'long_name': 'Total power H (uncorrected reflectivity)',
              'short_name': 'DBTH',
@@ -83,6 +88,13 @@ moments_mapping = {
         'units': 'meters per second',
         'gamic': 'vv',
     },
+    'VR': {
+        'standard_name': 'radial_velocity_of_scatterers_away_'
+                         'from_instrument',
+        'long_name': 'Radial velocity of scatterers away from instrument',
+        'short_name': 'VR',
+        'units': 'meters per seconds',
+        'gamic': None},
     'WRADH': {'standard_name': 'radar_doppler_spectrum_width_h',
               'long_name': 'Doppler spectrum width H',
               'short_name': 'WRADH',
@@ -243,8 +255,10 @@ class GamicAccessor(object):
         if self._time_range is None:
             # we can use a cache on our accessor objects, because accessors
             # themselves are cached on instances that access them.
-            da = self._obj['timestamp'] / 1e6
-            da.assign_attrs(time_attrs)
+            times = self._obj['timestamp'] / 1e6
+            attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
+                     'standard_name': 'time'}
+            da = xr.DataArray(times, dims=['time'], attrs=attrs)
             self._time_range = da
         return self._time_range
 
@@ -444,19 +458,24 @@ def write_odim_moments(src, dest):
 
         # p. 21 ff
         h5_what = h5_data.create_group('what')
+        try:
+            undetect = float(value._Undetect)
+        except AttributeError:
+            undetect = np.finfo(np.float).max
         what = {'quantity': value.name,
                 'gain': float(enc['scale_factor']),
                 'offset': float(enc['add_offset']),
                 'nodata': float(enc['_FillValue']),
-                'undetect': float(value._Undetect),
+                'undetect': undetect,
                 }
         write_odim(what, h5_what)
 
         # moments
         val = value.values
-        maxval = value.encoding['_FillValue'] * value.gain + value.offset
-        val[np.isnan(val)] = maxval
-        val = (val - value.offset) / value.gain
+        fillval = enc['_FillValue'] * enc['scale_factor']
+        fillval += enc['add_offset']
+        val[np.isnan(val)] = fillval
+        val = (val - enc['add_offset']) / enc['scale_factor']
         val = np.rint(val).astype(enc['dtype'])
         ds = h5_data.create_dataset('data', data=val, compression='gzip',
                                     compression_opts=6,
@@ -510,9 +529,9 @@ class XRadVol(collections.MutableMapping):
         return self._source.__repr__()
 
     def __del__(self):
-        for h in self._ds_handles[::-1][:-1]:
-            del h
-        self._ds_handles[0].close()
+        for k in list(self._source):
+            del self._source[k]
+        self._ncf.close()
 
     def to_cfradial2(self, filename):
         """ Save volume to Cf/Radial2.0 compliant file.
@@ -599,7 +618,7 @@ class XRadVol(collections.MutableMapping):
             # where group, p. 11 ff. mandatory
             h5_ds_where = h5_dataset.create_group('where')
             rscale = ds.range.values[1] / 1. - ds.range.values[0]
-            rstart = rscale / 2. - ds.range.values[0]
+            rstart = (ds.range.values[0] - rscale / 2.) / 1000.
             ds_where = {'elangle': ds.fixed_angle,
                         'nbins': ds.range.shape[0],
                         'rstart': rstart,
@@ -633,9 +652,7 @@ class CfRadial(XRadVol):
     def __init__(self, filename=None, flavour=None, **kwargs):
         super(CfRadial, self).__init__()
         self._filename = filename
-        self._ds_handles = []
         self._ncf = nc.Dataset(filename, diskless=True, persist=False)
-        self._ds_handles.append(self._ncf)
         self._disk_format = self._ncf.disk_format
         self._file_format = self._ncf.file_format
         self._data_model = self._ncf.data_model
@@ -668,12 +685,10 @@ class CfRadial(XRadVol):
 
         """
         self['root'] = open_ds(self._ncf)
-        self._ds_handles.append(self['root'])
         setattr(self, 'root', self['root'])
         sweepnames = self.root.sweep_group_name.values
         for sw in sweepnames:
             self[sw] = open_ds(self._ncf, sw)
-            self._ds_handles.append(self[sw])
             setattr(self, sw, self[sw])
 
     def assign_data_radial(self):
@@ -691,7 +706,6 @@ class CfRadial(XRadVol):
             sweep_group_name.append('sweep_{}'.format(i + 1))
         self['root'] = root1.assign(
             {'sweep_group_name': (['sweep'], sweep_group_name)})
-        self._ds_handles.append(self['root'])
         setattr(self, 'root', self['root'])
 
         keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
@@ -706,7 +720,6 @@ class CfRadial(XRadVol):
             tslice = slice(start_idx[i], end_idx[i])
             self[sw] = data.isel(time=tslice,
                                  sweep=slice(i, i + 1)).squeeze('sweep')
-            self._ds_handles.append(self[sw])
             setattr(self, sw, self[sw])
 
 
@@ -717,9 +730,7 @@ class OdimH5(XRadVol):
     def __init__(self, filename=None, flavour=None, strict=True, **kwargs):
         super(OdimH5, self).__init__()
         self._filename = filename
-        self._ds_handles = []
         self._ncf = nc.Dataset(filename, diskless=True, persist=False)
-        self._ds_handles.append(self._ncf)
         self._disk_format = self._ncf.disk_format
         self._file_format = self._ncf.file_format
         self._data_model = self._ncf.data_model
@@ -919,11 +930,10 @@ class OdimH5(XRadVol):
             # dataset only
             self[swp_grp_name[i]] = ds
             setattr(self, swp_grp_name[i], self[swp_grp_name[i]])
-            self._ds_handles.append(self[swp_grp_name[i]])
 
         # assign root variables
-        time_coverage_start = str(time_coverage_start)[:22] + 'Z'
-        time_coverage_end = str(time_coverage_end)[:22] + 'Z'
+        time_coverage_start = str(time_coverage_start)[:19] + 'Z'
+        time_coverage_end = str(time_coverage_end)[:19] + 'Z'
 
         # assign root variables
         root = root.assign({'volume_number': 0,
@@ -953,7 +963,6 @@ class OdimH5(XRadVol):
 
         # assign to source dict
         self['root'] = root
-        self._ds_handles.append(self['root'])
         setattr(self, 'root', self['root'])
         if not strict:
             self['odim'] = {'how': how,
@@ -1037,15 +1046,14 @@ class OdimH5(XRadVol):
             # dataset only
             self[swp_grp_name[i]] = ds
             setattr(self, swp_grp_name[i], self[swp_grp_name[i]])
-            self._ds_handles.append(self[swp_grp_name[i]])
 
         # assign root variables
-        time_coverage_start = str(time_coverage_start)[:22] + 'Z'
-        time_coverage_end = str(time_coverage_end)[:22] + 'Z'
+        time_coverage_start = str(time_coverage_start)[:19] + 'Z'
+        time_coverage_end = str(time_coverage_end)[:19] + 'Z'
 
         # assign root variables
         root = root.assign({'volume_number': 0,
-                            'platform_type': 'fixed',
+                            'platform_type': str('fixed'),
                             'instrument_type': 'radar',
                             'primary_axis': 'axis_z',
                             'time_coverage_start': time_coverage_start,
@@ -1072,7 +1080,6 @@ class OdimH5(XRadVol):
         # assign to source dict
         self['root'] = root
         setattr(self, 'root', self['root'])
-        self._ds_handles.append(self['root'])
         if not strict:
             self['odim'] = {'how': how,
                             'what': what,
