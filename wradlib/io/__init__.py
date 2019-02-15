@@ -19,6 +19,8 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.gdal
 .. automodule:: wradlib.io.iris
 .. automodule:: wradlib.io.misc
+.. automodule:: wradlib.io.xarray
+
 """
 
 from .misc import (write_polygon_to_text, to_pickle, from_pickle,
