@@ -37,6 +37,5 @@ from .radolan import (read_dx, read_radolan_composite,
                       read_radolan_binary_array,
                       decode_radolan_runlength_array)
 from .iris import (IrisFile, read_iris)
-from .xarray import (CfRadial, OdimH5)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

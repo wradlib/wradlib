@@ -6,6 +6,48 @@
 """
 Xarray powered Data I/O
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Reads data from netcdf-based Cf/Radial1, Cf/Radial2 and hdf5-based ODIM_H5 and
+other hdf5-flavours (GAMIC).
+
+Writes data to Cf/Radial2 and ODIM_H5 files.
+
+`mpl_toolkits.axisartist \
+    <https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
+
+This reader implementation uses
+
+* `netcdf4 <http://unidata.github.io/netcdf4-python/>`_,
+* `h5py <https://www.h5py.org/>`_ and
+* `xarray <xarray.pydata.org/>`_.
+
+The data is claimed using netcdf4-Dataset in a diskless non-persistent mode::
+
+    ncf = nc.Dataset(filename, diskless=True, persist=False)
+
+Further the different netcdf/hdf groups are accessed via xarray opendataset
+and the NetCDF4DataStore::
+
+    xr.open_dataset(xr.backends.NetCDF4DataStore(ncf), mask_and_scale=True)
+
+For hdf5 data scaling/masking properties will be added to the datasets before
+decoding. For GAMIC data compound data will be read via h5py.
+
+The data structure holds one ['root'] xarray dataset which corresponds to the
+Cf/Radial2 root-group and one or many ['sweep_X'] xarray datasets, holding the
+sweep data. Since for data handling xarray is utilized all xarray features can
+be exploited, like lazy-loading, pandas-like indexing on N-dimensional data
+and vectorized mathematical operations across mutliple dimensions.
+
+The writer implementation uses xarray for Cf/Radial2 output and relies on h5py
+for the ODIM_H5 output.
+
+Warning
+-------
+    This implementation is considered experimental. Changes in the API might
+    be expected.
+
+It uses
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -23,7 +65,10 @@ import h5py
 from .. import util as util
 from .. import georef as georef
 
-xr = util.import_optional('xarray')
+try:
+    xr = util.import_optional('xarray')
+except:
+    pass
 
 # Cf/Radial 2.0 - ODIM_H5 mapping
 moments_mapping = {
@@ -149,6 +194,7 @@ moments_mapping = {
 
 ODIM_NAMES = {value['short_name']: key for (key, value) in
               moments_mapping.items()}
+
 GAMIC_NAMES = {value['gamic']: key for (key, value) in moments_mapping.items()}
 
 range_attrs = {'units': 'meters',
@@ -158,10 +204,12 @@ range_attrs = {'units': 'meters',
                'axis': 'radial_range_coordinate',
                'meters_to_center_of_first_gate': None,
                }
+
 az_attrs = {'standard_name': 'ray_azimuth_angle',
             'long_name': 'azimuth_angle_from_true_north',
             'units': 'degrees',
             'axis': 'radial_azimuth_coordinate'}
+
 el_attrs = {'standard_name': 'ray_elevation_angle',
             'long_name': 'elevation_angle_from_horizontal_plane',
             'units': 'degrees',
@@ -206,8 +254,6 @@ class GamicAccessor(object):
     def radial_range(self):
         """Return the radial range of this dataset."""
         if self._radial_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             ngates = self._obj.attrs['bin_count']
             # range_start = self._obj.attrs['range_start']
             range_samples = self._obj.attrs['range_samples']
@@ -225,8 +271,6 @@ class GamicAccessor(object):
     def azimuth_range(self):
         """Return the azimuth range of this dataset."""
         if self._azimuth_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             azstart = self._obj['azimuth_start']
             azstop = self._obj['azimuth_stop']
             zero_index = np.where(azstop < azstart)
@@ -240,8 +284,6 @@ class GamicAccessor(object):
     def elevation_range(self):
         """Return the elevation range of this dataset."""
         if self._elevation_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             elstart = self._obj['elevation_start']
             elstop = self._obj['elevation_stop']
             elevation = (elstart + elstop) / 2.
@@ -253,8 +295,6 @@ class GamicAccessor(object):
     def time_range(self):
         """Return the time range of this dataset."""
         if self._time_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             times = self._obj['timestamp'] / 1e6
             attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
                      'standard_name': 'time'}
@@ -311,8 +351,6 @@ class OdimAccessor(object):
     def radial_range(self):
         """Return the radial range of this dataset."""
         if self._radial_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             ngates = self._obj.attrs['nbins']
             range_start = self._obj.attrs['rstart'] * 1000.
             bin_range = self._obj.attrs['rscale']
@@ -334,8 +372,6 @@ class OdimAccessor(object):
     def azimuth_range(self):
         """Return the azimuth range of this dataset."""
         if self._azimuth_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             nrays = self._obj.attrs['nrays']
             res = 360. / nrays
             azimuth_data = np.arange(res / 2.,
@@ -351,8 +387,6 @@ class OdimAccessor(object):
     def elevation_range(self):
         """Return the elevation range of this dataset."""
         if self._elevation_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             nrays = self._obj.attrs['nrays']
             elangle = self._obj.attrs['elangle']
             elevation_data = np.ones(nrays, dtype='float32') * elangle
@@ -364,8 +398,6 @@ class OdimAccessor(object):
     def time_range(self):
         """Return the time range of this dataset."""
         if self._time_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             startazT = self._obj.attrs['startazT']
 
             attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
@@ -378,8 +410,6 @@ class OdimAccessor(object):
     def time_range2(self):
         """Return the time range of this dataset."""
         if self._time_range is None:
-            # we can use a cache on our accessor objects, because accessors
-            # themselves are cached on instances that access them.
             startdate = self._obj.attrs['startdate']
             starttime = self._obj.attrs['starttime']
             enddate = self._obj.attrs['enddate']
@@ -390,9 +420,6 @@ class OdimAccessor(object):
             start = start.replace(tzinfo=dt.timezone.utc)
             end = end.replace(tzinfo=dt.timezone.utc)
 
-            # attrs = {'units': 'seconds since 1970-01-01 00:00',
-            #         'standard_name': 'time'}
-            # da = xr.DataArray(startazT, dims=['time'], attrs=attrs)
             self._time_range = (start.timestamp(), end.timestamp())
         return self._time_range
 
@@ -435,6 +462,15 @@ class OdimAccessor(object):
 
 
 def write_odim(src, dest):
+    """ Writes Odim Attributes
+
+    Parameters
+    ----------
+    src : dict
+        Attributes to write
+    dest : handle
+        h5py-group handle
+    """
     for key, value in src.items():
         if key in dest.attrs:
             continue
@@ -448,6 +484,15 @@ def write_odim(src, dest):
 
 
 def write_odim_moments(src, dest):
+    """ Writes Odim Dataspaces
+
+    Parameters
+    ----------
+    src : dict
+        Moments to write
+    dest : handle
+        h5py-group handle
+    """
     keys = [key for key in src if key in ODIM_NAMES]
     data_list = ['data{}'.format(i + 1) for i in range(len(keys))]
     data_idx = np.argsort(data_list)
@@ -494,6 +539,20 @@ def write_odim_moments(src, dest):
 
 
 def open_ds(nch, grp=None):
+    """ Open netcdf/hdf5 group as xarray dataset.
+
+    Parameters
+    ----------
+    nch : handle
+        netcdf4-file handle
+    grp : str
+        group to access
+
+    Returns
+    -------
+    nch : handle
+        netcdf4 group handle
+    """
     if grp is not None:
         nch = nch.groups.get(grp, False)
     if nch:
@@ -503,8 +562,10 @@ def open_ds(nch, grp=None):
 
 
 class XRadVol(collections.MutableMapping):
-    """ BaseClass for Xarray based RadarVolumes
+    """ BaseClass for xarray based RadarVolumes
 
+    Implements `collections.MutableMapping` dictionary and `to_cfradial2` and
+    `to_odim` functions.
     """
 
     def __init__(self):
@@ -646,7 +707,8 @@ class XRadVol(collections.MutableMapping):
 
 
 class CfRadial(XRadVol):
-    """ Class for Xarray based retrieval of Cf/Radial data files
+    """ Class for xarray based retrieval of Cf/Radial data files
+
     """
 
     def __init__(self, filename=None, flavour=None, **kwargs):
@@ -681,7 +743,7 @@ class CfRadial(XRadVol):
                 ''.format(flavour))
 
     def assign_data_radial2(self):
-        """ Assign from CfRadial2 data structure.
+        """ Assign from Cf/Radial2 data structure.
 
         """
         self['root'] = open_ds(self._ncf)
@@ -692,7 +754,7 @@ class CfRadial(XRadVol):
             setattr(self, sw, self[sw])
 
     def assign_data_radial(self):
-        """ Assign from CfRadial1 data structure.
+        """ Assign from Cf/Radial1 data structure.
 
         """
         root = open_ds(self._ncf)
@@ -724,9 +786,8 @@ class CfRadial(XRadVol):
 
 
 class OdimH5(XRadVol):
-    """ Class for Xarray based retrieval of ODIM_H5 data files
+    """ Class for xarray based retrieval of ODIM_H5 data files
     """
-
     def __init__(self, filename=None, flavour=None, strict=True, **kwargs):
         super(OdimH5, self).__init__()
         self._filename = filename

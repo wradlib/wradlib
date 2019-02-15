@@ -5,6 +5,7 @@ import unittest
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
+from wradlib.io.xarray import CfRadial, OdimH5
 from subprocess import check_call
 import numpy as np
 import xarray as xr
@@ -985,7 +986,7 @@ class XarrayTests(unittest.TestCase):
     def test_iter(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.CfRadial(ncfile)
+        cf = CfRadial(ncfile)
         i = 0
         for item in cf:
             i += 1
@@ -994,7 +995,7 @@ class XarrayTests(unittest.TestCase):
     def test_del(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.CfRadial(ncfile)
+        cf = CfRadial(ncfile)
         for k in list(cf):
             del cf[k]
         self.assertEqual(cf._source, {})
@@ -1004,7 +1005,7 @@ class XarrayTests(unittest.TestCase):
                                  4.7021,  6.4984, 9.1022, 12.7991])
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.CfRadial(ncfile)
+        cf = CfRadial(ncfile)
         np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
                                              fixed_angles)
 
@@ -1012,7 +1013,7 @@ class XarrayTests(unittest.TestCase):
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.])
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
         h5file = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.OdimH5(h5file)
+        cf = OdimH5(h5file)
         np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
                                              fixed_angles)
 
@@ -1021,8 +1022,8 @@ class XarrayTests(unittest.TestCase):
         filename = 'hdf5/2014-08-10--182000.ppi.mvol'
         h5file = wrl.util.get_wradlib_data_file(filename)
         self.assertRaises(AttributeError,
-                          lambda: wrl.io.OdimH5(h5file))
-        cf = wrl.io.OdimH5(h5file, flavour='GAMIC')
+                          lambda: OdimH5(h5file))
+        cf = OdimH5(h5file, flavour='GAMIC')
         self.assertEqual(str(cf.root.time_coverage_start.values),
                          time_cov[0])
         self.assertEqual(str(cf.root.time_coverage_end.values),
@@ -1031,10 +1032,10 @@ class XarrayTests(unittest.TestCase):
     def test_odim_roundtrip(self):
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
         odimfile = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.OdimH5(odimfile)
+        cf = OdimH5(odimfile)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
-        cf2 = wrl.io.OdimH5(tmp)
+        cf2 = OdimH5(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         xr.testing.assert_equal(cf.sweep_1, cf2.sweep_1)
         xr.testing.assert_equal(cf.sweep_2, cf2.sweep_2)
@@ -1048,10 +1049,10 @@ class XarrayTests(unittest.TestCase):
     def test_odim_roundtrip_nonstrict(self):
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
         odimfile = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.OdimH5(odimfile, strict=False)
+        cf = OdimH5(odimfile, strict=False)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
-        cf2 = wrl.io.OdimH5(tmp, strict=False)
+        cf2 = OdimH5(tmp, strict=False)
         xr.testing.assert_equal(cf.root, cf2.root)
         xr.testing.assert_equal(cf.sweep_1, cf2.sweep_1)
         xr.testing.assert_equal(cf.sweep_2, cf2.sweep_2)
@@ -1065,10 +1066,10 @@ class XarrayTests(unittest.TestCase):
     def test_cfradial_roundtrip(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.CfRadial(ncfile)
+        cf = CfRadial(ncfile)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_cfradial2(tmp)
-        cf2 = wrl.io.CfRadial(tmp)
+        cf2 = CfRadial(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         xr.testing.assert_equal(cf.sweep_1, cf2.sweep_1)
         xr.testing.assert_equal(cf.sweep_2, cf2.sweep_2)
@@ -1086,10 +1087,10 @@ class XarrayTests(unittest.TestCase):
     def test_cfradial_odim_roundtrip(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = wrl.io.CfRadial(ncfile)
+        cf = CfRadial(ncfile)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
-        cf2 = wrl.io.OdimH5(tmp)
+        cf2 = OdimH5(tmp)
         xr.testing.assert_allclose(cf.root.sweep_fixed_angle,
                                    cf2.root.sweep_fixed_angle)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
@@ -1099,7 +1100,7 @@ class XarrayTests(unittest.TestCase):
 
         tmp1 = tempfile.NamedTemporaryFile(mode='w+b').name
         cf2.to_cfradial2(tmp1)
-        cf3 = wrl.io.CfRadial(tmp1)
+        cf3 = CfRadial(tmp1)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf3.root.time_coverage_start)
 
