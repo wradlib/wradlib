@@ -67,7 +67,7 @@ from .. import georef as georef
 
 try:
     xr = util.import_optional('xarray')
-except:
+except AttributeError:
     pass
 
 # Cf/Radial 2.0 - ODIM_H5 mapping
