@@ -751,6 +751,8 @@ class CfRadial(XRadVol):
         sweepnames = self.root.sweep_group_name.values
         for sw in sweepnames:
             self[sw] = open_ds(self._ncf, sw)
+            self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
+            self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
             setattr(self, sw, self[sw])
 
     def assign_data_radial(self):
@@ -782,6 +784,8 @@ class CfRadial(XRadVol):
             tslice = slice(start_idx[i], end_idx[i])
             self[sw] = data.isel(time=tslice,
                                  sweep=slice(i, i + 1)).squeeze('sweep')
+            self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
+            self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
             setattr(self, sw, self[sw])
 
 
@@ -949,7 +953,7 @@ class OdimH5(XRadVol):
             # time coordinate
             try:
                 timevals = ds_how.odim.time_range.values
-            except KeyError:
+            except (KeyError, AttributeError):
                 # timehandling if only start and end time is given
                 start, end = ds_what.odim.time_range2
                 delta = (end - start) / ds_where.nrays
