@@ -13,6 +13,8 @@ clutter or attenuation) and visualising the data.
 
 import os
 import sys
+import semver
+import warnings
 from subprocess import check_output, CalledProcessError
 
 if sys.version_info[0] < 3:
@@ -53,7 +55,7 @@ LICENSE = 'MIT'
 CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 1
-MINOR = 2
+MINOR = 3
 PATCH = 0
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 
@@ -89,6 +91,7 @@ release = %(isrelease)s
     # Adding the git rev number needs to be done inside write_version_py(),
     # otherwise the import of wradlib.version messes up the build under
     # Python 3.
+
     SHORT_VERSION = VERSION
     FULL_VERSION = VERSION
     GIT_REVISION = VERSION + '-unknown'
@@ -107,15 +110,30 @@ release = %(isrelease)s
                               'wradlib/version.py and the build directory '
                               'before building.')
 
+    # parse version using semver
+    ver = semver.parse_version_info(GIT_REVISION)
+    pre = ver.prerelease.split('-')
+
     # get commit count, 0 means tagged commit -> release
     try:
-        ISRELEASED = not bool(int(GIT_REVISION.split('-')[1]))
+        ISRELEASED = not bool(int(pre[0]))
         if not ISRELEASED:
-            FULL_VERSION = GIT_REVISION
-    except ValueError:
-        pass
+            SHORT_VERSION = semver.format_version(ver.major,
+                                                  ver.minor + 1,
+                                                  0, 'dev.{}'.format(pre[0]))
+            GIT_REVISION = semver.format_version(ver.major,
+                                                 ver.minor + 1,
+                                                 0,
+                                                 '.'.join(pre))
 
-    print(VERSION, FULL_VERSION, GIT_REVISION, GIT_HASH, ISRELEASED)
+            FULL_VERSION = GIT_REVISION
+
+    except ValueError:
+        warnings.warn("wradlib source does not contain detailed version info "
+                      "via git or version.py, exact version can't be "
+                      "retrieved.", UserWarning)
+
+    print(SHORT_VERSION, FULL_VERSION, GIT_REVISION, GIT_HASH, ISRELEASED)
     a = open(filename, 'w')
     try:
         a.write(cnt % {'short_version': SHORT_VERSION,
@@ -126,11 +144,13 @@ release = %(isrelease)s
     finally:
         a.close()
 
+    return SHORT_VERSION
+
 
 def setup_package():
 
     # rewrite version file
-    write_version_py()
+    VERSION = write_version_py()
 
     from setuptools import setup, find_packages
 
