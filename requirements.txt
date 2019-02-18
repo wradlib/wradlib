@@ -6,3 +6,4 @@ netCDF4
 gdal
 deprecation
 xmltodict
+semver
