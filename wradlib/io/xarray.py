@@ -573,8 +573,10 @@ class XRadVol(collections.MutableMapping):
 
     def __setitem__(self, key, value):
         self._source[key] = value
+        setattr(self, key, self[key])
 
     def __delitem__(self, key):
+        delattr(self, key)
         del self._source[key]
 
     def __iter__(self):
@@ -744,13 +746,11 @@ class CfRadial(XRadVol):
 
         """
         self['root'] = open_ds(self._ncf)
-        setattr(self, 'root', self['root'])
         sweepnames = self.root.sweep_group_name.values
         for sw in sweepnames:
             self[sw] = open_ds(self._ncf, sw)
             self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
             self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
-            setattr(self, sw, self[sw])
 
     def assign_data_radial(self):
         """ Assign from CfRadial1 data structure.
@@ -767,7 +767,6 @@ class CfRadial(XRadVol):
             sweep_group_name.append('sweep_{}'.format(i + 1))
         self['root'] = root1.assign(
             {'sweep_group_name': (['sweep'], sweep_group_name)})
-        setattr(self, 'root', self['root'])
 
         keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
         remove_vars = var ^ keep_vars
@@ -783,7 +782,6 @@ class CfRadial(XRadVol):
                                  sweep=slice(i, i + 1)).squeeze('sweep')
             self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
             self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
-            setattr(self, sw, self[sw])
 
 
 class OdimH5(XRadVol):
@@ -991,7 +989,6 @@ class OdimH5(XRadVol):
 
             # dataset only
             self[swp_grp_name[i]] = ds
-            setattr(self, swp_grp_name[i], self[swp_grp_name[i]])
 
         # assign root variables
         time_coverage_start = str(time_coverage_start)[:19] + 'Z'
@@ -1025,7 +1022,6 @@ class OdimH5(XRadVol):
 
         # assign to source dict
         self['root'] = root
-        setattr(self, 'root', self['root'])
         if not strict:
             self['odim'] = {'how': how,
                             'what': what,
@@ -1107,7 +1103,6 @@ class OdimH5(XRadVol):
 
             # dataset only
             self[swp_grp_name[i]] = ds
-            setattr(self, swp_grp_name[i], self[swp_grp_name[i]])
 
         # assign root variables
         time_coverage_start = str(time_coverage_start)[:19] + 'Z'
@@ -1141,7 +1136,6 @@ class OdimH5(XRadVol):
 
         # assign to source dict
         self['root'] = root
-        setattr(self, 'root', self['root'])
         if not strict:
             self['odim'] = {'how': how,
                             'what': what,
