@@ -7,13 +7,10 @@
 Xarray powered Data I/O
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Reads data from netcdf-based Cf/Radial1, Cf/Radial2 and hdf5-based ODIM_H5 and
+Reads data from netcdf-based CfRadial1, CfRadial2 and hdf5-based ODIM_H5 and
 other hdf5-flavours (GAMIC).
 
-Writes data to Cf/Radial2 and ODIM_H5 files.
-
-`mpl_toolkits.axisartist \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
+Writes data to CfRadial2 and ODIM_H5 files.
 
 This reader implementation uses
 
@@ -25,7 +22,7 @@ The data is claimed using netcdf4-Dataset in a diskless non-persistent mode::
 
     ncf = nc.Dataset(filename, diskless=True, persist=False)
 
-Further the different netcdf/hdf groups are accessed via xarray opendataset
+Further the different netcdf/hdf groups are accessed via xarray open_dataset
 and the NetCDF4DataStore::
 
     xr.open_dataset(xr.backends.NetCDF4DataStore(ncf), mask_and_scale=True)
@@ -34,17 +31,17 @@ For hdf5 data scaling/masking properties will be added to the datasets before
 decoding. For GAMIC data compound data will be read via h5py.
 
 The data structure holds one ['root'] xarray dataset which corresponds to the
-Cf/Radial2 root-group and one or many ['sweep_X'] xarray datasets, holding the
+CfRadial2 root-group and one or many ['sweep_X'] xarray datasets, holding the
 sweep data. Since for data handling xarray is utilized all xarray features can
 be exploited, like lazy-loading, pandas-like indexing on N-dimensional data
 and vectorized mathematical operations across mutliple dimensions.
 
-The writer implementation uses xarray for Cf/Radial2 output and relies on h5py
+The writer implementation uses xarray for CfRadial2 output and relies on h5py
 for the ODIM_H5 output.
 
 Warning
 -------
-    This implementation is considered experimental. Changes in the API might
+    This implementation is considered experimental. Changes in the API should
     be expected.
 
 It uses
@@ -70,7 +67,7 @@ try:
 except AttributeError:
     pass
 
-# Cf/Radial 2.0 - ODIM_H5 mapping
+# CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
     'DBZH': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
              'long_name': 'Equivalent reflectivity factor H',
@@ -595,7 +592,7 @@ class XRadVol(collections.MutableMapping):
         self._ncf.close()
 
     def to_cfradial2(self, filename):
-        """ Save volume to Cf/Radial2.0 compliant file.
+        """ Save volume to CfRadial2.0 compliant file.
         """
         root = self['root'].copy(deep=True)
         root.attrs['Conventions'] = 'Cf/Radial'
@@ -707,7 +704,7 @@ class XRadVol(collections.MutableMapping):
 
 
 class CfRadial(XRadVol):
-    """ Class for xarray based retrieval of Cf/Radial data files
+    """ Class for xarray based retrieval of CfRadial data files
 
     """
 
@@ -743,7 +740,7 @@ class CfRadial(XRadVol):
                 ''.format(flavour))
 
     def assign_data_radial2(self):
-        """ Assign from Cf/Radial2 data structure.
+        """ Assign from CfRadial2 data structure.
 
         """
         self['root'] = open_ds(self._ncf)
@@ -756,7 +753,7 @@ class CfRadial(XRadVol):
             setattr(self, sw, self[sw])
 
     def assign_data_radial(self):
-        """ Assign from Cf/Radial1 data structure.
+        """ Assign from CfRadial1 data structure.
 
         """
         root = open_ds(self._ncf)
