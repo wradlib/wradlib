@@ -1,3 +1,5 @@
+! Copyright (c) wradlib developers.
+! Distributed under the MIT License. See LICENSE.txt for more info.
 C FILE: SPEEDUP.F
       SUBROUTINE F_UNFOLD_PHI(PHIDP, RHO, GRADPHI, STDARR, BEAMS, RS, W)
 C
