@@ -5,7 +5,7 @@ import unittest
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
-from wradlib.io.xarray import CfRadial, OdimH5
+from wradlib.io import CfRadial, OdimH5
 from subprocess import check_call
 import numpy as np
 import xarray as xr
@@ -1037,11 +1037,9 @@ class XarrayTests(unittest.TestCase):
         cf.to_odim(tmp)
         cf2 = OdimH5(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
-        xr.testing.assert_equal(cf.sweep_1, cf2.sweep_1)
-        xr.testing.assert_equal(cf.sweep_2, cf2.sweep_2)
-        xr.testing.assert_equal(cf.sweep_3, cf2.sweep_3)
-        xr.testing.assert_equal(cf.sweep_4, cf2.sweep_4)
-        xr.testing.assert_equal(cf.sweep_5, cf2.sweep_5)
+        for i in range(1, 6):
+            key = 'sweep_{}'.format(i)
+            xr.testing.assert_equal(cf[key], cf2[key])
         # test write after del, file lockage
         del cf2
         cf.to_odim(tmp)
@@ -1054,11 +1052,9 @@ class XarrayTests(unittest.TestCase):
         cf.to_odim(tmp)
         cf2 = OdimH5(tmp, strict=False)
         xr.testing.assert_equal(cf.root, cf2.root)
-        xr.testing.assert_equal(cf.sweep_1, cf2.sweep_1)
-        xr.testing.assert_equal(cf.sweep_2, cf2.sweep_2)
-        xr.testing.assert_equal(cf.sweep_3, cf2.sweep_3)
-        xr.testing.assert_equal(cf.sweep_4, cf2.sweep_4)
-        xr.testing.assert_equal(cf.sweep_5, cf2.sweep_5)
+        for i in range(1, 6):
+            key = 'sweep_{}'.format(i)
+            xr.testing.assert_equal(cf[key], cf2[key])
         # test write after del, file lockage
         del cf2
         cf.to_odim(tmp)
@@ -1071,15 +1067,9 @@ class XarrayTests(unittest.TestCase):
         cf.to_cfradial2(tmp)
         cf2 = CfRadial(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
-        xr.testing.assert_equal(cf.sweep_1, cf2.sweep_1)
-        xr.testing.assert_equal(cf.sweep_2, cf2.sweep_2)
-        xr.testing.assert_equal(cf.sweep_3, cf2.sweep_3)
-        xr.testing.assert_equal(cf.sweep_4, cf2.sweep_4)
-        xr.testing.assert_equal(cf.sweep_5, cf2.sweep_5)
-        xr.testing.assert_equal(cf.sweep_6, cf2.sweep_6)
-        xr.testing.assert_equal(cf.sweep_7, cf2.sweep_7)
-        xr.testing.assert_equal(cf.sweep_8, cf2.sweep_8)
-        xr.testing.assert_equal(cf.sweep_9, cf2.sweep_9)
+        for i in range(1, 10):
+            key = 'sweep_{}'.format(i)
+            xr.testing.assert_equal(cf[key], cf2[key])
         # test write after del, file lockage
         del cf2
         cf.to_cfradial2(tmp)
@@ -1095,8 +1085,8 @@ class XarrayTests(unittest.TestCase):
                                    cf2.root.sweep_fixed_angle)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf2.root.time_coverage_start)
-        xr.testing.assert_allclose(cf.sweep_1.sweep_number,
-                                   cf2.sweep_1.sweep_number)
+        xr.testing.assert_allclose(cf['sweep_1'].sweep_number,
+                                   cf2['sweep_1'].sweep_number)
 
         tmp1 = tempfile.NamedTemporaryFile(mode='w+b').name
         cf2.to_cfradial2(tmp1)
