@@ -1,6 +1,6 @@
 # Contributing to wradlib
 
-The wradlib project encourages everyone to contribute to the developement of wradlib. This paper describes the general guidelines for contributing to wradlib. There is more information on [wradlib's community effort](http://wradlib.org/wradlib-docs/latest/community.html) at the project's main website [wradlib.org](wradlib.org).
+The wradlib project encourages everyone to contribute to the developement of wradlib. This paper describes the general guidelines for contributing to wradlib. There is more information on [wradlib's community effort](https://wradlib.org/community) at the project's main website [wradlib.org](https://wradlib.org).
 
 In general wradlib uses GitHub Pull Requests for contribution. Second, the [wradlib developers](CONTRIBUTORS.txt) have GitHub Commit Access to the project's main repository.
 
