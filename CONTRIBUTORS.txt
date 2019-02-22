@@ -13,5 +13,4 @@ Thomas Pfaff - Blue Yonder
 Irene Crisologo - University of Potsdam
 Edouard Goudenhooft - Royal Meteorological Institute, Brussels
 Stephan Jacobi - University of Potsdam
-
-
+Christian Chwala - Karlsruhe Institute of Technology
