@@ -34,7 +34,7 @@ The data structure holds one ['root'] xarray dataset which corresponds to the
 CfRadial2 root-group and one or many ['sweep_X'] xarray datasets, holding the
 sweep data. Since for data handling xarray is utilized all xarray features can
 be exploited, like lazy-loading, pandas-like indexing on N-dimensional data
-and vectorized mathematical operations across mutliple dimensions.
+and vectorized mathematical operations across multiple dimensions.
 
 The writer implementation uses xarray for CfRadial2 output and relies on h5py
 for the ODIM_H5 output.
@@ -44,13 +44,24 @@ Warning
     This implementation is considered experimental. Changes in the API should
     be expected.
 
-It uses
 .. autosummary::
    :nosignatures:
    :toctree: generated/
 
+   RadXVol
    CfRadial
    OdimH5
+   open_dataset
+   to_cfradial2
+   to_odim
+   write_odim
+   write_odim_dataspace
+   get_sweep_group_name
+   get_variables_moments
+   get_group_moments
+   get_groups
+   get_moment_names
+
 """
 
 import collections
@@ -58,14 +69,9 @@ import numpy as np
 import datetime as dt
 import netCDF4 as nc
 import h5py
+import xarray as xr
 
-from .. import util as util
 from .. import georef as georef
-
-try:
-    xr = util.import_optional('xarray')
-except AttributeError:
-    pass
 
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
@@ -232,6 +238,52 @@ sweep_vars2 = {'azimuth', 'elevation', 'pulse_width', 'prt',
                'scan_rate'}
 
 sweep_vars3 = {'DBZ', 'VR', 'time', 'range', 'reflectivity_horizontal'}
+
+global_attrs = [('Conventions', 'Cf/Radial'),
+                ('version', 'Cf/Radial version number'),
+                ('title', 'short description of file contents'),
+                ('institution', 'where the original data were produced'),
+                ('references',
+                 ('references that describe the data or the methods used '
+                  'to produce it')),
+                ('source', 'method of production of the original data'),
+                ('history', 'list of modifications to the original data'),
+                ('comment', 'miscellaneous information'),
+                ('instrument_name', 'name of radar or lidar'),
+                ('site_name', 'name of site where data were gathered'),
+                ('scan_name', 'name of scan strategy used, if applicable'),
+                ('scan_id',
+                 'scan strategy id, if applicable. assumed 0 if missing'),
+                ('platform_is_mobile',
+                 '"true" or "false", assumed "false" if missing'),
+                ('ray_times_increase',
+                 ('"true" or "false", assumed "true" if missing. '
+                  'This is set to true if ray times increase monotonically '
+                  'thoughout all of the sweeps in the volume')),
+                ('field_names',
+                 'array of strings of field names present in this file.'),
+                ('time_coverage_start',
+                 'copy of time_coverage_start global variable'),
+                ('time_coverage_end',
+                 'copy of time_coverage_end global variable'),
+                ('simulated data',
+                 ('"true" or "false", assumed "false" if missing. '
+                  'data in this file are simulated'))]
+
+global_variables = dict([('volume_number', ''),
+                         ('platform_type', ''),
+                         ('instrument_type', ''),
+                         ('primary_axis', ''),
+                         ('time_coverage_start', ''),
+                         ('time_coverage_end', ''),
+                         ('latitude', ''),
+                         ('longitude', ''),
+                         ('altitude', ''),
+                         ('altitude_agl', ''),
+                         ('sweep_group_name', (['sweep'], [''])),
+                         ('sweep_fixed_angle', (['sweep'], [''])),
+                         ('frequency', ''),
+                         ('status_xml', '')])
 
 
 @xr.register_dataset_accessor('gamic')
@@ -480,7 +532,7 @@ def write_odim(src, dest):
             dest.attrs[key] = value
 
 
-def write_odim_moments(src, dest):
+def write_odim_dataspace(src, dest):
     """ Writes Odim Dataspaces
 
     Parameters
@@ -535,7 +587,7 @@ def write_odim_moments(src, dest):
             ds.attrs.create('IMAGE_VERSION', version, dtype=H5T_C_S1_VER)
 
 
-def open_ds(nch, grp=None):
+def open_dataset(nch, grp=None):
     """ Open netcdf/hdf5 group as xarray dataset.
 
     Parameters
@@ -558,25 +610,299 @@ def open_ds(nch, grp=None):
     return nch
 
 
+def to_cfradial2(volume, filename):
+    """ Save RadXVol to CfRadial2.0 compliant file.
+
+    Parameters
+    ----------
+    volume : RadXVol object
+    filename : str
+        output filename
+    """
+    root = volume.root.copy(deep=True)
+    root.attrs['Conventions'] = 'Cf/Radial'
+    root.attrs['version'] = '2.0'
+    root.to_netcdf(filename, mode='w', group='/')
+    for key in root.sweep_group_name.values:
+        volume[key].to_netcdf(filename, mode='a', group=key)
+
+
+def to_odim(volume, filename):
+    """  Save RadXVol to ODIM_H5/V2_2 compliant file.
+
+    Parameters
+    ----------
+    volume : RadXVol object
+    filename : str
+        output filename
+    """
+    root = volume.root
+
+    h5 = h5py.File(filename, 'w')
+
+    # root group, only Conventions for ODIM_H5
+    write_odim({'Conventions': 'ODIM_H5/V2_2'}, h5)
+
+    # how group
+    # first try to use original data
+    try:
+        how = volume['odim']['how'].attrs
+    except KeyError:
+        how = {}
+    else:
+        how.update({'_modification_program': 'wradlib'})
+
+    h5_how = h5.create_group('how')
+    write_odim(how, h5_how)
+
+    sweepnames = root.sweep_group_name.values
+
+    # what group, object, version, date, time, source, mandatory
+    # p. 10 f
+    try:
+        what = volume['odim']['what'].attrs
+    except KeyError:
+        what = {}
+        if len(sweepnames) > 1:
+            what['object'] = 'PVOL'
+        else:
+            what['object'] = 'SCAN'
+        what['version'] = 'H5rad 2.2'
+        what['date'] = str(root.time_coverage_start.values)[:10].replace(
+            '-', '')
+        what['time'] = str(root.time_coverage_end.values)[11:19].replace(
+            ':', '')
+        what['source'] = root.attrs['instrument_name']
+
+    h5_what = h5.create_group('what')
+    write_odim(what, h5_what)
+
+    # where group, lon, lat, height, mandatory
+    where = {'lon': root.longitude.values,
+             'lat': root.latitude.values,
+             'height': root.altitude.values}
+    h5_where = h5.create_group('where')
+    write_odim(where, h5_where)
+
+    # datasets
+    ds_list = ['dataset{}'.format(i + 1) for i in range(len(sweepnames))]
+    ds_idx = np.argsort(ds_list)
+    for idx in ds_idx:
+        ds = volume['sweep_{}'.format(idx + 1)]
+        h5_dataset = h5.create_group(ds_list[idx])
+
+        # what group p. 21 ff.
+        h5_ds_what = h5_dataset.create_group('what')
+        ds_what = {}
+        t = sorted(ds.time.values)
+        start = dt.datetime.utcfromtimestamp(t[0].astype('O') / 1e9)
+        end = dt.datetime.utcfromtimestamp(
+            np.rint(t[-1].astype('O') / 1e9))
+        ds_what['product'] = 'SCAN'
+        ds_what['startdate'] = start.strftime('%Y%m%d')
+        ds_what['starttime'] = start.strftime('%H%M%S')
+        ds_what['enddate'] = end.strftime('%Y%m%d')
+        ds_what['endtime'] = end.strftime('%H%M%S')
+        write_odim(ds_what, h5_ds_what)
+
+        # where group, p. 11 ff. mandatory
+        h5_ds_where = h5_dataset.create_group('where')
+        rscale = ds.range.values[1] / 1. - ds.range.values[0]
+        rstart = (ds.range.values[0] - rscale / 2.) / 1000.
+        ds_where = {'elangle': ds.fixed_angle,
+                    'nbins': ds.range.shape[0],
+                    'rstart': rstart,
+                    'rscale': rscale,
+                    'nrays': ds.azimuth.shape[0],
+                    'a1gate':
+                        np.nonzero(np.argsort(ds.time.values) == 0)[0][0]
+                    }
+        write_odim(ds_where, h5_ds_where)
+
+        # how group, p. 14 ff.
+        h5_ds_how = h5_dataset.create_group('how')
+        try:
+            ds_how = volume['odim']['dsets'][ds_list[idx]]['how'].attrs
+        except KeyError:
+            ds_how = {'scan_index': ds.sweep_number + 1,
+                      'scan_count': len(sweepnames),
+                      }
+        write_odim(ds_how, h5_ds_how)
+
+        # write moments
+        write_odim_dataspace(ds, h5_dataset)
+
+    h5.close()
+
+
+def get_sweep_group_name(ncf, name):
+    """ Return sweep names.
+
+    Returns source names and cfradial names.
+
+    Parameters
+    ----------
+    ncf : handle
+        netCDF4 Dataset handle
+    name : str
+        Common part of source dataset names.
+
+    Returns
+    -------
+    src : list
+        list of source dataset names
+    swg_grp_name : list
+        list of corresponding cfradial sweep_group_name
+    """
+    src = [key for key in ncf.groups.keys() if name in key]
+    src.sort(key=lambda x: int(x[len(name):]))
+    swp_grp_name = ['sweep_{}'.format(i) for i in
+                    range(1, len(src) + 1)]
+    return src, swp_grp_name
+
+
+def get_variables_moments(ds, moments=None):
+    """ Retrieve radar moments from dataset variables.
+
+    Parameters
+    ----------
+    ds : xarray dataset
+        source dataset
+    moments : list
+        list of moment strings
+
+    Returns
+    -------
+    ds : xarray dataset
+        altered dataset
+    """
+    for mom in moments:
+        # open dataX dataset
+        dmom = ds[mom]
+        name = dmom.moment.lower()
+        if name not in GAMIC_NAMES.keys():
+            ds = ds.drop(mom)
+            continue
+        cfname = GAMIC_NAMES[name]
+        # assign attributes
+        dmax = np.iinfo(dmom.dtype).max
+        minval = dmom.dyn_range_min
+        maxval = dmom.dyn_range_max
+        dmom.attrs['gain'] = (maxval - minval) / dmax
+        dmom.attrs['offset'] = minval
+        dmom.attrs['scale_factor'] = (maxval - minval) / dmax
+        dmom.attrs['add_offset'] = minval
+
+        dmom.attrs['_FillValue'] = float(dmax)
+        dmom.attrs['nodata'] = float(dmax)
+        dmom.attrs['_Undetect'] = 0.
+        dmom.attrs['undetect'] = 0.
+        for k, v in moments_mapping[cfname].items():
+            dmom.attrs[k] = v
+        dname = dmom.attrs.pop('short_name')
+        dmom.attrs.pop('gamic')
+        #
+        ds = ds.rename({mom: dname})
+        # fix dimensions
+        dims = dmom.dims
+        dmom = dmom.rename({dims[0]: 'time',
+                            dims[1]: 'range',
+                            })
+    return ds
+
+
+def get_group_moments(ncf, sweep, moments=None):
+    """ Retrieve radar moments from hdf groups.
+
+    Parameters
+    ----------
+    ncf : netCDF Dataset handle
+    sweep : str
+        sweep key
+    moments : list
+        list of moment strings
+
+    Returns
+    -------
+    ds : dictionary
+        moment datasets
+    """
+    datas = {}
+    for mom in moments:
+        dmom_what = open_dataset(ncf[sweep][mom], 'what')
+        name = dmom_what.attrs.pop('quantity')
+        if name not in moments_mapping.keys():
+            continue
+        dsmom = open_dataset(ncf[sweep], mom)
+        dmom = dsmom.data.assign_attrs(dmom_what.attrs)
+        dmom.attrs['scale_factor'] = dmom.attrs.get('gain')
+        dmom.attrs['add_offset'] = dmom.attrs.get('offset')
+        dmom.attrs['_FillValue'] = dmom.attrs.get('nodata')
+        dmom.attrs['_Undetect'] = dmom.attrs.get('undetect')
+        dmom.attrs['coordinates'] = 'elevation azimuth range'
+
+        # add cfradial moment attributes
+        for k, v in moments_mapping[name].items():
+            dmom.attrs[k] = v
+
+        # drop short_name
+        dmom.attrs.pop('short_name')
+        dmom.attrs.pop('gamic')
+
+        # fix dimensions
+        dims = dmom.dims
+        datas.update({name: dmom.rename({dims[0]: 'time',
+                                         dims[1]: 'range',
+                                         })})
+    return datas
+
+
+def get_groups(ncf, groups):
+    """ Get hdf groups.
+
+    Parameters
+    ----------
+    ncf : netCDf4 Dataset handle
+    groups : list
+        list of groups-keys
+
+    Returns
+    -------
+    out : tuple
+        tuple of xarray datasets
+    """
+    return tuple(map(lambda x: open_dataset(ncf, x), groups))
+
+
+def get_moment_names(sweep, fmt=None, src=None):
+    moments = [mom for mom in getattr(sweep, src).keys() if
+               fmt in mom]
+    moments_idx = np.argsort([int(s[len(fmt):]) for s in moments])
+    return np.array(moments)[moments_idx]
+
+
 class XRadVol(collections.MutableMapping):
     """ BaseClass for xarray based RadarVolumes
 
-    Implements `collections.MutableMapping` dictionary and `to_cfradial2` and
-    `to_odim` functions.
+    Implements `collections.MutableMapping` dictionary.
     """
 
     def __init__(self):
         self._source = dict()
+        self._filename = None
+        self._ncf = None
+        self._disk_format = None
+        self._file_format = None
+        self._data_model = None
+        self._init_root()
 
     def __getitem__(self, key):
         return self._source[key]
 
     def __setitem__(self, key, value):
         self._source[key] = value
-        setattr(self, key, self[key])
 
     def __delitem__(self, key):
-        delattr(self, key)
         del self._source[key]
 
     def __iter__(self):
@@ -593,123 +919,65 @@ class XRadVol(collections.MutableMapping):
             del self._source[k]
         self._ncf.close()
 
+    def _init_root(self):
+        self['root'] = xr.Dataset(data_vars=global_variables,
+                                  attrs=global_attrs)
+
+    @property
+    def root(self):
+        """ Return `root` dataset.
+        """
+        return self['root']
+
+    @property
+    def sweep(self):
+        """ Return sweep dimension count.
+        """
+        return self.root.dims['sweep']
+
+    @property
+    def sweeps(self):
+        """ Return zip sweep names, sweep_angles
+        """
+        names = list(self.root.sweep_group_name.values)
+        angles = list(self.root.sweep_fixed_angle.values)
+        return zip(names, angles)
+
+    @property
+    def location(self):
+        """ Return location of data source.
+        """
+        return (self.root.longitude.values.item(),
+                self.root.latitude.values.item(),
+                self.root.altitude.values.item())
+
+    @property
+    def Conventions(self):
+        """ Return CF/ODIM `Conventions`.
+        """
+        return self.root.Conventions
+
+    @property
+    def version(self):
+        """ Return CF/ODIM version
+        """
+        return self.root.version
+
     def to_cfradial2(self, filename):
         """ Save volume to CfRadial2.0 compliant file.
         """
-        root = self['root'].copy(deep=True)
-        root.attrs['Conventions'] = 'Cf/Radial'
-        root.attrs['version'] = '2.0'
-        root.to_netcdf(filename, mode='w', group='/')
-        for key in root.sweep_group_name.values:
-            self[key].to_netcdf(filename, mode='a', group=key)
+        to_cfradial2(self, filename)
 
     def to_odim(self, filename):
         """ Save volume to ODIM_H5/V2_2 compliant file.
         """
-        root = self['root']
-
-        h5 = h5py.File(filename, 'w')
-
-        # root group, only Conventions for ODIM_H5
-        write_odim({'Conventions': 'ODIM_H5/V2_2'}, h5)
-
-        # how group
-        # first try to use original data
-        try:
-            how = self['odim']['how'].attrs
-        except KeyError:
-            how = {}
-        else:
-            how.update({'_modification_program': 'wradlib'})
-
-        h5_how = h5.create_group('how')
-        write_odim(how, h5_how)
-
-        sweepnames = self['root'].sweep_group_name.values
-
-        # what group, object, version, date, time, source, mandatory
-        # p. 10 f
-        try:
-            what = self['odim']['what'].attrs
-        except KeyError:
-            what = {}
-            if len(sweepnames) > 1:
-                what['object'] = 'PVOL'
-            else:
-                what['object'] = 'SCAN'
-            what['version'] = 'H5rad 2.2'
-            what['date'] = str(root.time_coverage_start.values)[:10].replace(
-                '-', '')
-            what['time'] = str(root.time_coverage_end.values)[11:19].replace(
-                ':', '')
-            what['source'] = root.attrs['instrument_name']
-
-        h5_what = h5.create_group('what')
-        write_odim(what, h5_what)
-
-        # where group, lon, lat, height, mandatory
-        where = {'lon': root.longitude.values,
-                 'lat': root.latitude.values,
-                 'height': root.altitude.values}
-        h5_where = h5.create_group('where')
-        write_odim(where, h5_where)
-
-        # datasets
-        ds_list = ['dataset{}'.format(i + 1) for i in range(len(sweepnames))]
-        ds_idx = np.argsort(ds_list)
-        for idx in ds_idx:
-            ds = self['sweep_{}'.format(idx + 1)]
-            h5_dataset = h5.create_group(ds_list[idx])
-
-            # what group p. 21 ff.
-            h5_ds_what = h5_dataset.create_group('what')
-            ds_what = {}
-            t = sorted(ds.time.values)
-            start = dt.datetime.utcfromtimestamp(t[0].astype('O') / 1e9)
-            end = dt.datetime.utcfromtimestamp(
-                np.rint(t[-1].astype('O') / 1e9))
-            ds_what['product'] = 'SCAN'
-            ds_what['startdate'] = start.strftime('%Y%m%d')
-            ds_what['starttime'] = start.strftime('%H%M%S')
-            ds_what['enddate'] = end.strftime('%Y%m%d')
-            ds_what['endtime'] = end.strftime('%H%M%S')
-            write_odim(ds_what, h5_ds_what)
-
-            # where group, p. 11 ff. mandatory
-            h5_ds_where = h5_dataset.create_group('where')
-            rscale = ds.range.values[1] / 1. - ds.range.values[0]
-            rstart = (ds.range.values[0] - rscale / 2.) / 1000.
-            ds_where = {'elangle': ds.fixed_angle,
-                        'nbins': ds.range.shape[0],
-                        'rstart': rstart,
-                        'rscale': rscale,
-                        'nrays': ds.azimuth.shape[0],
-                        'a1gate':
-                            np.nonzero(np.argsort(ds.time.values) == 0)[0][0]
-                        }
-            write_odim(ds_where, h5_ds_where)
-
-            # how group, p. 14 ff.
-            h5_ds_how = h5_dataset.create_group('how')
-            try:
-                ds_how = self['odim']['dsets'][ds_list[idx]]['how'].attrs
-            except KeyError:
-                ds_how = {'scan_index': ds.sweep_number + 1,
-                          'scan_count': len(sweepnames),
-                          }
-            write_odim(ds_how, h5_ds_how)
-
-            # write moments
-            write_odim_moments(ds, h5_dataset)
-
-        h5.close()
+        to_odim(self, filename)
 
 
 class CfRadial(XRadVol):
     """ Class for xarray based retrieval of CfRadial data files
 
     """
-
     def __init__(self, filename=None, flavour=None, **kwargs):
         super(CfRadial, self).__init__()
         self._filename = filename
@@ -745,10 +1013,10 @@ class CfRadial(XRadVol):
         """ Assign from CfRadial2 data structure.
 
         """
-        self['root'] = open_ds(self._ncf)
-        sweepnames = self.root.sweep_group_name.values
+        self['root'] = open_dataset(self._ncf)
+        sweepnames = self['root'].sweep_group_name.values
         for sw in sweepnames:
-            self[sw] = open_ds(self._ncf, sw)
+            self[sw] = open_dataset(self._ncf, sw)
             self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
             self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
 
@@ -756,7 +1024,7 @@ class CfRadial(XRadVol):
         """ Assign from CfRadial1 data structure.
 
         """
-        root = open_ds(self._ncf)
+        root = open_dataset(self._ncf)
         var = root.variables.keys()
         remove_root = var ^ root_vars
         remove_root &= var
@@ -823,105 +1091,18 @@ class OdimH5(XRadVol):
                 'wradlib: Unknown "flavour" kwarg attribute: {} .'
                 ''.format(flavour))
 
-    def _get_groups(self):
-        return (open_ds(self._ncf), open_ds(self._ncf, 'how'),
-                open_ds(self._ncf, 'what'), open_ds(self._ncf, 'where'))
-
-    def _get_ds_groups(self, sweep):
-        return (open_ds(self._ncf, sweep),
-                open_ds(self._ncf[sweep], 'how'),
-                open_ds(self._ncf[sweep], 'what'),
-                open_ds(self._ncf[sweep], 'where'))
-
-    def _get_moment_names(self, sweep, fmt=None, src=None):
-        moments = [mom for mom in getattr(self._ncf[sweep], src).keys() if
-                   fmt in mom]
-        moments_idx = np.argsort([int(s[len(fmt):]) for s in moments])
-        return np.array(moments)[moments_idx]
-
-    def _get_group_moments(self, sweep, moments=None):
-        datas = {}
-        for mom in moments:
-            dmom_what = open_ds(self._ncf[sweep][mom], 'what')
-            name = dmom_what.attrs.pop('quantity')
-            if name not in moments_mapping.keys():
-                continue
-            dsmom = open_ds(self._ncf[sweep], mom)
-            dmom = dsmom.data.assign_attrs(dmom_what.attrs)
-            dmom.attrs['scale_factor'] = dmom.attrs.get('gain')
-            dmom.attrs['add_offset'] = dmom.attrs.get('offset')
-            dmom.attrs['_FillValue'] = dmom.attrs.get('nodata')
-            dmom.attrs['_Undetect'] = dmom.attrs.get('undetect')
-            dmom.attrs['coordinates'] = 'elevation azimuth range'
-
-            # add cfradial moment attributes
-            for k, v in moments_mapping[name].items():
-                dmom.attrs[k] = v
-
-            # drop short_name
-            dmom.attrs.pop('short_name')
-            dmom.attrs.pop('gamic')
-
-            # fix dimensions
-            dims = dmom.dims
-            datas.update({name: dmom.rename({dims[0]: 'time',
-                                             dims[1]: 'range',
-                                             })})
-        return datas
-
-    def _get_variables_moments(self, ds, moments=None):
-        for mom in moments:
-            # open dataX dataset
-            dmom = ds[mom]
-            name = dmom.moment.lower()
-            if name not in GAMIC_NAMES.keys():
-                ds = ds.drop(mom)
-                continue
-            cfname = GAMIC_NAMES[name]
-            # assign attributes
-            dmax = np.iinfo(dmom.dtype).max
-            minval = dmom.dyn_range_min
-            maxval = dmom.dyn_range_max
-            dmom.attrs['gain'] = (maxval - minval) / dmax
-            dmom.attrs['offset'] = minval
-            dmom.attrs['scale_factor'] = (maxval - minval) / dmax
-            dmom.attrs['add_offset'] = minval
-
-            dmom.attrs['_FillValue'] = float(dmax)
-            dmom.attrs['nodata'] = float(dmax)
-            dmom.attrs['_Undetect'] = 0.
-            dmom.attrs['undetect'] = 0.
-            for k, v in moments_mapping[cfname].items():
-                dmom.attrs[k] = v
-            dname = dmom.attrs.pop('short_name')
-            dmom.attrs.pop('gamic')
-            #
-            ds = ds.rename({mom: dname})
-            # fix dimensions
-            dims = dmom.dims
-            dmom = dmom.rename({dims[0]: 'time',
-                                dims[1]: 'range',
-                                })
-        return ds
-
-    def _get_swp_grp_name(self, name):
-        # sweep group handling
-        src = [key for key in self._ncf.groups.keys() if name in key]
-        src.sort(key=lambda x: int(x[len(name):]))
-        swp_grp_name = ['sweep_{}'.format(i) for i in
-                        range(1, len(src) + 1)]
-        return src, swp_grp_name
-
     def assign_data_odim(self, strict=True):
         """ Assign from ODIM_H5 data structure.
 
         """
 
         # retrieve and assign global groups root and /how, /what, /where
-        root, how, what, where = self._get_groups()
+        groups = [None, 'how', 'what', 'where']
+        root, how, what, where = get_groups(self._ncf, groups)
 
         # sweep group handling
-        src_swp_grp_name, swp_grp_name = self._get_swp_grp_name('dataset')
+        src_swp_grp_name, swp_grp_name = get_sweep_group_name(self._ncf,
+                                                              'dataset')
 
         sweep_fixed_angle = []
         time_coverage_start = np.datetime64('2037-01-01')
@@ -932,12 +1113,15 @@ class OdimH5(XRadVol):
             swp = {}
 
             # retrieve ds and assign datasetX how/what/where group attributes
-            ds, ds_how, ds_what, ds_where = self._get_ds_groups(sweep)
+            groups = [None, 'how', 'what', 'where']
+            ds, ds_how, ds_what, ds_where = get_groups(self._ncf[sweep],
+                                                       groups)
 
             # moments
-            moments = self._get_moment_names(sweep, fmt='data', src='groups')
-            for name, dmom in self._get_group_moments(sweep,
-                                                      moments=moments).items():
+            moments = get_moment_names(self._ncf[sweep], fmt='data',
+                                       src='groups')
+            for name, dmom in get_group_moments(self._ncf, sweep,
+                                                moments=moments).items():
                 ds[name] = dmom
 
             # coordinates wrap-up
@@ -1033,10 +1217,12 @@ class OdimH5(XRadVol):
 
         """
         # retrieve and assign global groups root and /how, /what, /where
-        root, how, what, where = self._get_groups()
+        groups = [None, 'how', 'what', 'where']
+        root, how, what, where = get_groups(self._ncf, groups)
 
         # sweep group handling
-        src_swp_grp_name, swp_grp_name = self._get_swp_grp_name('scan')
+        src_swp_grp_name, swp_grp_name = get_sweep_group_name(self._ncf,
+                                                              'scan')
 
         sweep_fixed_angle = []
         time_coverage_start = np.datetime64('2037-01-01')
@@ -1048,7 +1234,9 @@ class OdimH5(XRadVol):
             swp = {}
 
             # retrieve ds and assign datasetX how/what/where group attributes
-            ds, ds_how, ds_what, ds_where = self._get_ds_groups(sweep)
+            groups = [None, 'how', 'what', 'where']
+            ds, ds_how, ds_what, ds_where = get_groups(self._ncf[sweep],
+                                                       groups)
 
             # fix dimensions
             dims = list(ds.dims.keys())
@@ -1072,9 +1260,9 @@ class OdimH5(XRadVol):
             ds = ds.assign({'time': (['time'], ds_what.gamic.time_range.values,
                                      time_attrs)})
             # get moments
-            moments = self._get_moment_names(sweep, fmt='moment_',
-                                             src='variables')
-            ds = self._get_variables_moments(ds, moments=moments)
+            moments = get_moment_names(self._ncf[sweep], fmt='moment_',
+                                       src='variables')
+            ds = get_variables_moments(ds, moments=moments)
 
             # assign global sweep attributes
             ds = ds.assign({'sweep_number': i,
