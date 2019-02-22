@@ -3,6 +3,7 @@ scipy
 matplotlib
 h5py
 netCDF4
+xarray
 gdal
 deprecation
 xmltodict
