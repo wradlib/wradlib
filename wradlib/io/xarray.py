@@ -286,6 +286,53 @@ global_variables = dict([('volume_number', ''),
                          ('status_xml', '')])
 
 
+def as_xarray_dataarray(data, dims, coords):
+    keys = dims.keys()
+    vals = dims.values()
+
+    da = xr.DataArray(data, coords=vals, dims=keys)
+    dims = list(da.dims)
+    da = da.assign_coords(**coords)
+
+    return da
+
+
+def create_xarray_dataarray(data, rays=None, bins=None, site=(0, 0, 0),
+                            angle=None):
+    # providing 'reasonable defaults', based on the data's shape
+    if rays is None:
+        rays0 = np.arange(data.shape[0], dtype=np.float)
+        rays0 += (rays0[1] - rays0[0]) / 2.
+    else:
+        rays0 = np.asanyarray(rays.copy())
+
+    if bins is None:
+        bins0 = np.arange(data.shape[1], dtype=np.float)
+        bins0 += (bins0[1] - bins0[0]) / 2.
+    else:
+        bins0 = np.asanyarray(bins.copy())
+
+    if angle is None:
+        angle0 = np.ones_like(rays0) * 0.
+    else:
+        angle0 = np.asanyarray(angle)
+        if np.isscalar(angle):
+            angle0 = np.ones_like(rays0) * angle
+
+    # create xarray dataarray
+    dims = {'time': np.arange(rays0.shape[0]), 'range': bins0}
+    coords = {'azimuth': (list(dims.keys())[0], rays0),
+              'elevation': (list(dims.keys())[0], angle0),
+              'longitude': (site[0]),
+              'latitude': (site[1]),
+              'altitude': (site[2]),
+              }
+
+    da = as_xarray_dataarray(data, dims=dims, coords=coords)
+
+    return da
+
+
 @xr.register_dataset_accessor('gamic')
 class GamicAccessor(object):
     def __init__(self, xarray_obj):
@@ -1125,6 +1172,9 @@ class OdimH5(XRadVol):
                 ds[name] = dmom
 
             # coordinates wrap-up
+            ds = ds.assign_coords(longitude=where.attrs['lon'],
+                                  latitude=where.attrs['lat'],
+                                  altitude=where.attrs['height'])
             ds = ds.assign_coords(azimuth=ds_where.odim.azimuth_range)
             ds = ds.assign_coords(elevation=ds_where.odim.elevation_range)
             ds = ds.assign({'range': ds_where.odim.radial_range})

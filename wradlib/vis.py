@@ -41,16 +41,215 @@ from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
 import mpl_toolkits.axisartist.angle_helper as ah
 from matplotlib.ticker import NullFormatter, FuncFormatter
 from matplotlib.collections import LineCollection, PolyCollection
+import xarray as xr
 
 # wradlib modules
 from . import georef as georef
 from . import util as util
+from .io.xarray import create_xarray_dataarray
 
 
-def plot_ppi(data, r=None, az=None, autoext=True,
-             site=(0, 0, 0), proj=None, elev=0.,
-             fig=None, ax=111, func='pcolormesh',
-             cg=False, rf=1., refrac=False,
+@xr.register_dataarray_accessor('wradlib')
+class WradlibAccessor(object):
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+        self._bins = None
+        self._rays = None
+        self._site = None
+        self._coords = None
+        self._proj = None
+        self._re = None
+        self._ke = 4./3.
+        self.fix_cyclic()
+        #self.fix_proj()
+
+    def reset_attrs(self):
+        self._bins = None
+        self._rays = None
+        self._site = None
+        self._coords = None
+        self._proj = None
+
+    @property
+    def site(self):
+        if self._site is None:
+            self._site = (self._obj.longitude.item(),
+                          self._obj.latitude.item(),
+                          self._obj.altitude.item())
+        return self._site
+
+    @property
+    def proj(self):
+        return self._proj
+
+    @proj.setter
+    def proj(self, proj):
+        self.reset_attrs()
+        self._proj = proj
+
+    def fix_cyclic(self):
+        rays = self._obj.azimuth
+        if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
+            self._obj = xr.concat([self._obj, self._obj[0]], dim='time')
+
+    def fix_proj(self):
+        self._coords, self._proj = georef.spherical_to_xyz(self.bins,
+                                                           self.rays,
+                                                           self._obj.elevation,
+                                                           self.site,
+                                                           re=self._re,
+                                                           ke=self._ke
+                                                           )
+    @property
+    def bins(self):
+        if self._bins is None:
+            self._bins, self._rays = np.meshgrid(self._obj.range,
+                                                 self._obj.azimuth,
+                                                 indexing='xy')
+        return self._bins
+
+    @property
+    def rays(self):
+        if self._rays is None:
+            self._bins, self._rays = np.meshgrid(self._obj.range,
+                                                 self._obj.azimuth,
+                                                 indexing='xy')
+        return self._rays
+
+    @property
+    def re(self):
+        return self._re
+
+    @re.setter
+    def re(self, re):
+        self._coords = None
+        self._re = re
+
+    @property
+    def ke(self):
+        return self._re
+
+    @ke.setter
+    def ke(self, ke):
+        self._coords = None
+        self._ke = ke
+
+    @property
+    def coords(self):
+        if self._coords is None:
+            if self._proj is None:
+                self._coords, self._proj = georef.spherical_to_xyz(self.bins,
+                                                                   self.rays,
+                                                                   self._obj.elevation,
+                                                                   self.site,
+                                                                   re=self._re,
+                                                                   ke=self._ke)
+            else:
+                self._coords = georef.spherical_to_proj(self.bins,
+                                                    self.rays,
+                                                    self._obj.elevation,
+                                                    self.site,
+                                                    proj=self.proj,
+                                                    re=self._re,
+                                                    ke=self._ke)
+        return self._coords
+
+    def contour(self, **kwargs):
+        self.plot_ppi(func='contour', **kwargs)
+
+    def contourf(self, **kwargs):
+        self.plot_ppi(func='contourf', **kwargs)
+
+    def pcolormesh(self, **kwargs):
+        self.plot_ppi(func='pcolormesh', **kwargs)
+
+    def plot_ppi(self, cg=False, rf=1.0, ax=111, fig=None, proj=None,
+                 func='pcolormesh',
+                 cmap='viridis', center=False,  add_colorbar=False,
+                 add_labels=False, re=None, ke=4./3., **kwargs):
+
+        if proj is not None:
+            self.proj = proj
+
+        self._re = re
+        self._ke = ke
+
+        caax = None
+        paax = None
+
+        if isinstance(ax, axes.Axes):
+            if cg:
+                try:
+                    caax = ax.parasites[0]
+                    paax = ax.parasites[1]
+                except AttributeError:
+                    raise TypeError(
+                        "WRADLIB: If `cg=True` `ax` need to be of type"
+                        " `mpl_toolkits.axisartist.SubplotHost`")
+        else:
+            # axes object is given
+            if fig is None:
+                if ax == 111:
+                    # create new figure if there is only one subplot
+                    fig = pl.figure()
+                else:
+                    # assume current figure
+                    fig = pl.gcf()
+            if cg:
+                # create curvelinear axes
+                ax, caax, paax = create_cg('PPI', fig, ax)
+                # this is in fact the outermost thick "ring"
+                ax.axis["lon"] = ax.new_floating_axis(1, (np.max(
+                    self.bins) + (self._obj.range[1] - self._obj.range[0]) / 2. ) / rf)
+                ax.axis["lon"].major_ticklabels.set_visible(False)
+                # and also set tickmarklength to zero for better presentation
+                ax.axis["lon"].major_ticks.set_ticksize(0)
+            else:
+                ax = fig.add_subplot(ax)
+
+        dims = list(self._obj.dims)
+        if cg:
+
+            coords = {'x_cg': (dims, self.bins / rf),
+                      'y_cg': (dims, self.rays / rf)}
+            da = self._obj.assign_coords(**coords)
+            plax = paax
+            infer_intervals = kwargs.pop('infer_intervals', False)
+            xp, yp = 'y_cg', 'x_cg'
+        else:
+            if proj is None:
+                x_add = self.site[0]
+                y_add = self.site[1]
+            else:
+                x_add = 0
+                y_add = 0
+            coords = {'x': (dims, (self.coords[..., 0] + x_add) / rf),
+                      'y': (dims, (self.coords[..., 1] + y_add) / rf)}
+            da = self._obj.assign_coords(**coords)
+            plax = ax
+            infer_intervals = kwargs.pop('infer_intervals', True)
+            xp, yp = 'x', 'y'
+
+        plotfunc = getattr(da.plot, func)
+        pm = plotfunc(x=xp, y=yp, ax=plax, cmap=cmap, center=center,
+                      add_colorbar=add_colorbar, add_labels=add_labels,
+                      infer_intervals=infer_intervals, **kwargs)
+
+        if cg:
+            xa = da.x_cg * np.cos(np.radians(da.y_cg))
+            ya = da.x_cg * np.sin(np.radians(da.y_cg))
+            ax.set_ylim(np.min(ya), np.max(ya))
+            ax.set_xlim(np.min(xa), np.max(xa))
+            ax.grid(True)
+            caax.grid(True)
+        else:
+            ax.set_aspect('equal')
+
+        return ax, pm
+
+
+def plot_ppi(data, r=None, az=None, site=(0, 0, 0), proj=None, elev=0.,
+             fig=None, ax=111, func='pcolormesh', cg=False, rf=1.,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
 
@@ -92,13 +291,6 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     az : :class:`numpy:numpy.ndarray`
         The azimuth angles in degrees. If None, a default is
         calculated from the dimensions of ``data``.
-    autoext : bool
-        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw the
-        bins.
-        As this function needs one set of coordinates more than would usually
-        be provided by ``r`` and ``az``, setting ``autoext`` to True
-        automatically extends ``r`` and ``az`` so that all of ``data`` will
-        be plotted.
     refrac: bool
         If True, the effect of refractivity of the earth's atmosphere on the
         beam propagation will be taken into account. If False, simple
@@ -177,137 +369,10 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     and :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
 
     """
-    # kwargs handling
-    kw_spherical = {}
-    if 're' in kwargs:
-        re = kwargs.pop('re')
-        kw_spherical['re'] = re
-    if 'ke' in kwargs:
-        ke = kwargs.pop('ke')
-        kw_spherical['ke'] = ke
-    kwargs['zorder'] = kwargs.pop('zorder', 0)
+    da = create_xarray_dataarray(data, rays=az, bins=r, site=site, angle=elev)
 
-    if (proj is not None) & cg:
-        cg = False
-        warnings.warn(
-            "WARNING: `cg` cannot be used with `proj`, falling back.")
-
-    # providing 'reasonable defaults', based on the data's shape
-    if r is None:
-        d1 = np.arange(data.shape[1], dtype=np.float)
-    else:
-        d1 = np.asanyarray(r.copy())
-
-    if az is None:
-        d2 = np.arange(data.shape[0], dtype=np.float)
-    else:
-        d2 = np.asanyarray(az.copy())
-
-    if autoext & ('pcolormesh' in func):
-        # the ranges need to go 'one bin further', assuming some regularity
-        # we extend by the distance between the preceding bins.
-        x = np.append(d1, d1[-1] + (d1[-1] - d1[-2]))
-        # the angular dimension is supposed to be cyclic, so we just add the
-        # first element
-        y = np.append(d2, d2[0])
-    else:
-        # no autoext basically is only useful, if the user supplied the correct
-        # dimensions himself.
-        x = d1
-        y = d2
-
-    if 'contour' in func:
-        # add first azimuth as last for y and data
-        y = np.append(d2, d2[0])
-        data = np.vstack((data, data[0][np.newaxis, ...]))
-        # move to center
-        x += (x[1] - x[0]) / 2.
-        # get angle difference correct if y[1]=360-res/2 and y[0]=0+res/2
-        ydiff = np.abs((y[1] - y[0]) % 360)
-        y += ydiff / 2.
-
-    if refrac & (proj is None):
-        # with refraction correction, significant at higher elevations
-        # calculate new range values
-        re = kwargs.pop('re', 6370040.)
-        ke = kwargs.pop('ke', 4 / 3.)
-        x = georef.bin_distance(x, elev, site[2], re, ke=ke)
-
-    # axes object is given
-    if isinstance(ax, axes.Axes):
-        if cg:
-            try:
-                caax = ax.parasites[0]
-                paax = ax.parasites[1]
-            except AttributeError:
-                raise TypeError("WRADLIB: If `cg=True` `ax` need to be of type"
-                                " `mpl_toolkits.axisartist.SubplotHost`")
-    else:
-        if fig is None:
-            if ax == 111:
-                # create new figure if there is only one subplot
-                fig = pl.figure()
-            else:
-                # assume current figure
-                fig = pl.gcf()
-        if cg:
-            # create curvelinear axes
-            ax, caax, paax = create_cg('PPI', fig, ax)
-            # this is in fact the outermost thick "ring"
-            ax.axis["lon"] = ax.new_floating_axis(1, np.max(x) / rf)
-            ax.axis["lon"].major_ticklabels.set_visible(False)
-            # and also set tickmarklength to zero for better presentation
-            ax.axis["lon"].major_ticks.set_ticksize(0)
-        else:
-            ax = fig.add_subplot(ax)
-
-    if cg:
-        xx, yy = np.meshgrid(y, x)
-        # set bounds to min/max
-        xa = yy * np.sin(np.radians(xx)) / rf
-        ya = yy * np.cos(np.radians(xx)) / rf
-        plax = paax
-    else:
-        # coordinates for all vertices
-        xx, yy = np.meshgrid(x, y)
-        plax = ax
-
-    if proj:
-        # with georeferencing
-        if r is None:
-            # if we produced a default, this one is still in 'kilometers'
-            # therefore we need to get from km to m
-            xx *= 1000
-
-        # projected to the final coordinate system
-        kw_spherical['proj'] = proj
-        coords = georef.spherical_to_proj(xx, yy, elev, site, **kw_spherical)
-
-        xx = coords[..., 0]
-        yy = coords[..., 1]
-
-    else:
-        if cg:
-            yy = yy / rf
-            data = data.transpose()
-        else:
-            # no georeferencing -> simple trigonometry
-            xxx = (xx * np.cos(np.radians(90. - yy)) + site[0]) / rf
-            yy = (xx * np.sin(np.radians(90. - yy)) + site[1]) / rf
-            xx = xxx
-
-    # plot the stuff
-    plotfunc = getattr(plax, func)
-    pm = plotfunc(xx, yy, data, **kwargs)
-
-    if cg:
-        # show curvelinear and cartesian grids
-        ax.set_ylim(np.min(ya), np.max(ya))
-        ax.set_xlim(np.min(xa), np.max(xa))
-        ax.grid(True)
-        caax.grid(True)
-    else:
-        ax.set_aspect('equal')
+    ax, pm = da.wradlib.plot_ppi(ax=ax, fig=fig, func=func, rf=rf, cg=cg,
+                                 proj=proj, **kwargs)
 
     return ax, pm
 
