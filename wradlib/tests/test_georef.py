@@ -41,75 +41,68 @@ class CoordinateTransformTest(unittest.TestCase):
                        1694.22337134])))
 
     def test_spherical_to_xyz(self):
-        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+        self.assertTrue((1, 36, 10, 3) ==
+                        georef.spherical_to_xyz(np.arange(10),
+                                                np.arange(36),
                                                 10., self.csite,
-                                                squeeze=False)[0].shape ==
-                         (1, 36, 10, 3))
-        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                squeeze=False)[0].shape)
+        self.assertTrue((1, 36, 10, 3) ==
+                        georef.spherical_to_xyz(np.arange(10), np.arange(36),
                                                 np.arange(36), self.csite,
-                                                squeeze=False)[0].shape ==
-                        (1, 36, 10, 3))
-        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                squeeze=False)[0].shape)
+        self.assertTrue((36, 10, 3) ==
+                        georef.spherical_to_xyz(np.arange(10), np.arange(36),
                                                 np.arange(36), self.csite,
-                                                squeeze=True)[0].shape ==
-                        (36, 10, 3))
-        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                squeeze=True,
+                                                strict_dims=False)[0].shape)
+        self.assertTrue((36, 36, 10, 3) ==
+                        georef.spherical_to_xyz(np.arange(10), np.arange(36),
                                                 np.arange(36), self.csite,
-                                                strict_dims=True)[0].shape ==
-                        (36, 36, 10, 3))
-        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                strict_dims=True)[0].shape)
+        self.assertTrue((18, 36, 10, 3) ==
+                        georef.spherical_to_xyz(np.arange(10), np.arange(36),
                                                 np.arange(18), self.csite,
-                                                strict_dims=False)[0].shape ==
-                        (18, 36, 10, 3))
+                                                strict_dims=False)[0].shape)
         r, phi = np.meshgrid(np.arange(10), np.arange(36))
-        self.assertTrue(georef.spherical_to_xyz(r, phi,
-                                                10, self.csite,
+        self.assertTrue((1, 36, 10, 3) ==
+                        georef.spherical_to_xyz(r, phi, 10, self.csite,
                                                 squeeze=False,
-                                                strict_dims=False)[0].shape ==
-                        (1, 36, 10, 3))
+                                                strict_dims=False)[0].shape)
         r, phi = np.meshgrid(np.arange(10), np.arange(36))
-        self.assertTrue(georef.spherical_to_xyz(r, phi,
-                                                np.arange(36), self.csite,
-                                                squeeze=False,
-                                                strict_dims=False)[0].shape ==
-                        (1, 36, 10, 3))
+        self.assertTrue((1, 36, 10, 3) ==
+                        georef.spherical_to_xyz(r, phi, np.arange(36),
+                                                self.csite, squeeze=False,
+                                                strict_dims=False)[0].shape)
         r, phi = np.meshgrid(np.arange(10), np.arange(36))
-        self.assertTrue(georef.spherical_to_xyz(r, phi,
-                                                np.arange(18), self.csite,
-                                                squeeze=False,
-                                                strict_dims=False)[0].shape ==
-                        (18, 36, 10, 3))
+        self.assertTrue((18, 36, 10, 3) ==
+                        georef.spherical_to_xyz(r, phi, np.arange(18),
+                                                self.csite, squeeze=False,
+                                                strict_dims=False)[0].shape)
         r, phi = np.meshgrid(np.arange(10), np.arange(36))
-        self.assertTrue(georef.spherical_to_xyz(r, phi,
-                                                np.arange(36), self.csite,
-                                                squeeze=False,
-                                                strict_dims=True)[0].shape ==
-                        (36, 36, 10, 3))
-        self.assertTrue(georef.spherical_to_xyz(10, 36, 10., self.csite,
-                                                squeeze=False,
-                                                )[0].shape ==
-                        (1, 1, 1, 3))
-        self.assertTrue(georef.spherical_to_xyz(np.arange(10), 36, 10.,
+        self.assertTrue((36, 36, 10, 3) ==
+                        georef.spherical_to_xyz(r, phi, np.arange(36),
+                                                self.csite, squeeze=False,
+                                                strict_dims=True)[0].shape)
+        self.assertTrue((1, 1, 1, 3) ==
+                        georef.spherical_to_xyz(10, 36, 10., self.csite,
+                                                squeeze=False)[0].shape)
+        self.assertTrue((1, 1, 10, 3) ==
+                        georef.spherical_to_xyz(np.arange(10), 36, 10.,
                                                 self.csite,
-                                                squeeze=False,
-                                                )[0].shape ==
-                        (1, 1, 10, 3))
-        self.assertTrue(georef.spherical_to_xyz(10, np.arange(36), 10.,
+                                                squeeze=False)[0].shape)
+        self.assertTrue((1, 36, 1, 3) ==
+                        georef.spherical_to_xyz(10, np.arange(36), 10.,
                                                 self.csite,
-                                                squeeze=False,
-                                                )[0].shape ==
-                        (1, 36, 1, 3))
-        self.assertTrue(georef.spherical_to_xyz(10, 36.,np.arange(10),
+                                                squeeze=False)[0].shape)
+        self.assertTrue((10, 1, 1, 3) ==
+                        georef.spherical_to_xyz(10, 36., np.arange(10),
                                                 self.csite,
-                                                squeeze=False,
-                                                )[0].shape ==
-                        (10, 1, 1, 3))
-        self.assertTrue(georef.spherical_to_xyz(10, np.arange(36),
+                                                squeeze=False)[0].shape)
+        self.assertTrue((10, 36, 1, 3) ==
+                        georef.spherical_to_xyz(10, np.arange(36),
                                                 np.arange(10),
                                                 self.csite,
-                                                squeeze=False,
-                                                )[0].shape ==
-                        (10, 36, 1, 3))
+                                                squeeze=False)[0].shape)
 
         coords, rad = georef.spherical_to_xyz(self.r.copy(), self.az.copy(),
                                               self.th.copy(), self.csite,
