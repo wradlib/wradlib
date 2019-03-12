@@ -54,11 +54,10 @@ class PolarPlotTest(unittest.TestCase):
                                          linestyle='solid'))
         ax, pm = vis.plot_ppi(self.img, func='contour')
         ax, pm = vis.plot_ppi(self.img, func='contourf')
-        rays = self.da.wradlib.rays
+        rays = self.da.wradlib.rays  # noqa
         ax, pm = self.da.wradlib.contour()
         ax, pm = self.da.wradlib.contourf()
         ax, pm = self.da.wradlib.pcolormesh()
-
 
     def test_plot_rhi(self):
         ax, pm = vis.plot_rhi(self.img[0:90, :])

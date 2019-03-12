@@ -990,6 +990,7 @@ class XarrayTests(unittest.TestCase):
     def test_create_xarray_dataarray(self):
         self.assertRaises(TypeError,
                           lambda: create_xarray_dataarray())
+
     def test_iter(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
@@ -1028,8 +1029,8 @@ class XarrayTests(unittest.TestCase):
         time_cov = ('2014-08-10T18:23:35Z', '2014-08-10T18:24:05Z')
         filename = 'hdf5/2014-08-10--182000.ppi.mvol'
         h5file = wrl.util.get_wradlib_data_file(filename)
-        #self.assertRaises(AttributeError,
-        #                  lambda: OdimH5(h5file))
+        self.assertRaises(AttributeError,
+                          lambda: OdimH5(h5file))
         cf = OdimH5(h5file, flavour='GAMIC')
         self.assertEqual(str(cf.root.time_coverage_start.values),
                          time_cov[0])
