@@ -7,6 +7,7 @@ import unittest
 
 import wradlib.vis as vis
 import wradlib.georef as georef
+import wradlib.io as io
 import numpy as np
 import matplotlib.pyplot as pl
 pl.interactive(True)  # noqa
@@ -22,8 +23,11 @@ class PolarPlotTest(unittest.TestCase):
         img[60:120, 2:7] = 11  # precip field
         self.r = np.arange(0, 100000, 10000)
         self.az = np.arange(0, 360)
+        self.th = np.zeros_like(self.az)
         self.img = img
         self.proj = georef.create_osr("dwd-radolan")
+
+        self.da = io.create_xarray_dataarray(img, self.r, self.az, self.th)
 
     def test_plot_ppi(self):
         ax, pm = vis.plot_ppi(self.img, re=6371000., ke=(4. / 3.))
@@ -50,6 +54,11 @@ class PolarPlotTest(unittest.TestCase):
                                          linestyle='solid'))
         ax, pm = vis.plot_ppi(self.img, func='contour')
         ax, pm = vis.plot_ppi(self.img, func='contourf')
+        rays = self.da.wradlib.rays
+        ax, pm = self.da.wradlib.contour()
+        ax, pm = self.da.wradlib.contourf()
+        ax, pm = self.da.wradlib.pcolormesh()
+
 
     def test_plot_rhi(self):
         ax, pm = vis.plot_rhi(self.img[0:90, :])
