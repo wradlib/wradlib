@@ -164,18 +164,15 @@ class WradlibAccessor(object):
         return self._coords
 
     def contour(self, **kwargs):
-        kwargs.pop('func')
-        kwargs['func'] = 'contour'
+        kwargs.setdefault('func', 'contour')
         return self.plot(**kwargs)
 
     def contourf(self, **kwargs):
-        kwargs.pop('func')
-        kwargs['func'] = 'contourf'
+        kwargs.setdefault('func', 'contourf')
         return self.plot(**kwargs)
 
     def pcolormesh(self, **kwargs):
-        kwargs.pop('func')
-        kwargs['func'] = 'pcolormesh'
+        kwargs.setdefault('func', 'pcolormesh')
         return self.plot(**kwargs)
 
     def plot_rhi(self, **kwargs):
@@ -329,6 +326,7 @@ class WradlibAccessor(object):
                 ax = fig.add_subplot(ax)
 
         dims = list(self._obj.dims)
+        print(dims)
         if cg:
             coords = {'x_cg': (dims, self.bins / rf),
                       'y_cg': (dims, self.rays)}
@@ -355,6 +353,8 @@ class WradlibAccessor(object):
             coords = {'x': (dims, x),
                       'y': (dims, y),
                       'z': (dims, (self.coords[..., 2] + z_add) / rf)}
+            print(x.shape, y.shape, self.coords[..., 2].shape)
+            #print(self._obj.dims['time'], self._obj.dims['range'])
             da = self._obj.assign_coords(**coords)
             plax = ax
             infer_intervals = kwargs.pop('infer_intervals', True)
