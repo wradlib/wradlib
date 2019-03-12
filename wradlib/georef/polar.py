@@ -99,10 +99,10 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
     phi = np.asanyarray(phi)
 
     if r.ndim:
-        r.shape = (1,) * (3 - r.ndim) + r.shape
+        r = r.reshape((1,) * (3 - r.ndim) + r.shape)
 
     if phi.ndim:
-        phi.shape = (1,) + phi.shape + (1,) * (2 - phi.ndim)
+        phi = phi.reshape((1,) + phi.shape + (1,) * (2 - phi.ndim))
 
     if not theta.ndim:
         theta = np.broadcast_to(theta, phi.shape)
@@ -115,7 +115,7 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
             dims -= 1
 
     if theta.ndim and phi.ndim:
-        theta.shape = theta.shape + (1,) * (dims - theta.ndim)
+        theta = theta.reshape(theta.shape + (1,) * (dims - theta.ndim))
 
     z = bin_altitude(r, theta, centalt, re, ke=ke)
     dist = site_distance(r, theta, z, re, ke=ke)

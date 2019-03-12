@@ -104,8 +104,8 @@ class CoordinateTransformTest(unittest.TestCase):
                                                 self.csite,
                                                 squeeze=False)[0].shape)
 
-        coords, rad = georef.spherical_to_xyz(self.r.copy(), self.az.copy(),
-                                              self.th.copy(), self.csite,
+        coords, rad = georef.spherical_to_xyz(self.r, self.az,
+                                              self.th, self.csite,
                                               squeeze=True, strict_dims=False)
         self.assertTrue(np.allclose(coords[..., 0], self.result_xyz[0],
                         rtol=1e-03))
@@ -114,8 +114,8 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(coords[..., 2], self.result_xyz[2],
                         rtol=1e-03))
         re = georef.get_earth_radius(self.csite[1])
-        coords, rad = georef.spherical_to_xyz(self.r.copy(), self.az.copy(),
-                                              self.th.copy(), self.csite,
+        coords, rad = georef.spherical_to_xyz(self.r, self.az,
+                                              self.th, self.csite,
                                               re=re)
         self.assertTrue(np.allclose(coords[..., 0], self.result_xyz[0],
                                     rtol=1e-03))
