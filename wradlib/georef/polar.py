@@ -27,7 +27,8 @@ from .misc import (get_default_projection, get_earth_radius,
                    bin_altitude, site_distance)
 
 
-def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
+def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
+                     squeeze=None, strict_dims=False):
     """Transforms spherical coordinates (r, phi, theta) to cartesian
     coordinates (x, y, z) centered at sitecoords (aeqd).
 
@@ -54,6 +55,11 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
         affects radar beam propagation. In principle this is wavelength-
         dependent. The default of 4/3 is a good approximation for most
         weather radar wavelengths.
+    squeeze : bool
+        If True, returns squeezed array.
+    strict_dims : bool
+        If True, generates output of (theta, phi, r, 3) in any case.
+        If False, dimensions with same length are "merged".
 
     Returns
     -------
@@ -88,19 +94,58 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.):
                                                         lat=sitecoords[1],
                                                         a=re, b=re))
 
-    r = np.asarray(r)
-    theta = np.asarray(theta)
-    phi = np.asarray(phi)
+    r = np.asanyarray(r)
+    theta = np.asanyarray(theta)
+    phi = np.asanyarray(phi)
+
+    if r.ndim:
+        r.shape = (1,) * (3 - r.ndim) + r.shape
+
+    if phi.ndim:
+        phi.shape = (1,) + phi.shape + (1,) * (2 - phi.ndim)
+
+    if not theta.ndim:
+        theta = np.broadcast_to(theta, phi.shape)
+
+    dims = 3
+    if not strict_dims:
+        if phi.ndim and theta.ndim and (theta.shape[0] == phi.shape[1]):
+            dims -= 1
+        if r.ndim and theta.ndim and (theta.shape[0] == r.shape[2]):
+            dims -= 1
+
+    if theta.ndim and phi.ndim:
+        theta.shape = theta.shape + (1,) * (dims - theta.ndim)
 
     z = bin_altitude(r, theta, centalt, re, ke=ke)
     dist = site_distance(r, theta, z, re, ke=ke)
 
+    if ((not strict_dims) and phi.ndim and r.ndim and
+            (r.shape[2] == phi.shape[1])):
+        z = np.squeeze(z)
+        dist = np.squeeze(dist)
+        phi = np.squeeze(phi)
+
     x = dist * np.cos(np.radians(90 - phi))
     y = dist * np.sin(np.radians(90 - phi))
 
-    xyz = np.concatenate((x[..., np.newaxis],
-                          y[..., np.newaxis],
-                          z[..., np.newaxis]), axis=-1)
+    if z.ndim:
+        z = np.broadcast_to(z, x.shape)
+
+    xyz = np.stack((x, y, z), axis=-1)
+
+    if xyz.ndim == 1:
+        xyz.shape = (1,) * 3 + xyz.shape
+    elif xyz.ndim == 2:
+        xyz.shape = (xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],)
+
+    if squeeze is None:
+        warnings.warn("Function `spherical_to_xyz` will return an array of "
+                      "shape (theta, phi, range, 3) starting with version 1.4"
+                      "", FutureWarning)
+        squeeze = True
+    if squeeze:
+        xyz = np.squeeze(xyz)
 
     return xyz, rad
 
@@ -326,7 +371,7 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     # generate a grid of polar coordinates of bin corners
     r, phi = np.meshgrid(r, phi)
 
-    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords)
+    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, strict_dims=True)
     if proj is not None:
         coords = reproject(coords, projection_source=rad,
                            projection_target=proj)
@@ -398,7 +443,7 @@ def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
     # generate a polar grid and convert to lat/lon
     r, phi = np.meshgrid(r, phi)
 
-    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords)
+    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, )
 
     if proj is None:
         return coords, rad

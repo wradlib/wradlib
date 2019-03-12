@@ -21,7 +21,7 @@ class CoordinateTransformTest(unittest.TestCase):
         self.r = np.array([0., 0., 111., 111., 111., 111.]) * 1000
         self.az = np.array([0., 180., 0., 90., 180., 270.])
         self.th = np.array([0., 0., 0., 0., 0., 0.5])
-        self.csite = (9.0, 48.0)
+        self.csite = (9.0, 48.0, 0)
         self.result_xyz = tuple(
             (np.array([0., 0., 0., 110993.6738, 0., -110976.7856]),
              np.array([0., -0., 110993.6738, 0., -110976.7856, -0.]),
@@ -41,8 +41,79 @@ class CoordinateTransformTest(unittest.TestCase):
                        1694.22337134])))
 
     def test_spherical_to_xyz(self):
-        coords, rad = georef.spherical_to_xyz(self.r, self.az,
-                                              self.th, self.csite)
+        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                10., self.csite,
+                                                squeeze=False)[0].shape ==
+                         (1, 36, 10, 3))
+        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                np.arange(36), self.csite,
+                                                squeeze=False)[0].shape ==
+                        (1, 36, 10, 3))
+        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                np.arange(36), self.csite,
+                                                squeeze=True)[0].shape ==
+                        (36, 10, 3))
+        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                np.arange(36), self.csite,
+                                                strict_dims=True)[0].shape ==
+                        (36, 36, 10, 3))
+        self.assertTrue(georef.spherical_to_xyz(np.arange(10), np.arange(36),
+                                                np.arange(18), self.csite,
+                                                strict_dims=False)[0].shape ==
+                        (18, 36, 10, 3))
+        r, phi = np.meshgrid(np.arange(10), np.arange(36))
+        self.assertTrue(georef.spherical_to_xyz(r, phi,
+                                                10, self.csite,
+                                                squeeze=False,
+                                                strict_dims=False)[0].shape ==
+                        (1, 36, 10, 3))
+        r, phi = np.meshgrid(np.arange(10), np.arange(36))
+        self.assertTrue(georef.spherical_to_xyz(r, phi,
+                                                np.arange(36), self.csite,
+                                                squeeze=False,
+                                                strict_dims=False)[0].shape ==
+                        (1, 36, 10, 3))
+        r, phi = np.meshgrid(np.arange(10), np.arange(36))
+        self.assertTrue(georef.spherical_to_xyz(r, phi,
+                                                np.arange(18), self.csite,
+                                                squeeze=False,
+                                                strict_dims=False)[0].shape ==
+                        (18, 36, 10, 3))
+        r, phi = np.meshgrid(np.arange(10), np.arange(36))
+        self.assertTrue(georef.spherical_to_xyz(r, phi,
+                                                np.arange(36), self.csite,
+                                                squeeze=False,
+                                                strict_dims=True)[0].shape ==
+                        (36, 36, 10, 3))
+        self.assertTrue(georef.spherical_to_xyz(10, 36, 10., self.csite,
+                                                squeeze=False,
+                                                )[0].shape ==
+                        (1, 1, 1, 3))
+        self.assertTrue(georef.spherical_to_xyz(np.arange(10), 36, 10.,
+                                                self.csite,
+                                                squeeze=False,
+                                                )[0].shape ==
+                        (1, 1, 10, 3))
+        self.assertTrue(georef.spherical_to_xyz(10, np.arange(36), 10.,
+                                                self.csite,
+                                                squeeze=False,
+                                                )[0].shape ==
+                        (1, 36, 1, 3))
+        self.assertTrue(georef.spherical_to_xyz(10, 36.,np.arange(10),
+                                                self.csite,
+                                                squeeze=False,
+                                                )[0].shape ==
+                        (10, 1, 1, 3))
+        self.assertTrue(georef.spherical_to_xyz(10, np.arange(36),
+                                                np.arange(10),
+                                                self.csite,
+                                                squeeze=False,
+                                                )[0].shape ==
+                        (10, 36, 1, 3))
+
+        coords, rad = georef.spherical_to_xyz(self.r.copy(), self.az.copy(),
+                                              self.th.copy(), self.csite,
+                                              squeeze=True, strict_dims=False)
         self.assertTrue(np.allclose(coords[..., 0], self.result_xyz[0],
                         rtol=1e-03))
         self.assertTrue(np.allclose(coords[..., 1], self.result_xyz[1],
@@ -50,8 +121,8 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(coords[..., 2], self.result_xyz[2],
                         rtol=1e-03))
         re = georef.get_earth_radius(self.csite[1])
-        coords, rad = georef.spherical_to_xyz(self.r, self.az,
-                                              self.th, self.csite,
+        coords, rad = georef.spherical_to_xyz(self.r.copy(), self.az.copy(),
+                                              self.th.copy(), self.csite,
                                               re=re)
         self.assertTrue(np.allclose(coords[..., 0], self.result_xyz[0],
                                     rtol=1e-03))
@@ -148,7 +219,7 @@ class CoordinateHelperTest(unittest.TestCase):
                            [9.05187756, 48.08390846, 6.],
                            [9.05136309, 48.0830778, 6.],
                            [9.1238846, 48.03435008, 6.]]])
-        self.assertTrue(np.allclose(polyvert, arr, rtol=1e-12))
+        np.testing.assert_array_almost_equal(polyvert, arr, decimal=3)
         polyvert, pr = georef.spherical_to_polyvert(np.array([10000., 10100.]),
                                                     np.array([45., 90.]), 0,
                                                     (9., 48.))
@@ -172,7 +243,7 @@ class CoordinateHelperTest(unittest.TestCase):
                            [3.8651003e+03, 9.3311777e+03, 6.],
                            [3.8268320e+03, 9.2387900e+03, 6.],
                            [9.2387900e+03, 3.8268323e+03, 6.]]])
-        np.testing.assert_array_almost_equal(polyvert, arr, decimal=4)
+        np.testing.assert_array_almost_equal(polyvert, arr, decimal=3)
 
     def test_spherical_to_centroids(self):
         r = np.array([10000., 10100.])
@@ -185,14 +256,14 @@ class CoordinateHelperTest(unittest.TestCase):
                            [9.09534571, 48.06387232, 6.]],
                           [[9.1333325, 47.99992262, 6.],
                            [9.13467253, 47.99992106, 6.]]])
-        np.testing.assert_array_almost_equal(centroids, arr)
+        np.testing.assert_array_almost_equal(centroids, arr, decimal=3)
 
         centroids, pr = georef.spherical_to_centroids(r, az, 0, sitecoords)
         arr = np.asarray([[[7.0357090e+03, 7.0357090e+03, 6.],
                            [7.1064194e+03, 7.1064194e+03, 6.]],
                           [[9.9499951e+03, 0., 6.],
                            [1.0049995e+04, 0., 6.]]])
-        np.testing.assert_array_almost_equal(centroids, arr, decimal=4)
+        np.testing.assert_array_almost_equal(centroids, arr, decimal=3)
 
     def test_sweep_centroids(self):
         self.assertTrue(np.allclose(georef.sweep_centroids(1, 100., 1, 2.0),

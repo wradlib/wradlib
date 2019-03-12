@@ -41,8 +41,8 @@ class PolarNeighboursTest(unittest.TestCase):
         pn = verify.PolarNeighbours(self.r, self.az, self.site, self.proj,
                                     self.x, self.y, nnear=4)
         bx, by = pn.get_bincoords()
-        self.assertAlmostEqual(bx[0], 3557908.88665658)
-        self.assertAlmostEqual(by[0], 5383452.639404581)
+        np.testing.assert_almost_equal(bx[0], 3557908.88665658)
+        np.testing.assert_almost_equal(by[0], 5383452.639404042)
 
     def test_get_bincoords_at_points(self):
         pn = verify.PolarNeighbours(self.r, self.az, self.site, self.proj,
