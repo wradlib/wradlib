@@ -1089,8 +1089,10 @@ class XarrayTests(unittest.TestCase):
                                    cf2.root.sweep_fixed_angle)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf2.root.time_coverage_start)
-        xr.testing.assert_allclose(cf['sweep_1'].sweep_number,
-                                   cf2['sweep_1'].sweep_number)
+        drop = ['sweep_mode']
+        drop2 = ['longitude', 'latitude', 'altitude', 'sweep_mode']
+        xr.testing.assert_allclose(cf['sweep_1'].drop(drop).sweep_number,
+                                   cf2['sweep_1'].drop(drop2).sweep_number)
 
         tmp1 = tempfile.NamedTemporaryFile(mode='w+b').name
         cf2.to_cfradial2(tmp1)

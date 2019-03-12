@@ -289,43 +289,30 @@ global_variables = dict([('volume_number', ''),
 def as_xarray_dataarray(data, dims, coords):
     keys = dims.keys()
     vals = dims.values()
-
     da = xr.DataArray(data, coords=vals, dims=keys)
-    dims = list(da.dims)
     da = da.assign_coords(**coords)
-
     return da
 
 
-def create_xarray_dataarray(data, rays=None, bins=None, site=(0, 0, 0),
-                            angle=None):
-    # providing 'reasonable defaults', based on the data's shape
-    if rays is None:
-        rays0 = np.arange(data.shape[0], dtype=np.float)
-        rays0 += (rays0[1] - rays0[0]) / 2.
-    else:
-        rays0 = np.asanyarray(rays.copy())
+def create_xarray_dataarray(data, r=None, phi=None, theta=None,
+                            site=(0, 0, 0), sweep_mode='PPI'):
 
-    if bins is None:
-        bins0 = np.arange(data.shape[1], dtype=np.float)
-        bins0 += (bins0[1] - bins0[0]) / 2.
-    else:
-        bins0 = np.asanyarray(bins.copy())
+    if (r is None) or (phi is None) or (theta is None):
+        raise TypeError("wradlib: function `create_xarray_dataarray` needs r, "
+                        "phi and theta parameters.")
 
-    if angle is None:
-        angle0 = np.ones_like(rays0) * 0.
-    else:
-        angle0 = np.asanyarray(angle)
-        if np.isscalar(angle):
-            angle0 = np.ones_like(rays0) * angle
+    r = r.copy()
+    phi = phi.copy()
+    theta = theta.copy()
 
     # create xarray dataarray
-    dims = {'time': np.arange(rays0.shape[0]), 'range': bins0}
-    coords = {'azimuth': (list(dims.keys())[0], rays0),
-              'elevation': (list(dims.keys())[0], angle0),
+    dims = {'time': np.arange(phi.shape[0]), 'range': r}
+    coords = {'azimuth': (list(dims.keys())[0], phi),
+              'elevation': (list(dims.keys())[0], theta),
               'longitude': (site[0]),
               'latitude': (site[1]),
               'altitude': (site[2]),
+              'sweep_mode': sweep_mode,
               }
 
     da = as_xarray_dataarray(data, dims=dims, coords=coords)
@@ -1066,6 +1053,7 @@ class CfRadial(XRadVol):
             self[sw] = open_dataset(self._ncf, sw)
             self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
             self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
+            self[sw] = self[sw].assign_coords(sweep_mode=self[sw].sweep_mode)
 
     def assign_data_radial(self):
         """ Assign from CfRadial1 data structure.
@@ -1097,6 +1085,8 @@ class CfRadial(XRadVol):
                                  sweep=slice(i, i + 1)).squeeze('sweep')
             self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
             self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
+            sweep_mode = self[sw].sweep_mode.values.item().decode()
+            self[sw] = self[sw].assign_coords(sweep_mode=sweep_mode)
 
 
 class OdimH5(XRadVol):
@@ -1164,6 +1154,14 @@ class OdimH5(XRadVol):
             ds, ds_how, ds_what, ds_where = get_groups(self._ncf[sweep],
                                                        groups)
 
+            # what products?
+            if ds_what.attrs['product'] == 'SCAN':
+                sweep_mode = 'azimuth_surveillance'
+            elif ds_what.attrs['product'] == 'RHI':
+                sweep_mode = 'rhi'
+            else:
+                sweep_mode = 'azimuth_surveillance'
+
             # moments
             moments = get_moment_names(self._ncf[sweep], fmt='data',
                                        src='groups')
@@ -1174,7 +1172,8 @@ class OdimH5(XRadVol):
             # coordinates wrap-up
             ds = ds.assign_coords(longitude=where.attrs['lon'],
                                   latitude=where.attrs['lat'],
-                                  altitude=where.attrs['height'])
+                                  altitude=where.attrs['height'],
+                                  sweep_mode=sweep_mode)
             ds = ds.assign_coords(azimuth=ds_where.odim.azimuth_range)
             ds = ds.assign_coords(elevation=ds_where.odim.elevation_range)
             ds = ds.assign({'range': ds_where.odim.radial_range})
@@ -1198,7 +1197,7 @@ class OdimH5(XRadVol):
 
             # assign global sweep attributes
             ds = ds.assign({'sweep_number': i,
-                            'sweep_mode': 'azimuthal_surveillance',
+                            'sweep_mode': sweep_mode,
                             'follow_mode': 'none',
                             'prt_mode': 'fixed',
                             'fixed_angle': ds_where.elangle,
@@ -1304,6 +1303,9 @@ class OdimH5(XRadVol):
                 ds_what = ds_what.assign({name: (['time'], rh, attrs)})
 
             # coordinates wrap-up
+            ds = ds.assign_coords(longitude=where.attrs['lon'],
+                                  latitude=where.attrs['lat'],
+                                  altitude=where.attrs['height'])
             ds = ds.assign_coords(azimuth=ds_what.gamic.azimuth_range)
             ds = ds.assign_coords(elevation=ds_what.gamic.elevation_range)
             ds = ds.assign({'range': ds_how.gamic.radial_range})
@@ -1316,7 +1318,7 @@ class OdimH5(XRadVol):
 
             # assign global sweep attributes
             ds = ds.assign({'sweep_number': i,
-                            'sweep_mode': 'azimuthal_surveillance',
+                            'sweep_mode': 'azimuth_surveillance',
                             'follow_mode': 'none',
                             'prt_mode': 'fixed',
                             'fixed_angle': ds_how.attrs['elevation'],

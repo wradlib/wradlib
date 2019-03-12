@@ -29,22 +29,20 @@ class PolarPlotTest(unittest.TestCase):
         ax, pm = vis.plot_ppi(self.img, re=6371000., ke=(4. / 3.))
         ax, pm = vis.plot_ppi(self.img, self.r, self.az,
                               re=6371000., ke=(4. / 3.))
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az, refrac=True,
-                              re=6371000., ke=(4. / 3.))
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az, refrac=True,
+        ax, pm = vis.plot_ppi(self.img, self.r, self.az,
                               re=6371000., ke=(4. / 3.), ax=ax)
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az, refrac=True,
+        ax, pm = vis.plot_ppi(self.img, self.r, self.az,
                               re=6371000., ke=(4. / 3.), ax=212)
-        ax, pm = vis.plot_ppi(self.img, autoext=False)
+        ax, pm = vis.plot_ppi(self.img)
         vis.plot_ppi_crosshair(site=(0, 0), ranges=[2, 4, 8])
         vis.plot_ppi_crosshair(site=(0, 0),
                                ranges=[2, 4, 8],
                                angles=[0, 45, 90, 180, 270],
                                line=dict(color='white',
                                          linestyle='solid'))
-        ax, pm = vis.plot_ppi(self.img, site=(10., 45.), autoext=False,
+        ax, pm = vis.plot_ppi(self.img, site=(10., 45., 0.),
                               proj=self.proj)
-        vis.plot_ppi_crosshair(site=(0, 0),
+        vis.plot_ppi_crosshair(site=(0, 0, 0),
                                ranges=[2, 4, 8],
                                angles=[0, 45, 90, 180, 270],
                                proj=self.proj,
@@ -57,8 +55,6 @@ class PolarPlotTest(unittest.TestCase):
         ax, pm = vis.plot_rhi(self.img[0:90, :])
         ax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5)
         ax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, ax=212)
-        ax, pm = vis.plot_rhi(self.img[0:90, :], refrac=False)
-        ax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False)
         ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
                               th=np.arange(90))
         ax, pm = vis.plot_rhi(self.img[0:90, :], func='contour')
@@ -73,8 +69,7 @@ class PolarPlotTest(unittest.TestCase):
                                                cg=True, ax=ax[0, 0]))
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=111)
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=121)
-        cgax, pm = vis.plot_ppi(self.img, autoext=False, cg=True)
-        cgax, pm = vis.plot_ppi(self.img, refrac=False, cg=True)
+        cgax, pm = vis.plot_ppi(self.img, cg=True)
         cgax, pm = vis.plot_ppi(self.img, func='contour', cg=True)
         cgax, pm = vis.plot_ppi(self.img, func='contourf', cg=True)
 
@@ -93,17 +88,16 @@ class PolarPlotTest(unittest.TestCase):
                           lambda: vis.plot_rhi(self.img[0:90, :],
                                                cg=True, ax=ax[0, 0]))
         cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, cg=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], refrac=False, cg=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], autoext=False, cg=True)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
-                                th=np.arange(90), autoext=True, cg=True)
+                                th=np.arange(90), cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
                                 cg=True)
 
     def test_create_cg(self):
-        cgax, caax, paax = vis.create_cg('PPI')
-        cgax, caax, paax = vis.create_cg('PPI', subplot=121)
+        cgax, caax, paax = vis.create_cg()
+        cgax, caax, paax = vis.create_cg(subplot=121)
 
 
 class MiscPlotTest(unittest.TestCase):
