@@ -30,12 +30,15 @@ Standard plotting and mapping procedures
 # standard libraries
 import os.path as path
 import warnings
+import re
+import collections
 
 # site packages
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import patches, axes, lines
 from matplotlib.projections import PolarAxes
+from matplotlib.projections.geo import GeoAxes
 from matplotlib.transforms import Affine2D
 from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
                                      GridHelperCurveLinear)
@@ -43,6 +46,8 @@ import mpl_toolkits.axisartist.angle_helper as ah
 from matplotlib.ticker import NullFormatter, FuncFormatter
 from matplotlib.collections import LineCollection, PolyCollection
 import xarray as xr
+from cartopy.mpl.geoaxes import GeoAxes
+from cartopy.crs import CRS, AzimuthalEquidistant
 
 # wradlib modules
 from . import georef as georef
@@ -50,31 +55,369 @@ from .georef import spherical_to_xyz, spherical_to_proj
 from .io.xarray import create_xarray_dataarray
 
 
+# @xr.register_dataarray_accessor('wradlib1')
+# class WradlibAccessor1(object):
+#     """Dataarray Accessor for plotting radar moments
+#     """
+#     def __init__(self, xarray_obj):
+#         self._obj = xarray_obj
+#         self._bins = getattr(self._obj, 'bins', None)
+#         self._rays = getattr(self._obj, 'rays', None)
+#         self._site = None
+#         self._coords = None
+#         self._proj = None
+#         self._re = None
+#         self._ke = 4./3.
+#         if self._obj.sweep_mode in ['azimuth_surveillance', 'PPI']:
+#             self._mode = 'PPI'
+#         else:
+#             self. _mode = 'RHI'
+#         self.fix_cyclic()
+#
+#     def __getattr__(self, attr):
+#         return getattr(self._obj, attr)
+#
+#     def __repr__(self):
+#         return re.sub(r'<.+>', '<{}>'.format(self.__class__.__name__),
+#                       str(self._obj))
+#
+#     def reset_attrs(self):
+#         self._bins = None
+#         self._rays = None
+#         self._site = None
+#         self._coords = None
+#         self._proj = None
+#
+#     @property
+#     def site(self):
+#         if self._site is None:
+#             self._site = (self._obj.longitude.item(),
+#                           self._obj.latitude.item(),
+#                           self._obj.altitude.item())
+#         return self._site
+#
+#     @property
+#     def proj(self):
+#         return self._proj
+#
+#     @proj.setter
+#     def proj(self, proj):
+#         self.reset_attrs()
+#         self._proj = proj
+#
+#     def fix_cyclic(self):
+#         rays = self._obj.azimuth
+#         if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
+#             self._obj = xr.concat([self._obj, self._obj.isel(time=0)],
+#                                   dim='time')
+#
+#     def get_meshgrid(self):
+#         if self.mode == 'PPI':
+#             self._bins, self._rays = np.meshgrid(self._obj.range,
+#                                                  self._obj.azimuth,
+#                                                  indexing='xy')
+#         else:
+#             self._bins, self._rays = np.meshgrid(self._obj.range,
+#                                                  self._obj.elevation,
+#                                                  indexing='xy')
+#
+#     @property
+#     def bins(self):
+#         if self._bins is None:
+#             self.get_meshgrid()
+#         return self._bins
+#
+#     @property
+#     def rays(self):
+#         if self._rays is None:
+#             self.get_meshgrid()
+#         return self._rays
+#
+#     @property
+#     def re(self):
+#         return self._re
+#
+#     @re.setter
+#     def re(self, re):
+#         self._coords = None
+#         self._re = re
+#
+#     @property
+#     def ke(self):
+#         return self._re
+#
+#     @ke.setter
+#     def ke(self, ke):
+#         self._coords = None
+#         self._ke = ke
+#
+#     @property
+#     def mode(self):
+#         return self._mode
+#
+#     @property
+#     def coords(self):
+#         if self._coords is None:
+#             if self._proj is None:
+#                 (self._coords,
+#                  self._proj) = spherical_to_xyz(self._obj.range,
+#                                                 self._obj.azimuth,
+#                                                 self._obj.elevation,
+#                                                 self.site,
+#                                                 re=self._re,
+#                                                 ke=self._ke)
+#             else:
+#                 self._coords = spherical_to_proj(self._obj.range,
+#                                                  self._obj.azimuth,
+#                                                  self._obj.elevation,
+#                                                  self.site,
+#                                                  proj=self.proj,
+#                                                  re=self._re,
+#                                                  ke=self._ke)
+#         return self._coords
+#
+#     def contour(self, **kwargs):
+#         kwargs.setdefault('func', 'contour')
+#         return self.plot(**kwargs)
+#
+#     def contourf(self, **kwargs):
+#         kwargs.setdefault('func', 'contourf')
+#         return self.plot(**kwargs)
+#
+#     def pcolormesh(self, **kwargs):
+#         kwargs.setdefault('func', 'pcolormesh')
+#         return self.plot(**kwargs)
+#
+#     def plot_rhi(self, **kwargs):
+#         return self.plot(**kwargs)
+#
+#     def plot_ppi(self, **kwargs):
+#         return self.plot(**kwargs)
+#
+#     def plot(self, cg=False, rf=1.0, ax=111, fig=None, proj=None,
+#              func='pcolormesh', cmap='viridis', center=False,
+#              add_colorbar=False, add_labels=False, re=None, ke=4./3.,
+#              **kwargs):
+#         """Plot Plan Position Indicator (PPI) or Range Height Indicator (RHI).
+#
+#         The implementation of this plot routine is in cartesian axes and does
+#         all coordinate transforms using xarray machinery. This allows zooming
+#         into the data as well as making it easier to plot additional data
+#         (like gauge locations) without having to convert them to the radar's
+#         polar coordinate system.
+#
+#         Using ``cg`` keyword the plotting is done in a curvelinear grid axes.
+#
+#         Additional data can be plotted in polar coordinates or cartesian
+#         coordinates depending which axes object is used.
+#
+#         ``**kwargs`` may be used to try to influence the
+#         :func:`matplotlib.pyplot.pcolormesh`,
+#         :func:`matplotlib.pyplot.contour`,
+#         :func:`matplotlib.pyplot.contourf` and
+#         :func:`wradlib.georef.polar.spherical_to_proj` routines under the hood.
+#
+#         Parameters
+#         ----------
+#         rf: float
+#             If present, factor for scaling range axes, defaults to 1.
+#         proj : osr spatial reference object
+#             GDAL OSR Spatial Reference Object describing projection
+#             If this parameter is not None, ``site`` must be set properly.
+#             Then the function will attempt to georeference the radar bins and
+#             display the PPI in the coordinate system defined by the
+#             projection string.
+#         fig : :class:`matplotlib:matplotlib.figure.Figure`
+#             If given, the RHI will be plotted into this figure object.
+#             Axes are created as needed. If None, a new figure object will be
+#             created or current figure will be used, depending on ``ax``.
+#         ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid
+#         definition
+#             If matplotlib Axes object is given, the PPI will be plotted into
+#             this axes object.
+#             If matplotlib grid definition is given (nrows/ncols/plotnumber),
+#             axis are created in the specified place.
+#             Defaults to '111', only one subplot/axis.
+#         func : str
+#             Name of plotting function to be used under the hood.
+#             Defaults to 'pcolormesh'. 'contour' and 'contourf' can be
+#             selected too.
+#         cg : bool
+#             If True, the data will be plotted on curvelinear axes.
+#         cmap : str
+#             matplotlib colormap string
+#
+#         Returns
+#         -------
+#         ax : :class:`matplotlib:matplotlib.axes.Axes`
+#             The axes object into which the PPI was plotted
+#         pm : :class:`matplotlib:matplotlib.collections.QuadMesh` | \
+#             :class:`matplotlib:matplotlib.contour.QuadContourSet`
+#             The result of the plotting function. Necessary, if you want to
+#             add a colorbar to the plot.
+#
+#         Note
+#         ----
+#         If ``cg`` is True, the ``cgax`` - curvelinear Axes (r-theta-grid)
+#         is returned. ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
+#         parasite axes object for plotting polar data can be derived like this::
+#
+#             caax = cgax.parasites[0]
+#             paax = cgax.parasites[1]
+#
+#         The function :func:`~wradlib.vis.create_cg` uses the
+#         Matplotlib AXISARTIST namespace `mpl_toolkits.axisartist`_.
+#
+#         Here are some limitations to normal Matplotlib Axes. See
+#         `AxesGridToolkitUserGuide`_.
+#
+#         Examples
+#         --------
+#         See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
+#         and
+#         :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+#
+#         .. _mpl_toolkits.axisartist:
+#             https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+#         .. _AxesGridToolkitUserGuide:
+#             https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
+#         """
+#         if cg:
+#             if self.mode == 'PPI':
+#                 cg_dict = {'rot': -450., 'scale': -1.}
+#             else:
+#                 cg_dict = {'rot': 0., 'scale': 1.}
+#             try:
+#                 cg_dict.update(cg)
+#             except TypeError:
+#                 pass
+#             finally:
+#                 cg = cg_dict
+#
+#         if proj is not None:
+#             self.proj = proj
+#             if cg:
+#                 cg = False
+#                 warnings.warn(
+#                     "WARNING: `cg` cannot be used with `proj`, falling back.")
+#
+#         self._re = re
+#         self._ke = ke
+#
+#         caax = None
+#         paax = None
+#
+#         if isinstance(ax, axes.Axes):
+#             if cg:
+#                 try:
+#                     caax = ax.parasites[0]
+#                     paax = ax.parasites[1]
+#                 except AttributeError:
+#                     raise TypeError(
+#                         "WRADLIB: If `cg=True` `ax` need to be of type"
+#                         " `mpl_toolkits.axisartist.SubplotHost`")
+#         else:
+#             # axes object is given
+#             if fig is None:
+#                 if ax == 111:
+#                     # create new figure if there is only one subplot
+#                     fig = pl.figure()
+#                 else:
+#                     # assume current figure
+#                     fig = pl.gcf()
+#             if cg:
+#                 # create curvelinear axes
+#                 ax, caax, paax = create_cg(fig, ax, **cg)
+#                 # this is in fact the outermost thick "ring"
+#                 rdiff = self._obj.range[1] - self._obj.range[0]
+#                 ax.axis["lon"] = ax.new_floating_axis(1, (np.max(
+#                     self.bins) + rdiff / 2.) / rf)
+#                 ax.axis["lon"].major_ticklabels.set_visible(False)
+#                 # and also set tickmarklength to zero for better presentation
+#                 ax.axis["lon"].major_ticks.set_ticksize(0)
+#             else:
+#                 ax = fig.add_subplot(ax)
+#
+#         dims = list(self._obj.dims)
+#         if cg:
+#             coords = {'x_cg': (dims, self.bins / rf),
+#                       'y_cg': (dims, self.rays)}
+#             da = self._obj.assign_coords(**coords)
+#             plax = paax
+#             infer_intervals = kwargs.pop('infer_intervals', False)
+#             xp, yp = 'y_cg', 'x_cg'
+#         else:
+#             if proj is None:
+#                 x_add = self.site[0]
+#                 y_add = self.site[1]
+#                 z_add = self.site[2]
+#             else:
+#                 x_add = 0
+#                 y_add = 0
+#                 z_add = 0
+#             if self.mode == 'PPI':
+#                 x = (self.coords[..., 0] + x_add) / rf
+#                 y = (self.coords[..., 1] + y_add) / rf
+#             else:
+#                 x = (self.coords[..., 0] + x_add) / rf
+#                 y = (self.coords[..., 1] + y_add) / rf
+#                 x = np.sqrt(x ** 2 + y ** 2)
+#             coords = {'x': (dims, x),
+#                       'y': (dims, y),
+#                       'z': (dims, (self.coords[..., 2] + z_add) / rf)}
+#             da = self._obj.assign_coords(**coords)
+#             plax = ax
+#             infer_intervals = kwargs.pop('infer_intervals', True)
+#             if self.mode == 'PPI':
+#                 xp, yp = 'x', 'y'
+#             else:
+#                 xp, yp = 'x', 'z'
+#
+#         plotfunc = getattr(da.plot, func)
+#         pm = plotfunc(x=xp, y=yp, ax=plax, cmap=cmap, center=center,
+#                       add_colorbar=add_colorbar, add_labels=add_labels,
+#                       infer_intervals=infer_intervals, **kwargs)
+#
+#         if cg:
+#             xa = da.x_cg * np.cos(np.radians(da.y_cg))
+#             ya = da.x_cg * np.sin(np.radians(da.y_cg))
+#             ax.set_ylim(np.min(ya), np.max(ya))
+#             ax.set_xlim(np.min(xa), np.max(xa))
+#             ax.grid(True)
+#             caax.grid(True)
+#
+#         if self.mode == 'PPI':
+#             ax.set_aspect('equal', adjustable='box')
+#
+#         return ax, pm
+
 @xr.register_dataarray_accessor('wradlib')
 class WradlibAccessor(object):
     """Dataarray Accessor for plotting radar moments
     """
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
-        self._bins = None
-        self._rays = None
         self._site = None
-        self._coords = None
         self._proj = None
-        self._re = None
-        self._ke = 4./3.
         if self._obj.sweep_mode in ['azimuth_surveillance', 'PPI']:
             self._mode = 'PPI'
         else:
             self. _mode = 'RHI'
+
         self.fix_cyclic()
 
-    def reset_attrs(self):
-        self._bins = None
-        self._rays = None
-        self._site = None
-        self._coords = None
-        self._proj = None
+    def __getattr__(self, attr):
+        return getattr(self._obj, attr)
+
+    def __repr__(self):
+        return re.sub(r'<.+>', '<{}>'.format(self.__class__.__name__),
+                      str(self._obj))
+
+    def fix_cyclic(self):
+        rays = self._obj.azimuth
+        if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
+            self._obj = xr.concat([self._obj, self._obj.isel(time=0)],
+                                  dim='time')
 
     @property
     def site(self):
@@ -85,83 +428,16 @@ class WradlibAccessor(object):
         return self._site
 
     @property
+    def mode(self):
+        return self._mode
+
+    @property
     def proj(self):
         return self._proj
 
     @proj.setter
     def proj(self, proj):
-        self.reset_attrs()
         self._proj = proj
-
-    def fix_cyclic(self):
-        rays = self._obj.azimuth
-        if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
-            self._obj = xr.concat([self._obj, self._obj[0]], dim='time')
-
-    def get_meshgrid(self):
-        if self.mode == 'PPI':
-            self._bins, self._rays = np.meshgrid(self._obj.range,
-                                                 self._obj.azimuth,
-                                                 indexing='xy')
-        else:
-            self._bins, self._rays = np.meshgrid(self._obj.range,
-                                                 self._obj.elevation,
-                                                 indexing='xy')
-
-    @property
-    def bins(self):
-        if self._bins is None:
-            self.get_meshgrid()
-        return self._bins
-
-    @property
-    def rays(self):
-        if self._rays is None:
-            self.get_meshgrid()
-        return self._rays
-
-    @property
-    def re(self):
-        return self._re
-
-    @re.setter
-    def re(self, re):
-        self._coords = None
-        self._re = re
-
-    @property
-    def ke(self):
-        return self._re
-
-    @ke.setter
-    def ke(self, ke):
-        self._coords = None
-        self._ke = ke
-
-    @property
-    def mode(self):
-        return self._mode
-
-    @property
-    def coords(self):
-        if self._coords is None:
-            if self._proj is None:
-                (self._coords,
-                 self._proj) = spherical_to_xyz(self._obj.range,
-                                                self._obj.azimuth,
-                                                self._obj.elevation,
-                                                self.site,
-                                                re=self._re,
-                                                ke=self._ke)
-            else:
-                self._coords = spherical_to_proj(self._obj.range,
-                                                 self._obj.azimuth,
-                                                 self._obj.elevation,
-                                                 self.site,
-                                                 proj=self.proj,
-                                                 re=self._re,
-                                                 ke=self._ke)
-        return self._coords
 
     def contour(self, **kwargs):
         kwargs.setdefault('func', 'contour')
@@ -181,7 +457,7 @@ class WradlibAccessor(object):
     def plot_ppi(self, **kwargs):
         return self.plot(**kwargs)
 
-    def plot(self, cg=False, rf=1.0, ax=111, fig=None, proj=None,
+    def plot(self, ax=111, fig=None, proj=None,
              func='pcolormesh', cmap='viridis', center=False,
              add_colorbar=False, add_labels=False, re=None, ke=4./3.,
              **kwargs):
@@ -269,30 +545,19 @@ class WradlibAccessor(object):
         .. _AxesGridToolkitUserGuide:
             https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
         """
-        if cg:
-            if self.mode == 'PPI':
-                cg_dict = {'rot': -450., 'scale': -1.}
-            else:
-                cg_dict = {'rot': 0., 'scale': 1.}
-            try:
-                cg_dict.update(cg)
-            except TypeError:
-                pass
-            finally:
-                cg = cg_dict
-
-        if proj is not None:
-            self.proj = proj
-            if cg:
-                cg = False
-                warnings.warn(
-                    "WARNING: `cg` cannot be used with `proj`, falling back.")
-
-        self._re = re
-        self._ke = ke
-
+        cg = False
         caax = None
         paax = None
+
+        self.proj = proj
+
+        if self.proj == 'cg' or isinstance(self.proj, collections.Mapping):
+            if self.mode == 'PPI':
+                cg = {'rot': -450., 'scale': -1.}
+            else:
+                cg = {'rot': 0., 'scale': 1.}
+            if isinstance(self.proj, collections.Mapping):
+                cg.update(self.proj)
 
         if isinstance(ax, axes.Axes):
             if cg:
@@ -301,7 +566,7 @@ class WradlibAccessor(object):
                     paax = ax.parasites[1]
                 except AttributeError:
                     raise TypeError(
-                        "WRADLIB: If `cg=True` `ax` need to be of type"
+                        "WRADLIB: If `proj='cg'` `ax` need to be of type"
                         " `mpl_toolkits.axisartist.SubplotHost`")
         else:
             # axes object is given
@@ -318,56 +583,38 @@ class WradlibAccessor(object):
                 # this is in fact the outermost thick "ring"
                 rdiff = self._obj.range[1] - self._obj.range[0]
                 ax.axis["lon"] = ax.new_floating_axis(1, (np.max(
-                    self.bins) + rdiff / 2.) / rf)
+                    self._obj.bins) + rdiff / 2.))
                 ax.axis["lon"].major_ticklabels.set_visible(False)
                 # and also set tickmarklength to zero for better presentation
                 ax.axis["lon"].major_ticks.set_ticksize(0)
             else:
-                ax = fig.add_subplot(ax)
+                ax = fig.add_subplot(ax, projection=self.proj)
 
-        dims = list(self._obj.dims)
         if cg:
-            coords = {'x_cg': (dims, self.bins / rf),
-                      'y_cg': (dims, self.rays)}
-            da = self._obj.assign_coords(**coords)
             plax = paax
             infer_intervals = kwargs.pop('infer_intervals', False)
-            xp, yp = 'y_cg', 'x_cg'
+            xp, yp = 'rays', 'bins'
         else:
-            if proj is None:
-                x_add = self.site[0]
-                y_add = self.site[1]
-                z_add = self.site[2]
-            else:
-                x_add = 0
-                y_add = 0
-                z_add = 0
-            if self.mode == 'PPI':
-                x = (self.coords[..., 0] + x_add) / rf
-                y = (self.coords[..., 1] + y_add) / rf
-            else:
-                x = (self.coords[..., 0] + x_add) / rf
-                y = (self.coords[..., 1] + y_add) / rf
-                x = np.sqrt(x ** 2 + y ** 2)
-            coords = {'x': (dims, x),
-                      'y': (dims, y),
-                      'z': (dims, (self.coords[..., 2] + z_add) / rf)}
-            da = self._obj.assign_coords(**coords)
             plax = ax
             infer_intervals = kwargs.pop('infer_intervals', True)
             if self.mode == 'PPI':
                 xp, yp = 'x', 'y'
             else:
-                xp, yp = 'x', 'z'
+                xp, yp = 'gr', 'z'
 
-        plotfunc = getattr(da.plot, func)
+        if isinstance(plax, GeoAxes) or isinstance(self.proj, CRS):
+            map_trans = AzimuthalEquidistant(central_longitude=self.site[0],
+                                             central_latitude=self.site[1])
+            kwargs.update({'transform': map_trans})
+
+        plotfunc = getattr(self._obj.plot, func)
         pm = plotfunc(x=xp, y=yp, ax=plax, cmap=cmap, center=center,
                       add_colorbar=add_colorbar, add_labels=add_labels,
-                      infer_intervals=infer_intervals, **kwargs)
+                      infer_intervals=infer_intervals,  **kwargs)
 
         if cg:
-            xa = da.x_cg * np.cos(np.radians(da.y_cg))
-            ya = da.x_cg * np.sin(np.radians(da.y_cg))
+            xa = self._obj.bins * np.cos(np.radians(self._obj.rays))
+            ya = self._obj.bins * np.sin(np.radians(self._obj.rays))
             ax.set_ylim(np.min(ya), np.max(ya))
             ax.set_xlim(np.min(xa), np.max(xa))
             ax.grid(True)
