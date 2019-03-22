@@ -70,6 +70,14 @@ class PolarPlotTest(unittest.TestCase):
                                          linestyle='solid'))
         ax, pm = vis.plot_ppi(self.img, func='contour')
         ax, pm = vis.plot_ppi(self.img, func='contourf')
+        with self.assertRaises(TypeError):
+            ax, pm = vis.plot_ppi(self.img, proj=self.proj)
+        with self.assertWarns(UserWarning):
+            ax, pm = vis.plot_ppi(self.img, proj=None,
+                                  site=(0, 0, 0))
+        with self.assertWarns(UserWarning):
+            ax, pm = vis.plot_ppi(self.img, proj=None,
+                                  site=(0, 0))
 
     def test_plot_ppi_xarray(self):
         self.da_ppi.wradlib.rays
@@ -149,6 +157,7 @@ class PolarPlotTest(unittest.TestCase):
         cgax, pm = vis.plot_ppi(self.img, cg=True)
         cgax, pm = vis.plot_ppi(self.img, func='contour', cg=True)
         cgax, pm = vis.plot_ppi(self.img, func='contourf', cg=True)
+        cgax, pm = vis.plot_ppi(self.img, func='contourf', cg=True)
         with self.assertWarns(DeprecationWarning):
             cgax, pm = vis.plot_ppi(self.img, func='contourf',
                                     proj=self.proj, site=(0, 0, 0),
@@ -184,6 +193,10 @@ class PolarPlotTest(unittest.TestCase):
             cgax, caax, paax = vis.create_cg('PPI')
         with self.assertWarns(DeprecationWarning):
             cgax, caax, paax = vis.create_cg('PPI', subplot=121)
+        with self.assertWarns(DeprecationWarning):
+            cgax, caax, paax = vis.create_cg('RHI')
+        with self.assertWarns(DeprecationWarning):
+            cgax, caax, paax = vis.create_cg('RHI', subplot=121)
         cgax, caax, paax = vis.create_cg()
         cgax, caax, paax = vis.create_cg(subplot=121)
 
