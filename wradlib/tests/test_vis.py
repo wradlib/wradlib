@@ -91,6 +91,13 @@ class PolarPlotTest(unittest.TestCase):
         self.da_ppi.wradlib.contour(proj='cg')
         self.da_ppi.wradlib.contourf(proj='cg')
         self.da_ppi.wradlib.pcolormesh(proj='cg')
+        with self.assertRaises(TypeError):
+            self.da_ppi.wradlib.pcolormesh(proj=self.proj)
+        fig = pl.figure()
+        ax = fig.add_subplot(111)
+        with self.assertRaises(TypeError):
+            self.da_ppi.wradlib.pcolormesh(proj={'rot': 0, 'scale': 1},
+                                           ax=ax)
 
     @unittest.skipIf('cartopy' not in sys.modules, "without Cartopy")
     def test_plot_ppi_cartopy(self):
@@ -146,6 +153,8 @@ class PolarPlotTest(unittest.TestCase):
         with self.assertWarns(DeprecationWarning):
             cgax, pm = vis.plot_ppi(self.img, refrac=False, cg=True)
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True)
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, proj=self.proj,
+                                site=(0, 0, 0))
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg')
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=cgax)
         fig, ax = pl.subplots(2, 2)
@@ -162,6 +171,7 @@ class PolarPlotTest(unittest.TestCase):
             cgax, pm = vis.plot_ppi(self.img, func='contourf',
                                     proj=self.proj, site=(0, 0, 0),
                                     cg=True)
+
 
     def test_plot_cg_rhi(self):
         # DeprecationTests

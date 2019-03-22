@@ -7,7 +7,9 @@
 Visualisation
 ^^^^^^^^^^^^^
 
-Standard plotting and mapping procedures
+Standard plotting and mapping procedures.
+
+
 
 .. autosummary::
    :nosignatures:
@@ -434,16 +436,14 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     # Check can be removed in release 1.4
     cg = kwargs.pop('cg', None)
     if cg is not None:
+        warnings.warn("`cg` keyword is deprecated and will be removed in "
+                      "future release. Use `proj='cg' instead.",
+                      DeprecationWarning)
         if cg:
             if proj:
-                warnings.warn("`cg` cannot be used with `proj`, falling back."
-                              "`cg` keyword will be removed in future release."
-                              "Use `proj='cg' instead.", DeprecationWarning)
+                warnings.warn("`cg` cannot be used with `proj`, falling back.")
             else:
-                if cg is True:
-                    proj = 'cg'
-                else:
-                    proj = cg
+                proj = 'cg'
 
     if site and len(site) < 3:
         warnings.warn("`site` need to be a tuple of coordinates "
@@ -751,17 +751,15 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     # Check can be removed in release 1.4
     cg = kwargs.pop('cg', None)
     if cg is not None:
+        warnings.warn("`cg` keyword is deprecated and will be removed in "
+                      "future release. Use `proj='cg' instead.",
+                      DeprecationWarning)
         if cg:
             if proj:
                 warnings.warn(
-                    "`cg` cannot be used with `proj`, falling back."
-                    "`cg` keyword will be removed in future release."
-                    "Use `proj='cg' instead.", DeprecationWarning)
+                    "`cg` cannot be used with `proj`, falling back.")
             else:
-                if cg is True:
-                    proj = 'cg'
-                else:
-                    proj = cg
+                proj = 'cg'
 
     # kwargs handling
     kwargs['zorder'] = kwargs.pop('zorder', 0)
