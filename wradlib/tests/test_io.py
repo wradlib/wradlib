@@ -988,8 +988,8 @@ class NetcdfTest(unittest.TestCase):
 
 class XarrayTests(unittest.TestCase):
     def test_create_xarray_dataarray(self):
-        self.assertRaises(TypeError,
-                          lambda: create_xarray_dataarray())
+        with self.assertRaises(TypeError):
+            create_xarray_dataarray()
 
     def test_iter(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
