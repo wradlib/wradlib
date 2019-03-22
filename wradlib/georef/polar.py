@@ -81,7 +81,7 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
         re = get_earth_radius(sitecoords[1])
         # Set up aeqd-projection sitecoord-centered, wgs84 datum and ellipsoid
         # use world azimuthal equidistant projection
-        rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
+        rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} +x_0=0 +y_0=0 ' +
                             '+lat_0={lat:f} +ellps=WGS84 +datum=WGS84 ' +
                             '+units=m +no_defs').format(lon=sitecoords[0],
                                                         lat=sitecoords[1]))

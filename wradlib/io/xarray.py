@@ -364,21 +364,18 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
 
     # GDAL OSR, convert to this proj
     if isinstance(proj, osr.SpatialReference):
-        print("GDAL")
         xyz = spherical_to_proj(r, phi, theta, site, proj=proj, re=re)
         x = xyz[..., 0]
         y = xyz[..., 1]
         z = xyz[..., 2]
     # other proj, convert to aeqd
     elif proj:
-        print("other Proj", re)
         xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, squeeze=True)
         x = xyz[..., 0]
         y = xyz[..., 1]
         z = xyz[..., 2]
     # proj, convert to aeqd and add offset
     else:
-        print("NO proj", re)
         xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, squeeze=True)
         x = xyz[..., 0] + site[0]
         y = xyz[..., 1] + site[1]
@@ -397,7 +394,6 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
         cs.append(proj.GetAttrValue('projcs'))
     cs.append(proj.GetAttrValue('geogcs'))
     projstr = ' - '.join(cs)
-    print(projstr)
 
     dims = collections.OrderedDict()
     dims['time'] = np.arange(phi.shape[0])
