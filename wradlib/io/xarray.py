@@ -71,6 +71,7 @@ import datetime as dt
 import netCDF4 as nc
 import h5py
 import xarray as xr
+from osgeo import osr
 
 from ..georef import spherical_to_xyz, spherical_to_proj
 
@@ -306,15 +307,13 @@ def as_xarray_dataarray(data, dims, coords):
     dataset : xr.DataArray
         DataArray
     """
-    keys = dims.keys()
-    vals = dims.values()
-    da = xr.DataArray(data, coords=vals, dims=keys)
+    da = xr.DataArray(data, coords=dims.values(), dims=dims.keys())
     da = da.assign_coords(**coords)
     return da
 
 
-def create_xarray_dataarray(data, r=None, phi=None, theta=None,
-                            site=(0, 0, 0), sweep_mode='PPI'):
+def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
+                            site=None, sweep_mode='PPI', rf=1.0):
     """Create Xarray DataArray from Polar Radar Data
 
         .. versionadded:: 1.3
@@ -330,6 +329,8 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None,
         The azimuth angles in degrees.
     theta : :class:`numpy:numpy.ndarray`
         The elevation angles in degrees.
+    proj : osr object
+        Destination Spatial Reference System (Projection).
     site : tuple
         Tuple of coordinates of the radar site.
     sweep_mode : str
@@ -342,23 +343,81 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None,
     """
 
     if (r is None) or (phi is None) or (theta is None):
-        raise TypeError("wradlib: function `create_xarray_dataarray` needs r, "
-                        "phi and theta parameters.")
+        raise TypeError("wradlib: function `create_xarray_dataarray` requires "
+                        "r, phi and theta keyword-arguments.")
 
     r = r.copy()
     phi = phi.copy()
     theta = theta.copy()
 
-    # create xarray dataarray
-    dims = {'time': np.arange(phi.shape[0]), 'range': r}
-    coords = {'azimuth': (list(dims.keys())[0], phi),
-              'elevation': (list(dims.keys())[0], theta),
+    # create bins, rays 2D arrays for curvelinear coordinates
+    if sweep_mode == 'PPI':
+        bins, rays = np.meshgrid(r, phi, indexing='xy')
+    else:
+        bins, rays = np.meshgrid(r, theta, indexing='xy')
+
+    # setup for spherical earth calculations
+    re = None
+    if site is None:
+        site = (0., 0., 0.)
+        re = 6378137.
+
+    # GDAL OSR, convert to this proj
+    if isinstance(proj, osr.SpatialReference):
+        print("GDAL")
+        xyz = spherical_to_proj(r, phi, theta, site, proj=proj, re=re)
+        x = xyz[..., 0]
+        y = xyz[..., 1]
+        z = xyz[..., 2]
+    # other proj, convert to aeqd
+    elif proj:
+        print("other Proj", re)
+        xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, squeeze=True)
+        x = xyz[..., 0]
+        y = xyz[..., 1]
+        z = xyz[..., 2]
+    # proj, convert to aeqd and add offset
+    else:
+        print("NO proj", re)
+        xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, squeeze=True)
+        x = xyz[..., 0] + site[0]
+        y = xyz[..., 1] + site[1]
+        z = xyz[..., 2] + site[2]
+
+    # calculate center point
+    center = np.mean(xyz[:, 0, :], axis=0)
+
+    # calculate ground range
+    gr = np.sqrt((xyz[..., 0] - center[0]) ** 2 +
+                 (xyz[..., 1] - center[1]) ** 2)
+
+    # retrieve projection information
+    cs = []
+    if proj.IsProjected():
+        cs.append(proj.GetAttrValue('projcs'))
+    cs.append(proj.GetAttrValue('geogcs'))
+    projstr = ' - '.join(cs)
+    print(projstr)
+
+    dims = collections.OrderedDict()
+    dims['time'] = np.arange(phi.shape[0])
+    dims['range'] = r / rf
+    coords = {'azimuth': (['time'], phi),
+              'elevation': (['time'], theta),
+              'bins': (['time', 'range'], bins / rf),
+              'rays': (['time', 'range'], rays),
+              'x': (['time', 'range'], x / rf),
+              'y': (['time', 'range'], y / rf),
+              'z': (['time', 'range'], z / rf),
+              'gr': (['time', 'range'], gr / rf),
               'longitude': (site[0]),
               'latitude': (site[1]),
               'altitude': (site[2]),
               'sweep_mode': sweep_mode,
+              'projection': projstr,
               }
 
+    # create xarray dataarray
     da = as_xarray_dataarray(data, dims=dims, coords=coords)
 
     return da
@@ -463,7 +522,8 @@ class WradlibAccessor(object):
                                             self._obj.elevation,
                                             self.site,
                                             re=self._re,
-                                            ke=self._ke)
+                                            ke=self._ke,
+                                            squeeze=True)
         else:
             self._cartesian = spherical_to_proj(self._obj.range,
                                                 self._obj.azimuth,
@@ -556,38 +616,6 @@ class GamicAccessor(object):
             self._time_range = da
         return self._time_range
 
-    # @property
-    # def sitecoords(self):
-    #     """Return the coords of the radar site."""
-    #     if self._sitecoords is None:
-    #         self._sitecoords = (self._obj.longitude, self._obj.latitude,
-    #                             self._obj.altitude)
-    #     return self._sitecoords
-    #
-    # @property
-    # def polcoords(self):
-    #     if self._polcoords is None:
-    #         self.assign_xyz()
-    #     return self._polcoords
-    #
-    # def assign_xyz(self):
-    #     az = self._obj.azimuth
-    #     rng = self._obj.range
-    #     ele = self._obj.elevation
-    #     xx, yy = np.meshgrid(rng, az)
-    #     lon, lat, alt = self.sitecoords
-    #     coords, rad = georef.spherical_to_xyz(xx, yy, ele[0],
-    #                                           (lon, lat, alt),
-    #                                           re=georef.get_earth_radius(lat))
-    #     self._polcoords = coords
-    #     self._projection = rad
-    #
-    # @property
-    # def projection(self):
-    #     if self._projection is None:
-    #         self.assign_xyz()
-    #     return self._projection
-
 
 @xr.register_dataset_accessor('odim')
 class OdimAccessor(object):
@@ -600,12 +628,6 @@ class OdimAccessor(object):
         self._elevation_range = None
         self._time_range = None
         self._time_range2 = None
-        #self._xyz = None
-        #self._proj = None
-        #self._sitecoords = None
-        #self._polcoords = None
-        #self._projection = None
-        #2self._time = None
 
     @property
     def radial_range(self):
@@ -682,60 +704,6 @@ class OdimAccessor(object):
 
             self._time_range2 = (start.timestamp(), end.timestamp())
         return self._time_range2
-
-    # @property
-    # def xyz(self, site):
-    #     """Return the aeqd coords of the sweep."""
-    #     if self._xyz is None:
-    #         self._xyz, self._proj = spherical_to_xyz(self._obj.range,
-    #                                                  self._obj.azimuth,
-    #                                                  self._obj.elevation,
-    #                                                  site)
-    #     return self._xyz
-    #
-    # @property
-    # def proj(self):
-    #     """Return the aeqd-projection."""
-    #     return self._proj
-
-
-    # @property
-    # def sitecoords(self):
-    #     """Return the coords of the radar site."""
-    #     if self._sitecoords is None:
-    #         self._sitecoords = (self._obj.longitude.values,
-    #                             self._obj.latitude.values,
-    #                             self._obj.altitude.values)
-    #     return self._sitecoords
-    #
-    # @property
-    # def cartesian_coords(self):
-    #     if self._polcoords is None:
-    #         self.assign_xyz()
-    #     return self._polcoords
-    #
-    # def assign_xyz(self, sitecoords):
-    #     az = self._obj.azimuth
-    #     rng = self._obj.range
-    #     ele = self._obj.elevation
-    #     xx, yy = np.meshgrid(rng, az)
-    #     lon, lat, alt = sitecoords
-    #     coords, rad = georef.spherical_to_xyz(xx, yy, ele[0],
-    #                                           (lon, lat, alt),
-    #                                           re=georef.get_earth_radius(lat))
-    #     self._polcoords = coords
-    #     self._projection = rad
-    #     self._obj = self._obj.assign_coords(
-    #         x=(['time', 'range'], coords[..., 0]),
-    #         y=(['time', 'range'], coords[..., 1]),
-    #         z=(['range'], coords[0, ..., 2]))
-    #     return self._obj
-    #
-    # @property
-    # def projection(self):
-    #     if self._projection is None:
-    #         self.assign_xyz()
-    #     return self._projection
 
 
 def write_odim(src, dest):
@@ -1245,9 +1213,41 @@ class CfRadial(XRadVol):
         sweepnames = self['root'].sweep_group_name.values
         for sw in sweepnames:
             self[sw] = open_dataset(self._ncf, sw)
+            self[sw] = self[sw].assign_coords(longitude=self['root'].longitude)
+            self[sw] = self[sw].assign_coords(latitude=self['root'].latitude)
+            self[sw] = self[sw].assign_coords(altitude=self['root'].altitude)
             self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
             self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
             self[sw] = self[sw].assign_coords(sweep_mode=self[sw].sweep_mode)
+
+            # adding xyz aeqd-coordinates
+            ds = self[sw]
+            site = (ds.longitude.values, ds.latitude.values,
+                    ds.altitude.values)
+            xyz, aeqd = spherical_to_xyz(ds.range,
+                                         ds.azimuth,
+                                         ds.elevation,
+                                         site,
+                                         squeeze=True)
+            gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
+            ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
+            ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
+            ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
+            ds = ds.assign_coords(gr=(['time', 'range'], gr))
+
+            # what products?
+            is_ppi = True
+            if self[sw].sweep_mode != 'azimuth_surveillance':
+                is_ppi = False
+
+            # adding rays, bins coordinates
+            if is_ppi:
+                bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
+            else:
+                bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
+            ds = ds.assign_coords(rays=(['time', 'range'], rays))
+            ds = ds.assign_coords(bins=(['time', 'range'], bins))
+            self[sw] = ds
 
     def assign_data_radial(self):
         """ Assign from CfRadial1 data structure.
@@ -1277,10 +1277,41 @@ class CfRadial(XRadVol):
             tslice = slice(start_idx[i], end_idx[i])
             self[sw] = data.isel(time=tslice,
                                  sweep=slice(i, i + 1)).squeeze('sweep')
+            self[sw] = self[sw].assign_coords(longitude=self['root'].longitude)
+            self[sw] = self[sw].assign_coords(latitude=self['root'].latitude)
+            self[sw] = self[sw].assign_coords(altitude=self['root'].altitude)
             self[sw] = self[sw].assign_coords(azimuth=self[sw].azimuth)
             self[sw] = self[sw].assign_coords(elevation=self[sw].elevation)
             sweep_mode = self[sw].sweep_mode.values.item().decode()
             self[sw] = self[sw].assign_coords(sweep_mode=sweep_mode)
+            # adding xyz aeqd-coordinates
+            ds = self[sw]
+            site = (ds.longitude.values, ds.latitude.values,
+                    ds.altitude.values)
+            xyz, aeqd = spherical_to_xyz(ds.range,
+                                         ds.azimuth,
+                                         ds.elevation,
+                                         site,
+                                         squeeze=True)
+            gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
+            ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
+            ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
+            ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
+            ds = ds.assign_coords(gr=(['time', 'range'], gr))
+
+            # what products?
+            is_ppi = True
+            if sweep_mode != 'azimuth_surveillance':
+                is_ppi = False
+
+            # adding rays, bins coordinates
+            if is_ppi:
+                bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
+            else:
+                bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
+            ds = ds.assign_coords(rays=(['time', 'range'], rays))
+            ds = ds.assign_coords(bins=(['time', 'range'], bins))
+            self[sw] = ds
 
 
 class OdimH5(XRadVol):
@@ -1381,7 +1412,8 @@ class OdimH5(XRadVol):
             xyz, aeqd = spherical_to_xyz(ds.range,
                                          ds.azimuth,
                                          ds.elevation,
-                                         site)
+                                         site,
+                                         squeeze=True)
             gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
             ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
             ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
