@@ -3,14 +3,15 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
+import sys
 
 import wradlib.vis as vis
 import wradlib.georef as georef
 import wradlib.io as io
 import numpy as np
 import matplotlib.pyplot as pl
-import cartopy.crs as ccrs
-from cartopy.mpl.geoaxes import GeoAxes
+from wradlib.util import import_optional
+cartopy = import_optional('cartopy')
 pl.interactive(True)  # noqa
 from tempfile import NamedTemporaryFile
 
@@ -83,15 +84,17 @@ class PolarPlotTest(unittest.TestCase):
         self.da_ppi.wradlib.contourf(proj='cg')
         self.da_ppi.wradlib.pcolormesh(proj='cg')
 
+    @unittest.skipIf('cartopy' not in sys.modules, "without Cartopy")
     def test_plot_ppi_cartopy(self):
-        site = (7, 45, 0.)
-        map_proj = ccrs.Mercator(central_longitude=site[1])
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=map_proj)
-        self.assertIsInstance(ax, GeoAxes)
-        fig = pl.figure(figsize=(10, 10))
-        ax = fig.add_subplot(111, projection=map_proj)
-        self.da_ppi.wradlib.plot_ppi(ax=ax)
-        ax.gridlines(draw_labels=True)
+        if cartopy:
+            site = (7, 45, 0.)
+            map_proj = cartopy.crs.Mercator(central_longitude=site[1])
+            ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=map_proj)
+            self.assertIsInstance(ax, cartopy.mpl.geoaxes.GeoAxes)
+            fig = pl.figure(figsize=(10, 10))
+            ax = fig.add_subplot(111, projection=map_proj)
+            self.da_ppi.wradlib.plot_ppi(ax=ax)
+            ax.gridlines(draw_labels=True)
 
     def test_plot_rhi(self):
         # DeprecationTests
