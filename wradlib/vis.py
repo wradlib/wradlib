@@ -305,7 +305,7 @@ class WradlibAccessor(object):
 
 
 def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
-             fig=None, ax=111, func='pcolormesh', cg=False, rf=1.,
+             fig=None, ax=111, func='pcolormesh', rf=1.,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
 
@@ -431,21 +431,26 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
                       "future release. Please use `re`/`ke` keywords.",
                       DeprecationWarning)
 
+    # Check can be removed in release 1.4
+    cg = kwargs.pop('cg', None)
+    if cg is not None:
+        if cg:
+            if proj:
+                warnings.warn("`cg` cannot be used with `proj`, falling back."
+                              "`cg` keyword will be removed in future release."
+                              "Use `proj='cg' instead.", DeprecationWarning)
+            else:
+                if cg is True:
+                    proj = 'cg'
+                else:
+                    proj = cg
+
     if site and len(site) < 3:
         warnings.warn("`site` need to be a tuple of coordinates "
                       "(longitude, latitude, altitude)."
                       "Use of `site=(longitude, latitude)` will raise an "
                       "error in future releases.", DeprecationWarning)
         site = (*site, 0)
-
-    # Check can be removed in release 1.4
-    if cg is True:
-        if proj:
-            warnings.warn("`cg` cannot be used with `proj`, falling back."
-                          "`cg` keyword will be removed in future release."
-                          "Use `proj='cg' instead.", DeprecationWarning)
-        else:
-            proj = 'cg'
 
     # site must be given, if proj is OSR
     if isinstance(proj, osr.SpatialReference) and site is None:
@@ -622,8 +627,7 @@ def plot_ppi_crosshair(site, ranges, angles=None,
 
 
 def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
-             proj=None, rf=1., fig=None, ax=111, cg=False,
-             **kwargs):
+             proj=None, rf=1., fig=None, ax=111, **kwargs):
     """Plots a Range Height Indicator (RHI).
 
     This is a small wrapper around xarray dataarray.
@@ -730,7 +734,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     .. _AxesGridToolkitUserGuide:
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
-    # DeperecationWarnings
+    # DeprecationWarnings
     autoext = kwargs.pop('autoext', None)
     if autoext is not None:
         warnings.warn("`autoext` keyword is deprecated will be removed in "
@@ -744,22 +748,28 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
                       "future release. Please use `re`/`ke` keywords.",
                       DeprecationWarning)
 
+    # Check can be removed in release 1.4
+    cg = kwargs.pop('cg', None)
+    if cg is not None:
+        if cg:
+            if proj:
+                warnings.warn(
+                    "`cg` cannot be used with `proj`, falling back."
+                    "`cg` keyword will be removed in future release."
+                    "Use `proj='cg' instead.", DeprecationWarning)
+            else:
+                if cg is True:
+                    proj = 'cg'
+                else:
+                    proj = cg
+
     # kwargs handling
     kwargs['zorder'] = kwargs.pop('zorder', 0)
     func = kwargs.pop('func', 'pcolormesh')
 
-    # Check can be removed in release 1.4
-    if cg:
-        if proj:
-            warnings.warn(DeprecationWarning,
-                          "`cg` cannot be used with `proj`, falling back."
-                          "`cg` keyword will be removed in future release."
-                          "Use `proj='cg' instead.")
-        else:
-            if cg is True:
-                proj = 'cg'
-            else:
-                proj = cg
+    # re/ke kwargs handling
+    kw_spherical = {'re': kwargs.pop('re', None),
+                    'ke': kwargs.pop('ke', 4. / 3.)}
 
     if th is None:
         th = np.linspace(0., 90., num=data.shape[0], endpoint=True)
@@ -802,7 +812,8 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
         az = np.ones_like(th) * az
 
     da = create_xarray_dataarray(img, r=r, phi=az, theta=th, site=site,
-                                 proj=proj, sweep_mode='RHI', rf=rf)
+                                 proj=proj, sweep_mode='RHI', rf=rf,
+                                 **kw_spherical)
 
     # fallback to proj=None for GDAL OSR
     if isinstance(proj, osr.SpatialReference):
