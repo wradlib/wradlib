@@ -372,6 +372,10 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     cg : bool
         If True, the data will be plotted on curvelinear axes.
         Deprecated, use `proj='cg'`.
+    autoext : bool
+        Deprecated.
+    refrac : bool
+        Deprecated.
 
     See also
     --------
@@ -414,15 +418,15 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
     # DeprecationChecks
-    autoext = kwargs.pop('autoext', False)
-    if autoext:
+    autoext = kwargs.pop('autoext', None)
+    if autoext is not None:
         warnings.warn("`autoext` keyword is deprecated will be removed in "
                       "future release. The functionality is now handled by "
                       "`xarray` DataArray automatically.",
                       DeprecationWarning)
 
-    refrac = kwargs.pop('refrac', False)
-    if refrac:
+    refrac = kwargs.pop('refrac', None)
+    if refrac is not None:
         warnings.warn("`refrac` keyword is deprecated will be removed in "
                       "future release. Please use `re`/`ke` keywords.",
                       DeprecationWarning)
@@ -684,6 +688,10 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     cg : bool
         If True, the data will be plotted on curvelinear axes.
         Deprecated, use `proj='cg'`.
+    autoext : bool
+        Deprecated.
+    refrac : bool
+        Deprecated.
 
     See also
     --------
@@ -723,15 +731,15 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
     # DeperecationWarnings
-    autoext = kwargs.pop('autoext', False)
-    if autoext:
+    autoext = kwargs.pop('autoext', None)
+    if autoext is not None:
         warnings.warn("`autoext` keyword is deprecated will be removed in "
-                       "future release. The functionality is now handled by "
-                       "`xarray` DataArray automatically.",
-                       DeprecationWarning)
+                      "future release. The functionality is now handled by "
+                      "`xarray` DataArray automatically.",
+                      DeprecationWarning)
 
-    refrac = kwargs.pop('refrac', False)
-    if refrac:
+    refrac = kwargs.pop('refrac', None)
+    if refrac is not None:
         warnings.warn("`refrac` keyword is deprecated will be removed in "
                       "future release. Please use `re`/`ke` keywords.",
                       DeprecationWarning)
