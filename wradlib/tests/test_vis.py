@@ -172,7 +172,6 @@ class PolarPlotTest(unittest.TestCase):
                                     proj=self.proj, site=(0, 0, 0),
                                     cg=True)
 
-
     def test_plot_cg_rhi(self):
         # DeprecationTests
         with self.assertWarns(DeprecationWarning):
