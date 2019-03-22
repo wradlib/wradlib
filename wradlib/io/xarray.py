@@ -313,7 +313,7 @@ def as_xarray_dataarray(data, dims, coords):
 
 
 def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
-                            site=None, sweep_mode='PPI', rf=1.0):
+                            site=None, sweep_mode='PPI', rf=1.0, **kwargs):
     """Create Xarray DataArray from Polar Radar Data
 
         .. versionadded:: 1.3
@@ -341,7 +341,6 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
     dataset : xr.DataArray
         DataArray
     """
-
     if (r is None) or (phi is None) or (theta is None):
         raise TypeError("wradlib: function `create_xarray_dataarray` requires "
                         "r, phi and theta keyword-arguments.")
@@ -357,26 +356,29 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
         bins, rays = np.meshgrid(r, theta, indexing='xy')
 
     # setup for spherical earth calculations
-    re = None
+    re = kwargs.pop('re', None)
+    ke = kwargs.pop('ke', 4. / 3.)
     if site is None:
         site = (0., 0., 0.)
         re = 6378137.
 
     # GDAL OSR, convert to this proj
     if isinstance(proj, osr.SpatialReference):
-        xyz = spherical_to_proj(r, phi, theta, site, proj=proj, re=re)
+        xyz = spherical_to_proj(r, phi, theta, site, proj=proj, re=re, ke=ke)
         x = xyz[..., 0]
         y = xyz[..., 1]
         z = xyz[..., 2]
     # other proj, convert to aeqd
     elif proj:
-        xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, squeeze=True)
+        xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, ke=ke,
+                                     squeeze=True)
         x = xyz[..., 0]
         y = xyz[..., 1]
         z = xyz[..., 2]
     # proj, convert to aeqd and add offset
     else:
-        xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, squeeze=True)
+        xyz, proj = spherical_to_xyz(r, phi, theta, site, re=re, ke=ke,
+                                     squeeze=True)
         x = xyz[..., 0] + site[0]
         y = xyz[..., 1] + site[1]
         z = xyz[..., 2] + site[2]

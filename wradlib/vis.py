@@ -245,7 +245,7 @@ class WradlibAccessor(object):
                     fig = pl.gcf()
             if cg:
                 # create curvelinear axes
-                ax, caax, paax = create_cg(fig, ax, **cg)
+                ax, caax, paax = create_cg(fig=fig, subplot=ax, **cg)
                 # this is in fact the outermost thick "ring"
                 rdiff = self._obj.range[1] - self._obj.range[0]
                 ax.axis["lon"] = ax.new_floating_axis(1, (np.max(
@@ -413,11 +413,26 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     .. _AxesGridToolkitUserGuide:
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
-    # site must be given, if proj is OSR
-    if isinstance(proj, osr.SpatialReference) and site is None:
-        raise TypeError("WRADLIB: If `proj` is Spatial Reference System "
-                        "(GDAL OSR SRS or cartopy CRS) site need to be given "
-                        "as tuple of (longitude, latitude, altitude)")
+    # DeprecationChecks
+    autoext = kwargs.pop('autoext', False)
+    if autoext:
+        warnings.warn("`autoext` keyword is deprecated will be removed in "
+                      "future release. The functionality is now handled by "
+                      "`xarray` DataArray automatically.",
+                      DeprecationWarning)
+
+    refrac = kwargs.pop('refrac', False)
+    if refrac:
+        warnings.warn("`refrac` keyword is deprecated will be removed in "
+                      "future release. Please use `re`/`ke` keywords.",
+                      DeprecationWarning)
+
+    if site and len(site) < 3:
+        warnings.warn("`site` need to be a tuple of coordinates "
+                      "(longitude, latitude, altitude)."
+                      "Use of `site=(longitude, latitude)` will raise an "
+                      "error in future releases.", DeprecationWarning)
+        site = (*site, 0)
 
     # Check can be removed in release 1.4
     if cg is True:
@@ -428,11 +443,21 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
         else:
             proj = 'cg'
 
+    # site must be given, if proj is OSR
+    if isinstance(proj, osr.SpatialReference) and site is None:
+        raise TypeError("WRADLIB: If `proj` is Spatial Reference System "
+                        "(GDAL OSR SRS) site need to be given "
+                        "as tuple of (longitude, latitude, altitude)")
+
     # site given without proj
     if site and not proj:
         warnings.warn(
             "WRADLIB: site is given without `proj`, it will be used "
             "as simple xy-offset")
+
+    # re/ke kwargs handling
+    kw_spherical = {'re': kwargs.pop('re', None),
+                    'ke': kwargs.pop('ke', 4. / 3.)}
 
     if az is None:
         az = np.arange(data.shape[0], dtype=np.float)
@@ -451,7 +476,8 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
         elev = np.ones_like(az) * elev
 
     da = create_xarray_dataarray(data, r=r, phi=az, theta=elev, site=site,
-                                 proj=proj, sweep_mode='PPI', rf=rf)
+                                 proj=proj, sweep_mode='PPI', rf=rf,
+                                 **kw_spherical)
 
     # fallback to proj=None for GDAL OSR
     if isinstance(proj, osr.SpatialReference):
@@ -696,6 +722,20 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     .. _AxesGridToolkitUserGuide:
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
+    # DeperecationWarnings
+    autoext = kwargs.pop('autoext', False)
+    if autoext:
+        warnings.warn("`autoext` keyword is deprecated will be removed in "
+                       "future release. The functionality is now handled by "
+                       "`xarray` DataArray automatically.",
+                       DeprecationWarning)
+
+    refrac = kwargs.pop('refrac', False)
+    if refrac:
+        warnings.warn("`refrac` keyword is deprecated will be removed in "
+                      "future release. Please use `re`/`ke` keywords.",
+                      DeprecationWarning)
+
     # kwargs handling
     kwargs['zorder'] = kwargs.pop('zorder', 0)
     func = kwargs.pop('func', 'pcolormesh')
@@ -766,7 +806,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     return pl.gca(), pm
 
 
-def create_cg(fig=None, subplot=111, rot=-450, scale=-1,
+def create_cg(st=None, fig=None, subplot=111, rot=-450, scale=-1,
               angular_spacing=10, radial_spacing=10,
               latmin=0, lon_cycle=360):
     """ Helper function to create curvelinear grid
@@ -815,6 +855,15 @@ def create_cg(fig=None, subplot=111, rot=-450, scale=-1,
     paax : matplotlib Axes object (parasite to cgax)
         The parasite axes object for plotting polar data
     """
+
+    if st is not None:
+        warnings.warn("ScanType string is deprecated and will be removed in "
+                      "future release. Please use `rot` and `scale` keyword "
+                      "arguments to specify PPI/RHI. ",
+                      DeprecationWarning)
+        if st == 'RHI':
+            rot = 0
+            scale = 1
 
     # create transformation
     # rotate
