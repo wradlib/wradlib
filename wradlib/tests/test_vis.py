@@ -11,9 +11,9 @@ import wradlib.io as io
 import numpy as np
 import matplotlib.pyplot as pl
 from wradlib.util import import_optional
+from tempfile import NamedTemporaryFile
 cartopy = import_optional('cartopy')
 pl.interactive(True)  # noqa
-from tempfile import NamedTemporaryFile
 
 
 class PolarPlotTest(unittest.TestCase):
