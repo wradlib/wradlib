@@ -60,6 +60,7 @@ echo "conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
     source deactivate
 fi
+
 conda update --yes conda
 
 # Add conda-forge channel
