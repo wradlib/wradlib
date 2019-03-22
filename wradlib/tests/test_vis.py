@@ -9,6 +9,8 @@ import wradlib.georef as georef
 import wradlib.io as io
 import numpy as np
 import matplotlib.pyplot as pl
+import cartopy.crs as ccrs
+from cartopy.mpl.geoaxes import GeoAxes
 pl.interactive(True)  # noqa
 from tempfile import NamedTemporaryFile
 
@@ -22,11 +24,15 @@ class PolarPlotTest(unittest.TestCase):
         img[60:120, 2:7] = 11  # precip field
         self.r = np.arange(0, 100000, 10000)
         self.az = np.arange(0, 360)
+        self.el = np.arange(0, 90)
         self.th = np.zeros_like(self.az)
+        self.az1 = np.ones_like(self.el) * 225
         self.img = img
         self.proj = georef.create_osr("dwd-radolan")
 
-        self.da = io.create_xarray_dataarray(img, self.r, self.az, self.th)
+        self.da_ppi = io.create_xarray_dataarray(img, self.r, self.az, self.th)
+        self.da_rhi = io.create_xarray_dataarray(img[0:90], self.r, self.az1,
+                                                 self.el)
 
     def test_plot_ppi(self):
         # DeprecationTests
@@ -63,10 +69,29 @@ class PolarPlotTest(unittest.TestCase):
                                          linestyle='solid'))
         ax, pm = vis.plot_ppi(self.img, func='contour')
         ax, pm = vis.plot_ppi(self.img, func='contourf')
-        self.da.wradlib.rays
-        self.da.wradlib.contour()
-        self.da.wradlib.contourf()
-        self.da.wradlib.pcolormesh()
+
+    def test_plot_ppi_xarray(self):
+        self.da_ppi.wradlib.rays
+        self.da_ppi.wradlib.plot()
+        self.da_ppi.wradlib.plot_ppi()
+        self.da_ppi.wradlib.contour()
+        self.da_ppi.wradlib.contourf()
+        self.da_ppi.wradlib.pcolormesh()
+        self.da_ppi.wradlib.plot(proj='cg')
+        self.da_ppi.wradlib.plot_ppi(proj='cg')
+        self.da_ppi.wradlib.contour(proj='cg')
+        self.da_ppi.wradlib.contourf(proj='cg')
+        self.da_ppi.wradlib.pcolormesh(proj='cg')
+
+    def test_plot_ppi_cartopy(self):
+        site = (7, 45, 0.)
+        map_proj = ccrs.Mercator(central_longitude=site[1])
+        ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=map_proj)
+        self.assertIsInstance(ax, GeoAxes)
+        fig = pl.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111, projection=map_proj)
+        self.da_ppi.wradlib.plot_ppi(ax=ax)
+        ax.gridlines(draw_labels=True)
 
     def test_plot_rhi(self):
         # DeprecationTests
@@ -85,6 +110,19 @@ class PolarPlotTest(unittest.TestCase):
                               th=np.arange(90))
         ax, pm = vis.plot_rhi(self.img[0:90, :], func='contour')
         ax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf')
+
+    def test_plot_rhi_xarray(self):
+        self.da_rhi.wradlib.rays
+        self.da_rhi.wradlib.plot()
+        self.da_rhi.wradlib.plot_rhi()
+        self.da_rhi.wradlib.contour()
+        self.da_rhi.wradlib.contourf()
+        self.da_rhi.wradlib.pcolormesh()
+        self.da_rhi.wradlib.plot(proj='cg')
+        self.da_rhi.wradlib.plot_rhi(proj='cg')
+        self.da_rhi.wradlib.contour(proj='cg')
+        self.da_rhi.wradlib.contourf(proj='cg')
+        self.da_rhi.wradlib.pcolormesh(proj='cg')
 
     def test_plot_cg_ppi(self):
         # DeprecationTests
