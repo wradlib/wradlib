@@ -57,10 +57,14 @@ echo $WRADLIB_ENV
 echo $WRADLIB_PYTHON
 echo "conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 
+# Add conda-forge channel
+conda config --add channels conda-forge
+# Set strict channel priority
+conda config --set channel_priority strict
+
 if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
     source deactivate
 fi
-
 conda update --yes conda
 
 # Add conda-forge channel
