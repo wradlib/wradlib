@@ -78,6 +78,8 @@ class PolarPlotTest(unittest.TestCase):
         with self.assertWarns(UserWarning):
             ax, pm = vis.plot_ppi(self.img, proj=None,
                                   site=(0, 0))
+        ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=self.proj,
+                              site=(0, 0, 0))
 
     def test_plot_ppi_xarray(self):
         self.da_ppi.wradlib.rays
@@ -128,8 +130,13 @@ class PolarPlotTest(unittest.TestCase):
                               th=np.arange(90))
         ax, pm = vis.plot_rhi(self.img[0:90, :], func='contour')
         ax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf')
+        ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
+                              th=np.arange(90), proj=self.proj,
+                              site=(0, 0, 0))
 
     def test_plot_rhi_xarray(self):
+        self.assertEqual(repr(self.da_rhi.wradlib).split("\n", 1)[1],
+                         repr(self.da_rhi).split("\n", 1)[1])
         self.da_rhi.wradlib.rays
         self.da_rhi.wradlib.plot()
         self.da_rhi.wradlib.plot_rhi()
@@ -196,6 +203,10 @@ class PolarPlotTest(unittest.TestCase):
         cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
                                 cg=True)
+        with self.assertWarns(UserWarning):
+            cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
+                                    proj=self.proj, site=(0, 0, 0),
+                                    cg=True)
 
     def test_create_cg(self):
         with self.assertWarns(DeprecationWarning):

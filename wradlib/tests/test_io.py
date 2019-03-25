@@ -183,6 +183,9 @@ class HDF5Test(unittest.TestCase):
         self.assertTrue(np.allclose(arr, res))
         self.assertDictEqual(metadata, resmeta)
 
+        with self.assertRaises(KeyError):
+            wrl.io.from_hdf5(tmp.name, 'NotAvailable')
+
     def test_read_safnwc(self):
         filename = 'hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5'
         safnwcfile = wrl.util.get_wradlib_data_file(filename)
