@@ -997,8 +997,8 @@ class XarrayTests(unittest.TestCase):
         th = np.zeros_like(az)
         proj = epsg_to_osr(4326)
         with self.assertRaises(TypeError):
-            da = create_xarray_dataarray(img)
-        da = create_xarray_dataarray(img, r, az, th, proj=proj)
+            create_xarray_dataarray(img)
+        create_xarray_dataarray(img, r, az, th, proj=proj)
 
     def test_iter(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
@@ -1071,7 +1071,6 @@ class XarrayTests(unittest.TestCase):
         h5file = wrl.util.get_wradlib_data_file(filename)
         cf = OdimH5(h5file, flavour='GAMIC')
         cf = OdimH5(h5file, flavour='GAMIC', strict=False)
-
 
     def test_odim_roundtrip(self):
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
