@@ -8,6 +8,7 @@ env:
     - WRADLIB_BUILD_DIR=$TRAVIS_BUILD_DIR
 
 matrix:
+    fast_finish: true
     include:
     - python: 3.6
       env:
@@ -21,7 +22,6 @@ matrix:
       env:
         - WRADLIB_UNITTEST="true"
         - PYTHON_VERSION="3.7"
-    allow_failures:
     - python: 3.7
       sudo: required
       dist: xenial
@@ -29,6 +29,11 @@ matrix:
       env:
         - WRADLIB_NOTEBOOKTEST="true"
         - PYTHON_VERSION="3.7"
+    allow_failures:
+      - python: 3.7
+        env:
+          - WRADLIB_NOTEBOOKTEST="true"
+          - PYTHON_VERSION="3.7"
 
 cache:
   directories:
