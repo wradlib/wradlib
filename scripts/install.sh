@@ -28,6 +28,7 @@ if ! [ -x "$(command -v conda)" ]; then
         chmod +x miniconda.sh
         bash miniconda.sh -b -p $HOME/miniconda
         export PATH=$HOME/miniconda/bin:$PATH
+        source $HOME/miniconda/etc/profile.d/conda.sh
         WRADLIB_ENV="travis_wradlib"
         WRADLIB_PYTHON=$PYTHON_VERSION
 
@@ -56,29 +57,36 @@ echo $WRADLIB_ENV
 echo $WRADLIB_PYTHON
 echo "conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 
-# Add conda-forge channel
-conda config --add channels conda-forge
-# Remove defaults channel
-conda config --remove channels defaults
-
 if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
     source deactivate
 fi
+
 conda update --yes conda
 
+# Add conda-forge channel
+conda config --add channels conda-forge
+# Set strict channel priority
+conda config --set channel_priority strict
 
 # Create environment with the correct Python version
 conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON
-source activate $WRADLIB_ENV
+conda activate $WRADLIB_ENV
 
 # Install wradlib dependencies
-conda install --yes gdal numpy scipy matplotlib netcdf4 h5py xarray deprecation xmltodict semver coverage codecov pytest pytest-cov
+conda install --yes gdal numpy scipy matplotlib netcdf4 h5py xarray deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist
 conda list
 
 # Install wradlib-data if not set
 if [ -z ${WRADLIB_DATA+x} ]; then
     git clone https://github.com/wradlib/wradlib-data.git $WRADLIB_BUILD_DIR/wradlib-data
     export WRADLIB_DATA=$WRADLIB_BUILD_DIR/wradlib-data
+fi
+
+# Install WRADLIB_NOTEBOOKTEST is set
+if [ ! -z ${WRADLIB_NOTEBOOKTEST+x} ]; then
+    git clone --depth=1 https://github.com/wradlib/wradlib-notebooks.git $WRADLIB_BUILD_DIR/wradlib-notebooks
+    export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/wradlib-notebooks
+    conda install --yes notebook nbconvert
 fi
 
 # Install twine for pypi upload
