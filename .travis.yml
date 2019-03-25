@@ -21,6 +21,7 @@ matrix:
       env:
         - WRADLIB_UNITTEST="true"
         - PYTHON_VERSION="3.7"
+    allow_failures:
     - python: 3.7
       sudo: required
       dist: xenial
