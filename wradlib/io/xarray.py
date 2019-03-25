@@ -1252,13 +1252,10 @@ class OdimH5(XRadVol):
 
             # what products?
             is_ppi = True
-            if ds_what.attrs['product'] == 'SCAN':
-                sweep_mode = 'azimuth_surveillance'
-            elif ds_what.attrs['product'] == 'RHI':
+            sweep_mode = 'azimuth_surveillance'
+            if ds_what.attrs['product'] == 'RHI':
                 sweep_mode = 'rhi'
                 is_ppi = False
-            else:
-                sweep_mode = 'azimuth_surveillance'
 
             # moments
             moments = get_moment_names(self._ncf[sweep], fmt='data',
@@ -1301,7 +1298,8 @@ class OdimH5(XRadVol):
 
             # time coordinate
             try:
-                timevals = ds_how.odim.time_range.values
+                timevals = ds_how.odim.\
+                    time_range.values
             except (KeyError, AttributeError):
                 # timehandling if only start and end time is given
                 start, end = ds_what.odim.time_range2
@@ -1317,13 +1315,17 @@ class OdimH5(XRadVol):
             ds = ds.assign({'time': (['time'], timevals, time_attrs)})
 
             # assign global sweep attributes
+            if is_ppi:
+                fixed_angle = ds_where.elangle
+            else:
+                fixed_angle = ds_where.azangle
             ds = ds.assign({'sweep_number': i,
                             'sweep_mode': sweep_mode,
                             'follow_mode': 'none',
                             'prt_mode': 'fixed',
-                            'fixed_angle': ds_where.elangle,
+                            'fixed_angle': fixed_angle,
                             })
-            sweep_fixed_angle.append(ds_where.elangle)
+            sweep_fixed_angle.append(fixed_angle)
 
             # decode dataset
             ds = xr.decode_cf(ds)
@@ -1408,6 +1410,13 @@ class OdimH5(XRadVol):
             ds, ds_how, ds_what, ds_where = get_groups(self._ncf[sweep],
                                                        groups)
 
+            # what products?
+            is_ppi = True
+            sweep_mode = 'azimuth_surveillance'
+            if ds_what.attrs['scan_type'] == 'RHI':
+                sweep_mode = 'rhi'
+                is_ppi = False
+
             # fix dimensions
             dims = list(ds.dims.keys())
             ds = ds.rename({dims[0]: 'time',
@@ -1426,26 +1435,54 @@ class OdimH5(XRadVol):
             # coordinates wrap-up
             ds = ds.assign_coords(longitude=where.attrs['lon'],
                                   latitude=where.attrs['lat'],
-                                  altitude=where.attrs['height'])
+                                  altitude=where.attrs['height'],
+                                  sweep_mode=sweep_mode)
+
             ds = ds.assign_coords(azimuth=ds_what.gamic.azimuth_range)
             ds = ds.assign_coords(elevation=ds_what.gamic.elevation_range)
             ds = ds.assign({'range': ds_how.gamic.radial_range})
             ds = ds.assign({'time': (['time'], ds_what.gamic.time_range.values,
                                      time_attrs)})
+
+            # adding xyz aeqd-coordinates
+            site = (ds.longitude.values, ds.latitude.values,
+                    ds.altitude.values)
+            xyz, aeqd = spherical_to_xyz(ds.range,
+                                         ds.azimuth,
+                                         ds.elevation,
+                                         site,
+                                         squeeze=True)
+            gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
+            ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
+            ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
+            ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
+            ds = ds.assign_coords(gr=(['time', 'range'], gr))
+
+            # adding rays, bins coordinates
+            if is_ppi:
+                bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
+            else:
+                bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
+            ds = ds.assign_coords(rays=(['time', 'range'], rays))
+            ds = ds.assign_coords(bins=(['time', 'range'], bins))
+
             # get moments
             moments = get_moment_names(self._ncf[sweep], fmt='moment_',
                                        src='variables')
             ds = get_variables_moments(ds, moments=moments)
 
             # assign global sweep attributes
+            if is_ppi:
+                fixed_angle = ds_how.attrs['elevation']
+            else:
+                fixed_angle = ds_how.attrs['azimuth']
             ds = ds.assign({'sweep_number': i,
-                            'sweep_mode': 'azimuth_surveillance',
+                            'sweep_mode': sweep_mode,
                             'follow_mode': 'none',
                             'prt_mode': 'fixed',
-                            'fixed_angle': ds_how.attrs['elevation'],
+                            'fixed_angle': fixed_angle,
                             })
-
-            sweep_fixed_angle.append(ds_how.attrs['elevation'])
+            sweep_fixed_angle.append(fixed_angle)
 
             ds = xr.decode_cf(ds)
 
