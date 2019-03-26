@@ -50,12 +50,12 @@ install:
 script:
     - if [ "${WRADLIB_UNITTEST}" == "true" ]; then
         if [ "${PYTHON}" == "3.6" ]; then
-          xvfb-run scripts/run_tests.sh;
+          xvfb-run scripts/run_tests.sh wradlib;
         else
-          scripts/run_tests.sh;
+          scripts/run_tests.sh wradlib;
         fi;
       else
-        testrunner -n -s;
+        scripts/run_tests.sh $WRADLIB_NOTEBOOKS;
       fi;
 
 after_success:
