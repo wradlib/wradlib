@@ -426,6 +426,10 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
                       "future release. The functionality is now handled by "
                       "`xarray` DataArray automatically.",
                       DeprecationWarning)
+        if autoext is False and r is not None:
+            r = r[:-1]
+        if autoext is False and az is not None:
+            az = az[:-1]
 
     refrac = kwargs.pop('refrac', None)
     if refrac is not None:
