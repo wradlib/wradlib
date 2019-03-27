@@ -7,7 +7,9 @@
 Visualisation
 ^^^^^^^^^^^^^
 
-Standard plotting and mapping procedures
+Standard plotting and mapping procedures.
+
+
 
 .. autosummary::
    :nosignatures:
@@ -16,6 +18,7 @@ Standard plotting and mapping procedures
    plot_ppi
    plot_ppi_crosshair
    plot_rhi
+   WradlibAccessor
    create_cg
    plot_scan_strategy
    plot_plan_and_vert
@@ -23,11 +26,14 @@ Standard plotting and mapping procedures
    add_lines
    add_patches
 
+
 """
 
 # standard libraries
 import os.path as path
 import warnings
+import re
+import collections
 
 # site packages
 import numpy as np
@@ -37,29 +43,280 @@ from matplotlib.projections import PolarAxes
 from matplotlib.transforms import Affine2D
 from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
                                      GridHelperCurveLinear)
-from mpl_toolkits.axisartist.grid_finder import FixedLocator, DictFormatter
 import mpl_toolkits.axisartist.angle_helper as ah
 from matplotlib.ticker import NullFormatter, FuncFormatter
 from matplotlib.collections import LineCollection, PolyCollection
+import xarray as xr
+from osgeo import osr
 
 # wradlib modules
 from . import georef as georef
-from . import util as util
+from .io.xarray import create_xarray_dataarray
+from . util import import_optional
 
 
-def plot_ppi(data, r=None, az=None, autoext=True,
-             site=(0, 0, 0), proj=None, elev=0.,
-             fig=None, ax=111, func='pcolormesh',
-             cg=False, rf=1., refrac=False,
+@xr.register_dataarray_accessor('wradlib')
+class WradlibAccessor(object):
+    """Dataarray Accessor for plotting radar moments
+    """
+    def __init__(self, xarray_obj):
+        self._obj = xarray_obj
+        self._site = None
+        self._proj = None
+        if self._obj.sweep_mode in ['azimuth_surveillance', 'PPI']:
+            self._mode = 'PPI'
+        else:
+            self. _mode = 'RHI'
+
+        self.fix_cyclic()
+
+    def __getattr__(self, attr):
+        return getattr(self._obj, attr)
+
+    def __repr__(self):
+        return re.sub(r'<.+>', '<{}>'.format(self.__class__.__name__),
+                      str(self._obj))
+
+    def fix_cyclic(self):
+        rays = self._obj.azimuth
+        if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
+            self._obj = xr.concat([self._obj, self._obj.isel(time=0)],
+                                  dim='time')
+
+    @property
+    def site(self):
+        if self._site is None:
+            self._site = (self._obj.longitude.item(),
+                          self._obj.latitude.item(),
+                          self._obj.altitude.item())
+        return self._site
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @property
+    def proj(self):
+        return self._proj
+
+    @proj.setter
+    def proj(self, proj):
+        self._proj = proj
+
+    def contour(self, **kwargs):
+        kwargs.setdefault('func', 'contour')
+        return self.plot(**kwargs)
+
+    def contourf(self, **kwargs):
+        kwargs.setdefault('func', 'contourf')
+        return self.plot(**kwargs)
+
+    def pcolormesh(self, **kwargs):
+        kwargs.setdefault('func', 'pcolormesh')
+        return self.plot(**kwargs)
+
+    def plot_rhi(self, **kwargs):
+        return self.plot(**kwargs)
+
+    def plot_ppi(self, **kwargs):
+        return self.plot(**kwargs)
+
+    def plot(self, ax=111, fig=None, proj=None,
+             func='pcolormesh', cmap='viridis', center=False,
+             add_colorbar=False, add_labels=False,
+             **kwargs):
+        """Plot Plan Position Indicator (PPI) or Range Height Indicator (RHI).
+
+        The implementation of this plot routine is in cartesian axes and does
+        all coordinate transforms using xarray machinery. This allows zooming
+        into the data as well as making it easier to plot additional data
+        (like gauge locations) without having to convert them to the radar's
+        polar coordinate system.
+
+        Using ``proj=cg`` the plotting is done in a curvelinear grid axes.
+
+        Additional data can be plotted in polar coordinates or cartesian
+        coordinates depending which axes object is used.
+
+        ``**kwargs`` may be used to try to influence the
+        :func:`matplotlib.pyplot.pcolormesh`,
+        :func:`matplotlib.pyplot.contour`,
+        :func:`matplotlib.pyplot.contourf` and
+        :func:`wradlib.georef.polar.spherical_to_proj` routines under the hood.
+
+        Parameters
+        ----------
+        proj : cartopy CRS | curvelinear grid dict | None
+            cartopy CRS Coordinate Reference System describing projection
+            If this parameter is not None, ``site`` must be set properly.
+            Then the function will attempt to georeference the radar bins and
+            display the PPI in the coordinate system defined by the
+            projection string.
+        fig : :class:`matplotlib:matplotlib.figure.Figure`
+            If given, the PPI/RHI will be plotted into this figure object.
+            Axes are created as needed. If None, a new figure object will be
+            created or current figure will be used, depending on ``ax``.
+        ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid
+        definition
+            If matplotlib Axes object is given, the PPI will be plotted into
+            this axes object.
+            If matplotlib grid definition is given (nrows/ncols/plotnumber),
+            axis are created in the specified place.
+            Defaults to '111', only one subplot/axis.
+        func : str
+            Name of plotting function to be used under the hood.
+            Defaults to 'pcolormesh'. 'contour' and 'contourf' can be
+            selected too.
+        cmap : str
+            matplotlib colormap string
+
+        Returns
+        -------
+        pm : :class:`matplotlib:matplotlib.collections.QuadMesh` | \
+            :class:`matplotlib:matplotlib.contour.QuadContourSet`
+            The result of the plotting function. Necessary, if you want to
+            add a colorbar to the plot.
+
+        Note
+        ----
+        If ``proj`` contains a curvelinear grid dict,
+        the ``cgax`` - curvelinear Axes (r-theta-grid) is returned.
+        ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
+        parasite axes object for plotting polar data can be derived like this::
+
+            caax = cgax.parasites[0]
+            paax = cgax.parasites[1]
+
+        The function :func:`~wradlib.vis.create_cg` uses the
+        Matplotlib AXISARTIST namespace `mpl_toolkits.axisartist`_.
+
+        Here are some limitations to normal Matplotlib Axes. See
+        `AxesGridToolkitUserGuide`_.
+
+        Examples
+        --------
+        See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
+        and
+        :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+
+        .. _mpl_toolkits.axisartist:
+            https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+        .. _AxesGridToolkitUserGuide:
+            https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
+        """
+        cg = False
+        caax = None
+        paax = None
+
+        # fix for correct zorder of data and grid
+        kwargs['zorder'] = kwargs.pop('zorder', 0)
+
+        self.proj = proj
+
+        # handle curvelinear grid properties
+        if proj == 'cg' or isinstance(proj, collections.Mapping):
+            self.proj = None
+            if self.mode == 'PPI':
+                cg = {'rot': -450, 'scale': -1}
+            else:
+                cg = {'rot': 0, 'scale': 1}
+            if isinstance(proj, collections.Mapping):
+                cg.update(proj)
+
+        if isinstance(proj, osr.SpatialReference):
+            raise TypeError(
+                "WRADLIB: Currently GDAL OSR SRS are not supported")
+
+        if isinstance(ax, axes.Axes):
+            if cg:
+                try:
+                    caax = ax.parasites[0]
+                    paax = ax.parasites[1]
+                except AttributeError:
+                    raise TypeError(
+                        "WRADLIB: If `proj='cg'` `ax` need to be of type"
+                        " `mpl_toolkits.axisartist.SubplotHost`")
+        else:
+            # axes object is given
+            if fig is None:
+                if ax == 111:
+                    # create new figure if there is only one subplot
+                    fig = pl.figure()
+                else:
+                    # assume current figure
+                    fig = pl.gcf()
+            if cg:
+                # create curvelinear axes
+                ax, caax, paax = create_cg(fig=fig, subplot=ax, **cg)
+                # this is in fact the outermost thick "ring"
+                rdiff = self._obj.range[1] - self._obj.range[0]
+                ax.axis["lon"] = ax.new_floating_axis(1, (np.max(
+                    self._obj.bins) + rdiff / 2.))
+                ax.axis["lon"].major_ticklabels.set_visible(False)
+                # and also set tickmarklength to zero for better presentation
+                ax.axis["lon"].major_ticks.set_ticksize(0)
+            else:
+                ax = fig.add_subplot(ax, projection=self.proj)
+
+        if cg:
+            plax = paax
+            infer_intervals = kwargs.pop('infer_intervals', False)
+            xp, yp = 'rays', 'bins'
+        else:
+            plax = ax
+            infer_intervals = kwargs.pop('infer_intervals', True)
+            if self.mode == 'PPI':
+                xp, yp = 'x', 'y'
+            else:
+                xp, yp = 'gr', 'z'
+
+        # use cartopy, if available
+        if hasattr(plax, 'projection'):
+            cartopy = import_optional('cartopy')
+            map_trans = cartopy.crs.AzimuthalEquidistant(
+                central_longitude=self.site[0],
+                central_latitude=self.site[1])
+            kwargs.update({'transform': map_trans})
+
+        # claim xarray plot function and create plot
+        plotfunc = getattr(self._obj.plot, func)
+        pm = plotfunc(x=xp, y=yp, ax=plax, cmap=cmap, center=center,
+                      add_colorbar=add_colorbar, add_labels=add_labels,
+                      infer_intervals=infer_intervals, **kwargs)
+
+        # set cg grids and limits
+        if cg:
+            if self.mode == 'PPI':
+                xlims = np.min(self._obj.x), np.max(self._obj.x)
+                ylims = np.min(self._obj.y), np.max(self._obj.y)
+            else:
+                xlims = np.min(self._obj.gr), np.max(self._obj.gr)
+                ylims = np.min(self._obj.z), np.max(self._obj.z)
+            ax.set_ylim(ylims)
+            ax.set_xlim(xlims)
+            ax.grid(True)
+            caax.grid(True)
+
+        if self.mode == 'PPI':
+            ax.set_aspect('equal', adjustable='box')
+
+        # set ax as current
+        pl.sca(ax)
+
+        return pm
+
+
+def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
+             fig=None, ax=111, func='pcolormesh', rf=1.,
              **kwargs):
     """Plots a Plan Position Indicator (PPI).
 
-    The implementation of this plot routine is in cartesian axes and does all
-    coordinate transforms beforehand. This allows zooming into the data as well
-    as making it easier to plot additional data (like gauge locations) without
-    having to convert them to the radar's polar coordinate system.
+    This is a small wrapper around xarray dataarray.
+    The radar data, coordinates and metadata is transformed into an
+    xarray dataarray. Using the wradlib dataarray accessor the dataarray is
+    enabled to plot polar data.
 
-    Using ``cg=True`` the plotting is done in a curvelinear grid axes.
+    Using ``proj=cg`` the plotting is done in a curvelinear grid axes.
     Additional data can be plotted in polar coordinates or cartesian
     coordinates depending which axes object is used.
 
@@ -68,15 +325,9 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     :func:`matplotlib.pyplot.contourf` and
     :func:`wradlib.georef.polar.spherical_to_proj` routines under the hood.
 
-    There is one major caveat concerning the values of ``r`` and ``az``.
-    Due to the way :func:`matplotlib.pyplot.pcolormesh` works, ``r`` should
-    give the location of the start of each range bin, while ``az`` should give
-    the angle also at the begin (i.e. 'leftmost') of the beam.
-    This might be in contrast to other conventions, which might define ranges
-    and angles at the center of bin and beam.
-    This affects especially the default values set for ``r`` and ``az``, but ìt
-    should be possible to accommodate all other conventions by setting ``r``
-    and ``az`` properly.
+    Concerning the values of ``r``, ``az``, ``elev``, ``r`` should
+    give the location of the center of each range bin, ``az`` and
+    ``elev`` should give the angle at the center of the beam.
 
     Parameters
     ----------
@@ -92,36 +343,23 @@ def plot_ppi(data, r=None, az=None, autoext=True,
     az : :class:`numpy:numpy.ndarray`
         The azimuth angles in degrees. If None, a default is
         calculated from the dimensions of ``data``.
-    autoext : bool
-        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw the
-        bins.
-        As this function needs one set of coordinates more than would usually
-        be provided by ``r`` and ``az``, setting ``autoext`` to True
-        automatically extends ``r`` and ``az`` so that all of ``data`` will
-        be plotted.
-    refrac: bool
-        If True, the effect of refractivity of the earth's atmosphere on the
-        beam propagation will be taken into account. If False, simple
-        trigonometry will be used to calculate beam propagation.
-        Functionality for this will be provided by function
-        :func:`wradlib.georef.misc.bin_distance`. Therefore, if ``refrac`` is
-        True, ``r`` must be given in meters.
-    site : tuple
+    elev : float or array of same shape as ``az``
+        Elevation angle of the scan or individual azimuths.
+        May improve georeferencing coordinates for larger elevation angles.
+    site : tuple or None
         Tuple of coordinates of the radar site.
         If ``proj`` is not used, this simply becomes the offset for the origin
         of the coordinate system.
-        If ``proj`` is used, values must be given as (longitude, latitude)
-        tuple of geographical coordinates.
-    proj : osr spatial reference object
+        If ``proj`` is used, values must be given as (longitude, latitude,
+        altitude) tuple of geographical coordinates.
+        Defaults to None.
+    proj : GDAL OSR SRS | cartopy CRS | curvelinear grid dict | None
         GDAL OSR Spatial Reference Object describing projection
         If this parameter is not None, ``site`` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
         coordinate system defined by the projection string.
-    elev : float or array of same shape as ``az``
-        Elevation angle of the scan or individual azimuths.
-        May improve georeferencing coordinates for larger elevation angles.
     fig : :class:`matplotlib:matplotlib.figure.Figure`
-        If given, the RHI will be plotted into this figure object. Axes are
+        If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None, a new figure object will be created or
         current figure will be used, depending on ``ax``.
     ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid definition
@@ -135,6 +373,11 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
     cg : bool
         If True, the data will be plotted on curvelinear axes.
+        Deprecated, use `proj='cg'`.
+    autoext : bool
+        Deprecated.
+    refrac : bool
+        Deprecated.
 
     See also
     --------
@@ -159,157 +402,104 @@ def plot_ppi(data, r=None, az=None, autoext=True,
         caax = cgax.parasites[0]
         paax = cgax.parasites[1]
 
-    The function :func:`~wradlib.vis.create_cg` uses the Matplotlib AXISARTIST
-    namespace `mpl_toolkits.axisartist \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
+    The function :func:`~wradlib.vis.create_cg` uses the
+    Matplotlib AXISARTIST namespace `mpl_toolkits.axisartist`_.
 
-    Here are some limitations to normal Matplotlib Axes. While using the
-    Matplotlib `AxesGrid Toolkit \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
-    most of the limitations can be overcome.
-    See `Matplotlib AxesGrid Toolkit User’s Guide \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
-
+    Here are some limitations to normal Matplotlib Axes. See
+    `AxesGridToolkitUserGuide`_.
 
     Examples
     --------
     See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
-    and :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+    and
+    :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
 
+    .. _mpl_toolkits.axisartist:
+        https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+    .. _AxesGridToolkitUserGuide:
+        https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
-    # kwargs handling
-    kw_spherical = {}
-    if 're' in kwargs:
-        re = kwargs.pop('re')
-        kw_spherical['re'] = re
-    if 'ke' in kwargs:
-        ke = kwargs.pop('ke')
-        kw_spherical['ke'] = ke
-    kwargs['zorder'] = kwargs.pop('zorder', 0)
+    # DeprecationChecks
+    autoext = kwargs.pop('autoext', None)
+    if autoext is not None:
+        warnings.warn("`autoext` keyword is deprecated will be removed in "
+                      "future release. The functionality is now handled by "
+                      "`xarray` DataArray automatically.",
+                      DeprecationWarning)
+        if autoext is False and r is not None:
+            r = r[:-1]
+        if autoext is False and az is not None:
+            az = az[:-1]
 
-    if (proj is not None) & cg:
-        cg = False
+    refrac = kwargs.pop('refrac', None)
+    if refrac is not None:
+        warnings.warn("`refrac` keyword is deprecated will be removed in "
+                      "future release. Please use `re`/`ke` keywords.",
+                      DeprecationWarning)
+
+    # Check can be removed in release 1.4
+    cg = kwargs.pop('cg', None)
+    if cg is not None:
+        warnings.warn("`cg` keyword is deprecated and will be removed in "
+                      "future release. Use `proj='cg' instead.",
+                      DeprecationWarning)
+        if cg:
+            if proj:
+                warnings.warn("`cg` cannot be used with `proj`, falling back.")
+            else:
+                proj = 'cg'
+
+    if site and len(site) < 3:
+        warnings.warn("`site` need to be a tuple of coordinates "
+                      "(longitude, latitude, altitude)."
+                      "Use of `site=(longitude, latitude)` will raise an "
+                      "error in future releases.", DeprecationWarning)
+        site = (*site, 0)
+
+    # site must be given, if proj is OSR
+    if isinstance(proj, osr.SpatialReference) and site is None:
+        raise TypeError("WRADLIB: If `proj` is Spatial Reference System "
+                        "(GDAL OSR SRS) site need to be given "
+                        "as tuple of (longitude, latitude, altitude)")
+
+    # site given without proj
+    if site and not proj:
         warnings.warn(
-            "WARNING: `cg` cannot be used with `proj`, falling back.")
+            "WRADLIB: site is given without `proj`, it will be used "
+            "as simple xy-offset")
 
-    # providing 'reasonable defaults', based on the data's shape
-    if r is None:
-        d1 = np.arange(data.shape[1], dtype=np.float)
-    else:
-        d1 = np.asanyarray(r.copy())
+    # re/ke kwargs handling
+    kw_spherical = {'re': kwargs.pop('re', None),
+                    'ke': kwargs.pop('ke', 4. / 3.)}
 
     if az is None:
-        d2 = np.arange(data.shape[0], dtype=np.float)
-    else:
-        d2 = np.asanyarray(az.copy())
+        az = np.arange(data.shape[0], dtype=np.float)
+        az += (az[1] - az[0]) / 2.
 
-    if autoext & ('pcolormesh' in func):
-        # the ranges need to go 'one bin further', assuming some regularity
-        # we extend by the distance between the preceding bins.
-        x = np.append(d1, d1[-1] + (d1[-1] - d1[-2]))
-        # the angular dimension is supposed to be cyclic, so we just add the
-        # first element
-        y = np.append(d2, d2[0])
-    else:
-        # no autoext basically is only useful, if the user supplied the correct
-        # dimensions himself.
-        x = d1
-        y = d2
+    if r is None:
+        if proj and proj != 'cg':
+            warnings.warn("Parameter `r` is None, falling back to `proj=None`."
+                          "If using projection, r must be given as "
+                          "array with units m.")
+            proj = None
+        r = np.arange(data.shape[1], dtype=np.float)
+        r += (r[1] - r[0]) / 2.
 
-    if 'contour' in func:
-        # add first azimuth as last for y and data
-        y = np.append(d2, d2[0])
-        data = np.vstack((data, data[0][np.newaxis, ...]))
-        # move to center
-        x += (x[1] - x[0]) / 2.
-        # get angle difference correct if y[1]=360-res/2 and y[0]=0+res/2
-        ydiff = np.abs((y[1] - y[0]) % 360)
-        y += ydiff / 2.
+    if np.isscalar(elev):
+        elev = np.ones_like(az) * elev
 
-    if refrac & (proj is None):
-        # with refraction correction, significant at higher elevations
-        # calculate new range values
-        re = kwargs.pop('re', 6370040.)
-        ke = kwargs.pop('ke', 4 / 3.)
-        x = georef.bin_distance(x, elev, site[2], re, ke=ke)
+    da = create_xarray_dataarray(data, r=r, phi=az, theta=elev, site=site,
+                                 proj=proj, sweep_mode='PPI', rf=rf,
+                                 **kw_spherical)
 
-    # axes object is given
-    if isinstance(ax, axes.Axes):
-        if cg:
-            try:
-                caax = ax.parasites[0]
-                paax = ax.parasites[1]
-            except AttributeError:
-                raise TypeError("WRADLIB: If `cg=True` `ax` need to be of type"
-                                " `mpl_toolkits.axisartist.SubplotHost`")
-    else:
-        if fig is None:
-            if ax == 111:
-                # create new figure if there is only one subplot
-                fig = pl.figure()
-            else:
-                # assume current figure
-                fig = pl.gcf()
-        if cg:
-            # create curvelinear axes
-            ax, caax, paax = create_cg('PPI', fig, ax)
-            # this is in fact the outermost thick "ring"
-            ax.axis["lon"] = ax.new_floating_axis(1, np.max(x) / rf)
-            ax.axis["lon"].major_ticklabels.set_visible(False)
-            # and also set tickmarklength to zero for better presentation
-            ax.axis["lon"].major_ticks.set_ticksize(0)
-        else:
-            ax = fig.add_subplot(ax)
+    # fallback to proj=None for GDAL OSR
+    if isinstance(proj, osr.SpatialReference):
+        proj = None
 
-    if cg:
-        xx, yy = np.meshgrid(y, x)
-        # set bounds to min/max
-        xa = yy * np.sin(np.radians(xx)) / rf
-        ya = yy * np.cos(np.radians(xx)) / rf
-        plax = paax
-    else:
-        # coordinates for all vertices
-        xx, yy = np.meshgrid(x, y)
-        plax = ax
+    pm = da.wradlib.plot_ppi(ax=ax, fig=fig, func=func,
+                             proj=proj, **kwargs)
 
-    if proj:
-        # with georeferencing
-        if r is None:
-            # if we produced a default, this one is still in 'kilometers'
-            # therefore we need to get from km to m
-            xx *= 1000
-
-        # projected to the final coordinate system
-        kw_spherical['proj'] = proj
-        coords = georef.spherical_to_proj(xx, yy, elev, site, **kw_spherical)
-
-        xx = coords[..., 0]
-        yy = coords[..., 1]
-
-    else:
-        if cg:
-            yy = yy / rf
-            data = data.transpose()
-        else:
-            # no georeferencing -> simple trigonometry
-            xxx = (xx * np.cos(np.radians(90. - yy)) + site[0]) / rf
-            yy = (xx * np.sin(np.radians(90. - yy)) + site[1]) / rf
-            xx = xxx
-
-    # plot the stuff
-    plotfunc = getattr(plax, func)
-    pm = plotfunc(xx, yy, data, **kwargs)
-
-    if cg:
-        # show curvelinear and cartesian grids
-        ax.set_ylim(np.min(ya), np.max(ya))
-        ax.set_xlim(np.min(xa), np.max(xa))
-        ax.grid(True)
-        caax.grid(True)
-    else:
-        ax.set_aspect('equal')
-
-    return ax, pm
+    return pl.gca(), pm
 
 
 def plot_ppi_crosshair(site, ranges, angles=None,
@@ -422,7 +612,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     if proj:
         # produce an approximation of the circle
         x, y = np.meshgrid(ranges, np.arange(360))
-        poly = georef.spherical_to_proj(x, y, elev, site, proj=proj)[..., :2]
+        poly = georef.spherical_to_proj(ranges, np.arange(360), elev, site,
+                                        proj=proj)[..., :2]
         poly = np.swapaxes(poly, 0, 1)
         for p in poly:
             ax.add_patch(patches.Polygon(p, **circkw))
@@ -439,15 +630,15 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     return ax
 
 
-def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
-             refrac=True, rf=1., fig=None, ax=111, func='pcolormesh', cg=False,
-             **kwargs):
+def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
+             proj=None, rf=1., fig=None, ax=111, **kwargs):
     """Plots a Range Height Indicator (RHI).
 
-    The implementation of this plot routine is in cartesian axes and does all
-    coordinate transforms beforehand. This allows zooming into the data as well
-    as making it easier to plot additional data (like gauge locations) without
-    having to convert them to the radar's polar coordinate system.
+    This is a small wrapper around xarray dataarray.
+
+    The radar data, coordinates and metadata is transformed into an
+    xarray dataarray. Using the wradlib dataarray accessor the dataarray is
+    enabled to plot polar data.
 
     Using ``cg=True`` the plotting is done in a curvelinear grid axes.
     Additional data can be plotted in polar coordinates or cartesian
@@ -470,30 +661,25 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
     th : :class:`numpy:numpy.ndarray`
         The elevation angles in degrees. If None, a default is
         calculated from the dimensions of ``data``.
-    th_res : float or np.array of same shape as ``th``
+    th_res : float or :class:`numpy:numpy.ndarray` of same shape as ``th``
         In RHI's it happens that the elevation angles are spaced wider than
         the beam width. If this beam width (in degrees) is given in ``th_res``,
         plot_rhi will plot the beams accordingly. Otherwise the behavior of
         :func:`matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
         to each other, which might lead to unexpected results.
-    yoffset : float
-        Altitude offset that would typically represent the altitude of
-        the radar antenna. Units must be consistent with units of ``r``.
-    autoext : bool
-        This routine uses :func:`matplotlib.pyplot.pcolormesh` to draw
-        the bins.
-        As this function needs one set of coordinates more than would usually
-        provided by ``r`` and ``az``, setting ``autoext`` to True automatically
-        extends ``r`` and ``az`` so that all of ``data`` will be plotted.
-    refrac : bool
-        If True, the effect of refractivity of the earth's atmosphere on the
-        beam propagation will be taken into account. If False, simple
-        trigonometry will be used to calculate beam propagation.
-        Functionality for this will be provided by functions
-        :func:`wradlib.georef.misc.site_distance` and
-        :func:`wradlib.georef.misc.bin_altitude`, which assume distances to be
-        given in meters. Therefore, if ``refrac`` is True, ``r`` must be given
-        in meters.
+    az : float or :class:`numpy:numpy.ndarray` of same shape as ``th``
+    site : tuple
+        Tuple of coordinates of the radar site.
+        If ``proj`` is not used, this simply becomes the offset for the origin
+        of the coordinate system.
+        If ``proj`` is used, values must be given as (longitude, latitude,
+        altitude)
+        tuple of geographical coordinates.
+    proj : osr spatial reference object
+        GDAL OSR Spatial Reference Object describing projection
+        If this parameter is not None, ``site`` must be set. Then the function
+        will attempt to georeference the radar bins in the
+        coordinate system defined by the projection string.
     fig : :class:`matplotlib:matplotlib.figure.Figure`
         If given, the RHI will be plotted into this figure object. Axes are
         created as needed. If None, a new figure object will be created or
@@ -509,6 +695,11 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
     cg : bool
         If True, the data will be plotted on curvelinear axes.
+        Deprecated, use `proj='cg'`.
+    autoext : bool
+        Deprecated.
+    refrac : bool
+        Deprecated.
 
     See also
     --------
@@ -532,47 +723,59 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
         caax = cgax.parasites[0]
         paax = cgax.parasites[1]
 
-    The function :func:`~wradlib.vis.create_cg` uses the Matplotlib AXISARTIST
-    namespace `mpl_toolkits.axisartist \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
+    The function :func:`~wradlib.vis.create_cg` uses the
+    Matplotlib AXISARTIST namespace `mpl_toolkits.axisartist`_.
 
-    Here are some limitations to normal Matplotlib Axes. While using the
-    Matplotlib `AxesGrid Toolkit \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
-    most of the limitations can be overcome.
-    See `Matplotlib AxesGrid Toolkit User’s Guide \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
+    Here are some limitations to normal Matplotlib Axes. See
+    `AxesGridToolkitUserGuide`_.
 
     Examples
     --------
     See :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+
+    .. _mpl_toolkits.axisartist:
+        https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
+    .. _AxesGridToolkitUserGuide:
+        https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
+    # DeprecationWarnings
+    autoext = kwargs.pop('autoext', None)
+    if autoext is not None:
+        warnings.warn("`autoext` keyword is deprecated will be removed in "
+                      "future release. The functionality is now handled by "
+                      "`xarray` DataArray automatically.",
+                      DeprecationWarning)
+
+    refrac = kwargs.pop('refrac', None)
+    if refrac is not None:
+        warnings.warn("`refrac` keyword is deprecated will be removed in "
+                      "future release. Please use `re`/`ke` keywords.",
+                      DeprecationWarning)
+
+    # Check can be removed in release 1.4
+    cg = kwargs.pop('cg', None)
+    if cg is not None:
+        warnings.warn("`cg` keyword is deprecated and will be removed in "
+                      "future release. Use `proj='cg' instead.",
+                      DeprecationWarning)
+        if cg:
+            if proj:
+                warnings.warn(
+                    "`cg` cannot be used with `proj`, falling back.")
+            else:
+                proj = 'cg'
+
     # kwargs handling
     kwargs['zorder'] = kwargs.pop('zorder', 0)
+    func = kwargs.pop('func', 'pcolormesh')
 
-    # autogenerate axis dimensions
-    if r is None:
-        d1 = np.arange(data.shape[1], dtype=np.float)
-    else:
-        d1 = np.asanyarray(r.copy())
+    # re/ke kwargs handling
+    kw_spherical = {'re': kwargs.pop('re', None),
+                    'ke': kwargs.pop('ke', 4. / 3.)}
 
     if th is None:
-        # assume, data is evenly spaced between 0 and 90 degree
-        d2 = np.linspace(0., 90., num=data.shape[0], endpoint=True)
-        # d2 = np.arange(data.shape[0], dtype=np.float)
-    else:
-        d2 = np.asanyarray(th.copy())
-
-    if autoext & ('pcolormesh' in func):
-        # extend the range by the delta of the two last bins
-        x = np.append(d1, d1[-1] + d1[-1] - d1[-2])
-        # RHIs usually aren't cyclic, so we best guess a regular extension
-        # here as well
-        y = np.append(d2, d2[-1] + d2[-1] - d2[-2])
-    else:
-        # hopefully, the user supplied everything correctly...
-        x = d1
-        y = d2
+        th = np.linspace(0., 90., num=data.shape[0], endpoint=True)
+        th += (th[1] - th[0]) / 2.
 
     if th_res is not None:
         # we are given a beam resolution and thus may not just glue each
@@ -590,93 +793,43 @@ def plot_rhi(data, r=None, th=None, th_res=None, yoffset=0., autoext=True,
         # reshape so that data and masked lines interlace each other
         img = img.reshape((-1, data.shape[1]))
         # produce lower and upper y coordinates for the actual data
-        yl = d2 - th_res * 0.5
-        yu = d2 + th_res * 0.5
+        yl = th - th_res * 0.5
+        yu = th + th_res * 0.5
         # glue them together to achieve the proper dimensions for the
         # interlaced array
-        y = np.concatenate([yl[None, :], yu[None, :]], axis=0).T.ravel()
+        th = np.concatenate([yl[None, :], yu[None, :]], axis=0).T.ravel()
     else:
         img = data
 
-    # fix reference for contour functions
-    if 'contour' in func:
-        x += (x[1] - x[0]) / 2
-        y += (y[1] - y[0]) / 2
+    if r is None:
+        if proj and proj != 'cg':
+            warnings.warn("Parameter `r` is None, falling back to `proj=None`."
+                          "If using projection, r must be given as "
+                          "array with units m.")
+            proj = None
+        r = np.arange(data.shape[1], dtype=np.float)
+        r += (r[1] - r[0]) / 2.
 
-    # axes object given
-    if isinstance(ax, axes.Axes):
-        if cg:
-            try:
-                caax = ax.parasites[0]
-                paax = ax.parasites[1]
-            except AttributeError:
-                raise TypeError("WRADLIB: If `cg=True` `ax` need to be of type"
-                                " `mpl_toolkits.axisartist.SubplotHost`")
-    else:
-        if fig is None:
-            # create new figure if there is only one subplot
-            if ax == 111:
-                fig = pl.figure()
-            else:
-                fig = pl.gcf()
-        if cg:
-            # create curvelinear axes
-            ax, caax, paax = create_cg('RHI', fig, ax)
+    if np.isscalar(az):
+        az = np.ones_like(th) * az
 
-            # this is in fact the outermost thick "ring" aka max_range
-            ax.axis["lon"] = ax.new_floating_axis(1, np.max(x) / rf)
-            ax.axis["lon"].major_ticklabels.set_visible(False)
-            # and also set tickmarklength to zero for better presentation
-            ax.axis["lon"].major_ticks.set_ticksize(0)
-        else:
-            ax = fig.add_subplot(ax)
+    da = create_xarray_dataarray(img, r=r, phi=az, theta=th, site=site,
+                                 proj=proj, sweep_mode='RHI', rf=rf,
+                                 **kw_spherical)
 
-    # coordinates for all vertices
-    xx, yy = np.meshgrid(x, y)
+    # fallback to proj=None for GDAL OSR
+    if isinstance(proj, osr.SpatialReference):
+        proj = None
 
-    plax = ax
-    if refrac:
-        # observing air refractivity, so ground distances and beam height
-        # must be calculated specially
-        re = kwargs.pop('re', 6370040.)
-        ke = kwargs.pop('ke', 4/3.)
-        yyy = georef.bin_altitude(xx, yy, yoffset, re, ke=ke)
-        xxx = georef.site_distance(xx, yy, yyy, re, ke=ke)
-        xxx /= rf
-        yyy /= rf
-        if cg:
-            plax = caax
-    else:
-        if cg:
-            xxx, yyy = np.meshgrid(y, x)
-            yyy /= rf
-            img = img.transpose()
-            plax = paax
-        else:
-            # otherwise plane trigonometry will do
-            xxx = xx * np.cos(np.radians(yy)) / rf
-            yyy = xx * np.sin(np.radians(yy)) / rf
+    pm = da.wradlib.plot_rhi(ax=ax, fig=fig, func=func, proj=proj,
+                             **kwargs)
 
-        yyy += yoffset / rf
-
-    # plot the stuff
-    plotfunc = getattr(plax, func)
-    pm = plotfunc(xxx, yyy, img, **kwargs)
-
-    # return references to important and eventually new objects
-    if cg:
-        # set bounds to maximum
-        ax.set_ylim(0, np.max(x) / rf)
-        ax.set_xlim(0, np.max(x) / rf)
-
-        # show curvelinear and cartesian grids
-        ax.grid(True)
-        caax.grid(True)
-
-    return ax, pm
+    return pl.gca(), pm
 
 
-def create_cg(st, fig=None, subplot=111):
+def create_cg(st=None, fig=None, subplot=111, rot=-450, scale=-1,
+              angular_spacing=10, radial_spacing=10,
+              latmin=0, lon_cycle=360):
     """ Helper function to create curvelinear grid
 
     The function makes use of the Matplotlib AXISARTIST namespace
@@ -692,16 +845,27 @@ def create_cg(st, fig=None, subplot=111):
 
     Parameters
     ----------
-    st : string
-        scan type, 'PPI' or 'RHI'
     fig : matplotlib Figure object
-        If given, the PPI will be plotted into this figure object. Axes are
-        created as needed. If None a new figure object will be created or
-        current figure will be used, depending on "subplot".
+        If given, the PPI/RHI will be plotted into this figure object.
+        Axes are created as needed. If None a new figure object will
+        be created or current figure will be used, depending on "subplot".
     subplot : :class:`matplotlib:matplotlib.gridspec.GridSpec`, \
         matplotlib grid definition
         nrows/ncols/plotnumber, see examples section
         defaults to '111', only one subplot
+    rot : float
+        Rotation of the source data in degrees, defaults to -450 for PPI,
+        use 0 for RHI
+    scale : float
+        Scale of source data, defaults to -1. for PPI, use 1 for RHI
+    angular_spacing : float
+        Spacing of the angular grid, defaults to 10.
+    radial_spacing : float
+        Spacing of the radial grid, defaults to 10.
+    latmin : float
+        Startvalue for radial grid, defaults to 0.
+    lon_cycle : float
+        Angular cycle, defaults to 360.
 
     Returns
     -------
@@ -713,72 +877,48 @@ def create_cg(st, fig=None, subplot=111):
         The parasite axes object for plotting polar data
     """
 
-    if st == 'RHI':
-        # create transformation
-        tr = Affine2D().scale(np.pi / 180, 1) + PolarAxes.PolarTransform()
+    if st is not None:
+        warnings.warn("ScanType string is deprecated and will be removed in "
+                      "future release. Please use `rot` and `scale` keyword "
+                      "arguments to specify PPI/RHI. ",
+                      DeprecationWarning)
+        if st == 'RHI':
+            rot = 0
+            scale = 1
 
-        # build up curvelinear grid
-        extreme_finder = ah.ExtremeFinderCycle(20, 20,
-                                               lon_cycle=100,
-                                               lat_cycle=None,
-                                               lon_minmax=(0, np.inf),
-                                               lat_minmax=(0, np.inf),
-                                               )
+    # create transformation
+    # rotate
+    tr_rotate = Affine2D().translate(rot, 0)
+    # scale
+    tr_scale = Affine2D().scale(scale * np.pi / 180, 1)
+    # polar
+    tr_polar = PolarAxes.PolarTransform()
 
-        # locator and formatter for angular annotation
-        grid_locator1 = ah.LocatorDMS(10.)
-        tick_formatter1 = ah.FormatterDMS()
+    tr = tr_rotate + tr_scale + tr_polar
 
-        # grid_helper for curvelinear grid
-        grid_helper = GridHelperCurveLinear(tr,
-                                            extreme_finder=extreme_finder,
-                                            grid_locator1=grid_locator1,
-                                            grid_locator2=None,
-                                            tick_formatter1=tick_formatter1,
-                                            tick_formatter2=None,
-                                            )
+    # build up curvelinear grid
+    extreme_finder = ah.ExtremeFinderCycle(360, 360,
+                                           lon_cycle=lon_cycle,
+                                           lat_cycle=None,
+                                           lon_minmax=None,
+                                           lat_minmax=(latmin, np.inf),
+                                           )
+    # locator and formatter for angular annotation
+    grid_locator1 = ah.LocatorDMS(lon_cycle // angular_spacing)
+    tick_formatter1 = ah.FormatterDMS()
 
-        # try to set nice locations for range gridlines
-        grid_helper.grid_finder.grid_locator2._nbins = 30.0
-        grid_helper.grid_finder.grid_locator2._steps = [0, 1, 1.5,
-                                                        2, 2.5, 5, 10]
+    # grid_helper for curvelinear grid
+    grid_helper = GridHelperCurveLinear(tr,
+                                        extreme_finder=extreme_finder,
+                                        grid_locator1=grid_locator1,
+                                        grid_locator2=None,
+                                        tick_formatter1=tick_formatter1,
+                                        tick_formatter2=None,
+                                        )
 
-    if st == 'PPI':
-        # Set theta start to north
-        tr_rotate = Affine2D().translate(-90, 0)
-        # set theta running clockwise
-        tr_scale = Affine2D().scale(-np.pi / 180, 1)
-        # create transformation
-        tr = tr_rotate + tr_scale + PolarAxes.PolarTransform()
-
-        # build up curvelinear grid
-        extreme_finder = ah.ExtremeFinderCycle(20, 20,
-                                               lon_cycle=360,
-                                               lat_cycle=None,
-                                               lon_minmax=(360, 0),
-                                               lat_minmax=(0, np.inf),
-                                               )
-
-        # locator and formatter for angle annotation
-        locs = [i for i in np.arange(0., 359., 10.)]
-        grid_locator1 = FixedLocator(locs)
-        tick_formatter1 = DictFormatter(dict([(i, r"${0:.0f}^\circ$".format(i))
-                                              for i in locs]))
-
-        # grid_helper for curvelinear grid
-        grid_helper = GridHelperCurveLinear(tr,
-                                            extreme_finder=extreme_finder,
-                                            grid_locator1=grid_locator1,
-                                            grid_locator2=None,
-                                            tick_formatter1=tick_formatter1,
-                                            tick_formatter2=None,
-                                            )
-        # try to set nice locations for range gridlines
-        grid_helper.grid_finder.grid_locator2._nbins = 15.0
-        grid_helper.grid_finder.grid_locator2._steps = [0, 1, 1.5, 2,
-                                                        2.5,
-                                                        5,
-                                                        10]
+    # try to set nice locations for radial gridlines
+    grid_locator2 = grid_helper.grid_finder.grid_locator2
+    grid_locator2._nbins = (radial_spacing * 2 + 1) // np.sqrt(2)
 
     # if there is no figure object given
     if fig is None:
@@ -791,12 +931,7 @@ def create_cg(st, fig=None, subplot=111):
 
     # generate Axis
     cgax = SubplotHost(fig, subplot, grid_helper=grid_helper)
-
     fig.add_axes(cgax)
-
-    # PPIs always plottetd with equal aspect
-    if st == 'PPI':
-        cgax.set_aspect('equal', adjustable='box')
 
     # get twin axis for cartesian grid
     caax = cgax.twin()
@@ -846,14 +981,8 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     """
     # just a dummy
     az = np.array([90.])
-
-    polc = util.meshgrid_n(ranges, az, elevs)
-
-    # get mean height over radar
-    coords, _ = georef.spherical_to_xyz(polc[0], polc[1], polc[2], site)
-    coords = np.squeeze(coords)
+    coords, _ = georef.spherical_to_xyz(ranges, az, elevs, site)
     alt = coords[..., 2]
-    r = polc[0].reshape(len(ranges), len(elevs))
     if ax is None:
         returnax = False
         fig = pl.figure()
@@ -866,17 +995,17 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     for x in ranges:
         ax.axvline(x=x, color="grey")
     for i in range(len(elevs)):
-        ax.plot(r[:, i].ravel(), alt[:, i].ravel(), lw=2, color="black")
+        ax.plot(ranges, alt[i, :], lw=2, color="black")
     pl.ylim(ymax=maxalt)
     ax.tick_params(labelsize="large")
     pl.xlabel("Range (m)", size="large")
     pl.ylabel("Height over radar (m)", size="large")
     for i, elev in enumerate(elevs):
-        x = r[:, i].ravel()[-1] + 1500.
-        y = alt[:, i].ravel()[-1]
+        x = ranges[-1] + 1500.
+        y = alt[i, :][-1]
         if y > maxalt:
-            ix = np.where(alt[:, i].ravel() < maxalt)[0][-1]
-            x = r[:, i].ravel()[ix]
+            ix = np.where(alt[i, :] < maxalt)[0][-1]
+            x = ranges[ix]
             y = maxalt + 100.
         pl.text(x, y, str(elev), fontsize="large")
 

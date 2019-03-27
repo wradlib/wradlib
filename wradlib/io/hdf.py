@@ -20,7 +20,6 @@ HDF Data I/O
 
 # standard libraries
 from __future__ import absolute_import
-import sys
 
 # site packages
 import h5py
@@ -424,9 +423,8 @@ def from_hdf5(fpath, dataset="data"):
     f = h5py.File(fpath, mode="r")
     # Check whether Dataset exists
     if dataset not in f.keys():
-        print("Cannot read Dataset <%s> from hdf5 file <%s>" % (dataset, f))
-        f.close()
-        sys.exit()
+        raise KeyError("WRADLIB: Cannot read Dataset <%s> from hdf5 file "
+                       "<%s>" % (dataset, f))
     data = np.array(f[dataset][:])
     # get metadata
     metadata = {}

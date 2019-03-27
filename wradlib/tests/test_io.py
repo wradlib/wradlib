@@ -5,7 +5,8 @@ import unittest
 import wradlib as wrl
 from wradlib.io import radolan
 from wradlib.io import rainbow
-from wradlib.io import CfRadial, OdimH5
+from wradlib.io import CfRadial, OdimH5, create_xarray_dataarray
+from wradlib.georef import epsg_to_osr
 from subprocess import check_call
 import numpy as np
 import xarray as xr
@@ -148,6 +149,8 @@ class MiscTest(unittest.TestCase):
                 'THTV': 'K'}
         import urllib
         try:
+            with self.assertRaises(ValueError):
+                data, meta = wrl.io.get_radiosonde(10411, date)
             data, meta = wrl.io.get_radiosonde(10410, date)
         except urllib.error.HTTPError:
             print("HTTPError while retrieving radiosonde data, test skipped!")
@@ -179,6 +182,9 @@ class HDF5Test(unittest.TestCase):
         res, resmeta = wrl.io.from_hdf5(tmp.name)
         self.assertTrue(np.allclose(arr, res))
         self.assertDictEqual(metadata, resmeta)
+
+        with self.assertRaises(KeyError):
+            wrl.io.from_hdf5(tmp.name, 'NotAvailable')
 
     def test_read_safnwc(self):
         filename = 'hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5'
@@ -987,6 +993,16 @@ class NetcdfTest(unittest.TestCase):
 
 
 class XarrayTests(unittest.TestCase):
+    def test_create_xarray_dataarray(self):
+        img = np.zeros((360, 10), dtype=np.float32)
+        r = np.arange(0, 100000, 10000)
+        az = np.arange(0, 360)
+        th = np.zeros_like(az)
+        proj = epsg_to_osr(4326)
+        with self.assertRaises(TypeError):
+            create_xarray_dataarray(img)
+        create_xarray_dataarray(img, r, az, th, proj=proj)
+
     def test_iter(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
@@ -1005,6 +1021,9 @@ class XarrayTests(unittest.TestCase):
         self.assertEqual(cf._source, {})
 
     def test_read_cfradial(self):
+        sweep_names = ['sweep_1', 'sweep_2', 'sweep_3', 'sweep_4',
+                       'sweep_5', 'sweep_6', 'sweep_7', 'sweep_8',
+                       'sweep_9']
         fixed_angles = np.array([0.4999, 1.0986, 1.8018, 2.5983, 3.598,
                                  4.7021,  6.4984, 9.1022, 12.7991])
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
@@ -1012,6 +1031,19 @@ class XarrayTests(unittest.TestCase):
         cf = CfRadial(ncfile)
         np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
                                              fixed_angles)
+        cfnames, cfangles = zip(*cf.sweeps)
+        self.assertEqual(sweep_names, list(cfnames))
+        np.testing.assert_array_almost_equal(fixed_angles, np.array(cfangles))
+        self.assertEqual(cf.sweep, 9)
+        self.assertSequenceEqual(cf.location, (120.43350219726562,
+                                               22.52669906616211,
+                                               45.00000178813934))
+        self.assertEqual(cf.version, '1.2')
+        self.assertEqual(cf.Conventions, 'CF/Radial instrument_parameters '
+                                         'radar_parameters radar_calibration '
+                                         'geometry_correction')
+
+        self.assertEqual(repr(cf), repr(cf._source))
 
     def test_read_odim(self):
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.])
@@ -1020,6 +1052,11 @@ class XarrayTests(unittest.TestCase):
         cf = OdimH5(h5file)
         np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
                                              fixed_angles)
+        filename = 'hdf5/knmi_polar_volume.h5'
+        h5file = wrl.util.get_wradlib_data_file(filename)
+        cf = OdimH5(h5file)
+        with self.assertRaises(AttributeError):
+            cf = OdimH5(h5file, flavour='None')
 
     def test_read_gamic(self):
         time_cov = ('2014-08-10T18:23:35Z', '2014-08-10T18:24:05Z')
@@ -1032,6 +1069,11 @@ class XarrayTests(unittest.TestCase):
                          time_cov[0])
         self.assertEqual(str(cf.root.time_coverage_end.values),
                          time_cov[1])
+
+        filename = 'hdf5/2014-06-09--185000.rhi.mvol'
+        h5file = wrl.util.get_wradlib_data_file(filename)
+        cf = OdimH5(h5file, flavour='GAMIC')
+        cf = OdimH5(h5file, flavour='GAMIC', strict=False)
 
     def test_odim_roundtrip(self):
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
@@ -1089,8 +1131,9 @@ class XarrayTests(unittest.TestCase):
                                    cf2.root.sweep_fixed_angle)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf2.root.time_coverage_start)
-        xr.testing.assert_allclose(cf['sweep_1'].sweep_number,
-                                   cf2['sweep_1'].sweep_number)
+        drop = ['longitude', 'latitude', 'altitude', 'sweep_mode']
+        xr.testing.assert_allclose(cf['sweep_1'].drop(drop).sweep_number,
+                                   cf2['sweep_1'].drop(drop).sweep_number)
 
         tmp1 = tempfile.NamedTemporaryFile(mode='w+b').name
         cf2.to_cfradial2(tmp1)
