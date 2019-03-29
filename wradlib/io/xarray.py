@@ -48,7 +48,7 @@ Warning
    :nosignatures:
    :toctree: generated/
 
-   RadXVol
+   XRadVol
    CfRadial
    OdimH5
    open_dataset
@@ -678,11 +678,11 @@ def open_dataset(nch, grp=None):
 
 
 def to_cfradial2(volume, filename):
-    """ Save RadXVol to CfRadial2.0 compliant file.
+    """ Save XRadVol to CfRadial2.0 compliant file.
 
     Parameters
     ----------
-    volume : RadXVol object
+    volume : XRadVol object
     filename : str
         output filename
     """
@@ -695,11 +695,11 @@ def to_cfradial2(volume, filename):
 
 
 def to_odim(volume, filename):
-    """ Save RadXVol to ODIM_H5/V2_2 compliant file.
+    """ Save XRadVol to ODIM_H5/V2_2 compliant file.
 
     Parameters
     ----------
-    volume : RadXVol object
+    volume : XRadVol object
     filename : str
         output filename
     """
