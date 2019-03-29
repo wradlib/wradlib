@@ -121,9 +121,16 @@ release = %(isrelease)s
     try:
         ISRELEASED = ver.prerelease == 'dev0'
         if not ISRELEASED:
+            if not ver.patch:
+                patch = 0
+                minor = 1
+            else:
+                patch = 1
+                minor = 0
+
             SHORT_VERSION = semver.format_version(ver.major,
-                                                  ver.minor,
-                                                  ver.patch,
+                                                  ver.minor + minor,
+                                                  ver.patch + patch,
                                                   ver.prerelease)
             FULL_VERSION = GIT_REVISION
 
