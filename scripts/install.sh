@@ -68,13 +68,11 @@ conda config --add channels conda-forge
 # Set strict channel priority
 conda config --set channel_priority strict
 
-# Create environment with the correct Python version
-conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON
-conda activate $WRADLIB_ENV
-
-# Install wradlib dependencies
-conda install --yes gdal numpy scipy matplotlib netcdf4 h5py xarray deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist
-conda list
+DEPS="gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+# Install twine for pypi upload
+if [[ "$DEPLOY" == "true" ]]; then
+    DEPS="$DEPS twine"
+fi
 
 # Install wradlib-data if not set
 if [ -z ${WRADLIB_DATA+x} ]; then
@@ -86,13 +84,13 @@ fi
 if [ ! -z ${WRADLIB_NOTEBOOKTEST+x} ]; then
     git clone --depth=1 https://github.com/wradlib/wradlib-notebooks.git $WRADLIB_BUILD_DIR/wradlib-notebooks
     export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/wradlib-notebooks
-    conda install --yes notebook nbconvert
+    DEPS="$DEPS notebook nbconvert"
 fi
 
-# Install twine for pypi upload
-if [[ "$DEPLOY" == "true" ]]; then
-    conda install --yes twine
-fi
+# Create environment with the correct Python version and the needed dependencies
+echo $DEPS
+conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $DEPS
+conda activate $WRADLIB_ENV
 
 # Install wradlib
 python setup.py sdist
