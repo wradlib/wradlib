@@ -65,7 +65,11 @@ def git_version():
     try:
         git_rev = check_output(['git', 'describe', '--tags', '--long'])
         git_hash = check_output(['git', 'rev-parse', 'HEAD'])
-        GIT_REVISION = git_rev.strip().decode('ascii')
+        git_rev = git_rev.strip().decode('ascii').split('-')
+        GIT_REVISION = '-'.join([git_rev[0],
+                                 'dev' + git_rev[1]])
+        GIT_REVISION = '+'.join([GIT_REVISION,
+                                 git_rev[2]])
         GIT_HASH = git_hash.strip().decode('ascii')
     except (CalledProcessError, OSError):
         GIT_REVISION = 'unknown'
@@ -112,20 +116,15 @@ release = %(isrelease)s
 
     # parse version using semver
     ver = semver.parse_version_info(GIT_REVISION)
-    pre = ver.prerelease.split('-')
 
-    # get commit count, 0 means tagged commit -> release
+    # get commit count, dev0 means tagged commit -> release
     try:
-        ISRELEASED = not bool(int(pre[0]))
+        ISRELEASED = ver.prerelease == 'dev0'
         if not ISRELEASED:
             SHORT_VERSION = semver.format_version(ver.major,
-                                                  ver.minor + 1,
-                                                  0, 'dev.{}'.format(pre[0]))
-            GIT_REVISION = semver.format_version(ver.major,
-                                                 ver.minor + 1,
-                                                 0,
-                                                 '.'.join(pre))
-
+                                                  ver.minor,
+                                                  ver.patch,
+                                                  ver.prerelease)
             FULL_VERSION = GIT_REVISION
 
     except ValueError:
