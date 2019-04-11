@@ -673,7 +673,8 @@ def open_dataset(nch, grp=None):
         nch = nch.groups.get(grp, False)
     if nch:
         nch = xr.open_dataset(xr.backends.NetCDF4DataStore(nch),
-                              mask_and_scale=True)
+                              mask_and_scale=False,
+                              decode_cf=False)
     return nch
 
 
@@ -1265,36 +1266,36 @@ class OdimH5(XRadVol):
                 ds[name] = dmom
 
             # coordinates wrap-up
-            ds = ds.assign_coords(longitude=where.attrs['lon'],
-                                  latitude=where.attrs['lat'],
-                                  altitude=where.attrs['height'],
-                                  sweep_mode=sweep_mode)
+#            ds = ds.assign_coords(longitude=where.attrs['lon'],
+#                                  latitude=where.attrs['lat'],
+#                                  altitude=where.attrs['height'],
+#                                  sweep_mode=sweep_mode)
 
-            ds = ds.assign_coords(azimuth=ds_where.odim.azimuth_range)
-            ds = ds.assign_coords(elevation=ds_where.odim.elevation_range)
-            ds = ds.assign({'range': ds_where.odim.radial_range})
+#            ds = ds.assign_coords(azimuth=ds_where.odim.azimuth_range)
+#            ds = ds.assign_coords(elevation=ds_where.odim.elevation_range)
+            ds.coords["range"] = ds_where.odim.radial_range
 
             # adding xyz aeqd-coordinates
-            site = (ds.longitude.values, ds.latitude.values,
-                    ds.altitude.values)
-            xyz, aeqd = spherical_to_xyz(ds.range,
-                                         ds.azimuth,
-                                         ds.elevation,
-                                         site,
-                                         squeeze=True)
-            gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-            ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
-            ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
-            ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
-            ds = ds.assign_coords(gr=(['time', 'range'], gr))
+#            site = (ds.longitude.values, ds.latitude.values,
+#                    ds.altitude.values)
+#            xyz, aeqd = spherical_to_xyz(ds.range,
+#                                         ds.azimuth,
+#                                         ds.elevation,
+#                                         site,
+#                                         squeeze=True)
+#            gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
+#            ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
+#            ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
+#            ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
+#            ds = ds.assign_coords(gr=(['time', 'range'], gr))
 
             # adding rays, bins coordinates
-            if is_ppi:
-                bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
-            else:
-                bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
-            ds = ds.assign_coords(rays=(['time', 'range'], rays))
-            ds = ds.assign_coords(bins=(['time', 'range'], bins))
+#            if is_ppi:
+#                bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
+#            else:
+#                bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
+#            ds = ds.assign_coords(rays=(['time', 'range'], rays))
+#            ds = ds.assign_coords(bins=(['time', 'range'], bins))
 
             # time coordinate
             try:
@@ -1312,7 +1313,7 @@ class OdimH5(XRadVol):
                 timevals = da.values
                 timevals = np.roll(timevals, shift=-ds_where.a1gate)
                 # timevals = ds_how.odim.time_range2.values
-            ds = ds.assign({'time': (['time'], timevals, time_attrs)})
+            ds.coords['time'] = timevals
 
             # assign global sweep attributes
             if is_ppi:
@@ -1326,15 +1327,6 @@ class OdimH5(XRadVol):
                             'fixed_angle': fixed_angle,
                             })
             sweep_fixed_angle.append(fixed_angle)
-
-            # decode dataset
-            ds = xr.decode_cf(ds)
-
-            # extract time coverage
-            time_coverage_start = min(time_coverage_start,
-                                      ds.time.values.min())
-            time_coverage_end = max(time_coverage_end,
-                                    ds.time.values.max())
 
             # assign to sweep dict
             if not strict:
@@ -1351,22 +1343,20 @@ class OdimH5(XRadVol):
         time_coverage_end = str(time_coverage_end)[:19] + 'Z'
 
         # assign root variables
-        root = root.assign({'volume_number': 0,
-                            'platform_type': 'fixed',
-                            'instrument_type': 'radar',
-                            'primary_axis': 'axis_z',
-                            'time_coverage_start': time_coverage_start,
-                            'time_coverage_end': time_coverage_end,
-                            'latitude': where.attrs['lat'],
-                            'longitude': where.attrs['lon'],
-                            'altitude': where.attrs['height'],
-                            'sweep_group_name': (['sweep'], swp_grp_name),
-                            'sweep_fixed_angle': (
+        root = root.assign({'sweep_fixed_angle': (
                                 ['sweep'], sweep_fixed_angle),
                             })
 
         # assign root attributes
-        root = root.assign_attrs({'version': what.attrs['version'],
+        root = root.assign_attrs({'volume_number': 0,
+                                  'version': what.attrs['version'],
+                                  'platform_type': 'fixed',
+                                  'instrument_type': 'radar',
+                                  'primary_axis': 'axis_z',
+                                  'latitude': where.attrs['lat'],
+                                  'longitude': where.attrs['lon'],
+                                  'altitude': where.attrs['height'],
+                                  'sweep_group_name': (['sweep'], swp_grp_name),
                                   'title': 'None',
                                   'institution': what.attrs['source'],
                                   'references': 'None',
