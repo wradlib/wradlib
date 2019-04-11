@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
+# Example:run_tests_profile.sh "wradlib.tests.test_io" "XarrayTests().test_read_odim()" 
 
 set -e
 
