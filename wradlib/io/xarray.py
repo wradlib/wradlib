@@ -948,7 +948,7 @@ def get_moment_names(sweep, fmt=None, src=None):
     return np.array(moments)[moments_idx]
 
 
-class XRadVol(collections.MutableMapping):
+class XRadVol(collections.abc.MutableMapping):
     """ BaseClass for xarray based RadarVolumes
 
     Implements `collections.MutableMapping` dictionary.
