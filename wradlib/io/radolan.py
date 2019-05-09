@@ -622,8 +622,6 @@ def read_radolan_header(fid):
     -------
     header : string
     """
-    # rewind, just in case...
-    fid.seek(0, 0)
 
     header = ''
     while True:
