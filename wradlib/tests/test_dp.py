@@ -55,12 +55,45 @@ class TextureTest(unittest.TestCase):
         img[5, 6:8] = 10  # line
         img[20, :] = 5  # spike
         img[60:120, 2:7] = 11  # precip field
-        self.r = np.arange(0, 100000, 10000)
-        self.az = np.arange(0, 360)
+
         self.img = img
 
+        pixel = np.ones((3, 3)) * 3.5355339059327378
+        pixel[1, 1] = 10.
+        self.pixel = pixel
+
+        line = np.ones((3, 4)) * 3.5355339059327378
+        line[:, 1:3] = 5.0
+        line[1, 1:3] = 9.354143466934854
+        self.line = line
+
+        spike = np.ones((3, 10)) * 3.0618621784789726
+        spike[1] = 4.330127018922194
+        spike[:, 0] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
+        spike[:, -1] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
+        self.spike = spike
+
+        rainfield = np.zeros((62, 7))
+        rainfield[:, 0:2] = 6.73609679265374
+        rainfield[:, -2:] = 6.73609679265374
+        rainfield[0:2, :] = 6.73609679265374
+        rainfield[-2:, :] = 6.73609679265374
+        rainfield[0, :2] = 3.8890872965260113, 5.5
+        rainfield[0, -2:] = 5.5, 3.8890872965260113
+        rainfield[-1, :2] = 3.8890872965260113, 5.5
+        rainfield[-1, -2:] = 5.5, 3.8890872965260113
+        rainfield[1, :2] = 5.5, 8.696263565463044
+        rainfield[1, -2:] = 8.696263565463044, 5.5
+        rainfield[-2, :2] = 5.5, 8.696263565463044
+        rainfield[-2, -2:] = 8.696263565463044, 5.5
+        self.rainfield = rainfield
+
     def test_texture(self):
-        dp.texture(self.img)
+        tex = dp.texture(self.img)
+        np.testing.assert_array_equal(tex[1:4, 1:4], self.pixel)
+        np.testing.assert_array_equal(tex[4:7, 5:9], self.line)
+        np.testing.assert_array_equal(tex[19:22], self.spike)
+        np.testing.assert_array_equal(tex[59:121, 1:8], self.rainfield)
 
 
 if __name__ == '__main__':
