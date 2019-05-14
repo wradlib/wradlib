@@ -935,30 +935,34 @@ def get_group_moments(ncf, sweep, moments=None, **kwargs):
     for mom in moments:
         dmom_what = open_dataset(ncf[sweep][mom], 'what')
         name = dmom_what.attrs.pop('quantity')
-        if 'cf' in standard:
-            if name not in moments_mapping.keys():
+        if 'cf' in standard and name not in moments_mapping.keys():
                 continue
         dsmom = open_dataset(ncf[sweep], mom)
+
+        # create attribute dict
+        attrs = collections.OrderedDict()
+
         if standard in ['odim']:
-            dmom = dsmom.data.assign_attrs(dmom_what.attrs)
-        else:
-            dmom = dsmom['data']
+            attrs.update(dmom_what.attrs)
 
         # add cfradial moment attributes
         if 'cf' in standard or mask_and_scale:
-            dmom.attrs['scale_factor'] = dmom_what.attrs.get('gain')
-            dmom.attrs['add_offset'] = dmom_what.attrs.get('offset')
-            dmom.attrs['_FillValue'] = dmom_what.attrs.get('nodata')
+            attrs['scale_factor'] = dmom_what.attrs.get('gain')
+            attrs['add_offset'] = dmom_what.attrs.get('offset')
+            attrs['_FillValue'] = dmom_what.attrs.get('nodata')
         if 'cf' in standard or decode_coords:
-            dmom.attrs['coordinates'] = 'elevation azimuth range'
+            attrs['coordinates'] = 'elevation azimuth range'
         if 'cf' in standard:
             for k, v in moments_mapping[name].items():
-                dmom.attrs[k] = v
+                attrs[k] = v
             # drop short_name
-            dmom.attrs.pop('short_name')
-            dmom.attrs.pop('gamic')
+            attrs.pop('short_name')
+            attrs.pop('gamic')
         if 'full' in standard:
-            dmom.attrs['_Undetect'] = dmom.attrs.get('undetect')
+            attrs['_Undetect'] = attrs.get('undetect')
+
+        # assign attributes
+        dmom = dsmom.data.assign_attrs(attrs)
 
         # fix dimensions
         dims = dmom.dims
@@ -1332,42 +1336,46 @@ class OdimH5(XRadVol):
                                                 **kwargs).items():
                 ds[name] = dmom
 
+            coords = collections.OrderedDict()
+            vars = collections.OrderedDict()
             # coordinates wrap-up
             if 'cf' in standard or georef:
-                ds = ds.assign_coords(longitude=where.attrs['lon'],
-                                      latitude=where.attrs['lat'],
-                                      altitude=where.attrs['height'])
+                coords['longitude'] = where.attrs['lon']
+                coords['latitude'] = where.attrs['lat']
+                coords['altitude'] = where.attrs['height']
             if 'cf' in standard:
-                ds = ds.assign_coords(sweep_mode=sweep_mode)
+                coords['sweep_mode'] = sweep_mode
             if ('cf' in standard) or decode_coords or georef:
-                ds = ds.assign(azimuth=ds_where.odim.azimuth_range)
-                ds = ds.assign(elevation=ds_where.odim.elevation_range)
-                ds = ds.assign(range=ds_where.odim.radial_range)
+                vars['azimuth'] =  ds_where.odim.azimuth_range
+                vars['elevation'] = ds_where.odim.elevation_range
+                vars['range'] = ds_where.odim.radial_range
 
             if georef:
                 # adding xyz aeqd-coordinates
-                site = (ds.longitude.values, ds.latitude.values,
-                        ds.altitude.values)
-                xyz, aeqd = spherical_to_xyz(ds.range,
-                                             ds.azimuth,
-                                             ds.elevation,
+                site = (coords['longitude'], coords['latitude'],
+                        coords['altitude'])
+                xyz, aeqd = spherical_to_xyz(vars['range'],
+                                             vars['azimuth'],
+                                             vars['elevation'],
                                              site,
                                              squeeze=True)
                 gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-                ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
-                ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
-                ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
-                ds = ds.assign_coords(gr=(['time', 'range'], gr))
+                coords['x'] = (['time', 'range'], xyz[..., 0])
+                coords['y'] = (['time', 'range'], xyz[..., 1])
+                coords['z'] = (['time', 'range'], xyz[..., 2])
+                coords['gr'] = (['time', 'range'], gr)
 
                 # adding rays, bins coordinates
                 if is_ppi:
-                    bins, rays = np.meshgrid(ds.range, ds.azimuth,
+                    bins, rays = np.meshgrid(vars['range'],
+                                             vars['azimuth'],
                                              indexing='xy')
                 else:
-                    bins, rays = np.meshgrid(ds.range, ds.elevation,
+                    bins, rays = np.meshgrid(vars['range'],
+                                             vars['elevation'],
                                              indexing='xy')
-                ds = ds.assign_coords(rays=(['time', 'range'], rays))
-                ds = ds.assign_coords(bins=(['time', 'range'], bins))
+                coords['rays'] = (['time', 'range'], rays)
+                coords['bins'] = (['time', 'range'], bins)
 
             # time coordinate
             if 'cf' in standard or decode_times:
@@ -1380,9 +1388,9 @@ class OdimH5(XRadVol):
                     timevals = np.arange(start + delta / 2., end, delta)
                     timevals = np.roll(timevals, shift=-ds_where.a1gate)
                 if decode_times:
-                    ds = ds.assign({'time': (['time'], timevals, time_attrs)})
+                    vars['time'] = (['time'], timevals, time_attrs)
                 else:
-                    ds = ds.assign({'time': (['time'], timevals)})
+                    vars['time'] = (['time'], timevals)
 
                 # assign global cfradial sweep attributes
                 if 'cf' in standard:
@@ -1390,13 +1398,17 @@ class OdimH5(XRadVol):
                         fixed_angle = ds_where.elangle
                     else:
                         fixed_angle = ds_where.azangle
-                    ds = ds.assign({'sweep_number': i,
+                    vars.update({'sweep_number': i,
                                     'sweep_mode': sweep_mode,
                                     'follow_mode': 'none',
                                     'prt_mode': 'fixed',
                                     'fixed_angle': fixed_angle,
                                     })
                     sweep_fixed_angle.append(fixed_angle)
+
+            # assign variables and coordinates
+            ds = ds.assign(vars)
+            ds = ds.assign_coords(**coords)
 
             # decode dataset if requested
             if decode_times or decode_coords or mask_and_scale:
