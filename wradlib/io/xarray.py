@@ -936,7 +936,7 @@ def get_group_moments(ncf, sweep, moments=None, **kwargs):
         dmom_what = open_dataset(ncf[sweep][mom], 'what')
         name = dmom_what.attrs.pop('quantity')
         if 'cf' in standard and name not in moments_mapping.keys():
-                continue
+            continue
         dsmom = open_dataset(ncf[sweep], mom)
 
         # create attribute dict
@@ -1346,7 +1346,7 @@ class OdimH5(XRadVol):
             if 'cf' in standard:
                 coords['sweep_mode'] = sweep_mode
             if ('cf' in standard) or decode_coords or georef:
-                vars['azimuth'] =  ds_where.odim.azimuth_range
+                vars['azimuth'] = ds_where.odim.azimuth_range
                 vars['elevation'] = ds_where.odim.elevation_range
                 vars['range'] = ds_where.odim.radial_range
 
@@ -1399,11 +1399,11 @@ class OdimH5(XRadVol):
                     else:
                         fixed_angle = ds_where.azangle
                     vars.update({'sweep_number': i,
-                                    'sweep_mode': sweep_mode,
-                                    'follow_mode': 'none',
-                                    'prt_mode': 'fixed',
-                                    'fixed_angle': fixed_angle,
-                                    })
+                                 'sweep_mode': sweep_mode,
+                                 'follow_mode': 'none',
+                                 'prt_mode': 'fixed',
+                                 'fixed_angle': fixed_angle}) 
+
                     sweep_fixed_angle.append(fixed_angle)
 
             # assign variables and coordinates
