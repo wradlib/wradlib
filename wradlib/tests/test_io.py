@@ -3,6 +3,7 @@
 
 import unittest
 import wradlib as wrl
+from wradlib.io import dem
 from wradlib.io import radolan
 from wradlib.io import rainbow
 from wradlib.io import CfRadial, OdimH5, create_xarray_dataarray
@@ -1142,5 +1143,29 @@ class XarrayTests(unittest.TestCase):
                                    cf3.root.time_coverage_start)
 
 
+class DemTest(unittest.TestCase):
+    
+    def test_get_srtm(self):
+        targets = ["N49E002", "N49E003", "N49E004",
+                   "N50E002", "N50E003", "N50E004"]
+        targets = [ "%s.hgt.zip" %(f) for f in targets]
+
+        opts={'region':'Eurasia'}
+        datasets = dem.get_srtm([2.3,4.5,49.4,50.5], merge=False, download=opts)
+        self.assertEqual(len(datasets), 6)
+        
+        merged = dem.get_srtm([2.3,4.5,49.4,50.5])
+        
+        xsize = (datasets[0].RasterXSize-1)*3+1 
+        ysize = (datasets[0].RasterXSize-1)*2+1 
+        self.assertEqual(merged.RasterXSize, xsize)
+        self.assertEqual(merged.RasterYSize, ysize)
+
+        geo = merged.GetGeoTransform()
+        resolution = 3.0/3600
+        geo_ref = [2 - resolution/2, resolution, 0, 51 + resolution/2, 0, -resolution]
+        np.testing.assert_array_almost_equal(geo, geo_ref)
+
+        
 if __name__ == '__main__':
     unittest.main()

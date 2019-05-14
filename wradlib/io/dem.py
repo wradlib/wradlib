@@ -1,0 +1,146 @@
+#!/usr/bin/env python
+# Copyright (c) 2011-2019, wradlib developers.
+# Distributed under the MIT License. See LICENSE.txt for more info.
+
+
+"""
+Digital elevation model I/O
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Provide surface/terrain elevation information
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+download_srtm
+get_srtm
+
+"""
+
+import numpy as np
+import os
+
+from osgeo import gdal
+import requests
+
+import wradlib.util
+
+def download_srtm(filename, destination=None, version=2, resolution=3,
+                  region="Eurasia", token=None):
+    """
+    Download NASA SRTM elevation data
+    Version 3 is only available with a login and a token
+
+    Parameters
+    ----------
+    filename : str
+        srtm file to download
+    destination : str
+        output filename
+    version : int
+        srtm version (2 or 3)
+    resolution : int
+        resolution of SRTM data (1, 3 or 30)
+    region : str
+        name of the region for SRTM version 2 only: 
+        Africa, Australia, Eurasia, Islands, North America, South America
+    token : str
+        filename with authorization token (required for version 3)
+
+    """
+
+    if version == 2:
+        website = "https://dds.cr.usgs.gov/srtm/version2_1"
+        source = "%s/SRTM%s/%s" %(website, resolution, region)
+    if version == 3:
+        website = "http://e4ftl01.cr.usgs.gov/MEASURES" 
+        source = "%s/SRTMGL%d.003/2000.02.11" %(website, resolution)
+    url = "%s/%s" %(source, filename)
+
+    headers = None
+    if token is not None:
+        headers = {'Authorization': 'Bearer %s' %(token)}
+    try:
+        r = requests.get(url, headers=headers, stream=True)
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        print(err)
+        return
+    
+    if destination is None:
+        destination = filename
+    with open(destination, 'wb') as fd:
+        for chunk in r.iter_content(chunk_size=128):
+            fd.write(chunk)
+
+
+def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
+    """
+    Get NASA SRTM elevation data
+
+    Parameters
+    ----------
+    extent : str
+        lonmin, lonmax, latmin, latmax
+    version : int
+        srtm version (2 or 3)
+    resolution : int
+        resolution of SRTM data (1, 3 or 30)
+    merge : bool
+        True to merge the tiles in one dataset
+    download : dict
+        download options (see downloard_srtm)
+ 
+    """
+ 
+    extent = [int(x) for x in extent]
+    lonmin, lonmax, latmin, latmax = extent
+
+    filelist=[]
+    for latitude in range(latmin,min(latmax,0)):
+        for longitude in range(lonmin,min(lonmax,0)):
+            georef = "S%02gW%03g" %(-latitude, -longitude)
+            filelist.append(georef)
+        for longitude in range(max(lonmin,0),lonmax+1):
+            georef = "S%02gE%03g" %(-latitude, longitude)
+            filelist.append(georef)
+    for latitude in range(max(0,latmin),latmax+1):
+        for longitude in range(lonmin,min(lonmax,0)):
+            georef = "N%02gW%03g" %(latitude, -longitude)
+            filelist.append(georef)
+        for longitude in range(max(lonmin,0),lonmax+1):
+            georef = "N%02gE%03g" %(latitude, longitude)
+            filelist.append(georef)
+
+    if version == 3:
+        filelist = ["%s.SRTMGL%s" %(f, resolution) for f in filelist]
+
+    filelist = ["%s.hgt.zip" %(f) for f in filelist]
+
+    wrl_data_path = wradlib.util.get_wradlib_data_path()
+    srtm_path = "%s/geo" %(wrl_data_path)
+    if not os.path.exists(srtm_path) and download is not None:
+        os.makedirs(srtm_path)
+   
+    dems = []
+    for filename in filelist:
+        path = "%s/%s" %(srtm_path, filename)
+        if os.path.exists(path):
+            dems.append(path)
+            continue
+        if download is not None:
+            print("Downloading %s" %(filename))
+            download_srtm(filename, path, version, resolution, **download)
+            if os.path.exists(path):
+                dems.append(path)
+    
+    dems = [gdal.Open(d) for d in dems]
+
+    if not merge:
+        return(dems)
+
+    dem = gdal.Warp('', dems, format='MEM')
+
+    return(dem)
+
