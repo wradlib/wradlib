@@ -151,10 +151,10 @@ moments_mapping = {
               'units': 'meters per seconds',
               'gamic': 'wh'},
     'UWRADH': {'standard_name': 'radar_doppler_spectrum_width_h',
-              'long_name': 'Doppler spectrum width H',
-              'short_name': 'UWRADH',
-              'units': 'meters per seconds',
-              'gamic': 'uwh'},
+               'long_name': 'Doppler spectrum width H',
+               'short_name': 'UWRADH',
+               'units': 'meters per seconds',
+               'gamic': 'uwh'},
     'WRADV': {'standard_name': 'radar_doppler_spectrum_width_v',
               'long_name': 'Doppler spectrum width V',
               'short_name': 'WRADV',
@@ -166,10 +166,10 @@ moments_mapping = {
             'units': 'dB',
             'gamic': 'zdr'},
     'UZDR': {'standard_name': 'radar_differential_reflectivity_hv',
-            'long_name': 'Log differential reflectivity H/V',
-            'short_name': 'UZDR',
-            'units': 'dB',
-            'gamic': 'uzdr'},
+             'long_name': 'Log differential reflectivity H/V',
+             'short_name': 'UZDR',
+             'units': 'dB',
+             'gamic': 'uzdr'},
     'LDR': {'standard_name': 'radar_linear_depolarization_ratio',
             'long_name': 'Log-linear depolarization ratio HV',
             'short_name': 'LDR',
@@ -196,10 +196,10 @@ moments_mapping = {
               'units': 'unitless',
               'gamic': 'rhohv'},
     'URHOHV': {'standard_name': 'radar_correlation_coefficient_hv',
-              'long_name': 'Correlation coefficient HV',
-              'short_name': 'URHOHV',
-              'units': 'unitless',
-              'gamic': 'urhohv'},
+               'long_name': 'Correlation coefficient HV',
+               'short_name': 'URHOHV',
+               'units': 'unitless',
+               'gamic': 'urhohv'},
     'SNRH': {'standard_name': 'signal_noise_ratio_h',
              'long_name': 'Signal Noise Ratio H',
              'short_name': 'SNRH',
@@ -221,15 +221,15 @@ moments_mapping = {
              'units': 'unitless',
              'gamic': None},
     'CCORH': {'standard_name': 'clutter_correction_h',
-             'long_name': 'Clutter Correction H',
-             'short_name': 'CCORH',
-             'units': 'unitless',
-             'gamic': None},
+              'long_name': 'Clutter Correction H',
+              'short_name': 'CCORH',
+              'units': 'unitless',
+              'gamic': None},
     'CCORV': {'standard_name': 'clutter_correction_v',
-             'long_name': 'Clutter Correction V',
-             'short_name': 'CCORV',
-             'units': 'unitless',
-             'gamic': None},
+              'long_name': 'Clutter Correction V',
+              'short_name': 'CCORV',
+              'units': 'unitless',
+              'gamic': None},
 
 }
 
@@ -1081,7 +1081,8 @@ class XRadVol(collections.abc.MutableMapping):
         if self.root:
             to_cfradial2(self, filename)
         else:
-            warning.warn(UserWarning, "No CfRadial2-compliant data structure available. Not saving.")
+            warnings.warn(UserWarning, "No CfRadial2-compliant data structure "
+                                       "available. Not saving.")
 
     def to_odim(self, filename):
         """ Save volume to ODIM_H5/V2_2 compliant file.
@@ -1089,7 +1090,8 @@ class XRadVol(collections.abc.MutableMapping):
         if self.root:
             to_odim(self, filename)
         else:
-            warning.warn(UserWarning, "No OdimH5-compliant data structure available. Not saving.")
+            warnings.warn(UserWarning, "No OdimH5-compliant data structure "
+                                       "available. Not saving.")
 
 
 class CfRadial(XRadVol):
@@ -1110,7 +1112,7 @@ class CfRadial(XRadVol):
             except AttributeError as e:
                 raise AttributeError(
                     'wradlib: Missing "Conventions" attribute in {} ./n'
-                    'Use the "flavour" kwarg to specify your source '
+                    'Use the "flavour" kwarg to specify yoget_groupsur source'
                     'data.'.format(filename)) from e
             if "cf/radial" in self._Conventions.lower():
                 if self._version == '2.0':
@@ -1119,19 +1121,19 @@ class CfRadial(XRadVol):
                     flavour = 'Cf/Radial'
 
         if flavour == "Cf/Radial2":
-            self.assign_data_radial2()
+            self.assign_data_radial2(**kwargs)
         elif flavour == "Cf/Radial":
-            self.assign_data_radial()
+            self.assign_data_radial(**kwargs)
         else:
             raise AttributeError(
                 'wradlib: Unknown "flavour" kwarg attribute: {} .'
                 ''.format(flavour))
 
-    def assign_data_radial2(self):
+    def assign_data_radial2(self, **kwargs):
         """ Assign from CfRadial2 data structure.
 
         """
-        self['root'] = open_dataset(self._ncf)
+        self['root'] = open_dataset(self._ncf, **kwargs)
         sweepnames = self['root'].sweep_group_name.values
         for sw in sweepnames:
             self[sw] = open_dataset(self._ncf, sw)
@@ -1171,11 +1173,11 @@ class CfRadial(XRadVol):
             ds = ds.assign_coords(bins=(['time', 'range'], bins))
             self[sw] = ds
 
-    def assign_data_radial(self):
+    def assign_data_radial(self, **kwargs):
         """ Assign from CfRadial1 data structure.
 
         """
-        root = open_dataset(self._ncf)
+        root = open_dataset(self._ncf, **kwargs)
         var = root.variables.keys()
         remove_root = var ^ root_vars
         remove_root &= var
@@ -1299,8 +1301,10 @@ class OdimH5(XRadVol):
             time_coverage_start = np.datetime64('2037-01-01')
             time_coverage_end = np.datetime64('1970-01-01')
             if not decode_times:
-                time_coverage_start = (time_coverage_start - epoch) / np.timedelta64(1, 's')
-                time_coverage_end = (time_coverage_end - epoch) / np.timedelta64(1, 's')
+                time_coverage_start = ((time_coverage_start - epoch) /
+                                       np.timedelta64(1, 's'))
+                time_coverage_end = ((time_coverage_end - epoch) /
+                                     np.timedelta64(1, 's'))
 
         # iterate sweeps
         sweeps = {}
@@ -1357,9 +1361,11 @@ class OdimH5(XRadVol):
 
                 # adding rays, bins coordinates
                 if is_ppi:
-                    bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
+                    bins, rays = np.meshgrid(ds.range, ds.azimuth,
+                                             indexing='xy')
                 else:
-                    bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
+                    bins, rays = np.meshgrid(ds.range, ds.elevation,
+                                             indexing='xy')
                 ds = ds.assign_coords(rays=(['time', 'range'], rays))
                 ds = ds.assign_coords(bins=(['time', 'range'], bins))
 
@@ -1442,7 +1448,7 @@ class OdimH5(XRadVol):
                                       'references': 'None',
                                       'source': 'None',
                                       'history': 'None',
-                                      'comment': 'imported/exported using wradlib',
+                                      'comment': 'im/exported using wradlib',
                                       'instrument_name': what.attrs['source'],
                                       })
 
