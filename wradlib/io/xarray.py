@@ -1402,7 +1402,7 @@ class OdimH5(XRadVol):
                                  'sweep_mode': sweep_mode,
                                  'follow_mode': 'none',
                                  'prt_mode': 'fixed',
-                                 'fixed_angle': fixed_angle}) 
+                                 'fixed_angle': fixed_angle})
 
                     sweep_fixed_angle.append(fixed_angle)
 
