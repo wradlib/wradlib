@@ -835,6 +835,20 @@ def to_odim(volume, filename):
 
 
 def extract_gamic_ray_header(filename, scan):
+    """Returns GAMIC ray header dictionary.
+
+    Parameters
+    ----------
+    filename : str
+        filename of GAMIC file
+    scan : int
+        Number of scan in file
+
+    Returns
+    -------
+    vars : dict
+        OrderedDict of ray header items
+    """
     # ToDo: move rayheader into own dataset
     h5 = h5py.File(filename)
     ray_header = h5['scan{}/ray_header'.format(scan)][:]
@@ -1043,6 +1057,21 @@ def get_groups(ncf, groups):
 
 
 def get_moment_names(sweep, fmt=None, src=None):
+    """Get moment names.
+
+    Parameters
+    ----------
+    sweep : netCDf4 Group handle
+    fmt : str
+        dataset descriptor format
+    src : str
+        dataset location
+
+    Returns
+    -------
+    out : :class:`numpy:numpy.ndarray`
+        array of moment names
+    """
     moments = [mom for mom in getattr(sweep, src).keys() if
                fmt in mom]
     moments_idx = np.argsort([int(s[len(fmt):]) for s in moments])
@@ -1050,6 +1079,19 @@ def get_moment_names(sweep, fmt=None, src=None):
 
 
 def georeference_dataset(coords, vars, is_ppi):
+    """Georeference Dataset.
+
+    This function adds georeference data to `coords` and `vars`.
+
+    Parameters
+    ----------
+    coords : dict
+        Dictionary of coordinates
+    vars : dict
+        Dictionary of variables
+    is_ppi : bool
+        PPI/RHI flag
+    """
     # adding xyz aeqd-coordinates
     site = (coords['longitude'], coords['latitude'],
             coords['altitude'])
@@ -1372,6 +1414,15 @@ class OdimH5(XRadVol):
         self.assign_data(strict=strict, **kwargs)
 
     def assign_moments(self, ds, sweep, **kwargs):
+        """Assign radar moments to dataset.
+
+        Parameters
+        ----------
+        ds : xarray dataset
+            destination dataset
+        sweep : str
+            netcdf group name
+        """
         moments = get_moment_names(self._ncf[sweep], fmt=self._mfmt,
                                    src=self._msrc)
         if self._flavour == 'ODIM':
@@ -1385,6 +1436,18 @@ class OdimH5(XRadVol):
         return ds
 
     def get_timevals(self, grps):
+        """Retrieve TimeArray from source data.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of dataset hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        timevals : :class:`numpy:numpy.ndarray`
+                array of time values
+        """
         if self._flavour == 'ODIM':
             try:
                 timevals = grps['how'].odim.time_range
@@ -1400,6 +1463,18 @@ class OdimH5(XRadVol):
         return timevals
 
     def get_coords(self, grps):
+        """Retrieve Coordinates according OdimH5 standard.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of dataset hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        coords : dict
+            Dictionary of coordinate arrays
+        """
         flavour = self._flavour.lower()
         coords = collections.OrderedDict()
         if flavour == 'odim':
@@ -1414,6 +1489,20 @@ class OdimH5(XRadVol):
         return coords
 
     def get_fixed_angle(self, grps, is_ppi):
+        """Retrieve fixed angle from source data.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of dataset hdf5 groups ('how', 'what', 'where')
+        is_ppi : bool
+            PPI/RHI flag
+
+        Returns
+        -------
+        fixed-angle : float
+            fixed angle of specific scan
+        """
         idx = int(is_ppi)
         if self._flavour == 'ODIM':
             ang = ('azangle', 'elangle')
@@ -1424,6 +1513,18 @@ class OdimH5(XRadVol):
         return fixed_angle
 
     def get_root_attributes(self, grps):
+        """Retrieve root attributes according CfRadial2 standard.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of root hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        attrs : dict
+            Dictionary of root attributes
+        """
         attrs = collections.OrderedDict()
         attrs.update({'version': 'None',
                       'title': 'None',
@@ -1447,8 +1548,34 @@ class OdimH5(XRadVol):
         return attrs
 
     def assign_data(self, strict=True, **kwargs):
-        """ Assign from hdf5 data structure.
+        """Assign from hdf5 data structure.
 
+        Parameters
+        ----------
+        strict : bool
+            If False, exports all groups verbatim into dedicated 'odim'-group.
+
+        Keyword Arguments
+        -----------------
+        decode_times : bool
+            If True, decode cf times to np.datetime64. Defaults to True.
+        decode_coords : bool
+            If True, use the ‘coordinates’ attribute on variable
+            to assign coordinates. Defaults to True.
+        mask_and_scale : bool
+            If True, lazily scale (using scale_factor and add_offset)
+            and mask (using _FillValue). Defaults to True.
+        georef : bool
+            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+        standard : str
+            * `none` - data is read as verbatim as possible, no metadata
+            * `odim` - data is read, odim metadata added to datasets
+            * `cf-mandatory` - data is read according to cfradial2 standard
+              importing mandatory metadata
+            * `cf-full` - data is read according to cfradial2 standard
+              importing all available cfradial2 metadata (not fully
+              implemented)
         """
         # keyword argument handling
         decode_times = kwargs.get('decode_times', True)
