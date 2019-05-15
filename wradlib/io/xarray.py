@@ -920,7 +920,7 @@ def get_variables_moments(ds, moments=None, **kwargs):
         # create attribute dict
         attrs = collections.OrderedDict()
         # clean moment attributes
-        if standard is not 'none':
+        if standard != 'none':
             dmom.attrs = collections.OrderedDict()
 
         if standard in ['odim']:
@@ -937,6 +937,9 @@ def get_variables_moments(ds, moments=None, **kwargs):
 
         if 'cf' in standard or decode_coords:
             attrs['coordinates'] = 'elevation azimuth range'
+
+        if 'full' in standard:
+            attrs['_Undetect'] = undetect
 
         if 'cf' in standard:
             cfname = GAMIC_NAMES[name]
