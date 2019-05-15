@@ -64,6 +64,7 @@ Warning
 
 """
 
+import warnings
 import collections
 import numpy as np
 import datetime as dt
@@ -149,6 +150,11 @@ moments_mapping = {
               'short_name': 'WRADH',
               'units': 'meters per seconds',
               'gamic': 'wh'},
+    'UWRADH': {'standard_name': 'radar_doppler_spectrum_width_h',
+               'long_name': 'Doppler spectrum width H',
+               'short_name': 'UWRADH',
+               'units': 'meters per seconds',
+               'gamic': 'uwh'},
     'WRADV': {'standard_name': 'radar_doppler_spectrum_width_v',
               'long_name': 'Doppler spectrum width V',
               'short_name': 'WRADV',
@@ -159,6 +165,11 @@ moments_mapping = {
             'short_name': 'ZDR',
             'units': 'dB',
             'gamic': 'zdr'},
+    'UZDR': {'standard_name': 'radar_differential_reflectivity_hv',
+             'long_name': 'Log differential reflectivity H/V',
+             'short_name': 'UZDR',
+             'units': 'dB',
+             'gamic': 'uzdr'},
     'LDR': {'standard_name': 'radar_linear_depolarization_ratio',
             'long_name': 'Log-linear depolarization ratio HV',
             'short_name': 'LDR',
@@ -173,7 +184,7 @@ moments_mapping = {
                'long_name': 'Differential phase HV',
                'short_name': 'UPHIDP',
                'units': 'degrees',
-               'gamic': 'phidp'},
+               'gamic': 'uphidp'},
     'KDP': {'standard_name': 'radar_specific_differential_phase_hv',
             'long_name': 'Specific differential phase HV',
             'short_name': 'KDP',
@@ -184,16 +195,42 @@ moments_mapping = {
               'short_name': 'RHOHV',
               'units': 'unitless',
               'gamic': 'rhohv'},
+    'URHOHV': {'standard_name': 'radar_correlation_coefficient_hv',
+               'long_name': 'Correlation coefficient HV',
+               'short_name': 'URHOHV',
+               'units': 'unitless',
+               'gamic': 'urhohv'},
+    'SNRH': {'standard_name': 'signal_noise_ratio_h',
+             'long_name': 'Signal Noise Ratio H',
+             'short_name': 'SNRH',
+             'units': 'unitless',
+             'gamic': None},
+    'SNRV': {'standard_name': 'signal_noise_ratio_v',
+             'long_name': 'Signal Noise Ratio V',
+             'short_name': 'SNRV',
+             'units': 'unitless',
+             'gamic': None},
     'SQIH': {'standard_name': 'signal_quality_index_h',
              'long_name': 'Signal Quality H',
              'short_name': 'SQIH',
              'units': 'unitless',
              'gamic': None},
     'SQIV': {'standard_name': 'signal_quality_index_v',
-             'long_name': 'Signal QualityV',
+             'long_name': 'Signal Quality V',
              'short_name': 'SQIV',
              'units': 'unitless',
              'gamic': None},
+    'CCORH': {'standard_name': 'clutter_correction_h',
+              'long_name': 'Clutter Correction H',
+              'short_name': 'CCORH',
+              'units': 'unitless',
+              'gamic': None},
+    'CCORV': {'standard_name': 'clutter_correction_v',
+              'long_name': 'Clutter Correction V',
+              'short_name': 'CCORV',
+              'units': 'unitless',
+              'gamic': None},
+
 }
 
 ODIM_NAMES = {value['short_name']: key for (key, value) in
@@ -551,12 +588,7 @@ class OdimAccessor(object):
     def time_range(self):
         """Return the time range of this dataset."""
         if self._time_range is None:
-            startazT = self._obj.attrs['startazT']
-
-            attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
-                     'standard_name': 'time'}
-            da = xr.DataArray(startazT, dims=['time'], attrs=attrs)
-            self._time_range = da
+            self._time_range = self._obj.attrs['startazT']
         return self._time_range
 
     @property
@@ -802,6 +834,33 @@ def to_odim(volume, filename):
     h5.close()
 
 
+def extract_gamic_ray_header(filename, scan):
+    """Returns GAMIC ray header dictionary.
+
+    Parameters
+    ----------
+    filename : str
+        filename of GAMIC file
+    scan : int
+        Number of scan in file
+
+    Returns
+    -------
+    vars : dict
+        OrderedDict of ray header items
+    """
+    # ToDo: move rayheader into own dataset
+    h5 = h5py.File(filename)
+    ray_header = h5['scan{}/ray_header'.format(scan)][:]
+    h5.close()
+    vars = collections.OrderedDict()
+    for name in ray_header.dtype.names:
+        rh = ray_header[name]
+        attrs = None
+        vars.update({name: (['time'], rh, attrs)})
+    return vars
+
+
 def get_sweep_group_name(ncf, name):
     """ Return sweep names.
 
@@ -828,7 +887,7 @@ def get_sweep_group_name(ncf, name):
     return src, swp_grp_name
 
 
-def get_variables_moments(ds, moments=None):
+def get_variables_moments(ds, moments=None, **kwargs):
     """ Retrieve radar moments from dataset variables.
 
     Parameters
@@ -843,42 +902,77 @@ def get_variables_moments(ds, moments=None):
     ds : xarray dataset
         altered dataset
     """
+
+    standard = kwargs.get('standard', 'cf-mandatory')
+    mask_and_scale = kwargs.get('mask_and_scale', True)
+    decode_coords = kwargs.get('decode_coords', True)
+
+    # fix dimensions
+    dims = list(ds.dims.keys())
+    ds = ds.rename({dims[0]: 'time',
+                    dims[1]: 'range',
+                    })
+
     for mom in moments:
         # open dataX dataset
         dmom = ds[mom]
         name = dmom.moment.lower()
-        if name not in GAMIC_NAMES.keys():
+        if 'cf' in standard and name not in GAMIC_NAMES.keys():
             ds = ds.drop(mom)
             continue
-        cfname = GAMIC_NAMES[name]
-        # assign attributes
+
+        # extract attributes
         dmax = np.iinfo(dmom.dtype).max
+        dmin = np.iinfo(dmom.dtype).min
         minval = dmom.dyn_range_min
         maxval = dmom.dyn_range_max
-        dmom.attrs['gain'] = (maxval - minval) / dmax
-        dmom.attrs['offset'] = minval
-        dmom.attrs['scale_factor'] = (maxval - minval) / dmax
-        dmom.attrs['add_offset'] = minval
+        gain = (maxval - minval) / dmax
+        offset = minval
+        fillval = float(dmax)
+        undetect = float(dmin)
 
-        dmom.attrs['_FillValue'] = float(dmax)
-        dmom.attrs['nodata'] = float(dmax)
-        dmom.attrs['_Undetect'] = 0.
-        dmom.attrs['undetect'] = 0.
-        for k, v in moments_mapping[cfname].items():
-            dmom.attrs[k] = v
-        dname = dmom.attrs.pop('short_name')
-        dmom.attrs.pop('gamic')
-        #
-        ds = ds.rename({mom: dname})
-        # fix dimensions
-        dims = dmom.dims
-        dmom = dmom.rename({dims[0]: 'time',
-                            dims[1]: 'range',
-                            })
+        # create attribute dict
+        attrs = collections.OrderedDict()
+        # clean moment attributes
+        if standard != 'none':
+            dmom.attrs = collections.OrderedDict()
+
+        if standard in ['odim']:
+            attrs['gain'] = gain
+            attrs['offset'] = offset
+            attrs['nodata'] = fillval
+            attrs['undetect'] = undetect
+
+        # add cfradial moment attributes
+        if 'cf' in standard or mask_and_scale:
+            attrs['scale_factor'] = gain
+            attrs['add_offset'] = minval
+            attrs['_FillValue'] = float(dmax)
+
+        if 'cf' in standard or decode_coords:
+            attrs['coordinates'] = 'elevation azimuth range'
+
+        if 'full' in standard:
+            attrs['_Undetect'] = undetect
+
+        if 'cf' in standard:
+            cfname = GAMIC_NAMES[name]
+            for k, v in moments_mapping[cfname].items():
+                attrs[k] = v
+            name = attrs.pop('short_name')
+            attrs.pop('gamic')
+
+        # assign attributes to moment
+        dmom.attrs.update(attrs)
+
+        # keep original dataset name
+        if standard != 'none':
+            ds = ds.rename({mom: name.upper()})
+
     return ds
 
 
-def get_group_moments(ncf, sweep, moments=None):
+def get_group_moments(ncf, sweep, moments=None, **kwargs):
     """ Retrieve radar moments from hdf groups.
 
     Parameters
@@ -894,30 +988,51 @@ def get_group_moments(ncf, sweep, moments=None):
     ds : dictionary
         moment datasets
     """
+
+    standard = kwargs.get('standard', 'cf-mandatory')
+    mask_and_scale = kwargs.get('mask_and_scale', True)
+    decode_coords = kwargs.get('decode_coords', True)
+
     datas = {}
     for mom in moments:
         dmom_what = open_dataset(ncf[sweep][mom], 'what')
         name = dmom_what.attrs.pop('quantity')
-        if name not in moments_mapping.keys():
+        if 'cf' in standard and name not in moments_mapping.keys():
             continue
         dsmom = open_dataset(ncf[sweep], mom)
-        dmom = dsmom.data.assign_attrs(dmom_what.attrs)
-        dmom.attrs['scale_factor'] = dmom.attrs.get('gain')
-        dmom.attrs['add_offset'] = dmom.attrs.get('offset')
-        dmom.attrs['_FillValue'] = dmom.attrs.get('nodata')
-        dmom.attrs['_Undetect'] = dmom.attrs.get('undetect')
-        dmom.attrs['coordinates'] = 'elevation azimuth range'
+
+        # create attribute dict
+        attrs = collections.OrderedDict()
+
+        if standard in ['odim']:
+            attrs.update(dmom_what.attrs)
 
         # add cfradial moment attributes
-        for k, v in moments_mapping[name].items():
-            dmom.attrs[k] = v
+        if 'cf' in standard or mask_and_scale:
+            attrs['scale_factor'] = dmom_what.attrs.get('gain')
+            attrs['add_offset'] = dmom_what.attrs.get('offset')
+            attrs['_FillValue'] = dmom_what.attrs.get('nodata')
+        if 'cf' in standard or decode_coords:
+            attrs['coordinates'] = 'elevation azimuth range'
+        if 'cf' in standard:
+            for k, v in moments_mapping[name].items():
+                attrs[k] = v
+            # drop short_name
+            attrs.pop('short_name')
+            attrs.pop('gamic')
+        if 'full' in standard:
+            attrs['_Undetect'] = dmom_what.attrs.get('undetect')
 
-        # drop short_name
-        dmom.attrs.pop('short_name')
-        dmom.attrs.pop('gamic')
+        # assign attributes
+        dmom = dsmom.data.assign_attrs(attrs)
 
         # fix dimensions
         dims = dmom.dims
+
+        # keep original dataset name
+        if standard == 'none':
+            name = mom
+
         datas.update({name: dmom.rename({dims[0]: 'time',
                                          dims[1]: 'range',
                                          })})
@@ -942,10 +1057,66 @@ def get_groups(ncf, groups):
 
 
 def get_moment_names(sweep, fmt=None, src=None):
+    """Get moment names.
+
+    Parameters
+    ----------
+    sweep : netCDf4 Group handle
+    fmt : str
+        dataset descriptor format
+    src : str
+        dataset location
+
+    Returns
+    -------
+    out : :class:`numpy:numpy.ndarray`
+        array of moment names
+    """
     moments = [mom for mom in getattr(sweep, src).keys() if
                fmt in mom]
     moments_idx = np.argsort([int(s[len(fmt):]) for s in moments])
     return np.array(moments)[moments_idx]
+
+
+def georeference_dataset(coords, vars, is_ppi):
+    """Georeference Dataset.
+
+    This function adds georeference data to `coords` and `vars`.
+
+    Parameters
+    ----------
+    coords : dict
+        Dictionary of coordinates
+    vars : dict
+        Dictionary of variables
+    is_ppi : bool
+        PPI/RHI flag
+    """
+    # adding xyz aeqd-coordinates
+    site = (coords['longitude'], coords['latitude'],
+            coords['altitude'])
+    xyz, aeqd = spherical_to_xyz(vars['range'],
+                                 vars['azimuth'],
+                                 vars['elevation'],
+                                 site,
+                                 squeeze=True)
+    gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
+    coords['x'] = (['time', 'range'], xyz[..., 0])
+    coords['y'] = (['time', 'range'], xyz[..., 1])
+    coords['z'] = (['time', 'range'], xyz[..., 2])
+    coords['gr'] = (['time', 'range'], gr)
+
+    # adding rays, bins coordinates
+    if is_ppi:
+        bins, rays = np.meshgrid(vars['range'],
+                                 vars['azimuth'],
+                                 indexing='xy')
+    else:
+        bins, rays = np.meshgrid(vars['range'],
+                                 vars['elevation'],
+                                 indexing='xy')
+    coords['rays'] = (['time', 'range'], rays)
+    coords['bins'] = (['time', 'range'], bins)
 
 
 class XRadVol(collections.abc.MutableMapping):
@@ -954,14 +1125,15 @@ class XRadVol(collections.abc.MutableMapping):
     Implements `collections.MutableMapping` dictionary.
     """
 
-    def __init__(self):
+    def __init__(self, init_root=False):
         self._source = dict()
         self._filename = None
         self._ncf = None
         self._disk_format = None
         self._file_format = None
         self._data_model = None
-        self._init_root()
+        if init_root:
+            self._init_root()
 
     def __getitem__(self, key):
         return self._source[key]
@@ -1033,12 +1205,20 @@ class XRadVol(collections.abc.MutableMapping):
     def to_cfradial2(self, filename):
         """ Save volume to CfRadial2.0 compliant file.
         """
-        to_cfradial2(self, filename)
+        if self.root:
+            to_cfradial2(self, filename)
+        else:
+            warnings.warn(UserWarning, "No CfRadial2-compliant data structure "
+                                       "available. Not saving.")
 
     def to_odim(self, filename):
         """ Save volume to ODIM_H5/V2_2 compliant file.
         """
-        to_odim(self, filename)
+        if self.root:
+            to_odim(self, filename)
+        else:
+            warnings.warn(UserWarning, "No OdimH5-compliant data structure "
+                                       "available. Not saving.")
 
 
 class CfRadial(XRadVol):
@@ -1059,7 +1239,7 @@ class CfRadial(XRadVol):
             except AttributeError as e:
                 raise AttributeError(
                     'wradlib: Missing "Conventions" attribute in {} ./n'
-                    'Use the "flavour" kwarg to specify your source '
+                    'Use the "flavour" kwarg to specify yoget_groupsur source'
                     'data.'.format(filename)) from e
             if "cf/radial" in self._Conventions.lower():
                 if self._version == '2.0':
@@ -1068,19 +1248,19 @@ class CfRadial(XRadVol):
                     flavour = 'Cf/Radial'
 
         if flavour == "Cf/Radial2":
-            self.assign_data_radial2()
+            self.assign_data_radial2(**kwargs)
         elif flavour == "Cf/Radial":
-            self.assign_data_radial()
+            self.assign_data_radial(**kwargs)
         else:
             raise AttributeError(
                 'wradlib: Unknown "flavour" kwarg attribute: {} .'
                 ''.format(flavour))
 
-    def assign_data_radial2(self):
+    def assign_data_radial2(self, **kwargs):
         """ Assign from CfRadial2 data structure.
 
         """
-        self['root'] = open_dataset(self._ncf)
+        self['root'] = open_dataset(self._ncf, **kwargs)
         sweepnames = self['root'].sweep_group_name.values
         for sw in sweepnames:
             self[sw] = open_dataset(self._ncf, sw)
@@ -1120,11 +1300,11 @@ class CfRadial(XRadVol):
             ds = ds.assign_coords(bins=(['time', 'range'], bins))
             self[sw] = ds
 
-    def assign_data_radial(self):
+    def assign_data_radial(self, **kwargs):
         """ Assign from CfRadial1 data structure.
 
         """
-        root = open_dataset(self._ncf)
+        root = open_dataset(self._ncf, **kwargs)
         var = root.variables.keys()
         remove_root = var ^ root_vars
         remove_root &= var
@@ -1215,190 +1395,216 @@ class OdimH5(XRadVol):
                     'Use the "flavour" kwarg to specify your source '
                     'data.'.format(self._Conventions, filename))
 
+        self._flavour = flavour
         if flavour == "ODIM":
-            self.assign_data_odim(strict=strict)
+            self._dsdesc = 'dataset'
+            self._swmode = 'product'
+            self._mfmt = 'data'
+            self._msrc = 'groups'
         elif flavour == "GAMIC":
-            self.assign_data_gamic(strict=strict)
+            self._dsdesc = 'scan'
+            self._swmode = 'scan_type'
+            self._mfmt = 'moment_'
+            self._msrc = 'variables'
+            self._flavour = flavour
         else:
             raise AttributeError(
                 'wradlib: Unknown "flavour" kwarg attribute: {} .'
                 ''.format(flavour))
+        self.assign_data(strict=strict, **kwargs)
 
-    def assign_data_odim(self, strict=True):
-        """ Assign from ODIM_H5 data structure.
+    def assign_moments(self, ds, sweep, **kwargs):
+        """Assign radar moments to dataset.
 
+        Parameters
+        ----------
+        ds : xarray dataset
+            destination dataset
+        sweep : str
+            netcdf group name
         """
-
-        # retrieve and assign global groups root and /how, /what, /where
-        groups = [None, 'how', 'what', 'where']
-        root, how, what, where = get_groups(self._ncf, groups)
-
-        # sweep group handling
-        src_swp_grp_name, swp_grp_name = get_sweep_group_name(self._ncf,
-                                                              'dataset')
-
-        sweep_fixed_angle = []
-        time_coverage_start = np.datetime64('2037-01-01')
-        time_coverage_end = np.datetime64('1970-01-01')
-        # iterate sweeps
-        sweeps = {}
-        for i, sweep in enumerate(src_swp_grp_name):
-            swp = {}
-
-            # retrieve ds and assign datasetX how/what/where group attributes
-            groups = [None, 'how', 'what', 'where']
-            ds, ds_how, ds_what, ds_where = get_groups(self._ncf[sweep],
-                                                       groups)
-
-            # what products?
-            is_ppi = True
-            sweep_mode = 'azimuth_surveillance'
-            if ds_what.attrs['product'] == 'RHI':
-                sweep_mode = 'rhi'
-                is_ppi = False
-
-            # moments
-            moments = get_moment_names(self._ncf[sweep], fmt='data',
-                                       src='groups')
+        moments = get_moment_names(self._ncf[sweep], fmt=self._mfmt,
+                                   src=self._msrc)
+        if self._flavour == 'ODIM':
             for name, dmom in get_group_moments(self._ncf, sweep,
-                                                moments=moments).items():
+                                                moments=moments,
+                                                **kwargs).items():
                 ds[name] = dmom
+        if self._flavour == 'GAMIC':
+            ds = get_variables_moments(ds, moments=moments, **kwargs)
 
-            # coordinates wrap-up
-            ds = ds.assign_coords(longitude=where.attrs['lon'],
-                                  latitude=where.attrs['lat'],
-                                  altitude=where.attrs['height'],
-                                  sweep_mode=sweep_mode)
+        return ds
 
-            ds = ds.assign_coords(azimuth=ds_where.odim.azimuth_range)
-            ds = ds.assign_coords(elevation=ds_where.odim.elevation_range)
-            ds = ds.assign({'range': ds_where.odim.radial_range})
+    def get_timevals(self, grps):
+        """Retrieve TimeArray from source data.
 
-            # adding xyz aeqd-coordinates
-            site = (ds.longitude.values, ds.latitude.values,
-                    ds.altitude.values)
-            xyz, aeqd = spherical_to_xyz(ds.range,
-                                         ds.azimuth,
-                                         ds.elevation,
-                                         site,
-                                         squeeze=True)
-            gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-            ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
-            ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
-            ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
-            ds = ds.assign_coords(gr=(['time', 'range'], gr))
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of dataset hdf5 groups ('how', 'what', 'where')
 
-            # adding rays, bins coordinates
-            if is_ppi:
-                bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
-            else:
-                bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
-            ds = ds.assign_coords(rays=(['time', 'range'], rays))
-            ds = ds.assign_coords(bins=(['time', 'range'], bins))
-
-            # time coordinate
+        Returns
+        -------
+        timevals : :class:`numpy:numpy.ndarray`
+                array of time values
+        """
+        if self._flavour == 'ODIM':
             try:
-                timevals = ds_how.odim.\
-                    time_range.values
+                timevals = grps['how'].odim.time_range
             except (KeyError, AttributeError):
                 # timehandling if only start and end time is given
-                start, end = ds_what.odim.time_range2
-                delta = (end - start) / ds_where.nrays
+                start, end = grps['what'].odim.time_range2
+                delta = (end - start) / grps['where'].nrays
                 timevals = np.arange(start + delta / 2., end, delta)
-                # print(delta, timevals.shape)
-                attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
-                         'standard_name': 'time'}
-                da = xr.DataArray(timevals, dims=['time'], attrs=attrs)
-                timevals = da.values
-                timevals = np.roll(timevals, shift=-ds_where.a1gate)
-                # timevals = ds_how.odim.time_range2.values
-            ds = ds.assign({'time': (['time'], timevals, time_attrs)})
+                timevals = np.roll(timevals, shift=-grps['where'].a1gate)
+        if self._flavour == 'GAMIC':
+            timevals = grps['what'].gamic.time_range.values
 
-            # assign global sweep attributes
-            if is_ppi:
-                fixed_angle = ds_where.elangle
-            else:
-                fixed_angle = ds_where.azangle
-            ds = ds.assign({'sweep_number': i,
-                            'sweep_mode': sweep_mode,
-                            'follow_mode': 'none',
-                            'prt_mode': 'fixed',
-                            'fixed_angle': fixed_angle,
-                            })
-            sweep_fixed_angle.append(fixed_angle)
+        return timevals
 
-            # decode dataset
-            ds = xr.decode_cf(ds)
+    def get_coords(self, grps):
+        """Retrieve Coordinates according OdimH5 standard.
 
-            # extract time coverage
-            time_coverage_start = min(time_coverage_start,
-                                      ds.time.values.min())
-            time_coverage_end = max(time_coverage_end,
-                                    ds.time.values.max())
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of dataset hdf5 groups ('how', 'what', 'where')
 
-            # assign to sweep dict
-            if not strict:
-                swp.update({'how': ds_how})
-                swp.update({'what': ds_what})
-                swp.update({'where': ds_where})
-                sweeps[sweep] = swp
-
-            # dataset only
-            self[swp_grp_name[i]] = ds
-
-        # assign root variables
-        time_coverage_start = str(time_coverage_start)[:19] + 'Z'
-        time_coverage_end = str(time_coverage_end)[:19] + 'Z'
-
-        # assign root variables
-        root = root.assign({'volume_number': 0,
-                            'platform_type': 'fixed',
-                            'instrument_type': 'radar',
-                            'primary_axis': 'axis_z',
-                            'time_coverage_start': time_coverage_start,
-                            'time_coverage_end': time_coverage_end,
-                            'latitude': where.attrs['lat'],
-                            'longitude': where.attrs['lon'],
-                            'altitude': where.attrs['height'],
-                            'sweep_group_name': (['sweep'], swp_grp_name),
-                            'sweep_fixed_angle': (
-                                ['sweep'], sweep_fixed_angle),
-                            })
-
-        # assign root attributes
-        root = root.assign_attrs({'version': what.attrs['version'],
-                                  'title': 'None',
-                                  'institution': what.attrs['source'],
-                                  'references': 'None',
-                                  'source': 'None',
-                                  'history': 'None',
-                                  'comment': 'imported/exported using wradlib',
-                                  'instrument_name': what.attrs['source'],
-                                  })
-
-        # assign to source dict
-        self['root'] = root
-        if not strict:
-            self['odim'] = {'how': how,
-                            'what': what,
-                            'where': where,
-                            'dsets': sweeps}
-
-    def assign_data_gamic(self, strict=True):
-        """ Assign from GAMIC hdf5 data structure.
-
+        Returns
+        -------
+        coords : dict
+            Dictionary of coordinate arrays
         """
+        flavour = self._flavour.lower()
+        coords = collections.OrderedDict()
+        if flavour == 'odim':
+            az = el = rng = grps['where']
+        if flavour == 'gamic':
+            az = el = grps['what']
+            rng = grps['how']
+        coords['azimuth'] = getattr(az, flavour).azimuth_range
+        coords['elevation'] = getattr(el, flavour).elevation_range
+        coords['range'] = getattr(rng, flavour).radial_range
+
+        return coords
+
+    def get_fixed_angle(self, grps, is_ppi):
+        """Retrieve fixed angle from source data.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of dataset hdf5 groups ('how', 'what', 'where')
+        is_ppi : bool
+            PPI/RHI flag
+
+        Returns
+        -------
+        fixed-angle : float
+            fixed angle of specific scan
+        """
+        idx = int(is_ppi)
+        if self._flavour == 'ODIM':
+            ang = ('azangle', 'elangle')
+            fixed_angle = getattr(grps['where'], ang[idx])
+        if self._flavour == 'GAMIC':
+            ang = ('azimuth', 'elevation')
+            fixed_angle = grps['how'].attrs[ang[idx]]
+        return fixed_angle
+
+    def get_root_attributes(self, grps):
+        """Retrieve root attributes according CfRadial2 standard.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of root hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        attrs : dict
+            Dictionary of root attributes
+        """
+        attrs = collections.OrderedDict()
+        attrs.update({'version': 'None',
+                      'title': 'None',
+                      'institution': 'None',
+                      'references': 'None',
+                      'source': 'None',
+                      'history': 'None',
+                      'comment': 'im/exported using wradlib',
+                      'instrument_name': 'None',
+                      })
+
+        attrs['version'] = grps['what'].attrs['version']
+
+        if self._flavour == 'ODIM':
+            attrs['institution'] = grps['what'].attrs['source']
+            attrs['instrument'] = grps['what'].attrs['source']
+        if self._flavour == 'GAMIC':
+            attrs['title'] = grps['how'].attrs['template_name']
+            attrs['instrument'] = grps['how'].attrs['host_name']
+
+        return attrs
+
+    def assign_data(self, strict=True, **kwargs):
+        """Assign from hdf5 data structure.
+
+        Parameters
+        ----------
+        strict : bool
+            If False, exports all groups verbatim into dedicated 'odim'-group.
+
+        Keyword Arguments
+        -----------------
+        decode_times : bool
+            If True, decode cf times to np.datetime64. Defaults to True.
+        decode_coords : bool
+            If True, use the ‘coordinates’ attribute on variable
+            to assign coordinates. Defaults to True.
+        mask_and_scale : bool
+            If True, lazily scale (using scale_factor and add_offset)
+            and mask (using _FillValue). Defaults to True.
+        georef : bool
+            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+        standard : str
+            * `none` - data is read as verbatim as possible, no metadata
+            * `odim` - data is read, odim metadata added to datasets
+            * `cf-mandatory` - data is read according to cfradial2 standard
+              importing mandatory metadata
+            * `cf-full` - data is read according to cfradial2 standard
+              importing all available cfradial2 metadata (not fully
+              implemented)
+        """
+        # keyword argument handling
+        decode_times = kwargs.get('decode_times', True)
+        decode_coords = kwargs.get('decode_coords', True)
+        mask_and_scale = kwargs.get('mask_and_scale', True)
+        georef = kwargs.get('georef', True)
+        standard = kwargs.get('standard', 'cf-mandatory')
+
         # retrieve and assign global groups root and /how, /what, /where
         groups = [None, 'how', 'what', 'where']
         root, how, what, where = get_groups(self._ncf, groups)
+        rt_grps = {'how': how,
+                   'what': what,
+                   'where': where}
 
         # sweep group handling
         src_swp_grp_name, swp_grp_name = get_sweep_group_name(self._ncf,
-                                                              'scan')
+                                                              self._dsdesc)
 
-        sweep_fixed_angle = []
-        time_coverage_start = np.datetime64('2037-01-01')
-        time_coverage_end = np.datetime64('1970-01-01')
+        if 'cf' in standard:
+            sweep_fixed_angle = []
+            time_coverage_start = np.datetime64('2037-01-01')
+            time_coverage_end = np.datetime64('1970-01-01')
+            if not decode_times:
+                epoch = np.datetime64('1970-01-01T00:00:00Z')
+                time_coverage_start = ((time_coverage_start - epoch) /
+                                       np.timedelta64(1, 's'))
+                time_coverage_end = ((time_coverage_end - epoch) /
+                                     np.timedelta64(1, 's'))
 
         # iterate sweeps
         sweeps = {}
@@ -1409,133 +1615,112 @@ class OdimH5(XRadVol):
             groups = [None, 'how', 'what', 'where']
             ds, ds_how, ds_what, ds_where = get_groups(self._ncf[sweep],
                                                        groups)
+            ds_grps = {'how': ds_how,
+                       'what': ds_what,
+                       'where': ds_where}
 
             # what products?
-            is_ppi = True
-            sweep_mode = 'azimuth_surveillance'
-            if ds_what.attrs['scan_type'] == 'RHI':
-                sweep_mode = 'rhi'
-                is_ppi = False
+            if 'cf' in standard or georef:
+                is_ppi = True
+                sweep_mode = 'azimuth_surveillance'
+                if ds_grps['what'].attrs[self._swmode] == 'RHI':
+                    sweep_mode = 'rhi'
+                    is_ppi = False
 
-            # fix dimensions
-            dims = list(ds.dims.keys())
-            ds = ds.rename({dims[0]: 'time',
-                            dims[1]: 'range',
-                            })
+            # moments
+            ds = self.assign_moments(ds, sweep, **kwargs)
 
-            # retrieve and assign ray_header
-            # ToDo: move rayheader into own dataset
-            h5 = h5py.File(self._filename)
-            ray_header = h5['scan{}/ray_header'.format(i)][:]
-            for name in ray_header.dtype.names:
-                rh = ray_header[name]
-                attrs = None
-                ds_what = ds_what.assign({name: (['time'], rh, attrs)})
+            # retrieve and assign gamic ray_header
+            if self._flavour == 'GAMIC':
+                rh = extract_gamic_ray_header(self._filename, i)
+                ds_grps['what'] = ds_grps['what'].assign(rh)
 
             # coordinates wrap-up
-            ds = ds.assign_coords(longitude=where.attrs['lon'],
-                                  latitude=where.attrs['lat'],
-                                  altitude=where.attrs['height'],
-                                  sweep_mode=sweep_mode)
+            coords = collections.OrderedDict()
+            vars = collections.OrderedDict()
+            if 'cf' in standard or georef:
+                coords['longitude'] = rt_grps['where'].attrs['lon']
+                coords['latitude'] = rt_grps['where'].attrs['lat']
+                coords['altitude'] = rt_grps['where'].attrs['height']
+            if 'cf' in standard:
+                coords['sweep_mode'] = sweep_mode
 
-            ds = ds.assign_coords(azimuth=ds_what.gamic.azimuth_range)
-            ds = ds.assign_coords(elevation=ds_what.gamic.elevation_range)
-            ds = ds.assign({'range': ds_how.gamic.radial_range})
-            ds = ds.assign({'time': (['time'], ds_what.gamic.time_range.values,
-                                     time_attrs)})
+            if ('cf' in standard) or decode_coords or georef:
+                vars.update(self.get_coords(ds_grps))
 
-            # adding xyz aeqd-coordinates
-            site = (ds.longitude.values, ds.latitude.values,
-                    ds.altitude.values)
-            xyz, aeqd = spherical_to_xyz(ds.range,
-                                         ds.azimuth,
-                                         ds.elevation,
-                                         site,
-                                         squeeze=True)
-            gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-            ds = ds.assign_coords(x=(['time', 'range'], xyz[..., 0]))
-            ds = ds.assign_coords(y=(['time', 'range'], xyz[..., 1]))
-            ds = ds.assign_coords(z=(['time', 'range'], xyz[..., 2]))
-            ds = ds.assign_coords(gr=(['time', 'range'], gr))
+            # time coordinate
+            if 'cf' in standard or decode_times:
+                timevals = self.get_timevals(ds_grps)
+                if decode_times:
+                    vars['time'] = (['time'], timevals, time_attrs)
+                else:
+                    vars['time'] = (['time'], timevals)
 
-            # adding rays, bins coordinates
-            if is_ppi:
-                bins, rays = np.meshgrid(ds.range, ds.azimuth, indexing='xy')
-            else:
-                bins, rays = np.meshgrid(ds.range, ds.elevation, indexing='xy')
-            ds = ds.assign_coords(rays=(['time', 'range'], rays))
-            ds = ds.assign_coords(bins=(['time', 'range'], bins))
-
-            # get moments
-            moments = get_moment_names(self._ncf[sweep], fmt='moment_',
-                                       src='variables')
-            ds = get_variables_moments(ds, moments=moments)
+            if georef:
+                georeference_dataset(coords, vars, is_ppi)
 
             # assign global sweep attributes
-            if is_ppi:
-                fixed_angle = ds_how.attrs['elevation']
-            else:
-                fixed_angle = ds_how.attrs['azimuth']
-            ds = ds.assign({'sweep_number': i,
-                            'sweep_mode': sweep_mode,
-                            'follow_mode': 'none',
-                            'prt_mode': 'fixed',
-                            'fixed_angle': fixed_angle,
-                            })
-            sweep_fixed_angle.append(fixed_angle)
+            if 'cf' in standard:
+                fixed_angle = self.get_fixed_angle(ds_grps, is_ppi)
+                vars.update({'sweep_number': i,
+                             'sweep_mode': sweep_mode,
+                             'follow_mode': 'none',
+                             'prt_mode': 'fixed',
+                             'fixed_angle': fixed_angle})
+                sweep_fixed_angle.append(fixed_angle)
 
-            ds = xr.decode_cf(ds)
+            # assign variables and coordinates
+            ds = ds.assign(vars)
+            ds = ds.assign_coords(**coords)
+
+            # decode dataset if requested
+            if decode_times or decode_coords or mask_and_scale:
+                ds = xr.decode_cf(ds, decode_times=decode_times,
+                                  decode_coords=decode_coords,
+                                  mask_and_scale=mask_and_scale)
 
             # extract time coverage
-            time_coverage_start = min(time_coverage_start,
-                                      ds.time.values.min())
-            time_coverage_end = max(time_coverage_end,
-                                    ds.time.values.max())
+            if 'cf' in standard:
+                time_coverage_start = min(time_coverage_start,
+                                          ds.time.values.min())
+                time_coverage_end = max(time_coverage_end,
+                                        ds.time.values.max())
 
             # assign to sweep dict
             if not strict:
-                swp.update({'how': ds_how,
-                            'what': ds_what,
-                            'where': ds_where})
+                swp.update(ds_grps)
                 sweeps[sweep] = swp
 
             # dataset only
             self[swp_grp_name[i]] = ds
 
         # assign root variables
-        time_coverage_start = str(time_coverage_start)[:19] + 'Z'
-        time_coverage_end = str(time_coverage_end)[:19] + 'Z'
+        if 'cf' in standard:
+            time_coverage_start = str(time_coverage_start)[:19] + 'Z'
+            time_coverage_end = str(time_coverage_end)[:19] + 'Z'
 
-        # assign root variables
-        root = root.assign({'volume_number': 0,
-                            'platform_type': str('fixed'),
-                            'instrument_type': 'radar',
-                            'primary_axis': 'axis_z',
-                            'time_coverage_start': time_coverage_start,
-                            'time_coverage_end': time_coverage_end,
-                            'latitude': where.attrs['lat'],
-                            'longitude': where.attrs['lon'],
-                            'altitude': where.attrs['height'],
-                            'sweep_group_name': (['sweep'], swp_grp_name),
-                            'sweep_fixed_angle': (
-                                ['sweep'], sweep_fixed_angle),
-                            })
+            # assign root variables
+            root = root.assign({'volume_number': 0,
+                                'platform_type': str('fixed'),
+                                'instrument_type': 'radar',
+                                'primary_axis': 'axis_z',
+                                'time_coverage_start': time_coverage_start,
+                                'time_coverage_end': time_coverage_end,
+                                'latitude': rt_grps['where'].attrs['lat'],
+                                'longitude': rt_grps['where'].attrs['lon'],
+                                'altitude': rt_grps['where'].attrs['height'],
+                                'sweep_group_name': (['sweep'], swp_grp_name),
+                                'sweep_fixed_angle': (
+                                    ['sweep'], sweep_fixed_angle),
+                                })
 
-        # assign root attributes
-        root = root.assign_attrs({'version': what.attrs['version'],
-                                  'title': how.attrs['template_name'],
-                                  'institution': 'None',
-                                  'references': 'None',
-                                  'source': 'None',
-                                  'history': 'None',
-                                  'comment': 'imported/exported using wradlib',
-                                  'instrument_name': how.attrs['host_name'],
-                                  })
+            # assign root attributes
+            attrs = self.get_root_attributes(rt_grps)
+            root = root.assign_attrs(attrs)
 
-        # assign to source dict
-        self['root'] = root
+            # assign to source dict
+            self['root'] = root
+
         if not strict:
-            self['odim'] = {'how': how,
-                            'what': what,
-                            'where': where,
-                            'dsets': sweeps}
+            self['odim'] = {'dsets': sweeps}
+            self['odim'].update(rt_grps)
