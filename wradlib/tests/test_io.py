@@ -838,8 +838,8 @@ class IrisTest(unittest.TestCase):
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
         self.assertIsInstance(data.fh, np.memmap)
         data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=True)
-        self.assertEqual(data._record_number, 512)
-        self.assertEqual(data.filepos, 3145728)
+        self.assertEqual(data._record_number, 511)
+        self.assertEqual(data.filepos, 3139584)
 
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
@@ -871,7 +871,7 @@ class IrisTest(unittest.TestCase):
     def test_IrisRecord(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
         sigmetfile = wrl.util.get_wradlib_data_file(filename)
-        data = wrl.io.IrisFile(sigmetfile, loaddata=False)
+        data = wrl.io.IrisRecordFile(sigmetfile, loaddata=False)
         # reset record after init
         data.init_record(1)
         self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
@@ -915,6 +915,13 @@ class IrisTest(unittest.TestCase):
                                                                offset2=-2.),
                                       [0, 2., 4., 6., 8., 10.,
                                        12., 14., 16., 18., 20.])
+        data = np.array([0, 1, 255, 1000, 9096, 22634, 34922, 50000, 65534],
+                        dtype=np.uint16)
+        np.testing.assert_array_equal(wrl.io.iris.decode_array(data,
+                                                               scale=1000,
+                                                               tofloat=True),
+                                      [0., 0.001, 0.255, 1., 10., 100.,
+                                       800., 10125.312, 134184.96])
 
     def test_decode_kdp(self):
         np.testing.assert_array_almost_equal(
