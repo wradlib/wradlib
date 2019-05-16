@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 
@@ -24,11 +24,21 @@ Using `rawdata=True` the data will be kept undecoded.
    :toctree: generated/
 
    IrisRecord
+   IrisHeaderBase
+   IrisStructureHeader
+   IrisIngestHeader
+   IrisProductHeader
+   IrisIngestDataHeader
+   IrisFileBase
    IrisFile
+   IrisIngestHeaderFile
+   IrisIngestDataFile
+   IrisRecordFile
    IrisRawFile
    IrisProductFile
    IrisCartesianProductFile
    read_iris
+
 """
 
 import numpy as np
@@ -68,10 +78,10 @@ def to_float(data):
     decoded : :class:`numpy:numpy.ndarray`
         decoded floating point data
 
-    Update
-    -------
-    DB_FLIQUID2 decodes changes depends on IRIS manuals, 4.4.12 - Page 75
-    ftp://ftp.sigmet.com/outgoing/manuals/IRIS_Programmers_Manual.pdf
+    Note
+    ----
+    DB_FLIQUID2 decoding see IRIS manuals, 4.4.12 - Page 75
+
     """
     exp = data >> 12
     nz = exp > 0
@@ -79,15 +89,22 @@ def to_float(data):
     mantissa[nz] = (mantissa[nz] | 0x1000) << (exp[nz] - 1)
     return mantissa
 
-#    exp = data >> 12
-#    mantissa = (data & 0xfff).astype(np.float)
-#    return mantissa * 2 ** exp
-
-
-# TODO: mask nodata and area not scanned
 
 def decode_bin_angle(bin_angle, mode=None):
     """Decode BIN angle.
+
+    See 4.2 p.23
+
+    Parameters
+    ----------
+    bin_angle : array-like
+    mode : int
+        number of bytes
+
+    Returns
+    -------
+    out : array-like
+        decoded angle
     """
     return 360. * bin_angle / 2 ** (mode * 8)
 
@@ -319,6 +336,8 @@ def _data_types_from_dsp_mask(words):
 
 
 def _check_product(product_type):
+    """Return IRIS File Class depending on product type.
+    """
     if product_type in ['MAX', 'TOPS', 'HMAX', 'BASE', 'THICK', 'PPI', 'RHI',
                         'CAPPI', 'RAINN', 'RAIN1', 'CROSS', 'SHEAR', 'SRI',
                         'RTI', 'VIL', 'LAYER', 'BEAM', 'MLHGT']:
@@ -333,6 +352,8 @@ def _check_product(product_type):
 
 
 def _check_identifier(identifier):
+    """Return IRIS File Class depending on identifier.
+    """
     if identifier == 'INGEST_HEADER':
         return IrisIngestHeaderFile
     elif identifier == 'INGEST_DATA_HEADER':
@@ -349,6 +370,8 @@ _STRING = {'read': decode_string,
 
 
 def string_dict(size):
+    """Return _STRING dictionary
+    """
     dic = _STRING.copy()
     dic['size'] = '{0}s'.format(size)
     return dic
@@ -359,6 +382,8 @@ _ARRAY = {'read': np.frombuffer,
 
 
 def array_dict(size, dtype):
+    """Return _ARRAY dictionary
+    """
     dic = _ARRAY.copy()
     dic['size'] = '{0}s'.format(size * get_dtype_size(dtype))
     dic['rkw']['dtype'] = dtype

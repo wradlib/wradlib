@@ -923,7 +923,6 @@ class IrisTest(unittest.TestCase):
                                       [0., 0.001, 0.255, 1., 10., 100.,
                                        800., 10125.312, 134184.96])
 
-
     def test_decode_kdp(self):
         np.testing.assert_array_almost_equal(
             wrl.io.iris.decode_kdp(np.arange(-5, 5, dtype='int8'),
