@@ -73,12 +73,10 @@ def to_float(data):
     DB_FLIQUID2 decodes changes depends on IRIS manuals, 4.4.12 - Page 75
     ftp://ftp.sigmet.com/outgoing/manuals/IRIS_Programmers_Manual.pdf
     """
-
-    mantissa  = np.array(data,dtype='uint32')
     exp = data >> 12
-    ind_non0 = exp > 0
-    mantissa[ind_non0] = np.array(data[ind_non0] & 0xfff + 4096,dtype='uint32')
-    mantissa[ind_non0] = mantissa[ind_non0] << (exp[ind_non0]-1)
+    nz = exp > 0
+    mantissa = (data & 0xfff).astype(dtype='uint32')
+    mantissa[nz] = (mantissa[nz] | 0x1000) << (exp[nz] - 1)
     return mantissa
 
 #    exp = data >> 12
