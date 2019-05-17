@@ -300,17 +300,22 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
     At the moment, the following decision variables are considered:
 
-        - Texture of differential reflectivity (zdr)
+        - Texture of differential reflectivity (zdr) (mandatory)
 
-        - Texture of correlation coefficient (rho)
+        - Texture of correlation coefficient (rho) (mandatory)
 
-        - Correlation coefficient (rho2)
+        - Texture of differential propagation phase (phidp) (mandatory)
 
-        - Texture of differential propagation phase (phidp)
+        - Doppler velocity (dop) (mandatory)
 
-        - Doppler velocity (dop)
+        - Static clutter map (map) (mandatory)
 
-        - Static clutter map (map)
+        - Correlation coefficient (rho2) (additional)
+
+        - Depolarization Ratio (dr), computed from
+        correlation coefficient & differential reflectivity (additional)
+
+        - clutter phase alignment (cpa) (additional)
 
     Parameters
     ----------
@@ -320,7 +325,7 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
         should be (..., number of beams, number of gates) and the shapes need
         to be identical or be broadcastable.
     weights : dict
-        dictionray of floats.
+        dictionary of floats.
         Defines the weights of the decision variables.
     trpz : dict
         dictionary of lists of floats.
@@ -342,31 +347,50 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
     """
     # Check the inputs
+    # mandatory data keys
     dkeys = ["zdr", "rho", "phi", "dop", "map"]
-    wkeys = ["zdr", "rho", "rho2", "phi", "dop", "map"]
-    tkeys = ["zdr", "rho", "rho2", "phi", "dop", "map"]
+    # usable wkeys
+    wkeys = ["zdr", "rho", "phi", "dop", "map", "rho2", "dr", "cpa"]
+    # usable tkeys
+    tkeys = ["zdr", "rho",  "phi", "dop", "map", "rho2", "dr", "cpa"]
 
+    # default weights
+    weights_default = {"zdr": 0.4, "rho": 0.4, "phi": 0.1,
+                       "dop": 0.1, "map": 0.5,
+                       "rho2": 0.4, "dr": 0.4, "cpa": 0.4}
     if weights is None:
-        weights = {"zdr": 0.4, "rho": 0.4, "rho2": 0.4,
-                   "phi": 0.1, "dop": 0.1, "map": 0.5}
+        weights = weights_default
+    else:
+        weights = dict(list(weights_default.items()) + list(weights.items()))
 
+    # default trapezoidal membership functions
+    trpz_default = {"zdr": [0.7, 1.0, 9999, 9999],
+                    "rho": [0.1, 0.15, 9999, 9999],
+                    "phi": [15, 20, 10000, 10000],
+                    "dop": [-0.2, -0.1, 0.1, 0.2],
+                    "map": [1, 1, 9999, 9999],
+                    "rho2": [-9999, -9999, 0.95, 0.98],
+                    "dr": [-20, -12, 9999, 9999],
+                    "cpa": [0.6, 0.9, 9999, 9999]}
     if trpz is None:
-        trpz = {"zdr": [0.7, 1.0, 9999, 9999],
-                "rho": [0.1, 0.15, 9999, 9999],
-                "rho2": [-9999, -9999, 0.95, 0.98],
-                "phi": [15, 20, 10000, 10000],
-                "dop": [-0.2, -0.1, 0.1, 0.2],
-                "map": [1, 1, 9999, 9999]}
+        trpz = trpz_default
+    else:
+        trpz = dict(list(trpz_default.items()) + list(trpz.items()))
 
+    # check data conformity
     assert np.all(np.in1d(dkeys, list(dat.keys()))), \
         "Argument dat of classify_echo_fuzzy must be a dictionary " \
-        "with keywords %r." % (dkeys,)
+        "with mandatory keywords %r." % (dkeys,)
     assert np.all(np.in1d(wkeys, list(weights.keys()))), \
         "Argument weights of classify_echo_fuzzy must be a dictionary " \
         "with keywords %r." % (wkeys,)
     assert np.all(np.in1d(tkeys, list(trpz.keys()))), \
         "Argument trpz of classify_echo_fuzzy must be a dictionary " \
         "with keywords %r." % (tkeys,)
+
+    # copy rho to rho2
+    dat['rho2'] = dat['rho'].copy()
+
     shape = None
     for key in dkeys:
         if not dat[key] is None:
@@ -382,10 +406,13 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     # If all dual-pol moments are NaN, can we assume that and echo is
     # non-meteorological?
     # Successively identify those bins where all moments are NaN
-    nan_mask = np.isnan(dat["rho"])
-    nan_mask &= np.isnan(dat["zdr"])
-    nan_mask &= np.isnan(dat["phi"])
-    # nan_mask = nan_mask & np.isnan(dat["dop"])
+    nmom = ['rho', 'zdr', 'phi', 'dr', 'cpa']  # 'dop'
+    nan_mask = np.isnan(dat['rho'])
+    for mom in nmom[1:]:
+        try:
+            nan_mask &= np.isnan(dat[mom])
+        except KeyError:
+            pass
 
     # Replace missing data by NaN
     dummy = np.zeros(shape) * np.nan
@@ -394,45 +421,39 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
             dat[key] = dummy
 
     # membership in meteorological class for each variable
-    q_dop = 1. - util.trapezoid(dat["dop"], trpz["dop"][0], trpz["dop"][1],
-                                trpz["dop"][2], trpz["dop"][3])
-    q_zdr = 1. - util.trapezoid(dp.texture(dat["zdr"]),
-                                trpz["zdr"][0], trpz["zdr"][1],
-                                trpz["zdr"][2], trpz["zdr"][3])
-    q_phi = 1. - util.trapezoid(dp.texture(dat["phi"]),
-                                trpz["phi"][0], trpz["phi"][1],
-                                trpz["phi"][2], trpz["phi"][3])
-    q_rho = 1. - util.trapezoid(dp.texture(dat["rho"]),
-                                trpz["rho"][0], trpz["rho"][1],
-                                trpz["rho"][2], trpz["rho"][3])
-    q_map = 1. - util.trapezoid(dat["map"],
-                                trpz["map"][0], trpz["map"][1],
-                                trpz["map"][2], trpz["map"][3])
-    q_rho2 = 1. - util.trapezoid(dat["rho"],
-                                 trpz["rho2"][0], trpz["rho2"][1],
-                                 trpz["rho2"][2], trpz["rho2"][3])
+    qres = dict()
+    for key in dat.keys():
+        if key not in tkeys:
+            continue
+        if key in ['zdr', 'rho', 'phi']:
+            d = dp.texture(dat[key])
+        else:
+            d = dat[key]
+        qres[key] = 1. - util.trapezoid(d,
+                                        trpz[key][0],
+                                        trpz[key][1],
+                                        trpz[key][2],
+                                        trpz[key][3])
 
     # create weight arrays which are zero where the data is NaN
     # This way, each pixel "adapts" to the local data availability
-    w_dop = _weight_array(q_dop, weights["dop"])
-    w_zdr = _weight_array(q_zdr, weights["zdr"])
-    w_rho = _weight_array(q_rho, weights["rho"])
-    w_phi = _weight_array(q_phi, weights["phi"])
-    w_map = _weight_array(q_map, weights["map"])
-    w_rho2 = _weight_array(q_rho2, weights["rho2"])
-
-    # remove NaNs from data
-    q_dop = np.nan_to_num(q_dop)
-    q_zdr = np.nan_to_num(q_zdr)
-    q_rho = np.nan_to_num(q_rho)
-    q_phi = np.nan_to_num(q_phi)
-    q_map = np.nan_to_num(q_map)
-    q_rho2 = np.nan_to_num(q_rho2)
+    wres = dict()
+    for key in dat.keys():
+        if key not in wkeys:
+            continue
+        wres[key] = _weight_array(qres[key], weights[key])
 
     # Membership in meteorological class after combining all variables
-    q = ((q_map * w_map) + (q_dop * w_dop) + (q_zdr * w_zdr) +
-         (q_rho * w_rho) + (q_phi * w_phi) + (q_rho2 * w_rho2)) / \
-        (w_map + w_dop + w_zdr + w_rho + w_phi + w_rho2)
+    qsum = []
+    wsum = []
+    for key in dat.keys():
+        if key not in wkeys:
+            continue
+        # weighted sum, also removing NaN from data
+        qsum.append(np.nan_to_num(qres[key]) * wres[key])
+        wsum.append(wres[key])
+
+    q = np.array(qsum).sum(axis=0) / np.array(wsum).sum(axis=0)
 
     # flag low quality
     return np.where(q < thresh, True, False), nan_mask
