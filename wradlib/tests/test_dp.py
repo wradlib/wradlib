@@ -96,5 +96,21 @@ class TextureTest(unittest.TestCase):
         np.testing.assert_array_equal(tex[59:121, 1:8], self.rainfield)
 
 
+class DepolarizationTest(unittest.TestCase):
+    def test_depolarization(self):
+        zdr = np.linspace(-0.5, 0.5, 10)
+        rho = np.linspace(0., 1., 10)
+
+        dr_0 = [-12.719937, -12.746507, -12.766551, -12.779969, -12.786695,
+                -12.786695, -12.779969, -12.766551, -12.746507, -12.719937]
+        dr_1 = [0., -0.96266, -1.949568, -2.988849, -4.118078, -5.394812,
+                -6.921361, -8.919312, -12.067837, -24.806473]
+
+        np.testing.assert_array_almost_equal(dp.depolarization(zdr, 0.9),
+                                             dr_0)
+        np.testing.assert_array_almost_equal(dp.depolarization(1.0, rho),
+                                             dr_1)
+
+
 if __name__ == '__main__':
     unittest.main()
