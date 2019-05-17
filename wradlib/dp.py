@@ -49,6 +49,7 @@ all input arrays.
     unfold_phi
     linear_despeckle
     texture
+    depolarization
 
 """
 
@@ -57,6 +58,7 @@ from scipy.interpolate import interp1d
 from scipy.stats import linregress
 from scipy.ndimage.filters import convolve1d
 from . import util as util
+from . import trafo as trafo
 
 
 def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
@@ -554,6 +556,33 @@ def texture(data):
     rmsd[np.isnan(data)] = np.nan
 
     return rmsd
+
+
+def depolarization(zdr, rho):
+    """Compute the depolarization ration.
+
+    Compute the depolarization ration using differential
+    reflectivity :math:`Z_{DR}` and crosscorrelation coefficient
+    :math:`Rho_{HV}`of a radar sweep (:cite:`Ryzhkov2017).
+
+    Parameters
+    ----------
+    zdr : float or :class:`numpy:numpy.ndarray`
+        differential reflectivity
+    rho : float or :class:`numpy:numpy.ndarray`
+        crosscorrelation coefficient
+
+    Returns
+    ------
+    depolarization : :class:`numpy:numpy.ndarray`
+        array of depolarization ratios with the same shape as input data,
+        numpy broadcasting rules apply
+
+    """
+    zdr = trafo.idecibel(np.asanyarray(zdr))
+    m = 2 * np.asanyarray(rho) * zdr ** 0.5
+
+    return trafo.decibel((1 + zdr - m) / (1 + zdr + m))
 
 
 if __name__ == '__main__':
