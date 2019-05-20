@@ -177,19 +177,20 @@ def classify(data, threshold=0.):
         scores. No precip is added on the top.
     """
     data = data.copy()
+    shape = data.shape[0]
 
     # handle no precipitation
     nop = np.sum(data, axis=0) / data.shape[0]
     mask = nop <= threshold
+    # add no precip field (with zero probability)
     noprec = np.zeros_like(nop)
-    noprec[mask] = data.shape[0] + 1
     data = np.vstack((data, noprec[np.newaxis, ...]))
 
     # sort idx and vals
     idx = np.argsort(data, axis=0)
     vals = np.sort(data, axis=0)
     # set no precip in every class
-    idx[:, mask] = data.shape[0]
+    idx[:, mask] = shape
     vals[:, mask] = 1.
 
     return idx, vals
