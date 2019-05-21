@@ -520,7 +520,7 @@ class GamicAccessor(object):
             times = self._obj['timestamp'] / 1e6
             attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
                      'standard_name': 'time'}
-            da = xr.DataArray(times, dims=['time'], attrs=attrs)
+            da = xr.DataArray(times, attrs=attrs)
             self._time_range = da
         return self._time_range
 
@@ -569,7 +569,7 @@ class OdimAccessor(object):
                                      res,
                                      dtype='float32')
 
-            da = xr.DataArray(azimuth_data, dims=['time'], attrs=az_attrs)
+            da = xr.DataArray(azimuth_data, attrs=az_attrs)
             self._azimuth_range = da
         return self._azimuth_range
 
@@ -580,7 +580,7 @@ class OdimAccessor(object):
             nrays = self._obj.attrs['nrays']
             elangle = self._obj.attrs['elangle']
             elevation_data = np.ones(nrays, dtype='float32') * elangle
-            da = xr.DataArray(elevation_data, dims=['time'], attrs=el_attrs)
+            da = xr.DataArray(elevation_data, attrs=el_attrs)
             self._elevation_range = da
         return self._elevation_range
 
@@ -857,7 +857,7 @@ def extract_gamic_ray_header(filename, scan):
     for name in ray_header.dtype.names:
         rh = ray_header[name]
         attrs = None
-        vars.update({name: (['time'], rh, attrs)})
+        vars.update({name: (['dim_0'], rh, attrs)})
     return vars
 
 
@@ -906,10 +906,11 @@ def get_variables_moments(ds, moments=None, **kwargs):
     standard = kwargs.get('standard', 'cf-mandatory')
     mask_and_scale = kwargs.get('mask_and_scale', True)
     decode_coords = kwargs.get('decode_coords', True)
+    dim0 = kwargs.get('dim0', 'time')
 
     # fix dimensions
     dims = list(ds.dims.keys())
-    ds = ds.rename({dims[0]: 'time',
+    ds = ds.rename({dims[0]: dim0,
                     dims[1]: 'range',
                     })
 
@@ -992,6 +993,7 @@ def get_group_moments(ncf, sweep, moments=None, **kwargs):
     standard = kwargs.get('standard', 'cf-mandatory')
     mask_and_scale = kwargs.get('mask_and_scale', True)
     decode_coords = kwargs.get('decode_coords', True)
+    dim0 = kwargs.get('dim0', 'time')
 
     datas = {}
     for mom in moments:
@@ -1033,8 +1035,8 @@ def get_group_moments(ncf, sweep, moments=None, **kwargs):
         if standard == 'none':
             name = mom
 
-        datas.update({name: dmom.rename({dims[0]: 'time',
-                                         dims[1]: 'range',
+        datas.update({name: dmom.rename({dims[0]: dim0,
+                                         dims[1]: 'range'
                                          })})
     return datas
 
@@ -1095,16 +1097,17 @@ def georeference_dataset(coords, vars, is_ppi):
     # adding xyz aeqd-coordinates
     site = (coords['longitude'], coords['latitude'],
             coords['altitude'])
+    dim0 = vars['azimuth'].dims[0]
     xyz, aeqd = spherical_to_xyz(vars['range'],
                                  vars['azimuth'],
                                  vars['elevation'],
                                  site,
                                  squeeze=True)
     gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-    coords['x'] = (['time', 'range'], xyz[..., 0])
-    coords['y'] = (['time', 'range'], xyz[..., 1])
-    coords['z'] = (['time', 'range'], xyz[..., 2])
-    coords['gr'] = (['time', 'range'], gr)
+    coords['x'] = ([dim0, 'range'], xyz[..., 0])
+    coords['y'] = ([dim0, 'range'], xyz[..., 1])
+    coords['z'] = ([dim0, 'range'], xyz[..., 2])
+    coords['gr'] = ([dim0, 'range'], gr)
 
     # adding rays, bins coordinates
     if is_ppi:
@@ -1115,8 +1118,8 @@ def georeference_dataset(coords, vars, is_ppi):
         bins, rays = np.meshgrid(vars['range'],
                                  vars['elevation'],
                                  indexing='xy')
-    coords['rays'] = (['time', 'range'], rays)
-    coords['bins'] = (['time', 'range'], bins)
+    coords['rays'] = ([dim0, 'range'], rays)
+    coords['bins'] = ([dim0, 'range'], bins)
 
 
 class XRadVol(collections.abc.MutableMapping):
@@ -1576,6 +1579,10 @@ class OdimH5(XRadVol):
             * `cf-full` - data is read according to cfradial2 standard
               importing all available cfradial2 metadata (not fully
               implemented)
+        dim0 : str
+            name of the ray-dimension of DataArrays and Dataset:
+                * `time` - cfradial2 standard
+                * `azimuth` - better for working with xarray
         """
         # keyword argument handling
         decode_times = kwargs.get('decode_times', True)
@@ -1583,6 +1590,7 @@ class OdimH5(XRadVol):
         mask_and_scale = kwargs.get('mask_and_scale', True)
         georef = kwargs.get('georef', True)
         standard = kwargs.get('standard', 'cf-mandatory')
+        dim0 = kwargs.get('dim0', 'time')
 
         # retrieve and assign global groups root and /how, /what, /where
         groups = [None, 'how', 'what', 'where']
@@ -1652,9 +1660,12 @@ class OdimH5(XRadVol):
             if 'cf' in standard or decode_times:
                 timevals = self.get_timevals(ds_grps)
                 if decode_times:
-                    vars['time'] = (['time'], timevals, time_attrs)
+                    coords['time'] = ([dim0], timevals, time_attrs)
                 else:
-                    vars['time'] = (['time'], timevals)
+                    coords['time'] = ([dim0], timevals)
+
+            vars['azimuth'] = vars['azimuth'].rename({'dim_0': dim0})
+            vars['elevation'] = vars['elevation'].rename({'dim_0': dim0})
 
             if georef:
                 georeference_dataset(coords, vars, is_ppi)
