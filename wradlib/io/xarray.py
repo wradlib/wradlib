@@ -434,16 +434,18 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
     projstr = ' - '.join(cs)
 
     dims = collections.OrderedDict()
-    dims['time'] = np.arange(phi.shape[0])
-    dims['range'] = r / rf
-    coords = {'azimuth': (['time'], phi),
-              'elevation': (['time'], theta),
-              'bins': (['time', 'range'], bins / rf),
-              'rays': (['time', 'range'], rays),
-              'x': (['time', 'range'], x / rf),
-              'y': (['time', 'range'], y / rf),
-              'z': (['time', 'range'], z / rf),
-              'gr': (['time', 'range'], gr / rf),
+    dim0 = kwargs.pop('dim0', 'azimuth')
+    dim1 = kwargs.pop('dim1', 'range')
+    dims[dim0] = np.arange(phi.shape[0])
+    dims[dim1] = r / rf
+    coords = {'azimuth': ([dim0], phi),
+              'elevation': ([dim0], theta),
+              'bins': ([dim0, dim1], bins / rf),
+              'rays': ([dim0, dim1], rays),
+              'x': ([dim0, dim1], x / rf),
+              'y': ([dim0, dim1], y / rf),
+              'z': ([dim0, dim1], z / rf),
+              'gr': ([dim0, dim1], gr / rf),
               'longitude': (site[0]),
               'latitude': (site[1]),
               'altitude': (site[2]),
