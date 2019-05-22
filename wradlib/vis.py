@@ -79,9 +79,10 @@ class WradlibAccessor(object):
 
     def fix_cyclic(self):
         rays = self._obj.azimuth
+        dim0 = rays.dims[0]
         if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
-            self._obj = xr.concat([self._obj, self._obj.isel(time=0)],
-                                  dim='time')
+            self._obj = xr.concat([self._obj, self._obj.isel({dim0: 0})],
+                                  dim=dim0)
 
     @property
     def site(self):
