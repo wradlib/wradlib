@@ -140,10 +140,11 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
         xyz.shape = (xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],)
 
     if squeeze is None:
-        warnings.warn("Function `spherical_to_xyz` will return an array of "
-                      "shape (theta, phi, range, 3) starting with version 1.4"
-                      "", FutureWarning)
-        squeeze = True
+        warnings.warn("Function `spherical_to_xyz` returns an array of "
+                      "shape (theta, phi, range, 3) starting with version 1.4."
+                      "Use `squeeze=True` to remove singleton dimensions."
+                      "", DeprecationWarning)
+        squeeze = False
     if squeeze:
         xyz = np.squeeze(xyz)
 
