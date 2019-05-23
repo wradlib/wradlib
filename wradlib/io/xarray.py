@@ -371,6 +371,20 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
         Tuple of coordinates of the radar site.
     sweep_mode : str
         Defaults to 'PPI'.
+    rf : float
+        factor to scale range, defaults to 1. (no scale)
+
+    Keyword Arguments
+    -----------------
+    re : float
+        effective earth radius
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. Defaults to 4/3.
+    dim0 : str
+        Name of the first dimension. Defaults to 'azimuth'.
+    dim1 : str
+        Name of the second dimension. Defaults to 'range'.
 
     Returns
     -------
@@ -1374,6 +1388,43 @@ class OdimH5(XRadVol):
     """ Class for xarray based retrieval of ODIM_H5 data files
     """
     def __init__(self, filename=None, flavour=None, strict=True, **kwargs):
+        """Initialize xarray structure from hdf5 data structure.
+
+        Parameters
+        ----------
+        filename : str
+            Source data file name.
+        flavour : str
+            Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
+        strict : bool
+            If False, exports all groups verbatim into dedicated 'odim'-group.
+
+        Keyword Arguments
+        -----------------
+        decode_times : bool
+            If True, decode cf times to np.datetime64. Defaults to True.
+        decode_coords : bool
+            If True, use the ‘coordinates’ attribute on variable
+            to assign coordinates. Defaults to True.
+        mask_and_scale : bool
+            If True, lazily scale (using scale_factor and add_offset)
+            and mask (using _FillValue). Defaults to True.
+        georef : bool
+            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+        standard : str
+            * `none` - data is read as verbatim as possible, no metadata
+            * `odim` - data is read, odim metadata added to datasets
+            * `cf-mandatory` - data is read according to cfradial2 standard
+              importing mandatory metadata
+            * `cf-full` - data is read according to cfradial2 standard
+              importing all available cfradial2 metadata (not fully
+              implemented)
+        dim0 : str
+            name of the ray-dimension of DataArrays and Dataset:
+                * `time` - cfradial2 standard
+                * `azimuth` - better for working with xarray
+        """
         super(OdimH5, self).__init__()
         self._filename = filename
         self._ncf = nc.Dataset(filename, diskless=True, persist=False)
@@ -1427,6 +1478,37 @@ class OdimH5(XRadVol):
             destination dataset
         sweep : str
             netcdf group name
+
+        Keyword Arguments
+        -----------------
+        decode_times : bool
+            If True, decode cf times to np.datetime64. Defaults to True.
+        decode_coords : bool
+            If True, use the ‘coordinates’ attribute on variable
+            to assign coordinates. Defaults to True.
+        mask_and_scale : bool
+            If True, lazily scale (using scale_factor and add_offset)
+            and mask (using _FillValue). Defaults to True.
+        georef : bool
+            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+        standard : str
+            * `none` - data is read as verbatim as possible, no metadata
+            * `odim` - data is read, odim metadata added to datasets
+            * `cf-mandatory` - data is read according to cfradial2 standard
+              importing mandatory metadata
+            * `cf-full` - data is read according to cfradial2 standard
+              importing all available cfradial2 metadata (not fully
+              implemented)
+        dim0 : str
+            name of the ray-dimension of DataArrays and Dataset:
+                * `time` - cfradial2 standard
+                * `azimuth` - better for working with xarray
+
+        Returns
+        -------
+        ds : xarray dataset
+            Dataset with assigned radar moments
         """
         moments = get_moment_names(self._ncf[sweep], fmt=self._mfmt,
                                    src=self._msrc)
@@ -1572,18 +1654,19 @@ class OdimH5(XRadVol):
             and mask (using _FillValue). Defaults to True.
         georef : bool
             If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
-            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy).
+            Defaults to True.
         standard : str
             * `none` - data is read as verbatim as possible, no metadata
             * `odim` - data is read, odim metadata added to datasets
             * `cf-mandatory` - data is read according to cfradial2 standard
-              importing mandatory metadata
+              importing mandatory metadata, default value
             * `cf-full` - data is read according to cfradial2 standard
               importing all available cfradial2 metadata (not fully
               implemented)
         dim0 : str
             name of the ray-dimension of DataArrays and Dataset:
-                * `time` - cfradial2 standard
+                * `time` - cfradial2 standard, default value
                 * `azimuth` - better for working with xarray
         """
         # keyword argument handling

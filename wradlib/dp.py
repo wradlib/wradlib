@@ -563,7 +563,8 @@ def depolarization(zdr, rho):
 
     Compute the depolarization ration using differential
     reflectivity :math:`Z_{DR}` and crosscorrelation coefficient
-    :math:`Rho_{HV}`of a radar sweep (:cite:`Ryzhkov2017).
+    :math:`Rho_{HV}` of a radar sweep (:cite:`Kilambi2018`,
+    :cite:`Melnikov2013`, :cite:`Ryzhkov2017`).
 
     Parameters
     ----------
@@ -577,7 +578,6 @@ def depolarization(zdr, rho):
     depolarization : :class:`numpy:numpy.ndarray`
         array of depolarization ratios with the same shape as input data,
         numpy broadcasting rules apply
-
     """
     zdr = trafo.idecibel(np.asanyarray(zdr))
     m = 2 * np.asanyarray(rho) * zdr ** 0.5
