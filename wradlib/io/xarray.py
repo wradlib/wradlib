@@ -1738,8 +1738,13 @@ class OdimH5(XRadVol):
             if 'cf' in standard:
                 coords['sweep_mode'] = sweep_mode
 
-            if ('cf' in standard) or decode_coords or georef:
+            if 'cf' in standard or decode_coords or georef:
                 vars.update(self.get_coords(ds_grps))
+                vars['azimuth'] = vars['azimuth'].rename({'dim_0': dim0})
+                vars['elevation'] = vars['elevation'].rename({'dim_0': dim0})
+                # georeference needs coordinate variables
+                if georef:
+                    georeference_dataset(coords, vars, is_ppi)
 
             # time coordinate
             if 'cf' in standard or decode_times:
@@ -1748,12 +1753,6 @@ class OdimH5(XRadVol):
                     coords['time'] = ([dim0], timevals, time_attrs)
                 else:
                     coords['time'] = ([dim0], timevals)
-
-            vars['azimuth'] = vars['azimuth'].rename({'dim_0': dim0})
-            vars['elevation'] = vars['elevation'].rename({'dim_0': dim0})
-
-            if georef:
-                georeference_dataset(coords, vars, is_ppi)
 
             # assign global sweep attributes
             if 'cf' in standard:
