@@ -201,29 +201,30 @@ class InterpolationTest(unittest.TestCase):
                                        src_drift=None,
                                        trg_drift=None)
 
-        self.assertRaises(ValueError, ip, self.vals)
+        with self.assertRaises(ValueError):
+            ip(self.vals)
 
     def test_MissingErrors(self):
-        self.assertRaises(ipol.MissingSourcesError,
-                          ipol.Nearest, np.array([]), self.trg)
-        self.assertRaises(ipol.MissingTargetsError,
-                          ipol.Nearest, self.src, np.array([]))
-        self.assertRaises(ipol.MissingSourcesError,
-                          ipol.Idw, np.array([]), self.trg)
-        self.assertRaises(ipol.MissingTargetsError,
-                          ipol.Idw, self.src, np.array([]))
-        self.assertRaises(ipol.MissingSourcesError,
-                          ipol.Linear, np.array([]), self.trg)
-        self.assertRaises(ipol.MissingTargetsError,
-                          ipol.Linear, self.src, np.array([]))
-        self.assertRaises(ipol.MissingSourcesError,
-                          ipol.OrdinaryKriging, np.array([]), self.trg)
-        self.assertRaises(ipol.MissingTargetsError,
-                          ipol.OrdinaryKriging, self.src, np.array([]))
-        self.assertRaises(ipol.MissingSourcesError,
-                          ipol.ExternalDriftKriging, np.array([]), self.trg)
-        self.assertRaises(ipol.MissingTargetsError,
-                          ipol.ExternalDriftKriging, self.src, np.array([]))
+        with self.assertRaises(ipol.MissingSourcesError):
+            ipol.Nearest(np.array([]), self.trg)
+        with self.assertRaises(ipol.MissingTargetsError):
+            ipol.Nearest(self.src, np.array([]))
+        with self.assertRaises(ipol.MissingSourcesError):
+            ipol.Idw(np.array([]), self.trg)
+        with self.assertRaises(ipol.MissingTargetsError):
+            ipol.Idw(self.src, np.array([]))
+        with self.assertRaises(ipol.MissingSourcesError):
+            ipol.Linear(np.array([]), self.trg)
+        with self.assertRaises(ipol.MissingTargetsError):
+            ipol.Linear(self.src, np.array([]))
+        with self.assertRaises(ipol.MissingSourcesError):
+            ipol.OrdinaryKriging(np.array([]), self.trg)
+        with self.assertRaises(ipol.MissingTargetsError):
+            ipol.OrdinaryKriging(self.src, np.array([]))
+        with self.assertRaises(ipol.MissingSourcesError):
+            ipol.ExternalDriftKriging(np.array([]), self.trg)
+        with self.assertRaises(ipol.MissingTargetsError):
+            ipol.ExternalDriftKriging(self.src, np.array([]))
 
     def test_nnearest_warning(self):
         with warnings.catch_warnings(record=True) as w:
@@ -252,8 +253,8 @@ class InterpolationTest(unittest.TestCase):
 
         # Check behaviour if dimension is > 2
         ip = ipol.IpolBase(self.src, self.trg)
-        self.assertRaises(Exception, ipol.IpolBase,
-                          np.arange(12).reshape((2, 3, 2)),
+        with self.assertRaises(Exception):
+            ipol.IpolBase(np.arange(12).reshape((2, 3, 2)),
                           np.arange(20).reshape((2, 2, 5)))
 
 
@@ -286,13 +287,10 @@ class WrapperFunctionTest(unittest.TestCase):
         filled_a = ipol.interpolate_polar(data, mask=masked_values,
                                           ipclass=ipol.Linear)
         testfunc = ipol.interpolate_polar
-        self.assertRaises(ipol.MissingTargetsError,
-                          lambda: testfunc(data, mask=None,
-                                           ipclass=ipol.Linear))
+        with self.assertRaises(ipol.MissingTargetsError):
+            testfunc(data, mask=None, ipclass=ipol.Linear)
         mdata = np.ma.array(data, mask=masked_values)
-        filled_b = ipol.interpolate_polar(mdata,
-                                          ipclass=ipol.Linear)
-
+        filled_b = ipol.interpolate_polar(mdata, ipclass=ipol.Linear)
         np.testing.assert_allclose(filled_a, filled_b)
 
 

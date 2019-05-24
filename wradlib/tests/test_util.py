@@ -45,16 +45,16 @@ class HelperFunctionsTest(unittest.TestCase):
     def test_get_wradlib_data_path(self):
         wrl_data_path = os.environ.get('WRADLIB_DATA', None)
         del os.environ['WRADLIB_DATA']
-        self.assertRaises(EnvironmentError,
-                          lambda: util.get_wradlib_data_path())
+        with self.assertRaises(EnvironmentError):
+            util.get_wradlib_data_path()
         filename = 'rainbow/2013070308340000dBuZ.azi'
         os.environ['WRADLIB_DATA'] = os.path.join(wrl_data_path, filename)
-        self.assertRaises(EnvironmentError,
-                          lambda: util.get_wradlib_data_path())
+        with self.assertRaises(EnvironmentError):
+            util.get_wradlib_data_path()
         os.environ['WRADLIB_DATA'] = wrl_data_path
         filename = os.path.join(wrl_data_path, "test.dat")
-        self.assertRaises(EnvironmentError,
-                          lambda: util.get_wradlib_data_file(filename))
+        with self.assertRaises(EnvironmentError):
+            util.get_wradlib_data_file(filename)
 
     def test_from_to(self):
         out = util.from_to("2000-01-01 00:00:00",
@@ -75,7 +75,8 @@ class HelperFunctionsTest(unittest.TestCase):
         m = util.import_optional('math')
         np.testing.assert_equal(m.log10(100), 2.0)
         mod = util.import_optional('h8x')
-        self.assertRaises(AttributeError, lambda: mod.test())
+        with self.assertRaises(AttributeError):
+            mod.test()
 
     def test_maximum_intensity_projection(self):
         angle = 0.0
