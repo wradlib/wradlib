@@ -64,9 +64,8 @@ class TestAttenuation(unittest.TestCase):
         atten.correct_attenuation_hb(gateset, mode='warn')
         atten.correct_attenuation_hb(gateset, mode='nan')
         atten.correct_attenuation_hb(gateset, mode='zero')
-        self.assertRaises(atten.AttenuationOverflowError,
-                          lambda: atten.correct_attenuation_hb(gateset,
-                                                               mode='except'))
+        with self.assertRaises(atten.AttenuationOverflowError):
+            atten.correct_attenuation_hb(gateset, mode='except')
 
     def test_correct_attenuation_constrained(self):
         filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"

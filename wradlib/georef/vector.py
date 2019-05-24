@@ -47,7 +47,6 @@ def get_vector_points(geom):
     result : generator object
         expands to Nx2 dimensional nested point arrays
     """
-
     geomtype = geom.GetGeometryType()
     if geomtype > 1:
         # 1D Geometries, LINESTRINGS

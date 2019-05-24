@@ -234,8 +234,8 @@ class AdjustHelperTest(unittest.TestCase):
     def test__get_statfunc(self):
         adjust._get_statfunc('median')
         adjust._get_statfunc('best')
-        self.assertRaises(NameError,
-                          lambda: adjust._get_statfunc('wradlib'))
+        with self.assertRaises(NameError):
+            adjust._get_statfunc('wradlib')
 
     def test_best(self):
         x = 7.5

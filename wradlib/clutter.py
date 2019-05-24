@@ -291,6 +291,13 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     moment, it only distinguishes between meteorological and non-meteorological
     echos.
 
+    .. versionchanged:: 1.4.0
+       The implementation was extended using depolarization ratio (dr)
+       and clutter phase alignment (cpa).
+
+    For Clutter Phase Alignment (CPA) see :cite:`Hubbert2009a` and
+    :cite:`Hubbert2009b`
+
     For each decision variable and radar bin, the algorithm uses trapezoidal
     functions in order to define the membership to the non-meteorological
     echo class.
@@ -313,7 +320,7 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
         - Correlation coefficient (rho2) (additional)
 
         - Depolarization Ratio (dr), computed from
-        correlation coefficient & differential reflectivity (additional)
+          correlation coefficient & differential reflectivity (additional)
 
         - clutter phase alignment (cpa) (additional)
 
@@ -344,6 +351,12 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
         The second boolean array indicates where all the polarimetric moments
         had missing values which could be used as an additional information
         criterion.
+
+    See Also
+    --------
+    :func:`~wradlib.dp.texture` - texture
+
+    :func:`~wradlib.dp.depolarization` - depolarization ratio
 
     """
     # Check the inputs

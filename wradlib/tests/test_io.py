@@ -195,8 +195,8 @@ class HDF5Test(unittest.TestCase):
         check_call(command, shell=True)
         command = 'h5copy -i {} -o test1.h5 -s CT -d CT'.format(safnwcfile)
         check_call(command, shell=True)
-
-        self.assertRaises(KeyError, lambda: wrl.io.read_safnwc('test1.h5'))
+        with self.assertRaises(KeyError):
+            wrl.io.read_safnwc('test1.h5')
 
     def test_read_gpm(self):
         filename1 = ('gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-'
@@ -275,7 +275,8 @@ class HDF5Test(unittest.TestCase):
         h5_file = wrl.util.get_wradlib_data_file(rhi)
         wrl.io.read_gamic_hdf5(h5_file)
         h5_file = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(KeyError, lambda: wrl.io.read_gamic_hdf5(h5_file))
+        with self.assertRaises(KeyError):
+            wrl.io.read_gamic_hdf5(h5_file)
 
 
 class RadolanTest(unittest.TestCase):
@@ -418,10 +419,8 @@ class RadolanTest(unittest.TestCase):
         rw_fid = radolan.get_radolan_filehandle(rw_file)
         header = radolan.read_radolan_header(rw_fid)
         attrs = radolan.parse_dwd_composite_header(header)
-        self.assertRaises(
-            IOError,
-            lambda: radolan.read_radolan_binary_array(rw_fid,
-                                                      attrs['datasize'] + 10))
+        with self.assertRaises(IOError):
+            radolan.read_radolan_binary_array(rw_fid, attrs['datasize'] + 10)
 
     def test_get_radolan_filehandle(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
@@ -441,7 +440,8 @@ class RadolanTest(unittest.TestCase):
                      b'asd,neu,nhb,oft,tur,isn,fbg,mem>')
 
         buf = io.BytesIO(rx_header)
-        self.assertRaises(EOFError, lambda: radolan.read_radolan_header(buf))
+        with self.assertRaises(EOFError):
+            radolan.read_radolan_header(buf)
 
         buf = io.BytesIO(rx_header + b"\x03")
         header = radolan.read_radolan_header(buf)
@@ -602,7 +602,8 @@ class RadolanTest(unittest.TestCase):
                 self.assertEqual(value.dtype, np.int64)
             else:
                 self.assertEqual(value, test_attrs[key])
-        self.assertRaises(KeyError, lambda: attrs['nodataflag'])
+        with self.assertRaises(KeyError):
+            attrs['nodataflag']
 
         filename = 'radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz'
         rx_file = wrl.util.get_wradlib_data_file(filename)
@@ -619,7 +620,8 @@ class RainbowTest(unittest.TestCase):
     def test_read_rainbow(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(IOError, lambda: rainbow.read_rainbow('test'))
+        with self.assertRaises(IOError):
+            rainbow.read_rainbow('test')
         # Test reading from file name
         rb_dict = rainbow.read_rainbow(rb_file)
         self.assertEqual(rb_dict[u'volume'][u'@datetime'],
@@ -657,7 +659,8 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rainbow.get_rb_data_layout(8), (1, '>u1'))
         self.assertEqual(rainbow.get_rb_data_layout(16), (2, '>u2'))
         self.assertEqual(rainbow.get_rb_data_layout(32), (4, '>u4'))
-        self.assertRaises(ValueError, lambda: rainbow.get_rb_data_layout(128))
+        with self.assertRaises(ValueError):
+            rainbow.get_rb_data_layout(128)
 
     @unittest.skipIf(sys.version_info < (3, 3),
                      "not supported in this python version")
@@ -682,9 +685,8 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'rays'), 361)
         self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'rays'), 361)
         self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'bins'), 400)
-        self.assertRaises(KeyError,
-                          lambda: rainbow.get_rb_data_attribute(data[0],
-                                                                'Nonsense'))
+        with self.assertRaises(KeyError):
+            rainbow.get_rb_data_attribute(data[0], 'Nonsense')
         self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'depth'), 16)
 
     def test_get_rb_blob_attribute(self):
@@ -695,9 +697,8 @@ class RainbowTest(unittest.TestCase):
                          'qt')
         self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'size'), '737')
         self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'blobid'), '0')
-        self.assertRaises(KeyError,
-                          lambda: rainbow.get_rb_blob_attribute(xmldict,
-                                                                'Nonsense'))
+        with self.assertRaises(KeyError):
+            rainbow.get_rb_blob_attribute(xmldict, 'Nonsense')
 
     def test_get_rb_data_shape(self):
         xmltodict = wrl.util.import_optional('xmltodict')
@@ -719,7 +720,8 @@ class RainbowTest(unittest.TestCase):
         self.assertEqual(rainbow.get_rb_data_shape(data[1]), (361, 400))
         self.assertEqual(rainbow.get_rb_data_shape(data[2]), (800, 400, 6))
         self.assertEqual(rainbow.get_rb_data_shape(data[4]), (800, 400))
-        self.assertRaises(KeyError, lambda: rainbow.get_rb_data_shape(data[3]))
+        with self.assertRaises(KeyError):
+            rainbow.get_rb_data_shape(data[3])
 
     def test_map_rb_data(self):
         indata = b'0123456789'
@@ -739,8 +741,8 @@ class RainbowTest(unittest.TestCase):
 
     def test_get_rb_blob_data(self):
         datastring = b'<BLOB blobid="0" size="737" compression="qt"></BLOB>'
-        self.assertRaises(EOFError,
-                          lambda: rainbow.get_rb_blob_data(datastring, 1))
+        with self.assertRaises(EOFError):
+            rainbow.get_rb_blob_data(datastring, 1)
 
     def test_get_rb_blob_from_file(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
@@ -752,16 +754,14 @@ class RainbowTest(unittest.TestCase):
             data = rainbow.get_rb_blob_from_file(rb_fh, rbblob)
             self.assertEqual(data.shape[0], int(rbblob['@rays']))
             self.assertEqual(data.shape[1], int(rbblob['@bins']))
-            self.assertRaises(IOError,
-                              lambda: rainbow.get_rb_blob_from_file('rb_fh',
-                                                                    rbblob))
+            with self.assertRaises(IOError):
+                rainbow.get_rb_blob_from_file('rb_fh', rbblob)
         # Check reading from file path
         data = rainbow.get_rb_blob_from_file(rb_file, rbblob)
         self.assertEqual(data.shape[0], int(rbblob['@rays']))
         self.assertEqual(data.shape[1], int(rbblob['@bins']))
-        self.assertRaises(IOError,
-                          lambda: rainbow.get_rb_blob_from_file('rb_fh',
-                                                                rbblob))
+        with self.assertRaises(IOError):
+            rainbow.get_rb_blob_from_file('rb_fh', rbblob)
 
     def test_get_rb_file_as_string(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
@@ -769,8 +769,8 @@ class RainbowTest(unittest.TestCase):
         with open(rb_file, 'rb') as rb_fh:
             rb_string = rainbow.get_rb_file_as_string(rb_fh)
             self.assertTrue(rb_string)
-            self.assertRaises(IOError,
-                              lambda: rainbow.get_rb_file_as_string('rb_fh'))
+            with self.assertRaises(IOError):
+                rainbow.get_rb_file_as_string('rb_fh')
 
     def test_get_rb_header(self):
         rb_header = (b'<volume version="5.34.16" '
@@ -780,7 +780,8 @@ class RainbowTest(unittest.TestCase):
                      b'date="2013-07-03">')
 
         buf = io.BytesIO(rb_header)
-        self.assertRaises(IOError, lambda: rainbow.get_rb_header(buf))
+        with self.assertRaises(IOError):
+            rainbow.get_rb_header(buf)
 
         filename = 'rainbow/2013070308340000dBuZ.azi'
         rb_file = wrl.util.get_wradlib_data_file(filename)
@@ -793,13 +794,12 @@ class RasterTest(unittest.TestCase):
     def test_gdal_create_dataset(self):
         testfunc = wrl.io.gdal_create_dataset
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
-        self.assertRaises(TypeError,
-                          lambda: testfunc('AIG', tmp))
+        with self.assertRaises(TypeError):
+            testfunc('AIG', tmp)
         from osgeo import gdal
-        self.assertRaises(TypeError,
-                          lambda: testfunc('AAIGrid', tmp,
-                                           cols=10, rows=10, bands=1,
-                                           gdal_type=gdal.GDT_Float32))
+        with self.assertRaises(TypeError):
+            testfunc('AAIGrid', tmp, cols=10, rows=10, bands=1,
+                     gdal_type=gdal.GDT_Float32)
         testfunc('GTiff', tmp, cols=10, rows=10, bands=1,
                  gdal_type=gdal.GDT_Float32)
         testfunc('GTiff', tmp, cols=10, rows=10, bands=1,
@@ -812,9 +812,8 @@ class RasterTest(unittest.TestCase):
         wrl.io.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid')
         wrl.io.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid',
                                     remove=True)
-        self.assertRaises(TypeError,
-                          lambda: wrl.io.write_raster_dataset(geofile + 'asc1',
-                                                              ds, 'AIG'))
+        with self.assertRaises(TypeError):
+            wrl.io.write_raster_dataset(geofile + 'asc1', ds, 'AIG')
 
     def test_open_raster(self):
         filename = 'geo/bonn_new.tif'
@@ -976,19 +975,21 @@ class NetcdfTest(unittest.TestCase):
 
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(Exception, lambda: wrl.io.read_edge_netcdf(ncfile))
-        self.assertRaises(Exception, lambda: wrl.io.read_edge_netcdf('test'))
+        with self.assertRaises(Exception):
+            wrl.io.read_edge_netcdf(ncfile)
+        with self.assertRaises(Exception):
+            wrl.io.read_edge_netcdf('test')
 
     def test_read_generic_netcdf(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
         wrl.io.read_generic_netcdf(ncfile)
-        self.assertRaises(IOError,
-                          lambda: wrl.io.read_generic_netcdf('test'))
+        with self.assertRaises(IOError):
+            wrl.io.read_generic_netcdf('test')
         filename = 'sigmet/cor-main131125105503.RAW2049'
         ncfile = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(IOError,
-                          lambda: wrl.io.read_generic_netcdf(ncfile))
+        with self.assertRaises(IOError):
+            wrl.io.read_generic_netcdf(ncfile)
 
         filename = 'hdf5/IDR66_20100206_111233.vol.h5'
         ncfile = wrl.util.get_wradlib_data_file(filename)
@@ -1069,8 +1070,8 @@ class XarrayTests(unittest.TestCase):
         time_cov = ('2014-08-10T18:23:35Z', '2014-08-10T18:24:05Z')
         filename = 'hdf5/2014-08-10--182000.ppi.mvol'
         h5file = wrl.util.get_wradlib_data_file(filename)
-        self.assertRaises(AttributeError,
-                          lambda: OdimH5(h5file))
+        with self.assertRaises(AttributeError):
+            OdimH5(h5file)
         cf = OdimH5(h5file, flavour='GAMIC')
         self.assertEqual(str(cf.root.time_coverage_start.values),
                          time_cov[0])
