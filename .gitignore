@@ -1,3 +1,23 @@
+# ignore everything
+*
+
+# whitelist block
+# whitelist root .gitignore
+!/.gitignore
+
+# whitelist .py, .f-files and .sh files
+!*.py
+!*.f
+!*.sh
+
+# whitelist files under `scripts`
+!/scripts/
+!/scripts/*
+
+# whitelist files under `wradlib`
+!/wradlib/
+!/wradlib/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
