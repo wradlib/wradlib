@@ -18,6 +18,7 @@ get_srtm
 
 """
 
+import numpy as np
 import os
 
 from osgeo import gdal
@@ -49,10 +50,9 @@ def download_srtm(filename, destination=None, version=2, resolution=3,
         filename with authorization token (required for version 3)
 
     """
-
     if version == 2:
         website = "https://dds.cr.usgs.gov/srtm/version2_1"
-        source = "%s/SRTM%s/%s " % (website, resolution, region)
+        source = "%s/SRTM%s/%s" % (website, resolution, region)
     if version == 3:
         website = "http://e4ftl01.cr.usgs.gov/MEASURES"
         source = "%s/SRTMGL%d.003/2000.02.11" % (website, resolution)
@@ -93,7 +93,7 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
 
     """
 
-    extent = [int(x) for x in extent]
+    extent = [int(np.floor(x)) for x in extent]
     lonmin, lonmax, latmin, latmax = extent
 
     filelist = []
@@ -111,7 +111,6 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
         for longitude in range(max(lonmin, 0), lonmax+1):
             georef = "N%02gE%03g" % (latitude, longitude)
             filelist.append(georef)
-
     if version == 3:
         filelist = ["%s.SRTMGL%s" % (f, resolution) for f in filelist]
 
