@@ -1152,28 +1152,31 @@ class XarrayTests(unittest.TestCase):
 
 
 class DemTest(unittest.TestCase):
-    
+
     def test_get_srtm(self):
         targets = ["N49E002", "N49E003", "N49E004",
                    "N50E002", "N50E003", "N50E004"]
-        targets = [ "%s.hgt.zip" %(f) for f in targets]
+        targets = ["%s.hgt.zip" % (f) for f in targets]
 
-        opts={'region':'Eurasia'}
-        datasets = dem.get_srtm([2.3,4.5,49.4,50.5], merge=False, download=opts)
+        opts = {'region': 'Eurasia'}
+        extent = [2.3, 4.5, 49.4, 50.5]
+        datasets = dem.get_srtm(extent, merge=False, download=opts)
         self.assertEqual(len(datasets), 6)
-        
-        merged = dem.get_srtm([2.3,4.5,49.4,50.5])
-        
-        xsize = (datasets[0].RasterXSize-1)*3+1 
-        ysize = (datasets[0].RasterXSize-1)*2+1 
+
+        merged = dem.get_srtm(extent)
+
+        xsize = (datasets[0].RasterXSize-1)*3+1
+        ysize = (datasets[0].RasterXSize-1)*2+1
         self.assertEqual(merged.RasterXSize, xsize)
         self.assertEqual(merged.RasterYSize, ysize)
 
         geo = merged.GetGeoTransform()
         resolution = 3.0/3600
-        geo_ref = [2 - resolution/2, resolution, 0, 51 + resolution/2, 0, -resolution]
+        ulcx = 2 - resolution/2
+        ulcy = 51 + resolution/2
+        geo_ref = [ulcx, resolution, 0, ulcy, 0, -resolution]
         np.testing.assert_array_almost_equal(geo, geo_ref)
 
-        
+
 if __name__ == '__main__':
     unittest.main()
