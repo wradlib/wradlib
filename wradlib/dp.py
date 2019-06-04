@@ -49,6 +49,7 @@ all input arrays.
     unfold_phi
     linear_despeckle
     texture
+    depolarization
 
 """
 
@@ -57,6 +58,7 @@ from scipy.interpolate import interp1d
 from scipy.stats import linregress
 from scipy.ndimage.filters import convolve1d
 from . import util as util
+from . import trafo as trafo
 
 
 def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
@@ -524,37 +526,63 @@ def texture(data):
         array of textures with the same shape as data
 
     """
-    x1 = np.roll(data, 1, -2)  # center:2
-    x2 = np.roll(data, 1, -1)  # 4
-    x3 = np.roll(data, -1, -2)  # 8
-    x4 = np.roll(data, -1, -1)  # 6
-    x5 = np.roll(x1, 1, -1)  # 1
-    x6 = np.roll(x4, 1, -2)  # 3
-    x7 = np.roll(x3, -1, -1)  # 9
-    x8 = np.roll(x2, -1, -2)  # 7
+    # one-element wrap-around padding
+    x = np.pad(data, 1, mode='wrap')
 
-    # at least one NaN would give a sum of NaN
+    # set first and last range elements to NaN
+    x[:, 0] = np.nan
+    x[:, -1] = np.nan
+
+    # get neighbours using views into padded array
+    x1 = x[..., :-2, 1:-1]  # center:2
+    x2 = x[..., 1:-1, :-2]  # 4
+    x3 = x[..., 2:, 1:-1]  # 8
+    x4 = x[..., 1:-1, 2:]  # 6
+    x5 = x[..., :-2, :-2]  # 1
+    x6 = x[..., :-2, 2:]  # 3
+    x7 = x[..., 2:, 2:]  # 9
+    x8 = x[..., 2:, :-2]  # 7
+
+    # stack arrays
     xa = np.array([x1, x2, x3, x4, x5, x6, x7, x8])
 
-    # get count of valid neighboring pixels
-    xa_valid = np.ones(np.shape(xa))
-    xa_valid[np.isnan(xa)] = 0
-    # count number of valid neighbors
-    xa_valid_count = np.sum(xa_valid, axis=0)
+    # get count of valid neighbouring pixels
+    xa_valid_count = np.count_nonzero(~np.isnan(xa), axis=0)
 
-    num = np.zeros(data.shape)
-    for xarr in xa:
-        diff = data - xarr
-        # difference of NaNs will be converted to zero
-        # (to not affect the summation)
-        diff[np.isnan(diff)] = 0
-        # only those with valid values are considered in the summation
-        num += diff ** 2
+    # root mean of squared differences
+    rmsd = np.sqrt(np.nansum((xa - data) ** 2, axis=0) / xa_valid_count)
 
     # reinforce that NaN values should have NaN textures
-    num[np.isnan(data)] = np.nan
+    rmsd[np.isnan(data)] = np.nan
 
-    return np.sqrt(num / xa_valid_count)
+    return rmsd
+
+
+def depolarization(zdr, rho):
+    """Compute the depolarization ration.
+
+    Compute the depolarization ration using differential
+    reflectivity :math:`Z_{DR}` and crosscorrelation coefficient
+    :math:`Rho_{HV}` of a radar sweep (:cite:`Kilambi2018`,
+    :cite:`Melnikov2013`, :cite:`Ryzhkov2017`).
+
+    Parameters
+    ----------
+    zdr : float or :class:`numpy:numpy.ndarray`
+        differential reflectivity
+    rho : float or :class:`numpy:numpy.ndarray`
+        crosscorrelation coefficient
+
+    Returns
+    ------
+    depolarization : :class:`numpy:numpy.ndarray`
+        array of depolarization ratios with the same shape as input data,
+        numpy broadcasting rules apply
+    """
+    zdr = trafo.idecibel(np.asanyarray(zdr))
+    m = 2 * np.asanyarray(rho) * zdr ** 0.5
+
+    return trafo.decibel((1 + zdr - m) / (1 + zdr + m))
 
 
 if __name__ == '__main__':

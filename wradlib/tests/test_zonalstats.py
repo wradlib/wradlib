@@ -38,8 +38,8 @@ class DataSourceTest(unittest.TestCase):
         filename = util.get_wradlib_data_file('shapefiles/agger/'
                                               'agger_merge.shp')
         self.assertEqual(len(zonalstats.DataSource(filename).data), 13)
-        self.assertRaises(RuntimeError,
-                          lambda: zonalstats.DataSource('test_zonalstats.py'))
+        with self.assertRaises(RuntimeError):
+            zonalstats.DataSource('test_zonalstats.py')
 
     def test_data(self):
         self.assertTrue(np.allclose(self.ds.data, self.data))
@@ -206,17 +206,18 @@ class ZonalDataBaseTest(unittest.TestCase):
 
     def test__get_intersection(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.assertRaises(TypeError, lambda: zdb._get_intersection())
+        with self.assertRaises(TypeError):
+            zdb._get_intersection()
         np.testing.assert_equal(zdb._get_intersection(trg=self.box3),
                                 [self.box5])
         np.testing.assert_equal(zdb._get_intersection(idx=0),
                                 [self.box5])
-        self.assertRaises(TypeError,
-                          lambda: zdb._get_intersection(idx=2))
+        with self.assertRaises(TypeError):
+            zdb._get_intersection(idx=2)
         zdb = zonalstats.ZonalDataBase(self.src, [self.box7], srs=self.proj)
         zdb.trg = None
-        self.assertRaises(TypeError,
-                          lambda: zdb._get_intersection(idx=0))
+        with self.assertRaises(TypeError):
+            zdb._get_intersection(idx=0)
 
 
 @unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
@@ -362,14 +363,15 @@ class ZonalStatsBaseTest(unittest.TestCase):
         self.zdp = zonalstats.ZonalDataPoly(self.src, self.trg, srs=self.proj)
 
     def test__init__(self):
-        self.assertRaises(NotImplementedError,
-                          lambda: zonalstats.ZonalStatsBase(self.zdb))
+        with self.assertRaises(NotImplementedError):
+            zonalstats.ZonalStatsBase(self.zdb)
         zonalstats.ZonalStatsBase(self.zdp)
-        self.assertRaises(TypeError, lambda: zonalstats.ZonalStatsBase('test'))
-        self.assertRaises(TypeError, lambda: zonalstats.ZonalStatsBase())
-        self.assertRaises(TypeError,
-                          lambda: zonalstats.ZonalStatsBase(ix=np.arange(10),
-                                                            w=np.arange(11)))
+        with self.assertRaises(TypeError):
+            zonalstats.ZonalStatsBase('test')
+        with self.assertRaises(TypeError):
+            zonalstats.ZonalStatsBase()
+        with self.assertRaises(TypeError):
+            zonalstats.ZonalStatsBase(ix=np.arange(10), w=np.arange(11))
 
     def test_w(self):
         zdp = zonalstats.ZonalStatsBase(self.zdp)
@@ -378,8 +380,8 @@ class ZonalStatsBaseTest(unittest.TestCase):
 
     def test__check_vals(self):
         zdp = zonalstats.ZonalStatsBase(self.zdp)
-        self.assertRaises(AssertionError,
-                          lambda: zdp._check_vals(np.arange(3)))
+        with self.assertRaises(AssertionError):
+            zdp._check_vals(np.arange(3))
 
     def test_mean(self):
         zdp = zonalstats.ZonalStatsBase(self.zdp)

@@ -79,9 +79,10 @@ class WradlibAccessor(object):
 
     def fix_cyclic(self):
         rays = self._obj.azimuth
+        dim0 = rays.dims[0]
         if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
-            self._obj = xr.concat([self._obj, self._obj.isel(time=0)],
-                                  dim='time')
+            self._obj = xr.concat([self._obj, self._obj.isel({dim0: 0})],
+                                  dim=dim0)
 
     @property
     def site(self):
@@ -133,7 +134,7 @@ class WradlibAccessor(object):
         (like gauge locations) without having to convert them to the radar's
         polar coordinate system.
 
-        Using ``proj=cg`` the plotting is done in a curvelinear grid axes.
+        Using ``proj='cg'`` the plotting is done in a curvelinear grid axes.
 
         Additional data can be plotted in polar coordinates or cartesian
         coordinates depending which axes object is used.
@@ -214,13 +215,13 @@ class WradlibAccessor(object):
         self.proj = proj
 
         # handle curvelinear grid properties
-        if proj == 'cg' or isinstance(proj, collections.Mapping):
+        if proj == 'cg' or isinstance(proj, collections.abc.Mapping):
             self.proj = None
             if self.mode == 'PPI':
                 cg = {'rot': -450, 'scale': -1}
             else:
                 cg = {'rot': 0, 'scale': 1}
-            if isinstance(proj, collections.Mapping):
+            if isinstance(proj, collections.abc.Mapping):
                 cg.update(proj)
 
         if isinstance(proj, osr.SpatialReference):
@@ -371,13 +372,6 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     func : str
         Name of plotting function to be used under the hood.
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
-    cg : bool
-        If True, the data will be plotted on curvelinear axes.
-        Deprecated, use `proj='cg'`.
-    autoext : bool
-        Deprecated.
-    refrac : bool
-        Deprecated.
 
     See also
     --------
@@ -395,7 +389,7 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
 
     Note
     ----
-    If ``cg`` is True, the ``cgax`` - curvelinear Axes (r-theta-grid)
+    If proj=``cg``, the ``cgax`` - curvelinear Axes (r-theta-grid)
     is returned. ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
     parasite axes object for plotting polar data can be derived like this::
 
@@ -419,42 +413,10 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     .. _AxesGridToolkitUserGuide:
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
-    # DeprecationChecks
-    autoext = kwargs.pop('autoext', None)
-    if autoext is not None:
-        warnings.warn("`autoext` keyword is deprecated will be removed in "
-                      "future release. The functionality is now handled by "
-                      "`xarray` DataArray automatically.",
-                      DeprecationWarning)
-        if autoext is False and r is not None:
-            r = r[:-1]
-        if autoext is False and az is not None:
-            az = az[:-1]
-
-    refrac = kwargs.pop('refrac', None)
-    if refrac is not None:
-        warnings.warn("`refrac` keyword is deprecated will be removed in "
-                      "future release. Please use `re`/`ke` keywords.",
-                      DeprecationWarning)
-
-    # Check can be removed in release 1.4
-    cg = kwargs.pop('cg', None)
-    if cg is not None:
-        warnings.warn("`cg` keyword is deprecated and will be removed in "
-                      "future release. Use `proj='cg' instead.",
-                      DeprecationWarning)
-        if cg:
-            if proj:
-                warnings.warn("`cg` cannot be used with `proj`, falling back.")
-            else:
-                proj = 'cg'
-
+    # check coordinate tuple
     if site and len(site) < 3:
-        warnings.warn("`site` need to be a tuple of coordinates "
-                      "(longitude, latitude, altitude)."
-                      "Use of `site=(longitude, latitude)` will raise an "
-                      "error in future releases.", DeprecationWarning)
-        site = (*site, 0)
+        raise ValueError("WRADLIB: `site` need to be a tuple of coordinates "
+                         "(longitude, latitude, altitude).")
 
     # site must be given, if proj is OSR
     if isinstance(proj, osr.SpatialReference) and site is None:
@@ -512,8 +474,8 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         Tuple of coordinates of the radar site.
         If `proj` is not used, this simply becomes the offset for the origin
         of the coordinate system.
-        If `proj` is used, values must be given as (longitude, latitude)
-        tuple of geographical coordinates.
+        If `proj` is used, values must be given as (longitude, latitude,
+        altitude) tuple of geographical coordinates.
     ranges : list
         List of ranges, for which range circles should be drawn.
         If ``proj`` is None arbitrary units may be used (such that they fit
@@ -564,6 +526,11 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`.
 
     """
+    # check coordinate tuple
+    if site and len(site) < 3:
+        raise ValueError("WRADLIB: `site` need to be a tuple of coordinates "
+                         "(longitude, latitude, altitude).")
+
     # if we didn't get an axes object, find the current one
     if ax is None:
         ax = pl.gca()
@@ -693,13 +660,6 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     func : str
         Name of plotting function to be used under the hood.
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
-    cg : bool
-        If True, the data will be plotted on curvelinear axes.
-        Deprecated, use `proj='cg'`.
-    autoext : bool
-        Deprecated.
-    refrac : bool
-        Deprecated.
 
     See also
     --------
@@ -716,7 +676,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
 
     Note
     ----
-    If ``cg`` is True, the ``cgax`` - curvelinear Axes (r-theta-grid)
+    If proj=``cg``, the ``cgax`` - curvelinear Axes (r-theta-grid)
     is returned. ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
     parasite axes object for plotting polar data can be derived like this::
 
@@ -738,33 +698,6 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     .. _AxesGridToolkitUserGuide:
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
-    # DeprecationWarnings
-    autoext = kwargs.pop('autoext', None)
-    if autoext is not None:
-        warnings.warn("`autoext` keyword is deprecated will be removed in "
-                      "future release. The functionality is now handled by "
-                      "`xarray` DataArray automatically.",
-                      DeprecationWarning)
-
-    refrac = kwargs.pop('refrac', None)
-    if refrac is not None:
-        warnings.warn("`refrac` keyword is deprecated will be removed in "
-                      "future release. Please use `re`/`ke` keywords.",
-                      DeprecationWarning)
-
-    # Check can be removed in release 1.4
-    cg = kwargs.pop('cg', None)
-    if cg is not None:
-        warnings.warn("`cg` keyword is deprecated and will be removed in "
-                      "future release. Use `proj='cg' instead.",
-                      DeprecationWarning)
-        if cg:
-            if proj:
-                warnings.warn(
-                    "`cg` cannot be used with `proj`, falling back.")
-            else:
-                proj = 'cg'
-
     # kwargs handling
     kwargs['zorder'] = kwargs.pop('zorder', 0)
     func = kwargs.pop('func', 'pcolormesh')
@@ -827,7 +760,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     return pl.gca(), pm
 
 
-def create_cg(st=None, fig=None, subplot=111, rot=-450, scale=-1,
+def create_cg(fig=None, subplot=111, rot=-450, scale=-1,
               angular_spacing=10, radial_spacing=10,
               latmin=0, lon_cycle=360):
     """ Helper function to create curvelinear grid
@@ -876,16 +809,6 @@ def create_cg(st=None, fig=None, subplot=111, rot=-450, scale=-1,
     paax : matplotlib Axes object (parasite to cgax)
         The parasite axes object for plotting polar data
     """
-
-    if st is not None:
-        warnings.warn("ScanType string is deprecated and will be removed in "
-                      "future release. Please use `rot` and `scale` keyword "
-                      "arguments to specify PPI/RHI. ",
-                      DeprecationWarning)
-        if st == 'RHI':
-            rot = 0
-            scale = 1
-
     # create transformation
     # rotate
     tr_rotate = Affine2D().translate(rot, 0)
@@ -981,7 +904,7 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     """
     # just a dummy
     az = np.array([90.])
-    coords, _ = georef.spherical_to_xyz(ranges, az, elevs, site)
+    coords, _ = georef.spherical_to_xyz(ranges, az, elevs, site, squeeze=True)
     alt = coords[..., 2]
     if ax is None:
         returnax = False
@@ -996,7 +919,7 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
         ax.axvline(x=x, color="grey")
     for i in range(len(elevs)):
         ax.plot(ranges, alt[i, :], lw=2, color="black")
-    pl.ylim(ymax=maxalt)
+    pl.ylim(top=maxalt)
     ax.tick_params(labelsize="large")
     pl.xlabel("Range (m)", size="large")
     pl.ylabel("Height over radar (m)", size="large")
@@ -1061,7 +984,7 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
     ax_y.yaxis.set_major_formatter(NullFormatter())
 
     # draw CAPPI
-    pl.axes(ax_xy)
+    pl.sca(ax_xy)
     xy = pl.contourf(x, y, dataxy, **kwargs)
     pl.grid(color="grey", lw=1.5)
 

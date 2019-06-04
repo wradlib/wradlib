@@ -2,7 +2,6 @@
 # Copyright (c) 2011-2018, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import sys
 import unittest
 import wradlib.georef as georef
 import wradlib.util as util
@@ -116,7 +115,7 @@ class CoordinateTransformTest(unittest.TestCase):
         re = georef.get_earth_radius(self.csite[1])
         coords, rad = georef.spherical_to_xyz(self.r, self.az,
                                               self.th, self.csite,
-                                              re=re)
+                                              re=re, squeeze=True)
         self.assertTrue(np.allclose(coords[..., 0], self.result_xyz[0],
                                     rtol=1e-03))
         self.assertTrue(np.allclose(coords[..., 1], self.result_xyz[1],
@@ -183,9 +182,8 @@ class CoordinateHelperTest(unittest.TestCase):
                        [2.5, 3.5],
                        [2.5, 2.5],
                        [1.5, 2.5]]]))
-        self.assertRaises(ValueError,
-                          lambda: georef.centroid_to_polyvert([[0.], [1.]],
-                                                              [0.5, 1.5]))
+        with self.assertRaises(ValueError):
+            georef.centroid_to_polyvert([[0.], [1.]], [0.5, 1.5])
 
     def test_spherical_to_polyvert(self):
         sph = georef.get_default_projection()
@@ -265,59 +263,56 @@ class CoordinateHelperTest(unittest.TestCase):
     def test__check_polar_coords(self):
         r = np.array([50., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._check_polar_coords(r, az)
+
+        r = np.array([50., 100., 150., 200.])
+        az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
+        with self.assertWarns(UserWarning):
+            georef.polar._check_polar_coords(r, az)
 
         r = np.array([0, 50., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._check_polar_coords(r, az)
 
         r = np.array([50., 100., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._check_polar_coords(r, az)
 
         r = np.array([100., 50., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._check_polar_coords(r, az)
 
         r = np.array([50., 100., 125., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._check_polar_coords(r, az)
 
         r = np.array([50., 100., 150., 200.])
         az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 361.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._check_polar_coords(r, az)
 
         r = np.array([50., 100., 150., 200.])
         az = np.array([225., 270., 315., 0., 45., 90., 135., 180.])[::-1]
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._check_polar_coords(r, az)
 
     def test__get_range_resolution(self):
         r = np.array([50.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._get_range_resolution(r))
+        with self.assertRaises(ValueError):
+            georef.polar._get_range_resolution(r)
         r = np.array([50., 100., 150., 190., 250.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._get_range_resolution(r))
+        with self.assertRaises(ValueError):
+            georef.polar._get_range_resolution(r)
 
     def test__get_azimuth_resolution(self):
         az = np.array([0., 45., 90., 135., 180., 224., 270., 315.])
-        self.assertRaises(ValueError,
-                          lambda: georef.polar._get_azimuth_resolution(az))
-
-    @unittest.skipIf(sys.version_info < (3, 5),
-                     "not supported in this python version")
-    def test__check_polar_coords_py3k(self):
-        r = np.array([50., 100., 150., 200.])
-        az = np.array([10., 45., 90., 135., 180., 225., 270., 315.])
-        self.assertWarns(UserWarning,
-                         lambda: georef.polar._check_polar_coords(r, az))
+        with self.assertRaises(ValueError):
+            georef.polar._get_azimuth_resolution(az)
 
 
 class ProjectionsTest(unittest.TestCase):
@@ -366,7 +361,8 @@ class ProjectionsTest(unittest.TestCase):
                                            x_0=0,
                                            y_0=0).ExportToWkt(),
                          aeqd_wkt)
-        self.assertRaises(ValueError, lambda: georef.create_osr('lambert'))
+        with self.assertRaises(ValueError):
+            georef.create_osr('lambert')
 
     def test_proj4_to_osr(self):
         srs = georef.proj4_to_osr('+proj=lcc +lat_1=46.8 +lat_0=46.8 +lon_0=0 '
@@ -378,8 +374,8 @@ class ProjectionsTest(unittest.TestCase):
         srs2 = osr.SpatialReference()
         srs2.ImportFromProj4(p4)
         self.assertTrue(srs.IsSame(srs2))
-        self.assertRaises(ValueError,
-                          lambda: georef.proj4_to_osr("+proj=lcc1"))
+        with self.assertRaises(ValueError):
+            georef.proj4_to_osr("+proj=lcc1")
 
     def test_get_earth_radius(self):
         self.assertEqual(georef.get_earth_radius(50.), 6365631.51753728)
@@ -402,9 +398,8 @@ class ProjectionsTest(unittest.TestCase):
         self.assertAlmostEqual(lonlat[0], 7.0)
         self.assertAlmostEqual(lonlat[1], 53.0)
 
-        self.assertRaises(TypeError,
-                          lambda: georef.reproject(np.stack((x, y, x, y),
-                                                            axis=-1)))
+        with self.assertRaises(TypeError):
+            georef.reproject(np.stack((x, y, x, y), axis=-1))
 
         lon, lat, alt = georef.reproject(x, y, z, projection_source=proj_gk,
                                          projection_target=proj_wgs84)
@@ -412,15 +407,13 @@ class ProjectionsTest(unittest.TestCase):
         self.assertAlmostEqual(lat, 53., places=3)
         self.assertAlmostEqual(alt, 0., places=3)
 
-        self.assertRaises(TypeError,
-                          lambda: georef.reproject(x, y, x, y))
-        self.assertRaises(TypeError,
-                          lambda: georef.reproject([np.arange(10)],
-                                                   [np.arange(11)]))
-        self.assertRaises(TypeError,
-                          lambda: georef.reproject([np.arange(10)],
-                                                   [np.arange(10)],
-                                                   [np.arange(11)]))
+        with self.assertRaises(TypeError):
+            georef.reproject(x, y, x, y)
+        with self.assertRaises(TypeError):
+            georef.reproject([np.arange(10)], [np.arange(11)])
+        with self.assertRaises(TypeError):
+            georef.reproject([np.arange(10)], [np.arange(10)],
+                             [np.arange(11)])
 
     def test_get_default_projection(self):
         self.assertEqual(georef.get_default_projection().ExportToWkt(),
@@ -512,8 +505,8 @@ class GdalTests(unittest.TestCase):
         georef.reproject_raster_dataset(self.ds, size=(1000, 1000),
                                         resample=gdal.GRA_Bilinear,
                                         align=True)
-        self.assertRaises(NameError,
-                          lambda: georef.reproject_raster_dataset(self.ds))
+        with self.assertRaises(NameError):
+            georef.reproject_raster_dataset(self.ds)
         dst = georef.epsg_to_osr(31466)
         georef.reproject_raster_dataset(self.ds, spacing=100.,
                                         resample=gdal.GRA_Bilinear,
@@ -599,10 +592,10 @@ class GetGridsTest(unittest.TestCase):
         self.assertTrue(np.allclose(radolan_grid_xy, self.radolan_grid_xy))
 
     def test_get_radolan_grid_raises(self):
-        self.assertRaises(TypeError,
-                          lambda: georef.get_radolan_grid('900', '900'))
-        self.assertRaises(ValueError,
-                          lambda: georef.get_radolan_grid(2000, 2000))
+        with self.assertRaises(TypeError):
+            georef.get_radolan_grid('900', '900')
+        with self.assertRaises(ValueError):
+            georef.get_radolan_grid(2000, 2000)
 
     def test_get_radolan_grid_shape(self):
         radolan_grid_xy = georef.get_radolan_grid()
@@ -734,8 +727,8 @@ class VectorTest(unittest.TestCase):
     def test_ogr_create_layer(self):
         ds = gdal_create_dataset('Memory', 'test',
                                  gdal_type=gdal.OF_VECTOR)
-        self.assertRaises(TypeError,
-                          lambda: georef.ogr_create_layer(ds, 'test'))
+        with self.assertRaises(TypeError):
+            georef.ogr_create_layer(ds, 'test')
         lyr = georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
                                           fields=[('test', ogr.OFTReal)])
         self.assertTrue(isinstance(lyr, ogr.Layer))
@@ -750,13 +743,11 @@ class VectorTest(unittest.TestCase):
         y = georef.ogr_to_numpy(self.ogrobj)
         np.testing.assert_allclose(x, y)
 
-    @unittest.skipIf(sys.version_info < (3, 2),
-                     "not supported in this python version")
     def test_get_vector_points_warning(self):
-        point = ogr.Geometry(ogr.wkbPoint)
-        point.AddPoint(1198054.34, 648493.09)
-        self.assertWarns(UserWarning,
-                         lambda: list(georef.get_vector_points(point)))
+        point_wkt = "POINT (1198054.34 648493.09)"
+        point = ogr.CreateGeometryFromWkt(point_wkt)
+        with self.assertWarns(UserWarning):
+            list(georef.get_vector_points(point))
 
     def test_get_vector_coordinates(self):
         # this also tests equality with `ogr_to_numpy`
@@ -790,12 +781,9 @@ class VectorTest(unittest.TestCase):
         x = list(georef.get_vector_points(geom))[0]
         np.testing.assert_allclose(x, self.lonlat)
 
-    @unittest.skipIf(sys.version_info < (3, 2),
-                     "not supported in this python version")
     def test_transform_geometry_warning(self):
-        func = georef.transform_geometry
-        self.assertWarns(UserWarning,
-                         lambda: func(self.ogrobj, dest_srs=self.wgs84))
+        with self.assertWarns(UserWarning):
+            georef.transform_geometry(self.ogrobj, dest_srs=self.wgs84)
 
     def test_ogr_copy_layer(self):
         ds = gdal_create_dataset('Memory', 'test',
@@ -808,11 +796,8 @@ class VectorTest(unittest.TestCase):
                                  gdal_type=gdal.OF_VECTOR)
         georef.ogr_copy_layer_by_name(self.ds, 'agger_merge', ds)
         self.assertTrue(isinstance(ds.GetLayer(), ogr.Layer))
-
-        self.assertRaises(ValueError,
-                          lambda: georef.ogr_copy_layer_by_name(self.ds,
-                                                                'agger_merge1',
-                                                                ds))
+        with self.assertRaises(ValueError):
+            georef.ogr_copy_layer_by_name(self.ds, 'agger_merge1', ds)
 
     def test_ogr_add_feature(self):
         ds = gdal_create_dataset('Memory', 'test',

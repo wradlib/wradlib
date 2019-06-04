@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 
@@ -24,11 +24,21 @@ Using `rawdata=True` the data will be kept undecoded.
    :toctree: generated/
 
    IrisRecord
+   IrisHeaderBase
+   IrisStructureHeader
+   IrisIngestHeader
+   IrisProductHeader
+   IrisIngestDataHeader
+   IrisFileBase
    IrisFile
+   IrisIngestHeaderFile
+   IrisIngestDataFile
+   IrisRecordFile
    IrisRawFile
    IrisProductFile
    IrisCartesianProductFile
    read_iris
+
 """
 
 import numpy as np
@@ -37,1050 +47,6 @@ from collections import OrderedDict
 import warnings
 import datetime as dt
 import copy
-
-RECORD_BYTES = 6144
-
-
-class IrisRecord(object):
-    """ Class holding a single record from a Sigmet IRIS file.
-    """
-    def __init__(self, record, recnum):
-        """
-
-        Parameters
-        ----------
-        record : array-like
-            Slice into memory mapped file.
-        recnum : int
-        """
-        self.record = record.copy()
-        self._pos = 0
-        self.recnum = recnum
-
-    @property
-    def pos(self):
-        """ Returns current byte offset.
-        """
-        return self._pos
-
-    @pos.setter
-    def pos(self, value):
-        """ Sets current byte offset.
-        """
-        self._pos = value
-
-    @property
-    def recpos(self):
-        """ Returns current word offset.
-        """
-        return int(self._pos / 2)
-
-    @recpos.setter
-    def recpos(self, value):
-        """ Sets current word offset.
-        """
-        self._pos = value * 2
-
-    def read(self, words, width=2):
-        """ Reads from Record.
-
-        Parameters
-        ----------
-        words : unsigned int
-            Number of data words to be read.
-        width : unsigned int
-            Width (bytes) of data words to be read. Defaults to 2.
-
-        Returns
-        -------
-        ret : array-like
-        """
-        ret = self.record[self._pos:self._pos + words * width]
-        self.pos += words * width
-        return ret
-
-
-class IrisFile(object):
-    """ Class for retrieving data from Sigmet IRIS files.
-    """
-    def __init__(self, filename, loaddata=True, rawdata=False, debug=False):
-        """
-
-        Parameters
-        ----------
-        filename : basestring
-            Filename of Iris File
-        loaddata : bool | kwdict
-                If true, retrieves whole data section from file.
-                If false, retrievs only ingest_data_headers, but no data.
-                If kwdict, retrieves according to given kwdict::
-
-                    loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                                'sweep': [1, 3, 9]}
-        rawdata : bool
-            If true, returns raw unconverted/undecoded data.
-        debug : bool
-            If true, print debug messages.
-        """
-        self._debug = debug
-        self._rawdata = rawdata
-        self._loaddata = loaddata
-        self._fh = np.memmap(filename, mode='r')
-        self._rh = None
-        self._record_number = None
-        self.init_record(0)
-
-        # read data headers
-        self._product_hdr = _unpack_dictionary(
-            self.bytes_from_record(LEN_PRODUCT_HDR, width=1),
-            PRODUCT_HDR,
-            rawdata)
-        # determine product type contained in the file
-        self._product_type_code = self.get_product_type_code()
-        # get product specific information
-        self.get_product_specific_info()
-
-    @property
-    def loaddata(self):
-        """Returns `loaddata` switch.
-        """
-        return self._loaddata
-
-    @property
-    def rawdata(self):
-        """Returns `rawdata` switch.
-        """
-        return self._rawdata
-
-    @property
-    def debug(self):
-        return self._debug
-
-    @property
-    def fh(self):
-        """Returns file-memmap object.
-        """
-        return self._fh
-
-    @property
-    def rh(self):
-        """Returns current record object.
-        """
-        return self._rh
-
-    @rh.setter
-    def rh(self, value):
-        """Sets current record object.
-        """
-        self._rh = value
-
-    @property
-    def record_number(self):
-        """Returns current record number.
-        """
-        return self._record_number
-
-    @record_number.setter
-    def record_number(self, value):
-        """Sets current record number.
-        """
-        self._record_number = value
-
-    @property
-    def filepos(self):
-        """Returns current byte position of data file.
-        """
-        return self._record_number * RECORD_BYTES + int(self._rh.pos)
-
-    @property
-    def product_hdr(self):
-        """Returns product_hdr dictionary.
-        """
-        return self._product_hdr
-
-    @property
-    def product_type_code(self):
-        """Returns product type code.
-        """
-        return self._product_type_code
-
-    @property
-    def product_type(self):
-        """Returns product type.
-        """
-        return PRODUCT_DATA_TYPE_CODES[self._product_type_code]
-
-    @property
-    def data_type(self):
-        """Returns product configuration data type.
-        """
-        data_type = self.product_hdr['product_configuration']['data_type']
-        return SIGMET_DATA_TYPES[data_type]
-
-    def get_product_type_code(self):
-        """Returns product type code.
-        """
-        prod_conf = self.product_hdr['product_configuration']
-        return prod_conf['product_type_code']
-
-    @property
-    def filesize(self):
-        """Returns filesize.
-        """
-        return self.product_hdr['structure_header']['bytes_in_structure']
-
-    def _check_record(self):
-        """Checks record for correct size.
-
-        Need to be implemented in the derived classes
-        """
-        return True
-
-    def init_record(self, recnum):
-        """Initialize record using given number.
-        """
-        start = recnum * RECORD_BYTES
-        stop = start + RECORD_BYTES
-        self.record_number = recnum
-        self.rh = IrisRecord(self.fh[start:stop], recnum)
-        return self._check_record()
-
-    def init_next_record(self):
-        """Get next record from file.
-
-        This increases record_number count and initialises a new IrisRecord
-        with the calculated start and stop file offsets.
-
-        Returns
-        -------
-        chk : bool
-            True, if record is truncated.
-        """
-        return self.init_record(self.record_number + 1)
-
-    def array_from_record(self, words, width, dtype):
-        """Retrieve array from current record.
-
-        Parameters
-        ----------
-        words : int
-            Number of data words to read.
-        width : int
-            Size of the data word to read in bytes.
-        dtype : str
-            dtype string specifying data format.
-
-        Returns
-        -------
-        data : array-like
-            numpy array of data
-        """
-        return self.rh.read(words, width=width).view(dtype=dtype)
-
-    def bytes_from_record(self, words, width):
-        """Retrieve bytes from current record.
-
-        Parameters
-        ----------
-        words : int
-            Number of data words to read.
-        width : int
-            Size of the data word to read in bytes.
-
-        Returns
-        -------
-        data : array-like
-            numpy array of data
-        """
-        return self.rh.read(words, width=width)
-
-    def read_from_record(self, words, dtype):
-        """Read from file.
-
-        Parameters
-        ----------
-        words : int
-            Number of data words to read.
-        dtype : str
-            dtype string specifying data format.
-
-        Returns
-        -------
-        data : array-like
-            numpy array of data
-        """
-        width = get_dtype_size(dtype)
-        data = self.array_from_record(words, width, dtype)
-        words -= len(data)
-        while words > 0:
-            self.init_next_record()
-            next_data = self.array_from_record(words, width, dtype)
-            data = np.append(data, next_data)
-            words -= len(next_data)
-        return data
-
-    def get_product_specific_info(self):
-        """Retrieves product specific info"""
-        config = self.product_hdr['product_configuration']
-        pt = self.product_type
-        key = 'product_specific_info'
-        try:
-            config[key] = _unpack_dictionary(config[key],
-                                             pt['struct'],
-                                             self.rawdata)
-        except KeyError:
-            warnings.warn("product type {0} not implemented, \n"
-                          "only header information "
-                          "available".format(pt['name']),
-                          RuntimeWarning,
-                          stacklevel=3)
-
-    def decode_data(self, data, prod):
-        """Decode data according given prod-dict.
-
-        Parameters
-        ----------
-        data : data to decode
-        prod : dict
-
-        Returns
-        -------
-        data : decoded data
-
-        """
-        if self._rawdata:
-            return data
-        kw = {}
-        if prod['func']:
-            try:
-                kw.update(prod['fkw'])
-            except KeyError:
-                pass
-            return prod['func'](data.view(prod['dtype']), **kw)
-        else:
-            return data
-
-
-class IrisWrapperFile(IrisFile):
-    """Class Wrapper for retrieving data from Sigmet IRIS files.
-    """
-
-    def __init__(self, irisfile, **kwargs):
-        """
-        Parameters
-        ----------
-        irisfile : IrisFile class instance handle
-            class instance handle
-        """
-        if isinstance(irisfile, IrisFile):
-            self.init(irisfile)
-        else:
-            super(IrisWrapperFile, self).__init__(irisfile, **kwargs)
-
-    def init(self, irisfile):
-        self._debug = irisfile.debug
-        self._rawdata = irisfile.rawdata
-        self._loaddata = irisfile.loaddata
-        self._fh = irisfile.fh
-        self._record_number = irisfile.record_number
-        self._rh = irisfile.rh
-
-        # read data headers
-        self._product_hdr = irisfile.product_hdr
-
-        # determine product type contained in the file
-        self._product_type_code = irisfile.product_type_code
-
-    @property
-    def data(self):
-        """ Returns product data.
-        """
-        return self._data
-
-    def get_data(self):
-        return NotImplemented
-
-
-class IrisRawFile(IrisWrapperFile):
-    """Class for retrieving data from Sigmet IRIS RAW files.
-    """
-
-    def __init__(self, irisfile, **kwargs):
-        """
-        Parameters
-        ----------
-        irisfile : IrisWrapperFile class instance handle
-            class instance handle
-        """
-        super(IrisRawFile, self).__init__(irisfile, **kwargs)
-        self.init_record(1)
-        self._ingest_header = _unpack_dictionary(
-            self.bytes_from_record(LEN_INGEST_HEADER, width=1),
-            INGEST_HEADER,
-            self._rawdata)
-        self._data_types_numbers = self.get_data_types()
-        self.get_task_type_scan_info()
-        self._raw_product_bhdrs = []
-
-        self._data = OrderedDict()
-        if self.loaddata:
-            self.get_data()
-        else:
-            self.get_data_headers()
-
-    @property
-    def ingest_header(self):
-        """Returns `ingest_header` dictionary.
-        """
-        return self._ingest_header
-
-    @property
-    def raw_product_bhdrs(self):
-        """Returns `raw_product_bhdrs` dictionary.
-        """
-        return self._raw_product_bhdrs
-
-    @property
-    def sweeps(self):
-        """Returns dictionary of retrieved sweeps.
-        """
-        return self._data
-
-    @property
-    def nsweeps(self):
-        """Returns number of sweeps.
-        """
-        head = self._ingest_header['task_configuration']['task_scan_info']
-        return head['sweep_number']
-
-    @property
-    def nbins(self):
-        """Returns number of bins.
-        """
-        return self._product_hdr['product_end']['number_bins']
-
-    @property
-    def nrays(self):
-        """Returns number of rays.
-        """
-        return self._ingest_header['ingest_configuration']['number_rays_sweep']
-
-    @property
-    def data_types(self):
-        """Returns list of data type dictionaries.
-        """
-        return [SIGMET_DATA_TYPES[i] for i in self._data_types_numbers]
-
-    @property
-    def data_types_count(self):
-        """Returns number of data types.
-        """
-        return len(self._data_types_numbers)
-
-    @property
-    def data_types_names(self):
-        """Returns list of data type names.
-        """
-        return [SIGMET_DATA_TYPES[i]['name'] for i in self._data_types_numbers]
-
-    def _check_record(self):
-        """Checks record for correct size.
-
-        Returns
-        -------
-        chk : bool
-            False, if record is truncated.
-        """
-        # we do not know filesize before reading first record,
-        # so we try and pass
-        try:
-            if self.record_number >= self.filesize / RECORD_BYTES:
-                return False
-        except AttributeError:
-            pass
-        chk = self._rh.record.shape[0] == RECORD_BYTES
-        if not chk:
-            raise EOFError("Unexpected file end detected at "
-                           "record {}".format(self.rh.recnum))
-        return chk
-
-    def read_from_record(self, words, dtype):
-        """Read from record/file.
-
-        Parameters
-        ----------
-        words : int
-            Number of data words to read.
-        dtype : str
-            dtype string specifying data format.
-        Returns
-        -------
-        data : array-like
-            numpy array of data
-        """
-        width = get_dtype_size(dtype)
-        data = self.array_from_record(words, width, dtype)
-        words -= len(data)
-        while words > 0:
-            self.init_next_record()
-            self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
-            next_data = self.array_from_record(words, width, dtype)
-            data = np.append(data, next_data)
-            words -= len(next_data)
-        return data
-
-    def get_compression_code(self):
-        """Read and return data compression code.
-
-        Returns
-        -------
-        cmp_msb : bool
-            True, if MSB is set.
-        cmp_val : int
-            Value of data compression code.
-        """
-        cmp_val = self.read_from_record(1, 'int16')[0]
-        cmp_msb = np.sign(cmp_val) == -1
-        if cmp_msb:
-            cmp_val = cmp_val + 32768
-        if self._debug:
-            print("--- Sub CMP Code:", cmp_msb, cmp_val, self._rh.recpos - 1,
-                  self._rh.recpos)
-        return cmp_msb, cmp_val
-
-    def get_data_types(self):
-        """Returns the available data types.
-        """
-        # determine the available fields
-        task_config = self._ingest_header['task_configuration']
-        task_dsp_info = task_config['task_dsp_info']
-        word0 = task_dsp_info['dsp_data_mask0']['mask_word_0']
-        word1 = task_dsp_info['dsp_data_mask0']['mask_word_1']
-        word2 = task_dsp_info['dsp_data_mask0']['mask_word_2']
-        word3 = task_dsp_info['dsp_data_mask0']['mask_word_3']
-
-        return _data_types_from_dsp_mask([word0, word1, word2, word3])
-
-    def get_task_type_scan_info(self):
-        """Retrieves task type info"""
-        task_info = self._ingest_header['task_configuration']['task_scan_info']
-        mode = task_info['antenna_scan_mode']
-        key = 'task_type_scan_info'
-        if mode in [1, 4]:
-            task_info[key] = _unpack_dictionary(task_info[key],
-                                                TASK_PPI_SCAN_INFO,
-                                                self._rawdata)
-        elif mode == 2:
-            task_info[key] = _unpack_dictionary(task_info[key],
-                                                TASK_RHI_SCAN_INFO,
-                                                self._rawdata)
-        elif mode == 3:
-            task_info[key] = _unpack_dictionary(task_info[key],
-                                                TASK_MANUAL_SCAN_INFO,
-                                                self._rawdata)
-        elif mode == 5:
-            task_info[key] = _unpack_dictionary(task_info[key],
-                                                TASK_FILE_SCAN_INFO,
-                                                self._rawdata)
-        else:
-            pass
-
-    def get_raw_prod_bhdr(self):
-        """Read and unpack raw product bhdr.
-        """
-        return _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
-                                  RAW_PROD_BHDR, self._rawdata)
-
-    def get_ingest_data_headers(self):
-        """Read and return ingest data headers.
-        """
-        ingest_data_hdrs = OrderedDict()
-        for i, dn in enumerate(self.data_types_names):
-            ingest_data_hdrs[dn] = _unpack_dictionary(
-                self._rh.read(LEN_INGEST_DATA_HEADER, width=1),
-                INGEST_DATA_HEADER, self._rawdata)
-
-        return ingest_data_hdrs
-
-    def get_ray(self, data):
-        """Retrieve single ray.
-
-        Returns
-        -------
-        data : array-like
-            Numpy array containing data of one ray.
-        """
-        ray_pos = 0
-
-        cmp_msb, cmp_val = self.get_compression_code()
-
-        # ray is missing
-        if (cmp_val == 1) & (cmp_msb == 0):
-            if self._debug:
-                print("ray missing")
-            return None
-
-        while not ((cmp_val == 1) & (not cmp_msb)):
-
-            # data words follow
-            if cmp_msb:
-                if self._debug:
-                    print(
-                        "--- Add {0} WORDS at range {1}, record {2}:{3}:"
-                        "".format(cmp_val, ray_pos, self._rh.recpos,
-                                  self._rh.recpos + cmp_val))
-                data[ray_pos:ray_pos + cmp_val] = \
-                    self.read_from_record(cmp_val,
-                                          'int16')
-            # compressed zeros follow
-            # can be skipped, if data array is created all zeros
-            else:
-                if self._debug:
-                    print(
-                        "--- Add {0} Zeros at range {1}, record {2}:{3}:"
-                        "".format(cmp_val, ray_pos,
-                                  self._rh.recpos, self._rh.recpos + 1))
-                if cmp_val + ray_pos > self.nbins + 6:
-                    return data
-                data[ray_pos:ray_pos + cmp_val] = 0
-
-            ray_pos += cmp_val
-
-            # read next compression code
-            cmp_msb, cmp_val = self.get_compression_code()
-
-        return data
-
-    def get_sweep(self, moment):
-        """Retrieve a single sweep.
-
-        Parameters
-        ----------
-        moment : list of strings
-            Data Types to retrieve.
-
-        Returns
-        -------
-        sweep : OrderedDict
-            Dictionary containing sweep data.
-        """
-        sweep = OrderedDict()
-
-        sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
-
-        # get boolean True for moment in available data_types
-        skip = [True if k in moment else False
-                for k in sweep['ingest_data_hdrs'].keys()]
-
-        # get rays per available data type
-        rays_per_data_type = [d['number_rays_file_expected']
-                              for d in sweep['ingest_data_hdrs'].values()]
-
-        # get rays per selected data type
-        rays_per_selected_type = [d['number_rays_file_expected']
-                                  if k in moment else 0 for k, d in
-                                  sweep['ingest_data_hdrs'].items()]
-
-        # get available selected data types
-        selected_type = []
-        for i, k in enumerate(sweep['ingest_data_hdrs'].keys()):
-            if k in moment:
-                selected_type.append(self.data_types[i])
-
-        # get boolean True for selected available rays
-        raylist = skip * rays_per_data_type[0]
-
-        # get sum of rays for selected available data types
-        rays = sum(rays_per_selected_type)
-        bins = self._product_hdr['product_end']['number_bins']
-
-        raw_data = np.zeros((rays, bins + 6), dtype='int16')
-        single_data = np.zeros((bins + 6), dtype='int16')
-        cnt = 0
-        for i, ray_i in enumerate(raylist):
-            if ray_i:
-                ret = self.get_ray(raw_data[cnt])
-                if ret is not None:
-                    raw_data[cnt] = ret
-                cnt += 1
-            else:
-                self.get_ray(single_data)
-
-        sweep_data = OrderedDict()
-        cnt = len(selected_type)
-        for i, prod in enumerate(selected_type):
-            sweep_prod = OrderedDict()
-            sweep_prod['data'] = self.decode_data(raw_data[i::cnt, 6:], prod)
-            sweep_prod['azi_start'] = self.decode_data(raw_data[i::cnt, 0],
-                                                       BIN2)
-            sweep_prod['ele_start'] = self.decode_data(raw_data[i::cnt, 1],
-                                                       BIN2)
-            sweep_prod['azi_stop'] = self.decode_data(raw_data[i::cnt, 2],
-                                                      BIN2)
-            sweep_prod['ele_stop'] = self.decode_data(raw_data[i::cnt, 3],
-                                                      BIN2)
-            sweep_prod['rbins'] = raw_data[i::cnt, 4]
-            sweep_prod['dtime'] = raw_data[i::cnt, 5]
-            sweep_data[prod['name']] = sweep_prod
-
-        sweep['sweep_data'] = sweep_data
-
-        return sweep
-
-    def decode_data(self, data, prod):
-        """Decode data according given prod-dict.
-
-        Parameters
-        ----------
-        data : data to decode
-        prod : dict
-
-        Returns
-        -------
-        data : decoded data
-
-        """
-        if self._rawdata:
-            return data
-        kw = {}
-        if prod['func']:
-            try:
-                kw.update(prod['fkw'])
-            except KeyError:
-                pass
-            if get_dtype_size(prod['dtype']) == 1:
-                dtype = '(2,) {0}'.format(prod['dtype'])
-            else:
-                dtype = '{0}'.format(prod['dtype'])
-            try:
-                rays, bins = data.shape
-                data = data.view(dtype).reshape(rays, -1)[:, :bins]
-            except ValueError:
-                data = data.view(dtype)
-            if prod['func'] in [decode_vel, decode_width, decode_kdp]:
-                wavelength = self.product_hdr['product_end']['wavelength']
-                if prod['func'] == decode_kdp:
-                    kw.update({'wavelength': wavelength / 100})
-                    return prod['func'](data, **kw)
-
-                prf = self.product_hdr['product_end']['prf']
-                nyquist = wavelength * prf / (10000. * 4.)
-                if prod['func'] == decode_vel:
-                    nyquist *= (self.ingest_header['task_configuration']
-                                ['task_dsp_info']['multi_prf_mode_flag'] + 1)
-                kw.update({'nyquist': nyquist})
-
-            return prod['func'](data, **kw)
-        else:
-            return data
-
-    def get_data(self):
-        """Retrieve all sweeps from file.
-        """
-        dt_names = [d['name'] for d in self.data_types]
-        rsweeps = range(1, self.nsweeps + 1)
-
-        loaddata = self.loaddata
-        try:
-            sweep = loaddata.copy().pop('sweep', rsweeps)
-            moment = loaddata.copy().pop('moment', dt_names)
-        except AttributeError:
-            sweep = rsweeps
-            moment = dt_names
-
-        self.init_record(1)
-        sw = 0
-        ingest_conf = self.ingest_header['ingest_configuration']
-        sw_completed = ingest_conf['number_sweeps_completed']
-        while self.init_next_record() and sw < sw_completed:
-            raw_prod_bhdr = self.get_raw_prod_bhdr()
-            sw = raw_prod_bhdr['sweep_number']
-            # continue to next record if not belonging to wanted sweeps
-            if sw not in sweep:
-                continue
-            self.raw_product_bhdrs.append(raw_prod_bhdr)
-            self._data[sw] = self.get_sweep(moment)
-
-    def get_data_headers(self):
-        """Retrieve all sweep `ingest_data_header` from file.
-        """
-        self.init_record(1)
-        sw = 0
-        ingest_conf = self.ingest_header['ingest_configuration']
-        sw_completed = ingest_conf['number_sweeps_completed']
-        while self.init_next_record() and sw < sw_completed:
-            # get raw_prod_bhdr
-            raw_prod_bhdr = self.get_raw_prod_bhdr()
-            # continue to next record if belonging to same sweep
-            if raw_prod_bhdr['sweep_number'] == sw:
-                continue
-            # else set current sweep number
-            else:
-                sw = raw_prod_bhdr['sweep_number']
-            # read headers and add to _data
-            self.raw_product_bhdrs.append(raw_prod_bhdr)
-            sweep = OrderedDict()
-            sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
-            self._data[sw] = sweep
-
-
-class IrisProductFile(IrisWrapperFile):
-    """Class for retrieving data from Sigmet IRIS Product files.
-    """
-
-    def __init__(self, irisfile):
-        """
-        Parameters
-        ----------
-        irisfile : IrisWrapperFile class instance handle
-            class instance handle
-        """
-        super(IrisProductFile, self).__init__(irisfile)
-
-        self._data = OrderedDict()
-        if self.loaddata:
-            self.get_data()
-
-    def get_protect_setup(self):
-        protected_setup = self.read_from_record(1024, 'uint8')
-        protected_regions = OrderedDict()
-        for i in range(32):
-            region = _unpack_dictionary(protected_setup[i * 32:i * 32 + 32],
-                                        ONE_PROTECTED_REGION, self._rawdata)
-            if not region['region_name'].isspace():
-                protected_regions[i] = region
-
-        return protected_regions
-
-    def get_results(self, results, num, structure):
-        cnt = struct.calcsize(_get_fmt_string(structure))
-        for i in range(num):
-            dta = self.read_from_record(cnt, 'uint8')
-            res = _unpack_dictionary(dta, structure,
-                                     self._rawdata)
-            results[i] = res
-
-    def get_data(self):
-        """Retrieves cartesian data from file.
-        """
-        # set filepointer accordingly
-        self.init_record(0)
-        self._rh.pos = 640
-        if 'protect_setup' in self.product_type:
-            self._protect_setup = self.get_protect_setup()
-        product_end = self.product_hdr['product_end']
-        product_config = self.product_hdr['product_configuration']
-        num_elements = product_end['number_elements']
-        specific_info = product_config['product_specific_info']
-
-        result = OrderedDict()
-        if self.product_type['name'] in ['FCAST', 'NDOP']:
-            x_size = product_config.get('x_size')
-            y_size = product_config.get('y_size')
-            z_size = product_config.get('z_size', 1)
-
-            cnt = struct.calcsize(_get_fmt_string(self.product_type['result']))
-            z = []
-            for zi in range(z_size):
-                y = []
-                for yi in range(y_size):
-                    x = []
-                    for xi in range(x_size):
-                        dta = self.read_from_record(cnt, 'uint8')
-                        res = _unpack_dictionary(dta,
-                                                 self.product_type['result'],
-                                                 self._rawdata)
-                        x.append(res)
-                    y.append(x)
-                z.append(y)
-            result[0] = np.array(z)
-        # get vvp num_elements
-        elif self.product_type['name'] in ['VVP']:
-            num_elements = specific_info['num_intervals']
-            self.get_results(result, num_elements, self.product_type['result'])
-        # get wind num_elements
-        elif self.product_type['name'] in ['WIND']:
-            num_elements = specific_info['num_panel_points'] * \
-                           specific_info['num_range_points']
-            cnt = struct.calcsize(_get_fmt_string(VVP_RESULTS))
-            dta = self.read_from_record(cnt, 'uint8')
-            res = _unpack_dictionary(dta, VVP_RESULTS,
-                                     self._rawdata)
-            result['VVP'] = res
-            self.get_results(result, num_elements, self.product_type['result'])
-        else:
-            if num_elements:
-                self.get_results(result, num_elements,
-                                 self.product_type['result'])
-            else:
-                warnings.warn(
-                    "{0} - No product result "
-                    "array(s) available".format(self.product_type['name']),
-                    RuntimeWarning,
-                    stacklevel=3)
-        self._data = result
-
-
-class IrisCartesianProductFile(IrisWrapperFile):
-    """ Class for retrieving data from Sigmet IRIS Cartesian Product files.
-    """
-
-    def __init__(self, irisfile):
-        """
-        Parameters
-        ----------
-        irisfile : IrisWrapperFile class instance handle
-            class instance handle
-        """
-        super(IrisCartesianProductFile, self).__init__(irisfile)
-
-        self._data = OrderedDict()
-        if self.loaddata:
-            self.get_data()
-
-    def fix_ext_header(self, ext):
-        prod_conf = self.product_hdr['product_configuration']
-        ext.update({'x_size': ext.pop('x_size', prod_conf.get('x_size'))})
-        ext.update({'y_size': ext.pop('y_size', prod_conf.get('y_size'))})
-        ext.update({'z_size': ext.pop('z_size', prod_conf.get('z_size', 1))})
-        ext.update({'data_type': ext.pop('iris_type',
-                                         prod_conf.get('data_type'))})
-
-    def get_extended_header(self):
-        # hack, get from actual position to end of record
-        ext = self.rh.record[self.rh.pos:]
-        if len(ext) == 0:
-            return False
-        # extended header token
-        search = [0x00, 0xff]
-        ext = np.where((ext[:-1] == search[0]) & (ext[1:] == search[1]))[0][0]
-        extended_header = OrderedDict([('extended_header', string_dict(ext))])
-        ext_str = _unpack_dictionary(self.bytes_from_record(ext, 1),
-                                     extended_header,
-                                     self._rawdata)['extended_header']
-        # skip search bytes
-        self.bytes_from_record(2, 1)
-        ext_hdr = OrderedDict()
-        for d in ext_str.split('\n'):
-            kv = d.split('=')
-            try:
-                ext_hdr[kv[0]] = int(kv[1])
-            except ValueError:
-                ext_hdr[kv[0]] = kv[1]
-            except Exception:
-                pass
-        self.fix_ext_header(ext_hdr)
-        return ext_hdr
-
-    def get_image(self, header):
-        """Retrieve cartesian image.
-
-        Parameters
-        ----------
-        header : dict
-            header dictionary
-
-        Returns
-        -------
-        data : :class:`numpy:numpy.ndarray`
-            3D array of cartesian data
-
-        """
-        prod = SIGMET_DATA_TYPES[header.get('data_type')]
-        x_size = header.get('x_size')
-        y_size = header.get('y_size')
-        z_size = header.get('z_size')
-        cnt = x_size * y_size * z_size
-        data = self.read_from_record(cnt, prod['dtype'])
-        data = self.decode_data(data, prod=prod)
-        data.shape = (z_size, y_size, x_size)
-        return np.flip(data, axis=1)
-
-    def get_data(self):
-        """ Retrieves cartesian data from file.
-        """
-        # set filepointer accordingly
-        self.init_record(0)
-        self.rh.pos = 640
-
-        product_hdr = self.product_hdr
-        product_end = product_hdr['product_end']
-        if product_hdr['product_end']['number_elements']:
-            warnings.warn("{0} Not Implemented - Product results "
-                          "array available \nnot loading "
-                          "dataset".format(self.product_type['name']),
-                          RuntimeWarning,
-                          stacklevel=3)
-        else:
-            self._data[0] = self.get_image(
-                product_hdr['product_configuration'])
-            if product_end['extended_product_header_offset']:
-                ext_hdr = OrderedDict()
-                i = 0
-                ext = self.get_extended_header()
-                while ext:
-                    ext_hdr[i + 1] = ext
-                    i += 1
-                    self._data[i] = self.get_image(ext)
-                    ext = self.get_extended_header()
-                self.product_hdr['extended_header'] = ext_hdr
-
-
-def read_iris(filename, loaddata=True, rawdata=False, debug=False):
-    """Read Iris file and return dictionary.
-
-    Parameters
-    ----------
-    filename : str
-        Filename of data file.
-    loaddata : bool | kwdict
-                If true, retrieves whole data section from file.
-                If false, retrievs only ingest_data_headers, but no data.
-                If kwdict, retrieves according to given kwdict::
-
-                    loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
-                                'sweep': [1, 3, 9]}
-
-    rawdata : bool
-        If true, returns raw unconverted/undecoded data.
-    debug : bool
-        If true, print debug messages.
-
-    Returns
-    -------
-    data : OrderedDict
-        Dictionary with data and metadata retrieved from file.
-    """
-    irisfile = IrisFile(filename, loaddata=loaddata, rawdata=rawdata,
-                        debug=debug)
-    data = OrderedDict()
-    data['product_hdr'] = irisfile.product_hdr
-    data['product_type'] = irisfile.product_type['name']
-    if irisfile.product_type['name'] in ['RAW']:
-        fh = IrisRawFile(irisfile)
-        data['ingest_header'] = fh.ingest_header
-        data['nsweeps'] = fh.nsweeps
-        data['nrays'] = fh.nrays
-        data['nbins'] = fh.nbins
-        data['data_types'] = fh.data_types_names
-        data['data'] = fh.data
-        data['raw_product_bhdrs'] = fh.raw_product_bhdrs
-    elif irisfile.product_type['name'] in ['MAX', 'TOPS', 'HMAX', 'BASE',
-                                           'THICK', 'PPI', 'RHI', 'CAPPI',
-                                           'RAINN', 'RAIN1', 'CROSS', 'SHEAR',
-                                           'SRI', 'RTI', 'VIL', 'LAYER',
-                                           'BEAM', 'MLHGT']:
-        fh = IrisCartesianProductFile(irisfile)
-        data['data'] = fh.data
-    elif irisfile.product_type['name'] in ['CATCH', 'FCAST', 'NDOP', 'SLINE',
-                                           'TDWR', 'TRACK', 'VAD', 'VVP',
-                                           'WARN', 'WIND']:
-        fh = IrisProductFile(irisfile)
-        data['data'] = fh.data
-    else:
-        print("Product Type {0} "
-              "not implemented".format(irisfile.product_type['name']))
-    return data
 
 
 def get_dtype_size(dtype):
@@ -1111,21 +77,40 @@ def to_float(data):
     -------
     decoded : :class:`numpy:numpy.ndarray`
         decoded floating point data
+
+    Note
+    ----
+    DB_FLIQUID2 decoding see IRIS manuals, 4.4.12 - Page 75
+
     """
     exp = data >> 12
-    mantissa = (data & 0xfff).astype(np.float)
-    return mantissa * 2 ** exp
+    nz = exp > 0
+    mantissa = (data & 0xfff).astype(dtype='uint32')
+    mantissa[nz] = (mantissa[nz] | 0x1000) << (exp[nz] - 1)
+    return mantissa
 
-
-# TODO: mask nodata and area not scanned
 
 def decode_bin_angle(bin_angle, mode=None):
     """Decode BIN angle.
+
+    See 4.2 p.23
+
+    Parameters
+    ----------
+    bin_angle : array-like
+    mode : int
+        number of bytes
+
+    Returns
+    -------
+    out : array-like
+        decoded angle
     """
     return 360. * bin_angle / 2 ** (mode * 8)
 
 
-def decode_array(data, scale=1., offset=0, offset2=0, tofloat=False):
+def decode_array(
+        data, scale=1., offset=0, offset2=0, tofloat=False, mask=None):
     """Decode data array.
 
     .. math::
@@ -1149,6 +134,8 @@ def decode_array(data, scale=1., offset=0, offset2=0, tofloat=False):
     """
     if tofloat:
         data = to_float(data)
+    if mask is not None:
+        data = np.ma.masked_equal(data, mask)
     return (data + offset) / scale + offset2
 
 
@@ -1163,6 +150,8 @@ def decode_vel(data, **kwargs):
     See 4.4.46 p.85
     """
     nyquist = kwargs.pop('nyquist')
+    # mask = kwargs.pop('mask')
+    # data = np.ma.masked_equal(data, mask)
     return decode_array(data, **kwargs) * nyquist
 
 
@@ -1346,13 +335,43 @@ def _data_types_from_dsp_mask(words):
     return data_types
 
 
-# IRIS Data Structures
+def _check_product(product_type):
+    """Return IRIS File Class depending on product type.
+    """
+    if product_type in ['MAX', 'TOPS', 'HMAX', 'BASE', 'THICK', 'PPI', 'RHI',
+                        'CAPPI', 'RAINN', 'RAIN1', 'CROSS', 'SHEAR', 'SRI',
+                        'RTI', 'VIL', 'LAYER', 'BEAM', 'MLHGT']:
+        return IrisCartesianProductFile
+    elif product_type in ['CATCH', 'FCAST', 'NDOP', 'SLINE', 'TDWR', 'TRACK',
+                          'VAD', 'VVP', 'WARN', 'WIND']:
+        return IrisProductFile
+    elif product_type in ['RAW']:
+        return IrisRawFile
+    else:
+        return False
 
+
+def _check_identifier(identifier):
+    """Return IRIS File Class depending on identifier.
+    """
+    if identifier == 'INGEST_HEADER':
+        return IrisIngestHeaderFile
+    elif identifier == 'INGEST_DATA_HEADER':
+        return IrisIngestDataFile
+    elif identifier == 'PRODUCT_HDR':
+        return IrisRecordFile
+    else:
+        return False
+
+
+# IRIS Data Structures
 _STRING = {'read': decode_string,
            'rkw': {}}
 
 
 def string_dict(size):
+    """Return _STRING dictionary
+    """
     dic = _STRING.copy()
     dic['size'] = '{0}s'.format(size)
     return dic
@@ -1363,6 +382,8 @@ _ARRAY = {'read': np.frombuffer,
 
 
 def array_dict(size, dtype):
+    """Return _ARRAY dictionary
+    """
     dic = _ARRAY.copy()
     dic['size'] = '{0}s'.format(size * get_dtype_size(dtype))
     dic['rkw']['dtype'] = dtype
@@ -1766,7 +787,7 @@ WIND_RESULTS = OrderedDict([('num_possible_hits', SINT4),
 SPARE_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '80s'})])
 
 # one_protected_region Structure
-# 4.3.33, page 35
+# 4.3.22, page 35
 ONE_PROTECTED_REGION = OrderedDict([('east_center', SINT4),
                                     ('north_center', SINT4),
                                     ('east_west_size', SINT4),
@@ -2187,11 +1208,44 @@ INGEST_DATA_HEADER = OrderedDict([('structure_header', STRUCTURE_HEADER),
                                   ('data_type', UINT2),
                                   ('spare_0', {'fmt': '36s'})])
 
+# ray_header Structure
+# 4.3.33, page 46
+
+RAY_HEADER = OrderedDict([('azi_start', BIN2),
+                          ('ele_start', BIN2),
+                          ('azi_stop', BIN2),
+                          ('ele_stop', BIN2),
+                          ('rbins', SINT2),
+                          ('dtime', UINT2)])
+
 # some length's of data structures
+LEN_STRUCTURE_HEADER = struct.calcsize(_get_fmt_string(STRUCTURE_HEADER))
 LEN_PRODUCT_HDR = struct.calcsize(_get_fmt_string(PRODUCT_HDR))
 LEN_INGEST_HEADER = struct.calcsize(_get_fmt_string(INGEST_HEADER))
 LEN_RAW_PROD_BHDR = struct.calcsize(_get_fmt_string(RAW_PROD_BHDR))
 LEN_INGEST_DATA_HEADER = struct.calcsize(_get_fmt_string(INGEST_DATA_HEADER))
+LEN_RAY_HEADER = struct.calcsize(_get_fmt_string(RAY_HEADER))
+
+# Sigmet structure header identifiers
+# extracted from headers.h
+STRUCTURE_HEADER_IDENTIFIERS = OrderedDict([
+    (20, {'name': 'VERSION_STEP'}),
+    (22, {'name': 'TASK_CONFIGURATION'}),
+    (23, {'name': 'INGEST_HEADER'}),
+    (24, {'name': 'INGEST_DATA_HEADER'}),
+    (25, {'name': 'TAPE_INVENTORY'}),
+    (26, {'name': 'PRODUCT_CONFIGURATION'}),
+    (27, {'name': 'PRODUCT_HDR'}),
+    (28, {'name': 'TAPE_HEADER_RECORD'}),
+])
+
+STRUCTURE_HEADER_FORMAT_VERSION = OrderedDict([
+    (3, {'name': 'INGEST_DATA_HEADER'}),
+    (4, {'name': 'INGEST_HEADER'}),
+    (5, {'name': 'TASK_CONFIGURATION'}),
+    (6, {'name': 'PRODUCT_CONFIGURATION'}),
+    (8, {'name': 'PRODUCT_HDR'}),
+])
 
 # Sigmet data types
 # 4.9 Constants, Table 17
@@ -2207,7 +1261,7 @@ SIGMET_DATA_TYPES = OrderedDict([
          'fkw': {'scale': 2., 'offset': -64.}}),
     # Velocity (1 byte)
     (3, {'name': 'DB_VEL', 'dtype': 'uint8', 'func': decode_vel,
-         'fkw': {'scale': 127., 'offset': -128.}}),
+         'fkw': {'scale': 127., 'offset': -128., 'mask': 0.}}),
     # Width (1 byte)
     (4, {'name': 'DB_WIDTH', 'dtype': 'uint8', 'func': decode_width,
          'fkw': {'scale': 256.}}),
@@ -2449,6 +1503,7 @@ SIGMET_DATA_TYPES = OrderedDict([
           'fkw': {'scale': 2., 'offset': -63.}})
 ])
 
+
 PRODUCT_DATA_TYPE_CODES = OrderedDict([(0, {'name': 'NULL',
                                             'struct': SPARE_PSI_STRUCT}),
                                        (1, {'name': 'PPI',
@@ -2543,3 +1598,1344 @@ PRODUCT_DATA_TYPE_CODES = OrderedDict([(0, {'name': 'NULL',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (40, {'name': 'MLHGT',
                                              'struct': MLHGT_PSI_STRUCT})])
+
+
+RECORD_BYTES = 6144
+
+
+class IrisRecord(object):
+    """ Class holding a single record from a Sigmet IRIS file.
+    """
+    def __init__(self, record, recnum):
+        """
+
+        Parameters
+        ----------
+        record : array-like
+            Slice into memory mapped file.
+        recnum : int
+        """
+        self.record = record.copy()
+        self._pos = 0
+        self.recnum = recnum
+
+    @property
+    def pos(self):
+        """ Returns current byte offset.
+        """
+        return self._pos
+
+    @pos.setter
+    def pos(self, value):
+        """ Sets current byte offset.
+        """
+        self._pos = value
+
+    @property
+    def recpos(self):
+        """ Returns current word offset.
+        """
+        return int(self._pos / 2)
+
+    @recpos.setter
+    def recpos(self, value):
+        """ Sets current word offset.
+        """
+        self._pos = value * 2
+
+    def read(self, words, width=2):
+        """ Reads from Record.
+
+        Parameters
+        ----------
+        words : unsigned int
+            Number of data words to be read.
+        width : unsigned int
+            Width (bytes) of data words to be read. Defaults to 2.
+
+        Returns
+        -------
+        ret : array-like
+        """
+        ret = self.record[self._pos:self._pos + words * width]
+        self.pos += words * width
+        return ret
+
+
+class IrisHeaderBase(object):
+    """ Base Class for Iris Headers.
+    """
+    def __init__(self, **kwargs):
+        super(IrisHeaderBase, self).__init__()
+
+    def init_header(self):
+        pass
+
+
+class IrisStructureHeader(IrisHeaderBase):
+    """ Iris Structure Header class.
+    """
+    len = LEN_STRUCTURE_HEADER
+    structure = STRUCTURE_HEADER
+    name = '_structure_header'
+
+    def __init__(self, **kwargs):
+        super(IrisStructureHeader, self).__init__(**kwargs)
+        self._structure_header = None
+
+    @property
+    def structure_identifier(self):
+        return STRUCTURE_HEADER_IDENTIFIERS[
+            self._structure_header['structure_identifier']]['name']
+
+    @property
+    def structure_format(self):
+        return STRUCTURE_HEADER_FORMAT_VERSION[
+            self._structure_header['format_version']]['name']
+
+    @property
+    def structure_size(self):
+        return self._structure_header['bytes_in_structure']
+
+
+class IrisIngestHeader(IrisHeaderBase):
+    """ Iris Ingest Header class.
+    """
+    len = LEN_INGEST_HEADER
+    structure = INGEST_HEADER
+    name = '_ingest_header'
+
+    def __init__(self, **kwargs):
+        super(IrisIngestHeader, self).__init__(**kwargs)
+        self._ingest_header = None
+        self._data_types_numbers = None
+
+    @property
+    def ingest_header(self):
+        """Returns ingest_header dictionary.
+        """
+        return self._ingest_header
+
+    @property
+    def nsweeps(self):
+        """Returns number of sweeps.
+        """
+        head = self._ingest_header['task_configuration']['task_scan_info']
+        return head['sweep_number']
+
+    @property
+    def nrays(self):
+        """Returns number of rays.
+        """
+        return self._ingest_header['ingest_configuration']['number_rays_sweep']
+
+    @property
+    def data_types_dict(self):
+        """Returns list of data type dictionaries.
+        """
+        return [SIGMET_DATA_TYPES.get(i, {'name': 'DB_UNKNOWN_{}'.format(i),
+                                          'func': None})
+                for i in self._data_types_numbers]
+
+    @property
+    def data_types_count(self):
+        """Returns number of data types.
+        """
+        return len(self._data_types_numbers)
+
+    @property
+    def data_types(self):
+        """Returns list of data type names.
+        """
+        return [d['name'] for d in self.data_types_dict]
+
+    def get_data_types_numbers(self):
+        """Returns the available data types.
+        """
+        # determine the available fields
+        task_config = self.ingest_header['task_configuration']
+        task_dsp_info = task_config['task_dsp_info']
+        word0 = task_dsp_info['dsp_data_mask0']['mask_word_0']
+        word1 = task_dsp_info['dsp_data_mask0']['mask_word_1']
+        word2 = task_dsp_info['dsp_data_mask0']['mask_word_2']
+        word3 = task_dsp_info['dsp_data_mask0']['mask_word_3']
+
+        return _data_types_from_dsp_mask([word0, word1, word2, word3])
+
+    def get_task_type_scan_info(self, rawdata):
+        """Retrieves task type info"""
+        task_info = self.ingest_header['task_configuration']['task_scan_info']
+        mode = task_info['antenna_scan_mode']
+        key = 'task_type_scan_info'
+        if mode in [1, 4]:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_PPI_SCAN_INFO,
+                                                rawdata)
+        elif mode == 2:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_RHI_SCAN_INFO,
+                                                rawdata)
+        elif mode == 3:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_MANUAL_SCAN_INFO,
+                                                rawdata)
+        elif mode == 5:
+            task_info[key] = _unpack_dictionary(task_info[key],
+                                                TASK_FILE_SCAN_INFO,
+                                                rawdata)
+        else:
+            pass
+
+    def init_header(self, rawdata=False):
+        self._data_types_numbers = self.get_data_types_numbers()
+        self.get_task_type_scan_info(rawdata)
+
+
+class IrisProductHeader(IrisHeaderBase):
+    """Iris Product Header class.
+    """
+    len = LEN_PRODUCT_HDR
+    structure = PRODUCT_HDR
+    name = '_product_hdr'
+
+    def __init__(self, **kwargs):
+        super(IrisProductHeader, self).__init__(**kwargs)
+        self._product_hdr = None
+        self._product_type_code = None
+
+    @property
+    def product_hdr(self):
+        """Returns ingest_header dictionary.
+        """
+        return self._product_hdr
+
+    @property
+    def nbins(self):
+        """Returns number of bins.
+        """
+        return self._product_hdr['product_end']['number_bins']
+
+    @property
+    def product_type_code(self):
+        """Returns product type code.
+        """
+        return self._product_type_code
+
+    @property
+    def product_type(self):
+        """Returns product type.
+        """
+        return PRODUCT_DATA_TYPE_CODES[self.product_type_code]['name']
+
+    @property
+    def product_type_dict(self):
+        """Returns product type dictionary.
+        """
+        return PRODUCT_DATA_TYPE_CODES[self.product_type_code]
+
+    @property
+    def data_type(self):
+        """Returns product configuration data type.
+        """
+        data_type = self.product_hdr['product_configuration']['data_type']
+        return SIGMET_DATA_TYPES[data_type]
+
+    def init_header(self, rawdata=False):
+        self._product_type_code = self.get_product_type_code()
+        self.get_product_specific_info(rawdata)
+
+    def get_product_type_code(self):
+        """Returns product type code.
+        """
+        prod_conf = self.product_hdr['product_configuration']
+        return prod_conf['product_type_code']
+
+    def get_product_specific_info(self, rawdata):
+        """Retrieves product specific info
+        """
+        config = self.product_hdr['product_configuration']
+        pt = self.product_type_dict
+        key = 'product_specific_info'
+        try:
+            config[key] = _unpack_dictionary(config[key],
+                                             pt['struct'],
+                                             rawdata)
+        except KeyError:
+            warnings.warn("product type {0} not implemented, \n"
+                          "only header information "
+                          "available".format(pt['name']),
+                          RuntimeWarning,
+                          stacklevel=3)
+
+
+class IrisIngestDataHeader(IrisHeaderBase):
+    """Iris Ingest Data Header class.
+    """
+    len = LEN_INGEST_DATA_HEADER
+    structure = INGEST_DATA_HEADER
+    name = '_ingest_data_header'
+
+    def __init__(self, **kwargs):
+        super(IrisIngestDataHeader, self).__init__(**kwargs)
+        self._ingest_data_header = None
+        self._nrays_expected = None
+        self._data_types_numbers = None
+        self._rawdata = None
+
+    @property
+    def ingest_data_header(self):
+        """Returns ingest_header dictionary.
+        """
+        return self._ingest_data_header
+
+    @property
+    def nrays(self):
+        return self._nrays_expected
+
+    @property
+    def data_types_dict(self):
+        """Returns list of data type dictionaries.
+        """
+        i = self._data_types_numbers
+
+        return SIGMET_DATA_TYPES.get(i, {'name': 'DB_UNKNOWN_{}'.format(i),
+                                         'func': None})
+
+    @property
+    def data_types(self):
+        """Returns list of data type names.
+        """
+        return self.data_types_dict['name']
+
+    def init_header(self):
+        self._nrays_expected = self._ingest_data_header[
+            'number_rays_file_expected']
+        self._data_types_numbers = self.get_data_types_numbers()
+
+    def get_data_types_numbers(self):
+        """Returns the available data types.
+        """
+        return self.ingest_data_header['data_type']
+
+
+class IrisFileBase(object):
+    """Base class for Iris Files.
+    """
+    def __init__(self, **kwargs):
+        super(IrisFileBase, self).__init__()
+
+
+class IrisFile(IrisFileBase, IrisStructureHeader):
+    """IrisFile class
+    """
+    identifier = ['PRODUCT_HDR', 'INGEST_HEADER', 'INGEST_DATA_HEADER']
+
+    def __init__(self, filename, **kwargs):
+        self._debug = kwargs.get('debug', False)
+        self._rawdata = kwargs.get('rawdata', False)
+        self._loaddata = kwargs.get('loaddata', True)
+        self._fh = np.memmap(filename, mode='r')
+        self._filepos = 0
+        self._data = None
+        super(IrisFile, self).__init__(**kwargs)
+        # read first structure header
+        self.get_header(IrisStructureHeader)
+        self._filepos = 0
+
+    def check_identifier(self):
+        if self.structure_identifier in self.identifier:
+            return self.structure_identifier
+        else:
+            raise IOError("Cannot read {0} with {1} class".format(
+                self.structure_identifier, self.__class__.__name__))
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def loaddata(self):
+        """Returns `loaddata` switch.
+        """
+        return self._loaddata
+
+    @property
+    def rawdata(self):
+        """Returns `rawdata` switch.
+        """
+        return self._rawdata
+
+    @property
+    def debug(self):
+        return self._debug
+
+    @property
+    def fh(self):
+        return self._fh
+
+    @property
+    def filepos(self):
+        return self._filepos
+
+    @filepos.setter
+    def filepos(self, pos):
+        self._filepos = pos
+
+    def read_from_file(self, size):
+        """Read from file.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        dtype : str
+            dtype string specifying data format.
+
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        start = self._filepos
+        self._filepos += size
+        return self._fh[start:self._filepos]
+
+    def get_header(self, header):
+        head = _unpack_dictionary(self.read_from_file(header.len),
+                                  header.structure,
+                                  self._rawdata)
+        setattr(self, header.name, head)
+        header.init_header(self)
+
+
+class IrisIngestHeaderFile(IrisFile, IrisIngestHeader):
+    """Iris Ingest Header File class.
+    """
+    identifier = 'INGEST_HEADER'
+
+    def __init__(self, filename, **kwargs):
+        super(IrisIngestHeaderFile, self).__init__(filename=filename,
+                                                   **kwargs)
+        self.check_identifier()
+        self.get_header(IrisIngestHeader)
+
+
+class IrisIngestDataFile(IrisFile, IrisIngestDataHeader):
+    """Iris Ingest Data File class.
+    """
+    identifier = 'INGEST_DATA_HEADER'
+
+    def __init__(self, filename, **kwargs):
+        super(IrisIngestDataFile, self).__init__(filename=filename,
+                                                 **kwargs)
+        self.check_identifier()
+        self.get_header(IrisIngestDataHeader)
+
+        self.pointers = self.array_from_file(self.nrays, 'int32')
+
+        ingest_header = kwargs.get('ingest_header', None)
+        if ingest_header:
+            self.ingest_header = ingest_header
+        else:
+            raise TypeError("`ingest_header` missing in keyword parameters")
+
+        if self.loaddata:
+            self._data = self.get_sweep()
+
+    def array_from_file(self, words, dtype):
+        """Retrieve array from current record.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        width : int
+            Size of the data word to read in bytes.
+        dtype : str
+            dtype string specifying data format.
+
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        width = get_dtype_size(dtype)
+        data = self.read_from_file(words * width)
+        return data.view(dtype=dtype)
+
+    def get_sweep(self):
+        sweep_data = OrderedDict()
+        sweep_prod = OrderedDict()
+        sweep_prod['data'] = []
+        sweep_prod['azi_start'] = []
+        sweep_prod['ele_start'] = []
+        sweep_prod['azi_stop'] = []
+        sweep_prod['ele_stop'] = []
+        sweep_prod['rbins'] = []
+        sweep_prod['dtime'] = []
+
+        start = self.filepos
+        for i, p in enumerate(self.pointers):
+            if not p:
+                continue
+            self.filepos = start - 1 + p
+            ray_header = _unpack_dictionary(
+                self.read_from_file(LEN_RAY_HEADER), RAY_HEADER, self.rawdata)
+            data = self.decode_data(
+                self.read_from_file(ray_header['rbins']), self.data_types_dict)
+            sweep_prod['data'].append(data)
+            sweep_prod['azi_start'].append(ray_header['azi_start'])
+            sweep_prod['ele_start'].append(ray_header['ele_start'])
+            sweep_prod['azi_stop'].append(ray_header['azi_stop'])
+            sweep_prod['ele_stop'].append(ray_header['ele_stop'])
+            sweep_prod['rbins'].append(ray_header['rbins'])
+            sweep_prod['dtime'].append(ray_header['dtime'])
+
+        [sweep_prod.update({k: np.array(v)}) for k, v in sweep_prod.items()]
+
+        sweep_data[self.data_types] = sweep_prod
+
+        return sweep_data
+
+    def decode_data(self, data, prod):
+        """Decode data according given prod-dict.
+
+        Parameters
+        ----------
+        data : data to decode
+        prod : dict
+
+        Returns
+        -------
+        data : decoded data
+
+        """
+        if self._rawdata:
+            return data
+        kw = {}
+        if prod['func']:
+            try:
+                kw.update(prod['fkw'])
+            except KeyError:
+                pass
+            # this doesn't work for ingest data files
+            # if get_dtype_size(prod['dtype']) == 1:
+            #    dtype = '(2,) {0}'.format(prod['dtype'])
+            # else:
+            #    dtype = '{0}'.format(prod['dtype'])
+            dtype = '{0}'.format(prod['dtype'])
+            try:
+                rays, bins = data.shape
+                data = data.view(dtype).reshape(rays, -1)[:, :bins]
+            except ValueError:
+                data = data.view(dtype)
+            if prod['func'] in [decode_vel, decode_width, decode_kdp]:
+                # wavelength is normally used from product_hdr
+                # wavelength = self.product_hdr['product_end']['wavelength']
+                # but we can retrieve it from TASK_MISC_INFO, too
+                wavelength = (self.ingest_header['task_configuration']
+                              ['task_misc_info']['wavelength'])
+                if prod['func'] == decode_kdp:
+                    # get wavelength in cm
+                    kw.update({'wavelength': wavelength / 100})
+                    return prod['func'](data, **kw)
+                # PRF is normally used from product_hdr
+                # prf = self.product_hdr['product_end']['prf']
+                # but we can retrieve it from TASK_DSP_INFO, too
+                prf = (self.ingest_header['task_configuration']
+                       ['task_dsp_info']['prf'])
+                # division by 10000 to get from 1/100 cm to m
+                nyquist = wavelength * prf / (10000. * 4.)
+                if prod['func'] == decode_vel:
+                    nyquist *= (self.ingest_header['task_configuration']
+                                ['task_dsp_info']['multi_prf_mode_flag'] + 1)
+                kw.update({'nyquist': nyquist})
+
+            return prod['func'](data, **kw)
+        else:
+            return data
+
+
+class IrisRecordFile(IrisFile, IrisProductHeader):
+    """Iris Record File class
+    """
+    identifier = ['PRODUCT_HDR']
+    product_identifier = ['MAX', 'TOPS', 'HMAX', 'BASE', 'THICK', 'PPI', 'RHI',
+                          'CAPPI', 'RAINN', 'RAIN1', 'CROSS', 'SHEAR', 'SRI',
+                          'RTI', 'VIL', 'LAYER', 'BEAM', 'MLHGT',
+                          'CATCH', 'FCAST', 'NDOP', 'SLINE', 'TDWR', 'TRACK',
+                          'VAD', 'VVP', 'WARN', 'WIND', 'RAW']
+
+    def __init__(self, filename, **kwargs):
+        super(IrisRecordFile, self).__init__(filename=filename,
+                                             **kwargs)
+        self._rh = None
+        self._record_number = None
+        self.get_header(IrisProductHeader)
+        self.check_product_identifier()
+
+    def check_product_identifier(self):
+        if self.product_type in self.product_identifier:
+            return self.product_type
+        else:
+            raise IOError("Cannot read {0} with {1} class".format(
+                self.product_type, self.__class__.__name__))
+
+    @property
+    def rh(self):
+        """Returns current record object.
+        """
+        return self._rh
+
+    @rh.setter
+    def rh(self, value):
+        """Sets current record object.
+        """
+        self._rh = value
+
+    @property
+    def record_number(self):
+        """Returns current record number.
+        """
+        return self._record_number
+
+    @record_number.setter
+    def record_number(self, value):
+        """Sets current record number.
+        """
+        self._record_number = value
+
+    def _check_record(self):
+        """Checks record for correct size.
+
+        Need to be implemented in the derived classes
+        """
+        return True
+
+    def init_record(self, recnum):
+        """Initialize record using given number.
+        """
+        start = recnum * RECORD_BYTES
+        stop = start + RECORD_BYTES
+        self.record_number = recnum
+        self.rh = IrisRecord(self.fh[start:stop], recnum)
+        self.filepos = self.record_number * RECORD_BYTES
+        return self._check_record()
+
+    def init_next_record(self):
+        """Get next record from file.
+
+        This increases record_number count and initialises a new IrisRecord
+        with the calculated start and stop file offsets.
+
+        Returns
+        -------
+        chk : bool
+            True, if record is truncated.
+        """
+        return self.init_record(self.record_number + 1)
+
+    def array_from_record(self, words, width, dtype):
+        """Retrieve array from current record.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        width : int
+            Size of the data word to read in bytes.
+        dtype : str
+            dtype string specifying data format.
+
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        return self.rh.read(words, width=width).view(dtype=dtype)
+
+    def bytes_from_record(self, words, width):
+        """Retrieve bytes from current record.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        width : int
+            Size of the data word to read in bytes.
+
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        return self.rh.read(words, width=width)
+
+    def read_from_record(self, words, dtype):
+        """Read from file.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        dtype : str
+            dtype string specifying data format.
+
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        width = get_dtype_size(dtype)
+        data = self.array_from_record(words, width, dtype)
+        words -= len(data)
+        while words > 0:
+            self.init_next_record()
+            next_data = self.array_from_record(words, width, dtype)
+            data = np.append(data, next_data)
+            words -= len(next_data)
+        return data
+
+
+class IrisRawFile(IrisRecordFile, IrisIngestHeader):
+    """Iris Raw File class.
+    """
+    product_identifier = ['RAW']
+
+    def __init__(self, filename, **kwargs):
+        super(IrisRawFile, self).__init__(filename, **kwargs)
+
+        self.check_product_identifier()
+
+        self.init_record(1)
+        self.get_header(IrisIngestHeader)
+
+        # get RAW file specifics
+        self._raw_product_bhdrs = []
+        self._data = OrderedDict()
+        if self.loaddata:
+            self.get_data()
+        else:
+            self.get_data_headers()
+
+    @property
+    def raw_product_bhdrs(self):
+        """Returns `raw_product_bhdrs` dictionary.
+        """
+        return self._raw_product_bhdrs
+
+    def _check_record(self):
+        """Checks record for correct size.
+
+        Returns
+        -------
+        chk : bool
+            False, if record is truncated.
+        """
+        # we do not know filesize before reading first record,
+        # so we try and pass
+        try:
+            if self.record_number >= self.filesize / RECORD_BYTES:
+                return False
+        except AttributeError:
+            pass
+        chk = self._rh.record.shape[0] == RECORD_BYTES
+        if not chk:
+            raise EOFError("Unexpected file end detected at "
+                           "record {}".format(self.rh.recnum))
+        return chk
+
+    def read_from_record(self, words, dtype):
+        """Read from record/file.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to read.
+        dtype : str
+            dtype string specifying data format.
+        Returns
+        -------
+        data : array-like
+            numpy array of data
+        """
+        width = get_dtype_size(dtype)
+        data = self.array_from_record(words, width, dtype)
+        words -= len(data)
+        while words > 0:
+            self.init_next_record()
+            self.raw_product_bhdrs.append(self.get_raw_prod_bhdr())
+            next_data = self.array_from_record(words, width, dtype)
+            data = np.append(data, next_data)
+            words -= len(next_data)
+        return data
+
+    def get_compression_code(self):
+        """Read and return data compression code.
+
+        Returns
+        -------
+        cmp_msb : bool
+            True, if MSB is set.
+        cmp_val : int
+            Value of data compression code.
+        """
+        cmp_val = self.read_from_record(1, 'int16')[0]
+        cmp_msb = np.sign(cmp_val) == -1
+        if cmp_msb:
+            cmp_val = cmp_val + 32768
+        if self._debug:
+            print("--- Sub CMP Code:", cmp_msb, cmp_val, self._rh.recpos - 1,
+                  self._rh.recpos)
+        return cmp_msb, cmp_val
+
+    def get_raw_prod_bhdr(self):
+        """Read and unpack raw product bhdr.
+        """
+        return _unpack_dictionary(self._rh.read(LEN_RAW_PROD_BHDR, width=1),
+                                  RAW_PROD_BHDR, self._rawdata)
+
+    def get_ingest_data_headers(self):
+        """Read and return ingest data headers.
+        """
+        ingest_data_hdrs = OrderedDict()
+        for i, dn in enumerate(self.data_types):
+            ingest_data_hdrs[dn] = _unpack_dictionary(
+                self._rh.read(LEN_INGEST_DATA_HEADER, width=1),
+                INGEST_DATA_HEADER, self._rawdata)
+
+        return ingest_data_hdrs
+
+    def get_ray(self, data):
+        """Retrieve single ray.
+
+        Returns
+        -------
+        data : array-like
+            Numpy array containing data of one ray.
+        """
+        ray_pos = 0
+
+        cmp_msb, cmp_val = self.get_compression_code()
+
+        # ray is missing
+        if (cmp_val == 1) & (cmp_msb == 0):
+            if self._debug:
+                print("ray missing")
+            return None
+
+        while not ((cmp_val == 1) & (not cmp_msb)):
+
+            # data words follow
+            if cmp_msb:
+                if self._debug:
+                    print(
+                        "--- Add {0} WORDS at range {1}, record {2}:{3}:"
+                        "".format(cmp_val, ray_pos, self._rh.recpos,
+                                  self._rh.recpos + cmp_val))
+                data[ray_pos:ray_pos + cmp_val] = \
+                    self.read_from_record(cmp_val,
+                                          'int16')
+            # compressed zeros follow
+            # can be skipped, if data array is created all zeros
+            else:
+                if self._debug:
+                    print(
+                        "--- Add {0} Zeros at range {1}, record {2}:{3}:"
+                        "".format(cmp_val, ray_pos,
+                                  self._rh.recpos, self._rh.recpos + 1))
+                if cmp_val + ray_pos > self.nbins + 6:
+                    return data
+                data[ray_pos:ray_pos + cmp_val] = 0
+
+            ray_pos += cmp_val
+
+            # read next compression code
+            cmp_msb, cmp_val = self.get_compression_code()
+
+        return data
+
+    def get_sweep(self, moment):
+        """Retrieve a single sweep.
+
+        Parameters
+        ----------
+        moment : list of strings
+            Data Types to retrieve.
+
+        Returns
+        -------
+        sweep : OrderedDict
+            Dictionary containing sweep data.
+        """
+        sweep = OrderedDict()
+
+        sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
+
+        # get boolean True for moment in available data_types
+        skip = [True if k in moment else False
+                for k in sweep['ingest_data_hdrs'].keys()]
+
+        # get rays per available data type
+        rays_per_data_type = [d['number_rays_file_expected']
+                              for d in sweep['ingest_data_hdrs'].values()]
+
+        # get rays per selected data type
+        rays_per_selected_type = [d['number_rays_file_expected']
+                                  if k in moment else 0 for k, d in
+                                  sweep['ingest_data_hdrs'].items()]
+
+        # get available selected data types
+        selected_type = []
+        for i, k in enumerate(sweep['ingest_data_hdrs'].keys()):
+            if k in moment:
+                selected_type.append(self.data_types_dict[i])
+
+        # get boolean True for selected available rays
+        raylist = skip * rays_per_data_type[0]
+
+        # get sum of rays for selected available data types
+        rays = sum(rays_per_selected_type)
+        bins = self._product_hdr['product_end']['number_bins']
+
+        raw_data = np.zeros((rays, bins + 6), dtype='int16')
+        single_data = np.zeros((bins + 6), dtype='int16')
+        cnt = 0
+        for i, ray_i in enumerate(raylist):
+            if ray_i:
+                ret = self.get_ray(raw_data[cnt])
+                if ret is not None:
+                    raw_data[cnt] = ret
+                cnt += 1
+            else:
+                self.get_ray(single_data)
+
+        sweep_data = OrderedDict()
+        cnt = len(selected_type)
+        for i, prod in enumerate(selected_type):
+            sweep_prod = OrderedDict()
+            sweep_prod['data'] = self.decode_data(raw_data[i::cnt, 6:], prod)
+            sweep_prod['azi_start'] = self.decode_data(raw_data[i::cnt, 0],
+                                                       BIN2)
+            sweep_prod['ele_start'] = self.decode_data(raw_data[i::cnt, 1],
+                                                       BIN2)
+            sweep_prod['azi_stop'] = self.decode_data(raw_data[i::cnt, 2],
+                                                      BIN2)
+            sweep_prod['ele_stop'] = self.decode_data(raw_data[i::cnt, 3],
+                                                      BIN2)
+            sweep_prod['rbins'] = raw_data[i::cnt, 4]
+            sweep_prod['dtime'] = raw_data[i::cnt, 5]
+            sweep_data[prod['name']] = sweep_prod
+
+        sweep['sweep_data'] = sweep_data
+
+        return sweep
+
+    def decode_data(self, data, prod):
+        """Decode data according given prod-dict.
+
+        Parameters
+        ----------
+        data : data to decode
+        prod : dict
+
+        Returns
+        -------
+        data : decoded data
+
+        """
+        if self._rawdata:
+            return data
+        kw = {}
+        if prod['func']:
+            try:
+                kw.update(prod['fkw'])
+            except KeyError:
+                pass
+            if get_dtype_size(prod['dtype']) == 1:
+                dtype = '(2,) {0}'.format(prod['dtype'])
+            else:
+                dtype = '{0}'.format(prod['dtype'])
+            try:
+                rays, bins = data.shape
+                data = data.view(dtype).reshape(rays, -1)[:, :bins]
+            except ValueError:
+                data = data.view(dtype)
+            if prod['func'] in [decode_vel, decode_width, decode_kdp]:
+                wavelength = self.product_hdr['product_end']['wavelength']
+                if prod['func'] == decode_kdp:
+                    kw.update({'wavelength': wavelength / 100})
+                    return prod['func'](data, **kw)
+
+                prf = self.product_hdr['product_end']['prf']
+                nyquist = wavelength * prf / (10000. * 4.)
+                if prod['func'] == decode_vel:
+                    nyquist *= (self.ingest_header['task_configuration']
+                                ['task_dsp_info']['multi_prf_mode_flag'] + 1)
+                kw.update({'nyquist': nyquist})
+
+            return prod['func'](data, **kw)
+        else:
+            return data
+
+    def get_data(self):
+        """Retrieve all sweeps from file.
+        """
+        dt_names = self.data_types  # [d['name'] for d in self.data_types]
+        rsweeps = range(1, self.nsweeps + 1)
+
+        loaddata = self.loaddata
+        try:
+            sweep = loaddata.copy().pop('sweep', rsweeps)
+            moment = loaddata.copy().pop('moment', dt_names)
+        except AttributeError:
+            sweep = rsweeps
+            moment = dt_names
+
+        self.init_record(1)
+        sw = 0
+        ingest_conf = self.ingest_header['ingest_configuration']
+        sw_completed = ingest_conf['number_sweeps_completed']
+        while sw < sw_completed and self.init_next_record():
+            raw_prod_bhdr = self.get_raw_prod_bhdr()
+            sw = raw_prod_bhdr['sweep_number']
+            # continue to next record if not belonging to wanted sweeps
+            if sw not in sweep:
+                continue
+            self.raw_product_bhdrs.append(raw_prod_bhdr)
+            self._data[sw] = self.get_sweep(moment)
+
+    def get_data_headers(self):
+        """Retrieve all sweep `ingest_data_header` from file.
+        """
+        self.init_record(1)
+        sw = 0
+        ingest_conf = self.ingest_header['ingest_configuration']
+        sw_completed = ingest_conf['number_sweeps_completed']
+        while sw < sw_completed and self.init_next_record():
+            # get raw_prod_bhdr
+            raw_prod_bhdr = self.get_raw_prod_bhdr()
+            # continue to next record if belonging to same sweep
+            if raw_prod_bhdr['sweep_number'] == sw:
+                continue
+            # else set current sweep number
+            else:
+                sw = raw_prod_bhdr['sweep_number']
+            # read headers and add to _data
+            self.raw_product_bhdrs.append(raw_prod_bhdr)
+            sweep = OrderedDict()
+            sweep['ingest_data_hdrs'] = self.get_ingest_data_headers()
+            self._data[sw] = sweep
+
+
+class IrisProductFile(IrisRecordFile):
+    """Class for retrieving data from Sigmet IRIS Product files.
+    """
+    product_identifier = [
+        'CATCH', 'FCAST', 'NDOP', 'SLINE', 'TDWR', 'TRACK',
+        'VAD', 'VVP', 'WARN', 'WIND'
+        ]
+
+    def __init__(self, filename, **kwargs):
+        """
+        Parameters
+        ----------
+        irisfile : IrisWrapperFile class instance handle
+            class instance handle
+        """
+        super(IrisProductFile, self).__init__(filename, **kwargs)
+
+        self.check_product_identifier()
+        self._protect_setup = None
+        self._data = OrderedDict()
+        if self.loaddata:
+            self.get_data()
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def protect_setup(self):
+        return self._protect_setup
+
+    def get_protect_setup(self):
+        protected_setup = self.read_from_record(1024, 'uint8')
+        protected_regions = OrderedDict()
+        for i in range(32):
+            region = _unpack_dictionary(protected_setup[i * 32:i * 32 + 32],
+                                        ONE_PROTECTED_REGION, self._rawdata)
+            if not region['region_name'].isspace():
+                protected_regions[i] = region
+
+        return protected_regions
+
+    def get_results(self, results, num, structure):
+        cnt = struct.calcsize(_get_fmt_string(structure))
+        for i in range(num):
+            dta = self.read_from_record(cnt, 'uint8')
+            res = _unpack_dictionary(dta, structure,
+                                     self._rawdata)
+            results[i] = res
+
+    def get_data(self):
+        """Retrieves cartesian data from file.
+        """
+        # set filepointer accordingly
+        self.init_record(0)
+        self._rh.pos = 640
+        if 'protect_setup' in self.product_type_dict:
+            self._protect_setup = self.get_protect_setup()
+        product_end = self.product_hdr['product_end']
+        product_config = self.product_hdr['product_configuration']
+        num_elements = product_end['number_elements']
+        specific_info = product_config['product_specific_info']
+
+        result = OrderedDict()
+        if self.product_type in ['FCAST', 'NDOP']:
+            x_size = product_config.get('x_size')
+            y_size = product_config.get('y_size')
+            z_size = product_config.get('z_size', 1)
+
+            cnt = struct.calcsize(_get_fmt_string(
+                self.product_type_dict['result']))
+            z = []
+            for zi in range(z_size):
+                y = []
+                for yi in range(y_size):
+                    x = []
+                    for xi in range(x_size):
+                        dta = self.read_from_record(cnt, 'uint8')
+                        res = _unpack_dictionary(
+                            dta,
+                            self.product_type_dict['result'],
+                            self._rawdata)
+                        x.append(res)
+                    y.append(x)
+                z.append(y)
+            result[0] = np.array(z)
+        # get vvp num_elements
+        elif self.product_type in ['VVP']:
+            num_elements = specific_info['num_intervals']
+            self.get_results(result, num_elements,
+                             self.product_type_dict['result'])
+        # get wind num_elements
+        elif self.product_type in ['WIND']:
+            num_elements = specific_info['num_panel_points'] * \
+                           specific_info['num_range_points']
+            cnt = struct.calcsize(_get_fmt_string(VVP_RESULTS))
+            dta = self.read_from_record(cnt, 'uint8')
+            res = _unpack_dictionary(dta, VVP_RESULTS,
+                                     self._rawdata)
+            result['VVP'] = res
+            self.get_results(result, num_elements,
+                             self.product_type_dict['result'])
+        else:
+            if num_elements:
+                self.get_results(result, num_elements,
+                                 self.product_type_dict['result'])
+            else:
+                warnings.warn(
+                    "{0} - No product result "
+                    "array(s) available".format(self.product_type),
+                    RuntimeWarning,
+                    stacklevel=3)
+
+        if self._protect_setup is not None:
+            result['protect_setup'] = self._protect_setup
+
+        self._data = result
+
+
+class IrisCartesianProductFile(IrisRecordFile):
+    """ Class for retrieving data from Sigmet IRIS Cartesian Product files.
+    """
+    product_identifier = [
+        'MAX', 'TOPS', 'HMAX', 'BASE', 'THICK', 'PPI', 'RHI',
+        'CAPPI', 'RAINN', 'RAIN1', 'CROSS', 'SHEAR', 'SRI',
+        'RTI', 'VIL', 'LAYER', 'BEAM', 'MLHGT'
+        ]
+
+    def __init__(self, irisfile, **kwargs):
+        """
+        Parameters
+        ----------
+        irisfile : IrisWrapperFile class instance handle
+            class instance handle
+        """
+        super(IrisCartesianProductFile, self).__init__(irisfile, **kwargs)
+
+        self.check_product_identifier()
+
+        self._data = OrderedDict()
+        if self.loaddata:
+            self.get_data()
+
+    @property
+    def data(self):
+        return self._data
+
+    def fix_ext_header(self, ext):
+        prod_conf = self.product_hdr['product_configuration']
+        ext.update({'x_size': ext.pop('x_size', prod_conf.get('x_size'))})
+        ext.update({'y_size': ext.pop('y_size', prod_conf.get('y_size'))})
+        ext.update({'z_size': ext.pop('z_size', prod_conf.get('z_size', 1))})
+        ext.update({'data_type': ext.pop('iris_type',
+                                         prod_conf.get('data_type'))})
+
+    def get_extended_header(self):
+        # hack, get from actual position to end of record
+        ext = self.rh.record[self.rh.pos:]
+        if len(ext) == 0:
+            return False
+        # extended header token
+        search = [0x00, 0xff]
+        ext = np.where((ext[:-1] == search[0]) & (ext[1:] == search[1]))[0][0]
+        extended_header = OrderedDict([('extended_header', string_dict(ext))])
+        ext_str = _unpack_dictionary(self.bytes_from_record(ext, 1),
+                                     extended_header,
+                                     self._rawdata)['extended_header']
+        # skip search bytes
+        self.bytes_from_record(2, 1)
+        ext_hdr = OrderedDict()
+        for d in ext_str.split('\n'):
+            kv = d.split('=')
+            try:
+                ext_hdr[kv[0]] = int(kv[1])
+            except ValueError:
+                ext_hdr[kv[0]] = kv[1]
+            except Exception:
+                pass
+        self.fix_ext_header(ext_hdr)
+        return ext_hdr
+
+    def get_image(self, header):
+        """Retrieve cartesian image.
+
+        Parameters
+        ----------
+        header : dict
+            header dictionary
+
+        Returns
+        -------
+        data : :class:`numpy:numpy.ndarray`
+            3D array of cartesian data
+
+        """
+        prod = SIGMET_DATA_TYPES[header.get('data_type')]
+        x_size = header.get('x_size')
+        y_size = header.get('y_size')
+        z_size = header.get('z_size')
+        cnt = x_size * y_size * z_size
+        data = self.read_from_record(cnt, prod['dtype'])
+        data = self.decode_data(data, prod=prod)
+        data.shape = (z_size, y_size, x_size)
+        return np.flip(data, axis=1)
+
+    def get_data(self):
+        """ Retrieves cartesian data from file.
+        """
+        # set filepointer accordingly
+        self.init_record(0)
+        self.rh.pos = 640
+
+        product_hdr = self.product_hdr
+        product_end = product_hdr['product_end']
+        if product_hdr['product_end']['number_elements']:
+            warnings.warn("{0} Not Implemented - Product results "
+                          "array available \nnot loading "
+                          "dataset".format(self.product_type),
+                          RuntimeWarning,
+                          stacklevel=3)
+        else:
+            self._data[0] = self.get_image(
+                product_hdr['product_configuration'])
+            if product_end['extended_product_header_offset']:
+                ext_hdr = OrderedDict()
+                i = 0
+                ext = self.get_extended_header()
+                while ext:
+                    ext_hdr[i + 1] = ext
+                    i += 1
+                    self._data[i] = self.get_image(ext)
+                    ext = self.get_extended_header()
+                self.product_hdr['extended_header'] = ext_hdr
+
+    def decode_data(self, data, prod):
+        """Decode data according given prod-dict.
+
+        Parameters
+        ----------
+        data : data to decode
+        prod : dict
+
+        Returns
+        -------
+        data : decoded data
+
+        """
+        if self._rawdata:
+            return data
+        kw = {}
+        if prod['func']:
+            try:
+                kw.update(prod['fkw'])
+            except KeyError:
+                pass
+            return prod['func'](data.view(prod['dtype']), **kw)
+        else:
+            return data
+
+
+def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
+    """Read Iris file and return dictionary.
+
+    Parameters
+    ----------
+    filename : str
+        Filename of data file.
+    loaddata : bool | kwdict
+                If true, retrieves whole data section from file.
+                If false, retrievs only ingest_data_headers, but no data.
+                If kwdict, retrieves according to given kwdict::
+
+                    loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
+                                'sweep': [1, 3, 9]}
+
+    rawdata : bool
+        If true, returns raw unconverted/undecoded data.
+    debug : bool
+        If true, print debug messages.
+
+    Returns
+    -------
+    data : OrderedDict
+        Dictionary with data and metadata retrieved from file.
+    """
+    irisfile = IrisFile(filename)
+    id = irisfile.check_identifier()
+    ic = _check_identifier(irisfile.check_identifier())
+    if id == 'PRODUCT_HDR':
+        irisfile = IrisRecordFile(filename)
+        pi = irisfile.check_product_identifier()
+        ic = _check_product(pi)
+
+    if not ic:
+        raise TypeError("Unknown File or Product Type {}".format(id))
+
+    irisfile = ic(filename, loaddata=loaddata,
+                  rawdata=rawdata, debug=debug, **kwargs)
+
+    properties = ['product_hdr', 'product_type', 'ingest_header',
+                  'ingest_data_header', 'nrays_expected', 'sweep', 'nsweeps',
+                  'nrays', 'nbins', 'data_types', 'data', 'raw_product_bhdrs',
+                  'sweeps', 'spare_0', 'gparm']
+
+    data = OrderedDict()
+    for k in properties:
+        item = getattr(irisfile, k, None)
+        if item:
+            data.update({k: item})
+
+    return data

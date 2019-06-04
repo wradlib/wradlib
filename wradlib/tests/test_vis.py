@@ -36,16 +36,6 @@ class PolarPlotTest(unittest.TestCase):
                                                  self.el)
 
     def test_plot_ppi(self):
-        # DeprecationTests
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_ppi(self.img, autoext=True)
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_ppi(self.img, autoext=False)
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_ppi(self.img, refrac=True)
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_ppi(self.img, refrac=False)
-
         ax, pm = vis.plot_ppi(self.img, re=6371000., ke=(4. / 3.))
         ax, pm = vis.plot_ppi(self.img, self.r, self.az,
                               re=6371000., ke=(4. / 3.))
@@ -54,15 +44,15 @@ class PolarPlotTest(unittest.TestCase):
         ax, pm = vis.plot_ppi(self.img, self.r, self.az,
                               re=6371000., ke=(4. / 3.), ax=212)
         ax, pm = vis.plot_ppi(self.img)
-        vis.plot_ppi_crosshair(site=(0, 0), ranges=[2, 4, 8])
-        vis.plot_ppi_crosshair(site=(0, 0),
+        vis.plot_ppi_crosshair(site=(0, 0, 0), ranges=[2, 4, 8])
+        vis.plot_ppi_crosshair(site=(0, 0, 0),
                                ranges=[2, 4, 8],
                                angles=[0, 45, 90, 180, 270],
                                line=dict(color='white',
                                          linestyle='solid'))
-        ax, pm = vis.plot_ppi(self.img, site=(10., 45., 0.),
+        ax, pm = vis.plot_ppi(self.img, self.r, site=(10., 45., 0.),
                               proj=self.proj)
-        vis.plot_ppi_crosshair(site=(0, 0),
+        vis.plot_ppi_crosshair(site=(10., 45., 0.),
                                ranges=[2, 4, 8],
                                angles=[0, 45, 90, 180, 270],
                                proj=self.proj,
@@ -70,16 +60,20 @@ class PolarPlotTest(unittest.TestCase):
                                          linestyle='solid'))
         ax, pm = vis.plot_ppi(self.img, func='contour')
         ax, pm = vis.plot_ppi(self.img, func='contourf')
-        with self.assertRaises(TypeError):
-            ax, pm = vis.plot_ppi(self.img, proj=self.proj)
+        ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=self.proj,
+                              site=(0, 0, 0))
+        with self.assertWarns(UserWarning):
+            ax, pm = vis.plot_ppi(self.img, site=(10., 45., 0.),
+                                  proj=self.proj)
         with self.assertWarns(UserWarning):
             ax, pm = vis.plot_ppi(self.img, proj=None,
                                   site=(0, 0, 0))
-        with self.assertWarns(UserWarning):
-            ax, pm = vis.plot_ppi(self.img, proj=None,
-                                  site=(0, 0))
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=self.proj,
-                              site=(0, 0, 0))
+        with self.assertRaises(TypeError):
+            ax, pm = vis.plot_ppi(self.img, proj=self.proj)
+        with self.assertRaises(ValueError):
+            ax, pm = vis.plot_ppi(self.img, site=(0, 0), proj=self.proj)
+        with self.assertRaises(ValueError):
+            vis.plot_ppi_crosshair(site=(0, 0), ranges=[2, 4, 8])
 
     def test_plot_ppi_xarray(self):
         self.da_ppi.wradlib.rays
@@ -114,15 +108,6 @@ class PolarPlotTest(unittest.TestCase):
             ax.gridlines(draw_labels=True)
 
     def test_plot_rhi(self):
-        # DeprecationTests
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_rhi(self.img, autoext=True)
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_rhi(self.img, autoext=False)
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_rhi(self.img, refrac=True)
-        with self.assertWarns(DeprecationWarning):
-            ax, pm = vis.plot_rhi(self.img, refrac=False)
         ax, pm = vis.plot_rhi(self.img[0:90, :])
         ax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5)
         ax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, ax=212)
@@ -150,73 +135,35 @@ class PolarPlotTest(unittest.TestCase):
         self.da_rhi.wradlib.pcolormesh(proj='cg')
 
     def test_plot_cg_ppi(self):
-        # DeprecationTests
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_ppi(self.img, autoext=True, cg=True)
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_ppi(self.img, autoext=False, cg=True)
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_ppi(self.img, refrac=True, cg=True)
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_ppi(self.img, refrac=False, cg=True)
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True)
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, proj=self.proj,
-                                site=(0, 0, 0))
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg')
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=cgax)
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg',
+                                site=(0, 0, 0))
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=cgax)
         fig, ax = pl.subplots(2, 2)
-        self.assertRaises(TypeError,
-                          lambda: vis.plot_ppi(self.img, elev=2.0,
-                                               cg=True, ax=ax[0, 0]))
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=111)
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, cg=True, ax=121)
-        cgax, pm = vis.plot_ppi(self.img, cg=True)
-        cgax, pm = vis.plot_ppi(self.img, func='contour', cg=True)
-        cgax, pm = vis.plot_ppi(self.img, func='contourf', cg=True)
-        cgax, pm = vis.plot_ppi(self.img, func='contourf', cg=True)
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_ppi(self.img, func='contourf',
-                                    proj=self.proj, site=(0, 0, 0),
-                                    cg=True)
+        with self.assertRaises(TypeError):
+            vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=ax[0, 0])
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=111)
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=121)
+        cgax, pm = vis.plot_ppi(self.img, proj='cg')
+        cgax, pm = vis.plot_ppi(self.img, func='contour', proj='cg')
+        cgax, pm = vis.plot_ppi(self.img, func='contourf', proj='cg')
+        cgax, pm = vis.plot_ppi(self.img, func='contourf', proj='cg')
 
     def test_plot_cg_rhi(self):
-        # DeprecationTests
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_rhi(self.img, autoext=True, cg=True)
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_rhi(self.img, autoext=False, cg=True)
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_rhi(self.img, refrac=True, cg=True)
-        with self.assertWarns(DeprecationWarning):
-            cgax, pm = vis.plot_rhi(self.img, refrac=False, cg=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True)
         cgax, pm = vis.plot_rhi(self.img[0:90, :], proj='cg')
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True, ax=cgax)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj='cg', ax=cgax)
         fig, ax = pl.subplots(2, 2)
-        self.assertRaises(TypeError,
-                          lambda: vis.plot_rhi(self.img[0:90, :],
-                                               cg=True, ax=ax[0, 0]))
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, cg=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], cg=True)
+        with self.assertRaises(TypeError):
+            vis.plot_rhi(self.img[0:90, :], proj='cg', ax=ax[0, 0])
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, proj='cg')
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj='cg')
         cgax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
-                                th=np.arange(90), cg=True)
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', cg=True)
+                                th=np.arange(90), proj='cg')
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', proj='cg')
         cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
-                                cg=True)
-        with self.assertWarns(UserWarning):
-            cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
-                                    proj=self.proj, site=(0, 0, 0),
-                                    cg=True)
+                                proj='cg')
 
     def test_create_cg(self):
-        with self.assertWarns(DeprecationWarning):
-            cgax, caax, paax = vis.create_cg('PPI')
-        with self.assertWarns(DeprecationWarning):
-            cgax, caax, paax = vis.create_cg('PPI', subplot=121)
-        with self.assertWarns(DeprecationWarning):
-            cgax, caax, paax = vis.create_cg('RHI')
-        with self.assertWarns(DeprecationWarning):
-            cgax, caax, paax = vis.create_cg('RHI', subplot=121)
         cgax, caax, paax = vis.create_cg()
         cgax, caax, paax = vis.create_cg(subplot=121)
 

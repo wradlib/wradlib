@@ -140,10 +140,10 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
         xyz.shape = (xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],)
 
     if squeeze is None:
-        warnings.warn("Function `spherical_to_xyz` will return an array of "
-                      "shape (theta, phi, range, 3) starting with version 1.4"
-                      "", FutureWarning)
-        squeeze = True
+        warnings.warn("Function `spherical_to_xyz` returns an array "
+                      "of shape (theta, phi, range, 3). Use `squeeze=True` "
+                      "to remove singleton dimensions."
+                      "", DeprecationWarning)
     if squeeze:
         xyz = np.squeeze(xyz)
 
@@ -218,7 +218,8 @@ Georeferencing-and-Projection`.
     if proj is None:
         proj = get_default_projection()
 
-    xyz, rad = spherical_to_xyz(r, phi, theta, sitecoords, re=re, ke=ke)
+    xyz, rad = spherical_to_xyz(r, phi, theta, sitecoords, re=re, ke=ke,
+                                squeeze=True)
 
     # reproject aeqd to destination projection
     coords = reproject(xyz, projection_source=rad, projection_target=proj)
@@ -371,7 +372,8 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     # generate a grid of polar coordinates of bin corners
     r, phi = np.meshgrid(r, phi)
 
-    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, strict_dims=True)
+    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, squeeze=True,
+                                   strict_dims=True)
     if proj is not None:
         coords = reproject(coords, projection_source=rad,
                            projection_target=proj)
@@ -443,7 +445,7 @@ def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
     # generate a polar grid and convert to lat/lon
     r, phi = np.meshgrid(r, phi)
 
-    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, )
+    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, squeeze=True)
 
     if proj is None:
         return coords, rad

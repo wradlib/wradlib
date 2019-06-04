@@ -2,7 +2,6 @@
 # Copyright (c) 2011-2018, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import sys
 import unittest
 import numpy as np
 import matplotlib.pyplot as pl
@@ -73,14 +72,12 @@ class ErrorMetricsTest(unittest.TestCase):
 
     def test___init__(self):
         self.metrics = verify.ErrorMetrics(self.obs, self.est)
-        self.assertRaises(ValueError,
-                          lambda: verify.ErrorMetrics(self.obs, self.est[:10]))
+        with self.assertRaises(ValueError):
+            verify.ErrorMetrics(self.obs, self.est[:10])
 
-    @unittest.skipIf(sys.version_info < (3, 2),
-                     "not supported in this python version")
     def test___init__warn(self):
-        self.assertWarns(UserWarning,
-                         lambda: verify.ErrorMetrics(self.obs, self.non))
+        with self.assertWarns(UserWarning):
+            verify.ErrorMetrics(self.obs, self.non)
 
     def test_all_metrics(self):
         metrics = verify.ErrorMetrics(self.obs, self.est)

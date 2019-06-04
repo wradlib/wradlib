@@ -62,15 +62,34 @@ def git_version():
     try:
         git_rev = check_output(['git', 'describe', '--tags', '--long'])
         git_hash = check_output(['git', 'rev-parse', 'HEAD'])
+        branch = check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+
         git_rev = git_rev.strip().decode('ascii').split('-')
+        branch = branch.strip().decode('ascii')
+
         GIT_REVISION = '-'.join([git_rev[0],
                                  'dev' + git_rev[1]])
         GIT_REVISION = '+'.join([GIT_REVISION,
                                  git_rev[2]])
         GIT_HASH = git_hash.strip().decode('ascii')
+
+        ver = semver.parse_version_info(GIT_REVISION)
+        minor = ver.minor
+        patch = ver.patch
+
+        if ver.prerelease != 'dev0':
+            if 'release' not in branch:
+                minor += 1
+            else:
+                patch += 1
+        GIT_REVISION = semver.format_version(ver.major,
+                                             minor,
+                                             patch,
+                                             ver.prerelease)
+
     except (CalledProcessError, OSError):
-        GIT_REVISION = 'unknown'
-        GIT_HASH = 'unknown'
+        print('WRADLIB: Unable to import git_revision from repository.')
+        raise
     return GIT_REVISION, GIT_HASH
 
 
@@ -110,33 +129,23 @@ release = %(isrelease)s
             raise ImportError('Unable to import git_revision. Try removing '
                               'wradlib/version.py and the build directory '
                               'before building.')
+    else:
+        warnings.warn("wradlib source does not contain detailed version info "
+                      "via git or version.py, exact version can't be "
+                      "retrieved.", UserWarning)
 
     # parse version using semver
     ver = semver.parse_version_info(GIT_REVISION)
 
     # get commit count, dev0 means tagged commit -> release
-    try:
-        ISRELEASED = ver.prerelease == 'dev0'
-        if not ISRELEASED:
-            if not ver.patch:
-                patch = 0
-                minor = 1
-            else:
-                patch = 1
-                minor = 0
+    ISRELEASED = ver.prerelease == 'dev0'
+    if not ISRELEASED:
+        SHORT_VERSION = semver.format_version(ver.major,
+                                              ver.minor,
+                                              ver.patch,
+                                              ver.prerelease)
+        FULL_VERSION = GIT_REVISION
 
-            SHORT_VERSION = semver.format_version(ver.major,
-                                                  ver.minor + minor,
-                                                  ver.patch + patch,
-                                                  ver.prerelease)
-            FULL_VERSION = GIT_REVISION
-
-    except ValueError:
-        warnings.warn("wradlib source does not contain detailed version info "
-                      "via git or version.py, exact version can't be "
-                      "retrieved.", UserWarning)
-
-    print(SHORT_VERSION, FULL_VERSION, GIT_REVISION, GIT_HASH, ISRELEASED)
     a = open(filename, 'w')
     try:
         a.write(cnt % {'short_version': SHORT_VERSION,
