@@ -1154,23 +1154,25 @@ class XarrayTests(unittest.TestCase):
 class DemTest(unittest.TestCase):
 
     def test_get_srtm(self):
-        targets = ["N51W000", "N52E000", "N51E001",
-                   "N52W000", "N51E000", "N52E001"]
+        targets = ["N51W001", "N51E000", "N51E001",
+                   "N52W001", "N52E000", "N52E001"]
         targets = ["%s.hgt.zip" % (f) for f in targets]
 
         opts = {'region': 'Eurasia'}
         extent = [-0.3, 1.5, 51.4, 52.5]
         datasets = dem.get_srtm(extent, merge=False, download=opts)
-        self.assertEqual(len(datasets), 6)
+        filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
+        self.assertEqual(targets, filelist)
 
-        targets = ["N01E015", "N00E016", "S00E015",
-                   "S00E016", "S01E015", "S01E016"]
+        targets = ["S02E015", "S02E016", "S01E015",
+                   "S01E016", "N00E015", "N00E016"]
         targets = ["%s.hgt.zip" % (f) for f in targets]
 
         opts = {'region': 'Africa'}
         extent = [15.3, 16.6, -1.4, 0.4]
         datasets = dem.get_srtm(extent, merge=False, download=opts)
-        self.assertEqual(len(datasets), 6)
+        filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
+        self.assertEqual(targets, filelist)
 
         merged = dem.get_srtm(extent)
 
