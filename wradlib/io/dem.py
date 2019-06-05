@@ -24,7 +24,7 @@ import os
 from osgeo import gdal
 import requests
 
-import wradlib.util
+from wradlib import util
 
 
 def download_srtm(filename, destination=None, version=2, resolution=3,
@@ -52,10 +52,12 @@ def download_srtm(filename, destination=None, version=2, resolution=3,
     """
     if version == 2:
         website = "https://dds.cr.usgs.gov/srtm/version2_1"
-        source = "%s/SRTM%s/%s" % (website, resolution, region)
+        resolution = "SRTM%s" % (resolution)
+        source = os.path.join(website, resolution, region)
     if version == 3:
         website = "http://e4ftl01.cr.usgs.gov/MEASURES"
-        source = "%s/SRTMGL%d.003/2000.02.11" % (website, resolution)
+        resolution = "SRTMGL%d.003%s" % (resolution)
+        source = os.path.join(website, resolution)
     url = "%s/%s" % (source, filename)
 
     headers = None
@@ -91,7 +93,7 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
     merge : bool
         True to merge the tiles in one dataset
     download : dict
-        download options (see downloard_srtm)
+        download options (see download_srtm)
 
     """
 
@@ -118,18 +120,17 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
 
     filelist = ["%s.hgt.zip" % (f) for f in filelist]
 
-    wrl_data_path = wradlib.util.get_wradlib_data_path()
-    srtm_path = "%s/geo" % (wrl_data_path)
+    wrl_data_path = util.get_wradlib_data_path()
+    srtm_path = os.path.join(wrl_data_path,"geo")
     if not os.path.exists(srtm_path) and download is not None:
         os.makedirs(srtm_path)
     dems = []
     for filename in filelist:
-        path = "%s/%s" % (srtm_path, filename)
+        path = os.path.join(srtm_path, filename)
         if os.path.exists(path):
             dems.append(path)
             continue
         if download is not None:
-            print("Downloading %s" % (filename))
             download_srtm(filename, path, version, resolution, **download)
             if os.path.exists(path):
                 dems.append(path)
