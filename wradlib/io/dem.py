@@ -65,8 +65,10 @@ def download_srtm(filename, destination=None, version=2, resolution=3,
         r = requests.get(url, headers=headers, stream=True)
         r.raise_for_status()
     except requests.exceptions.HTTPError as err:
-        print(err)
-        return
+        status_code = err.response.status_code
+        if status_code != 404:
+            raise err
+
     if destination is None:
         destination = filename
     with open(destination, 'wb') as fd:
