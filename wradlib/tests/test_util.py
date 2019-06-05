@@ -119,15 +119,15 @@ class HelperFunctionsTest(unittest.TestCase):
     def test_gradient_along_axis(self):
         x = np.arange(10).reshape((2, 5)).astype("f4") ** 2
         result = util.gradient_along_axis(x)
-        shouldbe = np.array([[1., 11., 2., 4., 6., 7.],
-                             [1., 11., 12., 14., 16., 17.]])
+        shouldbe = np.array([[1., 2., 4., 6., 7.],
+                             [11., 12., 14., 16., 17.]])
         np.testing.assert_allclose(result, shouldbe)
 
     def test_gradient_from_smoothed(self):
         x = np.arange(10).reshape((2, 5)).astype("f4") ** 2
         result = util.gradient_from_smoothed(x)
-        shouldbe = np.array([[1., 11., 2., 1.5, 0., 0.],
-                             [1., 11., 12., 6.5, 0., 0.]])
+        shouldbe = np.array([[1., 2., 1.5, 0., 0.],
+                             [11., 12., 6.5, 0., 0.]])
         np.testing.assert_allclose(result, shouldbe)
 
 
