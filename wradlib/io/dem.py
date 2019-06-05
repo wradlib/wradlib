@@ -55,10 +55,10 @@ def download_srtm(filename, destination=None, version=2, resolution=3,
         resolution = "SRTM%s" % (resolution)
         source = os.path.join(website, resolution, region)
     if version == 3:
-        website = "http://e4ftl01.cr.usgs.gov/MEASURES"
-        resolution = "SRTMGL%d.003%s" % (resolution)
-        source = os.path.join(website, resolution)
-    url = "%s/%s" % (source, filename)
+        website = "https://e4ftl01.cr.usgs.gov/MEASURES"
+        resolution = "SRTMGL%d.003" % (resolution)
+        source = os.path.join(website, resolution, "2000.02.11")
+    url = os.path.join(source, filename)
 
     headers = None
     if token is not None:
@@ -68,7 +68,9 @@ def download_srtm(filename, destination=None, version=2, resolution=3,
         r.raise_for_status()
     except requests.exceptions.HTTPError as err:
         status_code = err.response.status_code
-        if status_code != 404:
+        if status_code == 404:
+            return
+        else:
             raise err
 
     if destination is None:

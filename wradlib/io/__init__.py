@@ -23,6 +23,8 @@ for an introduction on how to deal with different file formats.
 
 """
 
+from .dem import *
+
 from .misc import (write_polygon_to_text, to_pickle, from_pickle,
                    get_radiosonde, get_membership_functions)
 from .gdal import (read_safnwc, write_raster_dataset, open_vector, open_raster,
