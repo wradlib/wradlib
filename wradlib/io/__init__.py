@@ -23,7 +23,7 @@ for an introduction on how to deal with different file formats.
 
 """
 
-from .dem import *
+from .dem import (get_srtm)
 
 from .misc import (write_polygon_to_text, to_pickle, from_pickle,
                    get_radiosonde, get_membership_functions)
