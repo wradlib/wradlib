@@ -123,7 +123,7 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
     filelist = ["%s.hgt.zip" % (f) for f in filelist]
 
     wrl_data_path = util.get_wradlib_data_path()
-    srtm_path = os.path.join(wrl_data_path,"geo")
+    srtm_path = os.path.join(wrl_data_path, "geo")
     if not os.path.exists(srtm_path) and download is not None:
         os.makedirs(srtm_path)
     dems = []
