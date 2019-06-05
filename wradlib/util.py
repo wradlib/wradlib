@@ -25,6 +25,7 @@ attributable to the other modules
 import datetime as dt
 from datetime import tzinfo, timedelta
 import os
+from importlib import import_module
 
 import numpy as np
 from scipy.ndimage import filters
@@ -101,7 +102,7 @@ latest/gettingstarted.html#optional-dependencies
     for further instructions.
     """
     try:
-        mod = __import__(module)
+        mod = import_module(module)
     except ImportError:
         mod = OptionalModuleStub(module)
 
@@ -765,7 +766,7 @@ def gradient_along_axis(x):
     diff_end = (x[..., -1] - x[..., -2]).reshape(newshape)
     diffs = ((x - np.roll(x, 2, axis)) / 2.)
     diffs = np.append(diffs[..., 2:], diff_end, axis=axis)
-    return np.insert(diffs, 0, diff_begin, axis=axis)
+    return np.insert(diffs, [0], diff_begin, axis=axis)
 
 
 def gradient_from_smoothed(x, n=5):
