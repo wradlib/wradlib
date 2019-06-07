@@ -97,6 +97,10 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
     download : dict
         download options (see download_srtm)
 
+    Returns
+    -------
+    dataset : gdal.Dataset
+        Raster dataset containing elevation information
     """
 
     extent = [int(np.floor(x)) for x in extent]
@@ -126,22 +130,20 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
     srtm_path = os.path.join(wrl_data_path, "geo")
     if not os.path.exists(srtm_path) and download is not None:
         os.makedirs(srtm_path)
-    dems = []
+    demlist = []
     for filename in filelist:
         path = os.path.join(srtm_path, filename)
         if os.path.exists(path):
-            dems.append(path)
+            demlist.append(path)
             continue
         if download is not None:
             download_srtm(filename, path, version, resolution, **download)
             if os.path.exists(path):
-                dems.append(path)
+                demlist.append(path)
 
-    dems = [gdal.Open(d) for d in dems]
-
+    demlist = [gdal.Open(d) for d in demlist]
     if not merge:
-        return(dems)
+        return demlist
+    dem = gdal.Warp('', demlist, format='MEM')
 
-    dem = gdal.Warp('', dems, format='MEM')
-
-    return(dem)
+    return dem
