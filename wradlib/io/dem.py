@@ -4,18 +4,17 @@
 
 
 """
-Digital elevation model I/O
+Digital Elevation Model I/O
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Provide surface/terrain elevation information
+Provide surface/terrain elevation information from SRTM data
 
 .. autosummary::
    :nosignatures:
    :toctree: generated/
 
-download_srtm
-get_srtm
-
+   download_srtm
+   get_srtm
 """
 
 import numpy as np

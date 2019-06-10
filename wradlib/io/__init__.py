@@ -20,6 +20,7 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.iris
 .. automodule:: wradlib.io.misc
 .. automodule:: wradlib.io.xarray
+.. automodule:: wradlib.io.dem
 
 """
 
