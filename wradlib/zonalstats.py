@@ -407,6 +407,33 @@ class DataSource(object):
                 ret[i].append(getattr(ogr_src.GetGeometryRef(), prop)())
         return ret
 
+    def get_attrs_and_props(self, attrs=None, props=None, filt=None):
+        """Read properties and attributes
+
+        Parameters
+        ----------
+        attrs : list
+           Attribute Names to retrieve
+        props : list
+           Property Names to retrieve
+        filt : tuple
+           (attname,value) for Attribute Filter
+
+        """
+        lyr = self.ds.GetLayer()
+        lyr.ResetReading()
+        if filt is not None:
+            lyr.SetAttributeFilter('{0}={1}'.format(*filt))
+        ret_props = [[] for _ in props]
+        ret_attrs = [[] for _ in attrs]
+        for ogr_src in lyr:
+            for i, att in enumerate(attrs):
+                ret_attrs[i].append(ogr_src.GetField(att))
+            for i, prop in enumerate(props):
+                ret_props[i].append(getattr(ogr_src.GetGeometryRef(), prop)())
+
+        return ret_attrs, ret_props
+
 
 class ZonalDataBase(object):
     """Base class for managing 2-dimensional zonal data.
@@ -717,10 +744,9 @@ class ZonalDataPoly(ZonalDataBase):
         cnt = trg.GetFeatureCount()
         ret = [[] for _ in range(2)]
         for index in range(cnt):
-            arr = self.dst.get_attributes(['src_index'],
-                                          filt=('trg_index', index))
-            w = self.dst.get_geom_properties(['Area'],
-                                             filt=('trg_index', index))
+            arr, w = self.dst.get_attrs_and_props(attrs=['src_index'],
+                                                  props=['Area'],
+                                                  filt=('trg_index', index))
             arr.append(w[0])
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
