@@ -59,6 +59,8 @@ from matplotlib.path import Path
 import matplotlib.patches as patches
 from osgeo import gdal, ogr
 import warnings
+import tempfile
+import os
 
 from .io import open_vector, gdal_create_dataset, write_raster_dataset
 from .georef import (numpy_to_ogr, ogr_add_feature, ogr_copy_layer,
@@ -204,7 +206,9 @@ class DataSource(object):
             - transforming source grid points/polygons to ogr.geometries
               on ogr.layer
         """
-        ogr_src = gdal_create_dataset('Memory', 'out',
+        tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
+        ogr_src = gdal_create_dataset('ESRI Shapefile',
+                                      os.path.join('/vsimem', tmpfile),
                                       gdal_type=gdal.OF_VECTOR)
 
         src = np.array(src)
@@ -254,10 +258,10 @@ class DataSource(object):
         driver : string
             driver string
         """
-
-        self.ds = gdal_create_dataset('Memory', self._name,
+        tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
+        self.ds = gdal_create_dataset('ESRI Shapefile',
+                                      os.path.join('/vsimem', tmpfile),
                                       gdal_type=gdal.OF_VECTOR)
-
         # get input file handles
         ds_in, tmp_lyr = open_vector(filename, driver=driver, layer=source)
 
@@ -310,7 +314,6 @@ class DataSource(object):
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
-        print("Rasterize layers")
         if attr is not None:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
                                 options=["ATTRIBUTE={0}".format(attr),
@@ -528,8 +531,15 @@ class ZonalDataBase(object):
         ds_mem : object
             gdal.Dataset object
         """
+
+        # create mem-mapped temp file dataset
+        tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
+        ds_out = gdal_create_dataset('ESRI Shapefile',
+                                     os.path.join('/vsimem', tmpfile),
+                                     gdal_type=gdal.OF_VECTOR)
+
         # create intermediate mem dataset
-        ds_mem = gdal_create_dataset('Memory', 'dst',
+        ds_mem = gdal_create_dataset('Memory', 'out',
                                      gdal_type=gdal.OF_VECTOR)
 
         # get src geometry layer
@@ -538,43 +548,38 @@ class ZonalDataBase(object):
         src_lyr.SetSpatialFilter(None)
         geom_type = src_lyr.GetGeomType()
 
-        # create temp Buffer layer (time consuming)
-        ds_tmp = gdal_create_dataset('Memory', 'tmp',
-                                     gdal_type=gdal.OF_VECTOR)
-        ogr_copy_layer(self.trg.ds, 0, ds_tmp)
-        tmp_trg_lyr = ds_tmp.GetLayer()
+        # get trg geometry layer
+        trg_lyr = self.trg.ds.GetLayerByName('trg')
+        trg_lyr.ResetReading()
+        trg_lyr.SetSpatialFilter(None)
 
-        for i in range(tmp_trg_lyr.GetFeatureCount()):
-            feat = tmp_trg_lyr.GetFeature(i)
-            feat.SetGeometryDirectly(feat.GetGeometryRef().
-                                     Buffer(self._buffer))
-            tmp_trg_lyr.SetFeature(feat)
+        # buffer handling (time consuming)
+        if self._buffer > 0:
+            for i in range(trg_lyr.GetFeatureCount()):
+                feat = trg_lyr.GetFeature(i)
+                feat.SetGeometryDirectly(feat.GetGeometryRef().
+                                         Buffer(self._buffer))
+                trg_lyr.SetFeature(feat)
 
-        # get target layer, iterate over polygons and calculate intersections
-        tmp_trg_lyr.ResetReading()
+        # reset target layer
+        trg_lyr.ResetReading()
 
+        # create tmp dest layer
         self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
                                         geom_type=geom_type)
 
-        try:
-            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr,
-                                     options=['SKIP_FAILURES=YES',
-                                              'INPUT_PREFIX=trg_',
-                                              'METHOD_PREFIX=src_',
-                                              'PROMOTE_TO_MULTI=YES',
-                                              'PRETEST_CONTAINMENT=YES'],
-                                     callback=gdal.TermProgress)
-        except RuntimeError:
-            # Catch RuntimeError that was reported on gdal 1.11.1
-            # on Windows systems
-            tmp_trg_lyr.Intersection(src_lyr, self.tmp_lyr,
-                                     options=['SKIP_FAILURES=YES',
-                                              'INPUT_PREFIX=trg_',
-                                              'METHOD_PREFIX=src_',
-                                              'PROMOTE_TO_MULTI=YES',
-                                              'PRETEST_CONTAINMENT=YES'])
+        trg_lyr.Intersection(src_lyr, self.tmp_lyr,
+                             options=['SKIP_FAILURES=YES',
+                                      'INPUT_PREFIX=trg_',
+                                      'METHOD_PREFIX=src_',
+                                      'PROMOTE_TO_MULTI=YES',
+                                      'USE_PREPARED_GEOMETRIES=YES',
+                                      'PRETEST_CONTAINMENT=YES'],
+                             callback=gdal.TermProgress)
 
-        return ds_mem
+        ogr_copy_layer(ds_mem, 0, ds_out)
+
+        return ds_out
 
     def dump_vector(self, filename, driver='ESRI Shapefile', remove=True):
         """Output source/target grid points/polygons to ESRI_Shapefile
