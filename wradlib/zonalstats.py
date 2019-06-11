@@ -103,7 +103,7 @@ class DataSource(object):
                 self._ds = self._check_src(data)
             except TypeError:
                 self.load_vector(data, source=source)
-
+            self._create_spatial_index()
         else:
             self._ds = None
 
@@ -197,6 +197,22 @@ class DataSource(object):
         lyr.SetAttributeFilter(None)
         lyr.SetSpatialFilter(geom)
         return self._get_data()
+
+    def _create_spatial_index(self):
+        """Creates spatial index file .qix
+        """
+        sql1 = "DROP SPATIAL INDEX ON {}".format(self._name)
+        sql2 = "CREATE SPATIAL INDEX ON {}".format(self._name)
+        self.ds.ExecuteSQL(sql1)
+        self.ds.ExecuteSQL(sql2)
+
+    def _create_table_index(self, col):
+        """Creates attribute index files
+        """
+        sql1 = "DROP INDEX ON {}".format(self._name)
+        sql2 = "CREATE INDEX ON {} USING {}".format(self._name, col)
+        self.ds.ExecuteSQL(sql1)
+        self.ds.ExecuteSQL(sql2)
 
     def _check_src(self, src):
         """Basic check of source elements (sequence of points or polygons).
@@ -461,7 +477,9 @@ class ZonalDataBase(object):
 
             self.dst = DataSource(name='dst')
             self.dst.ds = self._create_dst_datasource()
+            self.dst._create_spatial_index()
 
+        self.dst._create_table_index('trg_index')
         self._count_intersections = self.dst.ds.GetLayer().GetFeatureCount()
 
     @property
