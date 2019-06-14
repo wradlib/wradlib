@@ -1,5 +1,8 @@
+include CONTRIBUTING.md
+include CONTRIBUTORS.txt
 include LICENSE.txt
 include MANIFEST.in
+include pyproject.toml
 include requirements.txt
 include requirements_devel.txt
 include scripts/testrunner.py
