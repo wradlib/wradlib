@@ -576,7 +576,7 @@ class OdimAccessor(object):
         return self._radial_range
 
     @property
-    def azimuth_range(self):
+    def azimuth_range2(self):
         """Return the azimuth range of this dataset."""
         if self._azimuth_range is None:
             nrays = self._obj.attrs['nrays']
@@ -591,12 +591,36 @@ class OdimAccessor(object):
         return self._azimuth_range
 
     @property
-    def elevation_range(self):
+    def azimuth_range(self):
+        """Return the azimuth range of this dataset."""
+        if self._azimuth_range is None:
+            startaz = self._obj.attrs['startazA']
+            stopaz = self._obj.attrs['stopazA']
+            zero_index = np.where(stopaz < startaz)
+            stopaz[zero_index[0]] += 360
+            azimuth_data = (startaz + stopaz) / 2.
+            da = xr.DataArray(azimuth_data, attrs=az_attrs)
+            self._azimuth_range = da
+        return self._azimuth_range
+
+    @property
+    def elevation_range2(self):
         """Return the elevation range of this dataset."""
         if self._elevation_range is None:
             nrays = self._obj.attrs['nrays']
             elangle = self._obj.attrs['elangle']
             elevation_data = np.ones(nrays, dtype='float32') * elangle
+            da = xr.DataArray(elevation_data, attrs=el_attrs)
+            self._elevation_range = da
+        return self._elevation_range
+
+    @property
+    def elevation_range(self):
+        """Return the elevation range of this dataset."""
+        if self._elevation_range is None:
+            startel = self._obj.attrs['startelA']
+            stopel = self._obj.attrs['stopelA']
+            elevation_data = (startel + stopel) / 2.
             da = xr.DataArray(elevation_data, attrs=el_attrs)
             self._elevation_range = da
         return self._elevation_range
@@ -1566,12 +1590,18 @@ class OdimH5(XRadVol):
         flavour = self._flavour.lower()
         coords = collections.OrderedDict()
         if flavour == 'odim':
-            az = el = rng = grps['where']
+            rng = grps['where']
+            az = el = grps['how']
         if flavour == 'gamic':
             az = el = grps['what']
             rng = grps['how']
-        coords['azimuth'] = getattr(az, flavour).azimuth_range
-        coords['elevation'] = getattr(el, flavour).elevation_range
+        try:
+            coords['azimuth'] = getattr(az, flavour).azimuth_range
+            coords['elevation'] = getattr(el, flavour).elevation_range
+        except (KeyError, AttributeError):
+            az = el = grps['where']
+            coords['azimuth'] = getattr(az, flavour).azimuth_range2
+            coords['elevation'] = getattr(el, flavour).elevation_range2
         coords['range'] = getattr(rng, flavour).radial_range
 
         return coords
