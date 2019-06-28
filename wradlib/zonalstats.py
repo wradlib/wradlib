@@ -69,6 +69,9 @@ from .georef import (numpy_to_ogr, ogr_add_feature, ogr_copy_layer,
 ogr.UseExceptions()
 gdal.UseExceptions()
 
+# check windows
+isWindows = os.name == 'nt'
+
 
 class DataSource(object):
     """ DataSource class for handling ogr/gdal vector data
@@ -293,7 +296,7 @@ class DataSource(object):
         del ds_in
 
     def dump_raster(self, filename, driver='GTiff', attr=None,
-                    pixel_size=1., remove=True):
+                    pixel_size=1., remove=True, **kwargs):
         """Output layer to GDAL Rasterfile
 
         Parameters
@@ -309,7 +312,14 @@ class DataSource(object):
         remove : bool
             if True removes existing output file
 
+        Keyword Arguments
+        -----------------
+        silent : bool
+            If True no ProgressBar is shown. Defaults to False.
         """
+        silent = kwargs.pop('silent', False)
+        progress = None if (silent or isWindows) else gdal.TermProgress
+
         layer = self.ds.GetLayer()
         layer.ResetReading()
 
@@ -334,11 +344,11 @@ class DataSource(object):
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
                                 options=["ATTRIBUTE={0}".format(attr),
                                          "ALL_TOUCHED=TRUE"],
-                                callback=gdal.TermProgress)
+                                callback=progress)
         else:
             gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
                                 options=["ALL_TOUCHED=TRUE"],
-                                callback=gdal.TermProgress)
+                                callback=progress)
 
         write_raster_dataset(filename, ds_out, driver, remove=remove)
 
@@ -478,6 +488,10 @@ class ZonalDataBase(object):
         will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
+    silent : bool
+        If True no ProgressBar is shown. Defaults to False.
+
+
     Examples
     --------
     See \
@@ -487,6 +501,7 @@ class ZonalDataBase(object):
     def __init__(self, src, trg=None, buf=0., srs=None, **kwargs):
         self._buffer = buf
         self._srs = srs
+        silent = kwargs.pop('silent', False)
 
         if trg is None:
             # try to read complete dump (src, trg, dst)
@@ -503,7 +518,7 @@ class ZonalDataBase(object):
                 self.trg = DataSource(trg, name='trg', srs=srs, **kwargs)
 
             self.dst = DataSource(name='dst')
-            self.dst.ds = self._create_dst_datasource()
+            self.dst.ds = self._create_dst_datasource(silent)
             self.dst._create_spatial_index()
 
         self.dst._create_table_index('trg_index')
@@ -565,7 +580,7 @@ class ZonalDataBase(object):
         return np.array(self.dst.get_attributes(['src_index'],
                                                 filt=('trg_index', idx))[0])
 
-    def _create_dst_datasource(self):
+    def _create_dst_datasource(self, silent):
         """Create destination target gdal.Dataset
 
         Creates one layer for each target polygon, consisting of
@@ -576,6 +591,7 @@ class ZonalDataBase(object):
         ds_mem : object
             gdal.Dataset object
         """
+        progress = None if (silent or isWindows) else gdal.TermProgress
 
         # create mem-mapped temp file dataset
         tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
@@ -620,7 +636,7 @@ class ZonalDataBase(object):
                                       'PROMOTE_TO_MULTI=YES',
                                       'USE_PREPARED_GEOMETRIES=YES',
                                       'PRETEST_CONTAINMENT=YES'],
-                             callback=gdal.TermProgress)
+                             callback=progress)
 
         ogr_copy_layer(ds_mem, 0, ds_out)
 
