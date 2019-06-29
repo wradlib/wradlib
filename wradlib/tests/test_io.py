@@ -89,14 +89,18 @@ class MiscTest(unittest.TestCase):
                '2 1.000000 1.000000 0.000000 2.000000\n',
                '3 0.000000 0.000000 0.000000 0.000000\n', 'END\n']
         tmp = tempfile.NamedTemporaryFile()
-        wrl.io.write_polygon_to_text(tmp.name, polygons)
-        self.assertEqual(open(tmp.name, 'r').readlines(), res)
+        name = tmp.name
+        tmp.close()
+        wrl.io.write_polygon_to_text(name, polygons)
+        self.assertEqual(open(name, 'r').readlines(), res)
 
     def test_pickle(self):
         arr = np.zeros((124, 248), dtype=np.int16)
         tmp = tempfile.NamedTemporaryFile()
-        wrl.io.to_pickle(tmp.name, arr)
-        res = wrl.io.from_pickle(tmp.name)
+        name = tmp.name
+        tmp.close()
+        wrl.io.to_pickle(name, arr)
+        res = wrl.io.from_pickle(name)
         self.assertTrue(np.allclose(arr, res))
 
     @unittest.skipIf(sys.version_info < (3, 0),
@@ -179,13 +183,15 @@ class HDF5Test(unittest.TestCase):
         arr = np.zeros((124, 248), dtype=np.int16)
         metadata = {'test': 12.}
         tmp = tempfile.NamedTemporaryFile()
-        wrl.io.to_hdf5(tmp.name, arr, metadata=metadata)
-        res, resmeta = wrl.io.from_hdf5(tmp.name)
+        name = tmp.name
+        tmp.close()
+        wrl.io.to_hdf5(name, arr, metadata=metadata)
+        res, resmeta = wrl.io.from_hdf5(name)
         self.assertTrue(np.allclose(arr, res))
         self.assertDictEqual(metadata, resmeta)
 
         with self.assertRaises(KeyError):
-            wrl.io.from_hdf5(tmp.name, 'NotAvailable')
+            wrl.io.from_hdf5(name, 'NotAvailable')
 
     def test_read_safnwc(self):
         filename = 'hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5'
@@ -423,6 +429,7 @@ class RadolanTest(unittest.TestCase):
         with self.assertRaises(IOError):
             radolan.read_radolan_binary_array(rw_fid, attrs['datasize'] + 10)
 
+    @unittest.skipIf(sys.platform.startswith("win"), "no gunzip on windows")
     def test_get_radolan_filehandle(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
         rw_file = wrl.util.get_wradlib_data_file(filename)
@@ -1153,6 +1160,7 @@ class XarrayTests(unittest.TestCase):
 
 class DemTest(unittest.TestCase):
 
+    @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
     def test_get_srtm(self):
         targets = ["N51W001", "N51E000", "N51E001",
                    "N52W001", "N52E000", "N52E001"]

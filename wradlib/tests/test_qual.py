@@ -42,7 +42,8 @@ class HelperFunctionsTest(unittest.TestCase):
                             8.61329192e+07, 1.17236473e+08, 1.53125190e+08,
                             1.93799068e+08])
         np.testing.assert_allclose(
-            qual.pulse_volume(np.arange(0, 100000, 10000), 100, 1), vol_out)
+            qual.pulse_volume(np.arange(0., 100000., 10000.),
+                              100., 1.), vol_out)
 
 
 class BeamBlockFracTest(unittest.TestCase):
