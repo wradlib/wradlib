@@ -18,7 +18,7 @@ Projection Functions
    wkt_to_osr
 """
 
-from osgeo import osr, ogr
+from osgeo import gdal, osr, ogr
 import numpy as np
 
 
@@ -71,23 +71,25 @@ Georeferencing-and-Projection`.
                 'PARAMETER["latitude_of_center", {0:-f}],'
                 'PARAMETER["longitude_of_center", {1:-f}],'
                 'PARAMETER["false_easting", {2:-f}],'
-                'PARAMETER["false_northing", {3:-f}]]')
+                'PARAMETER["false_northing", {3:-f}],'
+                'UNIT["Meter",1]]')
+
 
     radolan_wkt = ('PROJCS["Radolan projection",'
                    'GEOGCS["Radolan Coordinate System",'
-                   'DATUM["Radolan Kugel",'
-                   'SPHEROID["Erdkugel", 6370040.0, 0.0]],'
-                   'PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],'
-                   'UNIT["degree", 0.017453292519943295],'
-                   'AXIS["Longitude", EAST],'
-                   'AXIS["Latitude", NORTH]],'
+                   'DATUM["Radolan_Kugel",'
+                   'SPHEROID["Erdkugel", 6370040, 0]],'
+                   'PRIMEM["Greenwich", 0, AUTHORITY["EPSG","8901"]],'
+                   'UNIT["degree", 0.0174532925199433],'
+                   'AXIS["Longitude",EAST],'
+                   'AXIS["Latitude",NORTH]],'
                    'PROJECTION["polar_stereographic"],'
-                   'PARAMETER["central_meridian", 10.0],'
-                   'PARAMETER["latitude_of_origin", 60.0],'
+                   'PARAMETER["central_meridian", 10],'
+                   'PARAMETER["latitude_of_origin", 60],'
                    'PARAMETER["scale_factor", {0:8.10f}],'
-                   'PARAMETER["false_easting", 0.0],'
-                   'PARAMETER["false_northing", 0.0],'
-                   'UNIT["m*1000.0", 1000.0],'
+                   'PARAMETER["false_easting", 0],'
+                   'PARAMETER["false_northing", 0],'
+                   'UNIT["m*1000", 1000],'
                    'AXIS["X", EAST],'
                    'AXIS["Y", NORTH]]')
     #                  'AUTHORITY["USER","100000"]]'
@@ -102,8 +104,8 @@ Georeferencing-and-Projection`.
                                                kwargs["x_0"],
                                                kwargs["y_0"]))
         else:
-            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"],
-                                               kwargs["lon_0"], 0, 0))
+            aeqd_wkt = aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0, 0)
+            proj.ImportFromWkt(aeqd_wkt)
 
     elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
@@ -135,9 +137,12 @@ def proj4_to_osr(proj4str):
     proj = osr.SpatialReference()
     proj.ImportFromProj4(proj4str)
     proj.AutoIdentifyEPSG()
-    proj.Fixup()
-    proj.FixupOrdering()
+    if gdal.VersionInfo()[0] < '3':
+        proj.Fixup()
+        proj.FixupOrdering()
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
+        print(proj4str)
+        print(proj)
         raise ValueError("proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
                          "and can't be imported as OSR object")
     return proj
@@ -230,8 +235,16 @@ def reproject(*args, **kwargs):
     projection_target = kwargs.get('projection_target',
                                    get_default_projection())
 
+    if gdal.VersionInfo()[0] >= '3':
+        print("gdal 3")
+        projection_source.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        projection_target.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+
     ct = osr.CoordinateTransformation(projection_source, projection_target)
-    trans = np.array(ct.TransformPoints(C))
+    print(C)
+    print(projection_source)
+    print(projection_target)
+    trans = np.array(ct.TransformPoints(C[0]))
 
     if len(args) == 1:
         # here we could do this one
