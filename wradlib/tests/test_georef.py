@@ -318,46 +318,25 @@ class CoordinateHelperTest(unittest.TestCase):
 class ProjectionsTest(unittest.TestCase):
     def test_create_osr(self):
         self.maxDiff = None
-
-        if gdal.VersionInfo()[0] < '3':
-            radolan_wkt = ('PROJCS["Radolan projection",'
-                           'GEOGCS["Radolan Coordinate System",'
-                           'DATUM["Radolan_Kugel",'
-                           'SPHEROID["Erdkugel",6370040,0]],'
-                           'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
-                           'UNIT["degree",0.0174532925199433]],'
-                           'AXIS["Longitude",EAST],'
-                           'AXIS["Latitude",NORTH]],'
-                           'PROJECTION["polar_stereographic"],'
-                           'PARAMETER["central_meridian",10],'
-                           'PARAMETER["latitude_of_origin",60],'
-                           'PARAMETER["scale_factor",{0:8.10f}],'
-                           'PARAMETER["false_easting",0],'
-                           'PARAMETER["false_northing",0],'
-                           'UNIT["m*1000",1000],'
-                           'AXIS["X",EAST],'
-                           'AXIS["Y",NORTH]]'.
-                           format((1. + np.sin(np.radians(60.))) /
-                                  (1. + np.sin(np.radians(90.)))))
-        else:
-            radolan_wkt = ('PROJCS["Radolan projection",'
-                           'GEOGCS["Radolan Coordinate System",'
-                           'DATUM["Radolan_Kugel",'
-                           'SPHEROID["Erdkugel",6370040,0]],'
-                           'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
-                           'UNIT["degree",0.0174532925199433]],'
-                           'PROJECTION["polar_stereographic"],'
-                           'PARAMETER["central_meridian",10],'
-                           'PARAMETER["latitude_of_origin",60],'
-                           'PARAMETER["scale_factor",{0:8.10f}],'
-                           'PARAMETER["false_easting",0],'
-                           'PARAMETER["false_northing",0],'
-                           'UNIT["m*1000",1000],'
-                           'AXIS["X",EAST],'
-                           'AXIS["Y",NORTH]]'.
-                           format((1. + np.sin(np.radians(60.))) /
-                                  (1. + np.sin(np.radians(90.)))))
-
+        radolan_wkt = ('PROJCS["Radolan projection",'
+                       'GEOGCS["Radolan Coordinate System",'
+                       'DATUM["Radolan Kugel",'
+                       'SPHEROID["Erdkugel",6370040.0,0.0]],'
+                       'PRIMEM["Greenwich",0.0,AUTHORITY["EPSG","8901"]],'
+                       'UNIT["degree",0.017453292519943295],'
+                       'AXIS["Longitude",EAST],'
+                       'AXIS["Latitude",NORTH]],'
+                       'PROJECTION["polar_stereographic"],'
+                       'PARAMETER["central_meridian",10.0],'
+                       'PARAMETER["latitude_of_origin",60.0],'
+                       'PARAMETER["scale_factor",{0:8.10f}],'
+                       'PARAMETER["false_easting",0.0],'
+                       'PARAMETER["false_northing",0.0],'
+                       'UNIT["m*1000.0",1000.0],'
+                       'AXIS["X",EAST],'
+                       'AXIS["Y",NORTH]]'.
+                       format((1. + np.sin(np.radians(60.))) /
+                              (1. + np.sin(np.radians(90.)))))
         self.assertEqual(georef.create_osr('dwd-radolan').ExportToWkt(),
                          radolan_wkt)
         aeqd_wkt = ('PROJCS["unnamed",'
@@ -366,26 +345,18 @@ class ProjectionsTest(unittest.TestCase):
                     'SPHEROID["WGS84",6378137,298.257223563]],'
                     'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],'
                     'PROJECTION["Azimuthal_Equidistant"],'
-                    'PARAMETER["latitude_of_center",{0:d}],'
-                    'PARAMETER["longitude_of_center",{1:d}],'
-                    'PARAMETER["false_easting",{2:d}],'
-                    'PARAMETER["false_northing",{3:d}],'
-                    'UNIT["Meter",1],'
-                    'AXIS["Easting",EAST],'
-                    'AXIS["Northing",NORTH]]'.
-                    format(49, 5, 0, 0))
-
-        print(georef.create_osr('aeqd',
-                                           lon_0=5,
-                                           lat_0=49).ExportToWkt())
-        print(aeqd_wkt)
+                    'PARAMETER["latitude_of_center",{0:-f}],'
+                    'PARAMETER["longitude_of_center",{1:-f}],'
+                    'PARAMETER["false_easting",{2:-f}],'
+                    'PARAMETER["false_northing",{3:-f}]]'.
+                    format(49., 5., 0, 0))
 
         self.assertEqual(georef.create_osr('aeqd',
-                                           lon_0=5,
+                                           lon_0=5.,
                                            lat_0=49).ExportToWkt(),
                          aeqd_wkt)
         self.assertEqual(georef.create_osr('aeqd',
-                                           lon_0=5,
+                                           lon_0=5.,
                                            lat_0=49,
                                            x_0=0,
                                            y_0=0).ExportToWkt(),
@@ -396,17 +367,12 @@ class ProjectionsTest(unittest.TestCase):
     def test_proj4_to_osr(self):
         srs = georef.proj4_to_osr('+proj=lcc +lat_1=46.8 +lat_0=46.8 +lon_0=0 '
                                   '+k_0=0.99987742 +x_0=600000 +y_0=2200000 '
-                                  '+ellps=clrk80ign '
+                                  '+a=6378249.2 +b=6356515 '
                                   '+towgs84=-168,-60,320,0,0,0,0 '
                                   '+pm=paris +units=m +no_defs')
         p4 = srs.ExportToProj4()
         srs2 = osr.SpatialReference()
         srs2.ImportFromProj4(p4)
-        print(p4)
-        print(srs)
-        print(srs2)
-        print(srs.IsSame(srs))
-        print(srs.IsSame(srs2))
         self.assertTrue(srs.IsSame(srs2))
         with self.assertRaises(ValueError):
             georef.proj4_to_osr("+proj=lcc1")
@@ -451,6 +417,27 @@ class ProjectionsTest(unittest.TestCase):
 
     def test_get_default_projection(self):
         self.assertEqual(georef.get_default_projection().ExportToWkt(),
+                         ('GEOGCS["WGS 84",DATUM["WGS_1984",'
+                          'SPHEROID["WGS 84",6378137,298.257223563,'
+                          'AUTHORITY["EPSG","7030"]],'
+                          'AUTHORITY["EPSG","6326"]],'
+                          'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                          'UNIT["degree",0.0174532925199433,'
+                          'AUTHORITY["EPSG","9122"]],'
+                          'AUTHORITY["EPSG","4326"]]'))
+
+    def test_epsg_to_osr(self):
+        self.assertEqual(georef.epsg_to_osr(4326).ExportToWkt(),
+                         ('GEOGCS["WGS 84",DATUM["WGS_1984",'
+                          'SPHEROID["WGS 84",6378137,298.257223563,'
+                          'AUTHORITY["EPSG","7030"]],'
+                          'AUTHORITY["EPSG","6326"]],'
+                          'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
+                          'UNIT["degree",0.0174532925199433,'
+                          'AUTHORITY["EPSG","9122"]],'
+                          'AUTHORITY["EPSG","4326"]]'))
+
+        self.assertEqual(georef.epsg_to_osr().ExportToWkt(),
                          ('GEOGCS["WGS 84",DATUM["WGS_1984",'
                           'SPHEROID["WGS 84",6378137,298.257223563,'
                           'AUTHORITY["EPSG","7030"]],'
@@ -792,7 +779,7 @@ class VectorTest(unittest.TestCase):
     def test_transform_geometry(self):
         geom = georef.transform_geometry(self.projobj, dest_srs=self.wgs84)
         x = list(georef.get_vector_points(geom))[0]
-        np.testing.assert_allclose(x, self.lonlat, rtol=1e-05)
+        np.testing.assert_allclose(x, self.lonlat)
 
     def test_transform_geometry_warning(self):
         with self.assertWarns(UserWarning):

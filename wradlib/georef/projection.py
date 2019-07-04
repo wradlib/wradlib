@@ -141,8 +141,6 @@ def proj4_to_osr(proj4str):
         proj.Fixup()
         proj.FixupOrdering()
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
-        print(proj4str)
-        print(proj)
         raise ValueError("proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
                          "and can't be imported as OSR object")
     return proj
@@ -236,15 +234,11 @@ def reproject(*args, **kwargs):
                                    get_default_projection())
 
     if gdal.VersionInfo()[0] >= '3':
-        print("gdal 3")
         projection_source.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         projection_target.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
 
     ct = osr.CoordinateTransformation(projection_source, projection_target)
-    print(C)
-    print(projection_source)
-    print(projection_target)
-    trans = np.array(ct.TransformPoints(C[0]))
+    trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
         # here we could do this one
@@ -311,4 +305,9 @@ def wkt_to_osr(wkt=None):
         proj.ImportFromWkt(wkt)
     else:
         proj = get_default_projection()
+
+    if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
+        raise ValueError("proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
+                         "and can't be imported as OSR object")
+
     return proj
