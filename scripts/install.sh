@@ -55,6 +55,7 @@ fi
 echo $PATH
 echo $WRADLIB_ENV
 echo $WRADLIB_PYTHON
+echo $GDAL_VERSION
 echo "conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 
 if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
@@ -68,7 +69,15 @@ conda config --add channels conda-forge
 # Set strict channel priority
 conda config --set channel_priority strict
 
-DEPS="gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+# Install wradlib dependencies
+DEPS="numpy scipy matplotlib netcdf4 h5py xarray deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+
+if [[ "$GDAL_VERSION" == "2" ]]; then
+    DEPS="$DEPS gdal cartopy"
+else
+    DEPS="$DEPS gdal"
+fi
+
 # Install twine for pypi upload
 if [[ "$DEPLOY" == "true" ]]; then
     DEPS="$DEPS twine"
