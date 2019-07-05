@@ -307,7 +307,7 @@ def wkt_to_osr(wkt=None):
         proj = get_default_projection()
 
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
-        raise ValueError("proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
+        raise ValueError("wkt validates to 'ogr.OGRERR_CORRUPT_DATA'"
                          "and can't be imported as OSR object")
 
     return proj
