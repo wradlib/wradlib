@@ -14,6 +14,7 @@ matrix:
       env:
         - WRADLIB_UNITTEST="true"
         - PYTHON_VERSION="3.6"
+        - GDAL_VERSION="2"
         - DEPLOY="true"
     - python: 3.7
       sudo: required
@@ -22,6 +23,15 @@ matrix:
       env:
         - WRADLIB_UNITTEST="true"
         - PYTHON_VERSION="3.7"
+        - GDAL_VERSION="2"
+    - python: 3.7
+      sudo: required
+      dist: xenial
+      services: xvfb
+      env:
+        - WRADLIB_UNITTEST="true"
+        - PYTHON_VERSION="3.7"
+        - GDAL_VERSION="3"
     - python: 3.7
       sudo: required
       dist: xenial
@@ -29,11 +39,18 @@ matrix:
       env:
         - WRADLIB_NOTEBOOKTEST="true"
         - PYTHON_VERSION="3.7"
+        - GDAL_VERSION="2"
     allow_failures:
       - python: 3.7
         env:
           - WRADLIB_NOTEBOOKTEST="true"
           - PYTHON_VERSION="3.7"
+          - GDAL_VERSION="2"
+      - python: 3.7
+        env:
+          - WRADLIB_UNITTEST="true"
+          - PYTHON_VERSION="3.7"
+          - GDAL_VERSION="3"
 
 cache:
   directories:
