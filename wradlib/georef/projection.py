@@ -103,8 +103,8 @@ Georeferencing-and-Projection`.
                                                kwargs["x_0"],
                                                kwargs["y_0"]))
         else:
-            aeqd_wkt = aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0, 0)
-            proj.ImportFromWkt(aeqd_wkt)
+            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"],
+                                               kwargs["lon_0"], 0, 0))
 
     elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
