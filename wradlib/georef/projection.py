@@ -234,8 +234,9 @@ def reproject(*args, **kwargs):
                                    get_default_projection())
 
     if gdal.VersionInfo()[0] >= '3':
-        projection_source.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
-        projection_target.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
+        projection_source.SetAxisMappingStrategy(axis_order)
+        projection_target.SetAxisMappingStrategy(axis_order)
 
     ct = osr.CoordinateTransformation(projection_source, projection_target)
     trans = np.array(ct.TransformPoints(C))
