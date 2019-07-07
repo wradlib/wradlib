@@ -74,6 +74,28 @@ Georeferencing-and-Projection`.
                 'PARAMETER["false_northing", {3:-f}],'
                 'UNIT["Meter",1]]')
 
+    radolan_wkt3 = ('PROJCS["Radolan projection",'
+                    'GEOGCS["Radolan Coordinate System",'
+                    'DATUM["Radolan Kugel",'
+                    'SPHEROID["Erdkugel", 6370040, 0]],'
+                    'PRIMEM["Greenwich", 0,'
+                    'AUTHORITY["EPSG","8901"]],'
+                    'UNIT["degree", 0.017453292519943295,'
+                    'AUTHORITY["EPSG","9122"]]]'
+                    # 'AXIS["Longitude", EAST],'
+                    # 'AXIS["Latitude", NORTH]],'
+                    'PROJECTION["Polar_Stereographic"],'
+                    'PARAMETER["latitude_of_origin", 90],'
+                    # 'PARAMETER["standard_parallel", 60],'
+                    'PARAMETER["central_meridian", 10],'
+                    'PARAMETER["scale_factor", {0:8.12f}],'
+                    'PARAMETER["false_easting", 0],'
+                    'PARAMETER["false_northing", 0],'
+                    'UNIT["kilometre", 1000,'
+                    'AUTHORITY["EPSG","9036"]],'
+                    'AXIS["Easting",SOUTH],'
+                    'AXIS["Northing",SOUTH]]')
+
     radolan_wkt = ('PROJCS["Radolan projection",'
                    'GEOGCS["Radolan Coordinate System",'
                    'DATUM["Radolan Kugel",'
@@ -91,7 +113,6 @@ Georeferencing-and-Projection`.
                    'UNIT["m*1000.0", 1000.0],'
                    'AXIS["X", EAST],'
                    'AXIS["Y", NORTH]]')
-    #                  'AUTHORITY["USER","100000"]]'
 
     proj = osr.SpatialReference()
 
@@ -109,7 +130,18 @@ Georeferencing-and-Projection`.
     elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
         scale = (1. + np.sin(np.radians(60.))) / (1. + np.sin(np.radians(90.)))
-        proj.ImportFromWkt(radolan_wkt.format(scale))
+        print("SCALE:", scale)
+        if gdal.VersionInfo()[0] >= '3':
+            radolan_wkt = radolan_wkt3.format(scale)
+        else:
+            radolan_wkt = radolan_wkt.format(scale)
+
+        proj.ImportFromWkt(radolan_wkt)
+        print("PROJ:", proj)
+        #dwd_string = (
+        #    '+proj=stere +lat_0=90 +lon_0=10 +k={0:8.10f} '#0.93301270189 '
+        #    '+x_0=0 +y_0=0 +a=6370040 +b=6370040 +to_meter=1000 +no_defs +ellps=sphere')
+        #proj = proj4_to_osr(dwd_string.format(scale))
 
     else:
         raise ValueError("No convenience support for projection %r, "
