@@ -508,21 +508,20 @@ class ZonalDataTest(unittest.TestCase):
         # need to iterate over nested array for correct testing
         for i in range(len(self.zdpoly.isecs)):
             for k in range(len(self.zdpoly.isecs[i])):
-                np.testing.assert_array_almost_equal(self.zdpoly.isecs[i, k],
-                                                     self.isec_poly[i, k],
-                                                     decimal=3)
+                np.testing.assert_allclose(self.zdpoly.isecs[i, k],
+                                           self.isec_poly[i, k],
+                                           rtol=1e-6)
 
-        np.testing.assert_array_almost_equal(self.zdpoint.isecs,
-                                             self.isec_point, decimal=2)
+        np.testing.assert_allclose(self.zdpoint.isecs,
+                                   self.isec_point, rtol=1e-6)
 
     def test_get_isec(self):
         for i in [0, 1]:
             for k, arr in enumerate(self.zdpoly.get_isec(i)):
-                np.testing.assert_array_almost_equal(arr,
-                                                     self.isec_poly[i, k],
-                                                     decimal=3)
-            np.testing.assert_array_almost_equal(self.zdpoint.get_isec(i),
-                                                 self.isec_point[i], decimal=2)
+                np.testing.assert_allclose(arr, self.isec_poly[i, k],
+                                           rtol=1e-6)
+            np.testing.assert_allclose(self.zdpoint.get_isec(i),
+                                       self.isec_point[i], rtol=1e-6)
 
     def test_get_source_index(self):
         np.testing.assert_array_equal(self.zdpoly.get_source_index(0),

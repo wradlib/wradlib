@@ -40,8 +40,8 @@ class PolarNeighboursTest(unittest.TestCase):
         pn = verify.PolarNeighbours(self.r, self.az, self.site, self.proj,
                                     self.x, self.y, nnear=4)
         bx, by = pn.get_bincoords()
-        np.testing.assert_almost_equal(bx[0], 3557908.88665658)
-        np.testing.assert_almost_equal(by[0], 5383452.639404042)
+        np.testing.assert_allclose(bx[0], 3557908.88665658, rtol=1e-6)
+        np.testing.assert_allclose(by[0], 5383452.639404042, rtol=1e-6)
 
     def test_get_bincoords_at_points(self):
         pn = verify.PolarNeighbours(self.r, self.az, self.site, self.proj,
@@ -57,10 +57,10 @@ class PolarNeighboursTest(unittest.TestCase):
         resy1 = np.array([5383370.64023136, 5383380.64013055, 5383390.64002972,
                           5383400.6399289])
 
-        np.testing.assert_allclose(bx[0], resx0)
-        np.testing.assert_allclose(bx[1], resx1)
-        np.testing.assert_allclose(by[0], resy0)
-        np.testing.assert_allclose(by[1], resy1)
+        np.testing.assert_allclose(bx[0], resx0, rtol=1e-6)
+        np.testing.assert_allclose(bx[1], resx1, rtol=1e-6)
+        np.testing.assert_allclose(by[0], resy0, rtol=1e-6)
+        np.testing.assert_allclose(by[1], resy1, rtol=1e-6)
 
 
 class ErrorMetricsTest(unittest.TestCase):
