@@ -18,7 +18,7 @@ Projection Functions
    wkt_to_osr
 """
 
-from osgeo import osr, ogr
+from osgeo import gdal, osr, ogr
 import numpy as np
 
 
@@ -71,7 +71,39 @@ Georeferencing-and-Projection`.
                 'PARAMETER["latitude_of_center", {0:-f}],'
                 'PARAMETER["longitude_of_center", {1:-f}],'
                 'PARAMETER["false_easting", {2:-f}],'
-                'PARAMETER["false_northing", {3:-f}]]')
+                'PARAMETER["false_northing", {3:-f}],'
+                'UNIT["Meter",1]]')
+    aeqd_wkt3 = ('PROJCS["unnamed",'
+                 'GEOGCS["WGS 84",'
+                 'DATUM["unknown",'
+                 'SPHEROID["WGS84",6378137,298.257223563]],'
+                 'PRIMEM["Greenwich",0],'
+                 'UNIT["degree",0.0174532925199433]],'
+                 'PROJECTION["Azimuthal_Equidistant"],'
+                 'PARAMETER["latitude_of_center",{0:-f}],'
+                 'PARAMETER["longitude_of_center",{1:-f}],'
+                 'PARAMETER["false_easting",{2:-f}],'
+                 'PARAMETER["false_northing",{3:-f}],'
+                 'UNIT["Meter",1]]')
+
+    radolan_wkt3 = ('PROJCS["Radolan Projection",'
+                    'GEOGCS["Radolan Coordinate System",'
+                    'DATUM["Radolan_Kugel",'
+                    'SPHEROID["Erdkugel", 6370040, 0]],'
+                    'PRIMEM["Greenwich", 0,'
+                    'AUTHORITY["EPSG","8901"]],'
+                    'UNIT["degree", 0.017453292519943295,'
+                    'AUTHORITY["EPSG","9122"]]],'
+                    'PROJECTION["Polar_Stereographic"],'
+                    'PARAMETER["latitude_of_origin", 90],'
+                    'PARAMETER["central_meridian", 10],'
+                    'PARAMETER["scale_factor", {0:8.12f}],'
+                    'PARAMETER["false_easting", 0],'
+                    'PARAMETER["false_northing", 0],'
+                    'UNIT["kilometre", 1000,'
+                    'AUTHORITY["EPSG","9036"]],'
+                    'AXIS["Easting",SOUTH],'
+                    'AXIS["Northing",SOUTH]]')
 
     radolan_wkt = ('PROJCS["Radolan projection",'
                    'GEOGCS["Radolan Coordinate System",'
@@ -83,19 +115,21 @@ Georeferencing-and-Projection`.
                    'AXIS["Latitude", NORTH]],'
                    'PROJECTION["polar_stereographic"],'
                    'PARAMETER["central_meridian", 10.0],'
-                   'PARAMETER["latitude_of_origin", 60.0],'
+                   'PARAMETER["latitude_of_origin", 90.0],'
                    'PARAMETER["scale_factor", {0:8.10f}],'
                    'PARAMETER["false_easting", 0.0],'
                    'PARAMETER["false_northing", 0.0],'
                    'UNIT["m*1000.0", 1000.0],'
                    'AXIS["X", EAST],'
                    'AXIS["Y", NORTH]]')
-    #                  'AUTHORITY["USER","100000"]]'
 
     proj = osr.SpatialReference()
 
     if projname == "aeqd":
         # Azimuthal Equidistant
+        if gdal.VersionInfo()[0] >= '3':
+            aeqd_wkt = aeqd_wkt3
+
         if "x_0" in kwargs:
             proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"],
                                                kwargs["lon_0"],
@@ -103,13 +137,17 @@ Georeferencing-and-Projection`.
                                                kwargs["y_0"]))
         else:
             proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"],
-                                               kwargs["lon_0"], 0, 0))
+                                               kwargs["lon_0"], 0., 0.))
 
     elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
         scale = (1. + np.sin(np.radians(60.))) / (1. + np.sin(np.radians(90.)))
-        proj.ImportFromWkt(radolan_wkt.format(scale))
+        if gdal.VersionInfo()[0] >= '3':
+            radolan_wkt = radolan_wkt3.format(scale)
+        else:
+            radolan_wkt = radolan_wkt.format(scale)
 
+        proj.ImportFromWkt(radolan_wkt)
     else:
         raise ValueError("No convenience support for projection %r, "
                          "yet.\nYou need to create projection by using "
@@ -135,8 +173,9 @@ def proj4_to_osr(proj4str):
     proj = osr.SpatialReference()
     proj.ImportFromProj4(proj4str)
     proj.AutoIdentifyEPSG()
-    proj.Fixup()
-    proj.FixupOrdering()
+    if gdal.VersionInfo()[0] < '3':
+        proj.Fixup()
+        proj.FixupOrdering()
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
         raise ValueError("proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
                          "and can't be imported as OSR object")
@@ -173,6 +212,9 @@ def reproject(*args, **kwargs):
         defaults to EPSG(4326)
     projection_target : osr object
         defaults to EPSG(4326)
+    area_of_interest : tuple
+        tuple of floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
+    dfNorthLatitudeDeg), only gdal>=3
 
     Returns
     -------
@@ -229,8 +271,24 @@ def reproject(*args, **kwargs):
                                    get_default_projection())
     projection_target = kwargs.get('projection_target',
                                    get_default_projection())
+    area_of_interest = kwargs.get('area_of_interest',
+                                  (np.float(C[..., 0].min()),
+                                   np.float(C[..., 1].min()),
+                                   np.float(C[..., 0].max()),
+                                   np.float(C[..., 1].max())))
 
-    ct = osr.CoordinateTransformation(projection_source, projection_target)
+    if gdal.VersionInfo()[0] >= '3':
+        axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
+        projection_source.SetAxisMappingStrategy(axis_order)
+        projection_target.SetAxisMappingStrategy(axis_order)
+        options = osr.CoordinateTransformationOptions()
+        options.SetAreaOfInterest(*area_of_interest)
+        ct = osr.CreateCoordinateTransformation(projection_source,
+                                                projection_target,
+                                                options)
+    else:
+        ct = osr.CoordinateTransformation(projection_source,
+                                          projection_target)
     trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
@@ -298,4 +356,9 @@ def wkt_to_osr(wkt=None):
         proj.ImportFromWkt(wkt)
     else:
         proj = get_default_projection()
+
+    if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
+        raise ValueError("wkt validates to 'ogr.OGRERR_CORRUPT_DATA'"
+                         "and can't be imported as OSR object")
+
     return proj

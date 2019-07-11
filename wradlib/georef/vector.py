@@ -26,7 +26,7 @@ Vector Functions (GDAL)
 """
 
 import numpy as np
-from osgeo import gdal, ogr
+from osgeo import gdal, ogr, osr
 from .projection import get_default_projection
 import warnings
 ogr.UseExceptions()
@@ -98,6 +98,10 @@ def transform_geometry(geom, dest_srs, **kwargs):
     if not srs.IsSame(dest_srs):
         if gsrs is None:
             geom.AssignSpatialReference(srs)
+            gsrs = geom.GetSpatialReference()
+        if gdal.VersionInfo()[0] >= '3':
+            dest_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+            gsrs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         geom.TransformTo(dest_srs)
 
     return geom
