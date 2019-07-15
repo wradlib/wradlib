@@ -834,7 +834,9 @@ def to_odim(volume, filename):
         # what group p. 21 ff.
         h5_ds_what = h5_dataset.create_group('what')
         ds_what = {}
-        t = sorted(ds.time.values)
+        # skip NaT values
+        valid_times = ~np.isnat(ds.time.values)
+        t = sorted(ds.time.values[valid_times])
         start = dt.datetime.utcfromtimestamp(t[0].astype('O') / 1e9)
         end = dt.datetime.utcfromtimestamp(
             np.rint(t[-1].astype('O') / 1e9))
