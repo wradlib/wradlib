@@ -615,13 +615,22 @@ class RadolanTest(unittest.TestCase):
 
         filename = 'radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz'
         rx_file = wrl.util.get_wradlib_data_file(filename)
-        # test for loaddata=False
         data, attrs = radolan.read_radolan_composite(rx_file)
 
         filename = 'radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz'
         pc_file = wrl.util.get_wradlib_data_file(filename)
-        # test for loaddata=False
         data, attrs = radolan.read_radolan_composite(pc_file)
+
+        # xarray test
+        filename = 'radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz'
+        rx_file = wrl.util.get_wradlib_data_file(filename)
+        data, attrs = radolan.read_radolan_composite(rx_file,
+                                                     loaddata='xarray')
+        self.assertEqual(data.RX.shape, (900, 900))
+        self.assertEqual(data.dims, {'x':900, 'y':900})
+        self.assertEqual(data.RX.dims, ('y', 'x'))
+        self.assertEqual(data.time.values,
+                         np.datetime64('2014-08-10T20:50:00.000000000'))
 
 
 class RainbowTest(unittest.TestCase):

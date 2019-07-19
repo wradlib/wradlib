@@ -18,6 +18,7 @@ Reading DX and RADOLAN data from German Weather Service
     parse_dwd_composite_header
     read_radolan_binary_array
     decode_radolan_runlength_array
+    radolan_to_xarray
 """
 
 # standard libraries
@@ -36,7 +37,9 @@ import warnings
 
 # site packages
 import numpy as np
+import xarray as xr
 from .. import util as util
+from .. import georef as georef
 
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
@@ -656,21 +659,28 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
     The factor is also returned as part of attrs dictionary under
     keyword "precision".
 
+    Note
+    ----
+    Using `loaddata='xarray'` the data is wrapped in an xarray Dataset.
+    x,y, dimension as well as x,y and time coordinates
+    (polar stereographic projection) are supplied.
+
     Parameters
     ----------
     f : string or file handle
         path to the composite file or file handle
     missing : int
         value assigned to no-data cells
-    loaddata : bool
-        True | False, If False function returns (None, attrs)
+    loaddata : bool | str
+        True | False | 'xarray', If False function returns (None, attrs)
+        If 'xarray' returns (xarray Dataset, attrs)
 
     Returns
     -------
     output : tuple
         tuple of two items (data, attrs):
             - data : :func:`numpy:numpy.array` of shape (number of rows,
-              number of columns)
+              number of columns) | xarray.Dataset
             - attrs : dictionary of metadata information from the file header
 
     Examples
@@ -680,18 +690,19 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
 
     NODATA = missing
     mask = 0xFFF  # max value integer
+    close = False
 
     # If a file name is supplied, get a file handle
-    try:
-        header = read_radolan_header(f)
-    except AttributeError:
+    if isinstance(f, str):
         f = get_radolan_filehandle(f)
-        header = read_radolan_header(f)
+        close = True
 
+    header = read_radolan_header(f)
     attrs = parse_dwd_composite_header(header)
 
     if not loaddata:
-        f.close()
+        if close:
+            f.close()
         return None, attrs
 
     attrs["nodataflag"] = NODATA
@@ -709,16 +720,18 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
     if attrs['producttype'] in ['RX', 'EX', 'WX']:
         # convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
-        arr = np.where(arr == 250, NODATA, arr)
+        #arr = np.where(arr == 250, NODATA, arr)
+        attrs['nodatamask'] = np.where(arr == 250)[0]
         attrs['cluttermask'] = np.where(arr == 249)[0]
     elif attrs['producttype'] in ['PG', 'PC']:
         arr = decode_radolan_runlength_array(indat, attrs)
+        attrs['nodatamask'] = np.where(arr == 255)[0]
     else:
         # convert to 16-bit integers
         arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
         # evaluate bits 13, 14, 15 and 16
         attrs['secondary'] = np.where(arr & 0x1000)[0]
-        nodata = np.where(arr & 0x2000)[0]
+        attrs['nodatamask'] = np.where(arr & 0x2000)[0]
         negative = np.where(arr & 0x4000)[0]
         attrs['cluttermask'] = np.where(arr & 0x8000)[0]
         # mask out the last 4 bits
@@ -727,13 +740,125 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
         if attrs['producttype'] == 'RD':
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
-        # apply precision factor
-        # this promotes arr to float if precision is float
-        arr = arr * attrs['precision']
-        # set nodata value
-        arr[nodata] = NODATA
 
     # anyway, bring it into right shape
     arr = arr.reshape((attrs['nrow'], attrs['ncol']))
 
+    if loaddata is 'xarray':
+        arr = radolan_to_xarray(arr, attrs)
+    else:
+        # apply precision factor
+        # this promotes arr to float if precision is float
+        if 'precision' in attrs:
+            arr = arr * attrs['precision']
+        # set nodata value
+        if 'nodatamask' in attrs:
+            arr.flat[attrs['nodatamask']] = NODATA
+
+    if close:
+        f.close()
+
     return arr, attrs
+
+
+def _get_radolan_product_attributes(attrs):
+    """Create RADOLAN product attributes dictionary
+
+    Parameters
+    ----------
+    attrs : dict
+        dictionary of metadata information from the file header
+
+    Returns
+    -------
+    pattrs : dict
+        RADOLAN product attributes
+    """
+    product = attrs['producttype']
+    pattrs = {}
+
+    if product not in ['PG', 'PC']:
+        interval = attrs['intervalseconds']
+        precision = attrs['precision']
+
+    if product in ['RX', 'EX', 'WX']:
+        pattrs.update(radolan['dBZ'])
+    elif product in ['RY', 'RZ', 'EY', 'EZ']:
+        pattrs.update(radolan['RR'])
+        scale_factor = np.float32(precision * 3600 / interval)
+        pattrs.update({'scale_factor': scale_factor})
+    elif product in ['RH', 'RB', 'RW', 'RL', 'RU', 'EH', 'EB',
+                     'EW', 'SQ', 'SH', 'SF', 'W1', 'W2', 'W3', 'W4']:
+        pattrs.update(radolan['RA'])
+        pattrs.update({'scale_factor': np.float32(precision)})
+    elif product in ['PG', 'PC']:
+        pattrs.update(radolan['PG'])
+    else:
+        raise ValueError("WRADLIB: unkown RADOLAN product!")
+
+    return pattrs
+
+
+def radolan_to_xarray(data, attrs):
+    """Converts RADOLAN data to xarray Dataset
+
+    Parameters
+    ----------
+    data : :func:`numpy:numpy.array`
+        array of shape (number of rows, number of columns)
+    attrs : dict
+        dictionary of metadata information from the file header
+
+    Returns
+    -------
+    dset : xarray.Dataset
+        RADOLAN data and coordinates
+    """
+    product = attrs['producttype']
+    pattrs = _get_radolan_product_attributes(attrs)
+    radolan_grid_xy = georef.get_radolan_grid(attrs['nrow'], attrs['ncol'])
+    x0 = radolan_grid_xy[0, :, 0]
+    y0 = radolan_grid_xy[:, 0, 1]
+    if pattrs:
+        if 'nodatamask' in attrs:
+            data.flat[attrs['nodatamask']] = pattrs['_FillValue']
+        if 'cluttermask' in attrs:
+            data.flat[attrs['cluttermask']] = pattrs['_FillValue']
+    darr = xr.DataArray(data,
+                        attrs=pattrs,
+                        dims=['y', 'x'],
+                        coords={'time': attrs['datetime'],  'x': x0, 'y': y0,
+                                },
+                        )
+    dset = xr.Dataset({product: darr})
+    dset = dset.pipe(xr.decode_cf)
+
+    return dset
+
+
+radolan = {'dBZ': {'scale_factor': np.float32(0.5),
+                   'add_offset': np.float32(-32.5),
+                   'valid_min': np.int32(0),
+                   'valid_max': np.int32(255),
+                   '_FillValue': np.int32(255),
+                   'standard_name': 'equivalent_reflectivity_factor',
+                   'long_name': 'equivalent_reflectivity_factor',
+                   'unit': 'dBZ'},
+           'RR': {'add_offset': np.float(0),
+                  'valid_min': np.int32(0),
+                  'valid_max': np.int32(4095),
+                  '_FillValue': np.int32(65535),
+                  'standard_name': 'rainfall_rate',
+                  'long_name': 'rainfall_rate',
+                  'unit': 'mm h-1'},
+           'RA': {'add_offset': np.float(0),
+                  'valid_min': np.int32(0),
+                  'valid_max': np.int32(4095),
+                  '_FillValue': np.int32(65535),
+                  'standard_name': 'rainfall_amount',
+                  'long_name': 'rainfall_amount',
+                  'unit': 'mm'},
+           'PG': {'valid_min': np.int32(0),
+                  'valid_max': np.int32(255),
+                  '_FillValue': np.int32(255)}
+           }
