@@ -627,7 +627,7 @@ class RadolanTest(unittest.TestCase):
         data, attrs = radolan.read_radolan_composite(rx_file,
                                                      loaddata='xarray')
         self.assertEqual(data.RX.shape, (900, 900))
-        self.assertEqual(data.dims, {'x':900, 'y':900})
+        self.assertEqual(data.dims, {'x': 900, 'y': 900})
         self.assertEqual(data.RX.dims, ('y', 'x'))
         self.assertEqual(data.time.values,
                          np.datetime64('2014-08-10T20:50:00.000000000'))

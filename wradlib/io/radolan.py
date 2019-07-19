@@ -720,7 +720,6 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
     if attrs['producttype'] in ['RX', 'EX', 'WX']:
         # convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
-        #arr = np.where(arr == 250, NODATA, arr)
         attrs['nodatamask'] = np.where(arr == 250)[0]
         attrs['cluttermask'] = np.where(arr == 249)[0]
     elif attrs['producttype'] in ['PG', 'PC']:
@@ -744,7 +743,7 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
     # anyway, bring it into right shape
     arr = arr.reshape((attrs['nrow'], attrs['ncol']))
 
-    if loaddata is 'xarray':
+    if loaddata == 'xarray':
         arr = radolan_to_xarray(arr, attrs)
     else:
         # apply precision factor
