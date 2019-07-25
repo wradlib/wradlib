@@ -73,7 +73,7 @@ conda update --yes conda
 DEPS="numpy scipy matplotlib netcdf4 h5py xarray deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
 if [[ "$GDAL_VERSION" == "2" ]]; then
-    DEPS="$DEPS gdal=$GDAL_VESRION cartopy"
+    DEPS="$DEPS gdal=$GDAL_VERSION cartopy"
 else
     DEPS="$DEPS gdal=$GDAL_VERSION"
 fi
