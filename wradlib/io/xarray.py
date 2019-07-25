@@ -704,8 +704,8 @@ def write_odim_dataspace(src, dest):
                 }
         write_odim(what, h5_what)
 
-        # moments
-        val = value.values
+        # moments handling
+        val = value.sortby('azimuth').values
         fillval = enc['_FillValue'] * enc['scale_factor']
         fillval += enc['add_offset']
         val[np.isnan(val)] = fillval
@@ -851,13 +851,13 @@ def to_odim(volume, filename):
         h5_ds_where = h5_dataset.create_group('where')
         rscale = ds.range.values[1] / 1. - ds.range.values[0]
         rstart = (ds.range.values[0] - rscale / 2.) / 1000.
+        a1gate = np.argsort(ds.sortby('time').azimuth.values)[0]
         ds_where = {'elangle': ds.fixed_angle,
                     'nbins': ds.range.shape[0],
                     'rstart': rstart,
                     'rscale': rscale,
                     'nrays': ds.azimuth.shape[0],
-                    'a1gate':
-                        np.nonzero(np.argsort(ds.time.values) == 0)[0][0]
+                    'a1gate': a1gate,
                     }
         write_odim(ds_where, h5_ds_where)
 
