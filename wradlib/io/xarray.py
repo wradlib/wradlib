@@ -629,7 +629,11 @@ class OdimAccessor(object):
     def time_range(self):
         """Return the time range of this dataset."""
         if self._time_range is None:
-            self._time_range = self._obj.attrs['startazT']
+            startT = self._obj.attrs['startazT']
+            stopT = self._obj.attrs['stopazT']
+            times = (startT + stopT) / 2.
+            self._time_range = times
+
         return self._time_range
 
     @property
@@ -837,7 +841,7 @@ def to_odim(volume, filename):
         # skip NaT values
         valid_times = ~np.isnat(ds.time.values)
         t = sorted(ds.time.values[valid_times])
-        start = dt.datetime.utcfromtimestamp(t[0].astype('O') / 1e9)
+        start = dt.datetime.utcfromtimestamp(np.rint(t[0].astype('O') / 1e9))
         end = dt.datetime.utcfromtimestamp(
             np.rint(t[-1].astype('O') / 1e9))
         ds_what['product'] = 'SCAN'
@@ -866,8 +870,23 @@ def to_odim(volume, filename):
         try:
             ds_how = volume['odim']['dsets'][ds_list[idx]]['how'].attrs
         except KeyError:
+            tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').time]
+            difft = np.diff(tout) / 2.
+            difft = np.insert(difft, 0, difft[0])
+            azout = ds.sortby('azimuth').azimuth
+            diffa = np.diff(azout) / 2.
+            diffa = np.insert(diffa, 0, diffa[0])
+            elout = ds.sortby('azimuth').elevation
+            diffe = np.diff(elout) / 2.
+            diffe = np.insert(diffe, 0, diffe[0])
             ds_how = {'scan_index': ds.sweep_number + 1,
                       'scan_count': len(sweepnames),
+                      'startazT': tout - difft,
+                      'stopazT': tout + difft,
+                      'startazA': azout - diffa,
+                      'stopazA': azout + diffa,
+                      'startelA': elout - diffe,
+                      'stopelA': elout + diffe,
                       }
         write_odim(ds_how, h5_ds_how)
 
@@ -1202,7 +1221,8 @@ class XRadVol(collections.abc.MutableMapping):
     def __del__(self):
         for k in list(self._source):
             del self._source[k]
-        self._ncf.close()
+        if isinstance(self._ncf, nc.Dataset):
+            self._ncf.close()
 
     def _init_root(self):
         self['root'] = xr.Dataset(data_vars=global_variables,
