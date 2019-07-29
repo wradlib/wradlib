@@ -1023,10 +1023,8 @@ class XarrayTests(unittest.TestCase):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
         cf = CfRadial(ncfile)
-        i = 0
-        for item in cf:
-            i += 1
-        self.assertEqual(i, 10)
+        self.assertEqual(len(cf), cf.sweep)
+        self.assertEqual(len(cf), 9)
 
     def test_del(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
@@ -1034,7 +1032,7 @@ class XarrayTests(unittest.TestCase):
         cf = CfRadial(ncfile)
         for k in list(cf):
             del cf[k]
-        self.assertEqual(cf._source, {})
+        self.assertEqual(cf, {})
 
     def test_read_cfradial(self):
         sweep_names = ['sweep_1', 'sweep_2', 'sweep_3', 'sweep_4',
