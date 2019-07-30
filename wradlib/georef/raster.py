@@ -459,6 +459,9 @@ def reproject_raster_dataset(src_ds, **kwargs):
     # apply GeoTransform to destination dataset
     dst_ds.SetGeoTransform(dst_geo)
 
+    # apply Projection to destination dataset
+    dst_ds.SetProjection(dst_srs)
+
     # nodata handling, need to initialize dst_ds with nodata
     src_band = src_ds.GetRasterBand(1)
     nodata = src_band.GetNoDataValue()
