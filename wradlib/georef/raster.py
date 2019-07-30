@@ -403,7 +403,6 @@ def reproject_raster_dataset(src_ds, **kwargs):
                         [lrx, lry]]])
 
     if dst_srs:
-        print("dest_src available")
         src_srs = osr.SpatialReference()
         src_srs.ImportFromWkt(src_ds.GetProjection())
 
@@ -458,6 +457,10 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
     # apply GeoTransform to destination dataset
     dst_ds.SetGeoTransform(dst_geo)
+
+    # apply Projection to destination dataset
+    if dst_srs is not None:
+        dst_ds.SetProjection(dst_srs)
 
     # nodata handling, need to initialize dst_ds with nodata
     src_band = src_ds.GetRasterBand(1)
