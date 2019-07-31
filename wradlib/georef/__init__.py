@@ -17,6 +17,7 @@ Georeferencing
 .. automodule:: wradlib.georef.vector
 .. automodule:: wradlib.georef.rect
 .. automodule:: wradlib.georef.satellite
+.. automodule:: wradlib.georef.xarray
 """
 
 from .misc import (bin_altitude, bin_distance, site_distance, get_earth_radius)
@@ -44,5 +45,7 @@ from .vector import (get_vector_points, transform_geometry,
                      ogr_copy_layer_by_name, ogr_add_feature, ogr_add_geometry,
                      numpy_to_ogr, ogr_to_numpy, ogr_geocol_to_numpy,
                      get_centroid)
+
+from .xarray import (georeference_dataset)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

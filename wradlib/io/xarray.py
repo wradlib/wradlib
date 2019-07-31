@@ -66,7 +66,8 @@ import h5py
 import xarray as xr
 from osgeo import osr
 
-from ..georef import spherical_to_xyz, spherical_to_proj
+from ..georef import georeference_dataset, spherical_to_xyz, spherical_to_proj
+
 
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
@@ -343,7 +344,8 @@ def as_xarray_dataarray(data, dims, coords):
 
 
 def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
-                            site=None, sweep_mode='PPI', rf=1.0, **kwargs):
+                            site=None, sweep_mode='azimuth_surveillance',
+                            rf=1.0, **kwargs):
     """Create Xarray DataArray from Polar Radar Data
 
         .. versionadded:: 1.3
@@ -394,7 +396,7 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None, proj=None,
     theta = theta.copy()
 
     # create bins, rays 2D arrays for curvelinear coordinates
-    if sweep_mode == 'PPI':
+    if sweep_mode == 'azimuth_surveillance':
         bins, rays = np.meshgrid(r, phi, indexing='xy')
     else:
         bins, rays = np.meshgrid(r, theta, indexing='xy')
@@ -778,45 +780,6 @@ def to_odim(volume, filename):
     h5.close()
 
 
-def georeference_dataset(ds):
-    """Georeference Dataset.
-
-    This function adds georeference data to xarray dataset `ds`.
-
-    Parameters
-    ----------
-    ds : xarray dataset
-    """
-    # adding xyz aeqd-coordinates
-    site = (ds.coords['longitude'].values, ds.coords['latitude'].values,
-            ds.coords['altitude'].values)
-    dim0 = ds['azimuth'].dims[0]
-    xyz, aeqd = spherical_to_xyz(ds['range'],
-                                 ds['azimuth'],
-                                 ds['elevation'],
-                                 site,
-                                 squeeze=True)
-    gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-    ds.coords['x'] = ([dim0, 'range'], xyz[..., 0])
-    ds.coords['y'] = ([dim0, 'range'], xyz[..., 1])
-    ds.coords['z'] = ([dim0, 'range'], xyz[..., 2])
-    ds.coords['gr'] = ([dim0, 'range'], gr)
-
-    # adding rays, bins coordinates
-    if ds.sweep_mode == 'azimuth_surveillance':
-        bins, rays = np.meshgrid(ds['range'],
-                                 ds['azimuth'],
-                                 indexing='xy')
-    else:
-        bins, rays = np.meshgrid(ds['range'],
-                                 ds['elevation'],
-                                 indexing='xy')
-    ds.coords['rays'] = ([dim0, 'range'], rays)
-    ds.coords['bins'] = ([dim0, 'range'], bins)
-
-    return ds
-
-
 class XRadVolFile(object):
     """ BaseClass for holding netCDF4.Dataset handles
 
@@ -940,10 +903,19 @@ class XRadVol(collections.abc.MutableMapping):
             self._init_root()
 
     def __getitem__(self, key):
+        if key == 'root':
+            warnings.warn("WRADLIB: Use of `obj['root']` is deprecated, "
+                          "please use obj.root instead.", DeprecationWarning)
+            return self._root
+
         return self._sweeps[key]
 
     def __setitem__(self, key, value):
-        self._sweeps[key] = value
+        if key in self._sweeps:
+            self._sweeps[key] = value
+        else:
+            warnings.warn("WRADLIB: Use class methods to add data. "
+                          "Direct setting is not allowed.", UserWarning)
 
     def __delitem__(self, key):
         del self._sweeps[key]
@@ -1018,8 +990,8 @@ class XRadVol(collections.abc.MutableMapping):
         if self.root:
             to_cfradial2(self, filename)
         else:
-            warnings.warn(UserWarning, "No CfRadial2-compliant data structure "
-                                       "available. Not saving.")
+            warnings.warn("WRADLIB: No CfRadial2-compliant data structure "
+                          "available. Not saving.", UserWarning)
 
     def to_odim(self, filename):
         """ Save volume to ODIM_H5/V2_2 compliant file.
@@ -1027,8 +999,8 @@ class XRadVol(collections.abc.MutableMapping):
         if self.root:
             to_odim(self, filename)
         else:
-            warnings.warn(UserWarning, "No OdimH5-compliant data structure "
-                                       "available. Not saving.")
+            warnings.warn("WRADLIB: No OdimH5-compliant data structure "
+                          "available. Not saving.", UserWarning)
 
     def georeference(self):
         for swp in self:
@@ -1080,7 +1052,7 @@ class CfRadial(XRadVol):
             if georef:
                 ds = georeference_dataset(ds)
 
-            self[sw] = ds
+            self._sweeps[sw] = ds
 
     def assign_data_radial(self, nch, **kwargs):
         """ Assign from CfRadial1 data structure.
@@ -1128,7 +1100,7 @@ class CfRadial(XRadVol):
             if georef:
                 ds = georeference_dataset(ds)
 
-            self[sw] = ds
+            self._sweeps[sw] = ds
 
 
 class OdimH5(XRadVol):
@@ -1170,7 +1142,7 @@ class OdimH5(XRadVol):
                 * `time` - cfradial2 standard
                 * `azimuth` - better for working with xarray
         """
-        super(OdimH5, self).__init__(init_root=False)
+        super(OdimH5, self).__init__()
 
         if not isinstance(filename, list):
             filename = [filename]
@@ -1343,7 +1315,7 @@ class OdimH5(XRadVol):
             is_new_sweep = False
             # first file
             if self.root is None:
-                self[swp_grp_name[i]] = ds
+                self._sweeps[swp_grp_name[i]] = ds
             # all other files
             else:
                 # sort sweeps by angles
@@ -1355,12 +1327,13 @@ class OdimH5(XRadVol):
                 if fixed_angle == rt['sweep_fixed_angle']:
                     dictkey = rt['sweep_group_name'].item()
                     # merge datasets
-                    self[dictkey] = xr.merge([self[dictkey], ds])
+                    self._sweeps[dictkey] = xr.merge([self._sweeps[dictkey],
+                                                      ds])
                 # not same sweep (new sweep)
                 else:
                     nidx = len(self._sweeps) + 1
                     swp_grp_name[i] = f'sweep_{nidx}'
-                    self[swp_grp_name[i]] = ds
+                    self._sweeps[swp_grp_name[i]] = ds
                     is_new_sweep = True
 
         # assign root variables
