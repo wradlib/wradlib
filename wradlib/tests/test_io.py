@@ -6,8 +6,8 @@ import wradlib as wrl
 from wradlib.io import dem
 from wradlib.io import radolan
 from wradlib.io import rainbow
-from wradlib.io import CfRadial, OdimH5, create_xarray_dataarray
-from wradlib.georef import epsg_to_osr
+from wradlib.io import CfRadial, OdimH5
+from wradlib.georef import epsg_to_osr, create_xarray_dataarray
 from subprocess import check_call
 import numpy as np
 import xarray as xr
