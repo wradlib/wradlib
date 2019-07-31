@@ -1057,7 +1057,7 @@ class XarrayTests(unittest.TestCase):
                                          'radar_parameters radar_calibration '
                                          'geometry_correction')
 
-        self.assertEqual(repr(cf), repr(cf._source))
+        self.assertEqual(repr(cf), repr(cf._sweeps))
 
     def test_read_odim(self):
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.])
@@ -1096,21 +1096,6 @@ class XarrayTests(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
         cf2 = OdimH5(tmp)
-        xr.testing.assert_equal(cf.root, cf2.root)
-        for i in range(1, 6):
-            key = 'sweep_{}'.format(i)
-            xr.testing.assert_equal(cf[key], cf2[key])
-        # test write after del, file lockage
-        del cf2
-        cf.to_odim(tmp)
-
-    def test_odim_roundtrip_nonstrict(self):
-        filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
-        odimfile = wrl.util.get_wradlib_data_file(filename)
-        cf = OdimH5(odimfile, strict=False)
-        tmp = tempfile.NamedTemporaryFile(mode='w+b').name
-        cf.to_odim(tmp)
-        cf2 = OdimH5(tmp, strict=False)
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 6):
             key = 'sweep_{}'.format(i)
