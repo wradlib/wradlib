@@ -1058,6 +1058,12 @@ class XarrayTests(unittest.TestCase):
                                          'geometry_correction')
 
         self.assertEqual(repr(cf), repr(cf._sweeps))
+        filename = 'hdf5/2014-08-10--182000.ppi.mvol'
+        h5file = wrl.util.get_wradlib_data_file(filename)
+        with self.assertRaises(AttributeError):
+            cf = CfRadial(h5file, flavour='Cf/Radial3')
+        with self.assertRaises(AttributeError):
+            cf = CfRadial(h5file)
 
     def test_read_odim(self):
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.])
@@ -1139,6 +1145,36 @@ class XarrayTests(unittest.TestCase):
         cf3 = CfRadial(tmp1)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf3.root.time_coverage_start)
+
+    def test_root_key_warnings(self):
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        cf = CfRadial(ncfile)
+        with self.assertWarns(DeprecationWarning):
+            cf['root']
+
+    def test_to_odim_warning(self):
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        cf = CfRadial(ncfile)
+        cf.root = None
+        with self.assertWarns(UserWarning):
+            cf.to_odim('test.h5')
+
+    def test_to_cfradial2_warning(self):
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        cf = CfRadial(ncfile)
+        cf.root = None
+        with self.assertWarns(UserWarning):
+            cf.to_cfradial2('test.nc')
+
+    def test_setitem_warning(self):
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        cf = CfRadial(ncfile)
+        with self.assertWarns(UserWarning):
+            cf['test'] = None
 
 
 class DemTest(unittest.TestCase):

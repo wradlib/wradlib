@@ -6,9 +6,10 @@ import unittest
 import wradlib.georef as georef
 import wradlib.util as util
 from wradlib.io import (read_generic_hdf5, open_raster, gdal_create_dataset,
-                        open_vector)
+                        open_vector, create_xarray_dataarray)
 import numpy as np
 from osgeo import gdal, osr, ogr
+import xarray as xr
 
 np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
                     precision=8, suppress=False, threshold=1000,
@@ -904,6 +905,23 @@ class VectorTest(unittest.TestCase):
 
         self.assertEqual(cent1, (2600050.0, 5630050.0))
         self.assertEqual(cent2, (2600050.0, 5630050.0))
+
+
+class XarrayTest(unittest.TestCase):
+    def setUp(self):
+        self.da = create_xarray_dataarray(np.random.rand(360, 1000),
+                                          r=np.arange(0., 100000., 100.),
+                                          phi=np.arange(0., 360.),
+                                          theta=np.ones(360) * 1.0,
+                                          site=(9., 48., 100.),
+                                          proj=True,
+                                          sweep_mode='azimuth_surveillance')
+
+    def test_georeference_dataset(self):
+        src_da = self.da.copy()
+        src_da.drop(['x', 'y', 'z', 'gr', 'rays', 'bins'])
+        da = georef.georeference_dataset(src_da)
+        xr.testing.assert_equal(self.da, da)
 
 
 if __name__ == '__main__':
