@@ -46,6 +46,7 @@ from .vector import (get_vector_points, transform_geometry,
                      numpy_to_ogr, ogr_to_numpy, ogr_geocol_to_numpy,
                      get_centroid)
 
-from .xarray import (georeference_dataset)
+from .xarray import (as_xarray_dataarray, create_xarray_dataarray,
+                     georeference_dataset)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

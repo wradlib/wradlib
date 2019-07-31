@@ -51,7 +51,6 @@ from osgeo import osr
 
 # wradlib modules
 from . import georef as georef
-from .io.xarray import create_xarray_dataarray
 from . util import import_optional
 
 
@@ -450,9 +449,13 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     if np.isscalar(elev):
         elev = np.ones_like(az) * elev
 
-    da = create_xarray_dataarray(data, r=r, phi=az, theta=elev, site=site,
-                                 proj=proj, sweep_mode='PPI', rf=rf,
-                                 **kw_spherical)
+    da = georef.create_xarray_dataarray(data, r=r, phi=az, theta=elev,
+                                        site=site, proj=proj,
+                                        sweep_mode='azimuth_surveillance',
+                                        rf=rf,
+                                        **kw_spherical)
+
+    da = georef.georeference_dataset(da, proj=proj)
 
     # fallback to proj=None for GDAL OSR
     if isinstance(proj, osr.SpatialReference):
@@ -746,9 +749,11 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     if np.isscalar(az):
         az = np.ones_like(th) * az
 
-    da = create_xarray_dataarray(img, r=r, phi=az, theta=th, site=site,
-                                 proj=proj, sweep_mode='RHI', rf=rf,
-                                 **kw_spherical)
+    da = georef.create_xarray_dataarray(img, r=r, phi=az, theta=th, site=site,
+                                        proj=proj, sweep_mode='rhi', rf=rf,
+                                        **kw_spherical)
+
+    da = georef.georeference_dataset(da, proj=proj)
 
     # fallback to proj=None for GDAL OSR
     if isinstance(proj, osr.SpatialReference):

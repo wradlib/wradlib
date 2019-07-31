@@ -7,7 +7,6 @@ import sys
 
 import wradlib.vis as vis
 import wradlib.georef as georef
-import wradlib.io as io
 import numpy as np
 import matplotlib.pyplot as pl
 from wradlib.util import import_optional
@@ -31,9 +30,12 @@ class PolarPlotTest(unittest.TestCase):
         self.img = img
         self.proj = georef.create_osr("dwd-radolan")
 
-        self.da_ppi = io.create_xarray_dataarray(img, self.r, self.az, self.th)
-        self.da_rhi = io.create_xarray_dataarray(img[0:90], self.r, self.az1,
-                                                 self.el)
+        self.da_ppi = georef.create_xarray_dataarray(img, self.r, self.az,
+                                                     self.th)
+        self.da_ppi = georef.georeference_dataset(self.da_ppi, proj=None)
+        self.da_rhi = georef.create_xarray_dataarray(img[0:90], self.r,
+                                                     self.az1, self.el)
+        self.da_rhi = georef.georeference_dataset(self.da_rhi, proj=None)
 
     def test_plot_ppi(self):
         ax, pm = vis.plot_ppi(self.img, re=6371000., ke=(4. / 3.))

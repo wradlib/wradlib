@@ -6,7 +6,7 @@ import unittest
 import wradlib.georef as georef
 import wradlib.util as util
 from wradlib.io import (read_generic_hdf5, open_raster, gdal_create_dataset,
-                        open_vector, create_xarray_dataarray)
+                        open_vector)
 import numpy as np
 from osgeo import gdal, osr, ogr
 import xarray as xr
@@ -909,13 +909,15 @@ class VectorTest(unittest.TestCase):
 
 class XarrayTest(unittest.TestCase):
     def setUp(self):
-        self.da = create_xarray_dataarray(np.random.rand(360, 1000),
-                                          r=np.arange(0., 100000., 100.),
-                                          phi=np.arange(0., 360.),
-                                          theta=np.ones(360) * 1.0,
-                                          site=(9., 48., 100.),
-                                          proj=True,
-                                          sweep_mode='azimuth_surveillance')
+        func = georef.create_xarray_dataarray
+        self.da = func(np.random.rand(360, 1000),
+                       r=np.arange(0., 100000., 100.),
+                       phi=np.arange(0., 360.),
+                       theta=np.ones(360) * 1.0,
+                       site=(9., 48., 100.),
+                       proj=True,
+                       sweep_mode='azimuth_surveillance')
+        self.da = georef.georeference_dataset(self.da)
 
     def test_georeference_dataset(self):
         src_da = self.da.copy()
