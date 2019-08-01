@@ -68,6 +68,14 @@ import xarray as xr
 from ..georef import xarray
 
 
+def create_xarray_dataarray(*args, **kwargs):
+    warnings.warn("WRADLIB: calling `wradlib.io.create_xarray_dataarray` is "
+                  "deprecated, please use "
+                  "`wradlib.georef.create_xarray_dataarray`.",
+                  DeprecationWarning)
+    return xarray.create_xarray_dataarray(*args, **kwargs)
+
+
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
     'DBZH': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
