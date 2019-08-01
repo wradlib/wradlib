@@ -515,11 +515,13 @@ def to_cfradial2(volume, filename):
     filename : str
         output filename
     """
+    volume.root.load()
     root = volume.root.copy(deep=True)
     root.attrs['Conventions'] = 'Cf/Radial'
     root.attrs['version'] = '2.0'
     root.to_netcdf(filename, mode='w', group='/')
     for key in root.sweep_group_name.values:
+        volume[key].load()
         volume[key].to_netcdf(filename, mode='a', group=key)
 
 
@@ -638,7 +640,7 @@ def to_odim(volume, filename):
 
 
 class XRadVolFile(object):
-    """ BaseClass for holding netCDF4.Dataset handles
+    """BaseClass for holding netCDF4.Dataset handles
 
     """
     def __init__(self, filename=None, flavour=None, **kwargs):
@@ -668,6 +670,15 @@ class XRadVolFile(object):
 
 
 class OdimH5File(XRadVolFile):
+    """Class for holding netCDF4.Dataset handles of OdimH5 files
+
+    Parameters
+    ----------
+    filename : str
+        Source data file name.
+    flavour : str
+        Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
+    """
     def __init__(self, filename=None, flavour=None, **kwargs):
         super(OdimH5File, self).__init__(filename=filename,
                                          flavour=flavour, **kwargs)
@@ -716,6 +727,15 @@ class OdimH5File(XRadVolFile):
 
 
 class NetCDF4File(XRadVolFile):
+    """Class for holding netCDF4.Dataset handles of Cf/Radial files
+
+    Parameters
+    ----------
+    filename : str
+        Source data file name.
+    flavour : str
+        Name of flavour ('Cf/Radial' or 'Cf/Radial2').
+    """
     def __init__(self, filename=None, flavour=None, **kwargs):
         super(NetCDF4File, self).__init__(filename=filename,
                                           flavour=flavour,
@@ -738,7 +758,7 @@ class NetCDF4File(XRadVolFile):
                 else:
                     flavour = 'Cf/Radial'
 
-        if "Cf/Radial" not in flavour:
+        if flavour not in ['Cf/Radial', 'Cf/Radial2']:
             raise AttributeError(
                 'wradlib: Unknown "flavour" kwarg attribute: {} .'
                 ''.format(flavour))
@@ -747,7 +767,7 @@ class NetCDF4File(XRadVolFile):
 
 
 class XRadVol(collections.abc.MutableMapping):
-    """ BaseClass for xarray based RadarVolumes
+    """BaseClass for xarray based RadarVolumes
 
     Implements `collections.MutableMapping` dictionary.
     """
@@ -843,6 +863,11 @@ class XRadVol(collections.abc.MutableMapping):
 
     def to_cfradial2(self, filename):
         """ Save volume to CfRadial2.0 compliant file.
+
+        Parameter
+        ---------
+        filename : str
+            Name of the output file
         """
         if self.root:
             to_cfradial2(self, filename)
@@ -852,6 +877,11 @@ class XRadVol(collections.abc.MutableMapping):
 
     def to_odim(self, filename):
         """ Save volume to ODIM_H5/V2_2 compliant file.
+
+        Parameter
+        ---------
+        filename : str
+            Name of the output file
         """
         if self.root:
             to_odim(self, filename)
@@ -859,8 +889,18 @@ class XRadVol(collections.abc.MutableMapping):
             warnings.warn("WRADLIB: No OdimH5-compliant data structure "
                           "available. Not saving.", UserWarning)
 
-    def georeference(self):
-        for swp in self:
+    def georeference(self, sweeps=None):
+        """Georeference sweeps
+
+        Parameter
+        ---------
+        sweeps : list
+            list with sweep keys to georeference, defaults to all sweeps
+        """
+        if sweeps is None:
+            sweeps = self
+
+        for swp in sweeps:
             self[swp] = self[swp].pipe(xarray.georeference_dataset)
 
 
@@ -869,6 +909,37 @@ class CfRadial(XRadVol):
 
     """
     def __init__(self, filename=None, flavour=None, **kwargs):
+        """Initialize xarray structure from Cf/Radial data structure.
+
+        Parameters
+        ----------
+        filename : str
+            Source data file name.
+        flavour : str
+            Name of flavour ('Cf/Radial' or 'Cf/Radial2').
+
+        Keyword Arguments
+        -----------------
+        decode_times : bool
+            If True, decode cf times to np.datetime64. Defaults to True.
+        decode_coords : bool
+            If True, use the ‘coordinates’ attribute on variable
+            to assign coordinates. Defaults to True.
+        mask_and_scale : bool
+            If True, lazily scale (using scale_factor and add_offset)
+            and mask (using _FillValue). Defaults to True.
+        chunks : int | dict, optional
+            If chunks is provided, it used to load the new dataset into dask
+            arrays. chunks={} loads the dataset with dask using a single
+            chunk for all arrays.
+        georef : bool
+            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+        dim0 : str
+            name of the ray-dimension of DataArrays and Dataset:
+                * `time` - cfradial2 standard
+                * `azimuth` - better for working with xarray
+        """
         super(CfRadial, self).__init__()
         if not isinstance(filename, list):
             filename = [filename]
@@ -877,16 +948,37 @@ class CfRadial(XRadVol):
             self._nch.append(nch)
             if nch.flavour == "Cf/Radial2":
                 self.assign_data_radial2(nch, **kwargs)
-            elif nch.flavour == "Cf/Radial":
-                self.assign_data_radial(nch, **kwargs)
             else:
-                raise AttributeError(
-                    'wradlib: Unknown "flavour" kwarg attribute: {} .'
-                    ''.format(nch.flavour))
+                self.assign_data_radial(nch, **kwargs)
 
     def assign_data_radial2(self, nch, **kwargs):
         """ Assign from CfRadial2 data structure.
 
+        Parameter
+        ---------
+        nch : NetCDF4File object
+
+        Keyword Arguments
+        -----------------
+        decode_times : bool
+            If True, decode cf times to np.datetime64. Defaults to True.
+        decode_coords : bool
+            If True, use the ‘coordinates’ attribute on variable
+            to assign coordinates. Defaults to True.
+        mask_and_scale : bool
+            If True, lazily scale (using scale_factor and add_offset)
+            and mask (using _FillValue). Defaults to True.
+        chunks : int | dict, optional
+            If chunks is provided, it used to load the new dataset into dask
+            arrays. chunks={} loads the dataset with dask using a single
+            chunk for all arrays.
+        georef : bool
+            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+        dim0 : str
+            name of the ray-dimension of DataArrays and Dataset:
+                * `time` - cfradial2 standard
+                * `azimuth` - better for working with xarray
         """
         # keyword argument handling
         georef = kwargs.pop('georef', False)
@@ -914,6 +1006,27 @@ class CfRadial(XRadVol):
     def assign_data_radial(self, nch, **kwargs):
         """ Assign from CfRadial1 data structure.
 
+        Keyword Arguments
+        -----------------
+        decode_times : bool
+            If True, decode cf times to np.datetime64. Defaults to True.
+        decode_coords : bool
+            If True, use the ‘coordinates’ attribute on variable
+            to assign coordinates. Defaults to True.
+        mask_and_scale : bool
+            If True, lazily scale (using scale_factor and add_offset)
+            and mask (using _FillValue). Defaults to True.
+        chunks : int | dict, optional
+            If chunks is provided, it used to load the new dataset into dask
+            arrays. chunks={} loads the dataset with dask using a single
+            chunk for all arrays.
+        georef : bool
+            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
+            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+        dim0 : str
+            name of the ray-dimension of DataArrays and Dataset:
+                * `time` - cfradial2 standard
+                * `azimuth` - better for working with xarray
         """
         # keyword argument handling
         georef = kwargs.pop('georef', False)
@@ -944,6 +1057,7 @@ class CfRadial(XRadVol):
             ds = data.isel(time=tslice,
                            sweep=slice(i, i + 1)).squeeze('sweep')
             ds = ds.rename_dims({'time': dim0})
+            ds.sweep_mode.load()
             coords = {'longitude': self.root.longitude,
                       'latitude': self.root.latitude,
                       'altitude': self.root.altitude,
@@ -983,6 +1097,10 @@ class OdimH5(XRadVol):
         mask_and_scale : bool
             If True, lazily scale (using scale_factor and add_offset)
             and mask (using _FillValue). Defaults to True.
+        chunks : int | dict, optional
+            If chunks is provided, it used to load the new dataset into dask
+            arrays. chunks={} loads the dataset with dask using a single
+            chunk for all arrays.
         georef : bool
             If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
             2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
@@ -1027,6 +1145,10 @@ class OdimH5(XRadVol):
         mask_and_scale : bool
             If True, lazily scale (using scale_factor and add_offset)
             and mask (using _FillValue). Defaults to True.
+        chunks : int | dict, optional
+            If chunks is provided, it used to load the new dataset into dask
+            arrays. chunks={} loads the dataset with dask using a single
+            chunk for all arrays.
         georef : bool
             If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
             2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy).
@@ -1260,7 +1382,7 @@ def _write_odim(src, dest):
 
 
 def _write_odim_dataspace(src, dest):
-    """ Writes Odim Dataspaces
+    """ Writes Odim Dataspaces.
 
     Parameters
     ----------
@@ -1315,7 +1437,7 @@ def _write_odim_dataspace(src, dest):
 
 
 def _open_dataset(nch, grp=None, **kwargs):
-    """ Open netcdf/hdf5 group as xarray dataset.
+    """ Open netcdf4/hdf5 group as xarray dataset.
 
     Parameters
     ----------
@@ -1327,7 +1449,7 @@ def _open_dataset(nch, grp=None, **kwargs):
     Returns
     -------
     nch : handle
-        netcdf4 group handle
+        xarray Dataset handle
     """
     if grp is not None:
         nch = nch.groups.get(grp, False)
@@ -1401,7 +1523,7 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
 
     Returns
     -------
-    ds : xarray dataset
+    ds : xarray Dataset
         altered dataset
     """
 
@@ -1476,12 +1598,12 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
     return ds
 
 
-def _get_odim_group_moments(ncf, sweep, moments=None, **kwargs):
+def _get_odim_group_moments(nch, sweep, moments=None, **kwargs):
     """ Retrieve radar moments from hdf groups.
 
     Parameters
     ----------
-    ncf : netCDF Dataset handle
+    nch : netCDF Dataset handle
     sweep : str
         sweep key
     moments : list
@@ -1501,11 +1623,11 @@ def _get_odim_group_moments(ncf, sweep, moments=None, **kwargs):
 
     datas = {}
     for mom in moments:
-        dmom_what = _open_dataset(ncf[sweep][mom], 'what', chunks=chunks)
+        dmom_what = _open_dataset(nch[sweep][mom], 'what', chunks=chunks)
         name = dmom_what.attrs.pop('quantity')
         if 'cf' in standard and name not in moments_mapping.keys():
             continue
-        dsmom = _open_dataset(ncf[sweep], mom, chunks=chunks)
+        dsmom = _open_dataset(nch[sweep], mom, chunks=chunks)
 
         # create attribute dict
         attrs = collections.OrderedDict()
@@ -1706,6 +1828,20 @@ def _get_odim_coordinates(nch, grps):
 
 
 def _get_odim_sweep_mode(nch, grp):
+    """Retrieve sweep mode
+
+    Parameters
+    ----------
+    nch : netCDF4.Dataset handle
+    grp : dict
+        Dictionary of dataset hdf5 groups ('how', 'what', 'where')
+
+    Returns
+    -------
+    out : str
+        'azimuth_surveillance' or 'rhi'
+
+    """
     odim_mode = grp['what'].attrs[nch._swmode]
     return ('rhi' if odim_mode == 'RHI' else 'azimuth_surveillance')
 

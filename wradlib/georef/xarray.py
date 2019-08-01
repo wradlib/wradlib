@@ -70,7 +70,7 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None,
     site : tuple
         Tuple of coordinates of the radar site.
     sweep_mode : str
-        Defaults to 'PPI'.
+        Defaults to 'azimuth_surveillance'.
     rf : float
         factor to scale range, defaults to 1. (no scale)
 
@@ -121,55 +121,69 @@ def create_xarray_dataarray(data, r=None, phi=None, theta=None,
     return da
 
 
-def georeference_dataset(ds, **kwargs):
+def georeference_dataset(obj, **kwargs):
     """Georeference Dataset.
 
-    This function adds georeference data to xarray dataset `ds`.
+        .. versionadded:: 1.5
+
+    This function adds georeference data to xarray Dataset/DataArray `obj`.
 
     Parameters
     ----------
-    ds : xarray dataset
+    obj : xarray.Dataset | xarray.DataArray
+
+    Keyword Arguments
+    -----------------
+    proj : GDAL OSR SRS | cartopy CRS | None
+        If GDAL OSR SRS, output is in this projection, else AEQD.
+    re : float
+        earth's radius [m]
+    ke : float
+        adjustment factor to account for the refractivity gradient that
+        affects radar beam propagation. In principle this is wavelength-
+        dependent. The default of 4/3 is a good approximation for most
+        weather radar wavelengths.
 
     Returns
     ----------
-    ds : xarray dataset
+    obj : xarray.Dataset | xarray.DataArray
     """
     proj = kwargs.pop('proj', 'None')
     re = kwargs.pop('re', None)
     ke = kwargs.pop('ke', 4. / 3.)
 
     # adding xyz aeqd-coordinates
-    site = (ds.coords['longitude'].values, ds.coords['latitude'].values,
-            ds.coords['altitude'].values)
+    site = (obj.coords['longitude'].values, obj.coords['latitude'].values,
+            obj.coords['altitude'].values)
 
     if site == (0., 0., 0.):
         re = 6378137.
 
-    dim0 = ds['azimuth'].dims[0]
+    dim0 = obj['azimuth'].dims[0]
 
     # GDAL OSR, convert to this proj
     if isinstance(proj, osr.SpatialReference):
-        xyz = polar.spherical_to_proj(ds['range'],
-                                      ds['azimuth'],
-                                      ds['elevation'],
+        xyz = polar.spherical_to_proj(obj['range'],
+                                      obj['azimuth'],
+                                      obj['elevation'],
                                       site,
                                       proj=proj,
                                       re=re,
                                       ke=ke)
     # other proj, convert to aeqd
     elif proj:
-        xyz, dst_proj = polar.spherical_to_xyz(ds['range'],
-                                               ds['azimuth'],
-                                               ds['elevation'],
+        xyz, dst_proj = polar.spherical_to_xyz(obj['range'],
+                                               obj['azimuth'],
+                                               obj['elevation'],
                                                site,
                                                re=re,
                                                ke=ke,
                                                squeeze=True)
     # proj, convert to aeqd and add offset
     else:
-        xyz, dst_proj = polar.spherical_to_xyz(ds['range'],
-                                               ds['azimuth'],
-                                               ds['elevation'],
+        xyz, dst_proj = polar.spherical_to_xyz(obj['range'],
+                                               obj['azimuth'],
+                                               obj['elevation'],
                                                site,
                                                re=re,
                                                ke=ke,
@@ -184,21 +198,21 @@ def georeference_dataset(ds, **kwargs):
                  (xyz[..., 1] - center[1]) ** 2)
 
     gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-    ds.coords['x'] = ([dim0, 'range'], xyz[..., 0])
-    ds.coords['y'] = ([dim0, 'range'], xyz[..., 1])
-    ds.coords['z'] = ([dim0, 'range'], xyz[..., 2])
-    ds.coords['gr'] = ([dim0, 'range'], gr)
+    obj.coords['x'] = ([dim0, 'range'], xyz[..., 0])
+    obj.coords['y'] = ([dim0, 'range'], xyz[..., 1])
+    obj.coords['z'] = ([dim0, 'range'], xyz[..., 2])
+    obj.coords['gr'] = ([dim0, 'range'], gr)
 
     # adding rays, bins coordinates
-    if ds.sweep_mode == 'azimuth_surveillance':
-        bins, rays = np.meshgrid(ds['range'],
-                                 ds['azimuth'],
+    if obj.sweep_mode == 'azimuth_surveillance':
+        bins, rays = np.meshgrid(obj['range'],
+                                 obj['azimuth'],
                                  indexing='xy')
     else:
-        bins, rays = np.meshgrid(ds['range'],
-                                 ds['elevation'],
+        bins, rays = np.meshgrid(obj['range'],
+                                 obj['elevation'],
                                  indexing='xy')
-    ds.coords['rays'] = ([dim0, 'range'], rays)
-    ds.coords['bins'] = ([dim0, 'range'], bins)
+    obj.coords['rays'] = ([dim0, 'range'], rays)
+    obj.coords['bins'] = ([dim0, 'range'], bins)
 
-    return ds
+    return obj

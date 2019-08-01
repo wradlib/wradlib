@@ -62,11 +62,6 @@ class WradlibAccessor(object):
         self._obj = xarray_obj
         self._site = None
         self._proj = None
-        if self._obj.sweep_mode in ['azimuth_surveillance', 'PPI']:
-            self._mode = 'PPI'
-        else:
-            self. _mode = 'RHI'
-
         self.fix_cyclic()
 
     def __getattr__(self, attr):
@@ -90,10 +85,6 @@ class WradlibAccessor(object):
                           self._obj.latitude.item(),
                           self._obj.altitude.item())
         return self._site
-
-    @property
-    def mode(self):
-        return self._mode
 
     @property
     def proj(self):
@@ -216,7 +207,7 @@ class WradlibAccessor(object):
         # handle curvelinear grid properties
         if proj == 'cg' or isinstance(proj, collections.abc.Mapping):
             self.proj = None
-            if self.mode == 'PPI':
+            if self.sweep_mode == 'azimuth_surveillance':
                 cg = {'rot': -450, 'scale': -1}
             else:
                 cg = {'rot': 0, 'scale': 1}
@@ -265,7 +256,7 @@ class WradlibAccessor(object):
         else:
             plax = ax
             infer_intervals = kwargs.pop('infer_intervals', True)
-            if self.mode == 'PPI':
+            if self.sweep_mode == 'azimuth_surveillance':
                 xp, yp = 'x', 'y'
             else:
                 xp, yp = 'gr', 'z'
@@ -286,7 +277,7 @@ class WradlibAccessor(object):
 
         # set cg grids and limits
         if cg:
-            if self.mode == 'PPI':
+            if self.sweep_mode == 'azimuth_surveillance':
                 xlims = np.min(self._obj.x), np.max(self._obj.x)
                 ylims = np.min(self._obj.y), np.max(self._obj.y)
             else:
@@ -297,7 +288,7 @@ class WradlibAccessor(object):
             ax.grid(True)
             caax.grid(True)
 
-        if self.mode == 'PPI':
+        if self.sweep_mode == 'azimuth_surveillance':
             ax.set_aspect('equal', adjustable='box')
 
         # set ax as current
