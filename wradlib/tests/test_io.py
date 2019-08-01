@@ -1059,12 +1059,6 @@ class XarrayTests(unittest.TestCase):
                                          'geometry_correction')
 
         self.assertEqual(repr(cf), repr(cf._sweeps))
-        filename = 'hdf5/2014-08-10--182000.ppi.mvol'
-        h5file = wrl.util.get_wradlib_data_file(filename)
-        with self.assertRaises(AttributeError):
-            cf = CfRadial(h5file, flavour='Cf/Radial3')
-        with self.assertRaises(AttributeError):
-            cf = CfRadial(h5file)
 
     def test_read_odim(self):
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.])
@@ -1147,6 +1141,20 @@ class XarrayTests(unittest.TestCase):
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf3.root.time_coverage_start)
 
+    def test_georeference(self):
+        filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        cf = CfRadial(ncfile, georef=True)
+        tmp = tempfile.NamedTemporaryFile(mode='w+b').name
+        cf.to_cfradial2(tmp)
+        cf2 = CfRadial(tmp, georef=True)
+        swp1 = cf['sweep_1'].copy()
+        cf['sweep_1'] = cf['sweep_1'].drop(['x', 'y', 'z', 'gr',
+                                            'rays', 'bins'])
+        cf.georeference()
+        xr.testing.assert_equal(swp1, cf['sweep_1'])
+        xr.testing.assert_equal(swp1, cf2['sweep_1'])
+
     def test_root_key_warnings(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
         ncfile = wrl.util.get_wradlib_data_file(filename)
@@ -1176,6 +1184,25 @@ class XarrayTests(unittest.TestCase):
         cf = CfRadial(ncfile)
         with self.assertWarns(UserWarning):
             cf['test'] = None
+
+    def test_odim_errors(self):
+        filename = 'netcdf/edge_netcdf.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        with self.assertRaises(TypeError):
+            OdimH5(ncfile)
+
+        filename = 'netcdf/example_cfradial_ppi.nc'
+        ncfile = wrl.util.get_wradlib_data_file(filename)
+        with self.assertRaises(AttributeError):
+            OdimH5(ncfile)
+
+    def test_netcdf4_errors(self):
+        filename = 'hdf5/2014-08-10--182000.ppi.mvol'
+        h5file = wrl.util.get_wradlib_data_file(filename)
+        with self.assertRaises(AttributeError):
+            CfRadial(h5file, flavour='Cf/Radial3')
+        with self.assertRaises(AttributeError):
+            CfRadial(h5file)
 
 
 class DemTest(unittest.TestCase):
