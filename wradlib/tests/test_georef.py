@@ -919,6 +919,16 @@ class XarrayTest(unittest.TestCase):
                        sweep_mode='azimuth_surveillance')
         self.da = georef.georeference_dataset(self.da)
 
+    def test_create_xarray_dataarray(self):
+        img = np.zeros((360, 10), dtype=np.float32)
+        r = np.arange(0, 100000, 10000)
+        az = np.arange(0, 360)
+        th = np.zeros_like(az)
+        proj = georef.epsg_to_osr(4326)
+        with self.assertRaises(TypeError):
+            georef.create_xarray_dataarray(img)
+        georef.create_xarray_dataarray(img, r, az, th, proj=proj)
+
     def test_georeference_dataset(self):
         src_da = self.da.copy()
         src_da.drop(['x', 'y', 'z', 'gr', 'rays', 'bins'])

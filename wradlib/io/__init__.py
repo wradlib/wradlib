@@ -42,6 +42,6 @@ from .radolan import (read_dx, read_radolan_composite,
 from .iris import (IrisFile, IrisRecordFile, IrisRawFile, IrisIngestHeaderFile,
                    IrisIngestDataFile, IrisProductFile,
                    IrisCartesianProductFile, read_iris)
-from .xarray import (CfRadial, OdimH5)
+from .xarray import (CfRadial, OdimH5, create_xarray_dataarray)
 
 __all__ = [s for s in dir() if not s.startswith('_')]

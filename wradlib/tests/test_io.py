@@ -6,8 +6,8 @@ import wradlib as wrl
 from wradlib.io import dem
 from wradlib.io import radolan
 from wradlib.io import rainbow
-from wradlib.io import CfRadial, OdimH5
-from wradlib.georef import epsg_to_osr, create_xarray_dataarray
+from wradlib.io import CfRadial, OdimH5, create_xarray_dataarray
+import wradlib.georef as georef
 from subprocess import check_call
 import numpy as np
 import xarray as xr
@@ -1014,10 +1014,11 @@ class XarrayTests(unittest.TestCase):
         r = np.arange(0, 100000, 10000)
         az = np.arange(0, 360)
         th = np.zeros_like(az)
-        proj = epsg_to_osr(4326)
+        proj = georef.epsg_to_osr(4326)
         with self.assertRaises(TypeError):
             create_xarray_dataarray(img)
-        create_xarray_dataarray(img, r, az, th, proj=proj)
+        with self.assertWarns(DeprecationWarning):
+            create_xarray_dataarray(img, r, az, th, proj=proj)
 
     def test_iter(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
