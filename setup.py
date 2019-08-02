@@ -52,7 +52,7 @@ LICENSE = 'MIT'
 CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 1
-MINOR = 4
+MINOR = 5
 PATCH = 0
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 
