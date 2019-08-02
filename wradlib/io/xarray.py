@@ -521,8 +521,15 @@ def to_cfradial2(volume, filename):
     root.attrs['version'] = '2.0'
     root.to_netcdf(filename, mode='w', group='/')
     for key in root.sweep_group_name.values:
-        volume[key].load()
-        volume[key].to_netcdf(filename, mode='a', group=key)
+        swp = volume[key]
+        swp.load()
+        dims = list(swp.dims)
+        dims.remove('range')
+        dim0 = dims[0]
+
+        swp = swp.rename_dims({dim0: 'time'})
+        swp.drop(['x', 'y', 'z', 'gr', 'rays', 'bins'], errors='ignore')
+        swp.to_netcdf(filename, mode='a', group=key)
 
 
 def to_odim(volume, filename):
