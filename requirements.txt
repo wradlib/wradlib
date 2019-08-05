@@ -8,3 +8,4 @@ gdal
 deprecation
 xmltodict
 semver
+requests
