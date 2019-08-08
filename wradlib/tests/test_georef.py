@@ -2,6 +2,8 @@
 # Copyright (c) 2011-2018, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import sys
+
 import unittest
 import wradlib.georef as georef
 import wradlib.util as util
