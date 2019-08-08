@@ -511,9 +511,6 @@ class PixMapTest(unittest.TestCase):
     def test_pixel_to_map(self):
         pass
 
-    def test_pixel_to_map3d(self):
-        pass
-
 
 class GdalTests(unittest.TestCase):
     def setUp(self):
@@ -525,11 +522,25 @@ class GdalTests(unittest.TestCase):
          self.proj) = georef.extract_raster_dataset(self.ds)
         self.x_sp, self.y_sp = self.coords[1, 1] - self.coords[0, 0]
 
+        filename = 'hdf5/belgium.comp.hdf'
+        geofile = util.get_wradlib_data_file(filename)
+        self.ds2 = open_raster(geofile)
+        self.corner_gdalinfo = np.array([[3e5, 1e6],
+                                         [3e5, 3e5],
+                                         [1e6, 3e5],
+                                         [1e6, 1e6]])
+
+        self.corner_geo_gdalinfo = np.array([[-0.925465, 53.6928559],
+                                             [-0.266697, 47.4167912],
+                                             [9.0028805, 47.4160381],
+                                             [9.6641599, 53.6919969]])
+
     def test_read_gdal_coordinates(self):
-        coords = georef.read_gdal_coordinates(self.ds)
-        self.assertEqual(coords.shape[-1], 3)
-        coords = georef.read_gdal_coordinates(self.ds, z=False)
-        self.assertEqual(coords.shape[-1], 2)
+        center_coords = georef.read_gdal_coordinates(self.ds)
+        self.assertEqual(center_coords.shape[-1], 2)
+        edge_coords = georef.read_gdal_coordinates(self.ds, edge=True)
+        ul_center = (edge_coords[0, 0] + edge_coords[1, 1]) / 2
+        np.testing.assert_array_almost_equal(center_coords[0, 0], ul_center)
 
     def test_read_gdal_projection(self):
         georef.read_gdal_projection(self.ds)
@@ -584,11 +595,33 @@ class GdalTests(unittest.TestCase):
                                                     axis=-2))
 
         np.testing.assert_array_equal(coords,
-                                      np.flip(self.coords[:3600, :3600] +
-                                              [0, self.y_sp], axis=-3))
+                                      np.flip(self.coords[:3600, :3600],
+                                              axis=-3))
 
     def test_extract_raster_dataset(self):
         data, coords, proj = georef.extract_raster_dataset(self.ds)
+        self.assertEqual(coords.shape[-1], 2)
+        data, coords, proj = georef.extract_raster_dataset(self.ds, edge=True)
+        self.assertEqual(coords.shape[-1], 2)
+
+    def test_get_raster_elevation(self):
+        georef.get_raster_elevation(self.ds, download={'region': 'Eurasia'})
+
+    def test_get_raster_extent(self):
+        extent = georef.get_raster_extent(self.ds2)
+        window_geo = np.array([-0.925465, 9.6641599, 47.4160381, 53.6928559])
+        np.testing.assert_array_almost_equal(extent, window_geo)
+
+        extent = georef.get_raster_extent(self.ds2, geo=False)
+        window_map = np.array([3e5, 1e6, 3e5, 1e6])
+        np.testing.assert_array_almost_equal(extent, window_map, decimal=3)
+
+        extent = georef.get_raster_extent(self.ds2, window=False)
+        np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
+
+        extent = georef.get_raster_extent(self.ds2, geo=False, window=False)
+        np.testing.assert_array_almost_equal(extent, self.corner_gdalinfo,
+                                             decimal=3)
 
 
 class GetGridsTest(unittest.TestCase):

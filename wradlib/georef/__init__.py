@@ -36,6 +36,7 @@ from .raster import (pixel_coordinates, pixel_to_map, pixel_to_map3d,
                      read_gdal_coordinates, read_gdal_values,
                      read_gdal_projection, create_raster_dataset,
                      set_raster_origin, extract_raster_dataset,
+                     get_raster_extent, get_raster_elevation,
                      reproject_raster_dataset)
 
 from .satellite import (correct_parallax, dist_from_orbit)

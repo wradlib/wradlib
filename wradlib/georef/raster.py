@@ -27,10 +27,11 @@ import numpy as np
 from osgeo import gdal, osr, gdal_array
 
 from .projection import reproject
+from ..io import dem
 
 
-def pixel_coordinates(nx, ny, mode="centers"):
-    """Get pixel coordinates from a regular grid with dimension nx by ny.
+def pixel_coordinates(nx, ny, edge=False):
+    """Get pixel center coordinates from a regular grid with dimension nx by ny.
 
     Parameters
     ----------
@@ -38,26 +39,28 @@ def pixel_coordinates(nx, ny, mode="centers"):
         xsize
     ny : int
         ysize
-    mode : string
-        `centers` or `edges` to return the pixel coordinates
-        defaults to centers
+    edge : bool
+        True to get pixel edges coordinates instead
+
     Returns
     -------
     coordinates : :class:`numpy:numpy.ndarray`
-         Array of shape (ny,nx) with pixel coordinates (x,y)
+         Array of shape (ny,nx,2) with pixel coordinates (x,y)
+         The shape is (ny+1,nx+1,2) if edge is true
 
     """
     x = np.linspace(0, nx, num=nx + 1)
     y = np.linspace(0, ny, num=ny + 1)
-    if mode == "centers":
+
+    if not edge:
         x = x + 0.5
         y = y + 0.5
         x = np.delete(x, -1)
         y = np.delete(y, -1)
+
     X, Y = np.meshgrid(x, y)
-    coordinates = np.empty(X.shape + (2,))
-    coordinates[:, :, 0] = X
-    coordinates[:, :, 1] = Y
+    coordinates = np.stack((X, Y), axis=-1)
+
     return coordinates
 
 
@@ -124,22 +127,21 @@ def pixel_to_map3d(geotransform, coordinates, z=None):
     return coordinates_map
 
 
-def read_gdal_coordinates(dataset, mode='centers', z=True):
+def read_gdal_coordinates(dataset, edge=False):
     """Get the projected coordinates from a GDAL dataset.
 
     Parameters
     ----------
     dataset : gdal.Dataset
         raster image with georeferencing
-    mode : string
-        either 'centers' or 'borders'
-    z : boolean
-        True to get height coordinates (zero).
+    edge : bool
+        True to get pixel edges coordinates instead
 
     Returns
     -------
     coordinates : :class:`numpy:numpy.ndarray`
-        Array of projected coordinates (x,y,z)
+        Array of shape (ny,nx,2) with (x, y) coordinates
+        The shape is (ny+1,nx+1,2) if edge is true
 
     Examples
     --------
@@ -148,12 +150,10 @@ def read_gdal_coordinates(dataset, mode='centers', z=True):
 
     """
     coordinates_pixel = pixel_coordinates(dataset.RasterXSize,
-                                          dataset.RasterYSize, mode)
+                                          dataset.RasterYSize, edge)
     geotransform = dataset.GetGeoTransform()
-    if z:
-        coordinates = pixel_to_map3d(geotransform, coordinates_pixel)
-    else:
-        coordinates = pixel_to_map(geotransform, coordinates_pixel)
+    coordinates = pixel_to_map(geotransform, coordinates_pixel)
+
     return coordinates
 
 
@@ -256,7 +256,9 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
 
     # initialize geotransform
     x_ps, y_ps = coords[1, 1] - coords[0, 0]
-    geotran = [coords[0, 0, 0], x_ps, 0, coords[0, 0, 1], 0, y_ps]
+    upper_corner_x = coords[0, 0, 0] - x_ps/2
+    upper_corner_y = coords[0, 0, 1] - y_ps/2
+    geotran = [upper_corner_x, x_ps, 0, upper_corner_y, 0, y_ps]
     dataset.SetGeoTransform(geotran)
 
     if projection:
@@ -300,13 +302,13 @@ def set_raster_origin(data, coords, direction):
         coords = np.flip(coords, axis=-3)
         # we need to shift y-coordinate if data and coordinates have the same
         # number of rows and cols (only the ll or ul raster coords are given)
-        if data.shape[-2:] == coords.shape[:2]:
-            coords += [0, y_sp]
+#        if data.shape[-2:] == coords.shape[:2]:
+#            coords += [0, y_sp]
 
     return data, coords
 
 
-def extract_raster_dataset(dataset, nodata=None):
+def extract_raster_dataset(dataset, nodata=None, edge=False):
     """ Extract data, coordinates and projection information
 
     Parameters
@@ -315,7 +317,12 @@ def extract_raster_dataset(dataset, nodata=None):
         raster dataset
     nodata : scalar
         Value to which the dataset nodata values are mapped.
-
+    edge : bool
+        True to get pixel edges coordinates instead of center coordinates
+    elevation : boolean
+        True to get elevation (amsl) as third coordinate
+    region : str
+        region of the dataset
     Returns
     -------
     data : :class:`numpy:numpy.ndarray`
@@ -323,6 +330,7 @@ def extract_raster_dataset(dataset, nodata=None):
         the data values.
     coords : :class:`numpy:numpy.ndarray`
         Array of shape (rows, cols, 2) containing xy-coordinates.
+        The shape is (rows+1,cols+1,2) if edge is true
     projection : osr object
         Spatial reference system of the used coordinates.
     """
@@ -331,11 +339,7 @@ def extract_raster_dataset(dataset, nodata=None):
     data = read_gdal_values(dataset, nodata=nodata)
 
     # coords
-    coords_pixel = pixel_coordinates(dataset.RasterXSize,
-                                     dataset.RasterYSize,
-                                     'edges')
-    coords = pixel_to_map(dataset.GetGeoTransform(),
-                          coords_pixel)
+    coords = read_gdal_coordinates(dataset, edge)
 
     projection = read_gdal_projection(dataset)
 
@@ -475,3 +479,87 @@ def reproject_raster_dataset(src_ds, **kwargs):
     gdal.ReprojectImage(src_ds, dst_ds, src_srs, dst_srs, resample)
 
     return dst_ds
+
+
+def get_raster_extent(dataset, geo=True, window=True):
+    """Get the coordinates of the 4 corners of the raster dataset
+
+    Parameters
+    ----------
+    dataset : gdal.Dataset
+        raster image with georeferencing (GeoTransform at least)
+    geo : bool
+        True to get geographical coordinates
+    window : bool
+        True to get the extent of the window containing the corners instead
+
+    Returns
+    -------
+    extent : :class:`numpy:numpy.ndarray`
+        corner coordinates [ul,ll,lr,ur] or
+        window extent [xmin, xmax, ymin, ymax]
+    """
+
+    x_size = dataset.RasterXSize
+    y_size = dataset.RasterYSize
+    geotrans = dataset.GetGeoTransform()
+    xmin = geotrans[0]
+    ymax = geotrans[3]
+    xmax = geotrans[0] + geotrans[1] * x_size
+    ymin = geotrans[3] + geotrans[5] * y_size
+
+    extent = np.array([[xmin, ymax],
+                       [xmin, ymin],
+                       [xmax, ymin],
+                       [xmax, ymax]])
+
+    if geo:
+        projection = read_gdal_projection(dataset)
+        extent = reproject(extent, projection_source=projection)
+
+    if window:
+        x = extent[:, 0]
+        y = extent[:, 1]
+        extent = np.array([x.min(), x.max(), y.min(), y.max()])
+
+    return(extent)
+
+
+def get_raster_elevation(dataset, **kwargs):
+    """Return surface elevation corresponding to raster dataset
+       The resampling algorithm is chosen based on scale ratio
+
+    Parameters
+    ----------
+    dataset : gdal.Dataset
+        raster image with georeferencing (GeoTransform at least)
+    kwargs : keyword arguments to dem.get_strm()
+
+    Returns
+    -------
+    elevation : :class:`numpy:numpy.ndarray`
+        Array of shape (rows, cols, 2) containing elevation
+    """
+    extent = get_raster_extent(dataset)
+    src_ds = dem.get_srtm(extent, **kwargs)
+
+    driver = gdal.GetDriverByName('MEM')
+    dst_ds = driver.CreateCopy('ds', dataset)
+
+    src_gt = src_ds.GetGeoTransform()
+    dst_gt = src_ds.GetGeoTransform()
+    src_scale = min(abs(src_gt[1]), abs(src_gt[5]))
+    dst_scale = min(abs(dst_gt[1]), abs(dst_gt[5]))
+    ratio = dst_scale/src_scale
+    resample = gdal.GRA_Bilinear
+    if ratio > 2:
+        resample = gdal.GRA_Average
+    if ratio < 0.5:
+        resample = gdal.GRA_NearestNeighbour
+
+    gdal.ReprojectImage(src_ds, dst_ds,
+                        src_ds.GetProjection(), dst_ds.GetProjection(),
+                        resample)
+    elevation = read_gdal_values(dst_ds)
+
+    return(elevation)
