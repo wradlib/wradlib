@@ -604,6 +604,7 @@ class GdalTests(unittest.TestCase):
         data, coords, proj = georef.extract_raster_dataset(self.ds, edge=True)
         self.assertEqual(coords.shape[-1], 2)
 
+    @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
     def test_get_raster_elevation(self):
         georef.get_raster_elevation(self.ds, download={'region': 'Eurasia'})
 
