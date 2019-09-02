@@ -21,6 +21,8 @@ import numpy as np
 from .projection import (create_osr, reproject, get_default_projection)
 from .misc import get_earth_radius
 
+import wradlib.util as util
+
 
 def get_radolan_coords(lon, lat, trig=False):
     """
@@ -294,3 +296,16 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
     phi[phi <= 0] += 360
 
     return r, phi, np.degrees(theta)
+
+
+def grid_center_to_edge(centers):
+
+    x = centers[0, :, 0]
+    y = centers[:, 0, 1]
+    x_edge = util.center_to_edge(x)
+    y_edge = util.center_to_edge(y)
+
+    X, Y = np.meshgrid(x_edge, y_edge)
+    edges = np.stack((X, Y), axis=-1)
+
+    return(edges)

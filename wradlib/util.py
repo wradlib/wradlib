@@ -775,5 +775,26 @@ def gradient_from_smoothed(x, n=5):
     return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
 
 
+def grid_to_polyvert(grid, ravel=False):
+    """Get polygonal vertices from rectangular grid coordinates.
+
+    Parameters
+    ----------
+    edges : numpy array
+        edge coordinates
+    """
+
+    v1 = grid[:-1, :-1]
+    v2 = grid[:-1, 1:]
+    v3 = grid[1:, 1:]
+    v4 = grid[1:, :-1]
+
+    poly = np.stack((v1, v2, v3, v4, v1), axis=-2)
+
+    if ravel:
+        poly = poly.reshape((-1, 5, 2))
+
+    return(poly)
+
 if __name__ == '__main__':
     print('wradlib: Calling module <util> as main...')

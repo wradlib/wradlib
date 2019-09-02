@@ -540,7 +540,7 @@ class GdalTests(unittest.TestCase):
     def test_read_gdal_coordinates(self):
         center_coords = georef.read_gdal_coordinates(self.ds)
         self.assertEqual(center_coords.shape[-1], 2)
-        edge_coords = georef.read_gdal_coordinates(self.ds, edge=True)
+        edge_coords = georef.read_gdal_coordinates(self.ds, mode="edges")
         ul_center = (edge_coords[0, 0] + edge_coords[1, 1]) / 2
         np.testing.assert_array_almost_equal(center_coords[0, 0], ul_center)
 
@@ -601,9 +601,10 @@ class GdalTests(unittest.TestCase):
                                               axis=-3))
 
     def test_extract_raster_dataset(self):
-        data, coords, proj = georef.extract_raster_dataset(self.ds)
+        ds = self.ds
+        data, coords, proj = georef.extract_raster_dataset(ds)
         self.assertEqual(coords.shape[-1], 2)
-        data, coords, proj = georef.extract_raster_dataset(self.ds, edge=True)
+        data, coords, proj = georef.extract_raster_dataset(ds, mode="edges")
         self.assertEqual(coords.shape[-1], 2)
 
     @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
@@ -611,20 +612,21 @@ class GdalTests(unittest.TestCase):
         georef.get_raster_elevation(self.ds, download={'region': 'Eurasia'})
 
     def test_get_raster_extent(self):
-        extent = georef.get_raster_extent(self.ds2)
-        window_geo = np.array([-0.925465, 9.6641599, 47.4160381, 53.6928559])
-        np.testing.assert_array_almost_equal(extent, window_geo)
 
-        extent = georef.get_raster_extent(self.ds2, geo=False)
+        extent = georef.get_raster_extent(self.ds2)
         window_map = np.array([3e5, 1e6, 3e5, 1e6])
         np.testing.assert_array_almost_equal(extent, window_map, decimal=3)
 
-        extent = georef.get_raster_extent(self.ds2, window=False)
-        np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
+        extent = georef.get_raster_extent(self.ds2, geo=True)
+        window_geo = np.array([-0.925465, 9.6641599, 47.4160381, 53.6928559])
+        np.testing.assert_array_almost_equal(extent, window_geo)
 
-        extent = georef.get_raster_extent(self.ds2, geo=False, window=False)
+        extent = georef.get_raster_extent(self.ds2, window=False)
         np.testing.assert_array_almost_equal(extent, self.corner_gdalinfo,
                                              decimal=3)
+
+        extent = georef.get_raster_extent(self.ds2, geo=True, window=False)
+        np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
 
 
 class GetGridsTest(unittest.TestCase):
