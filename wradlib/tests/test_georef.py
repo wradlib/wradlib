@@ -7,6 +7,7 @@ import sys
 import unittest
 import wradlib.georef as georef
 import wradlib.util as util
+import wradlib.io.dem as dem
 from wradlib.io import (read_generic_hdf5, open_raster, gdal_create_dataset,
                         open_vector)
 import numpy as np
@@ -627,6 +628,17 @@ class GdalTests(unittest.TestCase):
 
         extent = georef.get_raster_extent(self.ds2, geo=True, window=False)
         np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
+
+    def test_merge_raster(self):
+        datasets = dem.get_srtm([3, 4, 47, 48], merge=False)
+        georef.merge_rasters(datasets)
+
+    def test_raster_to_polyvert(self):
+        ds = self.ds
+        polyvert = georef.raster_to_polyvert(ds)
+        nx = ds.RasterXSize
+        ny = ds.RasterYSize
+        self.assertEqual((ny, nx, 5, 2), polyvert.shape)
 
 
 class GetGridsTest(unittest.TestCase):

@@ -26,6 +26,8 @@ from osgeo import gdal, osr, gdal_array
 import wradlib.io.dem as dem
 import wradlib.georef as georef
 
+import wradlib.util as util
+
 
 def _pixel_coordinates(nx, ny, mode):
     """Get the pixel coordinates of an image.
@@ -555,20 +557,22 @@ def merge_rasters(datasets):
     return(dataset)
 
 
-def raster_to_polyvert(rastercoords, mode="centers", ravel=False):
+def raster_to_polyvert(dataset):
     """Get raster polygonal vertices from gdal dataset.
 
     Parameters
     ----------
-    coords : :class:`numpy:numpy.ndarray`
-        Array of shape (rows, cols, 2) containing xy-coordinates.
-        The shape is (rows+1,cols+1,2) if edge is true
-    mode : string
-        either 'centers' or 'edges'
+    dataset : gdal.Dataset
+        raster image with georeferencing (GeoTransform at least)
+
+    Returns
+    -------
+    polyvert : :class:`numpy:numpy.ndarray`
+        A 3-d array of polygon vertices with shape (..., 5, 2).
+
     """
-    if mode == "centers":
-        rastercoords = georef.grid_center_to_edge(rastercoords)
+    rastercoords = read_gdal_coordinates(dataset, mode="edges")
 
-    vertices = georef.grid_to_polyvert(rastercoords, ravel=ravel)
+    polyvert = util.grid_to_polyvert(rastercoords)
 
-    return(vertices)
+    return(polyvert)

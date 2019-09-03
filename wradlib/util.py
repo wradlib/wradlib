@@ -780,8 +780,14 @@ def grid_to_polyvert(grid, ravel=False):
 
     Parameters
     ----------
-    edges : numpy array
-        edge coordinates
+    grid : numpy array
+        grid edge coordinates
+
+    Returns
+    -------
+    polyvert : :class:`numpy:numpy.ndarray`
+        A 3-d array of polygon vertices with shape (..., 5, 2).
+
     """
 
     v1 = grid[:-1, :-1]
@@ -789,12 +795,13 @@ def grid_to_polyvert(grid, ravel=False):
     v3 = grid[1:, 1:]
     v4 = grid[1:, :-1]
 
-    poly = np.stack((v1, v2, v3, v4, v1), axis=-2)
+    polyvert = np.stack((v1, v2, v3, v4, v1), axis=-2)
 
     if ravel:
-        poly = poly.reshape((-1, 5, 2))
+        polyvert = polyvert.reshape((-1, 5, 2))
 
-    return(poly)
+    return(polyvert)
+
 
 if __name__ == '__main__':
     print('wradlib: Calling module <util> as main...')
