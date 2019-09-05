@@ -2883,6 +2883,15 @@ class IrisCartesianProductFile(IrisRecordFile):
                 kw.update(prod['fkw'])
             except KeyError:
                 pass
+            if prod['func'] in [decode_vel, decode_width, decode_kdp]:
+                wavelength = self.product_hdr['product_end']['wavelength']
+                if prod['func'] == decode_kdp:
+                    kw.update({'wavelength': wavelength / 100})
+                    return prod['func'](data, **kw)
+
+                prf = self.product_hdr['product_end']['prf']
+                nyquist = wavelength * prf / (10000. * 4.)
+                kw.update({'nyquist': nyquist})
             return prod['func'](data.view(prod['dtype']), **kw)
         else:
             return data
