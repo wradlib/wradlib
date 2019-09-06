@@ -27,7 +27,7 @@ from netCDF4 import Dataset
 import numpy as np
 import datetime as dt
 
-from ..zonalstats import get_clip_mask
+import wradlib.zonalstats as zonalstats
 
 
 def read_generic_hdf5(fname):
@@ -464,7 +464,7 @@ def read_gpm(filename, bbox=None):
                 [bbox['right'], bbox['top']],
                 [bbox['right'], bbox['bottom']],
                 [bbox['left'], bbox['bottom']]]
-        mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+        mask = zonalstats.get_clip_mask(np.dstack((lon[:], lat[:])), poly)
     else:
         mask = np.ones_like(lon, dtype=bool, subok=False)
 
@@ -595,7 +595,7 @@ def read_trmm(filename1, filename2, bbox=None):
                 [bbox['right'], bbox['top']],
                 [bbox['right'], bbox['bottom']],
                 [bbox['left'], bbox['bottom']]]
-        mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
+        mask = zonalstats.get_clip_mask(np.dstack((lon[:], lat[:])), poly)
     else:
         mask = np.ones_like(lon, dtype=bool)
 
