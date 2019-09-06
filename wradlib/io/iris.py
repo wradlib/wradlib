@@ -343,7 +343,7 @@ def _check_product(product_type):
                         'RTI', 'VIL', 'LAYER', 'BEAM', 'MLHGT']:
         return IrisCartesianProductFile
     elif product_type in ['CATCH', 'FCAST', 'NDOP', 'SLINE', 'TDWR', 'TRACK',
-                          'VAD', 'VVP', 'WARN', 'WIND']:
+                          'VAD', 'VVP', 'WARN', 'WIND', 'STATUS']:
         return IrisProductFile
     elif product_type in ['RAW']:
         return IrisRawFile
@@ -501,17 +501,17 @@ MAX_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '4s'}),
 
 # mlhgt_psi_struct (if MLGHT)
 # 4.3.18, page 34
-MLHGT_PSI_STRUCT = \
-    OrderedDict([('flags', UINT4),
-                 ('averaged_ml_altitude', SINT2),
-                 ('interval_ml_altitudes', SINT2),
-                 ('vertical_grid_spacing', SINT2),
-                 ('num_az_sectors', UINT2),
-                 ('relaxation_time_mlhgt_confidence', UINT4),
-                 ('modeled_fraction_melt_classifications', UINT2),
-                 ('modeled_fraction_nomelt_classifications', UINT2),
-                 ('min_confidence', UINT2),
-                 ('spare_0', {'fmt': '58s'})])
+MLHGT_PSI_STRUCT = OrderedDict(
+    [('flags', UINT4),
+     ('averaged_ml_altitude', SINT2),
+     ('interval_ml_altitudes', SINT2),
+     ('vertical_grid_spacing', SINT2),
+     ('num_az_sectors', UINT2),
+     ('relaxation_time_mlhgt_confidence', UINT4),
+     ('modeled_fraction_melt_classifications', UINT2),
+     ('modeled_fraction_nomelt_classifications', UINT2),
+     ('min_confidence', UINT2),
+     ('spare_0', {'fmt': '58s'})])
 
 # ndop_input Struct
 # 4.3.19, page 34
@@ -657,7 +657,7 @@ TRACK_RESULTS = OrderedDict([('latitude', BIN4),
                              ('input_data_scale_factor', SINT4),
                              ('track_index_number', SINT4),
                              ('text', string_dict(32)),
-                             ('time', YMDS_TIME),
+                             ('time', _YMDS_TIME),
                              ('eta_protected_areas', array_dict(32, 'int32')),
                              ('input_data_type', UINT4),
                              ('spare_2', {'fmt': '8s'}),
@@ -774,7 +774,7 @@ WIND_PSI_STRUCT = OrderedDict([('min_height', SINT4),
 # wind_results Struct
 # 4.3.76, page 70
 WIND_RESULTS = OrderedDict([('num_possible_hits', SINT4),
-                            ('num__data_points_used', SINT4),
+                            ('num_data_points_used', SINT4),
                             ('center_sector_range', SINT4),
                             ('center_sector_azimuth', BIN2),
                             ('east_velocity', SINT2),
@@ -782,6 +782,121 @@ WIND_RESULTS = OrderedDict([('num_possible_hits', SINT4),
                             ('north_velocity', SINT2),
                             ('north_velocity_std', SINT2),
                             ('spare_0', {'fmt': '10s'})])
+
+
+# status_antenna_info Structure
+# 4.3.40, page 51
+STATUS_ANTENNA_INFO = OrderedDict(
+    [('azimuth_position', BIN4),
+     ('elevation_position', BIN4),
+     ('azimuth_velocity', UINT4),
+     ('elevation_velocity', UINT4),
+     ('command_bits', UINT4),
+     ('command_bit_availability_mask', UINT4),
+     ('status_bits', UINT4),
+     ('status_bit_availability_mask', UINT4),
+     ('bite_fault_flag', UINT4),
+     ('lowest_field_num_generating_fault', SINT4),
+     ('status_bits_which_cause_critical_faults', UINT4),
+     ('mask_bite_fields_state',
+      array_dict(3, 'uint32')),
+     ('mask_bite_fields_faulted',
+      array_dict(3, 'uint32')),
+     ('spare_0', {'fmt': '32s'})])
+
+# status_message_info Structure
+# 4.3.42, page 52
+STATUS_MESSAGE_INFO = OrderedDict([('message_count', SINT4),
+                                   ('message_number', MESSAGE),
+                                   ('message_repeat_number', SINT4),
+                                   ('process_name', string_dict(16)),
+                                   ('message_text', string_dict(80)),
+                                   ('signal_name', string_dict(32)),
+                                   ('message_time', _YMDS_TIME),
+                                   ('message_type', UINT4),
+                                   ('spare_0', {'fmt': '36s'})])
+
+# status_misc_info Structure
+# 4.3.43, page 52
+STATUS_MISC_INFO = OrderedDict(
+    [('radar_status_configuration_name', string_dict(16)),
+     ('task_configuration_name', string_dict(16)),
+     ('product_scheduler_configuration_name', string_dict(16)),
+     ('product_output_configuration_name', string_dict(16)),
+     ('active_task_name', string_dict(16)),
+     ('active_product_name', string_dict(16)),
+     ('site_type', UINT4),
+     ('num_incoming_network_connects', SINT4),
+     ('num_iris_clients_connected', SINT4),
+     ('spare_0', {'fmt': '4s'}),
+     ('num_output_devices', SINT4),
+     ('flags', UINT4),
+     ('node_status_fault_site', string_dict(4)),
+     ('time_of_active_task', _YMDS_TIME),
+     ('spare_1', {'fmt': '64s'})])
+
+# status_one_device Structure
+# 4.3.44, page 53
+STATUS_ONE_DEVICE = OrderedDict([('device_type', UINT4),
+                                 ('unit_number', SINT4),
+                                 ('status', UINT4),
+                                 ('spare_0', {'fmt': '4s'}),
+                                 ('process_table_mode', UINT4),
+                                 ('string', string_dict(16)),
+                                 ('spare_1', {'fmt': '4s'})])
+
+# status_device_info Structure
+# 4.3.41, page 52
+STATUS_DEVICE_INFO = OrderedDict([('dsp', STATUS_ONE_DEVICE),
+                                  ('antenna', STATUS_ONE_DEVICE),
+                                  ('output_device_0', STATUS_ONE_DEVICE),
+                                  ('output_device_1', STATUS_ONE_DEVICE),
+                                  ('output_device_2', STATUS_ONE_DEVICE),
+                                  ('output_device_3', STATUS_ONE_DEVICE),
+                                  ('output_device_4', STATUS_ONE_DEVICE),
+                                  ('output_device_5', STATUS_ONE_DEVICE),
+                                  ('output_device_6', STATUS_ONE_DEVICE),
+                                  ('output_device_7', STATUS_ONE_DEVICE),
+                                  ('output_device_8', STATUS_ONE_DEVICE),
+                                  ('output_device_9', STATUS_ONE_DEVICE),
+                                  ('output_device_10', STATUS_ONE_DEVICE),
+                                  ('output_device_11', STATUS_ONE_DEVICE),
+                                  ('output_device_12', STATUS_ONE_DEVICE),
+                                  ('output_device_13', STATUS_ONE_DEVICE),
+                                  ('output_device_14', STATUS_ONE_DEVICE),
+                                  ('output_device_15', STATUS_ONE_DEVICE),
+                                  ('output_device_16', STATUS_ONE_DEVICE),
+                                  ('output_device_17', STATUS_ONE_DEVICE)])
+
+# status_one_process Structure
+# 4.3.45, page 54
+STATUS_ONE_PROCESS = OrderedDict([('command', UINT4),
+                                  ('mode', UINT4),
+                                  ('spare_0', {'fmt': '12s'})])
+
+# status_process_info Structure
+# 4.3.46, page 54
+STATUS_PROCESS_INFO = OrderedDict(
+    [('ingest_process', STATUS_ONE_PROCESS),
+     ('ingfio_process', STATUS_ONE_PROCESS),
+     ('spare_0', {'fmt': '20s'}),
+     ('output_master_process', STATUS_ONE_PROCESS),
+     ('product_process', STATUS_ONE_PROCESS),
+     ('watchdog_process', STATUS_ONE_PROCESS),
+     ('reingest_process', STATUS_ONE_PROCESS),
+     ('network_process', STATUS_ONE_PROCESS),
+     ('nordrad_process', STATUS_ONE_PROCESS),
+     ('server_process', STATUS_ONE_PROCESS),
+     ('ribbuild_process', STATUS_ONE_PROCESS),
+     ('spare_1', {'fmt': '180s'})])
+
+# status_results Structure
+# 4.3.47, page 54
+STATUS_RESULTS = OrderedDict([('status_misc_info', STATUS_MISC_INFO),
+                              ('status_process_info', STATUS_PROCESS_INFO),
+                              ('status_device_info', STATUS_DEVICE_INFO),
+                              ('status_antenna_info', STATUS_ANTENNA_INFO),
+                              ('status_message_info', STATUS_MESSAGE_INFO)])
 
 # spare (if USER, OTHER, TEXT)
 SPARE_PSI_STRUCT = OrderedDict([('spare_0', {'fmt': '80s'})])
@@ -1551,7 +1666,8 @@ PRODUCT_DATA_TYPE_CODES = OrderedDict([(0, {'name': 'NULL',
                                        (19, {'name': 'OTHER',
                                              'struct': SPARE_PSI_STRUCT}),
                                        (20, {'name': 'STATUS',
-                                             'struct': SPARE_PSI_STRUCT}),
+                                             'struct': SPARE_PSI_STRUCT,
+                                             'result': STATUS_RESULTS}),
                                        (21, {'name': 'SLINE',
                                              'struct': SLINE_PSI_STRUCT,
                                              'protect_setup': True}),
@@ -2164,7 +2280,7 @@ class IrisRecordFile(IrisFile, IrisProductHeader):
                           'CAPPI', 'RAINN', 'RAIN1', 'CROSS', 'SHEAR', 'SRI',
                           'RTI', 'VIL', 'LAYER', 'BEAM', 'MLHGT',
                           'CATCH', 'FCAST', 'NDOP', 'SLINE', 'TDWR', 'TRACK',
-                          'VAD', 'VVP', 'WARN', 'WIND', 'RAW']
+                          'VAD', 'VVP', 'WARN', 'WIND', 'STATUS', 'RAW']
 
     def __init__(self, filename, **kwargs):
         super(IrisRecordFile, self).__init__(filename=filename,
@@ -2633,7 +2749,7 @@ class IrisProductFile(IrisRecordFile):
     """
     product_identifier = [
         'CATCH', 'FCAST', 'NDOP', 'SLINE', 'TDWR', 'TRACK',
-        'VAD', 'VVP', 'WARN', 'WIND'
+        'VAD', 'VVP', 'WARN', 'WIND', 'STATUS'
         ]
 
     def __init__(self, filename, **kwargs):
@@ -2728,6 +2844,9 @@ class IrisProductFile(IrisRecordFile):
             res = _unpack_dictionary(dta, VVP_RESULTS,
                                      self._rawdata)
             result['VVP'] = res
+            self.get_results(result, num_elements,
+                             self.product_type_dict['result'])
+        elif self.product_type in ['STATUS']:
             self.get_results(result, num_elements,
                              self.product_type_dict['result'])
         else:
