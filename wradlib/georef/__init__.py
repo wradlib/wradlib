@@ -30,7 +30,10 @@ from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
 
 from .projection import (create_osr, proj4_to_osr, reproject,
                          get_default_projection, epsg_to_osr,
-                         wkt_to_osr)
+                         wkt_to_osr, get_earth_projection,
+                         get_radar_projection, get_extent,
+                         geoid_to_ellipsoid, ellipsoid_to_geoid,
+                         get_earth_radius2)
 
 from .raster import (pixel_coordinates, pixel_to_map, pixel_to_map3d,
                      read_gdal_coordinates, read_gdal_values,

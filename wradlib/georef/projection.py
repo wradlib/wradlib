@@ -21,6 +21,8 @@ Projection Functions
 from osgeo import gdal, osr, ogr
 import numpy as np
 
+import wradlib.georef as georef
+
 
 def create_osr(projname, **kwargs):
     """Conveniently supports the construction of osr spatial reference objects
@@ -362,3 +364,185 @@ def wkt_to_osr(wkt=None):
                          "and can't be imported as OSR object")
 
     return proj
+
+
+def get_earth_projection(sphere=False, geoid=False):
+    """Get a default earth projection based on WGS
+
+    Parameters
+    ----------
+    sphere : bool
+        True to use the WGS authalic sphere
+    geoid : bool
+        True to use the EGM96 geoid instead of the ellipsoid
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        projection definition
+
+    """
+    proj = osr.SpatialReference()
+
+    if sphere:
+        proj.ImportFromEPSG(4047)
+        return(proj)
+
+    if geoid:
+        projstr = "+proj=longlat"
+        projstr += " +datum=WGS84"
+        projstr += " +geoidgrids=egm96_15.gtx"
+        projstr += " +vunits=m"
+        projstr += " +no_defs"
+
+        proj.ImportFromProj4(projstr)
+    else:
+        proj.ImportFromEPSG(4326)
+
+    return(proj)
+
+
+def get_radar_projection(sitecoords):
+    """Get the native radar projection which is
+    an azimuthal equidistant projection
+    centered at the site and using a sphere model
+
+    Parameters
+    ----------
+    sitecoords : a sequence of two floats
+        the WGS84 lon / lat coordinates of the radar location
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        projection definition
+
+    """
+    re = get_earth_radius2(sitecoords[1])
+    projstr = '+proj=aeqd +lon_0=%f ' % (sitecoords[0])
+    projstr += '+lat_0=%f ' % (sitecoords[1])
+    projstr += '+a=%f +b=%f ' % (re, re)
+    projection = georef.proj4_to_osr(projstr)
+
+    return(projection)
+
+
+def geoid_to_ellipsoid(coords, reverse=False):
+    """Transforms WGS geoid height to ellipsoid height.
+
+    Parameters
+    ----------
+    coords: numpy array
+        Array of coordinates with shape (...,3)
+
+    Returns
+    -------
+    coords :  numpy array
+        array of transformed coordinates with shape (...,3)
+
+    """
+    geoid = get_earth_projection(geoid=True)
+
+    ellipsoid = get_earth_projection()
+
+    src = geoid
+    trg = ellipsoid
+
+    if reverse:
+        src = ellipsoid
+        trg = geoid
+
+    if gdal.VersionInfo()[0] >= '2.4':
+        coords = georef.reproject(coords, src, trg)
+        return(coords)
+
+    # Loop to avoid bug in GDAL <= 2.3
+    ct = osr.CoordinateTransformation(src, trg)
+    coords = coords.copy()
+    coords = np.array(coords)
+    myshape = coords.shape
+    coords = coords.reshape(-1, 3)
+    for i in range(coords.shape[0]):
+        coords[i, :] = ct.TransformPoints([coords[i, :]])[0]
+
+    coords = coords.reshape(myshape)
+
+    return(coords)
+
+
+def ellipsoid_to_geoid(coords):
+    """Transform WGS ellipsoid height to geoid height.
+
+    Parameters
+    ----------
+    coords: numpy array
+        Array of coordinates with shape (...,3)
+
+    Returns
+    -------
+    coords :  numpy array
+        array of transformed coordinates with shape (...,3)
+
+    """
+    coords = geoid_to_ellipsoid(coords, reverse=True)
+
+    return(coords)
+
+
+def get_extent(coords):
+    """Get the extent of 2d coordinates
+
+    Parameters
+    ----------
+    coords : 2d array
+        coordinates array with shape (...,(x,y))
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        GDAL/OSR object defining projection
+
+    """
+
+    xmin = coords[..., 0].min()
+    xmax = coords[..., 0].max()
+    ymin = coords[..., 1].min()
+    ymax = coords[..., 1].max()
+    extent = [xmin, xmax, ymin, ymax]
+
+    return(extent)
+
+
+def get_earth_radius2(latitude, sr=None):
+    """Get the radius of the Earth (in km) for a given Spheroid model (sr) at \
+    a given position.
+
+    .. math::
+
+        R^2 = \\frac{a^4 \\cos(f)^2 + b^4 \\sin(f)^2}
+        {a^2 \\cos(f)^2 + b^2 \\sin(f)^2}
+
+    Parameters
+    ----------
+    sr : osr object
+        spatial reference
+    latitude : float
+        geodetic latitude in degrees
+
+    Returns
+    -------
+    radius : float
+        earth radius in meter
+
+    """
+    if sr is None:
+        sr = get_earth_projection()
+
+    radius_e = sr.GetSemiMajor()
+    radius_p = sr.GetSemiMinor()
+    latitude = np.radians(latitude)
+    radius = np.sqrt((np.power(radius_e, 4) * np.power(np.cos(latitude), 2) +
+                      np.power(radius_p, 4) * np.power(np.sin(latitude), 2)) /
+                     (np.power(radius_e, 2) * np.power(np.cos(latitude), 2) +
+                      np.power(radius_p, 2) * np.power(np.sin(latitude), 2)))
+    return radius
