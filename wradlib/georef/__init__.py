@@ -26,6 +26,8 @@ from .polar import (centroid_to_polyvert, spherical_to_xyz, spherical_to_proj,
                     spherical_to_polyvert, spherical_to_centroids,
                     sweep_centroids)
 
+from .polar import *
+
 from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
 
 from .projection import (create_osr, proj4_to_osr, reproject,

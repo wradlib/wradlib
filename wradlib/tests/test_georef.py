@@ -164,6 +164,212 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(coords[..., 2], self.result_n[2]))
 
 
+class PolarTest(unittest.TestCase):
+    def setUp(self):
+        step = 0.2
+        lon = np.arange(2, 9 + step,  step)
+        lat = np.arange(47, 53 + step, step)
+        lat = np.flip(lat)
+        lon, lat = np.meshgrid(lon, lat)
+        coords = np.stack((lon, lat), axis=-1)
+        val = (lon**2 + lat**2)/10
+        val = val[:-1, :-1]
+        proj = georef.get_earth_projection()
+        self.raster = georef.create_raster_dataset(val, coords, proj)
+        self.val = val
+
+        self.sitecoords = [5.5, 50, 800]
+        rscale = 5E3
+        ascale = 10
+        self.ranges = np.arange(rscale/2, 250e3, rscale)
+        self.azimuths = np.arange(ascale/2, 360, ascale)
+        self.elangle = 1.
+
+    def test_bin_gcz(self):
+        elangle = self.elangle
+        ranges = self.ranges
+        height = self.sitecoords[2]
+
+        rsite = georef.get_earth_radius(self.sitecoords[1])
+
+        print("\nmaster:")
+        altitude = georef.bin_altitude(ranges, elangle, height, rsite)
+        distance = georef.bin_distance(ranges, elangle, height, rsite)
+        print((distance, altitude))
+
+        print("\nbasic:")
+        print(georef.bin_gcz(height, elangle, ranges, rsite))
+
+        print("\ndoviak:")
+        print(georef.bin_gcz_doviak(height, elangle, ranges, rsite))
+
+        print("\nother:")
+        print(georef.bin_gcz_other(height, elangle, ranges, rsite))
+
+        print("\nfull:")
+        print(georef.bin_gcz_full(height, elangle, ranges, rsite))
+
+        print("\nbasic with 100 meter geoid bias:")
+        print(georef.bin_gcz(height+100, elangle, ranges, rsite))
+
+        print("\nbasic at 4000 meter:")
+        print(georef.bin_gcz(4000, elangle, ranges, rsite))
+
+    def test_sweep_to_map(self):
+        np.set_printoptions(suppress=True)
+        sitecoords = self.sitecoords
+        elangle = self.elangle
+        ranges = self.ranges
+        azimuths = self.azimuths
+
+        proj_radar = georef.get_radar_projection(sitecoords)
+        proj_wgs = georef.get_earth_projection()
+        rsite = georef.get_earth_radius(sitecoords[1])
+        print("\nTest case\n")
+        print("Site coords")
+        print(sitecoords)
+        print("Site earth radius")
+        print(rsite)
+        print("Sweep coordinates")
+        print(ranges, azimuths, elangle)
+
+        print("\nto native map coordinates\n")
+        coord, proj = georef.spherical_to_xyz(ranges, azimuths, elangle,
+                                              sitecoords)
+        print("spherical_to_xyz wgs")
+        print(coord)
+        coord, proj_re = georef.spherical_to_xyz(ranges, azimuths, elangle,
+                                                 sitecoords, re=rsite)
+        print("spherical_to_xyz sphere")
+        print(coord)
+        print("sweep_to_map 2d")
+        coord = georef.sweep_to_map(sitecoords, elangle, ranges, azimuths)
+        print(coord)
+        print("sweep_to_map 3d")
+        coord = georef.sweep_to_map(sitecoords, elangle, ranges, azimuths,
+                                    altitude=True)
+        print(coord)
+
+        print("\nto wgs coordinates\n")
+
+        print("spherical_to_proj wgs")
+        coord1 = georef.spherical_to_proj(ranges, azimuths, elangle,
+                                          sitecoords, proj_wgs)
+        print(coord1)
+
+        print("spherical_to_proj sphere")
+        coord2 = georef.spherical_to_proj(ranges, azimuths, elangle,
+                                          sitecoords, proj_wgs, re=rsite)
+        print(coord2)
+
+        print("sweep_to_map")
+        coord3 = georef.sweep_to_map(sitecoords, elangle, ranges, azimuths,
+                                     projection=proj_wgs, altitude=True)
+        print(coord3)
+        print("wgs to geoid")
+        coord3 = georef.ellipsoid_to_geoid(coord3)
+        print(coord3)
+
+        print("\nBack to radar projection\n")
+
+        print("spherical_to_proj wgs")
+        coord = georef.reproject(coord1, projection_source=proj_wgs,
+                                 projection_target=proj_radar)
+        print(coord)
+        print("sweep_to_map")
+        coord = georef.reproject(coord3, projection_source=proj_wgs,
+                                 projection_target=proj_radar)
+        print(coord)
+
+        print("\nBack to sweep\n")
+        print("spherical_to_proj wgs")
+        coord = georef.map_to_sweep(coord1, sitecoords, elangle, proj_wgs)
+        print(coord)
+        print("sweep_to_map")
+        coord = georef.map_to_sweep(coord3, sitecoords, elangle, proj_wgs)
+        print(coord)
+
+        ranges, azimuths = np.meshgrid(ranges, azimuths)
+        coords = np.stack((ranges, azimuths), axis=-1)
+
+        np.testing.assert_allclose(coords, coord, rtol=1e-5)
+
+    def test_raster_to_sweep(self):
+        raster = self.raster
+        rastercoords = georef.read_gdal_coordinates(raster)
+        rastervalues = georef.read_gdal_values(raster)
+        projection = georef.read_gdal_projection(raster)
+        sitecoords = self.sitecoords
+        elangle = self.elangle
+        ranges = self.ranges
+        azimuths = self.azimuths
+
+        methods = ["nearest", "linear", "spline", "binned", "area"]
+        result = {}
+        for method in methods:
+            print(method)
+            res = georef.raster_to_sweep(rastercoords, projection,
+                                         sitecoords, elangle, ranges, azimuths,
+                                         rastervalues=rastervalues,
+                                         method=method)
+
+            print(res.shape)
+            result[method] = res
+
+        ref = result['area']
+        for key, val in result.items():
+            print(key)
+            res = val
+            nbad = np.sum(np.isnan(res))
+            print(nbad)
+            maxdiff = np.nanmax(np.absolute(res-ref))
+            print(maxdiff)
+            meandiff = np.nanmean(np.absolute(res-ref))
+            print(meandiff)
+
+        sweepval = result['area']
+
+        result2 = {}
+        for method in methods:
+            print(method)
+            res = georef.sweep_to_raster(rastercoords, projection,
+                                         sitecoords, elangle, ranges, azimuths,
+                                         sweepvalues=sweepval,
+                                         method=method)
+            print(res.shape)
+            result2[method] = res
+
+        ref = result2['area']
+        for key, val in result2.items():
+            print(key)
+            res = val
+            nbad = np.sum(np.isnan(res))
+            print(nbad)
+            maxdiff = np.nanmax(np.absolute(res-ref))
+            print(maxdiff)
+            meandiff = np.nanmean(np.absolute(res-ref))
+            print(meandiff)
+
+        bad = np.isnan(ref)
+        np.testing.assert_allclose(ref[~bad], self.val[~bad], rtol=1e-2)
+
+        ref = georef.raster_to_sweep(rastercoords, projection,
+                                     sitecoords, elangle, ranges, azimuths,
+                                     rastervalues=rastervalues)
+
+        test = georef.raster_to_sweep_multi([raster, raster],
+                                            sitecoords, elangle,
+                                            ranges, azimuths)
+
+        np.testing.assert_allclose(test, ref)
+
+        interpolator = georef.raster_to_sweep(rastercoords, projection,
+                                              sitecoords, elangle,
+                                              ranges, azimuths)
+        test = interpolator(rastervalues)
+        np.testing.assert_allclose(test, ref)
+
+
 class CoordinateHelperTest(unittest.TestCase):
     def test_centroid_to_polyvert(self):
         np.testing.assert_array_equal(

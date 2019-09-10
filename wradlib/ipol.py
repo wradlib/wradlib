@@ -833,6 +833,7 @@ class PolyArea(IpolBase):
         trg = trg.reshape((-1, 5, 2))
 
         zd = zonalstats.ZonalDataPoly(src, trg, **kwargs)
+        print(zd)
         self.obj = zonalstats.ZonalStatsPoly(zd)
 
     def __call__(self, values):
