@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -20,9 +20,9 @@ Clutter Identification
 
 """
 import numpy as np
-import scipy.ndimage as ndi
-from . import dp as dp
-from . import util as util
+from scipy import ndimage
+
+from wradlib import dp, util
 
 
 def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
@@ -115,9 +115,9 @@ def filter_gabella_b(img, thrs=0.):
     # create binary image of the rainfall field
     binimg = img > thrs
     # label objects (individual rain cells, so to say)
-    labelimg, nlabels = ndi.label(binimg, conn)
+    labelimg, nlabels = ndimage.label(binimg, conn)
     # erode the image, thus removing the 'boundary pixels'
-    binimg_erode = ndi.binary_erosion(binimg, structure=conn)
+    binimg_erode = ndimage.binary_erosion(binimg, structure=conn)
     # determine the size of each object
     labelhist, edges = np.histogram(labelimg,
                                     bins=nlabels + 1,
@@ -188,7 +188,8 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
         img[bad] = np.Inf
     ntr1 = filter_gabella_a(img, wsize, tr1, cartesian, radial)
     if not rm_nans:
-        f_good = ndi.filters.uniform_filter((~bad).astype(float), size=wsize)
+        f_good = ndimage.filters.uniform_filter((~bad).astype(float),
+                                                size=wsize)
         f_good[f_good == 0] = 1e-10
         ntr1 = ntr1 / f_good
         ntr1[bad] = n_p

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import numpy as np
-import wradlib.atten as atten
 import unittest
-from .. import util as util
-from .. import io as io
+
+import numpy as np
+
+from wradlib import atten, io, util
 
 
 class TestAttenuation(unittest.TestCase):

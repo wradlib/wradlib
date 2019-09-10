@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -24,11 +24,13 @@ Vector Functions (GDAL)
    ogr_geocol_to_numpy
    get_centroid
 """
+import warnings
 
 import numpy as np
 from osgeo import gdal, ogr, osr
-from .projection import get_default_projection
-import warnings
+
+from wradlib.georef import projection
+
 ogr.UseExceptions()
 gdal.UseExceptions()
 
@@ -91,7 +93,7 @@ def transform_geometry(geom, dest_srs, **kwargs):
 
     # srs is None assume wgs84 lonlat, but warn too
     if srs is None:
-        srs = get_default_projection()
+        srs = projection.get_default_projection()
         warnings.warn("geometry without spatial reference - assuming wgs84")
 
     # transform if not the same spatial reference system

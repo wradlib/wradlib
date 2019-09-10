@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2018, wradlib developers.
+# Copyright (c) 2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
+
 import numpy as np
 
-from .. import classify as classify
-from .. import io as io
-from .. import util as util
+from wradlib import classify, io, util
 
 
 class HydrometeorClassificationTest(unittest.TestCase):

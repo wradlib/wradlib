@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import sys
-import os
-import io
-import getopt
-import unittest
 import doctest
+import getopt
 import inspect
+import io
+import os
+import sys
+import unittest
 from multiprocessing import Process, Queue
+
+import coverage
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
 from nbconvert.preprocessors.execute import CellExecutionError
-import coverage
 
 VERBOSE = 2
 

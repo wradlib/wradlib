@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -23,7 +23,8 @@ into rainfall rates and vice versa
 """
 import numpy as np
 import scipy.ndimage.filters as filters
-from .trafo import decibel
+
+from wradlib import trafo
 
 
 def z_to_r(z, a=200., b=1.6):
@@ -122,7 +123,7 @@ def _z_to_r_enhanced(z):
     dimx = z.shape[1]
 
     # calculate the decibel values from the input
-    db = decibel(z)
+    db = trafo.decibel(z)
 
     # set up our output arrays
     r = np.zeros(z.shape)
@@ -187,7 +188,7 @@ def z_to_r_esifilter(data):
     """calculates the shower index for the enhanced z-r relation
 
     to be used as the callable for
-    :func:`scipy:scipy.ndimagefilters.generic_filter`
+    :func:`scipy:scipy.ndimage.filters.generic_filter`
     """
     if data[4] < 36.5:
         tdata = data.reshape((3, 3))
@@ -205,15 +206,15 @@ def _z_to_r_enhanced_mdfilt(z, mode='mirror'):
     """multidimensional version
 
     assuming the two last dimensions represent a 2-D image
-    Uses :func:`scipy:scipy.ndimagefilters.generic_filter` to reduce the number
-    of for-loops even more.
+    Uses :func:`scipy:scipy.ndimage.filters.generic_filter` to reduce the
+    number of for-loops even more.
     """
     # get the shape of the input
     # dimy = z.shape[-2]
     # dimx = z.shape[-1]
 
     # calculate the decibel values from the input
-    db = decibel(z)
+    db = trafo.decibel(z)
 
     # set up our output arrays
     r = np.zeros(z.shape)
@@ -255,7 +256,7 @@ def _z_to_r_enhanced_mdcorr(z, xmode='reflect', ymode='wrap'):
     # dimx = z.shape[-1]
 
     # calculate the decibel values from the input
-    db = decibel(z)
+    db = trafo.decibel(z)
     # calculate the shower differences by 1-d correlation with a differencing
     # kernel
     db_diffx = np.abs(filters.correlate1d(db, [1, -1], axis=-1,

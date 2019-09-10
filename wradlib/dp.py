@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -52,13 +52,10 @@ all input arrays.
     depolarization
 
 """
-
 import numpy as np
-from scipy.interpolate import interp1d
-from scipy.stats import linregress
-from scipy.ndimage.filters import convolve1d
-from . import util as util
-from . import trafo as trafo
+from scipy import interpolate, ndimage, stats
+
+from wradlib import trafo, util
 
 
 def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
@@ -204,8 +201,8 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
         if len(validx) < 2:
             dat[beam, invalid] = 0.
             continue
-        f = interp1d(validx, dat[beam, validx], kind=kind,
-                     bounds_error=False, fill_value=fill_value)
+        f = interpolate.interp1d(validx, dat[beam, validx], kind=kind,
+                                 bounds_error=False, fill_value=fill_value)
         invalidx = np.where(invalid)[0]
         dat[beam, invalidx] = f(invalidx)
     return dat.reshape(shape)
@@ -288,7 +285,7 @@ lanczos-low-noise-differentiators/>`_.
         kdp = np.zeros(phidp.shape) * np.nan
     else:
         window = lanczos_differentiator(winlen)
-        kdp = convolve1d(phidp, window, axis=1)
+        kdp = ndimage.filters.convolve1d(phidp, window, axis=1)
 
     # find remaining NaN values with valid neighbours
     invalidkdp = np.isnan(kdp)
@@ -314,23 +311,22 @@ lanczos-low-noise-differentiators/>`_.
             if np.sum(valids[beam, ix]) < winlen / 2:
                 # not enough valid values inside our window
                 continue
-            kdp[beam, r] = linregress(x[ix][valids[beam, ix]],
-                                      phidp[beam, ix[valids[beam, ix]]])[0]
+            kdp[beam, r] = stats.linregress(x[ix][valids[beam, ix]],
+                                            phidp[beam,
+                                                  ix[valids[beam, ix]]])[0]
         # take care of the start and end of the beam
         #   start
         ix = np.arange(0, winlen)
         if np.sum(valids[beam, ix]) >= 2:
-            kdp[beam, 0:int(winlen / 2)] = linregress(x[ix][valids[beam, ix]],
-                                                      phidp[beam,
-                                                            ix[valids[beam,
-                                                                      ix]]])[0]
+            kdp[beam, 0:int(winlen / 2)] = stats.linregress(
+                x[ix][valids[beam, ix]],
+                phidp[beam, ix[valids[beam, ix]]])[0]
         # end
         ix = np.arange(shape[-1] - winlen, shape[-1])
         if np.sum(valids[beam, ix]) >= 2:
-            kdp[beam, -int(winlen / 2):] = linregress(x[ix][valids[beam, ix]],
-                                                      phidp[beam,
-                                                            ix[valids[beam,
-                                                                      ix]]])[0]
+            kdp[beam, -int(winlen / 2):] = stats.linregress(
+                x[ix][valids[beam, ix]],
+                phidp[beam, ix[valids[beam, ix]]])[0]
 
     # accounting for forward/backward propagation AND gate length
     return kdp.reshape(shape) / 2. / dr

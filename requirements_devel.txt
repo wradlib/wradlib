@@ -1,4 +1,8 @@
-coverage
 codecov
+coverage
 pytest
 pytest-cov
+pytest-sugar
+pytest-xdist
+nbconvert
+nbformat

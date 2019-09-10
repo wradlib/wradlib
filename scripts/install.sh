@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 set -e
@@ -70,13 +70,7 @@ conda config --set channel_priority strict
 conda update --yes conda
 
 # Install wradlib dependencies
-DEPS="numpy scipy matplotlib netcdf4 h5py xarray deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
-
-if [[ "$GDAL_VERSION" == "2" ]]; then
-    DEPS="$DEPS gdal=$GDAL_VERSION cartopy"
-else
-    DEPS="$DEPS gdal=$GDAL_VERSION"
-fi
+DEPS="gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
 # Install twine for pypi upload
 if [[ "$DEPLOY" == "true" ]]; then

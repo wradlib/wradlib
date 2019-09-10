@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -14,13 +14,8 @@ Raster and Vector I/O using GDAL
    read_safnwc
    write_raster_dataset
 """
-
-# standard libraries
-from __future__ import absolute_import
-
 import os
 
-# site packages
 from osgeo import gdal, osr
 
 
