@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -22,10 +22,9 @@ Attenuation Correction
 
 import logging
 import numpy as np
-import scipy.ndimage
-import scipy.interpolate
-from . import trafo as trafo
-from . import zr as zr
+from scipy import ndimage, interpolate
+
+from wradlib import trafo, zr
 
 logger = logging.getLogger('attcorr')
 
@@ -301,21 +300,21 @@ def _sector_filter(mask, min_sector_size):
     forward_origin = (-(min_sector_size - (min_sector_size // 2)) +
                       min_sector_size % 2)
     backward_origin = (min_sector_size - (min_sector_size // 2)) - 1
-    forward_sum = scipy.ndimage.correlate1d(mask.astype(np.int), kernelb,
-                                            axis=-1, mode='wrap',
-                                            origin=forward_origin)
-    backward_sum = scipy.ndimage.correlate1d(mask.astype(np.int), kernelb,
-                                             axis=-1, mode='wrap',
-                                             origin=backward_origin)
+    forward_sum = ndimage.correlate1d(mask.astype(np.int), kernelb,
+                                      axis=-1, mode='wrap',
+                                      origin=forward_origin)
+    backward_sum = ndimage.correlate1d(mask.astype(np.int), kernelb,
+                                       axis=-1, mode='wrap',
+                                       origin=backward_origin)
     forward_corners = (forward_sum == min_sector_size)
     backward_corners = (backward_sum == min_sector_size)
     forward_large_sectors = np.zeros_like(mask)
     backward_large_sectors = np.zeros_like(mask)
     for iii in range(mask.shape[0]):
-        forward_large_sectors[iii] = scipy.ndimage.morphology.binary_dilation(
+        forward_large_sectors[iii] = ndimage.morphology.binary_dilation(
             forward_corners[iii], kernela[0], origin=forward_origin).astype(
             int)
-        backward_large_sectors[iii] = scipy.ndimage.morphology.binary_dilation(
+        backward_large_sectors[iii] = ndimage.morphology.binary_dilation(
             backward_corners[iii], kernela[0],
             origin=backward_origin).astype(int)
 
@@ -339,9 +338,9 @@ def _interp_atten(pia, invalidbeams):
         # Build the extended pia-array.
         extended_pia = np.concatenate([sub_pia] * 3)
         # Build interpolation class.
-        intp = scipy.interpolate.interp1d(x[~extended_invalid],
-                                          extended_pia[~extended_invalid],
-                                          kind='linear')
+        intp = interpolate.interp1d(x[~extended_invalid],
+                                    extended_pia[~extended_invalid],
+                                    kind='linear')
         # Interpolate where sectors are invalid.
         pia[i, sub_invalid, -1] = intp(x[pia.shape[1]:2 * pia.shape[1]]
                                        [sub_invalid])

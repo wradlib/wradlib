@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import numpy as np
-import wradlib.qual as qual
 import unittest
+
+import numpy as np
+
+from wradlib import qual
 
 
 class HelperFunctionsTest(unittest.TestCase):

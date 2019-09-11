@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import numpy as np
-import wradlib.ipol as ipol
-import wradlib.georef as georef
 import unittest
 import warnings
+
+import numpy as np
+
+from wradlib import georef, ipol
 
 
 class InterpolationTest(unittest.TestCase):

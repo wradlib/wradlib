@@ -1,18 +1,18 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
 import sys
+import tempfile
+import unittest
 
-import wradlib.vis as vis
-import wradlib.georef as georef
 import numpy as np
 import matplotlib.pyplot as pl
-from wradlib.util import import_optional
-from tempfile import NamedTemporaryFile
-cartopy = import_optional('cartopy')
 pl.interactive(True)  # noqa
+
+from wradlib import georef, util, vis
+
+cartopy = util.import_optional('cartopy')
 
 
 class PolarPlotTest(unittest.TestCase):
@@ -189,8 +189,9 @@ class MiscPlotTest(unittest.TestCase):
         vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy)
         vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy,
                                title='Test')
+        tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy,
-                               saveto=NamedTemporaryFile(mode='w+b').name)
+                               saveto=tmp)
         vis.plot_max_plan_and_vert(x, y, z, vol)
 
     def test_add_lines(self):

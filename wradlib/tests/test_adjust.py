@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
-import wradlib.adjust as adjust
+
 import numpy as np
+
+from wradlib import adjust
 
 # Arguments to be used throughout all test classes
 raw_x, raw_y = np.meshgrid(np.arange(4).astype("f4"),

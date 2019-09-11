@@ -1,15 +1,13 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018-2017, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 import tempfile
-
-import wradlib.georef as georef
-import wradlib.zonalstats as zonalstats
-import wradlib.util as util
 import numpy as np
 from osgeo import osr
+
+from wradlib import georef, util, zonalstats
 
 np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
                     precision=8, suppress=False, threshold=1000,

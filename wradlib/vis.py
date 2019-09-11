@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -28,30 +28,25 @@ Standard plotting and mapping procedures.
 
 
 """
-
-# standard libraries
-import os.path as path
-import warnings
-import re
 import collections
+import os.path
+import re
+import warnings
 
-# site packages
 import numpy as np
 import matplotlib.pyplot as pl
 from matplotlib import patches, axes, lines
+from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.projections import PolarAxes
+from matplotlib.ticker import NullFormatter, FuncFormatter
 from matplotlib.transforms import Affine2D
 from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
                                      GridHelperCurveLinear)
 import mpl_toolkits.axisartist.angle_helper as ah
-from matplotlib.ticker import NullFormatter, FuncFormatter
-from matplotlib.collections import LineCollection, PolyCollection
 import xarray as xr
 from osgeo import osr
 
-# wradlib modules
-from . import georef as georef
-from . util import import_optional
+from wradlib import georef, util
 
 
 @xr.register_dataarray_accessor('wradlib')
@@ -263,7 +258,7 @@ class WradlibAccessor(object):
 
         # use cartopy, if available
         if hasattr(plax, 'projection'):
-            cartopy = import_optional('cartopy')
+            cartopy = util.import_optional('cartopy')
             map_trans = cartopy.crs.AzimuthalEquidistant(
                 central_longitude=self.site[0],
                 central_latitude=self.site[1])
@@ -1035,7 +1030,8 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
             pl.close()
     else:
         # save plot to file
-        if (path.exists(path.dirname(saveto))) or (path.dirname(saveto) == ''):
+        if ((os.path.exists(os.path.dirname(saveto))) or
+                (os.path.dirname(saveto) == '')):
             pl.savefig(saveto)
             pl.close()
 

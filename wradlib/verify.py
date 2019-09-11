@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -17,16 +17,14 @@ estimates to ground truth.
    PolarNeighbours
 
 """
-# site packages
-import numpy as np
-from scipy.spatial import KDTree
-from scipy import stats
-from pprint import pprint
 import warnings
+from pprint import pprint
 
-# wradlib modules
-from . import georef as georef
-from . import util as util
+import numpy as np
+from scipy import spatial, stats
+
+from wradlib.georef import polar
+from wradlib import util
 
 
 class PolarNeighbours():
@@ -76,13 +74,13 @@ class PolarNeighbours():
         self.x = x
         self.y = y
         # compute the centroid coordinates in proj
-        bin_coords = georef.spherical_to_centroids(r, az, 0,
-                                                   sitecoords,
-                                                   proj=proj)
+        bin_coords = polar.spherical_to_centroids(r, az, 0,
+                                                  sitecoords,
+                                                  proj=proj)
         self.binx = bin_coords[..., 0].ravel()
         self.biny = bin_coords[..., 1].ravel()
         # compute the KDTree
-        tree = KDTree(list(zip(self.binx, self.biny)))
+        tree = spatial.KDTree(list(zip(self.binx, self.biny)))
         # query the tree for nearest neighbours
         self.dist, self.ix = tree.query(list(zip(x, y)), k=nnear)
 

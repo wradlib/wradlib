@@ -15,12 +15,13 @@ Xarray Functions
    create_xarray_dataarray
    georeference_dataset
 """
+import collections
 
 import numpy as np
 import xarray as xr
-import collections
 from osgeo import osr
-from . import polar
+
+from wradlib.georef import polar
 
 
 def as_xarray_dataarray(data, dims, coords):

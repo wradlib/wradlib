@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import numpy as np
-import wradlib.clutter as clutter
 import unittest
-from .. import io as io
-from .. import util as util
-from .. import georef as georef
-from .. import ipol as ipol
+
+import numpy as np
+
+from wradlib import clutter, georef, io, ipol, util
 
 
 # -------------------------------------------------------------------------------

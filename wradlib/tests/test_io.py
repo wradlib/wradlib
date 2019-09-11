@@ -1,41 +1,39 @@
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import datetime
+import gzip
+import io as sio
+import os
+import sys
+import subprocess
+import tempfile
 import unittest
-import wradlib as wrl
-from wradlib.io import dem
-from wradlib.io import radolan
-from wradlib.io import rainbow
-from wradlib.io import CfRadial, OdimH5, create_xarray_dataarray
-import wradlib.georef as georef
-from subprocess import check_call
+import zlib
+
+import deprecation
 import numpy as np
 import xarray as xr
-import zlib
-import gzip
-import tempfile
-import os
-import datetime
-import io
-import sys
+
+from wradlib import georef, io, util, zonalstats
 
 
 class DXTest(unittest.TestCase):
     # testing functions related to read_dx
     def test__get_timestamp_from_filename(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
-        self.assertEqual(radolan._get_timestamp_from_filename(filename),
+        self.assertEqual(io.radolan._get_timestamp_from_filename(filename),
                          datetime.datetime(2006, 8, 5, 0))
         filename = 'raa00-dx_10488-0608050000-drs---bin'
-        self.assertEqual(radolan._get_timestamp_from_filename(filename),
+        self.assertEqual(io.radolan._get_timestamp_from_filename(filename),
                          datetime.datetime(2006, 8, 5, 0))
 
     def test_get_dx_timestamp(self):
         filename = 'raa00-dx_10488-200608050000-drs---bin'
-        self.assertEqual(radolan.get_dx_timestamp(filename).__str__(),
+        self.assertEqual(io.radolan.get_dx_timestamp(filename).__str__(),
                          '2006-08-05 00:00:00+00:00')
         filename = 'raa00-dx_10488-0608050000-drs---bin'
-        self.assertEqual(radolan.get_dx_timestamp(filename).__str__(),
+        self.assertEqual(io.radolan.get_dx_timestamp(filename).__str__(),
                          '2006-08-05 00:00:00+00:00')
 
     def test_parse_dx_header(self):
@@ -60,17 +58,17 @@ class DXTest(unittest.TestCase):
                   b'42( 114,  53)-31-31 36 36 40 42 40 40 34 34 37 30  ` '
                   b'54(  51,  27)-31-31 49 49 54 51 45 39 40 34..')
         head = ''
-        for c in io.BytesIO(header):
+        for c in sio.BytesIO(header):
             head += str(c.decode())
-        radolan.parse_dx_header(head)
+        io.radolan.parse_dx_header(head)
 
     def test_unpack_dx(self):
         pass
 
     def test_read_dx(self):
         filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
-        dxfile = wrl.util.get_wradlib_data_file(filename)
-        data, attrs = radolan.read_dx(dxfile)
+        dxfile = util.get_wradlib_data_file(filename)
+        data, attrs = io.radolan.read_dx(dxfile)
 
 
 class MiscTest(unittest.TestCase):
@@ -91,7 +89,7 @@ class MiscTest(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile()
         name = tmp.name
         tmp.close()
-        wrl.io.write_polygon_to_text(name, polygons)
+        io.misc.write_polygon_to_text(name, polygons)
         self.assertEqual(open(name, 'r').readlines(), res)
 
     def test_pickle(self):
@@ -99,12 +97,10 @@ class MiscTest(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile()
         name = tmp.name
         tmp.close()
-        wrl.io.to_pickle(name, arr)
-        res = wrl.io.from_pickle(name)
+        io.misc.to_pickle(name, arr)
+        res = io.misc.from_pickle(name)
         self.assertTrue(np.allclose(arr, res))
 
-    @unittest.skipIf(sys.version_info < (3, 0),
-                     "not supported in this python version")
     def test_get_radiosonde(self):
         date = datetime.datetime(2013, 7, 1, 15, 30)
         res1 = np.array([(1000., 153., 17.4, 13.5, 13.5, 78., 78., 9.81, 200.,
@@ -155,8 +151,8 @@ class MiscTest(unittest.TestCase):
         import urllib
         try:
             with self.assertRaises(ValueError):
-                data, meta = wrl.io.get_radiosonde(10411, date)
-            data, meta = wrl.io.get_radiosonde(10410, date)
+                data, meta = io.misc.get_radiosonde(10411, date)
+            data, meta = io.misc.get_radiosonde(10410, date)
         except urllib.error.HTTPError:
             print("HTTPError while retrieving radiosonde data, test skipped!")
         else:
@@ -166,8 +162,8 @@ class MiscTest(unittest.TestCase):
             self.assertEqual(quant, res3)
 
     def test_get_membership_functions(self):
-        filename = wrl.util.get_wradlib_data_file('misc/msf_xband.gz')
-        msf = wrl.io.get_membership_functions(filename)
+        filename = util.get_wradlib_data_file('misc/msf_xband.gz')
+        msf = io.misc.get_membership_functions(filename)
         res = np.array(
             [[6.000e+00, 5.000e+00, 1.000e+01, 3.500e+01, 4.000e+01],
              [6.000e+00, -7.458e-01, -4.457e-01, 5.523e-01, 8.523e-01],
@@ -185,33 +181,33 @@ class HDF5Test(unittest.TestCase):
         tmp = tempfile.NamedTemporaryFile()
         name = tmp.name
         tmp.close()
-        wrl.io.to_hdf5(name, arr, metadata=metadata)
-        res, resmeta = wrl.io.from_hdf5(name)
+        io.hdf.to_hdf5(name, arr, metadata=metadata)
+        res, resmeta = io.hdf.from_hdf5(name)
         self.assertTrue(np.allclose(arr, res))
         self.assertDictEqual(metadata, resmeta)
 
         with self.assertRaises(KeyError):
-            wrl.io.from_hdf5(name, 'NotAvailable')
+            io.hdf.from_hdf5(name, 'NotAvailable')
 
     def test_read_safnwc(self):
         filename = 'hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5'
-        safnwcfile = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.read_safnwc(safnwcfile)
+        safnwcfile = util.get_wradlib_data_file(filename)
+        io.gdal.read_safnwc(safnwcfile)
 
         command = 'rm -rf test1.h5'
-        check_call(command, shell=True)
+        subprocess.check_call(command, shell=True)
         command = 'h5copy -i {} -o test1.h5 -s CT -d CT'.format(safnwcfile)
-        check_call(command, shell=True)
+        subprocess.check_call(command, shell=True)
         with self.assertRaises(KeyError):
-            wrl.io.read_safnwc('test1.h5')
+            io.gdal.read_safnwc('test1.h5')
 
     def test_read_gpm(self):
         filename1 = ('gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-'
                      'S095002-E095137.004383.V05A.HDF5')
-        gpm_file = wrl.util.get_wradlib_data_file(filename1)
+        gpm_file = util.get_wradlib_data_file(filename1)
         filename2 = ('hdf5/IDR66_20141206_094829.vol.h5')
-        gr2gpm_file = wrl.util.get_wradlib_data_file(filename2)
-        gr_data = wrl.io.read_generic_netcdf(gr2gpm_file)
+        gr2gpm_file = util.get_wradlib_data_file(filename2)
+        gr_data = io.netcdf.read_generic_netcdf(gr2gpm_file)
         dset = gr_data['dataset{0}'.format(2)]
         nray_gr = dset['where']['nrays']
         ngate_gr = dset['where']['nbins'].astype("i4")
@@ -220,28 +216,28 @@ class HDF5Test(unittest.TestCase):
         lon0_gr = gr_data['where']['lon']
         lat0_gr = gr_data['where']['lat']
         alt0_gr = gr_data['where']['height']
-        coord = wrl.georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
-        coords = wrl.georef.spherical_to_proj(coord[..., 0],
-                                              np.degrees(coord[..., 1]),
-                                              coord[..., 2],
-                                              (lon0_gr, lat0_gr, alt0_gr))
+        coord = georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
+        coords = georef.spherical_to_proj(coord[..., 0],
+                                          np.degrees(coord[..., 1]),
+                                          coord[..., 2],
+                                          (lon0_gr, lat0_gr, alt0_gr))
         lon = coords[..., 0]
         lat = coords[..., 1]
-        bbox = wrl.zonalstats.get_bbox(lon, lat)
-        wrl.io.read_gpm(gpm_file, bbox)
+        bbox = zonalstats.get_bbox(lon, lat)
+        io.hdf.read_gpm(gpm_file, bbox)
 
     def test_read_trmm(self):
         # define TRMM data sets
-        trmm_2a23_file = wrl.util.get_wradlib_data_file(
+        trmm_2a23_file = util.get_wradlib_data_file(
             'trmm/2A-CS-151E24S154E30S.TRMM.PR.2A23.20100206-'
             'S111425-E111526.069662.7.HDF')
-        trmm_2a25_file = wrl.util.get_wradlib_data_file(
+        trmm_2a25_file = util.get_wradlib_data_file(
             'trmm/2A-CS-151E24S154E30S.TRMM.PR.2A25.20100206-'
             'S111425-E111526.069662.7.HDF')
 
         filename2 = ('hdf5/IDR66_20141206_094829.vol.h5')
-        gr2gpm_file = wrl.util.get_wradlib_data_file(filename2)
-        gr_data = wrl.io.read_generic_netcdf(gr2gpm_file)
+        gr2gpm_file = util.get_wradlib_data_file(filename2)
+        gr_data = io.netcdf.read_generic_netcdf(gr2gpm_file)
         dset = gr_data['dataset{0}'.format(2)]
         nray_gr = dset['where']['nrays']
         ngate_gr = dset['where']['nbins'].astype("i4")
@@ -250,26 +246,26 @@ class HDF5Test(unittest.TestCase):
         lon0_gr = gr_data['where']['lon']
         lat0_gr = gr_data['where']['lat']
         alt0_gr = gr_data['where']['height']
-        coord = wrl.georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
-        coords = wrl.georef.spherical_to_proj(coord[..., 0],
-                                              np.degrees(coord[..., 1]),
-                                              coord[..., 2],
-                                              (lon0_gr, lat0_gr, alt0_gr))
+        coord = georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
+        coords = georef.spherical_to_proj(coord[..., 0],
+                                          np.degrees(coord[..., 1]),
+                                          coord[..., 2],
+                                          (lon0_gr, lat0_gr, alt0_gr))
         lon = coords[..., 0]
         lat = coords[..., 1]
-        bbox = wrl.zonalstats.get_bbox(lon, lat)
+        bbox = zonalstats.get_bbox(lon, lat)
 
-        wrl.io.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
+        io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
 
     def test_read_generic_hdf5(self):
         filename = ('hdf5/IDR66_20141206_094829.vol.h5')
-        h5_file = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.read_generic_hdf5(h5_file)
+        h5_file = util.get_wradlib_data_file(filename)
+        io.hdf.read_generic_hdf5(h5_file)
 
     def test_read_opera_hdf5(self):
         filename = ('hdf5/IDR66_20141206_094829.vol.h5')
-        h5_file = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.read_opera_hdf5(h5_file)
+        h5_file = util.get_wradlib_data_file(filename)
+        io.hdf.read_opera_hdf5(h5_file)
 
     def test_read_gamic_hdf5(self):
         ppi = ('hdf5/2014-08-10--182000.ppi.mvol')
@@ -277,13 +273,13 @@ class HDF5Test(unittest.TestCase):
         filename = ('gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-'
                     'S095002-E095137.004383.V05A.HDF5')
 
-        h5_file = wrl.util.get_wradlib_data_file(ppi)
-        wrl.io.read_gamic_hdf5(h5_file)
-        h5_file = wrl.util.get_wradlib_data_file(rhi)
-        wrl.io.read_gamic_hdf5(h5_file)
-        h5_file = wrl.util.get_wradlib_data_file(filename)
+        h5_file = util.get_wradlib_data_file(ppi)
+        io.hdf.read_gamic_hdf5(h5_file)
+        h5_file = util.get_wradlib_data_file(rhi)
+        io.hdf.read_gamic_hdf5(h5_file)
+        h5_file = util.get_wradlib_data_file(filename)
         with self.assertRaises(KeyError):
-            wrl.io.read_gamic_hdf5(h5_file)
+            io.hdf.read_gamic_hdf5(h5_file)
 
 
 class RadolanTest(unittest.TestCase):
@@ -291,7 +287,7 @@ class RadolanTest(unittest.TestCase):
         keylist = ['BY', 'VS', 'SW', 'PR', 'INT', 'GP',
                    'MS', 'LV', 'CS', 'MX', 'BG', 'ST',
                    'VV', 'MF', 'QN', 'VR', 'U']
-        head = radolan.get_radolan_header_token()
+        head = io.radolan.get_radolan_header_token()
         for key in keylist:
             self.assertIsNone(head[key])
 
@@ -300,7 +296,7 @@ class RadolanTest(unittest.TestCase):
                   'INT  60GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,'
                   'asd,neu,nhb,oft,tur,isn,fbg,mem>')
 
-        test_head = radolan.get_radolan_header_token()
+        test_head = io.radolan.get_radolan_header_token()
         test_head['PR'] = (43, 48)
         test_head['GP'] = (57, 66)
         test_head['INT'] = (51, 55)
@@ -309,7 +305,7 @@ class RadolanTest(unittest.TestCase):
         test_head['MS'] = (68, 128)
         test_head['BY'] = (19, 26)
 
-        head = radolan.get_radolan_header_token_pos(header)
+        head = io.radolan.get_radolan_header_token_pos(header)
         self.assertDictEqual(head, test_head)
 
         header = ('RQ210945100000517BY1620162VS 2SW 1.7.2PR E-01'
@@ -321,7 +317,7 @@ class RadolanTest(unittest.TestCase):
                      'MS': (85, 153), 'LV': None, 'CS': None, 'MX': None,
                      'BG': None, 'ST': None, 'VV': (64, 66), 'MF': (68, 77),
                      'QN': (79, 83), 'VR': None, 'U': None}
-        head = radolan.get_radolan_header_token_pos(header)
+        head = io.radolan.get_radolan_header_token_pos(header)
         self.assertDictEqual(head, test_head)
 
     def test_decode_radolan_runlength_line(self):
@@ -382,10 +378,10 @@ class RadolanTest(unittest.TestCase):
         testline1 = (b'\x10\n')
         testattrs = {'ncol': 460, 'nodataflag': 0}
         arr = np.frombuffer(testline, np.uint8).astype(np.uint8)
-        line = radolan.decode_radolan_runlength_line(arr, testattrs)
+        line = io.radolan.decode_radolan_runlength_line(arr, testattrs)
         self.assertTrue(np.allclose(line, testarr))
         arr = np.frombuffer(testline1, np.uint8).astype(np.uint8)
-        line = radolan.decode_radolan_runlength_line(arr, testattrs)
+        line = io.radolan.decode_radolan_runlength_line(arr, testattrs)
         self.assertTrue(np.allclose(line, [0] * 460))
 
     def test_read_radolan_runlength_line(self):
@@ -397,7 +393,7 @@ class RadolanTest(unittest.TestCase):
         tmp_id.write(testline)
         tmp_id.close()
         tmp_id = open(temp_path, 'rb')
-        line = radolan.read_radolan_runlength_line(tmp_id)
+        line = io.radolan.read_radolan_runlength_line(tmp_id)
         tmp_id.close()
         os.close(fid)
         os.remove(temp_path)
@@ -405,41 +401,42 @@ class RadolanTest(unittest.TestCase):
 
     def test_decode_radolan_runlength_array(self):
         filename = 'radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz'
-        pg_file = wrl.util.get_wradlib_data_file(filename)
-        pg_fid = radolan.get_radolan_filehandle(pg_file)
-        header = radolan.read_radolan_header(pg_fid)
-        attrs = radolan.parse_dwd_composite_header(header)
-        data = radolan.read_radolan_binary_array(pg_fid, attrs['datasize'])
+        pg_file = util.get_wradlib_data_file(filename)
+        pg_fid = io.radolan.get_radolan_filehandle(pg_file)
+        header = io.radolan.read_radolan_header(pg_fid)
+        attrs = io.radolan.parse_dwd_composite_header(header)
+        data = io.radolan.read_radolan_binary_array(pg_fid, attrs['datasize'])
         attrs['nodataflag'] = 255
-        arr = radolan.decode_radolan_runlength_array(data, attrs)
+        arr = io.radolan.decode_radolan_runlength_array(data, attrs)
         self.assertEqual(arr.shape, (460, 460))
 
     def test_read_radolan_binary_array(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
-        rw_file = wrl.util.get_wradlib_data_file(filename)
-        rw_fid = radolan.get_radolan_filehandle(rw_file)
-        header = radolan.read_radolan_header(rw_fid)
-        attrs = radolan.parse_dwd_composite_header(header)
-        data = radolan.read_radolan_binary_array(rw_fid, attrs['datasize'])
+        rw_file = util.get_wradlib_data_file(filename)
+        rw_fid = io.radolan.get_radolan_filehandle(rw_file)
+        header = io.radolan.read_radolan_header(rw_fid)
+        attrs = io.radolan.parse_dwd_composite_header(header)
+        data = io.radolan.read_radolan_binary_array(rw_fid, attrs['datasize'])
         self.assertEqual(len(data), attrs['datasize'])
 
-        rw_fid = radolan.get_radolan_filehandle(rw_file)
-        header = radolan.read_radolan_header(rw_fid)
-        attrs = radolan.parse_dwd_composite_header(header)
+        rw_fid = io.radolan.get_radolan_filehandle(rw_file)
+        header = io.radolan.read_radolan_header(rw_fid)
+        attrs = io.radolan.parse_dwd_composite_header(header)
         with self.assertRaises(IOError):
-            radolan.read_radolan_binary_array(rw_fid, attrs['datasize'] + 10)
+            io.radolan.read_radolan_binary_array(rw_fid,
+                                                 attrs['datasize'] + 10)
 
     @unittest.skipIf(sys.platform.startswith("win"), "no gunzip on windows")
     def test_get_radolan_filehandle(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
-        rw_file = wrl.util.get_wradlib_data_file(filename)
-        rw_fid = radolan.get_radolan_filehandle(rw_file)
+        rw_file = util.get_wradlib_data_file(filename)
+        rw_fid = io.radolan.get_radolan_filehandle(rw_file)
         self.assertEqual(rw_file, rw_fid.name)
 
         command = 'gunzip -k -f {}'.format(rw_file)
-        check_call(command, shell=True)
+        subprocess.check_call(command, shell=True)
 
-        rw_fid = radolan.get_radolan_filehandle(rw_file[:-3])
+        rw_fid = io.radolan.get_radolan_filehandle(rw_file[:-3])
         self.assertEqual(rw_file[:-3], rw_fid.name)
 
     def test_read_radolan_header(self):
@@ -447,12 +444,12 @@ class RadolanTest(unittest.TestCase):
                      b'INT  60GP 900x 900MS 58<boo,ros,emd,hnr,pro,ess,'
                      b'asd,neu,nhb,oft,tur,isn,fbg,mem>')
 
-        buf = io.BytesIO(rx_header)
+        buf = sio.BytesIO(rx_header)
         with self.assertRaises(EOFError):
-            radolan.read_radolan_header(buf)
+            io.radolan.read_radolan_header(buf)
 
-        buf = io.BytesIO(rx_header + b"\x03")
-        header = radolan.read_radolan_header(buf)
+        buf = sio.BytesIO(rx_header + b"\x03")
+        header = io.radolan.read_radolan_header(buf)
         self.assertEqual(header, rx_header.decode())
 
     def test_parse_dwd_composite_header(self):
@@ -537,11 +534,11 @@ class RadolanTest(unittest.TestCase):
                                       'ess', 'asd', 'neu', 'nhb', 'oft', 'tur',
                                       'isn', 'fbg', 'mem']}
 
-        rx = radolan.parse_dwd_composite_header(rx_header)
-        pg = radolan.parse_dwd_composite_header(pg_header)
-        rq = radolan.parse_dwd_composite_header(rq_header)
-        sq = radolan.parse_dwd_composite_header(sq_header)
-        yw = radolan.parse_dwd_composite_header(yw_header)
+        rx = io.radolan.parse_dwd_composite_header(rx_header)
+        pg = io.radolan.parse_dwd_composite_header(pg_header)
+        rq = io.radolan.parse_dwd_composite_header(rq_header)
+        sq = io.radolan.parse_dwd_composite_header(sq_header)
+        yw = io.radolan.parse_dwd_composite_header(yw_header)
 
         for key, value in rx.items():
             self.assertEqual(value, test_rx[key])
@@ -568,7 +565,7 @@ class RadolanTest(unittest.TestCase):
 
     def test_read_radolan_composite(self):
         filename = 'radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz'
-        rw_file = wrl.util.get_wradlib_data_file(filename)
+        rw_file = util.get_wradlib_data_file(filename)
         test_attrs = {'maxrange': '150 km',
                       'radarlocations': ['boo', 'ros', 'emd', 'hnr', 'pro',
                                          'ess', 'asd', 'neu', 'nhb', 'oft',
@@ -581,7 +578,7 @@ class RadolanTest(unittest.TestCase):
                       'datasize': 1620000, 'radarid': '10000'}
 
         # test for complete file
-        data, attrs = radolan.read_radolan_composite(rw_file)
+        data, attrs = io.radolan.read_radolan_composite(rw_file)
         self.assertEqual(data.shape, (900, 900))
 
         for key, value in attrs.items():
@@ -593,7 +590,7 @@ class RadolanTest(unittest.TestCase):
         # Do the same for the case where a file handle is passed
         # instead of a file name
         with gzip.open(rw_file) as fh:
-            data, attrs = radolan.read_radolan_composite(fh)
+            data, attrs = io.radolan.read_radolan_composite(fh)
             self.assertEqual(data.shape, (900, 900))
 
         for key, value in attrs.items():
@@ -603,7 +600,8 @@ class RadolanTest(unittest.TestCase):
                 self.assertEqual(value, test_attrs[key])
 
         # test for loaddata=False
-        data, attrs = radolan.read_radolan_composite(rw_file, loaddata=False)
+        data, attrs = io.radolan.read_radolan_composite(rw_file,
+                                                        loaddata=False)
         self.assertEqual(data, None)
         for key, value in attrs.items():
             if type(value) == np.ndarray:
@@ -614,18 +612,18 @@ class RadolanTest(unittest.TestCase):
             attrs['nodataflag']
 
         filename = 'radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz'
-        rx_file = wrl.util.get_wradlib_data_file(filename)
-        data, attrs = radolan.read_radolan_composite(rx_file)
+        rx_file = util.get_wradlib_data_file(filename)
+        data, attrs = io.radolan.read_radolan_composite(rx_file)
 
         filename = 'radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz'
-        pc_file = wrl.util.get_wradlib_data_file(filename)
-        data, attrs = radolan.read_radolan_composite(pc_file)
+        pc_file = util.get_wradlib_data_file(filename)
+        data, attrs = io.radolan.read_radolan_composite(pc_file)
 
         # xarray test
         filename = 'radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz'
-        rx_file = wrl.util.get_wradlib_data_file(filename)
-        data, attrs = radolan.read_radolan_composite(rx_file,
-                                                     loaddata='xarray')
+        rx_file = util.get_wradlib_data_file(filename)
+        data, attrs = io.radolan.read_radolan_composite(rx_file,
+                                                        loaddata='xarray')
         self.assertEqual(data.RX.shape, (900, 900))
         self.assertEqual(data.dims, {'x': 900, 'y': 900})
         self.assertEqual(data.RX.dims, ('y', 'x'))
@@ -636,16 +634,16 @@ class RadolanTest(unittest.TestCase):
 class RainbowTest(unittest.TestCase):
     def test_read_rainbow(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
-        rb_file = wrl.util.get_wradlib_data_file(filename)
+        rb_file = util.get_wradlib_data_file(filename)
         with self.assertRaises(IOError):
-            rainbow.read_rainbow('test')
+            io.rainbow.read_rainbow('test')
         # Test reading from file name
-        rb_dict = rainbow.read_rainbow(rb_file)
+        rb_dict = io.rainbow.read_rainbow(rb_file)
         self.assertEqual(rb_dict[u'volume'][u'@datetime'],
                          u'2013-07-03T08:33:55')
         # Test reading from file handle
         with open(rb_file, 'rb') as rb_fh:
-            rb_dict = rainbow.read_rainbow(rb_fh)
+            rb_dict = io.rainbow.read_rainbow(rb_fh)
             self.assertEqual(rb_dict[u'volume'][u'@datetime'],
                              u'2013-07-03T08:33:55')
 
@@ -657,68 +655,74 @@ class RainbowTest(unittest.TestCase):
         outdict = [{'X': 1, 'AAA': 0}, {'X': 5, 'ACA': 4},
                    {'ABA': 2, 'X': 3}, {'ADA': 4, 'X': 2}]
         try:
-            self.assertCountEqual(list(rainbow.find_key('X', indict)),
+            self.assertCountEqual(list(io.rainbow.find_key('X', indict)),
                                   outdict)
-            self.assertCountEqual(list(rainbow.find_key('Y', indict)),
+            self.assertCountEqual(list(io.rainbow.find_key('Y', indict)),
                                   [])
         except AttributeError:
-            self.assertItemsEqual(list(rainbow.find_key('X', indict)),
+            self.assertItemsEqual(list(io.rainbow.find_key('X', indict)),
                                   outdict)
-            self.assertItemsEqual(list(rainbow.find_key('Y', indict)),
+            self.assertItemsEqual(list(io.rainbow.find_key('Y', indict)),
                                   [])
 
     def test_decompress(self):
         dstring = b'very special compressed string'
         cstring = zlib.compress(dstring)
-        self.assertEqual(rainbow.decompress(cstring), dstring)
+        self.assertEqual(io.rainbow.decompress(cstring), dstring)
 
     def test_get_rb_data_layout(self):
-        self.assertEqual(rainbow.get_rb_data_layout(8), (1, '>u1'))
-        self.assertEqual(rainbow.get_rb_data_layout(16), (2, '>u2'))
-        self.assertEqual(rainbow.get_rb_data_layout(32), (4, '>u4'))
+        self.assertEqual(io.rainbow.get_rb_data_layout(8), (1, '>u1'))
+        self.assertEqual(io.rainbow.get_rb_data_layout(16), (2, '>u2'))
+        self.assertEqual(io.rainbow.get_rb_data_layout(32), (4, '>u4'))
         with self.assertRaises(ValueError):
-            rainbow.get_rb_data_layout(128)
+            io.rainbow.get_rb_data_layout(128)
 
-    @unittest.skipIf(sys.version_info < (3, 3),
-                     "not supported in this python version")
     def test_get_rb_data_layout_big(self):
         from unittest.mock import patch
         with patch('sys.byteorder', 'big'):
-            self.assertEqual(rainbow.get_rb_data_layout(8), (1, '<u1'))
-            self.assertEqual(rainbow.get_rb_data_layout(16), (2, '<u2'))
-            self.assertEqual(rainbow.get_rb_data_layout(32), (4, '<u4'))
+            self.assertEqual(io.rainbow.get_rb_data_layout(8), (1, '<u1'))
+            self.assertEqual(io.rainbow.get_rb_data_layout(16), (2, '<u2'))
+            self.assertEqual(io.rainbow.get_rb_data_layout(32), (4, '<u4'))
 
     def test_get_rb_data_attribute(self):
-        xmltodict = wrl.util.import_optional('xmltodict')
+        xmltodict = util.import_optional('xmltodict')
         data = xmltodict.parse(('<slicedata time="13:30:05" date="2013-04-26">'
                                 '#<rayinfo refid="startangle" blobid="0" '
                                 'rays="361" depth="16"/> '
                                 '#<rawdata blobid="1" rays="361" type="dBuZ" '
                                 'bins="400" min="-31.5" max="95.5" '
                                 'depth="8"/> #</slicedata>'))
-        data = list(rainbow.find_key('@blobid', data))
-        self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'blobid'), 0)
-        self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'blobid'), 1)
-        self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'rays'), 361)
-        self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'rays'), 361)
-        self.assertEqual(rainbow.get_rb_data_attribute(data[1], 'bins'), 400)
+        data = list(io.rainbow.find_key('@blobid', data))
+        self.assertEqual(io.rainbow.get_rb_data_attribute(data[0],
+                                                          'blobid'), 0)
+        self.assertEqual(io.rainbow.get_rb_data_attribute(data[1],
+                                                          'blobid'), 1)
+        self.assertEqual(io.rainbow.get_rb_data_attribute(data[0],
+                                                          'rays'), 361)
+        self.assertEqual(io.rainbow.get_rb_data_attribute(data[1],
+                                                          'rays'), 361)
+        self.assertEqual(io.rainbow.get_rb_data_attribute(data[1],
+                                                          'bins'), 400)
         with self.assertRaises(KeyError):
-            rainbow.get_rb_data_attribute(data[0], 'Nonsense')
-        self.assertEqual(rainbow.get_rb_data_attribute(data[0], 'depth'), 16)
+            io.rainbow.get_rb_data_attribute(data[0], 'Nonsense')
+        self.assertEqual(io.rainbow.get_rb_data_attribute(data[0],
+                                                          'depth'), 16)
 
     def test_get_rb_blob_attribute(self):
-        xmltodict = wrl.util.import_optional('xmltodict')
+        xmltodict = util.import_optional('xmltodict')
         xmldict = xmltodict.parse(
             '<BLOB blobid="0" size="737" compression="qt"></BLOB>')
-        self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'compression'),
-                         'qt')
-        self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'size'), '737')
-        self.assertEqual(rainbow.get_rb_blob_attribute(xmldict, 'blobid'), '0')
+        self.assertEqual(io.rainbow.get_rb_blob_attribute(xmldict,
+                                                          'compression'), 'qt')
+        self.assertEqual(io.rainbow.get_rb_blob_attribute(xmldict,
+                                                          'size'), '737')
+        self.assertEqual(io.rainbow.get_rb_blob_attribute(xmldict,
+                                                          'blobid'), '0')
         with self.assertRaises(KeyError):
-            rainbow.get_rb_blob_attribute(xmldict, 'Nonsense')
+            io.rainbow.get_rb_blob_attribute(xmldict, 'Nonsense')
 
     def test_get_rb_data_shape(self):
-        xmltodict = wrl.util.import_optional('xmltodict')
+        xmltodict = util.import_optional('xmltodict')
         data = xmltodict.parse(('<slicedata time="13:30:05" date="2013-04-26">'
                                 '#<rayinfo refid="startangle" blobid="0" '
                                 'rays="361" depth="16"/> #<rawdata blobid="1" '
@@ -732,13 +736,13 @@ class RainbowTest(unittest.TestCase):
                                 'blobid="4" rows="800" type="dBuZ" '
                                 'columns="400" min="-31.5" max="95.5" '
                                 'depth="8"/> #</slicedata>'))
-        data = list(rainbow.find_key('@blobid', data))
-        self.assertEqual(rainbow.get_rb_data_shape(data[0]), 361)
-        self.assertEqual(rainbow.get_rb_data_shape(data[1]), (361, 400))
-        self.assertEqual(rainbow.get_rb_data_shape(data[2]), (800, 400, 6))
-        self.assertEqual(rainbow.get_rb_data_shape(data[4]), (800, 400))
+        data = list(io.rainbow.find_key('@blobid', data))
+        self.assertEqual(io.rainbow.get_rb_data_shape(data[0]), 361)
+        self.assertEqual(io.rainbow.get_rb_data_shape(data[1]), (361, 400))
+        self.assertEqual(io.rainbow.get_rb_data_shape(data[2]), (800, 400, 6))
+        self.assertEqual(io.rainbow.get_rb_data_shape(data[4]), (800, 400))
         with self.assertRaises(KeyError):
-            rainbow.get_rb_data_shape(data[3])
+            io.rainbow.get_rb_data_shape(data[3])
 
     def test_map_rb_data(self):
         indata = b'0123456789'
@@ -747,47 +751,48 @@ class RainbowTest(unittest.TestCase):
         outdata16 = np.array([12337, 12851, 13365, 13879, 14393],
                              dtype=np.uint16)
         outdata32 = np.array([808530483, 875902519], dtype=np.uint32)
-        self.assertTrue(np.allclose(rainbow.map_rb_data(indata, 8), outdata8))
-        self.assertTrue(np.allclose(rainbow.map_rb_data(indata, 16),
+        self.assertTrue(np.allclose(io.rainbow.map_rb_data(indata, 8),
+                                    outdata8))
+        self.assertTrue(np.allclose(io.rainbow.map_rb_data(indata, 16),
                                     outdata16))
-        self.assertTrue(np.allclose(rainbow.map_rb_data(indata, 32),
+        self.assertTrue(np.allclose(io.rainbow.map_rb_data(indata, 32),
                                     outdata32))
         flagdata = b'1'
-        self.assertTrue(np.allclose(rainbow.map_rb_data(flagdata, 1),
+        self.assertTrue(np.allclose(io.rainbow.map_rb_data(flagdata, 1),
                                     [0, 0, 1, 1, 0, 0, 0, 1]))
 
     def test_get_rb_blob_data(self):
         datastring = b'<BLOB blobid="0" size="737" compression="qt"></BLOB>'
         with self.assertRaises(EOFError):
-            rainbow.get_rb_blob_data(datastring, 1)
+            io.rainbow.get_rb_blob_data(datastring, 1)
 
     def test_get_rb_blob_from_file(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
-        rb_file = wrl.util.get_wradlib_data_file(filename)
-        rbdict = rainbow.read_rainbow(rb_file, loaddata=False)
+        rb_file = util.get_wradlib_data_file(filename)
+        rbdict = io.rainbow.read_rainbow(rb_file, loaddata=False)
         rbblob = rbdict['volume']['scan']['slice']['slicedata']['rawdata']
         # Check reading from file handle
         with open(rb_file, 'rb') as rb_fh:
-            data = rainbow.get_rb_blob_from_file(rb_fh, rbblob)
+            data = io.rainbow.get_rb_blob_from_file(rb_fh, rbblob)
             self.assertEqual(data.shape[0], int(rbblob['@rays']))
             self.assertEqual(data.shape[1], int(rbblob['@bins']))
             with self.assertRaises(IOError):
-                rainbow.get_rb_blob_from_file('rb_fh', rbblob)
+                io.rainbow.get_rb_blob_from_file('rb_fh', rbblob)
         # Check reading from file path
-        data = rainbow.get_rb_blob_from_file(rb_file, rbblob)
+        data = io.rainbow.get_rb_blob_from_file(rb_file, rbblob)
         self.assertEqual(data.shape[0], int(rbblob['@rays']))
         self.assertEqual(data.shape[1], int(rbblob['@bins']))
         with self.assertRaises(IOError):
-            rainbow.get_rb_blob_from_file('rb_fh', rbblob)
+            io.rainbow.get_rb_blob_from_file('rb_fh', rbblob)
 
     def test_get_rb_file_as_string(self):
         filename = 'rainbow/2013070308340000dBuZ.azi'
-        rb_file = wrl.util.get_wradlib_data_file(filename)
+        rb_file = util.get_wradlib_data_file(filename)
         with open(rb_file, 'rb') as rb_fh:
-            rb_string = rainbow.get_rb_file_as_string(rb_fh)
+            rb_string = io.rainbow.get_rb_file_as_string(rb_fh)
             self.assertTrue(rb_string)
             with self.assertRaises(IOError):
-                rainbow.get_rb_file_as_string('rb_fh')
+                io.rainbow.get_rb_file_as_string('rb_fh')
 
     def test_get_rb_header(self):
         rb_header = (b'<volume version="5.34.16" '
@@ -796,20 +801,20 @@ class RainbowTest(unittest.TestCase):
                      b'<scan name="analyzer.azi" time="08:34:00" '
                      b'date="2013-07-03">')
 
-        buf = io.BytesIO(rb_header)
+        buf = sio.BytesIO(rb_header)
         with self.assertRaises(IOError):
-            rainbow.get_rb_header(buf)
+            io.rainbow.get_rb_header(buf)
 
         filename = 'rainbow/2013070308340000dBuZ.azi'
-        rb_file = wrl.util.get_wradlib_data_file(filename)
+        rb_file = util.get_wradlib_data_file(filename)
         with open(rb_file, 'rb') as rb_fh:
-            rb_header = rainbow.get_rb_header(rb_fh)
+            rb_header = io.rainbow.get_rb_header(rb_fh)
             self.assertEqual(rb_header['volume']['@version'], '5.34.16')
 
 
 class RasterTest(unittest.TestCase):
     def test_gdal_create_dataset(self):
-        testfunc = wrl.io.gdal_create_dataset
+        testfunc = io.gdal.gdal_create_dataset
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         with self.assertRaises(TypeError):
             testfunc('AIG', tmp)
@@ -824,43 +829,43 @@ class RasterTest(unittest.TestCase):
 
     def test_write_raster_dataset(self):
         filename = 'geo/bonn_new.tif'
-        geofile = wrl.util.get_wradlib_data_file(filename)
-        ds = wrl.io.open_raster(geofile)
-        wrl.io.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid')
-        wrl.io.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid',
-                                    remove=True)
+        geofile = util.get_wradlib_data_file(filename)
+        ds = io.gdal.open_raster(geofile)
+        io.gdal.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid')
+        io.gdal.write_raster_dataset(geofile + 'asc', ds, 'AAIGrid',
+                                     remove=True)
         with self.assertRaises(TypeError):
-            wrl.io.write_raster_dataset(geofile + 'asc1', ds, 'AIG')
+            io.gdal.write_raster_dataset(geofile + 'asc1', ds, 'AIG')
 
     def test_open_raster(self):
         filename = 'geo/bonn_new.tif'
-        geofile = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.open_raster(geofile, 'GTiff')
+        geofile = util.get_wradlib_data_file(filename)
+        io.gdal.open_raster(geofile, 'GTiff')
 
 
 class VectorTest(unittest.TestCase):
     def test_open_vector(self):
         filename = 'shapefiles/agger/agger_merge.shp'
-        geofile = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.open_vector(geofile)
-        wrl.io.open_vector(geofile, 'ESRI Shapefile')
+        geofile = util.get_wradlib_data_file(filename)
+        io.gdal.open_vector(geofile)
+        io.gdal.open_vector(geofile, 'ESRI Shapefile')
 
 
 class IrisTest(unittest.TestCase):
     def test_open_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
-        sigmetfile = wrl.util.get_wradlib_data_file(filename)
-        data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=False)
-        self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
+        sigmetfile = util.get_wradlib_data_file(filename)
+        data = io.iris.IrisRawFile(sigmetfile, loaddata=False)
+        self.assertIsInstance(data.rh, io.iris.IrisRecord)
         self.assertIsInstance(data.fh, np.memmap)
-        data = wrl.io.iris.IrisRawFile(sigmetfile, loaddata=True)
+        data = io.iris.IrisRawFile(sigmetfile, loaddata=True)
         self.assertEqual(data._record_number, 511)
         self.assertEqual(data.filepos, 3139584)
 
     def test_read_iris(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
-        sigmetfile = wrl.util.get_wradlib_data_file(filename)
-        data = wrl.io.read_iris(sigmetfile, loaddata=True, rawdata=True)
+        sigmetfile = util.get_wradlib_data_file(filename)
+        data = io.iris.read_iris(sigmetfile, loaddata=True, rawdata=True)
         data_keys = ['product_hdr', 'product_type', 'ingest_header', 'nsweeps',
                      'nrays', 'nbins', 'data_types', 'data',
                      'raw_product_bhdrs']
@@ -879,18 +884,18 @@ class IrisTest(unittest.TestCase):
         data_types = ['DB_DBZ', 'DB_VEL']
         selected_data = [1, 3, 8]
         loaddata = {'moment': data_types, 'sweep': selected_data}
-        data = wrl.io.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
+        data = io.iris.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
         self.assertEqual(list(data['data'][1]['sweep_data'].keys()),
                          data_types)
         self.assertEqual(list(data['data'].keys()), selected_data)
 
     def test_IrisRecord(self):
         filename = 'sigmet/cor-main131125105503.RAW2049'
-        sigmetfile = wrl.util.get_wradlib_data_file(filename)
-        data = wrl.io.IrisRecordFile(sigmetfile, loaddata=False)
+        sigmetfile = util.get_wradlib_data_file(filename)
+        data = io.iris.IrisRecordFile(sigmetfile, loaddata=False)
         # reset record after init
         data.init_record(1)
-        self.assertIsInstance(data.rh, wrl.io.iris.IrisRecord)
+        self.assertIsInstance(data.rh, io.iris.IrisRecord)
         self.assertEqual(data.rh.pos, 0)
         self.assertEqual(data.rh.recpos, 0)
         self.assertEqual(data.rh.recnum, 1)
@@ -905,141 +910,141 @@ class IrisTest(unittest.TestCase):
         np.testing.assert_array_equal(data.rh.read(5, 4), rlist)
 
     def test_decode_bin_angle(self):
-        self.assertEqual(wrl.io.iris.decode_bin_angle(20000, 2), 109.86328125)
-        self.assertEqual(wrl.io.iris.decode_bin_angle(2000000000, 4),
+        self.assertEqual(io.iris.decode_bin_angle(20000, 2), 109.86328125)
+        self.assertEqual(io.iris.decode_bin_angle(2000000000, 4),
                          167.63806343078613)
 
     def decode_array(self):
         data = np.arange(0, 11)
-        np.testing.assert_array_equal(wrl.io.iris.decode_array(data),
+        np.testing.assert_array_equal(io.iris.decode_array(data),
                                       [0., 1., 2., 3., 4., 5.,
                                        6., 7., 8., 9., 10.])
-        np.testing.assert_array_equal(wrl.io.iris.decode_array(data,
-                                                               offset=1.),
+        np.testing.assert_array_equal(io.iris.decode_array(data, offset=1.),
                                       [1., 2., 3., 4., 5., 6.,
                                        7., 8., 9., 10., 11.])
-        np.testing.assert_array_equal(wrl.io.iris.decode_array(data,
-                                                               scale=0.5),
+        np.testing.assert_array_equal(io.iris.decode_array(data, scale=0.5),
                                       [0, 2., 4., 6., 8., 10.,
                                        12., 14., 16., 18., 20.])
-        np.testing.assert_array_equal(wrl.io.iris.decode_array(data, offset=1.,
-                                                               scale=0.5),
+        np.testing.assert_array_equal(io.iris.decode_array(data, offset=1.,
+                                                           scale=0.5),
                                       [2., 4., 6., 8., 10., 12.,
                                        14., 16., 18., 20., 22.])
-        np.testing.assert_array_equal(wrl.io.iris.decode_array(data, offset=1.,
-                                                               scale=0.5,
-                                                               offset2=-2.),
+        np.testing.assert_array_equal(io.iris.decode_array(data, offset=1.,
+                                                           scale=0.5,
+                                                           offset2=-2.),
                                       [0, 2., 4., 6., 8., 10.,
                                        12., 14., 16., 18., 20.])
         data = np.array([0, 1, 255, 1000, 9096, 22634, 34922, 50000, 65534],
                         dtype=np.uint16)
-        np.testing.assert_array_equal(wrl.io.iris.decode_array(data,
-                                                               scale=1000,
-                                                               tofloat=True),
+        np.testing.assert_array_equal(io.iris.decode_array(data,
+                                                           scale=1000,
+                                                           tofloat=True),
                                       [0., 0.001, 0.255, 1., 10., 100.,
                                        800., 10125.312, 134184.96])
 
     def test_decode_kdp(self):
         np.testing.assert_array_almost_equal(
-            wrl.io.iris.decode_kdp(np.arange(-5, 5, dtype='int8'),
-                                   wavelength=10.),
+            io.iris.decode_kdp(np.arange(-5, 5, dtype='int8'),
+                               wavelength=10.),
             [12.243229, 12.880858, 13.551695,
              14.257469, 15., -0., -15., -14.257469,
              -13.551695, -12.880858])
 
     def test_decode_phidp(self):
         np.testing.assert_array_almost_equal(
-            wrl.io.iris.decode_phidp(np.arange(0, 10, dtype='uint8'),
-                                     scale=254., offset=-1),
+            io.iris.decode_phidp(np.arange(0, 10, dtype='uint8'),
+                                 scale=254., offset=-1),
             [-0.70866142, 0., 0.70866142, 1.41732283, 2.12598425, 2.83464567,
              3.54330709, 4.2519685, 4.96062992, 5.66929134])
 
     def test_decode_phidp2(self):
         np.testing.assert_array_almost_equal(
-            wrl.io.iris.decode_phidp2(np.arange(0, 10, dtype='uint16'),
-                                      scale=65534., offset=-1),
+            io.iris.decode_phidp2(np.arange(0, 10, dtype='uint16'),
+                                  scale=65534., offset=-1),
             [-0.00549333, 0., 0.00549333, 0.01098666, 0.01648, 0.02197333,
              0.02746666, 0.03295999, 0.03845332, 0.04394665])
 
     def test_decode_sqi(self):
         np.testing.assert_array_almost_equal(
-            wrl.io.iris.decode_sqi(np.arange(0, 10, dtype='uint8'),
-                                   scale=253., offset=-1),
+            io.iris.decode_sqi(np.arange(0, 10, dtype='uint8'),
+                               scale=253., offset=-1),
             [np.nan, 0., 0.06286946, 0.08891084, 0.1088931, 0.12573892,
              0.14058039, 0.1539981, 0.16633696, 0.17782169])
 
     def test_decode_time(self):
         timestring = b'\xd1\x9a\x00\x000\t\xdd\x07\x0b\x00\x19\x00'
-        self.assertEqual(wrl.io.iris.decode_time(timestring).isoformat(),
+        self.assertEqual(io.iris.decode_time(timestring).isoformat(),
                          '2013-11-25T11:00:35.352000')
 
     def test_decode_string(self):
-        self.assertEqual(wrl.io.iris.decode_string(b'EEST\x00\x00\x00\x00'),
+        self.assertEqual(io.iris.decode_string(b'EEST\x00\x00\x00\x00'),
                          'EEST')
 
     def test__get_fmt_string(self):
         fmt = '12sHHi12s12s12s6s12s12sHiiiiiiiiii2sH12sHB1shhiihh80s16s12s48s'
-        self.assertEqual(wrl.io.iris._get_fmt_string(
-            wrl.io.iris.PRODUCT_CONFIGURATION), fmt)
+        self.assertEqual(io.iris._get_fmt_string(
+            io.iris.PRODUCT_CONFIGURATION), fmt)
 
 
 class NetcdfTest(unittest.TestCase):
     def test_read_edge_netcdf(self):
         filename = 'netcdf/edge_netcdf.nc'
-        edgefile = wrl.util.get_wradlib_data_file(filename)
-        data, attrs = wrl.io.read_edge_netcdf(edgefile)
-        data, attrs = wrl.io.read_edge_netcdf(edgefile, enforce_equidist=True)
+        edgefile = util.get_wradlib_data_file(filename)
+        data, attrs = io.netcdf.read_edge_netcdf(edgefile)
+        data, attrs = io.netcdf.read_edge_netcdf(edgefile,
+                                                 enforce_equidist=True)
 
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
+        ncfile = util.get_wradlib_data_file(filename)
         with self.assertRaises(Exception):
-            wrl.io.read_edge_netcdf(ncfile)
+            io.netcdf.read_edge_netcdf(ncfile)
         with self.assertRaises(Exception):
-            wrl.io.read_edge_netcdf('test')
+            io.netcdf.read_edge_netcdf('test')
 
     def test_read_generic_netcdf(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.read_generic_netcdf(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        io.netcdf.read_generic_netcdf(ncfile)
         with self.assertRaises(IOError):
-            wrl.io.read_generic_netcdf('test')
+            io.netcdf.read_generic_netcdf('test')
         filename = 'sigmet/cor-main131125105503.RAW2049'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
+        ncfile = util.get_wradlib_data_file(filename)
         with self.assertRaises(IOError):
-            wrl.io.read_generic_netcdf(ncfile)
+            io.netcdf.read_generic_netcdf(ncfile)
 
         filename = 'hdf5/IDR66_20100206_111233.vol.h5'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.read_generic_netcdf(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        io.netcdf.read_generic_netcdf(ncfile)
 
         filename = 'netcdf/example_cfradial_ppi.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        wrl.io.read_generic_netcdf(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        io.netcdf.read_generic_netcdf(ncfile)
 
 
 class XarrayTests(unittest.TestCase):
+    @deprecation.fail_if_not_removed
     def test_create_xarray_dataarray(self):
         img = np.zeros((360, 10), dtype=np.float32)
         r = np.arange(0, 100000, 10000)
         az = np.arange(0, 360)
         th = np.zeros_like(az)
-        proj = georef.epsg_to_osr(4326)
+        proj = georef.projection.epsg_to_osr(4326)
         with self.assertRaises(TypeError):
-            create_xarray_dataarray(img)
+            io.xarray.create_xarray_dataarray(img)
         with self.assertWarns(DeprecationWarning):
-            create_xarray_dataarray(img, r, az, th, proj=proj)
+            io.xarray.create_xarray_dataarray(img, r, az, th, proj=proj)
 
     def test_iter(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         self.assertEqual(len(cf), cf.sweep)
         self.assertEqual(len(cf), 9)
 
     def test_del(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         for k in list(cf):
             del cf[k]
         self.assertEqual(cf, {})
@@ -1051,8 +1056,8 @@ class XarrayTests(unittest.TestCase):
         fixed_angles = np.array([0.4999, 1.0986, 1.8018, 2.5983, 3.598,
                                  4.7021,  6.4984, 9.1022, 12.7991])
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
                                              fixed_angles)
         cfnames, cfangles = zip(*cf.sweeps)
@@ -1072,40 +1077,40 @@ class XarrayTests(unittest.TestCase):
     def test_read_odim(self):
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.])
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
-        h5file = wrl.util.get_wradlib_data_file(filename)
-        cf = OdimH5(h5file)
+        h5file = util.get_wradlib_data_file(filename)
+        cf = io.xarray.OdimH5(h5file)
         np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
                                              fixed_angles)
         filename = 'hdf5/knmi_polar_volume.h5'
-        h5file = wrl.util.get_wradlib_data_file(filename)
-        cf = OdimH5(h5file)
+        h5file = util.get_wradlib_data_file(filename)
+        cf = io.xarray.OdimH5(h5file)
         with self.assertRaises(AttributeError):
-            cf = OdimH5(h5file, flavour='None')
+            cf = io.xarray.OdimH5(h5file, flavour='None')
 
     def test_read_gamic(self):
         time_cov = ('2014-08-10T18:23:35Z', '2014-08-10T18:24:05Z')
         filename = 'hdf5/2014-08-10--182000.ppi.mvol'
-        h5file = wrl.util.get_wradlib_data_file(filename)
+        h5file = util.get_wradlib_data_file(filename)
         with self.assertRaises(AttributeError):
-            OdimH5(h5file)
-        cf = OdimH5(h5file, flavour='GAMIC')
+            io.xarray.OdimH5(h5file)
+        cf = io.xarray.OdimH5(h5file, flavour='GAMIC')
         self.assertEqual(str(cf.root.time_coverage_start.values),
                          time_cov[0])
         self.assertEqual(str(cf.root.time_coverage_end.values),
                          time_cov[1])
 
         filename = 'hdf5/2014-06-09--185000.rhi.mvol'
-        h5file = wrl.util.get_wradlib_data_file(filename)
-        cf = OdimH5(h5file, flavour='GAMIC')
-        cf = OdimH5(h5file, flavour='GAMIC', strict=False)
+        h5file = util.get_wradlib_data_file(filename)
+        cf = io.xarray.OdimH5(h5file, flavour='GAMIC')
+        cf = io.xarray.OdimH5(h5file, flavour='GAMIC', strict=False)
 
     def test_odim_roundtrip(self):
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
-        odimfile = wrl.util.get_wradlib_data_file(filename)
-        cf = OdimH5(odimfile)
+        odimfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.OdimH5(odimfile)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
-        cf2 = OdimH5(tmp)
+        cf2 = io.xarray.OdimH5(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 6):
             key = 'sweep_{}'.format(i)
@@ -1116,11 +1121,11 @@ class XarrayTests(unittest.TestCase):
 
     def test_cfradial_roundtrip(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_cfradial2(tmp)
-        cf2 = CfRadial(tmp)
+        cf2 = io.xarray.CfRadial(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 10):
             key = 'sweep_{}'.format(i)
@@ -1131,11 +1136,11 @@ class XarrayTests(unittest.TestCase):
 
     def test_cfradial_odim_roundtrip(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
-        cf2 = OdimH5(tmp)
+        cf2 = io.xarray.OdimH5(tmp)
         xr.testing.assert_allclose(cf.root.sweep_fixed_angle,
                                    cf2.root.sweep_fixed_angle)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
@@ -1146,17 +1151,17 @@ class XarrayTests(unittest.TestCase):
 
         tmp1 = tempfile.NamedTemporaryFile(mode='w+b').name
         cf2.to_cfradial2(tmp1)
-        cf3 = CfRadial(tmp1)
+        cf3 = io.xarray.CfRadial(tmp1)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf3.root.time_coverage_start)
 
     def test_georeference(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile, georef=True)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile, georef=True)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_cfradial2(tmp)
-        cf2 = CfRadial(tmp, georef=True)
+        cf2 = io.xarray.CfRadial(tmp, georef=True)
         swp1 = cf['sweep_1'].copy()
         cf['sweep_1'] = cf['sweep_1'].drop(['x', 'y', 'z', 'gr',
                                             'rays', 'bins'])
@@ -1166,52 +1171,52 @@ class XarrayTests(unittest.TestCase):
 
     def test_root_key_warnings(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         with self.assertWarns(DeprecationWarning):
             cf['root']
 
     def test_to_odim_warning(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         cf.root = None
         with self.assertWarns(UserWarning):
             cf.to_odim('test.h5')
 
     def test_to_cfradial2_warning(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         cf.root = None
         with self.assertWarns(UserWarning):
             cf.to_cfradial2('test.nc')
 
     def test_setitem_warning(self):
         filename = 'netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
-        cf = CfRadial(ncfile)
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray.CfRadial(ncfile)
         with self.assertWarns(UserWarning):
             cf['test'] = None
 
     def test_odim_errors(self):
         filename = 'netcdf/edge_netcdf.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
+        ncfile = util.get_wradlib_data_file(filename)
         with self.assertRaises(TypeError):
-            OdimH5(ncfile)
+            io.xarray.OdimH5(ncfile)
 
         filename = 'netcdf/example_cfradial_ppi.nc'
-        ncfile = wrl.util.get_wradlib_data_file(filename)
+        ncfile = util.get_wradlib_data_file(filename)
         with self.assertRaises(AttributeError):
-            OdimH5(ncfile)
+            io.xarray.OdimH5(ncfile)
 
     def test_netcdf4_errors(self):
         filename = 'hdf5/2014-08-10--182000.ppi.mvol'
-        h5file = wrl.util.get_wradlib_data_file(filename)
+        h5file = util.get_wradlib_data_file(filename)
         with self.assertRaises(AttributeError):
-            CfRadial(h5file, flavour='Cf/Radial3')
+            io.xarray.CfRadial(h5file, flavour='Cf/Radial3')
         with self.assertRaises(AttributeError):
-            CfRadial(h5file)
+            io.xarray.CfRadial(h5file)
 
 
 class DemTest(unittest.TestCase):
@@ -1224,7 +1229,7 @@ class DemTest(unittest.TestCase):
 
         opts = {'region': 'Eurasia'}
         extent = [-0.3, 1.5, 51.4, 52.5]
-        datasets = dem.get_srtm(extent, merge=False, download=opts)
+        datasets = io.dem.get_srtm(extent, merge=False, download=opts)
         filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
         self.assertEqual(targets, filelist)
 
@@ -1234,11 +1239,11 @@ class DemTest(unittest.TestCase):
 
         opts = {'region': 'Africa'}
         extent = [15.3, 16.6, -1.4, 0.4]
-        datasets = dem.get_srtm(extent, merge=False, download=opts)
+        datasets = io.dem.get_srtm(extent, merge=False, download=opts)
         filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
         self.assertEqual(targets, filelist)
 
-        merged = dem.get_srtm(extent)
+        merged = io.dem.get_srtm(extent)
 
         xsize = (datasets[0].RasterXSize-1)*2+1
         ysize = (datasets[0].RasterXSize-1)*3+1
