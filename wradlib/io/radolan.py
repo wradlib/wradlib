@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -20,26 +20,16 @@ Reading DX and RADOLAN data from German Weather Service
     decode_radolan_runlength_array
     radolan_to_xarray
 """
-
-# standard libraries
-from __future__ import absolute_import
 import datetime as dt
-
-try:
-    from StringIO import StringIO
-    import io
-except ImportError:
-    from io import StringIO  # noqa
-    import io
-
+import io
 import re
 import warnings
 
-# site packages
 import numpy as np
 import xarray as xr
-from .. import util as util
-from .. import georef as georef
+
+from wradlib import util
+from wradlib.georef import rect
 
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
@@ -815,7 +805,7 @@ def radolan_to_xarray(data, attrs):
     """
     product = attrs['producttype']
     pattrs = _get_radolan_product_attributes(attrs)
-    radolan_grid_xy = georef.get_radolan_grid(attrs['nrow'], attrs['ncol'])
+    radolan_grid_xy = rect.get_radolan_grid(attrs['nrow'], attrs['ncol'])
     x0 = radolan_grid_xy[0, :, 0]
     y0 = radolan_grid_xy[:, 0, 1]
     if pattrs:

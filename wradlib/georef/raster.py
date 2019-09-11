@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -22,11 +22,10 @@ Raster Functions
    set_raster_origin
    extract_raster_dataset
 """
-
 import numpy as np
 from osgeo import gdal, osr, gdal_array
 
-from .projection import reproject
+from wradlib.georef import projection
 
 
 def pixel_coordinates(nx, ny, mode="centers"):
@@ -407,8 +406,8 @@ def reproject_raster_dataset(src_ds, **kwargs):
         src_srs.ImportFromWkt(src_ds.GetProjection())
 
         # Transformation
-        extent = reproject(extent, projection_source=src_srs,
-                           projection_target=dst_srs)
+        extent = projection.reproject(extent, projection_source=src_srs,
+                                      projection_target=dst_srs)
 
         # wkt needed
         src_srs = src_srs.ExportToWkt()

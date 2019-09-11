@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -17,14 +17,14 @@ Polar Grid Functions
    spherical_to_centroids
    centroid_to_polyvert
    sweep_centroids
+   maximum_intensity_projection
 
 """
+import warnings
 
 import numpy as np
-import warnings
-from .projection import proj4_to_osr, reproject
-from .misc import (get_default_projection, get_earth_radius,
-                   bin_altitude, site_distance)
+
+from wradlib.georef import misc, projection
 
 
 def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
@@ -78,21 +78,22 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
     # if no radius is given, get the approximate radius of the WGS84
     # ellipsoid for the site's latitude
     if re is None:
-        re = get_earth_radius(sitecoords[1])
+        re = projection.get_earth_radius(sitecoords[1])
         # Set up aeqd-projection sitecoord-centered, wgs84 datum and ellipsoid
         # use world azimuthal equidistant projection
-        rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} +x_0=0 +y_0=0 ' +
-                            '+lat_0={lat:f} +ellps=WGS84 +datum=WGS84 ' +
-                            '+units=m +no_defs').format(lon=sitecoords[0],
-                                                        lat=sitecoords[1]))
+        projstr = ('+proj=aeqd +lon_0={lon:f} +x_0=0 +y_0=0 +lat_0={lat:f} ' +
+                   '+ellps=WGS84 +datum=WGS84 +units=m +no_defs' +
+                   '').format(lon=sitecoords[0], lat=sitecoords[1])
+
     else:
         # Set up aeqd-projection sitecoord-centered, assuming spherical earth
         # use Sphere azimuthal equidistant projection
-        rad = proj4_to_osr(('+proj=aeqd +lon_0={lon:f} ' +
-                            '+lat_0={lat:f} +a={a:f} +b={b:f} ' +
-                            '+units=m +no_defs').format(lon=sitecoords[0],
+        projstr = ('+proj=aeqd +lon_0={lon:f} lat_0={lat:f} +a={a:f} '
+                   '+b={b:f} +units=m +no_defs').format(lon=sitecoords[0],
                                                         lat=sitecoords[1],
-                                                        a=re, b=re))
+                                                        a=re, b=re)
+
+    rad = projection.proj4_to_osr(projstr)
 
     r = np.asanyarray(r)
     theta = np.asanyarray(theta)
@@ -117,8 +118,8 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
     if theta.ndim and phi.ndim:
         theta = theta.reshape(theta.shape + (1,) * (dims - theta.ndim))
 
-    z = bin_altitude(r, theta, centalt, re, ke=ke)
-    dist = site_distance(r, theta, z, re, ke=ke)
+    z = misc.bin_altitude(r, theta, centalt, re, ke=ke)
+    dist = misc.site_distance(r, theta, z, re, ke=ke)
 
     if ((not strict_dims) and phi.ndim and r.ndim and
             (r.shape[2] == phi.shape[1])):
@@ -216,13 +217,14 @@ def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4./3.):
 Georeferencing-and-Projection`.
     """
     if proj is None:
-        proj = get_default_projection()
+        proj = projection.get_default_projection()
 
     xyz, rad = spherical_to_xyz(r, phi, theta, sitecoords, re=re, ke=ke,
                                 squeeze=True)
 
     # reproject aeqd to destination projection
-    coords = reproject(xyz, projection_source=rad, projection_target=proj)
+    coords = projection.reproject(xyz, projection_source=rad,
+                                  projection_target=proj)
 
     return coords
 
@@ -375,8 +377,8 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, squeeze=True,
                                    strict_dims=True)
     if proj is not None:
-        coords = reproject(coords, projection_source=rad,
-                           projection_target=proj)
+        coords = projection.reproject(coords, projection_source=rad,
+                                      projection_target=proj)
 
     llc = coords[:-1, :-1]
     ulc = coords[:-1, 1:]
@@ -450,8 +452,8 @@ def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
     if proj is None:
         return coords, rad
     else:
-        return reproject(coords, projection_source=rad,
-                         projection_target=proj)
+        return projection.reproject(coords, projection_source=rad,
+                                    projection_target=proj)
 
 
 def _check_polar_coords(r, az):
@@ -568,3 +570,145 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
     coordinates[:, :, 1] = np.transpose(np.tile(azimuths, (nbins, 1)))
     coordinates[:, :, 2] = elangle
     return coordinates
+
+
+def maximum_intensity_projection(data, r=None, az=None, angle=None,
+                                 elev=None, autoext=True):
+    """Computes the maximum intensity projection along an arbitrary cut \
+    through the ppi from polar data.
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        Array containing polar data (azimuth, range)
+    r : :class:`numpy:numpy.ndarray`
+        Array containing range data
+    az : array
+        Array containing azimuth data
+    angle : float
+        angle of slice, Defaults to 0. Should be between 0 and 180.
+        0. means horizontal slice, 90. means vertical slice
+    elev : float
+        elevation angle of scan, Defaults to 0.
+    autoext : True | False
+        This routine uses numpy.digitize to bin the data.
+        As this function needs bounds, we create one set of coordinates more
+        than would usually be provided by `r` and `az`.
+
+    Returns
+    -------
+    xs : :class:`numpy:numpy.ndarray`
+        meshgrid x array
+    ys : :class:`numpy:numpy.ndarray`
+        meshgrid y array
+    mip : :class:`numpy:numpy.ndarray`
+        Array containing the maximum intensity projection (range, range*2)
+    """
+    # this may seem odd at first, but d1 and d2 are also used in several
+    # plotting functions and thus it may be easier to compare the functions
+    d1 = r
+    d2 = az
+
+    # providing 'reasonable defaults', based on the data's shape
+    if d1 is None:
+        d1 = np.arange(data.shape[1], dtype=np.float)
+    if d2 is None:
+        d2 = np.arange(data.shape[0], dtype=np.float)
+
+    if angle is None:
+        angle = 0.0
+
+    if elev is None:
+        elev = 0.0
+
+    if autoext:
+        # the ranges need to go 'one bin further', assuming some regularity
+        # we extend by the distance between the preceding bins.
+        x = np.append(d1, d1[-1] + (d1[-1] - d1[-2]))
+        # the angular dimension is supposed to be cyclic, so we just add the
+        # first element
+        y = np.append(d2, d2[0])
+    else:
+        # no autoext basically is only useful, if the user supplied the correct
+        # dimensions himself.
+        x = d1
+        y = d2
+
+    # roll data array to specified azimuth, assuming equidistant azimuth angles
+    ind = (d2 >= angle).nonzero()[0][0]
+    data = np.roll(data, ind, axis=0)
+
+    # build cartesian range array, add delta to last element to compensate for
+    # open bound (np.digitize)
+    dc = np.linspace(-np.max(d1), np.max(d1) + 0.0001, num=d1.shape[0] * 2 + 1)
+
+    # get height values from polar data and build cartesian height array
+    # add delta to last element to compensate for open bound (np.digitize)
+    hp = np.zeros((y.shape[0], x.shape[0]))
+    hc = misc.bin_altitude(x, elev, 0, re=6370040.)
+    hp[:] = hc
+    hc[-1] += 0.0001
+
+    # create meshgrid for polar data
+    xx, yy = np.meshgrid(x, y)
+
+    # create meshgrid for cartesian slices
+    xs, ys = np.meshgrid(dc, hc)
+    # xs, ys = np.meshgrid(dc,x)
+
+    # convert polar coordinates to cartesian
+    xxx = xx * np.cos(np.radians(90. - yy))
+    # yyy = xx * np.sin(np.radians(90.-yy))
+
+    # digitize coordinates according to cartesian range array
+    range_dig1 = np.digitize(xxx.ravel(), dc)
+    range_dig1.shape = xxx.shape
+
+    # digitize heights according polar height array
+    height_dig1 = np.digitize(hp.ravel(), hc)
+    # reshape accordingly
+    height_dig1.shape = hp.shape
+
+    # what am I doing here?!
+    range_dig1 = range_dig1[0:-1, 0:-1]
+    height_dig1 = height_dig1[0:-1, 0:-1]
+
+    # create height and range masks
+    height_mask = [(height_dig1 == i).ravel().nonzero()[0]
+                   for i in range(1, len(hc))]
+    range_mask = [(range_dig1 == i).ravel().nonzero()[0]
+                  for i in range(1, len(dc))]
+
+    # create mip output array, set outval to inf
+    mip = np.zeros((d1.shape[0], 2 * d1.shape[0]))
+    mip[:] = np.inf
+
+    # fill mip array,
+    # in some cases there are no values found in the specified range and height
+    # then we fill in nans and interpolate afterwards
+    for i in range(0, len(range_mask)):
+        mask1 = range_mask[i]
+        found = False
+        for j in range(0, len(height_mask)):
+            mask2 = np.intersect1d(mask1, height_mask[j])
+            # this is to catch the ValueError from the max() routine when
+            # calculating on empty array
+            try:
+                mip[j, i] = data.ravel()[mask2].max()
+                if not found:
+                    found = True
+            except ValueError:
+                if found:
+                    mip[j, i] = np.nan
+
+    # interpolate nans inside image, do not touch outvals
+    good = ~np.isnan(mip)
+    xp = good.ravel().nonzero()[0]
+    fp = mip[~np.isnan(mip)]
+    x = np.isnan(mip).ravel().nonzero()[0]
+    mip[np.isnan(mip)] = np.interp(x, xp, fp)
+
+    # reset outval to nan
+    mip[mip == np.inf] = np.nan
+
+    return xs, ys, mip

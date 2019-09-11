@@ -1,11 +1,10 @@
-numpy
-scipy
-matplotlib
+deprecation
+gdal
 h5py
 netCDF4
+numpy
+matplotlib
+scipy
 xarray
-gdal
-deprecation
 xmltodict
-semver
 requests

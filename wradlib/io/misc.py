@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -15,22 +15,15 @@ Miscellaneous Data I/O
    get_radiosonde
    get_membership_functions
 """
-
-# standard libraries
-from __future__ import absolute_import
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
-
-import numpy as np
+import datetime as dt
+import io
+import pickle
 import urllib
 import warnings
-import datetime as dt
-from io import StringIO
 
-from .. import util as util
+import numpy as np
+
+from wradlib import util
 
 
 def _write_polygon_to_txt(f, idx, vertices):
@@ -179,7 +172,7 @@ def get_radiosonde(wmoid, date, cols=None):
     # read data
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', category=UserWarning)
-        data = np.genfromtxt(StringIO(url_data),
+        data = np.genfromtxt(io.StringIO(url_data),
                              names=names,
                              dtype=float,
                              usecols=cols,
@@ -188,7 +181,7 @@ def get_radiosonde(wmoid, date, cols=None):
 
     # read metadata
     meta = {}
-    for i, row in enumerate(StringIO(url_meta)):
+    for i, row in enumerate(io.StringIO(url_meta)):
         if i == 0:
             continue
         k, v = row.split(':')

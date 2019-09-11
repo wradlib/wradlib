@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -12,14 +12,11 @@ Read NetCDF
    read_edge_netcdf
    read_generic_netcdf
 """
-
-# standard libraries
-from __future__ import absolute_import
+import collections
 import datetime as dt
 
-from collections import OrderedDict
-import numpy as np
 import netCDF4 as nc
+import numpy as np
 
 
 def read_edge_netcdf(filename, enforce_equidist=False):
@@ -108,7 +105,7 @@ def read_netcdf_group(ncid):
         an ordered dictionary that contains both data and metadata
         according to the original netcdf file structure
     """
-    out = OrderedDict()
+    out = collections.OrderedDict()
 
     # attributes
     for k, v in ncid.__dict__.items():
@@ -122,9 +119,9 @@ def read_netcdf_group(ncid):
     # dimensions
     dimids = np.array([])
     if ncid.dimensions:
-        dim = OrderedDict()
+        dim = collections.OrderedDict()
         for k, v in ncid.dimensions.items():
-            tmp = OrderedDict()
+            tmp = collections.OrderedDict()
             try:
                 tmp['data_model'] = v._data_model
             except AttributeError:
@@ -145,7 +142,7 @@ def read_netcdf_group(ncid):
             out['dimensions'] = dim
         else:
             # need to sort
-            dim2 = OrderedDict()
+            dim2 = collections.OrderedDict()
             keys = dim.keys()
             for dimid in np.sort(dimids):
                 dim2[keys[dimid]] = dim[keys[dimid]]
@@ -153,9 +150,9 @@ def read_netcdf_group(ncid):
 
     # variables
     if ncid.variables:
-        var = OrderedDict()
+        var = collections.OrderedDict()
         for k, v in ncid.variables.items():
-            tmp = OrderedDict()
+            tmp = collections.OrderedDict()
             for k1 in v.ncattrs():
                 tmp[k1] = v.getncattr(k1)
             if v[:].dtype.kind == 'S':

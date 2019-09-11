@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -31,18 +31,14 @@ This includes for example:
    cart_to_irregular_spline
 
 """
-
-from functools import reduce
+import functools
 import re
-import scipy
-from scipy.spatial import cKDTree
-from scipy.interpolate import LinearNDInterpolator
-from scipy.ndimage.interpolation import map_coordinates
-from scipy.interpolate import griddata
-import numpy as np
 import warnings
 
-from . import util as util
+import numpy as np
+import scipy
+
+from wradlib import util
 
 
 class MissingSourcesError(Exception):
@@ -189,7 +185,7 @@ class Nearest(IpolBase):
     """
 
     def __init__(self, src, trg, remove_missing=0, **kwargs):
-        if isinstance(src, cKDTree):
+        if isinstance(src, scipy.spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
@@ -197,7 +193,7 @@ class Nearest(IpolBase):
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = cKDTree(src, **kwargs)
+            self.tree = scipy.spatial.cKDTree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -298,7 +294,7 @@ class Idw(IpolBase):
     def __init__(self, src, trg, nnearest=4, p=2., remove_missing=False,
                  **kwargs):
 
-        if isinstance(src, cKDTree):
+        if isinstance(src, scipy.spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
@@ -306,7 +302,7 @@ class Idw(IpolBase):
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = cKDTree(src, **kwargs)
+            self.tree = scipy.spatial.cKDTree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -456,12 +452,12 @@ class Linear(IpolBase):
         self._check_shape(vals)
         isnan = np.isnan(vals)
         if self.remove_missing & np.count_nonzero(isnan):
-            ip = LinearNDInterpolator(self.src[~isnan, ...],
-                                      vals[~isnan],
-                                      fill_value=fill_value)
+            ip = scipy.interpolate.LinearNDInterpolator(self.src[~isnan, ...],
+                                                        vals[~isnan],
+                                                        fill_value=fill_value)
         else:
-            ip = LinearNDInterpolator(self.src, vals,
-                                      fill_value=fill_value)
+            ip = scipy.interpolate.LinearNDInterpolator(self.src, vals,
+                                                        fill_value=fill_value)
         return ip(self.trg)
 
 
@@ -507,7 +503,7 @@ def parse_covariogram(cov_model):
 
     # return complete covariance function, which adds
     # individual subparts
-    return lambda h: reduce(np.add, [f(h) for f in funcs])
+    return lambda h: functools.reduce(np.add, [f(h) for f in funcs])
 
 
 def _make_cov(func, params):
@@ -659,7 +655,7 @@ class OrdinaryKriging(IpolBase):
     def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12,
                  remove_missing=False, **kwargs):
         """"""
-        if isinstance(src, cKDTree):
+        if isinstance(src, scipy.spatial.cKDTree):
             self.tree = src
             self.src = self.tree.data
         else:
@@ -668,7 +664,7 @@ class OrdinaryKriging(IpolBase):
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = cKDTree(self.src, **kwargs)
+            self.tree = scipy.spatial.cKDTree(self.src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -838,7 +834,7 @@ class ExternalDriftKriging(IpolBase):
                  src_drift=None, trg_drift=None, remove_missing=False,
                  **kwargs):
         """"""
-        if isinstance(src, cKDTree):
+        if isinstance(src, scipy.spatial.cKDTree):
             self.tree = src
             self.src = self.tree.data
         else:
@@ -847,7 +843,7 @@ class ExternalDriftKriging(IpolBase):
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
             kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = cKDTree(self.src, **kwargs)
+            self.tree = scipy.spatial.cKDTree(self.src, **kwargs)
 
         self.numsources = self.tree.n
         self.remove_missing = remove_missing
@@ -1252,7 +1248,7 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     if values.ndim > 1:
         values = values.ravel()
 
-    interp = griddata(cart_arr, values, new_arr, **kwargs)
+    interp = scipy.interpolate.griddata(cart_arr, values, new_arr, **kwargs)
     interp = interp.reshape(newshape)
 
     return interp
@@ -1314,7 +1310,9 @@ Preprocessing-the-digitial-elevation-model`.
         yi = ny - (ny - 1) * (yi - cymin) / (cymax - cymin)
 
     # interpolation by map_coordinates
-    interp = map_coordinates(values, [yi, xi], **kwargs)
+    interp = scipy.ndimage.interpolation.map_coordinates(values,
+                                                         [yi, xi],
+                                                         **kwargs)
     interp = interp.reshape(newshape)
 
     return interp

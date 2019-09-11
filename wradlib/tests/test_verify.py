@@ -1,13 +1,12 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
+
 import numpy as np
-import matplotlib.pyplot as pl
-pl.interactive(True)  # noqa
-from .. import verify
-from .. import georef
+
+from wradlib import georef, verify
 
 
 class PolarNeighboursTest(unittest.TestCase):

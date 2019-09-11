@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
+
 import numpy as np
-import wradlib.trafo as trafo
+
+from wradlib import trafo
 
 
 class TransformationTest(unittest.TestCase):
