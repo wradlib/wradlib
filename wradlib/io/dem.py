@@ -16,10 +16,9 @@ Provide surface/terrain elevation information from SRTM data
    download_srtm
    get_srtm
 """
-
-import numpy as np
 import os
 
+import numpy as np
 from osgeo import gdal
 import requests
 

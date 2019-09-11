@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -16,10 +16,10 @@ Projection Functions
    proj4_to_osr
    epsg_to_osr
    wkt_to_osr
+   get_earth_radius
 """
-
-from osgeo import gdal, osr, ogr
 import numpy as np
+from osgeo import gdal, osr, ogr
 
 
 def create_osr(projname, **kwargs):
@@ -362,3 +362,37 @@ def wkt_to_osr(wkt=None):
                          "and can't be imported as OSR object")
 
     return proj
+
+
+def get_earth_radius(latitude, sr=None):
+    """Get the radius of the Earth (in km) for a given Spheroid model (sr) at \
+    a given position.
+
+    .. math::
+
+        R^2 = \\frac{a^4 \\cos(f)^2 + b^4 \\sin(f)^2}
+        {a^2 \\cos(f)^2 + b^2 \\sin(f)^2}
+
+    Parameters
+    ----------
+    sr : osr object
+        spatial reference
+    latitude : float
+        geodetic latitude in degrees
+
+    Returns
+    -------
+    radius : float
+        earth radius in meter
+
+    """
+    if sr is None:
+        sr = get_default_projection()
+    radius_e = sr.GetSemiMajor()
+    radius_p = sr.GetSemiMinor()
+    latitude = np.radians(latitude)
+    radius = np.sqrt((np.power(radius_e, 4) * np.power(np.cos(latitude), 2) +
+                      np.power(radius_p, 4) * np.power(np.sin(latitude), 2)) /
+                     (np.power(radius_e, 2) * np.power(np.cos(latitude), 2) +
+                      np.power(radius_p, 2) * np.power(np.sin(latitude), 2)))
+    return radius

@@ -1,21 +1,19 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
+
 import numpy as np
-from .. import comp
-from .. import georef
-from .. import ipol
-from ..util import get_wradlib_data_file
-from ..io import read_dx
+
+from wradlib import comp, georef, io, ipol, util
 
 
 class ComposeTest(unittest.TestCase):
     def setUp(self):
         filename = 'dx/raa00-dx_10908-0806021655-fbg---bin.gz'
-        dx_file = get_wradlib_data_file(filename)
-        self.data, metadata = read_dx(dx_file)
+        dx_file = util.get_wradlib_data_file(filename)
+        self.data, metadata = io.read_dx(dx_file)
         radar_location = (8.005, 47.8744, 1517)
         elevation = 0.5  # in degree
         azimuths = np.arange(0, 360)  # in degrees

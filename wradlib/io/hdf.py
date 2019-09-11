@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -17,17 +17,10 @@ HDF Data I/O
    read_gpm
    read_trmm
 """
-
-# standard libraries
-from __future__ import absolute_import
-
-# site packages
 import h5py
-from netCDF4 import Dataset
+import netCDF4 as nc
 import numpy as np
 import datetime as dt
-
-from ..zonalstats import get_clip_mask
 
 
 def read_generic_hdf5(fname):
@@ -454,7 +447,7 @@ def read_gpm(filename, bbox=None):
     --------
     See :ref:`/notebooks/match3d/wradlib_match_workflow.ipynb`.
     """
-    pr_data = Dataset(filename, mode="r")
+    pr_data = nc.Dataset(filename, mode="r")
     lon = pr_data['NS'].variables['Longitude']
     lat = pr_data['NS'].variables['Latitude']
 
@@ -464,6 +457,7 @@ def read_gpm(filename, bbox=None):
                 [bbox['right'], bbox['top']],
                 [bbox['right'], bbox['bottom']],
                 [bbox['left'], bbox['bottom']]]
+        from wradlib.zonalstats import get_clip_mask
         mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
     else:
         mask = np.ones_like(lon, dtype=bool, subok=False)
@@ -583,8 +577,8 @@ def read_trmm(filename1, filename2, bbox=None):
     See :ref:`/notebooks/match3d/wradlib_match_workflow.ipynb`.
     """
     # trmm 2A23 and 2A25 data is hdf4
-    pr_data1 = Dataset(filename1, mode="r")
-    pr_data2 = Dataset(filename2, mode="r")
+    pr_data1 = nc.Dataset(filename1, mode="r")
+    pr_data2 = nc.Dataset(filename2, mode="r")
 
     lon = pr_data1.variables['Longitude']
     lat = pr_data1.variables['Latitude']
@@ -595,6 +589,7 @@ def read_trmm(filename1, filename2, bbox=None):
                 [bbox['right'], bbox['top']],
                 [bbox['right'], bbox['bottom']],
                 [bbox['left'], bbox['bottom']]]
+        from wradlib.zonalstats import get_clip_mask
         mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
     else:
         mask = np.ones_like(lon, dtype=bool)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -29,7 +29,6 @@ fields except that they exhibit the numpy ndarray interface.
     get_bb_ratio
 
 """
-
 import numpy as np
 
 

@@ -1,12 +1,15 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import os
-import numpy as np
-import wradlib.util as util
-import unittest
 import datetime as dt
+import os
+import unittest
+
+import deprecation
+import numpy as np
+
+from wradlib import util
 
 
 class HelperFunctionsTest(unittest.TestCase):
@@ -78,6 +81,7 @@ class HelperFunctionsTest(unittest.TestCase):
         with self.assertRaises(AttributeError):
             mod.test()
 
+    @deprecation.fail_if_not_removed
     def test_maximum_intensity_projection(self):
         angle = 0.0
         elev = 0.0

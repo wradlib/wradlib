@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -11,13 +11,10 @@ Read Rainbow
 
    read_rainbow
 """
-
-# standard libraries
-from __future__ import absolute_import
 import sys
-
 import numpy as np
-from .. import util as util
+
+from wradlib import util
 
 
 def find_key(key, dictionary):

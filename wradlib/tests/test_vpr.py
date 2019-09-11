@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 
-import wradlib.vpr as vpr
-import wradlib.georef as georef
 import numpy as np
+
+from wradlib import georef, vpr
 
 
 class VPRHelperFunctionsTest(unittest.TestCase):

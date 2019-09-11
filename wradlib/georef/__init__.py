@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 # flake8: noqa
 """
@@ -20,17 +20,15 @@ Georeferencing
 .. automodule:: wradlib.georef.xarray
 """
 
-from .misc import (bin_altitude, bin_distance, site_distance, get_earth_radius)
+from .misc import (bin_altitude, bin_distance, site_distance)
 
 from .polar import (centroid_to_polyvert, spherical_to_xyz, spherical_to_proj,
                     spherical_to_polyvert, spherical_to_centroids,
-                    sweep_centroids)
-
-from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
+                    sweep_centroids, maximum_intensity_projection)
 
 from .projection import (create_osr, proj4_to_osr, reproject,
                          get_default_projection, epsg_to_osr,
-                         wkt_to_osr)
+                         wkt_to_osr, get_earth_radius)
 
 from .raster import (read_gdal_coordinates, read_gdal_values,
                      read_gdal_projection, create_raster_dataset,
@@ -38,6 +36,8 @@ from .raster import (read_gdal_coordinates, read_gdal_values,
                      get_raster_extent, get_raster_elevation,
                      reproject_raster_dataset, merge_rasters,
                      raster_to_polyvert)
+
+from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
 
 from .satellite import (correct_parallax, dist_from_orbit)
 

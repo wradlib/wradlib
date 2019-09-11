@@ -11,16 +11,11 @@ intensity, identifying and correcting typical error sources (such as
 clutter or attenuation) and visualising the data.
 """
 
+import builtins
 import os
-import sys
 import semver
-import warnings
 from subprocess import check_output, CalledProcessError
-
-if sys.version_info[0] < 3:
-    import __builtin__ as builtins
-else:
-    import builtins
+import warnings
 
 DOCLINES = __doc__.split("\n")
 

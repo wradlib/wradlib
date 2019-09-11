@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2018, wradlib developers.
+# Copyright (c) 2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -16,7 +16,6 @@ Hydrometeor Classification (HMC)
     probability
     classify
 """
-
 import numpy as np
 
 pr_types = {0: ('LR', 'Light Rain'), 1: ('MR', 'Moderate Rain'),

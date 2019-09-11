@@ -56,23 +56,25 @@ Warning
    to_odim
 
 """
-
-import warnings
 import collections
-import numpy as np
 import datetime as dt
-import netCDF4 as nc
+import warnings
+
+import deprecation
 import h5py
+import netCDF4 as nc
+import numpy as np
 import xarray as xr
 
-from ..georef import xarray
+from wradlib.georef import xarray
+from wradlib import version
 
 
+@deprecation.deprecated(deprecated_in="1.5", removed_in="2.0",
+                        current_version=version.version,
+                        details="Use `wradlib.georef.create_xarray_dataarray` "
+                                "instead.")
 def create_xarray_dataarray(*args, **kwargs):
-    warnings.warn("WRADLIB: calling `wradlib.io.create_xarray_dataarray` is "
-                  "deprecated, please use "
-                  "`wradlib.georef.create_xarray_dataarray`.",
-                  DeprecationWarning)
     return xarray.create_xarray_dataarray(*args, **kwargs)
 
 

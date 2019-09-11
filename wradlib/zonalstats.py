@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -52,20 +52,17 @@ Calling the objects with actual data, however, will be very fast.
    get_clip_mask
 
 """
-
-import numpy as np
-from scipy.spatial import cKDTree
-from matplotlib.path import Path
-import matplotlib.patches as patches
-from osgeo import gdal, ogr
-import warnings
-import tempfile
 import os
+import tempfile
+import warnings
 
-from .io import open_vector, gdal_create_dataset, write_raster_dataset
-from wradlib.georef.vector import (numpy_to_ogr, ogr_add_feature,
-                                   ogr_copy_layer, ogr_create_layer,
-                                   ogr_to_numpy)
+from matplotlib.path import Path
+from matplotlib import patches
+import numpy as np
+from osgeo import gdal, ogr
+from scipy import spatial
+
+from wradlib import georef, io
 
 ogr.UseExceptions()
 gdal.UseExceptions()
@@ -149,7 +146,7 @@ class DataSource(object):
         sources = []
         for feature in lyr:
             geom = feature.GetGeometryRef()
-            poly = ogr_to_numpy(geom)
+            poly = georef.vector.ogr_to_numpy(geom)
             sources.append(poly)
         return np.array(sources)
 
@@ -169,7 +166,7 @@ class DataSource(object):
         for i in idx:
             feature = lyr.GetFeature(i)
             geom = feature.GetGeometryRef()
-            poly = ogr_to_numpy(geom)
+            poly = georef.vector.ogr_to_numpy(geom)
             sources.append(poly)
         return np.array(sources)
 
@@ -227,9 +224,9 @@ class DataSource(object):
               on ogr.layer
         """
         tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
-        ogr_src = gdal_create_dataset('ESRI Shapefile',
-                                      os.path.join('/vsimem', tmpfile),
-                                      gdal_type=gdal.OF_VECTOR)
+        ogr_src = io.gdal.gdal_create_dataset('ESRI Shapefile',
+                                              os.path.join('/vsimem', tmpfile),
+                                              gdal_type=gdal.OF_VECTOR)
 
         src = np.array(src)
         # create memory datasource, layer and create features
@@ -239,9 +236,9 @@ class DataSource(object):
         else:
             geom_type = ogr.wkbPolygon
         fields = [('index', ogr.OFTInteger)]
-        ogr_create_layer(ogr_src, self._name, srs=self._srs,
-                         geom_type=geom_type, fields=fields)
-        ogr_add_feature(ogr_src, src, name=self._name)
+        georef.vector.ogr_create_layer(ogr_src, self._name, srs=self._srs,
+                                       geom_type=geom_type, fields=fields)
+        georef.vector.ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
 
@@ -258,10 +255,10 @@ class DataSource(object):
             if True removes existing output file
 
         """
-        ds_out = gdal_create_dataset(driver, filename,
-                                     gdal_type=gdal.OF_VECTOR,
-                                     remove=remove)
-        ogr_copy_layer(self.ds, 0, ds_out)
+        ds_out = io.gdal.gdal_create_dataset(driver, filename,
+                                             gdal_type=gdal.OF_VECTOR,
+                                             remove=remove)
+        georef.vector.ogr_copy_layer(self.ds, 0, ds_out)
 
         # flush everything
         del ds_out
@@ -279,11 +276,12 @@ class DataSource(object):
             driver string
         """
         tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
-        self.ds = gdal_create_dataset('ESRI Shapefile',
-                                      os.path.join('/vsimem', tmpfile),
-                                      gdal_type=gdal.OF_VECTOR)
+        self.ds = io.gdal.gdal_create_dataset('ESRI Shapefile',
+                                              os.path.join('/vsimem', tmpfile),
+                                              gdal_type=gdal.OF_VECTOR)
         # get input file handles
-        ds_in, tmp_lyr = open_vector(filename, driver=driver, layer=source)
+        ds_in, tmp_lyr = io.gdal.open_vector(filename, driver=driver,
+                                             layer=source)
 
         # copy layer
         ogr_src_lyr = self.ds.CopyLayer(tmp_lyr, self._name)
@@ -330,8 +328,8 @@ class DataSource(object):
         rows = int((y_max - y_min) / pixel_size)
 
         # Todo: at the moment, always writing floats
-        ds_out = gdal_create_dataset('MEM', '', cols, rows, 1,
-                                     gdal_type=gdal.GDT_Float32)
+        ds_out = io.gdal.gdal_create_dataset('MEM', '', cols, rows, 1,
+                                             gdal_type=gdal.GDT_Float32)
 
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
         proj = layer.GetSpatialRef()
@@ -351,7 +349,7 @@ class DataSource(object):
                                 options=["ALL_TOUCHED=TRUE"],
                                 callback=progress)
 
-        write_raster_dataset(filename, ds_out, driver, remove=remove)
+        io.gdal.write_raster_dataset(filename, ds_out, driver, remove=remove)
 
         del ds_out
 
@@ -596,13 +594,13 @@ class ZonalDataBase(object):
 
         # create mem-mapped temp file dataset
         tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
-        ds_out = gdal_create_dataset('ESRI Shapefile',
-                                     os.path.join('/vsimem', tmpfile),
-                                     gdal_type=gdal.OF_VECTOR)
+        ds_out = io.gdal.gdal_create_dataset('ESRI Shapefile',
+                                             os.path.join('/vsimem', tmpfile),
+                                             gdal_type=gdal.OF_VECTOR)
 
         # create intermediate mem dataset
-        ds_mem = gdal_create_dataset('Memory', 'out',
-                                     gdal_type=gdal.OF_VECTOR)
+        ds_mem = io.gdal.gdal_create_dataset('Memory', 'out',
+                                             gdal_type=gdal.OF_VECTOR)
 
         # get src geometry layer
         src_lyr = self.src.ds.GetLayerByName('src')
@@ -627,8 +625,9 @@ class ZonalDataBase(object):
         trg_lyr.ResetReading()
 
         # create tmp dest layer
-        self.tmp_lyr = ogr_create_layer(ds_mem, 'dst', srs=self._srs,
-                                        geom_type=geom_type)
+        self.tmp_lyr = georef.vector.ogr_create_layer(ds_mem, 'dst',
+                                                      srs=self._srs,
+                                                      geom_type=geom_type)
 
         trg_lyr.Intersection(src_lyr, self.tmp_lyr,
                              options=['SKIP_FAILURES=YES',
@@ -639,7 +638,7 @@ class ZonalDataBase(object):
                                       'PRETEST_CONTAINMENT=YES'],
                              callback=progress)
 
-        ogr_copy_layer(ds_mem, 0, ds_out)
+        georef.vector.ogr_copy_layer(ds_mem, 0, ds_out)
 
         return ds_out
 
@@ -706,7 +705,7 @@ class ZonalDataBase(object):
 
         # check for geometry
         if not type(trg) == ogr.Geometry:
-            trg = numpy_to_ogr(trg, 'Polygon')
+            trg = georef.vector.numpy_to_ogr(trg, 'Polygon')
 
         # apply Buffer value
         trg = trg.Buffer(buf)
@@ -1085,7 +1084,7 @@ def mask_from_bbox(x, y, bbox, polar=False):
 
     # Find bbox corners
     #    Plant a tree
-    tree = cKDTree(np.vstack((x.ravel(), y.ravel())).transpose())
+    tree = spatial.cKDTree(np.vstack((x.ravel(), y.ravel())).transpose())
     # find lower left corner index
     dists, ixll = tree.query([bbox["left"], bbox["bottom"]], k=1)
     ill = (ixll // nx) - 1

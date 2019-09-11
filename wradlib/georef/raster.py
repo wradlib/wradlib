@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -19,13 +19,11 @@ Raster Functions
    create_raster_dataset
    set_raster_origin
 """
-
 import numpy as np
 from osgeo import gdal, osr, gdal_array
 
-import wradlib.io.dem as dem
+import wradlib
 import wradlib.georef as georef
-
 import wradlib.util as util
 
 
@@ -262,7 +260,8 @@ def get_raster_extent(dataset, geo=False, window=True):
 
     if geo:
         projection = read_gdal_projection(dataset)
-        extent = georef.reproject(extent, projection_source=projection)
+        fun = georef.projection.reproject
+        extent = fun(extent, projection_source=projection)
 
     if window:
         x = extent[:, 0]
@@ -281,7 +280,7 @@ def get_raster_elevation(dataset, **kwargs):
     dataset : gdal.Dataset
         raster image with georeferencing (GeoTransform at least)
     kwargs : keyword arguments
-        passed to dem.get_strm()
+        passed to wradlib.io.dem.get_strm()
 
     Returns
     -------
@@ -289,7 +288,7 @@ def get_raster_elevation(dataset, **kwargs):
         Array of shape (rows, cols, 2) containing elevation
     """
     extent = get_raster_extent(dataset)
-    src_ds = dem.get_srtm(extent, **kwargs)
+    src_ds = wradlib.io.dem.get_srtm(extent, **kwargs)
 
     driver = gdal.GetDriverByName('MEM')
     dst_ds = driver.CreateCopy('ds', dataset)
@@ -413,8 +412,10 @@ def reproject_raster_dataset(src_ds, **kwargs):
         src_srs.ImportFromWkt(src_ds.GetProjection())
 
         # Transformation
-        extent = georef.reproject(extent, projection_source=src_srs,
-                                  projection_target=dst_srs)
+
+        fun = georef.projection.reproject
+        extent = fun(extent, projection_source=src_srs,
+                     projection_target=dst_srs)
 
         # wkt needed
         src_srs = src_srs.ExportToWkt()

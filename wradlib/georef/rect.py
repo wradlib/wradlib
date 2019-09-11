@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -15,11 +15,9 @@ Rectangular Grid Functions
     get_radolan_grid
     xyz_to_spherical
 """
-
 import numpy as np
 
-from .projection import (create_osr, reproject, get_default_projection)
-from .misc import get_earth_radius
+from wradlib.georef import projection
 
 
 def get_radolan_coords(lon, lat, trig=False):
@@ -56,13 +54,13 @@ def get_radolan_coords(lon, lat, trig=False):
         y = - er * m_phi * np.cos(phi_m) * np.cos(lam)
     else:
         # create radolan projection osr object
-        proj_stereo = create_osr("dwd-radolan")
+        proj_stereo = projection.create_osr("dwd-radolan")
 
         # create wgs84 projection osr object
-        proj_wgs = get_default_projection()
+        proj_wgs = projection.get_default_projection()
 
-        x, y = reproject(lon, lat, projection_source=proj_wgs,
-                         projection_target=proj_stereo)
+        x, y = projection.reproject(lon, lat, projection_source=proj_wgs,
+                                    projection_target=proj_stereo)
 
     return x, y
 
@@ -219,14 +217,14 @@ Polar-Stereographic-Projection`.
             radolan_grid = np.dstack((lon, lat))
         else:
             # create radolan projection osr object
-            proj_stereo = create_osr("dwd-radolan")
+            proj_stereo = projection.create_osr("dwd-radolan")
 
             # create wgs84 projection osr object
-            proj_wgs = get_default_projection()
+            proj_wgs = projection.get_default_projection()
 
-            radolan_grid = reproject(radolan_grid,
-                                     projection_source=proj_stereo,
-                                     projection_target=proj_wgs)
+            radolan_grid = projection.reproject(radolan_grid,
+                                                projection_source=proj_stereo,
+                                                projection_target=proj_wgs)
 
     return radolan_grid
 
@@ -266,7 +264,8 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
     # for the latitude_of_center, if no projection is given assume
     # spherical earth
     try:
-        re = get_earth_radius(proj.GetProjParm('latitude_of_center'), proj)
+        lat0 = proj.GetProjParm('latitude_of_center')
+        re = projection.get_earth_radius(lat0, proj)
     except Exception:
         re = 6370040.
 

@@ -1,18 +1,19 @@
 # !/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import sys
 
 import unittest
-import wradlib.georef as georef
-import wradlib.util as util
-import wradlib.io.dem as dem
-from wradlib.io import (read_generic_hdf5, open_raster, gdal_create_dataset,
-                        open_vector)
+
 import numpy as np
 from osgeo import gdal, osr, ogr
 import xarray as xr
+
+import wradlib
+import wradlib.georef as georef
+import wradlib.util as util
+
 
 np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
                     precision=8, suppress=False, threshold=1000,
@@ -162,6 +163,22 @@ class CoordinateTransformTest(unittest.TestCase):
         self.assertTrue(np.allclose(coords[..., 0], self.result_n[0]))
         self.assertTrue(np.allclose(coords[..., 1], self.result_n[1]))
         self.assertTrue(np.allclose(coords[..., 2], self.result_n[2]))
+
+    def test_maximum_intensity_projection(self):
+        angle = 0.0
+        elev = 0.0
+
+        filename = util.get_wradlib_data_file('misc/polar_dBZ_tur.gz')
+        data = np.loadtxt(filename)
+        # we need to have meter here for the georef function inside mip
+        d1 = np.arange(data.shape[1], dtype=np.float) * 1000
+        d2 = np.arange(data.shape[0], dtype=np.float)
+        data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
+
+        # calculate max intensity proj
+        georef.maximum_intensity_projection(data, r=d1, az=d2,
+                                            angle=angle, elev=elev)
+        georef.maximum_intensity_projection(data, autoext=False)
 
 
 class CoordinateHelperTest(unittest.TestCase):
@@ -519,7 +536,7 @@ class GdalTests(unittest.TestCase):
     def setUp(self):
         filename = 'geo/bonn_new.tif'
         geofile = util.get_wradlib_data_file(filename)
-        self.ds = open_raster(geofile)
+        self.ds = wradlib.io.open_raster(geofile)
         (self.data,
          self.coords,
          self.proj) = georef.extract_raster_dataset(self.ds)
@@ -527,7 +544,7 @@ class GdalTests(unittest.TestCase):
 
         filename = 'hdf5/belgium.comp.hdf'
         geofile = util.get_wradlib_data_file(filename)
-        self.ds2 = open_raster(geofile)
+        self.ds2 = wradlib.io.open_raster(geofile)
         self.corner_gdalinfo = np.array([[3e5, 1e6],
                                          [3e5, 3e5],
                                          [1e6, 3e5],
@@ -631,9 +648,9 @@ class GdalTests(unittest.TestCase):
 
     @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
     def test_merge_raster(self):
-        download = {"region":"Eurasia"}
-        datasets = dem.get_srtm([3, 4, 47, 48], merge=False,
-                                download=download)
+        download = {"region": "Eurasia"}
+        datasets = wradlib.io.dem.get_srtm([3, 4, 47, 48], merge=False,
+                                           download=download)
         georef.merge_rasters(datasets)
 
     def test_raster_to_polyvert(self):
@@ -715,7 +732,7 @@ class SatelliteTest(unittest.TestCase):
     def setUp(self):
         f = 'gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-S095002-E095137.004383.V05A.HDF5'  # noqa
         gpm_file = util.get_wradlib_data_file(f)
-        pr_data = read_generic_hdf5(gpm_file)
+        pr_data = wradlib.io.read_generic_hdf5(gpm_file)
         pr_lon = pr_data['NS/Longitude']['data']
         pr_lat = pr_data['NS/Latitude']['data']
         zenith = pr_data['NS/PRE/localZenithAngle']['data']
@@ -815,11 +832,11 @@ class VectorTest(unittest.TestCase):
 
         filename = util.get_wradlib_data_file('shapefiles/agger/'
                                               'agger_merge.shp')
-        self.ds, self.layer = open_vector(filename)
+        self.ds, self.layer = wradlib.io.open_vector(filename)
 
     def test_ogr_create_layer(self):
-        ds = gdal_create_dataset('Memory', 'test',
-                                 gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         with self.assertRaises(TypeError):
             georef.ogr_create_layer(ds, 'test')
         lyr = georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
@@ -879,22 +896,22 @@ class VectorTest(unittest.TestCase):
             georef.transform_geometry(self.ogrobj, dest_srs=self.wgs84)
 
     def test_ogr_copy_layer(self):
-        ds = gdal_create_dataset('Memory', 'test',
-                                 gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         georef.ogr_copy_layer(self.ds, 0, ds)
         self.assertTrue(isinstance(ds.GetLayer(), ogr.Layer))
 
     def test_ogr_copy_layer_by_name(self):
-        ds = gdal_create_dataset('Memory', 'test',
-                                 gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         georef.ogr_copy_layer_by_name(self.ds, 'agger_merge', ds)
         self.assertTrue(isinstance(ds.GetLayer(), ogr.Layer))
         with self.assertRaises(ValueError):
             georef.ogr_copy_layer_by_name(self.ds, 'agger_merge1', ds)
 
     def test_ogr_add_feature(self):
-        ds = gdal_create_dataset('Memory', 'test',
-                                 gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
                                 fields=[('index', ogr.OFTReal)])
 
@@ -904,8 +921,8 @@ class VectorTest(unittest.TestCase):
         georef.ogr_add_feature(ds, parr, name='test')
 
     def test_ogr_add_geometry(self):
-        ds = gdal_create_dataset('Memory', 'test',
-                                 gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         lyr = georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
                                       fields=[('test', ogr.OFTReal)])
         point = ogr.Geometry(ogr.wkbPoint)

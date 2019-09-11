@@ -40,13 +40,13 @@ Using `rawdata=True` the data will be kept undecoded.
    read_iris
 
 """
+from collections import OrderedDict
+import copy
+import datetime as dt
+import struct
+import warnings
 
 import numpy as np
-import struct
-from collections import OrderedDict
-import warnings
-import datetime as dt
-import copy
 
 
 def get_dtype_size(dtype):

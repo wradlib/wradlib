@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -108,15 +108,10 @@ validation results::
    AdjustNone
 
 """
-
-# site packages
 import numpy as np
-from scipy.spatial import cKDTree
-from scipy.stats import linregress
+from scipy import spatial, stats
 
-# wradlib modules
-import wradlib.ipol as ipol
-import wradlib.util as util
+from wradlib import ipol, util
 
 
 class AdjustBase(ipol.IpolBase):
@@ -617,7 +612,7 @@ class AdjustMFB(AdjustBase):
             y = rawatobs[ix][ix_]
             # check whether we should adjust or not
             try:
-                slope, intercept, r, p, stderr = linregress(x, y)
+                slope, intercept, r, p, stderr = stats.linregress(x, y)
             except Exception:
                 slope, r, p = 0, 0, np.inf
             if (slope > self.mfb_args["minslope"]) and \
@@ -788,7 +783,7 @@ def _get_neighbours_ix(obs_coords, raw_coords, nnear):
 
     """
     # plant a tree
-    tree = cKDTree(raw_coords)
+    tree = spatial.cKDTree(raw_coords)
     # return nearest neighbour indices
     return tree.query(obs_coords, k=nnear)[1]
 

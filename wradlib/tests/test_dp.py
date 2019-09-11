@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
 
-import wradlib.dp as dp
 import numpy as np
+
+from wradlib import dp
 
 
 class KDPFromPHIDPTest(unittest.TestCase):

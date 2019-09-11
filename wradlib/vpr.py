@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -84,12 +84,9 @@ volume data::
    PseudoCAPPI
 
 """
-
 import numpy as np
 
-from . import georef as georef
-from . import ipol as ipol
-from . import util as util
+from wradlib import georef, ipol, util
 
 
 class CartesianVolume():
