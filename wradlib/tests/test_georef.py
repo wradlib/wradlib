@@ -631,7 +631,9 @@ class GdalTests(unittest.TestCase):
 
     @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
     def test_merge_raster(self):
-        datasets = dem.get_srtm([3, 4, 47, 48], merge=False)
+        download = {"region":"Eurasia"}
+        datasets = dem.get_srtm([3, 4, 47, 48], merge=False,
+                                download=download)
         georef.merge_rasters(datasets)
 
     def test_raster_to_polyvert(self):
