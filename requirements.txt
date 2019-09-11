@@ -7,3 +7,4 @@ matplotlib
 scipy
 xarray
 xmltodict
+requests
