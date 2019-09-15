@@ -554,7 +554,7 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
     nbins : int
         number of range bins
     elangle : float
-        elevation angle [radians]
+        elevation angle [deg]
 
     Returns
     -------
