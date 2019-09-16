@@ -3,7 +3,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import sys
-
 import unittest
 
 import numpy as np

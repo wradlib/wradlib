@@ -22,7 +22,8 @@ Raster Functions
 import numpy as np
 from osgeo import gdal, osr, gdal_array
 
-from wradlib import georef, util
+import wradlib
+from wradlib import georef
 
 
 def _pixel_coordinates(nx, ny, mode):
@@ -266,10 +267,10 @@ def get_raster_extent(dataset, geo=False, window=True):
         y = extent[:, 1]
         extent = np.array([x.min(), x.max(), y.min(), y.max()])
 
-    return(extent)
+    return extent
 
 
-def get_raster_elevation(dataset, **kwargs):
+def get_raster_elevation(dataset, resample=None, **kwargs):
     """Return surface elevation corresponding to raster dataset
        The resampling algorithm is chosen based on scale ratio
 
@@ -277,6 +278,11 @@ def get_raster_elevation(dataset, **kwargs):
     ----------
     dataset : gdal.Dataset
         raster image with georeferencing (GeoTransform at least)
+    resample : GDALResampleAlg
+        If None the best algorithm is chosen based on scales.
+        GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2,
+        GRA_CubicSpline = 3, GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6,
+        GRA_Max = 8, GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
     kwargs : keyword arguments
         passed to wradlib.io.dem.get_strm()
 
@@ -291,23 +297,25 @@ def get_raster_elevation(dataset, **kwargs):
     driver = gdal.GetDriverByName('MEM')
     dst_ds = driver.CreateCopy('ds', dataset)
 
-    src_gt = src_ds.GetGeoTransform()
-    dst_gt = src_ds.GetGeoTransform()
-    src_scale = min(abs(src_gt[1]), abs(src_gt[5]))
-    dst_scale = min(abs(dst_gt[1]), abs(dst_gt[5]))
-    ratio = dst_scale/src_scale
-    resample = gdal.GRA_Bilinear
-    if ratio > 2:
-        resample = gdal.GRA_Average
-    if ratio < 0.5:
-        resample = gdal.GRA_NearestNeighbour
+    if resample is None:
+        src_gt = src_ds.GetGeoTransform()
+        dst_gt = dst_ds.GetGeoTransform()
+        src_scale = min(abs(src_gt[1]), abs(src_gt[5]))
+        dst_scale = min(abs(dst_gt[1]), abs(dst_gt[5]))
+        ratio = dst_scale/src_scale
+
+        resample = gdal.GRA_Bilinear
+        if ratio > 2:
+            resample = gdal.GRA_Average
+        if ratio < 0.5:
+            resample = gdal.GRA_NearestNeighbour
 
     gdal.ReprojectImage(src_ds, dst_ds,
                         src_ds.GetProjection(), dst_ds.GetProjection(),
                         resample)
     elevation = read_gdal_values(dst_ds)
 
-    return(elevation)
+    return elevation
 
 
 def set_raster_origin(data, coords, direction):
@@ -553,7 +561,7 @@ def merge_rasters(datasets):
 
     dataset = gdal.Warp('', datasets, format='MEM')
 
-    return(dataset)
+    return dataset
 
 
 def raster_to_polyvert(dataset):
@@ -572,6 +580,6 @@ def raster_to_polyvert(dataset):
     """
     rastercoords = read_gdal_coordinates(dataset, mode="edges")
 
-    polyvert = util.grid_to_polyvert(rastercoords)
+    polyvert = georef.rect.grid_to_polyvert(rastercoords)
 
-    return(polyvert)
+    return polyvert
