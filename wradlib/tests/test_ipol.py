@@ -306,7 +306,7 @@ class RegularToIrregularTest(unittest.TestCase):
 
         coord = georef.sweep_centroids(4, 1, NX, 0.)
         xx = coord[..., 0]
-        yy = np.degrees(coord[..., 1])
+        yy = coord[..., 1]
 
         xxx = xx * np.cos(np.radians(90. - yy))
         x = xx * np.sin(np.radians(90. - yy))

@@ -126,7 +126,7 @@ class FilterCloudtypeTest(unittest.TestCase):
                       pvol["where"]["height"])
 
         coord, proj_radar = georef.spherical_to_xyz(coord[..., 0],
-                                                    np.degrees(coord[..., 1]),
+                                                    coord[..., 1],
                                                     coord[..., 2], sitecoords,
                                                     re=6370040.,
                                                     ke=4. / 3.)

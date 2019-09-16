@@ -562,8 +562,8 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
         array of shape (nrays,nbins,3) containing native centroid radar
         coordinates (slant range, azimuth, elevation)
     """
-    ascale = 2 * np.pi / nrays
-    azimuths = ascale / 2. + np.linspace(0, 2 * np.pi, nrays, endpoint=False)
+    ascale = 360. / nrays
+    azimuths = ascale / 2. + np.linspace(0, 360., nrays, endpoint=False)
     ranges = np.arange(nbins) * rscale + rscale / 2.
     coordinates = np.empty((nrays, nbins, 3), dtype=float)
     coordinates[:, :, 0] = np.tile(ranges, (nrays, 1))
