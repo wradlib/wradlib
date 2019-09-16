@@ -218,7 +218,7 @@ class HDF5Test(unittest.TestCase):
         alt0_gr = gr_data['where']['height']
         coord = georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
         coords = georef.spherical_to_proj(coord[..., 0],
-                                          np.degrees(coord[..., 1]),
+                                          coord[..., 1],
                                           coord[..., 2],
                                           (lon0_gr, lat0_gr, alt0_gr))
         lon = coords[..., 0]
@@ -248,7 +248,7 @@ class HDF5Test(unittest.TestCase):
         alt0_gr = gr_data['where']['height']
         coord = georef.sweep_centroids(nray_gr, dr_gr, ngate_gr, elev_gr)
         coords = georef.spherical_to_proj(coord[..., 0],
-                                          np.degrees(coord[..., 1]),
+                                          coord[..., 1],
                                           coord[..., 2],
                                           (lon0_gr, lat0_gr, alt0_gr))
         lon = coords[..., 0]

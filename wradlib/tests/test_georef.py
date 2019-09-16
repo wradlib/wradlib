@@ -274,8 +274,8 @@ class CoordinateHelperTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(centroids, arr, decimal=3)
 
     def test_sweep_centroids(self):
-        self.assertTrue(np.allclose(georef.sweep_centroids(1, 100., 1, 2.0),
-                                    np.array([[[50., 3.14159265, 2.]]])))
+        np.testing.assert_array_equal(georef.sweep_centroids(1, 100., 1, 2.0),
+                                      np.array([[[50., 180., 2.]]]))
 
     def test__check_polar_coords(self):
         r = np.array([50., 100., 150., 200.])
