@@ -22,9 +22,7 @@ Raster Functions
 import numpy as np
 from osgeo import gdal, osr, gdal_array
 
-import wradlib
-import wradlib.georef as georef
-import wradlib.util as util
+from wradlib import georef, util
 
 
 def _pixel_coordinates(nx, ny, mode):

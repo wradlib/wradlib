@@ -11,8 +11,7 @@ from osgeo import gdal, osr, ogr
 import xarray as xr
 
 import wradlib
-import wradlib.georef as georef
-import wradlib.util as util
+from wradlib import georef, util
 
 
 np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
