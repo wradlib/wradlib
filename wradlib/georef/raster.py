@@ -259,8 +259,7 @@ def get_raster_extent(dataset, geo=False, window=True):
 
     if geo:
         projection = read_gdal_projection(dataset)
-        fun = georef.projection.reproject
-        extent = fun(extent, projection_source=projection)
+        extent = georef.reproject(extent, projection_source=projection)
 
     if window:
         x = extent[:, 0]
@@ -419,9 +418,8 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
         # Transformation
 
-        fun = georef.projection.reproject
-        extent = fun(extent, projection_source=src_srs,
-                     projection_target=dst_srs)
+        extent = georef.reproject(extent, projection_source=src_srs,
+                                  projection_target=dst_srs)
 
         # wkt needed
         src_srs = src_srs.ExportToWkt()
@@ -580,6 +578,6 @@ def raster_to_polyvert(dataset):
     """
     rastercoords = read_gdal_coordinates(dataset, mode="edges")
 
-    polyvert = georef.rect.grid_to_polyvert(rastercoords)
+    polyvert = georef.grid_to_polyvert(rastercoords)
 
     return polyvert

@@ -37,7 +37,8 @@ from .raster import (read_gdal_coordinates, read_gdal_values,
                      reproject_raster_dataset, merge_rasters,
                      raster_to_polyvert)
 
-from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
+from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical,
+                   grid_to_polyvert)
 
 from .satellite import (correct_parallax, dist_from_orbit)
 
