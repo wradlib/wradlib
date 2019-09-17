@@ -36,21 +36,21 @@ def _pixel_coordinates(nx, ny, mode):
     ny : int
         y size (numbers or rows)
     mode : string
-        either 'centers' (0.5 1.5 ...) or 'edges' (0 1 ...)
+        either 'center' (0.5 1.5 ...) or 'edge' (0 1 ...)
 
     Returns
     -------
     coordinates : :class:`numpy:numpy.ndarray`
          array containing pixel coordinates (x,y) in image convention
-         shape is (nrows, ncols, 2) if mode==centers
-         shape is (nrows+1, ncols+1, 2) if mode==edges
+         shape is (nrows, ncols, 2) if mode==center
+         shape is (nrows+1, ncols+1, 2) if mode==edge
 
     """
-    if mode == "centers":
+    if mode == "center":
         x = np.linspace(0.5, nx-0.5, num=nx)
         y = np.linspace(0.5, ny-0.5, num=ny)
 
-    if mode == "edges":
+    if mode == "edge":
         x = np.linspace(0, nx, num=nx + 1)
         y = np.linspace(0, ny, num=ny + 1)
 
@@ -93,7 +93,7 @@ def _pixel_to_map(coordinates, geotransform):
     return coordinates_map
 
 
-def read_gdal_coordinates(dataset, mode="centers"):
+def read_gdal_coordinates(dataset, mode="center"):
     """Get the projected coordinates from a GDAL dataset.
 
     Parameters
@@ -101,7 +101,7 @@ def read_gdal_coordinates(dataset, mode="centers"):
     dataset : gdal.Dataset
         raster image with georeferencing
     mode : string
-        either 'centers' or 'edges'
+        either 'center' or 'edge'
 
     Returns
     -------
@@ -109,7 +109,7 @@ def read_gdal_coordinates(dataset, mode="centers"):
         Array of shape (nrows,ncols,2) containing xy coordinates.
         The array indexing follows image convention with origin
         at upper left pixel.
-        The shape is (nrows+1,ncols+1,2) if mode == edges.
+        The shape is (nrows+1,ncols+1,2) if mode == edge.
 
     Examples
     --------
@@ -190,7 +190,7 @@ def read_gdal_values(dataset=None, nodata=None):
     return np.squeeze(np.array(bands))
 
 
-def extract_raster_dataset(dataset, mode="centers", nodata=None):
+def extract_raster_dataset(dataset, mode="center", nodata=None):
     """ Extract data, coordinates and projection information
 
     Parameters
@@ -198,7 +198,7 @@ def extract_raster_dataset(dataset, mode="centers", nodata=None):
     dataset : gdal.Dataset
         raster dataset
     mode : string
-        either 'centers' or 'edges'
+        either 'center' or 'edge'
     nodata : float
         replace nodata values
 
@@ -211,7 +211,7 @@ def extract_raster_dataset(dataset, mode="centers", nodata=None):
         Array of shape (nrows,ncols,2) containing xy coordinates.
         The array indexing follows image convention with origin
         at the upper left pixel (northup).
-        The shape is (nrows+1,ncols+1,2) if mode == edges.
+        The shape is (nrows+1,ncols+1,2) if mode == edge.
     projection : osr object
         Spatial reference system of the used coordinates.
     """
@@ -497,7 +497,9 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
         Array of shape (rows, cols) or (bands, rows, cols) containing
         the data values.
     coords : :class:`numpy:numpy.ndarray`
-        Array of shape (rows, cols, 2) containing xy-coordinates.
+        Array of shape (nrows, ncols, 2) containing pixel center coordinates
+        or
+        Array of shape (nrows+1, ncols+1, 2) containing pixel edge coordinates
     projection : osr object
         Spatial reference system of the used coordinates, defaults to None.
     nodata : int
@@ -526,8 +528,12 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
 
     # initialize geotransform
     x_ps, y_ps = coords[1, 1] - coords[0, 0]
-    upper_corner_x = coords[0, 0, 0] - x_ps/2
-    upper_corner_y = coords[0, 0, 1] - y_ps/2
+    if data.shape[-2:] == coords.shape[0:2]:
+        upper_corner_x = coords[0, 0, 0] - x_ps/2
+        upper_corner_y = coords[0, 0, 1] - y_ps/2
+    else:
+        upper_corner_x = coords[0, 0, 0]
+        upper_corner_y = coords[0, 0, 1]
     geotran = [upper_corner_x, x_ps, 0, upper_corner_y, 0, y_ps]
     dataset.SetGeoTransform(geotran)
 
@@ -543,13 +549,15 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
     return dataset
 
 
-def merge_rasters(datasets):
+def merge_raster_datasets(datasets, **kwargs):
     """Merge rasters.
 
     Parameters
     ----------
     datasets : list of gdal.Dataset
         raster images with georeferencing
+    kwargs : keyword arguments
+        passed to gdal.Warp()
 
     Returns
     -------
@@ -557,7 +565,7 @@ def merge_rasters(datasets):
         merged raster dataset
     """
 
-    dataset = gdal.Warp('', datasets, format='MEM')
+    dataset = gdal.Warp('', datasets, format='MEM', **kwargs)
 
     return dataset
 
@@ -573,10 +581,10 @@ def raster_to_polyvert(dataset):
     Returns
     -------
     polyvert : :class:`numpy:numpy.ndarray`
-        A 3-d array of polygon vertices with shape (..., 5, 2).
+        A N-d array of polygon vertices with shape (..., 5, 2).
 
     """
-    rastercoords = read_gdal_coordinates(dataset, mode="edges")
+    rastercoords = read_gdal_coordinates(dataset, mode="edge")
 
     polyvert = georef.grid_to_polyvert(rastercoords)
 

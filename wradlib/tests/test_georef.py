@@ -538,11 +538,13 @@ class GdalTests(unittest.TestCase):
         (self.data,
          self.coords,
          self.proj) = georef.extract_raster_dataset(self.ds)
-        self.x_sp, self.y_sp = self.coords[1, 1] - self.coords[0, 0]
 
         filename = 'hdf5/belgium.comp.hdf'
         geofile = util.get_wradlib_data_file(filename)
         self.ds2 = wradlib.io.open_raster(geofile)
+        (self.data2,
+         self.coords2,
+         self.proj2) = georef.extract_raster_dataset(self.ds, mode="edge")
         self.corner_gdalinfo = np.array([[3e5, 1e6],
                                          [3e5, 3e5],
                                          [1e6, 3e5],
@@ -556,7 +558,7 @@ class GdalTests(unittest.TestCase):
     def test_read_gdal_coordinates(self):
         center_coords = georef.read_gdal_coordinates(self.ds)
         self.assertEqual(center_coords.shape[-1], 2)
-        edge_coords = georef.read_gdal_coordinates(self.ds, mode="edges")
+        edge_coords = georef.read_gdal_coordinates(self.ds, mode="edge")
         ul_center = (edge_coords[0, 0] + edge_coords[1, 1]) / 2
         np.testing.assert_array_almost_equal(center_coords[0, 0], ul_center)
 
@@ -595,6 +597,19 @@ class GdalTests(unittest.TestCase):
         np.testing.assert_array_almost_equal(coords, self.coords)
         self.assertEqual(proj.ExportToWkt(), self.proj.ExportToWkt())
 
+        data, coords = georef.set_raster_origin(self.data2.copy(),
+                                                self.coords2.copy(),
+                                                'upper')
+        ds = georef.create_raster_dataset(data,
+                                          coords,
+                                          projection=self.proj,
+                                          nodata=-32768)
+
+        data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
+        np.testing.assert_array_equal(data, self.data2)
+        np.testing.assert_array_almost_equal(coords, self.coords2)
+        self.assertEqual(proj.ExportToWkt(), self.proj.ExportToWkt())
+
     def test_set_raster_origin(self):
         testfunc = georef.set_raster_origin
         data, coords = testfunc(self.data.copy(),
@@ -620,7 +635,7 @@ class GdalTests(unittest.TestCase):
         ds = self.ds
         data, coords, proj = georef.extract_raster_dataset(ds)
         self.assertEqual(coords.shape[-1], 2)
-        data, coords, proj = georef.extract_raster_dataset(ds, mode="edges")
+        data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
         self.assertEqual(coords.shape[-1], 2)
 
     @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
@@ -645,11 +660,11 @@ class GdalTests(unittest.TestCase):
         np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
 
     @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
-    def test_merge_raster(self):
+    def test_merge_raster_datasets(self):
         download = {"region": "Eurasia"}
         datasets = wradlib.io.dem.get_srtm([3, 4, 47, 48], merge=False,
                                            download=download)
-        georef.merge_rasters(datasets)
+        georef.merge_raster_datasets(datasets)
 
     def test_raster_to_polyvert(self):
         ds = self.ds
