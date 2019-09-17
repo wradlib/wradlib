@@ -15,12 +15,11 @@ into rainfall rates and vice versa
    :nosignatures:
    :toctree: generated/
 
-   z_to_r
-   r_to_z
-   z_to_r_enhanced
-
-
+   {}
 """
+__all__ = ['z_to_r', 'r_to_z', 'z_to_r_enhanced']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 import scipy.ndimage.filters as filters
 

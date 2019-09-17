@@ -15,19 +15,13 @@ Standard plotting and mapping procedures.
    :nosignatures:
    :toctree: generated/
 
-   plot_ppi
-   plot_ppi_crosshair
-   plot_rhi
-   WradlibAccessor
-   create_cg
-   plot_scan_strategy
-   plot_plan_and_vert
-   plot_max_plan_and_vert
-   add_lines
-   add_patches
-
-
+   {}
 """
+__all__ = ['plot_ppi', 'plot_ppi_crosshair', 'plot_rhi', 'WradlibAccessor',
+           'create_cg', 'plot_scan_strategy', 'plot_plan_and_vert',
+           'plot_max_plan_and_vert', 'add_lines', 'add_patches']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import collections
 import os.path
 import re

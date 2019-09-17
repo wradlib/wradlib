@@ -14,13 +14,12 @@ attributable to the other modules
    :nosignatures:
    :toctree: generated/
 
-   from_to
-   filter_window_polar
-   filter_window_cartesian
-   find_bbox_indices
-   get_raster_origin
-   calculate_polynomial
+   {}
 """
+__all__ = ['from_to', 'filter_window_polar', 'filter_window_cartesian',
+           'find_bbox_indices', 'get_raster_origin', 'calculate_polynomial']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import importlib
 import datetime as dt
 import os

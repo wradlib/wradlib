@@ -23,12 +23,12 @@ fields except that they exhibit the numpy ndarray interface.
    :nosignatures:
    :toctree: generated/
 
-    pulse_volume
-    beam_block_frac
-    cum_beam_block_frac
-    get_bb_ratio
-
+   {}
 """
+__all__ = ['pulse_volume', 'beam_block_frac', 'cum_beam_block_frac',
+           'get_bb_ratio']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 

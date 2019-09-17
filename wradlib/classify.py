@@ -10,12 +10,12 @@ Hydrometeor Classification (HMC)
    :nosignatures:
    :toctree: generated/
 
-    msf_index_indep
-    trapezoid
-    fuzzyfi
-    probability
-    classify
+    {}
 """
+__all__ = ['msf_index_indep', 'trapezoid', 'fuzzyfi', 'probability',
+           'classify']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 pr_types = {0: ('LR', 'Light Rain'), 1: ('MR', 'Moderate Rain'),

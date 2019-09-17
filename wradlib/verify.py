@@ -13,10 +13,11 @@ estimates to ground truth.
    :nosignatures:
    :toctree: generated/
 
-   ErrorMetrics
-   PolarNeighbours
-
+   {}
 """
+__all__ = ['ErrorMetrics', 'PolarNeighbours']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import warnings
 from pprint import pprint
 

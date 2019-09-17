@@ -10,15 +10,13 @@ Clutter Identification
    :nosignatures:
    :toctree: generated/
 
-   filter_gabella
-   filter_gabella_a
-   filter_gabella_b
-   filter_cloudtype
-   filter_window_distance
-   histo_cut
-   classify_echo_fuzzy
-
+   {}
 """
+__all__ = ['filter_gabella', 'filter_gabella_a', 'filter_gabella_b',
+           'filter_cloudtype', 'filter_window_distance', 'histo_cut',
+           'classify_echo_fuzzy']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 from scipy import ndimage
 
