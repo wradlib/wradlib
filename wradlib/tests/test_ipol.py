@@ -259,6 +259,112 @@ class InterpolationTest(unittest.TestCase):
                           np.arange(20).reshape((2, 2, 5)))
 
 
+class GridInterpolationTest(unittest.TestCase):
+    def setUp(self):
+        ul = (2, 55)
+        lr = (12, 45)
+
+        x = np.linspace(ul[0], lr[0], 101)
+        y = np.linspace(ul[1], lr[1], 101)
+
+        self.grids = {}
+        self.valgrids = {}
+        X, Y = np.meshgrid(x, y)
+        self.grids["image_upper"] = np.stack((X, Y), axis=-1)
+        self.valgrids["image_upper"] = X + Y
+
+        y = np.flip(y)
+
+        X, Y = np.meshgrid(x, y)
+        self.grids["image_lower"] = np.stack((X, Y), axis=-1)
+        self.valgrids["image_lower"] = X + Y
+
+        Y, X = np.meshgrid(y, x)
+        self.grids["plot"] = np.stack((X, Y), axis=-1)
+        self.valgrids["plot"] = X + Y
+
+        xt = np.random.uniform(ul[0], lr[0], 10000)
+        yt = np.random.uniform(lr[1], ul[1], 10000)
+        self.points = np.stack((xt, yt), axis=-1)
+        self.valpoints = xt + yt
+
+        self.grid = self.grids["image_upper"]
+        self.valgrid = self.valgrids["image_upper"]
+        self.grid2 = (self.grid - ul) / 2 + ul
+        self.valgrid2 = self.valgrid / 2
+
+    def test_RectIpol(self):
+        methods = ["RectNearest", "RectLinear", "RectSpline"]
+        methods = [getattr(ipol, m) for m in methods]
+        for method in methods:
+            for indexing, src in self.grids.items():
+                ip = method(src, self.points)
+                self.assertTrue(("image" in indexing) == ip.image)
+                self.assertTrue(("upper" in indexing) == ip.upper)
+                valip = ip(self.valgrids[indexing])
+                bad = np.isnan(valip)
+                pbad = np.sum(bad)/bad.size
+                self.assertTrue(pbad == 0)
+
+            for indexing, trg in self.grids.items():
+                ip = method(self.grid2, trg)
+                valip = ip(self.valgrid2)
+                self.assertEqual(valip.shape, trg.shape[:-1])
+                bad = np.isnan(valip)
+                pbad = np.sum(bad)/bad.size
+                self.assertTrue(abs(pbad-0.75) < 0.1)
+
+            ip = method(self.grid, self.grid2)
+            valip = ip(self.valgrid)
+            bad = np.isnan(valip)
+            pbad = np.sum(bad)/bad.size
+
+            ip2 = method(self.grid2, self.grid)
+            valip2 = ip2(valip)
+            bad = np.isnan(valip2)
+            pbad = np.sum(bad)/bad.size
+            self.assertTrue(abs(pbad-0.75) < 0.1)
+            np.testing.assert_allclose(self.valgrid[~bad], valip2[~bad])
+
+    def test_RectBin(self):
+        ip = ipol.RectBin(self.points, self.grid)
+        valip = ip(self.valpoints)
+        self.assertEqual(valip.shape, self.grid.shape[:-1])
+
+        grid2 = self.grid2 + (-0.01, 0.01)
+        ip = ipol.RectBin(grid2, self.grid)
+        valip = ip(self.valgrid2)
+        self.assertTrue(valip.shape == self.grid.shape[:-1])
+        bad = np.isnan(valip)
+        pbad = np.sum(bad)/bad.size
+        self.assertTrue(abs(pbad-0.75) < 0.1)
+        firstcell = self.valgrid2[0:2, 0:2]
+        mean = np.mean(firstcell.ravel())
+        np.testing.assert_allclose(mean, valip[0, 0])
+
+    def test_QuadriArea(self):
+        grid2 = self.grid2 + (-0.01, 0.01)
+        ip = ipol.QuadriArea(grid2, self.grid)
+        valgrid2 = self.valgrid2[1:, 1:]
+        valip = ip(valgrid2)
+        np.testing.assert_equal(valip.shape, np.array(self.grid.shape[:-1])-1)
+        bad = np.isnan(valip)
+        pbad = np.sum(bad)/bad.size
+        self.assertTrue(abs(pbad-0.75) < 0.1)
+        firstcell = self.valgrid2[0:3, 0:3]
+        weights = np.array([[81/100, 9/10, 9/100],
+                            [9/10, 1, 1/10],
+                            [9/100, 1/10, 1/100]])
+        ref = np.sum(np.multiply(firstcell, weights))/np.sum(weights)
+        np.testing.assert_allclose(ref, valip[0, 0])
+
+    def test_Sequence(self):
+        ip1 = ipol.RectSpline(self.grid, self.points)
+        ip2 = ipol.RectNearest(self.grid, self.points)
+        ipol.Sequence((ip1, ip2))
+        # Needs more testing
+
+
 class WrapperFunctionTest(unittest.TestCase):
     def test_interpolate(self):
         src = np.arange(10)[:, None]

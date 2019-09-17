@@ -293,3 +293,33 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
     phi[phi <= 0] += 360
 
     return r, phi, np.degrees(theta)
+
+
+def grid_to_polyvert(grid, ravel=False):
+    """Get polygonal vertices from rectangular grid coordinates.
+
+    Parameters
+    ----------
+    grid : numpy array
+        grid edge coordinates
+    ravel : bool
+        option to flatten the grid
+
+    Returns
+    -------
+    polyvert : :class:`numpy:numpy.ndarray`
+        A 3-d array of polygon vertices with shape (..., 5, 2).
+
+    """
+
+    v1 = grid[:-1, :-1]
+    v2 = grid[:-1, 1:]
+    v3 = grid[1:, 1:]
+    v4 = grid[1:, :-1]
+
+    polyvert = np.stack((v1, v2, v3, v4, v1), axis=-2)
+
+    if ravel:
+        polyvert = polyvert.reshape((-1, 5, 2))
+
+    return polyvert

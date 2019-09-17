@@ -32,13 +32,14 @@ This includes for example:
 
 """
 import functools
+import itertools
 import re
 import warnings
 
 import numpy as np
 import scipy
 
-from wradlib import util
+from wradlib import georef, util, zonalstats
 
 
 class MissingSourcesError(Exception):
@@ -459,6 +460,485 @@ class Linear(IpolBase):
             ip = scipy.interpolate.LinearNDInterpolator(self.src, vals,
                                                         fill_value=fill_value)
         return ip(self.trg)
+
+
+class RectGrid(IpolBase):
+    """
+    Rectangular grid
+    """
+    def _is_grid(self, src):
+        test = hasattr(src, "shape") and src.ndim == 3 and src.shape[2] == 2
+        return(test)
+
+    def _is_image(self, src):
+        rowcol = src[0, 0, 1] == src[0, 1, 1]
+        return(rowcol)
+
+    def _is_upper(self, src):
+        upper = src[0, 0, 1] - src[1, 0, 1] > 0
+        return(upper)
+
+    def _grid_to_xi(self, src, image=True, upper=True):
+
+        X = src[:, :, 0]
+        Y = src[:, :, 1]
+
+        if image:
+            X = util.image_to_plot(X, upper)
+            Y = util.image_to_plot(Y, upper)
+
+        x = X[:, 0]
+        y = Y[0, :]
+
+        xi = (x, y)
+
+        return xi
+
+
+class RectLinear(RectGrid):
+    """
+    Forked from scipy.interpolate.RegularGridInterpolator
+
+    Interpolation on a 2d grid in arbitrary dimensions
+
+    The data must be defined on a regular grid; the grid spacing however may be
+    uneven.  Linear and nearest-neighbour interpolation are supported
+
+    Parameters
+    ----------
+    src : 3d array of shape (..., 2)
+        The points defining the regular grid in n dimensions.
+
+    trg : nd array of shape (..., ndim)
+        The coordinates to sample the gridded data at
+
+    method : str, optional
+        The method of interpolation to perform. Supported are "linear" and
+        "nearest". This parameter will become the default for the object's
+        ``__call__`` method. Default is "linear".
+
+
+    Methods
+    -------
+    __call__
+
+    """
+    # forked from scipy.interpolate.RegularGridInterpolator
+
+    def __init__(self, src, trg, method="linear"):
+
+        self.upper = self._is_upper(src)
+        self.image = self._is_image(src)
+        points = self._grid_to_xi(src, self.image, self.upper)
+
+        xi = trg
+        if method not in ["linear", "nearest"]:
+            raise ValueError("Method '%s' is not defined" % method)
+        self.method = method
+
+        for i, p in enumerate(points):
+            if not np.all(np.diff(p) > 0.):
+                raise ValueError("The points in dimension %d must be strictly "
+                                 "ascending" % i)
+            if not np.asarray(p).ndim == 1:
+                raise ValueError("The points in dimension %d must be "
+                                 "1-dimensional" % i)
+
+        self.grid = tuple([np.asarray(p) for p in points])
+        method = self.method if method is None else method
+        if method not in ["linear", "nearest"]:
+            raise ValueError("Method '%s' is not defined" % method)
+
+        ndim = len(self.grid)
+        xi = scipy.interpolate.interpnd._ndim_coords_from_arrays(xi,
+                                                                 ndim=ndim)
+        if xi.shape[-1] != len(self.grid):
+            raise ValueError("The requested sample points xi have dimension "
+                             "%d, but this RegularGridInterpolator has "
+                             "dimension %d" % (xi.shape[1], ndim))
+
+        xi_shape = xi.shape
+        xi = xi.reshape(-1, xi_shape[-1])
+
+        self.param = self._find_indices(xi.T)
+
+        self.xi = xi
+        self.points = points
+        self.method = method
+        self.xi_shape = xi_shape
+        self.ndim = ndim
+
+    def __call__(self, values, fill_value=np.nan):
+        """
+        Interpolation of values
+
+        Parameters
+        ----------
+
+        values : array_like, shape (m1, ..., mn, ...)
+            The data on the regular grid in n dimensions.
+
+        method : str
+            The method of interpolation to perform. Supported are "linear" and
+            "nearest".
+
+        fill_value : number, optional
+            If provided, the value to use for points outside of the
+            interpolation domain. If None, values outside
+            the domain are extrapolated.
+
+        """
+        ndim = self.ndim
+        xi_shape = self.xi_shape
+        method = self.method
+        indices, norm_distances, out_of_bounds = self.param
+
+        if self.image:
+            values = util.image_to_plot(values, self.upper)
+
+        points = self.points
+        if not hasattr(values, 'ndim'):
+            # allow reasonable duck-typed values
+            values = np.asarray(values)
+
+        if len(points) > values.ndim:
+            raise ValueError("There are %d point arrays, but values has %d "
+                             "dimensions" % (len(points), values.ndim))
+
+        if hasattr(values, 'dtype') and hasattr(values, 'astype'):
+            if not np.issubdtype(values.dtype, np.inexact):
+                values = values.astype(float)
+
+        self.fill_value = fill_value
+        if fill_value is not None:
+            fill_value_dtype = np.asarray(fill_value).dtype
+            if (hasattr(values, 'dtype') and not
+                    np.can_cast(fill_value_dtype, values.dtype,
+                                casting='same_kind')):
+                raise ValueError("fill_value must be either 'None' or "
+                                 "of a type compatible with values")
+
+        for i, p in enumerate(points):
+            if not np.all(np.diff(p) > 0.):
+                raise ValueError("The points in dimension %d must be strictly "
+                                 "ascending" % i)
+            if not np.asarray(p).ndim == 1:
+                raise ValueError("The points in dimension %d must be "
+                                 "1-dimensional" % i)
+            if not values.shape[i] == len(p):
+                raise ValueError("There are %d points and %d values in "
+                                 "dimension %d" % (len(p), values.shape[i], i))
+
+        self.values = values
+        if method == "linear":
+            result = self._evaluate_linear(indices,
+                                           norm_distances,
+                                           out_of_bounds)
+        elif method == "nearest":
+            result = self._evaluate_nearest(indices,
+                                            norm_distances,
+                                            out_of_bounds)
+        if self.fill_value is not None:
+            result[out_of_bounds] = self.fill_value
+
+        result = result.reshape(xi_shape[:-1] + self.values.shape[ndim:])
+
+        return(result)
+
+    def _evaluate_linear(self, indices, norm_distances, out_of_bounds):
+        # slice for broadcasting over trailing dimensions in self.values
+        vslice = (slice(None),) + (None,)*(self.values.ndim - len(indices))
+
+        # find relevant values
+        # each i and i+1 represents a edge
+        edges = itertools.product(*[[i, i + 1] for i in indices])
+        values = 0.
+        for edge_indices in edges:
+            weight = 1.
+            for ei, i, yi in zip(edge_indices, indices, norm_distances):
+                weight *= np.where(ei == i, 1 - yi, yi)
+            values += np.asarray(self.values[edge_indices]) * weight[vslice]
+        return values
+
+    def _evaluate_nearest(self, indices, norm_distances, out_of_bounds):
+        idx_res = []
+        for i, yi in zip(indices, norm_distances):
+            idx_res.append(np.where(yi <= .5, i, i + 1))
+        return self.values[tuple(idx_res)]
+
+    def _find_indices(self, xi):
+        # find relevant edges between which xi are situated
+        indices = []
+        # compute distance to lower edge in unity units
+        norm_distances = []
+        # check for out of bounds xi
+        out_of_bounds = np.zeros((xi.shape[1]), dtype=bool)
+        # iterate through dimensions
+        for x, grid in zip(xi, self.grid):
+            i = np.searchsorted(grid, x) - 1
+            i[i < 0] = 0
+            i[i > grid.size - 2] = grid.size - 2
+            indices.append(i)
+            norm_distances.append((x - grid[i]) /
+                                  (grid[i + 1] - grid[i]))
+            out_of_bounds += x < grid[0]
+            out_of_bounds += x > grid[-1]
+        return indices, norm_distances, out_of_bounds
+
+
+class RectNearest(RectLinear):
+    """
+    See RectLinear class
+    """
+
+    def __init__(self, *args, **kwargs):
+        kwargs['method'] = 'nearest'
+        super().__init__(*args, **kwargs)
+
+
+class RectSpline(RectGrid):
+    """
+    Based on scipy.interpolate.RectBivariateSpline
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (npoly, nvert)
+        Polygon vertices of the source points.
+    trg : 2 arrays with shape (nx) and (ny)
+        Polygon vertices of the target points.
+
+    Examples
+    --------
+    """
+
+    def __init__(self, src, trg, **kwargs):
+
+        self.image = self._is_image(src)
+        self.upper = self._is_upper(src)
+        self.points = self._grid_to_xi(src, self.image, self.upper)
+        self.xi = trg
+        if "bounds_error" not in kwargs:
+            kwargs["bounds_error"] = False
+        self.initkwargs = kwargs
+
+    def __call__(self, values, **kwargs):
+        """
+        Evaluate interpolator for values given at the source points.
+
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape (numsourcepoints, ...)
+            Values at the source points which to interpolate
+
+        Returns
+        -------
+        result : ndarray of float with shape (numtargetpoints,...)
+
+        """
+        if self.image:
+            values = util.image_to_plot(values, self.upper)
+
+        result = scipy.interpolate.interpn(self.points, values, self.xi,
+                                           "splinef2d", **self.initkwargs,
+                                           **kwargs)
+
+        return result
+
+
+class RectBin(RectGrid):
+    """
+    Bin points values to regular grid cells
+
+    Based on a modified version of
+    :class:`scipy:scipy.stats.binned_statistic_dd`
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (..., ndims)
+        data point coordinates of the source points.
+    trg : array with shape (..., 2)
+        rectangular grid coordinates (center)
+
+    Examples
+    --------
+    """
+
+    def __init__(self, src, trg, **kwargs):
+        src = src.reshape(-1, 2)
+
+        self.upper = self._is_upper(trg)
+        self.image = self._is_image(trg)
+        xi = self._grid_to_xi(trg, self.image, self.upper)
+        bins = [util.center_to_edge(x) for x in xi]
+
+        self.binnumbers = util.binned_statistic_dd(src, bins=bins, **kwargs)
+
+        self.bins = bins
+        self.src = src
+
+    def __call__(self, values):
+        """
+        Evaluate interpolator for values given at the source points.
+
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape (numsourcepoints, ...)
+            Values at the source points which to interpolate
+
+        Returns
+        -------
+        result : ndarray of float with shape (numtargetpoints,...)
+
+        """
+
+        values = values.reshape(-1)
+        result = util.binned_statistic_dd(self.src, values, self.binnumbers,
+                                          'mean', self.bins)
+
+        if self.image:
+            result = util.plot_to_image(result, self.upper)
+
+        return result
+
+
+class PolyArea(IpolBase):
+    """
+    Map values representing polygons
+    to another polygons
+    Based on wradlib.zonalstats
+
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (..., 5, 2)
+        Source grid edge coordinates.
+    trg : ndarray of floats, shape (..., 5, 2)
+        Target grid edge coordinates.
+
+    Examples
+    --------
+    """
+
+    def __init__(self, src, trg, **kwargs):
+        self.trg_shape = np.array(trg.shape[:-2])
+
+        src = src.reshape((-1, 5, 2))
+        trg = trg.reshape((-1, 5, 2))
+
+        zd = zonalstats.ZonalDataPoly(src, trg, **kwargs)
+        self.obj = zonalstats.ZonalStatsPoly(zd)
+
+    def __call__(self, values):
+        """
+        Evaluate interpolator for values given at the source points.
+
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape corresponding to src
+            Values representing the source cells
+
+        Returns
+        -------
+        result : ndarray of floats, shape corresponding to trg
+
+        """
+
+        values = values.ravel()
+        result = self.obj.mean(values)
+        result = result.reshape(self.trg_shape)
+
+        return result
+
+
+class QuadriArea(PolyArea):
+    """
+    Map values representing quadrilateral grid cells
+    to another quadrilateral grid
+    Based on wradlib.zonalstats
+
+
+    Parameters
+    ----------
+    src : ndarray of floats, shape (n+1, m+1, 2)
+        Source grid edge coordinates.
+    trg : ndarray of floats, shape (o+1, p+1, 2)
+        Target grid edge coordinates.
+
+    Examples
+    --------
+    """
+
+    def __init__(self, src, trg, **kwargs):
+        src = georef.rect.grid_to_polyvert(src)
+        trg = georef.rect.grid_to_polyvert(trg)
+        super().__init__(src, trg, **kwargs)
+
+    def __call__(self, values, **kwargs):
+        """
+        Evaluate interpolator for values given at the source points.
+
+
+        Parameters
+        ----------
+        values : ndarray of float, shape (n,m)
+            Values representing the source cells
+
+        Returns
+        -------
+        result : ndarray of floats, shape (o,p)
+
+        """
+
+        result = super().__call__(values, **kwargs)
+
+        return result
+
+
+class Sequence(IpolBase):
+    """
+    Combines several interpolation methods sequentially
+
+
+    Parameters
+    ----------
+    interpolators: list of IpolBase objects
+        list of interpolators
+
+    Examples
+    --------
+    """
+
+    def __init__(self, interpolators):
+        self.interpolators = interpolators
+
+    def __call__(self, values, **kwargs):
+        """
+        Evaluate interpolator for values given at the source points.
+
+
+        Parameters
+        ----------
+        vals : ndarray of float, shape (numsourcepoints, ...)
+            Values at the source points which to interpolate
+
+        Returns
+        -------
+        result : ndarray of float with shape (numtargetpoints,...)
+
+        """
+
+        first = self.interpolators.pop(0)
+        result = first(values, **kwargs)
+
+        for interpolator in self.interpolators:
+            temp = interpolator(values, **kwargs)
+            bad = np.isnan(result)
+            result[bad] = temp[bad]
+
+        return result
 
 
 # -----------------------------------------------------------------------------

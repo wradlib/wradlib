@@ -766,6 +766,8 @@ class ZonalDataPoly(ZonalDataBase):
             arr.append(w[0])
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
+        print(ret[0][0])
+        print(ret[-1][0])
         return tuple(ret)
 
 
