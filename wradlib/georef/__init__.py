@@ -30,13 +30,15 @@ from .projection import (create_osr, proj4_to_osr, reproject,
                          get_default_projection, epsg_to_osr,
                          wkt_to_osr, get_earth_radius)
 
-from .raster import (pixel_coordinates, pixel_to_map, pixel_to_map3d,
-                     read_gdal_coordinates, read_gdal_values,
+from .raster import (read_gdal_coordinates, read_gdal_values,
                      read_gdal_projection, create_raster_dataset,
                      set_raster_origin, extract_raster_dataset,
-                     reproject_raster_dataset)
+                     get_raster_extent, get_raster_elevation,
+                     reproject_raster_dataset, merge_raster_datasets,
+                     raster_to_polyvert)
 
-from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical)
+from .rect import (get_radolan_coords, get_radolan_grid, xyz_to_spherical,
+                   grid_to_polyvert)
 
 from .satellite import (correct_parallax, dist_from_orbit)
 

@@ -2,13 +2,15 @@
 # Copyright (c) 2011-2019, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import sys
 import unittest
 
 import numpy as np
 from osgeo import gdal, osr, ogr
 import xarray as xr
 
-from wradlib import georef, io, util
+import wradlib
+from wradlib import georef, util
 
 
 np.set_printoptions(edgeitems=3, infstr='inf', linewidth=75, nanstr='nan',
@@ -527,25 +529,38 @@ class PixMapTest(unittest.TestCase):
     def test_pixel_to_map(self):
         pass
 
-    def test_pixel_to_map3d(self):
-        pass
-
 
 class GdalTests(unittest.TestCase):
     def setUp(self):
         filename = 'geo/bonn_new.tif'
         geofile = util.get_wradlib_data_file(filename)
-        self.ds = io.open_raster(geofile)
+        self.ds = wradlib.io.open_raster(geofile)
         (self.data,
          self.coords,
          self.proj) = georef.extract_raster_dataset(self.ds)
-        self.x_sp, self.y_sp = self.coords[1, 1] - self.coords[0, 0]
+
+        filename = 'hdf5/belgium.comp.hdf'
+        geofile = util.get_wradlib_data_file(filename)
+        self.ds2 = wradlib.io.open_raster(geofile)
+        (self.data2,
+         self.coords2,
+         self.proj2) = georef.extract_raster_dataset(self.ds, mode="edge")
+        self.corner_gdalinfo = np.array([[3e5, 1e6],
+                                         [3e5, 3e5],
+                                         [1e6, 3e5],
+                                         [1e6, 1e6]])
+
+        self.corner_geo_gdalinfo = np.array([[-0.925465, 53.6928559],
+                                             [-0.266697, 47.4167912],
+                                             [9.0028805, 47.4160381],
+                                             [9.6641599, 53.6919969]])
 
     def test_read_gdal_coordinates(self):
-        coords = georef.read_gdal_coordinates(self.ds)
-        self.assertEqual(coords.shape[-1], 3)
-        coords = georef.read_gdal_coordinates(self.ds, z=False)
-        self.assertEqual(coords.shape[-1], 2)
+        center_coords = georef.read_gdal_coordinates(self.ds)
+        self.assertEqual(center_coords.shape[-1], 2)
+        edge_coords = georef.read_gdal_coordinates(self.ds, mode="edge")
+        ul_center = (edge_coords[0, 0] + edge_coords[1, 1]) / 2
+        np.testing.assert_array_almost_equal(center_coords[0, 0], ul_center)
 
     def test_read_gdal_projection(self):
         georef.read_gdal_projection(self.ds)
@@ -582,6 +597,19 @@ class GdalTests(unittest.TestCase):
         np.testing.assert_array_almost_equal(coords, self.coords)
         self.assertEqual(proj.ExportToWkt(), self.proj.ExportToWkt())
 
+        data, coords = georef.set_raster_origin(self.data2.copy(),
+                                                self.coords2.copy(),
+                                                'upper')
+        ds = georef.create_raster_dataset(data,
+                                          coords,
+                                          projection=self.proj,
+                                          nodata=-32768)
+
+        data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
+        np.testing.assert_array_equal(data, self.data2)
+        np.testing.assert_array_almost_equal(coords, self.coords2)
+        self.assertEqual(proj.ExportToWkt(), self.proj.ExportToWkt())
+
     def test_set_raster_origin(self):
         testfunc = georef.set_raster_origin
         data, coords = testfunc(self.data.copy(),
@@ -600,11 +628,50 @@ class GdalTests(unittest.TestCase):
                                                     axis=-2))
 
         np.testing.assert_array_equal(coords,
-                                      np.flip(self.coords[:3600, :3600] +
-                                              [0, self.y_sp], axis=-3))
+                                      np.flip(self.coords[:3600, :3600],
+                                              axis=-3))
 
     def test_extract_raster_dataset(self):
-        data, coords, proj = georef.extract_raster_dataset(self.ds)
+        ds = self.ds
+        data, coords, proj = georef.extract_raster_dataset(ds)
+        self.assertEqual(coords.shape[-1], 2)
+        data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
+        self.assertEqual(coords.shape[-1], 2)
+
+    @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
+    def test_get_raster_elevation(self):
+        georef.get_raster_elevation(self.ds, download={'region': 'Eurasia'})
+
+    def test_get_raster_extent(self):
+
+        extent = georef.get_raster_extent(self.ds2)
+        window_map = np.array([3e5, 1e6, 3e5, 1e6])
+        np.testing.assert_array_almost_equal(extent, window_map, decimal=3)
+
+        extent = georef.get_raster_extent(self.ds2, geo=True)
+        window_geo = np.array([-0.925465, 9.6641599, 47.4160381, 53.6928559])
+        np.testing.assert_array_almost_equal(extent, window_geo)
+
+        extent = georef.get_raster_extent(self.ds2, window=False)
+        np.testing.assert_array_almost_equal(extent, self.corner_gdalinfo,
+                                             decimal=3)
+
+        extent = georef.get_raster_extent(self.ds2, geo=True, window=False)
+        np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
+
+    @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
+    def test_merge_raster_datasets(self):
+        download = {"region": "Eurasia"}
+        datasets = wradlib.io.dem.get_srtm([3, 4, 47, 48], merge=False,
+                                           download=download)
+        georef.merge_raster_datasets(datasets)
+
+    def test_raster_to_polyvert(self):
+        ds = self.ds
+        polyvert = georef.raster_to_polyvert(ds)
+        nx = ds.RasterXSize
+        ny = ds.RasterYSize
+        self.assertEqual((ny, nx, 5, 2), polyvert.shape)
 
 
 class GetGridsTest(unittest.TestCase):
@@ -678,7 +745,7 @@ class SatelliteTest(unittest.TestCase):
     def setUp(self):
         f = 'gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-S095002-E095137.004383.V05A.HDF5'  # noqa
         gpm_file = util.get_wradlib_data_file(f)
-        pr_data = io.read_generic_hdf5(gpm_file)
+        pr_data = wradlib.io.read_generic_hdf5(gpm_file)
         pr_lon = pr_data['NS/Longitude']['data']
         pr_lat = pr_data['NS/Latitude']['data']
         zenith = pr_data['NS/PRE/localZenithAngle']['data']
@@ -778,11 +845,11 @@ class VectorTest(unittest.TestCase):
 
         filename = util.get_wradlib_data_file('shapefiles/agger/'
                                               'agger_merge.shp')
-        self.ds, self.layer = io.open_vector(filename)
+        self.ds, self.layer = wradlib.io.open_vector(filename)
 
     def test_ogr_create_layer(self):
-        ds = io.gdal_create_dataset('Memory', 'test',
-                                    gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         with self.assertRaises(TypeError):
             georef.ogr_create_layer(ds, 'test')
         lyr = georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
@@ -842,22 +909,22 @@ class VectorTest(unittest.TestCase):
             georef.transform_geometry(self.ogrobj, dest_srs=self.wgs84)
 
     def test_ogr_copy_layer(self):
-        ds = io.gdal_create_dataset('Memory', 'test',
-                                    gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         georef.ogr_copy_layer(self.ds, 0, ds)
         self.assertTrue(isinstance(ds.GetLayer(), ogr.Layer))
 
     def test_ogr_copy_layer_by_name(self):
-        ds = io.gdal_create_dataset('Memory', 'test',
-                                    gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         georef.ogr_copy_layer_by_name(self.ds, 'agger_merge', ds)
         self.assertTrue(isinstance(ds.GetLayer(), ogr.Layer))
         with self.assertRaises(ValueError):
             georef.ogr_copy_layer_by_name(self.ds, 'agger_merge1', ds)
 
     def test_ogr_add_feature(self):
-        ds = io.gdal_create_dataset('Memory', 'test',
-                                    gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
                                 fields=[('index', ogr.OFTReal)])
 
@@ -867,8 +934,8 @@ class VectorTest(unittest.TestCase):
         georef.ogr_add_feature(ds, parr, name='test')
 
     def test_ogr_add_geometry(self):
-        ds = io.gdal_create_dataset('Memory', 'test',
-                                    gdal_type=gdal.OF_VECTOR)
+        ds = wradlib.io.gdal_create_dataset('Memory', 'test',
+                                            gdal_type=gdal.OF_VECTOR)
         lyr = georef.ogr_create_layer(ds, 'test', geom_type=ogr.wkbPoint,
                                       fields=[('test', ogr.OFTReal)])
         point = ogr.Geometry(ogr.wkbPoint)
