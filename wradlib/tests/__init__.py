@@ -23,3 +23,5 @@ from . import test_verify  # noqa
 from . import test_vpr  # noqa
 from . import test_zonalstats  # noqa
 from . import test_zr  # noqa
+
+__all__ = [s for s in dir() if not s.startswith('_')]

@@ -32,3 +32,5 @@ from .netcdf import *
 from .radolan import *
 from .rainbow import *
 from .xarray import *
+
+__all__ = [s for s in dir() if not s.startswith('_')]
