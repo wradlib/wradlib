@@ -11,10 +11,12 @@ Rectangular Grid Functions
    :nosignatures:
    :toctree: generated/
 
-    get_radolan_coords
-    get_radolan_grid
-    xyz_to_spherical
+   {}
 """
+__all__ = ['get_radolan_coords', 'get_radolan_grid', 'xyz_to_spherical',
+           'grid_to_polyvert']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 from wradlib.georef import projection

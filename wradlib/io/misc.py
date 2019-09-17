@@ -9,12 +9,12 @@ Miscellaneous Data I/O
    :nosignatures:
    :toctree: generated/
 
-   write_polygon_to_text
-   to_pickle
-   from_pickle
-   get_radiosonde
-   get_membership_functions
+   {}
 """
+__all__ = ['write_polygon_to_text', 'to_pickle', 'from_pickle',
+           'get_radiosonde', 'get_membership_functions']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import datetime as dt
 import io
 import pickle

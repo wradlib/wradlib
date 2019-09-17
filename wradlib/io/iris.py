@@ -23,23 +23,15 @@ Using `rawdata=True` the data will be kept undecoded.
    :nosignatures:
    :toctree: generated/
 
-   IrisRecord
-   IrisHeaderBase
-   IrisStructureHeader
-   IrisIngestHeader
-   IrisProductHeader
-   IrisIngestDataHeader
-   IrisFileBase
-   IrisFile
-   IrisIngestHeaderFile
-   IrisIngestDataFile
-   IrisRecordFile
-   IrisRawFile
-   IrisProductFile
-   IrisCartesianProductFile
-   read_iris
-
+   {}
 """
+__all__ = ['IrisRecord', 'IrisHeaderBase', 'IrisStructureHeader',
+           'IrisIngestHeader', 'IrisProductHeader', 'IrisIngestDataHeader',
+           'IrisFileBase', 'IrisFile', 'IrisIngestHeaderFile',
+           'IrisIngestDataFile', 'IrisRecordFile', 'IrisRawFile',
+           'IrisProductFile', 'IrisCartesianProductFile', 'read_iris']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 from collections import OrderedDict
 import copy
 import datetime as dt

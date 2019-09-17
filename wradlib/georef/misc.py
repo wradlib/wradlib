@@ -11,10 +11,11 @@ Miscellaneous
    :nosignatures:
    :toctree: generated/
 
-   bin_altitude
-   bin_distance
-   site_distance
+   {}
 """
+__all__ = ['bin_altitude', 'bin_distance', 'site_distance']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 

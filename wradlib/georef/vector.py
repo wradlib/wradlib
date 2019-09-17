@@ -11,19 +11,14 @@ Vector Functions (GDAL)
    :nosignatures:
    :toctree: generated/
 
-   get_vector_coordinates
-   get_vector_points
-   transform_geometry
-   ogr_create_layer
-   ogr_copy_layer
-   ogr_copy_layer_by_name
-   ogr_add_feature
-   ogr_add_geometry
-   numpy_to_ogr
-   ogr_to_numpy
-   ogr_geocol_to_numpy
-   get_centroid
+   {}
 """
+__all__ = ['get_vector_coordinates', 'get_vector_points', 'transform_geometry',
+           'ogr_create_layer', 'ogr_copy_layer', 'ogr_copy_layer_by_name',
+           'ogr_add_feature', 'ogr_add_geometry', 'numpy_to_ogr',
+           'ogr_to_numpy', 'ogr_geocol_to_numpy', 'get_centroid']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import warnings
 
 import numpy as np

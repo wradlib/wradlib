@@ -11,15 +11,14 @@ Reading DX and RADOLAN data from German Weather Service
     :nosignatures:
     :toctree: generated/
 
-    read_dx
-    read_radolan_composite
-    get_radolan_filehandle
-    read_radolan_header
-    parse_dwd_composite_header
-    read_radolan_binary_array
-    decode_radolan_runlength_array
-    radolan_to_xarray
+    {}
 """
+__all__ = ['read_dx', 'read_radolan_composite', 'get_radolan_filehandle',
+           'read_radolan_header', 'parse_dwd_composite_header',
+           'read_radolan_binary_array', 'decode_radolan_runlength_array',
+           'radolan_to_xarray']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import datetime as dt
 import io
 import re

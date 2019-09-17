@@ -9,8 +9,11 @@ Read Rainbow
    :nosignatures:
    :toctree: generated/
 
-   read_rainbow
+   {}
 """
+__all__ = ['read_rainbow']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import sys
 import numpy as np
 

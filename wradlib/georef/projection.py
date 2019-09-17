@@ -11,13 +11,12 @@ Projection Functions
    :nosignatures:
    :toctree: generated/
 
-   reproject
-   create_osr
-   proj4_to_osr
-   epsg_to_osr
-   wkt_to_osr
-   get_earth_radius
+   {}
 """
+__all__ = ['reproject', 'create_osr', 'proj4_to_osr', 'epsg_to_osr',
+           'wkt_to_osr', 'get_default_projection', 'get_earth_radius']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 from osgeo import gdal, osr, ogr
 

@@ -9,14 +9,12 @@ HDF Data I/O
    :nosignatures:
    :toctree: generated/
 
-   read_generic_hdf5
-   read_opera_hdf5
-   read_gamic_hdf5
-   to_hdf5
-   from_hdf5
-   read_gpm
-   read_trmm
+   {}
 """
+__all__ = ['read_generic_hdf5', 'read_opera_hdf5', 'read_gamic_hdf5',
+           'to_hdf5', 'from_hdf5', 'read_gpm', 'read_trmm']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import h5py
 import netCDF4 as nc
 import numpy as np
