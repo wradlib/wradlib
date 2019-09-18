@@ -639,8 +639,7 @@ def gradient_from_smoothed(x, n=5):
 
 
 def binned_statistic_dd(sample, values=None, binnumbers=None,
-                        statistic='mean', bins=10, ranges=None,
-                        expand_binnumbers=False):
+                        statistic='mean', bins=10):
     """
     Forked from scipy.stats.binned_statistic_dd
 
@@ -654,8 +653,7 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
     Parameters
     ----------
     sample : array_like
-        Data to histogram passed as a sequence of D arrays of length N, or
-        as an (N,D) array.
+        Data to histogram passed as an (N,D) array.
     values : (N,) array_like or list of (N,) array_like
         The data on which the statistic will be computed.  This must be
         the same shape as `sample`, or a list of sequences - each with the
@@ -690,19 +688,6 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
           * The number of bins for each dimension (nx, ny, ... = bins).
           * The number of bins for all dimensions (nx = ny = ... = bins).
 
-    ranges : sequence, optional
-        A sequence of lower and upper bin edges to be used if the edges are
-        not given explicitly in `bins`. Defaults to the minimum and maximum
-        values along each dimension.
-    expand_binnumbers : bool, optional
-        'False' (default): the returned `binnumber` is a shape (N,) array of
-        linearized bin indices.
-        'True': the returned `binnumber` is 'unraveled' into a shape (D,N)
-        ndarray, where each row gives the bin numbers in the corresponding
-        dimension.
-        See the `binnumber` returned value, and the `Examples` section of
-        `binned_statistic_2d`.
-
         .. versionadded:: 0.17.0
 
     Returns
@@ -714,8 +699,7 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
         dimension.
     binnumber : (N,) array of ints or (D,N) ndarray of ints
         This assigns to each element of `sample` an integer that represents the
-        bin in which this observation falls.  The representation depends on the
-        `expand_binnumbers` argument.  See `Notes` for details.
+        bin in which this observation falls.
 
 
     See Also
@@ -751,13 +735,9 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
     # `Ndim` is the number of dimensions (e.g. `2` for `binned_statistic_2d`)
     # `Dlen` is the length of elements along each dimension.
     # This code is based on np.histogramdd
-    try:
-        # `sample` is an ND-array.
-        Dlen, Ndim = sample.shape
-    except (AttributeError, ValueError):
-        # `sample` is a sequence of 1D arrays.
-        sample = np.atleast_2d(sample).T
-        Dlen, Ndim = sample.shape
+        
+    # `sample` is an ND-array.
+    Dlen, Ndim = sample.shape
 
     nbin = np.empty(Ndim, int)    # Number of bins in each dimension
     edges = Ndim * [None]         # Bin edges for each dim (will be 2D array)
@@ -773,14 +753,8 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
 
     # Select range for each dimension
     # Used only if number of bins is given.
-    if ranges is None:
-        smin = np.atleast_1d(np.array(sample.min(axis=0), float))
-        smax = np.atleast_1d(np.array(sample.max(axis=0), float))
-    else:
-        smin = np.zeros(Ndim)
-        smax = np.zeros(Ndim)
-        for i in range(Ndim):
-            smin[i], smax[i] = ranges[i]
+    smin = np.atleast_1d(np.array(sample.min(axis=0), float))
+    smax = np.atleast_1d(np.array(sample.max(axis=0), float))
 
     # Make sure the bins have a finite width.
     for i in range(len(smin)):
@@ -859,10 +833,6 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
     # Remove outliers (indices 0 and -1 for each bin-dimension).
     core = tuple([slice(None)] + Ndim * [slice(1, -1)])
     result = result[core]
-
-    # Unravel binnumbers into an ndarray, each row the bins for each dimension
-    if(expand_binnumbers and Ndim > 1):
-        binnumbers = np.asarray(np.unravel_index(binnumbers, nbin))
 
     if np.any(result.shape[1:] != nbin - 2):
         raise RuntimeError('Internal Shape Error')
