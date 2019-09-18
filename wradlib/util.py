@@ -638,5 +638,273 @@ def gradient_from_smoothed(x, n=5):
     return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
 
 
+def binned_statistic_dd(sample, values=None, binnumbers=None,
+                        statistic='mean', bins=10, ranges=None,
+                        expand_binnumbers=False):
+    """
+    Forked from scipy.stats.binned_statistic_dd
+
+    Compute a multidimensional binned statistic for a set of data.
+
+    This is a generalization of a histogramdd function.  A histogram divides
+    the space into bins, and returns the count of the number of points in
+    each bin.  This function allows the computation of the sum, mean, median,
+    or other statistic of the values within each bin.
+
+    Parameters
+    ----------
+    sample : array_like
+        Data to histogram passed as a sequence of D arrays of length N, or
+        as an (N,D) array.
+    values : (N,) array_like or list of (N,) array_like
+        The data on which the statistic will be computed.  This must be
+        the same shape as `sample`, or a list of sequences - each with the
+        same shape as `sample`.  If `values` is such a list, the statistic
+        will be computed on each independently.
+    statistic : string or callable, optional
+        The statistic to compute (default is 'mean').
+        The following statistics are available:
+
+          * 'mean' : compute the mean of values for points within each bin.
+            Empty bins will be represented by NaN.
+          * 'median' : compute the median of values for points within each
+            bin. Empty bins will be represented by NaN.
+          * 'count' : compute the count of points within each bin.  This is
+            identical to an unweighted histogram.  `values` array is not
+            referenced.
+          * 'sum' : compute the sum of values for points within each bin.
+            This is identical to a weighted histogram.
+          * 'min' : compute the minimum of values for points within each bin.
+            Empty bins will be represented by NaN.
+          * 'max' : compute the maximum of values for point within each bin.
+            Empty bins will be represented by NaN.
+          * function : a user-defined function which takes a 1D array of
+            values, and outputs a single numerical statistic. This function
+            will be called on the values in each bin.  Empty bins will be
+            represented by function([]), or NaN if this returns an error.
+
+    bins : sequence or int, optional
+        The bin specification must be in one of the following forms:
+
+          * A sequence of arrays describing the bin edges along each dimension.
+          * The number of bins for each dimension (nx, ny, ... = bins).
+          * The number of bins for all dimensions (nx = ny = ... = bins).
+
+    ranges : sequence, optional
+        A sequence of lower and upper bin edges to be used if the edges are
+        not given explicitly in `bins`. Defaults to the minimum and maximum
+        values along each dimension.
+    expand_binnumbers : bool, optional
+        'False' (default): the returned `binnumber` is a shape (N,) array of
+        linearized bin indices.
+        'True': the returned `binnumber` is 'unraveled' into a shape (D,N)
+        ndarray, where each row gives the bin numbers in the corresponding
+        dimension.
+        See the `binnumber` returned value, and the `Examples` section of
+        `binned_statistic_2d`.
+
+        .. versionadded:: 0.17.0
+
+    Returns
+    -------
+    statistic : ndarray, shape(nx1, nx2, nx3,...)
+        The values of the selected statistic in each two-dimensional bin.
+    bin_edges : list of ndarrays
+        A list of D arrays describing the (nxi + 1) bin edges for each
+        dimension.
+    binnumber : (N,) array of ints or (D,N) ndarray of ints
+        This assigns to each element of `sample` an integer that represents the
+        bin in which this observation falls.  The representation depends on the
+        `expand_binnumbers` argument.  See `Notes` for details.
+
+
+    See Also
+    --------
+    numpy.digitize, numpy.histogramdd, binned_statistic, binned_statistic_2d
+
+    Notes
+    -----
+    Binedges:
+    All but the last (righthand-most) bin is half-open in each dimension.  In
+    other words, if `bins` is ``[1, 2, 3, 4]``, then the first bin is
+    ``[1, 2)`` (including 1, but excluding 2) and the second ``[2, 3)``.  The
+    last bin, however, is ``[3, 4]``, which *includes* 4.
+
+    `binnumber`:
+    This returned argument assigns to each element of `sample` an integer that
+    represents the bin in which it belongs.  The representation depends on the
+    `expand_binnumbers` argument. If 'False' (default): The returned
+    `binnumber` is a shape (N,) array of linearized indices mapping each
+    element of `sample` to its corresponding bin (using row-major ordering).
+    If 'True': The returned `binnumber` is a shape (D,N) ndarray where
+    each row indicates bin placements for each dimension respectively.  In each
+    dimension, a binnumber of `i` means the corresponding value is between
+    (bin_edges[D][i-1], bin_edges[D][i]), for each dimension 'D'.
+
+    .. versionadded:: 0.11.0
+
+    """
+    known_stats = ['mean', 'median']
+    if not callable(statistic) and statistic not in known_stats:
+        raise ValueError('invalid statistic %r' % (statistic,))
+
+    # `Ndim` is the number of dimensions (e.g. `2` for `binned_statistic_2d`)
+    # `Dlen` is the length of elements along each dimension.
+    # This code is based on np.histogramdd
+    try:
+        # `sample` is an ND-array.
+        Dlen, Ndim = sample.shape
+    except (AttributeError, ValueError):
+        # `sample` is a sequence of 1D arrays.
+        sample = np.atleast_2d(sample).T
+        Dlen, Ndim = sample.shape
+
+    nbin = np.empty(Ndim, int)    # Number of bins in each dimension
+    edges = Ndim * [None]         # Bin edges for each dim (will be 2D array)
+    dedges = Ndim * [None]        # Spacing between edges (will be 2D array)
+
+    try:
+        M = len(bins)
+        if M != Ndim:
+            raise AttributeError('The dimension of bins must be equal '
+                                 'to the dimension of the sample x.')
+    except TypeError:
+        bins = Ndim * [bins]
+
+    # Select range for each dimension
+    # Used only if number of bins is given.
+    if ranges is None:
+        smin = np.atleast_1d(np.array(sample.min(axis=0), float))
+        smax = np.atleast_1d(np.array(sample.max(axis=0), float))
+    else:
+        smin = np.zeros(Ndim)
+        smax = np.zeros(Ndim)
+        for i in range(Ndim):
+            smin[i], smax[i] = ranges[i]
+
+    # Make sure the bins have a finite width.
+    for i in range(len(smin)):
+        if smin[i] == smax[i]:
+            smin[i] = smin[i] - .5
+            smax[i] = smax[i] + .5
+
+    # Create edge arrays
+    for i in range(Ndim):
+        if np.isscalar(bins[i]):
+            nbin[i] = bins[i] + 2  # +2 for outlier bins
+            edges[i] = np.linspace(smin[i], smax[i], nbin[i] - 1)
+        else:
+            edges[i] = np.asarray(bins[i], float)
+            nbin[i] = len(edges[i]) + 1  # +1 for outlier bins
+        dedges[i] = np.diff(edges[i])
+
+    nbin = np.asarray(nbin)
+
+    if binnumbers is None:
+        # Compute the bin number each sample falls into, in each dimension
+        sampBin = [
+            np.digitize(sample[:, i], edges[i])
+            for i in range(Ndim)
+        ]
+
+        # Using `digitize`, values that fall on an edge are put
+        # in the right bin.
+        # For the rightmost bin, we want values equal to the right
+        # edge to be counted in the last bin, and not as an outlier.
+        for i in range(Ndim):
+            # Find the rounding precision
+            decimal = int(-np.log10(dedges[i].min())) + 6
+            # Find which points are on the rightmost edge.
+            on_edge = np.where(np.around(sample[:, i], decimal) ==
+                               np.around(edges[i][-1], decimal))[0]
+            # Shift these points one bin to the left.
+            sampBin[i][on_edge] -= 1
+
+        # Compute the sample indices in the flattened statistic matrix.
+        binnumbers = np.ravel_multi_index(sampBin, nbin)
+
+    if values is None:
+        return(binnumbers)
+
+    # Store initial shape of `values` to preserve it in the output
+    values = np.asarray(values)
+    input_shape = list(values.shape)
+    # Make sure that `values` is 2D to iterate over rows
+    values = np.atleast_2d(values)
+    Vdim, Vlen = values.shape
+
+    # Make sure `values` match `sample`
+    if(statistic != 'count' and Vlen != Dlen):
+        raise AttributeError('The number of `values` elements must match the '
+                             'length of each `sample` dimension.')
+
+    result = np.empty([Vdim, nbin.prod()], float)
+
+    if statistic == 'mean':
+        result.fill(np.nan)
+        flatcount = np.bincount(binnumbers, None)
+        a = flatcount.nonzero()
+        for vv in range(Vdim):
+            flatsum = np.bincount(binnumbers, values[vv])
+            result[vv, a] = flatsum[a] / flatcount[a]
+    elif statistic == 'median':
+        result.fill(np.nan)
+        for i in np.unique(binnumbers):
+            for vv in range(Vdim):
+                result[vv, i] = np.median(values[vv, binnumbers == i])
+
+    # Shape into a proper matrix
+    result = result.reshape(np.append(Vdim, nbin))
+
+    # Remove outliers (indices 0 and -1 for each bin-dimension).
+    core = tuple([slice(None)] + Ndim * [slice(1, -1)])
+    result = result[core]
+
+    # Unravel binnumbers into an ndarray, each row the bins for each dimension
+    if(expand_binnumbers and Ndim > 1):
+        binnumbers = np.asarray(np.unravel_index(binnumbers, nbin))
+
+    if np.any(result.shape[1:] != nbin - 2):
+        raise RuntimeError('Internal Shape Error')
+
+    # Reshape to have output (`reulst`) match input (`values`) shape
+    result = result.reshape(input_shape[:-1] + list(nbin-2))
+
+    return result
+
+
+def image_to_plot(a, upper=True):
+    """
+    Convert an array from image order convention
+    with shape (nrows, ncols) starting upper left
+    to array in ploting order convention
+    with shape (nx, ny) and starting lower left
+    """
+    if upper:
+        a = np.flip(a, axis=0)
+    a = np.transpose(a)
+    return a
+
+
+def plot_to_image(a, upper=True):
+    """
+    Convert an array from ploting order convention
+    with shape (nx, ny) and starting lower left
+    to array in image order convention
+    with shape (nrows, ncols) starting upper left
+    """
+    a = np.transpose(a)
+    if upper:
+        a = np.flip(a, axis=0)
+    return a
+
+
+def center_to_edge(centers):
+    delta = centers[1] - centers[0]
+    edges = np.insert(centers + delta/2, 0, centers[0] - delta/2)
+
+    return edges
+
+
 if __name__ == '__main__':
     print('wradlib: Calling module <util> as main...')
