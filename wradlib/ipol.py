@@ -527,36 +527,19 @@ class RectLinear(RectGrid):
 
     def __init__(self, src, trg, method="linear"):
 
+        assert(self._is_grid(src))
+
         self.upper = self._is_upper(src)
         self.image = self._is_image(src)
         points = self._grid_to_xi(src, self.image, self.upper)
 
         xi = trg
-        if method not in ["linear", "nearest"]:
-            raise ValueError("Method '%s' is not defined" % method)
-        self.method = method
-
-        for i, p in enumerate(points):
-            if not np.all(np.diff(p) > 0.):
-                raise ValueError("The points in dimension %d must be strictly "
-                                 "ascending" % i)
-            if not np.asarray(p).ndim == 1:
-                raise ValueError("The points in dimension %d must be "
-                                 "1-dimensional" % i)
 
         self.grid = tuple([np.asarray(p) for p in points])
-        method = self.method if method is None else method
-        if method not in ["linear", "nearest"]:
-            raise ValueError("Method '%s' is not defined" % method)
 
         ndim = len(self.grid)
         xi = scipy.interpolate.interpnd._ndim_coords_from_arrays(xi,
                                                                  ndim=ndim)
-        if xi.shape[-1] != len(self.grid):
-            raise ValueError("The requested sample points xi have dimension "
-                             "%d, but this RegularGridInterpolator has "
-                             "dimension %d" % (xi.shape[1], ndim))
-
         xi_shape = xi.shape
         xi = xi.reshape(-1, xi_shape[-1])
 
@@ -597,9 +580,6 @@ class RectLinear(RectGrid):
             values = util.image_to_plot(values, self.upper)
 
         points = self.points
-        if not hasattr(values, 'ndim'):
-            # allow reasonable duck-typed values
-            values = np.asarray(values)
 
         if len(points) > values.ndim:
             raise ValueError("There are %d point arrays, but values has %d "
@@ -610,26 +590,8 @@ class RectLinear(RectGrid):
                 values = values.astype(float)
 
         self.fill_value = fill_value
-        if fill_value is not None:
-            fill_value_dtype = np.asarray(fill_value).dtype
-            if (hasattr(values, 'dtype') and not
-                    np.can_cast(fill_value_dtype, values.dtype,
-                                casting='same_kind')):
-                raise ValueError("fill_value must be either 'None' or "
-                                 "of a type compatible with values")
-
-        for i, p in enumerate(points):
-            if not np.all(np.diff(p) > 0.):
-                raise ValueError("The points in dimension %d must be strictly "
-                                 "ascending" % i)
-            if not np.asarray(p).ndim == 1:
-                raise ValueError("The points in dimension %d must be "
-                                 "1-dimensional" % i)
-            if not values.shape[i] == len(p):
-                raise ValueError("There are %d points and %d values in "
-                                 "dimension %d" % (len(p), values.shape[i], i))
-
         self.values = values
+
         if method == "linear":
             result = self._evaluate_linear(indices,
                                            norm_distances,
@@ -638,6 +600,7 @@ class RectLinear(RectGrid):
             result = self._evaluate_nearest(indices,
                                             norm_distances,
                                             out_of_bounds)
+        
         if self.fill_value is not None:
             result[out_of_bounds] = self.fill_value
 
@@ -713,6 +676,8 @@ class RectSpline(RectGrid):
 
     def __init__(self, src, trg, **kwargs):
 
+        assert(self._is_grid(src))
+
         self.image = self._is_image(src)
         self.upper = self._is_upper(src)
         self.points = self._grid_to_xi(src, self.image, self.upper)
@@ -765,6 +730,9 @@ class RectBin(RectGrid):
     """
 
     def __init__(self, src, trg, **kwargs):
+
+        assert(self._is_grid(trg))
+        
         src = src.reshape(-1, 2)
 
         self.upper = self._is_upper(trg)

@@ -746,7 +746,7 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
     .. versionadded:: 0.11.0
 
     """
-    known_stats = ['mean', 'median', 'count', 'sum', 'std', 'min', 'max']
+    known_stats = ['mean', 'median']
     if not callable(statistic) and statistic not in known_stats:
         raise ValueError('invalid statistic %r' % (statistic,))
 
@@ -849,53 +849,11 @@ def binned_statistic_dd(sample, values=None, binnumbers=None,
         for vv in range(Vdim):
             flatsum = np.bincount(binnumbers, values[vv])
             result[vv, a] = flatsum[a] / flatcount[a]
-    elif statistic == 'std':
-        result.fill(0)
-        flatcount = np.bincount(binnumbers, None)
-        a = flatcount.nonzero()
-        for vv in range(Vdim):
-            flatsum = np.bincount(binnumbers, values[vv])
-            flatsum2 = np.bincount(binnumbers, values[vv] ** 2)
-            result[vv, a] = np.sqrt(flatsum2[a] / flatcount[a] -
-                                    (flatsum[a] / flatcount[a]) ** 2)
-    elif statistic == 'count':
-        result.fill(0)
-        flatcount = np.bincount(binnumbers, None)
-        a = np.arange(len(flatcount))
-        result[:, a] = flatcount[np.newaxis, :]
-    elif statistic == 'sum':
-        result.fill(0)
-        for vv in range(Vdim):
-            flatsum = np.bincount(binnumbers, values[vv])
-            a = np.arange(len(flatsum))
-            result[vv, a] = flatsum
     elif statistic == 'median':
         result.fill(np.nan)
         for i in np.unique(binnumbers):
             for vv in range(Vdim):
                 result[vv, i] = np.median(values[vv, binnumbers == i])
-    elif statistic == 'min':
-        result.fill(np.nan)
-        for i in np.unique(binnumbers):
-            for vv in range(Vdim):
-                result[vv, i] = np.min(values[vv, binnumbers == i])
-    elif statistic == 'max':
-        result.fill(np.nan)
-        for i in np.unique(binnumbers):
-            for vv in range(Vdim):
-                result[vv, i] = np.max(values[vv, binnumbers == i])
-    elif callable(statistic):
-        fun = scipy._lib._numpy_compat.suppress_warnings()
-        with np.errstate(invalid='ignore'), fun as sup:
-            sup.filter(RuntimeWarning)
-            try:
-                null = statistic([])
-            except Exception:
-                null = np.nan
-        result.fill(null)
-        for i in np.unique(binnumbers):
-            for vv in range(Vdim):
-                result[vv, i] = statistic(values[vv, binnumbers == i])
 
     # Shape into a proper matrix
     result = result.reshape(np.append(Vdim, nbin))
