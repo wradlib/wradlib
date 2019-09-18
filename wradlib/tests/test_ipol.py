@@ -343,7 +343,7 @@ class GridInterpolationTest(unittest.TestCase):
         np.testing.assert_allclose(mean, valip[0, 0])
 
         ip = ipol.RectBin(self.points, self.grid, statistic='median')
-    
+
     def test_QuadriArea(self):
         grid2 = self.grid2 + (-0.01, 0.01)
         ip = ipol.QuadriArea(grid2, self.grid)

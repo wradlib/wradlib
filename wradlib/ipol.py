@@ -600,7 +600,7 @@ class RectLinear(RectGrid):
             result = self._evaluate_nearest(indices,
                                             norm_distances,
                                             out_of_bounds)
-        
+
         if self.fill_value is not None:
             result[out_of_bounds] = self.fill_value
 
@@ -732,7 +732,7 @@ class RectBin(RectGrid):
     def __init__(self, src, trg, **kwargs):
 
         assert(self._is_grid(trg))
-        
+
         src = src.reshape(-1, 2)
 
         self.upper = self._is_upper(trg)

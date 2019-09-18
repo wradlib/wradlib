@@ -28,7 +28,6 @@ import os
 import deprecation
 import numpy as np
 from osgeo import gdal, ogr
-import scipy
 from scipy import ndimage, signal
 
 from wradlib import version
