@@ -11,14 +11,15 @@ Raster Functions
    :nosignatures:
    :toctree: generated/
 
-   read_gdal_values
-   read_gdal_projection
-   read_gdal_coordinates
-   extract_raster_dataset
-   reproject_raster_dataset
-   create_raster_dataset
-   set_raster_origin
+   {}
 """
+__all__ = ['read_gdal_values', 'read_gdal_projection', 'read_gdal_coordinates',
+           'extract_raster_dataset',  'get_raster_extent',
+           'get_raster_elevation', 'reproject_raster_dataset',
+           'merge_raster_datasets', 'create_raster_dataset',
+           'set_raster_origin', 'raster_to_polyvert']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 from osgeo import gdal, osr, gdal_array
 

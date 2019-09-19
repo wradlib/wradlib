@@ -20,17 +20,13 @@ This includes for example:
    :nosignatures:
    :toctree: generated/
 
-   Nearest
-   Idw
-   Linear
-   OrdinaryKriging
-   ExternalDriftKriging
-   interpolate
-   interpolate_polar
-   cart_to_irregular_interp
-   cart_to_irregular_spline
-
+   {}
 """
+__all__ = ['Nearest', 'Idw', 'Linear', 'OrdinaryKriging',
+           'ExternalDriftKriging', 'interpolate', 'interpolate_polar',
+           'cart_to_irregular_interp', 'cart_to_irregular_spline']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import functools
 import re
 import warnings

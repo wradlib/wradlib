@@ -49,13 +49,12 @@ Warning
    :nosignatures:
    :toctree: generated/
 
-   XRadVol
-   CfRadial
-   OdimH5
-   to_cfradial2
-   to_odim
-
+   {}
 """
+__all__ = ['XRadVol', 'CfRadial', 'OdimH5', 'to_cfradial2', 'to_odim',
+           'create_xarray_dataarray']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import collections
 import datetime as dt
 import warnings

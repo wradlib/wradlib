@@ -11,9 +11,9 @@ Overview
 --------
 
 This module provides algorithms to process polarimetric radar moments,
-namely the differential phase, :math:`Phi_{DP}`, and, based on successful
-:math:`Phi_{DP}` retrieval, also the specific differential phase,
-:math:`K_{DP}`.
+namely the differential phase, :math:`Phi_{{DP}}`, and, based on successful
+:math:`Phi_{{DP}}` retrieval, also the specific differential phase,
+:math:`K_{{DP}}`.
 Please note that the actual application of polarimetric moments is implemented
 in the corresponding wradlib modules, e.g.:
 
@@ -22,15 +22,15 @@ in the corresponding wradlib modules, e.g.:
     - attenuation correction (:func:`wradlib.atten.pia_from_kdp`)
     - direct precipitation retrieval from Kdp (:func:`wradlib.trafo.kdp_to_r`)
 
-Establishing a valid :math:`Phi_{DP}` profile for :math:`K_{DP}` retrieval
+Establishing a valid :math:`Phi_{{DP}}` profile for :math:`K_{{DP}}` retrieval
 involves despeckling (linear_despeckle), phase unfolding, and iterative
-retrieval of :math:`Phi_{DP}` form :math:`K_{DP}`.
+retrieval of :math:`Phi_{{DP}}` form :math:`K_{{DP}}`.
 The main workflow and its single steps is based on a publication by
 :cite:`Vulpiani2012`. For convenience, the entire workflow has been
 put together in the function :func:`wradlib.dp.process_raw_phidp_vulpiani`.
 
-Once a valid :math:`Phi_{DP}` profile has been established, the
-`kdp_from_phidp` functions can be used to retrieve :math:`K_{DP}`.
+Once a valid :math:`Phi_{{DP}}` profile has been established, the
+`kdp_from_phidp` functions can be used to retrieve :math:`K_{{DP}}`.
 
 Please note that so far, the functions in this module were designed to increase
 performance. This was mainly achieved by allowing the simultaneous application
@@ -43,15 +43,13 @@ all input arrays.
    :nosignatures:
    :toctree: generated/
 
-    process_raw_phidp_vulpiani
-    kdp_from_phidp
-    unfold_phi_vulpiani
-    unfold_phi
-    linear_despeckle
-    texture
-    depolarization
-
+   {}
 """
+__all__ = ['process_raw_phidp_vulpiani', 'kdp_from_phidp',
+           'unfold_phi_vulpiani', 'unfold_phi', 'linear_despeckle', 'texture',
+           'depolarization']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 from scipy import interpolate, ndimage, stats
 

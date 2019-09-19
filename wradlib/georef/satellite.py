@@ -11,9 +11,11 @@ Satellite Functions
    :nosignatures:
    :toctree: generated/
 
-   correct_parallax
-   dist_from_orbit
+   {}
 """
+__all__ = ['correct_parallax', 'dist_from_orbit']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 

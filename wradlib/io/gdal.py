@@ -9,11 +9,12 @@ Raster and Vector I/O using GDAL
    :nosignatures:
    :toctree: generated/
 
-   open_vector
-   open_raster
-   read_safnwc
-   write_raster_dataset
+   {}
 """
+__all__ = ['open_vector', 'open_raster', 'read_safnwc', 'gdal_create_dataset',
+           'write_raster_dataset']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import os
 
 from osgeo import gdal, osr

@@ -11,10 +11,12 @@ Xarray Functions
    :nosignatures:
    :toctree: generated/
 
-   as_xarray_dataarray
-   create_xarray_dataarray
-   georeference_dataset
+   {}
 """
+__all__ = ['as_xarray_dataarray', 'create_xarray_dataarray',
+           'georeference_dataset']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import collections
 
 import numpy as np

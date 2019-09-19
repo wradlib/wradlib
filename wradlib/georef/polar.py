@@ -11,15 +11,13 @@ Polar Grid Functions
    :nosignatures:
    :toctree: generated/
 
-   spherical_to_xyz
-   spherical_to_proj
-   spherical_to_polyvert
-   spherical_to_centroids
-   centroid_to_polyvert
-   sweep_centroids
-   maximum_intensity_projection
-
+   {}
 """
+__all__ = ['spherical_to_xyz', 'spherical_to_proj', 'spherical_to_polyvert',
+           'spherical_to_centroids', 'centroid_to_polyvert', 'sweep_centroids',
+           'maximum_intensity_projection']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import warnings
 
 import numpy as np

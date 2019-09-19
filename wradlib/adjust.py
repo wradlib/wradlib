@@ -98,16 +98,12 @@ validation results::
    :nosignatures:
    :toctree: generated/
 
-   AdjustBase
-   AdjustMFB
-   AdjustMultiply
-   AdjustAdd
-   AdjustMixed
-   RawAtObs
-   GageOnly
-   AdjustNone
-
+   {}
 """
+__all__ = ['AdjustBase', 'AdjustMFB', 'AdjustMultiply', 'AdjustAdd',
+           'AdjustMixed', 'RawAtObs', 'GageOnly', 'AdjustNone']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 from scipy import spatial, stats
 

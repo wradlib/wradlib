@@ -77,13 +77,12 @@ volume data::
    :nosignatures:
    :toctree: generated/
 
-   volcoords_from_polar
-   make_3d_grid
-   CartesianVolume
-   CAPPI
-   PseudoCAPPI
-
+   {}
 """
+__all__ = ['volcoords_from_polar', 'make_3d_grid', 'CartesianVolume', 'CAPPI',
+           'PseudoCAPPI']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 from wradlib import georef, ipol, util

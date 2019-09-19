@@ -16,21 +16,13 @@ to dBZ-values to Z-values and vice versa.
    :nosignatures:
    :toctree: generated/
 
-   rvp_to_dbz
-   decibel
-   idecibel
-   r_to_depth
-   kdp_to_r
-   si_to_kmh
-   si_to_mph
-   si_2_kts
-   kmh_to_si
-   mph_to_si
-   kts_to_si
-   KuBandToS
-   SBandToKu
-
+   {}
 """
+__all__ = ['rvp_to_dbz', 'decibel', 'idecibel', 'r_to_depth', 'kdp_to_r',
+           'si_to_kmh', 'si_to_mph', 'si_2_kts', 'kmh_to_si', 'mph_to_si',
+           'kts_to_si', 'KuBandToS', 'SBandToKu']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 # CONSTANTS

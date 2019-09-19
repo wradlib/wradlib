@@ -12,12 +12,11 @@ Combine data from different radar locations on one common set of locations
    :nosignatures:
    :toctree: generated/
 
-   extract_circle
-   togrid
-   compose_ko
-   compose_weighted
-
+   {}
 """
+__all__ = ['extract_circle', 'togrid', 'compose_ko', 'compose_weighted']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import numpy as np
 
 

@@ -39,19 +39,14 @@ Calling the objects with actual data, however, will be very fast.
    :nosignatures:
    :toctree: generated/
 
-   DataSource
-   ZonalDataBase
-   ZonalDataPoint
-   ZonalDataPoly
-   ZonalStatsBase
-   ZonalStatsPoly
-   ZonalStatsPoint
-   mask_from_bbox
-   get_bbox
-   grid_centers_to_vertices
-   get_clip_mask
-
+   {}
 """
+__all__ = ['DataSource', 'ZonalDataBase', 'ZonalDataPoint', 'ZonalDataPoly',
+           'ZonalStatsBase', 'ZonalStatsPoly', 'ZonalStatsPoint',
+           'mask_from_bbox', 'get_bbox', 'grid_centers_to_vertices',
+           'get_clip_mask']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import os
 import tempfile
 import warnings

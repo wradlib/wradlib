@@ -9,9 +9,11 @@ Read NetCDF
    :nosignatures:
    :toctree: generated/
 
-   read_edge_netcdf
-   read_generic_netcdf
+   {}
 """
+__all__ = ['read_edge_netcdf', 'read_generic_netcdf']
+__doc__ = __doc__.format('\n   '.join(__all__))
+
 import collections
 import datetime as dt
 

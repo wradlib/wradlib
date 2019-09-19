@@ -11,14 +11,12 @@ Attenuation Correction
    :nosignatures:
    :toctree: generated/
 
-    correct_attenuation_hb
-    constraint_dbz
-    constraint_pia
-    correct_attenuation_constrained
-    correct_radome_attenuation_empirical
-    pia_from_kdp
-
+    {}
 """
+__all__ = ['correct_attenuation_hb', 'constraint_dbz', 'constraint_pia',
+           'correct_attenuation_constrained',
+           'correct_radome_attenuation_empirical', 'pia_from_kdp']
+__doc__ = __doc__.format('\n   '.join(__all__))
 
 import logging
 import numpy as np
