@@ -14,7 +14,9 @@ Projection Functions
    {}
 """
 __all__ = ['reproject', 'create_osr', 'proj4_to_osr', 'epsg_to_osr',
-           'wkt_to_osr', 'get_default_projection', 'get_earth_radius']
+           'wkt_to_osr', 'get_default_projection', 'get_earth_radius',
+           'get_radar_projection', 'get_earth_projection',
+           'geoid_to_ellipsoid', 'ellipsoid_to_geoid', 'get_extent']
 __doc__ = __doc__.format('\n   '.join(__all__))
 
 import numpy as np
@@ -395,3 +397,152 @@ def get_earth_radius(latitude, sr=None):
                      (np.power(radius_e, 2) * np.power(np.cos(latitude), 2) +
                       np.power(radius_p, 2) * np.power(np.sin(latitude), 2)))
     return radius
+
+
+def get_earth_projection(sphere=False, geoid=False):
+    """Get a default earth projection based on WGS
+
+    Parameters
+    ----------
+    sphere : bool
+        True to use the WGS authalic sphere
+    geoid : bool
+        True to use the EGM96 geoid instead of the ellipsoid
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        projection definition
+
+    """
+    proj = osr.SpatialReference()
+
+    if sphere:
+        proj.ImportFromEPSG(4047)
+        return(proj)
+
+    if geoid:
+        projstr = "+proj=longlat"
+        projstr += " +datum=WGS84"
+        projstr += " +geoidgrids=egm96_15.gtx"
+        projstr += " +vunits=m"
+        projstr += " +no_defs"
+
+        proj.ImportFromProj4(projstr)
+    else:
+        proj.ImportFromEPSG(4979)
+
+    return(proj)
+
+
+def get_radar_projection(sitecoords):
+    """Get the native radar projection which is
+    an azimuthal equidistant projection
+    centered at the site and using a sphere model
+
+    Parameters
+    ----------
+    sitecoords : a sequence of two floats
+        the WGS84 lon / lat coordinates of the radar location
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        projection definition
+
+    """
+    re = get_earth_radius(sitecoords[1])
+    projstr = '+proj=aeqd +lon_0=%f ' % (sitecoords[0])
+    projstr += '+lat_0=%f ' % (sitecoords[1])
+    projstr += '+a=%f +b=%f ' % (re, re)
+    projection = proj4_to_osr(projstr)
+
+    return(projection)
+
+
+def geoid_to_ellipsoid(coords, reverse=False):
+    """Transforms WGS geoid height to ellipsoid height.
+
+    Parameters
+    ----------
+    coords: numpy array
+        Array of coordinates with shape (...,3)
+
+    Returns
+    -------
+    coords :  numpy array
+        array of transformed coordinates with shape (...,3)
+
+    """
+    geoid = get_earth_projection(geoid=True)
+
+    ellipsoid = get_earth_projection()
+
+    src = geoid
+    trg = ellipsoid
+
+    if reverse:
+        src = ellipsoid
+        trg = geoid
+
+    #needs GDAL>=2.4
+    coords = reproject(coords, projection_source=src,
+                       projection_target=trg)
+    
+    return(coords)
+
+    # Backward compatibility with GDAL < 2.4
+    #ct = osr.CoordinateTransformation(src, trg)
+    #coords = coords.copy()
+    #coords = np.array(coords)
+    #myshape = coords.shape
+    #coords = coords.reshape(-1, 3)
+    #for i in range(coords.shape[0]):
+    #    coords[i, :] = ct.TransformPoints([coords[i, :]])[0]
+
+    #coords = coords.reshape(myshape)
+
+    return(coords)
+
+
+def ellipsoid_to_geoid(coords):
+    """Transform WGS ellipsoid height to geoid height.
+
+    Parameters
+    ----------
+    coords: numpy array
+        Array of coordinates with shape (...,3)
+
+    Returns
+    -------
+    coords :  numpy array
+        array of transformed coordinates with shape (...,3)
+
+    """
+    coords = geoid_to_ellipsoid(coords, reverse=True)
+
+    return(coords)
+
+
+def get_extent(coords):
+    """Get the extent of 2d coordinates
+
+    Parameters
+    ----------
+    coords : 2d array
+        coordinates array with shape (...,(x,y))
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        GDAL/OSR object defining projection
+
+    """
+
+    xmin = coords[..., 0].min()
+    xmax = coords[..., 0].max()
+    ymin = coords[..., 1].min()
+    ymax = coords[..., 1].max()
+    extent = [xmin, xmax, ymin, ymax]
+
+    return(extent)
