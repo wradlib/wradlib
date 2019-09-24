@@ -1791,9 +1791,15 @@ def _get_odim_timevalues(nch, grps):
         except (KeyError, AttributeError):
             # timehandling if only start and end time is given
             start, end = grps['what'].odim.time_range2
-            delta = (end - start) / grps['where'].nrays
-            timevals = np.arange(start + delta / 2., end, delta)
-            timevals = np.roll(timevals, shift=-grps['where'].a1gate)
+            if start == end:
+                warnings.warn("WRADLIB: Equal ODIM `starttime` and `endtime` "
+                              "values. Can't determine correct sweep start-, "
+                              "end- and raytimes.", UserWarning)
+                timevals = np.ones(grps['where'].nrays) * start
+            else:
+                delta = (end - start) / grps['where'].nrays
+                timevals = np.arange(start + delta / 2., end, delta)
+                timevals = np.roll(timevals, shift=-grps['where'].a1gate)
     if nch.flavour == 'GAMIC':
         timevals = grps['what'].gamic.time_range.values
 
