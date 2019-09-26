@@ -1218,6 +1218,17 @@ class XarrayTests(unittest.TestCase):
         with self.assertRaises(AttributeError):
             io.xarray.CfRadial(h5file)
 
+    def test_read_odim_multi(self):
+        import glob
+        files = 'hdf5/*LFPW*'
+        files = '%s/%s' % (util.get_wradlib_data_path(), files)
+        files = glob.glob(files)
+        if len(files) == 0:
+            return
+
+        io.xarray.OdimH5(files)
+        io.xarray.OdimH5(files, dim0='azimuth')
+
 
 class DemTest(unittest.TestCase):
 
