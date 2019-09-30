@@ -28,7 +28,6 @@ __all__ = ['Nearest', 'Idw', 'Linear', 'OrdinaryKriging',
 __doc__ = __doc__.format('\n   '.join(__all__))
 
 import functools
-import itertools
 import re
 import warnings
 
@@ -464,27 +463,23 @@ class RectGrid(IpolBase):
     """
     def _is_grid(self, src):
         test = hasattr(src, "shape") and src.ndim == 3 and src.shape[2] == 2
-        return(test)
+        return test
 
     def _is_image(self, src):
         rowcol = src[0, 0, 1] == src[0, 1, 1]
-        return(rowcol)
+        return rowcol
 
     def _is_upper(self, src):
         upper = src[0, 0, 1] - src[1, 0, 1] > 0
-        return(upper)
+        return upper
 
-    def _grid_to_xi(self, src, image=True, upper=True):
-
-        X = src[:, :, 0]
-        Y = src[:, :, 1]
+    def _grid_to_xi(self, grid, image=True, upper=True):
 
         if image:
-            X = util.image_to_plot(X, upper)
-            Y = util.image_to_plot(Y, upper)
+            grid = util.image_to_plot(grid, upper)
 
-        x = X[:, 0]
-        y = Y[0, :]
+        x = grid[:, 0, 0]
+        y = grid[0, :, 1]
 
         xi = (x, y)
 
@@ -493,7 +488,7 @@ class RectGrid(IpolBase):
 
 class RectLinear(RectGrid):
     """
-    Forked from scipy.interpolate.RegularGridInterpolator
+    Based on scipy.interpolate.RegularGridInterpolator
 
     Interpolation on a 2d grid in arbitrary dimensions
 
@@ -508,46 +503,22 @@ class RectLinear(RectGrid):
     trg : nd array of shape (..., ndim)
         The coordinates to sample the gridded data at
 
-    method : str, optional
-        The method of interpolation to perform. Supported are "linear" and
-        "nearest". This parameter will become the default for the object's
-        ``__call__`` method. Default is "linear".
-
-
     Methods
     -------
     __call__
 
     """
-    # forked from scipy.interpolate.RegularGridInterpolator
 
-    def __init__(self, src, trg, method="linear"):
+    def __init__(self, src, trg):
 
-        assert(self._is_grid(src))
+        assert self._is_grid(src)
 
         self.upper = self._is_upper(src)
         self.image = self._is_image(src)
-        points = self._grid_to_xi(src, self.image, self.upper)
+        self.src = self._grid_to_xi(src, self.image, self.upper)
+        self.trg = trg
 
-        xi = trg
-
-        self.grid = tuple([np.asarray(p) for p in points])
-
-        ndim = len(self.grid)
-        xi = scipy.interpolate.interpnd._ndim_coords_from_arrays(xi,
-                                                                 ndim=ndim)
-        xi_shape = xi.shape
-        xi = xi.reshape(-1, xi_shape[-1])
-
-        self.param = self._find_indices(xi.T)
-
-        self.xi = xi
-        self.points = points
-        self.method = method
-        self.xi_shape = xi_shape
-        self.ndim = ndim
-
-    def __call__(self, values, fill_value=np.nan):
+    def __call__(self, values, **kwargs):
         """
         Interpolation of values
 
@@ -556,103 +527,64 @@ class RectLinear(RectGrid):
 
         values : array_like, shape (m1, ..., mn, ...)
             The data on the regular grid in n dimensions.
-
-        method : str
-            The method of interpolation to perform. Supported are "linear" and
-            "nearest".
-
-        fill_value : number, optional
-            If provided, the value to use for points outside of the
-            interpolation domain. If None, values outside
-            the domain are extrapolated.
+        kwargs : keyword arguments
+            Passed to scipy.interpolate.RegularGridInterpolator
 
         """
-        ndim = self.ndim
-        xi_shape = self.xi_shape
-        method = self.method
-        indices, norm_distances, out_of_bounds = self.param
+        kwargs['bounds_error'] = kwargs.pop('bounds_error', False)
 
         if self.image:
             values = util.image_to_plot(values, self.upper)
 
-        points = self.points
+        interp = scipy.interpolate.RegularGridInterpolator
+        interp = interp(points=self.src, values=values, **kwargs)
+        result = interp(xi=self.trg)
 
-        if len(points) > values.ndim:
-            raise ValueError("There are %d point arrays, but values has %d "
-                             "dimensions" % (len(points), values.ndim))
-
-        if hasattr(values, 'dtype') and hasattr(values, 'astype'):
-            if not np.issubdtype(values.dtype, np.inexact):
-                values = values.astype(float)
-
-        self.fill_value = fill_value
-        self.values = values
-
-        if method == "linear":
-            result = self._evaluate_linear(indices,
-                                           norm_distances,
-                                           out_of_bounds)
-        elif method == "nearest":
-            result = self._evaluate_nearest(indices,
-                                            norm_distances,
-                                            out_of_bounds)
-
-        if self.fill_value is not None:
-            result[out_of_bounds] = self.fill_value
-
-        result = result.reshape(xi_shape[:-1] + self.values.shape[ndim:])
-
-        return(result)
-
-    def _evaluate_linear(self, indices, norm_distances, out_of_bounds):
-        # slice for broadcasting over trailing dimensions in self.values
-        vslice = (slice(None),) + (None,)*(self.values.ndim - len(indices))
-
-        # find relevant values
-        # each i and i+1 represents a edge
-        edges = itertools.product(*[[i, i + 1] for i in indices])
-        values = 0.
-        for edge_indices in edges:
-            weight = 1.
-            for ei, i, yi in zip(edge_indices, indices, norm_distances):
-                weight *= np.where(ei == i, 1 - yi, yi)
-            values += np.asarray(self.values[edge_indices]) * weight[vslice]
-        return values
-
-    def _evaluate_nearest(self, indices, norm_distances, out_of_bounds):
-        idx_res = []
-        for i, yi in zip(indices, norm_distances):
-            idx_res.append(np.where(yi <= .5, i, i + 1))
-        return self.values[tuple(idx_res)]
-
-    def _find_indices(self, xi):
-        # find relevant edges between which xi are situated
-        indices = []
-        # compute distance to lower edge in unity units
-        norm_distances = []
-        # check for out of bounds xi
-        out_of_bounds = np.zeros((xi.shape[1]), dtype=bool)
-        # iterate through dimensions
-        for x, grid in zip(xi, self.grid):
-            i = np.searchsorted(grid, x) - 1
-            i[i < 0] = 0
-            i[i > grid.size - 2] = grid.size - 2
-            indices.append(i)
-            norm_distances.append((x - grid[i]) /
-                                  (grid[i + 1] - grid[i]))
-            out_of_bounds += x < grid[0]
-            out_of_bounds += x > grid[-1]
-        return indices, norm_distances, out_of_bounds
+        return result
 
 
 class RectNearest(RectLinear):
     """
-    See RectLinear class
+    Based on scipy.interpolate.RegularGridInterpolator
+
+    Interpolation on a 2d grid in arbitrary dimensions
+
+    The data must be defined on a regular grid; the grid spacing however may be
+    uneven.  Linear and nearest-neighbour interpolation are supported
+
+    Parameters
+    ----------
+    src : 3d array of shape (..., 2)
+        The points defining the regular grid in n dimensions.
+
+    trg : nd array of shape (..., ndim)
+        The coordinates to sample the gridded data at
+
+    Methods
+    -------
+    __call__
+
     """
 
-    def __init__(self, *args, **kwargs):
-        kwargs['method'] = 'nearest'
-        super().__init__(*args, **kwargs)
+    def __init__(self, src, trg):
+        super().__init__(src, trg)
+
+    def __call__(self, values, **kwargs):
+        """
+        Interpolation of values
+
+        Parameters
+        ----------
+
+        values : array_like, shape (m1, ..., mn, ...)
+            The data on the regular grid in n dimensions.
+        kwargs : keyword arguments
+            Passed to scipy.interpolate.RegularGridInterpolator
+
+        """
+        result = super().__call__(values, method='nearest', **kwargs)
+
+        return result
 
 
 class RectSpline(RectGrid):
@@ -670,17 +602,14 @@ class RectSpline(RectGrid):
     --------
     """
 
-    def __init__(self, src, trg, **kwargs):
+    def __init__(self, src, trg):
 
-        assert(self._is_grid(src))
+        assert self._is_grid(src)
 
         self.image = self._is_image(src)
         self.upper = self._is_upper(src)
         self.points = self._grid_to_xi(src, self.image, self.upper)
         self.xi = trg
-        if "bounds_error" not in kwargs:
-            kwargs["bounds_error"] = False
-        self.initkwargs = kwargs
 
     def __call__(self, values, **kwargs):
         """
@@ -700,9 +629,11 @@ class RectSpline(RectGrid):
         if self.image:
             values = util.image_to_plot(values, self.upper)
 
-        result = scipy.interpolate.interpn(self.points, values, self.xi,
-                                           "splinef2d", **self.initkwargs,
-                                           **kwargs)
+        kwargs['bounds_error'] = kwargs.pop('bounds_error', False)
+
+        interp = scipy.interpolate.interpn
+        result = interp(self.points, values, self.xi, "splinef2d",
+                        **kwargs)
 
         return result
 
@@ -711,8 +642,7 @@ class RectBin(RectGrid):
     """
     Bin points values to regular grid cells
 
-    Based on a modified version of
-    :class:`scipy:scipy.stats.binned_statistic_dd`
+    Based on :class:`scipy:scipy.stats.binned_statistic_dd`
 
     Parameters
     ----------
@@ -725,31 +655,29 @@ class RectBin(RectGrid):
     --------
     """
 
-    def __init__(self, src, trg, **kwargs):
+    def __init__(self, src, trg):
 
-        assert(self._is_grid(trg))
+        assert self._is_grid(trg)
 
         src = src.reshape(-1, 2)
+        self.src = src
 
         self.upper = self._is_upper(trg)
         self.image = self._is_image(trg)
-        xi = self._grid_to_xi(trg, self.image, self.upper)
-        bins = [util.center_to_edge(x) for x in xi]
-
-        self.binnumbers = util.binned_statistic_dd(src, bins=bins, **kwargs)
-
+        trg = self._grid_to_xi(trg, self.image, self.upper)
+        bins = [util.center_to_edge(x) for x in trg]
         self.bins = bins
-        self.src = src
 
-    def __call__(self, values):
+    def __call__(self, values, **kwargs):
         """
         Evaluate interpolator for values given at the source points.
 
-
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, ...)
+        values : ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
+        kwargs : keyword arguments
+            Passed to scipy.stats.binned_statistic_dd
 
         Returns
         -------
@@ -758,19 +686,19 @@ class RectBin(RectGrid):
         """
 
         values = values.reshape(-1)
-        result = util.binned_statistic_dd(self.src, values, self.binnumbers,
-                                          'mean', self.bins)
+        fun = scipy.stats.binned_statistic_dd
+        result = fun(self.src, values, bins=self.bins, **kwargs)
+        stat = result.statistic
 
         if self.image:
-            result = util.plot_to_image(result, self.upper)
+            stat = util.plot_to_image(stat, self.upper)
 
-        return result
+        return stat
 
 
 class PolyArea(IpolBase):
     """
-    Map values representing polygons
-    to another polygons
+    Map values representing polygons to another polygons
     Based on wradlib.zonalstats
 
 
@@ -861,18 +789,16 @@ class QuadriArea(PolyArea):
         return result
 
 
-class Sequence(IpolBase):
+class IpolChain(IpolBase):
     """
-    Combines several interpolation methods sequentially
+    Apply succesive interpolation methods
 
 
     Parameters
     ----------
     interpolators: list of IpolBase objects
-        list of interpolators
+        list of interpolators to apply succesivly
 
-    Examples
-    --------
     """
 
     def __init__(self, interpolators):

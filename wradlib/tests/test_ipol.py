@@ -295,9 +295,12 @@ class GridInterpolationTest(unittest.TestCase):
 
     def test_RectIpol(self):
         methods = ["RectNearest", "RectLinear", "RectSpline"]
+        methods = ["RectLinear", "RectSpline"]
         methods = [getattr(ipol, m) for m in methods]
         for method in methods:
+            print(method)
             for indexing, src in self.grids.items():
+                print(indexing)
                 ip = method(src, self.points)
                 self.assertTrue(("image" in indexing) == ip.image)
                 self.assertTrue(("upper" in indexing) == ip.upper)
@@ -342,7 +345,8 @@ class GridInterpolationTest(unittest.TestCase):
         mean = np.mean(firstcell.ravel())
         np.testing.assert_allclose(mean, valip[0, 0])
 
-        ip = ipol.RectBin(self.points, self.grid, statistic='median')
+        ip = ipol.RectBin(self.points, self.grid)
+        ip(self.valpoints, statistic='median')
 
     def test_QuadriArea(self):
         grid2 = self.grid2 + (-0.01, 0.01)
@@ -360,10 +364,10 @@ class GridInterpolationTest(unittest.TestCase):
         ref = np.sum(np.multiply(firstcell, weights))/np.sum(weights)
         np.testing.assert_allclose(ref, valip[0, 0])
 
-    def test_Sequence(self):
+    def test_IpolChain(self):
         ip1 = ipol.RectSpline(self.grid, self.points)
         ip2 = ipol.RectNearest(self.grid, self.points)
-        ipol.Sequence((ip1, ip2))
+        ipol.IpolChain((ip1, ip2))
         # Needs more testing
 
 
