@@ -1220,14 +1220,17 @@ class XarrayTests(unittest.TestCase):
 
     def test_read_odim_multi(self):
         import glob
-        files = 'hdf5/*LFPW*'
+        files = 'hdf5/*2019093015*'
+#        files = 'hdf5/*ess*'
         files = '%s/%s' % (util.get_wradlib_data_path(), files)
         files = glob.glob(files)
         if len(files) == 0:
             return
 
-        io.xarray.OdimH5(files)
-        io.xarray.OdimH5(files, dim0='azimuth')
+        #pvol = io.xarray.OdimH5(files, dim0='time')
+        #print(pvol)
+        pvol = io.xarray.OdimH5(files)
+        #print(pvol)
 
 
 class DemTest(unittest.TestCase):

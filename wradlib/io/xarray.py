@@ -1085,7 +1085,7 @@ class CfRadial(XRadVol):
 class OdimH5(XRadVol):
     """ Class for xarray based retrieval of ODIM_H5 data files
     """
-    def __init__(self, filename=None, flavour=None, **kwargs):
+    def __init__(self, filename=None, flavour="ODIM", **kwargs):
         """Initialize xarray structure from hdf5 data structure.
 
         Parameters
@@ -1133,192 +1133,194 @@ class OdimH5(XRadVol):
         if len(filename) == 0:
             raise ValueError("File list empty")
 
-        self.sweep_angles = []
-        self.sweep_names = []
-
-        self.standard = kwargs.get('standard', 'cf-mandatory')
-
-        for f in filename:
-            self.assign_data(f, flavour=flavour, **kwargs)
-
-        self.assign_root()
-
-    def assign_data(self, filename, flavour=None, **kwargs):
-        """Assign xarray dataset from hdf5 data structure.
-
-        Parameters
-        ----------
-        filename : str
-            Source data file name.
-        flavour : str
-            Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
-
-        Keyword Arguments
-        -----------------
-        decode_times : bool
-            If True, decode cf times to np.datetime64. Defaults to True.
-        decode_coords : bool
-            If True, use the ‘coordinates’ attribute on variable
-            to assign coordinates. Defaults to True.
-        mask_and_scale : bool
-            If True, lazily scale (using scale_factor and add_offset)
-            and mask (using _FillValue). Defaults to True.
-        chunks : int | dict, optional
-            If chunks is provided, it used to load the new dataset into dask
-            arrays. chunks={} loads the dataset with dask using a single
-            chunk for all arrays.
-        georef : bool
-            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
-            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy).
-            Defaults to True.
-        standard : str
-            * `none` - data is read as verbatim as possible, no metadata
-            * `odim` - data is read, odim metadata added to datasets
-            * `cf-mandatory` - data is read according to cfradial2 standard
-              importing mandatory metadata, default value
-            * `cf-full` - data is read according to cfradial2 standard
-              importing all available cfradial2 metadata (not fully
-              implemented)
-        dim0 : str
-            name of the ray-dimension of DataArrays and Dataset:
-                * `time` - cfradial2 standard, default value
-                * `azimuth` - better for working with xarray
-        """
-        nch = OdimH5File(filename, flavour=flavour)
-        self._nch.append(nch)
-
         # keyword argument handling
-        decode_times = kwargs.get('decode_times', True)
-        decode_coords = kwargs.get('decode_coords', True)
-        mask_and_scale = kwargs.get('mask_and_scale', True)
-        georef = kwargs.get('georef', False)
-        standard = kwargs.get('standard', 'cf-mandatory')
-        dim0 = kwargs.get('dim0', 'time')
+        self.flavour = flavour
+        self.decode_times = kwargs.get('decode_times', True)
+        self.decode_coords = kwargs.get('decode_coords', True)
+        self.mask_and_scale = kwargs.get('mask_and_scale', True)
+        self.georef = kwargs.get('georef', False)
+        self.standard = kwargs.get('standard', 'cf-mandatory')
+        self.dim0 = kwargs.get('dim0', 'azimuth')
 
-        # retrieve and assign global groups /how, /what, /where
-        groups = ['how', 'what', 'where']
-        how, what, where = _get_odim_groups(nch.nch, groups)
-        rt_grps = {'how': how,
-                   'what': what,
-                   'where': where}
+        self.ds = []
+        for f in filename:
+            nch = OdimH5File(f, flavour=flavour)
 
-        # sweep group handling
-        (src_swp_grp_name,
-         swp_grp_name) = _get_odim_sweep_group_names(nch.nch,
-                                                     nch._dsdesc)
+            # retrieve and assign global groups /how, /what, /where
+            groups = ['how', 'what', 'where']
+            how, what, where = _get_odim_groups(nch.nch, groups)
+            self.rt_grps = {'how': how,
+                            'what': what,
+                            'where': where}
 
-        # iterate sweeps in file
-        for i, sweep in enumerate(src_swp_grp_name):
-            # retrieve ds and assign datasetX how/what/where group attributes
-            groups = [None, 'how', 'what', 'where']
-            ds, ds_how, ds_what, ds_where = _get_odim_groups(nch.nch[sweep],
-                                                             groups)
-            ds_grps = {'how': ds_how,
-                       'what': ds_what,
-                       'where': ds_where}
+            # sweep group handling
+            (src_swp_grp_name,
+             swp_grp_name) = _get_odim_sweep_group_names(nch.nch,
+                                                         nch._dsdesc)
 
-            # moments
-            # possible bug in netcdf-c reader assuming only one dimension when
-            # dimensions have same size
-            # see https://github.com/Unidata/netcdf4-python/issues/945
-            if len(ds.dims) == 1:
-                # we just read the contents without standard and decoding
-                decode_times = False
-                decode_coords = False
-                georef = False
-                standard = 'None'
+            # iterate sweeps in file
+            for i, sweep in enumerate(src_swp_grp_name):
+                self.assign_sweep(nch, sweep, **kwargs)
+
+        xr.merge((self.ds1,self.ds2))
+
+        if 'cf' in self.standard:
+            self.sort_by_time()
+            self.merge_variables()
+            self.merge_scans()
+            for i in range(len(self.ds)):
+                swp_grp_name = f'sweep_{i}'
+                self._sweeps[swp_grp_name] = self.ds[i]
+
+        self.assign_root(nch)
+
+    def sort_by_time(self):
+        start = [ds.time.values[0] for ds in self.ds]
+        sorting = np.argsort(start)
+        self.ds = [self.ds[i] for i in sorting]
+
+    def merge_variables(self):
+        merged_ds = []
+        allvars = []
+        start = [d.time.values[0] for d in self.ds]
+        for i, ds in enumerate(self.ds):
+            if i + 1 < len(self.ds) and start[i] == start[i+1]:
+                print("same sweep")
+                print(i)
+                allvars.append(ds)
             else:
-                # need to reclaim kwargs
-                decode_times = kwargs.get('decode_times', True)
-                decode_coords = kwargs.get('decode_coords', True)
-                georef = kwargs.get('georef', False)
-                standard = kwargs.get('standard', 'cf-mandatory')
-                ds = _assign_odim_moments(ds, nch, sweep, **kwargs)
+                print("last variable")
+                print(i)
+                allvars.append(ds)
+                allvars = xr.merge(allvars)
+                merged_ds.append(allvars)
+                allvars = []
+        self.ds = merged_ds
 
-            # retrieve and assign gamic ray_header
-            if nch.flavour == 'GAMIC':
-                rh = _get_gamic_ray_header(nch.filename, i)
-                ds_grps['what'] = ds_grps['what'].assign(rh)
+    def merge_scans(self):
+        merged_ds = []
+        fixed_angles_all = [ds.fixed_angle for ds in self.ds]
+        fixed_angles = np.unique(fixed_angles_all)
 
-            # coordinates wrap-up
 
-            vars = collections.OrderedDict()
-            coords = collections.OrderedDict()
-            if 'cf' in standard or georef:
-                coords['longitude'] = rt_grps['where'].attrs['lon']
-                coords['latitude'] = rt_grps['where'].attrs['lat']
-                coords['altitude'] = rt_grps['where'].attrs['height']
-            if 'cf' in standard or georef:
-                sweep_mode = _get_odim_sweep_mode(nch, ds_grps)
-                coords['sweep_mode'] = sweep_mode
+        for a in fixed_angles:
+            select = np.where(fixed_angles_all == a)[0]
+            selected = [self.ds[d] for d in select]
+            for d in selected:
+                print(d["DBZH"].values)
+            xr.merge(selected[0:2])
+            if self.dim0 == "azimuth":
+                allsweeps = xr.concat(selected, "time")
+            else:
+                allsweeps = xr.merge(selected)
+            merged_ds.append(allsweeps)
 
-            if 'cf' in standard or decode_coords or georef:
-                vars.update(_get_odim_coordinates(nch, ds_grps))
-                vars['azimuth'] = vars['azimuth'].rename({'dim_0': dim0})
-                vars['elevation'] = vars['elevation'].rename({'dim_0': dim0})
-                # georeference needs coordinate variables
-                if georef:
-                    geods = xr.Dataset(vars, coords)
-                    geods = xarray.georeference_dataset(geods)
-                    coords.update(geods.coords)
+        self.ds = merged_ds
 
-            # time coordinate
-            if 'cf' in standard or decode_times:
-                timevals = _get_odim_timevalues(nch, ds_grps)
-                if decode_times:
-                    coords['time'] = ([dim0], timevals, time_attrs)
-                else:
-                    coords['time'] = ([dim0], timevals)
+    def assign_sweep(self, nch, sweep, **kwargs):
+        """Assign xarray dataset from ODIM sweep data structure.
+        """
+        rt_grps = self.rt_grps
+        # retrieve ds and assign datasetX how/what/where group attributes
+        groups = [None, 'how', 'what', 'where']
+        ds, ds_how, ds_what, ds_where = _get_odim_groups(nch.nch[sweep], groups)
+        ds_grps = {'how': ds_how,
+                   'what': ds_what,
+                   'where': ds_where}
 
-            # assign global sweep attributes
-            fixed_angle = _get_odim_fixed_angle(nch, ds_grps)
-            if 'cf' in standard:
-                vars.update({'sweep_number': i,
-                             'sweep_mode': sweep_mode,
-                             'follow_mode': 'none',
-                             'prt_mode': 'fixed',
-                             'fixed_angle': fixed_angle})
+        # moments
+        # possible bug in netcdf-c reader assuming only one dimension when
+        # dimensions have same size
+        # see https://github.com/Unidata/netcdf4-python/issues/945
+        if len(ds.dims) == 1:
+            # we just read the contents without standard and decoding
+            decode_times = False
+            decode_coords = False
+            georef = False
+            standard = 'None'
+        else:
+            # need to reclaim kwargs
+            decode_times = self.decode_times
+            decode_coords = self.decode_coords
+            georef = self.georef
+            standard = self.standard
+            dim0 = self.dim0
+            mask_and_scale = self.mask_and_scale
+            ds = _assign_odim_moments(ds, nch, sweep, **kwargs)
 
-            # assign variables and coordinates
-            ds = ds.assign(vars)
-            ds = ds.assign_coords(**coords)
+        # retrieve and assign gamic ray_header
+        if nch.flavour == 'GAMIC':
+            rh = _get_gamic_ray_header(nch.filename, i)
+            ds_grps['what'] = ds_grps['what'].assign(rh)
 
-            # decode dataset if requested
-            if decode_times or decode_coords or mask_and_scale:
-                ds = xr.decode_cf(ds, decode_times=decode_times,
-                                  decode_coords=decode_coords,
-                                  mask_and_scale=mask_and_scale)
+        # coordinates wrap-up
 
-            # determine if same sweep
-            try:
-                index = self.sweep_angles.index(fixed_angle)
-                dictkey = self.sweep_names[index]
-                # merge/concat datasets
-                if dim0 == "azimuth":
-                    self._sweeps[dictkey] = xr.concat([self._sweeps[dictkey],
-                                                       ds], 'scan')
-                else:
-                    self._sweeps[dictkey] = xr.merge([self._sweeps[dictkey],
-                                                      ds])
-            except ValueError:
-                nidx = len(self._sweeps) + 1
-                swp_grp_name = f'sweep_{nidx}'
-                self._sweeps[swp_grp_name] = ds
-                self.sweep_names.append(swp_grp_name)
-                self.sweep_angles.append(fixed_angle)
+        vars = collections.OrderedDict()
+        coords = collections.OrderedDict()
+        if 'cf' in standard or georef:
+            coords['longitude'] = rt_grps['where'].attrs['lon']
+            coords['latitude'] = rt_grps['where'].attrs['lat']
+            coords['altitude'] = rt_grps['where'].attrs['height']
+        if 'cf' in standard or georef:
+            sweep_mode = _get_odim_sweep_mode(nch, ds_grps)
+            coords['sweep_mode'] = sweep_mode
 
-    def assign_root(self):
+        if 'cf' in standard or decode_coords or georef:
+            vars.update(_get_odim_coordinates(nch, ds_grps))
+            vars['azimuth'] = vars['azimuth'].rename({'dim_0': dim0})
+            vars['elevation'] = vars['elevation'].rename({'dim_0': dim0})
+            # georeference needs coordinate variables
+            if georef:
+                geods = xr.Dataset(vars, coords)
+                geods = xarray.georeference_dataset(geods)
+                coords.update(geods.coords)
+
+        # time coordinate
+        if 'cf' in standard or decode_times:
+            timevals = _get_odim_timevalues(nch, ds_grps)
+            if decode_times:
+                coords['time'] = ([dim0], timevals, time_attrs)
+            else:
+                coords['time'] = ([dim0], timevals)
+
+        # assign global sweep attributes
+        fixed_angle = _get_odim_fixed_angle(nch, ds_grps)
+        if 'cf' in standard:
+            vars.update({'sweep_number': 'none',
+                         'sweep_mode': sweep_mode,
+                         'follow_mode': 'none',
+                         'prt_mode': 'fixed',
+                         'fixed_angle': fixed_angle})
+
+        # assign variables and coordinates
+        ds = ds.assign(vars)
+        ds = ds.assign_coords(**coords)
+
+        # decode dataset if requested
+        if decode_times or decode_coords or mask_and_scale:
+            ds = xr.decode_cf(ds, decode_times=decode_times,
+                              decode_coords=decode_coords,
+                              mask_and_scale=mask_and_scale)
+
+
+        self.ds.append(ds)
+        if len(self.ds) == 1:
+            self.ds1 = ds
+        if len(self.ds) == 2:
+            print("merge")
+            print(self.ds1)
+            print(ds)
+            xr.merge((self.ds1,ds))
+            self.ds2 = ds
+
+    def assign_root(self, nch):
         # retrieve and assign global groups /how, /what, /where
-        first = self._nch[0]
 
-        groups = ['how', 'what', 'where']
-        how, what, where = _get_odim_groups(first.nch, groups)
-        rt_grps = {'how': how,
-                   'what': what,
-                   'where': where}
-
+        rt_grps = self.rt_grps
         # assign root variables
         if 'cf' in self.standard:
+            sweep_group_names = self._sweeps.keys()
+            sweep_fixed_angles = [ds.fixed_angle for ds in self._sweeps.values()]
             # extract time coverage
             tmin = [ds.time.values.min() for ds in self._sweeps.values()]
             time_coverage_start = min(tmin)
@@ -1343,13 +1345,13 @@ class OdimH5(XRadVol):
                                 'longitude': rt_grps['where'].attrs['lon'],
                                 'altitude': rt_grps['where'].attrs['height'],
                                 'sweep_group_name': (
-                                    ['sweep'], self.sweep_names),
+                                    ['sweep'], sweep_group_names),
                                 'sweep_fixed_angle': (
-                                    ['sweep'], self.sweep_angles),
+                                    ['sweep'], sweep_fixed_angles),
                                 })
 
             # assign root attributes
-            attrs = _get_odim_root_attributes(first, rt_grps)
+            attrs = _get_odim_root_attributes(nch, rt_grps)
             root = root.assign_attrs(attrs)
         self.root = root
 
@@ -1450,6 +1452,7 @@ def _open_dataset(nch, grp=None, **kwargs):
         nch = nch.groups.get(grp, False)
     if nch:
         nch = xr.open_dataset(xr.backends.NetCDF4DataStore(nch), **kwargs)
+#        nch = xr.open_dataset(xr.backends.ScipyDataStore(nch), **kwargs)
     return nch
 
 
@@ -1525,7 +1528,7 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
     standard = kwargs.get('standard', 'cf-mandatory')
     mask_and_scale = kwargs.get('mask_and_scale', True)
     decode_coords = kwargs.get('decode_coords', True)
-    dim0 = kwargs.get('dim0', 'time')
+    dim0 = kwargs.get('dim0', 'azimuth')
 
     # fix dimensions
     dims = sorted(list(ds.dims.keys()),
@@ -1613,7 +1616,7 @@ def _get_odim_group_moments(nch, sweep, moments=None, **kwargs):
     standard = kwargs.get('standard', 'cf-mandatory')
     mask_and_scale = kwargs.get('mask_and_scale', True)
     decode_coords = kwargs.get('decode_coords', True)
-    dim0 = kwargs.get('dim0', 'time')
+    dim0 = kwargs.get('dim0', 'azimuth')
     chunks = kwargs.get('chunks', None)
 
     datas = {}
