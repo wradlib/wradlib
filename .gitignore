@@ -18,6 +18,9 @@
 !/wradlib/
 !/wradlib/*
 
+# ignore version.py
+wradlib/version.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
