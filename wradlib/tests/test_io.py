@@ -1227,9 +1227,9 @@ class XarrayTests(unittest.TestCase):
         if len(files) == 0:
             return
 
-        #pvol = io.xarray.OdimH5(files, dim0='time')
-        #print(pvol)
-        pvol = io.xarray.OdimH5(files)
+        pvol = io.xarray.OdimH5(files, dim0='time')
+        print(pvol)
+        #pvol = io.xarray.OdimH5(files)
         #print(pvol)
 
 
