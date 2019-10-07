@@ -1142,9 +1142,11 @@ class OdimH5(XRadVol):
         self.standard = kwargs.get('standard', 'cf-mandatory')
         self.dim0 = kwargs.get('dim0', 'azimuth')
 
-        self.ds = None
+        self.ds = []
+        self._nch = []
         for f in filename:
             nch = OdimH5File(f, flavour=flavour)
+            self._nch.append(nch)
 
             # retrieve and assign global groups /how, /what, /where
             groups = ['how', 'what', 'where']
@@ -1190,7 +1192,7 @@ class OdimH5(XRadVol):
                 print("last variable")
                 print(i)
                 allvars.append(ds)
-                allvars = xr.merge(allvars)
+                allvars = xr.merge(allvars, compat='override')
                 merged_ds.append(allvars)
                 allvars = []
         self.ds = merged_ds
@@ -1200,17 +1202,13 @@ class OdimH5(XRadVol):
         fixed_angles_all = [ds.fixed_angle for ds in self.ds]
         fixed_angles = np.unique(fixed_angles_all)
 
-
         for a in fixed_angles:
             select = np.where(fixed_angles_all == a)[0]
             selected = [self.ds[d] for d in select]
-            for d in selected:
-                print(d["DBZH"].values)
-            xr.merge(selected[0:2])
             if self.dim0 == "azimuth":
-                allsweeps = xr.concat(selected, "time")
+                allsweeps = xr.concat(selected, "scan")
             else:
-                allsweeps = xr.merge(selected)
+                allsweeps = xr.merge(selected, compat='override')
             merged_ds.append(allsweeps)
 
         self.ds = merged_ds
@@ -1300,12 +1298,7 @@ class OdimH5(XRadVol):
                               decode_coords=decode_coords,
                               mask_and_scale=mask_and_scale)
 
-
-        if self.ds is None:
-            self.ds = ds
-        if self.ds.fixed_angle == ds.fixed_angle:
-            print(ds.time.values[0])
-            self.ds = xr.merge((self.ds,ds),compat='override')
+        self.ds.append(ds)
 
     def assign_root(self, nch):
         # retrieve and assign global groups /how, /what, /where
@@ -1313,7 +1306,7 @@ class OdimH5(XRadVol):
         rt_grps = self.rt_grps
         # assign root variables
         if 'cf' in self.standard:
-            sweep_group_names = self._sweeps.keys()
+            sweep_group_names = list(self._sweeps.keys())
             sweep_fixed_angles = [ds.fixed_angle for ds in self._sweeps.values()]
             # extract time coverage
             tmin = [ds.time.values.min() for ds in self._sweeps.values()]
