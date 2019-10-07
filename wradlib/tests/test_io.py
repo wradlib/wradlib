@@ -1220,7 +1220,7 @@ class XarrayTests(unittest.TestCase):
 
     def test_read_odim_multi(self):
         import glob
-        files = 'hdf5/*2019093015*'
+        files = 'hdf5/*PA*'
 #        files = 'hdf5/*ess*'
         files = '%s/%s' % (util.get_wradlib_data_path(), files)
         files = glob.glob(files)

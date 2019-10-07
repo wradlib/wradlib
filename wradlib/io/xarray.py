@@ -1142,7 +1142,7 @@ class OdimH5(XRadVol):
         self.standard = kwargs.get('standard', 'cf-mandatory')
         self.dim0 = kwargs.get('dim0', 'azimuth')
 
-        self.ds = []
+        self.ds = None
         for f in filename:
             nch = OdimH5File(f, flavour=flavour)
 
@@ -1161,8 +1161,6 @@ class OdimH5(XRadVol):
             # iterate sweeps in file
             for i, sweep in enumerate(src_swp_grp_name):
                 self.assign_sweep(nch, sweep, **kwargs)
-
-        xr.merge((self.ds1,self.ds2))
 
         if 'cf' in self.standard:
             self.sort_by_time()
@@ -1303,15 +1301,11 @@ class OdimH5(XRadVol):
                               mask_and_scale=mask_and_scale)
 
 
-        self.ds.append(ds)
-        if len(self.ds) == 1:
-            self.ds1 = ds
-        if len(self.ds) == 2:
-            print("merge")
-            print(self.ds1)
-            print(ds)
-            xr.merge((self.ds1,ds))
-            self.ds2 = ds
+        if self.ds is None:
+            self.ds = ds
+        if self.ds.fixed_angle == ds.fixed_angle:
+            print(ds.time.values[0])
+            self.ds = xr.merge((self.ds,ds),compat='override')
 
     def assign_root(self, nch):
         # retrieve and assign global groups /how, /what, /where
