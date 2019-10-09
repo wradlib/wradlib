@@ -1325,80 +1325,63 @@ class OdimH5(XRadVol):
                                   decode_coords=decode_coords,
                                   mask_and_scale=mask_and_scale)
 
-            # extract time coverage
-            if 'cf' in standard:
-                time_coverage_start = min(ds.time.values.min(),
-                                          time_coverage_start)
-                time_coverage_end = max(ds.time.values.max(),
-                                        time_coverage_end)
-
-            # dataset only
-            is_new_sweep = False
-            # first file
-            if self.root is None:
-                self._sweeps[swp_grp_name[i]] = ds
-            # all other files
+            # determine if same sweep
+            try:
+                index = self.sweep_angles.index(fixed_angle)
+            except ValueError:
+                nidx = len(self._sweeps) + 1
+                swp_grp_name = f'sweep_{nidx}'
+                self._sweeps[swp_grp_name] = ds
+                self.sweep_names.append(swp_grp_name)
+                self.sweep_angles.append(fixed_angle)
             else:
-                # sort sweeps by angles
-                rt = self.root
-                rt = rt.assign_coords(sweep=rt['sweep_fixed_angle'])
-                rt = (rt.sortby('sweep_fixed_angle').
-                      sel(sweep=slice(fixed_angle, fixed_angle)))
-                # determine if same sweep
-                if fixed_angle == rt['sweep_fixed_angle']:
-                    dictkey = rt['sweep_group_name'].item()
-                    # merge datasets
-                    self._sweeps[dictkey] = xr.merge([self._sweeps[dictkey],
-                                                      ds])
-                # not same sweep (new sweep)
-                else:
-                    nidx = len(self._sweeps) + 1
-                    swp_grp_name[i] = f'sweep_{nidx}'
-                    self._sweeps[swp_grp_name[i]] = ds
-                    is_new_sweep = True
+                dictkey = self.sweep_names[index]
+                self._sweeps[dictkey] = xr.merge([self._sweeps[dictkey], ds])
+
+    def assign_root(self):
+        # retrieve and assign global groups /how, /what, /where
+        first = self._nch[0]
+
+        groups = ['how', 'what', 'where']
+        how, what, where = _get_odim_groups(first.nch, groups)
+        rt_grps = {'how': how,
+                   'what': what,
+                   'where': where}
 
         # assign root variables
-        if 'cf' in standard:
-            time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
-            time_coverage_end_str = str(time_coverage_end)[:19] + 'Z'
+        # extract time coverage
+        tmin = [ds.time.values.min() for ds in self._sweeps.values()]
+        time_coverage_start = min(tmin)
+        tmax = [ds.time.values.max() for ds in self._sweeps.values()]
+        time_coverage_end = max(tmax)
 
-            # create root group from scratch
-            root = xr.Dataset(data_vars=global_variables,
-                              attrs=global_attrs)
+        time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
+        time_coverage_end_str = str(time_coverage_end)[:19] + 'Z'
 
-            # assign root variables
-            root = root.assign({'volume_number': 0,
-                                'platform_type': str('fixed'),
-                                'instrument_type': 'radar',
-                                'primary_axis': 'axis_z',
-                                'time_coverage_start': time_coverage_start_str,
-                                'time_coverage_end': time_coverage_end_str,
-                                'latitude': rt_grps['where'].attrs['lat'],
-                                'longitude': rt_grps['where'].attrs['lon'],
-                                'altitude': rt_grps['where'].attrs['height'],
-                                'sweep_group_name': (['sweep'], swp_grp_name),
-                                'sweep_fixed_angle': (
-                                    ['sweep'], sweep_fixed_angle),
-                                })
-            # assign root attributes
-            attrs = _get_odim_root_attributes(nch, rt_grps)
-            root = root.assign_attrs(attrs)
+        # create root group from scratch
+        root = xr.Dataset(data_vars=global_variables,
+                          attrs=global_attrs)
 
-            if self.root is None:
-                self.root = root
-            else:
-                if is_new_sweep:
-                    # fix time coverage
-                    tcs = self.root['time_coverage_start'].values.item()
-                    tcs = np.datetime64(tcs)
-                    tce = self.root['time_coverage_end'].values.item()
-                    tce = np.datetime64(tce)
-                    self.root = xr.concat([self.root, root], 'sweep',
-                                          data_vars='different')
-                    tcs = str(min(time_coverage_start, tcs))[:19] + 'Z'
-                    tce = str(max(time_coverage_end, tce))[:19] + 'Z'
-                    self.root['time_coverage_start'] = tcs
-                    self.root['time_coverage_end'] = tce
+        # assign root variables
+        root = root.assign({'volume_number': 0,
+                            'platform_type': str('fixed'),
+                            'instrument_type': 'radar',
+                            'primary_axis': 'axis_z',
+                            'time_coverage_start': time_coverage_start_str,
+                            'time_coverage_end': time_coverage_end_str,
+                            'latitude': rt_grps['where'].attrs['lat'],
+                            'longitude': rt_grps['where'].attrs['lon'],
+                            'altitude': rt_grps['where'].attrs['height'],
+                            'sweep_group_name': (
+                                ['sweep'], self.sweep_names),
+                            'sweep_fixed_angle': (
+                                ['sweep'], self.sweep_angles),
+                            })
+
+        # assign root attributes
+        attrs = _get_odim_root_attributes(first, rt_grps)
+        root = root.assign_attrs(attrs)
+        self.root = root
 
 
 def _write_odim(src, dest):
