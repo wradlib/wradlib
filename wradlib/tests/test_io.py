@@ -1060,9 +1060,8 @@ class XarrayTests(unittest.TestCase):
         cf = io.xarray.CfRadial(ncfile)
         np.testing.assert_array_almost_equal(cf.root.sweep_fixed_angle.values,
                                              fixed_angles)
-        cfnames, cfangles = zip(*cf.sweeps)
-        self.assertEqual(sweep_names, list(cfnames))
-        np.testing.assert_array_almost_equal(fixed_angles, np.array(cfangles))
+        self.assertEqual(sweep_names, cf.sweep_names)
+        np.testing.assert_array_almost_equal(fixed_angles, cf.sweep_angles)
         self.assertEqual(cf.sweep, 9)
         self.assertSequenceEqual(cf.location, (120.43350219726562,
                                                22.52669906616211,
@@ -1091,8 +1090,6 @@ class XarrayTests(unittest.TestCase):
         time_cov = ('2014-08-10T18:23:35Z', '2014-08-10T18:24:05Z')
         filename = 'hdf5/2014-08-10--182000.ppi.mvol'
         h5file = util.get_wradlib_data_file(filename)
-        with self.assertRaises(AttributeError):
-            io.xarray.OdimH5(h5file)
         cf = io.xarray.OdimH5(h5file, flavour='GAMIC')
         self.assertEqual(str(cf.root.time_coverage_start.values),
                          time_cov[0])
@@ -1102,15 +1099,14 @@ class XarrayTests(unittest.TestCase):
         filename = 'hdf5/2014-06-09--185000.rhi.mvol'
         h5file = util.get_wradlib_data_file(filename)
         cf = io.xarray.OdimH5(h5file, flavour='GAMIC')
-        cf = io.xarray.OdimH5(h5file, flavour='GAMIC', strict=False)
 
     def test_odim_roundtrip(self):
         filename = 'hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf'
         odimfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.OdimH5(odimfile)
+        cf = io.xarray.OdimH5(odimfile, standard='cf')
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
-        cf2 = io.xarray.OdimH5(tmp)
+        cf2 = io.xarray.OdimH5(tmp, standard='cf')
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 6):
             key = 'sweep_{}'.format(i)
@@ -1140,12 +1136,13 @@ class XarrayTests(unittest.TestCase):
         cf = io.xarray.CfRadial(ncfile)
         tmp = tempfile.NamedTemporaryFile(mode='w+b').name
         cf.to_odim(tmp)
-        cf2 = io.xarray.OdimH5(tmp)
+        cf2 = io.xarray.OdimH5(tmp, standard='cf')
         xr.testing.assert_allclose(cf.root.sweep_fixed_angle,
                                    cf2.root.sweep_fixed_angle)
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf2.root.time_coverage_start)
-        drop = ['longitude', 'latitude', 'altitude', 'sweep_mode']
+        drop = ['longitude', 'latitude', 'altitude', 'sweep_mode',
+                'fixed_angle']
         xr.testing.assert_allclose(cf['sweep_1'].drop(drop).sweep_number,
                                    cf2['sweep_1'].drop(drop).sweep_number)
 
@@ -1207,7 +1204,7 @@ class XarrayTests(unittest.TestCase):
 
         filename = 'netcdf/example_cfradial_ppi.nc'
         ncfile = util.get_wradlib_data_file(filename)
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(IOError):
             io.xarray.OdimH5(ncfile)
 
     def test_netcdf4_errors(self):

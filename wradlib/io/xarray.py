@@ -65,6 +65,14 @@ import netCDF4 as nc
 import numpy as np
 import xarray as xr
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(val, **kwargs):
+        print("Please wait for completion of time consuming task! \n"
+              "Please install 'tqdm' for showing a progress bar instead")
+        return val
+
 from wradlib.georef import xarray
 from wradlib import version
 
@@ -282,36 +290,38 @@ sweep_vars3 = {'DBZ', 'VR', 'time', 'range', 'reflectivity_horizontal'}
 
 cf_full_vars = {'prt': 'prf', 'n_samples': 'pulse'}
 
-global_attrs = [('Conventions', 'Cf/Radial'),
-                ('version', 'Cf/Radial version number'),
-                ('title', 'short description of file contents'),
-                ('institution', 'where the original data were produced'),
-                ('references',
-                 ('references that describe the data or the methods used '
-                  'to produce it')),
-                ('source', 'method of production of the original data'),
-                ('history', 'list of modifications to the original data'),
-                ('comment', 'miscellaneous information'),
-                ('instrument_name', 'name of radar or lidar'),
-                ('site_name', 'name of site where data were gathered'),
-                ('scan_name', 'name of scan strategy used, if applicable'),
-                ('scan_id',
-                 'scan strategy id, if applicable. assumed 0 if missing'),
-                ('platform_is_mobile',
-                 '"true" or "false", assumed "false" if missing'),
-                ('ray_times_increase',
-                 ('"true" or "false", assumed "true" if missing. '
-                  'This is set to true if ray times increase monotonically '
-                  'thoughout all of the sweeps in the volume')),
-                ('field_names',
-                 'array of strings of field names present in this file.'),
-                ('time_coverage_start',
-                 'copy of time_coverage_start global variable'),
-                ('time_coverage_end',
-                 'copy of time_coverage_end global variable'),
-                ('simulated data',
-                 ('"true" or "false", assumed "false" if missing. '
-                  'data in this file are simulated'))]
+global_attrs = dict([('Conventions', 'Cf/Radial'),
+                     ('version', 'Cf/Radial version number'),
+                     ('title', 'short description of file contents'),
+                     ('institution', 'where the original data were produced'),
+                     ('references',
+                      ('references that describe the data or the methods used '
+                       'to produce it')),
+                     ('source', 'method of production of the original data'),
+                     ('history', 'list of modifications to the original data'),
+                     ('comment', 'miscellaneous information'),
+                     ('instrument_name', 'name of radar or lidar'),
+                     ('site_name', 'name of site where data were gathered'),
+                     (
+                     'scan_name', 'name of scan strategy used, if applicable'),
+                     ('scan_id',
+                      'scan strategy id, if applicable. assumed 0 if missing'),
+                     ('platform_is_mobile',
+                      '"true" or "false", assumed "false" if missing'),
+                     ('ray_times_increase',
+                      ('"true" or "false", assumed "true" if missing. '
+                       'This is set to true if ray times increase '
+                       'monotonically thoughout all of the sweeps '
+                       'in the volume')),
+                     ('field_names',
+                      'array of strings of field names present in this file.'),
+                     ('time_coverage_start',
+                      'copy of time_coverage_start global variable'),
+                     ('time_coverage_end',
+                      'copy of time_coverage_end global variable'),
+                     ('simulated data',
+                      ('"true" or "false", assumed "false" if missing. '
+                       'data in this file are simulated'))])
 
 global_variables = dict([('volume_number', np.int),
                          ('platform_type', 'fixed'),
@@ -367,9 +377,10 @@ class GamicAccessor(object):
         if self._azimuth_range is None:
             azstart = self._obj['azimuth_start']
             azstop = self._obj['azimuth_stop']
-            zero_index = np.where(azstop < azstart)
+            zero_index_diff = azstop - azstart
+            zero_index = np.where(zero_index_diff < -0.1)
             azstop[zero_index[0]] += 360
-            azimuth = (azstart + azstop) / 2.
+            azimuth = np.round((azstart + azstop) / 2., decimals=10)
             azimuth = azimuth.assign_attrs(az_attrs)
             self._azimuth_range = azimuth
         return self._azimuth_range
@@ -655,7 +666,7 @@ def to_odim(volume, filename):
         elout = ds.sortby('azimuth').elevation
         diffe = np.diff(elout) / 2.
         diffe = np.insert(diffe, 0, diffe[0])
-        ds_how = {'scan_index': ds.sweep_number + 1,
+        ds_how = {'scan_index': idx,
                   'scan_count': len(sweepnames),
                   'startazT': tout - difft,
                   'stopazT': tout + difft,
@@ -672,37 +683,478 @@ def to_odim(volume, filename):
     h5.close()
 
 
-class XRadVolFile(object):
-    """BaseClass for holding netCDF4.Dataset handles
-
+class XRadFile(collections.abc.MutableSequence):
+    """BaseClass for holding Xarray backed netCDF4.Dataset structures
     """
-    def __init__(self, filename=None, flavour=None, **kwargs):
-        self._filename = filename
-        self._nch = None
-        self._flavour = None
-        self._nch, self._flavour = self._check_file(filename, flavour)
 
-    def _check_file(self, filename, flavour):
+    def __init__(self, filename=None, flavour=None, **kwargs):
+        self._netcdf = None
+        self._xarray = None
+        self._sweeps = None
+        self._flavour = flavour
+        self._sweep_angles = None
+        self._sweep_times = None
+        self._standard = kwargs.get('standard', 'none')
+        self._mask_and_scale = kwargs.get('mask_and_scale', True)
+        self._decode_coords = kwargs.get('decode_coords', True)
+        self._decode_times = kwargs.get('decode_times', True)
+        self._chunks = kwargs.get('chunks', None)
+        self._georef = kwargs.get('georef', False)
+        self._dim0 = kwargs.get('dim0', 'time')
+
+        self._netcdf = nc.Dataset(filename, diskless=True, persist=False)
+
+        self._claim_file()
+        self.reload()
+
+    def __getitem__(self, index):
+        return self._sweeps[index]
+
+    def __setitem__(self, key, value):
         raise NotImplementedError
 
+    def __delitem__(self, key):
+        raise NotImplementedError
+
+    def insert(self, pos, val):
+        self._sweeps.insert(pos, val)
+
+    def __iter__(self):
+        return iter(self._sweeps)
+
+    def __len__(self):
+        return len(self._sweeps)
+
+    def __repr__(self):
+        return self._sweeps.__repr__()
+
     def __del__(self):
-        if self._nch is not None:
-            self._nch.close()
+        if self._netcdf is not None:
+            self._netcdf.close()
+
+    @property
+    def xarray(self):
+        return self._xarray
 
     @property
     def filename(self):
-        return self._filename
+        return self._netcdf.filepath()
 
     @property
-    def nch(self):
-        return self._nch
+    def netcdf(self):
+        return self._netcdf
 
     @property
     def flavour(self):
         return self._flavour
 
+    @property
+    def mask_and_scale(self):
+        return self._mask_and_scale
 
-class OdimH5File(XRadVolFile):
+    @property
+    def standard(self):
+        return self._standard
+
+    @property
+    def decode_coords(self):
+        return self._decode_coords
+
+    @property
+    def decode_times(self):
+        return self._decode_times
+
+    @property
+    def chunks(self):
+        return self._chunks
+
+    @property
+    def georef(self):
+        return self._georef
+
+    @property
+    def sweeps(self):
+        raise NotImplementedError
+
+    @property
+    def sweep_angles(self):
+        if self._sweep_angles is None:
+            self._sweep_angles = [swp.fixed_angle.values.min()
+                                  for swp in self.sweeps]
+        return self._sweep_angles
+
+    @property
+    def sweep_times(self):
+        if self._sweep_times is None:
+            self._sweep_times = [swp.time.values.min() for swp in self.sweeps]
+        return self._sweep_times
+
+    def _claim_file(self):
+        """Claims File using netCDF4.Dataset
+
+        """
+        if self._netcdf.disk_format != 'HDF5':
+            raise TypeError(
+                'wradlib: File {} is neither "NETCDF4" (using HDF5 groups) '
+                'nor plain "HDF5".'.format(self.filename))
+
+    def reload(self):
+        self._sweeps = None
+        self._sweep_angles = None
+        self._sweep_times = None
+        self._xarray = _get_file_groups(self._netcdf, chunks=self.chunks)
+
+
+class H5RadFile(XRadFile):
+    """Class for holding netCDF4.Dataset handles of HDF5 Radar Files
+
+    Parameters
+    ----------
+    filename : str
+        Source data file name.
+    flavour : str
+        Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
+    """
+
+    def __init__(self, filename=None, flavour=None, **kwargs):
+        kwargs['standard'] = kwargs.get('standard', 'odim')
+        super(H5RadFile, self).__init__(filename=filename,
+                                        flavour=flavour, **kwargs)
+
+    @property
+    def sweeps(self):
+        if self._sweeps is None:
+            src = [key for key in self._xarray.keys() if
+                   self._dsdesc in key]
+            src.sort(key=lambda x: int(x[len(self._dsdesc):]))
+            swps = [self._xarray[s] for s in src]
+            self._sweeps = list(swps)
+        return self._sweeps
+
+    def _merge_moments(self):
+        for k, sweep in enumerate(self.sweeps):
+            if isinstance(sweep, xr.Dataset):
+                continue
+            ds = self._get_sweep_moments(sweep)
+            ds = ds.assign(self._get_sweep_variables(k, sweep))
+            ds = ds.assign_coords(**self._get_sweep_coordinates(sweep))
+            ds = ds.rename_dims({'dim_0': self._dim0, 'dim_1': 'range'})
+            if self.georef:
+                ds = xarray.georeference_dataset(ds)
+            if self.mask_and_scale | self.decode_coords | self.decode_times:
+                ds = self._decode_cf(ds)
+            self.sweeps[k] = ds
+
+    def _decode_cf(self, sweep):
+        ds = xr.decode_cf(sweep,
+                          decode_times=self.decode_times,
+                          mask_and_scale=self.mask_and_scale,
+                          decode_coords=self.decode_coords,
+                          )
+        return ds
+
+    def _get_sweep_coordinates(self, sweep):
+        coords = collections.OrderedDict()
+
+        if 'cf' in self.standard or self.georef:
+            coords['longitude'] = self._xarray['where'].attrs['lon']
+            coords['latitude'] = self._xarray['where'].attrs['lat']
+            coords['altitude'] = self._xarray['where'].attrs['height']
+
+        sweep_mode = sweep['what'].attrs[self._swmode]
+        sweep_angle = self._get_sweep_angle(sweep)
+        sweep_mode = 'rhi' if sweep_mode == 'RHI' else 'azimuth_surveillance'
+        coords['sweep_mode'] = sweep_mode
+        coords['fixed_angle'] = sweep_angle
+
+        # time coordinate
+        if 'cf' in self.standard or self.decode_coords or self.decode_times:
+            timevals = self._get_time_coordinate(sweep)
+            if self.decode_times:
+                coords['time'] = ([self._dim0], timevals, time_attrs)
+            else:
+                coords['time'] = ([self._dim0], timevals)
+
+        if 'cf' in self.standard or self.decode_coords or self.georef:
+            coords.update(self._get_polar_coordinates(sweep))
+
+        return coords
+
+    def _get_sweep_variables(self, num, sweep):
+        variables = collections.OrderedDict()
+        variables.update({'fixed_angle': self._get_sweep_angle(sweep)})
+
+        # Todo: might need this later
+        # if 'cf' in 'standard' or self.georef:
+        #     sweep_mode = sweep['what'].attrs[self._swmode].lower()
+        #     if 'rhi' not in sweep_mode:
+        #         sweep_mode = 'azimuth_surveillance'
+        #     variables.update({'sweep_mode': sweep_mode})
+
+        if 'cf' in self.standard:
+            variables.update({'sweep_number': num,
+                              'follow_mode': 'none',
+                              'prt_mode': 'fixed',
+                              })
+
+        if 'cf-full' in self.standard:
+            full_vars = self._get_sweep_full_vars(sweep)
+            variables.update(full_vars)
+
+        return variables
+
+
+class GamicFile(H5RadFile):
+    """Class for holding netCDF4.Dataset handles of Gamic HDF5 files
+
+    Parameters
+    ----------
+    filename : str
+        Source data file name.
+    flavour : str
+        Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
+    """
+    def __init__(self, filename=None, flavour=None, **kwargs):
+        super(GamicFile, self).__init__(filename=filename, flavour=flavour,
+                                        **kwargs)
+
+    def _claim_file(self):
+        super(GamicFile, self)._claim_file()
+        filename = self.filename
+        flavour = self.flavour
+        nch = self._netcdf
+        if flavour is None:
+            try:
+                how = nch['how']
+            except IndexError:
+                raise AttributeError(
+                    'wradlib: Missing attributes in {} ./n'
+                    'This is no GAMIC HDF file.'.format(filename))
+            else:
+                if hasattr(how, 'sdp_manufacturer'):
+                    flavour = how.sdp_manufacturer
+                elif hasattr(how, 'sdp_name'):
+                    if 'ENIGMA' in how.sdp_name:
+                        flavour = 'GAMIC'
+                elif hasattr(how, 'software'):
+                    if 'MURAN' in how.software:
+                        flavour = 'GAMIC'
+                else:
+                    raise AttributeError(
+                        'wradlib: Missing attributes in {} ./n'
+                        'This is no GAMIC HDF file.'.format(filename))
+        self._dsdesc = 'scan'
+        self._swmode = 'scan_type'
+        self._mfmt = 'moment_'
+        self._msrc = 'variables'
+
+        self._flavour = flavour
+
+    def reload(self):
+        super(GamicFile, self).reload()
+        self._assign_ray_header()
+        self._merge_moments()
+
+    def _assign_ray_header(self):
+        for k, sweep in enumerate(self.sweeps):
+            key = [k for k in sweep if self._dsdesc in k]
+            rh = _get_gamic_ray_header(self.filename, key[0])
+            sweep['what'] = sweep['what'].assign(rh)
+
+    def _get_sweep_angle(self, sweep):
+        try:
+            angle = sweep['how']['how'].elevation
+        except AttributeError:
+            angle = sweep['how']['how'].azimuth
+        return angle
+
+    # possible bug in netcdf-c reader assuming only one dimension when
+    # dimensions have same size
+    # see https://github.com/Unidata/netcdf4-python/issues/945
+    # see https://github.com/Unidata/netcdf-c/issues/1484
+    # fixed by dimension reassignment in _get_sweep_moments and
+    def _get_sweep_moments(self, sweep):
+        """ Retrieve radar moments from dataset variables.
+
+        Parameters
+        ----------
+        ds : xarray dataset
+            source dataset
+        moments : list
+            list of moment strings
+
+        Returns
+        -------
+        ds : xarray Dataset
+            altered dataset
+        """
+
+        standard = self.standard
+        mask_and_scale = self.mask_and_scale
+        decode_coords = self.decode_coords
+
+        ds = [v for k, v in sweep.items() if 'scan' in k][0]
+
+        # fix dimensions
+        dims = sorted(list(ds.dims.keys()),
+                      key=lambda x: int(x[len('phony_dim_'):]))
+
+        ds = ds.rename({dims[0]: 'dim_0'})
+        if len(dims) > 1:
+            ds = ds.rename({dims[1]: 'dim_1'})
+
+        for mom in ds.variables:
+            # open dataX dataset
+            dmom = ds[mom]
+            name = dmom.moment.lower()
+            if 'cf' in standard and name not in GAMIC_NAMES.keys():
+                ds = ds.drop(mom)
+                continue
+
+            # extract attributes
+            dmax = np.iinfo(dmom.dtype).max
+            dmin = np.iinfo(dmom.dtype).min
+            minval = dmom.dyn_range_min
+            maxval = dmom.dyn_range_max
+            gain = (maxval - minval) / dmax
+            offset = minval
+            fillval = float(dmax)
+            undetect = float(dmin)
+
+            # create attribute dict
+            attrs = collections.OrderedDict()
+            # clean moment attributes
+            if standard != 'none':
+                dmom.attrs = collections.OrderedDict()
+
+            if standard in ['odim']:
+                attrs['gain'] = gain
+                attrs['offset'] = offset
+                attrs['nodata'] = fillval
+                attrs['undetect'] = undetect
+
+            # add cfradial moment attributes
+            if 'cf' in standard or mask_and_scale:
+                attrs['scale_factor'] = gain
+                attrs['add_offset'] = minval
+                attrs['_FillValue'] = float(dmax)
+
+            if 'cf' in standard or decode_coords:
+                attrs['coordinates'] = 'elevation azimuth range'
+
+            if 'full' in standard:
+                attrs['_Undetect'] = undetect
+
+            if 'cf' in standard:
+                cfname = GAMIC_NAMES[name]
+                for k, v in moments_mapping[cfname].items():
+                    attrs[k] = v
+                name = attrs.pop('short_name')
+                attrs.pop('gamic')
+
+            # assign attributes to moment
+            dmom.attrs.update(attrs)
+
+            # fix dimensions, when dim_0 == dim_1
+            dims = dmom.dims
+            if dims[0] == dims[1]:
+                ds.update({mom: (['dim_0', 'dim_1'], dmom)})
+
+            # keep original dataset name
+            if standard != 'none':
+                ds = ds.rename({mom: name.upper()})
+
+        return ds
+
+    def _get_polar_coordinates(self, sweep):
+        """Retrieve coordinates according OdimH5 standard.
+
+        Parameters
+        ----------
+        sweep : dict
+            Dictionary containing sweep hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        coords : dict
+            Dictionary of coordinate arrays
+        """
+        coords = collections.OrderedDict()
+        coords['azimuth'] = sweep['what'].gamic.azimuth_range
+        coords['elevation'] = sweep['what'].gamic.elevation_range
+        coords['range'] = sweep['how']['how'].gamic.radial_range
+
+        return coords
+
+    def _get_time_coordinate(self, sweep):
+        """Retrieve TimeArray from source data.
+
+        Parameters
+        ----------
+        sweep : dict
+             Dictionary containing sweep hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        timevals : :class:`numpy:numpy.ndarray`
+                array of time values
+        """
+        timevals = sweep['what'].gamic.time_range.values
+
+        return timevals
+
+    # todo fix for gamic to import from all groups
+    def _get_sweep_full_vars(self, sweep):
+        """Retrieve available non mandatory variables from source data.
+
+        Parameters
+        ----------
+        sweep : dict
+             Dictionary containing sweep hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        full_vars : dict
+            full cf-variables
+        """
+        full_vars = collections.OrderedDict()
+        for k, v in cf_full_vars.items():
+            full_vars[k] = getattr(sweep['how'].gamic, k)
+        return full_vars
+
+    def _get_root_attributes(self):
+        """Retrieve root attributes according CfRadial2 standard.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of root hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        attrs : dict
+            Dictionary of root attributes
+        """
+        attrs = collections.OrderedDict()
+        attrs.update({'version': 'None',
+                      'title': 'None',
+                      'institution': 'None',
+                      'references': 'None',
+                      'source': 'None',
+                      'history': 'None',
+                      'comment': 'im/exported using wradlib',
+                      'instrument_name': 'None',
+                      })
+
+        attrs['version'] = self._xarray['what'].attrs['version']
+
+        attrs['title'] = self._xarray['how'].attrs['template_name']
+        attrs['instrument'] = self._xarray['how'].attrs['host_name']
+
+        return attrs
+
+
+class OdimH5File(H5RadFile):
     """Class for holding netCDF4.Dataset handles of OdimH5 files
 
     Parameters
@@ -716,50 +1168,221 @@ class OdimH5File(XRadVolFile):
         super(OdimH5File, self).__init__(filename=filename,
                                          flavour=flavour, **kwargs)
 
-    def _check_file(self, filename, flavour):
-        nch = nc.Dataset(filename, diskless=True, persist=False)
-        if nch.disk_format != 'HDF5':
-            raise TypeError(
-                'wradlib: File {} is neither "NETCDF4" (using HDF5 groups) '
-                'nor plain "HDF5".'.format(filename))
+    def _claim_file(self):
+        super(OdimH5File, self)._claim_file()
+        filename = self.filename
+        flavour = self.flavour
+        nch = self._netcdf
         if flavour is None:
             try:
                 flavour = nch.Conventions
             except AttributeError as e:
                 raise AttributeError(
                     'wradlib: Missing "Conventions" attribute in {} ./n'
-                    'Use the "flavour" kwarg to specify your source '
-                    'data.'.format(filename)) from e
-            if 'ODIM' not in flavour:
-                raise AttributeError(
-                    'wradlib: "Conventions" attribute "{}" in {} is unknown./n'
-                    'Use the "flavour" kwarg to specify your source '
-                    'data.'.format(flavour, filename))
-
-        if "ODIM" in flavour:
-            self._dsdesc = 'dataset'
-            self._swmode = 'product'
-            self._mfmt = 'data'
-            self._msrc = 'groups'
-        elif "GAMIC" in flavour:
-            self._dsdesc = 'scan'
-            self._swmode = 'scan_type'
-            self._mfmt = 'moment_'
-            self._msrc = 'variables'
-        else:
+                    'This is no ODIM H5 data file. '
+                    ''.format(filename)) from e
+        if 'ODIM' not in flavour:
             raise AttributeError(
-                'wradlib: Unknown "flavour" kwarg attribute: {} .'
-                ''.format(flavour))
+                'wradlib: "Conventions" attribute "{}" in {} is unknown.'
+                ''.format(flavour, filename))
 
-        return nch, flavour
+        flavour = 'ODIM'
+        self._dsdesc = 'dataset'
+        self._swmode = 'product'
+        self._mfmt = 'data'
+        self._msrc = 'groups'
 
-    @property
-    def flavour(self):
-        flv = ['ODIM', 'GAMIC']
-        return [s for s in flv if s in self._flavour][0]
+        self._flavour = flavour
+
+    def reload(self):
+        super(OdimH5File, self).reload()
+        self._merge_moments()
+
+    def _get_sweep_angle(self, sweep):
+        try:
+            angle = sweep['where'].elangle
+        except AttributeError:
+            angle = sweep['where'].azangle
+        return angle
+
+    def _get_sweep_moments(self, sweep):
+        """ Retrieve radar moments from hdf groups.
+
+        Parameters
+        ----------
+        sweep : dict
+             Dictionary containing sweep hdf5 groups
+
+        Returns
+        -------
+        ds : dictionary
+            moment datasets
+        """
+
+        standard = self.standard
+        mask_and_scale = self.mask_and_scale
+        decode_coords = self.decode_coords
+
+        # get moment dicts/ sort etc
+        moments = [mom for mom in sweep if self._mfmt in mom]
+        moments_idx = np.argsort([int(s[len(self._mfmt):]) for s in moments])
+        moments = np.array(moments)[moments_idx].tolist()
+        moments = {mom: sweep[mom] for mom in moments}
+
+        datas = {}
+        for key, mom in moments.items():
+            dmom_what = mom['what']
+            name = dmom_what.attrs.get('quantity')
+            if 'cf' in standard and name not in moments_mapping.keys():
+                continue
+            dsmom = mom[key]
+
+            # create attribute dict
+            attrs = collections.OrderedDict()
+
+            if standard in ['odim']:
+                attrs.update(dmom_what.attrs)
+
+            # add cfradial moment attributes
+            if 'cf' in standard or mask_and_scale:
+                attrs['scale_factor'] = dmom_what.attrs.get('gain')
+                attrs['add_offset'] = dmom_what.attrs.get('offset')
+                attrs['_FillValue'] = dmom_what.attrs.get('nodata')
+            if 'cf' in standard or decode_coords:
+                attrs['coordinates'] = 'elevation azimuth range'
+            if 'cf' in standard:
+                for k, v in moments_mapping[name].items():
+                    attrs[k] = v
+                # drop short_name
+                attrs.pop('short_name')
+                attrs.pop('gamic')
+            if 'full' in standard:
+                attrs['_Undetect'] = dmom_what.attrs.get('undetect')
+
+            # assign attributes
+            dmom = dsmom.data.assign_attrs(attrs)
+
+            # keep original dataset name
+            if standard == 'none':
+                name = key
+
+            # fix dimensions
+            dims = dmom.dims
+            if dims[0] == dims[1]:
+                datas.update({name: (['dim_0', 'dim_1'],
+                                     dmom.rename({dims[0]: 'dim_0'}))})
+            else:
+                datas.update({name: dmom.rename({dims[0]: 'dim_0',
+                                                 dims[1]: 'dim_1'
+                                                 })})
+
+        return xr.Dataset(datas)
+
+    def _get_polar_coordinates(self, sweep):
+        """Retrieve coordinates according OdimH5 standard.
+
+        Parameters
+        ----------
+        sweep : dict
+            Dictionary containing sweep hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        coords : dict
+            Dictionary of coordinate arrays
+        """
+        coords = collections.OrderedDict()
+        try:
+            coords['azimuth'] = sweep['how'].odim.azimuth_range
+            coords['elevation'] = sweep['how'].odim.elevation_range
+        except (KeyError, AttributeError):
+            coords['azimuth'] = sweep['where'].odim.azimuth_range2
+            coords['elevation'] = sweep['where'].odim.elevation_range2
+        coords['range'] = sweep['where'].odim.radial_range
+
+        return coords
+
+    def _get_time_coordinate(self, sweep):
+        """Retrieve TimeArray from source data.
+
+        Parameters
+        ----------
+        sweep : dict
+             Dictionary containing sweep hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        timevals : :class:`numpy:numpy.ndarray`
+                array of time values
+        """
+        try:
+            timevals = sweep['how'].odim.time_range
+        except (KeyError, AttributeError):
+            # timehandling if only start and end time is given
+            start, end = sweep['what'].odim.time_range2
+            if start == end:
+                warnings.warn(
+                    "WRADLIB: Equal ODIM `starttime` and `endtime` "
+                    "values. Can't determine correct sweep start-, "
+                    "end- and raytimes.", UserWarning)
+                timevals = np.ones(sweep['where'].nrays) * start
+            else:
+                delta = (end - start) / sweep['where'].nrays
+                timevals = np.arange(start + delta / 2., end, delta)
+                timevals = np.roll(timevals, shift=-sweep['where'].a1gate)
+
+        return timevals
+
+    def _get_sweep_full_vars(self, sweep):
+        """Retrieve available non-mandatory variables from source data.
+
+        Parameters
+        ----------
+        sweep : dict
+             Dictionary containing sweep hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        full_vars : dict
+            full cf-variables
+        """
+        full_vars = collections.OrderedDict()
+        for k, v in cf_full_vars.items():
+            full_vars[k] = getattr(sweep['how'].odim, k)
+        return full_vars
+
+    def _get_root_attributes(self):
+        """Retrieve root attributes according CfRadial2 standard.
+
+        Parameters
+        ----------
+        grps : dict
+            Dictionary of root hdf5 groups ('how', 'what', 'where')
+
+        Returns
+        -------
+        attrs : dict
+            Dictionary of root attributes
+        """
+        attrs = collections.OrderedDict()
+        attrs.update({'version': 'None',
+                      'title': 'None',
+                      'institution': 'None',
+                      'references': 'None',
+                      'source': 'None',
+                      'history': 'None',
+                      'comment': 'im/exported using wradlib',
+                      'instrument_name': 'None',
+                      })
+
+        attrs['version'] = self._xarray['what'].attrs['version']
+        attrs['institution'] = self._xarray['what'].attrs['source']
+        attrs['instrument'] = self._xarray['what'].attrs['source']
+
+        return attrs
 
 
-class NetCDF4File(XRadVolFile):
+class NetCDF4File(XRadFile):
     """Class for holding netCDF4.Dataset handles of Cf/Radial files
 
     Parameters
@@ -774,8 +1397,11 @@ class NetCDF4File(XRadVolFile):
                                           flavour=flavour,
                                           **kwargs)
 
-    def _check_file(self, filename, flavour):
-        nch = nc.Dataset(filename, diskless=True, persist=False)
+    def _claim_file(self):
+        filename = self.filename
+        flavour = self.flavour
+        nch = self._netcdf
+
         if flavour is None:
             try:
                 Conventions = nch.Conventions
@@ -796,11 +1422,11 @@ class NetCDF4File(XRadVolFile):
                 'wradlib: Unknown "flavour" kwarg attribute: {} .'
                 ''.format(flavour))
 
-        return nch, flavour
+        self._flavour = flavour
 
 
 class XRadVol(collections.abc.MutableMapping):
-    """BaseClass for xarray based RadarVolumes
+    """BaseClass for Xarray backed RadarVolumes/TimeSeries
 
     Implements `collections.MutableMapping` dictionary.
     """
@@ -809,8 +1435,6 @@ class XRadVol(collections.abc.MutableMapping):
         self._sweeps = dict()
         self._nch = list()
         self.root = None
-        self._sweep_angles = list()
-        self._sweep_names = list()
         if init_root:
             self._init_root()
 
@@ -854,7 +1478,7 @@ class XRadVol(collections.abc.MutableMapping):
 
     @property
     def root(self):
-        """ Return `root` dataset.
+        """Return `root` dataset.
         """
         return self._root
 
@@ -864,6 +1488,8 @@ class XRadVol(collections.abc.MutableMapping):
 
     @property
     def sweep_angles(self):
+        """Return list of sweep angles
+        """
         if self.root is None:
             return self._sweep_angles
         return list(self.root.sweep_fixed_angle.values)
@@ -875,6 +1501,8 @@ class XRadVol(collections.abc.MutableMapping):
 
     @property
     def sweep_names(self):
+        """Return list of sweep names
+        """
         if self.root is None:
             return self._sweep_names
         else:
@@ -887,19 +1515,19 @@ class XRadVol(collections.abc.MutableMapping):
 
     @property
     def sweep(self):
-        """ Return sweep dimension count.
+        """Return sweep dimension count.
         """
         return self.root.dims['sweep']
 
     @property
     def sweeps(self):
-        """ Return zip sweep names, sweep_angles
+        """Return list of sweeps
         """
-        return zip(self.sweep_names, self.sweep_angles)
+        return list(self._sweeps.values())
 
     @property
     def location(self):
-        """ Return location of data source.
+        """Return location of data source.
         """
         return (self.root.longitude.values.item(),
                 self.root.latitude.values.item(),
@@ -907,18 +1535,18 @@ class XRadVol(collections.abc.MutableMapping):
 
     @property
     def Conventions(self):
-        """ Return CF/ODIM `Conventions`.
+        """Return CF/ODIM `Conventions`.
         """
         return self.root.Conventions
 
     @property
     def version(self):
-        """ Return CF/ODIM version
+        """Return CF/ODIM version
         """
         return self.root.version
 
     def to_cfradial2(self, filename):
-        """ Save volume to CfRadial2.0 compliant file.
+        """Save volume to CfRadial2.0 compliant file.
 
         Parameter
         ---------
@@ -932,7 +1560,7 @@ class XRadVol(collections.abc.MutableMapping):
                           "available. Not saving.", UserWarning)
 
     def to_odim(self, filename):
-        """ Save volume to ODIM_H5/V2_2 compliant file.
+        """Save volume to ODIM_H5/V2_2 compliant file.
 
         Parameter
         ---------
@@ -961,11 +1589,11 @@ class XRadVol(collections.abc.MutableMapping):
 
 
 class CfRadial(XRadVol):
-    """ Class for xarray based retrieval of CfRadial data files
+    """Class for Xarray backed CfRadial data files
 
     """
     def __init__(self, filename=None, flavour=None, **kwargs):
-        """Initialize xarray structure from Cf/Radial data structure.
+        """Initialize Xarray structure from Cf/Radial data structure.
 
         Parameters
         ----------
@@ -1003,12 +1631,12 @@ class CfRadial(XRadVol):
             nch = NetCDF4File(f, flavour=flavour)
             self._nch.append(nch)
             if nch.flavour == "Cf/Radial2":
-                self.assign_data_radial2(nch, **kwargs)
+                self._assign_data_radial2(nch, **kwargs)
             else:
-                self.assign_data_radial(nch, **kwargs)
+                self._assign_data_radial(nch, **kwargs)
 
-    def assign_data_radial2(self, nch, **kwargs):
-        """ Assign from CfRadial2 data structure.
+    def _assign_data_radial2(self, nch, **kwargs):
+        """Assign from CfRadial2 data structure.
 
         Parameter
         ---------
@@ -1040,10 +1668,11 @@ class CfRadial(XRadVol):
         georef = kwargs.pop('georef', False)
         dim0 = kwargs.pop('dim0', 'time')
 
-        self.root = _open_dataset(nch.nch, grp=None, **kwargs)
+        # uses subgroups, need to get 'root' group
+        self.root = self._nch[0].xarray['root']
         sweepnames = self.root.sweep_group_name.values
         for sw in sweepnames:
-            ds = _open_dataset(nch.nch, grp=sw, **kwargs)
+            ds = self._nch[0].xarray[sw]
             ds = ds.rename_dims({'time': dim0})
             coords = {'longitude': self.root.longitude,
                       'latitude': self.root.latitude,
@@ -1059,8 +1688,12 @@ class CfRadial(XRadVol):
 
             self._sweeps[sw] = ds
 
-    def assign_data_radial(self, nch, **kwargs):
+    def _assign_data_radial(self, nch, **kwargs):
         """ Assign from CfRadial1 data structure.
+
+        Parameter
+        ---------
+        nch : NetCDF4File object
 
         Keyword Arguments
         -----------------
@@ -1088,7 +1721,8 @@ class CfRadial(XRadVol):
         georef = kwargs.pop('georef', False)
         dim0 = kwargs.pop('dim0', 'time')
 
-        root = _open_dataset(nch.nch, grp=None, **kwargs)
+        # only one group in xarray, equals root-group
+        root = self._nch[0].xarray
         var = root.variables.keys()
         remove_root = var ^ root_vars
         remove_root &= var
@@ -1131,17 +1765,18 @@ class CfRadial(XRadVol):
 
 
 class OdimH5(XRadVol):
-    """ Class for xarray based retrieval of ODIM_H5 data files
+    """ Class for Xarray backed ODIM_H5/Gamic HDF5 data files.
     """
     def __init__(self, filename=None, flavour=None, **kwargs):
-        """Initialize xarray structure from hdf5 data structure.
+        """Initialize Xarray structure from hdf5 data structure.
 
         Parameters
         ----------
-        filename : str
-            Source data file name.
+        filename : iterable
+            iterable of source data file names.
         flavour : str
-            Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
+            Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to None,
+            which checks file for type.
 
         Keyword Arguments
         -----------------
@@ -1160,6 +1795,7 @@ class OdimH5(XRadVol):
         georef : bool
             If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
             2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
+            Defaults to False
         standard : str
             * `none` - data is read as verbatim as possible, no metadata
             * `odim` - data is read, odim metadata added to datasets
@@ -1168,191 +1804,153 @@ class OdimH5(XRadVol):
             * `cf-full` - data is read according to cfradial2 standard
               importing all available cfradial2 metadata (not fully
               implemented)
+            Defaults to 'odim'.
         dim0 : str
             name of the ray-dimension of DataArrays and Dataset:
                 * `time` - cfradial2 standard
                 * `azimuth` - better for working with xarray
+            Defaults to `azimuth`, need to be `azimuth` if a timeseries is
+            imported.
         """
         super(OdimH5, self).__init__()
+        filename = np.array(filename).flatten()
+        self._merge_files(filename, flavour=flavour, **kwargs)
+        self._assign_root()
 
-        if not isinstance(filename, list):
-            filename = [filename]
+    def _merge_files(self, filename, flavour=None, **kwargs):
+        """Merge given files into Xarray backed structure
 
-        if len(filename) == 0:
-            raise ValueError("File list empty")
+       Parameters
+       ----------
+       obj : iterable
+           iterable containing filenames to be imported
+       """
+        filename = np.array(filename).flatten()
 
-        for f in filename:
-            self.assign_data(f, flavour=flavour, **kwargs)
+        nch = None
+        if flavour is not None:
+            if 'ODIM' in flavour:
+                fc = OdimH5File
+            elif 'GAMIC' in flavour:
+                fc = GamicFile
+            else:
+                raise AttributeError(
+                    'wradlib: Unknown "flavour" kwarg attribute: {} .'
+                    ''.format(flavour))
+            nch = [fc(f, flavour=flavour, **kwargs)
+                   for f in tqdm(filename, desc='Open  ', unit=' Files')]
+        else:
+            try:
+                nch = [OdimH5File(f, **kwargs)
+                       for f in tqdm(filename, desc='Open  ', unit=' Files')]
+            except AttributeError:
+                try:
+                    nch = [GamicFile(f, **kwargs) for f in tqdm(filename,
+                                                                desc='Open  ',
+                                                                unit=' Files')]
+                except AttributeError:
+                    raise IOError('wradlib: Unknown file types while reading: '
+                                  '{}.'.format(filename))
 
-        if 'cf' in kwargs.get('standard', 'cf-mandatory'):
-            self.assign_root()
+        if nch:
+            self._nch.extend(nch)
+            # gather sweeps
+            sweep_ds = [k for n in nch for k in n]
 
-    def assign_data(self, filename, flavour=None, **kwargs):
-        """Assign xarray dataset from hdf5 data structure.
+            # merge by equal time
+            sweep_ds = self._merge_by_time(sweep_ds, **kwargs)
+
+            # concat by equal angle
+            sweep_ds = self._merge_by_angle(sweep_ds, **kwargs)
+
+            # sort sweeps by time of first occurrence
+            sweep_ds.sort(key=lambda x: x.time.values.min())
+
+            # todo: we need another _merge_by_angle if we have already sweeps
+            # within the object
+            # sort timeseries of sweeps
+            for i, sw in enumerate(sweep_ds):
+                self._sweeps[f'sweep_{i+1}'] = sw.sortby('time')
+
+    # todo: make this a function for outside use
+    def _merge_by_time(self, obj, **kwargs):
+        """Merge Datasets having same time
 
         Parameters
         ----------
-        filename : str
-            Source data file name.
-        flavour : str
-            Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
+        obj : list
+            list of Xarray Datasets
+
+        Returns
+        -------
+        out : list
+            list of merged xarray.Datasets
+        """
+        out = []
+        times = [ds.time.values.min() for ds in obj]
+        unique_times = np.unique(times)
+        if len(unique_times) == len(obj):
+            out.extend([ob for ob in obj])
+        else:
+            for t in tqdm(unique_times, desc='Merge ', unit=' Datasets'):
+                idx = np.argwhere(times == t).flatten()
+                out.append(xr.combine_by_coords([obj[i] for i in idx]))
+        return out
+
+    # todo: make this a function for outside use
+    def _merge_by_angle(self, obj, **kwargs):
+        """Concatenate Datasets having same sweep angle
+
+        Parameters
+        ----------
+        obj : list
+            list of Xarray Datasets
 
         Keyword Arguments
         -----------------
-        decode_times : bool
-            If True, decode cf times to np.datetime64. Defaults to True.
-        decode_coords : bool
-            If True, use the ‘coordinates’ attribute on variable
-            to assign coordinates. Defaults to True.
-        mask_and_scale : bool
-            If True, lazily scale (using scale_factor and add_offset)
-            and mask (using _FillValue). Defaults to True.
-        chunks : int | dict, optional
-            If chunks is provided, it used to load the new dataset into dask
-            arrays. chunks={} loads the dataset with dask using a single
-            chunk for all arrays.
-        georef : bool
-            If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
-            2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy).
-            Defaults to False.
-        standard : str
-            * `none` - data is read as verbatim as possible, no metadata
-            * `odim` - data is read, odim metadata added to datasets
-            * `cf-mandatory` - data is read according to cfradial2 standard
-              importing mandatory metadata, default value
-            * `cf-full` - data is read according to cfradial2 standard
-              importing all available cfradial2 metadata (not fully
-              implemented)
-        dim0 : str
-            name of the ray-dimension of DataArrays and Dataset:
-                * `time` - cfradial2 standard, default value
-                * `azimuth` - better for working with xarray
+        fix_coords : list
+            list of coords strings, which should be treated/fixed.
+
+        Returns
+        -------
+        out : list
+            list of concatenated xarray.Datasets
         """
-        nch = OdimH5File(filename, flavour=flavour)
-        self._nch.append(nch)
+        fix_coords = kwargs.pop('fix_coords', [])
+        out = []
+        angles = [ds.fixed_angle.values.item() for ds in obj]
+        unique_angles = np.unique(angles)
+        if len(unique_angles) == len(obj):
+            out.extend([ob for ob in obj])
+        else:
+            for a in unique_angles:
+                idx = np.argwhere(angles == a).flatten()
+                merge_list = [obj[i].pipe(_fix_coords, fix_coords)
+                              for i in tqdm(idx, desc='Concat',
+                                            unit=' Timesteps', leave=None)]
+                out.append(xr.concat(merge_list,
+                                     dim="time",
+                                     data_vars='different',
+                                     coords='different'))
+        return out
 
-        # keyword argument handling
-        decode_times = kwargs.get('decode_times', True)
-        decode_coords = kwargs.get('decode_coords', True)
-        mask_and_scale = kwargs.get('mask_and_scale', True)
-        georef = kwargs.get('georef', False)
-        standard = kwargs.get('standard', 'cf-mandatory')
-        dim0 = kwargs.get('dim0', 'time')
-
-        # retrieve and assign global groups /how, /what, /where
-        groups = ['how', 'what', 'where']
-        how, what, where = _get_odim_groups(nch.nch, groups)
-        rt_grps = {'how': how,
-                   'what': what,
-                   'where': where}
-
-        # sweep group handling
-        (src_swp_grp_name,
-         swp_grp_name) = _get_odim_sweep_group_names(nch.nch,
-                                                     nch._dsdesc)
-
-        # iterate sweeps in file
-        for i, sweep in enumerate(src_swp_grp_name):
-            # retrieve ds and assign datasetX how/what/where group attributes
-            groups = [None, 'how', 'what', 'where']
-            ds, ds_how, ds_what, ds_where = _get_odim_groups(nch.nch[sweep],
-                                                             groups)
-            ds_grps = {'how': ds_how,
-                       'what': ds_what,
-                       'where': ds_where}
-
-            # moments
-            # possible bug in netcdf-c reader assuming only one dimension when
-            # dimensions have same size
-            # see https://github.com/Unidata/netcdf4-python/issues/945
-            # see https://github.com/Unidata/netcdf-c/issues/1484
-            # fixed by dimension reassignment in _get_odim_group_moments and
-            # _get_odim_variables_moments
-            ds = _assign_odim_moments(ds, nch, sweep, **kwargs)
-
-            # retrieve and assign gamic ray_header
-            if nch.flavour == 'GAMIC':
-                rh = _get_gamic_ray_header(nch.filename, i)
-                ds_grps['what'] = ds_grps['what'].assign(rh)
-
-            # coordinates wrap-up
-            vars = collections.OrderedDict()
-            coords = collections.OrderedDict()
-            if 'cf' in standard or georef:
-                coords['longitude'] = rt_grps['where'].attrs['lon']
-                coords['latitude'] = rt_grps['where'].attrs['lat']
-                coords['altitude'] = rt_grps['where'].attrs['height']
-            if 'cf' in standard or georef:
-                sweep_mode = _get_odim_sweep_mode(nch, ds_grps)
-                coords['sweep_mode'] = sweep_mode
-
-            if 'cf' in standard or decode_coords or georef:
-                coords.update(_get_odim_coordinates(nch, ds_grps))
-                # georeference needs coordinate variables
-                if georef:
-                    geods = xr.Dataset(vars, coords)
-                    geods = xarray.georeference_dataset(geods)
-                    coords.update(geods.coords)
-
-            # time coordinate
-            if 'cf' in standard or decode_times:
-                timevals = _get_odim_timevalues(nch, ds_grps)
-                if decode_times:
-                    coords['time'] = ([dim0], timevals, time_attrs)
-                else:
-                    coords['time'] = ([dim0], timevals)
-
-            # assign global sweep attributes
-            fixed_angle = _get_odim_fixed_angle(nch, ds_grps)
-            if 'cf' in standard:
-                vars.update({'sweep_number': i,
-                             'sweep_mode': sweep_mode,
-                             'follow_mode': 'none',
-                             'prt_mode': 'fixed',
-                             'fixed_angle': fixed_angle})
-            if 'cf-full' in standard:
-                full_vars = _get_odim_full_vars(nch, ds_grps)
-                vars.update(full_vars)
-
-            # assign variables and coordinates
-            ds = ds.assign(vars)
-            ds = ds.assign_coords(**coords)
-            ds = ds.rename_dims({'dim_0': dim0, 'dim_1': 'range'})
-
-            # decode dataset if requested
-            if decode_times or decode_coords or mask_and_scale:
-                ds = xr.decode_cf(ds, decode_times=decode_times,
-                                  decode_coords=decode_coords,
-                                  mask_and_scale=mask_and_scale)
-
-            # determine if same sweep
-            try:
-                index = self.sweep_angles.index(fixed_angle)
-            except ValueError:
-                nidx = len(self._sweeps) + 1
-                swp_grp_name = f'sweep_{nidx}'
-                self._sweeps[swp_grp_name] = ds
-                self.sweep_names.append(swp_grp_name)
-                self.sweep_angles.append(fixed_angle)
-            else:
-                dictkey = self.sweep_names[index]
-                self._sweeps[dictkey] = xr.merge([self._sweeps[dictkey], ds])
-
-    def assign_root(self):
-        # retrieve and assign global groups /how, /what, /where
-        first = self._nch[0]
-
-        groups = ['how', 'what', 'where']
-        how, what, where = _get_odim_groups(first.nch, groups)
-        rt_grps = {'how': how,
-                   'what': what,
-                   'where': where}
-
+    def _assign_root(self):
+        """(Re-)Create root object according CfRadial2 standard
+        """
         # assign root variables
+        sweep_group_names = list(self._sweeps.keys())
+        sweep_fixed_angles = [ds.fixed_angle.values.min()
+                              for ds in self._sweeps.values()]
         # extract time coverage
-        tmin = [ds.time.values.min() for ds in self._sweeps.values()]
+        try:
+            tmin = [ds.time.values.min() for ds in self._sweeps.values()]
+        except AttributeError:
+            tmin = [ds.rtime.values.min() for ds in self._sweeps.values()]
         time_coverage_start = min(tmin)
-        tmax = [ds.time.values.max() for ds in self._sweeps.values()]
+        try:
+            tmax = [ds.time.values.max() for ds in self._sweeps.values()]
+        except AttributeError:
+            tmax = [ds.rtime.values.max() for ds in self._sweeps.values()]
         time_coverage_end = max(tmax)
 
         time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
@@ -1362,6 +1960,9 @@ class OdimH5(XRadVol):
         root = xr.Dataset(data_vars=global_variables,
                           attrs=global_attrs)
 
+        # take first dataset/file for retrieval of location
+        nch = self._nch[0]
+
         # assign root variables
         root = root.assign({'volume_number': 0,
                             'platform_type': str('fixed'),
@@ -1369,19 +1970,96 @@ class OdimH5(XRadVol):
                             'primary_axis': 'axis_z',
                             'time_coverage_start': time_coverage_start_str,
                             'time_coverage_end': time_coverage_end_str,
-                            'latitude': rt_grps['where'].attrs['lat'],
-                            'longitude': rt_grps['where'].attrs['lon'],
-                            'altitude': rt_grps['where'].attrs['height'],
+                            'latitude': nch.xarray['where'].attrs['lat'],
+                            'longitude': nch.xarray['where'].attrs['lon'],
+                            'altitude': nch.xarray['where'].attrs['height'],
                             'sweep_group_name': (
-                                ['sweep'], self.sweep_names),
+                                ['sweep'], sweep_group_names),
                             'sweep_fixed_angle': (
-                                ['sweep'], self.sweep_angles),
+                                ['sweep'], sweep_fixed_angles),
                             })
 
         # assign root attributes
-        attrs = _get_odim_root_attributes(first, rt_grps)
+        attrs = nch._get_root_attributes()
         root = root.assign_attrs(attrs)
         self.root = root
+
+
+def _fix_coords(ds, fix_coords):
+    """Small wrapper around Dataset fix functions
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+
+    Returns
+    -------
+    ds : xarray.Dataset
+    """
+    if 'time' in fix_coords:
+        ds = ds.pipe(_fix_time)
+    if 'azimuth' in fix_coords:
+        ds = ds.pipe(_fix_azimuth)
+    if 'elevation' in fix_coords:
+        ds = ds.pipe(_fix_elevation)
+    return ds
+
+
+def _fix_time(ds):
+    """Rename time coordinate/variable and add new time dimension/coordinate
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+
+    Returns
+    -------
+    ds : xarray.Dataset
+    """
+    ds = ds.rename({'time': 'rtime'})
+    ds = ds.assign_coords({'time': (['time'], [ds['rtime'].min().values])})
+    return ds
+
+
+def _fix_azimuth(ds):
+    """reindex azimuth dimension
+
+    Fixes missing and/or double rays
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+
+    Returns
+    -------
+    ds : xarray.Dataset
+    """
+    dim = ds.azimuth.dims[0]
+    res = ds.azimuth.diff(dim).median().round(decimals=1)
+    azr = np.arange(res/2., 360, res)
+    ds = ds.sortby('azimuth').reindex(azimuth=azr, method='nearest',
+                                      tolerance=res/4.)
+    return ds
+
+
+def _fix_elevation(ds):
+    """Recreate elevation array using a rounded value.
+
+    Fixes glitches in the elevation data
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+
+    Returns
+    -------
+    ds : xarray.Dataset
+    """
+    dim = ds.elevation.dims[0]
+    nlen = ds.elevation.shape[0]
+    ele = np.ones(nlen) * ds.elevation.median(dim).round(decimals=1).values
+    ds = ds.assign_coords({'elevation': ([dim], ele)})
+    return ds
 
 
 def _write_odim(src, dest):
@@ -1461,26 +2139,30 @@ def _write_odim_dataspace(src, dest):
             ds.attrs.create('IMAGE_VERSION', version, dtype=H5T_C_S1_VER)
 
 
-def _open_dataset(nch, grp=None, **kwargs):
-    """ Open netcdf4/hdf5 group as xarray dataset.
+def _get_file_groups(ncid, chunks=None, **kwargs):
+    """Reads netcdf (nested) hdf-groups into python dictionary with
+    corresponding structure.
 
-    Parameters
-    ----------
-    nch : handle
-        netcdf4-file handle
-    grp : str
-        group to access
-
-    Returns
-    -------
-    nch : handle
-        xarray Dataset handle
     """
-    if grp is not None:
-        nch = nch.groups.get(grp, False)
-    if nch:
-        nch = xr.open_dataset(xr.backends.NetCDF4DataStore(nch), **kwargs)
-    return nch
+    try:
+        name = ncid.name
+    except KeyError:
+        name = 'root'
+    out = dict()
+    if ncid.__dict__.items() or ncid.variables:
+        ds = xr.open_dataset(xr.backends.NetCDF4DataStore(ncid),
+                             chunks=chunks, **kwargs)
+        if ncid.groups:
+            out[name] = ds
+        else:
+            return ds
+
+    # groups
+    if ncid.groups:
+        for k, v in ncid.groups.items():
+            out[k] = _get_file_groups(v, chunks=chunks, **kwargs)
+
+    return out
 
 
 def _get_gamic_ray_header(filename, scan):
@@ -1499,8 +2181,8 @@ def _get_gamic_ray_header(filename, scan):
         OrderedDict of ray header items
     """
     # ToDo: move rayheader into own dataset
-    h5 = h5py.File(filename)
-    ray_header = h5['scan{}/ray_header'.format(scan)][:]
+    h5 = h5py.File(filename, mode='r')
+    ray_header = h5[f'{scan}/ray_header'][:]
     h5.close()
     vars = collections.OrderedDict()
     for name in ray_header.dtype.names:
@@ -1508,458 +2190,3 @@ def _get_gamic_ray_header(filename, scan):
         attrs = None
         vars.update({name: (['dim_0'], rh, attrs)})
     return vars
-
-
-def _get_odim_sweep_group_names(nch, name):
-    """ Return sweep names.
-
-    Returns source names and cfradial names.
-
-    Parameters
-    ----------
-    nch : handle
-        netCDF4 Dataset handle
-    name : str
-        Common part of source dataset names.
-
-    Returns
-    -------
-    src : list
-        list of source dataset names
-    swg_grp_name : list
-        list of corresponding cfradial sweep_group_name
-    """
-    src = [key for key in nch.groups.keys() if name in key]
-    src.sort(key=lambda x: int(x[len(name):]))
-    swp_grp_name = ['sweep_{}'.format(i) for i in
-                    range(1, len(src) + 1)]
-    return src, swp_grp_name
-
-
-def _get_odim_variables_moments(ds, moments=None, **kwargs):
-    """ Retrieve radar moments from dataset variables.
-
-    Parameters
-    ----------
-    ds : xarray dataset
-        source dataset
-    moments : list
-        list of moment strings
-
-    Returns
-    -------
-    ds : xarray Dataset
-        altered dataset
-    """
-
-    standard = kwargs.get('standard', 'cf-mandatory')
-    mask_and_scale = kwargs.get('mask_and_scale', True)
-    decode_coords = kwargs.get('decode_coords', True)
-
-    # fix dimensions
-    dims = sorted(list(ds.dims.keys()),
-                  key=lambda x: int(x[len('phony_dim_'):]))
-
-    ds = ds.rename({dims[0]: 'dim_0'})
-    if len(dims) > 1:
-        ds = ds.rename({dims[1]: 'dim_1'})
-
-    for mom in moments:
-        # open dataX dataset
-        dmom = ds[mom]
-        name = dmom.moment.lower()
-        if 'cf' in standard and name not in GAMIC_NAMES.keys():
-            ds = ds.drop(mom)
-            continue
-
-        # extract attributes
-        dmax = np.iinfo(dmom.dtype).max
-        dmin = np.iinfo(dmom.dtype).min
-        minval = dmom.dyn_range_min
-        maxval = dmom.dyn_range_max
-        gain = (maxval - minval) / dmax
-        offset = minval
-        fillval = float(dmax)
-        undetect = float(dmin)
-
-        # create attribute dict
-        attrs = collections.OrderedDict()
-        # clean moment attributes
-        if standard != 'none':
-            dmom.attrs = collections.OrderedDict()
-
-        if standard in ['odim']:
-            attrs['gain'] = gain
-            attrs['offset'] = offset
-            attrs['nodata'] = fillval
-            attrs['undetect'] = undetect
-
-        # add cfradial moment attributes
-        if 'cf' in standard or mask_and_scale:
-            attrs['scale_factor'] = gain
-            attrs['add_offset'] = minval
-            attrs['_FillValue'] = float(dmax)
-
-        if 'cf' in standard or decode_coords:
-            attrs['coordinates'] = 'elevation azimuth range'
-
-        if 'full' in standard:
-            attrs['_Undetect'] = undetect
-
-        if 'cf' in standard:
-            cfname = GAMIC_NAMES[name]
-            for k, v in moments_mapping[cfname].items():
-                attrs[k] = v
-            name = attrs.pop('short_name')
-            attrs.pop('gamic')
-
-        # assign attributes to moment
-        dmom.attrs.update(attrs)
-
-        # fix dimensions, when dim_0 == dim_1
-        dims = dmom.dims
-        if dims[0] == dims[1]:
-            ds.update({mom: (['dim_0', 'dim_1'], dmom)})
-
-        # keep original dataset name
-        if standard != 'none':
-            ds = ds.rename({mom: name.upper()})
-
-    return ds
-
-
-def _get_odim_group_moments(nch, sweep, moments=None, **kwargs):
-    """ Retrieve radar moments from hdf groups.
-
-    Parameters
-    ----------
-    nch : netCDF Dataset handle
-    sweep : str
-        sweep key
-    moments : list
-        list of moment strings
-
-    Returns
-    -------
-    ds : dictionary
-        moment datasets
-    """
-
-    standard = kwargs.get('standard', 'cf-mandatory')
-    mask_and_scale = kwargs.get('mask_and_scale', True)
-    decode_coords = kwargs.get('decode_coords', True)
-    chunks = kwargs.get('chunks', None)
-
-    datas = {}
-    for mom in moments:
-        dmom_what = _open_dataset(nch[sweep][mom], 'what', chunks=chunks)
-        name = dmom_what.attrs.pop('quantity')
-        if 'cf' in standard and name not in moments_mapping.keys():
-            continue
-        dsmom = _open_dataset(nch[sweep], mom, chunks=chunks)
-
-        # create attribute dict
-        attrs = collections.OrderedDict()
-
-        if standard in ['odim']:
-            attrs.update(dmom_what.attrs)
-
-        # add cfradial moment attributes
-        if 'cf' in standard or mask_and_scale:
-            attrs['scale_factor'] = dmom_what.attrs.get('gain')
-            attrs['add_offset'] = dmom_what.attrs.get('offset')
-            attrs['_FillValue'] = dmom_what.attrs.get('nodata')
-        if 'cf' in standard or decode_coords:
-            attrs['coordinates'] = 'elevation azimuth range'
-        if 'cf' in standard:
-            for k, v in moments_mapping[name].items():
-                attrs[k] = v
-            # drop short_name
-            attrs.pop('short_name')
-            attrs.pop('gamic')
-        if 'full' in standard:
-            attrs['_Undetect'] = dmom_what.attrs.get('undetect')
-
-        # assign attributes
-        dmom = dsmom.data.assign_attrs(attrs)
-
-        # keep original dataset name
-        if standard == 'none':
-            name = mom
-
-        # fix dimensions
-        dims = dmom.dims
-        if dims[0] == dims[1]:
-            datas.update({name: (['dim_0', 'dim_1'],
-                                 dmom.rename({dims[0]: 'dim_0'}))})
-        else:
-            datas.update({name: dmom.rename({dims[0]: 'dim_0',
-                                             dims[1]: 'dim_1'
-                                             })})
-    return datas
-
-
-def _get_odim_groups(ncf, groups, **kwargs):
-    """ Get hdf groups.
-
-    Parameters
-    ----------
-    ncf : netCDf4 Dataset handle
-    groups : list
-        list of groups-keys
-
-    Returns
-    -------
-    out : tuple
-        tuple of xarray datasets
-    """
-    return tuple(map(lambda x: _open_dataset(ncf, x, **kwargs), groups))
-
-
-def _get_odim_moment_names(sweep, fmt=None, src=None):
-    """Get moment names.
-
-    Parameters
-    ----------
-    sweep : netCDf4 Group handle
-    fmt : str
-        dataset descriptor format
-    src : str
-        dataset location
-
-    Returns
-    -------
-    out : :class:`numpy:numpy.ndarray`
-        array of moment names
-    """
-    moments = [mom for mom in getattr(sweep, src).keys() if
-               fmt in mom]
-    moments_idx = np.argsort([int(s[len(fmt):]) for s in moments])
-    return np.array(moments)[moments_idx]
-
-
-def _assign_odim_moments(ds, nch, sweep, **kwargs):
-    """Assign radar moments to dataset.
-
-    Parameters
-    ----------
-    nch : netCDF4.Dataset handle
-        source netCDF4 Dataset
-    ds : xarray dataset
-        destination dataset
-    sweep : str
-        netcdf group name
-
-    Keyword Arguments
-    -----------------
-    decode_times : bool
-        If True, decode cf times to np.datetime64. Defaults to True.
-    decode_coords : bool
-        If True, use the ‘coordinates’ attribute on variable
-        to assign coordinates. Defaults to True.
-    mask_and_scale : bool
-        If True, lazily scale (using scale_factor and add_offset)
-        and mask (using _FillValue). Defaults to True.
-    georef : bool
-        If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
-        2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy)
-    standard : str
-        * `none` - data is read as verbatim as possible, no metadata
-        * `odim` - data is read, odim metadata added to datasets
-        * `cf-mandatory` - data is read according to cfradial2 standard
-          importing mandatory metadata
-        * `cf-full` - data is read according to cfradial2 standard
-          importing all available cfradial2 metadata (not fully
-          implemented)
-
-    Returns
-    -------
-    ds : xarray dataset
-        Dataset with assigned radar moments
-    """
-    moments = _get_odim_moment_names(nch.nch[sweep], fmt=nch._mfmt,
-                                     src=nch._msrc)
-    if nch.flavour == 'ODIM':
-        for name, dmom in _get_odim_group_moments(nch.nch, sweep,
-                                                  moments=moments,
-                                                  **kwargs).items():
-            ds[name] = dmom
-    if nch.flavour == 'GAMIC':
-        ds = _get_odim_variables_moments(ds, moments=moments, **kwargs)
-
-    return ds
-
-
-def _get_odim_timevalues(nch, grps):
-    """Retrieve TimeArray from source data.
-
-    Parameters
-    ----------
-    nch : netCDF4.Dataset handle
-        source netCDF4 Dataset
-    grps : dict
-        Dictionary of dataset hdf5 groups ('how', 'what', 'where')
-
-    Returns
-    -------
-    timevals : :class:`numpy:numpy.ndarray`
-            array of time values
-    """
-    if nch.flavour == 'ODIM':
-        try:
-            timevals = grps['how'].odim.time_range
-        except (KeyError, AttributeError):
-            # timehandling if only start and end time is given
-            start, end = grps['what'].odim.time_range2
-            if start == end:
-                warnings.warn("WRADLIB: Equal ODIM `starttime` and `endtime` "
-                              "values. Can't determine correct sweep start-, "
-                              "end- and raytimes.", UserWarning)
-                timevals = np.ones(grps['where'].nrays) * start
-            else:
-                delta = (end - start) / grps['where'].nrays
-                timevals = np.arange(start + delta / 2., end, delta)
-                timevals = np.roll(timevals, shift=-grps['where'].a1gate)
-    if nch.flavour == 'GAMIC':
-        timevals = grps['what'].gamic.time_range.values
-
-    return timevals
-
-
-def _get_odim_coordinates(nch, grps):
-    """Retrieve coordinates according OdimH5 standard.
-
-    Parameters
-    ----------
-    nch : netCDF4.Dataset handle
-        source netCDF4 Dataset
-    grps : dict
-        Dictionary of dataset hdf5 groups ('how', 'what', 'where')
-
-    Returns
-    -------
-    coords : dict
-        Dictionary of coordinate arrays
-    """
-    flavour = nch.flavour.lower()
-    coords = collections.OrderedDict()
-    if flavour == 'odim':
-        rng = grps['where']
-        az = el = grps['how']
-    if flavour == 'gamic':
-        az = el = grps['what']
-        rng = grps['how']
-    try:
-        coords['azimuth'] = getattr(az, flavour).azimuth_range
-        coords['elevation'] = getattr(el, flavour).elevation_range
-    except (KeyError, AttributeError):
-        az = el = grps['where']
-        coords['azimuth'] = getattr(az, flavour).azimuth_range2
-        coords['elevation'] = getattr(el, flavour).elevation_range2
-    coords['range'] = getattr(rng, flavour).radial_range
-
-    return coords
-
-
-def _get_odim_sweep_mode(nch, grp):
-    """Retrieve sweep mode
-
-    Parameters
-    ----------
-    nch : netCDF4.Dataset handle
-    grp : dict
-        Dictionary of dataset hdf5 groups ('how', 'what', 'where')
-
-    Returns
-    -------
-    out : str
-        'azimuth_surveillance' or 'rhi'
-
-    """
-    odim_mode = grp['what'].attrs[nch._swmode]
-    return ('rhi' if odim_mode == 'RHI' else 'azimuth_surveillance')
-
-
-def _get_odim_full_vars(nch, grps):
-    """Retrieve available non mandatory variables from source data.
-
-    Parameters
-    ----------
-    nch : netCDF4.Dataset handle
-    grps : dict
-        Dictionary of dataset hdf5 groups ('how', 'what', 'where')
-
-    Returns
-    -------
-    full_vars : dict
-        full cf-variables
-    """
-    full_vars = collections.OrderedDict()
-    if nch.flavour == 'ODIM':
-        for k, v in cf_full_vars.items():
-            full_vars[k] = getattr(getattr(grps['how'],
-                                           nch.flavour.lower()), k)
-    if nch.flavour == 'GAMIC':
-        pass
-
-    return full_vars
-
-
-def _get_odim_fixed_angle(nch, grps):
-    """Retrieve fixed angle from source data.
-
-    Parameters
-    ----------
-    nch : netCDF4.Dataset handle
-    grps : dict
-        Dictionary of dataset hdf5 groups ('how', 'what', 'where')
-
-    Returns
-    -------
-    fixed-angle : float
-        fixed angle of specific scan
-    """
-    mode = _get_odim_sweep_mode(nch, grps)
-    if nch.flavour == 'ODIM':
-        ang = {'azimuth_surveillance': 'elangle', 'rhi': 'azangle'}
-        fixed_angle = getattr(grps['where'], ang[mode])
-    if nch.flavour == 'GAMIC':
-        ang = {'azimuth_surveillance': 'elevation', 'rhi': 'azimuth'}
-        fixed_angle = grps['how'].attrs[ang[mode]]
-    return fixed_angle
-
-
-def _get_odim_root_attributes(nch, grps):
-    """Retrieve root attributes according CfRadial2 standard.
-
-    Parameters
-    ----------
-    grps : dict
-        Dictionary of root hdf5 groups ('how', 'what', 'where')
-
-    Returns
-    -------
-    attrs : dict
-        Dictionary of root attributes
-    """
-    attrs = collections.OrderedDict()
-    attrs.update({'version': 'None',
-                  'title': 'None',
-                  'institution': 'None',
-                  'references': 'None',
-                  'source': 'None',
-                  'history': 'None',
-                  'comment': 'im/exported using wradlib',
-                  'instrument_name': 'None',
-                  })
-
-    attrs['version'] = grps['what'].attrs['version']
-
-    if nch.flavour == 'ODIM':
-        attrs['institution'] = grps['what'].attrs['source']
-        attrs['instrument'] = grps['what'].attrs['source']
-    if nch.flavour == 'GAMIC':
-        attrs['title'] = grps['how'].attrs['template_name']
-        attrs['instrument'] = grps['how'].attrs['host_name']
-
-    return attrs
