@@ -280,6 +280,8 @@ sweep_vars2 = {'azimuth', 'elevation', 'pulse_width', 'prt',
 
 sweep_vars3 = {'DBZ', 'VR', 'time', 'range', 'reflectivity_horizontal'}
 
+cf_full_vars = {'prt': 'prf', 'n_samples': 'pulse'}
+
 global_attrs = [('Conventions', 'Cf/Radial'),
                 ('version', 'Cf/Radial version number'),
                 ('title', 'short description of file contents'),
@@ -406,6 +408,8 @@ class OdimAccessor(object):
         self._elevation_range = None
         self._time_range = None
         self._time_range2 = None
+        self._prt = None
+        self._n_samples = None
 
     @property
     def radial_range(self):
@@ -505,6 +509,27 @@ class OdimAccessor(object):
 
             self._time_range2 = (start.timestamp(), end.timestamp())
         return self._time_range2
+
+    @property
+    def prt(self):
+        if self._prt is None:
+            try:
+                prt = 1. / self._obj.attrs['prf']
+                da = xr.DataArray(prt, dims=['dim_0'])
+                self._prt = da
+            except KeyError:
+                pass
+        return self._prt
+
+    @property
+    def n_samples(self):
+        if self._n_samples is None:
+            try:
+                da = xr.DataArray(self._obj.attrs['pulse'], dims=['dim_0'])
+                self._n_samples = da
+            except KeyError:
+                pass
+        return self._n_samples
 
 
 def to_cfradial2(volume, filename):
@@ -1285,6 +1310,9 @@ class OdimH5(XRadVol):
                              'follow_mode': 'none',
                              'prt_mode': 'fixed',
                              'fixed_angle': fixed_angle})
+            if 'cf-full' in standard:
+                full_vars = _get_odim_full_vars(nch, ds_grps)
+                vars.update(full_vars)
 
             # assign variables and coordinates
             ds = ds.assign(vars)
@@ -1867,6 +1895,31 @@ def _get_odim_sweep_mode(nch, grp):
     """
     odim_mode = grp['what'].attrs[nch._swmode]
     return ('rhi' if odim_mode == 'RHI' else 'azimuth_surveillance')
+
+
+def _get_odim_full_vars(nch, grps):
+    """Retrieve available non mandatory variables from source data.
+
+    Parameters
+    ----------
+    nch : netCDF4.Dataset handle
+    grps : dict
+        Dictionary of dataset hdf5 groups ('how', 'what', 'where')
+
+    Returns
+    -------
+    full_vars : dict
+        full cf-variables
+    """
+    full_vars = collections.OrderedDict()
+    if nch.flavour == 'ODIM':
+        for k, v in cf_full_vars.items():
+            full_vars[k] = getattr(getattr(grps['how'],
+                                           nch.flavour.lower()), k)
+    if nch.flavour == 'GAMIC':
+        pass
+
+    return full_vars
 
 
 def _get_odim_fixed_angle(nch, grps):
