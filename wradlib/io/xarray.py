@@ -355,7 +355,7 @@ class GamicAccessor(object):
                                    bin_range,
                                    dtype='float32')
             range_attrs['meters_to_center_of_first_gate'] = bin_range / 2.
-            da = xr.DataArray(range_data, dims=['range'], attrs=range_attrs)
+            da = xr.DataArray(range_data, dims=['dim_1'], attrs=range_attrs)
             self._radial_range = da
         return self._radial_range
 
@@ -424,7 +424,7 @@ class OdimAccessor(object):
             range_attrs[
                 'meters_between_gates'] = bin_range
 
-            da = xr.DataArray(range_data, dims=['range'], attrs=range_attrs)
+            da = xr.DataArray(range_data, dims=['dim_1'], attrs=range_attrs)
             self._radial_range = da
         return self._radial_range
 
@@ -439,7 +439,7 @@ class OdimAccessor(object):
                                      res,
                                      dtype='float32')
 
-            da = xr.DataArray(azimuth_data, attrs=az_attrs)
+            da = xr.DataArray(azimuth_data, dims=['dim_0'], attrs=az_attrs)
             self._azimuth_range = da
         return self._azimuth_range
 
@@ -463,7 +463,7 @@ class OdimAccessor(object):
             nrays = self._obj.attrs['nrays']
             elangle = self._obj.attrs['elangle']
             elevation_data = np.ones(nrays, dtype='float32') * elangle
-            da = xr.DataArray(elevation_data, attrs=el_attrs)
+            da = xr.DataArray(elevation_data, dims=['dim_0'], attrs=el_attrs)
             self._elevation_range = da
         return self._elevation_range
 
@@ -474,7 +474,7 @@ class OdimAccessor(object):
             startel = self._obj.attrs['startelA']
             stopel = self._obj.attrs['stopelA']
             elevation_data = (startel + stopel) / 2.
-            da = xr.DataArray(elevation_data, attrs=el_attrs)
+            da = xr.DataArray(elevation_data, dims=['dim_0'], attrs=el_attrs)
             self._elevation_range = da
         return self._elevation_range
 
@@ -784,6 +784,8 @@ class XRadVol(collections.abc.MutableMapping):
         self._sweeps = dict()
         self._nch = list()
         self.root = None
+        self._sweep_angles = list()
+        self._sweep_names = list()
         if init_root:
             self._init_root()
 
@@ -836,6 +838,29 @@ class XRadVol(collections.abc.MutableMapping):
         self._root = value
 
     @property
+    def sweep_angles(self):
+        if self.root is None:
+            return self._sweep_angles
+        return list(self.root.sweep_fixed_angle.values)
+
+    @sweep_angles.setter
+    def sweep_angles(self, value):
+        if self.root is None:
+            self._sweep_angles.append(value)
+
+    @property
+    def sweep_names(self):
+        if self.root is None:
+            return self._sweep_names
+        else:
+            return list(self.root.sweep_group_name.values)
+
+    @sweep_names.setter
+    def sweep_names(self, value):
+        if self.root is None:
+            self._sweep_names.append(value)
+
+    @property
     def sweep(self):
         """ Return sweep dimension count.
         """
@@ -845,9 +870,7 @@ class XRadVol(collections.abc.MutableMapping):
     def sweeps(self):
         """ Return zip sweep names, sweep_angles
         """
-        names = list(self.root.sweep_group_name.values)
-        angles = list(self.root.sweep_fixed_angle.values)
-        return zip(names, angles)
+        return zip(self.sweep_names, self.sweep_angles)
 
     @property
     def location(self):
@@ -1130,8 +1153,14 @@ class OdimH5(XRadVol):
         if not isinstance(filename, list):
             filename = [filename]
 
+        if len(filename) == 0:
+            raise ValueError("File list empty")
+
         for f in filename:
             self.assign_data(f, flavour=flavour, **kwargs)
+
+        if 'cf' in kwargs.get('standard', 'cf-mandatory'):
+            self.assign_root()
 
     def assign_data(self, filename, flavour=None, **kwargs):
         """Assign xarray dataset from hdf5 data structure.
@@ -1160,7 +1189,7 @@ class OdimH5(XRadVol):
         georef : bool
             If True, adds 2D AEQD x,y,z-coordinates, ground_range (gr) and
             2D (rays,bins)-coordinates for easy georeferencing (eg. cartopy).
-            Defaults to True.
+            Defaults to False.
         standard : str
             * `none` - data is read as verbatim as possible, no metadata
             * `odim` - data is read, odim metadata added to datasets
@@ -1197,18 +1226,7 @@ class OdimH5(XRadVol):
          swp_grp_name) = _get_odim_sweep_group_names(nch.nch,
                                                      nch._dsdesc)
 
-        sweep_fixed_angle = []
-        if 'cf' in standard:
-            time_coverage_start = np.datetime64('2037-01-01')
-            time_coverage_end = np.datetime64('1970-01-01')
-            if not decode_times:
-                epoch = np.datetime64('1970-01-01T00:00:00Z')
-                time_coverage_start = ((time_coverage_start - epoch) /
-                                       np.timedelta64(1, 's'))
-                time_coverage_end = ((time_coverage_end - epoch) /
-                                     np.timedelta64(1, 's'))
-
-        # iterate sweeps
+        # iterate sweeps in file
         for i, sweep in enumerate(src_swp_grp_name):
             # retrieve ds and assign datasetX how/what/where group attributes
             groups = [None, 'how', 'what', 'where']
@@ -1222,19 +1240,10 @@ class OdimH5(XRadVol):
             # possible bug in netcdf-c reader assuming only one dimension when
             # dimensions have same size
             # see https://github.com/Unidata/netcdf4-python/issues/945
-            if len(ds.dims) == 1:
-                # we just read the contents without standard and decoding
-                decode_times = False
-                decode_coords = False
-                georef = False
-                standard = 'None'
-            else:
-                # need to reclaim kwargs
-                decode_times = kwargs.get('decode_times', True)
-                decode_coords = kwargs.get('decode_coords', True)
-                georef = kwargs.get('georef', False)
-                standard = kwargs.get('standard', 'cf-mandatory')
-                ds = _assign_odim_moments(ds, nch, sweep, **kwargs)
+            # see https://github.com/Unidata/netcdf-c/issues/1484
+            # fixed by dimension reassignment in _get_odim_group_moments and
+            # _get_odim_variables_moments
+            ds = _assign_odim_moments(ds, nch, sweep, **kwargs)
 
             # retrieve and assign gamic ray_header
             if nch.flavour == 'GAMIC':
@@ -1242,7 +1251,6 @@ class OdimH5(XRadVol):
                 ds_grps['what'] = ds_grps['what'].assign(rh)
 
             # coordinates wrap-up
-
             vars = collections.OrderedDict()
             coords = collections.OrderedDict()
             if 'cf' in standard or georef:
@@ -1254,9 +1262,7 @@ class OdimH5(XRadVol):
                 coords['sweep_mode'] = sweep_mode
 
             if 'cf' in standard or decode_coords or georef:
-                vars.update(_get_odim_coordinates(nch, ds_grps))
-                vars['azimuth'] = vars['azimuth'].rename({'dim_0': dim0})
-                vars['elevation'] = vars['elevation'].rename({'dim_0': dim0})
+                coords.update(_get_odim_coordinates(nch, ds_grps))
                 # georeference needs coordinate variables
                 if georef:
                     geods = xr.Dataset(vars, coords)
@@ -1273,7 +1279,6 @@ class OdimH5(XRadVol):
 
             # assign global sweep attributes
             fixed_angle = _get_odim_fixed_angle(nch, ds_grps)
-            sweep_fixed_angle.append(fixed_angle)
             if 'cf' in standard:
                 vars.update({'sweep_number': i,
                              'sweep_mode': sweep_mode,
@@ -1284,6 +1289,7 @@ class OdimH5(XRadVol):
             # assign variables and coordinates
             ds = ds.assign(vars)
             ds = ds.assign_coords(**coords)
+            ds = ds.rename_dims({'dim_0': dim0, 'dim_1': 'range'})
 
             # decode dataset if requested
             if decode_times or decode_coords or mask_and_scale:
@@ -1538,14 +1544,14 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
     standard = kwargs.get('standard', 'cf-mandatory')
     mask_and_scale = kwargs.get('mask_and_scale', True)
     decode_coords = kwargs.get('decode_coords', True)
-    dim0 = kwargs.get('dim0', 'time')
 
     # fix dimensions
     dims = sorted(list(ds.dims.keys()),
                   key=lambda x: int(x[len('phony_dim_'):]))
-    ds = ds.rename({dims[0]: dim0,
-                    dims[1]: 'range',
-                    })
+
+    ds = ds.rename({dims[0]: 'dim_0'})
+    if len(dims) > 1:
+        ds = ds.rename({dims[1]: 'dim_1'})
 
     for mom in moments:
         # open dataX dataset
@@ -1599,6 +1605,11 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
         # assign attributes to moment
         dmom.attrs.update(attrs)
 
+        # fix dimensions, when dim_0 == dim_1
+        dims = dmom.dims
+        if dims[0] == dims[1]:
+            ds.update({mom: (['dim_0', 'dim_1'], dmom)})
+
         # keep original dataset name
         if standard != 'none':
             ds = ds.rename({mom: name.upper()})
@@ -1626,7 +1637,6 @@ def _get_odim_group_moments(nch, sweep, moments=None, **kwargs):
     standard = kwargs.get('standard', 'cf-mandatory')
     mask_and_scale = kwargs.get('mask_and_scale', True)
     decode_coords = kwargs.get('decode_coords', True)
-    dim0 = kwargs.get('dim0', 'time')
     chunks = kwargs.get('chunks', None)
 
     datas = {}
@@ -1662,16 +1672,19 @@ def _get_odim_group_moments(nch, sweep, moments=None, **kwargs):
         # assign attributes
         dmom = dsmom.data.assign_attrs(attrs)
 
-        # fix dimensions
-        dims = dmom.dims
-
         # keep original dataset name
         if standard == 'none':
             name = mom
 
-        datas.update({name: dmom.rename({dims[0]: dim0,
-                                         dims[1]: 'range'
-                                         })})
+        # fix dimensions
+        dims = dmom.dims
+        if dims[0] == dims[1]:
+            datas.update({name: (['dim_0', 'dim_1'],
+                                 dmom.rename({dims[0]: 'dim_0'}))})
+        else:
+            datas.update({name: dmom.rename({dims[0]: 'dim_0',
+                                             dims[1]: 'dim_1'
+                                             })})
     return datas
 
 
@@ -1747,10 +1760,6 @@ def _assign_odim_moments(ds, nch, sweep, **kwargs):
         * `cf-full` - data is read according to cfradial2 standard
           importing all available cfradial2 metadata (not fully
           implemented)
-    dim0 : str
-        name of the ray-dimension of DataArrays and Dataset:
-            * `time` - cfradial2 standard
-            * `azimuth` - better for working with xarray
 
     Returns
     -------

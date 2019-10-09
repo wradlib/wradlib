@@ -164,10 +164,13 @@ def georeference_dataset(obj, **kwargs):
 
     dim0 = obj['azimuth'].dims[0]
 
+    # create meshgrid to overcome dimension problem with spherical_to_xyz
+    r, az = np.meshgrid(obj['range'], obj['azimuth'])
+
     # GDAL OSR, convert to this proj
     if isinstance(proj, osr.SpatialReference):
-        xyz = polar.spherical_to_proj(obj['range'],
-                                      obj['azimuth'],
+        xyz = polar.spherical_to_proj(r,
+                                      az,
                                       obj['elevation'],
                                       site,
                                       proj=proj,
@@ -175,8 +178,8 @@ def georeference_dataset(obj, **kwargs):
                                       ke=ke)
     # other proj, convert to aeqd
     elif proj:
-        xyz, dst_proj = polar.spherical_to_xyz(obj['range'],
-                                               obj['azimuth'],
+        xyz, dst_proj = polar.spherical_to_xyz(r,
+                                               az,
                                                obj['elevation'],
                                                site,
                                                re=re,
@@ -184,8 +187,8 @@ def georeference_dataset(obj, **kwargs):
                                                squeeze=True)
     # proj, convert to aeqd and add offset
     else:
-        xyz, dst_proj = polar.spherical_to_xyz(obj['range'],
-                                               obj['azimuth'],
+        xyz, dst_proj = polar.spherical_to_xyz(r,
+                                               az,
                                                obj['elevation'],
                                                site,
                                                re=re,
@@ -194,6 +197,7 @@ def georeference_dataset(obj, **kwargs):
         xyz += np.array(site).T
 
     # calculate center point
+    # use first range bins
     center = np.mean(xyz[:, 0, :], axis=0)
 
     # calculate ground range
