@@ -818,6 +818,7 @@ class H5RadFile(XRadFile):
 
     def __init__(self, filename=None, flavour=None, **kwargs):
         kwargs['standard'] = kwargs.get('standard', 'odim')
+        kwargs['dim0'] = kwargs.get('dim0', 'azimuth')
         super(H5RadFile, self).__init__(filename=filename,
                                         flavour=flavour, **kwargs)
 
@@ -1917,6 +1918,8 @@ class OdimH5(XRadVol):
             list of concatenated xarray.Datasets
         """
         fix_coords = kwargs.pop('fix_coords', [])
+        if ['time'] not in fix_coords:
+            fix_coords.append('time')
         out = []
         angles = [ds.fixed_angle.values.item() for ds in obj]
         unique_angles = np.unique(angles)
