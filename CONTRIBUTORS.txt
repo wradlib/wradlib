@@ -3,7 +3,7 @@ Developers
 
 Maik Heistermann - University of Potsdam
 Kai Muehlbauer - University of Bonn
-Edouard Goudenhooft - Royal Meteorological Institute, Brussels
+Edouard Goudenhoofdt - The Royal Meteorological Institute of Belgium
 
 Contributors
 ------------
