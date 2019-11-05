@@ -69,8 +69,9 @@ try:
     from tqdm import tqdm
 except ImportError:
     def tqdm(val, **kwargs):
-        print("Please wait for completion of time consuming task! \n"
-              "Please install 'tqdm' for showing a progress bar instead")
+        print("wradlib: Please wait for completion of time consuming task! \n"
+              "wradlib: Please install 'tqdm' for showing a progress bar "
+              "instead.")
         return val
 
 from wradlib.georef import xarray
@@ -1433,6 +1434,7 @@ class XRadVol(collections.abc.MutableMapping):
     """
 
     def __init__(self, init_root=False):
+        # Todo: make self._sweeps a list for better handling
         self._sweeps = dict()
         self._nch = list()
         self.root = None
@@ -1814,11 +1816,13 @@ class OdimH5(XRadVol):
             imported.
         """
         super(OdimH5, self).__init__()
-        filename = np.array(filename).flatten()
-        self._merge_files(filename, flavour=flavour, **kwargs)
-        self._assign_root()
+        georeference = kwargs.pop('georef', False)
+        self.merge_files(filename, flavour=flavour, **kwargs)
+        self.assign_root()
+        if georeference:
+            self.georeference()
 
-    def _merge_files(self, filename, flavour=None, **kwargs):
+    def merge_files(self, filename, flavour=None, **kwargs):
         """Merge given files into Xarray backed structure
 
        Parameters
@@ -1853,10 +1857,14 @@ class OdimH5(XRadVol):
                     raise IOError('wradlib: Unknown file types while reading: '
                                   '{}.'.format(filename))
 
+        # init sweep_ds with possibly existing data
+        sweep_ds = list(self._sweeps.values())
+
         if nch:
             self._nch.extend(nch)
+
             # gather sweeps
-            sweep_ds = [k for n in nch for k in n]
+            sweep_ds += [k for n in nch for k in n]
 
             # merge by equal time
             sweep_ds = self._merge_by_time(sweep_ds, **kwargs)
@@ -1865,11 +1873,10 @@ class OdimH5(XRadVol):
             sweep_ds = self._merge_by_angle(sweep_ds, **kwargs)
 
             # sort sweeps by time of first occurrence
+            # todo: sortby time or sort by angle
             sweep_ds.sort(key=lambda x: x.time.values.min())
 
-            # todo: we need another _merge_by_angle if we have already sweeps
-            # within the object
-            # sort timeseries of sweeps
+            # sort timeseries of single sweeps
             for i, sw in enumerate(sweep_ds):
                 self._sweeps[f'sweep_{i+1}'] = sw.sortby('time')
 
@@ -1918,26 +1925,48 @@ class OdimH5(XRadVol):
             list of concatenated xarray.Datasets
         """
         fix_coords = kwargs.pop('fix_coords', [])
-        if ['time'] not in fix_coords:
-            fix_coords.append('time')
+        include_coords = set(kwargs.pop('coords', []))
+        if 'elevation' in fix_coords and 'elevation' in include_coords:
+            include_coords.remove('elevation')
+        if 'time' in fix_coords:
+            include_coords.add('rtime')
+        odim_vars = set(ODIM_NAMES)
         out = []
         angles = [ds.fixed_angle.values.item() for ds in obj]
         unique_angles = np.unique(angles)
         if len(unique_angles) == len(obj):
             out.extend([ob for ob in obj])
         else:
-            for a in unique_angles:
-                idx = np.argwhere(angles == a).flatten()
-                merge_list = [obj[i].pipe(_fix_coords, fix_coords)
-                              for i in tqdm(idx, desc='Concat',
-                                            unit=' Timesteps', leave=None)]
-                out.append(xr.concat(merge_list,
-                                     dim="time",
-                                     data_vars='different',
-                                     coords='different'))
+            try:
+                for a in unique_angles:
+                    idx = np.argwhere(angles == a).flatten()
+                    merge_list = [obj[i].pipe(_fix_coords, fix_coords)
+                                  for i in tqdm(idx, desc='Concat',
+                                                unit=' Timesteps', leave=None)]
+                    current_coords = set(merge_list[0].coords)
+                    current_vars = set(merge_list[0].variables)
+                    data_vars = odim_vars & current_vars
+                    coords = include_coords & current_coords
+
+                    # todo: make this more flexible and reliable
+                    #  in terms of merging
+                    out.append(xr.concat(merge_list,
+                                         dim="time",
+                                         data_vars=list(data_vars),
+                                         coords=list(coords),
+                                         compat='equals'))
+            except ValueError as e:
+                if e.args[0] == ('time already exists as coordinate '
+                                 'or variable name.'):
+                    e.args = ('wradlib: {} Please add "time" to keyword '
+                              'argument "fix_coords" to fix this.'
+                              ''.format(e.args[0]),)
+                    raise
+                else:
+                    raise
         return out
 
-    def _assign_root(self):
+    def assign_root(self):
         """(Re-)Create root object according CfRadial2 standard
         """
         # assign root variables
@@ -2019,8 +2048,12 @@ def _fix_time(ds):
     -------
     ds : xarray.Dataset
     """
-    ds = ds.rename({'time': 'rtime'})
-    ds = ds.assign_coords({'time': (['time'], [ds['rtime'].min().values])})
+    try:
+        ds = ds.rename({'time': 'rtime'})
+        ds = ds.assign_coords({'time': (['time'], [ds['rtime'].min().values])})
+    except ValueError as e:
+        if e.args[0] != "the new name 'rtime' conflicts":
+            raise
     return ds
 
 
