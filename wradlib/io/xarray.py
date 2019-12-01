@@ -994,6 +994,7 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         """
         return self.what['quantity']
 
+
 # todo: subclass this for ODIM and GAMIC flavours
 class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
     """Class for holding one radar sweep
@@ -1284,6 +1285,53 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
         return ds
 
 
+# todo: subclass this for ODIM and GAMIC flavours
+class XRadSweepOdim(XRadSweep):
+    """Class for holding one radar sweep
+
+    Parameters
+    ----------
+
+    ncfile : {netCDF4.Dataset, h5py.File or h5netcdf.File object}
+        File handle of file containing radar sweep
+    ncpath : str
+        path to sweep group
+    """
+
+    def __init__(self, ncfile, ncpath, parent=None, **kwargs):
+        super(XRadSweepOdim, self).__init__(ncfile, ncpath, parent)
+        #self._kwargs = kwargs
+        #self._fixed_angle = None
+        #self._data = None
+        #self._seq.extend(self._get_moments())
+
+# todo: subclass this for ODIM and GAMIC flavours
+class XRadSweepGamic(XRadSweep):
+    """Class for holding one radar sweep
+
+    Parameters
+    ----------
+
+    ncfile : {netCDF4.Dataset, h5py.File or h5netcdf.File object}
+        File handle of file containing radar sweep
+    ncpath : str
+        path to sweep group
+    """
+
+    def __init__(self, ncfile, ncpath, parent=None, **kwargs):
+        super(XRadSweepGamic, self).__init__(ncfile, ncpath, parent)
+        #self._kwargs = kwargs
+        #self._fixed_angle = None
+        #self._data = None
+        #self._seq.extend(self._get_moments())
+
+    @property
+    def fixed_angle(self):
+        return np.round(self.how['elevation'],
+                        decimals=1)
+
+
+
 class XRadTimeSeries(XRadBase):
 
     def __init__(self, **kwargs):
@@ -1496,14 +1544,16 @@ def _open_odim_sweep(filename, loader, attr, **kwargs):
         groups = list(fattr)
 
     dsdesc = 'dataset'
+    sweep_cls = XRadSweepOdim
     if 'GAMIC' in kwargs.get('flavour', 'ODIM'):
         dsdesc = 'scan'
+        sweep_cls = XRadSweepGamic
 
     # iterate over single sweeps
     sweeps = [k for k in groups if dsdesc in k]
     sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
     sweeps = np.array(sweeps)[sweeps_idx].tolist()
-    return [XRadSweep(netcdf, k, **kwargs) for k in sweeps]
+    return [sweep_cls(netcdf, k, **kwargs) for k in sweeps]
 
 
 def open_odim(paths, loader='netcdf4', **kwargs):
