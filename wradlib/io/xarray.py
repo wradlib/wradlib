@@ -685,6 +685,39 @@ def to_odim(volume, filename):
     h5.close()
 
 
+def _preprocess_moment(ds, mom):
+
+    quantity = mom.quantity
+    # todo: do not use private property, make this public
+    if mom.parent._kwargs.get('mask_and_scale', False):
+        what = mom.what
+        attrs = collections.OrderedDict()
+        attrs['scale_factor'] = what['gain']
+        attrs['add_offset'] = what['offset']
+        attrs['_FillValue'] = what['nodata']
+        attrs['coordinates'] = 'elevation azimuth range'
+        try:
+            for k, v in moments_mapping[quantity].items():
+                attrs[k] = v
+        except KeyError:
+            pass
+        else:
+            attrs.pop('short_name')
+            attrs.pop('gamic')
+            attrs['_Undetect'] = what['undetect']
+        ds['data'] = ds['data'].assign_attrs(attrs)
+
+    # fix dimensions
+    dims = sorted(list(ds.dims.keys()),
+                  key=lambda x: int(x[len('phony_dim_'):]))
+
+    ds = ds.rename({'data': quantity,
+                    dims[0]: 'dim_0',
+                    dims[1]: 'dim_1'})
+
+    return ds
+
+
 def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
                     preprocess=None, engine=None,
                     lock=None, data_vars='all', coords='minimal',
@@ -756,7 +789,7 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
         in moments]
     file_objs = [getattr_(ds, '_file_obj') for ds in datasets]
     if preprocess is not None:
-        datasets = [preprocess(ds, mom, moments._kwargs.get('mask_and_scale', False)) for ds, mom in zip(datasets, moments)]
+        datasets = [preprocess(ds, mom) for ds, mom in zip(datasets, moments)]
 
     if parallel:
         # calling compute here will return the datasets/file_objs lists,
@@ -775,34 +808,6 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
     combined._file_obj = _MultiFileCloser(file_objs)
     combined.attrs = datasets[0].attrs
     return combined
-
-def rename_quantity(ds, mom, decode=False):
-    if decode:
-        attrs = collections.OrderedDict()
-        attrs['scale_factor'] = mom.what['gain']
-        attrs['add_offset'] = mom.what['offset']
-        attrs['_FillValue'] = mom.what['nodata']
-        attrs['coordinates'] = 'elevation azimuth range'
-        try:
-            for k, v in moments_mapping[mom.quantity].items():
-                attrs[k] = v
-        except KeyError:
-            pass
-        else:
-            attrs.pop('short_name')
-            attrs.pop('gamic')
-            attrs['_Undetect'] = mom.what['undetect']
-        ds['data'] = ds['data'].assign_attrs(attrs)
-
-    # fix dimensions
-    dims = sorted(list(ds.dims.keys()),
-                  key=lambda x: int(x[len('phony_dim_'):]))
-
-    ds = ds.rename({'data': mom.quantity,
-                    dims[0]: 'dim_0',
-                    dims[1]: 'dim_1'})
-
-    return ds
 
 
 class XRadBase(collections.abc.MutableSequence):
@@ -861,6 +866,10 @@ class OdimH5GroupAttributeMixin():
     def ncid(self):
         """Returns handle for current path
         """
+        # root-group can't be subset with netcdf4 and h5netcdf
+        if self._ncpath == '/':
+            if isinstance(self.ncfile, (nc.Dataset, h5netcdf.File)):
+                return self._ncfile
         return self._ncfile[self.ncpath]
 
     @property
@@ -976,10 +985,6 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         return self.parent.data[self.quantity]
 
     @property
-    def engine(self):
-        return self.parent.engine
-
-    @property
     def time(self):
         return self.parent.time
 
@@ -1043,8 +1048,9 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
         return out
 
     def _get_azimuth_how(self):
-        startaz = self.how['startazA']
-        stopaz = self.how['stopazA']
+        how = self.how
+        startaz = how['startazA']
+        stopaz = how['stopazA']
         zero_index = np.where(stopaz < startaz)
         stopaz[zero_index[0]] += 360
         azimuth_data = (startaz + stopaz) / 2.
@@ -1060,28 +1066,32 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
         return azimuth_data
 
     def _get_elevation_how(self):
-        startel = self.how['startelA']
-        stopel = self.how['stopelA']
+        how = self.how
+        startel = how['startelA']
+        stopel = how['stopelA']
         elevation_data = (startel + stopel) / 2.
         return elevation_data
 
     def _get_elevation_where(self):
-        nrays = self.where['nrays']
-        elangle = self.where['elangle']
+        where = self.where
+        nrays = where['nrays']
+        elangle = where['elangle']
         elevation_data = np.ones(nrays, dtype='float32') * elangle
         return elevation_data
 
     def _get_time_how(self):
-        startT = self.how['startazT']
-        stopT = self.how['stopazT']
+        how = self.how
+        startT = how['startazT']
+        stopT = how['stopazT']
         time_data = (startT + stopT) / 2.
         return time_data
 
     def _get_time_what(self):
-        startdate = self.what['startdate']
-        starttime = self.what['starttime']
-        enddate = self.what['enddate']
-        endtime = self.what['endtime']
+        what = self.what
+        startdate = what['startdate']
+        starttime = what['starttime']
+        enddate = what['enddate']
+        endtime = what['endtime']
         start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
         end = dt.datetime.strptime(enddate + endtime, '%Y%m%d%H%M%S')
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
@@ -1100,23 +1110,24 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
         return time_data
 
     def _get_time(self):
-        startdate = self.what['startdate']
-        starttime = self.what['starttime']
+        what = self.what
+        startdate = what['startdate']
+        starttime = what['starttime']
         start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         da = xr.DataArray(start, attrs=time_attrs)
-        if self._kwargs.get('decode_times', False):
+        if self.decode_times:
             da = self._decode_cf(da)
         return da
 
-    def _get_times(self):
+    def _get_ray_times(self):
         try:
             time_data = self._get_time_how()
         except (AttributeError, KeyError):
             time_data = self._get_time_what()
         da = xr.DataArray(time_data, dims=['dim_0'],
                           attrs=time_attrs)
-        if self._kwargs.get('decode_times', False):
+        if self.decode_coords:
             da = self._decode_cf(da)
         return da
 
@@ -1127,7 +1138,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
             azimuth_data = self._get_azimuth_where()
         da = xr.DataArray(azimuth_data, dims=['dim_0'],
                           attrs=az_attrs)
-        if self._kwargs.get('decode_coords', False):
+        if self.decode_coords:
             da = self._decode_cf(da)
         return da
 
@@ -1138,14 +1149,15 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
             elevation_data = self._get_elevation_where()
         da = xr.DataArray(elevation_data, dims=['dim_0'],
                           attrs=el_attrs)
-        if self._kwargs.get('decode_coords', False):
+        if self.decode_coords:
             da = self._decode_cf(da)
         return da
 
     def _get_range(self):
-        ngates = self.where['nbins']
-        range_start = self.where['rstart'] * 1000.
-        bin_range = self.where['rscale']
+        where = self.where
+        ngates = where['nbins']
+        range_start = where['rstart'] * 1000.
+        bin_range = where['rscale']
         cent_first = range_start + bin_range / 2.
         range_data = np.arange(cent_first,
                                range_start + bin_range * ngates,
@@ -1156,13 +1168,13 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
         range_attrs[
             'meters_between_gates'] = bin_range
         da = xr.DataArray(range_data, dims=['dim_1'], attrs=range_attrs)
-        if self._kwargs.get('decode_coords', False):
+        if self.decode_coords:
             da = self._decode_cf(da)
         return da
 
     def _get_coords(self):
         ds = xr.Dataset({'time': self.time,
-                         'rtime': self.times,
+                         'rtime': self.ray_times,
                          'azimuth': self.azimuth,
                          'elevation': self.elevation,
                          'range': self.rng})
@@ -1171,9 +1183,9 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
 
     def _merge_moments(self):
         ds = _open_mfmoments(self,
-                             chunks=self._kwargs.get('chunks', None),
-                             preprocess=rename_quantity,
-                             parallel=self._kwargs.get('parallel', False),
+                             chunks=self.chunks,
+                             preprocess=_preprocess_moment,
+                             parallel=self.parallel,
                              )
         return ds
 
@@ -1187,15 +1199,35 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
         return moments
 
     @property
+    def chunks(self):
+        return self._kwargs.get('chunks', None)
+
+    @property
+    def parallel(self):
+        return self._kwargs.get('parallel', False)
+
+    @property
+    def mask_and_scale(self):
+        return self._kwargs.get('mask_and_scale', False)
+
+    @property
+    def decode_coords(self):
+        return self._kwargs.get('decode_coords', False)
+
+    @property
+    def decode_times(self):
+        return self._kwargs.get('decode_times', False)
+
+    @property
     def data(self):
         """Return and cache moments as combined xarray Dataset
         """
         if self._data is None:
             # merge moments and assign time coord
             self._data = self._merge_moments()
-        if 'mask_and_scale' in self._kwargs:
+        if self.mask_and_scale:
             self._data = self._decode_cf(self._data)
-        if 'decode_coords' in self._kwargs:
+        if self.decode_coords:
             self._data = self._data.assign_coords(self.coords)
 
         return self._data.rename_dims({'dim_0': 'azimuth',
@@ -1220,8 +1252,8 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
         return self._get_elevation()
 
     @property
-    def times(self):
-        return self._get_times()
+    def ray_times(self):
+        return self._get_ray_times()
 
     @property
     def time(self):
@@ -1238,6 +1270,8 @@ class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
 
     @property
     def site(self):
+        # hack to claim file root subgroups
+        # todo: can we move it into XRadTimeSeries somehow?
         class OdimAttrs(OdimH5GroupAttributeMixin):
             def __init__(self, ncfile):
                 self._ncfile = ncfile
@@ -1274,13 +1308,15 @@ class XRadTimeSeries(XRadBase):
     @property
     def data(self):
         if self._data is None:
+            # moments handling
+            # get intersection and union
             moment_set = [set(list(t1.data.variables)) for t1
                           in tqdm(self, desc='Collecting', unit=' Timsteps',
                                   leave=None)]
             moment_set_i = set.intersection(*moment_set)
             moment_set_u = set.union(*moment_set)
+            # drop variables not available in all datasets
             drop = moment_set_i ^ moment_set_u
-            #print(drop, list(moment_set_i))
             if drop:
                 warnings.warn(
                     "wradlib: Moments {} are not available in all datasets "
@@ -1333,10 +1369,10 @@ class XRadVolume(XRadBase):
         # extract time coverage
         # try:
         try:
-            times = np.array([[t[0].times.values.min(), t[-1].times.values.max()] for t in self]).flatten()
+            times = np.array([[t[0].ray_times.values.min(), t[-1].ray_times.values.max()] for t in self]).flatten()
             #times_end =#tmin = [t[0].times.values.min() for t in self]
         except AttributeError:
-            times = np.array([[t.times.values.min(), t.times.values.max()]  for t in self]).flatten()
+            times = np.array([[t.ray_times.values.min(), t.ray_times.values.max()] for t in self]).flatten()
 
         # print(tmin)
         # except AttributeError:
@@ -1409,6 +1445,7 @@ def collect_by_time(obj):
         out.extend(obj)
     else:
         # runs only if several files for the same timestep are available
+        # eg DWD's one sweep one moment files
         for t in unique_times:
             idx = np.argwhere(times == t).flatten()
             out1 = obj[idx[0]]
