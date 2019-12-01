@@ -994,7 +994,7 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         """
         return self.what['quantity']
 
-
+# todo: subclass this for ODIM and GAMIC flavours
 class XRadSweep(OdimH5GroupAttributeMixin, XRadBase):
     """Class for holding one radar sweep
 
@@ -1495,9 +1495,13 @@ def _open_odim_sweep(filename, loader, attr, **kwargs):
     else:
         groups = list(fattr)
 
+    dsdesc = 'dataset'
+    if 'GAMIC' in kwargs.get('flavour', 'ODIM'):
+        dsdesc = 'scan'
+
     # iterate over single sweeps
-    sweeps = [k for k in groups if 'dataset' in k]
-    sweeps_idx = np.argsort([int(s[len('dataset'):]) for s in sweeps])
+    sweeps = [k for k in groups if dsdesc in k]
+    sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
     sweeps = np.array(sweeps)[sweeps_idx].tolist()
     return [XRadSweep(netcdf, k, **kwargs) for k in sweeps]
 
