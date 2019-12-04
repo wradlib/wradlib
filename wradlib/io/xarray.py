@@ -806,6 +806,7 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
         open_ = xr.open_dataset
         getattr_ = getattr
 
+    #moments = [mom for mom in moments if mom.quantity in moments.parent._merge_moments]
     datasets = [
         open_(p.filename, group=p.ncpath, engine=p.engine, **open_kwargs) for p
         in moments]
@@ -870,13 +871,18 @@ class OdimH5GroupAttributeMixin():
     """Mixin Class for Odim Group Attribute Retrieval
 
     """
-    __slots__ = ['_ncfile', '_ncpath', '_parent']
+    __slots__ = ['_attrs', '_ncfile', '_ncpath', '_parent', '_how',
+                 '_what', '_where']
 
     def __init__(self, ncfile=None, ncpath=None, parent=None):
         super(OdimH5GroupAttributeMixin, self).__init__()
         self._ncfile = ncfile
         self._ncpath = ncpath
         self._parent = parent
+        self._attrs = None
+        self._how = None
+        self._what = None
+        self._where = None
 
     @property
     def ncpath(self):
@@ -904,23 +910,31 @@ class OdimH5GroupAttributeMixin():
     def how(self):
         """Return attributes of `how`-group
         """
-        return self._get_attributes('how')
+        if self._how is None:
+            self._how = self._get_attributes('how')
+        return self._how
 
     @property
     def what(self):
         """Return attributes of `what`-group
         """
-        return self._get_attributes('what')
+        if self._what is None:
+            self._what = self._get_attributes('what')
+        return self._what
 
     @property
     def where(self):
         """Return attributes of `where`-group
         """
-        return self._get_attributes('where')
+        if self._where is None:
+            self._where = self._get_attributes('where')
+        return self._where
 
     @property
     def attrs(self):
-        return self._decode( {**self.ncid.attrs})
+        if self._attrs is None:
+            self._attrs = self._decode( {**self.ncid.attrs})
+        return self._attrs
 
     @property
     def filename(self):
@@ -953,6 +967,7 @@ class OdimH5GroupAttributeMixin():
 
     def _get_attributes(self, grp, ncid=None):
         """Return dict with attributes extracted from `grp`
+        # todo: currently we get the whole group, even if we only need one
         """
         if ncid is None:
             ncid = self.ncid
@@ -1383,6 +1398,21 @@ class XRadSweepOdim(XRadSweep):
         da = xr.DataArray(start, attrs=time_attrs)
         return da
 
+    def _get_time_fast(self):
+        ncid = self.ncid
+        try:
+            if isinstance(self.ncfile, nc.Dataset):
+                startdate = ncid['what'].getncattr('startdate')
+                starttime = ncid['what'].getncattr('starttime')
+            else:
+                startdate = ncid['what'].attrs['startdate'].decode()
+                starttime = ncid['what'].attrs['starttime'].decode()
+        except (IndexError, KeyError):
+            return None
+        start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
+        start = start.replace(tzinfo=dt.timezone.utc).timestamp()
+        return start
+
 
 class XRadSweepGamic(XRadSweep):
     """Class for holding one radar sweep
@@ -1567,9 +1597,15 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
             coords = set(['rtime', 'range', 'azimuth', 'elevation', 'time',
                           'altitude', 'latitude', 'longitude', 'sweep_mode'])
             # get intersection and union
-            moment_set = [set(list(t1.data.variables)) for t1
-                          in tqdm(self, desc='Collecting', unit=' Timesteps',
-                                  leave=None)]
+
+            #moment_set = [set(list(t1.data.variables)) for t1
+            #              in tqdm(self, desc='Collecting', unit=' Timesteps',
+            #                      leave=None)]
+            moment_set = [set([k.quantity for k in t1]) for t1 in self]
+            #moment_set = [set(f"{k.quantity}" for k in t1 for t1 in self for k in t1]
+            #moment_set = [set(list(t1.data.variables)) for t1
+            #              in tqdm(self, desc='Collecting', unit=' Timesteps',
+            #                      leave=None)]
             moment_set_i = set.intersection(*moment_set)
             moment_set_u = set.union(*moment_set)
             # drop variables not available in all datasets
@@ -1582,7 +1618,11 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
                     "and will be dropped from the result.".format(drop))
             # todo: catch possible error and add precise ErrorMessage
             self._data = xr.concat(
-                [f.data.drop_vars(drop, errors='ignore') for f in self],
+                [f.data.drop_vars(drop, errors='ignore') for f in tqdm(self, desc='Collecting', unit=' Timesteps',
+                                  leave=None)],
+                #[f.data for f in tqdm(self, desc='Collecting',
+                #                      unit=' Timesteps',
+                #                      leave=None)],
                 data_vars=list(keep),
                 #data_vars='minimal',
                 dim='time')
@@ -1673,8 +1713,19 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
                             })
 
         # assign root attributes
-        # attrs = nch._get_root_attributes()
-        # root = root.assign_attrs(attrs)
+        attrs = collections.OrderedDict()
+        attrs.update({'version': 'None',
+                      'title': 'None',
+                      'institution': 'None',
+                      'references': 'None',
+                      'source': 'None',
+                      'history': 'None',
+                      'comment': 'im/exported using wradlib',
+                      'instrument_name': 'None',
+                      })
+        attrs['version'] = self.what['version']
+        root = root.assign_attrs(attrs)
+        root = root.assign_attrs(self.attrs)
         self._root = root
 
     @property
@@ -1699,8 +1750,8 @@ def collect_by_time(obj):
         wrapper around list of XRadSweep objects
     """
     out = XRadTimeSeries()
-    times = [ds.time.values.item() for ds in obj]
-    unique_times = np.array(list(dict.fromkeys(times)))
+    times = [ds._get_time_fast() for ds in obj]
+    unique_times = np.array(list(set(times)))
     if len(unique_times) == 1:
         out.append(obj)
     elif len(unique_times) == len(obj):
@@ -1764,9 +1815,10 @@ def _open_odim_sweep(filename, loader, attr, **kwargs):
         sweep_cls = XRadSweepGamic
 
     # iterate over single sweeps
+    # todo: if sorting does not matter, we can skip this
     sweeps = [k for k in groups if dsdesc in k]
-    sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
-    sweeps = np.array(sweeps)[sweeps_idx].tolist()
+    #sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
+    #sweeps = np.array(sweeps)[sweeps_idx].tolist()
     return [sweep_cls(netcdf, k, **kwargs) for k in sweeps]
 
 
@@ -3086,6 +3138,7 @@ def _get_odim_root_attributes(nch, grps):
     attrs : dict
         Dictionary of root attributes
     """
+
     attrs = collections.OrderedDict()
     attrs.update({'version': 'None',
                   'title': 'None',
@@ -3096,7 +3149,6 @@ def _get_odim_root_attributes(nch, grps):
                   'comment': 'im/exported using wradlib',
                   'instrument_name': 'None',
                   })
-
     attrs['version'] = grps['what'].attrs['version']
 
     if nch.flavour == 'ODIM':
