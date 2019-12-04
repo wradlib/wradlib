@@ -872,7 +872,7 @@ class OdimH5GroupAttributeMixin():
     """
     __slots__ = ['_ncfile', '_ncpath', '_parent']
 
-    def __init__(self, ncfile, ncpath, parent):
+    def __init__(self, ncfile=None, ncpath=None, parent=None):
         super(OdimH5GroupAttributeMixin, self).__init__()
         self._ncfile = ncfile
         self._ncpath = ncpath
@@ -1146,6 +1146,10 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         return self._get_mdesc()
 
     @property
+    def root(self):
+        return self.parent.parent
+
+    @property
     def chunks(self):
         return self._kwargs.get('chunks')
 
@@ -1179,7 +1183,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
             if self.decode_coords:
                 self._data = self._data.assign_coords(self._get_coords().coords)
                 self._data = self._data.sortby('azimuth').pipe(_reindex_azimuth, self)
-                self._data = self._data.assign_coords(self.site.coords)
+                self._data = self._data.assign_coords(self.parent.parent.site.coords)
                 self._data = self._data.assign_coords({'sweep_mode': 'azimuth_surveillance'})
 
             if self.mask_and_scale | self.decode_coords | self.decode_times:
@@ -1222,21 +1226,6 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         if self.decode_times:
             da = self._decode_cf(da)
         return da
-
-    @property
-    def site(self):
-        # hack to claim file root subgroups
-        # todo: can we move it into XRadTimeSeries somehow?
-        class OdimAttrs(OdimH5GroupAttributeMixin):
-            def __init__(self, ncfile):
-                self._ncfile = ncfile
-                self._ncpath = '/'
-
-        root = OdimAttrs(self.ncfile)
-        ds = xr.Dataset(coords=root.where).rename({'height': 'altitude',
-                                                   'lon': 'longitude',
-                                                   'lat': 'latitude'})
-        return ds
 
 
 class XRadSweepOdim(XRadSweep):
@@ -1532,12 +1521,22 @@ class XRadSweepGamic(XRadSweep):
         return da
 
 
-class XRadTimeSeries(XRadBase):
+class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
 
     def __init__(self, **kwargs):
         super(XRadTimeSeries, self).__init__()
         self._data = None
         self._root = None
+
+    # override append and claim file for OdimH5GroupAttributeMixin
+    def append(self, value):
+        # do only for first file in this timeseries
+        value._parent = self
+        if not len(self):
+            self._ncfile = value.ncfile
+            self._ncpath = value.ncpath
+            #self._parent = None
+        return super(XRadTimeSeries, self).append(value)
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
@@ -1555,6 +1554,10 @@ class XRadTimeSeries(XRadBase):
 
     def reset_data(self):
         self._data = None
+
+    @property
+    def root(self):
+        return self.parent
 
     @property
     def data(self):
@@ -1587,7 +1590,7 @@ class XRadTimeSeries(XRadBase):
         return self._data
 
 
-class XRadVolume(XRadBase):
+class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
 
     def __init__(self, **kwargs):
         super(XRadVolume, self).__init__()
@@ -1651,10 +1654,7 @@ class XRadVolume(XRadBase):
         # attrs=wrl.io.xarray.global_attrs)
 
         # take first dataset/file for retrieval of location
-        try:
-            site = self[0][0].site
-        except AttributeError:
-            site = self[0].site
+        site = self.site
 
         # assign root variables
         root = root.assign({'volume_number': 0,
@@ -1676,6 +1676,13 @@ class XRadVolume(XRadBase):
         # attrs = nch._get_root_attributes()
         # root = root.assign_attrs(attrs)
         self._root = root
+
+    @property
+    def site(self):
+        ds = xr.Dataset(coords=self.where).rename({'height': 'altitude',
+                                                   'lon': 'longitude',
+                                                   'lat': 'latitude'})
+        return ds
 
 
 def collect_by_time(obj):
@@ -1804,6 +1811,10 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     angles = collect_by_angle(sweeps)
     for i in tqdm(range(len(angles)), desc='Collecting', unit=' Angles', leave=None):
         angles[i] = collect_by_time(angles[i])
+    for f in angles:
+        f._parent = angles
+    angles._ncfile = angles[0].ncfile
+    angles._ncpath = '/'
     return angles
 
 
