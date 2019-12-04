@@ -1192,6 +1192,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         """Returns xarray Dataset containing coordinates
         """
         # sort coords by azimuth, only necessary for gamic flavour
+        # for odim is already sorted
         return self._get_coords().sortby('azimuth')
 
     @property
@@ -1209,6 +1210,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
     @property
     def ray_times(self):
         da = self._get_ray_times()
+        # decode, if necessary
         if self.decode_times:
             da = self._decode_cf(da)
         return da
@@ -1216,6 +1218,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
     @property
     def time(self):
         da = self._get_time()
+        # decode, if necessary
         if self.decode_times:
             da = self._decode_cf(da)
         return da
@@ -1414,6 +1417,9 @@ class XRadSweepGamic(XRadSweep):
         if self._ray_header is None:
             self._ray_header = self.ncid['ray_header'][:]
         return self._ray_header
+
+    def _get_a1gate(self):
+        return np.argsort(self.coords.rtime.values)[0]
 
     def _get_azimuth(self):
         azstart = self.ray_header['azimuth_start']
@@ -1670,8 +1676,6 @@ class XRadVolume(XRadBase):
         # attrs = nch._get_root_attributes()
         # root = root.assign_attrs(attrs)
         self._root = root
-
-
 
 
 def collect_by_time(obj):
