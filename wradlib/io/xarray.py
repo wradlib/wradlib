@@ -246,10 +246,10 @@ moments_mapping = {
               'units': 'unitless',
               'gamic': None},
     'CMAP': {'standard_name': 'clutter_map',
-              'long_name': 'Clutter Map',
-              'short_name': 'CMAP',
-              'units': 'unitless',
-              'gamic': ['cmap']},
+             'long_name': 'Clutter Map',
+             'short_name': 'CMAP',
+             'units': 'unitless',
+             'gamic': ['cmap']},
 }
 
 ODIM_NAMES = {value['short_name']: key for (key, value) in
@@ -733,9 +733,9 @@ def _reindex_azimuth(ds, sweep, force=False):
         ds = (ds.reindex({dim: azr},
                          method='nearest',
                          tolerance=res/4.,
-                         fill_value=0)
-            .loc[{dim: slice(0, new_rays)}])
+                         fill_value=0).loc[{dim: slice(0, new_rays)}])
     return ds
+
 
 def _fix_elevation(da):
     # fix elevation outliers
@@ -743,6 +743,7 @@ def _fix_elevation(da):
         med = da.median()
         da = da.where(da == med).fillna(med)
     return da
+
 
 def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
                     preprocess=None, engine=None,
@@ -954,7 +955,7 @@ class OdimH5GroupAttributeMixin():
     @property
     def attrs(self):
         if self._attrs is None:
-            self._attrs = self._decode( {**self.ncid.attrs})
+            self._attrs = self._decode({**self.ncid.attrs})
         return self._attrs
 
     @property
@@ -1019,8 +1020,6 @@ class OdimH5SweepMetaDataMixin():
     """Mixin Class for Odim MetaData
 
     """
-    #__slots__ = ['_a1gate', '_nrays', '_nbins']
-
     def __init__(self):
         super(OdimH5SweepMetaDataMixin, self).__init__()
         self._a1gate = None
@@ -1057,9 +1056,6 @@ class XRadMoment(OdimH5GroupAttributeMixin):
 
     def __init__(self, ncfile, ncpath, parent):
         super(XRadMoment, self).__init__(ncfile, ncpath, parent)
-
-    def __repr__(self):
-        return self.quantity.__repr__()
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
@@ -1161,7 +1157,6 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
                                 'azimuth': self.azimuth,
                                 'elevation': self.elevation,
                                 'range': self._get_range()})
-        #ds = ds.sortby('azimuth')
         return ds
 
     def _get_moments(self):
@@ -1217,10 +1212,14 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
             self._data = self._merge_moments()
 
             if self.decode_coords:
-                self._data = self._data.assign_coords(self._get_coords().coords)
-                self._data = self._data.sortby('azimuth').pipe(_reindex_azimuth, self)
-                self._data = self._data.assign_coords(self.parent.parent.site.coords)
-                self._data = self._data.assign_coords({'sweep_mode': 'azimuth_surveillance'})
+                self._data = self._data.assign_coords(
+                    self._get_coords().coords)
+                self._data = (self._data.sortby('azimuth').
+                              pipe(_reindex_azimuth, self))
+                self._data = self._data.assign_coords(
+                    self.parent.parent.site.coords)
+                self._data = self._data.assign_coords(
+                    {'sweep_mode': 'azimuth_surveillance'})
 
             if self.mask_and_scale | self.decode_coords | self.decode_times:
                 self._data = self._data.pipe(self._decode_cf)
@@ -1523,8 +1522,6 @@ class XRadSweepGamic(XRadSweep):
                 minval = dmom.dyn_range_min
                 maxval = dmom.dyn_range_max
                 gain = (maxval - minval) / dmax
-                offset = minval
-                fillval = float(dmax)
                 undetect = float(dmin)
                 attrs['scale_factor'] = gain
                 attrs['add_offset'] = minval
@@ -1599,7 +1596,6 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         if not len(self):
             self._ncfile = value.ncfile
             self._ncpath = value.ncpath
-            #self._parent = None
         return super(XRadTimeSeries, self).append(value)
 
     def __repr__(self):
@@ -1826,8 +1822,8 @@ def _open_odim_sweep(filename, loader, attr, **kwargs):
     # iterate over single sweeps
     # todo: if sorting does not matter, we can skip this
     sweeps = [k for k in groups if dsdesc in k]
-    #sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
-    #sweeps = np.array(sweeps)[sweeps_idx].tolist()
+    sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
+    sweeps = np.array(sweeps)[sweeps_idx].tolist()
     return [sweep_cls(netcdf, k, **kwargs) for k in sweeps]
 
 
@@ -1870,7 +1866,8 @@ def open_odim(paths, loader='netcdf4', **kwargs):
           desc='Open',
           unit=' Files', leave=None)]
     angles = collect_by_angle(sweeps)
-    for i in tqdm(range(len(angles)), desc='Collecting', unit=' Angles', leave=None):
+    for i in tqdm(range(len(angles)), desc='Collecting',
+                  unit=' Angles', leave=None):
         angles[i] = collect_by_time(angles[i])
     for f in angles:
         f._parent = angles
