@@ -245,7 +245,11 @@ moments_mapping = {
               'short_name': 'CCORV',
               'units': 'unitless',
               'gamic': None},
-
+    'CMAP': {'standard_name': 'clutter_map',
+              'long_name': 'Clutter Map',
+              'short_name': 'CMAP',
+              'units': 'unitless',
+              'gamic': ['cmap']},
 }
 
 ODIM_NAMES = {value['short_name']: key for (key, value) in
@@ -792,8 +796,20 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
     
     """  # noqa
 
-    open_kwargs = dict(chunks=chunks or {}, lock=lock,
-                       autoclose=None, **kwargs)
+    open_kwargs = dict(chunks=chunks or {}, **kwargs)
+
+    engine = moments[0].engine
+    if engine == 'netcdf4':
+        opener = nc.Dataset
+        store = xr.backends.NetCDF4DataStore
+    else:
+        opener = h5netcdf.File
+        store = xr.backends.H5NetCDFStore
+
+    # do not use parallel if all moments in one file
+    if len(set([p.filename for p in moments])) == 1:
+        parallel = False
+        ds0 = opener(moments[0].filename, 'r')
 
     if parallel:
         import dask
@@ -806,10 +822,15 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
         open_ = xr.open_dataset
         getattr_ = getattr
 
-    #moments = [mom for mom in moments if mom.quantity in moments.parent._merge_moments]
-    datasets = [
-        open_(p.filename, group=p.ncpath, engine=p.engine, **open_kwargs) for p
-        in moments]
+    if parallel:
+        datasets = [
+            open_(p.filename, group=p.ncpath, lock=lock, autoclose=None,
+                  engine=engine, **open_kwargs) for p in moments]
+    else:
+        datasets = [
+            open_(store(ds0, group=p.ncpath, lock=lock, autoclose=None),
+                  engine=engine, **open_kwargs) for p in moments]
+
     file_objs = [getattr_(ds, '_file_obj') for ds in datasets]
     if preprocess is not None:
         datasets = [preprocess(ds, mom) for ds, mom in zip(datasets, moments)]
@@ -1550,6 +1571,19 @@ class XRadSweepGamic(XRadSweep):
         da = xr.DataArray(start, attrs=time_attrs)
         return da
 
+    def _get_time_fast(self):
+        ncid = self.ncid
+        try:
+            if isinstance(self.ncfile, nc.Dataset):
+                start = ncid['how'].getncattr('timestamp')
+            else:
+                start = ncid['how'].attrs['timestamp'].decode()
+        except (IndexError, KeyError):
+            return None
+        start = dt.datetime.strptime(start, '%Y-%m-%dT%H:%M:%S.%fZ')
+        start = start.replace(tzinfo=dt.timezone.utc).timestamp()
+        return start
+
 
 class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
 
@@ -1593,40 +1627,28 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
     def data(self):
         if self._data is None:
             # moments handling
-
             coords = set(['rtime', 'range', 'azimuth', 'elevation', 'time',
                           'altitude', 'latitude', 'longitude', 'sweep_mode'])
             # get intersection and union
-
-            #moment_set = [set(list(t1.data.variables)) for t1
-            #              in tqdm(self, desc='Collecting', unit=' Timesteps',
-            #                      leave=None)]
-            moment_set = [set([k.quantity for k in t1]) for t1 in self]
-            #moment_set = [set(f"{k.quantity}" for k in t1 for t1 in self for k in t1]
-            #moment_set = [set(list(t1.data.variables)) for t1
-            #              in tqdm(self, desc='Collecting', unit=' Timesteps',
-            #                      leave=None)]
+            moment_set = [set([k.quantity.upper() for k in t1]) for t1 in self]
             moment_set_i = set.intersection(*moment_set)
             moment_set_u = set.union(*moment_set)
             # drop variables not available in all datasets
             drop = moment_set_i ^ moment_set_u
             keep = (moment_set_i | coords) ^ coords
-            #drop = drop | coords
             if drop:
                 warnings.warn(
                     "wradlib: Moments {} are not available in all datasets "
                     "and will be dropped from the result.".format(drop))
             # todo: catch possible error and add precise ErrorMessage
             self._data = xr.concat(
-                [f.data.drop_vars(drop, errors='ignore') for f in tqdm(self, desc='Collecting', unit=' Timesteps',
-                                  leave=None)],
-                #[f.data for f in tqdm(self, desc='Collecting',
-                #                      unit=' Timesteps',
-                #                      leave=None)],
+                [f.data.drop_vars(drop, errors='ignore') for
+                 f in tqdm(self,
+                           desc='Collecting',
+                           unit=' Timesteps',
+                           leave=None)],
                 data_vars=list(keep),
-                #data_vars='minimal',
                 dim='time')
-            #self._data = self._data
         return self._data
 
 
@@ -1667,23 +1689,10 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
             sweep_fixed_angles = [ts.fixed_angle for ts in self]
 
         # extract time coverage
-        # try:
-        try:
-            times = np.array([[t[0].ray_times.values.min(), t[-1].ray_times.values.max()] for t in self]).flatten()
-            #times_end =#tmin = [t[0].times.values.min() for t in self]
-        except AttributeError:
-            times = np.array([[t.ray_times.values.min(), t.ray_times.values.max()] for t in self]).flatten()
-
-        # print(tmin)
-        # except AttributeError:
-        #    tmin = [ds.rtime.values.min() for ds in self._sweeps.values()]
-        # print(tmin)
+        times = np.array([[t[0].ray_times.values.min(),
+                           t[-1].ray_times.values.max()]
+                          for t in self]).flatten()
         time_coverage_start = min(times)
-        # try:
-        # tmax = [ds.time.values.min() for ds in self._sweeps.values()]
-        # # except AttributeError:
-        # #    tmax = [ds.rtime.values.max() for ds in self._sweeps.values()]
-        # time_coverage_end = max(tmax)
         time_coverage_end = max(times)
 
         time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
@@ -1750,11 +1759,11 @@ def collect_by_time(obj):
         wrapper around list of XRadSweep objects
     """
     out = XRadTimeSeries()
+    if isinstance(obj, XRadSweep):
+        obj = [obj]
     times = [ds._get_time_fast() for ds in obj]
-    unique_times = np.array(list(set(times)))
-    if len(unique_times) == 1:
-        out.append(obj)
-    elif len(unique_times) == len(obj):
+    unique_times = np.array(sorted(list(set(times))))
+    if len(unique_times) == len(obj):
         out.extend(obj)
     else:
         # runs only if several files for the same timestep are available
@@ -1839,7 +1848,7 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     """
 
     if isinstance(paths, str):
-        paths = sorted(glob.glob(paths))
+        paths = glob.glob(paths)
     else:
         paths = np.array(paths).flatten().tolist()
 
