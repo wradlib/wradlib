@@ -1010,9 +1010,14 @@ class OdimH5GroupAttributeMixin():
         """
         for k, v in attrs.items():
             try:
-                attrs[k] = v.decode()
+                v = v.item()
+            except ValueError:
+                pass
+            try:
+                v = v.decode()
             except (UnicodeDecodeError, AttributeError):
                 pass
+            attrs[k] = v
         return attrs
 
 
@@ -1128,7 +1133,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         summary.append("{} ({})".format(dims, dims_summary))
 
         angle = "Elevation:"
-        angle_summary = f"{self.fixed_angle}"
+        angle_summary = f"{self.fixed_angle:0.1f}"
         summary.append("{} ({})".format(angle, angle_summary))
 
         moms = "Moment(s):"
@@ -1349,7 +1354,7 @@ class XRadSweepOdim(XRadSweep):
     def _get_ray_times(self):
         try:
             time_data = self._get_time_how()
-        except (AttributeError, KeyError):
+        except (AttributeError, KeyError, TypeError):
             time_data = self._get_time_what()
         da = xr.DataArray(time_data, dims=['azimuth'],
                           attrs=time_attrs)
@@ -1358,7 +1363,7 @@ class XRadSweepOdim(XRadSweep):
     def _get_azimuth(self):
         try:
             azimuth_data = self._get_azimuth_how()
-        except (AttributeError, KeyError):
+        except (AttributeError, KeyError, TypeError):
             azimuth_data = self._get_azimuth_where()
         da = xr.DataArray(azimuth_data, dims=['azimuth'],
                           attrs=az_attrs)
@@ -1367,7 +1372,7 @@ class XRadSweepOdim(XRadSweep):
     def _get_elevation(self):
         try:
             elevation_data = self._get_elevation_how()
-        except (AttributeError, KeyError):
+        except (AttributeError, KeyError, TypeError):
             elevation_data = self._get_elevation_where()
         da = xr.DataArray(elevation_data, dims=['azimuth'],
                           attrs=el_attrs)
@@ -1425,8 +1430,8 @@ class XRadSweepOdim(XRadSweep):
                 startdate = ncid['what'].getncattr('startdate')
                 starttime = ncid['what'].getncattr('starttime')
             else:
-                startdate = ncid['what'].attrs['startdate'].decode()
-                starttime = ncid['what'].attrs['starttime'].decode()
+                startdate = ncid['what'].attrs['startdate'].item().decode()
+                starttime = ncid['what'].attrs['starttime'].item().decode()
         except (IndexError, KeyError):
             return None
         start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
@@ -1608,7 +1613,7 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         summary.append("{} ({})".format(dims, dims_summary))
         angle = "Elevation:"
         angle_summary = self[0].fixed_angle
-        summary.append("{} ({})".format(angle, angle_summary))
+        summary.append(f"{angle} ({angle_summary:.1f})")
 
         return "\n".join(summary)
 
@@ -1661,7 +1666,7 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         dims_summary = f"sweep: {len(self)}"
         summary.append("{} ({})".format(dims, dims_summary))
         angle = "Elevations:"
-        angle_summary = [f"{k[0].fixed_angle}" for k in self]
+        angle_summary = [f"{k[0].fixed_angle:.1f}" for k in self]
         angle_summary = ", ".join(angle_summary)
         summary.append("{} ({})".format(angle, angle_summary))
 
@@ -1787,7 +1792,7 @@ def collect_by_angle(obj):
     """
     out = XRadVolume()
     angles = [ds.fixed_angle for ds in obj]
-    unique_angles = list(dict.fromkeys(angles))
+    unique_angles = list(set(angles))
     if len(unique_angles) == len(obj):
         out.extend(obj)
     else:
