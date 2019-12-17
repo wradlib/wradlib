@@ -10,6 +10,9 @@ import subprocess
 import tempfile
 import unittest
 import zlib
+import contextlib
+import pytest
+import gc
 
 import deprecation
 import numpy as np
@@ -1217,6 +1220,56 @@ class XarrayTests(unittest.TestCase):
             io.xarray.CfRadial(h5file, flavour='Cf/Radial3')
         with self.assertRaises(AttributeError):
             io.xarray.CfRadial(h5file)
+
+
+@contextlib.contextmanager
+def get_odim_volume():
+    filename = 'hdf5/knmi_polar_volume.h5'
+    h5file = util.get_wradlib_data_file(filename)
+    yield h5file
+
+
+@pytest.fixture(params=['h5netcdf', 'h5py', 'netcdf4'])
+def loader(request):
+    return request.param
+
+
+class TestXRadVolume:
+
+    @contextlib.contextmanager
+    def open(self, path, loader, **kwargs):
+        yield io.xarray.open_odim(path, loader=loader, **kwargs)
+
+    def test_open_sweep(self, loader):
+        with get_odim_volume() as vol_file:
+            with self.open(vol_file, loader) as vol:
+                assert isinstance(vol, io.xarray.XRadVolume)
+                repr = ''.join(['<wradlib.XRadVolume>\n',
+                                'Dimensions: (sweep: 14)\n',
+                                'Elevations: (0.3, 0.4, 0.8, 1.1, 2.0,',
+                                ' 3.0, 4.5, 6.0, 8.0, 10.0, 12.0, ',
+                                '15.0, 20.0, 25.0)'])
+                assert vol.__repr__() == repr
+                assert isinstance(vol[0], io.xarray.XRadTimeSeries)
+                repr = ''.join(['<wradlib.XRadTimeSeries>\n',
+                                'Dimensions: (time: 1, azimuth: 360, ',
+                                'range: 320)\n',
+                                'Elevation: (0.3)'])
+                assert vol[0].__repr__() == repr
+                assert isinstance(vol[0][0], io.xarray.XRadSweep)
+                repr = ''.join(['<wradlib.XRadSweepOdim>\n',
+                                'Dimensions: (azimuth: 360, range: 320)\n',
+                                'Elevation: (0.3)\n',
+                                'Moment(s): (DBZH)'])
+                assert vol[0][0].__repr__() == repr
+                assert isinstance(vol[0][0][0], io.xarray.XRadMoment)
+                repr = ''.join(['<wradlib.XRadMoment>\','
+                                'Dimensions: (azimuth: 360, range: 320)\n',
+                                'Elevation: (0.3)\n',
+                                'Moment: (DBZH)'])
+
+        del vol
+        gc.collect()
 
 
 class DemTest(unittest.TestCase):
