@@ -554,7 +554,7 @@ def to_cfradial2(volume, filename):
         dim0 = dims[0]
 
         swp = swp.rename_dims({dim0: 'time'})
-        swp.drop(['x', 'y', 'z', 'gr', 'rays', 'bins'], errors='ignore')
+        swp.drop_vars(['x', 'y', 'z', 'gr', 'rays', 'bins'], errors='ignore')
         swp.to_netcdf(filename, mode='a', group=key)
 
 
@@ -1092,7 +1092,7 @@ class CfRadial(XRadVol):
         var = root.variables.keys()
         remove_root = var ^ root_vars
         remove_root &= var
-        root1 = root.drop(remove_root).rename(
+        root1 = root.drop_vars(remove_root).rename(
             {'fixed_angle': 'sweep_fixed_angle'})
         sweep_group_name = []
         for i in range(root1.dims['sweep']):
@@ -1103,11 +1103,11 @@ class CfRadial(XRadVol):
         keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
         remove_vars = var ^ keep_vars
         remove_vars &= var
-        data = root.drop(remove_vars)
+        data = root.drop_vars(remove_vars)
         data.attrs = {}
         start_idx = data.sweep_start_ray_index.values
         end_idx = data.sweep_end_ray_index.values
-        data = data.drop({'sweep_start_ray_index', 'sweep_end_ray_index'})
+        data = data.drop_vars({'sweep_start_ray_index', 'sweep_end_ray_index'})
         for i, sw in enumerate(sweep_group_name):
             tslice = slice(start_idx[i], end_idx[i])
             ds = data.isel(time=tslice,
@@ -1569,7 +1569,7 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
         dmom = ds[mom]
         name = dmom.moment.lower()
         if 'cf' in standard and name not in GAMIC_NAMES.keys():
-            ds = ds.drop(mom)
+            ds = ds.drop_vars(mom)
             continue
 
         # extract attributes
