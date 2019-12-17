@@ -955,7 +955,11 @@ class OdimH5GroupAttributeMixin():
     @property
     def attrs(self):
         if self._attrs is None:
-            self._attrs = self._decode({**self.ncid.attrs})
+            if isinstance(self.ncfile, nc.Dataset):
+                self._attrs = {k: self.ncid.getncattr(k)
+                               for k in self.ncid.ncattrs()}
+            else:
+                self._attrs = self._decode({**self.ncid.attrs})
         return self._attrs
 
     @property
