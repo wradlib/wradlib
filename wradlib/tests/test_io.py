@@ -16,6 +16,7 @@ import gc
 
 import deprecation
 import numpy as np
+import h5py
 import xarray as xr
 
 from wradlib import georef, io, util, zonalstats
@@ -1229,6 +1230,43 @@ def get_odim_volume():
     yield h5file
 
 
+def create_dbz_what():
+    what = [('gain', np.array([0.5], dtype=np.float32)),
+            ('nodata', np.array([255.], dtype=np.float32)),
+            ('offset', np.array([-31.5], dtype=np.float32)),
+            ('quantity', np.array([b'DBZH'], dtype='|S5')),
+            ('undetect', np.array([0.], dtype=np.float32))]
+    return what
+
+
+@pytest.fixture(scope="session")
+def odim_data(tmpdir_factory):
+    tmp_local = tmpdir_factory.mktemp("data").join("test_odim.h5")
+    with h5py.File(str(tmp_local), 'w') as f:
+        foo_data = np.random.randint(0, 255, (360, 100), dtype=np.uint8)
+        dataset = ['dataset1', 'dataset2']
+        for i, grp in enumerate(dataset):
+            dset = f.create_group(grp)
+            where = dset.create_group('where')
+            where.attrs.update(
+                [('a1gate', np.array([i + 20], dtype=np.int)),
+                 ('elangle', np.array([i + 0.5], dtype=np.float32)),
+                 ('nrays', np.array([360], dtype=np.int)),
+                 ('nbins', np.array([100], dtype=np.int))])
+            what = dset.create_group('what')
+            what.attrs.update(
+                [('startdate', np.array([b'20110610'], dtype='|S9')),
+                 ('starttime', np.array([b'101010'], dtype='|S7')),
+                 ('enddate', np.array([b'20110610'], dtype='|S9')),
+                 ('endtime', np.array([b'101610'], dtype='|S7'))
+                 ])
+            da = dset.create_group('data1')
+            da.create_dataset('data', data=foo_data)
+            ds_what = da.create_group('what')
+            ds_what.attrs.update(create_dbz_what())
+    return tmp_local
+
+
 @pytest.fixture(params=['h5netcdf', 'h5py', 'netcdf4'])
 def loader(request):
     return request.param
@@ -1263,10 +1301,119 @@ class TestXRadVolume:
                                 'Moment(s): (DBZH)'])
                 assert vol[0][0].__repr__() == repr
                 assert isinstance(vol[0][0][0], io.xarray.XRadMoment)
-                repr = ''.join(['<wradlib.XRadMoment>\','
+                repr = ''.join(['<wradlib.XRadMoment>\n',
                                 'Dimensions: (azimuth: 360, range: 320)\n',
                                 'Elevation: (0.3)\n',
                                 'Moment: (DBZH)'])
+                assert vol[0][0][0].__repr__() == repr
+
+        del vol
+        gc.collect()
+
+    def test_open_test_data(self, loader, odim_data):
+        with self.open(odim_data, loader) as vol:
+            assert isinstance(vol, io.xarray.XRadVolume)
+            repr = ''.join(['<wradlib.XRadVolume>\n',
+                            'Dimensions: (sweep: 2)\n',
+                            'Elevations: (0.5, 1.5)'])
+            assert vol.__repr__() == repr
+            assert isinstance(vol[0], io.xarray.XRadTimeSeries)
+            repr = ''.join(['<wradlib.XRadTimeSeries>\n',
+                            'Dimensions: (time: 1, azimuth: 360, ',
+                            'range: 100)\n',
+                            'Elevation: (0.5)'])
+            assert vol[0].__repr__() == repr
+            assert isinstance(vol[0][0], io.xarray.XRadSweep)
+            repr = ''.join(['<wradlib.XRadSweepOdim>\n',
+                            'Dimensions: (azimuth: 360, range: 100)\n',
+                            'Elevation: (0.5)\n',
+                            'Moment(s): (DBZH)'])
+            assert vol[0][0].__repr__() == repr
+            assert isinstance(vol[0][0][0], io.xarray.XRadMoment)
+            repr = ''.join(['<wradlib.XRadMoment>\n',
+                            'Dimensions: (azimuth: 360, range: 100)\n',
+                            'Elevation: (0.5)\n',
+                            'Moment: (DBZH)'])
+            assert vol[0][0][0].__repr__() == repr
+        del vol
+        gc.collect()
+
+    def test_moment(self, loader, odim_data):
+        with self.open(odim_data, loader) as vol:
+            mom = vol[0][0][0]
+            if 'h5' in loader:
+                assert mom.engine == 'h5netcdf'
+            else:
+                assert mom.engine == 'netcdf4'
+
+            assert mom.filename == odim_data
+            assert mom.quantity == 'DBZH'
+            assert mom.parent == vol[0][0]
+            assert mom.time.values == np.datetime64('2011-06-10T10:10:10')
+            assert mom.ncpath == 'dataset1/data1'
+            assert mom.ncid == mom.ncfile[mom.ncpath]
+        del mom
+        del vol
+        gc.collect()
+
+    def test_sweep(self, loader, odim_data):
+        with self.open(odim_data, loader) as vol:
+            sweep = vol[0][0]
+
+            assert sweep.a1gate == 20
+            np.testing.assert_array_equal(sweep.azimuth,
+                                          np.arange(0.5, 360, 1))
+            np.testing.assert_array_equal(sweep.elevation,
+                                          np.ones((360)) * 0.5)
+            if 'h5' in loader:
+                assert sweep.engine == 'h5netcdf'
+            else:
+                assert sweep.engine == 'netcdf4'
+            assert sweep.filename == odim_data
+            assert sweep.fixed_angle == 0.5
+            assert sweep.nbins == 100
+            assert sweep.ncid == sweep.ncfile[sweep.ncpath]
+            assert sweep.ncpath == 'dataset1'
+            assert sweep.nrays == 360
+            assert sweep.parent == vol[0]
+            assert sweep.ray_times.values[0] == np.datetime64(
+                '2011-06-10T10:15:50.500000000')
+            assert sweep.ray_times.values[-1] == np.datetime64(
+                '2011-06-10T10:15:49.500000000')
+            assert sweep.time.values == np.datetime64(
+                '2011-06-10T10:10:10.000000000')
+
+        del sweep
+        del vol
+        gc.collect()
+
+    def test_timeseries(self, loader, odim_data):
+        with self.open(odim_data, loader) as vol:
+            ts = vol[0]
+            print(dir(ts))
+            if 'h5' in loader:
+                assert ts.engine == 'h5netcdf'
+            else:
+                assert ts.engine == 'netcdf4'
+            assert ts.filename == odim_data
+            assert ts.ncid == ts.ncfile[ts.ncpath]
+            assert ts.ncpath == 'dataset1'
+            assert ts.parent == vol
+
+        del ts
+        del vol
+        gc.collect()
+
+    def test_volume(self, loader, odim_data):
+        with self.open(odim_data, loader) as vol:
+            if 'h5' in loader:
+                assert vol.engine == 'h5netcdf'
+            else:
+                assert vol.engine == 'netcdf4'
+            assert vol.filename == odim_data
+            assert vol.ncid == vol.ncfile
+            assert vol.ncpath == '/'
+            assert vol.parent is None
 
         del vol
         gc.collect()

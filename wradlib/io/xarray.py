@@ -1072,7 +1072,7 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         summary.append("{} ({})".format(dims, dims_summary))
 
         angle = "Elevation:"
-        angle_summary = f"{self.parent.fixed_angle}"
+        angle_summary = f"{self.parent.fixed_angle:.1f}"
         summary.append("{} ({})".format(angle, angle_summary))
 
         moms = "Moment:"
