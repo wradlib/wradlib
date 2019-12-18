@@ -480,6 +480,8 @@ class XRadVolume:
         gc.collect()
 
     def test_sweep_data(self, odim_data, get_odim_data):
+        if self.engine == 'h5netcdf':
+            pytest.skip("requires enhancements in xarray and h5netcdf")
         with self.open(odim_data, engine=self.engine,
                        decode_coords=False,
                        mask_and_scale=False, decode_times=False,
@@ -527,6 +529,8 @@ class XRadVolume:
         gc.collect()
 
     def test_timeseries_data(self, odim_data, get_odim_data):
+        if self.engine == 'h5netcdf':
+            pytest.skip("requires enhancements in xarray and h5netcdf")
         with self.open(odim_data, engine=self.engine,
                        decode_coords=False,
                        mask_and_scale=False, decode_times=False,
@@ -560,7 +564,6 @@ class XRadVolume:
         del ts
         del vol
         gc.collect()
-
 
 
 class TestH5NetCDF(XRadVolume):
