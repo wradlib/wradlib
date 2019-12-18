@@ -1015,7 +1015,7 @@ class OdimH5GroupAttributeMixin():
         for k, v in attrs.items():
             try:
                 v = v.item()
-            except ValueError:
+            except (ValueError, AttributeError):
                 pass
             try:
                 v = v.decode()

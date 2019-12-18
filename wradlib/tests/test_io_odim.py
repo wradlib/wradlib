@@ -165,7 +165,7 @@ def create_dataset(type=None):
     attrs['scale_factor'] = what['gain']
     attrs['add_offset'] = what['offset']
     attrs['_FillValue'] = what['nodata']
-    attrs['coordinates'] = 'elevation azimuth range'
+    attrs['coordinates'] = b'elevation azimuth range'
     attrs['_Undetect'] = what['undetect']
     ds = xr.Dataset({'DBZH': (['azimuth', 'range'], create_data(), attrs)})
     if type is None:
@@ -221,7 +221,47 @@ def odim_data_02(f):
         how.attrs.update(create_dset_how())
 
 
-@pytest.fixture(params=['data1', 'data2'])
+def odim_data_03(f):
+    foo_data = create_data()
+    dt_type = np.dtype({'names': ['azimuth_start', 'azimuth_stop',
+                                  'elevation_start', 'elevation_stop',
+                                  'timestamp'],
+                        'formats': ['<f8', '<f8', '<f8', '<f8', '<i8'],
+                        'offsets': [0, 8, 16, 24, 32],
+                        'itemsize': 40})
+
+    dataset = ['scan0', 'scan1']
+    root_where = f.create_group('where')
+    root_where.attrs.update(create_root_where())
+    for i, grp in enumerate(dataset):
+        dset = f.create_group(grp)
+        how = dset.create_group('how')
+        how.attrs.update({'range_samples': 1.,
+                          'range_step': 1000.,
+                          'ray_count': 360,
+                          'bin_count': 100,
+                          'timestamp': b'2011-06-10T10:10:10.000Z',
+                          'elevation': 0.5})
+        da = dset.create_dataset('moment_0', data=foo_data)
+        da.attrs.update({'dyn_range_min': -32.,
+                         'dyn_range_max': 95.5,
+                         'format': b'UV8',
+                         'moment': b'Zh',
+                         'unit': b'dBZ'})
+        rh_data = np.zeros((360,), dtype=dt_type)
+        rh = dset.create_dataset('ray_header', (360,), dtype=dt_type)
+        rh_data['azimuth_start'] = np.roll(create_startazA(),
+                                           shift=(360-create_a1gate()))
+        rh_data['azimuth_stop'] = np.roll(create_stopazA(),
+                                          shift=(360-create_a1gate()))
+        rh_data['elevation_start'] = create_startelA()
+        rh_data['elevation_stop'] = create_stopelA()
+        rh_data['timestamp'] = np.roll(create_ray_time().values * 1e6,
+                                       shift=-create_a1gate())
+        rh[...] = rh_data
+
+
+@pytest.fixture(params=['data1', 'data2', 'data3'])
 def get_odim_data(request):
     return int(request.param[4:])
 
@@ -231,7 +271,8 @@ def odim_data(tmpdir_factory, get_odim_data):
     fname = f"test_odim_{get_odim_data:02d}.h5"
     tmp_local = tmpdir_factory.mktemp("data").join(fname)
     datasets = {1: odim_data_01,
-                2: odim_data_02}
+                2: odim_data_02,
+                3: odim_data_03}
     with h5py.File(str(tmp_local), 'w') as f:
         datasets[get_odim_data](f)
     return tmp_local
@@ -241,6 +282,8 @@ class XRadVolume:
 
     @contextlib.contextmanager
     def open(self, path, **kwargs):
+        if kwargs.pop('dataset', 0) == 3:
+            kwargs['flavour'] = 'GAMIC'
         yield io.xarray.open_odim(path, loader=self.loader, **kwargs)
 
     def test_open_sweep(self):
@@ -275,7 +318,9 @@ class XRadVolume:
         del vol
         gc.collect()
 
-    def test_open_test_data(self, odim_data):
+    def test_open_test_data(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         with self.open(odim_data) as vol:
             assert isinstance(vol, io.xarray.XRadVolume)
             repr = ''.join(['<wradlib.XRadVolume>\n',
@@ -303,7 +348,9 @@ class XRadVolume:
         del vol
         gc.collect()
 
-    def test_moment(self, odim_data):
+    def test_moment(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         with self.open(odim_data) as vol:
             mom = vol[0][0][0]
             assert mom.engine == self.engine
@@ -317,7 +364,9 @@ class XRadVolume:
         del vol
         gc.collect()
 
-    def test_sweep(self, odim_data):
+    def test_sweep(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         with self.open(odim_data) as vol:
             sweep = vol[0][0]
 
@@ -342,7 +391,9 @@ class XRadVolume:
         del vol
         gc.collect()
 
-    def test_timeseries(self, odim_data):
+    def test_timeseries(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         with self.open(odim_data) as vol:
             ts = vol[0]
             assert ts.engine == self.engine
@@ -355,7 +406,9 @@ class XRadVolume:
         del vol
         gc.collect()
 
-    def test_volume(self, odim_data):
+    def test_volume(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         with self.open(odim_data) as vol:
             assert vol.engine == self.engine
             assert vol.filename == odim_data
@@ -368,6 +421,8 @@ class XRadVolume:
         gc.collect()
 
     def test_odimh5_group_mixin(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         with self.open(odim_data) as vol:
             # volume
             assert vol.how is None
@@ -441,7 +496,9 @@ class XRadVolume:
         gc.collect()
 
     def test_sweep_methods(self, odim_data, get_odim_data):
-        with self.open(odim_data) as vol:
+        if self.engine == 'netcdf4':
+            pytest.skip("gamic only works with hdf5 based engine")
+        with self.open(odim_data, dataset=get_odim_data) as vol:
             sweep = vol[0][0]
 
             assert sweep._get_a1gate() == 20
@@ -449,26 +506,39 @@ class XRadVolume:
             if get_odim_data == 1:
                 with pytest.raises(TypeError):
                     sweep._get_azimuth_how()
-            np.testing.assert_equal(sweep._get_azimuth_where(),
-                                    np.arange(0.5, 360, 1))
-            np.testing.assert_equal(sweep._get_azimuth().values,
-                                    np.arange(0.5, 360, 1))
+            if get_odim_data != 3:
+                np.testing.assert_equal(sweep._get_azimuth_where(),
+                                        np.arange(0.5, 360, 1))
+            if get_odim_data == 3:
+                np.testing.assert_equal(sweep._get_azimuth().values,
+                                        np.roll(np.arange(0.5, 360, 1),
+                                                shift=-create_a1gate()))
+            else:
+                np.testing.assert_equal(sweep._get_azimuth().values,
+                                        np.arange(0.5, 360, 1))
             if get_odim_data == 1:
                 with pytest.raises(TypeError):
                     sweep._get_elevation_how()
-            np.testing.assert_equal(sweep._get_elevation_where(),
-                                    np.ones((360)) * 0.5)
+            if get_odim_data != 3:
+                np.testing.assert_equal(sweep._get_elevation_where(),
+                                        np.ones((360)) * 0.5)
             np.testing.assert_equal(sweep._get_elevation().values,
                                     np.ones((360)) * 0.5)
             if get_odim_data == 1:
                 with pytest.raises(TypeError):
                     sweep._get_time_how()
-            time1 = sweep._get_time_what()
-            assert time1[0] == 1307700950.5
-            assert time1[-1] == 1307700949.5
-            time2 = sweep._get_ray_times()
-            assert time2.values[0] == 1307700950.5
-            assert time2.values[-1] == 1307700949.5
+            if get_odim_data == 3:
+                time = sweep._get_ray_times().values
+                assert time[0] == 1307700610.5
+                assert time[-1] == 1307700969.5
+            else:
+                time1 = sweep._get_time_what()
+                assert time1[0] == 1307700950.5
+                assert time1[-1] == 1307700949.5
+                time2 = sweep._get_ray_times()
+                assert time2.values[0] == 1307700950.5
+                assert time2.values[-1] == 1307700949.5
+
             np.testing.assert_equal(sweep._get_range().values,
                                     np.arange(500, 100100, 1000))
             assert sweep._get_nrays() == 360
@@ -480,6 +550,8 @@ class XRadVolume:
         gc.collect()
 
     def test_sweep_data(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         if self.engine == 'h5netcdf':
             pytest.skip("requires enhancements in xarray and h5netcdf")
         with self.open(odim_data, engine=self.engine,
@@ -517,6 +589,8 @@ class XRadVolume:
         gc.collect()
 
     def test_sweep_coords_data(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         with self.open(odim_data, engine=self.engine,
                        decode_coords=False,
                        mask_and_scale=False, decode_times=False,
@@ -529,6 +603,8 @@ class XRadVolume:
         gc.collect()
 
     def test_timeseries_data(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
         if self.engine == 'h5netcdf':
             pytest.skip("requires enhancements in xarray and h5netcdf")
         with self.open(odim_data, engine=self.engine,
@@ -536,7 +612,6 @@ class XRadVolume:
                        mask_and_scale=False, decode_times=False,
                        chunks=None, parallel=False) as vol:
             ts = vol[0]
-            print(ts.data)
             xr.testing.assert_equal(ts.data,
                                     create_dataset().expand_dims('time'))
         with self.open(odim_data, engine=self.engine,
@@ -562,6 +637,44 @@ class XRadVolume:
             data = xr.decode_cf(data)
             xr.testing.assert_equal(ts.data, data.expand_dims('time'))
         del ts
+        del vol
+        gc.collect()
+
+    def test_moment_data(self, odim_data, get_odim_data):
+        if get_odim_data == 3:
+            pytest.skip("doesn't work with gamic")
+        if self.engine == 'h5netcdf':
+            pytest.skip("requires enhancements in xarray and h5netcdf")
+        with self.open(odim_data, engine=self.engine,
+                       decode_coords=False,
+                       mask_and_scale=False, decode_times=False,
+                       chunks=None, parallel=False) as vol:
+            mom = vol[0][0][0]
+            xr.testing.assert_equal(mom.data,
+                                    create_dataset()['DBZH'])
+        with self.open(odim_data, engine=self.engine,
+                       decode_coords=True,
+                       mask_and_scale=False, decode_times=True,
+                       chunks=None, parallel=False) as vol:
+            mom = vol[0][0][0]
+            data = create_dataset()
+            data = data.assign_coords(create_coords(0).coords)
+            data = data.assign_coords(create_site().coords)
+            data = data.assign_coords({'sweep_mode': 'azimuth_surveillance'})
+            data = xr.decode_cf(data, mask_and_scale=False)
+            xr.testing.assert_equal(mom.data, data['DBZH'])
+        with self.open(odim_data, engine=self.engine,
+                       decode_coords=True,
+                       mask_and_scale=True, decode_times=True,
+                       chunks=None, parallel=False) as vol:
+            mom = vol[0][0][0]
+            data = create_dataset()
+            data = data.assign_coords(create_coords(0).coords)
+            data = data.assign_coords(create_site().coords)
+            data = data.assign_coords({'sweep_mode': 'azimuth_surveillance'})
+            data = xr.decode_cf(data)
+            xr.testing.assert_equal(mom.data, data['DBZH'])
+        del mom
         del vol
         gc.collect()
 
