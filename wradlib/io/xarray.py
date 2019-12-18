@@ -797,7 +797,7 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
     
     """  # noqa
 
-    open_kwargs = dict(chunks=chunks or {}, **kwargs)
+    open_kwargs = dict(chunks=chunks, **kwargs)
 
     engine = moments[0].engine
     if engine == 'netcdf4':
