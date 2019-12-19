@@ -569,8 +569,6 @@ class OdimVolume(XRadVolumeBase):
         gc.collect()
 
     def test_sweep_methods(self, odim_data, get_odim_data):
-        if self.engine == 'netcdf4':
-            pytest.skip("gamic only works with hdf5 based engine")
         with self.open(odim_data[0]) as vol:
             sweep = vol[0][0]
 
