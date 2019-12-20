@@ -633,7 +633,7 @@ class DataTimeSeries(DataSweep):
         with self.get_volume_data(get_loader, decode_coords=True,
                                   mask_and_scale=False, decode_times=True,
                                   chunks=None, parallel=False) as vol:
-            num = 1 if self.format == 'ODIM' else 0
+
             for i, ts in enumerate(vol):
                 data = create_dataset(i)
                 data = data.assign_coords(create_coords(i).coords)
