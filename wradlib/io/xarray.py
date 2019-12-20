@@ -1514,7 +1514,7 @@ class XRadSweepGamic(XRadSweep):
     def _merge_moments(self):
         ds = xr.open_dataset(self.filename, self.ncpath, engine=self.engine,
                              chunks=self.chunks)
-        ds = ds.drop('ray_header')
+        ds = ds.drop_vars('ray_header', errors='ignore')
         for mom in self:
             mom_name = mom.ncpath.split('/')[-1]
             dmom = ds[mom_name]
