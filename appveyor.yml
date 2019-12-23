@@ -20,7 +20,7 @@ install:
   - "conda update --yes --quiet conda"
   - "conda config --set changeps1 no"
   - "conda config --add channels conda-forge"
-  #- "conda config --set channel_priority strict"
+  - "conda config --set channel_priority strict"
   - "conda create --yes --quiet -n wradlib python=%PYTHON_VERSION%"
   - "activate wradlib"
 
