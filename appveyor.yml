@@ -1,6 +1,6 @@
 environment:
 
-  CONDA_PATH: "C:\\Miniconda3-x64"
+  CONDA_PATH: "C:\\Miniconda37-x64"
 
   matrix:
     - PYTHON_VERSION: "3.7"
@@ -25,7 +25,9 @@ install:
   - "activate wradlib"
 
   # Install wradlib dependecies
-  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  # install latest semver from PyPI
+  - "pip install semver"
 
   # Some checks
   - "python --version"
