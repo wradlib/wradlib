@@ -25,7 +25,7 @@ install:
   - "activate wradlib"
 
   # Install wradlib dependecies
-  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
   # install latest semver from PyPI
   - "pip install semver"
 
