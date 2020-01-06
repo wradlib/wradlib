@@ -19,42 +19,58 @@ def create_time():
     return xr.DataArray(1307700610.0, attrs=io.xarray.time_attrs)
 
 
-def create_startazT(i):
-    arr = np.arange(1307700610.0, 1307700970.0, 1.0,
+def create_startazT(i, nrays=361):
+    start = 1307700610.0
+    arr = np.linspace(start, start + 360, 360, endpoint=False,
                     dtype=np.float64)
     arr = np.roll(arr, shift=create_a1gate(i))
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
     return arr
 
 
-def create_stopazT(i):
-    arr = np.arange(1307700611.0, 1307700971.0, 1.0, dtype=np.float64)
+def create_stopazT(i, nrays=360):
+    start = 1307700611.0
+    arr = np.linspace(start, start + 360, 360, endpoint=False,
+                      dtype=np.float64)
     arr = np.roll(arr, shift=create_a1gate(i))
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
     return arr
 
 
-def create_startazA():
-    arr = np.arange(0, 360, 1, dtype=np.float32)
+def create_startazA(nrays=360):
+    arr = np.linspace(0, 360, 360, endpoint=False, dtype=np.float32)
+    if nrays == 361:
+        arr = np.insert(arr, 10, (arr[10] + arr[9]) / 2, axis=0)
     return arr
 
 
-def create_stopazA():
-    arr = np.arange(1, 361, 1, dtype=np.float32)
+def create_stopazA(nrays=360):
+    arr = np.linspace(1, 361, 360, endpoint=False, dtype=np.float32)
+    # arr = np.arange(1, 361, 1, dtype=np.float32)
     arr[arr >= 360] -= 360
+    if nrays == 361:
+        arr = np.insert(arr, 10, (arr[10] + arr[9]) / 2, axis=0)
     return arr
 
 
-def create_startelA(i):
+def create_startelA(i, nrays=360):
     arr = np.ones(360, dtype=np.float32) * (i + 0.5)
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
     return arr
 
 
-def create_stopelA(i):
+def create_stopelA(i, nrays=360):
     arr = np.ones(360, dtype=np.float32) * (i + 0.5)
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
     return arr
 
 
-def create_ray_time(i, decode=False):
-    time_data = (create_startazT(i) + create_stopazT(i)) / 2.
+def create_ray_time(i, decode=False, nrays=360):
+    time_data = (create_startazT(i, nrays=nrays) + create_stopazT(i, nrays=nrays)) / 2.
     da = xr.DataArray(time_data, dims=['azimuth'],
                       attrs=io.xarray.time_attrs)
     if decode:
@@ -62,9 +78,9 @@ def create_ray_time(i, decode=False):
     return da
 
 
-def create_azimuth(decode=False):
-    startaz = create_startazA()
-    stopaz = create_stopazA()
+def create_azimuth(decode=False, nrays=360):
+    startaz = create_startazA(nrays=nrays)
+    stopaz = create_stopazA(nrays=nrays)
     zero_index = np.where(stopaz < startaz)
     stopaz[zero_index[0]] += 360
     azimuth_data = (startaz + stopaz) / 2.
@@ -75,9 +91,9 @@ def create_azimuth(decode=False):
     return da
 
 
-def create_elevation(i, decode=False):
-    startel = create_startelA(i)
-    stopel = create_stopelA(i)
+def create_elevation(i, decode=False, nrays=360):
+    startel = create_startelA(i, nrays=nrays)
+    stopel = create_stopelA(i, nrays=nrays)
     elevation_data = (startel + stopel) / 2.
     da = xr.DataArray(elevation_data, dims=['azimuth'],
                       attrs=io.xarray.el_attrs)
@@ -157,19 +173,19 @@ def create_site(data):
     return site
 
 
-def create_dset_how(i):
-    return {'startazA': create_startazA(),
-            'stopazA': create_stopazA(),
-            'startelA': np.ones(360) * (i + 0.5),
-            'stopelA': np.ones(360) * (i + 0.5),
-            'startazT': create_startazT(i),
-            'stopazT': create_stopazT(i)}
+def create_dset_how(i, nrays=360):
+    return {'startazA': create_startazA(nrays=nrays),
+            'stopazA': create_stopazA(nrays=nrays),
+            'startelA': np.ones(nrays) * (i + 0.5),
+            'stopelA': np.ones(nrays) * (i + 0.5),
+            'startazT': create_startazT(i, nrays=nrays),
+            'stopazT': create_stopazT(i, nrays=nrays)}
 
 
-def create_dset_where(i):
+def create_dset_where(i, nrays=360):
     return {'a1gate': np.array([create_a1gate(i)], dtype=np.int),
             'elangle': np.array([i + 0.5], dtype=np.float32),
-            'nrays': np.array([360], dtype=np.int),
+            'nrays': np.array([nrays], dtype=np.int),
             'nbins': np.array([100], dtype=np.int),
             'rstart': np.array([0], dtype=np.float32),
             'rscale': np.array([1000], dtype=np.float32)}
@@ -190,12 +206,15 @@ def create_dbz_what(i):
             'undetect': np.array([0.], dtype=np.float32)}
 
 
-def create_data():
+def create_data(nrays=360):
     np.random.seed(42)
-    return np.random.randint(0, 255, (360, 100), dtype=np.uint8)
+    data = np.random.randint(0, 255, (360, 100), dtype=np.uint8)
+    if nrays == 361:
+        data = np.insert(data, 10, data[-1], axis=0)
+    return data
 
 
-def create_dataset(i, type=None):
+def create_dataset(i, type=None, nrays=360):
     what = create_dbz_what(i)
     attrs = {}
     attrs['scale_factor'] = what['gain']
@@ -203,17 +222,17 @@ def create_dataset(i, type=None):
     attrs['_FillValue'] = what['nodata']
     attrs['coordinates'] = b'elevation azimuth range'
     attrs['_Undetect'] = what['undetect']
-    ds = xr.Dataset({'DBZH': (['azimuth', 'range'], create_data(), attrs)})
+    ds = xr.Dataset({'DBZH': (['azimuth', 'range'], create_data(nrays=nrays), attrs)})
     if type is None:
         return ds
     return ds
 
 
-def create_coords(i):
+def create_coords(i, nrays=360):
     ds = xr.Dataset(coords={'time': create_time(),
-                            'rtime': create_ray_time(i),
-                            'azimuth': create_azimuth(),
-                            'elevation': create_elevation(i),
+                            'rtime': create_ray_time(i, nrays=nrays),
+                            'azimuth': create_azimuth(nrays=nrays),
+                            'elevation': create_elevation(i, nrays=nrays),
                             'range': create_range(i)})
     return ds
 
@@ -240,11 +259,11 @@ def get_synthetic_volume(name, get_loader, **kwargs):
                               flavour=format, **kwargs)
 
 
-def base_odim_data_00():
+def base_odim_data_00(nrays=360):
     data = {}
     root_attrs = [('Conventions', np.array([b'ODIM_H5/V2_0'], dtype='|S13'))]
     data['attrs'] = root_attrs
-    foo_data = create_data()
+    foo_data = create_data(nrays=nrays)
 
     dataset = ['dataset1', 'dataset2']
     datas = ['data1']
@@ -255,7 +274,7 @@ def base_odim_data_00():
         sub = {}
         sub['how'] = {}
         sub['where'] = {}
-        sub['where']['attrs'] = create_dset_where(i)
+        sub['where']['attrs'] = create_dset_where(i, nrays=nrays)
         sub['what'] = {}
         sub['what']['attrs'] = create_dset_what()
         for j, mom in enumerate(datas):
@@ -275,6 +294,16 @@ def base_odim_data_01():
         sub = data[grp]
         sub['how'] = {}
         sub['how']['attrs'] = create_dset_how(i)
+    return data
+
+
+def base_odim_data_02():
+    data = base_odim_data_00(nrays=361)
+    dataset = ['dataset1', 'dataset2']
+    for i, grp in enumerate(dataset):
+        sub = data[grp]
+        sub['how'] = {}
+        sub['how']['attrs'] = create_dset_how(i, nrays=361)
     return data
 
 
@@ -369,6 +398,10 @@ def get_loader(request):
     return request.param
 
 
+@pytest.fixture(params=[360, 361])
+def get_nrays(request):
+    return request.param
+
 def create_volume_repr(swp, ele):
     repr = ''.join(['<wradlib.XRadVolume>\n',
                     f'Dimensions: (sweep: {swp})\n',
@@ -444,10 +477,13 @@ class DataMoment:
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
+                if '02' in self.name:
+                    ds = create_dataset(i, nrays=361)['DBZH']
+                else:
+                    ds = create_dataset(i)['DBZH']
                 for j, swp in enumerate(ts):
                     for k, mom in enumerate(swp):
-                        xr.testing.assert_equal(mom.data,
-                                                create_dataset(i)['DBZH'])
+                        xr.testing.assert_equal(mom.data, ds)
         with self.get_volume_data(get_loader, decode_coords=True,
                                   mask_and_scale=False, decode_times=True,
                                   chunks=None, parallel=False) as vol:
@@ -536,8 +572,12 @@ class DataSweep(DataMoment):
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
+                if '02' in self.name:
+                    ds = create_dataset(i, nrays=361)
+                else:
+                    ds = create_dataset(i)
                 for j, swp in enumerate(ts):
-                    xr.testing.assert_equal(swp.data, create_dataset(i))
+                    xr.testing.assert_equal(swp.data, ds)
         with self.get_volume_data(get_loader, decode_coords=True,
                                   mask_and_scale=False, decode_times=True,
                                   chunks=None, parallel=False) as vol:
@@ -581,8 +621,12 @@ class DataSweep(DataMoment):
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
+                if '02' in self.name:
+                    ds = create_coords(i, nrays=361)
+                else:
+                    ds = create_coords(i)
                 for j, swp in enumerate(ts):
-                    xr.testing.assert_equal(swp.coords, create_coords(i))
+                    xr.testing.assert_equal(swp.coords, ds)
         del swp
         del ts
         del vol
@@ -625,9 +669,11 @@ class DataTimeSeries(DataSweep):
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
-                xr.testing.assert_equal(ts.data,
-                                        create_dataset(i).expand_dims(
-                                            'time'))
+                if '02' in self.name:
+                    ds = create_dataset(i, nrays=361)
+                else:
+                    ds = create_dataset(i)
+                xr.testing.assert_equal(ts.data, ds.expand_dims('time'))
 
         with self.get_volume_data(get_loader, decode_coords=True,
                                   mask_and_scale=False, decode_times=True,
@@ -687,15 +733,13 @@ class DataVolume(DataTimeSeries):
 
 
 class MeasuredDataVolume(DataVolume):
-
     @contextlib.contextmanager
-    def get_volume_data(self, get_loader):
+    def get_volume_data(self, get_loader, **kwargs):
         with get_measured_volume(self.name, get_loader, self.format) as vol:
             yield vol
 
 
 class SyntheticDataVolume(DataVolume):
-
     @contextlib.contextmanager
     def get_volume_data(self, get_loader, **kwargs):
         with get_synthetic_volume(self.name, get_loader, **kwargs) as vol:
@@ -761,6 +805,22 @@ class TestSyntheticOdimVolume02(SyntheticDataVolume):
     moments = ['DBZH']
     elevations = [0.5, 1.5]
     azimuths = [360, 360]
+    ranges = [100, 100]
+
+    data = globals()[name]()
+
+    dsdesc = 'dataset{}'
+    mdesc = 'data{}'
+
+
+class TestSyntheticOdimVolume03(SyntheticDataVolume):
+    name = 'base_odim_data_02'
+    format = 'ODIM'
+    volumes = 1
+    sweeps = 2
+    moments = ['DBZH']
+    elevations = [0.5, 1.5]
+    azimuths = [361, 361]
     ranges = [100, 100]
 
     data = globals()[name]()

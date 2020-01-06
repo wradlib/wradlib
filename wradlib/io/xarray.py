@@ -699,16 +699,6 @@ def _preprocess_moment(ds, mom):
         attrs['add_offset'] = what['offset']
         attrs['_FillValue'] = what['nodata']
         attrs['coordinates'] = 'elevation azimuth range'
-        if mom.parent.standard != 'ODIM':
-            try:
-                for k, v in moments_mapping[quantity].items():
-                    attrs[k] = v
-            except KeyError:
-                pass
-            else:
-                attrs.pop('short_name')
-                attrs.pop('gamic')
-                attrs['_Undetect'] = what['undetect']
         ds['data'] = ds['data'].assign_attrs(attrs)
 
     # fix dimensions
@@ -723,11 +713,11 @@ def _preprocess_moment(ds, mom):
 
 
 def _reindex_azimuth(ds, sweep, force=False):
-    new_rays = int(np.round(sweep.nrays / 360)) * 360
     dim = list(ds.dims)[0]
     diff = ds[dim].diff(dim)
     # this captures missing/additional rays and different angle spacing
     if force | (len(set(diff.values)) > 1):
+        new_rays = int(np.round(sweep.nrays / 360, decimals=1) * 360)
         res = diff.median().round(decimals=1)
         azr = np.arange(res / 2., sweep.nrays, res)
         ds = (ds.reindex({dim: azr},
@@ -1117,7 +1107,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
         super(XRadSweep, self).__init__(ncfile, ncpath, parent)
-        kwargs.setdefault('standard', 'ODIM')
+        #kwargs.setdefault('standard', 'ODIM')
         kwargs.setdefault('chunks', None)
         kwargs.setdefault('parallel', False)
         kwargs.setdefault('mask_and_scale', True)
@@ -1186,20 +1176,12 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         return self._get_mdesc()
 
     @property
-    def root(self):
-        return self.parent.parent
-
-    @property
     def chunks(self):
         return self._kwargs.get('chunks')
 
     @property
     def parallel(self):
         return self._kwargs.get('parallel')
-
-    @property
-    def standard(self):
-        return self._kwargs.get('standard')
 
     @property
     def mask_and_scale(self):
@@ -1449,6 +1431,7 @@ class XRadSweepGamic(XRadSweep):
     Parameters
     ----------
 
+
     ncfile : {netCDF4.Dataset, h5py.File or h5netcdf.File object}
         File handle of file containing radar sweep
     ncpath : str
@@ -1522,6 +1505,7 @@ class XRadSweepGamic(XRadSweep):
             if name not in GAMIC_NAMES.keys():
                 ds = ds.drop(mom_name)
                 continue
+            name = GAMIC_NAMES[name]
 
             # extract attributes
             attrs = collections.OrderedDict()
@@ -1538,12 +1522,6 @@ class XRadSweepGamic(XRadSweep):
                 attrs['_Undetect'] = undetect
             if self.decode_coords:
                 attrs['coordinates'] = 'elevation azimuth range'
-            if self.standard != 'ODIM':
-                cfname = GAMIC_NAMES[name]
-                for k, v in moments_mapping[cfname].items():
-                    attrs[k] = v
-                name = attrs.pop('short_name')
-                attrs.pop('gamic')
             # assign attributes to moment
             dmom.attrs = collections.OrderedDict()
             dmom.attrs.update(attrs)
@@ -1596,7 +1574,6 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
     def __init__(self, **kwargs):
         super(XRadTimeSeries, self).__init__()
         self._data = None
-        self._root = None
 
     # override append and claim file for OdimH5GroupAttributeMixin
     def append(self, value):
@@ -1623,10 +1600,6 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
 
     def reset_data(self):
         self._data = None
-
-    @property
-    def root(self):
-        return self.parent
 
     @property
     def data(self):
@@ -1662,7 +1635,6 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
     def __init__(self, **kwargs):
         super(XRadVolume, self).__init__()
         self._data = None
-        self._root = None
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
@@ -1677,77 +1649,15 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         return "\n".join(summary)
 
     @property
-    def root(self):
-        if self._root is None:
-            self.assign_root()
-        return self._root
-
-    def assign_root(self):
-        """(Re-)Create root object according CfRadial2 standard
-        """
-        # assign root variables
-        sweep_group_names = [f"sweep_{i}" for i in range(len(self))]
-
-        try:
-            sweep_fixed_angles = [ts[0].fixed_angle for ts in self]
-        except AttributeError:
-            sweep_fixed_angles = [ts.fixed_angle for ts in self]
-
-        # extract time coverage
-        times = np.array([[t[0].ray_times.values.min(),
-                           t[-1].ray_times.values.max()]
-                          for t in self]).flatten()
-        time_coverage_start = min(times)
-        time_coverage_end = max(times)
-
-        time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
-        time_coverage_end_str = str(time_coverage_end)[:19] + 'Z'
-
-        # create root group from scratch
-        root = xr.Dataset()  # data_vars=wrl.io.xarray.global_variables,
-        # attrs=wrl.io.xarray.global_attrs)
-
-        # take first dataset/file for retrieval of location
-        site = self.site
-
-        # assign root variables
-        root = root.assign({'volume_number': 0,
-                            'platform_type': str('fixed'),
-                            'instrument_type': 'radar',
-                            'primary_axis': 'axis_z',
-                            'time_coverage_start': time_coverage_start_str,
-                            'time_coverage_end': time_coverage_end_str,
-                            'latitude': site['latitude'].values,
-                            'longitude': site['longitude'].values,
-                            'altitude': site['altitude'].values,
-                            'sweep_group_name': (
-                                ['sweep'], sweep_group_names),
-                            'sweep_fixed_angle': (
-                                ['sweep'], sweep_fixed_angles),
-                            })
-
-        # assign root attributes
-        attrs = collections.OrderedDict()
-        attrs.update({'version': 'None',
-                      'title': 'None',
-                      'institution': 'None',
-                      'references': 'None',
-                      'source': 'None',
-                      'history': 'None',
-                      'comment': 'im/exported using wradlib',
-                      'instrument_name': 'None',
-                      })
-        attrs['version'] = self.what['version']
-        root = root.assign_attrs(attrs)
-        root = root.assign_attrs(self.attrs)
-        self._root = root
-
-    @property
     def site(self):
         ds = xr.Dataset(coords=self.where).rename({'height': 'altitude',
                                                    'lon': 'longitude',
                                                    'lat': 'latitude'})
         return ds
+
+    @property
+    def Conventions(self):
+        return self.ncid.attrs['Conventions']
 
 
 def collect_by_time(obj):
