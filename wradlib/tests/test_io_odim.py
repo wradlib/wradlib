@@ -624,7 +624,6 @@ class DataTimeSeries(DataSweep):
         with self.get_volume_data(get_loader, decode_coords=False,
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
-            num = 1 if self.format == 'ODIM' else 0
             for i, ts in enumerate(vol):
                 xr.testing.assert_equal(ts.data,
                                         create_dataset(i).expand_dims(

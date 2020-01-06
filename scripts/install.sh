@@ -96,6 +96,7 @@ conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $DEPS
 conda activate $WRADLIB_ENV
 
 # Install wradlib
+python setup.py sdist
 python -m pip install . --no-deps --ignore-installed --no-cache-dir
 
 # print some stuff
