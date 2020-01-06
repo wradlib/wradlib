@@ -22,7 +22,7 @@ install:
   - "conda update --yes --quiet conda"
   - "conda config --set changeps1 no"
   - "conda create --yes --quiet -n wradlib python=%PYTHON_VERSION%"
-  - "conda activate wradlib"
+  - "activate wradlib"
 
   # Install wradlib dependecies
   - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
