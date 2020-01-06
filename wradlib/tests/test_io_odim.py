@@ -22,7 +22,7 @@ def create_time():
 def create_startazT(i, nrays=361):
     start = 1307700610.0
     arr = np.linspace(start, start + 360, 360, endpoint=False,
-                    dtype=np.float64)
+                      dtype=np.float64)
     arr = np.roll(arr, shift=create_a1gate(i))
     if nrays == 361:
         arr = np.insert(arr, 10, arr[-1], axis=0)
@@ -70,9 +70,9 @@ def create_stopelA(i, nrays=360):
 
 
 def create_ray_time(i, decode=False, nrays=360):
-    time_data = (create_startazT(i, nrays=nrays) + create_stopazT(i, nrays=nrays)) / 2.
-    da = xr.DataArray(time_data, dims=['azimuth'],
-                      attrs=io.xarray.time_attrs)
+    time_data = (create_startazT(i, nrays=nrays) +
+                 create_stopazT(i, nrays=nrays)) / 2.
+    da = xr.DataArray(time_data, dims=['azimuth'], attrs=io.xarray.time_attrs)
     if decode:
         da = xr.decode_cf(xr.Dataset({'arr': da})).arr
     return da
@@ -222,7 +222,8 @@ def create_dataset(i, type=None, nrays=360):
     attrs['_FillValue'] = what['nodata']
     attrs['coordinates'] = b'elevation azimuth range'
     attrs['_Undetect'] = what['undetect']
-    ds = xr.Dataset({'DBZH': (['azimuth', 'range'], create_data(nrays=nrays), attrs)})
+    ds = xr.Dataset({'DBZH': (['azimuth', 'range'],
+                              create_data(nrays=nrays), attrs)})
     if type is None:
         return ds
     return ds
@@ -401,6 +402,7 @@ def get_loader(request):
 @pytest.fixture(params=[360, 361])
 def get_nrays(request):
     return request.param
+
 
 def create_volume_repr(swp, ele):
     repr = ''.join(['<wradlib.XRadVolume>\n',

@@ -1107,7 +1107,6 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
         super(XRadSweep, self).__init__(ncfile, ncpath, parent)
-        #kwargs.setdefault('standard', 'ODIM')
         kwargs.setdefault('chunks', None)
         kwargs.setdefault('parallel', False)
         kwargs.setdefault('mask_and_scale', True)
