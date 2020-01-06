@@ -17,24 +17,22 @@ install:
   - ps: $env:WRADLIB_DATA="C:\projects\wradlib\wradlib-data"
 
   # Create and activate a conda environment with the wanted Python version
-  - "conda update --yes --quiet conda"
-  - "conda config --set changeps1 no"
   - "conda config --add channels conda-forge"
   - "conda config --set channel_priority strict"
+  - "conda update --yes --quiet conda"
+  - "conda config --set changeps1 no"
   - "conda create --yes --quiet -n wradlib python=%PYTHON_VERSION%"
-  - "activate wradlib"
+  - "conda activate wradlib"
 
   # Install wradlib dependecies
-  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation semver xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
   # Some checks
-  - "python --version"
+  - "python -VV"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
   - "conda list"
-  - "conda info"
 
   # build wradlib
-  - "python setup.py sdist"
   - "python -m pip install . --no-deps --ignore-installed --no-cache-dir"
 
 build: false
