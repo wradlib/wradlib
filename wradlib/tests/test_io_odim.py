@@ -308,6 +308,16 @@ def base_odim_data_02():
     return data
 
 
+def base_odim_data_03():
+    data = base_odim_data_00()
+    dataset = ['dataset1', 'dataset2']
+    for i, grp in enumerate(dataset):
+        sub = data[grp]
+        sub['how'] = {}
+        sub['how']['attrs'] = create_dset_how(i)
+        sub['how']['attrs']['startelA'][0] = 10.
+    return data
+
 def base_gamic_data():
     data = {}
     foo_data = create_data()
@@ -823,6 +833,22 @@ class TestSyntheticOdimVolume03(SyntheticDataVolume):
     moments = ['DBZH']
     elevations = [0.5, 1.5]
     azimuths = [361, 361]
+    ranges = [100, 100]
+
+    data = globals()[name]()
+
+    dsdesc = 'dataset{}'
+    mdesc = 'data{}'
+
+
+class TestSyntheticOdimVolume04(SyntheticDataVolume):
+    name = 'base_odim_data_03'
+    format = 'ODIM'
+    volumes = 1
+    sweeps = 2
+    moments = ['DBZH']
+    elevations = [0.5, 1.5]
+    azimuths = [360, 360]
     ranges = [100, 100]
 
     data = globals()[name]()

@@ -1656,7 +1656,11 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
 
     @property
     def Conventions(self):
-        return self.ncid.attrs['Conventions']
+        try:
+            conv = self.ncid.attrs['Conventions']
+        except KeyError:
+            conv = None
+        return conv
 
 
 def collect_by_time(obj):
