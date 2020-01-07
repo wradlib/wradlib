@@ -318,6 +318,7 @@ def base_odim_data_03():
         sub['how']['attrs']['startelA'][0] = 10.
     return data
 
+
 def base_gamic_data():
     data = {}
     foo_data = create_data()
