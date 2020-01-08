@@ -878,6 +878,9 @@ class XRadBase(collections.abc.MutableSequence):
                 del self._seq[0]
             self._seq = None
 
+    def sort(self, **kwargs):
+        self._seq.sort(**kwargs)
+
 
 class OdimH5GroupAttributeMixin():
     """Mixin Class for Odim Group Attribute Retrieval
@@ -1791,6 +1794,7 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     for i in tqdm(range(len(angles)), desc='Collecting',
                   unit=' Angles', leave=None):
         angles[i] = collect_by_time(angles[i])
+    angles.sort(key=lambda x: x[0].time)
     for f in angles:
         f._parent = angles
     angles._ncfile = angles[0].ncfile
