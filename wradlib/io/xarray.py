@@ -15,10 +15,14 @@ Writes data to CfRadial2 and ODIM_H5 files.
 This reader implementation uses
 
 * `netcdf4 <http://unidata.github.io/netcdf4-python/>`_,
-* `h5py <https://www.h5py.org/>`_ and
+* `h5py <https://www.h5py.org/>`_,
+* `h5netcdf <https://github.com/shoyer/h5netcdf>`_ and
 * `xarray <xarray.pydata.org/>`_.
 
-The data is claimed using netcdf4-Dataset in a diskless non-persistent mode::
+Currently there are two different approaches.
+
+In the first approach the data is claimed using netcdf4-Dataset in a diskless
+non-persistent mode::
 
     nch = nc.Dataset(filename, diskless=True, persist=False)
 
@@ -32,13 +36,29 @@ decoding. For GAMIC data compound data will be read via h5py.
 
 The data structure holds one or many ['sweep_X'] xarray datasets, holding the
 sweep data. The root group xarray dataset which corresponds to the
-CfRadial2 root-group is available via the `.root`-object. Since for data
-handling xarray is utilized all xarray features can be exploited,
-like lazy-loading, pandas-like indexing on N-dimensional data and vectorized
-mathematical operations across multiple dimensions.
+CfRadial2 root-group is available via the `.root`-object.
 
 The writer implementation uses xarray for CfRadial2 output and relies on h5py
 for the ODIM_H5 output.
+
+The second approach reads ODIM files into a *simple* structure::
+
+    vol = wradlib.io.open_odim(paths, loader='netcdf4', **kwargs)
+
+All datafiles are accessed via the given loader (netcdf4, h5py, h5netcdf).
+Only absolutely neccessary data is actually read in this process, eg.
+acquisition time and elevation, to fill the structure accordingly. All
+subsequent metadata retrievals are cached to further improve performance.
+Actual data access is realised via xarray using engine 'netcdf4' or 'h5netcdf',
+depending on the loader.
+
+Since for data handling xarray is utilized all xarray features can be
+exploited, like lazy-loading, pandas-like indexing on N-dimensional data and
+vectorized mathematical operations across multiple dimensions.
+
+Examples
+--------
+    See :ref:`/notebooks/fileio/wradlib_multi_mfdataset.ipynb`.
 
 Warning
 -------
@@ -51,8 +71,10 @@ Warning
 
    {}
 """
-__all__ = ['XRadVol', 'CfRadial', 'OdimH5', 'open_odim', 'to_cfradial2',
-           'to_odim', 'create_xarray_dataarray']
+__all__ = ['XRadVol', 'CfRadial', 'OdimH5', 'to_cfradial2', 'to_odim',
+           'open_odim', 'XRadSweep', 'XRadMoment', 'XRadTimeSeries',
+           'XRadVolume',
+           'create_xarray_dataarray']
 __doc__ = __doc__.format('\n   '.join(__all__))
 
 import collections
@@ -309,7 +331,7 @@ global_attrs = [('Conventions', 'Cf/Radial'),
                 ('source', 'method of production of the original data'),
                 ('history', 'list of modifications to the original data'),
                 ('comment', 'miscellaneous information'),
-                ('instrument_name', 'name of radar or lidar'),
+                ('instrument_name', 'nameThe  of radar or lidar'),
                 ('site_name', 'name of site where data were gathered'),
                 ('scan_name', 'name of scan strategy used, if applicable'),
                 ('scan_id',
@@ -1637,6 +1659,7 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
     def __init__(self, **kwargs):
         super(XRadVolume, self).__init__()
         self._data = None
+        self._root = None
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
@@ -1649,6 +1672,72 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         summary.append("{} ({})".format(angle, angle_summary))
 
         return "\n".join(summary)
+
+    @property
+    def root(self):
+        if self._root is None:
+            self.assign_root()
+        return self._root
+
+    def assign_root(self):
+        """(Re-)Create root object according CfRadial2 standard
+        """
+        # assign root variables
+        sweep_group_names = [f"sweep_{i}" for i in range(len(self))]
+
+        try:
+            sweep_fixed_angles = [ts[0].fixed_angle for ts in self]
+        except AttributeError:
+            sweep_fixed_angles = [ts.fixed_angle for ts in self]
+
+        # extract time coverage
+        times = np.array([[t[0].ray_times.values.min(),
+                           t[-1].ray_times.values.max()]
+                          for t in self]).flatten()
+        time_coverage_start = min(times)
+        time_coverage_end = max(times)
+
+        time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
+        time_coverage_end_str = str(time_coverage_end)[:19] + 'Z'
+
+        # create root group from scratch
+        root = xr.Dataset()  # data_vars=wrl.io.xarray.global_variables,
+        # attrs=wrl.io.xarray.global_attrs)
+
+        # take first dataset/file for retrieval of location
+        site = self.site
+
+        # assign root variables
+        root = root.assign({'volume_number': 0,
+                            'platform_type': str('fixed'),
+                            'instrument_type': 'radar',
+                            'primary_axis': 'axis_z',
+                            'time_coverage_start': time_coverage_start_str,
+                            'time_coverage_end': time_coverage_end_str,
+                            'latitude': site['latitude'].values,
+                            'longitude': site['longitude'].values,
+                            'altitude': site['altitude'].values,
+                            'sweep_group_name': (
+                                ['sweep'], sweep_group_names),
+                            'sweep_fixed_angle': (
+                                ['sweep'], sweep_fixed_angles),
+                            })
+
+        # assign root attributes
+        attrs = collections.OrderedDict()
+        attrs.update({'version': 'None',
+                      'title': 'None',
+                      'institution': 'None',
+                      'references': 'None',
+                      'source': 'None',
+                      'history': 'None',
+                      'comment': 'im/exported using wradlib',
+                      'instrument_name': 'None',
+                      })
+        attrs['version'] = self.what['version']
+        root = root.assign_attrs(attrs)
+        root = root.assign_attrs(self.attrs)
+        self._root = root
 
     @property
     def site(self):
@@ -1703,12 +1792,12 @@ def collect_by_angle(obj):
     Parameters
     ----------
     obj : list
-        list of XRadSweepN objects
+        list of XRadSweep objects
 
     Returns
     -------
     out : XRadVolume
-        wrapper around nested list of XRadSweepN objects
+        wrapper around nested list of XRadSweep objects
     """
     out = XRadVolume()
     angles = [ds.fixed_angle for ds in obj]
@@ -1758,14 +1847,14 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     Parameters
     ----------
     paths : str or sequence
-        Either a filename or string glob in the form "path/to/my/files/*.h5"
+        Either a filename or string glob in the form 'path/to/my/files/\*.h5'
         or an explicit list of files to open.
 
     loader : {'netcdf4', 'h5py', 'h5netcdf'}
         Loader used for accessing file metadata, defaults to 'netcdf4'.
 
     **kwargs : optional
-        Additional arguments passed on to :py:class:`wradlib.io.XRadSweepN`.
+        Additional arguments passed on to :py:class:`wradlib.io.XRadSweep`.
     """
 
     if isinstance(paths, str):
@@ -2050,8 +2139,8 @@ class XRadVol(collections.abc.MutableMapping):
     def to_cfradial2(self, filename):
         """ Save volume to CfRadial2.0 compliant file.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         filename : str
             Name of the output file
         """
@@ -2064,8 +2153,8 @@ class XRadVol(collections.abc.MutableMapping):
     def to_odim(self, filename):
         """ Save volume to ODIM_H5/V2_2 compliant file.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         filename : str
             Name of the output file
         """
@@ -2078,8 +2167,8 @@ class XRadVol(collections.abc.MutableMapping):
     def georeference(self, sweeps=None):
         """Georeference sweeps
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         sweeps : list
             list with sweep keys to georeference, defaults to all sweeps
         """
@@ -2140,8 +2229,8 @@ class CfRadial(XRadVol):
     def assign_data_radial2(self, nch, **kwargs):
         """ Assign from CfRadial2 data structure.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         nch : NetCDF4File object
 
         Keyword Arguments
