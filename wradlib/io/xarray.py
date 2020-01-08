@@ -821,8 +821,10 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
 
     # do not use parallel if all moments in one file
     if len(set([p.filename for p in moments])) == 1:
-        parallel = False
+        single_file = True
         ds0 = opener(moments[0].filename, 'r')
+    else:
+        single_file = False
 
     if parallel:
         import dask
@@ -835,13 +837,13 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
         open_ = xr.open_dataset
         getattr_ = getattr
 
-    if parallel:
+    if single_file:
         datasets = [
-            open_(p.filename, group=p.ncpath, lock=lock, autoclose=None,
+            open_(store(ds0, group=p.ncpath, lock=lock, autoclose=None),
                   engine=engine, **open_kwargs) for p in moments]
     else:
         datasets = [
-            open_(store(ds0, group=p.ncpath, lock=lock, autoclose=None),
+            open_(p.filename, group=p.ncpath, lock=lock, autoclose=None,
                   engine=engine, **open_kwargs) for p in moments]
 
     file_objs = [getattr_(ds, '_file_obj') for ds in datasets]
@@ -1133,7 +1135,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
         super(XRadSweep, self).__init__(ncfile, ncpath, parent)
         kwargs.setdefault('chunks', None)
-        kwargs.setdefault('parallel', True)
+        kwargs.setdefault('parallel', False)
         kwargs.setdefault('mask_and_scale', True)
         kwargs.setdefault('decode_coords', True)
         kwargs.setdefault('decode_times', True)
