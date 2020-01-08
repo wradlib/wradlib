@@ -1133,7 +1133,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
         super(XRadSweep, self).__init__(ncfile, ncpath, parent)
         kwargs.setdefault('chunks', None)
-        kwargs.setdefault('parallel', False)
+        kwargs.setdefault('parallel', True)
         kwargs.setdefault('mask_and_scale', True)
         kwargs.setdefault('decode_coords', True)
         kwargs.setdefault('decode_times', True)
@@ -1847,7 +1847,7 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     Parameters
     ----------
     paths : str or sequence
-        Either a filename or string glob in the form 'path/to/my/files/\*.h5'
+        Either a filename or string glob in the form 'path/to/my/files/*.h5'
         or an explicit list of files to open.
 
     loader : {'netcdf4', 'h5py', 'h5netcdf'}
