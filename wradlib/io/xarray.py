@@ -112,6 +112,8 @@ def create_xarray_dataarray(*args, **kwargs):
     return xarray.create_xarray_dataarray(*args, **kwargs)
 
 
+moment_attrs = {'standard_name', 'long_name', 'units'}
+
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
     'DBZH': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
@@ -180,6 +182,13 @@ moments_mapping = {
                          'from_instrument',
         'long_name': 'Radial velocity of scatterers away from instrument',
         'short_name': 'VR',
+        'units': 'meters per seconds',
+        'gamic': None},
+    'VRAD': {
+        'standard_name': 'radial_velocity_of_scatterers_away_'
+                         'from_instrument',
+        'long_name': 'Radial velocity of scatterers away from instrument',
+        'short_name': 'VRAD',
         'units': 'meters per seconds',
         'gamic': None},
     'WRADH': {'standard_name': 'radar_doppler_spectrum_width_h',
@@ -714,14 +723,23 @@ def to_odim(volume, filename):
 def _preprocess_moment(ds, mom):
 
     quantity = mom.quantity
+    attrs = collections.OrderedDict()
     if mom.parent.mask_and_scale:
         what = mom.what
-        attrs = collections.OrderedDict()
         attrs['scale_factor'] = what['gain']
         attrs['add_offset'] = what['offset']
         attrs['_FillValue'] = what['nodata']
+        attrs['_Undetect'] = what['undetect']
+    else:
+        attrs.update(mom.what)
+        attrs.pop('quantity')
+
+    if mom.parent.decode_coords:
         attrs['coordinates'] = 'elevation azimuth range'
-        ds['data'] = ds['data'].assign_attrs(attrs)
+
+    mapping = moments_mapping[quantity]
+    attrs.update({key: mapping[key] for key in moment_attrs})
+    ds['data'] = ds['data'].assign_attrs(attrs)
 
     # fix dimensions
     dims = sorted(list(ds.dims.keys()),
@@ -1417,6 +1435,9 @@ class XRadSweepOdim(XRadSweep):
                              chunks=self.chunks,
                              preprocess=_preprocess_moment,
                              parallel=self.parallel,
+                             mask_and_scale=self.mask_and_scale,
+                             decode_times=self.decode_times,
+                             decode_coords=self.decode_coords
                              )
         return ds
 
@@ -1528,10 +1549,11 @@ class XRadSweepGamic(XRadSweep):
             mom_name = mom.ncpath.split('/')[-1]
             dmom = ds[mom_name]
             name = dmom.moment.lower()
-            if name not in GAMIC_NAMES.keys():
+            try:
+                name = GAMIC_NAMES[name]
+            except KeyError:
                 ds = ds.drop(mom_name)
                 continue
-            name = GAMIC_NAMES[name]
 
             # extract attributes
             attrs = collections.OrderedDict()
@@ -1548,6 +1570,9 @@ class XRadSweepGamic(XRadSweep):
                 attrs['_Undetect'] = undetect
             if self.decode_coords:
                 attrs['coordinates'] = 'elevation azimuth range'
+
+            mapping = moments_mapping[name]
+            attrs.update({key: mapping[key] for key in moment_attrs})
             # assign attributes to moment
             dmom.attrs = collections.OrderedDict()
             dmom.attrs.update(attrs)
