@@ -198,8 +198,8 @@ def create_dset_what():
             'endtime': np.array([b'101610'], dtype='|S7')}
 
 
-def create_dbz_what(i):
-    return {'gain': np.array([i + 0.5], dtype=np.float32),
+def create_dbz_what():
+    return {'gain': np.array([0.5], dtype=np.float32),
             'nodata': np.array([255.], dtype=np.float32),
             'offset': np.array([-31.5], dtype=np.float32),
             'quantity': np.array([b'DBZH'], dtype='|S5'),
@@ -215,17 +215,17 @@ def create_data(nrays=360):
 
 
 def create_dataset(i, type=None, nrays=360):
-    what = create_dbz_what(i)
+    what = create_dbz_what()
     attrs = {}
     attrs['scale_factor'] = what['gain']
     attrs['add_offset'] = what['offset']
+    if type == 'GAMIC':
+        attrs['add_offset'] -= 0.5
     attrs['_FillValue'] = what['nodata']
     attrs['coordinates'] = b'elevation azimuth range'
     attrs['_Undetect'] = what['undetect']
     ds = xr.Dataset({'DBZH': (['azimuth', 'range'],
                               create_data(nrays=nrays), attrs)})
-    if type is None:
-        return ds
     return ds
 
 
@@ -282,7 +282,7 @@ def base_odim_data_00(nrays=360):
             sub2 = {}
             sub2['data'] = foo_data
             sub2['what'] = {}
-            sub2['what']['attrs'] = create_dbz_what(i)
+            sub2['what']['attrs'] = create_dbz_what()
             sub[mom] = sub2
         data[grp] = sub
     return data
@@ -346,7 +346,7 @@ def base_gamic_data():
                                'elevation': i + 0.5}
         for j, mom in enumerate(datas):
             sub2 = {}
-            sub2['data'] = foo_data
+            sub2['data'] = np.roll(foo_data, shift=-create_a1gate(i), axis=0)
             sub2['attrs'] = {'dyn_range_min': -32.,
                              'dyn_range_max': 95.5,
                              'format': b'UV8',
@@ -482,13 +482,17 @@ class DataMoment:
         engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
-        if engine == 'h5netcdf':
-            pytest.skip("requires enhancements in xarray and h5netcdf")
+        #if engine == 'h5netcdf':
+        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
         with self.get_volume_data(get_loader, decode_coords=False,
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
+            #if 'gamic' in self.name:
+            #    key = 'Zh'
+            #else:
+            #    key = 'DBZH'
             for i, ts in enumerate(vol):
                 if '02' in self.name:
                     ds = create_dataset(i, nrays=361)['DBZH']
@@ -518,13 +522,15 @@ class DataMoment:
             for i, ts in enumerate(vol):
                 for j, swp in enumerate(ts):
                     for k, mom in enumerate(swp):
-                        data = create_dataset(i)
+                        data = create_dataset(i, type=self.format)
                         data = data.assign_coords(create_coords(i).coords)
                         data = data.assign_coords(
                             create_site(self.data['where']['attrs']).coords)
                         data = data.assign_coords(
                             {'sweep_mode': 'azimuth_surveillance'})
+                        print(data['DBZH'])
                         data = xr.decode_cf(data)
+                        print(data['DBZH'])
                         xr.testing.assert_equal(mom.data, data['DBZH'])
         del mom
         del swp
@@ -577,8 +583,8 @@ class DataSweep(DataMoment):
         engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
-        if engine == 'h5netcdf':
-            pytest.skip("requires enhancements in xarray and h5netcdf")
+        #if engine == 'h5netcdf':
+        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
         with self.get_volume_data(get_loader, decode_coords=False,
@@ -609,7 +615,7 @@ class DataSweep(DataMoment):
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
                 for j, swp in enumerate(ts):
-                    data = create_dataset(i)
+                    data = create_dataset(i, type=self.format)
                     data = data.assign_coords(create_coords(i).coords)
                     data = data.assign_coords(
                         create_site(self.data['where']['attrs']).coords)
@@ -626,8 +632,8 @@ class DataSweep(DataMoment):
         engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
-        if engine == 'h5netcdf':
-            pytest.skip("requires enhancements in xarray and h5netcdf")
+        #if engine == 'h5netcdf':
+        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
         with self.get_volume_data(get_loader, decode_coords=False,
@@ -676,23 +682,23 @@ class DataTimeSeries(DataSweep):
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
         engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
-        if engine == 'h5netcdf':
-            pytest.skip("requires enhancements in xarray and h5netcdf")
+        #if engine == 'h5netcdf':
+        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         with self.get_volume_data(get_loader, decode_coords=False,
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
                 if '02' in self.name:
-                    ds = create_dataset(i, nrays=361)
+                    ds = create_dataset(i, type=self.format, nrays=361)
                 else:
-                    ds = create_dataset(i)
+                    ds = create_dataset(i, type=self.format)
                 xr.testing.assert_equal(ts.data, ds.expand_dims('time'))
 
         with self.get_volume_data(get_loader, decode_coords=True,
                                   mask_and_scale=False, decode_times=True,
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
-                data = create_dataset(i)
+                data = create_dataset(i, type=self.format)
                 data = data.assign_coords(create_coords(i).coords)
                 data = data.assign_coords(
                     create_site(self.data['where']['attrs']).coords)
@@ -705,7 +711,7 @@ class DataTimeSeries(DataSweep):
                                   mask_and_scale=True, decode_times=True,
                                   chunks=None, parallel=False) as vol:
             for i, ts in enumerate(vol):
-                data = create_dataset(i)
+                data = create_dataset(i, type=self.format)
                 data = data.assign_coords(create_coords(i).coords)
                 data = data.assign_coords(
                     create_site(self.data['where']['attrs']).coords)
@@ -782,8 +788,8 @@ class TestGamicVolume(MeasuredDataVolume):
     format = 'GAMIC'
     volumes = 1
     sweeps = 10
-    moments = ['Zh', 'Zv', 'UZh', 'UZv', 'ZDR', 'Vh', 'Vv', 'Wh', 'Wv',
-               'PHIDP', 'KDP', 'RHOHV']
+    moments = ['DBZH', 'DBZV', 'DBTH', 'DBTV', 'ZDR', 'VRADH', 'VRADV',
+               'WRADH', 'WRADV', 'PHIDP', 'KDP', 'RHOHV']
     elevations = [28.0, 18.0, 14.0, 11.0, 8.2, 6.0, 4.5, 3.1, 1.7, 0.6]
     azimuths = [361, 361, 361, 360, 361, 360, 360, 361, 360, 360]
     ranges = [360, 500, 620, 800, 1050, 1400, 1000, 1000, 1000, 1000]
@@ -863,7 +869,7 @@ class TestSyntheticGamicVolume01(SyntheticDataVolume):
     format = 'GAMIC'
     volumes = 1
     sweeps = 2
-    moments = ['Zh']
+    moments = ['DBZH']
     elevations = [0.5, 1.5]
     azimuths = [360, 360]
     ranges = [100, 100]

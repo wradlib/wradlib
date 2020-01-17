@@ -832,15 +832,17 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
     engine = moments[0].engine
     if engine == 'netcdf4':
         opener = nc.Dataset
+        opener_kwargs = {}
         store = xr.backends.NetCDF4DataStore
     else:
         opener = h5netcdf.File
+        opener_kwargs = dict(phony_dims='access')
         store = xr.backends.H5NetCDFStore
 
     # do not use parallel if all moments in one file
     if len(set([p.filename for p in moments])) == 1:
         single_file = True
-        ds0 = opener(moments[0].filename, 'r')
+        ds0 = opener(moments[0].filename, 'r', **opener_kwargs)
     else:
         single_file = False
 
@@ -861,7 +863,8 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
                   engine=engine, **open_kwargs) for p in moments]
     else:
         datasets = [
-            open_(p.filename, group=p.ncpath, lock=lock, autoclose=None,
+            open_(store(opener(p.filename, 'r', **opener_kwargs),
+                        group=p.ncpath, lock=lock, autoclose=None),
                   engine=engine, **open_kwargs) for p in moments]
 
     file_objs = [getattr_(ds, '_file_obj') for ds in datasets]
@@ -1135,7 +1138,8 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         if isinstance(self.parent, XRadSweepOdim):
             return self.what['quantity']
         else:
-            return self.attrs['moment']
+            #print(self.attrs['moment'].lower())
+            return GAMIC_NAMES[self.attrs['moment'].lower()]
 
 
 class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
@@ -1245,12 +1249,12 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         """
         if self._data is None:
             self._data = self._merge_moments()
-
             if self.decode_coords:
                 self._data = self._data.assign_coords(
                     self._get_coords().coords)
                 self._data = (self._data.sortby('azimuth').
                               pipe(_reindex_azimuth, self))
+                #self._data['elevation'] = self._data.elevation.pipe(_fix_elevation)
                 self._data = self._data.assign_coords(
                     self.parent.parent.site.coords)
                 self._data = self._data.assign_coords(
@@ -1477,8 +1481,6 @@ class XRadSweepGamic(XRadSweep):
 
     Parameters
     ----------
-
-
     ncfile : {netCDF4.Dataset, h5py.File or h5netcdf.File object}
         File handle of file containing radar sweep
     ncpath : str
@@ -1542,8 +1544,20 @@ class XRadSweepGamic(XRadSweep):
         return np.round(self.how['elevation'], decimals=1)
 
     def _merge_moments(self):
-        ds = xr.open_dataset(self.filename, self.ncpath, engine=self.engine,
-                             chunks=self.chunks)
+
+        if 'h5' in self.engine:
+            opener = h5netcdf.File
+            opener_kwargs = dict(phony_dims='access')
+            store = xr.backends.H5NetCDFStore
+        else:
+            opener = nc.Dataset
+            opener_kwargs = dict()
+            store = xr.backends.NetCDF4DataStore
+
+        ds0 = opener(self.filename, 'r', **opener_kwargs)
+        ds = xr.open_dataset(store(ds0, self.ncpath,
+                                   lock=None, autoclose=None),
+                             engine=self.engine, chunks=self.chunks)
         ds = ds.drop_vars('ray_header', errors='ignore')
         for mom in self:
             mom_name = mom.ncpath.split('/')[-1]
@@ -1562,12 +1576,17 @@ class XRadSweepGamic(XRadSweep):
                 dmin = np.iinfo(dmom.dtype).min
                 minval = dmom.dyn_range_min
                 maxval = dmom.dyn_range_max
-                gain = (maxval - minval) / dmax
+                if maxval != minval:
+                    gain = (maxval - minval) / dmax
+                else:
+                    gain = (dmax - dmin) / dmax
+                    minval = dmin
                 undetect = float(dmin)
                 attrs['scale_factor'] = gain
                 attrs['add_offset'] = minval
                 attrs['_FillValue'] = float(dmax)
                 attrs['_Undetect'] = undetect
+
             if self.decode_coords:
                 attrs['coordinates'] = 'elevation azimuth range'
 
@@ -1636,6 +1655,7 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         return super(XRadTimeSeries, self).append(value)
 
     def __repr__(self):
+        self.check()
         summary = ["<wradlib.{}>".format(type(self).__name__)]
         dims = "Dimensions:"
         dims_summary = [f"time: {len(self)}"]
@@ -1669,6 +1689,7 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
                 warnings.warn(
                     "wradlib: Moments {} are not available in all datasets "
                     "and will be dropped from the result.".format(drop))
+                #drop = set()
             # todo: catch possible error and add precise ErrorMessage
             self._data = xr.concat(
                 [f.data.drop_vars(drop, errors='ignore') for
@@ -1679,6 +1700,38 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
                 data_vars=list(keep),
                 dim='time')
         return self._data
+
+    def check_rays(self):
+        #print(self, len(self), self[0])
+        nrays = [swp.nrays for swp in self]
+        snrays = set(nrays)
+        idx = []
+        for nr in snrays:
+            if (nr % 360):
+                idx.extend(np.argwhere(np.array(nrays) == nr).flatten()).tolist()
+
+        if len(snrays) > 1:
+            warnings.warn(
+                f"wradlib: number of rays differing between sweeps.\n"
+                f"{snrays}"
+            )
+        return snrays
+
+    def check_moments(self):
+        #print(self, len(self), self[0])
+        moments = [set([mom.quantity for mom in swp]) for swp in self]
+        mi = set.intersection(*mlist)
+        mu = set.union(*mlist)
+        mp = mi ^ mu
+        if mp:
+            idx = np.argwhere(moments != mu).flatten()
+            warnings.warn(
+                f"wradlib: moments differ between sweeps.\n"
+                f"{mp} not available in all sweeps."
+            )
+        return idx
+
+
 
 
 class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
@@ -1839,13 +1892,15 @@ def collect_by_angle(obj):
     return out
 
 
-def _open_odim_sweep(filename, loader, attr, **kwargs):
+def _open_odim_sweep(filename, loader, loader_kwargs, **kwargs):
     """Returns list of XRadSweep objects
 
     Every sweep will be put into it's own class instance.
     """
+    ld_kwargs = loader_kwargs.copy()
+    attr = ld_kwargs.pop('attr')
     # open file
-    netcdf = loader(filename, 'r')
+    netcdf = loader(filename, 'r', **ld_kwargs)
 
     # get group names
     fattr = getattr(netcdf, attr)
@@ -1891,18 +1946,22 @@ def open_odim(paths, loader='netcdf4', **kwargs):
 
     if loader == 'netcdf4':
         netcdf = nc.Dataset
+        loader_kwargs = {'attr': 'groups'}
         attr = 'groups'
     elif loader == 'h5netcdf':
         netcdf = h5netcdf.File
+        loader_kwargs = {'attr': 'keys',
+                         'phony_dims': None}
         attr = 'keys'
     elif loader == 'h5py':
         netcdf = h5py.File
+        loader_kwargs = {'attr': 'keys'}
         attr = 'keys'
     else:
         raise TypeError("wradlib: Unkown loader: {}".format(loader))
 
     sweeps = []
-    [sweeps.extend(_open_odim_sweep(f, netcdf, attr, **kwargs)) for f in
+    [sweeps.extend(_open_odim_sweep(f, netcdf, loader_kwargs, **kwargs)) for f in
      tqdm(paths,
           desc='Open',
           unit=' Files', leave=None)]
