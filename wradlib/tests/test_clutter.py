@@ -147,8 +147,17 @@ class FilterCloudtypeTest(unittest.TestCase):
         self.error = np.absolute(timelag) * wind
 
     def test_filter_cloudtype(self):
-        clutter.filter_cloudtype(self.val, self.val_sat,
-                                 scale=self.rscale, smoothing=self.error)
+        nonmet = clutter.filter_cloudtype(self.val, self.val_sat,
+                                          scale=self.rscale,
+                                          smoothing=self.error)
+        nclutter = np.sum(nonmet)
+        self.assertTrue(nclutter == 8141)
+        nonmet = clutter.filter_cloudtype(self.val, self.val_sat,
+                                          scale=self.rscale,
+                                          smoothing=self.error,
+                                          low=True)
+        nclutter = np.sum(nonmet)
+        self.assertTrue(nclutter == 17856)
 
 
 if __name__ == '__main__':

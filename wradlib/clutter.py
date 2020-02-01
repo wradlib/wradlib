@@ -494,12 +494,12 @@ def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
     thrs : float
         Threshold above which to identify clutter
     snow : bool
-        Swith to use PGE02 class "land/sea snow" for clutter identification
+        Switch to use PGE02 class "land/sea snow" for clutter identification
     low : bool
-        Swith to use PGE02 class "low/very low stratus/cumulus" for
-        clutter identification
+        Switch to use PGE02 class very low stratus, very low cumulus and
+        low cumulus for clutter identification
     cirrus : bool
-        Swith to use PGE02 class "very thin cirrus" and "fractional clouds"
+        Switch to use PGE02 class "very thin cirrus" and "fractional clouds"
         for clutter identification
     smoothing : float
         Size [m] of the smoothing window used to take into account various
@@ -520,7 +520,7 @@ def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
     if snow:
         noprecip = noprecip | (cloud == 3) | (cloud == 4)
     if low:
-        noprecip = noprecip | (cloud >= 4) | (cloud <= 7)
+        noprecip = noprecip | (cloud == 5) | (cloud == 6) | (cloud == 7)
     if cirrus:
         noprecip = noprecip | (cloud == 14) | (cloud == 18)
     if smoothing is not None:
