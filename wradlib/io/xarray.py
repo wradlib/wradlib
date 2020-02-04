@@ -553,7 +553,7 @@ def to_cfradial2(volume, filename):
         dims.remove('range')
         dim0 = dims[0]
 
-        swp = swp.rename_dims({dim0: 'time'})
+        swp = swp.rename({dim0: 'time'})
         swp.drop_vars(['x', 'y', 'z', 'gr', 'rays', 'bins'], errors='ignore')
         swp.to_netcdf(filename, mode='a', group=key)
 
@@ -1044,7 +1044,7 @@ class CfRadial(XRadVol):
         sweepnames = self.root.sweep_group_name.values
         for sw in sweepnames:
             ds = _open_dataset(nch.nch, grp=sw, **kwargs)
-            ds = ds.rename_dims({'time': dim0})
+            ds = ds.rename({'time': dim0})
             coords = {'longitude': self.root.longitude,
                       'latitude': self.root.latitude,
                       'altitude': self.root.altitude,
@@ -1112,7 +1112,7 @@ class CfRadial(XRadVol):
             tslice = slice(start_idx[i], end_idx[i])
             ds = data.isel(time=tslice,
                            sweep=slice(i, i + 1)).squeeze('sweep')
-            ds = ds.rename_dims({'time': dim0})
+            ds = ds.rename({'time': dim0})
             ds.sweep_mode.load()
             coords = {'longitude': self.root.longitude,
                       'latitude': self.root.latitude,
@@ -1285,7 +1285,6 @@ class OdimH5(XRadVol):
             if 'cf' in standard or georef:
                 sweep_mode = _get_odim_sweep_mode(nch, ds_grps)
                 coords['sweep_mode'] = sweep_mode
-
             if 'cf' in standard or decode_coords or georef:
                 coords.update(_get_odim_coordinates(nch, ds_grps))
                 # georeference needs coordinate variables
@@ -1293,14 +1292,13 @@ class OdimH5(XRadVol):
                     geods = xr.Dataset(vars, coords)
                     geods = xarray.georeference_dataset(geods)
                     coords.update(geods.coords)
-
             # time coordinate
             if 'cf' in standard or decode_times:
                 timevals = _get_odim_timevalues(nch, ds_grps)
                 if decode_times:
-                    coords['time'] = ([dim0], timevals, time_attrs)
+                    coords['time'] = (['dim_0'], timevals, time_attrs)
                 else:
-                    coords['time'] = ([dim0], timevals)
+                    coords['time'] = (['dim_0'], timevals)
 
             # assign global sweep attributes
             fixed_angle = _get_odim_fixed_angle(nch, ds_grps)
@@ -1317,7 +1315,7 @@ class OdimH5(XRadVol):
             # assign variables and coordinates
             ds = ds.assign(vars)
             ds = ds.assign_coords(**coords)
-            ds = ds.rename_dims({'dim_0': dim0, 'dim_1': 'range'})
+            ds = ds.rename({'dim_0': dim0, 'dim_1': 'range'})
 
             # decode dataset if requested
             if decode_times or decode_coords or mask_and_scale:
