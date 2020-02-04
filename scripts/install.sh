@@ -70,7 +70,7 @@ conda config --set channel_priority strict
 conda update --yes conda
 
 # Install wradlib dependencies
-DEPS="gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
 # Install twine for pypi upload
 if [[ "$DEPLOY" == "true" ]]; then
