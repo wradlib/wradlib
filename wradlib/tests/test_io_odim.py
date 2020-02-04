@@ -176,8 +176,8 @@ def create_site(data):
 def create_dset_how(i, nrays=360):
     return {'startazA': create_startazA(nrays=nrays),
             'stopazA': create_stopazA(nrays=nrays),
-            'startelA': np.ones(nrays) * (i + 0.5),
-            'stopelA': np.ones(nrays) * (i + 0.5),
+            'startelA': create_startelA(i, nrays=nrays),
+            'stopelA': create_stopelA(i, nrays=nrays),
             'startazT': create_startazT(i, nrays=nrays),
             'stopazT': create_stopazT(i, nrays=nrays)}
 
@@ -528,9 +528,7 @@ class DataMoment:
                             create_site(self.data['where']['attrs']).coords)
                         data = data.assign_coords(
                             {'sweep_mode': 'azimuth_surveillance'})
-                        print(data['DBZH'])
                         data = xr.decode_cf(data)
-                        print(data['DBZH'])
                         xr.testing.assert_equal(mom.data, data['DBZH'])
         del mom
         del swp
