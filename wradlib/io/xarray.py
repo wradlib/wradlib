@@ -14,10 +14,10 @@ Writes data to CfRadial2 and ODIM_H5 files.
 
 This reader implementation uses
 
-* `netcdf4 <http://unidata.github.io/netcdf4-python/>`_,
+* `netcdf4 <https://unidata.github.io/netcdf4-python/>`_,
 * `h5py <https://www.h5py.org/>`_,
 * `h5netcdf <https://github.com/shoyer/h5netcdf>`_ and
-* `xarray <xarray.pydata.org/>`_.
+* `xarray <https://xarray.pydata.org/>`_.
 
 Currently there are two different approaches.
 
@@ -41,13 +41,14 @@ CfRadial2 root-group is available via the `.root`-object.
 The writer implementation uses xarray for CfRadial2 output and relies on h5py
 for the ODIM_H5 output.
 
-The second approach reads ODIM files into a *simple* structure::
+The second approach reads ODIM files (metadata) into a *simple* accessible
+structure::
 
     vol = wradlib.io.open_odim(paths, loader='netcdf4', **kwargs)
 
-All datafiles are accessed via the given loader (netcdf4, h5py, h5netcdf).
-Only absolutely neccessary data is actually read in this process, eg.
-acquisition time and elevation, to fill the structure accordingly. All
+All datafiles are accessed via the given loader ('netcdf4', 'h5py',
+'h5netcdf'). Only absolutely neccessary data is actually read in this process,
+eg. acquisition time and elevation, to fill the structure accordingly. All
 subsequent metadata retrievals are cached to further improve performance.
 Actual data access is realised via xarray using engine 'netcdf4' or 'h5netcdf',
 depending on the loader.
@@ -73,8 +74,7 @@ Warning
 """
 __all__ = ['XRadVol', 'CfRadial', 'OdimH5', 'to_cfradial2', 'to_odim',
            'open_odim', 'XRadSweep', 'XRadMoment', 'XRadTimeSeries',
-           'XRadVolume',
-           'create_xarray_dataarray']
+           'XRadVolume', 'create_xarray_dataarray']
 __doc__ = __doc__.format('\n   '.join(__all__))
 
 import collections
@@ -1991,10 +1991,10 @@ def _open_odim_sweep(filename, loader, loader_kwargs, **kwargs):
     ld_kwargs = loader_kwargs.copy()
     attr = ld_kwargs.pop('attr')
     # open file
-    netcdf = loader(filename, 'r', **ld_kwargs)
+    handle = loader(filename, 'r', **ld_kwargs)
 
     # get group names
-    fattr = getattr(netcdf, attr)
+    fattr = getattr(handle, attr)
     if callable(fattr):
         groups = list(fattr())
     else:
@@ -2011,7 +2011,7 @@ def _open_odim_sweep(filename, loader, loader_kwargs, **kwargs):
     sweeps = [k for k in groups if dsdesc in k]
     sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
     sweeps = np.array(sweeps)[sweeps_idx].tolist()
-    return [sweep_cls(netcdf, k, **kwargs) for k in sweeps]
+    return [sweep_cls(handle, k, **kwargs) for k in sweeps]
 
 
 def open_odim(paths, loader='netcdf4', **kwargs):
@@ -2656,12 +2656,6 @@ class OdimH5(XRadVol):
                        'where': ds_where}
 
             # moments
-            # possible bug in netcdf-c reader assuming only one dimension when
-            # dimensions have same size
-            # see https://github.com/Unidata/netcdf4-python/issues/945
-            # see https://github.com/Unidata/netcdf-c/issues/1484
-            # fixed by dimension reassignment in _get_odim_group_moments and
-            # _get_odim_variables_moments
             ds = _assign_odim_moments(ds, nch, sweep, **kwargs)
 
             # retrieve and assign gamic ray_header
@@ -2952,9 +2946,8 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
     dims = sorted(list(ds.dims.keys()),
                   key=lambda x: int(x[len('phony_dim_'):]))
 
-    ds = ds.rename({dims[0]: 'dim_0'})
-    if len(dims) > 1:
-        ds = ds.rename({dims[1]: 'dim_1'})
+    ds = ds.rename({dims[0]: 'dim_0',
+                    dims[1]: 'dim_1'})
 
     for mom in moments:
         # open dataX dataset
@@ -3007,11 +3000,6 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
 
         # assign attributes to moment
         dmom.attrs.update(attrs)
-
-        # fix dimensions, when dim_0 == dim_1
-        dims = dmom.dims
-        if dims[0] == dims[1]:
-            ds.update({mom: (['dim_0', 'dim_1'], dmom)})
 
         # keep original dataset name
         if standard != 'none':
@@ -3081,13 +3069,9 @@ def _get_odim_group_moments(nch, sweep, moments=None, **kwargs):
 
         # fix dimensions
         dims = dmom.dims
-        if dims[0] == dims[1]:
-            datas.update({name: (['dim_0', 'dim_1'],
-                                 dmom.rename({dims[0]: 'dim_0'}))})
-        else:
-            datas.update({name: dmom.rename({dims[0]: 'dim_0',
-                                             dims[1]: 'dim_1'
-                                             })})
+        datas.update({name: dmom.rename({dims[0]: 'dim_0',
+                                         dims[1]: 'dim_1'
+                                         })})
     return datas
 
 
