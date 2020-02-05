@@ -479,20 +479,13 @@ class DataMoment:
         gc.collect()
 
     def test_moment_data(self, get_loader):
-        engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
-        #if engine == 'h5netcdf':
-        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
         with self.get_volume_data(get_loader, decode_coords=False,
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:
-            #if 'gamic' in self.name:
-            #    key = 'Zh'
-            #else:
-            #    key = 'DBZH'
             for i, ts in enumerate(vol):
                 if '02' in self.name:
                     ds = create_dataset(i, nrays=361)['DBZH']
@@ -578,11 +571,8 @@ class DataSweep(DataMoment):
         gc.collect()
 
     def test_sweep_data(self, get_loader):
-        engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
-        #if engine == 'h5netcdf':
-        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
         with self.get_volume_data(get_loader, decode_coords=False,
@@ -627,11 +617,8 @@ class DataSweep(DataMoment):
         gc.collect()
 
     def test_sweep_coords_data(self, get_loader):
-        engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
-        #if engine == 'h5netcdf':
-        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
         with self.get_volume_data(get_loader, decode_coords=False,
@@ -679,9 +666,6 @@ class DataTimeSeries(DataSweep):
             pytest.skip("requires synthetic data")
         if get_loader == 'netcdf4' and self.format == 'GAMIC':
             pytest.skip("gamic needs hdf-based loader")
-        engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
-        #if engine == 'h5netcdf':
-        #    pytest.skip("requires enhancements in xarray and h5netcdf")
         with self.get_volume_data(get_loader, decode_coords=False,
                                   mask_and_scale=False, decode_times=False,
                                   chunks=None, parallel=False) as vol:

@@ -123,10 +123,10 @@ moments_mapping = {
              'units': 'dBZ',
              'gamic': ['zh']},
     'DBZH_CLEAN': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
-             'long_name': 'Equivalent reflectivity factor H',
-             'short_name': 'DBZH_CLEAN',
-             'units': 'dBZ',
-             'gamic': None},
+                   'long_name': 'Equivalent reflectivity factor H',
+                   'short_name': 'DBZH_CLEAN',
+                   'units': 'dBZ',
+                   'gamic': None},
     'DBZV': {'standard_name': 'radar_equivalent_reflectivity_factor_v',
              'long_name': 'Equivalent reflectivity factor V',
              'short_name': 'DBZV',
@@ -781,7 +781,7 @@ def _reindex_azimuth(ds, sweep, force=False):
         ds = (ds.reindex({dim: azr},
                          method='nearest',
                          tolerance=res/4.,
-                         #fill_value=xr.core.dtypes.NA,
+                         # fill_value=xr.core.dtypes.NA,
                          ).loc[{dim: slice(0, new_rays)}])
     return ds
 
@@ -1353,7 +1353,6 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
                 self._data = self._data.assign_coords(coords)
                 self._data = self._data.sortby('azimuth')
                 self._data = (self._data.pipe(_reindex_azimuth, self))
-                #self._data['elevation'] = self._data.elevation.pipe(_fix_elevation)
                 self._data = self._data.assign_coords(
                     self.parent.parent.site.coords)
                 self._data = self._data.assign_coords(
@@ -1696,7 +1695,6 @@ class XRadSweepGamic(XRadSweep):
     def _get_time(self):
         start = self.how['timestamp']
         start = dateutil.parser.parse(start)
-        #start = dt.datetime.strptime(start, '%Y-%m-%dT%H:%M:%S.%fZ')
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         da = xr.DataArray(start, attrs=time_attrs)
         return da
@@ -1710,9 +1708,7 @@ class XRadSweepGamic(XRadSweep):
                 start = ncid['how'].attrs['timestamp'].decode()
         except (IndexError, KeyError):
             return None
-        #import dateutil
         start = dateutil.parser.parse(start)
-        #start = dt.datetime.strptime(start, '%Y-%m-%dT%H:%M:%S.%fZ')
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         return start
 
@@ -1735,7 +1731,6 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         return super(XRadTimeSeries, self).append(value)
 
     def __repr__(self):
-        #self.check()
         summary = ["<wradlib.{}>".format(type(self).__name__)]
         dims = "Dimensions:"
         dims_summary = [f"time: {len(self)}"]
@@ -1756,15 +1751,15 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
     def data(self):
         if self._data is None:
             # moments handling
-            coords = set(['rtime', 'range', 'azimuth', 'elevation', 'time',
-                          'altitude', 'latitude', 'longitude', 'sweep_mode'])
+            # coords = set(['rtime', 'range', 'azimuth', 'elevation', 'time',
+            #               'altitude', 'latitude', 'longitude', 'sweep_mode'])
             # get intersection and union
             moment_set = [set(t1.moments) for t1 in self]
             moment_set_i = set.intersection(*moment_set)
             moment_set_u = set.union(*moment_set)
             # drop variables not available in all datasets
             drop = moment_set_i ^ moment_set_u
-            keep = (moment_set_i | coords) ^ coords
+            # keep = (moment_set_i | coords) ^ coords
             drop = list(self.check_moments().keys())
             if drop:
                 warnings.warn(
@@ -1780,7 +1775,7 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
                            desc='Collecting',
                            unit=' Timesteps',
                            leave=None)],
-                #data_vars=list(keep),
+                # data_vars=list(keep),
                 dim='time')
         return self._data
 
@@ -1790,7 +1785,9 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         idx = []
         for nr in snrays:
             if (nr % 360):
-                idx.extend(np.argwhere(np.array(nrays) == nr).flatten()).tolist()
+                idx.extend(np.argwhere(np.array(nrays) == nr)
+                           .flatten()
+                           .tolist())
 
         if len(snrays) > 1:
             warnings.warn(
@@ -2041,24 +2038,22 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     if loader == 'netcdf4':
         netcdf = nc.Dataset
         loader_kwargs = {'attr': 'groups'}
-        attr = 'groups'
     elif loader == 'h5netcdf':
         netcdf = h5netcdf.File
         loader_kwargs = {'attr': 'keys',
                          'phony_dims': 'access'}
-        attr = 'keys'
     elif loader == 'h5py':
         netcdf = h5py.File
         loader_kwargs = {'attr': 'keys'}
-        attr = 'keys'
     else:
         raise TypeError("wradlib: Unkown loader: {}".format(loader))
 
     sweeps = []
-    [sweeps.extend(_open_odim_sweep(f, netcdf, loader_kwargs, **kwargs)) for f in
-     tqdm(paths,
-          desc='Open',
-          unit=' Files', leave=None)]
+    [sweeps.extend(_open_odim_sweep(f, netcdf, loader_kwargs, **kwargs))
+     for f in tqdm(paths,
+                   desc='Open',
+                   unit=' Files',
+                   leave=None)]
     angles = collect_by_angle(sweeps)
     for i in tqdm(range(len(angles)), desc='Collecting',
                   unit=' Angles', leave=None):
