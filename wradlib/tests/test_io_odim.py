@@ -636,6 +636,15 @@ class DataSweep(DataMoment):
         del vol
         gc.collect()
 
+    def test_sweep_errors(self, get_loader):
+        if not (get_loader == 'netcdf4' and self.format == 'GAMIC'):
+            pytest.skip("only test gamic using netcdf4")
+        with pytest.raises(ValueError):
+            with self.get_volume_data(get_loader, decode_coords=False,
+                                      mask_and_scale=False, decode_times=False,
+                                      chunks=None, parallel=False) as vol:
+                print(vol)
+
 
 class DataTimeSeries(DataSweep):
 
@@ -710,6 +719,8 @@ class DataTimeSeries(DataSweep):
 class DataVolume(DataTimeSeries):
 
     def test_volumes(self, get_loader):
+        if get_loader == 'netcdf4' and self.format == 'GAMIC':
+            pytest.skip("gamic needs hdf-based loader")
         with self.get_volume_data(get_loader) as vol:
             engine = 'h5netcdf' if 'h5' in get_loader else 'netcdf4'
             assert isinstance(vol, io.xarray.XRadVolume)

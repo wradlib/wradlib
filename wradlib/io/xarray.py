@@ -1983,15 +1983,34 @@ def collect_by_angle(obj):
     return out
 
 
-def _open_odim_sweep(filename, loader, loader_kwargs, **kwargs):
+def _open_odim_sweep(filename, loader, **kwargs):
     """Returns list of XRadSweep objects
 
     Every sweep will be put into it's own class instance.
     """
-    ld_kwargs = loader_kwargs.copy()
-    attr = ld_kwargs.pop('attr')
+    ld_kwargs = {}
+    if loader == 'netcdf4':
+        opener = nc.Dataset
+        attr = 'groups'
+    elif loader == 'h5netcdf':
+        opener = h5netcdf.File
+        attr = 'keys'
+        ld_kwargs['phony_dims'] = 'access'
+    else:
+        opener = h5py.File
+        attr = 'keys'
+
+    dsdesc = 'dataset'
+    sweep_cls = XRadSweepOdim
+    if 'GAMIC' in kwargs.get('flavour', 'ODIM'):
+        if loader == 'netcdf4':
+            raise ValueError("wradlib: GAMIC files can't be read using netcdf4"
+                             " loader. Use either 'h5py' or 'h5netcdf.")
+        dsdesc = 'scan'
+        sweep_cls = XRadSweepGamic
+
     # open file
-    handle = loader(filename, 'r', **ld_kwargs)
+    handle = opener(filename, 'r', **ld_kwargs)
 
     # get group names
     fattr = getattr(handle, attr)
@@ -1999,12 +2018,6 @@ def _open_odim_sweep(filename, loader, loader_kwargs, **kwargs):
         groups = list(fattr())
     else:
         groups = list(fattr)
-
-    dsdesc = 'dataset'
-    sweep_cls = XRadSweepOdim
-    if 'GAMIC' in kwargs.get('flavour', 'ODIM'):
-        dsdesc = 'scan'
-        sweep_cls = XRadSweepGamic
 
     # iterate over single sweeps
     # todo: if sorting does not matter, we can skip this
@@ -2035,21 +2048,11 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     else:
         paths = np.array(paths).flatten().tolist()
 
-    if loader == 'netcdf4':
-        netcdf = nc.Dataset
-        loader_kwargs = {'attr': 'groups'}
-    elif loader == 'h5netcdf':
-        netcdf = h5netcdf.File
-        loader_kwargs = {'attr': 'keys',
-                         'phony_dims': 'access'}
-    elif loader == 'h5py':
-        netcdf = h5py.File
-        loader_kwargs = {'attr': 'keys'}
-    else:
-        raise TypeError("wradlib: Unkown loader: {}".format(loader))
+    if loader not in ['netcdf4', 'h5netcdf', 'h5py']:
+        raise ValueError("wradlib: Unkown loader: {}".format(loader))
 
     sweeps = []
-    [sweeps.extend(_open_odim_sweep(f, netcdf, loader_kwargs, **kwargs))
+    [sweeps.extend(_open_odim_sweep(f, loader, **kwargs))
      for f in tqdm(paths,
                    desc='Open',
                    unit=' Files',
