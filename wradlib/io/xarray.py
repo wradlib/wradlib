@@ -219,6 +219,11 @@ moments_mapping = {
               'short_name': 'WRADV',
               'units': 'meters per second',
               'gamic': ['wv']},
+    'WRAD': {'standard_name': 'radar_doppler_spectrum_width',
+             'long_name': 'Doppler spectrum width',
+             'short_name': 'WRAD',
+             'units': 'meters per second',
+             'gamic': None},
     'ZDR': {'standard_name': 'radar_differential_reflectivity_hv',
             'long_name': 'Log differential reflectivity H/V',
             'short_name': 'ZDR',
@@ -2443,7 +2448,7 @@ class CfRadial(XRadVol):
         sweepnames = self.root.sweep_group_name.values
         for sw in sweepnames:
             ds = _open_dataset(nch.nch, grp=sw, **kwargs)
-            ds = ds.rename({'time': dim0})
+            ds = ds.swap_dims({'time': dim0})
             coords = {'longitude': self.root.longitude,
                       'latitude': self.root.latitude,
                       'altitude': self.root.altitude,
@@ -2511,7 +2516,7 @@ class CfRadial(XRadVol):
             tslice = slice(start_idx[i], end_idx[i])
             ds = data.isel(time=tslice,
                            sweep=slice(i, i + 1)).squeeze('sweep')
-            ds = ds.rename({'time': dim0})
+            ds = ds.swap_dims({'time': dim0})
             ds.sweep_mode.load()
             coords = {'longitude': self.root.longitude,
                       'latitude': self.root.latitude,
