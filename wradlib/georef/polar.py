@@ -86,7 +86,7 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
     else:
         # Set up aeqd-projection sitecoord-centered, assuming spherical earth
         # use Sphere azimuthal equidistant projection
-        projstr = ('+proj=aeqd +lon_0={lon:f} lat_0={lat:f} +a={a:f} '
+        projstr = ('+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={a:f} '
                    '+b={b:f} +units=m +no_defs').format(lon=sitecoords[0],
                                                         lat=sitecoords[1],
                                                         a=re, b=re)
