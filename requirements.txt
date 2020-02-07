@@ -2,7 +2,7 @@ deprecation
 gdal>=3
 h5py
 h5netcdf>=0.8.0
-netCDF4>=4.7.3
+netCDF4
 numpy
 matplotlib
 scipy
