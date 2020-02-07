@@ -1146,8 +1146,8 @@ class XarrayTests(unittest.TestCase):
         xr.testing.assert_allclose(cf.root.time_coverage_start,
                                    cf2.root.time_coverage_start)
         drop = ['longitude', 'latitude', 'altitude', 'sweep_mode']
-        xr.testing.assert_allclose(cf['sweep_1'].drop(drop).sweep_number,
-                                   cf2['sweep_1'].drop(drop).sweep_number)
+        xr.testing.assert_allclose(cf['sweep_1'].drop_vars(drop).sweep_number,
+                                   cf2['sweep_1'].drop_vars(drop).sweep_number)
 
         tmp1 = tempfile.NamedTemporaryFile(mode='w+b').name
         cf2.to_cfradial2(tmp1)
@@ -1163,8 +1163,8 @@ class XarrayTests(unittest.TestCase):
         cf.to_cfradial2(tmp)
         cf2 = io.xarray.CfRadial(tmp, georef=True)
         swp1 = cf['sweep_1'].copy()
-        cf['sweep_1'] = cf['sweep_1'].drop(['x', 'y', 'z', 'gr',
-                                            'rays', 'bins'])
+        cf['sweep_1'] = cf['sweep_1'].drop_vars(['x', 'y', 'z', 'gr',
+                                                 'rays', 'bins'])
         cf.georeference()
         xr.testing.assert_equal(swp1, cf['sweep_1'])
         xr.testing.assert_equal(swp1, cf2['sweep_1'])

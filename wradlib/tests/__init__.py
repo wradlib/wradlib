@@ -15,6 +15,7 @@ from . import test_comp  # noqa
 from . import test_dp  # noqa
 from . import test_georef  # noqa
 from . import test_io  # noqa
+from . import test_io_odim  # noqa
 from . import test_ipol  # noqa
 from . import test_qual  # noqa
 from . import test_trafo  # noqa
