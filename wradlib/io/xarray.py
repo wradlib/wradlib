@@ -848,6 +848,7 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
 
     open_kwargs = dict(chunks=chunks, **kwargs)
 
+    # if moments are specified in XRadTimeseries only load those
     if moments.parent._moments is not None:
         moments = [p for p in moments if p.quantity in moments.parent._moments]
 
@@ -1339,6 +1340,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         if self._data is None:
             self._data = self._merge_moments()
 
+            # if metadata declared in XRadTimeseries, load and assign
             if self.parent._meta is not None:
                 vars = dict()
                 for k, v in self.parent._meta.items():
