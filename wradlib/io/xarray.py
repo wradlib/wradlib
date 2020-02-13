@@ -766,19 +766,36 @@ def _preprocess_moment(ds, mom):
     ds = ds.rename({'data': quantity,
                     dims[0]: 'azimuth',
                     dims[1]: 'range'})
+    if mom.parent.decode_coords:
+        coords = mom.parent._get_coords().coords
+        ds = ds.assign_coords(coords)
+        ds = ds.sortby('azimuth')
+        ds = ds.pipe(_reindex_azimuth, mom.parent)
 
     return ds
 
 
 def _reindex_azimuth(ds, sweep, force=False):
+
     dim = list(ds.dims)[0]
     diff = ds[dim].diff(dim)
+
     # this captures missing/additional rays and different angle spacing
     if force | (len(set(diff.values)) > 1):
+        warnings.warn("WRADLIB: missing/additional rays detected "
+                      "=> trying to fix", UserWarning)
+
         # find exact duplicates and remove
         _, idx = np.unique(ds['azimuth'], return_index=True)
         if len(idx) < len(ds['azimuth']):
             ds = ds.isel(azimuth=idx)
+
+            # recompute rtimes if based on nrays
+            sweep._nrays = len(idx)
+            sweep._rtime = None
+            if len(sweep.ray_times) == len(idx):
+                ds = ds.assign({'rtime': sweep.ray_times})
+
         # create new array and reindex
         new_rays = int(np.round(sweep.nrays / 360, decimals=1) * 360)
         res = diff.median().round(decimals=1)
@@ -788,6 +805,7 @@ def _reindex_azimuth(ds, sweep, force=False):
                          tolerance=res/4.,
                          # fill_value=xr.core.dtypes.NA,
                          ).loc[{dim: slice(0, new_rays)}])
+
     return ds
 
 
@@ -1356,10 +1374,6 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
                 self._data = self._data.assign(vars)
 
             if self.decode_coords:
-                coords = self._get_coords().coords
-                self._data = self._data.assign_coords(coords)
-                self._data = self._data.sortby('azimuth')
-                self._data = (self._data.pipe(_reindex_azimuth, self))
                 self._data = self._data.assign_coords(
                     self.parent.parent.site.coords)
                 self._data = self._data.assign_coords(
@@ -1411,10 +1425,11 @@ class XRadSweepOdim(XRadSweep):
         zero_index = np.where(stopaz < startaz)
         stopaz[zero_index[0]] += 360
         azimuth_data = (startaz + stopaz) / 2.
+        azimuth_data = np.round(azimuth_data, decimals=1)
         return azimuth_data
 
     def _get_azimuth_where(self):
-        nrays = self.where['nrays']
+        nrays = self.nrays
         res = 360. / nrays
         azimuth_data = np.arange(res / 2.,
                                  360.,
@@ -1431,7 +1446,7 @@ class XRadSweepOdim(XRadSweep):
 
     def _get_elevation_where(self):
         where = self.where
-        nrays = where['nrays']
+        nrays = self.nrays
         elangle = where['elangle']
         elevation_data = np.ones(nrays, dtype='float32') * elangle
         return elevation_data
@@ -1453,7 +1468,7 @@ class XRadSweepOdim(XRadSweep):
         end = dt.datetime.strptime(enddate + endtime, '%Y%m%d%H%M%S')
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         end = end.replace(tzinfo=dt.timezone.utc).timestamp()
-        nrays = self.where['nrays']
+        nrays = self.nrays
         if start == end:
             warnings.warn("WRADLIB: Equal ODIM `starttime` and `endtime` "
                           "values. Can't determine correct sweep start-, "
@@ -1691,6 +1706,12 @@ class XRadSweepGamic(XRadSweep):
             ds = (ds.assign_coords({'azimuth': self.azimuth}).sortby('azimuth')
                   .pipe(_reindex_azimuth, self)
                   .drop('azimuth'))
+        else:
+            coords = mom.parent._get_coords().coords
+            ds = ds.assign_coords(coords)
+            ds = ds.sortby('azimuth')
+            ds = ds.pipe(_reindex_azimuth, mom.parent)
+
         return ds
 
     def _get_nrays(self):
