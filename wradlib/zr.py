@@ -126,7 +126,7 @@ def z_to_r_enhanced(z, polar=True):
         Corresponds to reflectivity Z in mm**6/m**3
         ND-array, at least 2D
     polar : bool
-        True for polar data, False for cartesian data.
+        defaults to to True (polar data), False for cartesian data.
 
     Returns
     -------
@@ -140,21 +140,19 @@ def z_to_r_enhanced(z, polar=True):
     z = np.asanyarray(z, dtype=np.float64)
     shape = z.shape
     z = z.reshape((-1,) + shape[-2:])
-    Z0 = z
     if polar:
-        prep = Z0[:, -1:, :]
-        app = Z0[:, 0:1, :]
-        Z0 = np.concatenate([prep, Z0, app], axis=-2)
+        z0 = np.concatenate([z[:, -1:, :], z, z[:, 0:1, :]], axis=-2)
         x_ymin, x_ymax = 2, -2
         y_ymin, y_ymax = 1, -1
         x_xmin, x_xmax = None, None
         y_xmin, y_xmax = 1, -1
     else:
+        z0 = z.copy()
         x_ymin, x_ymax = 1, -1
         y_ymin, y_ymax = None, None
         x_xmin, x_xmax = None, None
         y_xmin, y_xmax = 1, -1
-    z0 = trafo.decibel(Z0)
+    z0 = trafo.decibel(z0)
 
     # create shower index using differences and convolution sum
     diffx = np.abs(np.diff(z0, n=1, axis=-1))
@@ -195,7 +193,7 @@ def z_to_r_enhanced(z, polar=True):
     mn35 = (si > -1) & (si < 3.5)
     mn75l = (si >= 3.5) & (si <= 7.5)
 
-    # calculate rainrates
+    # calculate rainrates according DWD
     rr[mn75l] = z_to_r(z[mn75l], a=200., b=1.6)
     rr[mn75h] = z_to_r(z[mn75h], a=320., b=1.4)
     rr[mn35] = z_to_r(z[mn35], a=125., b=1.4)
