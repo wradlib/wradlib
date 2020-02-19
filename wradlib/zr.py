@@ -88,7 +88,7 @@ def r_to_z(r, a=200., b=1.6):
     return a * r ** b
 
 
-def z_to_r_enhanced(z, polar=True):
+def z_to_r_enhanced(z, polar=True, shower=True):
     """Calculates rainrates from radar reflectivities using the enhanced \
     three-part Z-R-relationship used by the DWD (as of 2009)
 
@@ -127,6 +127,8 @@ def z_to_r_enhanced(z, polar=True):
         ND-array, at least 2D
     polar : bool
         defaults to to True (polar data), False for cartesian data.
+    shower : bool
+        output shower index, defaults to True
 
     Returns
     -------
@@ -203,7 +205,10 @@ def z_to_r_enhanced(z, polar=True):
     rr.shape = shape
     si.shape = shape
 
-    return rr, si
+    if shower:
+        return rr, si
+    else:
+        return rr
 
 
 if __name__ == '__main__':
