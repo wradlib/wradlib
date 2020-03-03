@@ -776,18 +776,25 @@ def _reindex_azimuth(ds, sweep, force=False):
     # this captures missing/additional rays and different angle spacing
     if force | (len(set(diff.values)) > 1):
         # find exact duplicates and remove
-        _, idx = np.unique(ds['azimuth'], return_index=True)
-        if len(idx) < len(ds['azimuth']):
+        _, idx = np.unique(ds[dim], return_index=True)
+        if len(idx) < len(ds[dim]):
             ds = ds.isel(azimuth=idx)
+
         # create new array and reindex
-        new_rays = int(np.round(sweep.nrays / 360, decimals=1) * 360)
-        res = diff.median().round(decimals=1)
-        azr = np.arange(res / 2., sweep.nrays, res, dtype=res.dtype)
+        res = sweep.angle_resolution
+        new_rays = int(np.round(360 / res, decimals=0))
+        azr = np.arange(res / 2., new_rays, res, dtype=diff.dtype)
         ds = (ds.reindex({dim: azr},
                          method='nearest',
                          tolerance=res/4.,
                          # fill_value=xr.core.dtypes.NA,
-                         ).loc[{dim: slice(0, new_rays)}])
+                         ))#.loc[{dim: slice(0, new_rays)}])
+        # check elevation (no nan)
+        # set nan values to reasonable median
+        if np.count_nonzero(xr.ufuncs.isnan(ds['elevation'])):
+            ds['elevation'] = ds['elevation'].fillna(ds['elevation'].median())
+        # todo: rtime is also affected, might need to be treated accordingly
+
     return ds
 
 
@@ -1119,6 +1126,7 @@ class OdimH5SweepMetaDataMixin():
     def __init__(self):
         super(OdimH5SweepMetaDataMixin, self).__init__()
         self._a1gate = None
+        self._angle_resolution = None
         self._azimuth = None
         self._elevation = None
         self._fixed_angle = None
@@ -1133,6 +1141,12 @@ class OdimH5SweepMetaDataMixin():
         if self._a1gate is None:
             self._a1gate = self._get_a1gate()
         return self._a1gate
+
+    @property
+    def angle_resolution(self):
+        if self._angle_resolution is None:
+            self._angle_resolution = self._get_angle_resolution()
+        return self._angle_resolution
 
     @property
     def azimuth(self):
@@ -1401,6 +1415,9 @@ class XRadSweepOdim(XRadSweep):
     def _get_a1gate(self):
         return self.where['a1gate']
 
+    def _get_angle_resolution(self):
+        return self.azimuth.diff('azimuth').median().round(decimals=1)
+
     def _get_fixed_angle(self):
         return np.round(self.where['elangle'], decimals=1)
 
@@ -1581,6 +1598,9 @@ class XRadSweepGamic(XRadSweep):
 
     def _get_a1gate(self):
         return np.argsort(self.coords.rtime.values)[0]
+
+    def _get_angle_resolution(self):
+        return self.how['angle_step']
 
     def _get_azimuth(self):
         azstart = self.ray_header['azimuth_start']
