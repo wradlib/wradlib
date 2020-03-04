@@ -598,7 +598,7 @@ class OdimAccessor(object):
         return self._n_samples
 
 
-def to_cfradial2(volume, filename):
+def to_cfradial2(volume, filename, timestep=0):
     """ Save XRadVol to CfRadial2.0 compliant file.
 
     Parameters
@@ -606,25 +606,33 @@ def to_cfradial2(volume, filename):
     volume : XRadVol object
     filename : str
         output filename
+    timestep : int
+        timestep of wanted volume
     """
     volume.root.load()
     root = volume.root.copy(deep=True)
     root.attrs['Conventions'] = 'Cf/Radial'
     root.attrs['version'] = '2.0'
     root.to_netcdf(filename, mode='w', group='/')
-    for key in root.sweep_group_name.values:
-        swp = volume[key]
+    for idx, key in enumerate(root.sweep_group_name.values):
+        try:
+            swp = volume[key]
+        except TypeError:
+            swp = volume[idx][timestep].data
         swp.load()
         dims = list(swp.dims)
         dims.remove('range')
         dim0 = dims[0]
-
-        swp = swp.rename({dim0: 'time'})
+        try:
+            swp = swp.swap_dims({dim0: 'time'})
+        except ValueError:
+            swp = swp.drop_vars('time').rename({'rtime': 'time'})
+            swp = swp.swap_dims({dim0: 'time'})
         swp.drop_vars(['x', 'y', 'z', 'gr', 'rays', 'bins'], errors='ignore')
         swp.to_netcdf(filename, mode='a', group=key)
 
 
-def to_odim(volume, filename):
+def to_odim(volume, filename, timestep=0):
     """ Save XRadVol to ODIM_H5/V2_2 compliant file.
 
     Parameters
@@ -632,6 +640,8 @@ def to_odim(volume, filename):
     volume : XRadVol object
     filename : str
         output filename
+    timestep : int
+        timestep of wanted volume
     """
     root = volume.root
 
@@ -677,7 +687,10 @@ def to_odim(volume, filename):
     ds_list = ['dataset{}'.format(i + 1) for i in range(len(sweepnames))]
     ds_idx = np.argsort(ds_list)
     for idx in ds_idx:
-        ds = volume['sweep_{}'.format(idx + 1)]
+        try:
+            ds = volume['sweep_{}'.format(idx + 1)]
+        except TypeError:
+            ds = volume[idx][timestep].data
         h5_dataset = h5.create_group(ds_list[idx])
 
         # what group p. 21 ff.
@@ -700,8 +713,15 @@ def to_odim(volume, filename):
         h5_ds_where = h5_dataset.create_group('where')
         rscale = ds.range.values[1] / 1. - ds.range.values[0]
         rstart = (ds.range.values[0] - rscale / 2.) / 1000.
-        a1gate = np.argsort(ds.sortby('time').azimuth.values)[0]
-        ds_where = {'elangle': ds.fixed_angle,
+        try:
+            a1gate = np.argsort(ds.sortby('time').azimuth.values)[0]
+        except ValueError:
+            a1gate = np.argsort(ds.sortby('rtime').azimuth.values)[0]
+        try:
+            fixed_angle = ds.fixed_angle
+        except AttributeError:
+            fixed_angle = ds.elevation.round(decimals=1).median().values
+        ds_where = {'elangle': fixed_angle,
                     'nbins': ds.range.shape[0],
                     'rstart': rstart,
                     'rscale': rscale,
@@ -712,7 +732,11 @@ def to_odim(volume, filename):
 
         # how group, p. 14 ff.
         h5_ds_how = h5_dataset.create_group('how')
-        tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').time]
+        try:
+            tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').time]
+        except TypeError:
+            tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').rtime]
+
         difft = np.diff(tout) / 2.
         difft = np.insert(difft, 0, difft[0])
         azout = ds.sortby('azimuth').azimuth
@@ -721,7 +745,11 @@ def to_odim(volume, filename):
         elout = ds.sortby('azimuth').elevation
         diffe = np.diff(elout) / 2.
         diffe = np.insert(diffe, 0, diffe[0])
-        ds_how = {'scan_index': ds.sweep_number + 1,
+        try:
+            sweep_number = ds.sweep_number + 1
+        except AttributeError:
+            sweep_number = timestep
+        ds_how = {'scan_index': sweep_number,
                   'scan_count': len(sweepnames),
                   'startazT': tout - difft,
                   'stopazT': tout + difft,
@@ -803,7 +831,7 @@ def _reindex_azimuth(ds, sweep, force=False):
                          method='nearest',
                          tolerance=res/4.,
                          # fill_value=xr.core.dtypes.NA,
-                         ))#.loc[{dim: slice(0, new_rays)}])
+                         ))
         # check other coordinates
         # check elevation (no nan)
         # set nan values to reasonable median
@@ -1966,6 +1994,34 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         except KeyError:
             conv = None
         return conv
+
+    def to_odim(self, filename, timestep=0):
+        """ Save volume to ODIM_H5/V2_2 compliant file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the output file
+        """
+        if self.root:
+            to_odim(self, filename, timestep=timestep)
+        else:
+            warnings.warn("WRADLIB: No OdimH5-compliant data structure "
+                          "available. Not saving.", UserWarning)
+
+    def to_cfradial2(self, filename, timestep=0):
+        """ Save volume to ODIM_H5/V2_2 compliant file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the output file
+        """
+        if self.root:
+            to_cfradial2(self, filename, timestep=timestep)
+        else:
+            warnings.warn("WRADLIB: No CfRadial2-compliant data structure "
+                          "available. Not saving.", UserWarning)
 
 
 def collect_by_time(obj):
