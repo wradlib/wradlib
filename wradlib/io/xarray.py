@@ -771,24 +771,40 @@ def _preprocess_moment(ds, mom):
 
 
 def _reindex_azimuth(ds, sweep, force=False):
-    dim = list(ds.dims)[0]
-    diff = ds[dim].diff(dim)
-    # this captures missing/additional rays and different angle spacing
-    if force | (len(set(diff.values)) > 1):
+    dimname = list(ds.dims)[0]
+    dim = ds[dimname]
+    diff = dim.diff(dimname)
+    # this captures different angle spacing
+    # catches also missing rays and double rays
+    # and other erroneous ray alignments which result in different diff values
+    diffset = set(diff.values)
+    non_uniform_angle_spacing = len(diffset) > 1
+    # this captures missing and additional rays in case the angle differences
+    # are equal
+    non_full_circle = False
+    if not non_uniform_angle_spacing:
+        res = list(diffset)[0]
+        non_full_circle = ((res * sweep.nrays) % 360) != 0
+
+    # fix issues with ray alignment
+    if force | non_uniform_angle_spacing | non_full_circle:
         # find exact duplicates and remove
-        _, idx = np.unique(ds[dim], return_index=True)
-        if len(idx) < len(ds[dim]):
+        _, idx = np.unique(ds[dimname], return_index=True)
+        if len(idx) < len(ds[dimname]):
             ds = ds.isel(azimuth=idx)
 
         # create new array and reindex
         res = sweep.angle_resolution
         new_rays = int(np.round(360 / res, decimals=0))
+        # todo: check if assumption that beam center points to
+        #       multiples of res/2. is correct in any case
         azr = np.arange(res / 2., new_rays, res, dtype=diff.dtype)
-        ds = (ds.reindex({dim: azr},
+        ds = (ds.reindex({dimname: azr},
                          method='nearest',
                          tolerance=res/4.,
                          # fill_value=xr.core.dtypes.NA,
                          ))#.loc[{dim: slice(0, new_rays)}])
+        # check other coordinates
         # check elevation (no nan)
         # set nan values to reasonable median
         if np.count_nonzero(xr.ufuncs.isnan(ds['elevation'])):
