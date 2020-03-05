@@ -128,6 +128,7 @@ def create_root_where():
             'lon': 7.071624,
             'lat': 50.730599}
 
+
 def create_root_what():
     return {'version': '9'}
 
