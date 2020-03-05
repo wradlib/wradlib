@@ -231,7 +231,7 @@ class WradlibAccessor(object):
                 # this is in fact the outermost thick "ring"
                 rdiff = self._obj.range[1] - self._obj.range[0]
                 ax.axis["lon"] = ax.new_floating_axis(1, (np.max(
-                    self._obj.bins) + rdiff / 2.))
+                    self._obj.bins.values) + rdiff.values / 2.))
                 ax.axis["lon"].major_ticklabels.set_visible(False)
                 # and also set tickmarklength to zero for better presentation
                 ax.axis["lon"].major_ticks.set_ticksize(0)

@@ -598,40 +598,71 @@ class OdimAccessor(object):
         return self._n_samples
 
 
-def to_cfradial2(volume, filename):
-    """ Save XRadVol to CfRadial2.0 compliant file.
+def to_cfradial2(volume, filename, timestep=None):
+    """ Save XRadVol/XRadVolume to CfRadial2.0 compliant file.
 
     Parameters
     ----------
-    volume : XRadVol object
+    volume : XRadVol/XRadVolume object
     filename : str
         output filename
+    timestep : int
+        timestep of wanted volume
     """
     volume.root.load()
     root = volume.root.copy(deep=True)
     root.attrs['Conventions'] = 'Cf/Radial'
     root.attrs['version'] = '2.0'
     root.to_netcdf(filename, mode='w', group='/')
-    for key in root.sweep_group_name.values:
-        swp = volume[key]
+    for idx, key in enumerate(root.sweep_group_name.values):
+        try:
+            swp = volume[key]
+        except TypeError:
+            swp = volume[idx][timestep].data
         swp.load()
         dims = list(swp.dims)
         dims.remove('range')
         dim0 = dims[0]
-
-        swp = swp.rename({dim0: 'time'})
+        try:
+            swp = swp.swap_dims({dim0: 'time'})
+        except ValueError:
+            swp = swp.drop_vars('time').rename({'rtime': 'time'})
+            swp = swp.swap_dims({dim0: 'time'})
         swp.drop_vars(['x', 'y', 'z', 'gr', 'rays', 'bins'], errors='ignore')
         swp.to_netcdf(filename, mode='a', group=key)
 
 
-def to_odim(volume, filename):
-    """ Save XRadVol to ODIM_H5/V2_2 compliant file.
+def to_netcdf(volume, filename, timestep=None):
+    """ Save XRadVolume to netcdf compliant file.
 
     Parameters
     ----------
-    volume : XRadVol object
+    volume : XRadVolume object
     filename : str
         output filename
+    timestep : int, slice
+        timestep/slice of wanted volume
+    """
+    volume.root.load()
+    root = volume.root.copy(deep=True)
+    root.attrs['Conventions'] = 'Cf/Radial'
+    root.attrs['version'] = '2.0'
+    root.to_netcdf(filename, mode='w', group='/')
+    for idx, key in enumerate(root.sweep_group_name.values):
+        swp = volume[idx].data.isel(time=timestep)
+        swp.to_netcdf(filename, mode='a', group=key)
+
+
+def to_odim(volume, filename, timestep=0):
+    """ Save XRadVol/XRadVolume to ODIM_H5/V2_2 compliant file.
+
+    Parameters
+    ----------
+    volume : XRadVol/XRadVolume object
+    filename : str
+        output filename
+    timestep : int
+        timestep of wanted volume
     """
     root = volume.root
 
@@ -677,7 +708,10 @@ def to_odim(volume, filename):
     ds_list = ['dataset{}'.format(i + 1) for i in range(len(sweepnames))]
     ds_idx = np.argsort(ds_list)
     for idx in ds_idx:
-        ds = volume['sweep_{}'.format(idx + 1)]
+        try:
+            ds = volume['sweep_{}'.format(idx + 1)]
+        except TypeError:
+            ds = volume[idx][timestep].data
         h5_dataset = h5.create_group(ds_list[idx])
 
         # what group p. 21 ff.
@@ -700,8 +734,15 @@ def to_odim(volume, filename):
         h5_ds_where = h5_dataset.create_group('where')
         rscale = ds.range.values[1] / 1. - ds.range.values[0]
         rstart = (ds.range.values[0] - rscale / 2.) / 1000.
-        a1gate = np.argsort(ds.sortby('time').azimuth.values)[0]
-        ds_where = {'elangle': ds.fixed_angle,
+        try:
+            a1gate = np.argsort(ds.sortby('time').azimuth.values)[0]
+        except ValueError:
+            a1gate = np.argsort(ds.sortby('rtime').azimuth.values)[0]
+        try:
+            fixed_angle = ds.fixed_angle
+        except AttributeError:
+            fixed_angle = ds.elevation.round(decimals=1).median().values
+        ds_where = {'elangle': fixed_angle,
                     'nbins': ds.range.shape[0],
                     'rstart': rstart,
                     'rscale': rscale,
@@ -712,7 +753,11 @@ def to_odim(volume, filename):
 
         # how group, p. 14 ff.
         h5_ds_how = h5_dataset.create_group('how')
-        tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').time]
+        try:
+            tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').time]
+        except TypeError:
+            tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').rtime]
+
         difft = np.diff(tout) / 2.
         difft = np.insert(difft, 0, difft[0])
         azout = ds.sortby('azimuth').azimuth
@@ -721,7 +766,11 @@ def to_odim(volume, filename):
         elout = ds.sortby('azimuth').elevation
         diffe = np.diff(elout) / 2.
         diffe = np.insert(diffe, 0, diffe[0])
-        ds_how = {'scan_index': ds.sweep_number + 1,
+        try:
+            sweep_number = ds.sweep_number + 1
+        except AttributeError:
+            sweep_number = timestep
+        ds_how = {'scan_index': sweep_number,
                   'scan_count': len(sweepnames),
                   'startazT': tout - difft,
                   'stopazT': tout + difft,
@@ -740,8 +789,8 @@ def to_odim(volume, filename):
 
 def _preprocess_moment(ds, mom):
 
+    attrs = mom._decode(ds.data.attrs)
     quantity = mom.quantity
-    attrs = collections.OrderedDict()
     if mom.parent.mask_and_scale:
         what = mom.what
         attrs['scale_factor'] = what['gain']
@@ -771,23 +820,46 @@ def _preprocess_moment(ds, mom):
 
 
 def _reindex_azimuth(ds, sweep, force=False):
-    dim = list(ds.dims)[0]
-    diff = ds[dim].diff(dim)
-    # this captures missing/additional rays and different angle spacing
-    if force | (len(set(diff.values)) > 1):
+    dimname = list(ds.dims)[0]
+    dim = ds[dimname]
+    diff = dim.diff(dimname)
+    # this captures different angle spacing
+    # catches also missing rays and double rays
+    # and other erroneous ray alignments which result in different diff values
+    diffset = set(diff.values)
+    non_uniform_angle_spacing = len(diffset) > 1
+    # this captures missing and additional rays in case the angle differences
+    # are equal
+    non_full_circle = False
+    if not non_uniform_angle_spacing:
+        res = list(diffset)[0]
+        non_full_circle = ((res * sweep.nrays) % 360) != 0
+
+    # fix issues with ray alignment
+    if force | non_uniform_angle_spacing | non_full_circle:
         # find exact duplicates and remove
-        _, idx = np.unique(ds['azimuth'], return_index=True)
-        if len(idx) < len(ds['azimuth']):
+        _, idx = np.unique(ds[dimname], return_index=True)
+        if len(idx) < len(ds[dimname]):
             ds = ds.isel(azimuth=idx)
+
         # create new array and reindex
-        new_rays = int(np.round(sweep.nrays / 360, decimals=1) * 360)
-        res = diff.median().round(decimals=1)
-        azr = np.arange(res / 2., sweep.nrays, res, dtype=res.dtype)
-        ds = (ds.reindex({dim: azr},
+        res = sweep.angle_resolution
+        new_rays = int(np.round(360 / res, decimals=0))
+        # todo: check if assumption that beam center points to
+        #       multiples of res/2. is correct in any case
+        azr = np.arange(res / 2., new_rays, res, dtype=diff.dtype)
+        ds = (ds.reindex({dimname: azr},
                          method='nearest',
                          tolerance=res/4.,
                          # fill_value=xr.core.dtypes.NA,
-                         ).loc[{dim: slice(0, new_rays)}])
+                         ))
+        # check other coordinates
+        # check elevation (no nan)
+        # set nan values to reasonable median
+        if np.count_nonzero(xr.ufuncs.isnan(ds['elevation'])):
+            ds['elevation'] = ds['elevation'].fillna(ds['elevation'].median())
+        # todo: rtime is also affected, might need to be treated accordingly
+
     return ds
 
 
@@ -1119,6 +1191,7 @@ class OdimH5SweepMetaDataMixin():
     def __init__(self):
         super(OdimH5SweepMetaDataMixin, self).__init__()
         self._a1gate = None
+        self._angle_resolution = None
         self._azimuth = None
         self._elevation = None
         self._fixed_angle = None
@@ -1133,6 +1206,12 @@ class OdimH5SweepMetaDataMixin():
         if self._a1gate is None:
             self._a1gate = self._get_a1gate()
         return self._a1gate
+
+    @property
+    def angle_resolution(self):
+        if self._angle_resolution is None:
+            self._angle_resolution = self._get_angle_resolution()
+        return self._angle_resolution
 
     @property
     def azimuth(self):
@@ -1401,6 +1480,9 @@ class XRadSweepOdim(XRadSweep):
     def _get_a1gate(self):
         return self.where['a1gate']
 
+    def _get_angle_resolution(self):
+        return self.azimuth.diff('azimuth').median().round(decimals=1)
+
     def _get_fixed_angle(self):
         return np.round(self.where['elangle'], decimals=1)
 
@@ -1581,6 +1663,9 @@ class XRadSweepGamic(XRadSweep):
 
     def _get_a1gate(self):
         return np.argsort(self.coords.rtime.values)[0]
+
+    def _get_angle_resolution(self):
+        return self.how['angle_step']
 
     def _get_azimuth(self):
         azstart = self.ray_header['azimuth_start']
@@ -1930,6 +2015,54 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         except KeyError:
             conv = None
         return conv
+
+    def to_odim(self, filename, timestep=0):
+        """ Save volume to ODIM_H5/V2_2 compliant file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the output file
+        timestep : int
+            timestep of wanted volume
+        """
+        if self.root:
+            to_odim(self, filename, timestep=timestep)
+        else:
+            warnings.warn("WRADLIB: No OdimH5-compliant data structure "
+                          "available. Not saving.", UserWarning)
+
+    def to_cfradial2(self, filename, timestep=0):
+        """ Save volume to CfRadial2 compliant file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the output file
+        timestep : int
+            timestep wanted volume
+        """
+        if self.root:
+            to_cfradial2(self, filename, timestep=timestep)
+        else:
+            warnings.warn("WRADLIB: No CfRadial2-compliant data structure "
+                          "available. Not saving.", UserWarning)
+
+    def to_netcdf(self, filename, timestep=None):
+        """ Save volume to netcdf compliant file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the output file
+        timestep : int, slice
+            timestep/slice of wanted volume
+        """
+        if self.root:
+            to_netcdf(self, filename, timestep=timestep)
+        else:
+            warnings.warn("WRADLIB: No netcdf-compliant data structure "
+                          "available. Not saving.", UserWarning)
 
 
 def collect_by_time(obj):
