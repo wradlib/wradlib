@@ -773,6 +773,17 @@ class DataVolume(DataTimeSeries):
         del vol
         gc.collect()
 
+    def test_netcdf_output(self, get_loader):
+        if get_loader == 'netcdf4' and self.format == 'GAMIC':
+            pytest.skip("gamic needs hdf-based loader")
+        with self.get_volume_data(get_loader) as vol:
+            import tempfile
+            tmp_local = tempfile.NamedTemporaryFile(suffix='.nc',
+                                                    prefix='cfradial').name
+            vol.to_netcdf(tmp_local, timestep=slice(0, None))
+        del vol
+        gc.collect()
+
 
 class MeasuredDataVolume(DataVolume):
     @contextlib.contextmanager

@@ -598,12 +598,12 @@ class OdimAccessor(object):
         return self._n_samples
 
 
-def to_cfradial2(volume, filename, timestep=0):
-    """ Save XRadVol to CfRadial2.0 compliant file.
+def to_cfradial2(volume, filename, timestep=None):
+    """ Save XRadVol/XRadVolume to CfRadial2.0 compliant file.
 
     Parameters
     ----------
-    volume : XRadVol object
+    volume : XRadVol/XRadVolume object
     filename : str
         output filename
     timestep : int
@@ -632,12 +632,33 @@ def to_cfradial2(volume, filename, timestep=0):
         swp.to_netcdf(filename, mode='a', group=key)
 
 
-def to_odim(volume, filename, timestep=0):
-    """ Save XRadVol to ODIM_H5/V2_2 compliant file.
+def to_netcdf(volume, filename, timestep=None):
+    """ Save XRadVolume to netcdf compliant file.
 
     Parameters
     ----------
-    volume : XRadVol object
+    volume : XRadVolume object
+    filename : str
+        output filename
+    timestep : int, slice
+        timestep/slice of wanted volume
+    """
+    volume.root.load()
+    root = volume.root.copy(deep=True)
+    root.attrs['Conventions'] = 'Cf/Radial'
+    root.attrs['version'] = '2.0'
+    root.to_netcdf(filename, mode='w', group='/')
+    for idx, key in enumerate(root.sweep_group_name.values):
+        swp = volume[idx].data.isel(time=timestep)
+        swp.to_netcdf(filename, mode='a', group=key)
+
+
+def to_odim(volume, filename, timestep=0):
+    """ Save XRadVol/XRadVolume to ODIM_H5/V2_2 compliant file.
+
+    Parameters
+    ----------
+    volume : XRadVol/XRadVolume object
     filename : str
         output filename
     timestep : int
@@ -2002,6 +2023,8 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         ----------
         filename : str
             Name of the output file
+        timestep : int
+            timestep of wanted volume
         """
         if self.root:
             to_odim(self, filename, timestep=timestep)
@@ -2010,17 +2033,35 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
                           "available. Not saving.", UserWarning)
 
     def to_cfradial2(self, filename, timestep=0):
-        """ Save volume to ODIM_H5/V2_2 compliant file.
+        """ Save volume to CfRadial2 compliant file.
 
         Parameters
         ----------
         filename : str
             Name of the output file
+        timestep : int
+            timestep wanted volume
         """
         if self.root:
             to_cfradial2(self, filename, timestep=timestep)
         else:
             warnings.warn("WRADLIB: No CfRadial2-compliant data structure "
+                          "available. Not saving.", UserWarning)
+
+    def to_netcdf(self, filename, timestep=None):
+        """ Save volume to netcdf compliant file.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the output file
+        timestep : int, slice
+            timestep/slice of wanted volume
+        """
+        if self.root:
+            to_netcdf(self, filename, timestep=timestep)
+        else:
+            warnings.warn("WRADLIB: No netcdf-compliant data structure "
                           "available. Not saving.", UserWarning)
 
 
