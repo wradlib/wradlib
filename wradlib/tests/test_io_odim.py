@@ -128,6 +128,9 @@ def create_root_where():
             'lon': 7.071624,
             'lat': 50.730599}
 
+def create_root_what():
+    return {'version': '9'}
+
 
 def get_group_attrs(data, dsdesc, grp=None):
     if grp is not None:
@@ -248,7 +251,7 @@ def get_measured_volume(file, get_loader, format):
 @contextlib.contextmanager
 def get_synthetic_volume(name, get_loader, **kwargs):
     import tempfile
-    tmp_local = tempfile.NamedTemporaryFile(suffix='h5', prefix=name).name
+    tmp_local = tempfile.NamedTemporaryFile(suffix='.h5', prefix=name).name
     if 'gamic' in name:
         format = 'GAMIC'
     else:
@@ -271,6 +274,8 @@ def base_odim_data_00(nrays=360):
 
     data['where'] = {}
     data['where']['attrs'] = create_root_where()
+    data['what'] = {}
+    data['what']['attrs'] = create_root_what()
     for i, grp in enumerate(dataset):
         sub = {}
         sub['how'] = {}
@@ -334,6 +339,8 @@ def base_gamic_data():
 
     data['where'] = {}
     data['where']['attrs'] = create_root_where()
+    data['what'] = {}
+    data['what']['attrs'] = create_root_what()
 
     for i, grp in enumerate(dataset):
         sub = {}
@@ -740,6 +747,28 @@ class DataVolume(DataTimeSeries):
             assert vol.what == get_group_attrs(self.data, 'what')
             assert vol.where == get_group_attrs(self.data, 'where')
 
+        del vol
+        gc.collect()
+
+    def test_odim_output(self, get_loader):
+        if get_loader == 'netcdf4' and self.format == 'GAMIC':
+            pytest.skip("gamic needs hdf-based loader")
+        with self.get_volume_data(get_loader) as vol:
+            import tempfile
+            tmp_local = tempfile.NamedTemporaryFile(suffix='.h5',
+                                                    prefix='odim').name
+            vol.to_odim(tmp_local)
+        del vol
+        gc.collect()
+
+    def test_cfradial2_output(self, get_loader):
+        if get_loader == 'netcdf4' and self.format == 'GAMIC':
+            pytest.skip("gamic needs hdf-based loader")
+        with self.get_volume_data(get_loader) as vol:
+            import tempfile
+            tmp_local = tempfile.NamedTemporaryFile(suffix='.nc',
+                                                    prefix='cfradial').name
+            vol.to_cfradial2(tmp_local)
         del vol
         gc.collect()
 

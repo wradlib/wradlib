@@ -768,8 +768,8 @@ def to_odim(volume, filename, timestep=0):
 
 def _preprocess_moment(ds, mom):
 
+    attrs = mom._decode(ds.data.attrs)
     quantity = mom.quantity
-    attrs = collections.OrderedDict()
     if mom.parent.mask_and_scale:
         what = mom.what
         attrs['scale_factor'] = what['gain']
