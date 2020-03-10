@@ -787,7 +787,7 @@ def to_odim(volume, filename, timestep=0):
     h5.close()
 
 
-def _preprocess_moment(ds, mom):
+def _preprocess_moment(ds, mom, non_uniform_shape):
 
     attrs = mom._decode(ds.data.attrs)
     quantity = mom.quantity
@@ -816,6 +816,14 @@ def _preprocess_moment(ds, mom):
                     dims[0]: 'azimuth',
                     dims[1]: 'range'})
 
+    # apply coordinates to dataset if source moments have different shapes
+    # and correct for it
+    if mom.parent.decode_coords & non_uniform_shape:
+        coords = mom.parent._get_coords()
+        ds = ds.assign_coords(coords.coords)
+        ds = ds.sortby('azimuth')
+        ds = ds.pipe(_reindex_azimuth, mom.parent)
+
     return ds
 
 
@@ -837,14 +845,21 @@ def _reindex_azimuth(ds, sweep, force=False):
 
     # fix issues with ray alignment
     if force | non_uniform_angle_spacing | non_full_circle:
+        # create new array and reindex
+        res = sweep.angle_resolution
+        new_rays = int(np.round(360 / res, decimals=0))
+
         # find exact duplicates and remove
         _, idx = np.unique(ds[dimname], return_index=True)
         if len(idx) < len(ds[dimname]):
             ds = ds.isel(azimuth=idx)
+            # if ray_time was errouneously created from wrong dimensions
+            # we need to recalculate it
+            if sweep._need_time_recalc:
+                ray_times = sweep._get_ray_times(nrays=len(idx))
+                ray_times = sweep._decode_cf(ray_times)
+                ds = ds.assign({'rtime': ray_times})
 
-        # create new array and reindex
-        res = sweep.angle_resolution
-        new_rays = int(np.round(360 / res, decimals=0))
         # todo: check if assumption that beam center points to
         #       multiples of res/2. is correct in any case
         azr = np.arange(res / 2., new_rays, res, dtype=diff.dtype)
@@ -968,8 +983,13 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
                   engine=engine, **open_kwargs) for p in moments]
 
     file_objs = [getattr_(ds, '_file_obj') for ds in datasets]
+
+    # check for differences in shape of moments
+    non_uniform_shape = len(set([tuple(ds.sizes.values())
+                                 for ds in datasets])) > 1
     if preprocess is not None:
-        datasets = [preprocess(ds, mom) for ds, mom in zip(datasets, moments)]
+        datasets = [preprocess(ds, mom, non_uniform_shape)
+                    for ds, mom in zip(datasets, moments)]
 
     if parallel:
         # calling compute here will return the datasets/file_objs lists,
@@ -1198,6 +1218,7 @@ class OdimH5SweepMetaDataMixin():
         self._nrays = None
         self._nbins = None
         self._time = None
+        self._endtime = None
         self._rtime = None
         self._rng = None
 
@@ -1269,6 +1290,20 @@ class OdimH5SweepMetaDataMixin():
             self._time = da
         return self._time
 
+    @property
+    def starttime(self):
+        return self._time
+
+    @property
+    def endtime(self):
+        if self._endtime is None:
+            da = self._get_time(point='end')
+            # decode, if necessary
+            if self.decode_times:
+                da = self._decode_cf(da)
+            self._endtime = da
+        return self._endtime
+
 
 class XRadMoment(OdimH5GroupAttributeMixin):
 
@@ -1336,6 +1371,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         kwargs.setdefault('decode_times', True)
         self._kwargs = kwargs
         self._data = None
+        self._need_time_recalc = False
         self._seq.extend(self._get_moments())
 
     def __repr__(self):
@@ -1525,7 +1561,7 @@ class XRadSweepOdim(XRadSweep):
         time_data = (startT + stopT) / 2.
         return time_data
 
-    def _get_time_what(self):
+    def _get_time_what(self, nrays=None):
         what = self.what
         startdate = what['startdate']
         starttime = what['starttime']
@@ -1535,7 +1571,8 @@ class XRadSweepOdim(XRadSweep):
         end = dt.datetime.strptime(enddate + endtime, '%Y%m%d%H%M%S')
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         end = end.replace(tzinfo=dt.timezone.utc).timestamp()
-        nrays = self.where['nrays']
+        if nrays is None:
+            nrays = self.where['nrays']
         if start == end:
             warnings.warn("WRADLIB: Equal ODIM `starttime` and `endtime` "
                           "values. Can't determine correct sweep start-, "
@@ -1548,11 +1585,13 @@ class XRadSweepOdim(XRadSweep):
             time_data = np.roll(time_data, shift=+self.a1gate)
         return time_data
 
-    def _get_ray_times(self):
+    def _get_ray_times(self, nrays=None):
         try:
             time_data = self._get_time_how()
+            self._need_time_recalc = False
         except (AttributeError, KeyError, TypeError):
-            time_data = self._get_time_what()
+            time_data = self._get_time_what(nrays=nrays)
+            self._need_time_recalc = True
         da = xr.DataArray(time_data, dims=['azimuth'],
                           attrs=time_attrs)
         return da
@@ -1614,10 +1653,10 @@ class XRadSweepOdim(XRadSweep):
     def _get_nbins(self):
         return self.where['nbins']
 
-    def _get_time(self):
+    def _get_time(self, point='start'):
         what = self.what
-        startdate = what['startdate']
-        starttime = what['starttime']
+        startdate = what[f'{point}date']
+        starttime = what[f'{point}time']
         start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         da = xr.DataArray(start, attrs=time_attrs)
