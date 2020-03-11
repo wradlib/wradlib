@@ -71,7 +71,7 @@ conda update --yes conda
 
 # Install wradlib dependencies
 WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
-NOTEBOOK_DEPS="notebook nbconvert psutils tqdm"
+NOTEBOOK_DEPS="notebook nbconvert psutil tqdm"
 MISC_DEPS="coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
 # Install twine for pypi upload
