@@ -89,14 +89,13 @@ fi
 if [ ! -z ${WRADLIB_NOTEBOOKTEST+x} ]; then
     git clone --depth=1 https://github.com/wradlib/wradlib-notebooks.git $WRADLIB_BUILD_DIR/wradlib-notebooks
     export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/wradlib-notebooks
-    DEPS="$DEPS notebook nbconvert"
+    WRADLIB_DEPS="$WRADLIB_DEPS $NOTEBOOK_DEPS"
 fi
 
 # Create environment with the correct Python version and the needed dependencies
 echo $WRADLIB_DEPS
-echo $NOTEBOOK_DEPS
 echo $MISC_DEPS
-conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $NOTEBOOK_DEPS $MISC_DEPS
+conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
 conda activate $WRADLIB_ENV
 
 # Install wradlib
