@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2019, wradlib developers.
+# Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 
@@ -59,7 +59,7 @@ vectorized mathematical operations across multiple dimensions.
 
 Examples
 --------
-    See :ref:`/notebooks/fileio/wradlib_multi_mfdataset.ipynb`.
+    See :ref:`/notebooks/fileio/wradlib_odim_multi_file_dataset.ipynb`.
 
 Warning
 -------
@@ -1011,7 +1011,9 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
 
 
 class XRadBase(collections.abc.MutableSequence):
+    """Base Class for all XRad-classes.
 
+    """
     def __init__(self, **kwargs):
         super(XRadBase, self).__init__()
         self._seq = []
@@ -1066,13 +1068,13 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def ncpath(self):
-        """Returns path string inside HDF5 File
+        """Returns path string inside HDF5 File.
         """
         return self._ncpath
 
     @property
     def ncid(self):
-        """Returns handle for current path
+        """Returns handle for current path.
         """
         # root-group can't be subset with netcdf4 and h5netcdf
         if self._ncpath == '/':
@@ -1082,13 +1084,13 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def ncfile(self):
-        """Returns file handle
+        """Returns file handle.
         """
         return self._ncfile
 
     @property
     def how(self):
-        """Return attributes of `how`-group
+        """Return attributes of `how`-group.
         """
         if self._how is None:
             self._how = self._get_attributes('how')
@@ -1096,7 +1098,7 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def what(self):
-        """Return attributes of `what`-group
+        """Return attributes of `what`-group.
         """
         if self._what is None:
             self._what = self._get_attributes('what')
@@ -1104,7 +1106,7 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def where(self):
-        """Return attributes of `where`-group
+        """Return attributes of `where`-group.
         """
         if self._where is None:
             self._where = self._get_attributes('where')
@@ -1112,6 +1114,8 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def attrs(self):
+        """Return group attributes.
+        """
         if self._attrs is None:
             if isinstance(self.ncfile, nc.Dataset):
                 self._attrs = {k: self.ncid.getncattr(k)
@@ -1122,7 +1126,7 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def filename(self):
-        """Return filename moment belongs to
+        """Return filename group belongs to.
         """
         if isinstance(self.ncfile, nc.Dataset):
             return self.ncfile.filepath()
@@ -1131,6 +1135,8 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def groups(self):
+        """Return list of available groups.
+        """
         if isinstance(self.ncfile, nc.Dataset):
             return list(self.ncid.groups)
         else:
@@ -1147,6 +1153,8 @@ class OdimH5GroupAttributeMixin():
 
     @property
     def parent(self):
+        """Return parent object.
+        """
         return self._parent
 
     def _get_attributes(self, grp, ncid=None):
@@ -1189,7 +1197,7 @@ class OdimH5GroupAttributeMixin():
             return None
 
     def _decode(self, attrs):
-        """Decode strings if possible
+        """Decode strings if possible.
         """
         for k, v in attrs.items():
             try:
@@ -1205,8 +1213,7 @@ class OdimH5GroupAttributeMixin():
 
 
 class OdimH5SweepMetaDataMixin():
-    """Mixin Class for Odim MetaData
-
+    """Mixin Class for Odim MetaData.
     """
     def __init__(self):
         super(OdimH5SweepMetaDataMixin, self).__init__()
@@ -1224,54 +1231,72 @@ class OdimH5SweepMetaDataMixin():
 
     @property
     def a1gate(self):
+        """Return and cache a1gate, azimuth of first measured gate
+        """
         if self._a1gate is None:
             self._a1gate = self._get_a1gate()
         return self._a1gate
 
     @property
     def angle_resolution(self):
+        """Return and cache angular resolution in degree.
+        """
         if self._angle_resolution is None:
             self._angle_resolution = self._get_angle_resolution()
         return self._angle_resolution
 
     @property
     def azimuth(self):
+        """Return and cache azimuth xr.DataArray.
+        """
         if self._azimuth is None:
             self._azimuth = self._get_azimuth()
         return self._azimuth
 
     @property
     def elevation(self):
+        """Return and cache elevation xr.DataArray.
+        """
         if self._elevation is None:
             self._elevation = self._get_elevation()
         return self._elevation
 
     @property
     def fixed_angle(self):
+        """Return and cache elevation angle in degree.
+        """
         if self._fixed_angle is None:
             self._fixed_angle = self._get_fixed_angle()
         return self._fixed_angle
 
     @property
     def nrays(self):
+        """Return and cache number of rays.
+        """
         if self._nrays is None:
             self._nrays = self._get_nrays()
         return self._nrays
 
     @property
     def nbins(self):
+        """Return and cache number of bins.
+        """
         if self._nbins is None:
             self._nbins = self._get_nbins()
         return self._nbins
 
     @property
     def rng(self):
+        """Return and cache range xr.DataArray.
+        """
         if self._rng is None:
             self._rng = self._get_range()
         return self._rng
 
     @property
     def ray_times(self):
+        """Return and cache ray_times xr.DataArray.
+        """
         if self._rtime is None:
             da = self._get_ray_times()
             # decode, if necessary
@@ -1282,6 +1307,8 @@ class OdimH5SweepMetaDataMixin():
 
     @property
     def time(self):
+        """Return and cache time xr.DataArray.
+        """
         if self._time is None:
             da = self._get_time()
             # decode, if necessary
@@ -1292,10 +1319,14 @@ class OdimH5SweepMetaDataMixin():
 
     @property
     def starttime(self):
+        """Return sweep starttime xr.DataArray.
+        """
         return self._time
 
     @property
     def endtime(self):
+        """Return sweep endtime xr.DataArray.
+        """
         if self._endtime is None:
             da = self._get_time(point='end')
             # decode, if necessary
@@ -1306,6 +1337,17 @@ class OdimH5SweepMetaDataMixin():
 
 
 class XRadMoment(OdimH5GroupAttributeMixin):
+    """Class for holding one radar moment
+
+    Parameters
+    ----------
+    ncfile : {netCDF4.Dataset, h5py.File or h5netcdf.File object}
+        File handle of file containing radar sweep
+    ncpath : str
+        path to moment group (datasetX)
+    parent : XRadSweep
+        parent sweep object
+    """
 
     def __init__(self, ncfile, ncpath, parent):
         super(XRadMoment, self).__init__(ncfile, ncpath, parent)
@@ -1332,10 +1374,14 @@ class XRadMoment(OdimH5GroupAttributeMixin):
 
     @property
     def data(self):
+        """Return moment xr.DataArray.
+        """
         return self.parent.data[self.quantity]
 
     @property
     def time(self):
+        """Return sweep time.
+        """
         return self.parent.time
 
     @property
@@ -1427,6 +1473,8 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         return moments
 
     def reset_data(self):
+        """Reset .data xr.Dataset
+        """
         self._data = None
 
     @property
@@ -1435,27 +1483,37 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     @property
     def chunks(self):
+        """Return `chunks` setting.
+        """
         return self._kwargs.get('chunks')
 
     @property
     def parallel(self):
+        """Return `parallel` setting.
+        """
         return self._kwargs.get('parallel')
 
     @property
     def mask_and_scale(self):
+        """Return `mask_and_scale` setting.
+        """
         return self._kwargs.get('mask_and_scale')
 
     @property
     def decode_coords(self):
+        """Return `decode_coords` setting.
+        """
         return self._kwargs.get('decode_coords')
 
     @property
     def decode_times(self):
+        """Return `decode_times` setting.
+        """
         return self._kwargs.get('decode_times')
 
     @property
     def data(self):
-        """Return and cache moments as combined xarray Dataset
+        """Return and cache moments as combined xr.Dataset
         """
         if self._data is None:
             self._data = self._merge_moments()
@@ -1487,7 +1545,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     @property
     def coords(self):
-        """Returns xarray Dataset containing coordinates
+        """Returns xr.Dataset containing coordinates.
         """
         # sort coords by azimuth, only necessary for gamic flavour
         # for odim is already sorted
@@ -1495,6 +1553,8 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     @property
     def moments(self):
+        """Return list of moments.
+        """
         return [f"{k.quantity}" for k in self]
 
 
@@ -1845,7 +1905,8 @@ class XRadSweepGamic(XRadSweep):
 
 
 class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
-
+    """Class for holding a timeseries of radar sweeps
+    """
     def __init__(self, **kwargs):
         super(XRadTimeSeries, self).__init__()
         self._data = None
@@ -1956,6 +2017,8 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
 
 
 class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
+    """Class for holding a volume of radar sweeps
+    """
 
     def __init__(self, **kwargs):
         super(XRadVolume, self).__init__()
@@ -1976,12 +2039,14 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
 
     @property
     def root(self):
+        """ Return root object.
+        """
         if self._root is None:
             self.assign_root()
         return self._root
 
     def assign_root(self):
-        """(Re-)Create root object according CfRadial2 standard
+        """ (Re-)Create root object according CfRadial2 standard
         """
         # assign root variables
         sweep_group_names = [f"sweep_{i}" for i in range(len(self))]
@@ -2042,6 +2107,8 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
 
     @property
     def site(self):
+        """ Return coordinates of radar site.
+        """
         ds = xr.Dataset(coords=self.where).rename({'height': 'altitude',
                                                    'lon': 'longitude',
                                                    'lat': 'latitude'})
@@ -2049,6 +2116,8 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
 
     @property
     def Conventions(self):
+        """ Return Conventions string.
+        """
         try:
             conv = self.ncid.attrs['Conventions']
         except KeyError:

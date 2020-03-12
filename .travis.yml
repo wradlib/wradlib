@@ -68,9 +68,10 @@ matrix:
           - PYTHON_VERSION="3.8"
           - GDAL_VERSION="3"
 
-cache:
-  directories:
-    - $HOME/condacache/pkgs
+# remove temporarily, it seems it's faster without caching
+#  cache:
+#    directories:
+#      - $HOME/condacache/pkgs
 
 install:
     # test PEP8 compliance first to speed up
@@ -93,7 +94,9 @@ script:
 
 after_success:
     - codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests
-    - scripts/trigger_readthedocs.sh
+    - if [ "${DEPLOY}" == "true" ]; then
+        scripts/trigger_readthedocs.sh;
+      fi;
 
 deploy:
   # tagged
@@ -108,4 +111,4 @@ deploy:
       branch: master
       tags: true
       repo: wradlib/wradlib
-      condition: $TRAVIS_PYTHON_VERSION = "3.6"
+      condition: $DEPLOY = "true"

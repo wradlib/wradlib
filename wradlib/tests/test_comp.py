@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2019, wradlib developers.
+# Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
