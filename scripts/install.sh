@@ -33,7 +33,8 @@ if ! [ -x "$(command -v conda)" ]; then
         WRADLIB_PYTHON=$PYTHON_VERSION
 
         # special packages directory for caching in travis-ci
-        conda config --add pkgs_dirs $HOME/condacache/pkgs
+        # remove temprorarily, it seems it's faster without caching
+        # conda config --add pkgs_dirs $HOME/condacache/pkgs
     fi
 else
     # check if envname parameter is available
