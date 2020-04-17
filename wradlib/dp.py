@@ -520,12 +520,12 @@ def texture(data):
         array of textures with the same shape as data
 
     """
-    # one-element wrap-around padding
-    x = np.pad(data, 1, mode='wrap')
+    # one-element wrap-around padding for last two axes
+    x = np.pad(data, [(0,)] * (data.ndim - 2) + [(1,), (1,)], mode='wrap')
 
     # set first and last range elements to NaN
-    x[:, 0] = np.nan
-    x[:, -1] = np.nan
+    x[..., 0] = np.nan
+    x[..., -1] = np.nan
 
     # get neighbours using views into padded array
     x1 = x[..., :-2, 1:-1]  # center:2
