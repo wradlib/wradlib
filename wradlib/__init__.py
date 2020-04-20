@@ -36,6 +36,7 @@ from . import util  # noqa
 from . import verify  # noqa
 from . import vis  # noqa
 from . import vpr  # noqa
+from . import xarray  # noqa
 from . import zonalstats  # noqa
 from . import zr  # noqa
 from .util import show_versions  # noqa
