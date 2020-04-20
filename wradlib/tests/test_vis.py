@@ -130,26 +130,24 @@ class TestPolarPlot:
 
     @requires_gdal
     def test_plot_ppi_xarray(self, prj_data):
-        prj_data.da_ppi.wradlib.rays
-        prj_data.da_ppi.wradlib.plot()
-        prj_data.da_ppi.wradlib.plot_ppi()
-        prj_data.da_ppi.wradlib.contour()
-        prj_data.da_ppi.wradlib.contourf()
-        prj_data.da_ppi.wradlib.pcolormesh()
-        prj_data.da_ppi.wradlib.plot(proj="cg")
-        prj_data.da_ppi.wradlib.plot_ppi(proj="cg")
-        prj_data.da_ppi.wradlib.contour(proj="cg")
-        prj_data.da_ppi.wradlib.contourf(proj="cg")
-        prj_data.da_ppi.wradlib.pcolormesh(proj="cg")
+        assert hasattr(prj_data.da_ppi.wrl, "rays")
+        prj_data.da_ppi.wrl.vis.plot()
+        prj_data.da_ppi.wrl.vis.contour()
+        prj_data.da_ppi.wrl.vis.contourf()
+        prj_data.da_ppi.wrl.vis.pcolormesh()
+        prj_data.da_ppi.wrl.vis.plot(proj="cg")
+        prj_data.da_ppi.wrl.vis.contour(proj="cg")
+        prj_data.da_ppi.wrl.vis.contourf(proj="cg")
+        prj_data.da_ppi.wrl.vis.pcolormesh(proj="cg")
         fig = pl.figure()
         ax = fig.add_subplot(111)
         with pytest.raises(TypeError):
-            prj_data.da_ppi.wradlib.pcolormesh(proj={"rot": 0, "scale": 1}, ax=ax)
+            prj_data.da_ppi.wrl.vis.pcolormesh(proj={"rot": 0, "scale": 1}, ax=ax)
 
     @requires_gdal
     def test_plot_ppi_xarray_proj(self, prj_data):
         with pytest.raises(TypeError):
-            prj_data.da_ppi.wradlib.pcolormesh(proj=prj_data.proj)
+            prj_data.da_ppi.wrl.vis.pcolormesh(proj=prj_data.proj)
 
     @requires_cartopy
     @requires_gdal
@@ -164,7 +162,7 @@ class TestPolarPlot:
         assert isinstance(ax, cartopy.mpl.geoaxes.GeoAxes)
         fig = pl.figure(figsize=(10, 10))
         ax = fig.add_subplot(111, projection=map_proj)
-        prj_data.da_ppi.wradlib.plot_ppi(ax=ax)
+        prj_data.da_ppi.wrl.vis.plot(ax=ax)
         ax.gridlines(draw_labels=True)
 
     def test_plot_rhi(self, pol_data):
@@ -185,20 +183,18 @@ class TestPolarPlot:
     @requires_gdal
     def test_plot_rhi_xarray(self, prj_data):
         assert (
-            repr(prj_data.da_rhi.wradlib).split("\n", 1)[1]
+            repr(prj_data.da_rhi.wrl).split("\n", 1)[1]
             == repr(prj_data.da_rhi).split("\n", 1)[1]
         )
-        prj_data.da_rhi.wradlib.rays
-        prj_data.da_rhi.wradlib.plot()
-        prj_data.da_rhi.wradlib.plot_rhi()
-        prj_data.da_rhi.wradlib.contour()
-        prj_data.da_rhi.wradlib.contourf()
-        prj_data.da_rhi.wradlib.pcolormesh()
-        prj_data.da_rhi.wradlib.plot(proj="cg")
-        prj_data.da_rhi.wradlib.plot_rhi(proj="cg")
-        prj_data.da_rhi.wradlib.contour(proj="cg")
-        prj_data.da_rhi.wradlib.contourf(proj="cg")
-        prj_data.da_rhi.wradlib.pcolormesh(proj="cg")
+        assert hasattr(prj_data.da_rhi.wrl, "rays")
+        prj_data.da_rhi.wrl.vis.plot()
+        prj_data.da_rhi.wrl.vis.contour()
+        prj_data.da_rhi.wrl.vis.contourf()
+        prj_data.da_rhi.wrl.vis.pcolormesh()
+        prj_data.da_rhi.wrl.vis.plot(proj="cg")
+        prj_data.da_rhi.wrl.vis.contour(proj="cg")
+        prj_data.da_rhi.wrl.vis.contourf(proj="cg")
+        prj_data.da_rhi.wrl.vis.pcolormesh(proj="cg")
 
     def test_plot_cg_ppi(self, pol_data):
         cgax, pm = vis.plot_ppi(pol_data.img, elev=2.0, proj="cg")

@@ -14,6 +14,7 @@ This version brings doc-folder back into wradlib repo. The wradlib-docs repo wil
 **New features**
 
 * DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer`
+* ENH: introduce wradlib xarray accessor for easy access of wradlib functions from xarray.DataArray (with dp and zr modules prefilled), adapt tests ({pull}`621`) by {at}`kmuehlbauer`
 
 **Maintenance - CI**
 
