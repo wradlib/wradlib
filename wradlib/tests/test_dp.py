@@ -37,7 +37,7 @@ class TestKDPFromPHIDP:
 
     def test_kdp_from_phidp(self, derivation_method):
         if (derivation_method == 'polyfit' and sys.platform.startswith("win")
-                and sys.version_info == (3, 7, 0)):
+                and sys.version_info == (3, 7)):
             pytest.skip("fails on windows 3.7 due to MKL issue")
 
         out0a = dp.kdp_from_phidp(self.phidp_raw, dr=self.dr,
