@@ -5,9 +5,12 @@ environment:
   matrix:
     - PYTHON_VERSION: "3.7"
       MKL: ""
-    allow_failures:
-      - PYTHON_VERSION: "3.7"
-        MKL: "nomkl"
+    - PYTHON_VERSION: "3.7"
+      MKL: "nomkl"
+
+matrix:
+  allow_failures:
+    - MKL: "nomkl"
 
 install:
   # clone wradlib-data
