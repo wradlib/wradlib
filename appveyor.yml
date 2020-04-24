@@ -3,8 +3,8 @@ environment:
   CONDA_PATH: "C:\\Miniconda37-x64"
 
   matrix:
-    - PYTHON_VERSION: "3.7"
     - PYTHON_VERSION: "3.8"
+    - PYTHON_VERSION: "3.7"
 
 install:
   # clone wradlib-data
@@ -26,7 +26,7 @@ install:
   - "activate wradlib"
 
   # Install wradlib dependecies
-  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  - "conda install -y -q %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
   # Some checks
   - "python -VV"
