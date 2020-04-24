@@ -28,7 +28,7 @@ install:
   - "activate wradlib"
 
   # Install wradlib dependecies
-  - "conda install -y -q \"%MKL%\" gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  - "conda install -y -q %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
   # Some checks
   - "python -VV"
