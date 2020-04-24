@@ -39,4 +39,4 @@ install:
 build: false
 
 test_script:
-  - "if \"%PYTHON_VERSION%\"==\"3.7\" (pytest -v --doctest-modules --durations=15 --pyargs wradlib)"
+  - "pytest -v --doctest-modules --durations=15 --pyargs wradlib"
