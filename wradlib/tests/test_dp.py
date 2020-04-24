@@ -53,18 +53,18 @@ class TestKDPFromPHIDP:
         np.testing.assert_array_almost_equal(out0b, out1b)
 
     def test_linear_despeckle(self):
-       dp.linear_despeckle(self.phidp_raw, ndespeckle=3, copy=True)
-       dp.linear_despeckle(self.phidp_raw, ndespeckle=5, copy=True)
+        dp.linear_despeckle(self.phidp_raw, ndespeckle=3, copy=True)
+        dp.linear_despeckle(self.phidp_raw, ndespeckle=5, copy=True)
 
     def test_unfold_phi_naive(self):
-       dp.unfold_phi_naive(self.phidp_raw, self.rho)
-       dp.unfold_phi_naive(self.phidp_raw, self.rho, copy=True)
+        dp.unfold_phi_naive(self.phidp_raw, self.rho)
+        dp.unfold_phi_naive(self.phidp_raw, self.rho, copy=True)
 
     def test_unfold_phi_vulpiani(self):
-       dp.unfold_phi_vulpiani(self.phidp_raw, self.kdp_true)
+        dp.unfold_phi_vulpiani(self.phidp_raw, self.kdp_true)
 
     def test__fill_sweep(self):
-       dp._fill_sweep(self.phidp_raw, kind='linear')
+        dp._fill_sweep(self.phidp_raw, kind='linear')
 
 
 class TestTexture:
