@@ -670,7 +670,7 @@ def _polyfit_1d(rhs, order=1, method='lstsq'):
     rhs = rhs.reshape((-1, shape[-1])).T
 
     if method == 'lstsq':
-        out = np.linalg.lstsq(lhs, rhs)[0][0]
+        out = np.linalg.lstsq(lhs, rhs, rcond=None)[0][0]
     elif method == 'lstsq_nan':
         out = np.apply_along_axis(_nanpolyfit_lstsq, 0, rhs, lhs)
     elif method == 'matrix_inv_nan':
