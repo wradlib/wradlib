@@ -51,7 +51,7 @@ __all__ = ['process_raw_phidp_vulpiani', 'kdp_from_phidp',
 __doc__ = __doc__.format('\n   '.join(__all__))
 
 import numpy as np
-from scipy import interpolate, ndimage, stats
+from scipy import interpolate
 
 from wradlib import trafo, util
 
@@ -206,27 +206,21 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
     return dat.reshape(shape)
 
 
-def kdp_from_phidp(phidp, winlen=7, dr=1., method=None):
+def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
+                   **kwargs):
     """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
 
     In normal operation the method uses convolution to estimate :math:`K_{DP}`
-    (the derivative of :math:`Phi_{DP}` with Low-noise Lanczos differentiators.
-    The results are very similar to the fallback moving window linear
-    regression (`method=slow`), but the former is *much* faster, depending on
-    the percentage of NaN values in the beam, though.
+    (the derivative of :math:`Phi_{DP}`) with Low-noise Lanczos differentiators
+    (`method='lanczos_conv'`). The results are very similar to the moving window
+    linear regression (`method='polyfit'`), but the former is *much* faster.
 
-    For further reading please see `Differentiation by integration using \
-    orthogonal polynomials, a survey <https://arxiv.org/pdf/1102.5219>`_ \
-    and `Low-noise Lanczos differentiators \
-    <http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/\
-lanczos-low-noise-differentiators/>`_.
+    The :math:`K_{DP}` retrieval will return NaNs in case at least one value
+    in the moving window is NaN. By default, the remaining gates are treated by
+    using local linear regression where possible.
 
-    The fast method provides fast :math:`K_{DP}` retrieval but will return NaNs
-    in case at least one value in the moving window is NaN. The remaining gates
-    are treated by using local linear regression where possible.
-
-    Please note that the moving window size ``winlen`` is specified as the number of
-    range gates. Thus, this argument might need adjustment in case the
+    Please note that the moving window size ``winlen`` is specified as the
+    number of range gates. Thus, this argument might need adjustment in case the
     range resolution changes.
     In the original publication (:cite:`Vulpiani2012`), the value ``winlen=7``
     was chosen for a range resolution of 1km.
@@ -247,8 +241,14 @@ lanczos-low-noise-differentiators/>`_.
     dr : float
         gate length in km
     method : str
-        If None uses fast convolution based differentiation, if 'slow' uses
-        linear regression.
+        Defaults to 'lanczos_conv'. Can take one of 'lanczos_dot', 'polyfit'.
+    skipna : bool
+        Defaults to True.
+
+    Returns
+    -------
+    out : :class:`numpy:numpy.ndarray`
+        array of :math:`K_{DP}` with the same shape as phidp
 
     Examples
     --------
@@ -270,72 +270,8 @@ lanczos-low-noise-differentiators/>`_.
     >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> pl.show()
     """
-    assert (winlen % 2) == 1, \
-        "Window size N for function kdp_from_phidp must be an odd number."
-
-    shape = phidp.shape
-    phidp = phidp.reshape((-1, shape[-1]))
-
-    # Make really sure winlen is an integer
-    winlen = int(winlen)
-
-    if method == 'slow':
-        kdp = np.zeros(phidp.shape) * np.nan
-    else:
-        window = lanczos_differentiator(winlen)
-        kdp = ndimage.filters.convolve1d(phidp, window, axis=1)
-
-    # find remaining NaN values with valid neighbours
-    invalidkdp = np.isnan(kdp)
-    if not np.any(invalidkdp.ravel()):
-        # No NaN? Return KdP
-        return kdp.reshape(shape) / 2. / dr
-
-    # Otherwise continue
-    x = np.arange(phidp.shape[-1])
-    valids = ~np.isnan(phidp)
-    kernel = np.ones(winlen, dtype="i4")
-    # and do the slow moving window linear regression
-    for beam in range(len(phidp)):
-        # number of valid neighbours around one gate
-        nvalid = np.convolve(valids[beam], kernel, "same") > winlen / 2
-        # find those gates which have invalid Kdp AND enough valid neighbours
-        nangates = np.where(invalidkdp[beam] & nvalid)[0]
-        # now iterate over those
-        for r in nangates:
-            ix = np.arange(max(0, r - int(winlen / 2)),
-                           min(r + int(winlen / 2) + 1, shape[-1]))
-            # check again (just to make sure...)
-            if np.sum(valids[beam, ix]) < winlen / 2:
-                # not enough valid values inside our window
-                continue
-            kdp[beam, r] = stats.linregress(x[ix][valids[beam, ix]],
-                                            phidp[beam,
-                                                  ix[valids[beam, ix]]])[0]
-        # take care of the start and end of the beam
-        #   start
-        ix = np.arange(0, winlen)
-        if np.sum(valids[beam, ix]) >= 2:
-            kdp[beam, 0:int(winlen / 2)] = stats.linregress(
-                x[ix][valids[beam, ix]],
-                phidp[beam, ix[valids[beam, ix]]])[0]
-        # end
-        ix = np.arange(shape[-1] - winlen, shape[-1])
-        if np.sum(valids[beam, ix]) >= 2:
-            kdp[beam, -int(winlen / 2):] = stats.linregress(
-                x[ix][valids[beam, ix]],
-                phidp[beam, ix[valids[beam, ix]]])[0]
-
-    # accounting for forward/backward propagation AND gate length
-    return kdp.reshape(shape) / 2. / dr
-
-
-def lanczos_differentiator(winlen):
-    m = (winlen - 1) / 2
-    denom = m * (m + 1.) * (2 * m + 1.)
-    k = np.arange(1, m + 1)
-    f = 3 * k / denom
-    return np.r_[f[::-1], [0], -f]
+    return util.derivate(phidp, winlen=winlen, skipna=skipna,
+                         method=method, **kwargs) / 2 / dr
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):

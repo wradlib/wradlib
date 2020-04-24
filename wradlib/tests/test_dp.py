@@ -31,8 +31,14 @@ class KDPFromPHIDPTest(unittest.TestCase):
         dp.process_raw_phidp_vulpiani(self.phidp_raw, dr=self.dr)
 
     def test_kdp_from_phidp(self):
-        dp.kdp_from_phidp(self.phidp_raw, dr=self.dr)
-        dp.kdp_from_phidp(self.phidp_raw, dr=self.dr, method='slow')
+        out0 = dp.kdp_from_phidp(self.phidp_raw, dr=self.dr,
+                                 method='lanczos_conv')
+        out1 = dp.kdp_from_phidp(self.phidp_raw, dr=self.dr,
+                                 method='polyfit')
+        out2 = dp.kdp_from_phidp(self.phidp_raw, dr=self.dr,
+                                 method='lanczos_dot')
+        np.testing.assert_array_almost_equal(out0, out1)
+        np.testing.assert_array_almost_equal(out0, out2)
 
     def test_linear_despeckle(self):
         dp.linear_despeckle(self.phidp_raw, ndespeckle=3, copy=True)
