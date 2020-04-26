@@ -698,6 +698,21 @@ def _nanpolyfit_matrix_inv(y, x):
     return out[0]
 
 
+def _polyfit_covariance(y, skipna=False):
+    shape = y.shape
+    y = y.reshape((-1, y.shape[-1]))
+    idx = np.argsort(y, axis=-1)
+    y = np.sort(y, axis=-1)
+    n = y.shape[-1]
+    x = np.arange(n)
+    x = x[idx]
+    x = x.T
+    y = y.T
+    cov = np.sum((x - x.mean(axis=0)) * (y - y.mean(axis=0)), axis=0) / n
+    out = cov / (x.std(axis=0)**2)
+    return out.T.reshape(shape[:-1])
+
+
 def _lanczos_differentiator(winlen):
     """Returns Lanczos Differentiator.
     """
@@ -716,7 +731,8 @@ def _derivate(data, window, method='lanczos_conv'):
     :param method:
     :return:
     """
-    if method not in ['lanczos_conv', 'lanczos_dot', 'polyfit', 'slow']:
+    if method not in ['lanczos_conv', 'lanczos_dot', 'polyfit', 'covariance',
+                      'slow']:
         raise ValueError(f"wradlib: unknown method value {method}")
 
     if 'lanczos' in method:
@@ -732,6 +748,8 @@ def _derivate(data, window, method='lanczos_conv'):
             out = np.dot(data, win * -1)
         if method in ['slow', 'polyfit']:
             out = _polyfit_1d(data, method='lstsq')
+        if method == 'covariance':
+            out = _polyfit_covariance(data)
 
     return out
 
@@ -829,6 +847,7 @@ lanczos-low-noise-differentiators/>`_.
             # and interpolate using polyfit -> method2
             if np.any(recalc):
                 out.flat[recalc] = _polyfit_1d(data[recalc], method=method2)
+                #out.flat[recalc] = _polyfit_covariance(data[recalc], skipna=True)
 
     return out.reshape(shape)
 
