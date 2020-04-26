@@ -847,7 +847,6 @@ lanczos-low-noise-differentiators/>`_.
             # and interpolate using polyfit -> method2
             if np.any(recalc):
                 out.flat[recalc] = _polyfit_1d(data[recalc], method=method2)
-                #out.flat[recalc] = _polyfit_covariance(data[recalc], skipna=True)
 
     return out.reshape(shape)
 
