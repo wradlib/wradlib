@@ -883,11 +883,9 @@ lanczos-low-noise-differentiators/>`_.
 
             if method2 == 'cov_nan_iter':
                 for n in range(min_period + 1, winlen):
-                    #print(n, "valids")
                     valid = np.count_nonzero(~np.isnan(data), axis=-1) == n
                     recalc = (valid & invalid.reshape(-1))
                     if np.any(recalc):
-                        #print("need recalc")
                         out.flat[recalc] = _polyfit_1d(data[recalc],
                                                        method=method2)
             else:
