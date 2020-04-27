@@ -852,7 +852,8 @@ lanczos-low-noise-differentiators/>`_.
     if method == 'lanczos_conv':
         # we use constant nan padding here, since more sophisticated padding
         # can be done outside the _derivate helper function
-        out = ndimage.filters.convolve1d(data_pad, win, axis=-1, mode='constant')
+        out = ndimage.filters.convolve1d(data_pad, win, axis=-1,
+                                         mode='constant')
     else:
         data_roll = _rolling_dim(data_pad, winlen)
         if method == 'lanczos_dot':
@@ -890,11 +891,13 @@ lanczos-low-noise-differentiators/>`_.
                         out.flat[recalc] = _polyfit_1d(data[recalc],
                                                        method=method2)
             else:
-                valid = np.count_nonzero(~np.isnan(data), axis=-1) > min_period
+                valid = np.count_nonzero(~np.isnan(data),
+                                         axis=-1) > min_period
                 recalc = (valid & invalid.reshape(-1))
                 # and interpolate using polyfit_1d -> method2
                 if np.any(recalc):
-                    out.flat[recalc] = _polyfit_1d(data[recalc], method=method2)
+                    out.flat[recalc] = _polyfit_1d(data[recalc],
+                                                   method=method2)
 
     return out.reshape(shape)
 
