@@ -10,7 +10,7 @@ import numpy as np
 from wradlib import dp
 
 
-@pytest.fixture(params=['polyfit', 'covariance',
+@pytest.fixture(params=['lstsq', 'cov', 'matrix_inv',
                         'lanczos_conv', 'lanczos_dot'])
 def derivation_method(request):
     return request.param
