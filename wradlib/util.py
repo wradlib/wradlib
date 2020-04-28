@@ -18,7 +18,7 @@ attributable to the other modules
 """
 __all__ = ['from_to', 'filter_window_polar', 'filter_window_cartesian',
            'find_bbox_indices', 'get_raster_origin', 'calculate_polynomial',
-           'derivate']
+           'derivate', 'despeckle']
 __doc__ = __doc__.format('\n   '.join(__all__))
 
 import importlib
@@ -905,6 +905,45 @@ lanczos-low-noise-differentiators/>`_.
                                                       method=method2)
 
     return out.reshape(shape)
+
+
+def despeckle(data, n=3, copy=False):
+    """Remove floating pixels in between NaNs in a multi-dimensional array.
+
+    Warning
+    -------
+    This function changes the original input array if argument copy is set to
+    default (False).
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        Note that the range dimension must be the last dimension of the
+        input array.
+    n : int
+        (must be either 3 or 5, 3 by default),
+        Width of the window in which we check for speckle
+    copy : bool
+        If True, the input array will remain unchanged.
+
+    """
+    assert n in (3, 5), \
+        "Window size n for function despeckle must be 3 or 5."
+    if copy:
+        data = data.copy()
+
+    pad = n // 2
+
+    # pad with NaN
+    data0 = _pad_array(data, pad, mode='constant')
+    # append ndespeckel count last dimension
+    data0 = _rolling_dim(data0, data.shape[-1])
+    # count NaŃ's and find speckle
+    nans = np.count_nonzero(np.isnan(data0), axis=-2) == (n - 1)
+    # set speckle to NaN
+    data[nans] = np.nan
+
+    return data
 
 
 if __name__ == '__main__':

@@ -50,10 +50,11 @@ __all__ = ['process_raw_phidp_vulpiani', 'kdp_from_phidp',
            'depolarization']
 __doc__ = __doc__.format('\n   '.join(__all__))
 
+import deprecation
 import numpy as np
 from scipy import interpolate
 
-from wradlib import trafo, util
+from wradlib import trafo, util, version
 
 
 def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
@@ -107,7 +108,7 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
         phidp = phidp.copy()
 
     # despeckle
-    phidp = linear_despeckle(phidp, ndespeckle)
+    phidp = util.despeckle(phidp, ndespeckle)
     # kdp retrieval first guess
     kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
     # remove extreme values
@@ -398,6 +399,10 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     return phidp
 
 
+@deprecation.deprecated(deprecated_in="1.7", removed_in="2.0",
+                        current_version=version.version,
+                        details="Use `wradlib.util.despeckle` "
+                                "instead.")
 def linear_despeckle(data, ndespeckle=3, copy=False):
     """Remove floating pixels in between NaNs in a multi-dimensional array.
 
@@ -418,29 +423,7 @@ def linear_despeckle(data, ndespeckle=3, copy=False):
         If True, the input array will remain unchanged.
 
     """
-    assert ndespeckle in (3, 5), \
-        "Window size ndespeckle for function linear_despeckle must be 3 or 5."
-    if copy:
-        data = data.copy()
-    axis = data.ndim - 1
-    arr = np.ones(data.shape, dtype="i4")
-    arr[np.isnan(data)] = 0
-    arr_plus1 = np.roll(arr, shift=1, axis=axis)
-    arr_minus1 = np.roll(arr, shift=-1, axis=axis)
-    if ndespeckle == 3:
-        # for a window of size 3
-        test = arr + arr_plus1 + arr_minus1
-        data[np.logical_and(np.logical_not(np.isnan(data)), test < 2)] = np.nan
-    else:
-        # for a window of size 5
-        arr_plus2 = np.roll(arr, shift=2, axis=axis)
-        arr_minus2 = np.roll(arr, shift=-2, axis=axis)
-        test = arr + arr_plus1 + arr_minus1 + arr_plus2 + arr_minus2
-        data[np.logical_and(np.logical_not(np.isnan(data)), test < 3)] = np.nan
-    # remove isolated pixels at the first gate
-    secondgate = np.squeeze(np.take(data, range(1, 2), data.ndim - 1))
-    data[..., 0][np.isnan(secondgate)] = np.nan
-    return data
+    return util.despeckle(data, n=ndespeckle, copy=copy)
 
 
 def texture(data):
