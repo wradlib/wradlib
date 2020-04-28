@@ -213,7 +213,7 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
     In normal operation the method uses convolution to estimate :math:`K_{DP}`
     (the derivative of :math:`Phi_{DP}`) with Low-noise Lanczos differentiators
     (`method='lanczos_conv'`). The results are very similar to the moving window
-    linear regression (`method='polyfit'`), but the former is *much* faster.
+    linear regression (`method='lstsq'`), but the former is *much* faster.
 
     The :math:`K_{DP}` retrieval will return NaNs in case at least one value
     in the moving window is NaN. By default, the remaining gates are treated by
@@ -224,6 +224,9 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
     range resolution changes.
     In the original publication (:cite:`Vulpiani2012`), the value ``winlen=7``
     was chosen for a range resolution of 1km.
+
+    Uses :func:`~wradlib.util.derivate` to calculate the derivation. See for
+    additional kwargs.
 
     Warning
     -------
@@ -241,9 +244,11 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
     dr : float
         gate length in km
     method : str
-        Defaults to 'lanczos_conv'. Can take one of 'lanczos_dot', 'polyfit'.
+        Defaults to 'lanczos_conv'. Can also take one of 'lanczos_dot', 'lstsq',
+        'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
-        Defaults to True.
+        Defaults to True. Local Linear regression removing NaN values using
+        valid neighbors > winlen // 2.
 
     Returns
     -------
@@ -270,8 +275,9 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
     >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> pl.show()
     """
+    pad_mode = kwargs.pop('pad_mode', 'reflect')
     return util.derivate(phidp, winlen=winlen, skipna=skipna,
-                         method=method, **kwargs) / 2 / dr
+                         method=method, pad_mode=pad_mode, **kwargs) / 2 / dr
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):

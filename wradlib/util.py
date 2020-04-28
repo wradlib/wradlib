@@ -639,7 +639,7 @@ def gradient_from_smoothed(x, n=5):
     return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
 
 
-def _pad_array(data, pad, mode='edge', **kwargs):
+def _pad_array(data, pad, mode='reflect', **kwargs):
     """Returns array with padding added along last dimension.
     """
     pad_width = [(0,)] * (data.ndim - 1) + [(pad,)]
@@ -658,11 +658,12 @@ def _rolling_dim(data, window):
                                            strides=strides)
 
 
-def _polyfit_1d(rhs, order=1, method='lstsq'):
-    """ Calculates polyfit over last dimension of rhs.
+def _linregress_1d(rhs, method='lstsq'):
+    """Calculates slope by means of linear regression on last dimension of rhs.
 
-    Calculates lhs from size of last dimension of rhs. Only method='lstsq' is
-    multidimensional. The nan-methods only work on a single system. Hence the
+    Calculates lhs from size of last dimension of rhs.
+    Methods 'lstsq', 'cov', 'matrix_inv'  and 'cov_nan' are multidimensional.
+    The other two nan-methods only work on a single system. Hence the
     apply_along_axis.
     """
     shape = rhs.shape
@@ -676,7 +677,7 @@ def _polyfit_1d(rhs, order=1, method='lstsq'):
             rhs = np.sort(rhs, axis=-1)
             lhs = lhs[idx]
 
-            # special treatment for us, use fast method by slicing NaN's
+            # special treatment for wradlib, use fast method by slicing NaN's
             if 'iter' in method:
                 nan = np.argmax(np.isnan(rhs), axis=-1)
                 unique = np.unique(nan)
@@ -688,38 +689,38 @@ def _polyfit_1d(rhs, order=1, method='lstsq'):
             lhs = np.broadcast_to(lhs, (rhs.shape))
         lhs = lhs.T
     else:
-        lhs = np.vander(np.arange(shape[-1], dtype=rhs.dtype), order + 1)
+        lhs = np.vander(np.arange(shape[-1], dtype=rhs.dtype), 2)
 
     rhs = rhs.T
 
     if method == 'lstsq':
         out = np.linalg.lstsq(lhs, rhs, rcond=None)[0][0]
     elif method == 'lstsq_nan':
-        out = np.apply_along_axis(_nanpolyfit_lstsq, 0, rhs, lhs)
+        out = np.apply_along_axis(_nan_lstsq, 0, rhs, lhs)
     elif method == 'cov':
-        out = _polyfit_cov(lhs, rhs)
-    elif method == 'cov_nan':
-        out = _nanpolyfit_cov(lhs, rhs)
+        out = _cov(lhs, rhs)
+    elif 'cov_nan' in method:
+        out = _nan_cov(lhs, rhs)
     elif method == 'matrix_inv':
-        out = _polyfit_matrix_inv(lhs, rhs)
+        out = _matrix_inv(lhs, rhs)
     elif method == 'matrix_inv_nan':
-        out = np.apply_along_axis(_nanpolyfit_matrix_inv, 0, rhs, lhs)
+        out = np.apply_along_axis(_nan_matrix_inv, 0, rhs, lhs)
     else:
         raise ValueError(f"wradlib: unknown method value {method}")
 
     return out.reshape(shape[:-1])
 
 
-def _nanpolyfit_lstsq(y, x):
-    """Single polyfit by least squares considering NaN.
+def _nan_lstsq(y, x):
+    """Calculate slope by lstsq considering NaN.
     """
     mask = np.isnan(y)
     out, _, _, _ = np.linalg.lstsq(x[~mask, :], y[~mask], rcond=None)
     return out[0]
 
 
-def _nanpolyfit_matrix_inv(y, x):
-    """Single polyfit by matrix inversion considering NaN.
+def _nan_matrix_inv(y, x):
+    """Calculate slope by matrix inversion considering NaN.
     """
     mask = np.isnan(y)
     x = x[~mask]
@@ -727,14 +728,14 @@ def _nanpolyfit_matrix_inv(y, x):
     return out[0]
 
 
-def _polyfit_matrix_inv(x, y):
-    """Single polyfit by matrix inversion considering NaN.
+def _matrix_inv(x, y):
+    """Calculate slope by matrix inversion considering NaN.
     """
     out = np.dot(np.linalg.inv(np.dot(x.T, x)), np.dot(x.T, y))
     return out[0]
 
 
-def _nanpolyfit_cov(x, y):
+def _nan_cov(x, y):
     """Calculate slope using covariances considering NaN.
     """
     y = np.ma.masked_invalid(y)
@@ -748,7 +749,7 @@ def _nanpolyfit_cov(x, y):
     return out
 
 
-def _polyfit_cov(x, y):
+def _cov(x, y):
     """Calculate slope using covariances.
     """
     # calculate covariances
@@ -770,7 +771,7 @@ def _lanczos_differentiator(winlen):
 
 
 def derivate(data, winlen=7, method='lanczos_conv', skipna=False, **kwargs):
-    """Calculates derivative of data.
+    """Calculates derivative of data using window of length winlen.
 
     In normal operation the method ('lanczos_conv') uses convolution
     to estimate the derivative using Low-noise Lanczos differentiators.
@@ -783,17 +784,18 @@ def derivate(data, winlen=7, method='lanczos_conv', skipna=False, **kwargs):
 lanczos-low-noise-differentiators/>`_.
 
     The results are very similar to the moving window linear
-    regression (`polyfit`) method, but the former are *much* faster.
+    regression methods (`cov`, `matrix_inv` and `lstsq`), which are slower than
+    the former (in order of appearance).
 
     All methods will return NaNs in case at least one value in the moving
     window is NaN.
 
-    If `skipna=True` the location of NaN results are treated by using local
-    linear regression by matrix inversion where enough valid neighbouring data
-    is available.
+    If `skipna=True` the locations of NaN results are treated by using local
+    linear regression by method2 (default to `cov_nan`) where enough valid
+    neighbouring data is available.
 
     Before applying the actual derivation calculation the data is padded along
-    the derivation dimension.
+    the derivation dimension. Padding can be parametrized using kwargs.
 
     Parameters
     ----------
@@ -803,14 +805,15 @@ lanczos-low-noise-differentiators/>`_.
     winlen : int
         Width of the derivation window .
     method : str
-        Defaults to 'lanczos_conv'. Can take one of 'lanczos_dot', 'polyfit'.
+        Defaults to 'lanczos_conv'. Can take one of 'lanczos_dot', 'lstsq',
+        'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
         Defaults to False. It true, treat NaN results by applying method2.
 
     Keyword Arguments
     -----------------
     method2 : str
-        Defaults to 'matrix_inv_nan'. Can also take 'lstsq_nan'.
+        Defaults to '_nan' methods.
     min_period : int
         Defaults to winlen // 2.
     pad_mode : str
@@ -841,7 +844,7 @@ lanczos-low-noise-differentiators/>`_.
 
     # pad data using pad_mode
     pad_kwargs = kwargs.pop('pad_kwargs', {})
-    pad_kwargs['mode'] = kwargs.pop('pad_mode', 'edge')
+    pad_kwargs['mode'] = kwargs.pop('pad_mode', 'reflect')
     data_pad = _pad_array(data, pad, **pad_kwargs)
 
     # calculate derivation using winlen and method
@@ -850,8 +853,8 @@ lanczos-low-noise-differentiators/>`_.
 
     # calculate derivative
     if method == 'lanczos_conv':
-        # we use constant nan padding here, since more sophisticated padding
-        # can be done outside the _derivate helper function
+        # we use constant nan padding here,
+        # more sophisticated padding was already done
         out = ndimage.filters.convolve1d(data_pad, win, axis=-1,
                                          mode='constant')
     else:
@@ -859,7 +862,7 @@ lanczos-low-noise-differentiators/>`_.
         if method == 'lanczos_dot':
             out = np.dot(data_roll, win * -1)
         if method in ['lstsq', 'cov', 'cov_nan', 'matrix_inv']:
-            out = _polyfit_1d(data_roll, method=method)
+            out = _linregress_1d(data_roll, method=method)
 
     # strip padding for convolution method
     if method == 'lanczos_conv':
@@ -869,6 +872,8 @@ lanczos-low-noise-differentiators/>`_.
     if skipna:
         min_period = kwargs.pop('min_period', pad)
         assert min_period >= 1, "min_period need to be >= 1."
+
+        # automatically select method2 if not given
         if method in ['lstsq', 'matrix_inv']:
             m2 = method + '_nan'
         else:
@@ -881,21 +886,23 @@ lanczos-low-noise-differentiators/>`_.
             data = _rolling_dim(data_pad, winlen)
             data = data.reshape((-1, data.shape[-1]))
 
+            # internal speed up by iterating over same NaN counts and using
+            # faster calculation method
             if method2 == 'cov_nan_iter':
                 for n in range(min_period + 1, winlen):
                     valid = np.count_nonzero(~np.isnan(data), axis=-1) == n
                     recalc = (valid & invalid.reshape(-1))
                     if np.any(recalc):
-                        out.flat[recalc] = _polyfit_1d(data[recalc],
-                                                       method=method2)
+                        out.flat[recalc] = _linregress_1d(data[recalc],
+                                                          method=method2)
             else:
                 valid = np.count_nonzero(~np.isnan(data),
                                          axis=-1) > min_period
                 recalc = (valid & invalid.reshape(-1))
                 # and interpolate using polyfit_1d -> method2
                 if np.any(recalc):
-                    out.flat[recalc] = _polyfit_1d(data[recalc],
-                                                   method=method2)
+                    out.flat[recalc] = _linregress_1d(data[recalc],
+                                                      method=method2)
 
     return out.reshape(shape)
 
