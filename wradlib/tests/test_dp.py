@@ -2,37 +2,74 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
+import sys
+import pytest
 
 import numpy as np
 
 from wradlib import dp
 
 
-class KDPFromPHIDPTest(unittest.TestCase):
-    def setUp(self):
-        np.random.seed(42)
-        # Synthetic truth
-        self.dr = 0.5
-        r = np.arange(0, 100, self.dr)
-        self.kdp_true = np.sin(0.3 * r)
-        self.kdp_true[self.kdp_true < 0] = 0.
-        self.phidp_true = np.cumsum(self.kdp_true) * 2 * self.dr
-        # Synthetic observation of PhiDP with a random noise and gaps
-        self.phidp_raw = (self.phidp_true +
-                          np.random.uniform(-2, 2, len(self.phidp_true)))
-        self.gaps = np.random.uniform(0, len(r), 20).astype("int")
-        self.phidp_raw[self.gaps] = np.nan
-        self.rho = np.random.uniform(0.8, 1.0, len(r))
+@pytest.fixture(params=['lstsq', 'cov', 'matrix_inv',
+                        'lanczos_conv', 'lanczos_dot'])
+def derivation_method(request):
+    return request.param
+
+
+class TestKDPFromPHIDP:
+    np.random.seed(42)
+    # Synthetic truth
+    dr = 0.5
+    r = np.arange(0, 100, dr)
+    kdp_true = np.sin(0.3 * r)
+    kdp_true[kdp_true < 0] = 0.
+    phidp_true = np.cumsum(kdp_true) * 2 * dr
+    # Synthetic observation of PhiDP with a random noise and gaps
+    phidp_raw = (phidp_true +
+                 np.random.uniform(-2, 2, len(phidp_true)))
+    gaps = np.random.uniform(0, len(r), 20).astype("int")
+    phidp_raw[gaps] = np.nan
+    rho = np.random.uniform(0.8, 1.0, len(r))
+
+    # for derivation tests
+    window = 7
+    az = 360
+    rng = 1000
+    pad = window // 2
+    kdp_true = np.arange(az * rng, dtype=np.float).reshape(az, rng)
+    phidp_true = np.power(kdp_true, 2)
+    dr = 0.1
+    kdp_true /= (dr)
+    phidp_true_nan = phidp_true.copy()
+    phidp_true_nan[:, window:-1:10] = np.nan
 
     def test_process_raw_phidp_vulpiani(self):
         dp.process_raw_phidp_vulpiani(self.phidp_raw, dr=self.dr,
                                       copy=True)
         dp.process_raw_phidp_vulpiani(self.phidp_raw, dr=self.dr)
 
-    def test_kdp_from_phidp(self):
-        dp.kdp_from_phidp(self.phidp_raw, dr=self.dr)
-        dp.kdp_from_phidp(self.phidp_raw, dr=self.dr, method='slow')
+    def test_kdp_from_phidp(self, derivation_method):
+        if (derivation_method == 'lstsq' and sys.platform.startswith("win")):
+            pytest.skip("fails on windows due to MKL issue")
+
+        # compare with true kdp
+        out = dp.kdp_from_phidp(self.phidp_true, dr=self.dr,
+                                method=derivation_method)
+        outx = out[:, self.pad:-self.pad]
+        res = self.kdp_true[:, self.pad:-self.pad]
+        np.testing.assert_array_almost_equal(outx, res, decimal=4)
+
+        # intercompare with lanczos method with NaN handling
+        out0 = dp.kdp_from_phidp(self.phidp_true, dr=self.dr,
+                                 method='lanczos_conv')
+        np.testing.assert_array_almost_equal(out, out0, decimal=4)
+
+        # intercompare with lanczos method without NaN-handling
+        out0 = dp.kdp_from_phidp(self.phidp_true_nan, dr=self.dr,
+                                 method='lanczos_conv', skipna=False)
+        outx = dp.kdp_from_phidp(self.phidp_true_nan, dr=self.dr,
+                                 method=derivation_method, skipna=False)
+        np.testing.assert_array_almost_equal(outx, out0, decimal=4)
 
     def test_linear_despeckle(self):
         dp.linear_despeckle(self.phidp_raw, ndespeckle=3, copy=True)
@@ -49,45 +86,38 @@ class KDPFromPHIDPTest(unittest.TestCase):
         dp._fill_sweep(self.phidp_raw, kind='linear')
 
 
-class TextureTest(unittest.TestCase):
-    def setUp(self):
-        img = np.zeros((360, 10), dtype=np.float32)
-        img[2, 2] = 10  # isolated pixel
-        img[5, 6:8] = 10  # line
-        img[20, :] = 5  # spike
-        img[60:120, 2:7] = 11  # precip field
+class TestTexture:
+    img = np.zeros((360, 10), dtype=np.float32)
+    img[2, 2] = 10  # isolated pixel
+    img[5, 6:8] = 10  # line
+    img[20, :] = 5  # spike
+    img[60:120, 2:7] = 11  # precip field
 
-        self.img = img
+    pixel = np.ones((3, 3)) * 3.5355339059327378
+    pixel[1, 1] = 10.
 
-        pixel = np.ones((3, 3)) * 3.5355339059327378
-        pixel[1, 1] = 10.
-        self.pixel = pixel
+    line = np.ones((3, 4)) * 3.5355339059327378
+    line[:, 1:3] = 5.0
+    line[1, 1:3] = 9.354143466934854
 
-        line = np.ones((3, 4)) * 3.5355339059327378
-        line[:, 1:3] = 5.0
-        line[1, 1:3] = 9.354143466934854
-        self.line = line
+    spike = np.ones((3, 10)) * 3.0618621784789726
+    spike[1] = 4.330127018922194
+    spike[:, 0] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
+    spike[:, -1] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
 
-        spike = np.ones((3, 10)) * 3.0618621784789726
-        spike[1] = 4.330127018922194
-        spike[:, 0] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
-        spike[:, -1] = 3.1622776601683795, 4.47213595499958, 3.1622776601683795
-        self.spike = spike
-
-        rainfield = np.zeros((62, 7))
-        rainfield[:, 0:2] = 6.73609679265374
-        rainfield[:, -2:] = 6.73609679265374
-        rainfield[0:2, :] = 6.73609679265374
-        rainfield[-2:, :] = 6.73609679265374
-        rainfield[0, :2] = 3.8890872965260113, 5.5
-        rainfield[0, -2:] = 5.5, 3.8890872965260113
-        rainfield[-1, :2] = 3.8890872965260113, 5.5
-        rainfield[-1, -2:] = 5.5, 3.8890872965260113
-        rainfield[1, :2] = 5.5, 8.696263565463044
-        rainfield[1, -2:] = 8.696263565463044, 5.5
-        rainfield[-2, :2] = 5.5, 8.696263565463044
-        rainfield[-2, -2:] = 8.696263565463044, 5.5
-        self.rainfield = rainfield
+    rainfield = np.zeros((62, 7))
+    rainfield[:, 0:2] = 6.73609679265374
+    rainfield[:, -2:] = 6.73609679265374
+    rainfield[0:2, :] = 6.73609679265374
+    rainfield[-2:, :] = 6.73609679265374
+    rainfield[0, :2] = 3.8890872965260113, 5.5
+    rainfield[0, -2:] = 5.5, 3.8890872965260113
+    rainfield[-1, :2] = 3.8890872965260113, 5.5
+    rainfield[-1, -2:] = 5.5, 3.8890872965260113
+    rainfield[1, :2] = 5.5, 8.696263565463044
+    rainfield[1, -2:] = 8.696263565463044, 5.5
+    rainfield[-2, :2] = 5.5, 8.696263565463044
+    rainfield[-2, -2:] = 8.696263565463044, 5.5
 
     def test_texture(self):
         tex = dp.texture(self.img)
@@ -97,7 +127,7 @@ class TextureTest(unittest.TestCase):
         np.testing.assert_array_equal(tex[59:121, 1:8], self.rainfield)
 
 
-class DepolarizationTest(unittest.TestCase):
+class TestDepolarization:
     def test_depolarization(self):
         zdr = np.linspace(-0.5, 0.5, 10)
         rho = np.linspace(0., 1., 10)
@@ -111,7 +141,3 @@ class DepolarizationTest(unittest.TestCase):
                                              dr_0)
         np.testing.assert_array_almost_equal(dp.depolarization(1.0, rho),
                                              dr_1)
-
-
-if __name__ == '__main__':
-    unittest.main()
