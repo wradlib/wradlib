@@ -21,14 +21,13 @@ class TestKDPFromPHIDP:
     # Synthetic truth
     dr = 0.5
     r = np.arange(0, 100, dr)
-    kdp_true = np.sin(0.3 * r)
-    kdp_true[kdp_true < 0] = 0.
-    phidp_true = np.cumsum(kdp_true) * 2 * dr
+    kdp_true0 = np.sin(0.3 * r)
+    kdp_true0[kdp_true0 < 0] = 0.
+    phidp_true0 = np.cumsum(kdp_true0) * 2 * dr
     # Synthetic observation of PhiDP with a random noise and gaps
-    phidp_raw = (phidp_true +
-                 np.random.uniform(-2, 2, len(phidp_true)))
+    phidp_raw0 = (phidp_true0 + np.random.uniform(-2, 2, len(phidp_true0)))
     gaps = np.random.uniform(0, len(r), 20).astype("int")
-    phidp_raw[gaps] = np.nan
+    phidp_raw0[gaps] = np.nan
     rho = np.random.uniform(0.8, 1.0, len(r))
 
     # for derivation tests
@@ -44,9 +43,9 @@ class TestKDPFromPHIDP:
     phidp_true_nan[:, window:-1:10] = np.nan
 
     def test_process_raw_phidp_vulpiani(self):
-        dp.process_raw_phidp_vulpiani(self.phidp_raw, dr=self.dr,
+        dp.process_raw_phidp_vulpiani(self.phidp_raw0, dr=self.dr,
                                       copy=True)
-        dp.process_raw_phidp_vulpiani(self.phidp_raw, dr=self.dr)
+        dp.process_raw_phidp_vulpiani(self.phidp_raw0, dr=self.dr)
 
     def test_kdp_from_phidp(self, derivation_method):
         if (derivation_method == 'lstsq' and sys.platform.startswith("win")):
@@ -72,18 +71,33 @@ class TestKDPFromPHIDP:
         np.testing.assert_array_almost_equal(outx, out0, decimal=4)
 
     def test_linear_despeckle(self):
-        dp.linear_despeckle(self.phidp_raw, ndespeckle=3, copy=True)
-        dp.linear_despeckle(self.phidp_raw, ndespeckle=5, copy=True)
+        dp.linear_despeckle(self.phidp_raw0, ndespeckle=3, copy=True)
+        dp.linear_despeckle(self.phidp_raw0, ndespeckle=5, copy=True)
 
     def test_unfold_phi_naive(self):
-        dp.unfold_phi_naive(self.phidp_raw, self.rho)
-        dp.unfold_phi_naive(self.phidp_raw, self.rho, copy=True)
+        dp.unfold_phi_naive(self.phidp_raw0, self.rho)
+        dp.unfold_phi_naive(self.phidp_raw0, self.rho, copy=True)
 
     def test_unfold_phi_vulpiani(self):
-        dp.unfold_phi_vulpiani(self.phidp_raw, self.kdp_true)
+        phi_true = np.arange(600)
+        phi_raw1 = phi_true.copy()
+        phi_raw1[phi_raw1 > 540] -= 360
+        phi_raw2 = phi_raw1.copy()
+        phi_raw2[phi_raw2 > 180] -= 360
+        kdp1 = dp.kdp_from_phidp(phi_raw1)
+        kdp2 = dp.kdp_from_phidp(phi_raw2)
+
+        out1 = dp.unfold_phi_vulpiani(phi_raw1.copy(), kdp1)
+        out2 = dp.unfold_phi_vulpiani(phi_raw2.copy(), kdp2)
+        kdp3 = dp.kdp_from_phidp(out2)
+        out3 = dp.unfold_phi_vulpiani(out2.copy(), kdp3)
+
+        np.testing.assert_array_equal(out1, phi_true)
+        np.testing.assert_array_equal(out2, phi_raw1)
+        np.testing.assert_array_equal(out3, phi_true)
 
     def test__fill_sweep(self):
-        dp._fill_sweep(self.phidp_raw, kind='linear')
+        dp._fill_sweep(self.phidp_raw0, kind='linear')
 
 
 class TestTexture:

@@ -116,7 +116,7 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
     kdp[np.logical_and(kdp < -2, kdp > -20)] = 0
 
     # unfold phidp
-    phidp = unfold_phi_vulpiani(phidp, kdp)
+    phidp = unfold_phi_vulpiani(phidp, kdp, winlen=winlen)
 
     # clean up unfolded PhiDP
     phidp[phidp > 360] = np.nan
@@ -142,11 +142,17 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
     return phidp, kdp
 
 
-def unfold_phi_vulpiani(phidp, kdp):
+def unfold_phi_vulpiani(phidp, kdp, th=-20, winlen=7):
     """Alternative phase unfolding which completely relies on :math:`K_{DP}`.
 
     This unfolding should be used in oder to iteratively reconstruct
     :math:`Phi_{DP}` and :math:`K_{DP}` (see :cite:`Vulpiani2012`).
+
+    Note
+    ----
+    :math:`Phi_{DP}` is assumed to be in the interval [-180, 180] degree.
+    From experience the window for calculation of :math:`K_{DP}` should not
+    be too large to catch possible phase wraps.
 
     Parameters
     ----------
@@ -154,20 +160,41 @@ def unfold_phi_vulpiani(phidp, kdp):
         array of floats
     kdp : :class:`numpy:numpy.ndarray`
         array of floats
-
+    th : float
+        Threshold th3 in the above citation.
+    winlen : int
+        Length of window to fix possible phase over-correction. Normally
+        should take the value of the length of the processing window in
+        the above citation.
     """
     # unfold phidp
     shape = phidp.shape
     phidp = phidp.reshape((-1, shape[-1]))
     kdp = kdp.reshape((-1, shape[-1]))
 
-    for beam in range(len(phidp)):
-        below_th3 = kdp[beam] < -20
-        try:
-            idx1 = np.where(below_th3)[0][2]
-            phidp[beam, idx1:] += 360
-        except Exception:
-            pass
+    # check for possible phase wraps
+    mask = kdp < th
+    if np.any(mask):
+        # setup index on last dimension
+        idx = np.arange(phidp.shape[-1])
+        # set last bin to 1 to get that index in case of no kdp < th
+        mask[:, -1] = 1
+        # todo: check for better performance of NaN handling
+        # find first occurrence of kdp < th in each ray
+        amax = np.nanargmax(mask, axis=-1)
+
+        # get maximum phase in each ray
+        phimax = np.nanmax(phidp, axis=-1)
+
+        # retrieve folding location mask and unfold
+        foldmask = np.where(idx[np.newaxis, :] > amax[:, np.newaxis])
+        phidp[foldmask] += 360
+
+        # retrieve checkmask for remaining "over" unfolds and fix
+        checkmask = np.where((idx[np.newaxis, :] <=
+                              amax[:, np.newaxis] + winlen) &
+                             (phidp > (phimax[:, np.newaxis] + 180.)))
+        phidp[checkmask] -= 360
 
     return phidp.reshape(shape)
 
