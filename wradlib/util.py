@@ -650,7 +650,7 @@ def _pad_array(data, pad, mode='reflect', **kwargs):
 
 
 def _rolling_dim(data, window):
-    """Return array with rolling dimension of window-length added at the end..
+    """Return array with rolling dimension of window-length added at the end.
     """
     shape = data.shape[:-1] + (data.shape[-1] - window + 1, window)
     strides = data.strides + (data.strides[-1],)
@@ -794,8 +794,9 @@ lanczos-low-noise-differentiators/>`_.
     linear regression by method2 (default to `cov_nan`) where enough valid
     neighbouring data is available.
 
-    Before applying the actual derivation calculation the data is padded along
-    the derivation dimension. Padding can be parametrized using kwargs.
+    Before applying the actual derivation calculation the data is padded with
+    `mode='reflect'` by default along the derivation dimension. Padding can be
+    parametrized using kwargs.
 
     Parameters
     ----------
@@ -808,16 +809,17 @@ lanczos-low-noise-differentiators/>`_.
         Defaults to 'lanczos_conv'. Can take one of 'lanczos_dot', 'lstsq',
         'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
-        Defaults to False. It true, treat NaN results by applying method2.
+        Defaults to False. If True, treat NaN results by applying method2.
 
     Keyword Arguments
     -----------------
     method2 : str
         Defaults to '_nan' methods.
-    min_period : int
-        Defaults to winlen // 2.
+    min_periods : int
+        Minimum number of valid values in moving window for linear regression.
+        Defaults to winlen // 2 + 1.
     pad_mode : str
-        Defaults to 'edge'. See :func:`numpy:numpy.pad`.
+        Defaults to `reflect`. See :func:`numpy:numpy.pad`.
     pad_kwargs : dict
         Keyword arguments for padding, see :func:`numpy:numpy.pad`
 
@@ -828,80 +830,71 @@ lanczos-low-noise-differentiators/>`_.
     """
     assert (winlen % 2) == 1, \
         "Window size N for function kdp_from_phidp must be an odd number."
-
-    if method not in ['lanczos_conv', 'lanczos_dot', 'lstsq', 'cov',
-                      'cov_nan', 'matrix_inv']:
-        raise ValueError(f"wradlib: unknown method value {method}")
+    # Make really sure winlen is an integer
+    winlen = int(winlen)
 
     shape = data.shape
     data = data.reshape((-1, shape[-1]))
 
-    # Make really sure winlen is an integer
-    winlen = int(winlen)
-
-    # append padding on derivation dimension
+    # pad data using pad_mode on derivation dimension
     pad = winlen // 2
-
-    # pad data using pad_mode
     pad_kwargs = kwargs.pop('pad_kwargs', {})
     pad_kwargs['mode'] = kwargs.pop('pad_mode', 'reflect')
     data_pad = _pad_array(data, pad, **pad_kwargs)
-
-    # calculate derivation using winlen and method
-    if 'lanczos' in method:
-        win = _lanczos_differentiator(winlen)
+    data_roll = None
 
     # calculate derivative
     if method == 'lanczos_conv':
         # we use constant nan padding here,
         # more sophisticated padding was already done
-        out = ndimage.filters.convolve1d(data_pad, win, axis=-1,
-                                         mode='constant')
+        out = ndimage.convolve1d(data_pad, _lanczos_differentiator(winlen),
+                                 axis=-1, mode='constant')
+        # strip padding for convolution method
+        out = out[..., pad:-pad]
     else:
         data_roll = _rolling_dim(data_pad, winlen)
         if method == 'lanczos_dot':
-            out = np.dot(data_roll, win * -1)
-        if method in ['lstsq', 'cov', 'cov_nan', 'matrix_inv']:
+            out = np.dot(data_roll, _lanczos_differentiator(winlen) * -1)
+        elif method in ['lstsq', 'cov', 'cov_nan', 'matrix_inv']:
             out = _linregress_1d(data_roll, method=method)
-
-    # strip padding for convolution method
-    if method == 'lanczos_conv':
-        out = out[..., pad:-pad]
+        else:
+            raise ValueError(f"wradlib: unknown method value {method}")
 
     # NaN treatment
     if skipna:
-        min_period = kwargs.pop('min_period', pad)
-        assert min_period >= 1, "min_period need to be >= 1."
-
-        # automatically select method2 if not given
-        if method in ['lstsq', 'matrix_inv']:
-            m2 = method + '_nan'
-        else:
-            m2 = 'cov_nan_iter'
-        method2 = kwargs.pop('method2', m2)
-
         # find remaining NaN values with valid neighbours
         invalid = np.isnan(out)
         if np.any(invalid):
-            data = _rolling_dim(data_pad, winlen)
-            data = data.reshape((-1, data.shape[-1]))
+            min_periods = kwargs.pop('min_periods', winlen // 2 + 1)
+            assert min_periods >= 2, "min_periods need to be >= 2."
+
+            # automatically select method2 if not given
+            if method in ['lstsq', 'matrix_inv']:
+                m2 = method + '_nan'
+            else:
+                m2 = 'cov_nan_iter'
+            method2 = kwargs.pop('method2', m2)
+
+            # bring data into needed shape
+            data_roll = _rolling_dim(data_pad, winlen) if data_roll is None else data_roll
+            data_roll = data_roll.reshape((-1, data_roll.shape[-1]))
 
             # internal speed up by iterating over same NaN counts and using
             # faster calculation method
             if method2 == 'cov_nan_iter':
-                for n in range(min_period + 1, winlen):
-                    valid = np.count_nonzero(~np.isnan(data), axis=-1) == n
+                for n in range(min_periods, winlen):
+                    valid = np.count_nonzero(~np.isnan(data_roll), axis=-1) == n
                     recalc = (valid & invalid.reshape(-1))
                     if np.any(recalc):
-                        out.flat[recalc] = _linregress_1d(data[recalc],
+                        out.flat[recalc] = _linregress_1d(data_roll[recalc],
                                                           method=method2)
             else:
-                valid = np.count_nonzero(~np.isnan(data),
-                                         axis=-1) > min_period
+                valid = np.count_nonzero(~np.isnan(data_roll),
+                                         axis=-1) >= min_periods
                 recalc = (valid & invalid.reshape(-1))
                 # and interpolate using polyfit_1d -> method2
                 if np.any(recalc):
-                    out.flat[recalc] = _linregress_1d(data[recalc],
+                    out.flat[recalc] = _linregress_1d(data_roll[recalc],
                                                       method=method2)
 
     return out.reshape(shape)
