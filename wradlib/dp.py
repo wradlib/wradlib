@@ -176,24 +176,20 @@ def unfold_phi_vulpiani(phidp, kdp, th=-20, winlen=7):
     mask = kdp < th
     if np.any(mask):
         # setup index on last dimension
-        idx = np.arange(phidp.shape[-1])
+        idx = np.arange(phidp.shape[-1])[np.newaxis, :]
         # set last bin to 1 to get that index in case of no kdp < th
         mask[:, -1] = 1
-        # todo: check for better performance of NaN handling
         # find first occurrence of kdp < th in each ray
-        amax = np.nanargmax(mask, axis=-1)
-
+        amax = np.argmax(mask, axis=-1)[:, np.newaxis]
         # get maximum phase in each ray
-        phimax = np.nanmax(phidp, axis=-1)
-
+        phimax = np.nanmax(phidp, axis=-1)[:, np.newaxis]
         # retrieve folding location mask and unfold
-        foldmask = np.where(idx[np.newaxis, :] > amax[:, np.newaxis])
+        foldmask = np.where(idx > amax)
         phidp[foldmask] += 360
-
         # retrieve checkmask for remaining "over" unfolds and fix
-        checkmask = np.where((idx[np.newaxis, :] <=
-                              amax[:, np.newaxis] + winlen) &
-                             (phidp > (phimax[:, np.newaxis] + 180.)))
+        # phimax + 180 is chosen, because it's half of the max phase wrap
+        checkmask = np.where((idx <= amax + winlen) &
+                             (phidp > (phimax + 180.)))
         phidp[checkmask] -= 360
 
     return phidp.reshape(shape)
