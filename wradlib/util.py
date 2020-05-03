@@ -906,7 +906,7 @@ def despeckle(data, n=3, copy=False):
     Warning
     -------
     This function changes the original input array if argument copy is set to
-    default (False).
+    False (default).
 
     Parameters
     ----------
@@ -929,7 +929,7 @@ def despeckle(data, n=3, copy=False):
 
     # pad with NaN
     data0 = _pad_array(data, pad, mode='constant')
-    # append ndespeckel count last dimension
+    # append n count last dimension
     data0 = _rolling_dim(data0, data.shape[-1])
     # count NaŃ's and find speckle
     nans = np.count_nonzero(np.isnan(data0), axis=-2) == (n - 1)
