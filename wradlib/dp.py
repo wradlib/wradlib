@@ -276,7 +276,13 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
         'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
         Defaults to True. Local Linear regression removing NaN values using
-        valid neighbors > winlen // 2.
+        valid neighbors > min_periods
+
+    Keyword Arguments
+    -----------------
+    min_periods : int
+        Minimum number of valid values in moving window for linear regression.
+        Defaults to winlen // 2 + 1.
 
     Returns
     -------
@@ -303,9 +309,13 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
     >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> pl.show()
     """
-    pad_mode = kwargs.pop('pad_mode', 'reflect')
+    pad_mode = kwargs.pop('pad_mode', None)
+    if pad_mode is None:
+        pad_mode = 'reflect'
+    min_periods = kwargs.pop('min_periods', winlen // 2 + 1)
     return util.derivate(phidp, winlen=winlen, skipna=skipna,
-                         method=method, pad_mode=pad_mode, **kwargs) / 2 / dr
+                         method=method, pad_mode=pad_mode,
+                         min_periods=min_periods, **kwargs) / 2 / dr
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):
