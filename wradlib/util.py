@@ -851,6 +851,8 @@ lanczos-low-noise-differentiators/>`_.
                                  axis=-1, mode='constant')
         # strip padding for convolution method
         out = out[..., pad:-pad]
+    elif method == 'finite_difference_vulpiani':
+        out = (data_pad[..., winlen - 1:] - data_pad[..., :shape[-1]]) / winlen
     else:
         data_roll = _rolling_dim(data_pad, winlen)
         if method == 'lanczos_dot':
