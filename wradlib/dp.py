@@ -52,7 +52,7 @@ __doc__ = __doc__.format('\n   '.join(__all__))
 
 import deprecation
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, integrate
 
 from wradlib import trafo, util, version
 
@@ -75,13 +75,13 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
 
     Parameters
     ----------
-    phidp : array
+    phidp : :class:`numpy:numpy.ndarray`
         array of shape (n azimuth angles, n range gates)
     dr : float
         gate length in km
     ndespeckle : int
-        ``ndespeckle`` parameter of :func:`~wradlib.dp.linear_despeckle`
-    winlen : integer
+        ``ndespeckle`` parameter of :func:`~wradlib.util.despeckle`
+    winlen : int
         ``winlen`` parameter of :func:`~wradlib.dp.kdp_from_phidp`
     niter : int
         Number of iterations in which :math:`Phi_{DP}` is retrieved from
@@ -89,13 +89,22 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
     copy : bool
         if True, the original :math:`Phi_{DP}` array will remain unchanged
 
+    Keyword Arguments
+    -----------------
+    th1 : float
+        Threshold th1 from above cited paper.
+    th2 : float
+        Threshold th2 from above cited paper.
+    th3 : float
+        Threshold th3 from above cited paper.
+
     Returns
     -------
     phidp : :class:`numpy:numpy.ndarray`
-        array of shape (n azimuth angles, n range gates) reconstructed
+        array of shape (..., , n azimuth angles, n range gates) reconstructed
         :math:`Phi_{DP}`
     kdp : :class:`numpy:numpy.ndarray`
-        array of shape (n azimuth angles, n range gates)
+        array of shape (..., , n azimuth angles, n range gates)
         ``kdp`` estimate corresponding to ``phidp`` output
 
     Examples
@@ -107,37 +116,50 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
     if copy:
         phidp = phidp.copy()
 
+    # get thresholds
+    th1 = kwargs.pop("th1", -2)
+    th2 = kwargs.pop("th2", 20)
+    th3 = kwargs.pop("th3", -20)
+
+    method = kwargs.pop('method', None)
+
     # despeckle
     phidp = util.despeckle(phidp, ndespeckle)
-    # kdp retrieval first guess
-    kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
-    # remove extreme values
-    kdp[kdp > 20] = 0
-    kdp[np.logical_and(kdp < -2, kdp > -20)] = 0
 
-    # unfold phidp
-    phidp = unfold_phi_vulpiani(phidp, kdp, winlen=winlen)
+    # kdp retrieval first guess
+    # use finite difference scheme as written in the cited paper
+    kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen,
+                         method='finite_difference_vulpiani',
+                         skipna=False,
+                         **kwargs)
+
+    # try unfolding phidp
+    phidp = unfold_phi_vulpiani(phidp, kdp, th=th3, winlen=winlen)
 
     # clean up unfolded PhiDP
     phidp[phidp > 360] = np.nan
 
     # kdp retrieval second guess
+    # re-add given method to kwargs
+    if method is not None:
+        kwargs['method'] = method
+    # use given (fast) derivation methods
     kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
-    kdp = _fill_sweep(kdp)
 
-    # remove remaining extreme values
-    kdp[kdp > 20] = 0
-    kdp[kdp < -2] = 0
+    # find kdp values with no physical meaning like noise, backscatter differential
+    # phase, nonuniform beamfilling or residual artifacts using th1 and th2
+    mask = (kdp <= th1) | (kdp >= th2)
+    kdp[mask] = 0
+
+    # fill remaining NaN with zeros
+    kdp = np.nan_to_num(kdp)
 
     # start the actual phidp/kdp iteration
     for i in range(niter):
         # phidp from kdp through integration
-        phidp = 2 * np.cumsum(kdp, axis=-1) * dr
+        phidp = 2 * integrate.cumtrapz(kdp, dx=dr, initial=0., axis=-1)
         # kdp from phidp by convolution
         kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
-        # convert all NaNs to zeros (normally, this line can be assumed
-        # to be redundant)
-        kdp = _fill_sweep(kdp)
 
     return phidp, kdp
 
