@@ -6,6 +6,7 @@ import sys
 import pytest
 
 import numpy as np
+from scipy import integrate
 
 from wradlib import dp
 
@@ -13,6 +14,21 @@ from wradlib import dp
 @pytest.fixture(params=['lstsq', 'cov', 'matrix_inv',
                         'lanczos_conv', 'lanczos_dot'])
 def derivation_method(request):
+    return request.param
+
+
+@pytest.fixture(params=[11, 13, 15])
+def window(request):
+    return request.param
+
+
+@pytest.fixture(params=[True, False])
+def copy(request):
+    return request.param
+
+
+@pytest.fixture(params=[3, 5])
+def ndespeckle(request):
     return request.param
 
 
@@ -42,37 +58,133 @@ class TestKDPFromPHIDP:
     phidp_true_nan = phidp_true.copy()
     phidp_true_nan[:, window:-1:10] = np.nan
 
-    def test_process_raw_phidp_vulpiani(self):
-        dp.process_raw_phidp_vulpiani(self.phidp_raw0, dr=self.dr,
-                                      copy=True)
-        dp.process_raw_phidp_vulpiani(self.phidp_raw0, dr=self.dr)
+    def test_process_raw_phidp_vulpiani(self, derivation_method, window, copy):
+        if (derivation_method == 'lstsq' and sys.platform.startswith("win")):
+            pytest.skip("fails on windows due to MKL issue")
+        # Todo: move data setup into fixture
+        np.random.seed(42000)
+        # Synthetic truth
+        dr = 0.5
+        r = np.arange(0, 500, dr)
+
+        kdp_true0 = np.sin(0.3 * r)
+        kdp_true0[kdp_true0 < 0] = 0.
+        phidp_true0 = 2 * integrate.cumtrapz(kdp_true0, axis=-1,
+                                             initial=0, dx=dr)
+        fillval = phidp_true0[200]
+        phidp_true0 = np.concatenate((phidp_true0[:200], np.ones(20) *
+                                      fillval,
+                                      phidp_true0[200:]))
+        phidp_true0 = np.stack([phidp_true0, phidp_true0], axis=0)
+
+        # first, no noise, no folding, no gaps, offset
+        phidp_raw0 = phidp_true0.copy() + 30.
+
+        # second, noise, no folding, no gaps
+        phidp_raw1 = phidp_raw0.copy()
+        phidp_raw1 += np.random.uniform(-2, 2, phidp_raw1.shape[-1])
+
+        # third, noise, folding, no gaps
+        phidp_raw2 = phidp_raw1.copy()
+        phidp_raw2[phidp_raw2 > 180] -= 360
+
+        # fourth, noise, folding, large gap
+        phidp_raw3 = phidp_raw2.copy()
+        phidp_raw3[:, 200:220] = np.nan
+
+        # fifth, noise, folding, large gap, small gaps
+        phidp_raw4 = phidp_raw3.copy()
+        gaps = np.random.uniform(0, phidp_raw4.shape[-1], 50).astype("int")
+        phidp_raw4[:, gaps] = np.nan
+
+        in0 = phidp_raw0.copy()
+        out0 = dp.process_raw_phidp_vulpiani(in0, dr=dr,
+                                             copy=copy,
+                                             winlen=window,
+                                             method=derivation_method,
+                                             pad_mode='reflect',
+                                             pad_kwargs={'reflect_type': 'odd'},
+                                             niter=1,
+                                             )
+        np.testing.assert_array_equal(in0, phidp_raw0)
+        np.testing.assert_allclose(out0[0], phidp_true0, atol=0.6, rtol=0.02)
+
+        out1 = dp.process_raw_phidp_vulpiani(phidp_raw1.copy(), dr=dr,
+                                             copy=copy,
+                                             winlen=window,
+                                             method=derivation_method,
+                                             pad_mode='reflect',
+                                             pad_kwargs={'reflect_type': 'even'},
+                                             niter=1,
+                                             )
+        np.testing.assert_allclose(out1[0], phidp_true0, atol=0.8, rtol=0.02)
+
+        out2 = dp.process_raw_phidp_vulpiani(phidp_raw1.copy(), dr=dr,
+                                             copy=copy,
+                                             winlen=window,
+                                             method=derivation_method,
+                                             pad_mode='reflect',
+                                             pad_kwargs={'reflect_type': 'even'},
+                                             niter=1,
+                                             )
+        np.testing.assert_allclose(out2[0], phidp_true0, atol=0.8, rtol=0.02)
+
+        out3 = dp.process_raw_phidp_vulpiani(phidp_raw1.copy(), dr=dr,
+                                             copy=copy,
+                                             winlen=window,
+                                             method=derivation_method,
+                                             pad_mode='reflect',
+                                             pad_kwargs={'reflect_type': 'even'},
+                                             niter=1,
+                                             )
+        np.testing.assert_allclose(out3[0], phidp_true0, atol=0.8, rtol=0.02)
+
+        in4 = phidp_raw4.copy()
+        out4 = dp.process_raw_phidp_vulpiani(in4, dr=dr,
+                                             copy=copy,
+                                             winlen=window,
+                                             method=derivation_method,
+                                             pad_mode='reflect',
+                                             pad_kwargs={'reflect_type': 'even'},
+                                             niter=1,
+                                             )
+        np.testing.assert_allclose(out4[0], phidp_true0, atol=1.0, rtol=0.02)
+
+        # check copy
+        if copy:
+            np.testing.assert_array_equal(in4, phidp_raw4)
+        else:
+            assert not np.array_equal(in4, phidp_raw4)
 
     def test_kdp_from_phidp(self, derivation_method):
         if (derivation_method == 'lstsq' and sys.platform.startswith("win")):
             pytest.skip("fails on windows due to MKL issue")
 
+        window = 7
+
         # compare with true kdp
         out = dp.kdp_from_phidp(self.phidp_true, dr=self.dr,
-                                method=derivation_method)
+                                method=derivation_method, winlen=window)
         outx = out[:, self.pad:-self.pad]
         res = self.kdp_true[:, self.pad:-self.pad]
         np.testing.assert_array_almost_equal(outx, res, decimal=4)
 
         # intercompare with lanczos method with NaN handling
         out0 = dp.kdp_from_phidp(self.phidp_true, dr=self.dr,
-                                 method='lanczos_conv')
+                                 method='lanczos_conv', winlen=window)
         np.testing.assert_array_almost_equal(out, out0, decimal=4)
 
         # intercompare with lanczos method without NaN-handling
         out0 = dp.kdp_from_phidp(self.phidp_true_nan, dr=self.dr,
-                                 method='lanczos_conv', skipna=False)
+                                 method='lanczos_conv', skipna=False,
+                                 winlen=window)
         outx = dp.kdp_from_phidp(self.phidp_true_nan, dr=self.dr,
-                                 method=derivation_method, skipna=False)
+                                 method=derivation_method, skipna=False,
+                                 winlen=window)
         np.testing.assert_array_almost_equal(outx, out0, decimal=4)
 
-    def test_linear_despeckle(self):
-        dp.linear_despeckle(self.phidp_raw0, ndespeckle=3, copy=True)
-        dp.linear_despeckle(self.phidp_raw0, ndespeckle=5, copy=True)
+    def test_linear_despeckle(self, ndespeckle):
+        dp.linear_despeckle(self.phidp_raw0, ndespeckle=ndespeckle, copy=True)
 
     def test_unfold_phi_naive(self):
         dp.unfold_phi_naive(self.phidp_raw0, self.rho)
