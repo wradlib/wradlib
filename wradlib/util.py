@@ -16,10 +16,17 @@ attributable to the other modules
 
    {}
 """
-__all__ = ['from_to', 'filter_window_polar', 'filter_window_cartesian',
-           'find_bbox_indices', 'get_raster_origin', 'calculate_polynomial',
-           'derivate', 'despeckle']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "from_to",
+    "filter_window_polar",
+    "filter_window_cartesian",
+    "find_bbox_indices",
+    "get_raster_origin",
+    "calculate_polynomial",
+    "derivate",
+    "despeckle",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import importlib
 import datetime as dt
@@ -33,12 +40,15 @@ from scipy import ndimage, signal
 from wradlib import version
 
 
-@deprecation.deprecated(deprecated_in="1.6", removed_in="2.0",
-                        current_version=version.version,
-                        details="Use `wradlib.georef.maximum_intensity_"
-                                "projection` instead.")
+@deprecation.deprecated(
+    deprecated_in="1.6",
+    removed_in="2.0",
+    current_version=version.version,
+    details="Use `wradlib.georef.maximum_intensity_" "projection` instead.",
+)
 def maximum_intensity_projection(*args, **kwargs):
     from wradlib.georef import polar
+
     return polar.maximum_intensity_projection(*args, **kwargs)
 
 
@@ -55,15 +65,20 @@ class OptionalModuleStub(object):
         self.name = name
 
     def __getattr__(self, name):
-        link = 'https://wradlib.github.io/wradlib-docs/latest/' \
-               'gettingstarted.html#optional-dependencies'
-        raise AttributeError('Module "{0}" is not installed.\n\n'
-                             'You tried to access function/module/attribute '
-                             '"{1}"\nfrom module "{0}".\nThis module is '
-                             'optional right now in wradlib.\nYou need to '
-                             'separately install this dependency.\n'
-                             'Please refer to {2}\nfor further instructions.'.
-                             format(self.name, name, link))
+        link = (
+            "https://wradlib.github.io/wradlib-docs/latest/"
+            "gettingstarted.html#optional-dependencies"
+        )
+        raise AttributeError(
+            'Module "{0}" is not installed.\n\n'
+            "You tried to access function/module/attribute "
+            '"{1}"\nfrom module "{0}".\nThis module is '
+            "optional right now in wradlib.\nYou need to "
+            "separately install this dependency.\n"
+            "Please refer to {2}\nfor further instructions.".format(
+                self.name, name, link
+            )
+        )
 
 
 def import_optional(module):
@@ -149,7 +164,9 @@ def from_to(tstart, tend, tdelta):
     if not type(tend) == dt.datetime:
         tend = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
     tdelta = dt.timedelta(seconds=tdelta)
-    tsteps = [tstart, ]
+    tsteps = [
+        tstart,
+    ]
     tmptime = tstart
     while True:
         tmptime = tmptime + tdelta
@@ -174,7 +191,7 @@ def _idvalid(data, isinvalid=None, minval=None, maxval=None):
 
     """
     if isinvalid is None:
-        isinvalid = [-99., 99, -9999., -9999]
+        isinvalid = [-99.0, 99, -9999.0, -9999]
     ix = np.ma.masked_invalid(data).mask
     for el in isinvalid:
         ix = np.logical_or(ix, np.ma.masked_where(data == el, data).mask)
@@ -226,8 +243,7 @@ def gridaspoints(*arrs):
     # more dimensions]. Therefore np.meshgrid must be fed the axis coordinates
     # in shape order (z,y,x) and the result needs to be reversed in order
     # for everything to work out.
-    grid = tuple([dim.ravel()
-                  for dim in reversed(np.meshgrid(*arrs, indexing='ij'))])
+    grid = tuple([dim.ravel() for dim in reversed(np.meshgrid(*arrs, indexing="ij"))])
     return np.vstack(grid).transpose()
 
 
@@ -280,10 +296,12 @@ def trapezoid(data, x1, x2, x3, x4):
     d = np.ones(np.shape(data))
     d[np.logical_or(data <= x1, data >= x4)] = 0
     d[np.logical_and(data >= x2, data <= x3)] = 1
-    d[np.logical_and(data > x1, data < x2)] = \
-        (data[np.logical_and(data > x1, data < x2)] - x1) / float((x2 - x1))
-    d[np.logical_and(data > x3, data < x4)] = \
-        (x4 - data[np.logical_and(data > x3, data < x4)]) / float((x4 - x3))
+    d[np.logical_and(data > x1, data < x2)] = (
+        data[np.logical_and(data > x1, data < x2)] - x1
+    ) / float((x2 - x1))
+    d[np.logical_and(data > x3, data < x4)] = (
+        x4 - data[np.logical_and(data > x3, data < x4)]
+    ) / float((x4 - x3))
 
     d[np.isnan(data)] = np.nan
 
@@ -335,7 +353,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
         imin2 = max(imin - sr, 0)
         imax2 = min(imax + sr, nbins)
         temp = img[:, imin2:imax2]
-        temp = fun(temp, size=2 * sa + 1, mode='wrap', axis=0)
+        temp = fun(temp, size=2 * sa + 1, mode="wrap", axis=0)
         temp = fun(temp, size=2 * sr + 1, axis=1)
         imin3 = imin - imin2
         imax3 = imin3 + imax - imin
@@ -410,17 +428,17 @@ def roll2d_polar(img, shift=1, axis=0):
     if axis == 0:
         if shift > 0:
             out[shift:, :] = img[:-shift, :]
-            out[:shift, :] = img[n - shift:, :]
+            out[:shift, :] = img[n - shift :, :]
         else:
             out[:shift, :] = img[-shift:, :]
-            out[n + shift:, :] = img[:-shift:, :]
+            out[n + shift :, :] = img[:-shift:, :]
     else:
         if shift > 0:
             out[:, shift:] = img[:, :-shift]
             out[:, :shift] = np.nan
         else:
             out[:, :shift] = img[:, -shift:]
-            out[:, n + shift:] = np.nan
+            out[:, n + shift :] = np.nan
     return out
 
 
@@ -470,7 +488,7 @@ def half_power_radius(r, bwhalf):
     rhalf = half_power_radius(r,bwhalf)
     """
 
-    rhalf = (r * np.deg2rad(bwhalf)) / 2.
+    rhalf = (r * np.deg2rad(bwhalf)) / 2.0
 
     return rhalf
 
@@ -489,7 +507,7 @@ def get_raster_origin(coords):
         'lower' or 'upper'
 
     """
-    return 'lower' if (coords[1, 1] - coords[0, 0])[1] > 0 else 'upper'
+    return "lower" if (coords[1, 1] - coords[0, 0])[1] > 0 else "upper"
 
 
 def find_bbox_indices(coords, bbox):
@@ -517,14 +535,10 @@ def find_bbox_indices(coords, bbox):
     y_sort = np.argsort(coords[:, 0, 1])
 
     # find indices in sorted arrays
-    llx = np.searchsorted(coords[0, :, 0], bbox[0], side='left',
-                          sorter=x_sort)
-    urx = np.searchsorted(coords[0, :, 0], bbox[2], side='right',
-                          sorter=x_sort)
-    lly = np.searchsorted(coords[:, 0, 1], bbox[1], side='left',
-                          sorter=y_sort)
-    ury = np.searchsorted(coords[:, 0, 1], bbox[3], side='right',
-                          sorter=y_sort)
+    llx = np.searchsorted(coords[0, :, 0], bbox[0], side="left", sorter=x_sort)
+    urx = np.searchsorted(coords[0, :, 0], bbox[2], side="right", sorter=x_sort)
+    lly = np.searchsorted(coords[:, 0, 1], bbox[1], side="left", sorter=y_sort)
+    ury = np.searchsorted(coords[:, 0, 1], bbox[3], side="right", sorter=y_sort)
 
     # get indices in original array
     if llx < len(x_sort):
@@ -539,7 +553,7 @@ def find_bbox_indices(coords, bbox):
     # check at boundaries
     if llx:
         llx -= 1
-    if get_raster_origin(coords) == 'lower':
+    if get_raster_origin(coords) == "lower":
         if lly:
             lly -= 1
     else:
@@ -552,8 +566,8 @@ def find_bbox_indices(coords, bbox):
 
 
 def has_geos():
-    pnt1 = ogr.CreateGeometryFromWkt('POINT(10 20)')
-    pnt2 = ogr.CreateGeometryFromWkt('POINT(30 20)')
+    pnt1 = ogr.CreateGeometryFromWkt("POINT(10 20)")
+    pnt2 = ogr.CreateGeometryFromWkt("POINT(30 20)")
     ogrex = ogr.GetUseExceptions()
     gdalex = gdal.GetUseExceptions()
     gdal.DontUseExceptions()
@@ -567,20 +581,22 @@ def has_geos():
 
 
 def get_wradlib_data_path():
-    wrl_data_path = os.environ.get('WRADLIB_DATA', None)
+    wrl_data_path = os.environ.get("WRADLIB_DATA", None)
     if wrl_data_path is None:
         raise EnvironmentError("'WRADLIB_DATA' environment variable not set")
     if not os.path.isdir(wrl_data_path):
-        raise EnvironmentError("'WRADLIB_DATA' path '{0}' "
-                               "does not exist".format(wrl_data_path))
+        raise EnvironmentError(
+            "'WRADLIB_DATA' path '{0}' " "does not exist".format(wrl_data_path)
+        )
     return wrl_data_path
 
 
 def get_wradlib_data_file(relfile):
     data_file = os.path.abspath(os.path.join(get_wradlib_data_path(), relfile))
     if not os.path.exists(data_file):
-        raise EnvironmentError("WRADLIB_DATA file '{0}' "
-                               "does not exist".format(data_file))
+        raise EnvironmentError(
+            "WRADLIB_DATA file '{0}' " "does not exist".format(data_file)
+        )
     return data_file
 
 
@@ -607,7 +623,7 @@ def calculate_polynomial(data, w):
     """
     poly = np.zeros_like(data)
     for i, c in enumerate(w):
-        poly += c * data**i
+        poly += c * data ** i
     return poly
 
 
@@ -628,7 +644,7 @@ def gradient_along_axis(x):
     newshape[axis] = 1
     diff_begin = (x[..., 1] - x[..., 0]).reshape(newshape)
     diff_end = (x[..., -1] - x[..., -2]).reshape(newshape)
-    diffs = ((x - np.roll(x, 2, axis)) / 2.)
+    diffs = (x - np.roll(x, 2, axis)) / 2.0
     diffs = np.append(diffs[..., 2:], diff_end, axis=axis)
     return np.insert(diffs, [0], diff_begin, axis=axis)
 
@@ -639,26 +655,25 @@ def gradient_from_smoothed(x, n=5):
     return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
 
 
-def _pad_array(data, pad, mode='reflect', **kwargs):
+def _pad_array(data, pad, mode="reflect", **kwargs):
     """Returns array with padding added along last dimension.
     """
     pad_width = [(0,)] * (data.ndim - 1) + [(pad,)]
     if mode in ["maximum", "mean", "median", "minimum"]:
-        kwargs['stat_length'] = kwargs.pop('stat_length', pad)
+        kwargs["stat_length"] = kwargs.pop("stat_length", pad)
     data = np.pad(data, pad_width, mode=mode, **kwargs)
     return data
 
 
 def _rolling_dim(data, window):
-    """Return array with rolling dimension of window-length added at the end..
+    """Return array with rolling dimension of window-length added at the end.
     """
     shape = data.shape[:-1] + (data.shape[-1] - window + 1, window)
     strides = data.strides + (data.strides[-1],)
-    return np.lib.stride_tricks.as_strided(data, shape=shape,
-                                           strides=strides)
+    return np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
 
 
-def _linregress_1d(rhs, method='lstsq'):
+def _linregress_1d(rhs, method="lstsq"):
     """Calculates slope by means of linear regression on last dimension of rhs.
 
     Calculates lhs from size of last dimension of rhs.
@@ -670,21 +685,21 @@ def _linregress_1d(rhs, method='lstsq'):
 
     rhs = rhs.reshape((-1, rhs.shape[-1]))
 
-    if 'cov' in method:
+    if "cov" in method:
         lhs = np.arange(rhs.shape[-1])
-        if 'nan' in method:
+        if "nan" in method:
             idx = np.argsort(rhs, axis=-1)
             rhs = np.sort(rhs, axis=-1)
             lhs = lhs[idx]
 
             # special treatment for wradlib, use fast method by slicing NaN's
-            if 'iter' in method:
+            if "iter" in method:
                 nan = np.argmax(np.isnan(rhs), axis=-1)
                 unique = np.unique(nan)
                 if len(unique) == 1:
-                    rhs = rhs[..., :unique[0]]
-                    lhs = lhs[..., :unique[0]]
-                    method = 'cov'
+                    rhs = rhs[..., : unique[0]]
+                    lhs = lhs[..., : unique[0]]
+                    method = "cov"
         else:
             lhs = np.broadcast_to(lhs, (rhs.shape))
         lhs = lhs.T
@@ -693,17 +708,17 @@ def _linregress_1d(rhs, method='lstsq'):
 
     rhs = rhs.T
 
-    if method == 'lstsq':
+    if method == "lstsq":
         out = np.linalg.lstsq(lhs, rhs, rcond=None)[0][0]
-    elif method == 'lstsq_nan':
+    elif method == "lstsq_nan":
         out = np.apply_along_axis(_nan_lstsq, 0, rhs, lhs)
-    elif method == 'cov':
+    elif method == "cov":
         out = _cov(lhs, rhs)
-    elif 'cov_nan' in method:
+    elif "cov_nan" in method:
         out = _nan_cov(lhs, rhs)
-    elif method == 'matrix_inv':
+    elif method == "matrix_inv":
         out = _matrix_inv(lhs, rhs)
-    elif method == 'matrix_inv_nan':
+    elif method == "matrix_inv_nan":
         out = np.apply_along_axis(_nan_matrix_inv, 0, rhs, lhs)
     else:
         raise ValueError(f"wradlib: unknown method value {method}")
@@ -742,8 +757,9 @@ def _nan_cov(x, y):
     x = np.ma.masked_array(x, mask=np.ma.getmask(y))
 
     # calculate covariances
-    cov = (np.ma.sum((x - x.mean(axis=0)) * (y - y.mean(axis=0)),
-                     axis=0) / y.count(axis=0))
+    cov = np.ma.sum((x - x.mean(axis=0)) * (y - y.mean(axis=0)), axis=0) / y.count(
+        axis=0
+    )
     # calculate slope
     out = cov / (x.std(axis=0) ** 2)
     return out
@@ -753,10 +769,9 @@ def _cov(x, y):
     """Calculate slope using covariances.
     """
     # calculate covariances
-    cov = (np.sum((x - x.mean(axis=0)) * (y - y.mean(axis=0)), axis=0) /
-           y.shape[0])
+    cov = np.sum((x - x.mean(axis=0)) * (y - y.mean(axis=0)), axis=0) / y.shape[0]
     # calculate slope
-    out = cov / (x.std(axis=0)**2)
+    out = cov / (x.std(axis=0) ** 2)
     return out
 
 
@@ -764,13 +779,13 @@ def _lanczos_differentiator(winlen):
     """Returns Lanczos Differentiator.
     """
     m = (winlen - 1) / 2
-    denom = m * (m + 1.) * (2 * m + 1.)
+    denom = m * (m + 1.0) * (2 * m + 1.0)
     k = np.arange(1, m + 1)
     f = 3 * k / denom
     return np.r_[f[::-1], [0], -f]
 
 
-def derivate(data, winlen=7, method='lanczos_conv', skipna=False, **kwargs):
+def derivate(data, winlen=7, method="lanczos_conv", skipna=False, **kwargs):
     """Calculates derivative of data using window of length winlen.
 
     In normal operation the method ('lanczos_conv') uses convolution
@@ -794,8 +809,9 @@ lanczos-low-noise-differentiators/>`_.
     linear regression by method2 (default to `cov_nan`) where enough valid
     neighbouring data is available.
 
-    Before applying the actual derivation calculation the data is padded along
-    the derivation dimension. Padding can be parametrized using kwargs.
+    Before applying the actual derivation calculation the data is padded with
+    `mode='reflect'` by default along the derivation dimension. Padding can be
+    parametrized using kwargs.
 
     Parameters
     ----------
@@ -808,16 +824,17 @@ lanczos-low-noise-differentiators/>`_.
         Defaults to 'lanczos_conv'. Can take one of 'lanczos_dot', 'lstsq',
         'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
-        Defaults to False. It true, treat NaN results by applying method2.
+        Defaults to False. If True, treat NaN results by applying method2.
 
     Keyword Arguments
     -----------------
     method2 : str
         Defaults to '_nan' methods.
-    min_period : int
-        Defaults to winlen // 2.
+    min_periods : int
+        Minimum number of valid values in moving window for linear regression.
+        Defaults to winlen // 2 + 1.
     pad_mode : str
-        Defaults to 'edge'. See :func:`numpy:numpy.pad`.
+        Defaults to `reflect`. See :func:`numpy:numpy.pad`.
     pad_kwargs : dict
         Keyword arguments for padding, see :func:`numpy:numpy.pad`
 
@@ -826,83 +843,79 @@ lanczos-low-noise-differentiators/>`_.
     out : :class:`numpy:numpy.ndarray`
         array of derivates with the same shape as data
     """
-    assert (winlen % 2) == 1, \
-        "Window size N for function kdp_from_phidp must be an odd number."
-
-    if method not in ['lanczos_conv', 'lanczos_dot', 'lstsq', 'cov',
-                      'cov_nan', 'matrix_inv']:
-        raise ValueError(f"wradlib: unknown method value {method}")
+    assert (
+        winlen % 2
+    ) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+    # Make really sure winlen is an integer
+    winlen = int(winlen)
 
     shape = data.shape
     data = data.reshape((-1, shape[-1]))
 
-    # Make really sure winlen is an integer
-    winlen = int(winlen)
-
-    # append padding on derivation dimension
+    # pad data using pad_mode on derivation dimension
     pad = winlen // 2
-
-    # pad data using pad_mode
-    pad_kwargs = kwargs.pop('pad_kwargs', {})
-    pad_kwargs['mode'] = kwargs.pop('pad_mode', 'reflect')
+    pad_kwargs = kwargs.pop("pad_kwargs", {})
+    pad_kwargs["mode"] = kwargs.pop("pad_mode", "reflect")
     data_pad = _pad_array(data, pad, **pad_kwargs)
-
-    # calculate derivation using winlen and method
-    if 'lanczos' in method:
-        win = _lanczos_differentiator(winlen)
+    data_roll = None
 
     # calculate derivative
-    if method == 'lanczos_conv':
+    if method == "lanczos_conv":
         # we use constant nan padding here,
         # more sophisticated padding was already done
-        out = ndimage.filters.convolve1d(data_pad, win, axis=-1,
-                                         mode='constant')
+        out = ndimage.convolve1d(
+            data_pad, _lanczos_differentiator(winlen), axis=-1, mode="constant"
+        )
+        # strip padding for convolution method
+        out = out[..., pad:-pad]
+    elif method == "finite_difference_vulpiani":
+        out = (data_pad[..., winlen - 1 :] - data_pad[..., : shape[-1]]) / winlen
     else:
         data_roll = _rolling_dim(data_pad, winlen)
-        if method == 'lanczos_dot':
-            out = np.dot(data_roll, win * -1)
-        if method in ['lstsq', 'cov', 'cov_nan', 'matrix_inv']:
+        if method == "lanczos_dot":
+            out = np.dot(data_roll, _lanczos_differentiator(winlen) * -1)
+        elif method in ["lstsq", "cov", "cov_nan", "matrix_inv"]:
             out = _linregress_1d(data_roll, method=method)
-
-    # strip padding for convolution method
-    if method == 'lanczos_conv':
-        out = out[..., pad:-pad]
+        else:
+            raise ValueError(f"wradlib: unknown method value {method}")
 
     # NaN treatment
     if skipna:
-        min_period = kwargs.pop('min_period', pad)
-        assert min_period >= 1, "min_period need to be >= 1."
-
-        # automatically select method2 if not given
-        if method in ['lstsq', 'matrix_inv']:
-            m2 = method + '_nan'
-        else:
-            m2 = 'cov_nan_iter'
-        method2 = kwargs.pop('method2', m2)
-
         # find remaining NaN values with valid neighbours
         invalid = np.isnan(out)
         if np.any(invalid):
-            data = _rolling_dim(data_pad, winlen)
-            data = data.reshape((-1, data.shape[-1]))
+            min_periods = kwargs.pop("min_periods", winlen // 2 + 1)
+            assert min_periods >= 2, "min_periods need to be >= 2."
+
+            # automatically select method2 if not given
+            if method in ["lstsq", "matrix_inv"]:
+                m2 = method + "_nan"
+            else:
+                m2 = "cov_nan_iter"
+            method2 = kwargs.pop("method2", m2)
+
+            # bring data into needed shape
+            data_roll = (
+                _rolling_dim(data_pad, winlen) if data_roll is None else data_roll
+            )
+            data_roll = data_roll.reshape((-1, data_roll.shape[-1]))
 
             # internal speed up by iterating over same NaN counts and using
             # faster calculation method
-            if method2 == 'cov_nan_iter':
-                for n in range(min_period + 1, winlen):
-                    valid = np.count_nonzero(~np.isnan(data), axis=-1) == n
-                    recalc = (valid & invalid.reshape(-1))
+            if method2 == "cov_nan_iter":
+                for n in range(min_periods, winlen):
+                    valid = np.count_nonzero(~np.isnan(data_roll), axis=-1) == n
+                    recalc = valid & invalid.reshape(-1)
                     if np.any(recalc):
-                        out.flat[recalc] = _linregress_1d(data[recalc],
-                                                          method=method2)
+                        out.flat[recalc] = _linregress_1d(
+                            data_roll[recalc], method=method2
+                        )
             else:
-                valid = np.count_nonzero(~np.isnan(data),
-                                         axis=-1) > min_period
-                recalc = (valid & invalid.reshape(-1))
+                valid = np.count_nonzero(~np.isnan(data_roll), axis=-1) >= min_periods
+                recalc = valid & invalid.reshape(-1)
                 # and interpolate using polyfit_1d -> method2
                 if np.any(recalc):
-                    out.flat[recalc] = _linregress_1d(data[recalc],
-                                                      method=method2)
+                    out.flat[recalc] = _linregress_1d(data_roll[recalc], method=method2)
 
     return out.reshape(shape)
 
@@ -913,7 +926,7 @@ def despeckle(data, n=3, copy=False):
     Warning
     -------
     This function changes the original input array if argument copy is set to
-    default (False).
+    False (default).
 
     Parameters
     ----------
@@ -927,16 +940,15 @@ def despeckle(data, n=3, copy=False):
         If True, the input array will remain unchanged.
 
     """
-    assert n in (3, 5), \
-        "Window size n for function despeckle must be 3 or 5."
+    assert n in (3, 5), "Window size n for function despeckle must be 3 or 5."
     if copy:
         data = data.copy()
 
     pad = n // 2
 
     # pad with NaN
-    data0 = _pad_array(data, pad, mode='constant')
-    # append ndespeckel count last dimension
+    data0 = _pad_array(data, pad, mode="constant")
+    # append n count last dimension
     data0 = _rolling_dim(data0, data.shape[-1])
     # count NaŃ's and find speckle
     nans = np.count_nonzero(np.isnan(data0), axis=-2) == (n - 1)
@@ -946,5 +958,5 @@ def despeckle(data, n=3, copy=False):
     return data
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <util> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <util> as main...")

@@ -76,7 +76,8 @@ matrix:
 install:
     # test PEP8 compliance first to speed up
     - pip install flake8
-    - flake8 .
+    # assume black standards
+    - flake8 --max-line-length=88 --extend-ignore=E203 .
     - deactivate
     # install build environment
     - source scripts/install.sh

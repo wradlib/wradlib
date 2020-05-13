@@ -45,20 +45,27 @@ all input arrays.
 
    {}
 """
-__all__ = ['process_raw_phidp_vulpiani', 'kdp_from_phidp',
-           'unfold_phi_vulpiani', 'unfold_phi', 'linear_despeckle', 'texture',
-           'depolarization']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "process_raw_phidp_vulpiani",
+    "kdp_from_phidp",
+    "unfold_phi_vulpiani",
+    "unfold_phi",
+    "linear_despeckle",
+    "texture",
+    "depolarization",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import deprecation
 import numpy as np
-from scipy import interpolate
+from scipy import interpolate, integrate
 
 from wradlib import trafo, util, version
 
 
-def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
-                               niter=2, copy=False, **kwargs):
+def process_raw_phidp_vulpiani(
+    phidp, dr, ndespeckle=5, winlen=7, niter=2, copy=False, **kwargs
+):
     """Establish consistent :math:`Phi_{DP}` profiles from raw data.
 
     This approach is based on :cite:`Vulpiani2012` and involves a
@@ -75,13 +82,13 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
 
     Parameters
     ----------
-    phidp : array
+    phidp : :class:`numpy:numpy.ndarray`
         array of shape (n azimuth angles, n range gates)
     dr : float
         gate length in km
     ndespeckle : int
-        ``ndespeckle`` parameter of :func:`~wradlib.dp.linear_despeckle`
-    winlen : integer
+        ``ndespeckle`` parameter of :func:`~wradlib.util.despeckle`
+    winlen : int
         ``winlen`` parameter of :func:`~wradlib.dp.kdp_from_phidp`
     niter : int
         Number of iterations in which :math:`Phi_{DP}` is retrieved from
@@ -89,13 +96,22 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
     copy : bool
         if True, the original :math:`Phi_{DP}` array will remain unchanged
 
+    Keyword Arguments
+    -----------------
+    th1 : float
+        Threshold th1 from above cited paper.
+    th2 : float
+        Threshold th2 from above cited paper.
+    th3 : float
+        Threshold th3 from above cited paper.
+
     Returns
     -------
     phidp : :class:`numpy:numpy.ndarray`
-        array of shape (n azimuth angles, n range gates) reconstructed
+        array of shape (..., , n azimuth angles, n range gates) reconstructed
         :math:`Phi_{DP}`
     kdp : :class:`numpy:numpy.ndarray`
-        array of shape (n azimuth angles, n range gates)
+        array of shape (..., , n azimuth angles, n range gates)
         ``kdp`` estimate corresponding to ``phidp`` output
 
     Examples
@@ -107,37 +123,54 @@ def process_raw_phidp_vulpiani(phidp, dr, ndespeckle=5, winlen=7,
     if copy:
         phidp = phidp.copy()
 
+    # get thresholds
+    th1 = kwargs.pop("th1", -2)
+    th2 = kwargs.pop("th2", 20)
+    th3 = kwargs.pop("th3", -20)
+
+    method = kwargs.pop("method", None)
+
     # despeckle
     phidp = util.despeckle(phidp, ndespeckle)
-    # kdp retrieval first guess
-    kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
-    # remove extreme values
-    kdp[kdp > 20] = 0
-    kdp[np.logical_and(kdp < -2, kdp > -20)] = 0
 
-    # unfold phidp
-    phidp = unfold_phi_vulpiani(phidp, kdp, winlen=winlen)
+    # kdp retrieval first guess
+    # use finite difference scheme as written in the cited paper
+    kdp = kdp_from_phidp(
+        phidp,
+        dr=dr,
+        winlen=winlen,
+        method="finite_difference_vulpiani",
+        skipna=False,
+        **kwargs
+    )
+
+    # try unfolding phidp
+    phidp = unfold_phi_vulpiani(phidp, kdp, th=th3, winlen=winlen)
 
     # clean up unfolded PhiDP
     phidp[phidp > 360] = np.nan
 
     # kdp retrieval second guess
+    # re-add given method to kwargs
+    if method is not None:
+        kwargs["method"] = method
+    # use given (fast) derivation methods
     kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
-    kdp = _fill_sweep(kdp)
 
-    # remove remaining extreme values
-    kdp[kdp > 20] = 0
-    kdp[kdp < -2] = 0
+    # find kdp values with no physical meaning like noise, backscatter differential
+    # phase, nonuniform beamfilling or residual artifacts using th1 and th2
+    mask = (kdp <= th1) | (kdp >= th2)
+    kdp[mask] = 0
+
+    # fill remaining NaN with zeros
+    kdp = np.nan_to_num(kdp)
 
     # start the actual phidp/kdp iteration
     for i in range(niter):
         # phidp from kdp through integration
-        phidp = 2 * np.cumsum(kdp, axis=-1) * dr
+        phidp = 2 * integrate.cumtrapz(kdp, dx=dr, initial=0.0, axis=-1)
         # kdp from phidp by convolution
         kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
-        # convert all NaNs to zeros (normally, this line can be assumed
-        # to be redundant)
-        kdp = _fill_sweep(kdp)
 
     return phidp, kdp
 
@@ -176,30 +209,25 @@ def unfold_phi_vulpiani(phidp, kdp, th=-20, winlen=7):
     mask = kdp < th
     if np.any(mask):
         # setup index on last dimension
-        idx = np.arange(phidp.shape[-1])
+        idx = np.arange(phidp.shape[-1])[np.newaxis, :]
         # set last bin to 1 to get that index in case of no kdp < th
         mask[:, -1] = 1
-        # todo: check for better performance of NaN handling
         # find first occurrence of kdp < th in each ray
-        amax = np.nanargmax(mask, axis=-1)
-
+        amax = np.argmax(mask, axis=-1)[:, np.newaxis]
         # get maximum phase in each ray
-        phimax = np.nanmax(phidp, axis=-1)
-
+        phimax = np.nanmax(phidp, axis=-1)[:, np.newaxis]
         # retrieve folding location mask and unfold
-        foldmask = np.where(idx[np.newaxis, :] > amax[:, np.newaxis])
+        foldmask = np.where(idx > amax)
         phidp[foldmask] += 360
-
         # retrieve checkmask for remaining "over" unfolds and fix
-        checkmask = np.where((idx[np.newaxis, :] <=
-                              amax[:, np.newaxis] + winlen) &
-                             (phidp > (phimax[:, np.newaxis] + 180.)))
+        # phimax + 180 is chosen, because it's half of the max phase wrap
+        checkmask = np.where((idx <= amax + winlen) & (phidp > (phimax + 180.0)))
         phidp[checkmask] -= 360
 
     return phidp.reshape(shape)
 
 
-def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
+def _fill_sweep(dat, kind="nan_to_num", fill_value=0.0):
     """Fills missing data in a 1D profile.
 
     Parameters
@@ -225,17 +253,23 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.):
         invalid = np.isnan(dat[beam])
         validx = np.where(~invalid)[0]
         if len(validx) < 2:
-            dat[beam, invalid] = 0.
+            dat[beam, invalid] = 0.0
             continue
-        f = interpolate.interp1d(validx, dat[beam, validx], kind=kind,
-                                 bounds_error=False, fill_value=fill_value)
+        f = interpolate.interp1d(
+            validx,
+            dat[beam, validx],
+            kind=kind,
+            bounds_error=False,
+            fill_value=fill_value,
+        )
         invalidx = np.where(invalid)[0]
         dat[beam, invalidx] = f(invalidx)
     return dat.reshape(shape)
 
 
-def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
-                   **kwargs):
+def kdp_from_phidp(
+    phidp, winlen=7, dr=1.0, method="lanczos_conv", skipna=True, **kwargs
+):
     """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
 
     In normal operation the method uses convolution to estimate :math:`K_{DP}`
@@ -276,7 +310,13 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
         'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
         Defaults to True. Local Linear regression removing NaN values using
-        valid neighbors > winlen // 2.
+        valid neighbors > min_periods
+
+    Keyword Arguments
+    -----------------
+    min_periods : int
+        Minimum number of valid values in moving window for linear regression.
+        Defaults to winlen // 2 + 1.
 
     Returns
     -------
@@ -303,9 +343,23 @@ def kdp_from_phidp(phidp, winlen=7, dr=1., method='lanczos_conv', skipna=True,
     >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> pl.show()
     """
-    pad_mode = kwargs.pop('pad_mode', 'reflect')
-    return util.derivate(phidp, winlen=winlen, skipna=skipna,
-                         method=method, pad_mode=pad_mode, **kwargs) / 2 / dr
+    pad_mode = kwargs.pop("pad_mode", None)
+    if pad_mode is None:
+        pad_mode = "reflect"
+    min_periods = kwargs.pop("min_periods", winlen // 2 + 1)
+    return (
+        util.derivate(
+            phidp,
+            winlen=winlen,
+            skipna=skipna,
+            method=method,
+            pad_mode=pad_mode,
+            min_periods=min_periods,
+            **kwargs
+        )
+        / 2
+        / dr
+    )
 
 
 def unfold_phi(phidp, rho, width=5, copy=False):
@@ -348,13 +402,17 @@ def unfold_phi(phidp, rho, width=5, copy=False):
     # Compute the standard deviation within windows of 9 range bins
     stdarr = np.zeros(phidp.shape, dtype=np.float32)
     for r in range(rs - 9):
-        stdarr[..., r] = np.std(phidp[..., r:r + 9], -1)
+        stdarr[..., r] = np.std(phidp[..., r : r + 9], -1)
 
-    phidp = speedup.f_unfold_phi(phidp=phidp.astype("f4"),
-                                 rho=rho.astype("f4"),
-                                 gradphi=gradphi.astype("f4"),
-                                 stdarr=stdarr.astype("f4"),
-                                 beams=beams, rs=rs, w=width)
+    phidp = speedup.f_unfold_phi(
+        phidp=phidp.astype("f4"),
+        rho=rho.astype("f4"),
+        gradphi=gradphi.astype("f4"),
+        stdarr=stdarr.astype("f4"),
+        beams=beams,
+        rs=rs,
+        w=width,
+    )
 
     return phidp.reshape(shape)
 
@@ -397,7 +455,7 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     # Compute the standard deviation within windows of 9 range bins
     stdarr = np.zeros(phidp.shape, dtype=np.float32)
     for r in range(rs - 9):
-        stdarr[..., r] = np.std(phidp[..., r:r + 9], -1)
+        stdarr[..., r] = np.std(phidp[..., r : r + 9], -1)
 
     # phi_corr = np.zeros(phidp.shape)
     for beam in range(beams):
@@ -407,15 +465,16 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
 
         # step 1: determine location where meaningful PhiDP profile begins
         for j in range(0, rs - width):
-            if (np.sum(stdarr[beam, j:j + width] < 5) == width) and \
-                    (np.sum(rho[beam, j:j + 5] > 0.9) == width):
+            if (np.sum(stdarr[beam, j : j + width] < 5) == width) and (
+                np.sum(rho[beam, j : j + 5] > 0.9) == width
+            ):
                 break
 
-        ref = np.mean(phidp[beam, j:j + width])
+        ref = np.mean(phidp[beam, j : j + width])
         for k in range(j + width, rs):
-            if np.sum(stdarr[beam, k - width:k] < 5) and \
-                    np.logical_and(gradphi[beam, k] > -5,
-                                   gradphi[beam, k] < 20):
+            if np.sum(stdarr[beam, k - width : k] < 5) and np.logical_and(
+                gradphi[beam, k] > -5, gradphi[beam, k] < 20
+            ):
                 ref += gradphi[beam, k] * 0.5
                 if phidp[beam, k] - ref < -80:
                     if phidp[beam, k] < 0:
@@ -426,10 +485,12 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     return phidp
 
 
-@deprecation.deprecated(deprecated_in="1.7", removed_in="2.0",
-                        current_version=version.version,
-                        details="Use `wradlib.util.despeckle` "
-                                "instead.")
+@deprecation.deprecated(
+    deprecated_in="1.7",
+    removed_in="2.0",
+    current_version=version.version,
+    details="Use `wradlib.util.despeckle` " "instead.",
+)
 def linear_despeckle(data, ndespeckle=3, copy=False):
     """Remove floating pixels in between NaNs in a multi-dimensional array.
 
@@ -473,7 +534,7 @@ def texture(data):
 
     """
     # one-element wrap-around padding for last two axes
-    x = np.pad(data, [(0,)] * (data.ndim - 2) + [(1,), (1,)], mode='wrap')
+    x = np.pad(data, [(0,)] * (data.ndim - 2) + [(1,), (1,)], mode="wrap")
 
     # set first and last range elements to NaN
     x[..., 0] = np.nan
@@ -531,5 +592,5 @@ def depolarization(zdr, rho):
     return trafo.decibel((1 + zdr - m) / (1 + zdr + m))
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <dp> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <dp> as main...")

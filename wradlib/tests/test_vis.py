@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as pl
 pl.interactive(True)  # noqa
 
-from wradlib import georef, util, vis
+from wradlib import georef, util, vis  # noqa: 402
 
 cartopy = util.import_optional('cartopy')
 
