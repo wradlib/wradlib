@@ -891,7 +891,7 @@ lanczos-low-noise-differentiators/>`_.
             if method in ["lstsq", "matrix_inv"]:
                 m2 = method + "_nan"
             else:
-                m2 = "cov_nan_iter"
+                m2 = "cov_nan"
             method2 = kwargs.pop("method2", m2)
 
             # bring data into needed shape
@@ -902,6 +902,7 @@ lanczos-low-noise-differentiators/>`_.
 
             # internal speed up by iterating over same NaN counts and using
             # faster calculation method
+            # ToDo: this doesn't seem to speed up anything, rechecking needed
             if method2 == "cov_nan_iter":
                 for n in range(min_periods, winlen):
                     valid = np.count_nonzero(~np.isnan(data_roll), axis=-1) == n
@@ -913,7 +914,7 @@ lanczos-low-noise-differentiators/>`_.
             else:
                 valid = np.count_nonzero(~np.isnan(data_roll), axis=-1) >= min_periods
                 recalc = valid & invalid.reshape(-1)
-                # and interpolate using polyfit_1d -> method2
+                # and interpolate using _linregress_1d -> method2
                 if np.any(recalc):
                     out.flat[recalc] = _linregress_1d(data_roll[recalc], method=method2)
 
