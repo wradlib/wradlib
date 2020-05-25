@@ -805,25 +805,32 @@ def _preprocess_moment(ds, mom, non_uniform_shape):
     if mom.parent.decode_coords:
         attrs['coordinates'] = 'elevation azimuth range'
 
-    mapping = moments_mapping[quantity]
-    attrs.update({key: mapping[key] for key in moment_attrs})
-    ds['data'] = ds['data'].assign_attrs(attrs)
+    # handle non-standard moment names
+    try:
+        mapping = moments_mapping[quantity]
+    except KeyError:
+        pass
+    else:
+        attrs.update({key: mapping[key] for key in moment_attrs})
+
+    ds["data"] = ds["data"].assign_attrs(attrs)
 
     # fix dimensions
     dims = sorted(list(ds.dims.keys()),
                   key=lambda x: int(x[len('phony_dim_'):]))
 
     ds = ds.rename({'data': quantity,
-                    dims[0]: 'azimuth',
-                    dims[1]: 'range'})
+                    dims[0]: mom.parent._dim0[0],
+                    dims[1]: mom.parent._dim1})
 
     # apply coordinates to dataset if source moments have different shapes
     # and correct for it
     if mom.parent.decode_coords & non_uniform_shape:
         coords = mom.parent._get_coords()
         ds = ds.assign_coords(coords.coords)
-        ds = ds.sortby('azimuth')
-        ds = ds.pipe(_reindex_azimuth, mom.parent)
+        if mom.parent._dim0[0] == 'azimuth':
+            ds = ds.sortby(mom.parent._dim0[0])
+            ds = ds.pipe(_reindex_azimuth, mom.parent)
 
     return ds
 
@@ -1369,8 +1376,8 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
 
         dims = "Dimensions:"
-        dims_summary = [f"azimuth: {self.parent.nrays}"]
-        dims_summary.append(f"range: {self.parent.nbins}")
+        dims_summary = [f"{self.parent._dim0[0]}: {self.parent.nrays}"]
+        dims_summary.append(f"{self.parent._dim1}: {self.parent.nbins}")
         dims_summary = ", ".join(dims_summary)
         summary.append("{} ({})".format(dims, dims_summary))
 
@@ -1431,17 +1438,20 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         self._data = None
         self._need_time_recalc = False
         self._seq.extend(self._get_moments())
+        self._dim0 = ('azimuth', 'elevation')
+        self._dim1 = 'range'
+        self.fixed_angle
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
 
-        dims = "Dimensions:"
-        dims_summary = [f"azimuth: {self.nrays}"]
-        dims_summary.append(f"range: {self.nbins}")
+        dims = "Dimension(s):"
+        dims_summary = [f"{self._dim0[0]}: {self.nrays}"]
+        dims_summary.append(f"{self._dim1}: {self.nbins}")
         dims_summary = ", ".join(dims_summary)
         summary.append("{} ({})".format(dims, dims_summary))
 
-        angle = "Elevation:"
+        angle = f"{self._dim0[1].capitalize()}(s):"
         angle_summary = f"{self.fixed_angle:0.1f}"
         summary.append("{} ({})".format(angle, angle_summary))
 
@@ -1530,26 +1540,32 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         if self._data is None:
             self._data = self._merge_moments()
 
-        if self._data is not None:
+        #if self._data is not None:
             # if metadata declared in XRadTimeseries, load and assign
             if self.parent._meta is not None:
                 vars = dict()
                 for k, v in self.parent._meta.items():
                     attr = self._get_attribute(v, attr=k)
                     if hasattr(attr, 'ndim'):
-                        attr = xr.DataArray(attr, dims=['azimuth'])
+                        attr = xr.DataArray(attr, dims=[self._dim0[0]])
                     vars[k] = attr
                 self._data = self._data.assign(vars)
 
             if self.decode_coords:
                 coords = self._get_coords().coords
                 self._data = self._data.assign_coords(coords)
-                self._data = self._data.sortby('azimuth')
-                self._data = (self._data.pipe(_reindex_azimuth, self))
+                # todo: only if PPI
+                if self._dim0[0] == 'azimuth':
+                    self._data = self._data.sortby(self._dim0[0])
+                    self._data = (self._data.pipe(_reindex_azimuth, self))
+                    self._data = self._data.assign_coords(
+                        {'sweep_mode': 'azimuth_surveillance'})
+                else:
+                    self._data = self._data.assign_coords(
+                        {'sweep_mode': 'rhi'})
+
                 self._data = self._data.assign_coords(
                     self.parent.parent.site.coords)
-                self._data = self._data.assign_coords(
-                    {'sweep_mode': 'azimuth_surveillance'})
 
             if self.mask_and_scale | self.decode_coords | self.decode_times:
                 self._data = self._data.pipe(self._decode_cf)
@@ -1562,7 +1578,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         """
         # sort coords by azimuth, only necessary for gamic flavour
         # for odim is already sorted
-        return self._get_coords().sortby('azimuth')
+        return self._get_coords().sortby(self._dim0[0])
 
     @property
     def moments(self):
@@ -1590,10 +1606,15 @@ class XRadSweepOdim(XRadSweep):
         return self.where['a1gate']
 
     def _get_angle_resolution(self):
-        return self.azimuth.diff('azimuth').median().round(decimals=1)
+        return self.azimuth.diff(self._dim0[0]).median().round(decimals=1)
 
     def _get_fixed_angle(self):
-        return np.round(self.where['elangle'], decimals=1)
+        try:
+            angle = np.round(self.where['az_angle'], decimals=1)
+            self._dim0 = (self._dim0[1], self._dim0[0])
+        except KeyError:
+            angle = np.round(self.where['elangle'], decimals=1)
+        return angle
 
     def _get_azimuth_how(self):
         how = self.how
@@ -1665,7 +1686,7 @@ class XRadSweepOdim(XRadSweep):
         except (AttributeError, KeyError, TypeError):
             time_data = self._get_time_what(nrays=nrays)
             self._need_time_recalc = True
-        da = xr.DataArray(time_data, dims=['azimuth'],
+        da = xr.DataArray(time_data, dims=[self._dim0[0]],
                           attrs=time_attrs)
         return da
 
@@ -1674,7 +1695,7 @@ class XRadSweepOdim(XRadSweep):
             azimuth_data = self._get_azimuth_how()
         except (AttributeError, KeyError, TypeError):
             azimuth_data = self._get_azimuth_where()
-        da = xr.DataArray(azimuth_data, dims=['azimuth'],
+        da = xr.DataArray(azimuth_data, dims=[self._dim0[0]],
                           attrs=az_attrs)
         return da
 
@@ -1683,7 +1704,7 @@ class XRadSweepOdim(XRadSweep):
             elevation_data = self._get_elevation_how()
         except (AttributeError, KeyError, TypeError):
             elevation_data = self._get_elevation_where()
-        da = xr.DataArray(elevation_data, dims=['azimuth'],
+        da = xr.DataArray(elevation_data, dims=[self._dim0[0]],
                           attrs=el_attrs)
         # todo: do only if requested by user
         da = da.pipe(_fix_elevation)
@@ -1706,7 +1727,7 @@ class XRadSweepOdim(XRadSweep):
             'meters_to_center_of_first_gate'] = cent_first
         range_attrs[
             'meters_between_gates'] = bin_range
-        da = xr.DataArray(range_data, dims=['range'], attrs=range_attrs)
+        da = xr.DataArray(range_data, dims=[self._dim1], attrs=range_attrs)
         return da
 
     def _merge_moments(self):
@@ -1782,19 +1803,21 @@ class XRadSweepGamic(XRadSweep):
     def _get_azimuth(self):
         azstart = self.ray_header['azimuth_start']
         azstop = self.ray_header['azimuth_stop']
-        zero_index = np.where(azstop < azstart)
-        azstop[zero_index[0]] += 360
+        if self._dim0[0] == 'azimuth':
+            zero_index = np.where(azstop < azstart)
+            azstop[zero_index[0]] += 360
         azimuth = (azstart + azstop) / 2.
-        azimuth = xr.DataArray(azimuth, dims=['azimuth'], attrs=az_attrs)
+        azimuth = xr.DataArray(azimuth, dims=[self._dim0[0]], attrs=az_attrs)
         return azimuth
 
     def _get_elevation(self):
         elstart = self.ray_header['elevation_start']
         elstop = self.ray_header['elevation_stop']
         elevation = (elstart + elstop) / 2.
-        da = xr.DataArray(elevation, dims=['azimuth'], attrs=el_attrs)
+        da = xr.DataArray(elevation, dims=[self._dim0[0]], attrs=el_attrs)
         # todo: do only if requested by user
-        da = da.pipe(_fix_elevation)
+        if self._dim0[0] == 'azimuth':
+            da = da.pipe(_fix_elevation)
         return da
 
     def _get_mdesc(self):
@@ -1808,18 +1831,24 @@ class XRadSweepGamic(XRadSweep):
                                bin_range,
                                dtype='float32')
         range_attrs['meters_to_center_of_first_gate'] = bin_range / 2.
-        da = xr.DataArray(range_data, dims=['range'], attrs=range_attrs)
+        da = xr.DataArray(range_data, dims=[self._dim1], attrs=range_attrs)
         return da
 
     def _get_ray_times(self):
         times = self.ray_header['timestamp'] / 1e6
         attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
                  'standard_name': 'time'}
-        da = xr.DataArray(times, dims=['azimuth'], attrs=attrs)
+        da = xr.DataArray(times, dims=[self._dim0[0]], attrs=attrs)
         return da
 
     def _get_fixed_angle(self):
-        return np.round(self.how['elevation'], decimals=1)
+        try:
+            angle = np.round(self.how[self._dim0[1]], decimals=1)
+        except KeyError:
+            self._dim0 = (self._dim0[1], self._dim0[0])
+            angle = np.round(self.how[self._dim0[1]], decimals=1)
+
+        return angle
 
     def _merge_moments(self):
         if 'h5' in self.engine:
@@ -1889,13 +1918,13 @@ class XRadSweepGamic(XRadSweep):
         # fix dimensions
         dims = sorted(list(ds.dims.keys()),
                       key=lambda x: int(x[len('phony_dim_'):]))
-        ds = ds.rename({dims[0]: 'azimuth',
-                        dims[1]: 'range'})
+        ds = ds.rename({dims[0]: self._dim0[0],
+                        dims[1]: self._dim1})
 
         # todo: this sorts and reindexes the unsorted GAMIC dataset by azimuth
         # only if `decode_coords` is False
         # adding coord ->  sort -> reindex -> remove coord
-        if not self.decode_coords:
+        if not self.decode_coords and (self._dim0[0] == 'azimuth'):
             ds = (ds.assign_coords({'azimuth': self.azimuth}).sortby('azimuth')
                   .pipe(_reindex_azimuth, self)
                   .drop('azimuth'))
@@ -1948,13 +1977,13 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
-        dims = "Dimensions:"
+        dims = "Dimension(s):"
         dims_summary = [f"time: {len(self)}"]
-        dims_summary.append(f"azimuth: {self._seq[0].nrays}")
-        dims_summary.append(f"range: {self._seq[0].nbins}")
+        dims_summary.append(f"{self._seq[0]._dim0[0]}: {self._seq[0].nrays}")
+        dims_summary.append(f"{self._seq[0]._dim1}: {self._seq[0].nbins}")
         dims_summary = ", ".join(dims_summary)
         summary.append("{} ({})".format(dims, dims_summary))
-        angle = "Elevation:"
+        angle = f"{self._seq[0]._dim0[1].capitalize()}(s):"
         angle_summary = self[0].fixed_angle
         summary.append(f"{angle} ({angle_summary:.1f})")
 
@@ -2051,10 +2080,10 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
-        dims = "Dimensions:"
+        dims = "Dimension(s):"
         dims_summary = f"sweep: {len(self)}"
         summary.append("{} ({})".format(dims, dims_summary))
-        angle = "Elevations:"
+        angle = f"{self[0][0]._dim0[1].capitalize()}(s):"
         angle_summary = [f"{k[0].fixed_angle:.1f}" for k in self]
         angle_summary = ", ".join(angle_summary)
         summary.append("{} ({})".format(angle, angle_summary))
