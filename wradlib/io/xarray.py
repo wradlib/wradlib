@@ -1518,13 +1518,13 @@ class XRadMoment(OdimH5GroupAttributeMixin):
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
 
-        dims = "Dimensions:"
+        dims = "Dimension(s):"
         dims_summary = [f"{self.parent._dim0[0]}: {self.parent.nrays}"]
         dims_summary.append(f"{self.parent._dim1}: {self.parent.nbins}")
         dims_summary = ", ".join(dims_summary)
         summary.append("{} ({})".format(dims, dims_summary))
 
-        angle = "Elevation:"
+        angle = "Elevation(s):"
         angle_summary = f"{self.parent.fixed_angle:.1f}"
         summary.append("{} ({})".format(angle, angle_summary))
 
