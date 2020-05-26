@@ -148,7 +148,7 @@ Georeferencing-and-Projection`.
 
     if projname == "aeqd":
         # Azimuthal Equidistant
-        if LooseVersion(gdal.VersionInfo("RELEASE_NAME") >= LooseVersion("3")):
+        if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
             aeqd_wkt = aeqd_wkt3
 
         if "x_0" in kwargs:
@@ -165,7 +165,7 @@ Georeferencing-and-Projection`.
     elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
         scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
-        if LooseVersion(gdal.VersionInfo("RELEASE_NAME") >= LooseVersion("3")):
+        if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
             radolan_wkt = radolan_wkt3.format(scale)
         else:
             radolan_wkt = radolan_wkt.format(scale)
@@ -199,7 +199,7 @@ def proj4_to_osr(proj4str):
     proj.ImportFromProj4(proj4str)
     proj.AutoIdentifyEPSG()
 
-    if LooseVersion(gdal.VersionInfo("RELEASE_NAME") < LooseVersion("3")):
+    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) < LooseVersion("3"):
         proj.Fixup()
         proj.FixupOrdering()
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
@@ -305,7 +305,7 @@ def reproject(*args, **kwargs):
         ),
     )
 
-    if LooseVersion(gdal.VersionInfo("RELEASE_NAME") >= LooseVersion("3")):
+    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
         axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
         projection_source.SetAxisMappingStrategy(axis_order)
         projection_target.SetAxisMappingStrategy(axis_order)
@@ -520,7 +520,7 @@ def geoid_to_ellipsoid(coords, reverse=False):
         trg = geoid
 
     # needs GDAL>=2.4
-    if LooseVersion(gdal.VersionInfo("RELEASE_NAME") >= LooseVersion("2.4")):
+    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("2.4"):
         coords = reproject(coords, projection_source=src, projection_target=trg)
     else:
         # Backward compatibility with GDAL < 2.4
