@@ -278,6 +278,11 @@ class TestUtil(unittest.TestCase):
                                          np.array([250., 250])),
             correct))
 
+    def test_image_to_plot(self):
+        plot = util.image_to_plot(self.img)
+        image = util.plot_to_image(plot)
+        np.testing.assert_equal(image, self.img)
+
 
 class FindBboxIndicesTest(unittest.TestCase):
     def setUp(self):

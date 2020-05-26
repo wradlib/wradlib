@@ -655,6 +655,39 @@ def gradient_from_smoothed(x, n=5):
     return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
 
 
+def image_to_plot(a, upper=True):
+    """
+    Convert an array from image order convention
+    with shape (nrows, ncols) starting upper left
+    to array in ploting order convention
+    with shape (nx, ny) and starting lower left
+    """
+    if upper:
+        a = np.flip(a, axis=0)
+    a = np.swapaxes(a, 0, 1)
+    return a
+
+
+def plot_to_image(a, upper=True):
+    """
+    Convert an array from ploting order convention
+    with shape (nx, ny) and starting lower left
+    to array in image order convention
+    with shape (nrows, ncols) starting upper left
+    """
+    a = np.swapaxes(a, 0, 1)
+    if upper:
+        a = np.flip(a, axis=0)
+    return a
+
+
+def center_to_edge(centers):
+    delta = centers[1] - centers[0]
+    edges = np.insert(centers + delta/2, 0, centers[0] - delta/2)
+
+    return edges
+
+
 def _pad_array(data, pad, mode="reflect", **kwargs):
     """Returns array with padding added along last dimension.
     """

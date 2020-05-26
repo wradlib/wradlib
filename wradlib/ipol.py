@@ -22,30 +22,40 @@ This includes for example:
 
    {}
 """
-__all__ = ['Nearest', 'Idw', 'Linear', 'OrdinaryKriging',
-           'ExternalDriftKriging', 'interpolate', 'interpolate_polar',
-           'cart_to_irregular_interp', 'cart_to_irregular_spline']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "Nearest",
+    "Idw",
+    "Linear",
+    "OrdinaryKriging",
+    "ExternalDriftKriging",
+    "interpolate",
+    "interpolate_polar",
+    "cart_to_irregular_interp",
+    "cart_to_irregular_spline",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import functools
 import re
 import warnings
 
 import numpy as np
-import scipy
-
-from wradlib import util
+from scipy import interpolate as sinterp
+from scipy import ndimage, spatial, special, stats
+from wradlib import georef, util, zonalstats
 
 
 class MissingSourcesError(Exception):
     """Is raised in case no source coordinates are available for interpolation.
     """
+
     pass
 
 
 class MissingTargetsError(Exception):
     """Is raised in case no interpolation targets are available.
     """
+
     pass
 
 
@@ -97,9 +107,10 @@ class IpolBase:
         vals : ndarray of float
 
         """
-        assert len(vals) == self.numsources, \
-            ('Length of value array %d does not correspond to number '
-             'of source points %d' % (len(vals), self.numsources))
+        assert len(vals) == self.numsources, (
+            "Length of value array %d does not correspond to number "
+            "of source points %d" % (len(vals), self.numsources)
+        )
         self.valsshape = vals.shape
         self.valsndim = vals.ndim
 
@@ -124,7 +135,7 @@ class IpolBase:
             elif x.ndim == 2:
                 pass
             else:
-                raise Exception('Cannot deal wih 3-d arrays, yet.')
+                raise Exception("Cannot deal wih 3-d arrays, yet.")
         return x
 
     def _make_2d(self, vals):
@@ -181,15 +192,15 @@ class Nearest(IpolBase):
     """
 
     def __init__(self, src, trg, remove_missing=0, **kwargs):
-        if isinstance(src, scipy.spatial.cKDTree):
+        if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
             if len(src) == 0:
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = scipy.spatial.cKDTree(src, **kwargs)
+            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
+            self.tree = spatial.cKDTree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -287,18 +298,18 @@ class Idw(IpolBase):
     Uses :class:`scipy:scipy.spatial.cKDTree`
 
     """
-    def __init__(self, src, trg, nnearest=4, p=2., remove_missing=False,
-                 **kwargs):
 
-        if isinstance(src, scipy.spatial.cKDTree):
+    def __init__(self, src, trg, nnearest=4, p=2.0, remove_missing=False, **kwargs):
+
+        if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
             src = self._make_coord_arrays(src)
             if len(src) == 0:
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = scipy.spatial.cKDTree(src, **kwargs)
+            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
+            self.tree = spatial.cKDTree(src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -312,7 +323,7 @@ class Idw(IpolBase):
                 "wradlib.ipol.Idw: <nnearest> is larger than number of "
                 "source points and is set to %d corresponding to the "
                 "number of source points." % self.numsources,
-                UserWarning
+                UserWarning,
             )
             self.nnearest = self.numsources
         else:
@@ -322,8 +333,7 @@ class Idw(IpolBase):
 
         self.p = p
         # query tree
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest,
-                                              n_jobs=-1)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, n_jobs=-1)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
@@ -380,11 +390,11 @@ class Idw(IpolBase):
             weights = np.broadcast_to(weights, isnan.shape)
             masked_weights = np.ma.array(weights, mask=isnan)
 
-            interpol = (np.nansum(weights * trgvals, axis=1) /
-                        np.sum(masked_weights, axis=1))
+            interpol = np.nansum(weights * trgvals, axis=1) / np.sum(
+                masked_weights, axis=1
+            )
         else:
-            interpol = (np.sum(weights * trgvals, axis=1) /
-                        np.sum(weights, axis=1))
+            interpol = np.sum(weights * trgvals, axis=1) / np.sum(weights, axis=1)
 
         return interpol
 
@@ -448,13 +458,256 @@ class Linear(IpolBase):
         self._check_shape(vals)
         isnan = np.isnan(vals)
         if self.remove_missing & np.count_nonzero(isnan):
-            ip = scipy.interpolate.LinearNDInterpolator(self.src[~isnan, ...],
-                                                        vals[~isnan],
-                                                        fill_value=fill_value)
+            ip = sinterp.LinearNDInterpolator(
+                self.src[~isnan, ...], vals[~isnan], fill_value=fill_value
+            )
         else:
-            ip = scipy.interpolate.LinearNDInterpolator(self.src, vals,
-                                                        fill_value=fill_value)
+            ip = sinterp.LinearNDInterpolator(self.src, vals, fill_value=fill_value)
         return ip(self.trg)
+
+
+class RectGridBase(IpolBase):
+    """Rectangular grid base class
+    """
+    def _is_grid(self, src):
+        test = hasattr(src, "shape") and src.ndim == 3 and src.shape[2] == 2
+        return test
+
+    def _is_image(self, src):
+        rowcol = src[0, 0, 1] == src[0, 1, 1]
+        return rowcol
+
+    def _is_upper(self, src):
+        upper = src[0, 0, 1] - src[1, 0, 1] > 0
+        return upper
+
+    def _grid_to_xi(self, grid, image=True, upper=True):
+
+        if image:
+            grid = util.image_to_plot(grid, upper)
+
+        x = grid[:, 0, 0]
+        y = grid[0, :, 1]
+
+        xi = (x, y)
+
+        return xi
+
+
+class RectGrid(RectGridBase):
+    """Interpolation on a 2d grid in arbitrary dimensions.
+
+    The data must be defined on a regular grid, the grid spacing however may be
+    uneven. Linear, nearest-neighbour and spline interpolation are supported.
+
+    Based on :func:`scipy:scipy.interpolate.interpn`, uses:
+    - `nearest` :func:`scipy:scipy.interpolate.RegularGridInterpolator`
+    - `linear` :func:`scipy:scipy.interpolate.RegularGridInterpolator`
+    - `splinef2d` :func:`scipy.interpolate.RectBivariateSpline`
+
+    Parameters
+    ----------
+    src : :class:`numpy:numpy.ndarray` of floats
+        3d array of shape (..., 2)
+        The points defining the regular grid in n dimensions.
+    trg : :class:`numpy:numpy.ndarray` of floats
+        Array of shape (..., ndim)
+        The coordinates to sample the gridded data at
+
+    Keyword Arguments
+    -----------------
+    method : str
+        Method of interpolation used, defaults to 'linear'.
+
+    Methods
+    -------
+    __call__
+
+    """
+
+    def __init__(self, src, trg, method="linear"):
+
+        assert self._is_grid(src)
+
+        self.image = self._is_image(src)
+        self.upper = self._is_upper(src)
+        self.src = self._grid_to_xi(src, self.image, self.upper)
+        self.trg = trg
+        self.method = method
+
+    def __call__(self, values, **kwargs):
+        """Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values at the source points which to interpolate, shape (num src pts, ...)
+
+        Returns
+        -------
+        result : :class:`numpy:numpy.ndarray` of floats
+            Target values with shape (num trg pts, ...)
+
+        """
+        if self.image:
+            values = util.image_to_plot(values, self.upper)
+        # override bounds_error
+        kwargs["bounds_error"] = kwargs.pop("bounds_error", False)
+        kwargs["method"] = kwargs.pop("method", self.method)
+
+        result = sinterp.interpn(self.src, values, self.trg, **kwargs)
+
+        return result
+
+
+class RectBin(RectGridBase):
+    """Bin points values to regular grid cells
+
+    Based on :class:`scipy:scipy.stats.binned_statistic_dd`
+
+    Parameters
+    ----------
+    src : :class:`numpy:numpy.ndarray` of floats
+        data point coordinates of the source points with shape (..., ndims).
+    trg : :class:`numpy:numpy.ndarray` of floats
+        rectangular grid coordinates (center) with shape (..., 2)
+    """
+
+    def __init__(self, src, trg):
+
+        assert self._is_grid(trg)
+
+        src = src.reshape(-1, 2)
+        self.src = src
+
+        self.upper = self._is_upper(trg)
+        self.image = self._is_image(trg)
+        trg = self._grid_to_xi(trg, self.image, self.upper)
+        bins = [util.center_to_edge(x) for x in trg]
+        self.bins = bins
+
+    def __call__(self, values, **kwargs):
+        """Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values at the source points which to interpolate, shape (num src pts, ...)
+        kwargs : keyword arguments
+            Passed to scipy.stats.binned_statistic_dd
+
+        Returns
+        -------
+        stat : :class:`numpy:numpy.ndarray` of floats
+            Target values with shape (num trg pts, ...)
+        """
+
+        values = values.reshape(-1)
+        result = stats.binned_statistic_dd(self.src, values, bins=self.bins, **kwargs)
+        stat = result.statistic
+
+        if self.image:
+            stat = util.plot_to_image(stat, self.upper)
+
+        return stat
+
+
+class PolyArea(IpolBase):
+    """Map values representing polygons to another polygons
+
+    Based on wradlib.zonalstats
+
+    Parameters
+    ----------
+    src : :class:`numpy:numpy.ndarray` of floats
+        Source grid edge coordinates with shape (..., 5, 2).
+    trg : :class:`numpy:numpy.ndarray` of floats
+        Target grid edge coordinates with shape (..., 5, 2).
+    """
+
+    def __init__(self, src, trg, **kwargs):
+        self.trg_shape = np.array(trg.shape[:-2])
+
+        src = src.reshape((-1, 5, 2))
+        trg = trg.reshape((-1, 5, 2))
+
+        zd = zonalstats.ZonalDataPoly(src, trg, **kwargs)
+        self.obj = zonalstats.ZonalStatsPoly(zd)
+
+    def __call__(self, values):
+        """Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values representing the source cells, shape corresponding to src
+
+        Returns
+        -------
+        result : :class:`numpy:numpy.ndarray` of floats
+            Values representing the target cells, shape corresponding to trg
+        """
+
+        values = values.ravel()
+        result = self.obj.mean(values)
+
+        return result.reshape(self.trg_shape)
+
+
+class QuadriArea(PolyArea):
+    """Map values representing quadrilateral grid cells to another quadrilateral grid.
+
+    Based on wradlib.zonalstats
+
+    Parameters
+    ----------
+    src : :class:`numpy:numpy.ndarray` of floats
+        Source grid edge coordinates with shape (n+1, m+1, 2).
+    trg : :class:`numpy:numpy.ndarray` of floats
+        Target grid edge coordinates with shape (o+1, p+1, 2).
+    """
+
+    def __init__(self, src, trg, **kwargs):
+        src = georef.rect.grid_to_polyvert(src)
+        trg = georef.rect.grid_to_polyvert(trg)
+        super().__init__(src, trg, **kwargs)
+
+
+class IpolChain(IpolBase):
+    """Apply successive interpolation methods.
+
+    Parameters
+    ----------
+    interpolators: list of IpolBase objects
+        list of interpolators to apply successivly
+    """
+
+    def __init__(self, interpolators):
+        self.interpolators = interpolators
+
+    def __call__(self, values, **kwargs):
+        """Evaluate interpolator for values given at the source points.
+
+        Parameters
+        ----------
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values at src points which to interpolate with shape (num src pts, ...)
+
+        Returns
+        -------
+        result : class:`numpy:numpy.ndarray` of floats
+            Values at the trg points with shape (num trg pts, ...)
+        """
+
+        first = self.interpolators.pop(0)
+        result = first(values, **kwargs)
+
+        for interpolator in self.interpolators:
+            temp = interpolator(values, **kwargs)
+            bad = np.isnan(result)
+            result[bad] = temp[bad]
+
+        return result
 
 
 # -----------------------------------------------------------------------------
@@ -462,32 +715,33 @@ class Linear(IpolBase):
 # -----------------------------------------------------------------------------
 def parse_covariogram(cov_model):
     """"""
-    patterns = [re.compile(r'([\d\.]+) Nug\(([\d\.]+)\)'),  # nugget
-                re.compile(r'([\d\.]+) Lin\(([\d\.]+)\)'),  # linear
-                re.compile(r'([\d\.]+) Sph\(([\d\.]+)\)'),  # spherical
-                re.compile(r'([\d\.]+) Exp\(([\d\.]+)\)'),  # exponential
-                re.compile(r'([\d\.]+) Gau\(([\d\.]+)\)'),  # gaussian
-                re.compile(r'([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)'),  # matern
-                re.compile(r'([\d\.]+) Pow\(([\d\.]+)\)'),  # power
-                # cauchy
-                re.compile(r'([\d\.]+) '
-                           r'Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)'),
-                ]
+    patterns = [
+        re.compile(r"([\d\.]+) Nug\(([\d\.]+)\)"),  # nugget
+        re.compile(r"([\d\.]+) Lin\(([\d\.]+)\)"),  # linear
+        re.compile(r"([\d\.]+) Sph\(([\d\.]+)\)"),  # spherical
+        re.compile(r"([\d\.]+) Exp\(([\d\.]+)\)"),  # exponential
+        re.compile(r"([\d\.]+) Gau\(([\d\.]+)\)"),  # gaussian
+        re.compile(r"([\d\.]+) Mat\(([\d\.]+)\)\^([\d\.]+)"),  # matern
+        re.compile(r"([\d\.]+) Pow\(([\d\.]+)\)"),  # power
+        # cauchy
+        re.compile(r"([\d\.]+) " r"Cau\(([\d\.]+)\)\^([\d\.]+)\^([\d\.]+)"),
+    ]
 
-    cov_funs = [cov_nug,
-                cov_lin,
-                cov_sph,
-                cov_exp,
-                cov_gau,
-                cov_mat,
-                cov_pow,
-                cov_cau,
-                ]
+    cov_funs = [
+        cov_nug,
+        cov_lin,
+        cov_sph,
+        cov_exp,
+        cov_gau,
+        cov_mat,
+        cov_pow,
+        cov_cau,
+    ]
 
     funcs = []
 
     # first split along '+'
-    subparts = cov_model.split('+')
+    subparts = cov_model.split("+")
     # then analyse subparts
     for i, subpart in enumerate(subparts):
         # iterate over all available patterns
@@ -512,7 +766,7 @@ def cov_nug(h, sill, rng):
     Therefore, usually rng is set to 0
     """
     h = np.asanyarray(h)
-    return np.where(h <= rng, sill, 0.)
+    return np.where(h <= rng, sill, 0.0)
 
 
 def cov_exp(h, sill=1.0, rng=1.0):
@@ -524,21 +778,21 @@ def cov_exp(h, sill=1.0, rng=1.0):
 def cov_sph(h, sill=1.0, rng=1.0):
     """spherical type covariance function"""
     h = np.asanyarray(h)
-    return np.where(h < rng, sill * (1. - 1.5 * h /
-                                     rng + h ** 3 /
-                                     (2 * rng ** 3)), 0.)
+    return np.where(
+        h < rng, sill * (1.0 - 1.5 * h / rng + h ** 3 / (2 * rng ** 3)), 0.0
+    )
 
 
 def cov_gau(h, sill=1.0, rng=1.0):
     """gaussian type covariance function"""
     h = np.asanyarray(h)
-    return sill * np.exp(-h ** 2 / rng ** 2)
+    return sill * np.exp(-(h ** 2) / rng ** 2)
 
 
 def cov_lin(h, sill=1.0, rng=1.0):
     """linear covariance function"""
     h = np.asanyarray(h)
-    return np.where(h < rng, sill * (-h / rng + 1.), 0.)
+    return np.where(h < rng, sill * (-h / rng + 1.0), 0.0)
 
 
 def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
@@ -554,15 +808,14 @@ def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
         c = cov_gau(h, sill, rng)
     else:
         # modified bessel function of second kind of order v
-        kv = scipy.special.kv
+        kv = special.kv
         # Gamma function
-        tau = scipy.special.gamma
+        tau = special.gamma
 
         fac1 = h / rng * 2.0 * np.sqrt(shp)
-        fac2 = (tau(shp) * 2.0 ** (shp - 1.0))
+        fac2 = tau(shp) * 2.0 ** (shp - 1.0)
 
-        c = np.where(h != 0, sill * 1.0 /
-                     fac2 * fac1 ** shp * kv(shp, fac1), sill)
+        c = np.where(h != 0, sill * 1.0 / fac2 * fac1 ** shp * kv(shp, fac1), sill)
 
     return c
 
@@ -573,14 +826,14 @@ def cov_pow(h, sill=1.0, rng=1.0):
     return sill - h ** rng
 
 
-def cov_cau(h, sill=1., rng=1., alpha=1., beta=1.0):
+def cov_cau(h, sill=1.0, rng=1.0, alpha=1.0, beta=1.0):
     """
     cauchy covariance function.
 
     alpha >0 & <=2 ... shape parameter
     beta >0 ... parameterizes long term memory
     """
-    h = np.asanyarray(h).astype('float')
+    h = np.asanyarray(h).astype("float")
     return sill * (1 + (h / rng) ** alpha) ** (-beta / alpha)
 
 
@@ -648,10 +901,17 @@ class OrdinaryKriging(IpolBase):
     See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
-    def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12,
-                 remove_missing=False, **kwargs):
+    def __init__(
+        self,
+        src,
+        trg,
+        cov="1.0 Exp(10000.)",
+        nnearest=12,
+        remove_missing=False,
+        **kwargs
+    ):
         """"""
-        if isinstance(src, scipy.spatial.cKDTree):
+        if isinstance(src, spatial.cKDTree):
             self.tree = src
             self.src = self.tree.data
         else:
@@ -659,8 +919,8 @@ class OrdinaryKriging(IpolBase):
             if len(src) == 0:
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = scipy.spatial.cKDTree(self.src, **kwargs)
+            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
+            self.tree = spatial.cKDTree(self.src, **kwargs)
 
         self.numsources = self.tree.n
 
@@ -677,7 +937,7 @@ class OrdinaryKriging(IpolBase):
                 "larger than number of source points and is "
                 "set to %d corresponding to the "
                 "number of source points." % self.numsources,
-                UserWarning
+                UserWarning,
             )
             self.nnearest = self.numsources
         else:
@@ -699,12 +959,12 @@ class OrdinaryKriging(IpolBase):
     def _krig_matrix(self, src):
         """Sets up the kriging system for a configuration of source points.
         """
-        var_matrix = self.cov_func(scipy.spatial.distance_matrix(src, src))
+        var_matrix = self.cov_func(spatial.distance_matrix(src, src))
 
         ok_matrix = np.ones((len(src) + 1, len(src) + 1))
 
         ok_matrix[:-1, :-1] = var_matrix
-        ok_matrix[-1, -1] = 0.
+        ok_matrix[-1, -1] = 0.0
 
         return ok_matrix
 
@@ -713,7 +973,7 @@ class OrdinaryKriging(IpolBase):
         of the target to the source points. To be used in conjunction with
         `_krig_matrix`."""
         rhs = self.cov_func(dists)
-        ok_rhs = np.concatenate([rhs, [1.]])
+        ok_rhs = np.concatenate([rhs, [1.0]])
 
         return ok_rhs
 
@@ -726,8 +986,7 @@ class OrdinaryKriging(IpolBase):
             rhs = self._krig_rhs(dist)
             weights = np.linalg.solve(matrix, rhs)
             self.weights.append(weights)
-            self.estimation_variance.append(self.cov_func(0.) -
-                                            np.sum(weights * rhs))
+            self.estimation_variance.append(self.cov_func(0.0) - np.sum(weights * rhs))
 
     def __call__(self, vals):
         """
@@ -767,14 +1026,12 @@ class OrdinaryKriging(IpolBase):
         # nan handling
         if self.remove_missing:
             isnan = np.isnan(trgvals)
-            weights = np.broadcast_to(weights[:, :-1][..., np.newaxis],
-                                      isnan.shape)
+            weights = np.broadcast_to(weights[:, :-1][..., np.newaxis], isnan.shape)
             masked_weights = np.ma.array(weights, mask=isnan)
 
             interpol = np.nansum(masked_weights * trgvals, axis=1)
         else:
-            interpol = np.sum(weights[:, :-1][..., np.newaxis] * trgvals,
-                              axis=1)
+            interpol = np.sum(weights[:, :-1][..., np.newaxis] * trgvals, axis=1)
 
         if vals.ndim == 1:
             return interpol.ravel()
@@ -826,11 +1083,19 @@ class ExternalDriftKriging(IpolBase):
     See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
-    def __init__(self, src, trg, cov='1.0 Exp(10000.)', nnearest=12,
-                 src_drift=None, trg_drift=None, remove_missing=False,
-                 **kwargs):
+    def __init__(
+        self,
+        src,
+        trg,
+        cov="1.0 Exp(10000.)",
+        nnearest=12,
+        src_drift=None,
+        trg_drift=None,
+        remove_missing=False,
+        **kwargs
+    ):
         """"""
-        if isinstance(src, scipy.spatial.cKDTree):
+        if isinstance(src, spatial.cKDTree):
             self.tree = src
             self.src = self.tree.data
         else:
@@ -838,8 +1103,8 @@ class ExternalDriftKriging(IpolBase):
             if len(src) == 0:
                 raise MissingSourcesError
             # plant a tree, use unbalanced tree as default
-            kwargs.update(balanced_tree=kwargs.pop('balanced_tree', False))
-            self.tree = scipy.spatial.cKDTree(self.src, **kwargs)
+            kwargs.update(balanced_tree=kwargs.pop("balanced_tree", False))
+            self.tree = spatial.cKDTree(self.src, **kwargs)
 
         self.numsources = self.tree.n
         self.remove_missing = remove_missing
@@ -859,7 +1124,7 @@ class ExternalDriftKriging(IpolBase):
                 "than number of source points and is set to %d "
                 "corresponding to the number of source "
                 "points." % self.numsources,
-                UserWarning
+                UserWarning,
             )
             self.nnearest = self.numsources
         else:
@@ -879,20 +1144,20 @@ class ExternalDriftKriging(IpolBase):
         """Sets up the kriging system for a configuration of source points.
         """
         # the basic covariance matrix
-        var_matrix = self.cov_func(scipy.spatial.distance_matrix(src, src))
+        var_matrix = self.cov_func(spatial.distance_matrix(src, src))
         # the extended matrix, initialized to ones
         edk_matrix = np.ones((len(src) + 2, len(src) + 2))
 
         # adding entries for the first lagrange multiplier for the ordinary
         # kriging part
         edk_matrix[:-2, :-2] = var_matrix
-        edk_matrix[-2, -2] = 0.
+        edk_matrix[-2, -2] = 0.0
 
         # adding entries for the second lagrange multiplier for the  edk part
         edk_matrix[:-2, -1] = drift
         edk_matrix[-1, :-2] = drift
-        edk_matrix[-2:, -1] = 0.
-        edk_matrix[-1, -2:] = 0.
+        edk_matrix[-2:, -1] = 0.0
+        edk_matrix[-1, -2:] = 0.0
 
         return edk_matrix
 
@@ -901,7 +1166,7 @@ class ExternalDriftKriging(IpolBase):
         of the target to the source points. To be used in conjunction with
         `_krig_matrix`."""
         rhs = self.cov_func(dists)
-        edk_rhs = np.concatenate([rhs, np.array([1., drift])])
+        edk_rhs = np.concatenate([rhs, np.array([1.0, drift])])
 
         return edk_rhs
 
@@ -919,8 +1184,7 @@ class ExternalDriftKriging(IpolBase):
             except np.linalg.LinAlgError:
                 weights = np.repeat(np.nan, len(rhs))
             all_weights.append(weights)
-            estimation_variances.append(self.cov_func(0.) -
-                                        np.sum(weights * rhs))
+            estimation_variances.append(self.cov_func(0.0) - np.sum(weights * rhs))
 
         return all_weights, estimation_variances
 
@@ -957,16 +1221,20 @@ class ExternalDriftKriging(IpolBase):
         if src_drift is None:
             # check if we have data from __init__
             if self.src_drift is None:
-                raise ValueError('src_drift must be specified either on '
-                                 'initialization or when calling '
-                                 'the interpolator.')
+                raise ValueError(
+                    "src_drift must be specified either on "
+                    "initialization or when calling "
+                    "the interpolator."
+                )
             src_drift = self.src_drift
         if trg_drift is None:
             # check if we have data from __init__
             if self.trg_drift is None:
-                raise ValueError('trg_drift must be specified either on '
-                                 'initialization or when calling the '
-                                 'interpolator.')
+                raise ValueError(
+                    "trg_drift must be specified either on "
+                    "initialization or when calling the "
+                    "interpolator."
+                )
             trg_drift = self.trg_drift
 
         src_d = self._make_2d(src_drift)
@@ -989,22 +1257,20 @@ class ExternalDriftKriging(IpolBase):
             trgvals = v[self.ix]
             if self.remove_missing:
                 isnan = np.isnan(trgvals)
-                weights = np.broadcast_to(weights[:, :-2][..., np.newaxis],
-                                          isnan.shape)
+                weights = np.broadcast_to(weights[:, :-2][..., np.newaxis], isnan.shape)
                 masked_weights = np.ma.array(weights, mask=isnan)
                 ip = np.nansum(masked_weights * trgvals, axis=1)
             else:
-                ip = np.nansum(weights[:, :-2][..., np.newaxis] * trgvals,
-                               axis=1)
+                ip = np.nansum(weights[:, :-2][..., np.newaxis] * trgvals, axis=1)
         # otherwise we need to setup and solve the kriging system for each
         # field individually
         else:
             ip = np.empty((self.trg.shape[0], v.shape[1]))
-            assert ((v.shape[1] == src_d.shape[1]) and
-                    (v.shape[1] == trg_d.shape[1]))
+            assert (v.shape[1] == src_d.shape[1]) and (v.shape[1] == trg_d.shape[1])
             for i in range(v.shape[1]):
-                wght, variances = self._krige(src_d[:, i].squeeze(),
-                                              trg_d[:, i].squeeze())
+                wght, variances = self._krige(
+                    src_d[:, i].squeeze(), trg_d[:, i].squeeze()
+                )
 
                 weights = np.array(wght)
 
@@ -1107,18 +1373,22 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
         for i in np.unique(nan_in_result[-1]):
             ix_good = np.where(np.isfinite(vals[..., i]))[0]
             tmp = np.where(nan_in_result[-1] == i)[0]
-            ix_broken_targets = (nan_in_result[0][tmp])
-            ip = ipclass(src[ix_good],
-                         trg[nan_in_result[0]
-                         [np.where(nan_in_result[-1] == i)[0]]],
-                         *args, **kwargs)
+            ix_broken_targets = nan_in_result[0][tmp]
+            ip = ipclass(
+                src[ix_good],
+                trg[nan_in_result[0][np.where(nan_in_result[-1] == i)[0]]],
+                *args,
+                **kwargs
+            )
             tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
             result[ix_broken_targets, i] = tmp.ravel()
     else:
         if np.any(np.isnan(vals.ravel())):
-            raise NotImplementedError('WRADLIB: At the moment, <interpolate> '
-                                      'can only deal with NaN values in <vals>'
-                                      ' if <vals> has less than 3 dimension.')
+            raise NotImplementedError(
+                "WRADLIB: At the moment, <interpolate> "
+                "can only deal with NaN values in <vals>"
+                " if <vals> has less than 3 dimension."
+            )
         else:
             # if no NaN value are in <vals> we can safely apply the
             # ipclass as is
@@ -1168,8 +1438,10 @@ def interpolate_polar(data, mask=None, ipclass=Nearest):
     if mask is None:
         # no mask assigned: try to get it from masked array
         if type(data) != np.ma.core.MaskedArray:
-            print('Warning! Neither an explicit mask is assigned nor the '
-                  'data-array is masked.')
+            print(
+                "Warning! Neither an explicit mask is assigned nor the "
+                "data-array is masked."
+            )
         mask = np.ma.getmaskarray(data)
     elif not np.any(mask):
         # mask contains no True values, so there is nothing to fill
@@ -1178,17 +1450,18 @@ def interpolate_polar(data, mask=None, ipclass=Nearest):
     # construct the ranges for every bin
     ranges = np.tile(np.arange(0.5, data.shape[1] + 0.5), data.shape[0])
     # construct the angles for every bin
-    angles = np.repeat(np.radians(np.arange(0, 360, 360. / data.shape[0])),
-                       data.shape[1])
+    angles = np.repeat(
+        np.radians(np.arange(0, 360, 360.0 / data.shape[0])), data.shape[1]
+    )
     # calculate cartesian coordinates for every bin
     binx = np.cos(angles) * ranges
     biny = np.sin(angles) * ranges
     # calculate cartesian coordinates for bins, which are not masked
-    src_coord = np.array([(np.delete(binx, clutter_indices)),
-                          (np.delete(biny, clutter_indices))]).transpose()
+    src_coord = np.array(
+        [(np.delete(binx, clutter_indices)), (np.delete(biny, clutter_indices))]
+    ).transpose()
     # calculate cartesian coordinates for bins, which are masked
-    trg_coord = np.array([binx[clutter_indices],
-                          biny[clutter_indices]]).transpose()
+    trg_coord = np.array([binx[clutter_indices], biny[clutter_indices]]).transpose()
     # data values for bins, which are not masked
     values_list = np.delete(data, clutter_indices)
     filled_data = data.copy().ravel()
@@ -1199,11 +1472,13 @@ def interpolate_polar(data, mask=None, ipclass=Nearest):
     # in case of nans as processed at the rim when interpolating linear,
     # these values are finally interpolated by nearest Neighbor interpolation
     if np.any(np.isnan(filled_data)):
-        trg_coord = (np.array([binx[np.where(np.isnan(filled_data))],
-                              biny[np.where(np.isnan(filled_data))]])
-                     .transpose())
-        filling = interpolate(src_coord, trg_coord, values_list,
-                              ipclass=Nearest)
+        trg_coord = np.array(
+            [
+                binx[np.where(np.isnan(filled_data))],
+                biny[np.where(np.isnan(filled_data))],
+            ]
+        ).transpose()
+        filling = interpolate(src_coord, trg_coord, values_list, ipclass=Nearest)
         filled_data[np.where(np.isnan(filled_data))] = filling
     return filled_data.reshape(data.shape[0], data.shape[1])
 
@@ -1244,7 +1519,7 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     if values.ndim > 1:
         values = values.ravel()
 
-    interp = scipy.interpolate.griddata(cart_arr, values, new_arr, **kwargs)
+    interp = sinterp.griddata(cart_arr, values, new_arr, **kwargs)
     interp = interp.reshape(newshape)
 
     return interp
@@ -1300,19 +1575,17 @@ Preprocessing-the-digitial-elevation-model`.
     xi = (nx - 1) * (xi - cxmin) / (cxmax - cxmin)
 
     # check origin to calculate y index
-    if util.get_raster_origin(cartgrid) == 'lower':
+    if util.get_raster_origin(cartgrid) == "lower":
         yi = (ny - 1) * (yi - cymin) / (cymax - cymin)
     else:
         yi = ny - (ny - 1) * (yi - cymin) / (cymax - cymin)
 
     # interpolation by map_coordinates
-    interp = scipy.ndimage.interpolation.map_coordinates(values,
-                                                         [yi, xi],
-                                                         **kwargs)
+    interp = ndimage.interpolation.map_coordinates(values, [yi, xi], **kwargs)
     interp = interp.reshape(newshape)
 
     return interp
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <ipol> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <ipol> as main...")
