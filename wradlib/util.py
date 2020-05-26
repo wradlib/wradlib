@@ -688,8 +688,6 @@ def center_to_edge(centers):
     return edges
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <util> as main...')
 def _pad_array(data, pad, mode="reflect", **kwargs):
     """Returns array with padding added along last dimension.
     """
