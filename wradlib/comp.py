@@ -76,6 +76,11 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
         array of float, data of the radar circle which is interpolated on
         the composite grid
 
+    Note
+    ----
+    Keyword arguments to be used while calling the interpolator can be issued as
+    `call_kwargs`, eg. togrid(..... 'call_kwargs=dict(maxdist=10)')
+
     Examples
     --------
 
@@ -84,9 +89,10 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     """
     # get indices to select the subgrid from the composite grid
     ix = extract_circle(center, radius, trg)
+    call_kwargs = kwargs.pop('call_kwargs', {})
     # interpolate on subgrid
     ip = interpol(src, trg[ix], *args, **kwargs)
-    data_on_subgrid = ip(data).reshape((len(ix)))
+    data_on_subgrid = ip(data, **call_kwargs).reshape((len(ix)))
     # create container for entire grid
     composegridshape = [len(trg)]
     composegridshape.extend(data.shape[1:])
