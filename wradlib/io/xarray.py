@@ -72,10 +72,20 @@ Warning
 
    {}
 """
-__all__ = ['XRadVol', 'CfRadial', 'OdimH5', 'to_cfradial2', 'to_odim',
-           'open_odim', 'XRadSweep', 'XRadMoment', 'XRadTimeSeries',
-           'XRadVolume', 'create_xarray_dataarray']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "XRadVol",
+    "CfRadial",
+    "OdimH5",
+    "to_cfradial2",
+    "to_odim",
+    "open_odim",
+    "XRadSweep",
+    "XRadMoment",
+    "XRadTimeSeries",
+    "XRadVolume",
+    "create_xarray_dataarray",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
 import datetime as dt
@@ -96,310 +106,416 @@ from xarray.backends.api import _MultiFileCloser, combine_by_coords
 try:
     from tqdm import tqdm
 except ImportError:
+
     def tqdm(val, **kwargs):
-        print("wradlib: Please wait for completion of time consuming task! \n"
-              "wradlib: Please install 'tqdm' for showing a progress bar "
-              "instead.")
+        print(
+            "wradlib: Please wait for completion of time consuming task! \n"
+            "wradlib: Please install 'tqdm' for showing a progress bar "
+            "instead."
+        )
         return val
+
 
 from wradlib.georef import xarray
 from wradlib import version
 
 
-@deprecation.deprecated(deprecated_in="1.5", removed_in="2.0",
-                        current_version=version.version,
-                        details="Use `wradlib.georef.create_xarray_dataarray` "
-                                "instead.")
+@deprecation.deprecated(
+    deprecated_in="1.5",
+    removed_in="2.0",
+    current_version=version.version,
+    details="Use `wradlib.georef.create_xarray_dataarray` " "instead.",
+)
 def create_xarray_dataarray(*args, **kwargs):
     return xarray.create_xarray_dataarray(*args, **kwargs)
 
 
-moment_attrs = {'standard_name', 'long_name', 'units'}
+moment_attrs = {"standard_name", "long_name", "units"}
 
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
-    'DBZH': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
-             'long_name': 'Equivalent reflectivity factor H',
-             'short_name': 'DBZH',
-             'units': 'dBZ',
-             'gamic': ['zh']},
-    'DBZH_CLEAN': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
-                   'long_name': 'Equivalent reflectivity factor H',
-                   'short_name': 'DBZH_CLEAN',
-                   'units': 'dBZ',
-                   'gamic': None},
-    'DBZV': {'standard_name': 'radar_equivalent_reflectivity_factor_v',
-             'long_name': 'Equivalent reflectivity factor V',
-             'short_name': 'DBZV',
-             'units': 'dBZ',
-             'gamic': ['zv']},
-    'ZH': {'standard_name': 'radar_linear_equivalent_reflectivity_factor_h',
-           'long_name': 'Linear equivalent reflectivity factor H',
-           'short_name': 'ZH',
-           'units': 'unitless',
-           'gamic': None},
-    'ZV': {'standard_name': 'radar_equivalent_reflectivity_factor_v',
-           'long_name': 'Linear equivalent reflectivity factor V',
-           'short_name': 'ZV',
-           'units': 'unitless',
-           'gamic': None},
-    'DBZ': {'standard_name': 'radar_equivalent_reflectivity_factor',
-            'long_name': 'Equivalent reflectivity factor',
-            'short_name': 'DBZ',
-            'units': 'dBZ',
-            'gamic': None},
-    'DBTH': {'standard_name': 'radar_equivalent_reflectivity_factor_h',
-             'long_name': 'Total power H (uncorrected reflectivity)',
-             'short_name': 'DBTH',
-             'units': 'dBZ',
-             'gamic': ['uzh', 'uh']},
-    'DBTV': {'standard_name': 'radar_equivalent_reflectivity_factor_v',
-             'long_name': 'Total power V (uncorrected reflectivity)',
-             'short_name': 'DBTV',
-             'units': 'dBZ',
-             'gamic': ['uzv', 'uv'],
-             },
-    'TH': {'standard_name': 'radar_linear_equivalent_reflectivity_factor_h',
-           'long_name': 'Linear total power H (uncorrected reflectivity)',
-           'short_name': 'TH',
-           'units': 'unitless',
-           'gamic': None},
-    'TV': {'standard_name': 'radar_linear_equivalent_reflectivity_factor_v',
-           'long_name': 'Linear total power V (uncorrected reflectivity)',
-           'short_name': 'TV',
-           'units': 'unitless',
-           'gamic': None},
-    'VRADH': {
-        'standard_name': 'radial_velocity_of_scatterers_away_'
-                         'from_instrument_h',
-        'long_name': 'Radial velocity of scatterers away from instrument H',
-        'short_name': 'VRADH',
-        'units': 'meters per seconds',
-        'gamic': ['vh']},
-    'VRADV': {
-        'standard_name': 'radial_velocity_of_scatterers_'
-                         'away_from_instrument_v',
-        'long_name': 'Radial velocity of scatterers away from instrument V',
-        'short_name': 'VRADV',
-        'units': 'meters per second',
-        'gamic': ['vv'],
+    "DBZH": {
+        "standard_name": "radar_equivalent_reflectivity_factor_h",
+        "long_name": "Equivalent reflectivity factor H",
+        "short_name": "DBZH",
+        "units": "dBZ",
+        "gamic": ["zh"],
     },
-    'VR': {
-        'standard_name': 'radial_velocity_of_scatterers_away_'
-                         'from_instrument',
-        'long_name': 'Radial velocity of scatterers away from instrument',
-        'short_name': 'VR',
-        'units': 'meters per seconds',
-        'gamic': None},
-    'VRAD': {
-        'standard_name': 'radial_velocity_of_scatterers_away_'
-                         'from_instrument',
-        'long_name': 'Radial velocity of scatterers away from instrument',
-        'short_name': 'VRAD',
-        'units': 'meters per seconds',
-        'gamic': None},
-    'VRADDH': {
-        'standard_name': 'radial_velocity_of_scatterers_away_'
-                         'from_instrument_h',
-        'long_name': 'Radial velocity of scatterers away from instrument H',
-        'short_name': 'VRADDH',
-        'units': 'meters per seconds',
-        'gamic': None},
-    'WRADH': {'standard_name': 'radar_doppler_spectrum_width_h',
-              'long_name': 'Doppler spectrum width H',
-              'short_name': 'WRADH',
-              'units': 'meters per seconds',
-              'gamic': ['wh']},
-    'UWRADH': {'standard_name': 'radar_doppler_spectrum_width_h',
-               'long_name': 'Doppler spectrum width H',
-               'short_name': 'UWRADH',
-               'units': 'meters per seconds',
-               'gamic': ['uwh']},
-    'WRADV': {'standard_name': 'radar_doppler_spectrum_width_v',
-              'long_name': 'Doppler spectrum width V',
-              'short_name': 'WRADV',
-              'units': 'meters per second',
-              'gamic': ['wv']},
-    'WRAD': {'standard_name': 'radar_doppler_spectrum_width',
-             'long_name': 'Doppler spectrum width',
-             'short_name': 'WRAD',
-             'units': 'meters per second',
-             'gamic': None},
-    'ZDR': {'standard_name': 'radar_differential_reflectivity_hv',
-            'long_name': 'Log differential reflectivity H/V',
-            'short_name': 'ZDR',
-            'units': 'dB',
-            'gamic': ['zdr']},
-    'UZDR': {'standard_name': 'radar_differential_reflectivity_hv',
-             'long_name': 'Log differential reflectivity H/V',
-             'short_name': 'UZDR',
-             'units': 'dB',
-             'gamic': ['uzdr']},
-    'LDR': {'standard_name': 'radar_linear_depolarization_ratio',
-            'long_name': 'Log-linear depolarization ratio HV',
-            'short_name': 'LDR',
-            'units': 'dB',
-            'gamic': ['ldr']},
-    'PHIDP': {'standard_name': 'radar_differential_phase_hv',
-              'long_name': 'Differential phase HV',
-              'short_name': 'PHIDP',
-              'units': 'degrees',
-              'gamic': ['phidp']},
-    'UPHIDP': {'standard_name': 'radar_differential_phase_hv',
-               'long_name': 'Differential phase HV',
-               'short_name': 'UPHIDP',
-               'units': 'degrees',
-               'gamic': ['uphidp']},
-    'KDP': {'standard_name': 'radar_specific_differential_phase_hv',
-            'long_name': 'Specific differential phase HV',
-            'short_name': 'KDP',
-            'units': 'degrees per kilometer',
-            'gamic': ['kdp']},
-    'RHOHV': {'standard_name': 'radar_correlation_coefficient_hv',
-              'long_name': 'Correlation coefficient HV',
-              'short_name': 'RHOHV',
-              'units': 'unitless',
-              'gamic': ['rhohv']},
-    'URHOHV': {'standard_name': 'radar_correlation_coefficient_hv',
-               'long_name': 'Correlation coefficient HV',
-               'short_name': 'URHOHV',
-               'units': 'unitless',
-               'gamic': ['urhohv']},
-    'SNRH': {'standard_name': 'signal_noise_ratio_h',
-             'long_name': 'Signal Noise Ratio H',
-             'short_name': 'SNRH',
-             'units': 'unitless',
-             'gamic': None},
-    'SNRV': {'standard_name': 'signal_noise_ratio_v',
-             'long_name': 'Signal Noise Ratio V',
-             'short_name': 'SNRV',
-             'units': 'unitless',
-             'gamic': None},
-    'SQIH': {'standard_name': 'signal_quality_index_h',
-             'long_name': 'Signal Quality H',
-             'short_name': 'SQIH',
-             'units': 'unitless',
-             'gamic': None},
-    'SQIV': {'standard_name': 'signal_quality_index_v',
-             'long_name': 'Signal Quality V',
-             'short_name': 'SQIV',
-             'units': 'unitless',
-             'gamic': None},
-    'CCORH': {'standard_name': 'clutter_correction_h',
-              'long_name': 'Clutter Correction H',
-              'short_name': 'CCORH',
-              'units': 'unitless',
-              'gamic': None},
-    'CCORV': {'standard_name': 'clutter_correction_v',
-              'long_name': 'Clutter Correction V',
-              'short_name': 'CCORV',
-              'units': 'unitless',
-              'gamic': None},
-    'CMAP': {'standard_name': 'clutter_map',
-             'long_name': 'Clutter Map',
-             'short_name': 'CMAP',
-             'units': 'unitless',
-             'gamic': ['cmap']},
+    "DBZH_CLEAN": {
+        "standard_name": "radar_equivalent_reflectivity_factor_h",
+        "long_name": "Equivalent reflectivity factor H",
+        "short_name": "DBZH_CLEAN",
+        "units": "dBZ",
+        "gamic": None,
+    },
+    "DBZV": {
+        "standard_name": "radar_equivalent_reflectivity_factor_v",
+        "long_name": "Equivalent reflectivity factor V",
+        "short_name": "DBZV",
+        "units": "dBZ",
+        "gamic": ["zv"],
+    },
+    "ZH": {
+        "standard_name": "radar_linear_equivalent_reflectivity_factor_h",
+        "long_name": "Linear equivalent reflectivity factor H",
+        "short_name": "ZH",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "ZV": {
+        "standard_name": "radar_equivalent_reflectivity_factor_v",
+        "long_name": "Linear equivalent reflectivity factor V",
+        "short_name": "ZV",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "DBZ": {
+        "standard_name": "radar_equivalent_reflectivity_factor",
+        "long_name": "Equivalent reflectivity factor",
+        "short_name": "DBZ",
+        "units": "dBZ",
+        "gamic": None,
+    },
+    "DBTH": {
+        "standard_name": "radar_equivalent_reflectivity_factor_h",
+        "long_name": "Total power H (uncorrected reflectivity)",
+        "short_name": "DBTH",
+        "units": "dBZ",
+        "gamic": ["uzh", "uh"],
+    },
+    "DBTV": {
+        "standard_name": "radar_equivalent_reflectivity_factor_v",
+        "long_name": "Total power V (uncorrected reflectivity)",
+        "short_name": "DBTV",
+        "units": "dBZ",
+        "gamic": ["uzv", "uv"],
+    },
+    "TH": {
+        "standard_name": "radar_linear_equivalent_reflectivity_factor_h",
+        "long_name": "Linear total power H (uncorrected reflectivity)",
+        "short_name": "TH",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "TV": {
+        "standard_name": "radar_linear_equivalent_reflectivity_factor_v",
+        "long_name": "Linear total power V (uncorrected reflectivity)",
+        "short_name": "TV",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "VRADH": {
+        "standard_name": "radial_velocity_of_scatterers_away_" "from_instrument_h",
+        "long_name": "Radial velocity of scatterers away from instrument H",
+        "short_name": "VRADH",
+        "units": "meters per seconds",
+        "gamic": ["vh"],
+    },
+    "VRADV": {
+        "standard_name": "radial_velocity_of_scatterers_" "away_from_instrument_v",
+        "long_name": "Radial velocity of scatterers away from instrument V",
+        "short_name": "VRADV",
+        "units": "meters per second",
+        "gamic": ["vv"],
+    },
+    "VR": {
+        "standard_name": "radial_velocity_of_scatterers_away_" "from_instrument",
+        "long_name": "Radial velocity of scatterers away from instrument",
+        "short_name": "VR",
+        "units": "meters per seconds",
+        "gamic": None,
+    },
+    "VRAD": {
+        "standard_name": "radial_velocity_of_scatterers_away_" "from_instrument",
+        "long_name": "Radial velocity of scatterers away from instrument",
+        "short_name": "VRAD",
+        "units": "meters per seconds",
+        "gamic": None,
+    },
+    "VRADDH": {
+        "standard_name": "radial_velocity_of_scatterers_away_" "from_instrument_h",
+        "long_name": "Radial velocity of scatterers away from instrument H",
+        "short_name": "VRADDH",
+        "units": "meters per seconds",
+        "gamic": None,
+    },
+    "WRADH": {
+        "standard_name": "radar_doppler_spectrum_width_h",
+        "long_name": "Doppler spectrum width H",
+        "short_name": "WRADH",
+        "units": "meters per seconds",
+        "gamic": ["wh"],
+    },
+    "UWRADH": {
+        "standard_name": "radar_doppler_spectrum_width_h",
+        "long_name": "Doppler spectrum width H",
+        "short_name": "UWRADH",
+        "units": "meters per seconds",
+        "gamic": ["uwh"],
+    },
+    "WRADV": {
+        "standard_name": "radar_doppler_spectrum_width_v",
+        "long_name": "Doppler spectrum width V",
+        "short_name": "WRADV",
+        "units": "meters per second",
+        "gamic": ["wv"],
+    },
+    "WRAD": {
+        "standard_name": "radar_doppler_spectrum_width",
+        "long_name": "Doppler spectrum width",
+        "short_name": "WRAD",
+        "units": "meters per second",
+        "gamic": None,
+    },
+    "ZDR": {
+        "standard_name": "radar_differential_reflectivity_hv",
+        "long_name": "Log differential reflectivity H/V",
+        "short_name": "ZDR",
+        "units": "dB",
+        "gamic": ["zdr"],
+    },
+    "UZDR": {
+        "standard_name": "radar_differential_reflectivity_hv",
+        "long_name": "Log differential reflectivity H/V",
+        "short_name": "UZDR",
+        "units": "dB",
+        "gamic": ["uzdr"],
+    },
+    "LDR": {
+        "standard_name": "radar_linear_depolarization_ratio",
+        "long_name": "Log-linear depolarization ratio HV",
+        "short_name": "LDR",
+        "units": "dB",
+        "gamic": ["ldr"],
+    },
+    "PHIDP": {
+        "standard_name": "radar_differential_phase_hv",
+        "long_name": "Differential phase HV",
+        "short_name": "PHIDP",
+        "units": "degrees",
+        "gamic": ["phidp"],
+    },
+    "UPHIDP": {
+        "standard_name": "radar_differential_phase_hv",
+        "long_name": "Differential phase HV",
+        "short_name": "UPHIDP",
+        "units": "degrees",
+        "gamic": ["uphidp"],
+    },
+    "KDP": {
+        "standard_name": "radar_specific_differential_phase_hv",
+        "long_name": "Specific differential phase HV",
+        "short_name": "KDP",
+        "units": "degrees per kilometer",
+        "gamic": ["kdp"],
+    },
+    "RHOHV": {
+        "standard_name": "radar_correlation_coefficient_hv",
+        "long_name": "Correlation coefficient HV",
+        "short_name": "RHOHV",
+        "units": "unitless",
+        "gamic": ["rhohv"],
+    },
+    "URHOHV": {
+        "standard_name": "radar_correlation_coefficient_hv",
+        "long_name": "Correlation coefficient HV",
+        "short_name": "URHOHV",
+        "units": "unitless",
+        "gamic": ["urhohv"],
+    },
+    "SNRH": {
+        "standard_name": "signal_noise_ratio_h",
+        "long_name": "Signal Noise Ratio H",
+        "short_name": "SNRH",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "SNRV": {
+        "standard_name": "signal_noise_ratio_v",
+        "long_name": "Signal Noise Ratio V",
+        "short_name": "SNRV",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "SQIH": {
+        "standard_name": "signal_quality_index_h",
+        "long_name": "Signal Quality H",
+        "short_name": "SQIH",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "SQIV": {
+        "standard_name": "signal_quality_index_v",
+        "long_name": "Signal Quality V",
+        "short_name": "SQIV",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "CCORH": {
+        "standard_name": "clutter_correction_h",
+        "long_name": "Clutter Correction H",
+        "short_name": "CCORH",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "CCORV": {
+        "standard_name": "clutter_correction_v",
+        "long_name": "Clutter Correction V",
+        "short_name": "CCORV",
+        "units": "unitless",
+        "gamic": None,
+    },
+    "CMAP": {
+        "standard_name": "clutter_map",
+        "long_name": "Clutter Map",
+        "short_name": "CMAP",
+        "units": "unitless",
+        "gamic": ["cmap"],
+    },
 }
 
-ODIM_NAMES = {value['short_name']: key for (key, value) in
-              moments_mapping.items()}
+ODIM_NAMES = {value["short_name"]: key for (key, value) in moments_mapping.items()}
 
-GAMIC_NAMES = {v: key for (key, value) in moments_mapping.items()
-               if value['gamic'] is not None for v in value['gamic']}
+GAMIC_NAMES = {
+    v: key
+    for (key, value) in moments_mapping.items()
+    if value["gamic"] is not None
+    for v in value["gamic"]
+}
 
-range_attrs = {'units': 'meters',
-               'standard_name': 'projection_range_coordinate',
-               'long_name': 'range_to_measurement_volume',
-               'spacing_is_constant': 'true',
-               'axis': 'radial_range_coordinate',
-               'meters_to_center_of_first_gate': None,
-               }
+range_attrs = {
+    "units": "meters",
+    "standard_name": "projection_range_coordinate",
+    "long_name": "range_to_measurement_volume",
+    "spacing_is_constant": "true",
+    "axis": "radial_range_coordinate",
+    "meters_to_center_of_first_gate": None,
+}
 
-az_attrs = {'standard_name': 'ray_azimuth_angle',
-            'long_name': 'azimuth_angle_from_true_north',
-            'units': 'degrees',
-            'axis': 'radial_azimuth_coordinate'}
+az_attrs = {
+    "standard_name": "ray_azimuth_angle",
+    "long_name": "azimuth_angle_from_true_north",
+    "units": "degrees",
+    "axis": "radial_azimuth_coordinate",
+}
 
-el_attrs = {'standard_name': 'ray_elevation_angle',
-            'long_name': 'elevation_angle_from_horizontal_plane',
-            'units': 'degrees',
-            'axis': 'radial_elevation_coordinate'}
+el_attrs = {
+    "standard_name": "ray_elevation_angle",
+    "long_name": "elevation_angle_from_horizontal_plane",
+    "units": "degrees",
+    "axis": "radial_elevation_coordinate",
+}
 
-time_attrs = {'standard_name': 'time',
-              'units': 'seconds since 1970-01-01T00:00:00Z',
-              }
+time_attrs = {
+    "standard_name": "time",
+    "units": "seconds since 1970-01-01T00:00:00Z",
+}
 
-root_vars = {'volume_number', 'platform_type', 'instrument_type',
-             'primary_axis', 'time_coverage_start', 'time_coverage_end',
-             'latitude', 'longitude', 'altitude', 'fixed_angle',
-             'status_xml'}
+root_vars = {
+    "volume_number",
+    "platform_type",
+    "instrument_type",
+    "primary_axis",
+    "time_coverage_start",
+    "time_coverage_end",
+    "latitude",
+    "longitude",
+    "altitude",
+    "fixed_angle",
+    "status_xml",
+}
 
-sweep_vars1 = {'sweep_number', 'sweep_mode', 'polarization_mode',
-               'prt_mode', 'follow_mode', 'fixed_angle',
-               'target_scan_rate', 'sweep_start_ray_index',
-               'sweep_end_ray_index'}
+sweep_vars1 = {
+    "sweep_number",
+    "sweep_mode",
+    "polarization_mode",
+    "prt_mode",
+    "follow_mode",
+    "fixed_angle",
+    "target_scan_rate",
+    "sweep_start_ray_index",
+    "sweep_end_ray_index",
+}
 
-sweep_vars2 = {'azimuth', 'elevation', 'pulse_width', 'prt',
-               'nyquist_velocity', 'unambiguous_range',
-               'antenna_transition', 'n_samples', 'r_calib_index',
-               'scan_rate'}
+sweep_vars2 = {
+    "azimuth",
+    "elevation",
+    "pulse_width",
+    "prt",
+    "nyquist_velocity",
+    "unambiguous_range",
+    "antenna_transition",
+    "n_samples",
+    "r_calib_index",
+    "scan_rate",
+}
 
-sweep_vars3 = {'DBZ', 'VR', 'time', 'range', 'reflectivity_horizontal'}
+sweep_vars3 = {"DBZ", "VR", "time", "range", "reflectivity_horizontal"}
 
-cf_full_vars = {'prt': 'prf', 'n_samples': 'pulse'}
+cf_full_vars = {"prt": "prf", "n_samples": "pulse"}
 
-global_attrs = [('Conventions', 'Cf/Radial'),
-                ('version', 'Cf/Radial version number'),
-                ('title', 'short description of file contents'),
-                ('institution', 'where the original data were produced'),
-                ('references',
-                 ('references that describe the data or the methods used '
-                  'to produce it')),
-                ('source', 'method of production of the original data'),
-                ('history', 'list of modifications to the original data'),
-                ('comment', 'miscellaneous information'),
-                ('instrument_name', 'nameThe  of radar or lidar'),
-                ('site_name', 'name of site where data were gathered'),
-                ('scan_name', 'name of scan strategy used, if applicable'),
-                ('scan_id',
-                 'scan strategy id, if applicable. assumed 0 if missing'),
-                ('platform_is_mobile',
-                 '"true" or "false", assumed "false" if missing'),
-                ('ray_times_increase',
-                 ('"true" or "false", assumed "true" if missing. '
-                  'This is set to true if ray times increase monotonically '
-                  'thoughout all of the sweeps in the volume')),
-                ('field_names',
-                 'array of strings of field names present in this file.'),
-                ('time_coverage_start',
-                 'copy of time_coverage_start global variable'),
-                ('time_coverage_end',
-                 'copy of time_coverage_end global variable'),
-                ('simulated data',
-                 ('"true" or "false", assumed "false" if missing. '
-                  'data in this file are simulated'))]
+global_attrs = [
+    ("Conventions", "Cf/Radial"),
+    ("version", "Cf/Radial version number"),
+    ("title", "short description of file contents"),
+    ("institution", "where the original data were produced"),
+    (
+        "references",
+        ("references that describe the data or the methods used " "to produce it"),
+    ),
+    ("source", "method of production of the original data"),
+    ("history", "list of modifications to the original data"),
+    ("comment", "miscellaneous information"),
+    ("instrument_name", "nameThe  of radar or lidar"),
+    ("site_name", "name of site where data were gathered"),
+    ("scan_name", "name of scan strategy used, if applicable"),
+    ("scan_id", "scan strategy id, if applicable. assumed 0 if missing"),
+    ("platform_is_mobile", '"true" or "false", assumed "false" if missing'),
+    (
+        "ray_times_increase",
+        (
+            '"true" or "false", assumed "true" if missing. '
+            "This is set to true if ray times increase monotonically "
+            "thoughout all of the sweeps in the volume"
+        ),
+    ),
+    ("field_names", "array of strings of field names present in this file."),
+    ("time_coverage_start", "copy of time_coverage_start global variable"),
+    ("time_coverage_end", "copy of time_coverage_end global variable"),
+    (
+        "simulated data",
+        (
+            '"true" or "false", assumed "false" if missing. '
+            "data in this file are simulated"
+        ),
+    ),
+]
 
-global_variables = dict([('volume_number', np.int),
-                         ('platform_type', 'fixed'),
-                         ('instrument_type', 'radar'),
-                         ('primary_axis', 'axis_z'),
-                         ('time_coverage_start', '1970-01-01T00:00:00Z'),
-                         ('time_coverage_end', '1970-01-01T00:00:00Z'),
-                         ('latitude', np.nan),
-                         ('longitude', np.nan),
-                         ('altitude', np.nan),
-                         ('altitude_agl', np.nan),
-                         ('sweep_group_name', (['sweep'], [np.nan])),
-                         ('sweep_fixed_angle', (['sweep'], [np.nan])),
-                         ('frequency', np.nan),
-                         ('status_xml', 'None')])
+global_variables = dict(
+    [
+        ("volume_number", np.int),
+        ("platform_type", "fixed"),
+        ("instrument_type", "radar"),
+        ("primary_axis", "axis_z"),
+        ("time_coverage_start", "1970-01-01T00:00:00Z"),
+        ("time_coverage_end", "1970-01-01T00:00:00Z"),
+        ("latitude", np.nan),
+        ("longitude", np.nan),
+        ("altitude", np.nan),
+        ("altitude_agl", np.nan),
+        ("sweep_group_name", (["sweep"], [np.nan])),
+        ("sweep_fixed_angle", (["sweep"], [np.nan])),
+        ("frequency", np.nan),
+        ("status_xml", "None"),
+    ]
+)
 
 
-@xr.register_dataset_accessor('gamic')
+@xr.register_dataset_accessor("gamic")
 class GamicAccessor(object):
     """Dataset Accessor for handling GAMIC HDF5 data files
     """
+
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self._radial_range = None
@@ -415,16 +531,16 @@ class GamicAccessor(object):
     def radial_range(self):
         """Return the radial range of this dataset."""
         if self._radial_range is None:
-            ngates = self._obj.attrs['bin_count']
+            ngates = self._obj.attrs["bin_count"]
             # range_start = self._obj.attrs['range_start']
-            range_samples = self._obj.attrs['range_samples']
-            range_step = self._obj.attrs['range_step']
+            range_samples = self._obj.attrs["range_samples"]
+            range_step = self._obj.attrs["range_step"]
             bin_range = range_step * range_samples
-            range_data = np.arange(bin_range / 2., bin_range * ngates,
-                                   bin_range,
-                                   dtype='float32')
-            range_attrs['meters_to_center_of_first_gate'] = bin_range / 2.
-            da = xr.DataArray(range_data, dims=['dim_1'], attrs=range_attrs)
+            range_data = np.arange(
+                bin_range / 2.0, bin_range * ngates, bin_range, dtype="float32"
+            )
+            range_attrs["meters_to_center_of_first_gate"] = bin_range / 2.0
+            da = xr.DataArray(range_data, dims=["dim_1"], attrs=range_attrs)
             self._radial_range = da
         return self._radial_range
 
@@ -432,11 +548,11 @@ class GamicAccessor(object):
     def azimuth_range(self):
         """Return the azimuth range of this dataset."""
         if self._azimuth_range is None:
-            azstart = self._obj['azimuth_start']
-            azstop = self._obj['azimuth_stop']
+            azstart = self._obj["azimuth_start"]
+            azstop = self._obj["azimuth_stop"]
             zero_index = np.where(azstop < azstart)
             azstop[zero_index[0]] += 360
-            azimuth = (azstart + azstop) / 2.
+            azimuth = (azstart + azstop) / 2.0
             azimuth = azimuth.assign_attrs(az_attrs)
             self._azimuth_range = azimuth
         return self._azimuth_range
@@ -445,9 +561,9 @@ class GamicAccessor(object):
     def elevation_range(self):
         """Return the elevation range of this dataset."""
         if self._elevation_range is None:
-            elstart = self._obj['elevation_start']
-            elstop = self._obj['elevation_stop']
-            elevation = (elstart + elstop) / 2.
+            elstart = self._obj["elevation_start"]
+            elstop = self._obj["elevation_stop"]
+            elevation = (elstart + elstop) / 2.0
             elevation = elevation.assign_attrs(el_attrs)
             self._elevation_range = elevation
         return self._elevation_range
@@ -456,18 +572,21 @@ class GamicAccessor(object):
     def time_range(self):
         """Return the time range of this dataset."""
         if self._time_range is None:
-            times = self._obj['timestamp'] / 1e6
-            attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
-                     'standard_name': 'time'}
+            times = self._obj["timestamp"] / 1e6
+            attrs = {
+                "units": "seconds since 1970-01-01T00:00:00Z",
+                "standard_name": "time",
+            }
             da = xr.DataArray(times, attrs=attrs)
             self._time_range = da
         return self._time_range
 
 
-@xr.register_dataset_accessor('odim')
+@xr.register_dataset_accessor("odim")
 class OdimAccessor(object):
     """Dataset Accessor for handling ODIM_H5 data files
     """
+
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self._radial_range = None
@@ -482,20 +601,17 @@ class OdimAccessor(object):
     def radial_range(self):
         """Return the radial range of this dataset."""
         if self._radial_range is None:
-            ngates = self._obj.attrs['nbins']
-            range_start = self._obj.attrs['rstart'] * 1000.
-            bin_range = self._obj.attrs['rscale']
-            cent_first = range_start + bin_range / 2.
-            range_data = np.arange(cent_first,
-                                   range_start + bin_range * ngates,
-                                   bin_range,
-                                   dtype='float32')
-            range_attrs[
-                'meters_to_center_of_first_gate'] = cent_first
-            range_attrs[
-                'meters_between_gates'] = bin_range
+            ngates = self._obj.attrs["nbins"]
+            range_start = self._obj.attrs["rstart"] * 1000.0
+            bin_range = self._obj.attrs["rscale"]
+            cent_first = range_start + bin_range / 2.0
+            range_data = np.arange(
+                cent_first, range_start + bin_range * ngates, bin_range, dtype="float32"
+            )
+            range_attrs["meters_to_center_of_first_gate"] = cent_first
+            range_attrs["meters_between_gates"] = bin_range
 
-            da = xr.DataArray(range_data, dims=['dim_1'], attrs=range_attrs)
+            da = xr.DataArray(range_data, dims=["dim_1"], attrs=range_attrs)
             self._radial_range = da
         return self._radial_range
 
@@ -503,14 +619,11 @@ class OdimAccessor(object):
     def azimuth_range2(self):
         """Return the azimuth range of this dataset."""
         if self._azimuth_range is None:
-            nrays = self._obj.attrs['nrays']
-            res = 360. / nrays
-            azimuth_data = np.arange(res / 2.,
-                                     360.,
-                                     res,
-                                     dtype='float32')
+            nrays = self._obj.attrs["nrays"]
+            res = 360.0 / nrays
+            azimuth_data = np.arange(res / 2.0, 360.0, res, dtype="float32")
 
-            da = xr.DataArray(azimuth_data, dims=['dim_0'], attrs=az_attrs)
+            da = xr.DataArray(azimuth_data, dims=["dim_0"], attrs=az_attrs)
             self._azimuth_range = da
         return self._azimuth_range
 
@@ -518,11 +631,11 @@ class OdimAccessor(object):
     def azimuth_range(self):
         """Return the azimuth range of this dataset."""
         if self._azimuth_range is None:
-            startaz = self._obj.attrs['startazA']
-            stopaz = self._obj.attrs['stopazA']
+            startaz = self._obj.attrs["startazA"]
+            stopaz = self._obj.attrs["stopazA"]
             zero_index = np.where(stopaz < startaz)
             stopaz[zero_index[0]] += 360
-            azimuth_data = (startaz + stopaz) / 2.
+            azimuth_data = (startaz + stopaz) / 2.0
             da = xr.DataArray(azimuth_data, attrs=az_attrs)
             self._azimuth_range = da
         return self._azimuth_range
@@ -531,10 +644,10 @@ class OdimAccessor(object):
     def elevation_range2(self):
         """Return the elevation range of this dataset."""
         if self._elevation_range is None:
-            nrays = self._obj.attrs['nrays']
-            elangle = self._obj.attrs['elangle']
-            elevation_data = np.ones(nrays, dtype='float32') * elangle
-            da = xr.DataArray(elevation_data, dims=['dim_0'], attrs=el_attrs)
+            nrays = self._obj.attrs["nrays"]
+            elangle = self._obj.attrs["elangle"]
+            elevation_data = np.ones(nrays, dtype="float32") * elangle
+            da = xr.DataArray(elevation_data, dims=["dim_0"], attrs=el_attrs)
             self._elevation_range = da
         return self._elevation_range
 
@@ -542,10 +655,10 @@ class OdimAccessor(object):
     def elevation_range(self):
         """Return the elevation range of this dataset."""
         if self._elevation_range is None:
-            startel = self._obj.attrs['startelA']
-            stopel = self._obj.attrs['stopelA']
-            elevation_data = (startel + stopel) / 2.
-            da = xr.DataArray(elevation_data, dims=['dim_0'], attrs=el_attrs)
+            startel = self._obj.attrs["startelA"]
+            stopel = self._obj.attrs["stopelA"]
+            elevation_data = (startel + stopel) / 2.0
+            da = xr.DataArray(elevation_data, dims=["dim_0"], attrs=el_attrs)
             self._elevation_range = da
         return self._elevation_range
 
@@ -553,9 +666,9 @@ class OdimAccessor(object):
     def time_range(self):
         """Return the time range of this dataset."""
         if self._time_range is None:
-            startT = self._obj.attrs['startazT']
-            stopT = self._obj.attrs['stopazT']
-            times = (startT + stopT) / 2.
+            startT = self._obj.attrs["startazT"]
+            stopT = self._obj.attrs["stopazT"]
+            times = (startT + stopT) / 2.0
             self._time_range = times
 
         return self._time_range
@@ -564,13 +677,13 @@ class OdimAccessor(object):
     def time_range2(self):
         """Return the time range of this dataset."""
         if self._time_range2 is None:
-            startdate = self._obj.attrs['startdate']
-            starttime = self._obj.attrs['starttime']
-            enddate = self._obj.attrs['enddate']
-            endtime = self._obj.attrs['endtime']
+            startdate = self._obj.attrs["startdate"]
+            starttime = self._obj.attrs["starttime"]
+            enddate = self._obj.attrs["enddate"]
+            endtime = self._obj.attrs["endtime"]
 
-            start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
-            end = dt.datetime.strptime(enddate + endtime, '%Y%m%d%H%M%S')
+            start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
+            end = dt.datetime.strptime(enddate + endtime, "%Y%m%d%H%M%S")
             start = start.replace(tzinfo=dt.timezone.utc)
             end = end.replace(tzinfo=dt.timezone.utc)
 
@@ -581,8 +694,8 @@ class OdimAccessor(object):
     def prt(self):
         if self._prt is None:
             try:
-                prt = 1. / self._obj.attrs['prf']
-                da = xr.DataArray(prt, dims=['dim_0'])
+                prt = 1.0 / self._obj.attrs["prf"]
+                da = xr.DataArray(prt, dims=["dim_0"])
                 self._prt = da
             except KeyError:
                 pass
@@ -592,7 +705,7 @@ class OdimAccessor(object):
     def n_samples(self):
         if self._n_samples is None:
             try:
-                da = xr.DataArray(self._obj.attrs['pulse'], dims=['dim_0'])
+                da = xr.DataArray(self._obj.attrs["pulse"], dims=["dim_0"])
                 self._n_samples = da
             except KeyError:
                 pass
@@ -612,9 +725,9 @@ def to_cfradial2(volume, filename, timestep=None):
     """
     volume.root.load()
     root = volume.root.copy(deep=True)
-    root.attrs['Conventions'] = 'Cf/Radial'
-    root.attrs['version'] = '2.0'
-    root.to_netcdf(filename, mode='w', group='/')
+    root.attrs["Conventions"] = "Cf/Radial"
+    root.attrs["version"] = "2.0"
+    root.to_netcdf(filename, mode="w", group="/")
     for idx, key in enumerate(root.sweep_group_name.values):
         try:
             swp = volume[key]
@@ -622,15 +735,15 @@ def to_cfradial2(volume, filename, timestep=None):
             swp = volume[idx][timestep].data
         swp.load()
         dims = list(swp.dims)
-        dims.remove('range')
+        dims.remove("range")
         dim0 = dims[0]
         try:
-            swp = swp.swap_dims({dim0: 'time'})
+            swp = swp.swap_dims({dim0: "time"})
         except ValueError:
-            swp = swp.drop_vars('time').rename({'rtime': 'time'})
-            swp = swp.swap_dims({dim0: 'time'})
-        swp.drop_vars(['x', 'y', 'z', 'gr', 'rays', 'bins'], errors='ignore')
-        swp.to_netcdf(filename, mode='a', group=key)
+            swp = swp.drop_vars("time").rename({"rtime": "time"})
+            swp = swp.swap_dims({dim0: "time"})
+        swp.drop_vars(["x", "y", "z", "gr", "rays", "bins"], errors="ignore")
+        swp.to_netcdf(filename, mode="a", group=key)
 
 
 def to_netcdf(volume, filename, timestep=None):
@@ -646,12 +759,12 @@ def to_netcdf(volume, filename, timestep=None):
     """
     volume.root.load()
     root = volume.root.copy(deep=True)
-    root.attrs['Conventions'] = 'Cf/Radial'
-    root.attrs['version'] = '2.0'
-    root.to_netcdf(filename, mode='w', group='/')
+    root.attrs["Conventions"] = "Cf/Radial"
+    root.attrs["version"] = "2.0"
+    root.to_netcdf(filename, mode="w", group="/")
     for idx, key in enumerate(root.sweep_group_name.values):
         swp = volume[idx].data.isel(time=timestep)
-        swp.to_netcdf(filename, mode='a', group=key)
+        swp.to_netcdf(filename, mode="a", group=key)
 
 
 def to_odim(volume, filename, timestep=0):
@@ -667,16 +780,16 @@ def to_odim(volume, filename, timestep=0):
     """
     root = volume.root
 
-    h5 = h5py.File(filename, 'w')
+    h5 = h5py.File(filename, "w")
 
     # root group, only Conventions for ODIM_H5
-    _write_odim({'Conventions': 'ODIM_H5/V2_2'}, h5)
+    _write_odim({"Conventions": "ODIM_H5/V2_2"}, h5)
 
     # how group
     how = {}
-    how.update({'_modification_program': 'wradlib'})
+    how.update({"_modification_program": "wradlib"})
 
-    h5_how = h5.create_group('how')
+    h5_how = h5.create_group("how")
     _write_odim(how, h5_how)
 
     sweepnames = root.sweep_group_name.values
@@ -685,101 +798,102 @@ def to_odim(volume, filename, timestep=0):
     # p. 10 f
     what = {}
     if len(sweepnames) > 1:
-        what['object'] = 'PVOL'
+        what["object"] = "PVOL"
     else:
-        what['object'] = 'SCAN'
-    what['version'] = 'H5rad 2.2'
-    what['date'] = str(root.time_coverage_start.values)[:10].replace(
-        '-', '')
-    what['time'] = str(root.time_coverage_end.values)[11:19].replace(
-        ':', '')
-    what['source'] = root.attrs['instrument_name']
+        what["object"] = "SCAN"
+    what["version"] = "H5rad 2.2"
+    what["date"] = str(root.time_coverage_start.values)[:10].replace("-", "")
+    what["time"] = str(root.time_coverage_end.values)[11:19].replace(":", "")
+    what["source"] = root.attrs["instrument_name"]
 
-    h5_what = h5.create_group('what')
+    h5_what = h5.create_group("what")
     _write_odim(what, h5_what)
 
     # where group, lon, lat, height, mandatory
-    where = {'lon': root.longitude.values,
-             'lat': root.latitude.values,
-             'height': root.altitude.values}
-    h5_where = h5.create_group('where')
+    where = {
+        "lon": root.longitude.values,
+        "lat": root.latitude.values,
+        "height": root.altitude.values,
+    }
+    h5_where = h5.create_group("where")
     _write_odim(where, h5_where)
 
     # datasets
-    ds_list = ['dataset{}'.format(i + 1) for i in range(len(sweepnames))]
+    ds_list = ["dataset{}".format(i + 1) for i in range(len(sweepnames))]
     ds_idx = np.argsort(ds_list)
     for idx in ds_idx:
         try:
-            ds = volume['sweep_{}'.format(idx + 1)]
+            ds = volume["sweep_{}".format(idx + 1)]
         except TypeError:
             ds = volume[idx][timestep].data
         h5_dataset = h5.create_group(ds_list[idx])
 
         # what group p. 21 ff.
-        h5_ds_what = h5_dataset.create_group('what')
+        h5_ds_what = h5_dataset.create_group("what")
         ds_what = {}
         # skip NaT values
         valid_times = ~np.isnat(ds.time.values)
         t = sorted(ds.time.values[valid_times])
-        start = dt.datetime.utcfromtimestamp(np.rint(t[0].astype('O') / 1e9))
-        end = dt.datetime.utcfromtimestamp(
-            np.rint(t[-1].astype('O') / 1e9))
-        ds_what['product'] = 'SCAN'
-        ds_what['startdate'] = start.strftime('%Y%m%d')
-        ds_what['starttime'] = start.strftime('%H%M%S')
-        ds_what['enddate'] = end.strftime('%Y%m%d')
-        ds_what['endtime'] = end.strftime('%H%M%S')
+        start = dt.datetime.utcfromtimestamp(np.rint(t[0].astype("O") / 1e9))
+        end = dt.datetime.utcfromtimestamp(np.rint(t[-1].astype("O") / 1e9))
+        ds_what["product"] = "SCAN"
+        ds_what["startdate"] = start.strftime("%Y%m%d")
+        ds_what["starttime"] = start.strftime("%H%M%S")
+        ds_what["enddate"] = end.strftime("%Y%m%d")
+        ds_what["endtime"] = end.strftime("%H%M%S")
         _write_odim(ds_what, h5_ds_what)
 
         # where group, p. 11 ff. mandatory
-        h5_ds_where = h5_dataset.create_group('where')
-        rscale = ds.range.values[1] / 1. - ds.range.values[0]
-        rstart = (ds.range.values[0] - rscale / 2.) / 1000.
+        h5_ds_where = h5_dataset.create_group("where")
+        rscale = ds.range.values[1] / 1.0 - ds.range.values[0]
+        rstart = (ds.range.values[0] - rscale / 2.0) / 1000.0
         try:
-            a1gate = np.argsort(ds.sortby('time').azimuth.values)[0]
+            a1gate = np.argsort(ds.sortby("time").azimuth.values)[0]
         except ValueError:
-            a1gate = np.argsort(ds.sortby('rtime').azimuth.values)[0]
+            a1gate = np.argsort(ds.sortby("rtime").azimuth.values)[0]
         try:
             fixed_angle = ds.fixed_angle
         except AttributeError:
             fixed_angle = ds.elevation.round(decimals=1).median().values
-        ds_where = {'elangle': fixed_angle,
-                    'nbins': ds.range.shape[0],
-                    'rstart': rstart,
-                    'rscale': rscale,
-                    'nrays': ds.azimuth.shape[0],
-                    'a1gate': a1gate,
-                    }
+        ds_where = {
+            "elangle": fixed_angle,
+            "nbins": ds.range.shape[0],
+            "rstart": rstart,
+            "rscale": rscale,
+            "nrays": ds.azimuth.shape[0],
+            "a1gate": a1gate,
+        }
         _write_odim(ds_where, h5_ds_where)
 
         # how group, p. 14 ff.
-        h5_ds_how = h5_dataset.create_group('how')
+        h5_ds_how = h5_dataset.create_group("how")
         try:
-            tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').time]
+            tout = [tx.astype("O") / 1e9 for tx in ds.sortby("azimuth").time]
         except TypeError:
-            tout = [tx.astype('O') / 1e9 for tx in ds.sortby('azimuth').rtime]
+            tout = [tx.astype("O") / 1e9 for tx in ds.sortby("azimuth").rtime]
 
-        difft = np.diff(tout) / 2.
+        difft = np.diff(tout) / 2.0
         difft = np.insert(difft, 0, difft[0])
-        azout = ds.sortby('azimuth').azimuth
-        diffa = np.diff(azout) / 2.
+        azout = ds.sortby("azimuth").azimuth
+        diffa = np.diff(azout) / 2.0
         diffa = np.insert(diffa, 0, diffa[0])
-        elout = ds.sortby('azimuth').elevation
-        diffe = np.diff(elout) / 2.
+        elout = ds.sortby("azimuth").elevation
+        diffe = np.diff(elout) / 2.0
         diffe = np.insert(diffe, 0, diffe[0])
         try:
             sweep_number = ds.sweep_number + 1
         except AttributeError:
             sweep_number = timestep
-        ds_how = {'scan_index': sweep_number,
-                  'scan_count': len(sweepnames),
-                  'startazT': tout - difft,
-                  'stopazT': tout + difft,
-                  'startazA': azout - diffa,
-                  'stopazA': azout + diffa,
-                  'startelA': elout - diffe,
-                  'stopelA': elout + diffe,
-                  }
+        ds_how = {
+            "scan_index": sweep_number,
+            "scan_count": len(sweepnames),
+            "startazT": tout - difft,
+            "stopazT": tout + difft,
+            "startazA": azout - diffa,
+            "stopazA": azout + diffa,
+            "startelA": elout - diffe,
+            "stopelA": elout + diffe,
+        }
         _write_odim(ds_how, h5_ds_how)
 
         # write moments
@@ -794,36 +908,42 @@ def _preprocess_moment(ds, mom, non_uniform_shape):
     quantity = mom.quantity
     if mom.parent.mask_and_scale:
         what = mom.what
-        attrs['scale_factor'] = what['gain']
-        attrs['add_offset'] = what['offset']
-        attrs['_FillValue'] = what['nodata']
-        attrs['_Undetect'] = what['undetect']
+        attrs["scale_factor"] = what["gain"]
+        attrs["add_offset"] = what["offset"]
+        attrs["_FillValue"] = what["nodata"]
+        attrs["_Undetect"] = what["undetect"]
     else:
         attrs.update(mom.what)
-        attrs.pop('quantity')
+        attrs.pop("quantity")
 
     if mom.parent.decode_coords:
-        attrs['coordinates'] = 'elevation azimuth range'
+        attrs["coordinates"] = "elevation azimuth range"
 
-    mapping = moments_mapping[quantity]
-    attrs.update({key: mapping[key] for key in moment_attrs})
-    ds['data'] = ds['data'].assign_attrs(attrs)
+    # handle non-standard moment names
+    try:
+        mapping = moments_mapping[quantity]
+    except KeyError:
+        pass
+    else:
+        attrs.update({key: mapping[key] for key in moment_attrs})
+
+    ds["data"] = ds["data"].assign_attrs(attrs)
 
     # fix dimensions
-    dims = sorted(list(ds.dims.keys()),
-                  key=lambda x: int(x[len('phony_dim_'):]))
+    dims = sorted(list(ds.dims.keys()), key=lambda x: int(x[len("phony_dim_") :]))
 
-    ds = ds.rename({'data': quantity,
-                    dims[0]: 'azimuth',
-                    dims[1]: 'range'})
+    ds = ds.rename(
+        {"data": quantity, dims[0]: mom.parent._dim0[0], dims[1]: mom.parent._dim1}
+    )
 
     # apply coordinates to dataset if source moments have different shapes
     # and correct for it
     if mom.parent.decode_coords & non_uniform_shape:
         coords = mom.parent._get_coords()
         ds = ds.assign_coords(coords.coords)
-        ds = ds.sortby('azimuth')
-        ds = ds.pipe(_reindex_azimuth, mom.parent)
+        if mom.parent._dim0[0] == "azimuth":
+            ds = ds.sortby(mom.parent._dim0[0])
+            ds = ds.pipe(_reindex_azimuth, mom.parent)
 
     return ds
 
@@ -859,21 +979,22 @@ def _reindex_azimuth(ds, sweep, force=False):
             if sweep._need_time_recalc:
                 ray_times = sweep._get_ray_times(nrays=len(idx))
                 ray_times = sweep._decode_cf(ray_times)
-                ds = ds.assign({'rtime': ray_times})
+                ds = ds.assign({"rtime": ray_times})
 
         # todo: check if assumption that beam center points to
         #       multiples of res/2. is correct in any case
-        azr = np.arange(res / 2., new_rays, res, dtype=diff.dtype)
-        ds = (ds.reindex({dimname: azr},
-                         method='nearest',
-                         tolerance=res/4.,
-                         # fill_value=xr.core.dtypes.NA,
-                         ))
+        azr = np.arange(res / 2.0, new_rays, res, dtype=diff.dtype)
+        ds = ds.reindex(
+            {dimname: azr},
+            method="nearest",
+            tolerance=res / 4.0,
+            # fill_value=xr.core.dtypes.NA,
+        )
         # check other coordinates
         # check elevation (no nan)
         # set nan values to reasonable median
-        if np.count_nonzero(xr.ufuncs.isnan(ds['elevation'])):
-            ds['elevation'] = ds['elevation'].fillna(ds['elevation'].median())
+        if np.count_nonzero(xr.ufuncs.isnan(ds["elevation"])):
+            ds["elevation"] = ds["elevation"].fillna(ds["elevation"].median())
         # todo: rtime is also affected, might need to be treated accordingly
 
     return ds
@@ -887,10 +1008,18 @@ def _fix_elevation(da):
     return da
 
 
-def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
-                    preprocess=None, engine=None,
-                    lock=None, data_vars='all', coords='minimal',
-                    parallel=False, **kwargs):
+def _open_mfmoments(
+    moments,
+    chunks=None,
+    compat="no_conflicts",
+    preprocess=None,
+    engine=None,
+    lock=None,
+    data_vars="all",
+    coords="minimal",
+    parallel=False,
+    **kwargs,
+):
     """Open multiple OdimH5 moments as a single dataset.
     
     This is derived from xarray.open_mfdataset [1]
@@ -946,35 +1075,41 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
         moments = [p for p in moments if p.quantity in moments.parent._moments]
 
     engine = moments[0].engine
-    if engine == 'netcdf4':
+    if engine == "netcdf4":
         opener = nc.Dataset
         opener_kwargs = {}
         store = xr.backends.NetCDF4DataStore
     else:
         if LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0"):
-            warnings.warn(f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
-                          f"operation. 'h5netcdf={h5netcdf.__version__} "
-                          f"available.", UserWarning)
+            warnings.warn(
+                f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
+                f"operation. 'h5netcdf={h5netcdf.__version__} "
+                f"available.",
+                UserWarning,
+            )
             return None
         if LooseVersion(xr.__version__) < LooseVersion("0.15.0"):
             warnings.warn(
                 f"WRADLIB: 'xarray>=0.15.0' needed to perform this "
                 f"operation. 'xarray={xr.__version__} "
-                f"available.", UserWarning)
+                f"available.",
+                UserWarning,
+            )
             return None
         opener = h5netcdf.File
-        opener_kwargs = dict(phony_dims='access')
+        opener_kwargs = dict(phony_dims="access")
         store = xr.backends.H5NetCDFStore
 
     # do not use parallel if all moments in one file
     if len(set([p.filename for p in moments])) == 1:
         single_file = True
-        ds0 = opener(moments[0].filename, 'r', **opener_kwargs)
+        ds0 = opener(moments[0].filename, "r", **opener_kwargs)
     else:
         single_file = False
 
     if parallel:
         import dask
+
         # wrap the open_dataset, getattr, and preprocess with delayed
         open_ = dask.delayed(xr.open_dataset)
         getattr_ = dask.delayed(getattr)
@@ -986,22 +1121,36 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
 
     if single_file:
         datasets = [
-            open_(store(ds0, group=p.ncpath, lock=lock, autoclose=None),
-                  engine=engine, **open_kwargs) for p in moments]
+            open_(
+                store(ds0, group=p.ncpath, lock=lock, autoclose=None),
+                engine=engine,
+                **open_kwargs,
+            )
+            for p in moments
+        ]
     else:
         datasets = [
-            open_(store(opener(p.filename, 'r', **opener_kwargs),
-                        group=p.ncpath, lock=lock, autoclose=None),
-                  engine=engine, **open_kwargs) for p in moments]
+            open_(
+                store(
+                    opener(p.filename, "r", **opener_kwargs),
+                    group=p.ncpath,
+                    lock=lock,
+                    autoclose=None,
+                ),
+                engine=engine,
+                **open_kwargs,
+            )
+            for p in moments
+        ]
 
-    file_objs = [getattr_(ds, '_file_obj') for ds in datasets]
+    file_objs = [getattr_(ds, "_file_obj") for ds in datasets]
 
     # check for differences in shape of moments
-    non_uniform_shape = len(set([tuple(ds.sizes.values())
-                                 for ds in datasets])) > 1
+    non_uniform_shape = len(set([tuple(ds.sizes.values()) for ds in datasets])) > 1
     if preprocess is not None:
-        datasets = [preprocess(ds, mom, non_uniform_shape)
-                    for ds, mom in zip(datasets, moments)]
+        datasets = [
+            preprocess(ds, mom, non_uniform_shape) for ds, mom in zip(datasets, moments)
+        ]
 
     if parallel:
         # calling compute here will return the datasets/file_objs lists,
@@ -1010,8 +1159,9 @@ def _open_mfmoments(moments, chunks=None, compat='no_conflicts',
 
     # Combine all datasets, closing them in case of a ValueError
     try:
-        combined = combine_by_coords(datasets, compat='no_conflicts',
-                                     data_vars='all', coords='minimal')
+        combined = combine_by_coords(
+            datasets, compat="no_conflicts", data_vars="all", coords="minimal"
+        )
     except ValueError:
         for ds in datasets:
             ds.close()
@@ -1026,6 +1176,7 @@ class XRadBase(collections.abc.MutableSequence):
     """Base Class for all XRad-classes.
 
     """
+
     def __init__(self, **kwargs):
         super(XRadBase, self).__init__()
         self._seq = []
@@ -1061,12 +1212,12 @@ class XRadBase(collections.abc.MutableSequence):
         self._seq.sort(**kwargs)
 
 
-class OdimH5GroupAttributeMixin():
+class OdimH5GroupAttributeMixin:
     """Mixin Class for Odim Group Attribute Retrieval
 
     """
-    __slots__ = ['_attrs', '_ncfile', '_ncpath', '_parent', '_how',
-                 '_what', '_where']
+
+    __slots__ = ["_attrs", "_ncfile", "_ncpath", "_parent", "_how", "_what", "_where"]
 
     def __init__(self, ncfile=None, ncpath=None, parent=None):
         super(OdimH5GroupAttributeMixin, self).__init__()
@@ -1089,7 +1240,7 @@ class OdimH5GroupAttributeMixin():
         """Returns handle for current path.
         """
         # root-group can't be subset with netcdf4 and h5netcdf
-        if self._ncpath == '/':
+        if self._ncpath == "/":
             if isinstance(self.ncfile, (nc.Dataset, h5netcdf.File)):
                 return self._ncfile
         return self._ncfile[self.ncpath]
@@ -1105,7 +1256,7 @@ class OdimH5GroupAttributeMixin():
         """Return attributes of `how`-group.
         """
         if self._how is None:
-            self._how = self._get_attributes('how')
+            self._how = self._get_attributes("how")
         return self._how
 
     @property
@@ -1113,7 +1264,7 @@ class OdimH5GroupAttributeMixin():
         """Return attributes of `what`-group.
         """
         if self._what is None:
-            self._what = self._get_attributes('what')
+            self._what = self._get_attributes("what")
         return self._what
 
     @property
@@ -1121,7 +1272,7 @@ class OdimH5GroupAttributeMixin():
         """Return attributes of `where`-group.
         """
         if self._where is None:
-            self._where = self._get_attributes('where')
+            self._where = self._get_attributes("where")
         return self._where
 
     @property
@@ -1130,8 +1281,7 @@ class OdimH5GroupAttributeMixin():
         """
         if self._attrs is None:
             if isinstance(self.ncfile, nc.Dataset):
-                self._attrs = {k: self.ncid.getncattr(k)
-                               for k in self.ncid.ncattrs()}
+                self._attrs = {k: self.ncid.getncattr(k) for k in self.ncid.ncattrs()}
             else:
                 self._attrs = self._decode({**self.ncid.attrs})
         return self._attrs
@@ -1159,9 +1309,9 @@ class OdimH5GroupAttributeMixin():
         """Return engine used for accessing data
         """
         if isinstance(self.ncfile, nc.Dataset):
-            return 'netcdf4'
+            return "netcdf4"
         else:
-            return 'h5netcdf'
+            return "h5netcdf"
 
     @property
     def parent(self):
@@ -1176,8 +1326,7 @@ class OdimH5GroupAttributeMixin():
             ncid = self.ncid
         try:
             if isinstance(self.ncfile, nc.Dataset):
-                attrs = {k: ncid[grp].getncattr(k)
-                         for k in ncid[grp].ncattrs()}
+                attrs = {k: ncid[grp].getncattr(k) for k in ncid[grp].ncattrs()}
                 return attrs
             else:
                 attrs = {**ncid[grp].attrs}
@@ -1224,9 +1373,10 @@ class OdimH5GroupAttributeMixin():
         return attrs
 
 
-class OdimH5SweepMetaDataMixin():
+class OdimH5SweepMetaDataMixin:
     """Mixin Class for Odim MetaData.
     """
+
     def __init__(self):
         super(OdimH5SweepMetaDataMixin, self).__init__()
         self._a1gate = None
@@ -1340,7 +1490,7 @@ class OdimH5SweepMetaDataMixin():
         """Return sweep endtime xr.DataArray.
         """
         if self._endtime is None:
-            da = self._get_time(point='end')
+            da = self._get_time(point="end")
             # decode, if necessary
             if self.decode_times:
                 da = self._decode_cf(da)
@@ -1368,13 +1518,13 @@ class XRadMoment(OdimH5GroupAttributeMixin):
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
 
-        dims = "Dimensions:"
-        dims_summary = [f"azimuth: {self.parent.nrays}"]
-        dims_summary.append(f"range: {self.parent.nbins}")
+        dims = "Dimension(s):"
+        dims_summary = [f"{self.parent._dim0[0]}: {self.parent.nrays}"]
+        dims_summary.append(f"{self.parent._dim1}: {self.parent.nbins}")
         dims_summary = ", ".join(dims_summary)
         summary.append("{} ({})".format(dims, dims_summary))
 
-        angle = "Elevation:"
+        angle = "Elevation(s):"
         angle_summary = f"{self.parent.fixed_angle:.1f}"
         summary.append("{} ({})".format(angle, angle_summary))
 
@@ -1402,9 +1552,9 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         """
         if self._quantity is None:
             if isinstance(self.parent, XRadSweepOdim):
-                self._quantity = self.what['quantity']
+                self._quantity = self.what["quantity"]
             else:
-                self._quantity = GAMIC_NAMES[self.attrs['moment'].lower()]
+                self._quantity = GAMIC_NAMES[self.attrs["moment"].lower()]
         return self._quantity
 
 
@@ -1422,26 +1572,29 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
         super(XRadSweep, self).__init__(ncfile, ncpath, parent)
-        kwargs.setdefault('chunks', None)
-        kwargs.setdefault('parallel', False)
-        kwargs.setdefault('mask_and_scale', True)
-        kwargs.setdefault('decode_coords', True)
-        kwargs.setdefault('decode_times', True)
+        kwargs.setdefault("chunks", None)
+        kwargs.setdefault("parallel", False)
+        kwargs.setdefault("mask_and_scale", True)
+        kwargs.setdefault("decode_coords", True)
+        kwargs.setdefault("decode_times", True)
         self._kwargs = kwargs
         self._data = None
         self._need_time_recalc = False
         self._seq.extend(self._get_moments())
+        self._dim0 = ("azimuth", "elevation")
+        self._dim1 = "range"
+        self.fixed_angle
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
 
-        dims = "Dimensions:"
-        dims_summary = [f"azimuth: {self.nrays}"]
-        dims_summary.append(f"range: {self.nbins}")
+        dims = "Dimension(s):"
+        dims_summary = [f"{self._dim0[0]}: {self.nrays}"]
+        dims_summary.append(f"{self._dim1}: {self.nbins}")
         dims_summary = ", ".join(dims_summary)
         summary.append("{} ({})".format(dims, dims_summary))
 
-        angle = "Elevation:"
+        angle = f"{self._dim0[1].capitalize()}(s):"
         angle_summary = f"{self.fixed_angle:0.1f}"
         summary.append("{} ({})".format(angle, angle_summary))
 
@@ -1460,28 +1613,34 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     def _decode_cf(self, obj):
         if isinstance(obj, xr.DataArray):
-            out = xr.decode_cf(xr.Dataset({'arr': obj}), self._kwargs).arr
+            out = xr.decode_cf(xr.Dataset({"arr": obj}), self._kwargs).arr
         else:
             out = xr.decode_cf(obj, self._kwargs)
         return out
 
     def _get_coords(self):
-        ds = xr.Dataset(coords={'time': self.time,
-                                'rtime': self.ray_times,
-                                'azimuth': self.azimuth,
-                                'elevation': self.elevation,
-                                'range': self.rng,
-                                })
+        ds = xr.Dataset(
+            coords={
+                "time": self.time,
+                "rtime": self.ray_times,
+                "azimuth": self.azimuth,
+                "elevation": self.elevation,
+                "range": self.rng,
+            }
+        )
         return ds
 
     def _get_moments(self):
         mdesc = self._mdesc
         moments = [k for k in self.groups if mdesc in k]
-        moments_idx = np.argsort([int(s[len(mdesc):]) for s in moments])
+        moments_idx = np.argsort([int(s[len(mdesc) :]) for s in moments])
         moments_names = np.array(moments)[moments_idx].tolist()
-        moments = [XRadMoment(ncfile=self.ncfile,
-                              ncpath='/'.join([self.ncpath, mom]),
-                              parent=self) for mom in moments_names]
+        moments = [
+            XRadMoment(
+                ncfile=self.ncfile, ncpath="/".join([self.ncpath, mom]), parent=self
+            )
+            for mom in moments_names
+        ]
         return moments
 
     def reset_data(self):
@@ -1497,31 +1656,31 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
     def chunks(self):
         """Return `chunks` setting.
         """
-        return self._kwargs.get('chunks')
+        return self._kwargs.get("chunks")
 
     @property
     def parallel(self):
         """Return `parallel` setting.
         """
-        return self._kwargs.get('parallel')
+        return self._kwargs.get("parallel")
 
     @property
     def mask_and_scale(self):
         """Return `mask_and_scale` setting.
         """
-        return self._kwargs.get('mask_and_scale')
+        return self._kwargs.get("mask_and_scale")
 
     @property
     def decode_coords(self):
         """Return `decode_coords` setting.
         """
-        return self._kwargs.get('decode_coords')
+        return self._kwargs.get("decode_coords")
 
     @property
     def decode_times(self):
         """Return `decode_times` setting.
         """
-        return self._kwargs.get('decode_times')
+        return self._kwargs.get("decode_times")
 
     @property
     def data(self):
@@ -1530,26 +1689,31 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         if self._data is None:
             self._data = self._merge_moments()
 
-        if self._data is not None:
+            # if self._data is not None:
             # if metadata declared in XRadTimeseries, load and assign
             if self.parent._meta is not None:
                 vars = dict()
                 for k, v in self.parent._meta.items():
                     attr = self._get_attribute(v, attr=k)
-                    if hasattr(attr, 'ndim'):
-                        attr = xr.DataArray(attr, dims=['azimuth'])
+                    if hasattr(attr, "ndim"):
+                        attr = xr.DataArray(attr, dims=[self._dim0[0]])
                     vars[k] = attr
                 self._data = self._data.assign(vars)
 
             if self.decode_coords:
                 coords = self._get_coords().coords
                 self._data = self._data.assign_coords(coords)
-                self._data = self._data.sortby('azimuth')
-                self._data = (self._data.pipe(_reindex_azimuth, self))
-                self._data = self._data.assign_coords(
-                    self.parent.parent.site.coords)
-                self._data = self._data.assign_coords(
-                    {'sweep_mode': 'azimuth_surveillance'})
+                # todo: only if PPI
+                if self._dim0[0] == "azimuth":
+                    self._data = self._data.sortby(self._dim0[0])
+                    self._data = self._data.pipe(_reindex_azimuth, self)
+                    self._data = self._data.assign_coords(
+                        {"sweep_mode": "azimuth_surveillance"}
+                    )
+                else:
+                    self._data = self._data.assign_coords({"sweep_mode": "rhi"})
+
+                self._data = self._data.assign_coords(self.parent.parent.site.coords)
 
             if self.mask_and_scale | self.decode_coords | self.decode_times:
                 self._data = self._data.pipe(self._decode_cf)
@@ -1562,7 +1726,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         """
         # sort coords by azimuth, only necessary for gamic flavour
         # for odim is already sorted
-        return self._get_coords().sortby('azimuth')
+        return self._get_coords().sortby(self._dim0[0])
 
     @property
     def moments(self):
@@ -1587,74 +1751,79 @@ class XRadSweepOdim(XRadSweep):
         super(XRadSweepOdim, self).__init__(ncfile, ncpath, parent, **kwargs)
 
     def _get_a1gate(self):
-        return self.where['a1gate']
+        return self.where["a1gate"]
 
     def _get_angle_resolution(self):
-        return self.azimuth.diff('azimuth').median().round(decimals=1)
+        return self.azimuth.diff(self._dim0[0]).median().round(decimals=1)
 
     def _get_fixed_angle(self):
-        return np.round(self.where['elangle'], decimals=1)
+        try:
+            angle = np.round(self.where["az_angle"], decimals=1)
+            self._dim0 = (self._dim0[1], self._dim0[0])
+        except KeyError:
+            angle = np.round(self.where["elangle"], decimals=1)
+        return angle
 
     def _get_azimuth_how(self):
         how = self.how
-        startaz = how['startazA']
-        stopaz = how['stopazA']
+        startaz = how["startazA"]
+        stopaz = how["stopazA"]
         zero_index = np.where(stopaz < startaz)
         stopaz[zero_index[0]] += 360
-        azimuth_data = (startaz + stopaz) / 2.
+        azimuth_data = (startaz + stopaz) / 2.0
         return azimuth_data
 
     def _get_azimuth_where(self):
-        nrays = self.where['nrays']
-        res = 360. / nrays
-        azimuth_data = np.arange(res / 2.,
-                                 360.,
-                                 res,
-                                 dtype='float32')
+        nrays = self.where["nrays"]
+        res = 360.0 / nrays
+        azimuth_data = np.arange(res / 2.0, 360.0, res, dtype="float32")
         return azimuth_data
 
     def _get_elevation_how(self):
         how = self.how
-        startel = how['startelA']
-        stopel = how['stopelA']
-        elevation_data = (startel + stopel) / 2.
+        startel = how["startelA"]
+        stopel = how["stopelA"]
+        elevation_data = (startel + stopel) / 2.0
         return elevation_data
 
     def _get_elevation_where(self):
         where = self.where
-        nrays = where['nrays']
-        elangle = where['elangle']
-        elevation_data = np.ones(nrays, dtype='float32') * elangle
+        nrays = where["nrays"]
+        elangle = where["elangle"]
+        elevation_data = np.ones(nrays, dtype="float32") * elangle
         return elevation_data
 
     def _get_time_how(self):
         how = self.how
-        startT = how['startazT']
-        stopT = how['stopazT']
-        time_data = (startT + stopT) / 2.
+        startT = how["startazT"]
+        stopT = how["stopazT"]
+        time_data = (startT + stopT) / 2.0
         return time_data
 
     def _get_time_what(self, nrays=None):
         what = self.what
-        startdate = what['startdate']
-        starttime = what['starttime']
-        enddate = what['enddate']
-        endtime = what['endtime']
-        start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
-        end = dt.datetime.strptime(enddate + endtime, '%Y%m%d%H%M%S')
+        startdate = what["startdate"]
+        starttime = what["starttime"]
+        enddate = what["enddate"]
+        endtime = what["endtime"]
+        start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
+        end = dt.datetime.strptime(enddate + endtime, "%Y%m%d%H%M%S")
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         end = end.replace(tzinfo=dt.timezone.utc).timestamp()
         if nrays is None:
-            nrays = self.where['nrays']
+            nrays = self.where["nrays"]
         if start == end:
-            warnings.warn("WRADLIB: Equal ODIM `starttime` and `endtime` "
-                          "values. Can't determine correct sweep start-, "
-                          "end- and raytimes.", UserWarning)
+            warnings.warn(
+                "WRADLIB: Equal ODIM `starttime` and `endtime` "
+                "values. Can't determine correct sweep start-, "
+                "end- and raytimes.",
+                UserWarning,
+            )
 
             time_data = np.ones(nrays) * start
         else:
             delta = (end - start) / nrays
-            time_data = np.arange(start + delta / 2., end, delta)
+            time_data = np.arange(start + delta / 2.0, end, delta)
             time_data = np.roll(time_data, shift=+self.a1gate)
         return time_data
 
@@ -1665,8 +1834,7 @@ class XRadSweepOdim(XRadSweep):
         except (AttributeError, KeyError, TypeError):
             time_data = self._get_time_what(nrays=nrays)
             self._need_time_recalc = True
-        da = xr.DataArray(time_data, dims=['azimuth'],
-                          attrs=time_attrs)
+        da = xr.DataArray(time_data, dims=[self._dim0[0]], attrs=time_attrs)
         return da
 
     def _get_azimuth(self):
@@ -1674,8 +1842,7 @@ class XRadSweepOdim(XRadSweep):
             azimuth_data = self._get_azimuth_how()
         except (AttributeError, KeyError, TypeError):
             azimuth_data = self._get_azimuth_where()
-        da = xr.DataArray(azimuth_data, dims=['azimuth'],
-                          attrs=az_attrs)
+        da = xr.DataArray(azimuth_data, dims=[self._dim0[0]], attrs=az_attrs)
         return da
 
     def _get_elevation(self):
@@ -1683,54 +1850,51 @@ class XRadSweepOdim(XRadSweep):
             elevation_data = self._get_elevation_how()
         except (AttributeError, KeyError, TypeError):
             elevation_data = self._get_elevation_where()
-        da = xr.DataArray(elevation_data, dims=['azimuth'],
-                          attrs=el_attrs)
+        da = xr.DataArray(elevation_data, dims=[self._dim0[0]], attrs=el_attrs)
         # todo: do only if requested by user
         da = da.pipe(_fix_elevation)
         return da
 
     def _get_mdesc(self):
-        return 'data'
+        return "data"
 
     def _get_range(self):
         where = self.where
-        ngates = where['nbins']
-        range_start = where['rstart'] * 1000.
-        bin_range = where['rscale']
-        cent_first = range_start + bin_range / 2.
-        range_data = np.arange(cent_first,
-                               range_start + bin_range * ngates,
-                               bin_range,
-                               dtype='float32')
-        range_attrs[
-            'meters_to_center_of_first_gate'] = cent_first
-        range_attrs[
-            'meters_between_gates'] = bin_range
-        da = xr.DataArray(range_data, dims=['range'], attrs=range_attrs)
+        ngates = where["nbins"]
+        range_start = where["rstart"] * 1000.0
+        bin_range = where["rscale"]
+        cent_first = range_start + bin_range / 2.0
+        range_data = np.arange(
+            cent_first, range_start + bin_range * ngates, bin_range, dtype="float32"
+        )
+        range_attrs["meters_to_center_of_first_gate"] = cent_first
+        range_attrs["meters_between_gates"] = bin_range
+        da = xr.DataArray(range_data, dims=[self._dim1], attrs=range_attrs)
         return da
 
     def _merge_moments(self):
-        ds = _open_mfmoments(self,
-                             chunks=self.chunks,
-                             preprocess=_preprocess_moment,
-                             parallel=self.parallel,
-                             mask_and_scale=self.mask_and_scale,
-                             decode_times=self.decode_times,
-                             decode_coords=self.decode_coords
-                             )
+        ds = _open_mfmoments(
+            self,
+            chunks=self.chunks,
+            preprocess=_preprocess_moment,
+            parallel=self.parallel,
+            mask_and_scale=self.mask_and_scale,
+            decode_times=self.decode_times,
+            decode_coords=self.decode_coords,
+        )
         return ds
 
     def _get_nrays(self):
-        return self.where['nrays']
+        return self.where["nrays"]
 
     def _get_nbins(self):
-        return self.where['nbins']
+        return self.where["nbins"]
 
-    def _get_time(self, point='start'):
+    def _get_time(self, point="start"):
         what = self.what
-        startdate = what[f'{point}date']
-        starttime = what[f'{point}time']
-        start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
+        startdate = what[f"{point}date"]
+        starttime = what[f"{point}time"]
+        start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         da = xr.DataArray(start, attrs=time_attrs)
         return da
@@ -1739,14 +1903,14 @@ class XRadSweepOdim(XRadSweep):
         ncid = self.ncid
         try:
             if isinstance(self.ncfile, nc.Dataset):
-                startdate = ncid['what'].getncattr('startdate')
-                starttime = ncid['what'].getncattr('starttime')
+                startdate = ncid["what"].getncattr("startdate")
+                starttime = ncid["what"].getncattr("starttime")
             else:
-                startdate = ncid['what'].attrs['startdate'].item().decode()
-                starttime = ncid['what'].attrs['starttime'].item().decode()
+                startdate = ncid["what"].attrs["startdate"].item().decode()
+                starttime = ncid["what"].attrs["starttime"].item().decode()
         except (IndexError, KeyError):
             return None
-        start = dt.datetime.strptime(startdate + starttime, '%Y%m%d%H%M%S')
+        start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         return start
 
@@ -1770,86 +1934,99 @@ class XRadSweepGamic(XRadSweep):
     def ray_header(self):
         # todo: caching adds to memory footprint
         if self._ray_header is None:
-            self._ray_header = self.ncid['ray_header'][:]
+            self._ray_header = self.ncid["ray_header"][:]
         return self._ray_header
 
     def _get_a1gate(self):
         return np.argsort(self.coords.rtime.values)[0]
 
     def _get_angle_resolution(self):
-        return self.how['angle_step']
+        return self.how["angle_step"]
 
     def _get_azimuth(self):
-        azstart = self.ray_header['azimuth_start']
-        azstop = self.ray_header['azimuth_stop']
-        zero_index = np.where(azstop < azstart)
-        azstop[zero_index[0]] += 360
-        azimuth = (azstart + azstop) / 2.
-        azimuth = xr.DataArray(azimuth, dims=['azimuth'], attrs=az_attrs)
+        azstart = self.ray_header["azimuth_start"]
+        azstop = self.ray_header["azimuth_stop"]
+        if self._dim0[0] == "azimuth":
+            zero_index = np.where(azstop < azstart)
+            azstop[zero_index[0]] += 360
+        azimuth = (azstart + azstop) / 2.0
+        azimuth = xr.DataArray(azimuth, dims=[self._dim0[0]], attrs=az_attrs)
         return azimuth
 
     def _get_elevation(self):
-        elstart = self.ray_header['elevation_start']
-        elstop = self.ray_header['elevation_stop']
-        elevation = (elstart + elstop) / 2.
-        da = xr.DataArray(elevation, dims=['azimuth'], attrs=el_attrs)
+        elstart = self.ray_header["elevation_start"]
+        elstop = self.ray_header["elevation_stop"]
+        elevation = (elstart + elstop) / 2.0
+        da = xr.DataArray(elevation, dims=[self._dim0[0]], attrs=el_attrs)
         # todo: do only if requested by user
-        da = da.pipe(_fix_elevation)
+        if self._dim0[0] == "azimuth":
+            da = da.pipe(_fix_elevation)
         return da
 
     def _get_mdesc(self):
-        return 'moment_'
+        return "moment_"
 
     def _get_range(self):
-        range_samples = self.how['range_samples']
-        range_step = self.how['range_step']
+        range_samples = self.how["range_samples"]
+        range_step = self.how["range_step"]
         bin_range = range_step * range_samples
-        range_data = np.arange(bin_range / 2., bin_range * self.nbins,
-                               bin_range,
-                               dtype='float32')
-        range_attrs['meters_to_center_of_first_gate'] = bin_range / 2.
-        da = xr.DataArray(range_data, dims=['range'], attrs=range_attrs)
+        range_data = np.arange(
+            bin_range / 2.0, bin_range * self.nbins, bin_range, dtype="float32"
+        )
+        range_attrs["meters_to_center_of_first_gate"] = bin_range / 2.0
+        da = xr.DataArray(range_data, dims=[self._dim1], attrs=range_attrs)
         return da
 
     def _get_ray_times(self):
-        times = self.ray_header['timestamp'] / 1e6
-        attrs = {'units': 'seconds since 1970-01-01T00:00:00Z',
-                 'standard_name': 'time'}
-        da = xr.DataArray(times, dims=['azimuth'], attrs=attrs)
+        times = self.ray_header["timestamp"] / 1e6
+        attrs = {"units": "seconds since 1970-01-01T00:00:00Z", "standard_name": "time"}
+        da = xr.DataArray(times, dims=[self._dim0[0]], attrs=attrs)
         return da
 
     def _get_fixed_angle(self):
-        return np.round(self.how['elevation'], decimals=1)
+        try:
+            angle = np.round(self.how[self._dim0[1]], decimals=1)
+        except KeyError:
+            self._dim0 = (self._dim0[1], self._dim0[0])
+            angle = np.round(self.how[self._dim0[1]], decimals=1)
+
+        return angle
 
     def _merge_moments(self):
-        if 'h5' in self.engine:
+        if "h5" in self.engine:
             if LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0"):
                 warnings.warn(
                     f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
                     f"operation. 'h5netcdf={h5netcdf.__version__} "
-                    f"available.", UserWarning)
+                    f"available.",
+                    UserWarning,
+                )
                 return None
             if LooseVersion(xr.__version__) < LooseVersion("0.15.0"):
                 warnings.warn(
                     f"WRADLIB: 'xarray>=0.15.0' needed to perform this "
                     f"operation. 'xarray={xr.__version__} "
-                    f"available.", UserWarning)
+                    f"available.",
+                    UserWarning,
+                )
                 return None
             opener = h5netcdf.File
-            opener_kwargs = dict(phony_dims='access')
+            opener_kwargs = dict(phony_dims="access")
             store = xr.backends.H5NetCDFStore
         else:
             opener = nc.Dataset
             opener_kwargs = dict()
             store = xr.backends.NetCDF4DataStore
 
-        ds0 = opener(self.filename, 'r', **opener_kwargs)
-        ds = xr.open_dataset(store(ds0, self.ncpath,
-                                   lock=None, autoclose=None),
-                             engine=self.engine, chunks=self.chunks)
-        ds = ds.drop_vars('ray_header', errors='ignore')
+        ds0 = opener(self.filename, "r", **opener_kwargs)
+        ds = xr.open_dataset(
+            store(ds0, self.ncpath, lock=None, autoclose=None),
+            engine=self.engine,
+            chunks=self.chunks,
+        )
+        ds = ds.drop_vars("ray_header", errors="ignore")
         for mom in self:
-            mom_name = mom.ncpath.split('/')[-1]
+            mom_name = mom.ncpath.split("/")[-1]
             dmom = ds[mom_name]
             name = dmom.moment.lower()
             try:
@@ -1871,13 +2048,13 @@ class XRadSweepGamic(XRadSweep):
                     gain = (dmax - dmin) / dmax
                     minval = dmin
                 undetect = float(dmin)
-                attrs['scale_factor'] = gain
-                attrs['add_offset'] = minval
-                attrs['_FillValue'] = float(dmax)
-                attrs['_Undetect'] = undetect
+                attrs["scale_factor"] = gain
+                attrs["add_offset"] = minval
+                attrs["_FillValue"] = float(dmax)
+                attrs["_Undetect"] = undetect
 
             if self.decode_coords:
-                attrs['coordinates'] = 'elevation azimuth range'
+                attrs["coordinates"] = "elevation azimuth range"
 
             mapping = moments_mapping[name]
             attrs.update({key: mapping[key] for key in moment_attrs})
@@ -1887,28 +2064,29 @@ class XRadSweepGamic(XRadSweep):
             ds = ds.rename({mom_name: name.upper()})
 
         # fix dimensions
-        dims = sorted(list(ds.dims.keys()),
-                      key=lambda x: int(x[len('phony_dim_'):]))
-        ds = ds.rename({dims[0]: 'azimuth',
-                        dims[1]: 'range'})
+        dims = sorted(list(ds.dims.keys()), key=lambda x: int(x[len("phony_dim_") :]))
+        ds = ds.rename({dims[0]: self._dim0[0], dims[1]: self._dim1})
 
         # todo: this sorts and reindexes the unsorted GAMIC dataset by azimuth
         # only if `decode_coords` is False
         # adding coord ->  sort -> reindex -> remove coord
-        if not self.decode_coords:
-            ds = (ds.assign_coords({'azimuth': self.azimuth}).sortby('azimuth')
-                  .pipe(_reindex_azimuth, self)
-                  .drop('azimuth'))
+        if not self.decode_coords and (self._dim0[0] == "azimuth"):
+            ds = (
+                ds.assign_coords({"azimuth": self.azimuth})
+                .sortby("azimuth")
+                .pipe(_reindex_azimuth, self)
+                .drop("azimuth")
+            )
         return ds
 
     def _get_nrays(self):
-        return self.how['ray_count']
+        return self.how["ray_count"]
 
     def _get_nbins(self):
-        return self.how['bin_count']
+        return self.how["bin_count"]
 
     def _get_time(self):
-        start = self.how['timestamp']
+        start = self.how["timestamp"]
         start = dateutil.parser.parse(start)
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         da = xr.DataArray(start, attrs=time_attrs)
@@ -1918,9 +2096,9 @@ class XRadSweepGamic(XRadSweep):
         ncid = self.ncid
         try:
             if isinstance(self.ncfile, nc.Dataset):
-                start = ncid['how'].getncattr('timestamp')
+                start = ncid["how"].getncattr("timestamp")
             else:
-                start = ncid['how'].attrs['timestamp'].decode()
+                start = ncid["how"].attrs["timestamp"].decode()
         except (IndexError, KeyError):
             return None
         start = dateutil.parser.parse(start)
@@ -1931,6 +2109,7 @@ class XRadSweepGamic(XRadSweep):
 class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
     """Class for holding a timeseries of radar sweeps
     """
+
     def __init__(self, **kwargs):
         super(XRadTimeSeries, self).__init__()
         self._data = None
@@ -1948,13 +2127,13 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
-        dims = "Dimensions:"
+        dims = "Dimension(s):"
         dims_summary = [f"time: {len(self)}"]
-        dims_summary.append(f"azimuth: {self._seq[0].nrays}")
-        dims_summary.append(f"range: {self._seq[0].nbins}")
+        dims_summary.append(f"{self._seq[0]._dim0[0]}: {self._seq[0].nrays}")
+        dims_summary.append(f"{self._seq[0]._dim1}: {self._seq[0].nbins}")
         dims_summary = ", ".join(dims_summary)
         summary.append("{} ({})".format(dims, dims_summary))
-        angle = "Elevation:"
+        angle = f"{self._seq[0]._dim0[1].capitalize()}(s):"
         angle_summary = self[0].fixed_angle
         summary.append(f"{angle} ({angle_summary:.1f})")
 
@@ -1982,17 +2161,20 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
                     "wradlib: Moments {} are not available in all datasets "
                     "and will be dropped from the result.\n"
                     "This will be solved in xarray, see "
-                    "https://github.com/pydata/xarray/pull/3545".format(drop))
+                    "https://github.com/pydata/xarray/pull/3545".format(drop)
+                )
 
             # todo: catch possible error and add precise ErrorMessage
             self._data = xr.concat(
-                [f.data.drop_vars(drop, errors='ignore') for
-                 f in tqdm(self,
-                           desc='Collecting',
-                           unit=' Timesteps',
-                           leave=None)],
+                [
+                    f.data.drop_vars(drop, errors="ignore")
+                    for f in tqdm(
+                        self, desc="Collecting", unit=" Timesteps", leave=None
+                    )
+                ],
                 # data_vars=list(keep),
-                dim='time')
+                dim="time",
+            )
         return self._data
 
     def check_rays(self):
@@ -2000,15 +2182,12 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         snrays = set(nrays)
         idx = []
         for nr in snrays:
-            if (nr % 360):
-                idx.extend(np.argwhere(np.array(nrays) == nr)
-                           .flatten()
-                           .tolist())
+            if nr % 360:
+                idx.extend(np.argwhere(np.array(nrays) == nr).flatten().tolist())
 
         if len(snrays) > 1:
             warnings.warn(
-                f"wradlib: number of rays differing between sweeps.\n"
-                f"{snrays}"
+                f"wradlib: number of rays differing between sweeps.\n" f"{snrays}"
             )
         return snrays, idx
 
@@ -2051,10 +2230,10 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
 
     def __repr__(self):
         summary = ["<wradlib.{}>".format(type(self).__name__)]
-        dims = "Dimensions:"
+        dims = "Dimension(s):"
         dims_summary = f"sweep: {len(self)}"
         summary.append("{} ({})".format(dims, dims_summary))
-        angle = "Elevations:"
+        angle = f"{self[0][0]._dim0[1].capitalize()}(s):"
         angle_summary = [f"{k[0].fixed_angle:.1f}" for k in self]
         angle_summary = ", ".join(angle_summary)
         summary.append("{} ({})".format(angle, angle_summary))
@@ -2081,14 +2260,14 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
             sweep_fixed_angles = [ts.fixed_angle for ts in self]
 
         # extract time coverage
-        times = np.array([[t[0].ray_times.values.min(),
-                           t[-1].ray_times.values.max()]
-                          for t in self]).flatten()
+        times = np.array(
+            [[t[0].ray_times.values.min(), t[-1].ray_times.values.max()] for t in self]
+        ).flatten()
         time_coverage_start = min(times)
         time_coverage_end = max(times)
 
-        time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
-        time_coverage_end_str = str(time_coverage_end)[:19] + 'Z'
+        time_coverage_start_str = str(time_coverage_start)[:19] + "Z"
+        time_coverage_end_str = str(time_coverage_end)[:19] + "Z"
 
         # create root group from scratch
         root = xr.Dataset()  # data_vars=wrl.io.xarray.global_variables,
@@ -2098,33 +2277,37 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         site = self.site
 
         # assign root variables
-        root = root.assign({'volume_number': 0,
-                            'platform_type': str('fixed'),
-                            'instrument_type': 'radar',
-                            'primary_axis': 'axis_z',
-                            'time_coverage_start': time_coverage_start_str,
-                            'time_coverage_end': time_coverage_end_str,
-                            'latitude': site['latitude'].values,
-                            'longitude': site['longitude'].values,
-                            'altitude': site['altitude'].values,
-                            'sweep_group_name': (
-                                ['sweep'], sweep_group_names),
-                            'sweep_fixed_angle': (
-                                ['sweep'], sweep_fixed_angles),
-                            })
+        root = root.assign(
+            {
+                "volume_number": 0,
+                "platform_type": str("fixed"),
+                "instrument_type": "radar",
+                "primary_axis": "axis_z",
+                "time_coverage_start": time_coverage_start_str,
+                "time_coverage_end": time_coverage_end_str,
+                "latitude": site["latitude"].values,
+                "longitude": site["longitude"].values,
+                "altitude": site["altitude"].values,
+                "sweep_group_name": (["sweep"], sweep_group_names),
+                "sweep_fixed_angle": (["sweep"], sweep_fixed_angles),
+            }
+        )
 
         # assign root attributes
         attrs = collections.OrderedDict()
-        attrs.update({'version': 'None',
-                      'title': 'None',
-                      'institution': 'None',
-                      'references': 'None',
-                      'source': 'None',
-                      'history': 'None',
-                      'comment': 'im/exported using wradlib',
-                      'instrument_name': 'None',
-                      })
-        attrs['version'] = self.what['version']
+        attrs.update(
+            {
+                "version": "None",
+                "title": "None",
+                "institution": "None",
+                "references": "None",
+                "source": "None",
+                "history": "None",
+                "comment": "im/exported using wradlib",
+                "instrument_name": "None",
+            }
+        )
+        attrs["version"] = self.what["version"]
         root = root.assign_attrs(attrs)
         root = root.assign_attrs(self.attrs)
         self._root = root
@@ -2133,9 +2316,9 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
     def site(self):
         """ Return coordinates of radar site.
         """
-        ds = xr.Dataset(coords=self.where).rename({'height': 'altitude',
-                                                   'lon': 'longitude',
-                                                   'lat': 'latitude'})
+        ds = xr.Dataset(coords=self.where).rename(
+            {"height": "altitude", "lon": "longitude", "lat": "latitude"}
+        )
         return ds
 
     @property
@@ -2143,7 +2326,7 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         """ Return Conventions string.
         """
         try:
-            conv = self.ncid.attrs['Conventions']
+            conv = self.ncid.attrs["Conventions"]
         except KeyError:
             conv = None
         return conv
@@ -2161,8 +2344,10 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         if self.root:
             to_odim(self, filename, timestep=timestep)
         else:
-            warnings.warn("WRADLIB: No OdimH5-compliant data structure "
-                          "available. Not saving.", UserWarning)
+            warnings.warn(
+                "WRADLIB: No OdimH5-compliant data structure " "available. Not saving.",
+                UserWarning,
+            )
 
     def to_cfradial2(self, filename, timestep=0):
         """ Save volume to CfRadial2 compliant file.
@@ -2177,8 +2362,11 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         if self.root:
             to_cfradial2(self, filename, timestep=timestep)
         else:
-            warnings.warn("WRADLIB: No CfRadial2-compliant data structure "
-                          "available. Not saving.", UserWarning)
+            warnings.warn(
+                "WRADLIB: No CfRadial2-compliant data structure "
+                "available. Not saving.",
+                UserWarning,
+            )
 
     def to_netcdf(self, filename, timestep=None):
         """ Save volume to netcdf compliant file.
@@ -2193,8 +2381,10 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         if self.root:
             to_netcdf(self, filename, timestep=timestep)
         else:
-            warnings.warn("WRADLIB: No netcdf-compliant data structure "
-                          "available. Not saving.", UserWarning)
+            warnings.warn(
+                "WRADLIB: No netcdf-compliant data structure " "available. Not saving.",
+                UserWarning,
+            )
 
 
 def collect_by_time(obj):
@@ -2261,28 +2451,30 @@ def _open_odim_sweep(filename, loader, **kwargs):
     Every sweep will be put into it's own class instance.
     """
     ld_kwargs = {}
-    if loader == 'netcdf4':
+    if loader == "netcdf4":
         opener = nc.Dataset
-        attr = 'groups'
-    elif loader == 'h5netcdf':
+        attr = "groups"
+    elif loader == "h5netcdf":
         opener = h5netcdf.File
-        attr = 'keys'
-        ld_kwargs['phony_dims'] = 'access'
+        attr = "keys"
+        ld_kwargs["phony_dims"] = "access"
     else:
         opener = h5py.File
-        attr = 'keys'
+        attr = "keys"
 
-    dsdesc = 'dataset'
+    dsdesc = "dataset"
     sweep_cls = XRadSweepOdim
-    if 'GAMIC' in kwargs.get('flavour', 'ODIM'):
-        if loader == 'netcdf4':
-            raise ValueError("wradlib: GAMIC files can't be read using netcdf4"
-                             " loader. Use either 'h5py' or 'h5netcdf.")
-        dsdesc = 'scan'
+    if "GAMIC" in kwargs.get("flavour", "ODIM"):
+        if loader == "netcdf4":
+            raise ValueError(
+                "wradlib: GAMIC files can't be read using netcdf4"
+                " loader. Use either 'h5py' or 'h5netcdf."
+            )
+        dsdesc = "scan"
         sweep_cls = XRadSweepGamic
 
     # open file
-    handle = opener(filename, 'r', **ld_kwargs)
+    handle = opener(filename, "r", **ld_kwargs)
 
     # get group names
     fattr = getattr(handle, attr)
@@ -2294,12 +2486,12 @@ def _open_odim_sweep(filename, loader, **kwargs):
     # iterate over single sweeps
     # todo: if sorting does not matter, we can skip this
     sweeps = [k for k in groups if dsdesc in k]
-    sweeps_idx = np.argsort([int(s[len(dsdesc):]) for s in sweeps])
+    sweeps_idx = np.argsort([int(s[len(dsdesc) :]) for s in sweeps])
     sweeps = np.array(sweeps)[sweeps_idx].tolist()
     return [sweep_cls(handle, k, **kwargs) for k in sweeps]
 
 
-def open_odim(paths, loader='netcdf4', **kwargs):
+def open_odim(paths, loader="netcdf4", **kwargs):
     """Open multiple ODIM files as a XRadVolume structure.
 
     Parameters
@@ -2314,35 +2506,37 @@ def open_odim(paths, loader='netcdf4', **kwargs):
     **kwargs : optional
         Additional arguments passed on to :py:class:`wradlib.io.XRadSweep`.
     """
-    if ((loader == "h5netcdf")
-            & (LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0"))):
-        warnings.warn(f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
-                      f"operation. 'h5netcdf={h5netcdf.__version__} "
-                      f"available.", UserWarning)
+    if (loader == "h5netcdf") & (
+        LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0")
+    ):
+        warnings.warn(
+            f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
+            f"operation. 'h5netcdf={h5netcdf.__version__} "
+            f"available.",
+            UserWarning,
+        )
 
     if isinstance(paths, str):
         paths = glob.glob(paths)
     else:
         paths = np.array(paths).flatten().tolist()
 
-    if loader not in ['netcdf4', 'h5netcdf', 'h5py']:
+    if loader not in ["netcdf4", "h5netcdf", "h5py"]:
         raise ValueError("wradlib: Unkown loader: {}".format(loader))
 
     sweeps = []
-    [sweeps.extend(_open_odim_sweep(f, loader, **kwargs))
-     for f in tqdm(paths,
-                   desc='Open',
-                   unit=' Files',
-                   leave=None)]
+    [
+        sweeps.extend(_open_odim_sweep(f, loader, **kwargs))
+        for f in tqdm(paths, desc="Open", unit=" Files", leave=None)
+    ]
     angles = collect_by_angle(sweeps)
-    for i in tqdm(range(len(angles)), desc='Collecting',
-                  unit=' Angles', leave=None):
+    for i in tqdm(range(len(angles)), desc="Collecting", unit=" Angles", leave=None):
         angles[i] = collect_by_time(angles[i])
     angles.sort(key=lambda x: x[0].time)
     for f in angles:
         f._parent = angles
     angles._ncfile = angles[0].ncfile
-    angles._ncpath = '/'
+    angles._ncpath = "/"
     return angles
 
 
@@ -2350,6 +2544,7 @@ class XRadVolFile(object):
     """BaseClass for holding netCDF4.Dataset handles
 
     """
+
     def __init__(self, filename=None, flavour=None, **kwargs):
         self._filename = filename
         self._nch = None
@@ -2386,16 +2581,17 @@ class OdimH5File(XRadVolFile):
     flavour : str
         Name of hdf5 flavour ('ODIM' or 'GAMIC'). Defaults to 'ODIM'.
     """
+
     def __init__(self, filename=None, flavour=None, **kwargs):
-        super(OdimH5File, self).__init__(filename=filename,
-                                         flavour=flavour, **kwargs)
+        super(OdimH5File, self).__init__(filename=filename, flavour=flavour, **kwargs)
 
     def _check_file(self, filename, flavour):
         nch = nc.Dataset(filename, diskless=True, persist=False)
-        if nch.disk_format != 'HDF5':
+        if nch.disk_format != "HDF5":
             raise TypeError(
                 'wradlib: File {} is neither "NETCDF4" (using HDF5 groups) '
-                'nor plain "HDF5".'.format(filename))
+                'nor plain "HDF5".'.format(filename)
+            )
         if flavour is None:
             try:
                 flavour = nch.Conventions
@@ -2403,33 +2599,35 @@ class OdimH5File(XRadVolFile):
                 raise AttributeError(
                     'wradlib: Missing "Conventions" attribute in {} ./n'
                     'Use the "flavour" kwarg to specify your source '
-                    'data.'.format(filename)) from e
-            if 'ODIM' not in flavour:
+                    "data.".format(filename)
+                ) from e
+            if "ODIM" not in flavour:
                 raise AttributeError(
                     'wradlib: "Conventions" attribute "{}" in {} is unknown./n'
                     'Use the "flavour" kwarg to specify your source '
-                    'data.'.format(flavour, filename))
+                    "data.".format(flavour, filename)
+                )
 
         if "ODIM" in flavour:
-            self._dsdesc = 'dataset'
-            self._swmode = 'product'
-            self._mfmt = 'data'
-            self._msrc = 'groups'
+            self._dsdesc = "dataset"
+            self._swmode = "product"
+            self._mfmt = "data"
+            self._msrc = "groups"
         elif "GAMIC" in flavour:
-            self._dsdesc = 'scan'
-            self._swmode = 'scan_type'
-            self._mfmt = 'moment_'
-            self._msrc = 'variables'
+            self._dsdesc = "scan"
+            self._swmode = "scan_type"
+            self._mfmt = "moment_"
+            self._msrc = "variables"
         else:
             raise AttributeError(
-                'wradlib: Unknown "flavour" kwarg attribute: {} .'
-                ''.format(flavour))
+                'wradlib: Unknown "flavour" kwarg attribute: {} .' "".format(flavour)
+            )
 
         return nch, flavour
 
     @property
     def flavour(self):
-        flv = ['ODIM', 'GAMIC']
+        flv = ["ODIM", "GAMIC"]
         return [s for s in flv if s in self._flavour][0]
 
 
@@ -2443,10 +2641,9 @@ class NetCDF4File(XRadVolFile):
     flavour : str
         Name of flavour ('Cf/Radial' or 'Cf/Radial2').
     """
+
     def __init__(self, filename=None, flavour=None, **kwargs):
-        super(NetCDF4File, self).__init__(filename=filename,
-                                          flavour=flavour,
-                                          **kwargs)
+        super(NetCDF4File, self).__init__(filename=filename, flavour=flavour, **kwargs)
 
     def _check_file(self, filename, flavour):
         nch = nc.Dataset(filename, diskless=True, persist=False)
@@ -2458,17 +2655,18 @@ class NetCDF4File(XRadVolFile):
                 raise AttributeError(
                     'wradlib: Missing "Conventions" attribute in {} ./n'
                     'Use the "flavour" kwarg to specify your source'
-                    'data.'.format(filename)) from e
+                    "data.".format(filename)
+                ) from e
             if "cf/radial" in Conventions.lower():
-                if version == '2.0':
-                    flavour = 'Cf/Radial2'
+                if version == "2.0":
+                    flavour = "Cf/Radial2"
                 else:
-                    flavour = 'Cf/Radial'
+                    flavour = "Cf/Radial"
 
-        if flavour not in ['Cf/Radial', 'Cf/Radial2']:
+        if flavour not in ["Cf/Radial", "Cf/Radial2"]:
             raise AttributeError(
-                'wradlib: Unknown "flavour" kwarg attribute: {} .'
-                ''.format(flavour))
+                'wradlib: Unknown "flavour" kwarg attribute: {} .' "".format(flavour)
+            )
 
         return nch, flavour
 
@@ -2489,9 +2687,12 @@ class XRadVol(collections.abc.MutableMapping):
             self._init_root()
 
     def __getitem__(self, key):
-        if key == 'root':
-            warnings.warn("WRADLIB: Use of `obj['root']` is deprecated, "
-                          "please use obj.root instead.", DeprecationWarning)
+        if key == "root":
+            warnings.warn(
+                "WRADLIB: Use of `obj['root']` is deprecated, "
+                "please use obj.root instead.",
+                DeprecationWarning,
+            )
             return self._root
 
         return self._sweeps[key]
@@ -2500,8 +2701,11 @@ class XRadVol(collections.abc.MutableMapping):
         if key in self._sweeps:
             self._sweeps[key] = value
         else:
-            warnings.warn("WRADLIB: Use class methods to add data. "
-                          "Direct setting is not allowed.", UserWarning)
+            warnings.warn(
+                "WRADLIB: Use class methods to add data. "
+                "Direct setting is not allowed.",
+                UserWarning,
+            )
 
     def __delitem__(self, key):
         del self._sweeps[key]
@@ -2523,8 +2727,7 @@ class XRadVol(collections.abc.MutableMapping):
             del k
 
     def _init_root(self):
-        self.root = xr.Dataset(data_vars=global_variables,
-                               attrs=global_attrs)
+        self.root = xr.Dataset(data_vars=global_variables, attrs=global_attrs)
 
     @property
     def root(self):
@@ -2563,7 +2766,7 @@ class XRadVol(collections.abc.MutableMapping):
     def sweep(self):
         """ Return sweep dimension count.
         """
-        return self.root.dims['sweep']
+        return self.root.dims["sweep"]
 
     @property
     def sweeps(self):
@@ -2575,9 +2778,11 @@ class XRadVol(collections.abc.MutableMapping):
     def location(self):
         """ Return location of data source.
         """
-        return (self.root.longitude.values.item(),
-                self.root.latitude.values.item(),
-                self.root.altitude.values.item())
+        return (
+            self.root.longitude.values.item(),
+            self.root.latitude.values.item(),
+            self.root.altitude.values.item(),
+        )
 
     @property
     def Conventions(self):
@@ -2602,8 +2807,11 @@ class XRadVol(collections.abc.MutableMapping):
         if self.root:
             to_cfradial2(self, filename)
         else:
-            warnings.warn("WRADLIB: No CfRadial2-compliant data structure "
-                          "available. Not saving.", UserWarning)
+            warnings.warn(
+                "WRADLIB: No CfRadial2-compliant data structure "
+                "available. Not saving.",
+                UserWarning,
+            )
 
     def to_odim(self, filename):
         """ Save volume to ODIM_H5/V2_2 compliant file.
@@ -2616,8 +2824,10 @@ class XRadVol(collections.abc.MutableMapping):
         if self.root:
             to_odim(self, filename)
         else:
-            warnings.warn("WRADLIB: No OdimH5-compliant data structure "
-                          "available. Not saving.", UserWarning)
+            warnings.warn(
+                "WRADLIB: No OdimH5-compliant data structure " "available. Not saving.",
+                UserWarning,
+            )
 
     def georeference(self, sweeps=None):
         """Georeference sweeps
@@ -2638,6 +2848,7 @@ class CfRadial(XRadVol):
     """ Class for xarray based retrieval of CfRadial data files
 
     """
+
     def __init__(self, filename=None, flavour=None, **kwargs):
         """Initialize xarray structure from Cf/Radial data structure.
 
@@ -2711,20 +2922,21 @@ class CfRadial(XRadVol):
                 * `azimuth` - better for working with xarray
         """
         # keyword argument handling
-        georef = kwargs.pop('georef', False)
-        dim0 = kwargs.pop('dim0', 'time')
+        georef = kwargs.pop("georef", False)
+        dim0 = kwargs.pop("dim0", "time")
 
         self.root = _open_dataset(nch.nch, grp=None, **kwargs)
         sweepnames = self.root.sweep_group_name.values
         for sw in sweepnames:
             ds = _open_dataset(nch.nch, grp=sw, **kwargs)
-            ds = ds.swap_dims({'time': dim0})
-            coords = {'longitude': self.root.longitude,
-                      'latitude': self.root.latitude,
-                      'altitude': self.root.altitude,
-                      'azimuth': ds.azimuth,
-                      'elevation': ds.elevation,
-                      }
+            ds = ds.swap_dims({"time": dim0})
+            coords = {
+                "longitude": self.root.longitude,
+                "latitude": self.root.latitude,
+                "altitude": self.root.altitude,
+                "azimuth": ds.azimuth,
+                "elevation": ds.elevation,
+            }
             ds = ds.assign_coords(**coords)
 
             # adding xyz aeqd-coordinates
@@ -2759,20 +2971,18 @@ class CfRadial(XRadVol):
                 * `azimuth` - better for working with xarray
         """
         # keyword argument handling
-        georef = kwargs.pop('georef', False)
-        dim0 = kwargs.pop('dim0', 'time')
+        georef = kwargs.pop("georef", False)
+        dim0 = kwargs.pop("dim0", "time")
 
         root = _open_dataset(nch.nch, grp=None, **kwargs)
         var = root.variables.keys()
         remove_root = var ^ root_vars
         remove_root &= var
-        root1 = root.drop_vars(remove_root).rename(
-            {'fixed_angle': 'sweep_fixed_angle'})
+        root1 = root.drop_vars(remove_root).rename({"fixed_angle": "sweep_fixed_angle"})
         sweep_group_name = []
-        for i in range(root1.dims['sweep']):
-            sweep_group_name.append('sweep_{}'.format(i + 1))
-        self.root = root1.assign(
-            {'sweep_group_name': (['sweep'], sweep_group_name)})
+        for i in range(root1.dims["sweep"]):
+            sweep_group_name.append("sweep_{}".format(i + 1))
+        self.root = root1.assign({"sweep_group_name": (["sweep"], sweep_group_name)})
 
         keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
         remove_vars = var ^ keep_vars
@@ -2781,20 +2991,20 @@ class CfRadial(XRadVol):
         data.attrs = {}
         start_idx = data.sweep_start_ray_index.values
         end_idx = data.sweep_end_ray_index.values
-        data = data.drop_vars({'sweep_start_ray_index', 'sweep_end_ray_index'})
+        data = data.drop_vars({"sweep_start_ray_index", "sweep_end_ray_index"})
         for i, sw in enumerate(sweep_group_name):
             tslice = slice(start_idx[i], end_idx[i])
-            ds = data.isel(time=tslice,
-                           sweep=slice(i, i + 1)).squeeze('sweep')
-            ds = ds.swap_dims({'time': dim0})
+            ds = data.isel(time=tslice, sweep=slice(i, i + 1)).squeeze("sweep")
+            ds = ds.swap_dims({"time": dim0})
             ds.sweep_mode.load()
-            coords = {'longitude': self.root.longitude,
-                      'latitude': self.root.latitude,
-                      'altitude': self.root.altitude,
-                      'azimuth': ds.azimuth,
-                      'elevation': ds.elevation,
-                      'sweep_mode': ds.sweep_mode.item().decode(),
-                      }
+            coords = {
+                "longitude": self.root.longitude,
+                "latitude": self.root.latitude,
+                "altitude": self.root.altitude,
+                "azimuth": ds.azimuth,
+                "elevation": ds.elevation,
+                "sweep_mode": ds.sweep_mode.item().decode(),
+            }
             ds = ds.assign_coords(**coords)
 
             # adding xyz aeqd-coordinates
@@ -2807,6 +3017,7 @@ class CfRadial(XRadVol):
 class OdimH5(XRadVol):
     """ Class for xarray based retrieval of ODIM_H5 data files
     """
+
     def __init__(self, filename=None, flavour=None, **kwargs):
         """Initialize xarray structure from hdf5 data structure.
 
@@ -2858,7 +3069,7 @@ class OdimH5(XRadVol):
         for f in filename:
             self.assign_data(f, flavour=flavour, **kwargs)
 
-        if 'cf' in kwargs.get('standard', 'cf-mandatory'):
+        if "cf" in kwargs.get("standard", "cf-mandatory"):
             self.assign_root()
 
     def assign_data(self, filename, flavour=None, **kwargs):
@@ -2906,54 +3117,49 @@ class OdimH5(XRadVol):
         self._nch.append(nch)
 
         # keyword argument handling
-        decode_times = kwargs.get('decode_times', True)
-        decode_coords = kwargs.get('decode_coords', True)
-        mask_and_scale = kwargs.get('mask_and_scale', True)
-        georef = kwargs.get('georef', False)
-        standard = kwargs.get('standard', 'cf-mandatory')
-        dim0 = kwargs.get('dim0', 'time')
+        decode_times = kwargs.get("decode_times", True)
+        decode_coords = kwargs.get("decode_coords", True)
+        mask_and_scale = kwargs.get("mask_and_scale", True)
+        georef = kwargs.get("georef", False)
+        standard = kwargs.get("standard", "cf-mandatory")
+        dim0 = kwargs.get("dim0", "time")
 
         # retrieve and assign global groups /how, /what, /where
-        groups = ['how', 'what', 'where']
+        groups = ["how", "what", "where"]
         how, what, where = _get_odim_groups(nch.nch, groups)
-        rt_grps = {'how': how,
-                   'what': what,
-                   'where': where}
+        rt_grps = {"how": how, "what": what, "where": where}
 
         # sweep group handling
-        (src_swp_grp_name,
-         swp_grp_name) = _get_odim_sweep_group_names(nch.nch,
-                                                     nch._dsdesc)
+        (src_swp_grp_name, swp_grp_name) = _get_odim_sweep_group_names(
+            nch.nch, nch._dsdesc
+        )
 
         # iterate sweeps in file
         for i, sweep in enumerate(src_swp_grp_name):
             # retrieve ds and assign datasetX how/what/where group attributes
-            groups = [None, 'how', 'what', 'where']
-            ds, ds_how, ds_what, ds_where = _get_odim_groups(nch.nch[sweep],
-                                                             groups)
-            ds_grps = {'how': ds_how,
-                       'what': ds_what,
-                       'where': ds_where}
+            groups = [None, "how", "what", "where"]
+            ds, ds_how, ds_what, ds_where = _get_odim_groups(nch.nch[sweep], groups)
+            ds_grps = {"how": ds_how, "what": ds_what, "where": ds_where}
 
             # moments
             ds = _assign_odim_moments(ds, nch, sweep, **kwargs)
 
             # retrieve and assign gamic ray_header
-            if nch.flavour == 'GAMIC':
+            if nch.flavour == "GAMIC":
                 rh = _get_gamic_ray_header(nch.filename, i)
-                ds_grps['what'] = ds_grps['what'].assign(rh)
+                ds_grps["what"] = ds_grps["what"].assign(rh)
 
             # coordinates wrap-up
             vars = collections.OrderedDict()
             coords = collections.OrderedDict()
-            if 'cf' in standard or georef:
-                coords['longitude'] = rt_grps['where'].attrs['lon']
-                coords['latitude'] = rt_grps['where'].attrs['lat']
-                coords['altitude'] = rt_grps['where'].attrs['height']
-            if 'cf' in standard or georef:
+            if "cf" in standard or georef:
+                coords["longitude"] = rt_grps["where"].attrs["lon"]
+                coords["latitude"] = rt_grps["where"].attrs["lat"]
+                coords["altitude"] = rt_grps["where"].attrs["height"]
+            if "cf" in standard or georef:
                 sweep_mode = _get_odim_sweep_mode(nch, ds_grps)
-                coords['sweep_mode'] = sweep_mode
-            if 'cf' in standard or decode_coords or georef:
+                coords["sweep_mode"] = sweep_mode
+            if "cf" in standard or decode_coords or georef:
                 coords.update(_get_odim_coordinates(nch, ds_grps))
                 # georeference needs coordinate variables
                 if georef:
@@ -2961,42 +3167,49 @@ class OdimH5(XRadVol):
                     geods = xarray.georeference_dataset(geods)
                     coords.update(geods.coords)
             # time coordinate
-            if 'cf' in standard or decode_times:
+            if "cf" in standard or decode_times:
                 timevals = _get_odim_timevalues(nch, ds_grps)
                 if decode_times:
-                    coords['time'] = (['dim_0'], timevals, time_attrs)
+                    coords["time"] = (["dim_0"], timevals, time_attrs)
                 else:
-                    coords['time'] = (['dim_0'], timevals)
+                    coords["time"] = (["dim_0"], timevals)
 
             # assign global sweep attributes
             fixed_angle = _get_odim_fixed_angle(nch, ds_grps)
-            if 'cf' in standard:
-                vars.update({'sweep_number': i,
-                             'sweep_mode': sweep_mode,
-                             'follow_mode': 'none',
-                             'prt_mode': 'fixed',
-                             'fixed_angle': fixed_angle})
-            if 'cf-full' in standard:
+            if "cf" in standard:
+                vars.update(
+                    {
+                        "sweep_number": i,
+                        "sweep_mode": sweep_mode,
+                        "follow_mode": "none",
+                        "prt_mode": "fixed",
+                        "fixed_angle": fixed_angle,
+                    }
+                )
+            if "cf-full" in standard:
                 full_vars = _get_odim_full_vars(nch, ds_grps)
                 vars.update(full_vars)
 
             # assign variables and coordinates
             ds = ds.assign(vars)
             ds = ds.assign_coords(**coords)
-            ds = ds.rename({'dim_0': dim0, 'dim_1': 'range'})
+            ds = ds.rename({"dim_0": dim0, "dim_1": "range"})
 
             # decode dataset if requested
             if decode_times or decode_coords or mask_and_scale:
-                ds = xr.decode_cf(ds, decode_times=decode_times,
-                                  decode_coords=decode_coords,
-                                  mask_and_scale=mask_and_scale)
+                ds = xr.decode_cf(
+                    ds,
+                    decode_times=decode_times,
+                    decode_coords=decode_coords,
+                    mask_and_scale=mask_and_scale,
+                )
 
             # determine if same sweep
             try:
                 index = self.sweep_angles.index(fixed_angle)
             except ValueError:
                 nidx = len(self._sweeps) + 1
-                swp_grp_name = f'sweep_{nidx}'
+                swp_grp_name = f"sweep_{nidx}"
                 self._sweeps[swp_grp_name] = ds
                 self.sweep_names.append(swp_grp_name)
                 self.sweep_angles.append(fixed_angle)
@@ -3008,11 +3221,9 @@ class OdimH5(XRadVol):
         # retrieve and assign global groups /how, /what, /where
         first = self._nch[0]
 
-        groups = ['how', 'what', 'where']
+        groups = ["how", "what", "where"]
         how, what, where = _get_odim_groups(first.nch, groups)
-        rt_grps = {'how': how,
-                   'what': what,
-                   'where': where}
+        rt_grps = {"how": how, "what": what, "where": where}
 
         # assign root variables
         # extract time coverage
@@ -3021,28 +3232,28 @@ class OdimH5(XRadVol):
         tmax = [ds.time.values.max() for ds in self._sweeps.values()]
         time_coverage_end = max(tmax)
 
-        time_coverage_start_str = str(time_coverage_start)[:19] + 'Z'
-        time_coverage_end_str = str(time_coverage_end)[:19] + 'Z'
+        time_coverage_start_str = str(time_coverage_start)[:19] + "Z"
+        time_coverage_end_str = str(time_coverage_end)[:19] + "Z"
 
         # create root group from scratch
-        root = xr.Dataset(data_vars=global_variables,
-                          attrs=global_attrs)
+        root = xr.Dataset(data_vars=global_variables, attrs=global_attrs)
 
         # assign root variables
-        root = root.assign({'volume_number': 0,
-                            'platform_type': str('fixed'),
-                            'instrument_type': 'radar',
-                            'primary_axis': 'axis_z',
-                            'time_coverage_start': time_coverage_start_str,
-                            'time_coverage_end': time_coverage_end_str,
-                            'latitude': rt_grps['where'].attrs['lat'],
-                            'longitude': rt_grps['where'].attrs['lon'],
-                            'altitude': rt_grps['where'].attrs['height'],
-                            'sweep_group_name': (
-                                ['sweep'], self.sweep_names),
-                            'sweep_fixed_angle': (
-                                ['sweep'], self.sweep_angles),
-                            })
+        root = root.assign(
+            {
+                "volume_number": 0,
+                "platform_type": str("fixed"),
+                "instrument_type": "radar",
+                "primary_axis": "axis_z",
+                "time_coverage_start": time_coverage_start_str,
+                "time_coverage_end": time_coverage_end_str,
+                "latitude": rt_grps["where"].attrs["lat"],
+                "longitude": rt_grps["where"].attrs["lon"],
+                "altitude": rt_grps["where"].attrs["height"],
+                "sweep_group_name": (["sweep"], self.sweep_names),
+                "sweep_fixed_angle": (["sweep"], self.sweep_angles),
+            }
+        )
 
         # assign root attributes
         attrs = _get_odim_root_attributes(first, rt_grps)
@@ -3083,7 +3294,7 @@ def _write_odim_dataspace(src, dest):
         h5py-group handle
     """
     keys = [key for key in src if key in ODIM_NAMES]
-    data_list = ['data{}'.format(i + 1) for i in range(len(keys))]
+    data_list = ["data{}".format(i + 1) for i in range(len(keys))]
     data_idx = np.argsort(data_list)
     for idx in data_idx:
         value = src[keys[idx]]
@@ -3091,40 +3302,45 @@ def _write_odim_dataspace(src, dest):
         enc = value.encoding
 
         # p. 21 ff
-        h5_what = h5_data.create_group('what')
+        h5_what = h5_data.create_group("what")
         try:
             undetect = float(value._Undetect)
         except AttributeError:
             undetect = np.finfo(np.float).max
-        what = {'quantity': value.name,
-                'gain': float(enc['scale_factor']),
-                'offset': float(enc['add_offset']),
-                'nodata': float(enc['_FillValue']),
-                'undetect': undetect,
-                }
+        what = {
+            "quantity": value.name,
+            "gain": float(enc["scale_factor"]),
+            "offset": float(enc["add_offset"]),
+            "nodata": float(enc["_FillValue"]),
+            "undetect": undetect,
+        }
         _write_odim(what, h5_what)
 
         # moments handling
-        val = value.sortby('azimuth').values
-        fillval = enc['_FillValue'] * enc['scale_factor']
-        fillval += enc['add_offset']
+        val = value.sortby("azimuth").values
+        fillval = enc["_FillValue"] * enc["scale_factor"]
+        fillval += enc["add_offset"]
         val[np.isnan(val)] = fillval
-        val = (val - enc['add_offset']) / enc['scale_factor']
-        val = np.rint(val).astype(enc['dtype'])
-        ds = h5_data.create_dataset('data', data=val, compression='gzip',
-                                    compression_opts=6,
-                                    fillvalue=enc['_FillValue'])
-        if enc['dtype'] == 'uint8':
-            image = 'IMAGE'
-            version = '1.2'
+        val = (val - enc["add_offset"]) / enc["scale_factor"]
+        val = np.rint(val).astype(enc["dtype"])
+        ds = h5_data.create_dataset(
+            "data",
+            data=val,
+            compression="gzip",
+            compression_opts=6,
+            fillvalue=enc["_FillValue"],
+        )
+        if enc["dtype"] == "uint8":
+            image = "IMAGE"
+            version = "1.2"
             tid1 = h5py.h5t.C_S1.copy()
             tid1.set_size(len(image) + 1)
             H5T_C_S1_IMG = h5py.Datatype(tid1)
             tid2 = h5py.h5t.C_S1.copy()
             tid2.set_size(len(version) + 1)
             H5T_C_S1_VER = h5py.Datatype(tid2)
-            ds.attrs.create('CLASS', image, dtype=H5T_C_S1_IMG)
-            ds.attrs.create('IMAGE_VERSION', version, dtype=H5T_C_S1_VER)
+            ds.attrs.create("CLASS", image, dtype=H5T_C_S1_IMG)
+            ds.attrs.create("IMAGE_VERSION", version, dtype=H5T_C_S1_VER)
 
 
 def _open_dataset(nch, grp=None, **kwargs):
@@ -3166,13 +3382,13 @@ def _get_gamic_ray_header(filename, scan):
     """
     # ToDo: move rayheader into own dataset
     h5 = h5py.File(filename)
-    ray_header = h5['scan{}/ray_header'.format(scan)][:]
+    ray_header = h5["scan{}/ray_header".format(scan)][:]
     h5.close()
     vars = collections.OrderedDict()
     for name in ray_header.dtype.names:
         rh = ray_header[name]
         attrs = None
-        vars.update({name: (['dim_0'], rh, attrs)})
+        vars.update({name: (["dim_0"], rh, attrs)})
     return vars
 
 
@@ -3196,9 +3412,8 @@ def _get_odim_sweep_group_names(nch, name):
         list of corresponding cfradial sweep_group_name
     """
     src = [key for key in nch.groups.keys() if name in key]
-    src.sort(key=lambda x: int(x[len(name):]))
-    swp_grp_name = ['sweep_{}'.format(i) for i in
-                    range(1, len(src) + 1)]
+    src.sort(key=lambda x: int(x[len(name) :]))
+    swp_grp_name = ["sweep_{}".format(i) for i in range(1, len(src) + 1)]
     return src, swp_grp_name
 
 
@@ -3218,22 +3433,20 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
         altered dataset
     """
 
-    standard = kwargs.get('standard', 'cf-mandatory')
-    mask_and_scale = kwargs.get('mask_and_scale', True)
-    decode_coords = kwargs.get('decode_coords', True)
+    standard = kwargs.get("standard", "cf-mandatory")
+    mask_and_scale = kwargs.get("mask_and_scale", True)
+    decode_coords = kwargs.get("decode_coords", True)
 
     # fix dimensions
-    dims = sorted(list(ds.dims.keys()),
-                  key=lambda x: int(x[len('phony_dim_'):]))
+    dims = sorted(list(ds.dims.keys()), key=lambda x: int(x[len("phony_dim_") :]))
 
-    ds = ds.rename({dims[0]: 'dim_0',
-                    dims[1]: 'dim_1'})
+    ds = ds.rename({dims[0]: "dim_0", dims[1]: "dim_1"})
 
     for mom in moments:
         # open dataX dataset
         dmom = ds[mom]
         name = dmom.moment.lower()
-        if 'cf' in standard and name not in GAMIC_NAMES.keys():
+        if "cf" in standard and name not in GAMIC_NAMES.keys():
             ds = ds.drop_vars(mom)
             continue
 
@@ -3250,39 +3463,39 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
         # create attribute dict
         attrs = collections.OrderedDict()
         # clean moment attributes
-        if standard != 'none':
+        if standard != "none":
             dmom.attrs = collections.OrderedDict()
 
-        if standard in ['odim']:
-            attrs['gain'] = gain
-            attrs['offset'] = offset
-            attrs['nodata'] = fillval
-            attrs['undetect'] = undetect
+        if standard in ["odim"]:
+            attrs["gain"] = gain
+            attrs["offset"] = offset
+            attrs["nodata"] = fillval
+            attrs["undetect"] = undetect
 
         # add cfradial moment attributes
-        if 'cf' in standard or mask_and_scale:
-            attrs['scale_factor'] = gain
-            attrs['add_offset'] = minval
-            attrs['_FillValue'] = float(dmax)
+        if "cf" in standard or mask_and_scale:
+            attrs["scale_factor"] = gain
+            attrs["add_offset"] = minval
+            attrs["_FillValue"] = float(dmax)
 
-        if 'cf' in standard or decode_coords:
-            attrs['coordinates'] = 'elevation azimuth range'
+        if "cf" in standard or decode_coords:
+            attrs["coordinates"] = "elevation azimuth range"
 
-        if 'full' in standard:
-            attrs['_Undetect'] = undetect
+        if "full" in standard:
+            attrs["_Undetect"] = undetect
 
-        if 'cf' in standard:
+        if "cf" in standard:
             cfname = GAMIC_NAMES[name]
             for k, v in moments_mapping[cfname].items():
                 attrs[k] = v
-            name = attrs.pop('short_name')
-            attrs.pop('gamic')
+            name = attrs.pop("short_name")
+            attrs.pop("gamic")
 
         # assign attributes to moment
         dmom.attrs.update(attrs)
 
         # keep original dataset name
-        if standard != 'none':
+        if standard != "none":
             ds = ds.rename({mom: name.upper()})
 
     return ds
@@ -3305,53 +3518,51 @@ def _get_odim_group_moments(nch, sweep, moments=None, **kwargs):
         moment datasets
     """
 
-    standard = kwargs.get('standard', 'cf-mandatory')
-    mask_and_scale = kwargs.get('mask_and_scale', True)
-    decode_coords = kwargs.get('decode_coords', True)
-    chunks = kwargs.get('chunks', None)
+    standard = kwargs.get("standard", "cf-mandatory")
+    mask_and_scale = kwargs.get("mask_and_scale", True)
+    decode_coords = kwargs.get("decode_coords", True)
+    chunks = kwargs.get("chunks", None)
 
     datas = {}
     for mom in moments:
-        dmom_what = _open_dataset(nch[sweep][mom], 'what', chunks=chunks)
-        name = dmom_what.attrs.pop('quantity')
-        if 'cf' in standard and name not in moments_mapping.keys():
+        dmom_what = _open_dataset(nch[sweep][mom], "what", chunks=chunks)
+        name = dmom_what.attrs.pop("quantity")
+        if "cf" in standard and name not in moments_mapping.keys():
             continue
         dsmom = _open_dataset(nch[sweep], mom, chunks=chunks)
 
         # create attribute dict
         attrs = collections.OrderedDict()
 
-        if standard in ['odim']:
+        if standard in ["odim"]:
             attrs.update(dmom_what.attrs)
 
         # add cfradial moment attributes
-        if 'cf' in standard or mask_and_scale:
-            attrs['scale_factor'] = dmom_what.attrs.get('gain')
-            attrs['add_offset'] = dmom_what.attrs.get('offset')
-            attrs['_FillValue'] = dmom_what.attrs.get('nodata')
-        if 'cf' in standard or decode_coords:
-            attrs['coordinates'] = 'elevation azimuth range'
-        if 'cf' in standard:
+        if "cf" in standard or mask_and_scale:
+            attrs["scale_factor"] = dmom_what.attrs.get("gain")
+            attrs["add_offset"] = dmom_what.attrs.get("offset")
+            attrs["_FillValue"] = dmom_what.attrs.get("nodata")
+        if "cf" in standard or decode_coords:
+            attrs["coordinates"] = "elevation azimuth range"
+        if "cf" in standard:
             for k, v in moments_mapping[name].items():
                 attrs[k] = v
             # drop short_name
-            attrs.pop('short_name')
-            attrs.pop('gamic')
-        if 'full' in standard:
-            attrs['_Undetect'] = dmom_what.attrs.get('undetect')
+            attrs.pop("short_name")
+            attrs.pop("gamic")
+        if "full" in standard:
+            attrs["_Undetect"] = dmom_what.attrs.get("undetect")
 
         # assign attributes
         dmom = dsmom.data.assign_attrs(attrs)
 
         # keep original dataset name
-        if standard == 'none':
+        if standard == "none":
             name = mom
 
         # fix dimensions
         dims = dmom.dims
-        datas.update({name: dmom.rename({dims[0]: 'dim_0',
-                                         dims[1]: 'dim_1'
-                                         })})
+        datas.update({name: dmom.rename({dims[0]: "dim_0", dims[1]: "dim_1"})})
     return datas
 
 
@@ -3388,9 +3599,8 @@ def _get_odim_moment_names(sweep, fmt=None, src=None):
     out : :class:`numpy:numpy.ndarray`
         array of moment names
     """
-    moments = [mom for mom in getattr(sweep, src).keys() if
-               fmt in mom]
-    moments_idx = np.argsort([int(s[len(fmt):]) for s in moments])
+    moments = [mom for mom in getattr(sweep, src).keys() if fmt in mom]
+    moments_idx = np.argsort([int(s[len(fmt) :]) for s in moments])
     return np.array(moments)[moments_idx]
 
 
@@ -3433,14 +3643,13 @@ def _assign_odim_moments(ds, nch, sweep, **kwargs):
     ds : xarray dataset
         Dataset with assigned radar moments
     """
-    moments = _get_odim_moment_names(nch.nch[sweep], fmt=nch._mfmt,
-                                     src=nch._msrc)
-    if nch.flavour == 'ODIM':
-        for name, dmom in _get_odim_group_moments(nch.nch, sweep,
-                                                  moments=moments,
-                                                  **kwargs).items():
+    moments = _get_odim_moment_names(nch.nch[sweep], fmt=nch._mfmt, src=nch._msrc)
+    if nch.flavour == "ODIM":
+        for name, dmom in _get_odim_group_moments(
+            nch.nch, sweep, moments=moments, **kwargs
+        ).items():
             ds[name] = dmom
-    if nch.flavour == 'GAMIC':
+    if nch.flavour == "GAMIC":
         ds = _get_odim_variables_moments(ds, moments=moments, **kwargs)
 
     return ds
@@ -3461,23 +3670,26 @@ def _get_odim_timevalues(nch, grps):
     timevals : :class:`numpy:numpy.ndarray`
             array of time values
     """
-    if nch.flavour == 'ODIM':
+    if nch.flavour == "ODIM":
         try:
-            timevals = grps['how'].odim.time_range
+            timevals = grps["how"].odim.time_range
         except (KeyError, AttributeError):
             # timehandling if only start and end time is given
-            start, end = grps['what'].odim.time_range2
+            start, end = grps["what"].odim.time_range2
             if start == end:
-                warnings.warn("WRADLIB: Equal ODIM `starttime` and `endtime` "
-                              "values. Can't determine correct sweep start-, "
-                              "end- and raytimes.", UserWarning)
-                timevals = np.ones(grps['where'].nrays) * start
+                warnings.warn(
+                    "WRADLIB: Equal ODIM `starttime` and `endtime` "
+                    "values. Can't determine correct sweep start-, "
+                    "end- and raytimes.",
+                    UserWarning,
+                )
+                timevals = np.ones(grps["where"].nrays) * start
             else:
-                delta = (end - start) / grps['where'].nrays
-                timevals = np.arange(start + delta / 2., end, delta)
-                timevals = np.roll(timevals, shift=-grps['where'].a1gate)
-    if nch.flavour == 'GAMIC':
-        timevals = grps['what'].gamic.time_range.values
+                delta = (end - start) / grps["where"].nrays
+                timevals = np.arange(start + delta / 2.0, end, delta)
+                timevals = np.roll(timevals, shift=-grps["where"].a1gate)
+    if nch.flavour == "GAMIC":
+        timevals = grps["what"].gamic.time_range.values
 
     return timevals
 
@@ -3499,20 +3711,20 @@ def _get_odim_coordinates(nch, grps):
     """
     flavour = nch.flavour.lower()
     coords = collections.OrderedDict()
-    if flavour == 'odim':
-        rng = grps['where']
-        az = el = grps['how']
-    if flavour == 'gamic':
-        az = el = grps['what']
-        rng = grps['how']
+    if flavour == "odim":
+        rng = grps["where"]
+        az = el = grps["how"]
+    if flavour == "gamic":
+        az = el = grps["what"]
+        rng = grps["how"]
     try:
-        coords['azimuth'] = getattr(az, flavour).azimuth_range
-        coords['elevation'] = getattr(el, flavour).elevation_range
+        coords["azimuth"] = getattr(az, flavour).azimuth_range
+        coords["elevation"] = getattr(el, flavour).elevation_range
     except (KeyError, AttributeError):
-        az = el = grps['where']
-        coords['azimuth'] = getattr(az, flavour).azimuth_range2
-        coords['elevation'] = getattr(el, flavour).elevation_range2
-    coords['range'] = getattr(rng, flavour).radial_range
+        az = el = grps["where"]
+        coords["azimuth"] = getattr(az, flavour).azimuth_range2
+        coords["elevation"] = getattr(el, flavour).elevation_range2
+    coords["range"] = getattr(rng, flavour).radial_range
 
     return coords
 
@@ -3532,8 +3744,8 @@ def _get_odim_sweep_mode(nch, grp):
         'azimuth_surveillance' or 'rhi'
 
     """
-    odim_mode = grp['what'].attrs[nch._swmode]
-    return ('rhi' if odim_mode == 'RHI' else 'azimuth_surveillance')
+    odim_mode = grp["what"].attrs[nch._swmode]
+    return "rhi" if odim_mode == "RHI" else "azimuth_surveillance"
 
 
 def _get_odim_full_vars(nch, grps):
@@ -3551,11 +3763,10 @@ def _get_odim_full_vars(nch, grps):
         full cf-variables
     """
     full_vars = collections.OrderedDict()
-    if nch.flavour == 'ODIM':
+    if nch.flavour == "ODIM":
         for k, v in cf_full_vars.items():
-            full_vars[k] = getattr(getattr(grps['how'],
-                                           nch.flavour.lower()), k)
-    if nch.flavour == 'GAMIC':
+            full_vars[k] = getattr(getattr(grps["how"], nch.flavour.lower()), k)
+    if nch.flavour == "GAMIC":
         pass
 
     return full_vars
@@ -3576,12 +3787,12 @@ def _get_odim_fixed_angle(nch, grps):
         fixed angle of specific scan
     """
     mode = _get_odim_sweep_mode(nch, grps)
-    if nch.flavour == 'ODIM':
-        ang = {'azimuth_surveillance': 'elangle', 'rhi': 'azangle'}
-        fixed_angle = getattr(grps['where'], ang[mode])
-    if nch.flavour == 'GAMIC':
-        ang = {'azimuth_surveillance': 'elevation', 'rhi': 'azimuth'}
-        fixed_angle = grps['how'].attrs[ang[mode]]
+    if nch.flavour == "ODIM":
+        ang = {"azimuth_surveillance": "elangle", "rhi": "azangle"}
+        fixed_angle = getattr(grps["where"], ang[mode])
+    if nch.flavour == "GAMIC":
+        ang = {"azimuth_surveillance": "elevation", "rhi": "azimuth"}
+        fixed_angle = grps["how"].attrs[ang[mode]]
     return fixed_angle
 
 
@@ -3600,22 +3811,25 @@ def _get_odim_root_attributes(nch, grps):
     """
 
     attrs = collections.OrderedDict()
-    attrs.update({'version': 'None',
-                  'title': 'None',
-                  'institution': 'None',
-                  'references': 'None',
-                  'source': 'None',
-                  'history': 'None',
-                  'comment': 'im/exported using wradlib',
-                  'instrument_name': 'None',
-                  })
-    attrs['version'] = grps['what'].attrs['version']
+    attrs.update(
+        {
+            "version": "None",
+            "title": "None",
+            "institution": "None",
+            "references": "None",
+            "source": "None",
+            "history": "None",
+            "comment": "im/exported using wradlib",
+            "instrument_name": "None",
+        }
+    )
+    attrs["version"] = grps["what"].attrs["version"]
 
-    if nch.flavour == 'ODIM':
-        attrs['institution'] = grps['what'].attrs['source']
-        attrs['instrument'] = grps['what'].attrs['source']
-    if nch.flavour == 'GAMIC':
-        attrs['title'] = grps['how'].attrs['template_name']
-        attrs['instrument'] = grps['how'].attrs['host_name']
+    if nch.flavour == "ODIM":
+        attrs["institution"] = grps["what"].attrs["source"]
+        attrs["instrument"] = grps["what"].attrs["source"]
+    if nch.flavour == "GAMIC":
+        attrs["title"] = grps["how"].attrs["template_name"]
+        attrs["instrument"] = grps["how"].attrs["host_name"]
 
     return attrs
