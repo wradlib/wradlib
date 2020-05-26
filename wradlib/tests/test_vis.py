@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2019, wradlib developers.
+# Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import sys
@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as pl
 pl.interactive(True)  # noqa
 
-from wradlib import georef, util, vis
+from wradlib import georef, util, vis  # noqa: 402
 
 cartopy = util.import_optional('cartopy')
 

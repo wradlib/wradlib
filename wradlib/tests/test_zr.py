@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2019, wradlib developers.
+# Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import unittest
@@ -18,6 +18,7 @@ class ZRConversionTest(unittest.TestCase):
         img[2:3, 6:9] = 2.0
         img[3:4, 1:7] = 5.0
 
+        img = np.stack([img, img * 1.1, img * 1.2], axis=0)
         self.img = img
 
     def test_z_to_r(self):
@@ -27,12 +28,10 @@ class ZRConversionTest(unittest.TestCase):
         self.assertEqual(zr.r_to_z(0.15), 9.611164492610417)
 
     def test_z_to_r_enhanced(self):
-        res_rr, res_si = zr.z_to_r_enhanced(trafo.idecibel(self.img))
-        res_rr2, res_si2 = zr.z_to_r_enhanced(trafo.idecibel(self.img),
-                                              algo='mdfilt', mode='mirror')
-        res_rr3, res_si3 = zr.z_to_r_enhanced(trafo.idecibel(self.img),
-                                              algo='mdcorr', xmode='mirror',
-                                              ymode='mirror')
+        res_rr, res_si = zr.z_to_r_enhanced(trafo.idecibel(self.img),
+                                            polar=True)
+        res_rr2, res_si2 = zr.z_to_r_enhanced(trafo.idecibel(self.img[0]),
+                                              polar=True)
 
         rr = np.array([[3.64633237e-02, 1.77564547e-01, 1.77564547e-01,
                         3.17838962e-02, 3.17838962e-02, 1.62407903e-02,
@@ -69,11 +68,11 @@ class ZRConversionTest(unittest.TestCase):
                        [4.57142861, 4.00000004, 4.00000004, 3.08333336,
                         1.25000001, 8.75000003, 12.50000004, 12.08333337,
                         11.25000003, 7.50000002, 0.]])
-        np.testing.assert_allclose(rr, res_rr)
-        np.testing.assert_allclose(rr, res_rr2)
-        np.testing.assert_allclose(rr, res_rr3)
 
-        self.assertTrue(np.allclose(si, res_si))
+        np.testing.assert_almost_equal(si, res_si[0], decimal=6)
+        np.testing.assert_array_almost_equal(rr, res_rr[0], decimal=6)
+        np.testing.assert_almost_equal(si, res_si2, decimal=6)
+        np.testing.assert_array_almost_equal(rr, res_rr2, decimal=6)
 
 
 if __name__ == '__main__':

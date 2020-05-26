@@ -15,6 +15,27 @@ matrix:
         - WRADLIB_UNITTEST="true"
         - PYTHON_VERSION="3.6"
         - GDAL_VERSION="2"
+    - python: 3.7
+      sudo: required
+      dist: xenial
+      services: xvfb
+      env:
+        - WRADLIB_UNITTEST="true"
+        - PYTHON_VERSION="3.7"
+        - GDAL_VERSION="2"
+    - python: 3.8
+      sudo: required
+      dist: xenial
+      services: xvfb
+      env:
+        - WRADLIB_UNITTEST="true"
+        - PYTHON_VERSION="3.8"
+        - GDAL_VERSION="2"
+    - python: 3.6
+      env:
+        - WRADLIB_UNITTEST="true"
+        - PYTHON_VERSION="3.6"
+        - GDAL_VERSION="3"
         - DEPLOY="true"
     - python: 3.7
       sudo: required
@@ -23,43 +44,40 @@ matrix:
       env:
         - WRADLIB_UNITTEST="true"
         - PYTHON_VERSION="3.7"
-        - GDAL_VERSION="2"
-    - python: 3.7
+        - GDAL_VERSION="3"
+    - python: 3.8
       sudo: required
       dist: xenial
       services: xvfb
       env:
         - WRADLIB_UNITTEST="true"
-        - PYTHON_VERSION="3.7"
+        - PYTHON_VERSION="3.8"
         - GDAL_VERSION="3"
-    - python: 3.7
+    - python: 3.8
       sudo: required
       dist: xenial
       services: xvfb
       env:
         - WRADLIB_NOTEBOOKTEST="true"
-        - PYTHON_VERSION="3.7"
-        - GDAL_VERSION="2"
+        - PYTHON_VERSION="3.8"
+        - GDAL_VERSION="3"
     allow_failures:
-      - python: 3.7
+      - python: 3.8
         env:
           - WRADLIB_NOTEBOOKTEST="true"
-          - PYTHON_VERSION="3.7"
-          - GDAL_VERSION="2"
-      - python: 3.7
-        env:
-          - WRADLIB_UNITTEST="true"
-          - PYTHON_VERSION="3.7"
+          - PYTHON_VERSION="3.8"
           - GDAL_VERSION="3"
 
-cache:
-  directories:
-    - $HOME/condacache/pkgs
+# remove temporarily, it seems it's faster without caching
+#  cache:
+#    directories:
+#      - $HOME/condacache/pkgs
 
 install:
     # test PEP8 compliance first to speed up
     - pip install flake8
-    - flake8 .
+    # assume black standards
+    - flake8 --max-line-length=88 --extend-ignore=E203 .
     - deactivate
     # install build environment
     - source scripts/install.sh
@@ -77,7 +95,9 @@ script:
 
 after_success:
     - codecov -f "$WRADLIB_BUILD_DIR/coverage.xml" -F wradlibtests
-    - scripts/trigger_readthedocs.sh
+    - if [ "${DEPLOY}" == "true" ]; then
+        scripts/trigger_readthedocs.sh;
+      fi;
 
 deploy:
   # tagged
@@ -92,4 +112,4 @@ deploy:
       branch: master
       tags: true
       repo: wradlib/wradlib
-      condition: $TRAVIS_PYTHON_VERSION = "3.6"
+      condition: $DEPLOY = "true"

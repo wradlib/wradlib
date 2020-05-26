@@ -1,8 +1,9 @@
 environment:
 
-  CONDA_PATH: "C:\\Miniconda3-x64"
+  CONDA_PATH: "C:\\Miniconda37-x64"
 
   matrix:
+    - PYTHON_VERSION: "3.8"
     - PYTHON_VERSION: "3.7"
 
 install:
@@ -17,26 +18,25 @@ install:
   - ps: $env:WRADLIB_DATA="C:\projects\wradlib\wradlib-data"
 
   # Create and activate a conda environment with the wanted Python version
+  - "conda config --add channels conda-forge"
+  - "conda config --set channel_priority strict"
   - "conda update --yes --quiet conda"
   - "conda config --set changeps1 no"
-  - "conda config --add channels conda-forge"
-  #- "conda config --set channel_priority strict"
   - "conda create --yes --quiet -n wradlib python=%PYTHON_VERSION%"
   - "activate wradlib"
 
   # Install wradlib dependecies
-  - "conda install -y -q gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  - "conda install -y -q %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
   # Some checks
-  - "python --version"
+  - "python -VV"
   - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
   - "conda list"
 
   # build wradlib
-  - "python setup.py sdist"
   - "python -m pip install . --no-deps --ignore-installed --no-cache-dir"
 
 build: false
 
 test_script:
-  - "if \"%PYTHON_VERSION%\"==\"3.7\" (pytest -v --doctest-modules --durations=15 wradlib)"
+  - "pytest -v --doctest-modules --durations=15 --pyargs wradlib"

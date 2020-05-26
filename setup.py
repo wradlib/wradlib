@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2018, wradlib developers.
+# Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """wradlib - An Open Source Library for Weather Radar Data Processing
@@ -29,6 +29,7 @@ Programming Language :: Python
 Programming Language :: Python :: 3
 Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
 Topic :: Scientific/Engineering
 Topic :: Scientific/Engineering :: Atmospheric Science
 Operating System :: POSIX :: Linux
@@ -44,10 +45,10 @@ LONG_DESCRIPTION = "\n".join(DOCLINES[2:])
 URL = "http://wradlib.org"
 DOWNLOAD_URL = "https://github.com/wradlib/wradlib"
 LICENSE = 'MIT'
-CLASSIFIERS = filter(None, CLASSIFIERS.split('\n'))
+CLASSIFIERS = list(filter(None, CLASSIFIERS.split('\n')))
 PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 1
-MINOR = 5
+MINOR = 6
 PATCH = 0
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, PATCH)
 

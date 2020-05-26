@@ -1,5 +1,5 @@
-#!/bin/bash
-# Copyright (c) 2011-2019, wradlib developers.
+#!/usr/bin/env bash
+# Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 set -e
@@ -33,7 +33,8 @@ if ! [ -x "$(command -v conda)" ]; then
         WRADLIB_PYTHON=$PYTHON_VERSION
 
         # special packages directory for caching in travis-ci
-        conda config --add pkgs_dirs $HOME/condacache/pkgs
+        # remove temprorarily, it seems it's faster without caching
+        # conda config --add pkgs_dirs $HOME/condacache/pkgs
     fi
 else
     # check if envname parameter is available
@@ -70,11 +71,13 @@ conda config --set channel_priority strict
 conda update --yes conda
 
 # Install wradlib dependencies
-DEPS="gdal numpy scipy matplotlib netcdf4 h5py xarray cartopy deprecation xmltodict semver coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
+NOTEBOOK_DEPS="notebook nbconvert psutil tqdm"
+MISC_DEPS="coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
 # Install twine for pypi upload
 if [[ "$DEPLOY" == "true" ]]; then
-    DEPS="$DEPS twine"
+    MISC_DEPS="$MISC_DEPS twine"
 fi
 
 # Install wradlib-data if not set
@@ -87,12 +90,13 @@ fi
 if [ ! -z ${WRADLIB_NOTEBOOKTEST+x} ]; then
     git clone --depth=1 https://github.com/wradlib/wradlib-notebooks.git $WRADLIB_BUILD_DIR/wradlib-notebooks
     export WRADLIB_NOTEBOOKS=$WRADLIB_BUILD_DIR/wradlib-notebooks
-    DEPS="$DEPS notebook nbconvert"
+    WRADLIB_DEPS="$WRADLIB_DEPS $NOTEBOOK_DEPS"
 fi
 
 # Create environment with the correct Python version and the needed dependencies
-echo $DEPS
-conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $DEPS
+echo $WRADLIB_DEPS
+echo $MISC_DEPS
+conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
 conda activate $WRADLIB_ENV
 
 # Install wradlib
