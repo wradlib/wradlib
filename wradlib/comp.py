@@ -14,8 +14,8 @@ Combine data from different radar locations on one common set of locations
 
    {}
 """
-__all__ = ['extract_circle', 'togrid', 'compose_ko', 'compose_weighted']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["extract_circle", "togrid", "compose_ko", "compose_weighted"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
@@ -76,6 +76,11 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
         array of float, data of the radar circle which is interpolated on
         the composite grid
 
+    Note
+    ----
+    Keyword arguments to be used while calling the interpolator can be issued as
+    `call_kwargs`, eg. togrid(..., call_kwargs=dict(maxdist=10))
+
     Examples
     --------
 
@@ -84,14 +89,16 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     """
     # get indices to select the subgrid from the composite grid
     ix = extract_circle(center, radius, trg)
+    call_kwargs = kwargs.pop("call_kwargs", {})
     # interpolate on subgrid
     ip = interpol(src, trg[ix], *args, **kwargs)
-    data_on_subgrid = ip(data).reshape((len(ix)))
+    data_on_subgrid = ip(data, **call_kwargs).reshape((len(ix)))
     # create container for entire grid
     composegridshape = [len(trg)]
     composegridshape.extend(data.shape[1:])
-    compose_grid = np.repeat(np.nan, len(trg) *
-                             np.prod(data.shape[1:])).reshape(composegridshape)
+    compose_grid = np.repeat(np.nan, len(trg) * np.prod(data.shape[1:])).reshape(
+        composegridshape
+    )
     # push subgrid results into the large grid
     compose_grid[ix] = data_on_subgrid
     return compose_grid
@@ -123,20 +130,22 @@ def compose_ko(radargrids, qualitygrids):
     """
     # first add a fallback array for all pixels having missing values in all
     # radargrids
-    radarfallback = (np.repeat(np.nan, np.prod(radargrids[0].shape))
-                     .reshape(radargrids[0].shape))
+    radarfallback = np.repeat(np.nan, np.prod(radargrids[0].shape)).reshape(
+        radargrids[0].shape
+    )
     radargrids.append(radarfallback)
     radarinfo = np.array(radargrids)
     # then do the same for the quality grids
-    qualityfallback = (np.repeat(-np.inf, np.prod(radargrids[0].shape))
-                       .reshape(radargrids[0].shape))
+    qualityfallback = np.repeat(-np.inf, np.prod(radargrids[0].shape)).reshape(
+        radargrids[0].shape
+    )
     qualitygrids.append(qualityfallback)
     qualityinfo = np.array(qualitygrids)
 
     select = np.nanargmax(qualityinfo, axis=0)
-    composite = (radarinfo.reshape((radarinfo.shape[0], -1))
-                 [select.ravel(), np.arange(np.prod(radarinfo.shape[1:]))]
-                 .reshape(radarinfo.shape[1:]))
+    composite = radarinfo.reshape((radarinfo.shape[0], -1))[
+        select.ravel(), np.arange(np.prod(radarinfo.shape[1:]))
+    ].reshape(radarinfo.shape[1:])
     radargrids.pop()
     qualitygrids.pop()
 
@@ -185,5 +194,5 @@ def compose_weighted(radargrids, qualitygrids):
     return composite
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <comp> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <comp> as main...")
