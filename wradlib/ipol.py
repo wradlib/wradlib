@@ -467,10 +467,8 @@ class Linear(IpolBase):
 
 
 class RectGridBase(IpolBase):
+    """Rectangular grid base class
     """
-    Rectangular grid
-    """
-
     def _is_grid(self, src):
         test = hasattr(src, "shape") and src.ndim == 3 and src.shape[2] == 2
         return test
@@ -497,21 +495,29 @@ class RectGridBase(IpolBase):
 
 
 class RectGrid(RectGridBase):
-    """
-    Based on scipy.interpolate.RegularGridInterpolator
+    """Interpolation on a 2d grid in arbitrary dimensions.
 
-    Interpolation on a 2d grid in arbitrary dimensions
+    The data must be defined on a regular grid, the grid spacing however may be
+    uneven. Linear, nearest-neighbour and spline interpolation are supported.
 
-    The data must be defined on a regular grid; the grid spacing however may be
-    uneven.  Linear and nearest-neighbour interpolation are supported
+    Based on :func:`scipy:scipy.interpolate.interpn`, uses:
+    - `nearest` :func:`scipy:scipy.interpolate.RegularGridInterpolator`
+    - `linear` :func:`scipy:scipy.interpolate.RegularGridInterpolator`
+    - `splinef2d` :func:`scipy.interpolate.RectBivariateSpline`
 
     Parameters
     ----------
-    src : 3d array of shape (..., 2)
+    src : :class:`numpy:numpy.ndarray` of floats
+        3d array of shape (..., 2)
         The points defining the regular grid in n dimensions.
-
-    trg : nd array of shape (..., ndim)
+    trg : :class:`numpy:numpy.ndarray` of floats
+        Array of shape (..., ndim)
         The coordinates to sample the gridded data at
+
+    Keyword Arguments
+    -----------------
+    method : str
+        Method of interpolation used, defaults to 'linear'.
 
     Methods
     -------
@@ -530,18 +536,17 @@ class RectGrid(RectGridBase):
         self.method = method
 
     def __call__(self, values, **kwargs):
-        """
-        Evaluate interpolator for values given at the source points.
-
+        """Evaluate interpolator for values given at the source points.
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, ...)
-            Values at the source points which to interpolate
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values at the source points which to interpolate, shape (num src pts, ...)
 
         Returns
         -------
-        result : ndarray of float with shape (numtargetpoints,...)
+        result : :class:`numpy:numpy.ndarray` of floats
+            Target values with shape (num trg pts, ...)
 
         """
         if self.image:
@@ -556,20 +561,16 @@ class RectGrid(RectGridBase):
 
 
 class RectBin(RectGridBase):
-    """
-    Bin points values to regular grid cells
+    """Bin points values to regular grid cells
 
     Based on :class:`scipy:scipy.stats.binned_statistic_dd`
 
     Parameters
     ----------
-    src : ndarray of floats, shape (..., ndims)
-        data point coordinates of the source points.
-    trg : array with shape (..., 2)
-        rectangular grid coordinates (center)
-
-    Examples
-    --------
+    src : :class:`numpy:numpy.ndarray` of floats
+        data point coordinates of the source points with shape (..., ndims).
+    trg : :class:`numpy:numpy.ndarray` of floats
+        rectangular grid coordinates (center) with shape (..., 2)
     """
 
     def __init__(self, src, trg):
@@ -586,20 +587,19 @@ class RectBin(RectGridBase):
         self.bins = bins
 
     def __call__(self, values, **kwargs):
-        """
-        Evaluate interpolator for values given at the source points.
+        """Evaluate interpolator for values given at the source points.
 
         Parameters
         ----------
-        values : ndarray of float, shape (numsourcepoints, ...)
-            Values at the source points which to interpolate
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values at the source points which to interpolate, shape (num src pts, ...)
         kwargs : keyword arguments
             Passed to scipy.stats.binned_statistic_dd
 
         Returns
         -------
-        result : ndarray of float with shape (numtargetpoints,...)
-
+        stat : :class:`numpy:numpy.ndarray` of floats
+            Target values with shape (num trg pts, ...)
         """
 
         values = values.reshape(-1)
@@ -613,20 +613,16 @@ class RectBin(RectGridBase):
 
 
 class PolyArea(IpolBase):
-    """
-    Map values representing polygons to another polygons
-    Based on wradlib.zonalstats
+    """Map values representing polygons to another polygons
 
+    Based on wradlib.zonalstats
 
     Parameters
     ----------
-    src : ndarray of floats, shape (..., 5, 2)
-        Source grid edge coordinates.
-    trg : ndarray of floats, shape (..., 5, 2)
-        Target grid edge coordinates.
-
-    Examples
-    --------
+    src : :class:`numpy:numpy.ndarray` of floats
+        Source grid edge coordinates with shape (..., 5, 2).
+    trg : :class:`numpy:numpy.ndarray` of floats
+        Target grid edge coordinates with shape (..., 5, 2).
     """
 
     def __init__(self, src, trg, **kwargs):
@@ -639,19 +635,17 @@ class PolyArea(IpolBase):
         self.obj = zonalstats.ZonalStatsPoly(zd)
 
     def __call__(self, values):
-        """
-        Evaluate interpolator for values given at the source points.
-
+        """Evaluate interpolator for values given at the source points.
 
         Parameters
         ----------
-        vals : ndarray of float, shape corresponding to src
-            Values representing the source cells
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values representing the source cells, shape corresponding to src
 
         Returns
         -------
-        result : ndarray of floats, shape corresponding to trg
-
+        result : :class:`numpy:numpy.ndarray` of floats
+            Values representing the target cells, shape corresponding to trg
         """
 
         values = values.ravel()
@@ -661,21 +655,16 @@ class PolyArea(IpolBase):
 
 
 class QuadriArea(PolyArea):
-    """
-    Map values representing quadrilateral grid cells
-    to another quadrilateral grid
-    Based on wradlib.zonalstats
+    """Map values representing quadrilateral grid cells to another quadrilateral grid.
 
+    Based on wradlib.zonalstats
 
     Parameters
     ----------
-    src : ndarray of floats, shape (n+1, m+1, 2)
-        Source grid edge coordinates.
-    trg : ndarray of floats, shape (o+1, p+1, 2)
-        Target grid edge coordinates.
-
-    Examples
-    --------
+    src : :class:`numpy:numpy.ndarray` of floats
+        Source grid edge coordinates with shape (n+1, m+1, 2).
+    trg : :class:`numpy:numpy.ndarray` of floats
+        Target grid edge coordinates with shape (o+1, p+1, 2).
     """
 
     def __init__(self, src, trg, **kwargs):
@@ -685,34 +674,29 @@ class QuadriArea(PolyArea):
 
 
 class IpolChain(IpolBase):
-    """
-    Apply succesive interpolation methods
-
+    """Apply successive interpolation methods.
 
     Parameters
     ----------
     interpolators: list of IpolBase objects
-        list of interpolators to apply succesivly
-
+        list of interpolators to apply successivly
     """
 
     def __init__(self, interpolators):
         self.interpolators = interpolators
 
     def __call__(self, values, **kwargs):
-        """
-        Evaluate interpolator for values given at the source points.
-
+        """Evaluate interpolator for values given at the source points.
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, ...)
-            Values at the source points which to interpolate
+        values : :class:`numpy:numpy.ndarray` of floats
+            Values at src points which to interpolate with shape (num src pts, ...)
 
         Returns
         -------
-        result : ndarray of float with shape (numtargetpoints,...)
-
+        result : class:`numpy:numpy.ndarray` of floats
+            Values at the trg points with shape (num trg pts, ...)
         """
 
         first = self.interpolators.pop(0)
