@@ -32,7 +32,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 from distutils.version import LooseVersion
 
 import numpy as np
-from osgeo import gdal, osr, ogr
+from osgeo import gdal, ogr, osr
 
 
 def create_osr(projname, **kwargs):
@@ -499,13 +499,13 @@ def geoid_to_ellipsoid(coords, reverse=False):
 
     Parameters
     ----------
-    coords: numpy array
-        Array of coordinates with shape (...,3)
+    coords: :class:`numpy:numpy.ndarray`
+        Array of coordinates with shape (..., 3)
 
     Returns
     -------
-    coords :  numpy array
-        array of transformed coordinates with shape (...,3)
+    coords :  :class:`numpy:numpy.ndarray`
+        array of transformed coordinates with shape (..., 3)
 
     """
     geoid = get_earth_projection(geoid=True)
@@ -541,12 +541,12 @@ def ellipsoid_to_geoid(coords):
 
     Parameters
     ----------
-    coords: numpy array
+    coords: :class:`numpy:numpy.ndarray`
         Array of coordinates with shape (...,3)
 
     Returns
     -------
-    coords :  numpy array
+    coords : :class:`numpy:numpy.ndarray`
         array of transformed coordinates with shape (...,3)
 
     """
@@ -560,7 +560,7 @@ def get_extent(coords):
 
     Parameters
     ----------
-    coords : 2d array
+    coords : :class:`numpy:numpy.ndarray`
         coordinates array with shape (...,(x,y))
 
     Returns
@@ -574,4 +574,4 @@ def get_extent(coords):
     ymin = coords[..., 1].min()
     ymax = coords[..., 1].max()
 
-    return (xmin, xmax, ymin, ymax)
+    return xmin, xmax, ymin, ymax
