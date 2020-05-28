@@ -521,6 +521,50 @@ class ProjectionsTest(unittest.TestCase):
         self.assertTrue(
             georef.wkt_to_osr().IsSame(georef.get_default_projection()))
 
+    def test_get_radar_projection(self):
+        sitecoords = [5, 52, 90]
+        georef.get_radar_projection(sitecoords)
+
+    def test_get_earth_projection(self):
+        georef.get_earth_projection()
+        georef.get_earth_projection(geoid=True)
+        georef.get_earth_projection(sphere=True)
+
+    @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
+    def test_geoid_to_ellipsoid(self):
+        coords = np.array([[5., 50., 300.], [2, 54, 300], [50, 5, 300]])
+        newcoords = georef.geoid_to_ellipsoid(coords)
+        assert np.any(np.not_equal(coords[..., 2], newcoords[..., 2]))
+
+        newcoords = georef.ellipsoid_to_geoid(newcoords)
+        np.testing.assert_allclose(coords, newcoords)
+
+    def test_get_extent(self):
+        arr = np.asarray([[[9.05084865, 48.08224715, 6.],
+                           [9.05136309, 48.0830778, 6.],
+                           [9.1238846, 48.03435008, 6.],
+                           [9.12264494, 48.03400725, 6.],
+                           [9.05084865, 48.08224715, 6.]],
+                          [[9.05136309, 48.0830778, 6.],
+                           [9.05187756, 48.08390846, 6.],
+                           [9.12512428, 48.03469291, 6.],
+                           [9.1238846, 48.03435008, 6.],
+                           [9.05136309, 48.0830778, 6.]],
+                          [[9.12264494, 48.03400725, 6.],
+                           [9.1238846, 48.03435008, 6.],
+                           [9.05136309, 48.0830778, 6.],
+                           [9.05084865, 48.08224715, 6.],
+                           [9.12264494, 48.03400725, 6.]],
+                          [[9.1238846, 48.03435008, 6.],
+                           [9.12512428, 48.03469291, 6.],
+                           [9.05187756, 48.08390846, 6.],
+                           [9.05136309, 48.0830778, 6.],
+                           [9.1238846, 48.03435008, 6.]]])
+
+        ref = [9.05084865, 9.12512428, 48.03400725, 48.08390846]
+        extent = georef.get_extent(arr)
+        np.testing.assert_array_almost_equal(ref, extent)
+
 
 class PixMapTest(unittest.TestCase):
     def test_pixel_coordinates(self):

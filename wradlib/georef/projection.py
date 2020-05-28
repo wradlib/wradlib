@@ -13,12 +13,26 @@ Projection Functions
 
    {}
 """
-__all__ = ['reproject', 'create_osr', 'proj4_to_osr', 'epsg_to_osr',
-           'wkt_to_osr', 'get_default_projection', 'get_earth_radius']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "reproject",
+    "create_osr",
+    "proj4_to_osr",
+    "epsg_to_osr",
+    "wkt_to_osr",
+    "get_default_projection",
+    "get_earth_radius",
+    "get_radar_projection",
+    "get_earth_projection",
+    "geoid_to_ellipsoid",
+    "ellipsoid_to_geoid",
+    "get_extent",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
+
+from distutils.version import LooseVersion
 
 import numpy as np
-from osgeo import gdal, osr, ogr
+from osgeo import gdal, ogr, osr
 
 
 def create_osr(projname, **kwargs):
@@ -61,96 +75,108 @@ def create_osr(projname, **kwargs):
 Georeferencing-and-Projection`.
     """
 
-    aeqd_wkt = ('PROJCS["unnamed",'
-                'GEOGCS["WGS 84",'
-                'DATUM["unknown",'
-                'SPHEROID["WGS84",6378137,298.257223563]],'
-                'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],'
-                'PROJECTION["Azimuthal_Equidistant"],'
-                'PARAMETER["latitude_of_center", {0:-f}],'
-                'PARAMETER["longitude_of_center", {1:-f}],'
-                'PARAMETER["false_easting", {2:-f}],'
-                'PARAMETER["false_northing", {3:-f}],'
-                'UNIT["Meter",1]]')
-    aeqd_wkt3 = ('PROJCS["unnamed",'
-                 'GEOGCS["WGS 84",'
-                 'DATUM["unknown",'
-                 'SPHEROID["WGS84",6378137,298.257223563]],'
-                 'PRIMEM["Greenwich",0],'
-                 'UNIT["degree",0.0174532925199433]],'
-                 'PROJECTION["Azimuthal_Equidistant"],'
-                 'PARAMETER["latitude_of_center",{0:-f}],'
-                 'PARAMETER["longitude_of_center",{1:-f}],'
-                 'PARAMETER["false_easting",{2:-f}],'
-                 'PARAMETER["false_northing",{3:-f}],'
-                 'UNIT["Meter",1]]')
+    aeqd_wkt = (
+        'PROJCS["unnamed",'
+        'GEOGCS["WGS 84",'
+        'DATUM["unknown",'
+        'SPHEROID["WGS84",6378137,298.257223563]],'
+        'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],'
+        'PROJECTION["Azimuthal_Equidistant"],'
+        'PARAMETER["latitude_of_center", {0:-f}],'
+        'PARAMETER["longitude_of_center", {1:-f}],'
+        'PARAMETER["false_easting", {2:-f}],'
+        'PARAMETER["false_northing", {3:-f}],'
+        'UNIT["Meter",1]]'
+    )
+    aeqd_wkt3 = (
+        'PROJCS["unnamed",'
+        'GEOGCS["WGS 84",'
+        'DATUM["unknown",'
+        'SPHEROID["WGS84",6378137,298.257223563]],'
+        'PRIMEM["Greenwich",0],'
+        'UNIT["degree",0.0174532925199433]],'
+        'PROJECTION["Azimuthal_Equidistant"],'
+        'PARAMETER["latitude_of_center",{0:-f}],'
+        'PARAMETER["longitude_of_center",{1:-f}],'
+        'PARAMETER["false_easting",{2:-f}],'
+        'PARAMETER["false_northing",{3:-f}],'
+        'UNIT["Meter",1]]'
+    )
 
-    radolan_wkt3 = ('PROJCS["Radolan Projection",'
-                    'GEOGCS["Radolan Coordinate System",'
-                    'DATUM["Radolan_Kugel",'
-                    'SPHEROID["Erdkugel", 6370040, 0]],'
-                    'PRIMEM["Greenwich", 0,'
-                    'AUTHORITY["EPSG","8901"]],'
-                    'UNIT["degree", 0.017453292519943295,'
-                    'AUTHORITY["EPSG","9122"]]],'
-                    'PROJECTION["Polar_Stereographic"],'
-                    'PARAMETER["latitude_of_origin", 90],'
-                    'PARAMETER["central_meridian", 10],'
-                    'PARAMETER["scale_factor", {0:8.12f}],'
-                    'PARAMETER["false_easting", 0],'
-                    'PARAMETER["false_northing", 0],'
-                    'UNIT["kilometre", 1000,'
-                    'AUTHORITY["EPSG","9036"]],'
-                    'AXIS["Easting",SOUTH],'
-                    'AXIS["Northing",SOUTH]]')
+    radolan_wkt3 = (
+        'PROJCS["Radolan Projection",'
+        'GEOGCS["Radolan Coordinate System",'
+        'DATUM["Radolan_Kugel",'
+        'SPHEROID["Erdkugel", 6370040, 0]],'
+        'PRIMEM["Greenwich", 0,'
+        'AUTHORITY["EPSG","8901"]],'
+        'UNIT["degree", 0.017453292519943295,'
+        'AUTHORITY["EPSG","9122"]]],'
+        'PROJECTION["Polar_Stereographic"],'
+        'PARAMETER["latitude_of_origin", 90],'
+        'PARAMETER["central_meridian", 10],'
+        'PARAMETER["scale_factor", {0:8.12f}],'
+        'PARAMETER["false_easting", 0],'
+        'PARAMETER["false_northing", 0],'
+        'UNIT["kilometre", 1000,'
+        'AUTHORITY["EPSG","9036"]],'
+        'AXIS["Easting",SOUTH],'
+        'AXIS["Northing",SOUTH]]'
+    )
 
-    radolan_wkt = ('PROJCS["Radolan projection",'
-                   'GEOGCS["Radolan Coordinate System",'
-                   'DATUM["Radolan Kugel",'
-                   'SPHEROID["Erdkugel", 6370040.0, 0.0]],'
-                   'PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],'
-                   'UNIT["degree", 0.017453292519943295],'
-                   'AXIS["Longitude", EAST],'
-                   'AXIS["Latitude", NORTH]],'
-                   'PROJECTION["polar_stereographic"],'
-                   'PARAMETER["central_meridian", 10.0],'
-                   'PARAMETER["latitude_of_origin", 90.0],'
-                   'PARAMETER["scale_factor", {0:8.10f}],'
-                   'PARAMETER["false_easting", 0.0],'
-                   'PARAMETER["false_northing", 0.0],'
-                   'UNIT["m*1000.0", 1000.0],'
-                   'AXIS["X", EAST],'
-                   'AXIS["Y", NORTH]]')
+    radolan_wkt = (
+        'PROJCS["Radolan projection",'
+        'GEOGCS["Radolan Coordinate System",'
+        'DATUM["Radolan Kugel",'
+        'SPHEROID["Erdkugel", 6370040.0, 0.0]],'
+        'PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],'
+        'UNIT["degree", 0.017453292519943295],'
+        'AXIS["Longitude", EAST],'
+        'AXIS["Latitude", NORTH]],'
+        'PROJECTION["polar_stereographic"],'
+        'PARAMETER["central_meridian", 10.0],'
+        'PARAMETER["latitude_of_origin", 90.0],'
+        'PARAMETER["scale_factor", {0:8.10f}],'
+        'PARAMETER["false_easting", 0.0],'
+        'PARAMETER["false_northing", 0.0],'
+        'UNIT["m*1000.0", 1000.0],'
+        'AXIS["X", EAST],'
+        'AXIS["Y", NORTH]]'
+    )
 
     proj = osr.SpatialReference()
 
     if projname == "aeqd":
         # Azimuthal Equidistant
-        if gdal.VersionInfo()[0] >= '3':
+        if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
             aeqd_wkt = aeqd_wkt3
 
         if "x_0" in kwargs:
-            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"],
-                                               kwargs["lon_0"],
-                                               kwargs["x_0"],
-                                               kwargs["y_0"]))
+            proj.ImportFromWkt(
+                aeqd_wkt.format(
+                    kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"]
+                )
+            )
         else:
-            proj.ImportFromWkt(aeqd_wkt.format(kwargs["lat_0"],
-                                               kwargs["lon_0"], 0., 0.))
+            proj.ImportFromWkt(
+                aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0.0, 0.0)
+            )
 
     elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
-        scale = (1. + np.sin(np.radians(60.))) / (1. + np.sin(np.radians(90.)))
-        if gdal.VersionInfo()[0] >= '3':
+        scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
+        if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
             radolan_wkt = radolan_wkt3.format(scale)
         else:
             radolan_wkt = radolan_wkt.format(scale)
 
         proj.ImportFromWkt(radolan_wkt)
     else:
-        raise ValueError("No convenience support for projection %r, "
-                         "yet.\nYou need to create projection by using "
-                         "other means..." % projname)
+        raise ValueError(
+            "No convenience support for projection %r, "
+            "yet.\nYou need to create projection by using "
+            "other means..." % projname
+        )
 
     return proj
 
@@ -172,12 +198,15 @@ def proj4_to_osr(proj4str):
     proj = osr.SpatialReference()
     proj.ImportFromProj4(proj4str)
     proj.AutoIdentifyEPSG()
-    if gdal.VersionInfo()[0] < '3':
+
+    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) < LooseVersion("3"):
         proj.Fixup()
         proj.FixupOrdering()
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
-        raise ValueError("proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
-                         "and can't be imported as OSR object")
+        raise ValueError(
+            "proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
+            "and can't be imported as OSR object"
+        )
     return proj
 
 
@@ -237,8 +266,7 @@ def reproject(*args, **kwargs):
         numCols = C.shape[-1]
         C = C.reshape(-1, numCols)
         if numCols < 2 or numCols > 3:
-            raise TypeError('Input Array column mismatch '
-                            'to %s' % ('reproject'))
+            raise TypeError("Input Array column mismatch " "to %s" % ("reproject"))
     else:
         if len(args) == 2:
             X, Y = (np.asanyarray(arg) for arg in args)
@@ -248,46 +276,46 @@ def reproject(*args, **kwargs):
             zshape = Z.shape
             numCols = 3
         else:
-            raise TypeError('Illegal arguments to %s' % ('reproject'))
+            raise TypeError("Illegal arguments to %s" % ("reproject"))
 
         xshape = X.shape
         yshape = Y.shape
 
         if xshape != yshape:
-            raise TypeError('Incompatible X, Y inputs to %s' % ('reproject'))
+            raise TypeError("Incompatible X, Y inputs to %s" % ("reproject"))
 
-        if 'Z' in locals():
+        if "Z" in locals():
             if xshape != zshape:
-                raise TypeError('Incompatible Z input to %s' % ('reproject'))
-            C = np.concatenate([X.ravel()[:, None],
-                                Y.ravel()[:, None],
-                                Z.ravel()[:, None]], axis=1)
+                raise TypeError("Incompatible Z input to %s" % ("reproject"))
+            C = np.concatenate(
+                [X.ravel()[:, None], Y.ravel()[:, None], Z.ravel()[:, None]], axis=1
+            )
         else:
-            C = np.concatenate([X.ravel()[:, None],
-                                Y.ravel()[:, None]], axis=1)
+            C = np.concatenate([X.ravel()[:, None], Y.ravel()[:, None]], axis=1)
 
-    projection_source = kwargs.get('projection_source',
-                                   get_default_projection())
-    projection_target = kwargs.get('projection_target',
-                                   get_default_projection())
-    area_of_interest = kwargs.get('area_of_interest',
-                                  (np.float(C[..., 0].min()),
-                                   np.float(C[..., 1].min()),
-                                   np.float(C[..., 0].max()),
-                                   np.float(C[..., 1].max())))
+    projection_source = kwargs.get("projection_source", get_default_projection())
+    projection_target = kwargs.get("projection_target", get_default_projection())
+    area_of_interest = kwargs.get(
+        "area_of_interest",
+        (
+            np.float(C[..., 0].min()),
+            np.float(C[..., 1].min()),
+            np.float(C[..., 0].max()),
+            np.float(C[..., 1].max()),
+        ),
+    )
 
-    if gdal.VersionInfo()[0] >= '3':
+    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
         axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
         projection_source.SetAxisMappingStrategy(axis_order)
         projection_target.SetAxisMappingStrategy(axis_order)
         options = osr.CoordinateTransformationOptions()
         options.SetAreaOfInterest(*area_of_interest)
-        ct = osr.CreateCoordinateTransformation(projection_source,
-                                                projection_target,
-                                                options)
+        ct = osr.CreateCoordinateTransformation(
+            projection_source, projection_target, options
+        )
     else:
-        ct = osr.CoordinateTransformation(projection_source,
-                                          projection_target)
+        ct = osr.CoordinateTransformation(projection_source, projection_target)
     trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
@@ -357,8 +385,10 @@ def wkt_to_osr(wkt=None):
         proj = get_default_projection()
 
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
-        raise ValueError("wkt validates to 'ogr.OGRERR_CORRUPT_DATA'"
-                         "and can't be imported as OSR object")
+        raise ValueError(
+            "wkt validates to 'ogr.OGRERR_CORRUPT_DATA'"
+            "and can't be imported as OSR object"
+        )
 
     return proj
 
@@ -390,8 +420,158 @@ def get_earth_radius(latitude, sr=None):
     radius_e = sr.GetSemiMajor()
     radius_p = sr.GetSemiMinor()
     latitude = np.radians(latitude)
-    radius = np.sqrt((np.power(radius_e, 4) * np.power(np.cos(latitude), 2) +
-                      np.power(radius_p, 4) * np.power(np.sin(latitude), 2)) /
-                     (np.power(radius_e, 2) * np.power(np.cos(latitude), 2) +
-                      np.power(radius_p, 2) * np.power(np.sin(latitude), 2)))
+    radius = np.sqrt(
+        (
+            np.power(radius_e, 4) * np.power(np.cos(latitude), 2)
+            + np.power(radius_p, 4) * np.power(np.sin(latitude), 2)
+        )
+        / (
+            np.power(radius_e, 2) * np.power(np.cos(latitude), 2)
+            + np.power(radius_p, 2) * np.power(np.sin(latitude), 2)
+        )
+    )
     return radius
+
+
+def get_earth_projection(sphere=False, geoid=False):
+    """Get a default earth projection based on WGS
+
+    Parameters
+    ----------
+    sphere : bool
+        True to use the WGS authalic sphere
+    geoid : bool
+        True to use the EGM96 geoid instead of the ellipsoid
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        projection definition
+
+    """
+    proj = osr.SpatialReference()
+
+    if sphere:
+        proj.ImportFromEPSG(4047)
+        return proj
+
+    if geoid:
+        projstr = "+proj=longlat"
+        projstr += " +datum=WGS84"
+        projstr += " +geoidgrids=egm96_15.gtx"
+        projstr += " +vunits=m"
+        projstr += " +no_defs"
+
+        proj.ImportFromProj4(projstr)
+    else:
+        proj.ImportFromEPSG(4979)
+
+    return proj
+
+
+def get_radar_projection(sitecoords):
+    """Get the native radar projection which is
+    an azimuthal equidistant projection
+    centered at the site and using a sphere model
+
+    Parameters
+    ----------
+    sitecoords : a sequence of two floats
+        the WGS84 lon / lat coordinates of the radar location
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        projection definition
+
+    """
+    re = get_earth_radius(sitecoords[1])
+    projstr = "+proj=aeqd +lon_0=%f " % (sitecoords[0])
+    projstr += "+lat_0=%f " % (sitecoords[1])
+    projstr += "+a=%f +b=%f " % (re, re)
+    projection = proj4_to_osr(projstr)
+
+    return projection
+
+
+def geoid_to_ellipsoid(coords, reverse=False):
+    """Transforms WGS geoid height to ellipsoid height.
+
+    Parameters
+    ----------
+    coords: :class:`numpy:numpy.ndarray`
+        Array of coordinates with shape (..., 3)
+
+    Returns
+    -------
+    coords :  :class:`numpy:numpy.ndarray`
+        array of transformed coordinates with shape (..., 3)
+
+    """
+    geoid = get_earth_projection(geoid=True)
+
+    ellipsoid = get_earth_projection()
+
+    src = geoid
+    trg = ellipsoid
+
+    if reverse:
+        src = ellipsoid
+        trg = geoid
+
+    # needs GDAL>=2.4
+    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("2.4"):
+        coords = reproject(coords, projection_source=src, projection_target=trg)
+    else:
+        # Backward compatibility with GDAL < 2.4
+        ct = osr.CoordinateTransformation(src, trg)
+        coords = coords.copy()
+        coords = np.array(coords)
+        myshape = coords.shape
+        coords = coords.reshape(-1, 3)
+        for i in range(coords.shape[0]):
+            coords[i, :] = ct.TransformPoints([coords[i, :]])[0]
+        coords = coords.reshape(myshape)
+
+    return coords
+
+
+def ellipsoid_to_geoid(coords):
+    """Transform WGS ellipsoid height to geoid height.
+
+    Parameters
+    ----------
+    coords: :class:`numpy:numpy.ndarray`
+        Array of coordinates with shape (...,3)
+
+    Returns
+    -------
+    coords : :class:`numpy:numpy.ndarray`
+        array of transformed coordinates with shape (...,3)
+
+    """
+    coords = geoid_to_ellipsoid(coords, reverse=True)
+
+    return coords
+
+
+def get_extent(coords):
+    """Get the extent of 2d coordinates
+
+    Parameters
+    ----------
+    coords : :class:`numpy:numpy.ndarray`
+        coordinates array with shape (...,(x,y))
+
+    Returns
+    -------
+    proj : osr.SpatialReference
+        GDAL/OSR object defining projection
+    """
+
+    xmin = coords[..., 0].min()
+    xmax = coords[..., 0].max()
+    ymin = coords[..., 1].min()
+    ymax = coords[..., 1].max()
+
+    return xmin, xmax, ymin, ymax
