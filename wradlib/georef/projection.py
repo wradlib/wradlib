@@ -23,8 +23,6 @@ __all__ = [
     "get_earth_radius",
     "get_radar_projection",
     "get_earth_projection",
-    "geoid_to_ellipsoid",
-    "ellipsoid_to_geoid",
     "get_extent",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -266,7 +264,7 @@ def reproject(*args, **kwargs):
         numCols = C.shape[-1]
         C = C.reshape(-1, numCols)
         if numCols < 2 or numCols > 3:
-            raise TypeError("Input Array column mismatch " "to %s" % ("reproject"))
+            raise TypeError("Input Array column mismatch to %s" % ("reproject"))
     else:
         if len(args) == 2:
             X, Y = (np.asanyarray(arg) for arg in args)
@@ -433,15 +431,17 @@ def get_earth_radius(latitude, sr=None):
     return radius
 
 
-def get_earth_projection(sphere=False, geoid=False):
+def get_earth_projection(model="ellipsoid"):
     """Get a default earth projection based on WGS
 
     Parameters
     ----------
-    sphere : bool
-        True to use the WGS authalic sphere
-    geoid : bool
-        True to use the EGM96 geoid instead of the ellipsoid
+    model : str
+        earth model used, defaults to `ellipsoid`:
+
+        - 'ellipsoid' - WGS84 with ellipsoid heights -> EPSG 4979
+        - 'geoid' - WGS84 with egm96 geoid heights -> EPSG 4326 + 5773
+        - 'sphere' - GRS 1980 authalic sphere -> EPSG 4047
 
     Returns
     -------
@@ -451,28 +451,26 @@ def get_earth_projection(sphere=False, geoid=False):
     """
     proj = osr.SpatialReference()
 
-    if sphere:
+    if model == "sphere":
         proj.ImportFromEPSG(4047)
-        return proj
-
-    if geoid:
-        projstr = "+proj=longlat"
-        projstr += " +datum=WGS84"
-        projstr += " +geoidgrids=egm96_15.gtx"
-        projstr += " +vunits=m"
-        projstr += " +no_defs"
-
-        proj.ImportFromProj4(projstr)
-    else:
+    elif model == "ellipsoid":
         proj.ImportFromEPSG(4979)
+    elif model == "geoid":
+        wgs84 = osr.SpatialReference()
+        wgs84.ImportFromEPSG(4326)
+        egm96 = osr.SpatialReference()
+        egm96.ImportFromEPSG(5773)
+        proj = osr.SpatialReference()
+        proj.SetCompoundCS("WGS84 Horizontal + EGM96 Vertical", wgs84, egm96)
+    else:
+        raise ValueError(f"wradlib: Unknown model='{model}'.")
 
     return proj
 
 
 def get_radar_projection(sitecoords):
-    """Get the native radar projection which is
-    an azimuthal equidistant projection
-    centered at the site and using a sphere model
+    """Get the native radar projection which is an azimuthal equidistant projection
+    centered at the site using WGS84.
 
     Parameters
     ----------
@@ -485,74 +483,11 @@ def get_radar_projection(sitecoords):
         projection definition
 
     """
-    re = get_earth_radius(sitecoords[1])
-    projstr = "+proj=aeqd +lon_0=%f " % (sitecoords[0])
-    projstr += "+lat_0=%f " % (sitecoords[1])
-    projstr += "+a=%f +b=%f " % (re, re)
-    projection = proj4_to_osr(projstr)
+    proj = osr.SpatialReference()
+    proj.SetProjCS("Unknown Azimuthal Equidistant")
+    proj.SetAE(sitecoords[1], sitecoords[0], 0, 0)
 
-    return projection
-
-
-def geoid_to_ellipsoid(coords, reverse=False):
-    """Transforms WGS geoid height to ellipsoid height.
-
-    Parameters
-    ----------
-    coords: :class:`numpy:numpy.ndarray`
-        Array of coordinates with shape (..., 3)
-
-    Returns
-    -------
-    coords :  :class:`numpy:numpy.ndarray`
-        array of transformed coordinates with shape (..., 3)
-
-    """
-    geoid = get_earth_projection(geoid=True)
-
-    ellipsoid = get_earth_projection()
-
-    src = geoid
-    trg = ellipsoid
-
-    if reverse:
-        src = ellipsoid
-        trg = geoid
-
-    # needs GDAL>=2.4
-    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("2.4"):
-        coords = reproject(coords, projection_source=src, projection_target=trg)
-    else:
-        # Backward compatibility with GDAL < 2.4
-        ct = osr.CoordinateTransformation(src, trg)
-        coords = coords.copy()
-        coords = np.array(coords)
-        myshape = coords.shape
-        coords = coords.reshape(-1, 3)
-        for i in range(coords.shape[0]):
-            coords[i, :] = ct.TransformPoints([coords[i, :]])[0]
-        coords = coords.reshape(myshape)
-
-    return coords
-
-
-def ellipsoid_to_geoid(coords):
-    """Transform WGS ellipsoid height to geoid height.
-
-    Parameters
-    ----------
-    coords: :class:`numpy:numpy.ndarray`
-        Array of coordinates with shape (...,3)
-
-    Returns
-    -------
-    coords : :class:`numpy:numpy.ndarray`
-        array of transformed coordinates with shape (...,3)
-
-    """
-    coords = geoid_to_ellipsoid(coords, reverse=True)
-
-    return coords
+    return proj
 
 
 def get_extent(coords):
