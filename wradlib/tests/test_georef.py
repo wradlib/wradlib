@@ -626,7 +626,8 @@ class TestProjections:
     def test_get_radar_projection(self):
         sitecoords = [5, 52, 90]
         p0 = georef.get_radar_projection(sitecoords)
-        assert p0.GetName() == "Unknown Azimuthal Equidistant"
+        if gdal.VersionInfo()[0] >= "3":
+            assert p0.GetName() == "Unknown Azimuthal Equidistant"
         assert p0.IsProjected()
         assert p0.IsSameGeogCS(georef.get_default_projection())
         assert p0.GetNormProjParm("latitude_of_center") == sitecoords[1]
