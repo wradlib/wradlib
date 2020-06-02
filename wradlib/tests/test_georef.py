@@ -981,7 +981,6 @@ class TestSatellite:
 
     def test_correct_parallax(self):
         xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin, self.dr, self.alpha)
-        xyz = np.concatenate((xy, z[..., np.newaxis]), axis=-1)
         pr_out = np.array(
             [
                 [
