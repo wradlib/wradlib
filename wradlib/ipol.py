@@ -469,17 +469,93 @@ class Linear(IpolBase):
 class RectGridBase(IpolBase):
     """Rectangular grid base class
     """
+    def __init__(self):
+        self._upper = None
+        self._xdim = None
+        self._ydim = None
+        self._image = None
+        self._upper = None
+        self._src_pts = None
+        self._xi = None
+        self._src = None
+        self._trg = None
+
     def _is_grid(self, src):
         test = hasattr(src, "shape") and src.ndim == 3 and src.shape[2] == 2
         return test
 
-    def _is_image(self, src):
-        rowcol = src[0, 0, 1] == src[0, 1, 1]
-        return rowcol
+    @property
+    def ydim(self):
+        if self._ydim is None:
+            if self.image:
+                self._ydim = 0
+            else:
+                self._ydim = 1
+        return self._ydim
 
-    def _is_upper(self, src):
-        upper = src[0, 0, 1] - src[1, 0, 1] > 0
-        return upper
+    @property
+    def xdim(self):
+        if self._xdim is None:
+            if self.image:
+                self._xdim = 1
+            else:
+                self._xdim = 0
+        return self._xdim
+
+    @property
+    def image(self):
+        if self._image is None:
+            self._image = self.src[0, 0, 1] == self.src[0, 1, 1]
+        return self._image
+
+    @property
+    def upper(self):
+        # todo: go ahead from here
+        if self._upper is None:
+            diff = np.diff(np.take(self.src[..., 1], 0, axis=self.ydim)[0:2])[0]
+            print(diff)
+            self._upper = diff < 0
+        return self._upper
+
+    @property
+    def src_pts(self):
+        if self._src_pts is None:
+            xdim = self.xdim
+            ydim = self.ydim
+            src = self.src
+            upper = self.upper
+            if self.image:
+                src = np.flip(src, -1)
+            if upper:
+                src = np.flip(src, ydim)
+            src_dim0 = np.take(src[..., 0], 0, axis=xdim)
+            src_dim1 = np.take(src[..., 1], 0, axis=ydim)
+            print(src_dim0)
+            print(src_dim1)
+            if self.image:
+                self._src_pts = (src_dim1, src_dim0)
+            else:
+                self._src_pts = (src_dim1, src_dim0)
+
+        return self._src_pts
+
+    @property
+    def xi(self):
+        if self._xi is None:
+            xi = self.trg
+            if self.image:
+                xi = np.flip(xi, -1)
+            self._xi = xi.reshape((-1, 2))
+        return self._xi
+
+    @property
+    def src(self):
+        return self._src
+
+    @property
+    def trg(self):
+        return self._trg
+
 
     def _grid_to_xi(self, grid, image=True, upper=True):
 
@@ -492,6 +568,19 @@ class RectGridBase(IpolBase):
         xi = (x, y)
 
         return xi
+
+    def _prepare_grids(self, src, trg):
+
+        src_dim0 = np.take(src[..., 0], 0, axis=self.xdim)
+        src_dim1 = np.take(src[..., 1], 0, axis=self.ymin)
+
+        if self.image:
+            src = np.flip(src, -1) #[..., ::-1]
+            trg = np.flip(trg, -1) #[..., ::-1]
+            if self.upper:
+                src = np.flip(src, axis=0) #[::-1, :, :]
+        src = (src[:, 0, 0], src[0, :, 1])
+        return src, trg.reshape((-1, 2))
 
 
 class RectGrid(RectGridBase):
@@ -526,14 +615,17 @@ class RectGrid(RectGridBase):
     """
 
     def __init__(self, src, trg, method="linear"):
-
+        super(RectGrid, self).__init__()
         assert self._is_grid(src)
 
-        self.image = self._is_image(src)
-        self.upper = self._is_upper(src)
-        self.src = self._grid_to_xi(src, self.image, self.upper)
-        self.trg = trg
+        self._src = src
+        self._trg = trg
+        #if self.image:
+        #    self._src = np.flip(self.src, -1)
         self.method = method
+
+        print(self.src_pts)
+        print(self.xi)
 
     def __call__(self, values, **kwargs):
         """Evaluate interpolator for values given at the source points.
@@ -549,15 +641,17 @@ class RectGrid(RectGridBase):
             Target values with shape (num trg pts, ...)
 
         """
-        if self.image:
-            values = util.image_to_plot(values, self.upper)
+
         # override bounds_error
         kwargs["bounds_error"] = kwargs.pop("bounds_error", False)
         kwargs["method"] = kwargs.pop("method", self.method)
 
-        result = sinterp.interpn(self.src, values, self.trg, **kwargs)
+        if self.upper:
+            values = np.flip(values, self.ydim)
 
-        return result
+        result = sinterp.interpn(self.src_pts, values, self.xi, **kwargs)
+
+        return result.reshape(self.trg.shape[:-1])
 
 
 class RectBin(RectGridBase):
