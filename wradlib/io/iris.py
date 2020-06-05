@@ -132,8 +132,28 @@ def decode_array(
 
 
 def decode_rainrate2(data):
-    print("not decoding data")
-    return data
+    """Decode db_rainrate2 value.
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        encoded data
+
+    Returns
+    -------
+    decoded : :class:`numpy:numpy.ndarray`
+        decoded db_rainrate2 data
+
+    Note
+    ----
+    DB_RAINRATE2 decoding see IRIS manuals, 4.3.20 - Page 84
+
+    """
+    exp = data >> 12
+    nz = exp > 0
+    mantissa = (data & 0xfff).astype(dtype='uint32')
+    mantissa[nz] = (mantissa[nz] | 0x1000) << (exp[nz] - 1)
+    return mantissa
 
 
 def decode_vel(data, **kwargs):
@@ -1396,8 +1416,8 @@ SIGMET_DATA_TYPES = OrderedDict([
     (12, {'name': 'DB_ZDR2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 100., 'offset': -32768.}}),
     # Rainfall rate (2 byte)
-    (13, {'name': 'DB_RAINRATE2', 'dtype': 'uint16',
-          'func': decode_rainrate2}),
+    (13, {'name': 'DB_RAINRATE2', 'dtype': 'uint16', 'func': decode_array,
+          'fkw': {'scale': 10000., 'offset': -1., 'tofloat': True}}),
     # Kdp (specific differential phase)(1 byte)
     (14, {'name': 'DB_KDP', 'dtype': 'int8', 'func': decode_kdp,
           'fkw': {}}),
