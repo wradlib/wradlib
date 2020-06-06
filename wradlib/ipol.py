@@ -479,27 +479,24 @@ class RectGridBase(IpolBase):
         self._xi = None
         self._src = None
         self._trg = None
+        self._is_grid = None
 
-    def _is_grid(self, src):
-        test = hasattr(src, "shape") and src.ndim == 3 and src.shape[2] == 2
-        return test
+    @property
+    def is_grid(self):
+        if self._is_grid is None:
+            self._is_grid = (hasattr(self.src, "shape") and self.src.ndim == 3 and self.src.shape[2] == 2)
+        return self._is_grid
 
     @property
     def ydim(self):
         if self._ydim is None:
-            if self.image:
-                self._ydim = 0
-            else:
-                self._ydim = 1
+            self._ydim = 0 if self.image else 1
         return self._ydim
 
     @property
     def xdim(self):
         if self._xdim is None:
-            if self.image:
-                self._xdim = 1
-            else:
-                self._xdim = 0
+            self._xdim = 1 if self.image else 0
         return self._xdim
 
     @property
@@ -510,32 +507,21 @@ class RectGridBase(IpolBase):
 
     @property
     def upper(self):
-        # todo: go ahead from here
         if self._upper is None:
-            diff = np.diff(np.take(self.src[..., 1], 0, axis=self.ydim)[0:2])[0]
-            print(diff)
-            self._upper = diff < 0
+            self._upper = np.diff(np.take(self.src[..., 1], 0, axis=self.xdim)[0:2])[0] < 0
         return self._upper
 
     @property
     def src_pts(self):
         if self._src_pts is None:
-            xdim = self.xdim
-            ydim = self.ydim
             src = self.src
-            upper = self.upper
             if self.image:
                 src = np.flip(src, -1)
-            if upper:
-                src = np.flip(src, ydim)
-            src_dim0 = np.take(src[..., 0], 0, axis=xdim)
-            src_dim1 = np.take(src[..., 1], 0, axis=ydim)
-            print(src_dim0)
-            print(src_dim1)
-            if self.image:
-                self._src_pts = (src_dim1, src_dim0)
-            else:
-                self._src_pts = (src_dim1, src_dim0)
+            if self.upper:
+                src = np.flip(src, self.ydim)
+            src_dim0 = np.take(src[..., 0], 0, axis=1)
+            src_dim1 = np.take(src[..., 1], 0, axis=0)
+            self._src_pts = (src_dim0, src_dim1)
 
         return self._src_pts
 
@@ -555,32 +541,6 @@ class RectGridBase(IpolBase):
     @property
     def trg(self):
         return self._trg
-
-
-    def _grid_to_xi(self, grid, image=True, upper=True):
-
-        if image:
-            grid = util.image_to_plot(grid, upper)
-
-        x = grid[:, 0, 0]
-        y = grid[0, :, 1]
-
-        xi = (x, y)
-
-        return xi
-
-    def _prepare_grids(self, src, trg):
-
-        src_dim0 = np.take(src[..., 0], 0, axis=self.xdim)
-        src_dim1 = np.take(src[..., 1], 0, axis=self.ymin)
-
-        if self.image:
-            src = np.flip(src, -1) #[..., ::-1]
-            trg = np.flip(trg, -1) #[..., ::-1]
-            if self.upper:
-                src = np.flip(src, axis=0) #[::-1, :, :]
-        src = (src[:, 0, 0], src[0, :, 1])
-        return src, trg.reshape((-1, 2))
 
 
 class RectGrid(RectGridBase):
@@ -616,16 +576,11 @@ class RectGrid(RectGridBase):
 
     def __init__(self, src, trg, method="linear"):
         super(RectGrid, self).__init__()
-        assert self._is_grid(src)
 
         self._src = src
         self._trg = trg
-        #if self.image:
-        #    self._src = np.flip(self.src, -1)
         self.method = method
-
-        print(self.src_pts)
-        print(self.xi)
+        assert self.is_grid
 
     def __call__(self, values, **kwargs):
         """Evaluate interpolator for values given at the source points.
