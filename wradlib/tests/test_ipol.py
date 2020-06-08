@@ -320,7 +320,6 @@ class TestRectGridInterpolation:
 
     def test_rect_grid(self, get_rect_method):
         for indexing, src in self.grids.items():
-            print(indexing)
             ip = ipol.RectGrid(src, self.points, method=get_rect_method)
             assert ("image" in indexing) == ip.image
             assert ("upper" in indexing) == ip.upper
