@@ -466,7 +466,7 @@ class Linear(IpolBase):
         return ip(self.trg)
 
 
-class RectGridBase():
+class RectGridBase:
     """Rectangular Grid - base class
 
     Parameters
@@ -478,6 +478,7 @@ class RectGridBase():
         Array of shape (..., 2)
         The sample point coordinates.
     """
+
     def __init__(self, grid, points):
         self._upper = None
         self._xdim = None
@@ -495,7 +496,11 @@ class RectGridBase():
     @property
     def is_grid(self):
         if self._is_grid is None:
-            self._is_grid = (hasattr(self.grid, "shape") and self.grid.ndim == 3 and self.grid.shape[2] == 2)
+            self._is_grid = (
+                hasattr(self.grid, "shape")
+                and self.grid.ndim == 3
+                and self.grid.shape[2] == 2
+            )
         return self._is_grid
 
     @property
@@ -519,7 +524,9 @@ class RectGridBase():
     @property
     def upper(self):
         if self._upper is None:
-            self._upper = np.diff(np.take(self.grid[..., 1], 0, axis=self.xdim)[0:2])[0] < 0
+            self._upper = (
+                np.diff(np.take(self.grid[..., 1], 0, axis=self.xdim)[0:2])[0] < 0
+            )
         return self._upper
 
     @property
@@ -533,7 +540,7 @@ class RectGridBase():
     @property
     def ipol_grid(self):
         if self._ipol_grid is None:
-            self._ipol_grid =  self._get_grid_dims()
+            self._ipol_grid = self._get_grid_dims()
         return self._ipol_grid
 
     @property
@@ -641,7 +648,7 @@ class RectBin(RectGridBase):
 
     def _get_grid_dims(self):
         dims = super()._get_grid_dims()
-        return  [util.center_to_edge(x) for x in dims]
+        return [util.center_to_edge(x) for x in dims]
 
     def __call__(self, values, **kwargs):
         """Evaluate interpolator for values given at the source points.
@@ -661,7 +668,9 @@ class RectBin(RectGridBase):
         # reshape into flat array
         values = values.reshape(-1)
 
-        result = stats.binned_statistic_dd(self.ipol_points, values, bins=self.ipol_grid, **kwargs)
+        result = stats.binned_statistic_dd(
+            self.ipol_points, values, bins=self.ipol_grid, **kwargs
+        )
         stat = result.statistic
 
         # need to flip ydim if grid origin is 'upper'
@@ -671,7 +680,7 @@ class RectBin(RectGridBase):
         return stat
 
 
-class PolyArea():
+class PolyArea:
     """Map values representing polygons to another polygons
 
     Based on wradlib.zonalstats
