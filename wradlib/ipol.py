@@ -466,18 +466,31 @@ class Linear(IpolBase):
         return ip(self.trg)
 
 
-class RectGridBase(IpolBase):
-    """Rectangular grid base class
+class RectGridBase():
+    """Rectangular Grid - base class
+
+    Parameters
+    ----------
+    grid : :class:`numpy:numpy.ndarray` of floats
+        3d array of shape (..., 2)
+        The points defining the regular grid in n dimensions.
+    points : :class:`numpy:numpy.ndarray` of floats
+        Array of shape (..., 2)
+        The sample point coordinates.
     """
-    def __init__(self):
+    def __init__(self, grid, points):
         self._upper = None
         self._xdim = None
         self._ydim = None
         self._image = None
         self._upper = None
-        self._grid = None
-        self._points = None
         self._is_grid = None
+        self._ipol_grid = None
+        self._ipol_points = None
+        self._grid = grid
+        self._points = points
+
+        assert self.is_grid
 
     @property
     def is_grid(self):
@@ -517,6 +530,18 @@ class RectGridBase(IpolBase):
     def points(self):
         return self._points
 
+    @property
+    def ipol_grid(self):
+        if self._ipol_grid is None:
+            self._ipol_grid =  self._get_grid_dims()
+        return self._ipol_grid
+
+    @property
+    def ipol_points(self):
+        if self._ipol_points is None:
+            self._ipol_points = self._get_points()
+        return self._ipol_points
+
     def _get_grid_dims(self):
         grd = self.grid
         if self.image:
@@ -526,6 +551,12 @@ class RectGridBase(IpolBase):
         grd_dim0 = np.take(grd[..., 0], 0, axis=1)
         grd_dim1 = np.take(grd[..., 1], 0, axis=0)
         return grd_dim0, grd_dim1
+
+    def _get_points(self):
+        pts = self.points
+        if self.image:
+            pts = np.flip(pts, -1)
+        return pts.reshape((-1, 2))
 
 
 class RectGrid(RectGridBase):
@@ -560,40 +591,9 @@ class RectGrid(RectGridBase):
 
     """
 
-    def __init__(self, src_grid, trg_points, method="linear"):
-        super(RectGrid, self).__init__()
-
-        self._src_pts = None
-        self._xi = None
-
-        self._grid = src_grid
-        self._points = trg_points
+    def __init__(self, src, trg, method="linear"):
+        super(RectGrid, self).__init__(src, trg)
         self.method = method
-
-        assert self.is_grid
-
-    @property
-    def src_pts(self):
-        if self._src_pts is None:
-            #src = self.grid
-            #if self.image:
-            #    src = np.flip(src, -1)
-            #if self.upper:
-            #    src = np.flip(src, self.ydim)
-            #src_dim0 = np.take(src[..., 0], 0, axis=1)
-            #src_dim1 = np.take(src[..., 1], 0, axis=0)
-            self._src_pts = self._get_grid_dims()
-
-        return self._src_pts
-
-    @property
-    def xi(self):
-        if self._xi is None:
-            xi = self.points
-            if self.image:
-                xi = np.flip(xi, -1)
-            self._xi = xi.reshape((-1, 2))
-        return self._xi
 
     def __call__(self, values, **kwargs):
         """Evaluate interpolator for values given at the source points.
@@ -614,101 +614,13 @@ class RectGrid(RectGridBase):
         kwargs["bounds_error"] = kwargs.pop("bounds_error", False)
         kwargs["method"] = kwargs.pop("method", self.method)
 
+        # need to flip ydim if grid origin is 'upper'
         if self.upper:
             values = np.flip(values, self.ydim)
 
-        result = sinterp.interpn(self.src_pts, values, self.xi, **kwargs)
+        result = sinterp.interpn(self.ipol_grid, values, self.ipol_points, **kwargs)
 
         return result.reshape(self.points.shape[:-1])
-
-
-class RectGridBase1(IpolBase):
-    """Rectangular grid base class
-    """
-    def _is_grid(self, src):
-        test = hasattr(src, "shape") and src.ndim == 3 and src.shape[2] == 2
-        return test
-
-    def _is_image(self, src):
-        rowcol = src[0, 0, 1] == src[0, 1, 1]
-        return rowcol
-
-    def _is_upper(self, src):
-        upper = src[0, 0, 1] - src[1, 0, 1] > 0
-        return upper
-
-    def _grid_to_xi(self, grid, image=True, upper=True):
-
-        if image:
-            grid = util.image_to_plot(grid, upper)
-
-        x = grid[:, 0, 0]
-        y = grid[0, :, 1]
-
-        xi = (x, y)
-
-        return xi
-
-
-class RectBin1(RectGridBase1):
-    """Bin points values to regular grid cells
-
-    Based on :class:`scipy:scipy.stats.binned_statistic_dd`
-
-    Parameters
-    ----------
-    src : :class:`numpy:numpy.ndarray` of floats
-        data point coordinates of the source points with shape (..., ndims).
-    trg : :class:`numpy:numpy.ndarray` of floats
-        rectangular grid coordinates (center) with shape (..., 2)
-    """
-
-    def __init__(self, src, trg):
-
-        assert self._is_grid(trg)
-
-        src = src.reshape(-1, 2)
-        self.src = src
-
-        self.upper = self._is_upper(trg)
-        self.image = self._is_image(trg)
-        trg = self._grid_to_xi(trg, self.image, self.upper)
-        bins = [util.center_to_edge(x) for x in trg]
-        self.bins = bins
-
-    def __call__(self, values, **kwargs):
-        """Evaluate interpolator for values given at the source points.
-
-        Parameters
-        ----------
-        values : :class:`numpy:numpy.ndarray` of floats
-            Values at the source points which to interpolate, shape (num src pts, ...)
-        kwargs : keyword arguments
-            Passed to scipy.stats.binned_statistic_dd
-
-        Returns
-        -------
-        stat : :class:`numpy:numpy.ndarray` of floats
-            Target values with shape (num trg pts, ...)
-        """
-
-        values = values.reshape(-1)
-
-        print("PTS:", self.src.shape)
-        print("---:", self.src)
-        print("BINS:", len(self.bins))
-        print("----:", self.bins)
-        print("VALS:", len(values))
-        result = stats.binned_statistic_dd(self.src, values, bins=self.bins, **kwargs)
-        stat = result.statistic
-        print("STAT:", stat.shape)
-        if self.image:
-            stat = util.plot_to_image(stat, self.upper)
-
-        print("STAT:", stat.shape)
-        print(stat)
-
-        return stat
 
 
 class RectBin(RectGridBase):
@@ -724,49 +636,12 @@ class RectBin(RectGridBase):
         rectangular grid coordinates (center) with shape (..., 2)
     """
 
-    def __init__(self, src_points, trg_grid):
-        super(RectBin, self).__init__()
+    def __init__(self, src, trg):
+        super(RectBin, self).__init__(trg, src)
 
-        self._bins = None
-        self._src_pts = None
-        self._points = src_points
-        self._grid = trg_grid
-
-        assert self.is_grid
-
-        #src = src.reshape(-1, 2)
-        #self.src = src
-
-        #self.upper = self._is_upper(trg)
-        #self.image = self._is_image(trg)
-        #trg = self._grid_to_xi(trg, self.image, self.upper)
-        #self._bins = None
-        #bins = [util.center_to_edge(x) for x in trg]
-        #self.bins = [util.center_to_edge(x) for x in self.grid]
-
-    @property
-    def bins(self):
-        if self._bins is None:
-            #xi = self.grid
-            #if self.image:
-            #    xi = np.flip(xi, -1)
-            #if self.upper:
-            #    xi = np.flip(xi, self.ydim)
-            #dim0 = np.take(xi[..., 0], 0, axis=1)
-            #dim1 = np.take(xi[..., 1], 0, axis=0)
-            xi = self._get_grid_dims()
-            xi = (xi[0], xi[1])
-            print("XI:", xi[0].shape, xi[1].shape)
-            self._bins = [util.center_to_edge(x) for x in xi]
-            #print(self._bins)
-        return self._bins
-
-    @property
-    def src_pts(self):
-        if self._src_pts is None:
-            src = self.points
-            self._src_pts = src.reshape((-1, 2))
-        return self._src_pts
+    def _get_grid_dims(self):
+        dims = super()._get_grid_dims()
+        return  [util.center_to_edge(x) for x in dims]
 
     def __call__(self, values, **kwargs):
         """Evaluate interpolator for values given at the source points.
@@ -783,30 +658,20 @@ class RectBin(RectGridBase):
         stat : :class:`numpy:numpy.ndarray` of floats
             Target values with shape (num trg pts, ...)
         """
-        print("VALS:", values.shape)
+        # reshape into flat array
         values = values.reshape(-1)
-        print("SRC:", self.points.shape)
-        print("TRG:", self.grid.shape)
-        print("SRC_PTS:", self.src_pts.shape)
-        print("-------:", self.src_pts)
 
-        print("BINS:", len(self.bins))
-        print("----:", self.bins)
-        print("VALS:", len(values))
-
-        result = stats.binned_statistic_dd(self.src_pts, values, bins=self.bins, **kwargs)
+        result = stats.binned_statistic_dd(self.ipol_points, values, bins=self.ipol_grid, **kwargs)
         stat = result.statistic
-        print("STAT:", stat.shape)
-        #if self.image:
-        #    stat = np.swapaxes(stat, 0, 1)
-        #if self.upper:
-        #    stat = np.flip(stat, self.ydim)
 
-        print("STAT:", stat.shape)
+        # need to flip ydim if grid origin is 'upper'
+        if self.upper:
+            stat = np.flip(stat, self.ydim)
+
         return stat
 
 
-class PolyArea(IpolBase):
+class PolyArea():
     """Map values representing polygons to another polygons
 
     Based on wradlib.zonalstats
@@ -820,7 +685,7 @@ class PolyArea(IpolBase):
     """
 
     def __init__(self, src, trg, **kwargs):
-        self.trg_shape = np.array(trg.shape[:-2])
+        self.shape = trg.shape[:-2]
 
         src = src.reshape((-1, 5, 2))
         trg = trg.reshape((-1, 5, 2))
@@ -845,7 +710,7 @@ class PolyArea(IpolBase):
         values = values.ravel()
         result = self.obj.mean(values)
 
-        return result.reshape(self.trg_shape)
+        return result.reshape(self.shape)
 
 
 class QuadriArea(PolyArea):

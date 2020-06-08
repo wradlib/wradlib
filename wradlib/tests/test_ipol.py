@@ -349,31 +349,6 @@ class TestRectGridInterpolation:
             assert abs(pbad - 0.75) < 0.1
             np.testing.assert_allclose(self.valgrid[~bad], valip2[~bad])
 
-    def test_rect_bin1(self):
-        ip = ipol.RectBin1(self.points, self.grid)
-        valip = ip(self.valpoints)
-        assert valip.shape == self.grid.shape[:-1]
-
-        grid2 = self.grid2 + (-0.01, 0.01)
-        ip = ipol.RectBin1(grid2, self.grid)
-        valip = ip(self.valgrid2)
-        assert valip.shape == self.grid.shape[:-1]
-
-        bad = np.isnan(valip)
-        pbad = np.sum(bad) / bad.size
-        print(abs(pbad - 0.75))
-        assert abs(pbad - 0.75) < 0.1
-
-        firstcell = self.valgrid2[0:2, 0:2]
-        print(firstcell)
-        mean = np.mean(firstcell.ravel())
-        print("MEAN:", mean)
-        print("VALP:", valip[0, 0])
-        np.testing.assert_allclose(mean, valip[0, 0])
-
-        ip = ipol.RectBin1(self.points, self.grid)
-        ip(self.valpoints, statistic="median")
-
     def test_rect_bin(self):
         ip = ipol.RectBin(self.points, self.grid)
         valip = ip(self.valpoints)
@@ -383,15 +358,13 @@ class TestRectGridInterpolation:
         ip = ipol.RectBin(grid2, self.grid)
         valip = ip(self.valgrid2)
         assert valip.shape == self.grid.shape[:-1]
+
         bad = np.isnan(valip)
         pbad = np.sum(bad) / bad.size
-        print(abs(pbad - 0.75))
-        #assert abs(pbad - 0.75) < 0.1
+        assert abs(pbad - 0.75) < 0.1
+
         firstcell = self.valgrid2[0:2, 0:2]
-        print(firstcell)
         mean = np.mean(firstcell.ravel())
-        print("MEAN:", mean)
-        print("VALP:", valip[0, 0])
         np.testing.assert_allclose(mean, valip[0, 0])
 
         ip = ipol.RectBin(self.points, self.grid)
@@ -403,15 +376,17 @@ class TestRectGridInterpolation:
         valgrid2 = self.valgrid2[1:, 1:]
         valip = ip(valgrid2)
         assert valip.shape == tuple([el - 1 for el in self.grid.shape[:-1]])
+
         bad = np.isnan(valip)
         pbad = np.sum(bad) / bad.size
         assert abs(pbad - 0.75) < 0.1
-        firstcell = self.valgrid2[0:3, 0:3]
+
+        firstcell = valgrid2[0:3, 0:3]
         weights = np.array(
             [
-                [81 / 100, 9 / 10, 9 / 100],
-                [9 / 10, 1, 1 / 10],
-                [9 / 100, 1 / 10, 1 / 100],
+                [72 / 100, 9 / 10, 18 / 100],
+                [8 / 10, 1, 2 / 10],
+                [8 / 100, 1 / 10, 2 / 100],
             ]
         )
         ref = np.sum(np.multiply(firstcell, weights)) / np.sum(weights)
