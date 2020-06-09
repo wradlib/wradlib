@@ -17,7 +17,8 @@ __all__ = ['read_gdal_values', 'read_gdal_projection', 'read_gdal_coordinates',
            'extract_raster_dataset',  'get_raster_extent',
            'get_raster_elevation', 'reproject_raster_dataset',
            'merge_raster_datasets', 'create_raster_dataset',
-           'set_raster_origin', 'raster_to_polyvert']
+           'set_raster_origin', 'set_raster_indexing', 'set_coordinate_indexing',
+           'raster_to_polyvert']
 __doc__ = __doc__.format('\n   '.join(__all__))
 
 import numpy as np
@@ -351,6 +352,77 @@ def set_raster_origin(data, coords, direction):
 #            coords += [0, y_sp]
 
     return data, coords
+
+
+def set_raster_indexing(data, coords, indexing='xy'):
+    """Sets Data and Coordinates Indexing Scheme
+
+    This converts data and coordinate layout from row-major to column major indexing.
+
+    Parameters
+    ----------
+    data : :class:`numpy:numpy.ndarray`
+        Array of shape (..., M, N) containing the data values.
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (..., M, N, 2) containing xy-coordinates.
+    indexing : str
+        'xy' or 'ij', indexing scheme in which to convert data and coordinates.
+
+    Returns
+    -------
+    data : :class:`numpy:numpy.ndarray`
+        Array of shape (..., N, M) containing the data values.
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (..., N, M, 2) containing xy-coordinates.
+    """
+    shape = coords.shape[:-1]
+
+    if shape != data.shape:
+        raise ValueError(f"wradlib: coordinate shape {coords.shape} and data shape "
+                         f"{data.shape} mismatch.")
+
+    coords = set_coordinate_indexing(coords, indexing=indexing)
+
+    # if coordinate shape has changed, we need to transform data too
+    if coords.shape[:-1] != shape:
+        data_shape = tuple(range(data.ndim - 2)) + (-1, -2)
+        data = data.transpose(data_shape)
+
+    return data, coords
+
+
+def set_coordinate_indexing(coords, indexing='xy'):
+    """Sets Coordinates Indexing Scheme
+
+    This converts coordinate layout from row-major to column major indexing.
+
+    Parameters
+    ----------
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (..., M, N, 2) containing xy-coordinates.
+    indexing : str
+        'xy' or 'ij', indexing scheme in which to convert data and coordinates.
+
+    Returns
+    -------
+    coords : :class:`numpy:numpy.ndarray`
+        Array of shape (..., N, M, 2) containing xy-coordinates.
+    """
+    is_grid = hasattr(coords, "shape") and coords.ndim >= 3 and coords.shape[-1] == 2
+    if not is_grid:
+        raise ValueError(f"wradlib: wrong coordinate shape {coords.shape}, "
+                         f"(..., M, N, 2) expected.")
+    if indexing not in ['xy', 'ij']:
+        raise ValueError(f"wradlib: unknown indexing value {indexing}.")
+
+    rowcol = coords[0, 0, 1] == coords[0, 1, 1]
+    convert = (rowcol and indexing == 'ij') or (not rowcol and indexing == 'xy')
+
+    if convert:
+        coords_shape = tuple(range(coords.ndim - 3)) + (-2, -3, -1)
+        coords = coords.transpose(coords_shape)
+
+    return coords
 
 
 def reproject_raster_dataset(src_ds, **kwargs):

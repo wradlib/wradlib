@@ -290,7 +290,7 @@ class TestRectGridInterpolation:
     lr = (12, 45)
 
     x = np.linspace(ul[0], lr[0], 101)
-    y = np.linspace(ul[1], lr[1], 101)
+    y = np.linspace(ul[1], lr[1], 51)
 
     grids = {}
     valgrids = {}
@@ -320,7 +320,6 @@ class TestRectGridInterpolation:
 
     def test_rect_grid(self, get_rect_method):
         for indexing, src in self.grids.items():
-            print(indexing)
             ip = ipol.RectGrid(src, self.points, method=get_rect_method)
             assert ("image" in indexing) == ip.image
             assert ("upper" in indexing) == ip.upper
@@ -341,6 +340,7 @@ class TestRectGridInterpolation:
             valip = ip(self.valgrid)
             bad = np.isnan(valip)
             pbad = np.sum(bad) / bad.size
+            assert pbad == 0
 
             ip2 = ipol.RectGrid(self.grid2, self.grid, method=get_rect_method)
             valip2 = ip2(valip)
@@ -358,9 +358,11 @@ class TestRectGridInterpolation:
         ip = ipol.RectBin(grid2, self.grid)
         valip = ip(self.valgrid2)
         assert valip.shape == self.grid.shape[:-1]
+
         bad = np.isnan(valip)
         pbad = np.sum(bad) / bad.size
         assert abs(pbad - 0.75) < 0.1
+
         firstcell = self.valgrid2[0:2, 0:2]
         mean = np.mean(firstcell.ravel())
         np.testing.assert_allclose(mean, valip[0, 0])
@@ -374,15 +376,17 @@ class TestRectGridInterpolation:
         valgrid2 = self.valgrid2[1:, 1:]
         valip = ip(valgrid2)
         assert valip.shape == tuple([el - 1 for el in self.grid.shape[:-1]])
+
         bad = np.isnan(valip)
         pbad = np.sum(bad) / bad.size
         assert abs(pbad - 0.75) < 0.1
-        firstcell = self.valgrid2[0:3, 0:3]
+
+        firstcell = valgrid2[0:3, 0:3]
         weights = np.array(
             [
-                [81 / 100, 9 / 10, 9 / 100],
-                [9 / 10, 1, 1 / 10],
-                [9 / 100, 1 / 10, 1 / 100],
+                [72 / 100, 9 / 10, 18 / 100],
+                [8 / 10, 1, 2 / 10],
+                [8 / 100, 1 / 10, 2 / 100],
             ]
         )
         ref = np.sum(np.multiply(firstcell, weights)) / np.sum(weights)

@@ -796,6 +796,27 @@ class TestGdal:
             coords, np.flip(self.coords[:3600, :3600], axis=-3)
         )
 
+    def test_set_raster_indexing(self):
+        data, coords = georef.set_raster_origin(
+            self.data.copy(), self.coords.copy(), "lower"
+        )
+        data, coords = georef.set_raster_indexing(data, coords, "ij")
+        np.testing.assert_array_equal(
+            data, np.swapaxes(np.flip(self.data, axis=-2), 0, 1)
+        )
+        np.testing.assert_array_equal(
+            coords, np.swapaxes(np.flip(self.coords, axis=-3), 0, 1)
+        )
+        data, coords = georef.set_raster_indexing(data, coords, "xy")
+        np.testing.assert_array_equal(data, np.flip(self.data, axis=-2))
+        np.testing.assert_array_equal(coords, np.flip(self.coords, axis=-3))
+
+    def test_set_coordinate_indexing(self):
+        coords = georef.set_coordinate_indexing(self.coords.copy(), "ij")
+        np.testing.assert_array_equal(coords, np.swapaxes(self.coords, 0, 1))
+        coords = georef.set_coordinate_indexing(self.coords.copy(), "xy")
+        np.testing.assert_array_equal(coords, self.coords)
+
     def test_extract_raster_dataset(self):
         ds = self.ds
         data, coords, proj = georef.extract_raster_dataset(ds)
