@@ -41,8 +41,10 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import functools
 import re
 import warnings
+from distutils.version import LooseVersion
 
 import numpy as np
+import scipy
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
 from wradlib import georef, util, zonalstats
@@ -680,7 +682,7 @@ class RectBin(RectGridBase):
         # reshape into flat array
         values = values.reshape(-1)
 
-        if not self.binned_stats:
+        if not self.binned_stats and LooseVersion(scipy.version) >= "1.4":
             result = stats.binned_statistic_dd(
                 self.ipol_points, values, bins=self.ipol_grid, **kwargs
             )
