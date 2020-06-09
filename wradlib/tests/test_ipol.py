@@ -340,6 +340,7 @@ class TestRectGridInterpolation:
             valip = ip(self.valgrid)
             bad = np.isnan(valip)
             pbad = np.sum(bad) / bad.size
+            assert pbad == 0
 
             ip2 = ipol.RectGrid(self.grid2, self.grid, method=get_rect_method)
             valip2 = ip2(valip)
