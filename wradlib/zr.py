@@ -104,25 +104,31 @@ def z_to_r_enhanced(z, polar=True, shower=True):
     calculated as the mean of the differences along both axis in a neighborhood
     of 3x3 pixels.
     This means:
-           x-direction -->
-    y |    +---+---+---+
-    | |    | 1 | 2 | 3 |
-    d v    +---+---+---+
-    i      | 4 | 5 | 6 |
-    r      +---+---+---+
-    e      | 7 | 8 | 9 |
-    c      +---+---+---+
-    t
-    i      if 5 is the pixel in question, its shower index is calculated as
-    o      ( |1-2| + |2-3| + |4-5| + |5-6| + |7-8| + |8-9| +
-    n      + |1-4| + |4-7| + |2-5| + |5-8| + |3-6| + |6-9| ) / 12.
-           then, the upper line of the sum would be diffx (DIFFerences in
-           X-direction), the lower line would be diffy
-           (DIFFerences in Y-direction) in the code below.
+
+                        +------+-----------------+
+                        |      | x-direction --> |
+                        +------+-----+-----+-----+
+                        | | y  |  1  |  2  |  3  |
+                        | | l  +-----+-----+-----+
+                        | | d  |  4  |  5  |  6  |
+                        | | i  +-----+-----+-----+
+                        | | r  |  7  |  8  |  9  |
+                        +------+-----+-----+-----+
+
+    If 5 is the pixel in question, it's shower index is calculated as:
+
+    .. math::
+
+        ( &|1-2| + |2-3| + |4-5| + |5-6| + |7-8| + |8-9| + \\\\
+          &|1-4| + |4-7| + |2-5| + |5-8| + |3-6| + |6-9| ) / 12.
+
+    then, the upper line of the sum would be diffx (DIFFerences in
+    X-direction), the lower line would be diffy
+    (DIFFerences in Y-direction) in the code below.
 
     Parameters
     ----------
-    z : ndarray a floats
+    z : :class:`numpy:numpy.ndarray`
         Corresponds to reflectivity Z in mm**6/m**3
         ND-array, at least 2D
     polar : bool

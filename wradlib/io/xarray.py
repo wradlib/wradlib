@@ -2497,13 +2497,13 @@ def open_odim(paths, loader="netcdf4", **kwargs):
     Parameters
     ----------
     paths : str or sequence
-        Either a filename or string glob in the form 'path/to/my/files/*.h5'
+        Either a filename or string glob in the form `'path/to/my/files/*.h5'`
         or an explicit list of files to open.
 
     loader : {'netcdf4', 'h5py', 'h5netcdf'}
         Loader used for accessing file metadata, defaults to 'netcdf4'.
 
-    **kwargs : optional
+    kwargs : optional
         Additional arguments passed on to :py:class:`wradlib.io.XRadSweep`.
     """
     if (loader == "h5netcdf") & (

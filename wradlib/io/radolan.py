@@ -8,10 +8,10 @@ Read RADOLAN and DX
 Reading DX and RADOLAN data from German Weather Service
 
 .. autosummary::
-    :nosignatures:
-    :toctree: generated/
+   :nosignatures:
+   :toctree: generated/
 
-    {}
+   {}
 """
 __all__ = ['read_dx', 'read_radolan_composite', 'get_radolan_filehandle',
            'read_radolan_header', 'parse_dwd_composite_header',
