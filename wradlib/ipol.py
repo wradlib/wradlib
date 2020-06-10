@@ -41,8 +41,10 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import functools
 import re
 import warnings
+from distutils.version import LooseVersion
 
 import numpy as np
+import scipy
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
 from wradlib import georef, util, zonalstats
@@ -648,6 +650,15 @@ class RectBin(RectGridBase):
 
     def __init__(self, src, trg):
         super(RectBin, self).__init__(trg, src)
+        self._binned_stats = False
+
+    @property
+    def binned_stats(self):
+        return self._binned_stats
+
+    @binned_stats.setter
+    def binned_stats(self, value):
+        self._binned_stats = value
 
     def _get_grid_dims(self):
         dims = super()._get_grid_dims()
@@ -671,9 +682,18 @@ class RectBin(RectGridBase):
         # reshape into flat array
         values = values.reshape(-1)
 
-        result = stats.binned_statistic_dd(
-            self.ipol_points, values, bins=self.ipol_grid, **kwargs
-        )
+        if not self.binned_stats or LooseVersion(scipy.__version__) < "1.4":
+            result = stats.binned_statistic_dd(
+                self.ipol_points, values, bins=self.ipol_grid, **kwargs
+            )
+            self.binned_stats = result
+        else:
+            result = stats.binned_statistic_dd(
+                self.ipol_points,
+                values,
+                binned_statistic_result=self.binned_stats,
+                **kwargs
+            )
         stat = result.statistic
 
         # need to flip ydim if grid origin is 'upper'

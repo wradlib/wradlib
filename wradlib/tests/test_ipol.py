@@ -370,6 +370,16 @@ class TestRectGridInterpolation:
         ip = ipol.RectBin(self.points, self.grid)
         ip(self.valpoints, statistic="median")
 
+        ip = ipol.RectBin(self.points, self.grid)
+        res0 = ip(self.valpoints, statistic="median")
+        res0a = ip.binned_stats.statistic.copy()
+        if ip.upper:
+            res0a = np.flip(res0a, ip.ydim)
+        res1 = ip(self.valpoints, statistic="median")
+
+        np.testing.assert_allclose(res0, res1)
+        np.testing.assert_allclose(res0a, res1)
+
     def test_QuadriArea(self):
         grid2 = self.grid2 + (-0.01, 0.01)
         ip = ipol.QuadriArea(grid2, self.grid)
