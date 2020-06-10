@@ -597,10 +597,6 @@ class RectGrid(RectGridBase):
     method : str
         Method of interpolation used, defaults to 'linear'.
 
-    Methods
-    -------
-    __call__
-
     """
 
     def __init__(self, src, trg, method="linear"):
