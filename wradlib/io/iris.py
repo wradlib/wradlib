@@ -131,11 +131,6 @@ def decode_array(
     return (data + offset) / scale + offset2
 
 
-def decode_rainrate2(data):
-    print("not decoding data")
-    return data
-
-
 def decode_vel(data, **kwargs):
     """Decode `DB_VEL`.
 
@@ -1396,8 +1391,8 @@ SIGMET_DATA_TYPES = OrderedDict([
     (12, {'name': 'DB_ZDR2', 'dtype': 'uint16', 'func': decode_array,
           'fkw': {'scale': 100., 'offset': -32768.}}),
     # Rainfall rate (2 byte)
-    (13, {'name': 'DB_RAINRATE2', 'dtype': 'uint16',
-          'func': decode_rainrate2}),
+    (13, {'name': 'DB_RAINRATE2', 'dtype': 'uint16', 'func': decode_array,
+          'fkw': {'scale': 10000., 'offset': -1., 'tofloat': True}}),
     # Kdp (specific differential phase)(1 byte)
     (14, {'name': 'DB_KDP', 'dtype': 'int8', 'func': decode_kdp,
           'fkw': {}}),
