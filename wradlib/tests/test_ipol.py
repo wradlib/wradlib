@@ -372,7 +372,7 @@ class TestRectGridInterpolation:
 
         ip = ipol.RectBin(self.points, self.grid)
         res0 = ip(self.valpoints, statistic="median")
-        res0a = ip.binned_stats.statistic
+        res0a = ip.binned_stats.statistic.copy()
         if ip.upper:
             res0a = np.flip(res0a, ip.ydim)
         res1 = ip(self.valpoints, statistic="median")
