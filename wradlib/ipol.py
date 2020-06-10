@@ -682,16 +682,17 @@ class RectBin(RectGridBase):
         # reshape into flat array
         values = values.reshape(-1)
 
-        if not self.binned_stats and LooseVersion(scipy.__version__) >= "1.4":
+        if not self.binned_stats:
             result = stats.binned_statistic_dd(
                 self.ipol_points, values, bins=self.ipol_grid, **kwargs
             )
             self.binned_stats = result
         else:
+            if LooseVersion(scipy.__version__) >= "1.4":
+                kwargs.update(dict(binned_statistic_result=self.binned_stats))
             result = stats.binned_statistic_dd(
                 self.ipol_points,
                 values,
-                binned_statistic_result=self.binned_stats,
                 **kwargs
             )
         stat = result.statistic
