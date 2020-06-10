@@ -1287,6 +1287,29 @@ class TestIris:
             ],
         )
 
+    def test_decode_rainrate2(self):
+        vals = np.array(
+            [0, 1, 2, 255, 1000, 9096, 22634, 34922, 50000, 65534, 65535],
+            dtype="uint16",
+        )
+        prod = io.iris.SIGMET_DATA_TYPES[13]
+        np.testing.assert_array_almost_equal(
+            io.iris.decode_array(vals.copy(), **prod["fkw"]),
+            [
+                -1.00000000e-04,
+                0.00000000e00,
+                1.00000000e-04,
+                2.54000000e-02,
+                9.99000000e-02,
+                9.99900000e-01,
+                9.99990000e00,
+                7.99999000e01,
+                1.01253110e03,
+                1.34184959e04,
+                1.34201343e04,
+            ],
+        )
+
     def test_decode_time(self):
         timestring = b"\xd1\x9a\x00\x000\t\xdd\x07\x0b\x00\x19\x00"
         assert (

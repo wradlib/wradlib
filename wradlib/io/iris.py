@@ -131,31 +131,6 @@ def decode_array(
     return (data + offset) / scale + offset2
 
 
-def decode_rainrate2(data):
-    """Decode db_rainrate2 value.
-
-    Parameters
-    ----------
-    data : :class:`numpy:numpy.ndarray`
-        encoded data
-
-    Returns
-    -------
-    decoded : :class:`numpy:numpy.ndarray`
-        decoded db_rainrate2 data
-
-    Note
-    ----
-    DB_RAINRATE2 decoding see IRIS manuals, 4.3.20 - Page 84
-
-    """
-    exp = data >> 12
-    nz = exp > 0
-    mantissa = (data & 0xfff).astype(dtype='uint32')
-    mantissa[nz] = (mantissa[nz] | 0x1000) << (exp[nz] - 1)
-    return mantissa
-
-
 def decode_vel(data, **kwargs):
     """Decode `DB_VEL`.
 
