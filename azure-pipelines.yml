@@ -11,7 +11,7 @@ jobs:
       py38:
         conda_env: py38
   pool:
-    vmImage: 'ubuntu-20-04'
+    vmImage: 'ubuntu-20.04'
   steps:
   - template: ci/azure/unit-tests.yml
 
