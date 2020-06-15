@@ -1,0 +1,10 @@
+steps:
+
+- template: install.yml
+
+# Work around for allowed test failures:
+# https://github.com/microsoft/azure-pipelines-tasks/issues/9302
+- bash: |
+    source activate wradlib-tests
+    pytest --verbose --doctest-modules --durations=15 wradlib
+  displayName: Run tests

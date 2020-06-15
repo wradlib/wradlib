@@ -1,20 +1,24 @@
 # ignore everything
 *
 
-# whitelist block
-# whitelist root .gitignore
+# allowlist block
+# allowlist root .gitignore
 !/.gitignore
 
-# whitelist .py, .f-files and .sh files
+# allowlist .py, .f-files and .sh files
 !*.py
 !*.f
 !*.sh
 
-# whitelist files under `scripts`
+# allowlist files under `ci`
+!/ci/
+!/ci/*
+
+# allowlist files under `scripts`
 !/scripts/
 !/scripts/*
 
-# whitelist files under `wradlib`
+# allowlist files under `wradlib`
 !/wradlib/
 !/wradlib/*
 

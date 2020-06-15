@@ -3,17 +3,34 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger:
-- master
+jobs:
 
-pool:
-  vmImage: 'ubuntu-latest'
+- job: Linux
+  strategy:
+    matrix:
+      py38:
+        conda_env: py38
+  pool:
+    vmImage: 'ubuntu-20-04'
+  steps:
+  - template: ci/azure/unit-tests.yml
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- job: MacOSX
+  strategy:
+    matrix:
+      py38:
+        conda_env: py38
+  pool:
+    vmImage: 'macOS-10.15'
+  steps:
+  - template: ci/azure/unit-tests.yml
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- job: Windows
+  strategy:
+    matrix:
+      py38:
+        conda_env: py38
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  - template: ci/azure/unit-tests.yml
