@@ -47,5 +47,6 @@ else:
     from . import vpr  # noqa
     from . import zonalstats  # noqa
     from . import zr  # noqa
+    from .util import show_versions  # noqa
 
     __all__ = [s for s in dir() if not s.startswith("_")]

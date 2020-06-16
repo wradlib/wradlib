@@ -14,15 +14,19 @@
 !/ci/
 !/ci/*
 
+# allowlist files under `ci`
+!/.github/
+!/.github/*
+
 # allowlist files under `scripts`
 !/scripts/
 !/scripts/*
 
 # allowlist files under `wradlib`
 !/wradlib
-!/wradlib/*
+!/wradlib/*.py
 !/wradlib/tests
-!/wradlib/tests/*
+!/wradlib/tests/*.py
 
 # ignore version.py
 wradlib/version.py

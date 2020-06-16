@@ -68,7 +68,7 @@ def git_version():
         GIT_REVISION = "+".join([GIT_REVISION, git_rev[2]])
         GIT_HASH = git_hash.strip().decode("ascii")
 
-        ver = semver.parse_version_info(GIT_REVISION)
+        ver = semver.VersionInfo.parse(GIT_REVISION)
         minor = ver.minor
         patch = ver.patch
 
@@ -77,7 +77,9 @@ def git_version():
                 minor += 1
             else:
                 patch += 1
-        GIT_REVISION = semver.format_version(ver.major, minor, patch, ver.prerelease)
+        GIT_REVISION = semver.format_version(
+            ver.major, minor, patch, ver.prerelease, ver.build
+        )
 
     except (CalledProcessError, OSError):
         print("WRADLIB: Unable to import git_revision from repository.")
@@ -132,7 +134,7 @@ release = %(isrelease)s
         )
 
     # parse version using semver
-    ver = semver.parse_version_info(GIT_REVISION)
+    ver = semver.VersionInfo.parse(GIT_REVISION)
 
     # get commit count, dev0 means tagged commit -> release
     ISRELEASED = ver.prerelease == "dev0"
