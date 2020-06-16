@@ -191,7 +191,7 @@ class AdjustBase(ipol.IpolBase):
         minval=0.0,
         mfb_args=None,
         ipclass=ipol.Idw,
-        **ipargs
+        **ipargs,
     ):
 
         # Check arguments

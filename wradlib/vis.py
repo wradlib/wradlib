@@ -124,7 +124,7 @@ class WradlibAccessor(object):
         center=False,
         add_colorbar=False,
         add_labels=False,
-        **kwargs
+        **kwargs,
     ):
         """Plot Plan Position Indicator (PPI) or Range Height Indicator (RHI).
 
@@ -291,7 +291,7 @@ class WradlibAccessor(object):
             add_colorbar=add_colorbar,
             add_labels=add_labels,
             infer_intervals=infer_intervals,
-            **kwargs
+            **kwargs,
         )
 
         # set cg grids and limits
@@ -327,7 +327,7 @@ def plot_ppi(
     ax=111,
     func="pcolormesh",
     rf=1.0,
-    **kwargs
+    **kwargs,
 ):
     """Plots a Plan Position Indicator (PPI).
 
@@ -484,7 +484,7 @@ def plot_ppi(
         proj=proj,
         sweep_mode="azimuth_surveillance",
         rf=rf,
-        **kw_spherical
+        **kw_spherical,
     )
 
     da = georef.georeference_dataset(da, proj=proj)
@@ -648,7 +648,7 @@ def plot_rhi(
     rf=1.0,
     fig=None,
     ax=111,
-    **kwargs
+    **kwargs,
 ):
     """Plots a Range Height Indicator (RHI).
 
@@ -807,7 +807,7 @@ def plot_rhi(
         proj=proj,
         sweep_mode="rhi",
         rf=rf,
-        **kw_spherical
+        **kw_spherical,
     )
 
     da = georef.georeference_dataset(da, proj=proj)
@@ -1136,7 +1136,7 @@ def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs
         unit,
         title,
         saveto,
-        **kwargs
+        **kwargs,
     )
 
 

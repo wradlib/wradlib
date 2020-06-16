@@ -890,11 +890,11 @@ class TestRainbow:
             io.rainbow.read_rainbow("test")
         # Test reading from file name
         rb_dict = io.rainbow.read_rainbow(rb_file)
-        assert rb_dict[u"volume"][u"@datetime"] == u"2013-07-03T08:33:55"
+        assert rb_dict["volume"]["@datetime"] == "2013-07-03T08:33:55"
         # Test reading from file handle
         with open(rb_file, "rb") as rb_fh:
             rb_dict = io.rainbow.read_rainbow(rb_fh)
-            assert rb_dict[u"volume"][u"@datetime"] == u"2013-07-03T08:33:55"
+            assert rb_dict["volume"]["@datetime"] == "2013-07-03T08:33:55"
 
     def test_find_key(self):
         indict = {

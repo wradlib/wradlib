@@ -131,7 +131,7 @@ class CartesianVolume:
         minelev=None,
         maxelev=None,
         ipclass=ipol.Idw,
-        **ipargs
+        **ipargs,
     ):
         # radar location in Cartesian coordinates
         # TODO: pass projected radar location as argument

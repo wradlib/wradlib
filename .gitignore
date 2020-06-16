@@ -19,8 +19,10 @@
 !/scripts/*
 
 # allowlist files under `wradlib`
-!/wradlib/
+!/wradlib
 !/wradlib/*
+!/wradlib/tests
+!/wradlib/tests/*
 
 # ignore version.py
 wradlib/version.py

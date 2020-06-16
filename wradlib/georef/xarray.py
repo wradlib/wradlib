@@ -57,7 +57,7 @@ def create_xarray_dataarray(
     site=None,
     sweep_mode="azimuth_surveillance",
     rf=1.0,
-    **kwargs
+    **kwargs,
 ):
     """Create Xarray DataArray from Polar Radar Data
 

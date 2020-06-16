@@ -141,7 +141,7 @@ def process_raw_phidp_vulpiani(
         winlen=winlen,
         method="finite_difference_vulpiani",
         skipna=False,
-        **kwargs
+        **kwargs,
     )
 
     # try unfolding phidp
@@ -355,7 +355,7 @@ def kdp_from_phidp(
             method=method,
             pad_mode=pad_mode,
             min_periods=min_periods,
-            **kwargs
+            **kwargs,
         )
         / 2
         / dr
