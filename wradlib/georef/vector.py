@@ -13,11 +13,21 @@ Vector Functions (GDAL)
 
    {}
 """
-__all__ = ['get_vector_coordinates', 'get_vector_points', 'transform_geometry',
-           'ogr_create_layer', 'ogr_copy_layer', 'ogr_copy_layer_by_name',
-           'ogr_add_feature', 'ogr_add_geometry', 'numpy_to_ogr',
-           'ogr_to_numpy', 'ogr_geocol_to_numpy', 'get_centroid']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "get_vector_coordinates",
+    "get_vector_points",
+    "transform_geometry",
+    "ogr_create_layer",
+    "ogr_copy_layer",
+    "ogr_copy_layer_by_name",
+    "ogr_add_feature",
+    "ogr_add_geometry",
+    "numpy_to_ogr",
+    "ogr_to_numpy",
+    "ogr_geocol_to_numpy",
+    "get_centroid",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import warnings
 
@@ -57,8 +67,10 @@ def get_vector_points(geom):
                 for result in get_vector_points(item):
                     yield result
     else:
-        warnings.warn("unsupported geometry type detected in "
-                      "wradlib.georef.get_vector_points - skipping")
+        warnings.warn(
+            "unsupported geometry type detected in "
+            "wradlib.georef.get_vector_points - skipping"
+        )
 
 
 def transform_geometry(geom, dest_srs, **kwargs):
@@ -84,7 +96,7 @@ def transform_geometry(geom, dest_srs, **kwargs):
         Transformed Geometry
     """
     gsrs = geom.GetSpatialReference()
-    srs = kwargs.get('source_srs', gsrs)
+    srs = kwargs.get("source_srs", gsrs)
 
     # srs is None assume wgs84 lonlat, but warn too
     if srs is None:
@@ -96,7 +108,7 @@ def transform_geometry(geom, dest_srs, **kwargs):
         if gsrs is None:
             geom.AssignSpatialReference(srs)
             gsrs = geom.GetSpatialReference()
-        if gdal.VersionInfo()[0] >= '3':
+        if gdal.VersionInfo()[0] >= "3":
             dest_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
             gsrs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         geom.TransformTo(dest_srs)
@@ -135,9 +147,9 @@ def get_vector_coordinates(layer, **kwargs):
 
     shp = []
 
-    source_srs = kwargs.get('source_srs', None)
-    dest_srs = kwargs.get('dest_srs', None)
-    key = kwargs.get('key', None)
+    source_srs = kwargs.get("source_srs", None)
+    dest_srs = kwargs.get("dest_srs", None)
+    key = kwargs.get("key", None)
     if key:
         attrs = []
     else:
@@ -273,15 +285,14 @@ def ogr_add_feature(ds, src, name=None):
 
     defn = lyr.GetLayerDefn()
     geom_name = ogr.GeometryTypeToName(lyr.GetGeomType())
-    fields = [defn.GetFieldDefn(i).GetName()
-              for i in range(defn.GetFieldCount())]
+    fields = [defn.GetFieldDefn(i).GetName() for i in range(defn.GetFieldCount())]
     feat = ogr.Feature(defn)
 
     for index, src_item in enumerate(src):
         geom = numpy_to_ogr(src_item, geom_name)
 
-        if 'index' in fields:
-            feat.SetField('index', index)
+        if "index" in fields:
+            feat.SetField("index", index)
 
         feat.SetGeometry(geom)
         lyr.CreateFeature(feat)
@@ -330,12 +341,14 @@ def numpy_to_ogr(vert, geom_name):
         object of type geom_name
     """
 
-    if geom_name in ['Polygon', 'MultiPolygon']:
-        json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".\
-            format(geom_name, vert.tolist())
+    if geom_name in ["Polygon", "MultiPolygon"]:
+        json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".format(
+            geom_name, vert.tolist()
+        )
     else:
-        json_str = "{{'type':{0!r},'coordinates':{1!r}}}".\
-            format(geom_name, vert.tolist())
+        json_str = "{{'type':{0!r},'coordinates':{1!r}}}".format(
+            geom_name, vert.tolist()
+        )
 
     return ogr.CreateGeometryFromJson(json_str)
 
@@ -358,7 +371,7 @@ def ogr_to_numpy(ogrobj):
     """
     jsonobj = eval(ogrobj.ExportToJson())
 
-    return np.squeeze(jsonobj['coordinates'])
+    return np.squeeze(jsonobj["coordinates"])
 
 
 def ogr_geocol_to_numpy(ogrobj):
@@ -381,10 +394,10 @@ def ogr_geocol_to_numpy(ogrobj):
     """
     jsonobj = eval(ogrobj.ExportToJson())
     mpol = []
-    for item in jsonobj['geometries']:
-        print(item['type'])
-        if item['type'] == 'Polygon':
-            mpol.append(item['coordinates'])
+    for item in jsonobj["geometries"]:
+        print(item["type"])
+        if item["type"] == "Polygon":
+            mpol.append(item["coordinates"])
 
     return np.squeeze(mpol)
 
@@ -403,5 +416,5 @@ def get_centroid(polyg):
 
     """
     if not type(polyg) == ogr.Geometry:
-        polyg = numpy_to_ogr(polyg, 'Polygon')
+        polyg = numpy_to_ogr(polyg, "Polygon")
     return polyg.Centroid().GetPoint()[0:2]

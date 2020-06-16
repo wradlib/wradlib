@@ -25,9 +25,8 @@ fields except that they exhibit the numpy ndarray interface.
 
    {}
 """
-__all__ = ['pulse_volume', 'beam_block_frac', 'cum_beam_block_frac',
-           'get_bb_ratio']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["pulse_volume", "beam_block_frac", "cum_beam_block_frac", "get_bb_ratio"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
@@ -66,7 +65,7 @@ def pulse_volume(ranges, h, theta):
     See :ref:`/notebooks/workflow/recipe1.ipynb`.
 
     """
-    return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta/2.))) ** 2
+    return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta / 2.0))) ** 2
 
 
 def beam_block_frac(th, bh, a):
@@ -109,9 +108,7 @@ def beam_block_frac(th, bh, a):
 
     The heights must be the same units!
     """
-    isfloat = (isinstance(th, float)
-               and isinstance(bh, float)
-               and isinstance(a, float))
+    isfloat = isinstance(th, float) and isinstance(bh, float) and isinstance(a, float)
 
     # convert to numpy array in any case
     th = np.atleast_1d(th)
@@ -124,18 +121,17 @@ def beam_block_frac(th, bh, a):
 
     # check if beam is clear or blocked
     ya = y / a
-    clear = ya < -1.
-    block = ya > 1.
+    clear = ya < -1.0
+    block = ya > 1.0
 
-    numer = (ya * np.sqrt(a ** 2 - y ** 2)) + \
-            (a * np.arcsin(ya)) + (np.pi * a / 2.)
+    numer = (ya * np.sqrt(a ** 2 - y ** 2)) + (a * np.arcsin(ya)) + (np.pi * a / 2.0)
 
     denom = np.pi * a
 
     pbb = numer / denom
 
-    pbb[clear] = 0.
-    pbb[block] = 1.
+    pbb[clear] = 0.0
+    pbb[block] = 1.0
 
     if isfloat:
         return pbb[0]
@@ -178,7 +174,7 @@ def cum_beam_block_frac(pbb):
 
     # Iterate over all beams
     for ii, index in enumerate(maxindex):
-        premax = 0.
+        premax = 0.0
         for jj in range(index):
             # Only iterate to max index to make this faster
             if pbb[ii, jj] > premax:
@@ -243,8 +239,8 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     bb_width_m = np.nanmedian(bb_width)
 
     # approximation of melting layer top and bottom
-    zmlt = bb_height_m + bb_width_m / 2.
-    zmlb = bb_height_m - bb_width_m / 2.
+    zmlt = bb_height_m + bb_width_m / 2.0
+    zmlb = bb_height_m - bb_width_m / 2.0
 
     # get ratio connected to brightband height
     ratio = (zp_r - zmlb) / (zmlt - zmlb)
@@ -252,5 +248,5 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     return ratio, ibb
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <qual> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <qual> as main...")

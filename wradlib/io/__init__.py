@@ -2,7 +2,6 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 # flake8: noqa
-
 """
 Raw Data I/O
 ============
@@ -33,4 +32,4 @@ from .radolan import *
 from .rainbow import *
 from .xarray import *
 
-__all__ = [s for s in dir() if not s.startswith('_')]
+__all__ = [s for s in dir() if not s.startswith("_")]

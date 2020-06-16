@@ -13,16 +13,25 @@ Raster Functions
 
    {}
 """
-__all__ = ['read_gdal_values', 'read_gdal_projection', 'read_gdal_coordinates',
-           'extract_raster_dataset',  'get_raster_extent',
-           'get_raster_elevation', 'reproject_raster_dataset',
-           'merge_raster_datasets', 'create_raster_dataset',
-           'set_raster_origin', 'set_raster_indexing', 'set_coordinate_indexing',
-           'raster_to_polyvert']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "read_gdal_values",
+    "read_gdal_projection",
+    "read_gdal_coordinates",
+    "extract_raster_dataset",
+    "get_raster_extent",
+    "get_raster_elevation",
+    "reproject_raster_dataset",
+    "merge_raster_datasets",
+    "create_raster_dataset",
+    "set_raster_origin",
+    "set_raster_indexing",
+    "set_coordinate_indexing",
+    "raster_to_polyvert",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
-from osgeo import gdal, osr, gdal_array
+from osgeo import gdal, gdal_array, osr
 
 import wradlib
 from wradlib import georef
@@ -49,8 +58,8 @@ def _pixel_coordinates(nx, ny, mode):
 
     """
     if mode == "center":
-        x = np.linspace(0.5, nx-0.5, num=nx)
-        y = np.linspace(0.5, ny-0.5, num=ny)
+        x = np.linspace(0.5, nx - 0.5, num=nx)
+        y = np.linspace(0.5, ny - 0.5, num=ny)
 
     if mode == "edge":
         x = np.linspace(0, nx, num=nx + 1)
@@ -86,12 +95,16 @@ def _pixel_to_map(coordinates, geotransform):
         2d array with map coordinates (x,y)
     """
     coordinates_map = np.empty(coordinates.shape)
-    coordinates_map[..., 0] = (geotransform[0] +
-                               geotransform[1] * coordinates[..., 0] +
-                               geotransform[2] * coordinates[..., 1])
-    coordinates_map[..., 1] = (geotransform[3] +
-                               geotransform[4] * coordinates[..., 0] +
-                               geotransform[5] * coordinates[..., 1])
+    coordinates_map[..., 0] = (
+        geotransform[0]
+        + geotransform[1] * coordinates[..., 0]
+        + geotransform[2] * coordinates[..., 1]
+    )
+    coordinates_map[..., 1] = (
+        geotransform[3]
+        + geotransform[4] * coordinates[..., 0]
+        + geotransform[5] * coordinates[..., 1]
+    )
     return coordinates_map
 
 
@@ -119,9 +132,9 @@ def read_gdal_coordinates(dataset, mode="center"):
     See :ref:`/notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
 
     """
-    coordinates_pixel = _pixel_coordinates(dataset.RasterXSize,
-                                           dataset.RasterYSize,
-                                           mode)
+    coordinates_pixel = _pixel_coordinates(
+        dataset.RasterXSize, dataset.RasterYSize, mode
+    )
 
     geotransform = dataset.GetGeoTransform()
     coordinates = _pixel_to_map(coordinates_pixel, geotransform)
@@ -254,10 +267,7 @@ def get_raster_extent(dataset, geo=False, window=True):
     xmax = geotrans[0] + geotrans[1] * x_size
     ymin = geotrans[3] + geotrans[5] * y_size
 
-    extent = np.array([[xmin, ymax],
-                       [xmin, ymin],
-                       [xmax, ymin],
-                       [xmax, ymax]])
+    extent = np.array([[xmin, ymax], [xmin, ymin], [xmax, ymin], [xmax, ymax]])
 
     if geo:
         projection = read_gdal_projection(dataset)
@@ -295,15 +305,15 @@ def get_raster_elevation(dataset, resample=None, **kwargs):
     extent = get_raster_extent(dataset)
     src_ds = wradlib.io.dem.get_srtm(extent, **kwargs)
 
-    driver = gdal.GetDriverByName('MEM')
-    dst_ds = driver.CreateCopy('ds', dataset)
+    driver = gdal.GetDriverByName("MEM")
+    dst_ds = driver.CreateCopy("ds", dataset)
 
     if resample is None:
         src_gt = src_ds.GetGeoTransform()
         dst_gt = dst_ds.GetGeoTransform()
         src_scale = min(abs(src_gt[1]), abs(src_gt[5]))
         dst_scale = min(abs(dst_gt[1]), abs(dst_gt[5]))
-        ratio = dst_scale/src_scale
+        ratio = dst_scale / src_scale
 
         resample = gdal.GRA_Bilinear
         if ratio > 2:
@@ -311,9 +321,9 @@ def get_raster_elevation(dataset, resample=None, **kwargs):
         if ratio < 0.5:
             resample = gdal.GRA_NearestNeighbour
 
-    gdal.ReprojectImage(src_ds, dst_ds,
-                        src_ds.GetProjection(), dst_ds.GetProjection(),
-                        resample)
+    gdal.ReprojectImage(
+        src_ds, dst_ds, src_ds.GetProjection(), dst_ds.GetProjection(), resample
+    )
     elevation = read_gdal_values(dst_ds)
 
     return elevation
@@ -341,20 +351,20 @@ def set_raster_origin(data, coords, direction):
         Array of shape (rows, cols, 2) containing xy-coordinates.
     """
     x_sp, y_sp = coords[1, 1] - coords[0, 0]
-    origin = ('lower' if y_sp > 0 else 'upper')
-    same = (origin == direction)
+    origin = "lower" if y_sp > 0 else "upper"
+    same = origin == direction
     if not same:
         data = np.flip(data, axis=-2)
         coords = np.flip(coords, axis=-3)
         # we need to shift y-coordinate if data and coordinates have the same
         # number of rows and cols (only the ll or ul raster coords are given)
-#        if data.shape[-2:] == coords.shape[:2]:
-#            coords += [0, y_sp]
+    #        if data.shape[-2:] == coords.shape[:2]:
+    #            coords += [0, y_sp]
 
     return data, coords
 
 
-def set_raster_indexing(data, coords, indexing='xy'):
+def set_raster_indexing(data, coords, indexing="xy"):
     """Sets Data and Coordinates Indexing Scheme
 
     This converts data and coordinate layout from row-major to column major indexing.
@@ -378,8 +388,10 @@ def set_raster_indexing(data, coords, indexing='xy'):
     shape = coords.shape[:-1]
 
     if shape != data.shape:
-        raise ValueError(f"wradlib: coordinate shape {coords.shape} and data shape "
-                         f"{data.shape} mismatch.")
+        raise ValueError(
+            f"wradlib: coordinate shape {coords.shape} and data shape "
+            f"{data.shape} mismatch."
+        )
 
     coords = set_coordinate_indexing(coords, indexing=indexing)
 
@@ -391,7 +403,7 @@ def set_raster_indexing(data, coords, indexing='xy'):
     return data, coords
 
 
-def set_coordinate_indexing(coords, indexing='xy'):
+def set_coordinate_indexing(coords, indexing="xy"):
     """Sets Coordinates Indexing Scheme
 
     This converts coordinate layout from row-major to column major indexing.
@@ -410,13 +422,15 @@ def set_coordinate_indexing(coords, indexing='xy'):
     """
     is_grid = hasattr(coords, "shape") and coords.ndim >= 3 and coords.shape[-1] == 2
     if not is_grid:
-        raise ValueError(f"wradlib: wrong coordinate shape {coords.shape}, "
-                         f"(..., M, N, 2) expected.")
-    if indexing not in ['xy', 'ij']:
+        raise ValueError(
+            f"wradlib: wrong coordinate shape {coords.shape}, "
+            f"(..., M, N, 2) expected."
+        )
+    if indexing not in ["xy", "ij"]:
         raise ValueError(f"wradlib: unknown indexing value {indexing}.")
 
     rowcol = coords[0, 0, 1] == coords[0, 1, 1]
-    convert = (rowcol and indexing == 'ij') or (not rowcol and indexing == 'xy')
+    convert = (rowcol and indexing == "ij") or (not rowcol and indexing == "xy")
 
     if convert:
         coords_shape = tuple(range(coords.ndim - 3)) + (-2, -3, -1)
@@ -462,12 +476,12 @@ def reproject_raster_dataset(src_ds, **kwargs):
     """
 
     # checking kwargs
-    spacing = kwargs.pop('spacing', None)
-    size = kwargs.pop('size', None)
-    resample = kwargs.pop('resample', gdal.GRA_Bilinear)
-    src_srs = kwargs.pop('projection_source', None)
-    dst_srs = kwargs.pop('projection_target', None)
-    align = kwargs.pop('align', False)
+    spacing = kwargs.pop("spacing", None)
+    size = kwargs.pop("size", None)
+    resample = kwargs.pop("resample", gdal.GRA_Bilinear)
+    src_srs = kwargs.pop("projection_source", None)
+    dst_srs = kwargs.pop("projection_target", None)
+    align = kwargs.pop("align", False)
 
     # Get the GeoTransform vector
     src_geo = src_ds.GetGeoTransform()
@@ -480,10 +494,7 @@ def reproject_raster_dataset(src_ds, **kwargs):
     lrx = src_geo[0] + src_geo[1] * x_size
     lry = src_geo[3] + src_geo[5] * y_size
 
-    extent = np.array([[[ulx, uly],
-                        [lrx, uly]],
-                       [[ulx, lry],
-                        [lrx, lry]]])
+    extent = np.array([[[ulx, uly], [lrx, uly]], [[ulx, lry], [lrx, lry]]])
 
     if dst_srs:
         src_srs = osr.SpatialReference()
@@ -491,15 +502,15 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
         # Transformation
 
-        extent = georef.reproject(extent, projection_source=src_srs,
-                                  projection_target=dst_srs)
+        extent = georef.reproject(
+            extent, projection_source=src_srs, projection_target=dst_srs
+        )
 
         # wkt needed
         src_srs = src_srs.ExportToWkt()
         dst_srs = dst_srs.ExportToWkt()
 
-    (ulx, uly, urx, ury,
-     llx, lly, lrx, lry) = tuple(list(extent.flatten().tolist()))
+    (ulx, uly, urx, ury, llx, lly, lrx, lry) = tuple(list(extent.flatten().tolist()))
 
     # align grid to destination raster or UL-corner point
     if align:
@@ -531,10 +542,10 @@ def reproject_raster_dataset(src_ds, **kwargs):
         raise NameError("Whether keyword 'spacing' or 'size' must be given")
 
     # create destination in-memory raster
-    mem_drv = gdal.GetDriverByName('MEM')
+    mem_drv = gdal.GetDriverByName("MEM")
 
     # and set RasterSize according ro cols/rows
-    dst_ds = mem_drv.Create('', cols, rows, 1, gdal.GDT_Float32)
+    dst_ds = mem_drv.Create("", cols, rows, 1, gdal.GDT_Float32)
 
     # Create the destination GeoTransform with changed x/y spacing
     dst_geo = (ulx, x_ps, src_geo[2], uly, src_geo[4], -y_ps)
@@ -595,15 +606,15 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
     bands, rows, cols = data.shape
 
     # create In-Memory Raster with correct dtype
-    mem_drv = gdal.GetDriverByName('MEM')
+    mem_drv = gdal.GetDriverByName("MEM")
     gdal_type = gdal_array.NumericTypeCodeToGDALTypeCode(data.dtype)
-    dataset = mem_drv.Create('', cols, rows, bands, gdal_type)
+    dataset = mem_drv.Create("", cols, rows, bands, gdal_type)
 
     # initialize geotransform
     x_ps, y_ps = coords[1, 1] - coords[0, 0]
     if data.shape[-2:] == coords.shape[0:2]:
-        upper_corner_x = coords[0, 0, 0] - x_ps/2
-        upper_corner_y = coords[0, 0, 1] - y_ps/2
+        upper_corner_x = coords[0, 0, 0] - x_ps / 2
+        upper_corner_y = coords[0, 0, 1] - y_ps / 2
     else:
         upper_corner_x = coords[0, 0, 0]
         upper_corner_y = coords[0, 0, 1]
@@ -638,7 +649,7 @@ def merge_raster_datasets(datasets, **kwargs):
         merged raster dataset
     """
 
-    dataset = gdal.Warp('', datasets, format='MEM', **kwargs)
+    dataset = gdal.Warp("", datasets, format="MEM", **kwargs)
 
     return dataset
 

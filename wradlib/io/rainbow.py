@@ -11,10 +11,11 @@ Read Rainbow
 
    {}
 """
-__all__ = ['read_rainbow']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["read_rainbow"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import sys
+
 import numpy as np
 
 from wradlib import util
@@ -58,7 +59,7 @@ def decompress(data):
     data : string
         (from xml) data string containing compressed data.
     """
-    zlib = util.import_optional('zlib')
+    zlib = util.import_optional("zlib")
     return zlib.decompress(data)
 
 
@@ -79,18 +80,19 @@ def get_rb_data_layout(datadepth):
         conversion string .
     """
 
-    if sys.byteorder != 'big':
-        byteorder = '>'
+    if sys.byteorder != "big":
+        byteorder = ">"
     else:
-        byteorder = '<'
+        byteorder = "<"
 
     datawidth = int(datadepth / 8)
 
     if datawidth in [1, 2, 4]:
-        datatype = byteorder + 'u' + str(datawidth)
+        datatype = byteorder + "u" + str(datawidth)
     else:
-        raise ValueError("Wrong DataDepth: %d. "
-                         "Conversion only for depth 8, 16, 32" % datadepth)
+        raise ValueError(
+            "Wrong DataDepth: %d. " "Conversion only for depth 8, 16, 32" % datadepth
+        )
 
     return datawidth, datatype
 
@@ -112,11 +114,13 @@ def get_rb_data_attribute(xmldict, attr):
     """
 
     try:
-        sattr = int(xmldict['@' + attr])
+        sattr = int(xmldict["@" + attr])
     except KeyError:
-        raise KeyError('Attribute @{0} is missing from '
-                       'Blob Description. There may be some '
-                       'problems with your file'.format(attr))
+        raise KeyError(
+            "Attribute @{0} is missing from "
+            "Blob Description. There may be some "
+            "problems with your file".format(attr)
+        )
     return sattr
 
 
@@ -135,10 +139,14 @@ def get_rb_blob_attribute(blobdict, attr):
     ret : Attribute Value
     """
     try:
-        value = blobdict['BLOB']['@' + attr]
+        value = blobdict["BLOB"]["@" + attr]
     except KeyError:
-        raise KeyError('Attribute @' + attr + ' is missing from Blob.' +
-                       'There may be some problems with your file')
+        raise KeyError(
+            "Attribute @"
+            + attr
+            + " is missing from Blob."
+            + "There may be some problems with your file"
+        )
 
     return value
 
@@ -158,21 +166,21 @@ def get_rb_blob_data(datastring, blobid):
     data : string
         Content of blob
     """
-    xmltodict = util.import_optional('xmltodict')
+    xmltodict = util.import_optional("xmltodict")
 
     start = 0
     search_string = '<BLOB blobid="{0}"'.format(blobid)
     start = datastring.find(search_string.encode(), start)
     if start == -1:
-        raise EOFError('Blob ID {0} not found!'.format(blobid))
-    end = datastring.find(b'>', start)
-    xmlstring = datastring[start:end + 1]
+        raise EOFError("Blob ID {0} not found!".format(blobid))
+    end = datastring.find(b">", start)
+    xmlstring = datastring[start : end + 1]
 
     # cheat the xml parser by making xml well-known
-    xmldict = xmltodict.parse(xmlstring.decode() + '</BLOB>')
-    cmpr = get_rb_blob_attribute(xmldict, 'compression')
-    size = int(get_rb_blob_attribute(xmldict, 'size'))
-    data = datastring[end + 2:end + 2 + size]  # read blob data to string
+    xmldict = xmltodict.parse(xmlstring.decode() + "</BLOB>")
+    cmpr = get_rb_blob_attribute(xmldict, "compression")
+    size = int(get_rb_blob_attribute(xmldict, "size"))
+    data = datastring[end + 2 : end + 2 + size]  # read blob data to string
 
     # decompress if necessary
     # the first 4 bytes are neglected for an unknown reason
@@ -206,8 +214,7 @@ def map_rb_data(data, datadepth):
     datawidth, datatype = get_rb_data_layout(datadepth)
 
     # import from data buffer well aligned to data array
-    data = np.ndarray(shape=(int(len(data) / datawidth),),
-                      dtype=datatype, buffer=data)
+    data = np.ndarray(shape=(int(len(data) / datawidth),), dtype=datatype, buffer=data)
 
     if flagdepth:
         data = np.unpackbits(data)
@@ -231,8 +238,8 @@ def get_rb_data_shape(blobdict):
     # this is a bit hacky, but we do not know beforehand,
     # so we extract this on the run
     try:
-        dim0 = get_rb_data_attribute(blobdict, 'rays')
-        dim1 = get_rb_data_attribute(blobdict, 'bins')
+        dim0 = get_rb_data_attribute(blobdict, "rays")
+        dim1 = get_rb_data_attribute(blobdict, "bins")
         # if rays and bins are found, return both
         return dim0, dim1
     except KeyError as e1:
@@ -242,9 +249,9 @@ def get_rb_data_shape(blobdict):
         except UnboundLocalError:
             try:
                 # if both rays and bins not found assuming pixmap
-                dim0 = get_rb_data_attribute(blobdict, 'rows')
-                dim1 = get_rb_data_attribute(blobdict, 'columns')
-                dim2 = get_rb_data_attribute(blobdict, 'depth')
+                dim0 = get_rb_data_attribute(blobdict, "rows")
+                dim1 = get_rb_data_attribute(blobdict, "columns")
+                dim2 = get_rb_data_attribute(blobdict, "depth")
                 if dim2 < 8:
                     # if flagged data return rows x columns x depth
                     return dim0, dim1, dim2
@@ -275,11 +282,11 @@ def get_rb_blob_from_string(datastring, blobdict):
         Content of blob as numpy array
     """
 
-    blobid = get_rb_data_attribute(blobdict, 'blobid')
+    blobid = get_rb_data_attribute(blobdict, "blobid")
     data = get_rb_blob_data(datastring, blobid)
 
     # map data to correct datatype and width
-    datadepth = get_rb_data_attribute(blobdict, 'depth')
+    datadepth = get_rb_data_attribute(blobdict, "depth")
     data = map_rb_data(data, datadepth)
 
     # reshape data
@@ -343,7 +350,7 @@ def get_rb_file_as_string(fid):
     try:
         data_string = fid.read()
     except Exception:
-        raise IOError('Could not read from file handle')
+        raise IOError("Could not read from file handle")
 
     return data_string
 
@@ -365,12 +372,12 @@ def get_rb_blobs_from_file(fid, rbdict):
         Rainbow File Contents
     """
 
-    blobs = list(find_key('@blobid', rbdict))
+    blobs = list(find_key("@blobid", rbdict))
 
     datastring = get_rb_file_as_string(fid)
     for blob in blobs:
         data = get_rb_blob_from_string(datastring, blob)
-        blob['data'] = data
+        blob["data"] = data
 
     return rbdict
 
@@ -400,7 +407,7 @@ def get_rb_header(fid):
         if len(line) == 0:
             raise IOError("WRADLIB: Rainbow Fileheader Corrupt")
 
-    xmltodict = util.import_optional('xmltodict')
+    xmltodict = util.import_optional("xmltodict")
 
     return xmltodict.parse(header)
 

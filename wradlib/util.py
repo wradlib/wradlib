@@ -28,8 +28,8 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import importlib
 import datetime as dt
+import importlib
 import os
 
 import deprecation
@@ -657,7 +657,7 @@ def gradient_from_smoothed(x, n=5):
 
 def center_to_edge(centers):
     delta = centers[1] - centers[0]
-    edges = np.insert(centers + delta/2, 0, centers[0] - delta/2)
+    edges = np.insert(centers + delta / 2, 0, centers[0] - delta / 2)
 
     return edges
 

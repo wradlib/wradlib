@@ -15,20 +15,21 @@ Provide surface/terrain elevation information from SRTM data
 
    {}
 """
-__all__ = ['download_srtm', 'get_srtm']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["download_srtm", "get_srtm"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
 
 import numpy as np
-from osgeo import gdal
 import requests
+from osgeo import gdal
 
 from wradlib import util
 
 
-def download_srtm(filename, destination=None, version=2, resolution=3,
-                  region="Eurasia", token=None):
+def download_srtm(
+    filename, destination=None, version=2, resolution=3, region="Eurasia", token=None
+):
     """
     Download NASA SRTM elevation data
     Version 3 is only available with a login and a token
@@ -62,7 +63,7 @@ def download_srtm(filename, destination=None, version=2, resolution=3,
 
     headers = None
     if token is not None:
-        headers = {'Authorization': 'Bearer %s' % (token)}
+        headers = {"Authorization": "Bearer %s" % (token)}
     try:
         r = requests.get(url, headers=headers, stream=True)
         r.raise_for_status()
@@ -75,7 +76,7 @@ def download_srtm(filename, destination=None, version=2, resolution=3,
 
     if destination is None:
         destination = filename
-    with open(destination, 'wb') as fd:
+    with open(destination, "wb") as fd:
         for chunk in r.iter_content(chunk_size=128):
             fd.write(chunk)
 
@@ -111,14 +112,14 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
         for longitude in range(lonmin, min(lonmax, 0)):
             georef = "S%02gW%03g" % (-latitude, -longitude)
             filelist.append(georef)
-        for longitude in range(max(lonmin, 0), lonmax+1):
+        for longitude in range(max(lonmin, 0), lonmax + 1):
             georef = "S%02gE%03g" % (-latitude, longitude)
             filelist.append(georef)
-    for latitude in range(max(0, latmin), latmax+1):
+    for latitude in range(max(0, latmin), latmax + 1):
         for longitude in range(lonmin, min(lonmax, 0)):
             georef = "N%02gW%03g" % (latitude, -longitude)
             filelist.append(georef)
-        for longitude in range(max(lonmin, 0), lonmax+1):
+        for longitude in range(max(lonmin, 0), lonmax + 1):
             georef = "N%02gE%03g" % (latitude, longitude)
             filelist.append(georef)
     if version == 3:
@@ -144,6 +145,6 @@ def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
     demlist = [gdal.Open(d) for d in demlist]
     if not merge:
         return demlist
-    dem = gdal.Warp('', demlist, format='MEM')
+    dem = gdal.Warp("", demlist, format="MEM")
 
     return dem

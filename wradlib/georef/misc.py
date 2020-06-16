@@ -13,13 +13,13 @@ Miscellaneous
 
    {}
 """
-__all__ = ['bin_altitude', 'bin_distance', 'site_distance']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["bin_altitude", "bin_distance", "site_distance"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
 
-def bin_altitude(r, theta, sitealt, re, ke=4./3.):
+def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
     """Calculates the height of a radar bin taking the refractivity of the \
     atmosphere into account.
 
@@ -55,11 +55,10 @@ def bin_altitude(r, theta, sitealt, re, ke=4./3.):
     """
     reff = ke * re
     sr = reff + sitealt
-    return np.sqrt(r ** 2 + sr ** 2 +
-                   2 * r * sr * np.sin(np.radians(theta))) - reff
+    return np.sqrt(r ** 2 + sr ** 2 + 2 * r * sr * np.sin(np.radians(theta))) - reff
 
 
-def bin_distance(r, theta, sitealt, re, ke=4./3.):
+def bin_distance(r, theta, sitealt, re, ke=4.0 / 3.0):
     """Calculates great circle distance from radar site to radar bin over \
     spherical earth, taking the refractivity of the atmosphere into account.
 
@@ -98,7 +97,7 @@ def bin_distance(r, theta, sitealt, re, ke=4./3.):
     return reff * np.arctan(r * np.cos(theta) / (r * np.sin(theta) + sr))
 
 
-def site_distance(r, theta, binalt, re=None, ke=4./3.):
+def site_distance(r, theta, binalt, re=None, ke=4.0 / 3.0):
     """Calculates great circle distance from bin at certain altitude to the \
     radar site over spherical earth, taking the refractivity of the \
     atmosphere into account.

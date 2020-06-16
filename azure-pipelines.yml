@@ -71,3 +71,27 @@ jobs:
     vmImage: 'vs2017-win2016'
   steps:
   - template: ci/azure/notebook-tests.yml
+
+- job: Black_Formatting_Check
+  pool:
+    vmImage: 'ubuntu-20.04'
+  steps:
+  - task: UsePythonVersion@0
+  - bash: python -m pip install black
+    displayName: Install black
+  - bash: black --check .
+    displayName: black formatting check
+
+
+- job: Import_Formatting_Check
+  variables:
+    conda_env: py38
+    test_data: false
+  pool:
+    vmImage: 'ubuntu-20.04'
+  steps:
+  - template: ci/azure/install.yml
+  - bash: |
+      source activate wradlib-tests
+      isort -rc --check .
+    displayName: isort formatting check

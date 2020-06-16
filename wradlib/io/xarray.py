@@ -89,19 +89,21 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
 import datetime as dt
-import dateutil
-import warnings
 import glob
+import warnings
 from distutils.version import LooseVersion
 
+import dateutil
 import deprecation
+import h5netcdf
 import h5py
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
-import h5netcdf
-
 from xarray.backends.api import _MultiFileCloser, combine_by_coords
+
+from wradlib import version
+from wradlib.georef import xarray
 
 try:
     from tqdm import tqdm
@@ -114,10 +116,6 @@ except ImportError:
             "instead."
         )
         return val
-
-
-from wradlib.georef import xarray
-from wradlib import version
 
 
 @deprecation.deprecated(

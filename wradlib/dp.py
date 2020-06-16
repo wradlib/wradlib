@@ -58,7 +58,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import deprecation
 import numpy as np
-from scipy import interpolate, integrate
+from scipy import integrate, interpolate
 
 from wradlib import trafo, util, version
 
