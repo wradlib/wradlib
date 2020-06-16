@@ -17,7 +17,7 @@ steps:
 
 - bash: |
     git clone https://github.com/wradlib/wradlib-data.git data
-    export WRADLIB_DATA=$PWD/data
+    echo "##vso[task.setvariable variable=WRADLIB_DATA]$PWD/data"
   condition: eq(variables.test_data, true)
   displayName: Install wradlib-data
 
