@@ -4,7 +4,7 @@
 # https://aka.ms/yaml
 
 variables:
-  install_data: true
+  test_data: true
 
 jobs:
 
