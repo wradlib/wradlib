@@ -25,6 +25,7 @@ dependencies:
   - setuptools
   - xarray
   - xmltodict
+  - dask
   - notebook
   - nbconvert
   - psutil
