@@ -969,11 +969,12 @@ def despeckle(data, n=3, copy=False):
 def show_versions(file=None):
     import sys
     import xarray as xr
+
     if file is None:
         file = sys.stdout
     xr.show_versions(file)
     print("", file=file)
-    print(f"wradlib: {version.version}")
+    print(f"wradlib: {version.full_version}")
 
 
 if __name__ == "__main__":
