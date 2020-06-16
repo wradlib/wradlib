@@ -5,10 +5,11 @@
 
 variables:
   test_data: true
+  notebooks: false
 
 jobs:
 
-- job: Linux
+- job: Linux Unit Tests
   strategy:
     matrix:
       py38:
@@ -17,6 +18,17 @@ jobs:
     vmImage: 'ubuntu-20.04'
   steps:
   - template: ci/azure/unit-tests.yml
+
+- job: Linux Notebook Tests
+  strategy:
+    matrix:
+      py38:
+        conda_env: py38
+        notebooks: true
+  pool:
+    vmImage: 'ubuntu-20.04'
+  steps:
+  - template: ci/azure/notebook-tests.yml
 
 - job: MacOSX
   strategy:

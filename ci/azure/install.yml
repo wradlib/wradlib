@@ -22,6 +22,11 @@ steps:
   displayName: Install wradlib-data
 
 - bash: |
+    git clone https://github.com/wradlib/wradlib-notebooks.git notebooks
+  condition: eq(variables.notebooks, true)
+  displayName: Install wradlib-notebooks
+
+- bash: |
     source activate wradlib-tests
     conda info -a
     conda list
