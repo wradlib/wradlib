@@ -16,6 +16,12 @@ steps:
   displayName: Install wradlib
 
 - bash: |
+    git clone https://github.com/wradlib/wradlib-data.git data
+    export WRADLIB_DATA=$PWD/data
+  condition: eq(variables.test_data, true)
+  displayName: Install wradlib-data
+
+- bash: |
     source activate wradlib-tests
     conda info -a
     conda list
