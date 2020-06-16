@@ -23,7 +23,7 @@ jobs:
   strategy:
     matrix:
       py38:
-        conda_env: py38
+        conda_env: py38-notebooks
         notebooks: true
   pool:
     vmImage: 'ubuntu-20.04'
