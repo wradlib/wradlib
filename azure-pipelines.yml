@@ -82,16 +82,12 @@ jobs:
   - bash: black --check .
     displayName: black formatting check
 
-
 - job: Import_Formatting_Check
-  variables:
-    conda_env: py38
-    test_data: false
   pool:
     vmImage: 'ubuntu-20.04'
   steps:
-  - template: ci/azure/install.yml
-  - bash: |
-      source activate wradlib-tests
-      isort -rc --check .
+  - task: UsePythonVersion@0
+  - bash: python -m pip install isort
+    displayName: Install isort
+  - bash: isort -rc --check .
     displayName: isort formatting check
