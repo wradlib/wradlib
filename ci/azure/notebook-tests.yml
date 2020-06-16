@@ -4,5 +4,5 @@ steps:
 
 - bash: |
     source activate wradlib-tests
-    pytest --verbose --doctest-modules --durations=15 notebooks
+    pytest --verbose --tb=long --doctest-modules --durations=15 notebooks
   displayName: Run tests
