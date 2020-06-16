@@ -9,7 +9,7 @@ variables:
 
 jobs:
 
-- job: Linux Unit Tests
+- job: Linux_Unit_Tests
   strategy:
     matrix:
       py38:
@@ -19,7 +19,7 @@ jobs:
   steps:
   - template: ci/azure/unit-tests.yml
 
-- job: Linux Notebook Tests
+- job: Linux_Notebook_Tests
   strategy:
     matrix:
       py38:
@@ -30,7 +30,7 @@ jobs:
   steps:
   - template: ci/azure/notebook-tests.yml
 
-- job: MacOSX
+- job: MacOSX_Unit_Tests
   strategy:
     matrix:
       py38:
@@ -40,7 +40,7 @@ jobs:
   steps:
   - template: ci/azure/unit-tests.yml
 
-- job: Windows
+- job: Windows_Unit_Tests
   strategy:
     matrix:
       py38:
