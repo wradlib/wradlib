@@ -15,8 +15,8 @@ estimates to ground truth.
 
    {}
 """
-__all__ = ['ErrorMetrics', 'PolarNeighbours']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["ErrorMetrics", "PolarNeighbours"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import warnings
 from pprint import pprint
@@ -24,11 +24,11 @@ from pprint import pprint
 import numpy as np
 from scipy import spatial, stats
 
-from wradlib.georef import polar
 from wradlib import util
+from wradlib.georef import polar
 
 
-class PolarNeighbours():
+class PolarNeighbours:
     """For a set of projected point coordinates, extract the neighbouring bin \
     values from a data set in polar coordinates.
 
@@ -75,9 +75,7 @@ class PolarNeighbours():
         self.x = x
         self.y = y
         # compute the centroid coordinates in proj
-        bin_coords = polar.spherical_to_centroids(r, az, 0,
-                                                  sitecoords,
-                                                  proj=proj)
+        bin_coords = polar.spherical_to_centroids(r, az, 0, sitecoords, proj=proj)
         self.binx = bin_coords[..., 0].ravel()
         self.biny = bin_coords[..., 1].ravel()
         # compute the KDTree
@@ -101,12 +99,14 @@ class PolarNeighbours():
             array of shape (..., number of points, nnear)
 
         """
-        assert vals.ndim >= 2, \
-            'Your <vals> array should at least contain an ' \
-            'azimuth and a range dimension.'
-        assert tuple(vals.shape[-2:]) == (len(self.az), len(self.r)), \
-            'The shape of your vals array does not correspond with ' \
-            'the range and azimuths you provided for your polar data set'
+        assert vals.ndim >= 2, (
+            "Your <vals> array should at least contain an "
+            "azimuth and a range dimension."
+        )
+        assert tuple(vals.shape[-2:]) == (len(self.az), len(self.r)), (
+            "The shape of your vals array does not correspond with "
+            "the range and azimuths you provided for your polar data set"
+        )
         vals = vals.reshape(vals.shape[:-2] + (len(self.az) * len(self.r),))
         return vals[..., self.ix]
 
@@ -133,7 +133,7 @@ class PolarNeighbours():
         return self.binx[self.ix], self.biny[self.ix]
 
 
-class ErrorMetrics():
+class ErrorMetrics:
     """Compute quality metrics from a set of observations (``obs``) and \
     estimates (``est``).
 
@@ -172,42 +172,48 @@ class ErrorMetrics():
     def __init__(self, obs, est, minval=None):
         # Check input
         if len(obs) != len(est):
-            raise ValueError("WRADLIB: obs and est need to have the "
-                             "same length. len(obs)={}, "
-                             "len(est)={}".format(len(obs), len(est)))
+            raise ValueError(
+                "WRADLIB: obs and est need to have the "
+                "same length. len(obs)={}, "
+                "len(est)={}".format(len(obs), len(est))
+            )
         self.est = est
         self.obs = obs
         # remember those pairs which both have valid obs and est
-        self.ix = np.intersect1d(util._idvalid(obs, minval=minval),
-                                 util._idvalid(est, minval=minval))
+        self.ix = np.intersect1d(
+            util._idvalid(obs, minval=minval), util._idvalid(est, minval=minval)
+        )
         self.n = len(self.ix)
         if self.n == 0:
-            warnings.warn("WRADLIB: No valid pairs of observed and "
-                          "estimated available for ErrorMetrics!")
+            warnings.warn(
+                "WRADLIB: No valid pairs of observed and "
+                "estimated available for ErrorMetrics!"
+            )
         self.resids = self.est[self.ix] - self.obs[self.ix]
 
     def corr(self):
         """Correlation coefficient
         """
-        return np.round(np.corrcoef(self.obs[self.ix],
-                                    self.est[self.ix])[0, 1], 2)
+        return np.round(np.corrcoef(self.obs[self.ix], self.est[self.ix])[0, 1], 2)
 
     def r2(self):
         """Coefficient of determination
         """
-        return np.round((np.corrcoef(self.obs[self.ix],
-                                     self.est[self.ix])[0, 1]) ** 2, 2)
+        return np.round(
+            (np.corrcoef(self.obs[self.ix], self.est[self.ix])[0, 1]) ** 2, 2
+        )
 
     def spearman(self):
         """Spearman rank correlation coefficient
         """
-        return np.round(stats.stats.spearmanr(self.obs[self.ix],
-                                              self.est[self.ix])[0], 2)
+        return np.round(
+            stats.stats.spearmanr(self.obs[self.ix], self.est[self.ix])[0], 2
+        )
 
     def nash(self):
         """Nash-Sutcliffe Efficiency
         """
-        return np.round(1. - (self.mse() / np.var(self.obs[self.ix])), 2)
+        return np.round(1.0 - (self.mse() / np.var(self.obs[self.ix])), 2)
 
     def sse(self):
         """Sum of Squared Errors
@@ -242,22 +248,24 @@ class ErrorMetrics():
     def pbias(self):
         """Percent bias
         """
-        return np.round(self.meanerr() * 100. / np.mean(self.obs[self.ix]), 1)
+        return np.round(self.meanerr() * 100.0 / np.mean(self.obs[self.ix]), 1)
 
     def all(self):
         """Returns a dictionary of all error metrics
         """
-        out = {"corr": self.corr(),
-               "r2": self.r2(),
-               "spearman": self.spearman(),
-               "nash": self.nash(),
-               "sse": self.sse(),
-               "mse": self.mse(),
-               "rmse": self.rmse(),
-               "mas": self.mas(),
-               "meanerr": self.meanerr(),
-               "ratio": self.ratio(),
-               "pbias": self.pbias()}
+        out = {
+            "corr": self.corr(),
+            "r2": self.r2(),
+            "spearman": self.spearman(),
+            "nash": self.nash(),
+            "sse": self.sse(),
+            "mse": self.mse(),
+            "rmse": self.rmse(),
+            "mas": self.mas(),
+            "meanerr": self.meanerr(),
+            "ratio": self.ratio(),
+            "pbias": self.pbias(),
+        }
 
         return out
 
@@ -267,5 +275,5 @@ class ErrorMetrics():
         pprint(self.all())
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <verify> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <verify> as main...")

@@ -100,9 +100,17 @@ validation results::
 
    {}
 """
-__all__ = ['AdjustBase', 'AdjustMFB', 'AdjustMultiply', 'AdjustAdd',
-           'AdjustMixed', 'RawAtObs', 'GageOnly', 'AdjustNone']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "AdjustBase",
+    "AdjustMFB",
+    "AdjustMultiply",
+    "AdjustAdd",
+    "AdjustMixed",
+    "RawAtObs",
+    "GageOnly",
+    "AdjustNone",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 from scipy import spatial, stats
@@ -173,17 +181,26 @@ class AdjustBase(ipol.IpolBase):
 
     """
 
-    def __init__(self, obs_coords, raw_coords,
-                 nnear_raws=9, stat='median', mingages=5, minval=0.,
-                 mfb_args=None, ipclass=ipol.Idw, **ipargs):
+    def __init__(
+        self,
+        obs_coords,
+        raw_coords,
+        nnear_raws=9,
+        stat="median",
+        mingages=5,
+        minval=0.0,
+        mfb_args=None,
+        ipclass=ipol.Idw,
+        **ipargs
+    ):
 
         # Check arguments
         if mfb_args is None:
-            mfb_args = dict(method="linregr", minslope=0.1,
-                            minr=0.5, maxp=0.01)
-        assert mfb_args["method"] in ["mean", "median", "linregr"], \
-            "Argument mfb_args['method'] has to be one " \
+            mfb_args = dict(method="linregr", minslope=0.1, minr=0.5, maxp=0.01)
+        assert mfb_args["method"] in ["mean", "median", "linregr"], (
+            "Argument mfb_args['method'] has to be one "
             "out of 'mean', 'median' or 'linregr'."
+        )
 
         # These are the coordinates of the rain gage locations and
         # the radar bin locations
@@ -211,10 +228,9 @@ class AdjustBase(ipol.IpolBase):
 
         # This method will quickly retrieve the actual radar values
         # at the gage locations
-        self.get_raw_at_obs = RawAtObs(self.obs_coords,
-                                       self.raw_coords,
-                                       nnear=nnear_raws,
-                                       stat=stat)
+        self.get_raw_at_obs = RawAtObs(
+            self.obs_coords, self.raw_coords, nnear=nnear_raws, stat=stat
+        )
 
     def _checkip(self, ix, targets):
         """INTERNAL: Return a revised instance of the Interpolator class.
@@ -298,8 +314,10 @@ class AdjustBase(ipol.IpolBase):
         # radar values at gage locations
         rawatobs = self.get_raw_at_obs(raw, obs)
         # check where both gage and radar observations are valid
-        ix = np.intersect1d(util._idvalid(obs, minval=self.minval),
-                            util._idvalid(rawatobs, minval=self.minval))
+        ix = np.intersect1d(
+            util._idvalid(obs, minval=self.minval),
+            util._idvalid(rawatobs, minval=self.minval),
+        )
         return rawatobs, ix
 
     def xvalidate(self, obs, raw):
@@ -329,11 +347,11 @@ class AdjustBase(ipol.IpolBase):
 
         """
         rawatobs, ix = self._get_valid_pairs(obs, raw)
-        self.get_raws_directly_at_obs = RawAtObs(self.obs_coords,
-                                                 self.raw_coords, nnear=1)
+        self.get_raws_directly_at_obs = RawAtObs(
+            self.obs_coords, self.raw_coords, nnear=1
+        )
         raws_directly_at_obs = self.get_raws_directly_at_obs(raw)
-        ix = np.intersect1d(ix, util._idvalid(raws_directly_at_obs,
-                                              minval=self.minval))
+        ix = np.intersect1d(ix, util._idvalid(raws_directly_at_obs, minval=self.minval))
         # Container for estimation results at the observation location
         estatobs = np.zeros(obs.shape) * np.nan
         # check whether enough gages remain for adjustment
@@ -344,9 +362,13 @@ class AdjustBase(ipol.IpolBase):
         for i in ix:
             # Pass all valid pairs except ONE which you pass as target
             ix_adjust = np.setdiff1d(ix, [i])
-            estatobs[i] = self.__call__(obs, raws_directly_at_obs[i],
-                                        self.obs_coords[i].reshape((1, -1)),
-                                        rawatobs, ix_adjust)
+            estatobs[i] = self.__call__(
+                obs,
+                raws_directly_at_obs[i],
+                self.obs_coords[i].reshape((1, -1)),
+                rawatobs,
+                ix_adjust,
+            )
         return obs, estatobs
 
 
@@ -405,7 +427,7 @@ class AdjustAdd(AdjustBase):
         # interpolate the error field
         iperror = ip(error)
         # add error field to raw and make sure no negatives occur
-        return np.where((raw + iperror) < 0., 0., raw + iperror)
+        return np.where((raw + iperror) < 0.0, 0.0, raw + iperror)
 
 
 class AdjustMultiply(AdjustBase):
@@ -543,13 +565,13 @@ class AdjustMixed(AdjustBase):
 
         # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH--------------
         # computing epsilon and delta from least squares
-        epsilon = (obs[ix] - rawatobs[ix]) / (rawatobs[ix] ** 2 + 1.)
-        delta = ((obs[ix] - epsilon) / rawatobs[ix]) - 1.
+        epsilon = (obs[ix] - rawatobs[ix]) / (rawatobs[ix] ** 2 + 1.0)
+        delta = ((obs[ix] - epsilon) / rawatobs[ix]) - 1.0
         # interpolate error fields
         ipepsilon = ip(epsilon)
         ipdelta = ip(delta)
         # compute adjusted radar rainfall field
-        return (1. + ipdelta) * raw + ipepsilon
+        return (1.0 + ipdelta) * raw + ipepsilon
 
 
 class AdjustMFB(AdjustBase):
@@ -602,7 +624,7 @@ class AdjustMFB(AdjustBase):
         elif self.mfb_args["method"] == "median":
             corrfact = np.median(ratios)
         elif self.mfb_args["method"] == "linregr":
-            corrfact = 1.
+            corrfact = 1.0
             ix_ = np.where(np.logical_not(ratios.mask))[0]
             x = obs[ix][ix_]
             y = rawatobs[ix][ix_]
@@ -611,19 +633,21 @@ class AdjustMFB(AdjustBase):
                 slope, intercept, r, p, stderr = stats.linregress(x, y)
             except Exception:
                 slope, r, p = 0, 0, np.inf
-            if (slope > self.mfb_args["minslope"]) and \
-                    (r > self.mfb_args["minr"]) and \
-                    (p < self.mfb_args["maxp"]):
+            if (
+                (slope > self.mfb_args["minslope"])
+                and (r > self.mfb_args["minr"])
+                and (p < self.mfb_args["maxp"])
+            ):
                 x = x[:, np.newaxis]
                 try:
                     slope, _, _, _ = np.linalg.lstsq(x, y)
                     if not slope[0] == 0:
-                        corrfact = 1. / slope[0]
+                        corrfact = 1.0 / slope[0]
                 except Exception:
                     # no correction if linear regression fails
                     pass
         if type(corrfact) == np.ma.core.MaskedConstant:
-            corrfact = 1.
+            corrfact = 1.0
         return corrfact * raw
 
 
@@ -721,7 +745,7 @@ class GageOnly(AdjustBase):
         return ip(obs[ix])
 
 
-class RawAtObs():
+class RawAtObs:
     """Get the raw values in the neighbourhood of the observation points
 
     Parameters
@@ -738,7 +762,7 @@ class RawAtObs():
 
     """
 
-    def __init__(self, obs_coords, raw_coords, nnear=9, stat='median'):
+    def __init__(self, obs_coords, raw_coords, nnear=9, stat="median"):
         self.statfunc = _get_statfunc(stat)
         self.raw_ix = _get_neighbours_ix(obs_coords, raw_coords, nnear)
 
@@ -800,13 +824,14 @@ def _get_statfunc(funcname):
 
         def newfunc(x, y):
             return func(y, axis=1)
+
     except Exception:
         # then try to find a function in this module with name funcname
-        if funcname == 'best':
+        if funcname == "best":
             newfunc = best
         else:
             # if no function can be found, raise an Exception
-            raise NameError('Unknown function name option: ' + funcname)
+            raise NameError("Unknown function name option: " + funcname)
     return newfunc
 
 
@@ -826,12 +851,12 @@ def best(x, y):
 
     """
     if type(x) == np.ndarray:
-        assert x.ndim == 1, 'x must be a 1-d array of floats or a float.'
-        assert len(x) == len(y), 'Length of x and y must be equal.'
+        assert x.ndim == 1, "x must be a 1-d array of floats or a float."
+        assert len(x) == len(y), "Length of x and y must be equal."
     if type(y) == np.ndarray:
-        assert y.ndim <= 2, 'y must be 1-d or 2-d array of floats.'
+        assert y.ndim <= 2, "y must be 1-d or 2-d array of floats."
     else:
-        raise ValueError('y must be 1-d or 2-d array of floats.')
+        raise ValueError("y must be 1-d or 2-d array of floats.")
     x = np.array(x).reshape((-1, 1))
     if y.ndim == 1:
         y = np.array(y).reshape((1, -1))
@@ -841,5 +866,5 @@ def best(x, y):
     return y[np.arange(len(y)), np.argmin(np.abs(x - y), axis=axis)]
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <adjust> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <adjust> as main...")
