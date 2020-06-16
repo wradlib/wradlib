@@ -25,6 +25,10 @@
 # allowlist files under `wradlib`
 !/wradlib
 !/wradlib/*.py
+!/wradlib/georef
+!/wradlib/georef/*.py
+!/wradlib/io
+!/wradlib/io/*.py
 !/wradlib/tests
 !/wradlib/tests/*.py
 
