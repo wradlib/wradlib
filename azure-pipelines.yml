@@ -40,6 +40,17 @@ jobs:
   steps:
   - template: ci/azure/unit-tests.yml
 
+- job: MacOSX_Notebook_Tests
+  strategy:
+    matrix:
+      py38:
+        conda_env: py38-notebooks
+        notebooks: true
+  pool:
+    vmImage: 'macOS-10.15'
+  steps:
+  - template: ci/azure/notebook-tests.yml
+
 - job: Windows_Unit_Tests
   strategy:
     matrix:
@@ -49,3 +60,14 @@ jobs:
     vmImage: 'vs2017-win2016'
   steps:
   - template: ci/azure/unit-tests.yml
+
+- job: Windows_Notebook_Tests
+  strategy:
+    matrix:
+      py38:
+        conda_env: py38-notebooks
+        notebooks: true
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  - template: ci/azure/notebook-tests.yml
