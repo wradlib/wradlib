@@ -1,0 +1,8 @@
+steps:
+
+- template: install.yml
+
+- bash: |
+    source activate wradlib-tests
+    pytest --verbose --doctest-modules --durations=15 wradlib
+  displayName: Run tests

@@ -12,18 +12,25 @@ Hydrometeor Classification (HMC)
 
     {}
 """
-__all__ = ['msf_index_indep', 'trapezoid', 'fuzzyfi', 'probability',
-           'classify']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["msf_index_indep", "trapezoid", "fuzzyfi", "probability", "classify"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
-pr_types = {0: ('LR', 'Light Rain'), 1: ('MR', 'Moderate Rain'),
-            2: ('HR', 'Heavy Rain'), 3: ('LD', 'Large Drops'),
-            4: ('HL', 'Hail'), 5: ('RH', 'Rain/Hail'),
-            6: ('GH', 'Graupel/Hail'), 7: ('DS', 'Dry Snow'),
-            8: ('WS', 'Wet Snow'), 9: ('HC', 'H Crystals'),
-            10: ('VC', 'V Crystals'), 11: ('NP', 'No Precip')}
+pr_types = {
+    0: ("LR", "Light Rain"),
+    1: ("MR", "Moderate Rain"),
+    2: ("HR", "Heavy Rain"),
+    3: ("LD", "Large Drops"),
+    4: ("HL", "Hail"),
+    5: ("RH", "Rain/Hail"),
+    6: ("GH", "Graupel/Hail"),
+    7: ("DS", "Dry Snow"),
+    8: ("WS", "Wet Snow"),
+    9: ("HC", "H Crystals"),
+    10: ("VC", "V Crystals"),
+    11: ("NP", "No Precip"),
+}
 
 
 def msf_index_indep(msf, idp, obs):
@@ -56,8 +63,9 @@ def msf_index_indep(msf, idp, obs):
     idxm = np.ma.masked_outside(idxm, 0, bins.shape[0] - 2)
     out = np.zeros((msf.shape[0], msf.shape[1], obs.size, msf.shape[-1]))
     out[:, :, ~idxm.mask.flatten(), :] = msf[:, :, idxm.compressed(), :]
-    out = np.reshape(out, ((msf.shape[0], msf.shape[1],) + obs.shape +
-                           (msf.shape[-1],)))
+    out = np.reshape(
+        out, ((msf.shape[0], msf.shape[1],) + obs.shape + (msf.shape[-1],))
+    )
     return out
 
 
@@ -84,15 +92,17 @@ def trapezoid(msf, obs):
     out = np.zeros_like(obs)
 
     ones = (obs >= msf[..., 1]) & (obs <= msf[..., 2])
-    out[ones] = 1.
+    out[ones] = 1.0
 
     lower = (obs >= msf[..., 0]) & (obs < msf[..., 1])
-    out[lower] = ((obs[lower] - msf[..., 0][lower]) /
-                  (msf[..., 1][lower] - msf[..., 0][lower]))
+    out[lower] = (obs[lower] - msf[..., 0][lower]) / (
+        msf[..., 1][lower] - msf[..., 0][lower]
+    )
 
     higher = (obs > msf[..., 2]) & (obs <= msf[..., 3])
-    out[higher] = ((obs[higher] - msf[..., 3][higher]) /
-                   (msf[..., 2][higher] - msf[..., 3][higher]))
+    out[higher] = (obs[higher] - msf[..., 3][higher]) / (
+        msf[..., 2][higher] - msf[..., 3][higher]
+    )
 
     return out
 
@@ -150,7 +160,7 @@ def probability(data, weights):
     return np.sum(data * weights, axis=1) / maxw
 
 
-def classify(data, threshold=0.):
+def classify(data, threshold=0.0):
     """Calculate probability of hmc-class for every data bin.
 
     Parameters
@@ -190,6 +200,6 @@ def classify(data, threshold=0.):
     vals = np.sort(data, axis=0)
     # set no precip in every class
     idx[:, mask] = shape
-    vals[:, mask] = 1.
+    vals[:, mask] = 1.0
 
     return idx, vals

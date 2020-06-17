@@ -17,36 +17,49 @@ Standard plotting and mapping procedures.
 
    {}
 """
-__all__ = ['plot_ppi', 'plot_ppi_crosshair', 'plot_rhi', 'WradlibAccessor',
-           'create_cg', 'plot_scan_strategy', 'plot_plan_and_vert',
-           'plot_max_plan_and_vert', 'add_lines', 'add_patches']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "plot_ppi",
+    "plot_ppi_crosshair",
+    "plot_rhi",
+    "WradlibAccessor",
+    "create_cg",
+    "plot_scan_strategy",
+    "plot_plan_and_vert",
+    "plot_max_plan_and_vert",
+    "add_lines",
+    "add_patches",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
 import os.path
 import re
 import warnings
 
-import numpy as np
 import matplotlib.pyplot as pl
-from matplotlib import patches, axes, lines
+import mpl_toolkits.axisartist.angle_helper as ah
+import numpy as np
+import xarray as xr
+from matplotlib import axes, lines, patches
 from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.projections import PolarAxes
-from matplotlib.ticker import NullFormatter, FuncFormatter
+from matplotlib.ticker import FuncFormatter, NullFormatter
 from matplotlib.transforms import Affine2D
-from mpl_toolkits.axisartist import (SubplotHost, ParasiteAxesAuxTrans,
-                                     GridHelperCurveLinear)
-import mpl_toolkits.axisartist.angle_helper as ah
-import xarray as xr
+from mpl_toolkits.axisartist import (
+    GridHelperCurveLinear,
+    ParasiteAxesAuxTrans,
+    SubplotHost,
+)
 from osgeo import osr
 
 from wradlib import georef, util
 
 
-@xr.register_dataarray_accessor('wradlib')
+@xr.register_dataarray_accessor("wradlib")
 class WradlibAccessor(object):
     """Dataarray Accessor for plotting radar moments
     """
+
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
         self._site = None
@@ -57,22 +70,22 @@ class WradlibAccessor(object):
         return getattr(self._obj, attr)
 
     def __repr__(self):
-        return re.sub(r'<.+>', '<{}>'.format(self.__class__.__name__),
-                      str(self._obj))
+        return re.sub(r"<.+>", "<{}>".format(self.__class__.__name__), str(self._obj))
 
     def fix_cyclic(self):
         rays = self._obj.azimuth
         dim0 = rays.dims[0]
         if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
-            self._obj = xr.concat([self._obj, self._obj.isel({dim0: 0})],
-                                  dim=dim0)
+            self._obj = xr.concat([self._obj, self._obj.isel({dim0: 0})], dim=dim0)
 
     @property
     def site(self):
         if self._site is None:
-            self._site = (self._obj.longitude.item(),
-                          self._obj.latitude.item(),
-                          self._obj.altitude.item())
+            self._site = (
+                self._obj.longitude.item(),
+                self._obj.latitude.item(),
+                self._obj.altitude.item(),
+            )
         return self._site
 
     @property
@@ -84,15 +97,15 @@ class WradlibAccessor(object):
         self._proj = proj
 
     def contour(self, **kwargs):
-        kwargs.setdefault('func', 'contour')
+        kwargs.setdefault("func", "contour")
         return self.plot(**kwargs)
 
     def contourf(self, **kwargs):
-        kwargs.setdefault('func', 'contourf')
+        kwargs.setdefault("func", "contourf")
         return self.plot(**kwargs)
 
     def pcolormesh(self, **kwargs):
-        kwargs.setdefault('func', 'pcolormesh')
+        kwargs.setdefault("func", "pcolormesh")
         return self.plot(**kwargs)
 
     def plot_rhi(self, **kwargs):
@@ -101,10 +114,18 @@ class WradlibAccessor(object):
     def plot_ppi(self, **kwargs):
         return self.plot(**kwargs)
 
-    def plot(self, ax=111, fig=None, proj=None,
-             func='pcolormesh', cmap='viridis', center=False,
-             add_colorbar=False, add_labels=False,
-             **kwargs):
+    def plot(
+        self,
+        ax=111,
+        fig=None,
+        proj=None,
+        func="pcolormesh",
+        cmap="viridis",
+        center=False,
+        add_colorbar=False,
+        add_labels=False,
+        **kwargs,
+    ):
         """Plot Plan Position Indicator (PPI) or Range Height Indicator (RHI).
 
         The implementation of this plot routine is in cartesian axes and does
@@ -189,23 +210,22 @@ class WradlibAccessor(object):
         paax = None
 
         # fix for correct zorder of data and grid
-        kwargs['zorder'] = kwargs.pop('zorder', 0)
+        kwargs["zorder"] = kwargs.pop("zorder", 0)
 
         self.proj = proj
 
         # handle curvelinear grid properties
-        if proj == 'cg' or isinstance(proj, collections.abc.Mapping):
+        if proj == "cg" or isinstance(proj, collections.abc.Mapping):
             self.proj = None
-            if self.sweep_mode == 'azimuth_surveillance':
-                cg = {'rot': -450, 'scale': -1}
+            if self.sweep_mode == "azimuth_surveillance":
+                cg = {"rot": -450, "scale": -1}
             else:
-                cg = {'rot': 0, 'scale': 1}
+                cg = {"rot": 0, "scale": 1}
             if isinstance(proj, collections.abc.Mapping):
                 cg.update(proj)
 
         if isinstance(proj, osr.SpatialReference):
-            raise TypeError(
-                "WRADLIB: Currently GDAL OSR SRS are not supported")
+            raise TypeError("WRADLIB: Currently GDAL OSR SRS are not supported")
 
         if isinstance(ax, axes.Axes):
             if cg:
@@ -215,7 +235,8 @@ class WradlibAccessor(object):
                 except AttributeError:
                     raise TypeError(
                         "WRADLIB: If `proj='cg'` `ax` need to be of type"
-                        " `mpl_toolkits.axisartist.SubplotHost`")
+                        " `mpl_toolkits.axisartist.SubplotHost`"
+                    )
         else:
             # axes object is given
             if fig is None:
@@ -230,8 +251,9 @@ class WradlibAccessor(object):
                 ax, caax, paax = create_cg(fig=fig, subplot=ax, **cg)
                 # this is in fact the outermost thick "ring"
                 rdiff = self._obj.range[1] - self._obj.range[0]
-                ax.axis["lon"] = ax.new_floating_axis(1, (np.max(
-                    self._obj.bins.values) + rdiff.values / 2.))
+                ax.axis["lon"] = ax.new_floating_axis(
+                    1, (np.max(self._obj.bins.values) + rdiff.values / 2.0)
+                )
                 ax.axis["lon"].major_ticklabels.set_visible(False)
                 # and also set tickmarklength to zero for better presentation
                 ax.axis["lon"].major_ticks.set_ticksize(0)
@@ -240,33 +262,41 @@ class WradlibAccessor(object):
 
         if cg:
             plax = paax
-            infer_intervals = kwargs.pop('infer_intervals', False)
-            xp, yp = 'rays', 'bins'
+            infer_intervals = kwargs.pop("infer_intervals", False)
+            xp, yp = "rays", "bins"
         else:
             plax = ax
-            infer_intervals = kwargs.pop('infer_intervals', True)
-            if self.sweep_mode == 'azimuth_surveillance':
-                xp, yp = 'x', 'y'
+            infer_intervals = kwargs.pop("infer_intervals", True)
+            if self.sweep_mode == "azimuth_surveillance":
+                xp, yp = "x", "y"
             else:
-                xp, yp = 'gr', 'z'
+                xp, yp = "gr", "z"
 
         # use cartopy, if available
-        if hasattr(plax, 'projection'):
-            cartopy = util.import_optional('cartopy')
+        if hasattr(plax, "projection"):
+            cartopy = util.import_optional("cartopy")
             map_trans = cartopy.crs.AzimuthalEquidistant(
-                central_longitude=self.site[0],
-                central_latitude=self.site[1])
-            kwargs.update({'transform': map_trans})
+                central_longitude=self.site[0], central_latitude=self.site[1]
+            )
+            kwargs.update({"transform": map_trans})
 
         # claim xarray plot function and create plot
         plotfunc = getattr(self._obj.plot, func)
-        pm = plotfunc(x=xp, y=yp, ax=plax, cmap=cmap, center=center,
-                      add_colorbar=add_colorbar, add_labels=add_labels,
-                      infer_intervals=infer_intervals, **kwargs)
+        pm = plotfunc(
+            x=xp,
+            y=yp,
+            ax=plax,
+            cmap=cmap,
+            center=center,
+            add_colorbar=add_colorbar,
+            add_labels=add_labels,
+            infer_intervals=infer_intervals,
+            **kwargs,
+        )
 
         # set cg grids and limits
         if cg:
-            if self.sweep_mode == 'azimuth_surveillance':
+            if self.sweep_mode == "azimuth_surveillance":
                 xlims = np.min(self._obj.x), np.max(self._obj.x)
                 ylims = np.min(self._obj.y), np.max(self._obj.y)
             else:
@@ -277,8 +307,8 @@ class WradlibAccessor(object):
             ax.grid(True)
             caax.grid(True)
 
-        if self.sweep_mode == 'azimuth_surveillance':
-            ax.set_aspect('equal', adjustable='box')
+        if self.sweep_mode == "azimuth_surveillance":
+            ax.set_aspect("equal", adjustable="box")
 
         # set ax as current
         pl.sca(ax)
@@ -286,9 +316,19 @@ class WradlibAccessor(object):
         return pm
 
 
-def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
-             fig=None, ax=111, func='pcolormesh', rf=1.,
-             **kwargs):
+def plot_ppi(
+    data,
+    r=None,
+    az=None,
+    elev=0.0,
+    site=None,
+    proj=None,
+    fig=None,
+    ax=111,
+    func="pcolormesh",
+    rf=1.0,
+    **kwargs,
+):
     """Plots a Plan Position Indicator (PPI).
 
     This is a small wrapper around xarray dataarray.
@@ -394,46 +434,58 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     """
     # check coordinate tuple
     if site and len(site) < 3:
-        raise ValueError("WRADLIB: `site` need to be a tuple of coordinates "
-                         "(longitude, latitude, altitude).")
+        raise ValueError(
+            "WRADLIB: `site` need to be a tuple of coordinates "
+            "(longitude, latitude, altitude)."
+        )
 
     # site must be given, if proj is OSR
     if isinstance(proj, osr.SpatialReference) and site is None:
-        raise TypeError("WRADLIB: If `proj` is Spatial Reference System "
-                        "(GDAL OSR SRS) site need to be given "
-                        "as tuple of (longitude, latitude, altitude)")
+        raise TypeError(
+            "WRADLIB: If `proj` is Spatial Reference System "
+            "(GDAL OSR SRS) site need to be given "
+            "as tuple of (longitude, latitude, altitude)"
+        )
 
     # site given without proj
     if site and not proj:
         warnings.warn(
             "WRADLIB: site is given without `proj`, it will be used "
-            "as simple xy-offset")
+            "as simple xy-offset"
+        )
 
     # re/ke kwargs handling
-    kw_spherical = {'re': kwargs.pop('re', None),
-                    'ke': kwargs.pop('ke', 4. / 3.)}
+    kw_spherical = {"re": kwargs.pop("re", None), "ke": kwargs.pop("ke", 4.0 / 3.0)}
 
     if az is None:
         az = np.arange(data.shape[0], dtype=np.float)
-        az += (az[1] - az[0]) / 2.
+        az += (az[1] - az[0]) / 2.0
 
     if r is None:
-        if proj and proj != 'cg':
-            warnings.warn("Parameter `r` is None, falling back to `proj=None`."
-                          "If using projection, r must be given as "
-                          "array with units m.")
+        if proj and proj != "cg":
+            warnings.warn(
+                "Parameter `r` is None, falling back to `proj=None`."
+                "If using projection, r must be given as "
+                "array with units m."
+            )
             proj = None
         r = np.arange(data.shape[1], dtype=np.float)
-        r += (r[1] - r[0]) / 2.
+        r += (r[1] - r[0]) / 2.0
 
     if np.isscalar(elev):
         elev = np.ones_like(az) * elev
 
-    da = georef.create_xarray_dataarray(data, r=r, phi=az, theta=elev,
-                                        site=site, proj=proj,
-                                        sweep_mode='azimuth_surveillance',
-                                        rf=rf,
-                                        **kw_spherical)
+    da = georef.create_xarray_dataarray(
+        data,
+        r=r,
+        phi=az,
+        theta=elev,
+        site=site,
+        proj=proj,
+        sweep_mode="azimuth_surveillance",
+        rf=rf,
+        **kw_spherical,
+    )
 
     da = georef.georeference_dataset(da, proj=proj)
 
@@ -441,14 +493,14 @@ def plot_ppi(data, r=None, az=None, elev=0., site=None, proj=None,
     if isinstance(proj, osr.SpatialReference):
         proj = None
 
-    pm = da.wradlib.plot_ppi(ax=ax, fig=fig, func=func,
-                             proj=proj, **kwargs)
+    pm = da.wradlib.plot_ppi(ax=ax, fig=fig, func=func, proj=proj, **kwargs)
 
     return pl.gca(), pm
 
 
-def plot_ppi_crosshair(site, ranges, angles=None,
-                       proj=None, elev=0., ax=None, **kwargs):
+def plot_ppi_crosshair(
+    site, ranges, angles=None, proj=None, elev=0.0, ax=None, **kwargs
+):
     """Plots a Crosshair for a Plan Position Indicator (PPI).
 
     Parameters
@@ -511,8 +563,10 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     """
     # check coordinate tuple
     if site and len(site) < 3:
-        raise ValueError("WRADLIB: `site` need to be a tuple of coordinates "
-                         "(longitude, latitude, altitude).")
+        raise ValueError(
+            "WRADLIB: `site` need to be a tuple of coordinates "
+            "(longitude, latitude, altitude)."
+        )
 
     # if we didn't get an axes object, find the current one
     if ax is None:
@@ -522,14 +576,14 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         angles = [0, 90, 180, 270]
 
     # set default line keywords
-    linekw = dict(color='gray', linestyle='dashed')
+    linekw = dict(color="gray", linestyle="dashed")
     # update with user settings
-    linekw.update(kwargs.get('line', {}))
+    linekw.update(kwargs.get("line", {}))
 
     # set default circle keywords
-    circkw = dict(edgecolor='gray', linestyle='dashed', facecolor='none')
+    circkw = dict(edgecolor="gray", linestyle="dashed", facecolor="none")
     # update with user settings
-    circkw.update(kwargs.get('circle', {}))
+    circkw.update(kwargs.get("circle", {}))
 
     # determine coordinates for 'straight' lines
     if proj:
@@ -548,11 +602,13 @@ def plot_ppi_crosshair(site, ranges, angles=None,
         psite = site
         rr, az = np.meshgrid(np.linspace(0, ranges[-1], 2), angles)
         # use simple trigonometry to calculate coordinates
-        nsewx, nsewy = (psite[0] + rr * np.cos(np.radians(90 - az)),
-                        psite[1] + rr * np.sin(np.radians(90 - az)))
+        nsewx, nsewy = (
+            psite[0] + rr * np.cos(np.radians(90 - az)),
+            psite[1] + rr * np.sin(np.radians(90 - az)),
+        )
 
     # mark the site, just in case nothing else would be drawn
-    ax.plot(*psite[:2], marker='+', **linekw)
+    ax.plot(*psite[:2], marker="+", **linekw)
 
     # draw the lines
     for i in range(len(angles)):
@@ -562,8 +618,9 @@ def plot_ppi_crosshair(site, ranges, angles=None,
     if proj:
         # produce an approximation of the circle
         x, y = np.meshgrid(ranges, np.arange(360))
-        poly = georef.spherical_to_proj(ranges, np.arange(360), elev, site,
-                                        proj=proj)[..., :2]
+        poly = georef.spherical_to_proj(ranges, np.arange(360), elev, site, proj=proj)[
+            ..., :2
+        ]
         poly = np.swapaxes(poly, 0, 1)
         for p in poly:
             ax.add_patch(patches.Polygon(p, **circkw))
@@ -574,14 +631,25 @@ def plot_ppi_crosshair(site, ranges, angles=None,
 
     # there should be not much wrong, setting the axes aspect to equal
     # by default
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
 
     # return the axes object for later use
     return ax
 
 
-def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
-             proj=None, rf=1., fig=None, ax=111, **kwargs):
+def plot_rhi(
+    data,
+    r=None,
+    th=None,
+    th_res=None,
+    az=0,
+    site=None,
+    proj=None,
+    rf=1.0,
+    fig=None,
+    ax=111,
+    **kwargs,
+):
     """Plots a Range Height Indicator (RHI).
 
     This is a small wrapper around xarray dataarray.
@@ -682,16 +750,15 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
         https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
     # kwargs handling
-    kwargs['zorder'] = kwargs.pop('zorder', 0)
-    func = kwargs.pop('func', 'pcolormesh')
+    kwargs["zorder"] = kwargs.pop("zorder", 0)
+    func = kwargs.pop("func", "pcolormesh")
 
     # re/ke kwargs handling
-    kw_spherical = {'re': kwargs.pop('re', None),
-                    'ke': kwargs.pop('ke', 4. / 3.)}
+    kw_spherical = {"re": kwargs.pop("re", None), "ke": kwargs.pop("ke", 4.0 / 3.0)}
 
     if th is None:
-        th = np.linspace(0., 90., num=data.shape[0], endpoint=True)
-        th += (th[1] - th[0]) / 2.
+        th = np.linspace(0.0, 90.0, num=data.shape[0], endpoint=True)
+        th += (th[1] - th[0]) / 2.0
 
     if th_res is not None:
         # we are given a beam resolution and thus may not just glue each
@@ -705,7 +772,7 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
         img.mask = np.ma.masked
         # set the data in the first half of the temporary array
         # this automatically unsets the mask
-        img[:, :data.shape[1]] = data
+        img[:, : data.shape[1]] = data
         # reshape so that data and masked lines interlace each other
         img = img.reshape((-1, data.shape[1]))
         # produce lower and upper y coordinates for the actual data
@@ -718,20 +785,30 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
         img = data
 
     if r is None:
-        if proj and proj != 'cg':
-            warnings.warn("Parameter `r` is None, falling back to `proj=None`."
-                          "If using projection, r must be given as "
-                          "array with units m.")
+        if proj and proj != "cg":
+            warnings.warn(
+                "Parameter `r` is None, falling back to `proj=None`."
+                "If using projection, r must be given as "
+                "array with units m."
+            )
             proj = None
         r = np.arange(data.shape[1], dtype=np.float)
-        r += (r[1] - r[0]) / 2.
+        r += (r[1] - r[0]) / 2.0
 
     if np.isscalar(az):
         az = np.ones_like(th) * az
 
-    da = georef.create_xarray_dataarray(img, r=r, phi=az, theta=th, site=site,
-                                        proj=proj, sweep_mode='rhi', rf=rf,
-                                        **kw_spherical)
+    da = georef.create_xarray_dataarray(
+        img,
+        r=r,
+        phi=az,
+        theta=th,
+        site=site,
+        proj=proj,
+        sweep_mode="rhi",
+        rf=rf,
+        **kw_spherical,
+    )
 
     da = georef.georeference_dataset(da, proj=proj)
 
@@ -739,15 +816,21 @@ def plot_rhi(data, r=None, th=None, th_res=None, az=0, site=None,
     if isinstance(proj, osr.SpatialReference):
         proj = None
 
-    pm = da.wradlib.plot_rhi(ax=ax, fig=fig, func=func, proj=proj,
-                             **kwargs)
+    pm = da.wradlib.plot_rhi(ax=ax, fig=fig, func=func, proj=proj, **kwargs)
 
     return pl.gca(), pm
 
 
-def create_cg(fig=None, subplot=111, rot=-450, scale=-1,
-              angular_spacing=10, radial_spacing=10,
-              latmin=0, lon_cycle=360):
+def create_cg(
+    fig=None,
+    subplot=111,
+    rot=-450,
+    scale=-1,
+    angular_spacing=10,
+    radial_spacing=10,
+    latmin=0,
+    lon_cycle=360,
+):
     """ Helper function to create curvelinear grid
 
     The function makes use of the Matplotlib AXISARTIST namespace
@@ -805,24 +888,27 @@ def create_cg(fig=None, subplot=111, rot=-450, scale=-1,
     tr = tr_rotate + tr_scale + tr_polar
 
     # build up curvelinear grid
-    extreme_finder = ah.ExtremeFinderCycle(360, 360,
-                                           lon_cycle=lon_cycle,
-                                           lat_cycle=None,
-                                           lon_minmax=None,
-                                           lat_minmax=(latmin, np.inf),
-                                           )
+    extreme_finder = ah.ExtremeFinderCycle(
+        360,
+        360,
+        lon_cycle=lon_cycle,
+        lat_cycle=None,
+        lon_minmax=None,
+        lat_minmax=(latmin, np.inf),
+    )
     # locator and formatter for angular annotation
     grid_locator1 = ah.LocatorDMS(lon_cycle // angular_spacing)
     tick_formatter1 = ah.FormatterDMS()
 
     # grid_helper for curvelinear grid
-    grid_helper = GridHelperCurveLinear(tr,
-                                        extreme_finder=extreme_finder,
-                                        grid_locator1=grid_locator1,
-                                        grid_locator2=None,
-                                        tick_formatter1=tick_formatter1,
-                                        tick_formatter2=None,
-                                        )
+    grid_helper = GridHelperCurveLinear(
+        tr,
+        extreme_finder=extreme_finder,
+        grid_locator1=grid_locator1,
+        grid_locator2=None,
+        tick_formatter1=tick_formatter1,
+        tick_formatter2=None,
+    )
 
     # try to set nice locations for radial gridlines
     grid_locator2 = grid_helper.grid_finder.grid_locator2
@@ -871,8 +957,7 @@ def create_cg(fig=None, subplot=111, rot=-450, scale=-1,
     return cgax, caax, paax
 
 
-def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
-                       maxalt=10000., ax=None):
+def plot_scan_strategy(ranges, elevs, site, vert_res=500.0, maxalt=10000.0, ax=None):
     """Plot the vertical scanning strategy
 
     Parameters
@@ -888,7 +973,7 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
         The axes object to be plotted to.
     """
     # just a dummy
-    az = np.array([90.])
+    az = np.array([90.0])
     coords, _ = georef.spherical_to_xyz(ranges, az, elevs, site, squeeze=True)
     alt = coords[..., 2]
     if ax is None:
@@ -898,7 +983,7 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     else:
         returnax = True
     # actual plotting
-    for y in np.arange(0, 10000., vert_res):
+    for y in np.arange(0, 10000.0, vert_res):
         ax.axhline(y=y, color="grey")
     for x in ranges:
         ax.axvline(x=x, color="grey")
@@ -909,12 +994,12 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     pl.xlabel("Range (m)", size="large")
     pl.ylabel("Height over radar (m)", size="large")
     for i, elev in enumerate(elevs):
-        x = ranges[-1] + 1500.
+        x = ranges[-1] + 1500.0
         y = alt[i, :][-1]
         if y > maxalt:
             ix = np.where(alt[i, :] < maxalt)[0][-1]
             x = ranges[ix]
-            y = maxalt + 100.
+            y = maxalt + 100.0
         pl.text(x, y, str(elev), fontsize="large")
 
     if returnax:
@@ -922,8 +1007,9 @@ def plot_scan_strategy(ranges, elevs, site, vert_res=500.,
     pl.show()
 
 
-def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
-                       title="", saveto="", **kwargs):
+def plot_plan_and_vert(
+    x, y, z, dataxy, datazx, datazy, unit="", title="", saveto="", **kwargs
+):
     """Plot 2-D plan view of ``dataxy`` together with vertical sections \
     ``dataxz`` and ``datazy``
 
@@ -984,22 +1070,22 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
     ax_y.contourf(z, y, datazy.T, **kwargs)
 
     # label axes
-    ax_xy.set_xlabel('x (km)')
-    ax_xy.set_ylabel('y (km)')
-    ax_x.set_xlabel('')
-    ax_x.set_ylabel('z (km)')
-    ax_y.set_ylabel('')
-    ax_y.set_xlabel('z (km)')
+    ax_xy.set_xlabel("x (km)")
+    ax_xy.set_ylabel("y (km)")
+    ax_x.set_xlabel("")
+    ax_x.set_ylabel("z (km)")
+    ax_y.set_ylabel("")
+    ax_y.set_xlabel("z (km)")
 
     def xycoords(x, pos):
         """The two args are the value and tick position"""
-        return "%d" % (x / 1000.)
+        return "%d" % (x / 1000.0)
 
     xyformatter = FuncFormatter(xycoords)
 
     def zcoords(x, pos):
         """The two args are the value and tick position"""
-        return ("%.1f" % (x / 1000.)).rstrip('0').rstrip('.')
+        return ("%.1f" % (x / 1000.0)).rstrip("0").rstrip(".")
 
     zformatter = FuncFormatter(zcoords)
 
@@ -1011,12 +1097,15 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
     if not title == "":
         # add a title - here, we have to create a new axes object which will
         # be invisible then the invisible axes will get a title
-        tax = pl.axes((left, bottom + width + height + 0.01,
-                       width + height, 0.01), frameon=False, facecolor="none")
+        tax = pl.axes(
+            (left, bottom + width + height + 0.01, width + height, 0.01),
+            frameon=False,
+            facecolor="none",
+        )
         tax.get_xaxis().set_visible(False)
         tax.get_yaxis().set_visible(False)
         pl.title(title)
-    if saveto == '':
+    if saveto == "":
         # show plot
         pl.show()
         if not pl.isinteractive():
@@ -1024,14 +1113,12 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, unit="",
             pl.close()
     else:
         # save plot to file
-        if ((os.path.exists(os.path.dirname(saveto))) or
-                (os.path.dirname(saveto) == '')):
+        if (os.path.exists(os.path.dirname(saveto))) or (os.path.dirname(saveto) == ""):
             pl.savefig(saveto)
             pl.close()
 
 
-def plot_max_plan_and_vert(x, y, z, data, unit="", title="",
-                           saveto="", **kwargs):
+def plot_max_plan_and_vert(x, y, z, data, unit="", title="", saveto="", **kwargs):
     """Plot according to <plot_plan_and_vert> with the maximum values
     along the three axes of ``data``
 
@@ -1039,9 +1126,18 @@ def plot_max_plan_and_vert(x, y, z, data, unit="", title="",
     --------
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
-    plot_plan_and_vert(x, y, z, np.max(data, axis=-3), np.max(data, axis=-2),
-                       np.max(data, axis=-1),
-                       unit, title, saveto, **kwargs)
+    plot_plan_and_vert(
+        x,
+        y,
+        z,
+        np.max(data, axis=-3),
+        np.max(data, axis=-2),
+        np.max(data, axis=-1),
+        unit,
+        title,
+        saveto,
+        **kwargs,
+    )
 
 
 def add_lines(ax, lines, **kwargs):
@@ -1098,5 +1194,5 @@ def add_patches(ax, patch_array, **kwargs):
             add_patches(ax, patch, **kwargs)
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <vis> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <vis> as main...")

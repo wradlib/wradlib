@@ -6,9 +6,10 @@ import sys
 
 import numpy as np
 import pytest
-import wradlib
 import xarray as xr
 from osgeo import gdal, ogr, osr
+
+import wradlib
 from wradlib import georef, util
 
 np.set_printoptions(

@@ -13,8 +13,8 @@ Satellite Functions
 
    {}
 """
-__all__ = ['correct_parallax', 'dist_from_orbit']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["correct_parallax", "dist_from_orbit"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
@@ -67,7 +67,7 @@ def correct_parallax(sr_xy, nbin, drt, alpha):
 
     # calculate x,y-differences between ground coordinate
     # and center ground coordinate [25th element]
-    center = int(np.floor(len(sr_x[-1]) / 2.))
+    center = int(np.floor(len(sr_x[-1]) / 2.0))
     xdiff = sr_x - sr_x[:, center][:, np.newaxis]
     ydiff = sr_y - sr_y[:, center][:, np.newaxis]
 
@@ -112,6 +112,7 @@ def dist_from_orbit(sr_alt, alpha, beta, r_sr_inv, re):
         Array of shape (nbeams, nbins) of PR bin range distances from
         SR platform in orbit.
     """
-    ro = ((re + sr_alt) * np.cos(np.radians(alpha - beta[np.newaxis, :]))
-          - re) / np.cos(np.radians(alpha))
+    ro = (
+        (re + sr_alt) * np.cos(np.radians(alpha - beta[np.newaxis, :])) - re
+    ) / np.cos(np.radians(alpha))
     return ro[..., np.newaxis] - r_sr_inv

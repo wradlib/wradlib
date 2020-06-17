@@ -13,28 +13,36 @@ Attenuation Correction
 
     {}
 """
-__all__ = ['correct_attenuation_hb', 'constraint_dbz', 'constraint_pia',
-           'correct_attenuation_constrained',
-           'correct_radome_attenuation_empirical', 'pia_from_kdp']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "correct_attenuation_hb",
+    "constraint_dbz",
+    "constraint_pia",
+    "correct_attenuation_constrained",
+    "correct_radome_attenuation_empirical",
+    "pia_from_kdp",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import logging
+
 import numpy as np
-from scipy import ndimage, interpolate
+from scipy import interpolate, ndimage
 
 from wradlib import trafo, zr
 
-logger = logging.getLogger('attcorr')
+logger = logging.getLogger("attcorr")
 
 
 class AttenuationOverflowError(Exception):
     pass
 
 
-def correct_attenuation_hb(gateset,
-                           coefficients={'a': 1.67e-4, 'b': 0.7,
-                                         'gate_length': 1.0},
-                           mode='except', thrs=59.0):
+def correct_attenuation_hb(
+    gateset,
+    coefficients={"a": 1.67e-4, "b": 0.7, "gate_length": 1.0},
+    mode="except",
+    thrs=59.0,
+):
     """Gate-by-Gate attenuation correction according to \
     :cite:`Hitschfeld1954`
 
@@ -88,13 +96,13 @@ def correct_attenuation_hb(gateset,
     See :ref:`/notebooks/attenuation/wradlib_attenuation.ipynb#\
 Hitschfeld-and-Bordan`.
     """
-    a = coefficients['a']
-    b = coefficients['b']
-    gate_length = coefficients['gate_length']
+    a = coefficients["a"]
+    b = coefficients["b"]
+    gate_length = coefficients["gate_length"]
 
     pia = np.empty(gateset.shape)
-    pia[..., 0] = 0.
-    ksum = 0.
+    pia[..., 0] = 0.0
+    ksum = 0.0
 
     # multidimensional version
     # assumes that iteration is only along the last dimension
@@ -103,8 +111,7 @@ Hitschfeld-and-Bordan`.
     for gate in range(gateset.shape[-1] - 1):
         # calculate k in dB/km from k-Z relation
         # c.f. Krämer2008(p. 147)
-        k = a * (10.0 ** ((gateset[..., gate] + ksum) / 10.0)) \
-                ** b * 2.0 * gate_length
+        k = a * (10.0 ** ((gateset[..., gate] + ksum) / 10.0)) ** b * 2.0 * gate_length
         # k = 10**(log10(a)+0.1*bin*b)
         # dBkn = 10*math.log10(a) + (bin+ksum)*b + 10*math.log10(2*gate_length)
         ksum += k
@@ -113,12 +120,11 @@ Hitschfeld-and-Bordan`.
         # stop-criterion, if corrected reflectivity is larger than 59 dBZ
         overflow = (gateset[..., gate + 1] + ksum) > thrs
         if np.any(overflow):
-            if mode == 'warn':
-                logger.warning(
-                    'corrected signal over threshold (%3.1f)' % thrs)
-            elif mode == 'nan':
+            if mode == "warn":
+                logger.warning("corrected signal over threshold (%3.1f)" % thrs)
+            elif mode == "nan":
                 pia[..., gate + 1][overflow] = np.nan
-            elif mode == 'zero':
+            elif mode == "zero":
                 pia[..., gate + 1][overflow] = 0.0
             else:
                 raise AttenuationOverflowError
@@ -143,7 +149,7 @@ def constraint_pia(gateset, pia, thrs_pia):
     return np.max(pia, axis=-1) > thrs_pia
 
 
-def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, gate_length=1.):
+def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, gate_length=1.0):
     """Gate-by-Gate forward correction as described in :cite:`Kraemer2008`
 
     Parameters
@@ -171,17 +177,27 @@ def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, gate_length=1.):
     """
     pia = np.zeros(gateset.shape)
     for gate in range(gateset.shape[-1] - 1):
-        k = a * trafo.idecibel(gateset[..., gate] + pia[..., gate]) ** b \
-            * 2.0 * gate_length
+        k = (
+            a
+            * trafo.idecibel(gateset[..., gate] + pia[..., gate]) ** b
+            * 2.0
+            * gate_length
+        )
         pia[..., gate + 1] = pia[..., gate] + k
     return pia
 
 
-def bisect_reference_attenuation(gateset, pia_ref,
-                                 a_max=1.67e-4, a_min=2.33e-5,
-                                 b_start=0.7, gate_length=1.0,
-                                 mode='difference', thrs=0.25,
-                                 max_iterations=10):
+def bisect_reference_attenuation(
+    gateset,
+    pia_ref,
+    a_max=1.67e-4,
+    a_min=2.33e-5,
+    b_start=0.7,
+    gate_length=1.0,
+    mode="difference",
+    thrs=0.25,
+    max_iterations=10,
+):
     """Find the optimal attenuation coefficients for a gateset to achieve a \
     given reference attenuation using a the forward correction algorithm in \
     combination with the bisection method.
@@ -251,9 +267,9 @@ def bisect_reference_attenuation(gateset, pia_ref,
         exponential k-Z relation coefficient b for successful pia calculation.
     """
     # Prepare arrays of initial k-Z relation coefficients for each beam.
-    a_hi = np.ones(pia_ref.shape)*a_max  # np.repeat(a_max, pia_ref.shape)
-    a_lo = np.ones(pia_ref.shape)*a_min  # np.repeat(a_min, pia_ref.shape)
-    b = np.ones(pia_ref.shape)*b_start  # np.repeat(b_start, pia_ref.shape)
+    a_hi = np.ones(pia_ref.shape) * a_max  # np.repeat(a_max, pia_ref.shape)
+    a_lo = np.ones(pia_ref.shape) * a_min  # np.repeat(a_min, pia_ref.shape)
+    b = np.ones(pia_ref.shape) * b_start  # np.repeat(b_start, pia_ref.shape)
     pia = np.empty_like(gateset)
     iteration_count = 0
 
@@ -263,16 +279,16 @@ def bisect_reference_attenuation(gateset, pia_ref,
         a_mid = (a_hi + a_lo) / 2
         pia = calc_attenuation_forward(gateset, a_mid, b, gate_length)
         # Find indices where calculated and reference pia sufficiently match
-        if mode == 'difference':
+        if mode == "difference":
             overshoot = (pia[..., -1] - pia_ref) > thrs
             undershoot = (pia[..., -1] - pia_ref) < -thrs
             hit = (np.abs(pia[..., -1] - pia_ref)) < thrs
-        elif mode == 'ratio':
+        elif mode == "ratio":
             overshoot = ((pia[..., -1] - pia_ref) / pia_ref) > thrs
             undershoot = ((pia[..., -1] - pia_ref) / pia_ref) < -thrs
             hit = (np.abs(pia[..., -1] - pia_ref) / pia_ref) < thrs
         else:
-            raise Exception('Unknown mode type ' + mode + '.')
+            raise Exception("Unknown mode type " + mode + ".")
         # Define new bounds of linear k-Z relation coefficient for over- and
         # undershooting pia calculations.
         a_hi[overshoot] = a_mid[overshoot]
@@ -295,28 +311,27 @@ def _sector_filter(mask, min_sector_size):
 
     kernela = np.ones([1] * (mask.ndim - 1) + [min_sector_size])
     kernelb = np.ones((min_sector_size,))
-    forward_origin = (-(min_sector_size - (min_sector_size // 2)) +
-                      min_sector_size % 2)
+    forward_origin = -(min_sector_size - (min_sector_size // 2)) + min_sector_size % 2
     backward_origin = (min_sector_size - (min_sector_size // 2)) - 1
-    forward_sum = ndimage.correlate1d(mask.astype(np.int), kernelb,
-                                      axis=-1, mode='wrap',
-                                      origin=forward_origin)
-    backward_sum = ndimage.correlate1d(mask.astype(np.int), kernelb,
-                                       axis=-1, mode='wrap',
-                                       origin=backward_origin)
-    forward_corners = (forward_sum == min_sector_size)
-    backward_corners = (backward_sum == min_sector_size)
+    forward_sum = ndimage.correlate1d(
+        mask.astype(np.int), kernelb, axis=-1, mode="wrap", origin=forward_origin
+    )
+    backward_sum = ndimage.correlate1d(
+        mask.astype(np.int), kernelb, axis=-1, mode="wrap", origin=backward_origin
+    )
+    forward_corners = forward_sum == min_sector_size
+    backward_corners = backward_sum == min_sector_size
     forward_large_sectors = np.zeros_like(mask)
     backward_large_sectors = np.zeros_like(mask)
     for iii in range(mask.shape[0]):
         forward_large_sectors[iii] = ndimage.morphology.binary_dilation(
-            forward_corners[iii], kernela[0], origin=forward_origin).astype(
-            int)
+            forward_corners[iii], kernela[0], origin=forward_origin
+        ).astype(int)
         backward_large_sectors[iii] = ndimage.morphology.binary_dilation(
-            backward_corners[iii], kernela[0],
-            origin=backward_origin).astype(int)
+            backward_corners[iii], kernela[0], origin=backward_origin
+        ).astype(int)
 
-    return (forward_large_sectors | backward_large_sectors)
+    return forward_large_sectors | backward_large_sectors
 
 
 def _interp_atten(pia, invalidbeams):
@@ -336,18 +351,26 @@ def _interp_atten(pia, invalidbeams):
         # Build the extended pia-array.
         extended_pia = np.concatenate([sub_pia] * 3)
         # Build interpolation class.
-        intp = interpolate.interp1d(x[~extended_invalid],
-                                    extended_pia[~extended_invalid],
-                                    kind='linear')
+        intp = interpolate.interp1d(
+            x[~extended_invalid], extended_pia[~extended_invalid], kind="linear"
+        )
         # Interpolate where sectors are invalid.
-        pia[i, sub_invalid, -1] = intp(x[pia.shape[1]:2 * pia.shape[1]]
-                                       [sub_invalid])
+        pia[i, sub_invalid, -1] = intp(x[pia.shape[1] : 2 * pia.shape[1]][sub_invalid])
 
 
-def correct_attenuation_constrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
-                                    n_a=4, b_max=0.7, b_min=0.65, n_b=6,
-                                    gate_length=1., constraints=None,
-                                    constraint_args=None, sector_thr=10):
+def correct_attenuation_constrained(
+    gateset,
+    a_max=1.67e-4,
+    a_min=2.33e-5,
+    n_a=4,
+    b_max=0.7,
+    b_min=0.65,
+    n_b=6,
+    gate_length=1.0,
+    constraints=None,
+    constraint_args=None,
+    sector_thr=10,
+):
     """Gate-by-Gate attenuation correction based on the iterative approach of \
     :cite:`Kraemer2008` and :cite:`Jacobi2016` with a generalized and \
     scalable number of constraints.
@@ -478,11 +501,11 @@ def correct_attenuation_constrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     if n_a != 1:
         delta_a = (a_max - a_min) / (n_a - 1)
     else:
-        delta_a = 0.
+        delta_a = 0.0
     if n_b != 1:
         delta_b = (b_max - b_min) / (n_b - 1)
     else:
-        delta_b = 0.
+        delta_b = 0.0
 
     # Iterate over possible b-parameters
     for j in range(n_b):
@@ -498,16 +521,16 @@ def correct_attenuation_constrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
             b_used[beams2correct] = b
             # Indexing threshold exceeding beams
             incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
-            for constraint, constraint_arg in zip(constraints,
-                                                  constraint_args):
-                incorrectbeams = np.logical_or(incorrectbeams,
-                                               constraint(tmp_gateset, pia,
-                                                          *constraint_arg))
+            for constraint, constraint_arg in zip(constraints, constraint_args):
+                incorrectbeams = np.logical_or(
+                    incorrectbeams, constraint(tmp_gateset, pia, *constraint_arg)
+                )
             # Determine incorrect sectors larger than sector_thr
             large_sectors = _sector_filter(incorrectbeams, sector_thr)
             # Determine incorrect sectors smaller than sector_thr
-            small_sectors = np.logical_or(small_sectors,
-                                          (incorrectbeams & ~large_sectors))
+            small_sectors = np.logical_or(
+                small_sectors, (incorrectbeams & ~large_sectors)
+            )
             beams2correct = np.where(large_sectors)
             if len(pia[beams2correct]) == 0:
                 break
@@ -526,9 +549,10 @@ def correct_attenuation_constrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
             a_min=a_min,
             b_start=b_max,
             gate_length=gate_length,
-            mode='difference',
+            mode="difference",
             thrs=0.25,
-            max_iterations=10)
+            max_iterations=10,
+        )
         pia[small_sectors, :] = tmp_pia
         a_used[small_sectors] = tmp_a
         b_used[small_sectors] = tmp_b
@@ -536,9 +560,9 @@ def correct_attenuation_constrained(gateset, a_max=1.67e-4, a_min=2.33e-5,
     return pia.reshape(gateset.shape)
 
 
-def correct_radome_attenuation_empirical(gateset, frequency=5.64,
-                                         hydrophobicity=0.165, n_r=2,
-                                         stat=np.mean):
+def correct_radome_attenuation_empirical(
+    gateset, frequency=5.64, hydrophobicity=0.165, n_r=2, stat=np.mean
+):
     """Estimate two-way wet radome losses.
 
     Empirical function of frequency and rainfall rate for both standard and
@@ -603,10 +627,9 @@ def correct_radome_attenuation_empirical(gateset, frequency=5.64,
     rain_over_radome = zr.z_to_r(trafo.idecibel(stat(center_m, axis=-1)))
     # Estimate the empirical two-way transmission loss due to
     # radome-attenuation.
-    k = 2 * hydrophobicity * rain_over_radome * np.tanh(frequency / 10.) ** 2
+    k = 2 * hydrophobicity * rain_over_radome * np.tanh(frequency / 10.0) ** 2
     # Reshape the result to gateset-shape.
-    k = np.repeat(k, gateset.shape[-1] *
-                  gateset.shape[-2]).reshape(gateset.shape)
+    k = np.repeat(k, gateset.shape[-1] * gateset.shape[-2]).reshape(gateset.shape)
 
     return k.filled(fill_value=np.nan)
 
@@ -636,5 +659,5 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
     return 2 * np.cumsum(alpha, axis=-1) * dr
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <atten> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <atten> as main...")

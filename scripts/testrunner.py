@@ -25,29 +25,32 @@ def create_examples_testsuite():
     # all functions inside the examples starting with 'ex_' or 'recipe_'
     # are considered as tests
     # find example files in examples directory
-    root_dir = 'examples/'
+    root_dir = "examples/"
     files = []
-    skip = ['__init__.py']
+    skip = ["__init__.py"]
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-3:] != '.py':
+            if filename in skip or filename[-3:] != ".py":
                 continue
-            if 'examples/data' in root:
+            if "examples/data" in root:
                 continue
             f = os.path.join(root, filename)
-            f = f.replace('/', '.')
+            f = f.replace("/", ".")
             f = f[:-3]
             files.append(f)
     # create empty testsuite
     suite = unittest.TestSuite()
     # find matching functions in
     for idx, module in enumerate(files):
-        module1, func = module.split('.')
+        module1, func = module.split(".")
         module = __import__(module)
         func = getattr(module, func)
         funcs = inspect.getmembers(func, inspect.isfunction)
-        [suite.addTest(unittest.FunctionTestCase(v))
-         for k, v in funcs if k.startswith(("ex_", "recipe_"))]
+        [
+            suite.addTest(unittest.FunctionTestCase(v))
+            for k, v in funcs
+            if k.startswith(("ex_", "recipe_"))
+        ]
 
     return suite
 
@@ -60,34 +63,37 @@ class NotebookTest(unittest.TestCase):
         self.cov = cov
 
     def _runTest(self):
-        kernel = 'python%d' % sys.version_info[0]
+        kernel = "python%d" % sys.version_info[0]
         cur_dir = os.path.dirname(self.nbfile)
 
         with open(self.nbfile) as f:
             nb = nbformat.read(f, as_version=4)
             if self.cov:
-                covdict = {'cell_type': 'code', 'execution_count': 1,
-                           'metadata': {'collapsed': True}, 'outputs': [],
-                           'nbsphinx': 'hidden',
-                           'source': 'import coverage\n'
-                                     'coverage.process_startup()\n'
-                                     'import sys\n'
-                                     'sys.path.append("{0}")\n'.format(cur_dir)
-                           }
-                nb['cells'].insert(0, nbformat.from_dict(covdict))
+                covdict = {
+                    "cell_type": "code",
+                    "execution_count": 1,
+                    "metadata": {"collapsed": True},
+                    "outputs": [],
+                    "nbsphinx": "hidden",
+                    "source": "import coverage\n"
+                    "coverage.process_startup()\n"
+                    "import sys\n"
+                    'sys.path.append("{0}")\n'.format(cur_dir),
+                }
+                nb["cells"].insert(0, nbformat.from_dict(covdict))
 
             exproc = ExecutePreprocessor(kernel_name=kernel, timeout=600)
 
             try:
-                run_dir = os.getenv('WRADLIB_BUILD_DIR', cur_dir)
-                exproc.preprocess(nb, {'metadata': {'path': run_dir}})
+                run_dir = os.getenv("WRADLIB_BUILD_DIR", cur_dir)
+                exproc.preprocess(nb, {"metadata": {"path": run_dir}})
             except CellExecutionError as e:
                 raise e
 
         if self.cov:
-            nb['cells'].pop(0)
+            nb["cells"].pop(0)
 
-        with io.open(self.nbfile, 'wt') as f:
+        with io.open(self.nbfile, "wt") as f:
             nbformat.write(nb, f)
 
         self.assertTrue(True)
@@ -98,16 +104,16 @@ def create_notebooks_testsuite(**kwargs):
     # all notebooks in the notebooks folder
     # are considered as tests
     # find notebook files in notebooks directory
-    cov = kwargs.pop('cov')
-    root_dir = os.getenv('WRADLIB_NOTEBOOKS', 'notebooks')
+    cov = kwargs.pop("cov")
+    root_dir = os.getenv("WRADLIB_NOTEBOOKS", "notebooks")
     files = []
     skip = []
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-6:] != '.ipynb':
+            if filename in skip or filename[-6:] != ".ipynb":
                 continue
             # skip checkpoints
-            if '/.' in root:
+            if "/." in root:
                 continue
             f = os.path.join(root, filename)
             files.append(f)
@@ -125,17 +131,17 @@ def create_notebooks_testsuite(**kwargs):
 
 def create_doctest_testsuite():
     # gather information on doctests, search in only wradlib folder
-    root_dir = 'wradlib/'
+    root_dir = "wradlib/"
     files = []
-    skip = ['__init__.py', 'version.py', 'bufr.py', 'test_']
+    skip = ["__init__.py", "version.py", "bufr.py", "test_"]
     for root, _, filenames in os.walk(root_dir):
         for filename in filenames:
-            if filename in skip or filename[-3:] != '.py':
+            if filename in skip or filename[-3:] != ".py":
                 continue
-            if 'wradlib/tests' in root:
+            if "wradlib/tests" in root:
                 continue
             f = os.path.join(root, filename)
-            f = f.replace('/', '.')
+            f = f.replace("/", ".")
             f = f[:-3]
             files.append(f)
 
@@ -148,13 +154,13 @@ def create_doctest_testsuite():
 
 def create_unittest_testsuite():
     # gather information on tests (unittest etc)
-    root_dir = 'wradlib/tests/'
+    root_dir = "wradlib/tests/"
     return unittest.defaultTestLoader.discover(root_dir)
 
 
 def single_suite_process(queue, test, verbosity, **kwargs):
-    test_cov = kwargs.pop('coverage', 0)
-    test_nb = kwargs.pop('notebooks', 0)
+    test_cov = kwargs.pop("coverage", 0)
+    test_nb = kwargs.pop("notebooks", 0)
     if test_cov and not test_nb:
         cov = coverage.coverage()
         cov.start()
@@ -253,40 +259,49 @@ def main():
     verbosity = VERBOSE
 
     try:
-        options, arg = getopt.getopt(args, 'aednuschv:',
-                                     ['all', 'example', 'doc',
-                                      'notebook', 'unit', 'use-subprocess',
-                                      'coverage', 'help'])
+        options, arg = getopt.getopt(
+            args,
+            "aednuschv:",
+            [
+                "all",
+                "example",
+                "doc",
+                "notebook",
+                "unit",
+                "use-subprocess",
+                "coverage",
+                "help",
+            ],
+        )
     except getopt.GetoptError as e:
         err_exit(e.msg)
 
     if not options:
         err_exit(usage_message)
     for name, value in options:
-        if name in ('-a', '--all'):
+        if name in ("-a", "--all"):
             test_all = 1
-        elif name in ('-e', '--example'):
+        elif name in ("-e", "--example"):
             test_examples = 1
-        elif name in ('-d', '--doc'):
+        elif name in ("-d", "--doc"):
             test_docs = 1
-        elif name in ('-n', '--notebook'):
+        elif name in ("-n", "--notebook"):
             test_notebooks = 1
-        elif name in ('-u', '--unit'):
+        elif name in ("-u", "--unit"):
             test_units = 1
-        elif name in ('-s', '--use-subprocess'):
+        elif name in ("-s", "--use-subprocess"):
             test_subprocess = 1
-        elif name in ('-c', '--coverage'):
+        elif name in ("-c", "--coverage"):
             test_cov = 1
-        elif name in ('-h', '--help'):
+        elif name in ("-h", "--help"):
             err_exit(usage_message, 0)
-        elif name == '-v':
+        elif name == "-v":
             verbosity = int(value)
         else:
             err_exit(usage_message)
 
-    if not (test_all or test_examples or test_docs or
-            test_notebooks or test_units):
-        err_exit('must specify one of: -a -e -d -n -u')
+    if not (test_all or test_examples or test_docs or test_notebooks or test_units):
+        err_exit("must specify one of: -a -e -d -n -u")
 
     testSuite = []
 
@@ -310,10 +325,12 @@ def main():
             if arg:
                 test = keep_tests(test, arg[0])
             queue = Queue()
-            keywords = {'coverage': test_cov, 'notebooks': test_notebooks}
-            proc = Process(target=single_suite_process,
-                           args=(queue, test, verbosity),
-                           kwargs=keywords)
+            keywords = {"coverage": test_cov, "notebooks": test_notebooks}
+            proc = Process(
+                target=single_suite_process,
+                args=(queue, test, verbosity),
+                kwargs=keywords,
+            )
             proc.start()
             result = queue.get()
             proc.join()
@@ -328,8 +345,7 @@ def main():
                 ts = keep_tests(ts, arg[0])
             for test in ts:
                 if test.countTestCases() != 0:
-                    result = unittest.TextTestRunner(verbosity=verbosity).\
-                        run(test)
+                    result = unittest.TextTestRunner(verbosity=verbosity).run(test)
                     # all_success should be 0 in the end
                     all_success = all_success & result.wasSuccessful()
         if test_cov and not test_notebooks:
@@ -340,8 +356,7 @@ def main():
         sys.exit(0)
     else:
         # This will return exit code 1
-        sys.exit("At least one test has failed. "
-                 "Please see test report for details.")
+        sys.exit("At least one test has failed. " "Please see test report for details.")
 
 
 def err_exit(message, rc=2):
@@ -349,5 +364,5 @@ def err_exit(message, rc=2):
     sys.exit(rc)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

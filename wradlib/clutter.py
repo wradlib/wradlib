@@ -12,10 +12,16 @@ Clutter Identification
 
    {}
 """
-__all__ = ['filter_gabella', 'filter_gabella_a', 'filter_gabella_b',
-           'filter_cloudtype', 'filter_window_distance', 'histo_cut',
-           'classify_echo_fuzzy']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "filter_gabella",
+    "filter_gabella_a",
+    "filter_gabella_b",
+    "filter_cloudtype",
+    "filter_window_distance",
+    "histo_cut",
+    "classify_echo_fuzzy",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 from scipy import ndimage
@@ -71,7 +77,7 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
         refa = np.roll(img, sa, axis=0)
         for sr in range_shift:
             refr = np.roll(refa, sr, axis=1)
-            count += (img - refr < tr1)
+            count += img - refr < tr1
     count[:, 0:nn] = wsize ** 2
     count[:, -nn:] = wsize ** 2
     if cartesian:
@@ -80,7 +86,7 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
     return count
 
 
-def filter_gabella_b(img, thrs=0.):
+def filter_gabella_b(img, thrs=0.0):
     """Second part of the Gabella filter comparing area to circumference of \
     contiguous echo regions.
 
@@ -117,13 +123,15 @@ def filter_gabella_b(img, thrs=0.):
     # erode the image, thus removing the 'boundary pixels'
     binimg_erode = ndimage.binary_erosion(binimg, structure=conn)
     # determine the size of each object
-    labelhist, edges = np.histogram(labelimg,
-                                    bins=nlabels + 1,
-                                    range=(-0.5, labelimg.max() + 0.5))
+    labelhist, edges = np.histogram(
+        labelimg, bins=nlabels + 1, range=(-0.5, labelimg.max() + 0.5)
+    )
     # determine the size of the eroded objects
-    erodelabelhist, edges = np.histogram(np.where(binimg_erode, labelimg, 0),
-                                         bins=nlabels + 1,
-                                         range=(-0.5, labelimg.max() + 0.5))
+    erodelabelhist, edges = np.histogram(
+        np.where(binimg_erode, labelimg, 0),
+        bins=nlabels + 1,
+        range=(-0.5, labelimg.max() + 0.5),
+    )
     # the boundary is the difference between these two
     boundarypixels = labelhist - erodelabelhist
     # now get the ratio between object size and boundary
@@ -137,8 +145,17 @@ def filter_gabella_b(img, thrs=0.):
     return result
 
 
-def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
-                   rm_nans=True, radial=False, cartesian=False):
+def filter_gabella(
+    img,
+    wsize=5,
+    thrsnorain=0.0,
+    tr1=6.0,
+    n_p=6,
+    tr2=1.3,
+    rm_nans=True,
+    radial=False,
+    cartesian=False,
+):
     """Clutter identification filter developed by :cite:`Gabella2002`.
 
     This is a two-part identification algorithm using echo continuity and
@@ -186,14 +203,13 @@ def filter_gabella(img, wsize=5, thrsnorain=0., tr1=6., n_p=6, tr2=1.3,
         img[bad] = np.Inf
     ntr1 = filter_gabella_a(img, wsize, tr1, cartesian, radial)
     if not rm_nans:
-        f_good = ndimage.filters.uniform_filter((~bad).astype(float),
-                                                size=wsize)
+        f_good = ndimage.filters.uniform_filter((~bad).astype(float), size=wsize)
         f_good[f_good == 0] = 1e-10
         ntr1 = ntr1 / f_good
         ntr1[bad] = n_p
-    clutter1 = (ntr1 < n_p)
+    clutter1 = ntr1 < n_p
     ratio = filter_gabella_b(img, thrsnorain)
-    clutter2 = (np.abs(ratio) < tr2)
+    clutter2 = np.abs(ratio) < tr2
     return clutter1 | clutter2
 
 
@@ -238,8 +254,9 @@ def histo_cut(prec_accum):
 
     # iterate as long as the difference between current and
     # last iteration doesn't fall below the stop criterion
-    while (abs(lower_bound - lower_bound_before) > 1) or \
-            (abs(upper_bound - upper_bound_before) > 1):
+    while (abs(lower_bound - lower_bound_before) > 1) or (
+        abs(upper_bound - upper_bound_before) > 1
+    ):
 
         # masks for bins with sums over/under the data bounds
         upper_mask = (prec_accum <= upper_bound).astype(int)
@@ -247,12 +264,12 @@ def histo_cut(prec_accum):
         # NaNs in place of masked bins
         # Kopie der Datenmatrix mit Nans an Stellen,
         # wo der Threshold erreicht wird
-        prec_accum_masked = np.where((upper_mask * lower_mask) == 0,
-                                     np.nan, prec_accum)
+        prec_accum_masked = np.where((upper_mask * lower_mask) == 0, np.nan, prec_accum)
 
         # generate a histogram of the valid bins with 50 classes
-        (n, bins) = np.histogram(prec_accum_masked[np.isfinite(
-            prec_accum_masked)].ravel(), bins=50)
+        (n, bins) = np.histogram(
+            prec_accum_masked[np.isfinite(prec_accum_masked)].ravel(), bins=50
+        )
         # get the class with biggest occurence
         index = np.where(n == n.max())
         index = index[0][0]
@@ -364,44 +381,56 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     # usable wkeys
     wkeys = ["zdr", "rho", "phi", "dop", "map", "rho2", "dr", "cpa"]
     # usable tkeys
-    tkeys = ["zdr", "rho",  "phi", "dop", "map", "rho2", "dr", "cpa"]
+    tkeys = ["zdr", "rho", "phi", "dop", "map", "rho2", "dr", "cpa"]
 
     # default weights
-    weights_default = {"zdr": 0.4, "rho": 0.4, "phi": 0.1,
-                       "dop": 0.1, "map": 0.5,
-                       "rho2": 0.4, "dr": 0.4, "cpa": 0.4}
+    weights_default = {
+        "zdr": 0.4,
+        "rho": 0.4,
+        "phi": 0.1,
+        "dop": 0.1,
+        "map": 0.5,
+        "rho2": 0.4,
+        "dr": 0.4,
+        "cpa": 0.4,
+    }
     if weights is None:
         weights = weights_default
     else:
         weights = dict(list(weights_default.items()) + list(weights.items()))
 
     # default trapezoidal membership functions
-    trpz_default = {"zdr": [0.7, 1.0, 9999, 9999],
-                    "rho": [0.1, 0.15, 9999, 9999],
-                    "phi": [15, 20, 10000, 10000],
-                    "dop": [-0.2, -0.1, 0.1, 0.2],
-                    "map": [1, 1, 9999, 9999],
-                    "rho2": [-9999, -9999, 0.95, 0.98],
-                    "dr": [-20, -12, 9999, 9999],
-                    "cpa": [0.6, 0.9, 9999, 9999]}
+    trpz_default = {
+        "zdr": [0.7, 1.0, 9999, 9999],
+        "rho": [0.1, 0.15, 9999, 9999],
+        "phi": [15, 20, 10000, 10000],
+        "dop": [-0.2, -0.1, 0.1, 0.2],
+        "map": [1, 1, 9999, 9999],
+        "rho2": [-9999, -9999, 0.95, 0.98],
+        "dr": [-20, -12, 9999, 9999],
+        "cpa": [0.6, 0.9, 9999, 9999],
+    }
     if trpz is None:
         trpz = trpz_default
     else:
         trpz = dict(list(trpz_default.items()) + list(trpz.items()))
 
     # check data conformity
-    assert np.all(np.in1d(dkeys, list(dat.keys()))), \
-        "Argument dat of classify_echo_fuzzy must be a dictionary " \
+    assert np.all(np.in1d(dkeys, list(dat.keys()))), (
+        "Argument dat of classify_echo_fuzzy must be a dictionary "
         "with mandatory keywords %r." % (dkeys,)
-    assert np.all(np.in1d(wkeys, list(weights.keys()))), \
-        "Argument weights of classify_echo_fuzzy must be a dictionary " \
+    )
+    assert np.all(np.in1d(wkeys, list(weights.keys()))), (
+        "Argument weights of classify_echo_fuzzy must be a dictionary "
         "with keywords %r." % (wkeys,)
-    assert np.all(np.in1d(tkeys, list(trpz.keys()))), \
-        "Argument trpz of classify_echo_fuzzy must be a dictionary " \
+    )
+    assert np.all(np.in1d(tkeys, list(trpz.keys()))), (
+        "Argument trpz of classify_echo_fuzzy must be a dictionary "
         "with keywords %r." % (tkeys,)
+    )
 
     # copy rho to rho2
-    dat['rho2'] = dat['rho'].copy()
+    dat["rho2"] = dat["rho"].copy()
 
     shape = None
     for key in dkeys:
@@ -409,17 +438,18 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
             if shape is None:
                 shape = dat[key].shape
             else:
-                assert dat[key].shape[-2:] == shape[-2:], \
-                    "Arrays of the decision variables have inconsistent " \
+                assert dat[key].shape[-2:] == shape[-2:], (
+                    "Arrays of the decision variables have inconsistent "
                     "shapes: %r vs. %r" % (dat[key].shape, shape)
+                )
         else:
             print("WARNING: Missing decision variable: %s" % key)
 
     # If all dual-pol moments are NaN, can we assume that and echo is
     # non-meteorological?
     # Successively identify those bins where all moments are NaN
-    nmom = ['rho', 'zdr', 'phi', 'dr', 'cpa']  # 'dop'
-    nan_mask = np.isnan(dat['rho'])
+    nmom = ["rho", "zdr", "phi", "dr", "cpa"]  # 'dop'
+    nan_mask = np.isnan(dat["rho"])
     for mom in nmom[1:]:
         try:
             nan_mask &= np.isnan(dat[mom])
@@ -437,15 +467,13 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     for key in dat.keys():
         if key not in tkeys:
             continue
-        if key in ['zdr', 'rho', 'phi']:
+        if key in ["zdr", "rho", "phi"]:
             d = dp.texture(dat[key])
         else:
             d = dat[key]
-        qres[key] = 1. - util.trapezoid(d,
-                                        trpz[key][0],
-                                        trpz[key][1],
-                                        trpz[key][2],
-                                        trpz[key][3])
+        qres[key] = 1.0 - util.trapezoid(
+            d, trpz[key][0], trpz[key][1], trpz[key][2], trpz[key][3]
+        )
 
     # create weight arrays which are zero where the data is NaN
     # This way, each pixel "adapts" to the local data availability
@@ -477,12 +505,21 @@ def _weight_array(data, weight):
     and NaNs have 0 weight value.
     """
     w_array = weight * np.ones(np.shape(data))
-    w_array[np.isnan(data)] = 0.
+    w_array[np.isnan(data)] = 0.0
     return w_array
 
 
-def filter_cloudtype(img, cloud, thrs=0, snow=False, low=False, cirrus=False,
-                     smoothing=None, grid="polar", scale=None):
+def filter_cloudtype(
+    img,
+    cloud,
+    thrs=0,
+    snow=False,
+    low=False,
+    cirrus=False,
+    smoothing=None,
+    grid="polar",
+    scale=None,
+):
     """Identification of non-meteorological echoes based on cloud type.
 
     Parameters
@@ -564,7 +601,7 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
     count = np.ones(img.shape, dtype=int)
     similar = np.zeros(img.shape, dtype=float)
     good = np.ones(img.shape, dtype=float)
-    valid = (~np.isnan(img))
+    valid = ~np.isnan(img)
     hole = np.sum(~valid) > 0
     nr = int(round(fsize / rscale))
     range_shift = range(-nr, nr + 1)
@@ -579,11 +616,10 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
         refa2 = util.roll2d_polar(img, -sa, axis=0)
         for sr in range_shift:
             refr1 = util.roll2d_polar(refa1, sr, axis=1)
-            similar[:, 0: imax] += (img[:, 0: imax] - refr1[:, 0: imax] < tr1)
+            similar[:, 0:imax] += img[:, 0:imax] - refr1[:, 0:imax] < tr1
             if sa > 0:
                 refr2 = util.roll2d_polar(refa2, sr, axis=1)
-                similar[:, 0: imax] += (img[:, 0: imax] -
-                                        refr2[:, 0: imax] < tr1)
+                similar[:, 0:imax] += img[:, 0:imax] - refr2[:, 0:imax] < tr1
         count[:, 0:imax] = 2 * sa + 1
         sa += 1
     similar[~valid] = np.nan
@@ -593,8 +629,7 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
         count[:, i] = count[:, i] * (nr + 1 + i)
         count[:, -i - 1] = count[:, -i - 1] * (nr + 1 + i)
     if hole:
-        good = util.filter_window_polar(valid.astype(float),
-                                        fsize, "uniform", rscale)
+        good = util.filter_window_polar(valid.astype(float), fsize, "uniform", rscale)
         count = count * good
         count[count == 0] = 1
     similar -= 1
@@ -603,5 +638,5 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
     return similar
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <clutter> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <clutter> as main...")

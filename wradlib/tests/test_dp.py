@@ -3,9 +3,9 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import sys
-import pytest
 
 import numpy as np
+import pytest
 from scipy import integrate
 
 from wradlib import dp

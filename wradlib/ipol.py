@@ -47,6 +47,7 @@ import numpy as np
 import scipy
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
+
 from wradlib import georef, util, zonalstats
 
 
@@ -688,7 +689,7 @@ class RectBin(RectGridBase):
                 self.ipol_points,
                 values,
                 binned_statistic_result=self.binned_stats,
-                **kwargs
+                **kwargs,
             )
         stat = result.statistic
 
@@ -995,7 +996,7 @@ class OrdinaryKriging(IpolBase):
         cov="1.0 Exp(10000.)",
         nnearest=12,
         remove_missing=False,
-        **kwargs
+        **kwargs,
     ):
         """"""
         if isinstance(src, spatial.cKDTree):
@@ -1179,7 +1180,7 @@ class ExternalDriftKriging(IpolBase):
         src_drift=None,
         trg_drift=None,
         remove_missing=False,
-        **kwargs
+        **kwargs,
     ):
         """"""
         if isinstance(src, spatial.cKDTree):
@@ -1465,7 +1466,7 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
                 src[ix_good],
                 trg[nan_in_result[0][np.where(nan_in_result[-1] == i)[0]]],
                 *args,
-                **kwargs
+                **kwargs,
             )
             tmp = ip(vals[ix_good, i].reshape((len(ix_good), -1)))
             result[ix_broken_targets, i] = tmp.ravel()

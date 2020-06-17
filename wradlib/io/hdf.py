@@ -11,14 +11,22 @@ HDF Data I/O
 
    {}
 """
-__all__ = ['read_generic_hdf5', 'read_opera_hdf5', 'read_gamic_hdf5',
-           'to_hdf5', 'from_hdf5', 'read_gpm', 'read_trmm']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "read_generic_hdf5",
+    "read_opera_hdf5",
+    "read_gamic_hdf5",
+    "to_hdf5",
+    "from_hdf5",
+    "read_gpm",
+    "read_trmm",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
+
+import datetime as dt
 
 import h5py
 import netCDF4 as nc
 import numpy as np
-import datetime as dt
 
 
 def read_generic_hdf5(fname):
@@ -53,10 +61,10 @@ def read_generic_hdf5(fname):
         tmp = {}
         # add attributes if present
         if len(y.attrs) > 0:
-            tmp['attrs'] = dict(y.attrs)
+            tmp["attrs"] = dict(y.attrs)
         # add data if it is a dataset
         if isinstance(y, h5py.Dataset):
-            tmp['data'] = np.array(y)
+            tmp["data"] = np.array(y)
         # only add to the dictionary, if we have something meaningful to add
         if tmp != {}:
             fcontent[x] = tmp
@@ -140,20 +148,20 @@ def read_gamic_scan_attributes(scan, scan_type):
     sattrs = {}
 
     # link to scans 'how' hdf5 group
-    sg1 = scan['how']
+    sg1 = scan["how"]
 
     # get scan attributes
     for attrname in list(sg1.attrs):
         sattrs[attrname] = sg1.attrs.get(attrname)
-    sattrs['bin_range'] = sattrs['range_step'] * sattrs['range_samples']
+    sattrs["bin_range"] = sattrs["range_step"] * sattrs["range_samples"]
 
     # get scan header
-    ray_header = scan['ray_header']
+    ray_header = scan["ray_header"]
 
     # az, el, zero_index for PPI scans
-    if scan_type == 'PVOL':
-        azi_start = ray_header['azimuth_start']
-        azi_stop = ray_header['azimuth_stop']
+    if scan_type == "PVOL":
+        azi_start = ray_header["azimuth_start"]
+        azi_stop = ray_header["azimuth_stop"]
         # Azimuth corresponding to 1st ray
         zero_index = np.where(azi_stop < azi_start)
         azi_stop[zero_index[0]] += 360
@@ -161,14 +169,14 @@ def read_gamic_scan_attributes(scan, scan_type):
         az = (azi_start + azi_stop) / 2
         az = np.roll(az, -zero_index, axis=0)
         az = np.round(az, 1)
-        el = sg1.attrs.get('elevation')
+        el = sg1.attrs.get("elevation")
 
     # az, el, zero_index for RHI scans
-    if scan_type == 'RHI':
-        ele_start = np.round(ray_header['elevation_start'], 1)
-        ele_stop = np.round(ray_header['elevation_stop'], 1)
-        angle_step = np.round(sattrs['angle_step'], 1)
-        angle_step = int(np.round(sattrs['ele_stop'], 1) / angle_step)
+    if scan_type == "RHI":
+        ele_start = np.round(ray_header["elevation_start"], 1)
+        ele_stop = np.round(ray_header["elevation_stop"], 1)
+        angle_step = np.round(sattrs["angle_step"], 1)
+        angle_step = int(np.round(sattrs["ele_stop"], 1) / angle_step)
         # Elevation corresponding to 1st ray
         if ele_start[0] < 0:
             ele_start = ele_start[1:]
@@ -179,22 +187,24 @@ def read_gamic_scan_attributes(scan, scan_type):
         el = np.round(el, 1)
         el = el[-angle_step:]
 
-        az = sg1.attrs.get('azimuth')
+        az = sg1.attrs.get("azimuth")
 
     # save zero_index (first ray) to scan attributes
-    sattrs['zero_index'] = zero_index[0]
+    sattrs["zero_index"] = zero_index[0]
 
     # create range array
-    r = np.arange(sattrs['bin_range'],
-                  sattrs['bin_range'] * sattrs['bin_count'] +
-                  sattrs['bin_range'], sattrs['bin_range'])
+    r = np.arange(
+        sattrs["bin_range"],
+        sattrs["bin_range"] * sattrs["bin_count"] + sattrs["bin_range"],
+        sattrs["bin_range"],
+    )
 
     # save variables to scan attributes
-    sattrs['az'] = az
-    sattrs['el'] = el
-    sattrs['r'] = r
-    sattrs['Time'] = sattrs.pop('timestamp')
-    sattrs['max_range'] = r[-1]
+    sattrs["az"] = az
+    sattrs["el"] = el
+    sattrs["r"] = r
+    sattrs["Time"] = sattrs.pop("timestamp")
+    sattrs["max_range"] = r[-1]
 
     return sattrs
 
@@ -226,37 +236,36 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
 
     # try to read wanted moments
     for mom in list(scan):
-        if 'moment' in mom:
+        if "moment" in mom:
             data1 = {}
             sg2 = scan[mom]
-            actual_moment = sg2.attrs.get('moment').decode().upper()
-            if (actual_moment in wanted_moments) or (wanted_moments == 'all'):
+            actual_moment = sg2.attrs.get("moment").decode().upper()
+            if (actual_moment in wanted_moments) or (wanted_moments == "all"):
                 # read attributes only once
                 if not sattrs:
                     sattrs = read_gamic_scan_attributes(scan, scan_type)
                 mdata = sg2[...]
-                dyn_range_max = sg2.attrs.get('dyn_range_max')
-                dyn_range_min = sg2.attrs.get('dyn_range_min')
-                bin_format = sg2.attrs.get('format').decode()
-                if bin_format == 'UV8':
+                dyn_range_max = sg2.attrs.get("dyn_range_max")
+                dyn_range_min = sg2.attrs.get("dyn_range_min")
+                bin_format = sg2.attrs.get("format").decode()
+                if bin_format == "UV8":
                     div = 256.0
                 else:
                     div = 65536.0
-                mdata = (dyn_range_min + mdata *
-                         (dyn_range_max - dyn_range_min) / div)
+                mdata = dyn_range_min + mdata * (dyn_range_max - dyn_range_min) / div
 
-                if scan_type == 'PVOL':
+                if scan_type == "PVOL":
                     # rotate accordingly
-                    mdata = np.roll(mdata, -1 * sattrs['zero_index'], axis=0)
+                    mdata = np.roll(mdata, -1 * sattrs["zero_index"], axis=0)
 
-                if scan_type == 'RHI':
+                if scan_type == "RHI":
                     # remove first zero angles
-                    sdiff = mdata.shape[0] - sattrs['el'].shape[0]
+                    sdiff = mdata.shape[0] - sattrs["el"].shape[0]
                     mdata = mdata[sdiff:, :]
 
-                data1['data'] = mdata
-                data1['dyn_range_max'] = dyn_range_max
-                data1['dyn_range_min'] = dyn_range_min
+                data1["data"] = mdata
+                data1["dyn_range_max"] = dyn_range_max
+                data1["dyn_range_min"] = dyn_range_min
                 data[actual_moment] = data1
 
     return data, sattrs
@@ -291,14 +300,14 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     # check elevations
     if wanted_elevations is None:
-        wanted_elevations = 'all'
+        wanted_elevations = "all"
 
     # check wanted_moments
     if wanted_moments is None:
-        wanted_moments = 'all'
+        wanted_moments = "all"
 
     # read the data from file
-    f = h5py.File(filename, 'r')
+    f = h5py.File(filename, "r")
 
     # placeholder for attributes and data
     attrs = {}
@@ -307,46 +316,47 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     # check if GAMIC file and
     try:
-        f['how'].attrs.get('software')
+        f["how"].attrs.get("software")
     except KeyError:
         print("WRADLIB: File is no GAMIC hdf5!")
         raise
 
     # get scan_type (PVOL or RHI)
-    scan_type = f['what'].attrs.get('object').decode()
+    scan_type = f["what"].attrs.get("object").decode()
 
     # single or volume scan
-    if scan_type == 'PVOL':
+    if scan_type == "PVOL":
         # loop over 'main' hdf5 groups (how, scanX, what, where)
         for n in list(f):
-            if 'scan' in n:
+            if "scan" in n:
                 g = f[n]
-                sg1 = g['how']
+                sg1 = g["how"]
 
                 # get scan elevation
-                el = sg1.attrs.get('elevation')
+                el = sg1.attrs.get("elevation")
                 el = str(round(el, 2))
 
                 # try to read scan data and attrs
                 # if wanted_elevations are found
-                if (el in wanted_elevations) or (wanted_elevations == 'all'):
-                    sdata, sattrs = read_gamic_scan(scan=g,
-                                                    scan_type=scan_type,
-                                                    wanted_moments=wanted_moments)  # noqa
+                if (el in wanted_elevations) or (wanted_elevations == "all"):
+                    sdata, sattrs = read_gamic_scan(
+                        scan=g, scan_type=scan_type, wanted_moments=wanted_moments
+                    )  # noqa
                     if sdata:
                         data[n.upper()] = sdata
                     if sattrs:
                         attrs[n.upper()] = sattrs
 
     # single rhi scan
-    elif scan_type == 'RHI':
+    elif scan_type == "RHI":
         # loop over 'main' hdf5 groups (how, scanX, what, where)
         for n in list(f):
-            if 'scan' in n:
+            if "scan" in n:
                 g = f[n]
                 # try to read scan data and attrs
-                sdata, sattrs = read_gamic_scan(scan=g, scan_type=scan_type,
-                                                wanted_moments=wanted_moments)
+                sdata, sattrs = read_gamic_scan(
+                    scan=g, scan_type=scan_type, wanted_moments=wanted_moments
+                )
                 if sdata:
                     data[n.upper()] = sdata
                 if sattrs:
@@ -354,21 +364,20 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     # collect volume attributes if wanted data is available
     if data:
-        vattrs['Latitude'] = f['where'].attrs.get('lat')
-        vattrs['Longitude'] = f['where'].attrs.get('lon')
-        vattrs['Height'] = f['where'].attrs.get('height')
+        vattrs["Latitude"] = f["where"].attrs.get("lat")
+        vattrs["Longitude"] = f["where"].attrs.get("lon")
+        vattrs["Height"] = f["where"].attrs.get("height")
         # check whether its useful to implement that feature
         # vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'],
         #                         vattrs['Height'])
-        attrs['VOL'] = vattrs
+        attrs["VOL"] = vattrs
 
     f.close()
 
     return data, attrs
 
 
-def to_hdf5(fpath, data, mode="w", metadata=None,
-            dataset="data", compression="gzip"):
+def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="gzip"):
     """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
 
     This is more efficient than pickle, cPickle or numpy.save. The data is
@@ -414,8 +423,9 @@ def from_hdf5(fpath, dataset="data"):
     f = h5py.File(fpath, mode="r")
     # Check whether Dataset exists
     if dataset not in f.keys():
-        raise KeyError("WRADLIB: Cannot read Dataset <%s> from hdf5 file "
-                       "<%s>" % (dataset, f))
+        raise KeyError(
+            "WRADLIB: Cannot read Dataset <%s> from hdf5 file " "<%s>" % (dataset, f)
+        )
     data = np.array(f[dataset][:])
     # get metadata
     metadata = {}
@@ -446,16 +456,19 @@ def read_gpm(filename, bbox=None):
     See :ref:`/notebooks/match3d/wradlib_match_workflow.ipynb`.
     """
     pr_data = nc.Dataset(filename, mode="r")
-    lon = pr_data['NS'].variables['Longitude']
-    lat = pr_data['NS'].variables['Latitude']
+    lon = pr_data["NS"].variables["Longitude"]
+    lat = pr_data["NS"].variables["Latitude"]
 
     if bbox is not None:
-        poly = [[bbox['left'], bbox['bottom']],
-                [bbox['left'], bbox['top']],
-                [bbox['right'], bbox['top']],
-                [bbox['right'], bbox['bottom']],
-                [bbox['left'], bbox['bottom']]]
+        poly = [
+            [bbox["left"], bbox["bottom"]],
+            [bbox["left"], bbox["top"]],
+            [bbox["right"], bbox["top"]],
+            [bbox["right"], bbox["bottom"]],
+            [bbox["left"], bbox["bottom"]],
+        ]
         from wradlib.zonalstats import get_clip_mask
+
         mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
     else:
         mask = np.ones_like(lon, dtype=bool, subok=False)
@@ -465,52 +478,59 @@ def read_gpm(filename, bbox=None):
     lon = lon[mask]
     lat = lat[mask]
 
-    year = pr_data['NS']['ScanTime'].variables['Year'][mask]
-    month = pr_data['NS']['ScanTime'].variables['Month'][mask]
-    dayofmonth = pr_data['NS']['ScanTime'].variables['DayOfMonth'][mask]
+    year = pr_data["NS"]["ScanTime"].variables["Year"][mask]
+    month = pr_data["NS"]["ScanTime"].variables["Month"][mask]
+    dayofmonth = pr_data["NS"]["ScanTime"].variables["DayOfMonth"][mask]
     # dayofyear = pr_data['NS']['ScanTime'].variables['DayOfYear'][mask]
-    hour = pr_data['NS']['ScanTime'].variables['Hour'][mask]
-    minute = pr_data['NS']['ScanTime'].variables['Minute'][mask]
-    second = pr_data['NS']['ScanTime'].variables['Second'][mask]
+    hour = pr_data["NS"]["ScanTime"].variables["Hour"][mask]
+    minute = pr_data["NS"]["ScanTime"].variables["Minute"][mask]
+    second = pr_data["NS"]["ScanTime"].variables["Second"][mask]
     # secondofday = pr_data['NS']['ScanTime'].variables['SecondOfDay'][mask]
-    millisecond = pr_data['NS']['ScanTime'].variables['MilliSecond'][mask]
-    date_array = zip(year, month, dayofmonth,
-                     hour, minute, second,
-                     millisecond.astype(np.int32) * 1000)
+    millisecond = pr_data["NS"]["ScanTime"].variables["MilliSecond"][mask]
+    date_array = zip(
+        year,
+        month,
+        dayofmonth,
+        hour,
+        minute,
+        second,
+        millisecond.astype(np.int32) * 1000,
+    )
     pr_time = np.array(
-        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in
-         date_array])
+        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in date_array]
+    )
 
-    sfc = pr_data['NS']['PRE'].variables['landSurfaceType'][mask]
-    pflag = pr_data['NS']['PRE'].variables['flagPrecip'][mask]
+    sfc = pr_data["NS"]["PRE"].variables["landSurfaceType"][mask]
+    pflag = pr_data["NS"]["PRE"].variables["flagPrecip"][mask]
 
     # bbflag = pr_data['NS']['CSF'].variables['flagBB'][mask]
-    zbb = pr_data['NS']['CSF'].variables['heightBB'][mask]
+    zbb = pr_data["NS"]["CSF"].variables["heightBB"][mask]
     # print(zbb.dtype)
-    bbwidth = pr_data['NS']['CSF'].variables['widthBB'][mask]
-    qbb = pr_data['NS']['CSF'].variables['qualityBB'][mask]
-    qtype = pr_data['NS']['CSF'].variables['qualityTypePrecip'][mask]
-    ptype = pr_data['NS']['CSF'].variables['typePrecip'][mask]
+    bbwidth = pr_data["NS"]["CSF"].variables["widthBB"][mask]
+    qbb = pr_data["NS"]["CSF"].variables["qualityBB"][mask]
+    qtype = pr_data["NS"]["CSF"].variables["qualityTypePrecip"][mask]
+    ptype = pr_data["NS"]["CSF"].variables["typePrecip"][mask]
 
-    quality = pr_data['NS']['scanStatus'].variables['dataQuality'][mask]
-    refl = pr_data['NS']['SLV'].variables['zFactorCorrected'][mask]
+    quality = pr_data["NS"]["scanStatus"].variables["dataQuality"][mask]
+    refl = pr_data["NS"]["SLV"].variables["zFactorCorrected"][mask]
     # print(pr_data['NS']['SLV'].variables['zFactorCorrected'])
 
-    zenith = pr_data['NS']['PRE'].variables['localZenithAngle'][mask]
+    zenith = pr_data["NS"]["PRE"].variables["localZenithAngle"][mask]
 
     pr_data.close()
 
     # Check for bad data
     if max(quality) != 0:
-        raise ValueError('GPM contains Bad Data')
+        raise ValueError("GPM contains Bad Data")
 
     pflag = pflag.astype(np.int8)
 
     # Determine the dimensions
     ndim = refl.ndim
     if ndim != 3:
-        raise ValueError('GPM Dimensions do not match! '
-                         'Needed 3, given {0}'.format(ndim))
+        raise ValueError(
+            "GPM Dimensions do not match! " "Needed 3, given {0}".format(ndim)
+        )
 
     tmp = refl.shape
     nscan = tmp[0]
@@ -527,7 +547,7 @@ def read_gpm(filename, bbox=None):
     ptype = (ptype / 1e7).astype(np.int16)
 
     # Simplify the surface types
-    imiss = (sfc == -9999)
+    imiss = sfc == -9999
     sfc = (sfc / 1e2).astype(np.int16) + 1
     sfc[imiss] = 0
 
@@ -539,15 +559,28 @@ def read_gpm(filename, bbox=None):
     i1 = ((qbb == 0) | (qbb == 1)) & (qtype == 1)
     quality[i1] = 1
 
-    i2 = ((qbb > 1) | (qtype > 2))
+    i2 = (qbb > 1) | (qtype > 2)
     quality[i2] = 2
 
     gpm_data = {}
-    gpm_data.update({'nscan': nscan, 'nray': nray, 'nbin': nbin,
-                     'date': pr_time, 'lon': lon, 'lat': lat,
-                     'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
-                     'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
-                     'refl': refl, 'zenith': zenith})
+    gpm_data.update(
+        {
+            "nscan": nscan,
+            "nray": nray,
+            "nbin": nbin,
+            "date": pr_time,
+            "lon": lon,
+            "lat": lat,
+            "pflag": pflag,
+            "ptype": ptype,
+            "zbb": zbb,
+            "bbwidth": bbwidth,
+            "sfc": sfc,
+            "quality": quality,
+            "refl": refl,
+            "zenith": zenith,
+        }
+    )
 
     return gpm_data
 
@@ -578,51 +611,60 @@ def read_trmm(filename1, filename2, bbox=None):
     pr_data1 = nc.Dataset(filename1, mode="r")
     pr_data2 = nc.Dataset(filename2, mode="r")
 
-    lon = pr_data1.variables['Longitude']
-    lat = pr_data1.variables['Latitude']
+    lon = pr_data1.variables["Longitude"]
+    lat = pr_data1.variables["Latitude"]
 
     if bbox is not None:
-        poly = [[bbox['left'], bbox['bottom']],
-                [bbox['left'], bbox['top']],
-                [bbox['right'], bbox['top']],
-                [bbox['right'], bbox['bottom']],
-                [bbox['left'], bbox['bottom']]]
+        poly = [
+            [bbox["left"], bbox["bottom"]],
+            [bbox["left"], bbox["top"]],
+            [bbox["right"], bbox["top"]],
+            [bbox["right"], bbox["bottom"]],
+            [bbox["left"], bbox["bottom"]],
+        ]
         from wradlib.zonalstats import get_clip_mask
+
         mask = get_clip_mask(np.dstack((lon[:], lat[:])), poly)
     else:
         mask = np.ones_like(lon, dtype=bool)
 
     mask = np.nonzero(np.count_nonzero(mask, axis=1))
 
-    lon = pr_data1.variables['Longitude'][mask]
-    lat = pr_data1.variables['Latitude'][mask]
+    lon = pr_data1.variables["Longitude"][mask]
+    lat = pr_data1.variables["Latitude"][mask]
 
-    year = pr_data1.variables['Year'][mask]
-    month = pr_data1.variables['Month'][mask]
-    dayofmonth = pr_data1.variables['DayOfMonth'][mask]
+    year = pr_data1.variables["Year"][mask]
+    month = pr_data1.variables["Month"][mask]
+    dayofmonth = pr_data1.variables["DayOfMonth"][mask]
     # dayofyear = pr_data1.variables['DayOfYear'][mask]
-    hour = pr_data1.variables['Hour'][mask]
-    minute = pr_data1.variables['Minute'][mask]
-    second = pr_data1.variables['Second'][mask]
+    hour = pr_data1.variables["Hour"][mask]
+    minute = pr_data1.variables["Minute"][mask]
+    second = pr_data1.variables["Second"][mask]
     # secondofday = pr_data1.variables['scanTime_sec'][mask]
-    millisecond = pr_data1.variables['MilliSecond'][mask]
-    date_array = zip(year, month, dayofmonth,
-                     hour, minute, second,
-                     millisecond.astype(np.int32) * 1000)
+    millisecond = pr_data1.variables["MilliSecond"][mask]
+    date_array = zip(
+        year,
+        month,
+        dayofmonth,
+        hour,
+        minute,
+        second,
+        millisecond.astype(np.int32) * 1000,
+    )
     pr_time = np.array(
-        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in
-         date_array])
+        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in date_array]
+    )
 
-    pflag = pr_data1.variables['rainFlag'][mask]
-    ptype = pr_data1.variables['rainType'][mask]
+    pflag = pr_data1.variables["rainFlag"][mask]
+    ptype = pr_data1.variables["rainType"][mask]
 
-    status = pr_data1.variables['status'][mask]
-    zbb = pr_data1.variables['HBB'][mask].astype(np.float32)
-    bbwidth = pr_data1.variables['BBwidth'][mask].astype(np.float32)
+    status = pr_data1.variables["status"][mask]
+    zbb = pr_data1.variables["HBB"][mask].astype(np.float32)
+    bbwidth = pr_data1.variables["BBwidth"][mask].astype(np.float32)
 
-    quality = pr_data2.variables['dataQuality'][mask]
-    refl = pr_data2.variables['correctZFactor'][mask] / 100.
-    zenith = pr_data2.variables['scLocalZenith'][mask]
+    quality = pr_data2.variables["dataQuality"][mask]
+    refl = pr_data2.variables["correctZFactor"][mask] / 100.0
+    zenith = pr_data2.variables["scLocalZenith"][mask]
 
     pr_data1.close()
     pr_data2.close()
@@ -631,21 +673,22 @@ def read_trmm(filename1, filename2, bbox=None):
     refl = np.ma.array(refl)
 
     # Ground clutter
-    refl[refl == -8888.] = np.ma.masked
+    refl[refl == -8888.0] = np.ma.masked
     # Misssing data
-    refl[refl == -9999.] = np.ma.masked
+    refl[refl == -9999.0] = np.ma.masked
     # Scaling
-    refl /= 100.
+    refl /= 100.0
 
     # Check for bad data
     if max(quality) != 0:
-        raise ValueError('TRMM contains Bad Data')
+        raise ValueError("TRMM contains Bad Data")
 
     # Determine the dimensions
     ndim = refl.ndim
     if ndim != 3:
-        raise ValueError('TRMM Dimensions do not match!'
-                         'Needed 3, given {0}'.format(ndim))
+        raise ValueError(
+            "TRMM Dimensions do not match!" "Needed 3, given {0}".format(ndim)
+        )
 
     tmp = refl.shape
     nscan = tmp[0]
@@ -657,16 +700,16 @@ def read_trmm(filename1, filename2, bbox=None):
 
     # Simplify the precipitation flag
     ipos = (pflag >= 10) & (pflag <= 20)
-    icer = (pflag >= 20)
+    icer = pflag >= 20
     pflag[ipos] = 1
     pflag[icer] = 2
 
     # Simplify the precipitation types
     istr = (ptype >= 100) & (ptype <= 200)
     icon = (ptype >= 200) & (ptype <= 300)
-    ioth = (ptype >= 300)
-    inone = (ptype == -88)
-    imiss = (ptype == -99)
+    ioth = ptype >= 300
+    inone = ptype == -88
+    imiss = ptype == -99
     ptype[istr] = 1
     ptype[icon] = 2
     ptype[ioth] = 3
@@ -675,36 +718,49 @@ def read_trmm(filename1, filename2, bbox=None):
 
     # Extract the surface type
     sfc = np.zeros((nscan, nray), dtype=np.uint8)
-    i0 = (status == 168)
+    i0 = status == 168
     sfc[i0] = 0
-    i1 = (status % 10 == 0)
+    i1 = status % 10 == 0
     sfc[i1] = 1
-    i2 = ((status - 1) % 10 == 0)
+    i2 = (status - 1) % 10 == 0
     sfc[i2] = 2
-    i3 = ((status - 3) % 10 == 0)
+    i3 = (status - 3) % 10 == 0
     sfc[i3] = 3
-    i4 = ((status - 4) % 10 == 0)
+    i4 = (status - 4) % 10 == 0
     sfc[i4] = 4
-    i5 = ((status - 5) % 10 == 0)
+    i5 = (status - 5) % 10 == 0
     sfc[i5] = 5
-    i9 = ((status - 9) % 10 == 0)
+    i9 = (status - 9) % 10 == 0
     sfc[i9] = 9
 
     # Extract 2A23 quality
     # TODO: Why is the `quality` variable overwritten?
     quality = np.zeros((nscan, nray), dtype=np.uint8)
-    i0 = (status == 168)
+    i0 = status == 168
     quality[i0] = 0
-    i1 = (status < 50)
+    i1 = status < 50
     quality[i1] = 1
-    i2 = ((status >= 50) & (status < 109))
+    i2 = (status >= 50) & (status < 109)
     quality[i2] = 2
 
     trmm_data = {}
-    trmm_data.update({'nscan': nscan, 'nray': nray, 'nbin': nbin,
-                      'date': pr_time, 'lon': lon, 'lat': lat,
-                      'pflag': pflag, 'ptype': ptype, 'zbb': zbb,
-                      'bbwidth': bbwidth, 'sfc': sfc, 'quality': quality,
-                      'refl': refl, 'zenith': zenith})
+    trmm_data.update(
+        {
+            "nscan": nscan,
+            "nray": nray,
+            "nbin": nbin,
+            "date": pr_time,
+            "lon": lon,
+            "lat": lat,
+            "pflag": pflag,
+            "ptype": ptype,
+            "zbb": zbb,
+            "bbwidth": bbwidth,
+            "sfc": sfc,
+            "quality": quality,
+            "refl": refl,
+            "zenith": zenith,
+        }
+    )
 
     return trmm_data
