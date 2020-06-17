@@ -1,12 +1,13 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import gc
 import contextlib
-import pytest
-import numpy as np
-import xarray as xr
+import gc
+
 import h5py
+import numpy as np
+import pytest
+import xarray as xr
 
 from wradlib import io, util
 

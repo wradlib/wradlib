@@ -41,19 +41,28 @@ Calling the objects with actual data, however, will be very fast.
 
    {}
 """
-__all__ = ['DataSource', 'ZonalDataBase', 'ZonalDataPoint', 'ZonalDataPoly',
-           'ZonalStatsBase', 'ZonalStatsPoly', 'ZonalStatsPoint',
-           'mask_from_bbox', 'get_bbox', 'grid_centers_to_vertices',
-           'get_clip_mask']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "DataSource",
+    "ZonalDataBase",
+    "ZonalDataPoint",
+    "ZonalDataPoly",
+    "ZonalStatsBase",
+    "ZonalStatsPoly",
+    "ZonalStatsPoint",
+    "mask_from_bbox",
+    "get_bbox",
+    "grid_centers_to_vertices",
+    "get_clip_mask",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
 import tempfile
 import warnings
 
-from matplotlib.path import Path
-from matplotlib import patches
 import numpy as np
+from matplotlib import patches
+from matplotlib.path import Path
 from osgeo import gdal, ogr
 from scipy import spatial
 
@@ -63,7 +72,7 @@ ogr.UseExceptions()
 gdal.UseExceptions()
 
 # check windows
-isWindows = os.name == 'nt'
+isWindows = os.name == "nt"
 
 
 class DataSource(object):
@@ -91,7 +100,7 @@ class DataSource(object):
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#DataSource`.
     """
 
-    def __init__(self, data=None, srs=None, name='layer', source=0, **kwargs):
+    def __init__(self, data=None, srs=None, name="layer", source=0, **kwargs):
         self._srs = srs
         self._name = name
         if data is not None:
@@ -218,10 +227,10 @@ class DataSource(object):
             - transforming source grid points/polygons to ogr.geometries
               on ogr.layer
         """
-        tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
-        ogr_src = io.gdal.gdal_create_dataset('ESRI Shapefile',
-                                              os.path.join('/vsimem', tmpfile),
-                                              gdal_type=gdal.OF_VECTOR)
+        tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
+        ogr_src = io.gdal.gdal_create_dataset(
+            "ESRI Shapefile", os.path.join("/vsimem", tmpfile), gdal_type=gdal.OF_VECTOR
+        )
 
         src = np.array(src)
         # create memory datasource, layer and create features
@@ -230,14 +239,15 @@ class DataSource(object):
         # no Polygons, just Points
         else:
             geom_type = ogr.wkbPolygon
-        fields = [('index', ogr.OFTInteger)]
-        georef.vector.ogr_create_layer(ogr_src, self._name, srs=self._srs,
-                                       geom_type=geom_type, fields=fields)
+        fields = [("index", ogr.OFTInteger)]
+        georef.vector.ogr_create_layer(
+            ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields
+        )
         georef.vector.ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
 
-    def dump_vector(self, filename, driver='ESRI Shapefile', remove=True):
+    def dump_vector(self, filename, driver="ESRI Shapefile", remove=True):
         """Output layer to OGR Vector File
 
         Parameters
@@ -250,15 +260,15 @@ class DataSource(object):
             if True removes existing output file
 
         """
-        ds_out = io.gdal.gdal_create_dataset(driver, filename,
-                                             gdal_type=gdal.OF_VECTOR,
-                                             remove=remove)
+        ds_out = io.gdal.gdal_create_dataset(
+            driver, filename, gdal_type=gdal.OF_VECTOR, remove=remove
+        )
         georef.vector.ogr_copy_layer(self.ds, 0, ds_out)
 
         # flush everything
         del ds_out
 
-    def load_vector(self, filename, source=0, driver='ESRI Shapefile'):
+    def load_vector(self, filename, source=0, driver="ESRI Shapefile"):
         """Read Layer from OGR Vector File
 
         Parameters
@@ -270,13 +280,12 @@ class DataSource(object):
         driver : string
             driver string
         """
-        tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
-        self.ds = io.gdal.gdal_create_dataset('ESRI Shapefile',
-                                              os.path.join('/vsimem', tmpfile),
-                                              gdal_type=gdal.OF_VECTOR)
+        tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
+        self.ds = io.gdal.gdal_create_dataset(
+            "ESRI Shapefile", os.path.join("/vsimem", tmpfile), gdal_type=gdal.OF_VECTOR
+        )
         # get input file handles
-        ds_in, tmp_lyr = io.gdal.open_vector(filename, driver=driver,
-                                             layer=source)
+        ds_in, tmp_lyr = io.gdal.open_vector(filename, driver=driver, layer=source)
 
         # copy layer
         ogr_src_lyr = self.ds.CopyLayer(tmp_lyr, self._name)
@@ -289,8 +298,9 @@ class DataSource(object):
         # flush everything
         del ds_in
 
-    def dump_raster(self, filename, driver='GTiff', attr=None,
-                    pixel_size=1., remove=True, **kwargs):
+    def dump_raster(
+        self, filename, driver="GTiff", attr=None, pixel_size=1.0, remove=True, **kwargs
+    ):
         """Output layer to GDAL Rasterfile
 
         Parameters
@@ -311,7 +321,7 @@ class DataSource(object):
         silent : bool
             If True no ProgressBar is shown. Defaults to False.
         """
-        silent = kwargs.pop('silent', False)
+        silent = kwargs.pop("silent", False)
         progress = None if (silent or isWindows) else gdal.TermProgress
 
         layer = self.ds.GetLayer()
@@ -323,8 +333,9 @@ class DataSource(object):
         rows = int((y_max - y_min) / pixel_size)
 
         # Todo: at the moment, always writing floats
-        ds_out = io.gdal.gdal_create_dataset('MEM', '', cols, rows, 1,
-                                             gdal_type=gdal.GDT_Float32)
+        ds_out = io.gdal.gdal_create_dataset(
+            "MEM", "", cols, rows, 1, gdal_type=gdal.GDT_Float32
+        )
 
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
         proj = layer.GetSpatialRef()
@@ -335,14 +346,23 @@ class DataSource(object):
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
         if attr is not None:
-            gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[0],
-                                options=["ATTRIBUTE={0}".format(attr),
-                                         "ALL_TOUCHED=TRUE"],
-                                callback=progress)
+            gdal.RasterizeLayer(
+                ds_out,
+                [1],
+                layer,
+                burn_values=[0],
+                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"],
+                callback=progress,
+            )
         else:
-            gdal.RasterizeLayer(ds_out, [1], layer, burn_values=[1],
-                                options=["ALL_TOUCHED=TRUE"],
-                                callback=progress)
+            gdal.RasterizeLayer(
+                ds_out,
+                [1],
+                layer,
+                burn_values=[1],
+                options=["ALL_TOUCHED=TRUE"],
+                callback=progress,
+            )
 
         io.gdal.write_raster_dataset(filename, ds_out, driver, remove=remove)
 
@@ -383,7 +403,7 @@ class DataSource(object):
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
         if filt is not None:
-            lyr.SetAttributeFilter('{0}={1}'.format(*filt))
+            lyr.SetAttributeFilter("{0}={1}".format(*filt))
         ret = [[] for _ in attrs]
         for ogr_src in lyr:
             for i, att in enumerate(attrs):
@@ -404,7 +424,7 @@ class DataSource(object):
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
         if filt is not None:
-            lyr.SetAttributeFilter('{0}={1}'.format(*filt))
+            lyr.SetAttributeFilter("{0}={1}".format(*filt))
         ret = [[] for _ in props]
         for ogr_src in lyr:
             for i, prop in enumerate(props):
@@ -427,7 +447,7 @@ class DataSource(object):
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
         if filt is not None:
-            lyr.SetAttributeFilter('{0}={1}'.format(*filt))
+            lyr.SetAttributeFilter("{0}={1}".format(*filt))
         ret_props = [[] for _ in props]
         ret_attrs = [[] for _ in attrs]
         for ogr_src in lyr:
@@ -492,10 +512,11 @@ class ZonalDataBase(object):
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
 
     """
-    def __init__(self, src, trg=None, buf=0., srs=None, **kwargs):
+
+    def __init__(self, src, trg=None, buf=0.0, srs=None, **kwargs):
         self._buffer = buf
         self._srs = srs
-        silent = kwargs.pop('silent', False)
+        silent = kwargs.pop("silent", False)
 
         if trg is None:
             # try to read complete dump (src, trg, dst)
@@ -504,18 +525,18 @@ class ZonalDataBase(object):
             if isinstance(src, DataSource):
                 self.src = src
             else:
-                self.src = DataSource(src, name='src', srs=srs, **kwargs)
+                self.src = DataSource(src, name="src", srs=srs, **kwargs)
 
             if isinstance(trg, DataSource):
                 self.trg = trg
             else:
-                self.trg = DataSource(trg, name='trg', srs=srs, **kwargs)
+                self.trg = DataSource(trg, name="trg", srs=srs, **kwargs)
 
-            self.dst = DataSource(name='dst')
+            self.dst = DataSource(name="dst")
             self.dst.ds = self._create_dst_datasource(silent)
             self.dst._create_spatial_index()
 
-        self.dst._create_table_index('trg_index')
+        self.dst._create_table_index("trg_index")
         self._count_intersections = self.dst.ds.GetLayer().GetFeatureCount()
 
     @property
@@ -539,9 +560,12 @@ class ZonalDataBase(object):
         array : :class:`numpy:numpy.ndarray`
             of Nx2 point coordinate arrays
         """
-        return np.array([self._get_intersection(idx=idx)
-                         for idx in range(self.trg.ds.GetLayerByName('trg').
-                                          GetFeatureCount())])
+        return np.array(
+            [
+                self._get_intersection(idx=idx)
+                for idx in range(self.trg.ds.GetLayerByName("trg").GetFeatureCount())
+            ]
+        )
 
     def get_isec(self, idx):
         """Returns intersections
@@ -571,8 +595,9 @@ class ZonalDataBase(object):
         array : :class:`numpy:numpy.ndarray`
             indices
         """
-        return np.array(self.dst.get_attributes(['src_index'],
-                                                filt=('trg_index', idx))[0])
+        return np.array(
+            self.dst.get_attributes(["src_index"], filt=("trg_index", idx))[0]
+        )
 
     def _create_dst_datasource(self, silent):
         """Create destination target gdal.Dataset
@@ -588,23 +613,22 @@ class ZonalDataBase(object):
         progress = None if (silent or isWindows) else gdal.TermProgress
 
         # create mem-mapped temp file dataset
-        tmpfile = tempfile.NamedTemporaryFile(mode='w+b').name
-        ds_out = io.gdal.gdal_create_dataset('ESRI Shapefile',
-                                             os.path.join('/vsimem', tmpfile),
-                                             gdal_type=gdal.OF_VECTOR)
+        tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
+        ds_out = io.gdal.gdal_create_dataset(
+            "ESRI Shapefile", os.path.join("/vsimem", tmpfile), gdal_type=gdal.OF_VECTOR
+        )
 
         # create intermediate mem dataset
-        ds_mem = io.gdal.gdal_create_dataset('Memory', 'out',
-                                             gdal_type=gdal.OF_VECTOR)
+        ds_mem = io.gdal.gdal_create_dataset("Memory", "out", gdal_type=gdal.OF_VECTOR)
 
         # get src geometry layer
-        src_lyr = self.src.ds.GetLayerByName('src')
+        src_lyr = self.src.ds.GetLayerByName("src")
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)
         geom_type = src_lyr.GetGeomType()
 
         # get trg geometry layer
-        trg_lyr = self.trg.ds.GetLayerByName('trg')
+        trg_lyr = self.trg.ds.GetLayerByName("trg")
         trg_lyr.ResetReading()
         trg_lyr.SetSpatialFilter(None)
 
@@ -612,32 +636,36 @@ class ZonalDataBase(object):
         if self._buffer > 0:
             for i in range(trg_lyr.GetFeatureCount()):
                 feat = trg_lyr.GetFeature(i)
-                feat.SetGeometryDirectly(feat.GetGeometryRef().
-                                         Buffer(self._buffer))
+                feat.SetGeometryDirectly(feat.GetGeometryRef().Buffer(self._buffer))
                 trg_lyr.SetFeature(feat)
 
         # reset target layer
         trg_lyr.ResetReading()
 
         # create tmp dest layer
-        self.tmp_lyr = georef.vector.ogr_create_layer(ds_mem, 'dst',
-                                                      srs=self._srs,
-                                                      geom_type=geom_type)
+        self.tmp_lyr = georef.vector.ogr_create_layer(
+            ds_mem, "dst", srs=self._srs, geom_type=geom_type
+        )
 
-        trg_lyr.Intersection(src_lyr, self.tmp_lyr,
-                             options=['SKIP_FAILURES=YES',
-                                      'INPUT_PREFIX=trg_',
-                                      'METHOD_PREFIX=src_',
-                                      'PROMOTE_TO_MULTI=YES',
-                                      'USE_PREPARED_GEOMETRIES=YES',
-                                      'PRETEST_CONTAINMENT=YES'],
-                             callback=progress)
+        trg_lyr.Intersection(
+            src_lyr,
+            self.tmp_lyr,
+            options=[
+                "SKIP_FAILURES=YES",
+                "INPUT_PREFIX=trg_",
+                "METHOD_PREFIX=src_",
+                "PROMOTE_TO_MULTI=YES",
+                "USE_PREPARED_GEOMETRIES=YES",
+                "PRETEST_CONTAINMENT=YES",
+            ],
+            callback=progress,
+        )
 
         georef.vector.ogr_copy_layer(ds_mem, 0, ds_out)
 
         return ds_out
 
-    def dump_vector(self, filename, driver='ESRI Shapefile', remove=True):
+    def dump_vector(self, filename, driver="ESRI Shapefile", remove=True):
         """Output source/target grid points/polygons to ESRI_Shapefile
 
         target layer features are attributed with source index and weight
@@ -663,9 +691,9 @@ class ZonalDataBase(object):
         filename : string
             path to vector file
         """
-        self.src = DataSource(filename, name='src', source='src')
-        self.trg = DataSource(filename, name='trg', source='trg')
-        self.dst = DataSource(filename, name='dst', source='dst')
+        self.src = DataSource(filename, name="src", source="src")
+        self.trg = DataSource(filename, name="trg", source="trg")
+        self.dst = DataSource(filename, name="dst", source="dst")
 
         # get spatial reference object
         self._srs = self.src.ds.GetLayer().GetSpatialRef()
@@ -675,7 +703,7 @@ class ZonalDataBase(object):
         """
         raise NotImplementedError
 
-    def _get_intersection(self, trg=None, idx=None, buf=0.):
+    def _get_intersection(self, trg=None, idx=None, buf=0.0):
         """Just a toy function if you want to inspect the intersection
         points/polygons of an arbitrary target or an target by index.
         """
@@ -685,22 +713,21 @@ class ZonalDataBase(object):
         if idx is not None:
             if self.trg:
                 try:
-                    lyr = self.trg.ds.GetLayerByName('trg')
+                    lyr = self.trg.ds.GetLayerByName("trg")
                     feat = lyr.GetFeature(idx)
                     trg = feat.GetGeometryRef()
                 except Exception:
-                    raise TypeError("No target polygon found at index {0}".
-                                    format(idx))
+                    raise TypeError("No target polygon found at index {0}".format(idx))
             else:
-                raise TypeError('No target polygons found in object!')
+                raise TypeError("No target polygons found in object!")
 
         # check for trg
         if trg is None:
-            raise TypeError('Either *trg* or *idx* keywords must be given!')
+            raise TypeError("Either *trg* or *idx* keywords must be given!")
 
         # check for geometry
         if not type(trg) == ogr.Geometry:
-            trg = georef.vector.numpy_to_ogr(trg, 'Polygon')
+            trg = georef.vector.numpy_to_ogr(trg, "Polygon")
 
         # apply Buffer value
         trg = trg.Buffer(buf)
@@ -708,7 +735,7 @@ class ZonalDataBase(object):
         if idx is None:
             intersecs = self.dst.get_data_by_geom(trg)
         else:
-            intersecs = self.dst.get_data_by_att('trg_index', idx)
+            intersecs = self.dst.get_data_by_att("trg_index", idx)
 
         return intersecs
 
@@ -741,6 +768,7 @@ class ZonalDataPoly(ZonalDataBase):
     See \
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
+
     def _get_idx_weights(self):
         """Retrieve index and weight from dst DataSource
 
@@ -755,9 +783,9 @@ class ZonalDataPoly(ZonalDataBase):
         cnt = trg.GetFeatureCount()
         ret = [[] for _ in range(2)]
         for index in range(cnt):
-            arr, w = self.dst.get_attrs_and_props(attrs=['src_index'],
-                                                  props=['Area'],
-                                                  filt=('trg_index', index))
+            arr, w = self.dst.get_attrs_and_props(
+                attrs=["src_index"], props=["Area"], filt=("trg_index", index)
+            )
             arr.append(w[0])
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
@@ -791,6 +819,7 @@ class ZonalDataPoint(ZonalDataBase):
     See \
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalData`.
     """
+
     def _get_idx_weights(self):
         """Retrieve index and weight from dst DataSource
 
@@ -805,9 +834,8 @@ class ZonalDataPoint(ZonalDataBase):
         cnt = trg.GetFeatureCount()
         ret = [[] for _ in range(2)]
         for index in range(cnt):
-            arr = self.dst.get_attributes(['src_index'],
-                                          filt=('trg_index', index))
-            arr.append([1. / len(arr[0])] * len(arr[0]))
+            arr = self.dst.get_attributes(["src_index"], filt=("trg_index", index))
+            arr.append([1.0 / len(arr[0])] * len(arr[0]))
             for i, l in enumerate(arr):
                 ret[i].append(np.array(l))
         return tuple(ret)
@@ -835,6 +863,7 @@ class ZonalStatsBase(object):
     See \
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`.
     """
+
     def __init__(self, src=None, ix=None, w=None):
 
         self._ix = None
@@ -843,11 +872,13 @@ class ZonalStatsBase(object):
         if src is not None:
             if isinstance(src, ZonalDataBase):
                 if not src.count_intersections:
-                    raise ValueError('No intersections found in destination '
-                                     'layer of ZonalDataBase object.')
+                    raise ValueError(
+                        "No intersections found in destination "
+                        "layer of ZonalDataBase object."
+                    )
                 self._zdata = src
             else:
-                raise TypeError('Parameter mismatch in calling ZonalDataBase')
+                raise TypeError("Parameter mismatch in calling ZonalDataBase")
             self.ix, self.w = self._check_ix_w(*self.zdata._get_idx_weights())
         else:
             self._zdata = None
@@ -896,28 +927,29 @@ class ZonalStatsBase(object):
                 raise TypeError("parameters ix and w must be of equal length")
             return np.array(ix), np.array(w)
         else:
-            raise TypeError("ix and w are complementary parameters and "
-                            "must both be given")
+            raise TypeError(
+                "ix and w are complementary parameters and " "must both be given"
+            )
 
     def _check_vals(self, vals):
         """TODO Basic check of target elements (sequence of polygons).
 
         """
         if self.zdata is not None:
-            lyr = self.zdata.src.ds.GetLayerByName('src')
+            lyr = self.zdata.src.ds.GetLayerByName("src")
             lyr.ResetReading()
             lyr.SetSpatialFilter(None)
             src_len = lyr.GetFeatureCount()
-            assert len(vals) == src_len, \
-                "Argument vals must be of length %d" % src_len
+            assert len(vals) == src_len, "Argument vals must be of length %d" % src_len
         else:
             imax = 0
             for i in self.ix:
                 mx = np.nanmax(i)
                 if imax < mx:
                     imax = mx
-            assert len(vals) > imax, \
-                "Argument vals cannot be subscripted by given index values"
+            assert (
+                len(vals) > imax
+            ), "Argument vals cannot be subscripted by given index values"
 
         return vals
 
@@ -936,11 +968,14 @@ class ZonalStatsBase(object):
         self.isempty = self.check_empty()
         out = np.zeros(len(self.ix)) * np.nan
         out[~self.isempty] = np.array(
-            [np.average(vals[self.ix[i]], weights=self.w[i])
-             for i in np.arange(len(self.ix))[~self.isempty]])
+            [
+                np.average(vals[self.ix[i]], weights=self.w[i])
+                for i in np.arange(len(self.ix))[~self.isempty]
+            ]
+        )
 
         if self.zdata is not None:
-            self.zdata.trg.set_attribute('mean', out)
+            self.zdata.trg.set_attribute("mean", out)
 
         return out
 
@@ -960,11 +995,14 @@ class ZonalStatsBase(object):
         mean = self.mean(vals)
         out = np.zeros(len(self.ix)) * np.nan
         out[~self.isempty] = np.array(
-            [np.average((vals[self.ix[i]] - mean[i])**2, weights=self.w[i])
-             for i in np.arange(len(self.ix))[~self.isempty]])
+            [
+                np.average((vals[self.ix[i]] - mean[i]) ** 2, weights=self.w[i])
+                for i in np.arange(len(self.ix))[~self.isempty]
+            ]
+        )
 
         if self.zdata is not None:
-            self.zdata.trg.set_attribute('var', out)
+            self.zdata.trg.set_attribute("var", out)
 
         return out
 
@@ -987,6 +1025,7 @@ class ZonalStatsPoly(ZonalStatsBase):
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
     and :ref:`/notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
     """
+
     def __init__(self, src=None, **kwargs):
         if src is not None:
             if not isinstance(src, ZonalDataPoly):
@@ -1012,6 +1051,7 @@ class ZonalStatsPoint(ZonalStatsBase):
     :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#ZonalStats`
     and :ref:`/notebooks/zonalstats/wradlib_zonalstats_example.ipynb`.
     """
+
     def __init__(self, src, **kwargs):
         if src is not None:
             if not isinstance(src, ZonalDataPoint):
@@ -1108,10 +1148,7 @@ def mask_from_bbox(x, y, bbox, polar=False):
         jmin = min(jll, jul, jur, jlr)
         jmax = max(jll, jul, jur, jlr)
         # azimuth array for angle_between calculation
-        ax = np.array([[ill, ilr],
-                       [ill, iur],
-                       [iul, ilr],
-                       [iul, iur]], dtype=int)
+        ax = np.array([[ill, ilr], [ill, iur], [iul, ilr], [iul, iur]], dtype=int)
         # this calculates the angles between 4 azimuth and returns indices
         # of the greatest angle
         ar = angle_between(ax[:, 0], ax[:, 1])
@@ -1164,10 +1201,7 @@ def get_bbox(x, y):
         y-coordinate values
 
     """
-    return dict(left=np.min(x),
-                right=np.max(x),
-                bottom=np.min(y),
-                top=np.max(y))
+    return dict(left=np.min(x), right=np.max(x), bottom=np.min(y), top=np.max(y))
 
 
 def grid_centers_to_vertices(x, y, dx, dy):
@@ -1200,11 +1234,15 @@ def grid_centers_to_vertices(x, y, dx, dy):
     right = x + dy / 2
     bottom = y - dy / 2
 
-    verts = np.vstack(([left.ravel(), bottom.ravel()],
-                       [right.ravel(), bottom.ravel()],
-                       [right.ravel(), top.ravel()],
-                       [left.ravel(), top.ravel()],
-                       [left.ravel(), bottom.ravel()])).T.reshape((-1, 5, 2))
+    verts = np.vstack(
+        (
+            [left.ravel(), bottom.ravel()],
+            [right.ravel(), bottom.ravel()],
+            [right.ravel(), top.ravel()],
+            [left.ravel(), top.ravel()],
+            [left.ravel(), bottom.ravel()],
+        )
+    ).T.reshape((-1, 5, 2))
 
     return verts
 
@@ -1230,8 +1268,7 @@ def get_clip_mask(coords, clippoly, srs=None):
     """
     clip = [clippoly]
 
-    zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]),
-                        clip, srs=srs)
+    zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]), clip, srs=srs)
 
     # Subsetting in order to use only precipitating profiles
     src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool)
@@ -1251,5 +1288,5 @@ def get_clip_mask(coords, clippoly, srs=None):
     return src_mask
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <zonalstats> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <zonalstats> as main...")

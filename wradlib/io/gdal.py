@@ -11,9 +11,14 @@ Raster and Vector I/O using GDAL
 
    {}
 """
-__all__ = ['open_vector', 'open_raster', 'read_safnwc', 'gdal_create_dataset',
-           'write_raster_dataset']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "open_vector",
+    "open_raster",
+    "read_safnwc",
+    "gdal_create_dataset",
+    "write_raster_dataset",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
 
@@ -90,15 +95,16 @@ def read_safnwc(filename):
     """
 
     root = gdal.Open(filename)
-    ds1 = gdal.Open('HDF5:' + filename + '://CT')
-    ds = gdal.GetDriverByName('MEM').CreateCopy('out', ds1, 0)
+    ds1 = gdal.Open("HDF5:" + filename + "://CT")
+    ds = gdal.GetDriverByName("MEM").CreateCopy("out", ds1, 0)
 
     try:
         proj = osr.SpatialReference()
         proj.ImportFromProj4(ds.GetMetadata()["PROJECTION"])
     except KeyError:
-        raise KeyError("WRADLIB: Projection is missing for satellite "
-                       "file {}".format(filename))
+        raise KeyError(
+            "WRADLIB: Projection is missing for satellite " "file {}".format(filename)
+        )
 
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
@@ -109,8 +115,9 @@ def read_safnwc(filename):
     return ds
 
 
-def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
-                        gdal_type=gdal.GDT_Unknown, remove=False):
+def gdal_create_dataset(
+    drv, name, cols=0, rows=0, bands=0, gdal_type=gdal.GDT_Unknown, remove=False
+):
     """Creates GDAL.DataSet object.
 
     Parameters
@@ -140,9 +147,10 @@ def gdal_create_dataset(drv, name, cols=0, rows=0, bands=0,
     driver = gdal.GetDriverByName(drv)
     metadata = driver.GetMetadata()
 
-    if not metadata.get('DCAP_CREATE', False):
-        raise TypeError("WRADLIB: Driver {} doesn't support "
-                        "Create() method.".format(drv))
+    if not metadata.get("DCAP_CREATE", False):
+        raise TypeError(
+            "WRADLIB: Driver {} doesn't support " "Create() method.".format(drv)
+        )
 
     if remove:
         if os.path.exists(name):
@@ -186,10 +194,11 @@ def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
     metadata = driver.GetMetadata()
 
     # check driver capability
-    if not ('DCAP_CREATECOPY' in metadata and
-            metadata['DCAP_CREATECOPY'] == 'YES'):
-        raise TypeError("WRADLIB: Raster Driver {} doesn't support "
-                        "CreateCopy() method.".format(rformat))
+    if not ("DCAP_CREATECOPY" in metadata and metadata["DCAP_CREATECOPY"] == "YES"):
+        raise TypeError(
+            "WRADLIB: Raster Driver {} doesn't support "
+            "CreateCopy() method.".format(rformat)
+        )
 
     if remove:
         if os.path.exists(fpath):

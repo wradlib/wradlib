@@ -13,11 +13,17 @@ Reading DX and RADOLAN data from German Weather Service
 
    {}
 """
-__all__ = ['read_dx', 'read_radolan_composite', 'get_radolan_filehandle',
-           'read_radolan_header', 'parse_dwd_composite_header',
-           'read_radolan_binary_array', 'decode_radolan_runlength_array',
-           'radolan_to_xarray']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "read_dx",
+    "read_radolan_composite",
+    "get_radolan_filehandle",
+    "read_radolan_header",
+    "parse_dwd_composite_header",
+    "read_radolan_binary_array",
+    "decode_radolan_runlength_array",
+    "radolan_to_xarray",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import datetime as dt
 import io
@@ -32,15 +38,15 @@ from wradlib.georef import rect
 
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
-dwdpattern = re.compile('raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin')
+dwdpattern = re.compile("raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin")
 
 
 def _get_timestamp_from_filename(filename):
     """Helper function doing the actual work of get_dx_timestamp"""
     time = dwdpattern.search(filename).group(3)
     if len(time) == 10:
-        time = '20' + time
-    return dt.datetime.strptime(time, '%Y%m%d%H%M')
+        time = "20" + time
+    return dt.datetime.strptime(time, "%Y%m%d%H%M")
 
 
 def get_dx_timestamp(name):
@@ -89,7 +95,7 @@ def unpack_dx(raw):
         return raw
 
     # everything until the first flag is normal data
-    beam.extend(raw[0:flagged[0]])
+    beam.extend(raw[0 : flagged[0]])
 
     # iterate over all flags except the last one
     for this, nxt in zip(flagged[:-1], flagged[1:]):
@@ -97,14 +103,14 @@ def unpack_dx(raw):
         # byte's data part
         beam.extend([0] * (raw[this] & data))
         # append the data until the next flag
-        beam.extend(raw[this + 1:nxt])
+        beam.extend(raw[this + 1 : nxt])
 
     # process the last flag
     # add zeroes
     beam.extend([0] * (raw[flagged[-1]] & data))
 
     # add remaining data
-    beam.extend(raw[flagged[-1] + 1:])
+    beam.extend(raw[flagged[-1] + 1 :])
 
     # return the data
     return np.array(beam)
@@ -124,8 +130,9 @@ def parse_dx_header(header):
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # time stamp from file header as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8] + header[13:17] + "00",
-                                           "%d%H%M%m%y%S")
+    out["datetime"] = dt.datetime.strptime(
+        header[2:8] + header[13:17] + "00", "%d%H%M%m%y%S"
+    )
     # Make it aware of its time zone (UTC)
     out["datetime"] = out["datetime"].replace(tzinfo=util.UTC())
     # radar location ID (always 10000 for composites)
@@ -138,13 +145,17 @@ def parse_dx_header(header):
     pos_ep = header.find("EP")
     pos_ms = header.find("MS")
 
-    out['bytes'] = int(header[pos_by + 2:pos_by + 7])
-    out['version'] = header[pos_vs + 2:pos_vs + 4]
-    out['cluttermap'] = int(header[pos_co + 2:pos_co + 3])
-    out['dopplerfilter'] = int(header[pos_cd + 2:pos_cd + 3])
-    out['statfilter'] = int(header[pos_cs + 2:pos_cs + 3])
-    out['elevprofile'] = [float(header[pos_ep + 2 + 3 * i:pos_ep + 2 + 3 * (i + 1)]) for i in range(8)]  # noqa
-    out['message'] = header[pos_ms + 5:pos_ms + 5 + int(header[pos_ms + 2:pos_ms + 5])]  # noqa
+    out["bytes"] = int(header[pos_by + 2 : pos_by + 7])
+    out["version"] = header[pos_vs + 2 : pos_vs + 4]
+    out["cluttermap"] = int(header[pos_co + 2 : pos_co + 3])
+    out["dopplerfilter"] = int(header[pos_cd + 2 : pos_cd + 3])
+    out["statfilter"] = int(header[pos_cs + 2 : pos_cs + 3])
+    out["elevprofile"] = [
+        float(header[pos_ep + 2 + 3 * i : pos_ep + 2 + 3 * (i + 1)]) for i in range(8)
+    ]  # noqa
+    out["message"] = header[
+        pos_ms + 5 : pos_ms + 5 + int(header[pos_ms + 2 : pos_ms + 5])
+    ]  # noqa
 
     return out
 
@@ -214,7 +225,7 @@ def read_dx(filename):
     f = get_radolan_filehandle(filename)
 
     # header string for later processing
-    header = ''
+    header = ""
     atend = False
 
     # read header
@@ -223,9 +234,9 @@ def read_dx(filename):
         # 0x03 signals the end of the header but sometimes there might be
         # an additional 0x03 char after that
 
-        if mychar == b'\x03':
+        if mychar == b"\x03":
             atend = True
-        if mychar != b'\x03' and atend:
+        if mychar != b"\x03" and atend:
             break
         header += str(mychar.decode())
 
@@ -238,7 +249,7 @@ def read_dx(filename):
     # intermediate fix:
     # if product length is uneven but header is even (e.g. because it has two
     # chr(3) at the end, read one byte less
-    buflen = attrs['bytes'] - len(header)
+    buflen = attrs["bytes"] - len(header)
     if (buflen % 2) != 0:
         # make sure that this is consistent with our assumption
         # i.e. contact DWD again, if DX files show up with uneven byte lengths
@@ -248,7 +259,7 @@ def read_dx(filename):
 
     buf = f.read(buflen)
     # we can interpret the rest directly as a 1-D array of 16 bit unsigned ints
-    raw = np.frombuffer(buf, dtype='uint16')
+    raw = np.frombuffer(buf, dtype="uint16")
 
     # reading finished, close file, but only if we opened it.
     if isinstance(f, io.IOBase):
@@ -273,17 +284,17 @@ def read_dx(filename):
     # iterate over all beams
     for i in range(newazimuths.size - 1):
         # unpack zeros
-        beam = unpack_dx(raw[newazimuths[i] + 3:newazimuths[i + 1]])
+        beam = unpack_dx(raw[newazimuths[i] + 3 : newazimuths[i + 1]])
         beams.append(beam)
-        elevs.append((raw[newazimuths[i] + 2] & databitmask) / 10.)
-        azims.append((raw[newazimuths[i] + 1] & databitmask) / 10.)
+        elevs.append((raw[newazimuths[i] + 2] & databitmask) / 10.0)
+        azims.append((raw[newazimuths[i] + 1] & databitmask) / 10.0)
 
     beams = np.array(beams)
 
     # attrs =  {}
-    attrs['elev'] = np.array(elevs)
-    attrs['azim'] = np.array(azims)
-    attrs['clutter'] = (beams & clutterflag) != 0
+    attrs["elev"] = np.array(elevs)
+    attrs["azim"] = np.array(azims)
+    attrs["clutter"] = (beams & clutterflag) != 0
 
     # converting the DWD rvp6-format into dBZ data and return as numpy array
     # together with attributes
@@ -298,11 +309,25 @@ def get_radolan_header_token():
     head : dict
         with known header token, value set to None
     """
-    head = {'BY': None, 'VS': None, 'SW': None, 'PR': None,
-            'INT': None, 'GP': None, 'MS': None, 'LV': None,
-            'CS': None, 'MX': None, 'BG': None, 'ST': None,
-            'VV': None, 'MF': None, 'QN': None, 'VR': None,
-            'U': None}
+    head = {
+        "BY": None,
+        "VS": None,
+        "SW": None,
+        "PR": None,
+        "INT": None,
+        "GP": None,
+        "MS": None,
+        "LV": None,
+        "CS": None,
+        "MX": None,
+        "BG": None,
+        "ST": None,
+        "VV": None,
+        "MF": None,
+        "QN": None,
+        "VR": None,
+        "U": None,
+    }
     return head
 
 
@@ -364,8 +389,9 @@ def parse_dwd_composite_header(header):
     # RADOLAN product type def
     out["producttype"] = header[0:2]
     # file time stamp as Python datetime object
-    out["datetime"] = dt.datetime.strptime(header[2:8] + header[13:17] + "00",
-                                           "%d%H%M%m%y%S")
+    out["datetime"] = dt.datetime.strptime(
+        header[2:8] + header[13:17] + "00", "%d%H%M%m%y%S"
+    )
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
 
@@ -375,60 +401,63 @@ def parse_dwd_composite_header(header):
     # for k, v in head.iteritems():
     for k, v in head.items():
         if v:
-            if k == 'BY':
-                out['datasize'] = int(header[v[0]:v[1]]) - len(header) - 1
-            if k == 'VS':
-                out["maxrange"] = {0: "100 km and 128 km (mixed)",
-                                   1: "100 km",
-                                   2: "128 km",
-                                   3: "150 km"}.get(int(header[v[0]:v[1]]),
-                                                    "100 km")
-            if k == 'SW':
-                out["radolanversion"] = header[v[0]:v[1]].strip()
-            if k == 'PR':
-                out["precision"] = float('1' + header[v[0]:v[1]].strip())
-            if k == 'INT':
-                out["intervalseconds"] = int(header[v[0]:v[1]]) * 60
-            if k == 'U':
-                out["intervalunit"] = int(header[v[0]:v[1]])
+            if k == "BY":
+                out["datasize"] = int(header[v[0] : v[1]]) - len(header) - 1
+            if k == "VS":
+                out["maxrange"] = {
+                    0: "100 km and 128 km (mixed)",
+                    1: "100 km",
+                    2: "128 km",
+                    3: "150 km",
+                }.get(int(header[v[0] : v[1]]), "100 km")
+            if k == "SW":
+                out["radolanversion"] = header[v[0] : v[1]].strip()
+            if k == "PR":
+                out["precision"] = float("1" + header[v[0] : v[1]].strip())
+            if k == "INT":
+                out["intervalseconds"] = int(header[v[0] : v[1]]) * 60
+            if k == "U":
+                out["intervalunit"] = int(header[v[0] : v[1]])
                 if out["intervalunit"] == 1:
                     out["intervalseconds"] *= 1440
-            if k == 'GP':
-                dimstrings = header[v[0]:v[1]].strip().split("x")
+            if k == "GP":
+                dimstrings = header[v[0] : v[1]].strip().split("x")
                 out["nrow"] = int(dimstrings[0])
                 out["ncol"] = int(dimstrings[1])
-            if k == 'BG':
-                dimstrings = header[v[0]:v[1]]
-                dimstrings = (dimstrings[:int(len(dimstrings) / 2)],
-                              dimstrings[int(len(dimstrings) / 2):])
+            if k == "BG":
+                dimstrings = header[v[0] : v[1]]
+                dimstrings = (
+                    dimstrings[: int(len(dimstrings) / 2)],
+                    dimstrings[int(len(dimstrings) / 2) :],
+                )
                 out["nrow"] = int(dimstrings[0])
                 out["ncol"] = int(dimstrings[1])
-            if k == 'LV':
-                lv = header[v[0]:v[1]].split()
-                out['nlevel'] = np.int(lv[0])
-                out['level'] = np.array(lv[1:]).astype('float')
-            if k == 'MS':
-                locationstring = (header[v[0]:].strip().split("<")[1].
-                                  split(">")[0])
+            if k == "LV":
+                lv = header[v[0] : v[1]].split()
+                out["nlevel"] = np.int(lv[0])
+                out["level"] = np.array(lv[1:]).astype("float")
+            if k == "MS":
+                locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
                 out["radarlocations"] = locationstring.split(",")
-            if k == 'ST':
-                locationstring = (header[v[0]:].strip().split("<")[1].
-                                  split(">")[0])
+            if k == "ST":
+                locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
                 out["radardays"] = locationstring.split(",")
-            if k == 'CS':
-                out['indicator'] = {0: "near ground level",
-                                    1: "maximum",
-                                    2: "tops"}.get(int(header[v[0]:v[1]]))
-            if k == 'MX':
-                out['imagecount'] = int(header[v[0]:v[1]])
-            if k == 'VV':
-                out['predictiontime'] = int(header[v[0]:v[1]])
-            if k == 'MF':
-                out['moduleflag'] = int(header[v[0]:v[1]])
-            if k == 'QN':
-                out['quantification'] = int(header[v[0]:v[1]])
-            if k == 'VR':
-                out['reanalysisversion'] = header[v[0]:v[1]].strip()
+            if k == "CS":
+                out["indicator"] = {
+                    0: "near ground level",
+                    1: "maximum",
+                    2: "tops",
+                }.get(int(header[v[0] : v[1]]))
+            if k == "MX":
+                out["imagecount"] = int(header[v[0] : v[1]])
+            if k == "VV":
+                out["predictiontime"] = int(header[v[0] : v[1]])
+            if k == "MF":
+                out["moduleflag"] = int(header[v[0] : v[1]])
+            if k == "QN":
+                out["quantification"] = int(header[v[0] : v[1]])
+            if k == "VR":
+                out["reanalysisversion"] = header[v[0] : v[1]].strip()
     return out
 
 
@@ -454,7 +483,7 @@ def decode_radolan_runlength_line(line, attrs):
     byte = line[lo]
     # line empty condition, lf directly behind line number
     if byte == 10:
-        return np.ones(attrs['ncol'], dtype=np.uint8) * attrs['nodataflag']
+        return np.ones(attrs["ncol"], dtype=np.uint8) * attrs["nodataflag"]
     offset = byte - 16
 
     # check if offset byte is 255 and take next byte(s)
@@ -465,7 +494,7 @@ def decode_radolan_runlength_line(line, attrs):
         offset += byte - 16
 
     # just take the rest
-    dline = line[lo + 1:]
+    dline = line[lo + 1 :]
 
     # this could be optimized
     # iterate over line string, until lf (10) is reached
@@ -477,13 +506,12 @@ def decode_radolan_runlength_line(line, attrs):
         # the "offset pixel" are "not measured" values
         # so we set them to 'nodata'
         if lo == 0:
-            arr = np.ones(offset, dtype=np.uint8) * attrs['nodataflag']
+            arr = np.ones(offset, dtype=np.uint8) * attrs["nodataflag"]
         arr = np.append(arr, np.ones(width, dtype=np.uint8) * val)
 
-    trailing = attrs['ncol'] - len(arr)
+    trailing = attrs["ncol"] - len(arr)
     if trailing > 0:
-        arr = np.append(arr, np.ones(trailing,
-                                     dtype=np.uint8) * attrs['nodataflag'])
+        arr = np.append(arr, np.ones(trailing, dtype=np.uint8) * attrs["nodataflag"])
     elif trailing < 0:
         arr = dline[:trailing]
 
@@ -507,7 +535,7 @@ def read_radolan_runlength_line(fid):
     line = fid.readline()
 
     # check if eot
-    if line == b'\x04':
+    if line == b"\x04":
         return None
 
     # convert input buffer to np.uint8 array
@@ -567,8 +595,10 @@ def read_radolan_binary_array(fid, size):
     binarr = fid.read(size)
     fid.close()
     if len(binarr) != size:
-        raise IOError('{0}: File corruption while reading {1}! \nCould not '
-                      'read enough data!'.format(__name__, fid.name))
+        raise IOError(
+            "{0}: File corruption while reading {1}! \nCould not "
+            "read enough data!".format(__name__, fid.name)
+        )
     return binarr
 
 
@@ -586,14 +616,14 @@ def get_radolan_filehandle(fname):
         filehandle
     """
 
-    gzip = util.import_optional('gzip')
+    gzip = util.import_optional("gzip")
 
     # open file handle
     try:
-        f = gzip.open(fname, 'rb')
+        f = gzip.open(fname, "rb")
         f.read(1)
     except IOError:
-        f = open(fname, 'rb')
+        f = open(fname, "rb")
         f.read(1)
 
     # rewind file
@@ -615,13 +645,12 @@ def read_radolan_header(fid):
     header : string
     """
 
-    header = ''
+    header = ""
     while True:
         mychar = fid.read(1)
         if not mychar:
-            raise EOFError('Unexpected EOF detected while reading '
-                           'RADOLAN header')
-        if mychar == b'\x03':
+            raise EOFError("Unexpected EOF detected while reading " "RADOLAN header")
+        if mychar == b"\x03":
             break
         header += str(mychar.decode())
     return header
@@ -697,51 +726,53 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
     attrs["nodataflag"] = NODATA
 
     if not attrs["radarid"] == "10000":
-        warnings.warn("WARNING: You are using function e" +
-                      "wradlib.io.read_RADOLAN_composit for a non " +
-                      "composite file.\n " +
-                      "This might work...but please check the validity " +
-                      "of the results")
+        warnings.warn(
+            "WARNING: You are using function e"
+            + "wradlib.io.read_RADOLAN_composit for a non "
+            + "composite file.\n "
+            + "This might work...but please check the validity "
+            + "of the results"
+        )
 
     # read the actual data
-    indat = read_radolan_binary_array(f, attrs['datasize'])
+    indat = read_radolan_binary_array(f, attrs["datasize"])
 
-    if attrs['producttype'] in ['RX', 'EX', 'WX']:
+    if attrs["producttype"] in ["RX", "EX", "WX"]:
         # convert to 8bit integer
         arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
-        attrs['nodatamask'] = np.where(arr == 250)[0]
-        attrs['cluttermask'] = np.where(arr == 249)[0]
-    elif attrs['producttype'] in ['PG', 'PC']:
+        attrs["nodatamask"] = np.where(arr == 250)[0]
+        attrs["cluttermask"] = np.where(arr == 249)[0]
+    elif attrs["producttype"] in ["PG", "PC"]:
         arr = decode_radolan_runlength_array(indat, attrs)
-        attrs['nodatamask'] = np.where(arr == 255)[0]
+        attrs["nodatamask"] = np.where(arr == 255)[0]
     else:
         # convert to 16-bit integers
         arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
         # evaluate bits 13, 14, 15 and 16
-        attrs['secondary'] = np.where(arr & 0x1000)[0]
-        attrs['nodatamask'] = np.where(arr & 0x2000)[0]
+        attrs["secondary"] = np.where(arr & 0x1000)[0]
+        attrs["nodatamask"] = np.where(arr & 0x2000)[0]
         negative = np.where(arr & 0x4000)[0]
-        attrs['cluttermask'] = np.where(arr & 0x8000)[0]
+        attrs["cluttermask"] = np.where(arr & 0x8000)[0]
         # mask out the last 4 bits
         arr &= mask
         # consider negative flag if product is RD (differences from adjustment)
-        if attrs['producttype'] == 'RD':
+        if attrs["producttype"] == "RD":
             # NOT TESTED, YET
             arr[negative] = -arr[negative]
 
     # anyway, bring it into right shape
-    arr = arr.reshape((attrs['nrow'], attrs['ncol']))
+    arr = arr.reshape((attrs["nrow"], attrs["ncol"]))
 
-    if loaddata == 'xarray':
+    if loaddata == "xarray":
         arr = radolan_to_xarray(arr, attrs)
     else:
         # apply precision factor
         # this promotes arr to float if precision is float
-        if 'precision' in attrs:
-            arr = arr * attrs['precision']
+        if "precision" in attrs:
+            arr = arr * attrs["precision"]
         # set nodata value
-        if 'nodatamask' in attrs:
-            arr.flat[attrs['nodatamask']] = NODATA
+        if "nodatamask" in attrs:
+            arr.flat[attrs["nodatamask"]] = NODATA
 
     if close:
         f.close()
@@ -762,25 +793,40 @@ def _get_radolan_product_attributes(attrs):
     pattrs : dict
         RADOLAN product attributes
     """
-    product = attrs['producttype']
+    product = attrs["producttype"]
     pattrs = {}
 
-    if product not in ['PG', 'PC']:
-        interval = attrs['intervalseconds']
-        precision = attrs['precision']
+    if product not in ["PG", "PC"]:
+        interval = attrs["intervalseconds"]
+        precision = attrs["precision"]
 
-    if product in ['RX', 'EX', 'WX']:
-        pattrs.update(radolan['dBZ'])
-    elif product in ['RY', 'RZ', 'EY', 'EZ']:
-        pattrs.update(radolan['RR'])
+    if product in ["RX", "EX", "WX"]:
+        pattrs.update(radolan["dBZ"])
+    elif product in ["RY", "RZ", "EY", "EZ"]:
+        pattrs.update(radolan["RR"])
         scale_factor = np.float32(precision * 3600 / interval)
-        pattrs.update({'scale_factor': scale_factor})
-    elif product in ['RH', 'RB', 'RW', 'RL', 'RU', 'EH', 'EB',
-                     'EW', 'SQ', 'SH', 'SF', 'W1', 'W2', 'W3', 'W4']:
-        pattrs.update(radolan['RA'])
-        pattrs.update({'scale_factor': np.float32(precision)})
-    elif product in ['PG', 'PC']:
-        pattrs.update(radolan['PG'])
+        pattrs.update({"scale_factor": scale_factor})
+    elif product in [
+        "RH",
+        "RB",
+        "RW",
+        "RL",
+        "RU",
+        "EH",
+        "EB",
+        "EW",
+        "SQ",
+        "SH",
+        "SF",
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+    ]:
+        pattrs.update(radolan["RA"])
+        pattrs.update({"scale_factor": np.float32(precision)})
+    elif product in ["PG", "PC"]:
+        pattrs.update(radolan["PG"])
     else:
         raise ValueError("WRADLIB: unkown RADOLAN product!")
 
@@ -802,51 +848,60 @@ def radolan_to_xarray(data, attrs):
     dset : xarray.Dataset
         RADOLAN data and coordinates
     """
-    product = attrs['producttype']
+    product = attrs["producttype"]
     pattrs = _get_radolan_product_attributes(attrs)
-    radolan_grid_xy = rect.get_radolan_grid(attrs['nrow'], attrs['ncol'])
+    radolan_grid_xy = rect.get_radolan_grid(attrs["nrow"], attrs["ncol"])
     x0 = radolan_grid_xy[0, :, 0]
     y0 = radolan_grid_xy[:, 0, 1]
     if pattrs:
-        if 'nodatamask' in attrs:
-            data.flat[attrs['nodatamask']] = pattrs['_FillValue']
-        if 'cluttermask' in attrs:
-            data.flat[attrs['cluttermask']] = pattrs['_FillValue']
-    darr = xr.DataArray(data,
-                        attrs=pattrs,
-                        dims=['y', 'x'],
-                        coords={'time': attrs['datetime'],  'x': x0, 'y': y0,
-                                },
-                        )
+        if "nodatamask" in attrs:
+            data.flat[attrs["nodatamask"]] = pattrs["_FillValue"]
+        if "cluttermask" in attrs:
+            data.flat[attrs["cluttermask"]] = pattrs["_FillValue"]
+    darr = xr.DataArray(
+        data,
+        attrs=pattrs,
+        dims=["y", "x"],
+        coords={"time": attrs["datetime"], "x": x0, "y": y0},
+    )
     dset = xr.Dataset({product: darr})
     dset = dset.pipe(xr.decode_cf)
 
     return dset
 
 
-radolan = {'dBZ': {'scale_factor': np.float32(0.5),
-                   'add_offset': np.float32(-32.5),
-                   'valid_min': np.int32(0),
-                   'valid_max': np.int32(255),
-                   '_FillValue': np.int32(255),
-                   'standard_name': 'equivalent_reflectivity_factor',
-                   'long_name': 'equivalent_reflectivity_factor',
-                   'unit': 'dBZ'},
-           'RR': {'add_offset': np.float(0),
-                  'valid_min': np.int32(0),
-                  'valid_max': np.int32(4095),
-                  '_FillValue': np.int32(65535),
-                  'standard_name': 'rainfall_rate',
-                  'long_name': 'rainfall_rate',
-                  'unit': 'mm h-1'},
-           'RA': {'add_offset': np.float(0),
-                  'valid_min': np.int32(0),
-                  'valid_max': np.int32(4095),
-                  '_FillValue': np.int32(65535),
-                  'standard_name': 'rainfall_amount',
-                  'long_name': 'rainfall_amount',
-                  'unit': 'mm'},
-           'PG': {'valid_min': np.int32(0),
-                  'valid_max': np.int32(255),
-                  '_FillValue': np.int32(255)}
-           }
+radolan = {
+    "dBZ": {
+        "scale_factor": np.float32(0.5),
+        "add_offset": np.float32(-32.5),
+        "valid_min": np.int32(0),
+        "valid_max": np.int32(255),
+        "_FillValue": np.int32(255),
+        "standard_name": "equivalent_reflectivity_factor",
+        "long_name": "equivalent_reflectivity_factor",
+        "unit": "dBZ",
+    },
+    "RR": {
+        "add_offset": np.float(0),
+        "valid_min": np.int32(0),
+        "valid_max": np.int32(4095),
+        "_FillValue": np.int32(65535),
+        "standard_name": "rainfall_rate",
+        "long_name": "rainfall_rate",
+        "unit": "mm h-1",
+    },
+    "RA": {
+        "add_offset": np.float(0),
+        "valid_min": np.int32(0),
+        "valid_max": np.int32(4095),
+        "_FillValue": np.int32(65535),
+        "standard_name": "rainfall_amount",
+        "long_name": "rainfall_amount",
+        "unit": "mm",
+    },
+    "PG": {
+        "valid_min": np.int32(0),
+        "valid_max": np.int32(255),
+        "_FillValue": np.int32(255),
+    },
+}

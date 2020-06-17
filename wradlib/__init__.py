@@ -16,13 +16,14 @@ except NameError:
 
 if __WRADLIB_SETUP__:
     import sys as _sys
+
     _sys.stderr.write("Running from wradlib source directory.\n")
     del _sys
 else:
     # Make sure that deprecation warnings get printed by default
     import warnings as _warnings
-    _warnings.filterwarnings('always', category=DeprecationWarning,
-                             module='wradlib')
+
+    _warnings.filterwarnings("always", category=DeprecationWarning, module="wradlib")
 
     # versioning
     from .version import git_revision as __git_revision__  # noqa
@@ -46,5 +47,6 @@ else:
     from . import vpr  # noqa
     from . import zonalstats  # noqa
     from . import zr  # noqa
+    from .util import show_versions  # noqa
 
-    __all__ = [s for s in dir() if not s.startswith('_')]
+    __all__ = [s for s in dir() if not s.startswith("_")]

@@ -13,9 +13,13 @@ Rectangular Grid Functions
 
    {}
 """
-__all__ = ['get_radolan_coords', 'get_radolan_grid', 'xyz_to_spherical',
-           'grid_to_polyvert']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "get_radolan_coords",
+    "get_radolan_grid",
+    "xyz_to_spherical",
+    "grid_to_polyvert",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
@@ -53,7 +57,7 @@ def get_radolan_coords(lon, lat, trig=False):
         er = 6370.040
         m_phi = (1 + np.sin(phi_0)) / (1 + np.sin(phi_m))
         x = er * m_phi * np.cos(phi_m) * np.sin(lam)
-        y = - er * m_phi * np.cos(phi_m) * np.cos(lam)
+        y = -er * m_phi * np.cos(phi_m) * np.cos(lam)
     else:
         # create radolan projection osr object
         proj_stereo = projection.create_osr("dwd-radolan")
@@ -61,8 +65,9 @@ def get_radolan_coords(lon, lat, trig=False):
         # create wgs84 projection osr object
         proj_wgs = projection.get_default_projection()
 
-        x, y = projection.reproject(lon, lat, projection_source=proj_wgs,
-                                    projection_target=proj_stereo)
+        x, y = projection.reproject(
+            lon, lat, projection_source=proj_wgs, projection_target=proj_stereo
+        )
 
     return x, y
 
@@ -167,23 +172,29 @@ Polar-Stereographic-Projection`.
     """
 
     # setup default parameters in dicts
-    tiny = {'j_0': 450, 'i_0': 450, 'res': 2}
-    small = {'j_0': 460, 'i_0': 460, 'res': 2}
-    normal = {'j_0': 450, 'i_0': 450, 'res': 1}
-    normal_wx = {'j_0': 370, 'i_0': 550, 'res': 1}
-    extended = {'j_0': 600, 'i_0': 800, 'res': 1}
-    griddefs = {(450, 450): tiny, (460, 460): small,
-                (900, 900): normal, (1100, 900): normal_wx,
-                (1500, 1400): extended}
+    tiny = {"j_0": 450, "i_0": 450, "res": 2}
+    small = {"j_0": 460, "i_0": 460, "res": 2}
+    normal = {"j_0": 450, "i_0": 450, "res": 1}
+    normal_wx = {"j_0": 370, "i_0": 550, "res": 1}
+    extended = {"j_0": 600, "i_0": 800, "res": 1}
+    griddefs = {
+        (450, 450): tiny,
+        (460, 460): small,
+        (900, 900): normal,
+        (1100, 900): normal_wx,
+        (1500, 1400): extended,
+    }
 
     # type and value checking
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
-            raise TypeError("wradlib.georef: Parameter *nrows* "
-                            "and *ncols* not integer")
+            raise TypeError(
+                "wradlib.georef: Parameter *nrows* " "and *ncols* not integer"
+            )
         if (nrows, ncols) not in griddefs.keys():
-            raise ValueError("wradlib.georef: Parameter *nrows* "
-                             "and *ncols* mismatch.")
+            raise ValueError(
+                "wradlib.georef: Parameter *nrows* " "and *ncols* mismatch."
+            )
     else:
         # fallback for call without parameters
         nrows = 900
@@ -191,9 +202,9 @@ Polar-Stereographic-Projection`.
 
     # tiny, small, normal or extended grid check
     # reference point changes according to radolan composit format
-    j_0 = griddefs[(nrows, ncols)]['j_0']
-    i_0 = griddefs[(nrows, ncols)]['i_0']
-    res = griddefs[(nrows, ncols)]['res']
+    j_0 = griddefs[(nrows, ncols)]["j_0"]
+    i_0 = griddefs[(nrows, ncols)]["i_0"]
+    res = griddefs[(nrows, ncols)]["res"]
 
     x_0, y_0 = get_radolan_coords(9.0, 51.0, trig=trig)
 
@@ -207,15 +218,16 @@ Polar-Stereographic-Projection`.
 
         if trig:
             # inverse projection
-            lon0 = 10.  # central meridian of projection
-            lat0 = 60.  # standard parallel of projection
+            lon0 = 10.0  # central meridian of projection
+            lat0 = 60.0  # standard parallel of projection
 
             sinlat0 = np.sin(np.radians(lat0))
 
-            fac = (6370.040 ** 2.) * ((1. + sinlat0) ** 2.)
+            fac = (6370.040 ** 2.0) * ((1.0 + sinlat0) ** 2.0)
             lon = np.degrees(np.arctan((-x / y))) + lon0
-            lat = np.degrees(np.arcsin((fac - (x ** 2. + y ** 2.)) /
-                                       (fac + (x ** 2. + y ** 2.))))
+            lat = np.degrees(
+                np.arcsin((fac - (x ** 2.0 + y ** 2.0)) / (fac + (x ** 2.0 + y ** 2.0)))
+            )
             radolan_grid = np.dstack((lon, lat))
         else:
             # create radolan projection osr object
@@ -224,14 +236,14 @@ Polar-Stereographic-Projection`.
             # create wgs84 projection osr object
             proj_wgs = projection.get_default_projection()
 
-            radolan_grid = projection.reproject(radolan_grid,
-                                                projection_source=proj_stereo,
-                                                projection_target=proj_wgs)
+            radolan_grid = projection.reproject(
+                radolan_grid, projection_source=proj_stereo, projection_target=proj_wgs
+            )
 
     return radolan_grid
 
 
-def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
+def xyz_to_spherical(xyz, alt=0, proj=None, ke=4.0 / 3.0):
     """Returns spherical representation (r, theta, phi) of given cartesian
     coordinates (x, y, z) with respect to the reference altitude (asl)
     considering earth's geometry (proj).
@@ -266,10 +278,10 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4. / 3.):
     # for the latitude_of_center, if no projection is given assume
     # spherical earth
     try:
-        lat0 = proj.GetProjParm('latitude_of_center')
+        lat0 = proj.GetProjParm("latitude_of_center")
         re = projection.get_earth_radius(lat0, proj)
     except Exception:
-        re = 6370040.
+        re = 6370040.0
 
     # calculate xy-distance
     s = np.sqrt(np.sum(xyz[..., 0:2] ** 2, axis=-1))

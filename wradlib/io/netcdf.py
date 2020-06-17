@@ -11,8 +11,8 @@ Read NetCDF
 
    {}
 """
-__all__ = ['read_edge_netcdf', 'read_generic_netcdf']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = ["read_edge_netcdf", "read_generic_netcdf"]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
 import datetime as dt
@@ -48,24 +48,24 @@ def read_edge_netcdf(filename, enforce_equidist=False):
     dset = nc.Dataset(filename)
     data = dset.variables[dset.TypeName][:]
     # Check azimuth angles and rotate image
-    az = dset.variables['Azimuth'][:]
+    az = dset.variables["Azimuth"][:]
     # These are the indices of the minimum and maximum azimuth angle
     ix_minaz = np.argmin(az)
     ix_maxaz = np.argmax(az)
     if enforce_equidist:
-        az = np.linspace(np.round(az[ix_minaz], 2),
-                         np.round(az[ix_maxaz], 2), len(az))
+        az = np.linspace(np.round(az[ix_minaz], 2), np.round(az[ix_maxaz], 2), len(az))
     else:
         az = np.roll(az, -ix_minaz)
     # rotate accordingly
     data = np.roll(data, -ix_minaz, axis=0)
-    data = np.where(data == dset.getncattr('MissingData'), np.nan, data)
+    data = np.where(data == dset.getncattr("MissingData"), np.nan, data)
     # Ranges
-    binwidth = ((dset.getncattr('MaximumRange-value') * 1000.) /
-                len(dset.dimensions['Gate']))
-    r = np.arange(binwidth,
-                  (dset.getncattr('MaximumRange-value') * 1000.) +
-                  binwidth, binwidth)
+    binwidth = (dset.getncattr("MaximumRange-value") * 1000.0) / len(
+        dset.dimensions["Gate"]
+    )
+    r = np.arange(
+        binwidth, (dset.getncattr("MaximumRange-value") * 1000.0) + binwidth, binwidth
+    )
     # collect attributes
     attrs = {}
     for attrname in dset.ncattrs():
@@ -75,12 +75,11 @@ def read_edge_netcdf(filename, enforce_equidist=False):
     #     data = data[:,:range_lim / binwidth]
     #     r = r[:range_lim / binwidth]
     # Set additional metadata attributes
-    attrs['az'] = az
-    attrs['r'] = r
-    attrs['sitecoords'] = (attrs['Longitude'], attrs['Latitude'],
-                           attrs['Height'])
-    attrs['time'] = dt.datetime.utcfromtimestamp(attrs.pop('Time'))
-    attrs['max_range'] = data.shape[1] * binwidth
+    attrs["az"] = az
+    attrs["r"] = r
+    attrs["sitecoords"] = (attrs["Longitude"], attrs["Latitude"], attrs["Height"])
+    attrs["time"] = dt.datetime.utcfromtimestamp(attrs.pop("Time"))
+    attrs["max_range"] = data.shape[1] * binwidth
 
     dset.close()
 
@@ -125,23 +124,23 @@ def read_netcdf_group(ncid):
         for k, v in ncid.dimensions.items():
             tmp = collections.OrderedDict()
             try:
-                tmp['data_model'] = v._data_model
+                tmp["data_model"] = v._data_model
             except AttributeError:
                 pass
             try:
-                tmp['size'] = v.__len__()
+                tmp["size"] = v.__len__()
             except AttributeError:
                 pass
-            tmp['dimid'] = v._dimid
+            tmp["dimid"] = v._dimid
             dimids = np.append(dimids, v._dimid)
-            tmp['grpid'] = v._grpid
-            tmp['isunlimited'] = v.isunlimited()
+            tmp["grpid"] = v._grpid
+            tmp["isunlimited"] = v.isunlimited()
             dim[k] = tmp
         # Usually, the dimensions should be ordered by dimid automatically
         # in case netcdf used OrderedDict. However, we should double check
         if np.array_equal(dimids, np.sort(dimids)):
             # is already sorted
-            out['dimensions'] = dim
+            out["dimensions"] = dim
         else:
             # need to sort
             dim2 = collections.OrderedDict()
@@ -157,15 +156,15 @@ def read_netcdf_group(ncid):
             tmp = collections.OrderedDict()
             for k1 in v.ncattrs():
                 tmp[k1] = v.getncattr(k1)
-            if v[:].dtype.kind == 'S':
+            if v[:].dtype.kind == "S":
                 try:
-                    tmp['data'] = nc.chartostring(v[:])
+                    tmp["data"] = nc.chartostring(v[:])
                 except Exception:
-                    tmp['data'] = v[:]
+                    tmp["data"] = v[:]
             else:
-                tmp['data'] = v[:]
+                tmp["data"] = v[:]
             var[k] = tmp
-        out['variables'] = var
+        out["variables"] = var
 
     return out
 
@@ -205,7 +204,7 @@ def read_generic_netcdf(fname):
     --------
     See :ref:`/notebooks/fileio/wradlib_generic_netcdf_example.ipynb`.
     """
-    ncid = nc.Dataset(fname, 'r')
+    ncid = nc.Dataset(fname, "r")
 
     out = read_netcdf_group(ncid)
 

@@ -1,0 +1,34 @@
+parameters:
+  env_file: ci/requirements/$CONDA_ENV.yml
+
+steps:
+
+- template: add-conda-to-path.yml
+
+- bash: |
+    conda update -y conda
+    conda env create -n wradlib-tests --file ${{ parameters.env_file }}
+  displayName: Install conda dependencies
+
+- bash: |
+    source activate wradlib-tests
+    python -m pip install --no-deps -e .
+  displayName: Install wradlib
+
+- bash: |
+    git clone https://github.com/wradlib/wradlib-data.git data
+    echo "##vso[task.setvariable variable=WRADLIB_DATA]$PWD/data"
+  condition: eq(variables.test_data, true)
+  displayName: Install wradlib-data
+
+- bash: |
+    git clone https://github.com/wradlib/wradlib-notebooks.git notebooks
+  condition: eq(variables.notebooks, true)
+  displayName: Install wradlib-notebooks
+
+- bash: |
+    source activate wradlib-tests
+    conda info -a
+    conda list
+    python -c "import wradlib; print(wradlib.version.full_version)"
+  displayName: Version info

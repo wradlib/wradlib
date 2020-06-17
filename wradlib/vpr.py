@@ -79,16 +79,21 @@ volume data::
 
    {}
 """
-__all__ = ['volcoords_from_polar', 'make_3d_grid', 'CartesianVolume', 'CAPPI',
-           'PseudoCAPPI']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "volcoords_from_polar",
+    "make_3d_grid",
+    "CartesianVolume",
+    "CAPPI",
+    "PseudoCAPPI",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
 from wradlib import georef, ipol, util
 
 
-class CartesianVolume():
+class CartesianVolume:
     """Create 3-D regular volume grid in Cartesian coordinates from polar \
     data with multiple elevation angles
 
@@ -117,18 +122,31 @@ class CartesianVolume():
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
-    def __init__(self, polcoords, gridcoords, gridshape=None,
-                 maxrange=None, minelev=None, maxelev=None,
-                 ipclass=ipol.Idw, **ipargs):
+    def __init__(
+        self,
+        polcoords,
+        gridcoords,
+        gridshape=None,
+        maxrange=None,
+        minelev=None,
+        maxelev=None,
+        ipclass=ipol.Idw,
+        **ipargs,
+    ):
         # radar location in Cartesian coordinates
         # TODO: pass projected radar location as argument
         # (allows processing of incomplete polar volumes)
-        self.radloc = np.array([np.mean(polcoords[:, 0]),
-                                np.mean(polcoords[:, 1]),
-                                np.min(polcoords[:, 2])]).reshape((-1, 3))
+        self.radloc = np.array(
+            [
+                np.mean(polcoords[:, 0]),
+                np.mean(polcoords[:, 1]),
+                np.min(polcoords[:, 2]),
+            ]
+        ).reshape((-1, 3))
         # Set the mask which masks the blind voxels of the 3-D volume grid
-        self.mask = self._get_mask(gridcoords, polcoords, gridshape,
-                                   maxrange, minelev, maxelev)
+        self.mask = self._get_mask(
+            gridcoords, polcoords, gridshape, maxrange, minelev, maxelev
+        )
         # create an instance of the Interpolation class
         self.trgix = np.where(np.logical_not(self.mask))
         self.ip = ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
@@ -154,8 +172,15 @@ class CartesianVolume():
 
         return ipdata
 
-    def _get_mask(self, gridcoords, polcoords=None, gridshape=None,
-                  maxrange=None, minelev=None, maxelev=None):
+    def _get_mask(
+        self,
+        gridcoords,
+        polcoords=None,
+        gridshape=None,
+        maxrange=None,
+        minelev=None,
+        maxelev=None,
+    ):
         """Returns a mask
 
         (the base class only contains a dummy function which masks nothing)
@@ -233,17 +258,19 @@ class CAPPI(CartesianVolume):
     --------
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
-    def _get_mask(self, gridcoords, polcoords, gridshape,
-                  maxrange, minelev, maxelev):
+
+    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume
 
         For the CAPPI, blind voxels are below `minelev` and above `maxelev`
         and beyond `maxrange`.
         """
-        below, above, out_of_range = blindspots(self.radloc, gridcoords,
-                                                minelev, maxelev, maxrange)
-        return np.logical_not(np.logical_not(out_of_range) &
-                              np.logical_not(below) & np.logical_not(above))
+        below, above, out_of_range = blindspots(
+            self.radloc, gridcoords, minelev, maxelev, maxrange
+        )
+        return np.logical_not(
+            np.logical_not(out_of_range) & np.logical_not(below) & np.logical_not(above)
+        )
 
 
 class PseudoCAPPI(CartesianVolume):
@@ -293,15 +320,14 @@ class PseudoCAPPI(CartesianVolume):
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
-    def _get_mask(self, gridcoords, polcoords, gridshape,
-                  maxrange, minelev, maxelev):
+    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
 
         For the Pseudo CAPPI, blind voxels are only those beyond `maxrange`.
         """
-        return np.logical_not(np.logical_not(out_of_range(self.radloc,
-                                                          gridcoords,
-                                                          maxrange)))
+        return np.logical_not(
+            np.logical_not(out_of_range(self.radloc, gridcoords, maxrange))
+        )
 
 
 def out_of_range(center, gridcoords, maxrange):
@@ -354,13 +380,13 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     # distances of 3-D grid nodes from radar site (center)
     dist_from_rad = np.sqrt(((gridcoords - center) ** 2).sum(axis=-1))
     # below the radar
-    below = gridcoords[:, 2] < (georef.bin_altitude(dist_from_rad, minelev, 0,
-                                                    re=6371000) +
-                                center[:, 2])
+    below = gridcoords[:, 2] < (
+        georef.bin_altitude(dist_from_rad, minelev, 0, re=6371000) + center[:, 2]
+    )
     # above the radar
-    above = gridcoords[:, 2] > (georef.bin_altitude(dist_from_rad, maxelev, 0,
-                                                    re=6371000) +
-                                center[:, 2])
+    above = gridcoords[:, 2] > (
+        georef.bin_altitude(dist_from_rad, maxelev, 0, re=6371000) + center[:, 2]
+    )
     # out of range
     out_of_range = dist_from_rad > maxrange
     return below, above, out_of_range
@@ -401,8 +427,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     return coords
 
 
-def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
-                                   ranges, proj=None):
+def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
     """Create Cartesian coordinates for polar volumes with irregular \
     sweep specifications
 
@@ -434,8 +459,9 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
         print("Could not create an array from argument <elevs>.")
         print("The following exception was raised:")
         raise
-    assert (elevs.ndim == 1) and (elevs.dtype != np.dtype("object")), \
-        "Argument <elevs> in wradlib.volcoords_from_polar must be a 1-D array."
+    assert (elevs.ndim == 1) and (
+        elevs.dtype != np.dtype("object")
+    ), "Argument <elevs> in wradlib.volcoords_from_polar must be a 1-D array."
     # now: is there one azimuths array for all elevation angles
     # or one for each?
     try:
@@ -447,9 +473,9 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     if len(azimuths) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in azimuths]
-        assert not ((False in isseq) and (True in isseq)), \
-            "Argument <azimuths> contains both iterable " \
-            "and non-iterable items."
+        assert not ((False in isseq) and (True in isseq)), (
+            "Argument <azimuths> contains both iterable " "and non-iterable items."
+        )
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             oneaz4all = False
@@ -463,9 +489,9 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     if len(ranges) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in ranges]
-        assert not ((False in isseq) and (True in isseq)), \
-            "Argument <azimuths> contains both iterable " \
-            "and non-iterable items."
+        assert not ((False in isseq) and (True in isseq)), (
+            "Argument <azimuths> contains both iterable " "and non-iterable items."
+        )
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             onerange4all = False
@@ -495,8 +521,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths,
     return coords
 
 
-def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res,
-                 minalt=0.):
+def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res, minalt=0.0):
     """Generate Cartesian coordinates for a regular 3-D grid based on \
     radar specs.
 
@@ -528,8 +553,7 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res,
         float array of shape (num grid points, 3), a tuple of
         3 representing the grid shape
     """
-    center = georef.reproject(sitecoords[0], sitecoords[1],
-                              projection_target=proj)
+    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=proj)
     # minz = sitecoords[2]
     llx = center[0] - maxrange
     lly = center[1] - maxrange
@@ -556,9 +580,9 @@ def synthetic_polar_volume(coords):
     """
     x = coords[:, 0] * 10 / np.max(coords[:, 0])
     y = coords[:, 1] * 10 / np.max(coords[:, 1])
-    z = coords[:, 2] / 1000.
+    z = coords[:, 2] / 1000.0
     out = np.abs(np.sin(x * y)) * np.exp(-z)
-    out = out * 100. / out.max()
+    out = out * 100.0 / out.max()
     return out
 
 
@@ -596,5 +620,5 @@ def norm_vpr_stats(volume, reference_layer, stat=np.mean, **kwargs):
     return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), axis=1, **kwargs)
 
 
-if __name__ == '__main__':
-    print('wradlib: Calling module <vpr> as main...')
+if __name__ == "__main__":
+    print("wradlib: Calling module <vpr> as main...")

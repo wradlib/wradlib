@@ -13,10 +13,16 @@ Polar Grid Functions
 
    {}
 """
-__all__ = ['spherical_to_xyz', 'spherical_to_proj', 'spherical_to_polyvert',
-           'spherical_to_centroids', 'centroid_to_polyvert', 'sweep_centroids',
-           'maximum_intensity_projection']
-__doc__ = __doc__.format('\n   '.join(__all__))
+__all__ = [
+    "spherical_to_xyz",
+    "spherical_to_proj",
+    "spherical_to_polyvert",
+    "spherical_to_centroids",
+    "centroid_to_polyvert",
+    "sweep_centroids",
+    "maximum_intensity_projection",
+]
+__doc__ = __doc__.format("\n   ".join(__all__))
 
 import warnings
 
@@ -25,8 +31,9 @@ import numpy as np
 from wradlib.georef import misc, projection
 
 
-def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
-                     squeeze=None, strict_dims=False):
+def spherical_to_xyz(
+    r, phi, theta, sitecoords, re=None, ke=4.0 / 3.0, squeeze=None, strict_dims=False
+):
     """Transforms spherical coordinates (r, phi, theta) to cartesian
     coordinates (x, y, z) centered at sitecoords (aeqd).
 
@@ -71,7 +78,7 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
     try:
         centalt = sitecoords[2]
     except IndexError:
-        centalt = 0.
+        centalt = 0.0
 
     # if no radius is given, get the approximate radius of the WGS84
     # ellipsoid for the site's latitude
@@ -79,17 +86,19 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
         re = projection.get_earth_radius(sitecoords[1])
         # Set up aeqd-projection sitecoord-centered, wgs84 datum and ellipsoid
         # use world azimuthal equidistant projection
-        projstr = ('+proj=aeqd +lon_0={lon:f} +x_0=0 +y_0=0 +lat_0={lat:f} ' +
-                   '+ellps=WGS84 +datum=WGS84 +units=m +no_defs' +
-                   '').format(lon=sitecoords[0], lat=sitecoords[1])
+        projstr = (
+            "+proj=aeqd +lon_0={lon:f} +x_0=0 +y_0=0 +lat_0={lat:f} "
+            + "+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
+            + ""
+        ).format(lon=sitecoords[0], lat=sitecoords[1])
 
     else:
         # Set up aeqd-projection sitecoord-centered, assuming spherical earth
         # use Sphere azimuthal equidistant projection
-        projstr = ('+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={a:f} '
-                   '+b={b:f} +units=m +no_defs').format(lon=sitecoords[0],
-                                                        lat=sitecoords[1],
-                                                        a=re, b=re)
+        projstr = (
+            "+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={a:f} "
+            "+b={b:f} +units=m +no_defs"
+        ).format(lon=sitecoords[0], lat=sitecoords[1], a=re, b=re)
 
     rad = projection.proj4_to_osr(projstr)
 
@@ -119,8 +128,7 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
     z = misc.bin_altitude(r, theta, centalt, re, ke=ke)
     dist = misc.site_distance(r, theta, z, re, ke=ke)
 
-    if ((not strict_dims) and phi.ndim and r.ndim and
-            (r.shape[2] == phi.shape[1])):
+    if (not strict_dims) and phi.ndim and r.ndim and (r.shape[2] == phi.shape[1]):
         z = np.squeeze(z)
         dist = np.squeeze(dist)
         phi = np.squeeze(phi)
@@ -139,17 +147,20 @@ def spherical_to_xyz(r, phi, theta, sitecoords, re=None, ke=4./3.,
         xyz.shape = (xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],)
 
     if squeeze is None:
-        warnings.warn("Function `spherical_to_xyz` returns an array "
-                      "of shape (theta, phi, range, 3). Use `squeeze=True` "
-                      "to remove singleton dimensions."
-                      "", DeprecationWarning)
+        warnings.warn(
+            "Function `spherical_to_xyz` returns an array "
+            "of shape (theta, phi, range, 3). Use `squeeze=True` "
+            "to remove singleton dimensions."
+            "",
+            DeprecationWarning,
+        )
     if squeeze:
         xyz = np.squeeze(xyz)
 
     return xyz, rad
 
 
-def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4./3.):
+def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4.0 / 3.0):
     """Transforms spherical coordinates (r, phi, theta) to projected
     coordinates centered at sitecoords in given projection.
 
@@ -217,12 +228,10 @@ Georeferencing-and-Projection`.
     if proj is None:
         proj = projection.get_default_projection()
 
-    xyz, rad = spherical_to_xyz(r, phi, theta, sitecoords, re=re, ke=ke,
-                                squeeze=True)
+    xyz, rad = spherical_to_xyz(r, phi, theta, sitecoords, re=re, ke=ke, squeeze=True)
 
     # reproject aeqd to destination projection
-    coords = projection.reproject(xyz, projection_source=rad,
-                                  projection_target=proj)
+    coords = projection.reproject(xyz, projection_source=rad, projection_target=proj)
 
     return coords
 
@@ -280,17 +289,14 @@ def centroid_to_polyvert(centroid, delta):
     """
     cent = np.asanyarray(centroid)
     if cent.shape[-1] != 2:
-        raise ValueError("Parameter 'centroid' dimensions need "
-                         "to be (..., 2)")
+        raise ValueError("Parameter 'centroid' dimensions need " "to be (..., 2)")
     dshape = [1] * cent.ndim
     dshape.insert(-1, 5)
     dshape[-1] = 2
 
-    d = np.array([[-1., -1.],
-                  [-1., 1.],
-                  [1., 1.],
-                  [1., -1.],
-                  [-1., -1.]]).reshape(tuple(dshape))
+    d = np.array(
+        [[-1.0, -1.0], [-1.0, 1.0], [1.0, 1.0], [1.0, -1.0], [-1.0, -1.0]]
+    ).reshape(tuple(dshape))
 
     return np.asanyarray(centroid)[..., None, :] + d * np.asanyarray(delta)
 
@@ -367,16 +373,18 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     r = np.insert(r, 0, r[0] - _get_range_resolution(r))
     phi = phi - 0.5 * _get_azimuth_resolution(phi)
     phi = np.append(phi, phi[0])
-    phi = np.where(phi < 0, phi + 360., phi)
+    phi = np.where(phi < 0, phi + 360.0, phi)
 
     # generate a grid of polar coordinates of bin corners
     r, phi = np.meshgrid(r, phi)
 
-    coords, rad = spherical_to_xyz(r, phi, theta, sitecoords, squeeze=True,
-                                   strict_dims=True)
+    coords, rad = spherical_to_xyz(
+        r, phi, theta, sitecoords, squeeze=True, strict_dims=True
+    )
     if proj is not None:
-        coords = projection.reproject(coords, projection_source=rad,
-                                      projection_target=proj)
+        coords = projection.reproject(
+            coords, projection_source=rad, projection_target=proj
+        )
 
     llc = coords[:-1, :-1]
     ulc = coords[:-1, 1:]
@@ -450,8 +458,9 @@ def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
     if proj is None:
         return coords, rad
     else:
-        return projection.reproject(coords, projection_source=rad,
-                                    projection_target=proj)
+        return projection.reproject(
+            coords, projection_source=rad, projection_target=proj
+        )
 
 
 def _check_polar_coords(r, az):
@@ -466,41 +475,52 @@ def _check_polar_coords(r, az):
         azimuth angles in degree
 
     """
-    r = np.array(r, 'f4')
-    az = np.array(az, 'f4')
-    az[az == 360.] = 0.
-    if 0. in r:
-        raise ValueError('Invalid polar coordinates: '
-                         '0 is not a valid range gate specification '
-                         '(the centroid of a range gate must be positive).')
+    r = np.array(r, "f4")
+    az = np.array(az, "f4")
+    az[az == 360.0] = 0.0
+    if 0.0 in r:
+        raise ValueError(
+            "Invalid polar coordinates: "
+            "0 is not a valid range gate specification "
+            "(the centroid of a range gate must be positive)."
+        )
     if len(np.unique(r)) != len(r):
-        raise ValueError('Invalid polar coordinates: '
-                         'Range gate specification contains duplicate '
-                         'entries.')
+        raise ValueError(
+            "Invalid polar coordinates: "
+            "Range gate specification contains duplicate "
+            "entries."
+        )
     if len(np.unique(az)) != len(az):
-        raise ValueError('Invalid polar coordinates: '
-                         'Azimuth specification contains duplicate entries.')
+        raise ValueError(
+            "Invalid polar coordinates: "
+            "Azimuth specification contains duplicate entries."
+        )
     if not _is_sorted(r):
-        raise ValueError('Invalid polar coordinates: '
-                         'Range array must be sorted.')
+        raise ValueError("Invalid polar coordinates: " "Range array must be sorted.")
     if len(np.unique(r[1:] - r[:-1])) > 1:
-        raise ValueError('Invalid polar coordinates: '
-                         'Range gates are not equidistant.')
-    if len(np.where(az >= 360.)[0]) > 0:
-        raise ValueError('Invalid polar coordinates: '
-                         'Azimuth angles must not be greater than '
-                         'or equal to 360 deg.')
+        raise ValueError(
+            "Invalid polar coordinates: " "Range gates are not equidistant."
+        )
+    if len(np.where(az >= 360.0)[0]) > 0:
+        raise ValueError(
+            "Invalid polar coordinates: "
+            "Azimuth angles must not be greater than "
+            "or equal to 360 deg."
+        )
     if not _is_sorted(az):
         # it is ok if the azimuth angle array is not sorted, but it has to be
         # 'continuously clockwise', e.g. it could start at 90° and stop at °89
         az_right = az[np.where(np.logical_and(az <= 360, az >= az[0]))[0]]
         az_left = az[np.where(az < az[0])]
         if (not _is_sorted(az_right)) or (not _is_sorted(az_left)):
-            raise ValueError('Invalid polar coordinates: '
-                             'Azimuth array is not sorted clockwise.')
+            raise ValueError(
+                "Invalid polar coordinates: " "Azimuth array is not sorted clockwise."
+            )
     if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1])) > 1:
-        warnings.warn("The azimuth angles of the current "
-                      "dataset are not equidistant.", UserWarning)
+        warnings.warn(
+            "The azimuth angles of the current " "dataset are not equidistant.",
+            UserWarning,
+        )
         # print('Invalid polar coordinates: Azimuth angles '
         #       'are not equidistant.')
         # exit()
@@ -520,11 +540,13 @@ def _get_range_resolution(x):
     the array x of the range gates' exterior limits
     """
     if len(x) <= 1:
-        raise ValueError('The range gate array has to contain at least '
-                         'two values for deriving the resolution.')
+        raise ValueError(
+            "The range gate array has to contain at least "
+            "two values for deriving the resolution."
+        )
     res = np.unique(x[1:] - x[:-1])
     if len(res) > 1:
-        raise ValueError('The resolution of the range array is ambiguous.')
+        raise ValueError("The resolution of the range array is ambiguous.")
     return res[0]
 
 
@@ -535,8 +557,7 @@ def _get_azimuth_resolution(x):
     """
     res = np.unique(np.sort(x)[1:] - np.sort(x)[:-1])
     if len(res) > 1:
-        raise ValueError('The resolution of the azimuth angle array '
-                         'is ambiguous.')
+        raise ValueError("The resolution of the azimuth angle array " "is ambiguous.")
     return res[0]
 
 
@@ -560,9 +581,9 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
         array of shape (nrays,nbins,3) containing native centroid radar
         coordinates (slant range, azimuth, elevation)
     """
-    ascale = 360. / nrays
-    azimuths = ascale / 2. + np.linspace(0, 360., nrays, endpoint=False)
-    ranges = np.arange(nbins) * rscale + rscale / 2.
+    ascale = 360.0 / nrays
+    azimuths = ascale / 2.0 + np.linspace(0, 360.0, nrays, endpoint=False)
+    ranges = np.arange(nbins) * rscale + rscale / 2.0
     coordinates = np.empty((nrays, nbins, 3), dtype=float)
     coordinates[:, :, 0] = np.tile(ranges, (nrays, 1))
     coordinates[:, :, 1] = np.transpose(np.tile(azimuths, (nbins, 1)))
@@ -570,8 +591,9 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
     return coordinates
 
 
-def maximum_intensity_projection(data, r=None, az=None, angle=None,
-                                 elev=None, autoext=True):
+def maximum_intensity_projection(
+    data, r=None, az=None, angle=None, elev=None, autoext=True
+):
     """Computes the maximum intensity projection along an arbitrary cut \
     through the ppi from polar data.
 
@@ -643,7 +665,7 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
     # get height values from polar data and build cartesian height array
     # add delta to last element to compensate for open bound (np.digitize)
     hp = np.zeros((y.shape[0], x.shape[0]))
-    hc = misc.bin_altitude(x, elev, 0, re=6370040.)
+    hc = misc.bin_altitude(x, elev, 0, re=6370040.0)
     hp[:] = hc
     hc[-1] += 0.0001
 
@@ -655,7 +677,7 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
     # xs, ys = np.meshgrid(dc,x)
 
     # convert polar coordinates to cartesian
-    xxx = xx * np.cos(np.radians(90. - yy))
+    xxx = xx * np.cos(np.radians(90.0 - yy))
     # yyy = xx * np.sin(np.radians(90.-yy))
 
     # digitize coordinates according to cartesian range array
@@ -672,10 +694,8 @@ def maximum_intensity_projection(data, r=None, az=None, angle=None,
     height_dig1 = height_dig1[0:-1, 0:-1]
 
     # create height and range masks
-    height_mask = [(height_dig1 == i).ravel().nonzero()[0]
-                   for i in range(1, len(hc))]
-    range_mask = [(range_dig1 == i).ravel().nonzero()[0]
-                  for i in range(1, len(dc))]
+    height_mask = [(height_dig1 == i).ravel().nonzero()[0] for i in range(1, len(hc))]
+    range_mask = [(range_dig1 == i).ravel().nonzero()[0] for i in range(1, len(dc))]
 
     # create mip output array, set outval to inf
     mip = np.zeros((d1.shape[0], 2 * d1.shape[0]))

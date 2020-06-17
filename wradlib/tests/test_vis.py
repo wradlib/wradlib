@@ -6,13 +6,15 @@ import sys
 import tempfile
 import unittest
 
-import numpy as np
 import matplotlib.pyplot as pl
-pl.interactive(True)  # noqa
+import numpy as np
 
 from wradlib import georef, util, vis  # noqa: 402
 
-cartopy = util.import_optional('cartopy')
+pl.interactive(True)  # noqa
+
+
+cartopy = util.import_optional("cartopy")
 
 
 class PolarPlotTest(unittest.TestCase):
@@ -30,46 +32,45 @@ class PolarPlotTest(unittest.TestCase):
         self.img = img
         self.proj = georef.create_osr("dwd-radolan")
 
-        self.da_ppi = georef.create_xarray_dataarray(img, self.r, self.az,
-                                                     self.th)
+        self.da_ppi = georef.create_xarray_dataarray(img, self.r, self.az, self.th)
         self.da_ppi = georef.georeference_dataset(self.da_ppi, proj=None)
-        self.da_rhi = georef.create_xarray_dataarray(img[0:90], self.r,
-                                                     self.az1, self.el)
+        self.da_rhi = georef.create_xarray_dataarray(
+            img[0:90], self.r, self.az1, self.el
+        )
         self.da_rhi = georef.georeference_dataset(self.da_rhi, proj=None)
 
     def test_plot_ppi(self):
-        ax, pm = vis.plot_ppi(self.img, re=6371000., ke=(4. / 3.))
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az,
-                              re=6371000., ke=(4. / 3.))
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az,
-                              re=6371000., ke=(4. / 3.), ax=ax)
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az,
-                              re=6371000., ke=(4. / 3.), ax=212)
+        ax, pm = vis.plot_ppi(self.img, re=6371000.0, ke=(4.0 / 3.0))
+        ax, pm = vis.plot_ppi(self.img, self.r, self.az, re=6371000.0, ke=(4.0 / 3.0))
+        ax, pm = vis.plot_ppi(
+            self.img, self.r, self.az, re=6371000.0, ke=(4.0 / 3.0), ax=ax
+        )
+        ax, pm = vis.plot_ppi(
+            self.img, self.r, self.az, re=6371000.0, ke=(4.0 / 3.0), ax=212
+        )
         ax, pm = vis.plot_ppi(self.img)
         vis.plot_ppi_crosshair(site=(0, 0, 0), ranges=[2, 4, 8])
-        vis.plot_ppi_crosshair(site=(0, 0, 0),
-                               ranges=[2, 4, 8],
-                               angles=[0, 45, 90, 180, 270],
-                               line=dict(color='white',
-                                         linestyle='solid'))
-        ax, pm = vis.plot_ppi(self.img, self.r, site=(10., 45., 0.),
-                              proj=self.proj)
-        vis.plot_ppi_crosshair(site=(10., 45., 0.),
-                               ranges=[2, 4, 8],
-                               angles=[0, 45, 90, 180, 270],
-                               proj=self.proj,
-                               line=dict(color='white',
-                                         linestyle='solid'))
-        ax, pm = vis.plot_ppi(self.img, func='contour')
-        ax, pm = vis.plot_ppi(self.img, func='contourf')
-        ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=self.proj,
-                              site=(0, 0, 0))
+        vis.plot_ppi_crosshair(
+            site=(0, 0, 0),
+            ranges=[2, 4, 8],
+            angles=[0, 45, 90, 180, 270],
+            line=dict(color="white", linestyle="solid"),
+        )
+        ax, pm = vis.plot_ppi(self.img, self.r, site=(10.0, 45.0, 0.0), proj=self.proj)
+        vis.plot_ppi_crosshair(
+            site=(10.0, 45.0, 0.0),
+            ranges=[2, 4, 8],
+            angles=[0, 45, 90, 180, 270],
+            proj=self.proj,
+            line=dict(color="white", linestyle="solid"),
+        )
+        ax, pm = vis.plot_ppi(self.img, func="contour")
+        ax, pm = vis.plot_ppi(self.img, func="contourf")
+        ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=self.proj, site=(0, 0, 0))
         with self.assertWarns(UserWarning):
-            ax, pm = vis.plot_ppi(self.img, site=(10., 45., 0.),
-                                  proj=self.proj)
+            ax, pm = vis.plot_ppi(self.img, site=(10.0, 45.0, 0.0), proj=self.proj)
         with self.assertWarns(UserWarning):
-            ax, pm = vis.plot_ppi(self.img, proj=None,
-                                  site=(0, 0, 0))
+            ax, pm = vis.plot_ppi(self.img, proj=None, site=(0, 0, 0))
         with self.assertRaises(TypeError):
             ax, pm = vis.plot_ppi(self.img, proj=self.proj)
         with self.assertRaises(ValueError):
@@ -84,23 +85,22 @@ class PolarPlotTest(unittest.TestCase):
         self.da_ppi.wradlib.contour()
         self.da_ppi.wradlib.contourf()
         self.da_ppi.wradlib.pcolormesh()
-        self.da_ppi.wradlib.plot(proj='cg')
-        self.da_ppi.wradlib.plot_ppi(proj='cg')
-        self.da_ppi.wradlib.contour(proj='cg')
-        self.da_ppi.wradlib.contourf(proj='cg')
-        self.da_ppi.wradlib.pcolormesh(proj='cg')
+        self.da_ppi.wradlib.plot(proj="cg")
+        self.da_ppi.wradlib.plot_ppi(proj="cg")
+        self.da_ppi.wradlib.contour(proj="cg")
+        self.da_ppi.wradlib.contourf(proj="cg")
+        self.da_ppi.wradlib.pcolormesh(proj="cg")
         with self.assertRaises(TypeError):
             self.da_ppi.wradlib.pcolormesh(proj=self.proj)
         fig = pl.figure()
         ax = fig.add_subplot(111)
         with self.assertRaises(TypeError):
-            self.da_ppi.wradlib.pcolormesh(proj={'rot': 0, 'scale': 1},
-                                           ax=ax)
+            self.da_ppi.wradlib.pcolormesh(proj={"rot": 0, "scale": 1}, ax=ax)
 
-    @unittest.skipIf('cartopy' not in sys.modules, "without Cartopy")
+    @unittest.skipIf("cartopy" not in sys.modules, "without Cartopy")
     def test_plot_ppi_cartopy(self):
         if cartopy:
-            site = (7, 45, 0.)
+            site = (7, 45, 0.0)
             map_proj = cartopy.crs.Mercator(central_longitude=site[1])
             ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=map_proj)
             self.assertIsInstance(ax, cartopy.mpl.geoaxes.GeoAxes)
@@ -113,57 +113,61 @@ class PolarPlotTest(unittest.TestCase):
         ax, pm = vis.plot_rhi(self.img[0:90, :])
         ax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5)
         ax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, ax=212)
-        ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
-                              th=np.arange(90))
-        ax, pm = vis.plot_rhi(self.img[0:90, :], func='contour')
-        ax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf')
-        ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
-                              th=np.arange(90), proj=self.proj,
-                              site=(0, 0, 0))
+        ax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10), th=np.arange(90))
+        ax, pm = vis.plot_rhi(self.img[0:90, :], func="contour")
+        ax, pm = vis.plot_rhi(self.img[0:90, :], func="contourf")
+        ax, pm = vis.plot_rhi(
+            self.img[0:90, :],
+            r=np.arange(10),
+            th=np.arange(90),
+            proj=self.proj,
+            site=(0, 0, 0),
+        )
 
     def test_plot_rhi_xarray(self):
-        self.assertEqual(repr(self.da_rhi.wradlib).split("\n", 1)[1],
-                         repr(self.da_rhi).split("\n", 1)[1])
+        self.assertEqual(
+            repr(self.da_rhi.wradlib).split("\n", 1)[1],
+            repr(self.da_rhi).split("\n", 1)[1],
+        )
         self.da_rhi.wradlib.rays
         self.da_rhi.wradlib.plot()
         self.da_rhi.wradlib.plot_rhi()
         self.da_rhi.wradlib.contour()
         self.da_rhi.wradlib.contourf()
         self.da_rhi.wradlib.pcolormesh()
-        self.da_rhi.wradlib.plot(proj='cg')
-        self.da_rhi.wradlib.plot_rhi(proj='cg')
-        self.da_rhi.wradlib.contour(proj='cg')
-        self.da_rhi.wradlib.contourf(proj='cg')
-        self.da_rhi.wradlib.pcolormesh(proj='cg')
+        self.da_rhi.wradlib.plot(proj="cg")
+        self.da_rhi.wradlib.plot_rhi(proj="cg")
+        self.da_rhi.wradlib.contour(proj="cg")
+        self.da_rhi.wradlib.contourf(proj="cg")
+        self.da_rhi.wradlib.pcolormesh(proj="cg")
 
     def test_plot_cg_ppi(self):
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg')
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg',
-                                site=(0, 0, 0))
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=cgax)
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg")
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", site=(0, 0, 0))
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=cgax)
         fig, ax = pl.subplots(2, 2)
         with self.assertRaises(TypeError):
-            vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=ax[0, 0])
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=111)
-        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj='cg', ax=121)
-        cgax, pm = vis.plot_ppi(self.img, proj='cg')
-        cgax, pm = vis.plot_ppi(self.img, func='contour', proj='cg')
-        cgax, pm = vis.plot_ppi(self.img, func='contourf', proj='cg')
-        cgax, pm = vis.plot_ppi(self.img, func='contourf', proj='cg')
+            vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=ax[0, 0])
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=111)
+        cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=121)
+        cgax, pm = vis.plot_ppi(self.img, proj="cg")
+        cgax, pm = vis.plot_ppi(self.img, func="contour", proj="cg")
+        cgax, pm = vis.plot_ppi(self.img, func="contourf", proj="cg")
+        cgax, pm = vis.plot_ppi(self.img, func="contourf", proj="cg")
 
     def test_plot_cg_rhi(self):
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj='cg')
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj='cg', ax=cgax)
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj="cg")
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj="cg", ax=cgax)
         fig, ax = pl.subplots(2, 2)
         with self.assertRaises(TypeError):
-            vis.plot_rhi(self.img[0:90, :], proj='cg', ax=ax[0, 0])
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, proj='cg')
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj='cg')
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], r=np.arange(10),
-                                th=np.arange(90), proj='cg')
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contour', proj='cg')
-        cgax, pm = vis.plot_rhi(self.img[0:90, :], func='contourf',
-                                proj='cg')
+            vis.plot_rhi(self.img[0:90, :], proj="cg", ax=ax[0, 0])
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, proj="cg")
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], proj="cg")
+        cgax, pm = vis.plot_rhi(
+            self.img[0:90, :], r=np.arange(10), th=np.arange(90), proj="cg"
+        )
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], func="contour", proj="cg")
+        cgax, pm = vis.plot_rhi(self.img[0:90, :], func="contourf", proj="cg")
 
     def test_create_cg(self):
         cgax, caax, paax = vis.create_cg()
@@ -187,11 +191,9 @@ class MiscPlotTest(unittest.TestCase):
         datazy = np.zeros((len(z), len(y)))
         vol = np.zeros((len(z), len(y), len(x)))
         vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy)
-        vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy,
-                               title='Test')
-        tmp = tempfile.NamedTemporaryFile(mode='w+b').name
-        vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy,
-                               saveto=tmp)
+        vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, title="Test")
+        tmp = tempfile.NamedTemporaryFile(mode="w+b").name
+        vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, saveto=tmp)
         vis.plot_max_plan_and_vert(x, y, z, vol)
 
     def test_add_lines(self):
@@ -211,5 +213,5 @@ class MiscPlotTest(unittest.TestCase):
         vis.add_patches(ax, np.array([xy]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
