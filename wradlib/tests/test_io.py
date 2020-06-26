@@ -17,7 +17,7 @@ import xarray as xr
 
 from wradlib import georef, io, util, zonalstats
 
-from . import has_data, requires_data
+from . import requires_data
 
 
 class TestDX:

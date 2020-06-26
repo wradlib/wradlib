@@ -3,7 +3,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import numpy as np
-import pytest
 
 from wradlib import georef, vpr
 

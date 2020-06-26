@@ -58,7 +58,7 @@ class TestHelperFunctions:
             os.environ["WRADLIB_DATA"] = wrl_data_path
 
     @requires_data
-    def test_get_wradlib_data_path(self):
+    def test_get_wradlib_data_path_requires(self):
         filename = os.path.join(util.get_wradlib_data_path(), "test.dat")
         with pytest.raises(EnvironmentError):
             util.get_wradlib_data_file(filename)
