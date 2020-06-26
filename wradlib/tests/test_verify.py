@@ -2,24 +2,22 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
-
 import numpy as np
+import pytest
 
 from wradlib import georef, verify
 
 
-class PolarNeighboursTest(unittest.TestCase):
-    def setUp(self):
-        self.r = np.arange(1, 100, 10)
-        self.az = np.arange(0, 360, 90)
-        self.site = (9.7839, 48.5861)
-        self.proj = georef.epsg_to_osr(31467)
-        # Coordinates of the rain gages in Gauss-Krueger 3 coordinates
-        self.x, self.y = (np.array([3557880, 3557890]), np.array([5383379, 5383375]))
+class TestPolarNeighbours:
+    r = np.arange(1, 100, 10)
+    az = np.arange(0, 360, 90)
+    site = (9.7839, 48.5861)
+    proj = georef.epsg_to_osr(31467)
+    # Coordinates of the rain gages in Gauss-Krueger 3 coordinates
+    x, y = (np.array([3557880, 3557890]), np.array([5383379, 5383375]))
 
-        np.random.seed(42)
-        self.data = np.random.random((len(self.az), len(self.r)))
+    np.random.seed(42)
+    data = np.random.random((len(az), len(r)))
 
     def test___init__(self):
         verify.PolarNeighbours(
@@ -69,20 +67,19 @@ class PolarNeighboursTest(unittest.TestCase):
         np.testing.assert_allclose(by[1], resy1, rtol=1e-6)
 
 
-class ErrorMetricsTest(unittest.TestCase):
-    def setUp(self):
-        np.random.seed(42)
-        self.obs = np.random.uniform(0, 10, 100)
-        self.est = np.random.uniform(0, 10, 100)
-        self.non = np.zeros(100) * np.nan
+class TestErrorMetrics:
+    np.random.seed(42)
+    obs = np.random.uniform(0, 10, 100)
+    est = np.random.uniform(0, 10, 100)
+    non = np.zeros(100) * np.nan
 
     def test___init__(self):
         self.metrics = verify.ErrorMetrics(self.obs, self.est)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             verify.ErrorMetrics(self.obs, self.est[:10])
 
     def test___init__warn(self):
-        with self.assertWarns(UserWarning):
+        with pytest.warns(UserWarning):
             verify.ErrorMetrics(self.obs, self.non)
 
     def test_all_metrics(self):
@@ -92,7 +89,3 @@ class ErrorMetricsTest(unittest.TestCase):
     def test_pprint(self):
         metrics = verify.ErrorMetrics(self.obs, self.est)
         metrics.pprint()
-
-
-if __name__ == "__main__":
-    unittest.main()

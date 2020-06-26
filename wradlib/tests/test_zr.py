@@ -2,30 +2,26 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
-
 import numpy as np
 
 from wradlib import trafo, zr
 
 
-class ZRConversionTest(unittest.TestCase):
-    def setUp(self):
-        img = np.zeros((5, 11), dtype=np.float32)
-        img[0:1, 1:3] = 11.0  # precip field
-        img[0:1, 6:9] = 45.0
-        img[2:3, 1:3] = 38.0
-        img[2:3, 6:9] = 2.0
-        img[3:4, 1:7] = 5.0
+class TestZRConversion:
+    img = np.zeros((5, 11), dtype=np.float32)
+    img[0:1, 1:3] = 11.0  # precip field
+    img[0:1, 6:9] = 45.0
+    img[2:3, 1:3] = 38.0
+    img[2:3, 6:9] = 2.0
+    img[3:4, 1:7] = 5.0
 
-        img = np.stack([img, img * 1.1, img * 1.2], axis=0)
-        self.img = img
+    img = np.stack([img, img * 1.1, img * 1.2], axis=0)
 
     def test_z_to_r(self):
-        self.assertEqual(zr.z_to_r(trafo.idecibel(10.0)), 0.1537645610180688)
+        assert zr.z_to_r(trafo.idecibel(10.0)) == 0.1537645610180688
 
     def test_r_to_z(self):
-        self.assertEqual(zr.r_to_z(0.15), 9.611164492610417)
+        assert zr.r_to_z(0.15) == 9.611164492610417
 
     def test_z_to_r_enhanced(self):
         res_rr, res_si = zr.z_to_r_enhanced(trafo.idecibel(self.img), polar=True)
@@ -174,7 +170,3 @@ class ZRConversionTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(rr, res_rr[0], decimal=6)
         np.testing.assert_almost_equal(si, res_si2, decimal=6)
         np.testing.assert_array_almost_equal(rr, res_rr2, decimal=6)
-
-
-if __name__ == "__main__":
-    unittest.main()

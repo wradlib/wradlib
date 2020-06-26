@@ -8,7 +8,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import unittest
 import zlib
 
 import deprecation
@@ -18,9 +17,12 @@ import xarray as xr
 
 from wradlib import georef, io, util, zonalstats
 
+from . import has_data, requires_data
+
 
 class TestDX:
     # testing functions related to read_dx
+    @requires_data
     def test__get_timestamp_from_filename(self):
         filename = "raa00-dx_10488-200608050000-drs---bin"
         assert io.radolan._get_timestamp_from_filename(filename) == datetime.datetime(
@@ -31,6 +33,7 @@ class TestDX:
             2006, 8, 5, 0
         )
 
+    @requires_data
     def test_get_dx_timestamp(self):
         filename = "raa00-dx_10488-200608050000-drs---bin"
         assert (
@@ -74,6 +77,7 @@ class TestDX:
     def test_unpack_dx(self):
         pass
 
+    @requires_data
     def test_read_dx(self):
         filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
         dxfile = util.get_wradlib_data_file(filename)
@@ -225,6 +229,7 @@ class TestMisc:
             assert meta == res2
             assert quant == res3
 
+    @requires_data
     def test_get_membership_functions(self):
         filename = util.get_wradlib_data_file("misc/msf_xband.gz")
         msf = io.misc.get_membership_functions(filename)
@@ -256,6 +261,7 @@ class TestHDF5:
         with pytest.raises(KeyError):
             io.hdf.from_hdf5(name, "NotAvailable")
 
+    @requires_data
     def test_read_safnwc(self):
         filename = "hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5"
         safnwcfile = util.get_wradlib_data_file(filename)
@@ -268,6 +274,7 @@ class TestHDF5:
         with pytest.raises(KeyError):
             io.gdal.read_safnwc("test1.h5")
 
+    @requires_data
     def test_read_gpm(self):
         filename1 = (
             "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-"
@@ -294,6 +301,7 @@ class TestHDF5:
         bbox = zonalstats.get_bbox(lon, lat)
         io.hdf.read_gpm(gpm_file, bbox)
 
+    @requires_data
     def test_read_trmm(self):
         # define TRMM data sets
         trmm_2a23_file = util.get_wradlib_data_file(
@@ -326,16 +334,19 @@ class TestHDF5:
 
         io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
 
+    @requires_data
     def test_read_generic_hdf5(self):
         filename = "hdf5/IDR66_20141206_094829.vol.h5"
         h5_file = util.get_wradlib_data_file(filename)
         io.hdf.read_generic_hdf5(h5_file)
 
+    @requires_data
     def test_read_opera_hdf5(self):
         filename = "hdf5/IDR66_20141206_094829.vol.h5"
         h5_file = util.get_wradlib_data_file(filename)
         io.hdf.read_opera_hdf5(h5_file)
 
+    @requires_data
     def test_read_gamic_hdf5(self):
         ppi = "hdf5/2014-08-10--182000.ppi.mvol"
         rhi = "hdf5/2014-06-09--185000.rhi.mvol"
@@ -353,7 +364,7 @@ class TestHDF5:
             io.hdf.read_gamic_hdf5(h5_file)
 
 
-class RadolanTest(unittest.TestCase):
+class TestRadolan:
     def test_get_radolan_header_token(self):
         keylist = [
             "BY",
@@ -509,6 +520,7 @@ class RadolanTest(unittest.TestCase):
         os.remove(temp_path)
         np.testing.assert_allclose(line, testarr)
 
+    @requires_data
     def test_decode_radolan_runlength_array(self):
         filename = "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz"
         pg_file = util.get_wradlib_data_file(filename)
@@ -520,6 +532,7 @@ class RadolanTest(unittest.TestCase):
         arr = io.radolan.decode_radolan_runlength_array(data, attrs)
         assert arr.shape == (460, 460)
 
+    @requires_data
     def test_read_radolan_binary_array(self):
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         rw_file = util.get_wradlib_data_file(filename)
@@ -536,6 +549,7 @@ class RadolanTest(unittest.TestCase):
             io.radolan.read_radolan_binary_array(rw_fid, attrs["datasize"] + 10)
 
     @pytest.mark.skipif(sys.platform.startswith("win"), reason="no gunzip on windows")
+    @requires_data
     def test_get_radolan_filehandle(self):
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         rw_file = util.get_wradlib_data_file(filename)
@@ -798,6 +812,7 @@ class RadolanTest(unittest.TestCase):
             else:
                 assert value == test_yw[key]
 
+    @requires_data
     def test_read_radolan_composite(self):
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         rw_file = util.get_wradlib_data_file(filename)
@@ -883,6 +898,7 @@ class RadolanTest(unittest.TestCase):
 
 
 class TestRainbow:
+    @requires_data
     def test_read_rainbow(self):
         filename = "rainbow/2013070308340000dBuZ.azi"
         rb_file = util.get_wradlib_data_file(filename)
@@ -1013,6 +1029,7 @@ class TestRainbow:
         with pytest.raises(EOFError):
             io.rainbow.get_rb_blob_data(datastring, 1)
 
+    @requires_data
     def test_get_rb_blob_from_file(self):
         filename = "rainbow/2013070308340000dBuZ.azi"
         rb_file = util.get_wradlib_data_file(filename)
@@ -1032,6 +1049,7 @@ class TestRainbow:
         with pytest.raises(IOError):
             io.rainbow.get_rb_blob_from_file("rb_fh", rbblob)
 
+    @requires_data
     def test_get_rb_file_as_string(self):
         filename = "rainbow/2013070308340000dBuZ.azi"
         rb_file = util.get_wradlib_data_file(filename)
@@ -1054,6 +1072,8 @@ class TestRainbow:
         with pytest.raises(IOError):
             io.rainbow.get_rb_header(buf)
 
+    @requires_data
+    def test_get_rb_header_from_file(self):
         filename = "rainbow/2013070308340000dBuZ.azi"
         rb_file = util.get_wradlib_data_file(filename)
         with open(rb_file, "rb") as rb_fh:
@@ -1084,6 +1104,7 @@ class TestRaster:
             remove=True,
         )
 
+    @requires_data
     def test_write_raster_dataset(self):
         filename = "geo/bonn_new.tif"
         geofile = util.get_wradlib_data_file(filename)
@@ -1093,6 +1114,7 @@ class TestRaster:
         with pytest.raises(TypeError):
             io.gdal.write_raster_dataset(geofile + "asc1", ds, "AIG")
 
+    @requires_data
     def test_open_raster(self):
         filename = "geo/bonn_new.tif"
         geofile = util.get_wradlib_data_file(filename)
@@ -1100,6 +1122,7 @@ class TestRaster:
 
 
 class TestVector:
+    @requires_data
     def test_open_vector(self):
         filename = "shapefiles/agger/agger_merge.shp"
         geofile = util.get_wradlib_data_file(filename)
@@ -1108,6 +1131,7 @@ class TestVector:
 
 
 class TestIris:
+    @requires_data
     def test_open_iris(self):
         filename = "sigmet/cor-main131125105503.RAW2049"
         sigmetfile = util.get_wradlib_data_file(filename)
@@ -1118,6 +1142,7 @@ class TestIris:
         assert data._record_number == 511
         assert data.filepos == 3139584
 
+    @requires_data
     def test_read_iris(self):
         filename = "sigmet/cor-main131125105503.RAW2049"
         sigmetfile = util.get_wradlib_data_file(filename)
@@ -1163,6 +1188,7 @@ class TestIris:
         assert list(data["data"][1]["sweep_data"].keys()) == data_types
         assert list(data["data"].keys()) == selected_data
 
+    @requires_data
     def test_IrisRecord(self):
         filename = "sigmet/cor-main131125105503.RAW2049"
         sigmetfile = util.get_wradlib_data_file(filename)
@@ -1326,6 +1352,7 @@ class TestIris:
 
 
 class TestNetcdf:
+    @requires_data
     def test_read_edge_netcdf(self):
         filename = "netcdf/edge_netcdf.nc"
         edgefile = util.get_wradlib_data_file(filename)
@@ -1339,6 +1366,7 @@ class TestNetcdf:
         with pytest.raises(Exception):
             io.netcdf.read_edge_netcdf("test")
 
+    @requires_data
     def test_read_generic_netcdf(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1372,6 +1400,7 @@ class TestXarray:
         with pytest.warns(DeprecationWarning):
             io.xarray.create_xarray_dataarray(img, r, az, th, proj=proj)
 
+    @requires_data
     def test_iter(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1379,6 +1408,7 @@ class TestXarray:
         assert len(cf) == cf.sweep
         assert len(cf) == 9
 
+    @requires_data
     def test_del(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1387,6 +1417,7 @@ class TestXarray:
             del cf[k]
         assert cf == {}
 
+    @requires_data
     def test_read_cfradial(self):
         sweep_names = [
             "sweep_1",
@@ -1422,6 +1453,7 @@ class TestXarray:
 
         assert repr(cf) == repr(cf._sweeps)
 
+    @requires_data
     def test_read_odim(self):
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.0])
         filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
@@ -1436,6 +1468,7 @@ class TestXarray:
         with pytest.raises(AttributeError):
             cf = io.xarray.OdimH5(h5file, flavour="None")
 
+    @requires_data
     def test_read_gamic(self):
         time_cov = ("2014-08-10T18:23:35Z", "2014-08-10T18:24:05Z")
         filename = "hdf5/2014-08-10--182000.ppi.mvol"
@@ -1451,6 +1484,7 @@ class TestXarray:
         cf = io.xarray.OdimH5(h5file, flavour="GAMIC")
         cf = io.xarray.OdimH5(h5file, flavour="GAMIC", strict=False)
 
+    @requires_data
     def test_odim_roundtrip(self):
         filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
         odimfile = util.get_wradlib_data_file(filename)
@@ -1466,6 +1500,7 @@ class TestXarray:
         del cf2
         cf.to_odim(tmp)
 
+    @requires_data
     def test_cfradial_roundtrip(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1481,6 +1516,7 @@ class TestXarray:
         del cf2
         cf.to_cfradial2(tmp)
 
+    @requires_data
     def test_cfradial_odim_roundtrip(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1507,6 +1543,7 @@ class TestXarray:
             cf.root.time_coverage_start, cf3.root.time_coverage_start
         )
 
+    @requires_data
     def test_georeference(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1520,6 +1557,7 @@ class TestXarray:
         xr.testing.assert_equal(swp1, cf["sweep_1"])
         xr.testing.assert_equal(swp1, cf2["sweep_1"])
 
+    @requires_data
     def test_root_key_warnings(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1527,6 +1565,7 @@ class TestXarray:
         with pytest.warns(DeprecationWarning):
             cf["root"]
 
+    @requires_data
     def test_to_odim_warning(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1535,6 +1574,7 @@ class TestXarray:
         with pytest.warns(UserWarning):
             cf.to_odim("test.h5")
 
+    @requires_data
     def test_to_cfradial2_warning(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1543,6 +1583,7 @@ class TestXarray:
         with pytest.warns(UserWarning):
             cf.to_cfradial2("test.nc")
 
+    @requires_data
     def test_setitem_warning(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1550,6 +1591,7 @@ class TestXarray:
         with pytest.warns(UserWarning):
             cf["test"] = None
 
+    @requires_data
     def test_odim_errors(self):
         filename = "netcdf/edge_netcdf.nc"
         ncfile = util.get_wradlib_data_file(filename)
@@ -1561,6 +1603,7 @@ class TestXarray:
         with pytest.raises(AttributeError):
             io.xarray.OdimH5(ncfile)
 
+    @requires_data
     def test_netcdf4_errors(self):
         filename = "hdf5/2014-08-10--182000.ppi.mvol"
         h5file = util.get_wradlib_data_file(filename)
@@ -1571,7 +1614,8 @@ class TestXarray:
 
 
 class TestDem:
-    @unittest.skipIf(sys.platform.startswith("win"), "known break on windows")
+    @pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
+    @requires_data
     def test_get_srtm(self):
         targets = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
         targets = ["%s.hgt.zip" % (f) for f in targets]

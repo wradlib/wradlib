@@ -12,6 +12,8 @@ from osgeo import gdal, ogr, osr
 import wradlib
 from wradlib import georef, util
 
+from . import has_data, requires_data
+
 np.set_printoptions(
     edgeitems=3,
     infstr="inf",
@@ -235,6 +237,7 @@ class TestCoordinateTransform:
         np.testing.assert_allclose(coords[..., 1], self.result_n[1])
         np.testing.assert_allclose(coords[..., 2], self.result_n[2])
 
+    @requires_data
     def test_maximum_intensity_projection(self):
         angle = 0.0
         elev = 0.0
@@ -701,16 +704,19 @@ class TestPixMap:
         pass
 
 
+@requires_data
 class TestGdal:
-    filename = "geo/bonn_new.tif"
-    geofile = util.get_wradlib_data_file(filename)
-    ds = wradlib.io.open_raster(geofile)
-    (data, coords, proj) = georef.extract_raster_dataset(ds)
+    if has_data:
+        filename = "geo/bonn_new.tif"
+        geofile = util.get_wradlib_data_file(filename)
+        ds = wradlib.io.open_raster(geofile)
+        (data, coords, proj) = georef.extract_raster_dataset(ds)
 
-    filename = "hdf5/belgium.comp.hdf"
-    geofile = util.get_wradlib_data_file(filename)
-    ds2 = wradlib.io.open_raster(geofile)
-    (data2, coords2, proj2) = georef.extract_raster_dataset(ds, mode="edge")
+        filename = "hdf5/belgium.comp.hdf"
+        geofile = util.get_wradlib_data_file(filename)
+        ds2 = wradlib.io.open_raster(geofile)
+        (data2, coords2, proj2) = georef.extract_raster_dataset(ds, mode="edge")
+
     corner_gdalinfo = np.array([[3e5, 1e6], [3e5, 3e5], [1e6, 3e5], [1e6, 1e6]])
 
     corner_geo_gdalinfo = np.array(
@@ -728,6 +734,8 @@ class TestGdal:
         edge_coords = georef.read_gdal_coordinates(self.ds, mode="edge")
         ul_center = (edge_coords[0, 0] + edge_coords[1, 1]) / 2
         np.testing.assert_array_almost_equal(center_coords[0, 0], ul_center)
+
+    requires_data
 
     def test_read_gdal_projection(self):
         georef.read_gdal_projection(self.ds)
@@ -933,74 +941,76 @@ class TestGetGrids:
 
 
 class TestSatellite:
-    f = "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-S095002-E095137.004383.V05A.HDF5"  # noqa
-    gpm_file = util.get_wradlib_data_file(f)
-    pr_data = wradlib.io.read_generic_hdf5(gpm_file)
-    pr_lon = pr_data["NS/Longitude"]["data"]
-    pr_lat = pr_data["NS/Latitude"]["data"]
-    zenith = pr_data["NS/PRE/localZenithAngle"]["data"]
-    wgs84 = georef.get_default_projection()
-    a = wgs84.GetSemiMajor()
-    b = wgs84.GetSemiMinor()
-    rad = georef.proj4_to_osr(
-        ("+proj=aeqd +lon_0={lon:f} " + "+lat_0={lat:f} +a={a:f} +b={b:f}" + "").format(
-            lon=pr_lon[68, 0], lat=pr_lat[68, 0], a=a, b=b
+    if has_data:
+        f = "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-S095002-E095137.004383.V05A.HDF5"  # noqa
+        gpm_file = util.get_wradlib_data_file(f)
+        pr_data = wradlib.io.read_generic_hdf5(gpm_file)
+        pr_lon = pr_data["NS/Longitude"]["data"]
+        pr_lat = pr_data["NS/Latitude"]["data"]
+        zenith = pr_data["NS/PRE/localZenithAngle"]["data"]
+        wgs84 = georef.get_default_projection()
+        a = wgs84.GetSemiMajor()
+        b = wgs84.GetSemiMinor()
+        rad = georef.proj4_to_osr(
+            (
+                "+proj=aeqd +lon_0={lon:f} " + "+lat_0={lat:f} +a={a:f} +b={b:f}" + ""
+            ).format(lon=pr_lon[68, 0], lat=pr_lat[68, 0], a=a, b=b)
         )
-    )
-    pr_x, pr_y = georef.reproject(
-        pr_lon, pr_lat, projection_source=wgs84, projection_target=rad
-    )
-    re = georef.get_earth_radius(pr_lat[68, 0], wgs84) * 4.0 / 3.0
-    pr_xy = np.dstack((pr_x, pr_y))
-    alpha = zenith
-    zt = 407000.0
-    dr = 125.0
-    bw_pr = 0.71
-    nbin = 176
-    nray = pr_lon.shape[1]
+        pr_x, pr_y = georef.reproject(
+            pr_lon, pr_lat, projection_source=wgs84, projection_target=rad
+        )
+        re = georef.get_earth_radius(pr_lat[68, 0], wgs84) * 4.0 / 3.0
+        pr_xy = np.dstack((pr_x, pr_y))
+        alpha = zenith
+        zt = 407000.0
+        dr = 125.0
+        bw_pr = 0.71
+        nbin = 176
+        nray = pr_lon.shape[1]
 
-    pr_out = np.array(
-        [
+        pr_out = np.array(
             [
                 [
-                    [-58533.78453556, 124660.60390174],
-                    [-58501.33048429, 124677.58873852],
+                    [
+                        [-58533.78453556, 124660.60390174],
+                        [-58501.33048429, 124677.58873852],
+                    ],
+                    [
+                        [-53702.13393133, 127251.83656509],
+                        [-53670.98686161, 127268.11882882],
+                    ],
                 ],
                 [
-                    [-53702.13393133, 127251.83656509],
-                    [-53670.98686161, 127268.11882882],
+                    [
+                        [-56444.00788528, 120205.5374491],
+                        [-56411.55421163, 120222.52300741],
+                    ],
+                    [
+                        [-51612.2360682, 122796.78620764],
+                        [-51581.08938314, 122813.06920719],
+                    ],
                 ],
-            ],
+            ]
+        )
+        r_out = np.array(
+            [0.0, 125.0, 250.0, 375.0, 500.0, 625.0, 750.0, 875.0, 1000.0, 1125.0]
+        )
+        z_out = np.array(
             [
-                [
-                    [-56444.00788528, 120205.5374491],
-                    [-56411.55421163, 120222.52300741],
-                ],
-                [
-                    [-51612.2360682, 122796.78620764],
-                    [-51581.08938314, 122813.06920719],
-                ],
-            ],
-        ]
-    )
-    r_out = np.array(
-        [0.0, 125.0, 250.0, 375.0, 500.0, 625.0, 750.0, 875.0, 1000.0, 1125.0]
-    )
-    z_out = np.array(
-        [
-            0.0,
-            119.51255112,
-            239.02510224,
-            358.53765337,
-            478.05020449,
-            597.56275561,
-            717.07530673,
-            836.58785786,
-            956.10040898,
-            1075.6129601,
-        ]
-    )
+                0.0,
+                119.51255112,
+                239.02510224,
+                358.53765337,
+                478.05020449,
+                597.56275561,
+                717.07530673,
+                836.58785786,
+                956.10040898,
+                1075.6129601,
+            ]
+        )
 
+    @requires_data
     def test_correct_parallax(self):
         xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin, self.dr, self.alpha)
         pr_out = np.array(
@@ -1049,6 +1059,7 @@ class TestSatellite:
         np.testing.assert_allclose(r[0:10], r_out, rtol=1e-12)
         np.testing.assert_allclose(z[0, 0, 0:10], z_out, rtol=1e-10)
 
+    @requires_data
     def test_dist_from_orbit(self):
         beta = abs(-17.04 + np.arange(self.nray) * self.bw_pr)
         xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin, self.dr, self.alpha)
@@ -1114,8 +1125,8 @@ class TestVector:
     projobj = georef.numpy_to_ogr(npobj, "Polygon")
     projobj.AssignSpatialReference(proj)
 
-    filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
-    ds, layer = wradlib.io.open_vector(filename)
+    # filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+    # ds, layer = wradlib.io.open_vector(filename)
 
     def test_ogr_create_layer(self):
         ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
@@ -1141,17 +1152,20 @@ class TestVector:
         with pytest.warns(UserWarning):
             list(georef.get_vector_points(point))
 
+    @requires_data
     def test_get_vector_coordinates(self):
-        # this also tests equality with `ogr_to_numpy`
+        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+        ds, layer = wradlib.io.open_vector(filename)
 
-        x, attrs = georef.get_vector_coordinates(self.layer, key="FID")
+        # this also tests equality with `ogr_to_numpy`
+        x, attrs = georef.get_vector_coordinates(layer, key="FID")
         assert attrs == list(range(13))
 
-        x, attrs = georef.get_vector_coordinates(self.layer)
+        x, attrs = georef.get_vector_coordinates(layer)
         y = []
-        self.layer.ResetReading()
-        for i in range(self.layer.GetFeatureCount()):
-            feature = self.layer.GetNextFeature()
+        layer.ResetReading()
+        for i in range(layer.GetFeatureCount()):
+            feature = layer.GetNextFeature()
             if feature:
                 geom = feature.GetGeometryRef()
                 y.append(georef.ogr_to_numpy(geom))
@@ -1159,13 +1173,13 @@ class TestVector:
         for x1, y1 in zip(x, y):
             np.testing.assert_allclose(x1, y1)
 
-        self.layer.ResetReading()
+        layer.ResetReading()
         x, attrs = georef.get_vector_coordinates(
-            self.layer, source_srs=self.proj, dest_srs=self.wgs84
+            layer, source_srs=self.proj, dest_srs=self.wgs84
         )
 
-        self.layer.ResetReading()
-        x, attrs = georef.get_vector_coordinates(self.layer, dest_srs=self.wgs84)
+        layer.ResetReading()
+        x, attrs = georef.get_vector_coordinates(layer, dest_srs=self.wgs84)
 
     def test_transform_geometry(self):
         geom = georef.transform_geometry(self.projobj, dest_srs=self.wgs84)
@@ -1176,17 +1190,23 @@ class TestVector:
         with pytest.warns(UserWarning):
             georef.transform_geometry(self.ogrobj, dest_srs=self.wgs84)
 
+    @requires_data
     def test_ogr_copy_layer(self):
+        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+        src_ds, layer = wradlib.io.open_vector(filename)
         ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
-        georef.ogr_copy_layer(self.ds, 0, ds)
+        georef.ogr_copy_layer(src_ds, 0, ds)
         assert isinstance(ds.GetLayer(), ogr.Layer)
 
+    @requires_data
     def test_ogr_copy_layer_by_name(self):
+        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+        src_ds, layer = wradlib.io.open_vector(filename)
         ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
-        georef.ogr_copy_layer_by_name(self.ds, "agger_merge", ds)
+        georef.ogr_copy_layer_by_name(src_ds, "agger_merge", ds)
         assert isinstance(ds.GetLayer(), ogr.Layer)
         with pytest.raises(ValueError):
-            georef.ogr_copy_layer_by_name(self.ds, "agger_merge1", ds)
+            georef.ogr_copy_layer_by_name(src_ds, "agger_merge1", ds)
 
     def test_ogr_add_feature(self):
         ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)

@@ -2,20 +2,18 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
-
 import numpy as np
+import pytest
 
 from wradlib import georef, vpr
 
 
-class VPRHelperFunctionsTest(unittest.TestCase):
-    def setUp(self):
-        self.site = (7.0, 53.0, 100.0)
-        self.proj = georef.epsg_to_osr(31467)
-        self.az = np.arange(0.0, 360.0, 2.0)
-        self.r = np.arange(0, 50000, 1000)
-        self.el = 2.5
+class TestVPRHelperFunctions:
+    site = (7.0, 53.0, 100.0)
+    proj = georef.epsg_to_osr(31467)
+    az = np.arange(0.0, 360.0, 2.0)
+    r = np.arange(0, 50000, 1000)
+    el = 2.5
 
     def test_out_of_range(self):
         pass
@@ -27,33 +25,32 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         coords = vpr.volcoords_from_polar(
             self.site, self.el, self.az, self.r, self.proj
         )
-        self.assertEqual(coords.shape, (9000, 3))
+        assert coords.shape == (9000, 3)
 
     def test_volcoords_from_polar_irregular(self):
         # oneazforall, onerange4all, one elev
         coords = vpr.volcoords_from_polar_irregular(
             self.site, [self.el], self.az, self.r, self.proj
         )
-        self.assertEqual(coords.shape, (9000, 3))
+        assert coords.shape == (9000, 3)
 
         # oneazforall, onerange4all, two elev
         coords = vpr.volcoords_from_polar_irregular(
             self.site, [self.el, 5.0], self.az, self.r, self.proj
         )
-        self.assertEqual(coords.shape, (18000, 3))
+        assert coords.shape == (18000, 3)
 
         # onerange4all, two elev
         coords = vpr.volcoords_from_polar_irregular(
             self.site, [self.el, 5.0], [self.az, self.az], self.r, self.proj
         )
-        self.assertEqual(coords.shape, (18000, 3))
+        assert coords.shape == (18000, 3)
 
         # oneazforall, two elev
         coords = vpr.volcoords_from_polar_irregular(
             self.site, [self.el, 5.0], self.az, [self.r, self.r], self.proj
         )
-
-        self.assertEqual(coords.shape, (18000, 3))
+        assert coords.shape == (18000, 3)
 
     def test_synthetic_polar_volume(self):
         nbins = [320, 240, 340, 300]
@@ -68,7 +65,7 @@ class VPRHelperFunctionsTest(unittest.TestCase):
             xyz = np.vstack((xyz, xyz_))
 
         vol = vpr.synthetic_polar_volume(xyz)
-        self.assertEqual(vol.shape, (216000,))
+        assert vol.shape == (216000,)
 
     def test_norm_vpr_stats(self):
         vol = np.arange(2 * 3 * 4).astype("f4").reshape((4, 3, 2)) ** 2
@@ -83,37 +80,29 @@ class VPRHelperFunctionsTest(unittest.TestCase):
         outxyz, outshape = vpr.make_3d_grid(
             self.site, self.proj, maxrange, maxalt, horiz_res, vert_res
         )
-        self.assertEqual(outshape, (6, 26, 26))
-        self.assertEqual(outxyz.shape, (4056, 3))
+        assert outshape == (6, 26, 26)
+        assert outxyz.shape == (4056, 3)
 
 
-class CartesianVolumeTest(unittest.TestCase):
-    def setUp(self):
-        # polar grid settings
-        self.site = (7.0, 53.0, 100.0)
-        self.proj = georef.epsg_to_osr(31467)
-        self.az = np.arange(0.0, 360.0, 2.0) + 1.0
-        self.r = np.arange(0.0, 50000.0, 1000.0)
-        self.elev = np.array([1.0, 3.0, 5.0, 10.0])
-        # cartesian grid settings
-        self.maxrange = 50000.0
-        self.minelev = 1.0
-        self.maxelev = 10.0
-        self.maxalt = 8000.0
-        self.horiz_res = 4000.0
-        self.vert_res = 1000.0
-        self.xyz = vpr.volcoords_from_polar(
-            self.site, self.elev, self.az, self.r, self.proj
-        )
-        self.data = vpr.synthetic_polar_volume(self.xyz)
-        self.trgxyz, self.trgshape = vpr.make_3d_grid(
-            self.site,
-            self.proj,
-            self.maxrange,
-            self.maxalt,
-            self.horiz_res,
-            self.vert_res,
-        )
+class TestCartesianVolume:
+    # polar grid settings
+    site = (7.0, 53.0, 100.0)
+    proj = georef.epsg_to_osr(31467)
+    az = np.arange(0.0, 360.0, 2.0) + 1.0
+    r = np.arange(0.0, 50000.0, 1000.0)
+    elev = np.array([1.0, 3.0, 5.0, 10.0])
+    # cartesian grid settings
+    maxrange = 50000.0
+    minelev = 1.0
+    maxelev = 10.0
+    maxalt = 8000.0
+    horiz_res = 4000.0
+    vert_res = 1000.0
+    xyz = vpr.volcoords_from_polar(site, elev, az, r, proj)
+    data = vpr.synthetic_polar_volume(xyz)
+    trgxyz, trgshape = vpr.make_3d_grid(
+        site, proj, maxrange, maxalt, horiz_res, vert_res,
+    )
 
     def test_CartesianVolume(self):
         gridder = vpr.CartesianVolume(
@@ -125,8 +114,8 @@ class CartesianVolumeTest(unittest.TestCase):
             self.maxelev,
         )
         out = gridder(self.data)
-        self.assertEqual(out.shape, (6084,))
-        self.assertEqual(len(np.where(np.isnan(out))[0]), 0)
+        assert out.shape == (6084,)
+        assert len(np.where(np.isnan(out))[0]) == 0
 
     def test_CAPPI(self):
         gridder = vpr.CAPPI(
@@ -138,7 +127,7 @@ class CartesianVolumeTest(unittest.TestCase):
             self.maxelev,
         )
         out = gridder(self.data)
-        self.assertEqual(out.shape, (6084,))
+        assert out.shape == (6084,)
         # Todo: find out where this discrepancy comes from
         from osgeo import gdal
 
@@ -146,7 +135,7 @@ class CartesianVolumeTest(unittest.TestCase):
             size = 3528
         else:
             size = 3512
-        self.assertEqual(len(np.where(np.isnan(out))[0]), size)
+        assert len(np.where(np.isnan(out))[0]) == size
 
     def test_PseudoCAPPI(self):
         # interpolate to Cartesian 3-D volume grid
@@ -159,9 +148,5 @@ class CartesianVolumeTest(unittest.TestCase):
             self.maxelev,
         )
         out = gridder(self.data)
-        self.assertEqual(out.shape, (6084,))
-        self.assertEqual(len(np.where(np.isnan(out))[0]), 1744)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert out.shape == (6084,)
+        assert len(np.where(np.isnan(out))[0]) == 1744
