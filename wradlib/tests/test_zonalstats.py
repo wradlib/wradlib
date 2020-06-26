@@ -64,25 +64,29 @@ class TestDataSource:
         assert np.allclose(self.ds.data, self.data)
 
     def test__get_data(self):
-        assert np.allclose(self.ds._get_data(), self.data)
+        ds = zonalstats.DataSource(self.data)
+        assert np.allclose(ds._get_data(), self.data)
 
     def test_get_data_by_idx(self):
-        assert np.allclose(self.ds.get_data_by_idx([0]), self.box0)
-        assert np.allclose(self.ds.get_data_by_idx([1]), self.box1)
-        assert np.allclose(self.ds.get_data_by_idx([0, 1]), self.data)
+        ds = zonalstats.DataSource(self.data)
+        assert np.allclose(ds.get_data_by_idx([0]), self.box0)
+        assert np.allclose(ds.get_data_by_idx([1]), self.box1)
+        assert np.allclose(ds.get_data_by_idx([0, 1]), self.data)
 
     def test_get_data_by_att(self):
-        assert np.allclose(self.ds.get_data_by_att("index", 0), self.box0)
-        assert np.allclose(self.ds.get_data_by_att("index", 1), self.box1)
+        ds = zonalstats.DataSource(self.data)
+        assert np.allclose(ds.get_data_by_att("index", 0), self.box0)
+        assert np.allclose(ds.get_data_by_att("index", 1), self.box1)
 
     def test_get_data_by_geom(self):
-        lyr = self.ds.ds.GetLayer()
+        ds = zonalstats.DataSource(self.data)
+        lyr = ds.ds.GetLayer()
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
         lyr.SetAttributeFilter(None)
         for i, feature in enumerate(lyr):
             geom = feature.GetGeometryRef()
-            assert np.allclose(self.ds.get_data_by_geom(geom), self.data[i])
+            assert np.allclose(ds.get_data_by_geom(geom), self.data[i])
 
     def test_set_attribute(self):
         ds = zonalstats.DataSource(self.data)
@@ -108,7 +112,8 @@ class TestDataSource:
         )
 
     def test_dump_vector(self):
-        self.ds.dump_vector(tempfile.NamedTemporaryFile(mode="w+b").name)
+        ds = zonalstats.DataSource(self.data)
+        ds.dump_vector(tempfile.NamedTemporaryFile(mode="w+b").name)
 
     @requires_data
     def test_dump_raster(self):
