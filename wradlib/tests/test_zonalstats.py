@@ -3,12 +3,14 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import tempfile
-import unittest
 
 import numpy as np
+import pytest
 from osgeo import osr
 
 from wradlib import georef, util, zonalstats
+
+from . import requires_data
 
 np.set_printoptions(
     edgeitems=3,
@@ -22,81 +24,84 @@ np.set_printoptions(
 )
 
 
-class DataSourceTest(unittest.TestCase):
-    def setUp(self):
-        # create synthetic box
-        self.box0 = np.array(
-            [
-                [2600000.0, 5630000.0],
-                [2600000.0, 5640000.0],
-                [2610000.0, 5640000.0],
-                [2610000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-            ]
-        )
+class TestDataSource:
+    # create synthetic box
+    box0 = np.array(
+        [
+            [2600000.0, 5630000.0],
+            [2600000.0, 5640000.0],
+            [2610000.0, 5640000.0],
+            [2610000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+        ]
+    )
 
-        self.box1 = np.array(
-            [
-                [2700000.0, 5630000.0],
-                [2700000.0, 5640000.0],
-                [2710000.0, 5640000.0],
-                [2710000.0, 5630000.0],
-                [2700000.0, 5630000.0],
-            ]
-        )
+    box1 = np.array(
+        [
+            [2700000.0, 5630000.0],
+            [2700000.0, 5640000.0],
+            [2710000.0, 5640000.0],
+            [2710000.0, 5630000.0],
+            [2700000.0, 5630000.0],
+        ]
+    )
 
-        self.data = np.array([self.box0, self.box1])
+    data = np.array([box0, box1])
 
-        self.ds = zonalstats.DataSource(self.data)
+    ds = zonalstats.DataSource(data)
 
-        self.values1 = np.array([47.11, 47.11])
-        self.values2 = np.array([47.11, 15.08])
+    values1 = np.array([47.11, 47.11])
+    values2 = np.array([47.11, 15.08])
 
+    @requires_data
     def test__check_src(self):
         filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
-        self.assertEqual(len(zonalstats.DataSource(filename).data), 13)
-        with self.assertRaises(RuntimeError):
+        assert len(zonalstats.DataSource(filename).data) == 13
+        with pytest.raises(RuntimeError):
             zonalstats.DataSource("test_zonalstats.py")
 
     def test_data(self):
-        self.assertTrue(np.allclose(self.ds.data, self.data))
+        assert np.allclose(self.ds.data, self.data)
 
     def test__get_data(self):
-        self.assertTrue(np.allclose(self.ds._get_data(), self.data))
+        ds = zonalstats.DataSource(self.data)
+        assert np.allclose(ds._get_data(), self.data)
 
     def test_get_data_by_idx(self):
-        self.assertTrue(np.allclose(self.ds.get_data_by_idx([0]), self.box0))
-        self.assertTrue(np.allclose(self.ds.get_data_by_idx([1]), self.box1))
-        self.assertTrue(np.allclose(self.ds.get_data_by_idx([0, 1]), self.data))
+        ds = zonalstats.DataSource(self.data)
+        assert np.allclose(ds.get_data_by_idx([0]), self.box0)
+        assert np.allclose(ds.get_data_by_idx([1]), self.box1)
+        assert np.allclose(ds.get_data_by_idx([0, 1]), self.data)
 
     def test_get_data_by_att(self):
-        self.assertTrue(np.allclose(self.ds.get_data_by_att("index", 0), self.box0))
-        self.assertTrue(np.allclose(self.ds.get_data_by_att("index", 1), self.box1))
+        ds = zonalstats.DataSource(self.data)
+        assert np.allclose(ds.get_data_by_att("index", 0), self.box0)
+        assert np.allclose(ds.get_data_by_att("index", 1), self.box1)
 
     def test_get_data_by_geom(self):
-        lyr = self.ds.ds.GetLayer()
+        ds = zonalstats.DataSource(self.data)
+        lyr = ds.ds.GetLayer()
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
         lyr.SetAttributeFilter(None)
         for i, feature in enumerate(lyr):
             geom = feature.GetGeometryRef()
-            self.assertTrue(np.allclose(self.ds.get_data_by_geom(geom), self.data[i]))
+            assert np.allclose(ds.get_data_by_geom(geom), self.data[i])
 
     def test_set_attribute(self):
-        self.ds.set_attribute("test", self.values1)
-        self.assertTrue(np.allclose(self.ds.get_attributes(["test"]), self.values1))
-        self.ds.set_attribute("test", self.values2)
-        self.assertTrue(np.allclose(self.ds.get_attributes(["test"]), self.values2))
+        ds = zonalstats.DataSource(self.data)
+        ds.set_attribute("test", self.values1)
+        assert np.allclose(ds.get_attributes(["test"]), self.values1)
+        ds.set_attribute("test", self.values2)
+        assert np.allclose(ds.get_attributes(["test"]), self.values2)
 
     def test_get_attributes(self):
-        self.ds.set_attribute("test", self.values2)
-        self.assertEqual(
-            self.ds.get_attributes(["test"], filt=("index", 0)), self.values2[0]
-        )
-        self.assertEqual(
-            self.ds.get_attributes(["test"], filt=("index", 1)), self.values2[1]
-        )
+        ds = zonalstats.DataSource(self.data)
+        ds.set_attribute("test", self.values2)
+        assert ds.get_attributes(["test"], filt=("index", 0)) == self.values2[0]
+        assert ds.get_attributes(["test"], filt=("index", 1)) == self.values2[1]
 
+    @requires_data
     def test_get_geom_properties(self):
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
@@ -107,8 +112,10 @@ class DataSourceTest(unittest.TestCase):
         )
 
     def test_dump_vector(self):
-        self.ds.dump_vector(tempfile.NamedTemporaryFile(mode="w+b").name)
+        ds = zonalstats.DataSource(self.data)
+        ds.dump_vector(tempfile.NamedTemporaryFile(mode="w+b").name)
 
+    @requires_data
     def test_dump_raster(self):
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
@@ -127,119 +134,117 @@ class DataSourceTest(unittest.TestCase):
         )
 
 
-@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
-class ZonalDataBaseTest(unittest.TestCase):
-    def setUp(self):
+@pytest.mark.skipif(not util.has_geos(), reason="GDAL without GEOS")
+class TestZonalDataBase:
+    # GK3-Projection
+    proj = osr.SpatialReference()
+    proj.ImportFromEPSG(31466)
 
-        # GK3-Projection
-        self.proj = osr.SpatialReference()
-        self.proj.ImportFromEPSG(31466)
+    # create synthetic box
+    box0 = np.array(
+        [
+            [2600000.0, 5630000.0],
+            [2600000.0, 5640000.0],
+            [2610000.0, 5640000.0],
+            [2610000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+        ]
+    )
 
-        # create synthetic box
-        self.box0 = np.array(
-            [
-                [2600000.0, 5630000.0],
-                [2600000.0, 5640000.0],
-                [2610000.0, 5640000.0],
-                [2610000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-            ]
-        )
+    box1 = np.array(
+        [
+            [2610000.0, 5630000.0],
+            [2610000.0, 5640000.0],
+            [2620000.0, 5640000.0],
+            [2620000.0, 5630000.0],
+            [2610000.0, 5630000.0],
+        ]
+    )
 
-        self.box1 = np.array(
-            [
-                [2610000.0, 5630000.0],
-                [2610000.0, 5640000.0],
-                [2620000.0, 5640000.0],
-                [2620000.0, 5630000.0],
-                [2610000.0, 5630000.0],
-            ]
-        )
+    box3 = np.array(
+        [
+            [2595000.0, 5625000.0],
+            [2595000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5625000.0],
+            [2595000.0, 5625000.0],
+        ]
+    )
 
-        self.box3 = np.array(
-            [
-                [2595000.0, 5625000.0],
-                [2595000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5625000.0],
-                [2595000.0, 5625000.0],
-            ]
-        )
+    box4 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5645000.0],
+            [2625000.0, 5645000.0],
+            [2625000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box4 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5645000.0],
-                [2625000.0, 5645000.0],
-                [2625000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box5 = np.array(
+        [
+            [2600000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+            [2600000.0, 5635000.0],
+        ]
+    )
 
-        self.box5 = np.array(
-            [
-                [2600000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-                [2600000.0, 5635000.0],
-            ]
-        )
+    box6 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5640000.0],
+            [2620000.0, 5640000.0],
+            [2620000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box6 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5640000.0],
-                [2620000.0, 5640000.0],
-                [2620000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box7 = np.array(
+        [
+            [2715000.0, 5635000.0],
+            [2715000.0, 5640000.0],
+            [2720000.0, 5640000.0],
+            [2720000.0, 5635000.0],
+            [2715000.0, 5635000.0],
+        ]
+    )
 
-        self.box7 = np.array(
-            [
-                [2715000.0, 5635000.0],
-                [2715000.0, 5640000.0],
-                [2720000.0, 5640000.0],
-                [2720000.0, 5635000.0],
-                [2715000.0, 5635000.0],
-            ]
-        )
-
-        self.src = np.array([self.box0, self.box1])
-        self.trg = np.array([self.box3, self.box4])
-        self.dst = np.array([[self.box5], [self.box6]])
-        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.f = tempfile.NamedTemporaryFile(mode="w+b").name
-        self.zdb.dump_vector(self.f)
+    src = np.array([box0, box1])
+    trg = np.array([box3, box4])
+    dst = np.array([[box5], [box6]])
+    zdb = zonalstats.ZonalDataBase(src, trg, srs=proj)
+    f = tempfile.NamedTemporaryFile(mode="w+b").name
+    zdb.dump_vector(f)
 
     def test___init__(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.assertIsInstance(zdb.src, zonalstats.DataSource)
-        self.assertIsInstance(zdb.trg, zonalstats.DataSource)
-        self.assertIsInstance(zdb.dst, zonalstats.DataSource)
-        self.assertEqual(zdb._count_intersections, 2)
+        assert isinstance(zdb.src, zonalstats.DataSource)
+        assert isinstance(zdb.trg, zonalstats.DataSource)
+        assert isinstance(zdb.dst, zonalstats.DataSource)
+        assert zdb._count_intersections == 2
         zd = zonalstats.DataSource(self.src, name="src", srs=self.proj)
         zdb = zonalstats.ZonalDataBase(zd, self.trg, srs=self.proj)
-        self.assertIsInstance(zdb.src, zonalstats.DataSource)
-        self.assertIsInstance(zdb.trg, zonalstats.DataSource)
-        self.assertIsInstance(zdb.dst, zonalstats.DataSource)
-        self.assertEqual(zdb._count_intersections, 2)
+        assert isinstance(zdb.src, zonalstats.DataSource)
+        assert isinstance(zdb.trg, zonalstats.DataSource)
+        assert isinstance(zdb.dst, zonalstats.DataSource)
+        assert zdb._count_intersections == 2
         zd1 = zonalstats.DataSource(self.src, name="src", srs=self.proj)
         zd2 = zonalstats.DataSource(self.trg, name="trg", srs=self.proj)
         zdb = zonalstats.ZonalDataBase(zd1, zd2, srs=self.proj)
-        self.assertIsInstance(zdb.src, zonalstats.DataSource)
-        self.assertIsInstance(zdb.trg, zonalstats.DataSource)
-        self.assertIsInstance(zdb.dst, zonalstats.DataSource)
-        self.assertEqual(zdb._count_intersections, 2)
+        assert isinstance(zdb.src, zonalstats.DataSource)
+        assert isinstance(zdb.trg, zonalstats.DataSource)
+        assert isinstance(zdb.dst, zonalstats.DataSource)
+        assert zdb._count_intersections == 2
 
     def test_count_intersections(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.assertEqual(zdb.count_intersections, 2)
+        assert zdb.count_intersections == 2
 
     def test_srs(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.assertEqual(zdb.srs, self.proj)
+        assert zdb.srs == self.proj
 
     def test_isecs(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
@@ -252,8 +257,8 @@ class ZonalDataBaseTest(unittest.TestCase):
 
     def test_get_source_index(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.assertEqual(zdb.get_source_index(0), 0)
-        self.assertEqual(zdb.get_source_index(1), 1)
+        assert zdb.get_source_index(0) == 0
+        assert zdb.get_source_index(1) == 1
 
     def test_dump_vector(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
@@ -265,288 +270,278 @@ class ZonalDataBaseTest(unittest.TestCase):
 
     def test__get_intersection(self):
         zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             zdb._get_intersection()
         np.testing.assert_equal(zdb._get_intersection(trg=self.box3), [self.box5])
         np.testing.assert_equal(zdb._get_intersection(idx=0), [self.box5])
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             zdb._get_intersection(idx=2)
         zdb = zonalstats.ZonalDataBase(self.src, [self.box7], srs=self.proj)
         zdb.trg = None
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             zdb._get_intersection(idx=0)
 
 
-@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
-class ZonalDataPolyTest(unittest.TestCase):
-    def setUp(self):
+@pytest.mark.skipif(not util.has_geos(), reason="GDAL without GEOS")
+class TestZonalDataPoly:
+    # GK3-Projection
+    proj = osr.SpatialReference()
+    proj.ImportFromEPSG(31466)
 
-        # GK3-Projection
-        self.proj = osr.SpatialReference()
-        self.proj.ImportFromEPSG(31466)
+    # create synthetic box
+    box0 = np.array(
+        [
+            [2600000.0, 5630000.0],
+            [2600000.0, 5640000.0],
+            [2610000.0, 5640000.0],
+            [2610000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+        ]
+    )
 
-        # create synthetic box
-        self.box0 = np.array(
-            [
-                [2600000.0, 5630000.0],
-                [2600000.0, 5640000.0],
-                [2610000.0, 5640000.0],
-                [2610000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-            ]
-        )
+    box1 = np.array(
+        [
+            [2610000.0, 5630000.0],
+            [2610000.0, 5640000.0],
+            [2620000.0, 5640000.0],
+            [2620000.0, 5630000.0],
+            [2610000.0, 5630000.0],
+        ]
+    )
 
-        self.box1 = np.array(
-            [
-                [2610000.0, 5630000.0],
-                [2610000.0, 5640000.0],
-                [2620000.0, 5640000.0],
-                [2620000.0, 5630000.0],
-                [2610000.0, 5630000.0],
-            ]
-        )
+    box3 = np.array(
+        [
+            [2595000.0, 5625000.0],
+            [2595000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5625000.0],
+            [2595000.0, 5625000.0],
+        ]
+    )
 
-        self.box3 = np.array(
-            [
-                [2595000.0, 5625000.0],
-                [2595000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5625000.0],
-                [2595000.0, 5625000.0],
-            ]
-        )
+    box4 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5645000.0],
+            [2625000.0, 5645000.0],
+            [2625000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box4 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5645000.0],
-                [2625000.0, 5645000.0],
-                [2625000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box5 = np.array(
+        [
+            [2600000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+            [2600000.0, 5635000.0],
+        ]
+    )
 
-        self.box5 = np.array(
-            [
-                [2600000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-                [2600000.0, 5635000.0],
-            ]
-        )
+    box6 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5640000.0],
+            [2620000.0, 5640000.0],
+            [2620000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box6 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5640000.0],
-                [2620000.0, 5640000.0],
-                [2620000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box7 = np.array(
+        [
+            [2715000.0, 5635000.0],
+            [2715000.0, 5640000.0],
+            [2720000.0, 5640000.0],
+            [2720000.0, 5635000.0],
+            [2715000.0, 5635000.0],
+        ]
+    )
 
-        self.box7 = np.array(
-            [
-                [2715000.0, 5635000.0],
-                [2715000.0, 5640000.0],
-                [2720000.0, 5640000.0],
-                [2720000.0, 5635000.0],
-                [2715000.0, 5635000.0],
-            ]
-        )
-
-        self.src = np.array([self.box0, self.box1])
-        self.trg = np.array([self.box3, self.box4])
-        self.dst = np.array([[self.box5], [self.box6]])
-        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.f = tempfile.NamedTemporaryFile(mode="w+b").name
-        self.zdb.dump_vector(self.f)
+    src = np.array([box0, box1])
+    trg = np.array([box3, box4])
+    dst = np.array([[box5], [box6]])
+    zdb = zonalstats.ZonalDataBase(src, trg, srs=proj)
+    f = tempfile.NamedTemporaryFile(mode="w+b").name
+    zdb.dump_vector(f)
 
     def test__get_idx_weights(self):
         zdp = zonalstats.ZonalDataPoly(self.src, self.trg, srs=self.proj)
-        self.assertEqual(
-            zdp._get_idx_weights(),
-            (
-                [np.array([0]), np.array([1])],
-                [np.array([25000000.0]), np.array([25000000.0])],
-            ),
+        assert zdp._get_idx_weights() == (
+            [np.array([0]), np.array([1])],
+            [np.array([25000000.0]), np.array([25000000.0])],
         )
 
 
-@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
-class ZonalDataPointTest(unittest.TestCase):
-    def setUp(self):
+@pytest.mark.skipif(not util.has_geos(), reason="GDAL without GEOS")
+class TestZonalDataPoint:
+    # GK3-Projection
+    proj = osr.SpatialReference()
+    proj.ImportFromEPSG(31466)
 
-        # GK3-Projection
-        self.proj = osr.SpatialReference()
-        self.proj.ImportFromEPSG(31466)
+    # create synthetic box
+    point0 = np.array([2600000.0, 5630000.0])
 
-        # create synthetic box
-        self.point0 = np.array([2600000.0, 5630000.0])
+    point1 = np.array([2620000.0, 5640000.0])
 
-        self.point1 = np.array([2620000.0, 5640000.0])
+    box3 = np.array(
+        [
+            [2595000.0, 5625000.0],
+            [2595000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5625000.0],
+            [2595000.0, 5625000.0],
+        ]
+    )
 
-        self.box3 = np.array(
-            [
-                [2595000.0, 5625000.0],
-                [2595000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5625000.0],
-                [2595000.0, 5625000.0],
-            ]
-        )
+    box4 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5645000.0],
+            [2625000.0, 5645000.0],
+            [2625000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box4 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5645000.0],
-                [2625000.0, 5645000.0],
-                [2625000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box5 = np.array(
+        [
+            [2600000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+            [2600000.0, 5635000.0],
+        ]
+    )
 
-        self.box5 = np.array(
-            [
-                [2600000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-                [2600000.0, 5635000.0],
-            ]
-        )
+    box6 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5640000.0],
+            [2620000.0, 5640000.0],
+            [2620000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box6 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5640000.0],
-                [2620000.0, 5640000.0],
-                [2620000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box7 = np.array(
+        [
+            [2715000.0, 5635000.0],
+            [2715000.0, 5640000.0],
+            [2720000.0, 5640000.0],
+            [2720000.0, 5635000.0],
+            [2715000.0, 5635000.0],
+        ]
+    )
 
-        self.box7 = np.array(
-            [
-                [2715000.0, 5635000.0],
-                [2715000.0, 5640000.0],
-                [2720000.0, 5640000.0],
-                [2720000.0, 5635000.0],
-                [2715000.0, 5635000.0],
-            ]
-        )
-
-        self.src = np.array([self.point0, self.point1])
-        self.trg = np.array([self.box3, self.box4])
-        self.dst = np.array([[self.point0], [self.point1]])
-        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.f = tempfile.NamedTemporaryFile(mode="w+b").name
-        self.zdb.dump_vector(self.f)
+    src = np.array([point0, point1])
+    trg = np.array([box3, box4])
+    dst = np.array([[point0], [point1]])
+    zdb = zonalstats.ZonalDataBase(src, trg, srs=proj)
+    f = tempfile.NamedTemporaryFile(mode="w+b").name
+    zdb.dump_vector(f)
 
     def test__get_idx_weights(self):
         zdp = zonalstats.ZonalDataPoint(self.src, self.trg, srs=self.proj)
-        print(zdp._get_idx_weights())
-        self.assertEqual(
-            zdp._get_idx_weights(),
-            ([np.array([0]), np.array([1])], [np.array([1.0]), np.array([1.0])]),
+        assert zdp._get_idx_weights() == (
+            [np.array([0]), np.array([1])],
+            [np.array([1.0]), np.array([1.0])],
         )
 
 
-@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
-class ZonalStatsBaseTest(unittest.TestCase):
-    def setUp(self):
+@pytest.mark.skipif(not util.has_geos(), reason="GDAL without GEOS")
+class TestZonalStatsBase:
+    # GK3-Projection
+    proj = osr.SpatialReference()
+    proj.ImportFromEPSG(31466)
 
-        # GK3-Projection
-        self.proj = osr.SpatialReference()
-        self.proj.ImportFromEPSG(31466)
+    # create synthetic box
+    box0 = np.array(
+        [
+            [2600000.0, 5630000.0],
+            [2600000.0, 5640000.0],
+            [2610000.0, 5640000.0],
+            [2610000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+        ]
+    )
 
-        # create synthetic box
-        self.box0 = np.array(
-            [
-                [2600000.0, 5630000.0],
-                [2600000.0, 5640000.0],
-                [2610000.0, 5640000.0],
-                [2610000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-            ]
-        )
+    box1 = np.array(
+        [
+            [2610000.0, 5630000.0],
+            [2610000.0, 5640000.0],
+            [2620000.0, 5640000.0],
+            [2620000.0, 5630000.0],
+            [2610000.0, 5630000.0],
+        ]
+    )
 
-        self.box1 = np.array(
-            [
-                [2610000.0, 5630000.0],
-                [2610000.0, 5640000.0],
-                [2620000.0, 5640000.0],
-                [2620000.0, 5630000.0],
-                [2610000.0, 5630000.0],
-            ]
-        )
+    box3 = np.array(
+        [
+            [2595000.0, 5625000.0],
+            [2595000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5625000.0],
+            [2595000.0, 5625000.0],
+        ]
+    )
 
-        self.box3 = np.array(
-            [
-                [2595000.0, 5625000.0],
-                [2595000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5625000.0],
-                [2595000.0, 5625000.0],
-            ]
-        )
+    box4 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5645000.0],
+            [2625000.0, 5645000.0],
+            [2625000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box4 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5645000.0],
-                [2625000.0, 5645000.0],
-                [2625000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box5 = np.array(
+        [
+            [2600000.0, 5635000.0],
+            [2605000.0, 5635000.0],
+            [2605000.0, 5630000.0],
+            [2600000.0, 5630000.0],
+            [2600000.0, 5635000.0],
+        ]
+    )
 
-        self.box5 = np.array(
-            [
-                [2600000.0, 5635000.0],
-                [2605000.0, 5635000.0],
-                [2605000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-                [2600000.0, 5635000.0],
-            ]
-        )
+    box6 = np.array(
+        [
+            [2615000.0, 5635000.0],
+            [2615000.0, 5640000.0],
+            [2620000.0, 5640000.0],
+            [2620000.0, 5635000.0],
+            [2615000.0, 5635000.0],
+        ]
+    )
 
-        self.box6 = np.array(
-            [
-                [2615000.0, 5635000.0],
-                [2615000.0, 5640000.0],
-                [2620000.0, 5640000.0],
-                [2620000.0, 5635000.0],
-                [2615000.0, 5635000.0],
-            ]
-        )
+    box7 = np.array(
+        [
+            [2715000.0, 5635000.0],
+            [2715000.0, 5640000.0],
+            [2720000.0, 5640000.0],
+            [2720000.0, 5635000.0],
+            [2715000.0, 5635000.0],
+        ]
+    )
 
-        self.box7 = np.array(
-            [
-                [2715000.0, 5635000.0],
-                [2715000.0, 5640000.0],
-                [2720000.0, 5640000.0],
-                [2720000.0, 5635000.0],
-                [2715000.0, 5635000.0],
-            ]
-        )
-
-        self.src = np.array([self.box0, self.box1])
-        self.trg = np.array([self.box3, self.box4])
-        self.dst = np.array([[self.box5], [self.box6]])
-        self.zdb = zonalstats.ZonalDataBase(self.src, self.trg, srs=self.proj)
-        self.zdp = zonalstats.ZonalDataPoly(self.src, self.trg, srs=self.proj)
+    src = np.array([box0, box1])
+    trg = np.array([box3, box4])
+    dst = np.array([[box5], [box6]])
+    zdb = zonalstats.ZonalDataBase(src, trg, srs=proj)
+    zdp = zonalstats.ZonalDataPoly(src, trg, srs=proj)
 
     def test__init__(self):
-        with self.assertRaises(NotImplementedError):
+        with pytest.raises(NotImplementedError):
             zonalstats.ZonalStatsBase(self.zdb)
         zonalstats.ZonalStatsBase(self.zdp)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             zonalstats.ZonalStatsBase("test")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             zonalstats.ZonalStatsBase()
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             zonalstats.ZonalStatsBase(ix=np.arange(10), w=np.arange(11))
 
     def test_w(self):
@@ -556,7 +551,7 @@ class ZonalStatsBaseTest(unittest.TestCase):
 
     def test__check_vals(self):
         zdp = zonalstats.ZonalStatsBase(self.zdp)
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             zdp._check_vals(np.arange(3))
 
     def test_mean(self):
@@ -568,164 +563,157 @@ class ZonalStatsBaseTest(unittest.TestCase):
         np.testing.assert_equal(zdp.var(np.arange(10, 21, 10)), np.array([0, 0]))
 
 
-@unittest.skipIf(not util.has_geos(), "GDAL without GEOS")
-class ZonalDataTest(unittest.TestCase):
-    def setUp(self):
-        global skip
-        # setup test grid and catchment
-        lon = 7.071664
-        lat = 50.730521
-        r = np.array(range(50, 100 * 1000 + 50, 100))
-        a = np.array(range(0, 360, 1))
-        rays = a.shape[0]
-        bins = r.shape[0]
+@pytest.mark.skipif(not util.has_geos(), reason="GDAL without GEOS")
+class TestZonalData:
+    global skip
+    # setup test grid and catchment
+    lon = 7.071664
+    lat = 50.730521
+    r = np.array(range(50, 100 * 1000 + 50, 100))
+    a = np.array(range(0, 360, 1))
+    rays = a.shape[0]
+    bins = r.shape[0]
 
-        # setup OSR objects
-        self.proj_gk = osr.SpatialReference()
-        self.proj_gk.ImportFromEPSG(31466)
-        self.proj_ll = osr.SpatialReference()
-        self.proj_ll.ImportFromEPSG(4326)
+    # setup OSR objects
+    proj_gk = osr.SpatialReference()
+    proj_gk.ImportFromEPSG(31466)
+    proj_ll = osr.SpatialReference()
+    proj_ll.ImportFromEPSG(4326)
 
-        # create polar grid polygon vertices in lat,lon
-        radar_ll = georef.spherical_to_polyvert(r, a, 0, (lon, lat), proj=self.proj_ll)[
-            ..., 0:2
+    # create polar grid polygon vertices in lat,lon
+    radar_ll = georef.spherical_to_polyvert(r, a, 0, (lon, lat), proj=proj_ll)[..., 0:2]
+
+    # create polar grid centroids in lat,lon
+    coords = georef.spherical_to_centroids(r, a, 0, (lon, lat), proj=proj_ll)
+
+    radar_llc = coords[..., 0:2]
+
+    # project ll grids to GK2
+    radar_gk = georef.reproject(
+        radar_ll, projection_source=proj_ll, projection_target=proj_gk
+    )
+    radar_gkc = georef.reproject(
+        radar_llc, projection_source=proj_ll, projection_target=proj_gk
+    )
+
+    # reshape
+    radar_gk.shape = (rays, bins, 5, 2)
+    radar_gkc.shape = (rays, bins, 2)
+
+    box0 = np.array(
+        [
+            [2600000.0, 5630000.0],
+            [2600000.0, 5630100.0],
+            [2600100.0, 5630100.0],
+            [2600100.0, 5630000.0],
+            [2600000.0, 5630000.0],
         ]
+    )
 
-        # create polar grid centroids in lat,lon
-        coords = georef.spherical_to_centroids(r, a, 0, (lon, lat), proj=self.proj_ll)
+    box1 = np.array(
+        [
+            [2600100.0, 5630000.0],
+            [2600100.0, 5630100.0],
+            [2600200.0, 5630100.0],
+            [2600200.0, 5630000.0],
+            [2600100.0, 5630000.0],
+        ]
+    )
 
-        radar_llc = coords[..., 0:2]
+    data = np.array([box0, box1])
 
-        # project ll grids to GK2
-        self.radar_gk = georef.reproject(
-            radar_ll, projection_source=self.proj_ll, projection_target=self.proj_gk
-        )
-        self.radar_gkc = georef.reproject(
-            radar_llc, projection_source=self.proj_ll, projection_target=self.proj_gk
-        )
+    # create catchment bounding box
+    buffer = 5000.0
+    bbox = zonalstats.get_bbox(data[..., 0], data[..., 1])
+    bbox = dict(
+        left=bbox["left"] - buffer,
+        right=bbox["right"] + buffer,
+        bottom=bbox["bottom"] - buffer,
+        top=bbox["top"] + buffer,
+    )
 
-        # reshape
-        self.radar_gk.shape = (rays, bins, 5, 2)
-        self.radar_gkc.shape = (rays, bins, 2)
+    mask, shape = zonalstats.mask_from_bbox(
+        radar_gkc[..., 0], radar_gkc[..., 1], bbox, polar=True
+    )
 
-        self.box0 = np.array(
-            [
-                [2600000.0, 5630000.0],
-                [2600000.0, 5630100.0],
-                [2600100.0, 5630100.0],
-                [2600100.0, 5630000.0],
-                [2600000.0, 5630000.0],
-            ]
-        )
+    radar_gkc = radar_gkc[mask, :]
+    radar_gk = radar_gk[mask]
 
-        self.box1 = np.array(
-            [
-                [2600100.0, 5630000.0],
-                [2600100.0, 5630100.0],
-                [2600200.0, 5630100.0],
-                [2600200.0, 5630000.0],
-                [2600100.0, 5630000.0],
-            ]
-        )
+    zdpoly = zonalstats.ZonalDataPoly(radar_gk, data, srs=proj_gk)
+    # zdpoly.dump_vector('test_zdpoly')
+    zdpoint = zonalstats.ZonalDataPoint(radar_gkc, data, srs=proj_gk)
+    # zdpoint.dump_vector('test_zdpoint')
 
-        self.data = np.array([self.box0, self.box1])
+    isec_poly0 = np.array(
+        [
+            np.array(
+                [
+                    [2600000.0, 5630000.0],
+                    [2600000.0, 5630100.0],
+                    [2600009.61157242, 5630100.0],
+                    [2600041.77844048, 5630000.0],
+                    [2600000.0, 5630000.0],
+                ]
+            ),
+            np.array(
+                [
+                    [2600009.61157242, 5630100.0],
+                    [2600100.0, 5630100.0],
+                    [2600100.0, 5630000.0],
+                    [2600041.77844048, 5630000.0],
+                    [2600009.61157242, 5630100.0],
+                ]
+            ),
+            np.array(
+                [
+                    [2600091.80406488, 5630100.0],
+                    [2600100.0, 5630100.0],
+                    [2600100.0, 5630074.58501104],
+                    [2600091.80406488, 5630100.0],
+                ]
+            ),
+        ]
+    )
+    isec_poly1 = np.array(
+        [
+            np.array(
+                [
+                    [2600100.0, 5630000.0],
+                    [2600100.0, 5630100.0],
+                    [2600114.66582085, 5630100.0],
+                    [2600146.83254704, 5630000.0],
+                    [2600100.0, 5630000.0],
+                ]
+            ),
+            np.array(
+                [
+                    [2600114.66582085, 5630100.0],
+                    [2600200.0, 5630100.0],
+                    [2600200.0, 5630000.0],
+                    [2600146.83254704, 5630000.0],
+                    [2600114.66582085, 5630100.0],
+                ]
+            ),
+            np.array(
+                [
+                    [2600197.20644071, 5630100.0],
+                    [2600200.0, 5630100.0],
+                    [2600200.0, 5630091.33737992],
+                    [2600197.20644071, 5630100.0],
+                ]
+            ),
+        ]
+    )
 
-        # create catchment bounding box
-        buffer = 5000.0
-        bbox = zonalstats.get_bbox(self.data[..., 0], self.data[..., 1])
-        bbox = dict(
-            left=bbox["left"] - buffer,
-            right=bbox["right"] + buffer,
-            bottom=bbox["bottom"] - buffer,
-            top=bbox["top"] + buffer,
-        )
+    isec_point0 = np.array([[2600077.2899581, 5630056.0874306]])
+    isec_point1 = np.array([[2600172.498418, 5630086.7127034]])
 
-        mask, shape = zonalstats.mask_from_bbox(
-            self.radar_gkc[..., 0], self.radar_gkc[..., 1], bbox, polar=True
-        )
-
-        self.radar_gkc = self.radar_gkc[mask, :]
-        self.radar_gk = self.radar_gk[mask]
-
-        self.zdpoly = zonalstats.ZonalDataPoly(
-            self.radar_gk, self.data, srs=self.proj_gk
-        )
-        # self.zdpoly.dump_vector('test_zdpoly')
-        self.zdpoint = zonalstats.ZonalDataPoint(
-            self.radar_gkc, self.data, srs=self.proj_gk
-        )
-        # self.zdpoint.dump_vector('test_zdpoint')
-
-        isec_poly0 = np.array(
-            [
-                np.array(
-                    [
-                        [2600000.0, 5630000.0],
-                        [2600000.0, 5630100.0],
-                        [2600009.61157242, 5630100.0],
-                        [2600041.77844048, 5630000.0],
-                        [2600000.0, 5630000.0],
-                    ]
-                ),
-                np.array(
-                    [
-                        [2600009.61157242, 5630100.0],
-                        [2600100.0, 5630100.0],
-                        [2600100.0, 5630000.0],
-                        [2600041.77844048, 5630000.0],
-                        [2600009.61157242, 5630100.0],
-                    ]
-                ),
-                np.array(
-                    [
-                        [2600091.80406488, 5630100.0],
-                        [2600100.0, 5630100.0],
-                        [2600100.0, 5630074.58501104],
-                        [2600091.80406488, 5630100.0],
-                    ]
-                ),
-            ]
-        )
-        isec_poly1 = np.array(
-            [
-                np.array(
-                    [
-                        [2600100.0, 5630000.0],
-                        [2600100.0, 5630100.0],
-                        [2600114.66582085, 5630100.0],
-                        [2600146.83254704, 5630000.0],
-                        [2600100.0, 5630000.0],
-                    ]
-                ),
-                np.array(
-                    [
-                        [2600114.66582085, 5630100.0],
-                        [2600200.0, 5630100.0],
-                        [2600200.0, 5630000.0],
-                        [2600146.83254704, 5630000.0],
-                        [2600114.66582085, 5630100.0],
-                    ]
-                ),
-                np.array(
-                    [
-                        [2600197.20644071, 5630100.0],
-                        [2600200.0, 5630100.0],
-                        [2600200.0, 5630091.33737992],
-                        [2600197.20644071, 5630100.0],
-                    ]
-                ),
-            ]
-        )
-
-        isec_point0 = np.array([[2600077.2899581, 5630056.0874306]])
-        isec_point1 = np.array([[2600172.498418, 5630086.7127034]])
-
-        self.isec_poly = np.array([isec_poly0, isec_poly1])
-        self.isec_point = np.array([isec_point0, isec_point1])
+    isec_poly = np.array([isec_poly0, isec_poly1])
+    isec_point = np.array([isec_point0, isec_point1])
 
     def test_srs(self):
-        self.assertEqual(self.zdpoly.srs, self.proj_gk)
-        self.assertEqual(self.zdpoint.srs, self.proj_gk)
+        assert self.zdpoly.srs == self.proj_gk
+        assert self.zdpoint.srs == self.proj_gk
 
     def test_isecs(self):
         # need to iterate over nested array for correct testing
@@ -760,23 +748,22 @@ class ZonalDataTest(unittest.TestCase):
         )
 
 
-class ZonalStatsUtilTest(unittest.TestCase):
-    def setUp(self):
-        self.npobj = np.array(
-            [
-                [2600000.0, 5630000.0],
-                [2600000.0, 5630100.0],
-                [2600100.0, 5630100.0],
-                [2600100.0, 5630000.0],
-                [2600000.0, 5630000.0],
-            ]
-        )
+class TestZonalStatsUtil:
+    npobj = np.array(
+        [
+            [2600000.0, 5630000.0],
+            [2600000.0, 5630100.0],
+            [2600100.0, 5630100.0],
+            [2600100.0, 5630000.0],
+            [2600000.0, 5630000.0],
+        ]
+    )
 
-        self.ogrobj = georef.numpy_to_ogr(self.npobj, "Polygon")
+    ogrobj = georef.numpy_to_ogr(npobj, "Polygon")
 
     def test_angle_between(self):
-        self.assertAlmostEqual(zonalstats.angle_between(355.0, 5.0), 10.0)
-        self.assertAlmostEqual(zonalstats.angle_between(5.0, 355.0), -10.0)
+        assert zonalstats.angle_between(355.0, 5.0) == pytest.approx(10.0)
+        assert zonalstats.angle_between(5.0, 355.0) == pytest.approx(-10.0)
 
     def test_get_clip_mask(self):
         proj_gk = osr.SpatialReference()
@@ -793,7 +780,3 @@ class ZonalStatsUtilTest(unittest.TestCase):
         mask = zonalstats.get_clip_mask(coords, self.npobj, proj_gk)
         out = np.array([True, True, True, False, False])
         np.testing.assert_array_equal(mask, out)
-
-
-if __name__ == "__main__":
-    unittest.main()

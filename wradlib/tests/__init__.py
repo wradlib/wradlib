@@ -6,25 +6,12 @@ wradlib_tests
 =============
 
 """
+import os
 
-from . import (
-    test_adjust,
-    test_atten,
-    test_classify,
-    test_clutter,
-    test_comp,
-    test_dp,
-    test_georef,
-    test_io,
-    test_io_odim,
-    test_ipol,
-    test_qual,
-    test_trafo,
-    test_util,
-    test_verify,
-    test_vpr,
-    test_zonalstats,
-    test_zr,
+import pytest
+
+has_data = os.environ.get("WRADLIB_DATA", False)
+requires_data = pytest.mark.skipif(
+    not has_data,
+    reason="requires 'WRADLIB_DATA' environment variable set to wradlib-data repository location.",
 )
-
-__all__ = [s for s in dir() if not s.startswith("_")]

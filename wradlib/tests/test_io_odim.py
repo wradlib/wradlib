@@ -11,6 +11,8 @@ import xarray as xr
 
 from wradlib import io, util
 
+from . import has_data, requires_data
+
 
 def create_a1gate(i):
     return i + 20
@@ -900,64 +902,68 @@ class SyntheticDataVolume(DataVolume):
             yield vol
 
 
+@requires_data
 class TestKNMIVolume(MeasuredDataVolume):
-    name = "hdf5/knmi_polar_volume.h5"
-    format = "ODIM"
-    volumes = 1
-    sweeps = 14
-    moments = ["DBZH"]
-    elevations = [
-        0.3,
-        0.4,
-        0.8,
-        1.1,
-        2.0,
-        3.0,
-        4.5,
-        6.0,
-        8.0,
-        10.0,
-        12.0,
-        15.0,
-        20.0,
-        25.0,
-    ]
-    azimuths = [360] * sweeps
-    ranges = [320, 240, 240, 240, 240, 340, 340, 300, 300, 240, 240, 240, 240, 240]
+    if has_data:
+        name = "hdf5/knmi_polar_volume.h5"
+        format = "ODIM"
+        volumes = 1
+        sweeps = 14
+        moments = ["DBZH"]
+        elevations = [
+            0.3,
+            0.4,
+            0.8,
+            1.1,
+            2.0,
+            3.0,
+            4.5,
+            6.0,
+            8.0,
+            10.0,
+            12.0,
+            15.0,
+            20.0,
+            25.0,
+        ]
+        azimuths = [360] * sweeps
+        ranges = [320, 240, 240, 240, 240, 340, 340, 300, 300, 240, 240, 240, 240, 240]
 
-    data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
+        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
 
-    dsdesc = "dataset{}"
-    mdesc = "data{}"
+        dsdesc = "dataset{}"
+        mdesc = "data{}"
 
 
+@requires_data
 class TestGamicVolume(MeasuredDataVolume):
-    name = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
-    format = "GAMIC"
-    volumes = 1
-    sweeps = 10
-    moments = [
-        "DBZH",
-        "DBZV",
-        "DBTH",
-        "DBTV",
-        "ZDR",
-        "VRADH",
-        "VRADV",
-        "WRADH",
-        "WRADV",
-        "PHIDP",
-        "KDP",
-        "RHOHV",
-    ]
-    elevations = [28.0, 18.0, 14.0, 11.0, 8.2, 6.0, 4.5, 3.1, 1.7, 0.6]
-    azimuths = [361, 361, 361, 360, 361, 360, 360, 361, 360, 360]
-    ranges = [360, 500, 620, 800, 1050, 1400, 1000, 1000, 1000, 1000]
+    if has_data:
+        name = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
+        format = "GAMIC"
+        volumes = 1
+        sweeps = 10
+        moments = [
+            "DBZH",
+            "DBZV",
+            "DBTH",
+            "DBTV",
+            "ZDR",
+            "VRADH",
+            "VRADV",
+            "WRADH",
+            "WRADV",
+            "PHIDP",
+            "KDP",
+            "RHOHV",
+        ]
+        elevations = [28.0, 18.0, 14.0, 11.0, 8.2, 6.0, 4.5, 3.1, 1.7, 0.6]
+        azimuths = [361, 361, 361, 360, 361, 360, 360, 361, 360, 360]
+        ranges = [360, 500, 620, 800, 1050, 1400, 1000, 1000, 1000, 1000]
 
-    data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
+        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
 
-    dsdesc = "scan{}"
-    mdesc = "moment_{}"
+        dsdesc = "scan{}"
+        mdesc = "moment_{}"
 
 
 class TestSyntheticOdimVolume01(SyntheticDataVolume):

@@ -3,46 +3,27 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
-
 import numpy as np
 
 from wradlib import clutter, georef, io, ipol, util
+
+from . import has_data, requires_data
 
 
 # -------------------------------------------------------------------------------
 # testing the filter helper function
 # -------------------------------------------------------------------------------
-class TestClutter(unittest.TestCase):
-    # def test_filter_gabella_a_trdefault(self):
-    #     data = np.arange(9)
-    #     data[4] = 10
-    #     result = cl.filter_gabella_a(data)
-    #     self.assertTrue(result == 4)
-    #
-    # def test_filter_gabella_a_tr1(self):
-    #     pass
-    #     data = np.arange(9)
-    #     data[4] = 10
-    #     result = cl.filter_gabella_a(data, tr1=5)
-    #     self.assertTrue(result == 3)
-    # -------------------------------------------------------------------------------
-    # testing the first part of the filter
-    # -------------------------------------------------------------------------------
-    def filter_setup(self):
-        img = np.zeros((36, 10), dtype=np.float32)
-        img[2, 2] = 10  # isolated pixel
-        img[5, 6:8] = 10  # line
-        img[20, :] = 5  # spike
-        img[9:12, 4:7] = 11  # precip field
-        self.img = img
-        pass
+class TestClutter:
+    img = np.zeros((36, 10), dtype=np.float32)
+    img[2, 2] = 10  # isolated pixel
+    img[5, 6:8] = 10  # line
+    img[20, :] = 5  # spike
+    img[9:12, 4:7] = 11  # precip field
 
     def test_filter_gabella_a(self):
         pass
 
     def test_filter_window_distance(self):
-        self.filter_setup()
         self.img[15:17, 5:7] = np.nan  # nans
         cl = self.img.copy()
         cl[self.img > 0] = True
@@ -53,25 +34,27 @@ class TestClutter(unittest.TestCase):
         similar = clutter.filter_window_distance(self.img, rscale, fsize=300, tr1=4)
         result = similar < 0.3
         np.set_printoptions(precision=3)
-        self.assertTrue((result == cl).all())
+        assert (result == cl).all()
 
 
-class FilterGabellaTest(unittest.TestCase):
+class TestFilterGabella:
+    @requires_data
     def test_filter_gabella(self):
         filename = util.get_wradlib_data_file("misc/polar_dBZ_fbg.gz")
         data = np.loadtxt(filename)
         clutter.filter_gabella(data, wsize=5, thrsnorain=0.0, tr1=6.0, n_p=8, tr2=1.3)
 
 
-class HistoCutTest(unittest.TestCase):
+class TestHistoCut:
+    @requires_data
     def test_histo_cut_test(self):
         filename = util.get_wradlib_data_file("misc/annual_rainfall_fbg.gz")
         yearsum = np.loadtxt(filename)
         clutter.histo_cut(yearsum)
 
 
-class ClassifyEchoFuzzyTest(unittest.TestCase):
-    def setUp(self):
+class TestClassifyEchoFuzzyTest:
+    if has_data:
         rhofile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-R.nc")
         phifile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-P.nc")
         reffile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-Z.nc")
@@ -86,8 +69,8 @@ class ClassifyEchoFuzzyTest(unittest.TestCase):
         dat["dop"], attrs_dop = io.read_edge_netcdf(dopfile)
         dat["zdr"], attrs_zdr = io.read_edge_netcdf(zdrfile)
         dat["map"] = io.from_hdf5(mapfile)[0][0]
-        self.dat = dat
 
+    @requires_data
     def test_classify_echo_fuzzy(self):
         weights = {
             "zdr": 0.4,
@@ -100,8 +83,8 @@ class ClassifyEchoFuzzyTest(unittest.TestCase):
         clutter.classify_echo_fuzzy(self.dat, weights=weights, thresh=0.5)
 
 
-class FilterCloudtypeTest(unittest.TestCase):
-    def setUp(self):
+class TestFilterCloudtype:
+    if has_data:
         # read the radar volume scan
         filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
         filename = util.get_wradlib_data_file(filename)
@@ -111,10 +94,10 @@ class FilterCloudtypeTest(unittest.TestCase):
         val = pvol["dataset%d/data1/data" % (1)]
         gain = float(pvol["dataset1/data1/what"]["gain"])
         offset = float(pvol["dataset1/data1/what"]["offset"])
-        self.val = val * gain + offset
-        self.rscale = int(pvol["dataset1/where"]["rscale"])
+        val = val * gain + offset
+        rscale = int(pvol["dataset1/where"]["rscale"])
         elangle = pvol["dataset%d/where" % (1)]["elangle"]
-        coord = georef.sweep_centroids(nrays, self.rscale, nbins, elangle)
+        coord = georef.sweep_centroids(nrays, rscale, nbins, elangle)
         sitecoords = (
             pvol["where"]["lon"],
             pvol["where"]["lat"],
@@ -142,23 +125,20 @@ class FilterCloudtypeTest(unittest.TestCase):
         interp = ipol.Nearest(
             coord_sat[..., 0:2].reshape(-1, 2), coord_radar[..., 0:2].reshape(-1, 2)
         )
-        self.val_sat = interp(val_sat.ravel()).reshape(val.shape)
+        val_sat = interp(val_sat.ravel()).reshape(val.shape)
         timelag = 9 * 60
         wind = 10
-        self.error = np.absolute(timelag) * wind
+        error = np.absolute(timelag) * wind
 
+    @requires_data
     def test_filter_cloudtype(self):
         nonmet = clutter.filter_cloudtype(
             self.val, self.val_sat, scale=self.rscale, smoothing=self.error
         )
         nclutter = np.sum(nonmet)
-        self.assertTrue(nclutter == 8141)
+        assert nclutter == 8141
         nonmet = clutter.filter_cloudtype(
             self.val, self.val_sat, scale=self.rscale, smoothing=self.error, low=True
         )
         nclutter = np.sum(nonmet)
-        self.assertTrue(nclutter == 17856)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert nclutter == 17856

@@ -3,21 +3,22 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
-
 import numpy as np
 
 from wradlib import classify, io, util
 
+from . import has_data, requires_data
 
-class HydrometeorClassificationTest(unittest.TestCase):
-    def setUp(self):
+
+@requires_data
+class TestHydrometeorClassification:
+    if has_data:
         filename = util.get_wradlib_data_file("misc/msf_xband.gz")
         msf = io.get_membership_functions(filename)
-        self.msf_idp = msf[0, 0, :, 0]
-        self.msf_obs = msf[..., 1:]
+        msf_idp = msf[0, 0, :, 0]
+        msf_obs = msf[..., 1:]
 
-        self.hmca = np.array(
+        hmca = np.array(
             [
                 [4.34960938, 15.68457031, 14.62988281],
                 [7.78125, 5.49902344, 5.03808594],
@@ -27,12 +28,10 @@ class HydrometeorClassificationTest(unittest.TestCase):
             ]
         )
 
-        self.msf_val = classify.msf_index_indep(
-            self.msf_obs, self.msf_idp, self.hmca[0]
-        )
-        self.fu = classify.fuzzyfi(self.msf_val, self.hmca)
-        self.w = np.array([2.0, 1.0, 1.0, 1.0, 1.0])
-        self.prob = classify.probability(self.fu, self.w)
+        msf_val = classify.msf_index_indep(msf_obs, msf_idp, hmca[0])
+        fu = classify.fuzzyfi(msf_val, hmca)
+        w = np.array([2.0, 1.0, 1.0, 1.0, 1.0])
+        prob = classify.probability(fu, w)
 
     def test_msf_index_indep(self):
         tst = np.array([-20, 10, 110])
@@ -112,7 +111,3 @@ class HydrometeorClassificationTest(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(hmc_idx, res_idx)
         np.testing.assert_array_almost_equal(hmc_vals, res_vals)
-
-
-if __name__ == "__main__":
-    unittest.main()

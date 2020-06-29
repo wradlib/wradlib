@@ -164,15 +164,42 @@ class TestKDPFromPHIDP:
         else:
             assert not np.array_equal(in4, phidp_raw4)
 
+    def test_kdp_from_phidp_nan(self, derivation_method):
+        if derivation_method == "lstsq" and sys.platform.startswith("win"):
+            pytest.skip("fails on windows due to MKL issue")
+        if derivation_method == "lstsq" and sys.platform.startswith("linux"):
+            pytest.skip("segfaults on linux for some unknow reason")
+
+        window = 7
+
+        # intercompare with lanczos method without NaN-handling
+        out0 = dp.kdp_from_phidp(
+            self.phidp_true_nan.copy(),
+            dr=self.dr,
+            method="lanczos_conv",
+            skipna=False,
+            winlen=window,
+        )
+        outx = dp.kdp_from_phidp(
+            self.phidp_true_nan.copy(),
+            dr=self.dr,
+            method=derivation_method,
+            skipna=False,
+            winlen=window,
+        )
+        np.testing.assert_array_almost_equal(outx, out0, decimal=4)
+
     def test_kdp_from_phidp(self, derivation_method):
         if derivation_method == "lstsq" and sys.platform.startswith("win"):
             pytest.skip("fails on windows due to MKL issue")
+        if derivation_method == "lstsq" and sys.platform.startswith("linux"):
+            pytest.skip("segfaults on linux for some unknow reason")
 
         window = 7
 
         # compare with true kdp
         out = dp.kdp_from_phidp(
-            self.phidp_true, dr=self.dr, method=derivation_method, winlen=window
+            self.phidp_true.copy(), dr=self.dr, method=derivation_method, winlen=window
         )
         outx = out[:, self.pad : -self.pad]
         res = self.kdp_true[:, self.pad : -self.pad]
@@ -180,26 +207,9 @@ class TestKDPFromPHIDP:
 
         # intercompare with lanczos method with NaN handling
         out0 = dp.kdp_from_phidp(
-            self.phidp_true, dr=self.dr, method="lanczos_conv", winlen=window
+            self.phidp_true.copy(), dr=self.dr, method="lanczos_conv", winlen=window
         )
         np.testing.assert_array_almost_equal(out, out0, decimal=4)
-
-        # intercompare with lanczos method without NaN-handling
-        out0 = dp.kdp_from_phidp(
-            self.phidp_true_nan,
-            dr=self.dr,
-            method="lanczos_conv",
-            skipna=False,
-            winlen=window,
-        )
-        outx = dp.kdp_from_phidp(
-            self.phidp_true_nan,
-            dr=self.dr,
-            method=derivation_method,
-            skipna=False,
-            winlen=window,
-        )
-        np.testing.assert_array_almost_equal(outx, out0, decimal=4)
 
     def test_linear_despeckle(self, ndespeckle):
         dp.linear_despeckle(self.phidp_raw0, ndespeckle=ndespeckle, copy=True)

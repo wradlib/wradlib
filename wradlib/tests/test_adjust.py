@@ -2,70 +2,63 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import unittest
-
 import numpy as np
+import pytest
 
 from wradlib import adjust
 
-# Arguments to be used throughout all test classes
-raw_x, raw_y = np.meshgrid(np.arange(4).astype("f4"), np.arange(4).astype("f4"))
-raw_coords = np.vstack((raw_x.ravel(), raw_y.ravel())).T
-obs_coords = np.array([[1.0, 1.0], [2.0, 1.0], [1.0, 3.5], [3.5, 3.0]])
-raw = np.array(
-    [
+
+class Data:
+    # Arguments to be used throughout all test classes
+    raw_x, raw_y = np.meshgrid(np.arange(4).astype("f4"), np.arange(4).astype("f4"))
+    raw_coords = np.vstack((raw_x.ravel(), raw_y.ravel())).T
+    obs_coords = np.array([[1.0, 1.0], [2.0, 1.0], [1.0, 3.5], [3.5, 3.0]])
+    raw = np.array(
         [
-            1.0,
-            2.0,
-            1.0,
-            0.0,
-            1.0,
-            2.0,
-            1.0,
-            2.0,
-            1.0,
-            0.0,
-            0.0,
-            3.0,
-            4.0,
-            0.0,
-            4.0,
-            0.0,
-        ],
-        [
-            1.0,
-            2.0,
-            1.0,
-            0.0,
-            1.0,
-            2.0,
-            1.0,
-            2.0,
-            1.0,
-            0.0,
-            0.0,
-            3.0,
-            4.0,
-            0.0,
-            4.0,
-            0.0,
-        ],
-    ]
-).T
-obs = np.array([[2.0, 3, 0.0, 4.0], [2.0, 3, 0.0, 4.0]]).T
-nnear_raws = 2
-mingages = 3
+            [
+                1.0,
+                2.0,
+                1.0,
+                0.0,
+                1.0,
+                2.0,
+                1.0,
+                2.0,
+                1.0,
+                0.0,
+                0.0,
+                3.0,
+                4.0,
+                0.0,
+                4.0,
+                0.0,
+            ],
+            [
+                1.0,
+                2.0,
+                1.0,
+                0.0,
+                1.0,
+                2.0,
+                1.0,
+                2.0,
+                1.0,
+                0.0,
+                0.0,
+                3.0,
+                4.0,
+                0.0,
+                4.0,
+                0.0,
+            ],
+        ]
+    ).T
+    obs = np.array([[2.0, 3, 0.0, 4.0], [2.0, 3, 0.0, 4.0]]).T
+    nnear_raws = 2
+    mingages = 3
 
 
-class AdjustBaseTest(unittest.TestCase):
-    def setUp(self):
-        self.raw_coords = raw_coords
-        self.obs_coords = obs_coords
-        self.raw = raw
-        self.obs = obs
-        self.nnear_raws = nnear_raws
-        self.mingages = mingages
-
+class TestAdjustBase(Data):
     def test___init__(self):
         pass
 
@@ -85,15 +78,7 @@ class AdjustBaseTest(unittest.TestCase):
         pass
 
 
-class AdjustAddTest(unittest.TestCase):
-    def setUp(self):
-        self.raw_coords = raw_coords
-        self.obs_coords = obs_coords
-        self.raw = raw
-        self.obs = obs
-        self.nnear_raws = nnear_raws
-        self.mingages = mingages
-
+class TestAdjustAddTest(Data):
     def test_AdjustAdd_1(self):
         adj = adjust.AdjustAdd(
             self.obs_coords,
@@ -122,21 +107,13 @@ class AdjustAddTest(unittest.TestCase):
                 [2.16913891, 2.16913891],
             ]
         )
-        self.assertTrue(np.allclose(res, shouldbe))
+        assert np.allclose(res, shouldbe)
         # test in case only one dataset is passed
         res = adj(self.obs[:, 0], self.raw[:, 0])
-        self.assertTrue(np.allclose(res, shouldbe[:, 0]))
+        assert np.allclose(res, shouldbe[:, 0])
 
 
-class AdjustMultiplyTest(unittest.TestCase):
-    def setUp(self):
-        self.raw_coords = raw_coords
-        self.obs_coords = obs_coords
-        self.raw = raw
-        self.obs = obs
-        self.nnear_raws = nnear_raws
-        self.mingages = mingages
-
+class TestAdjustMultiplyTest(Data):
     def test_AdjustMultiply_1(self):
         adj = adjust.AdjustMultiply(
             self.obs_coords,
@@ -165,21 +142,13 @@ class AdjustMultiplyTest(unittest.TestCase):
                 [0.0, 0.0],
             ]
         )
-        self.assertTrue(np.allclose(res, shouldbe))
+        assert np.allclose(res, shouldbe)
         # test in case only one dataset is passed
         res = adj(self.obs[:, 0], self.raw[:, 0])
-        self.assertTrue(np.allclose(res, shouldbe[:, 0]))
+        assert np.allclose(res, shouldbe[:, 0])
 
 
-class AdjustMixedTest(unittest.TestCase):
-    def setUp(self):
-        self.raw_coords = raw_coords
-        self.obs_coords = obs_coords
-        self.raw = raw
-        self.obs = obs
-        self.nnear_raws = nnear_raws
-        self.mingages = mingages
-
+class TestAdjustMixed(Data):
     def test_AdjustMixed_1(self):
         adj = adjust.AdjustMixed(
             self.obs_coords,
@@ -209,21 +178,19 @@ class AdjustMixedTest(unittest.TestCase):
             ]
         )
 
-        self.assertTrue(np.allclose(res, shouldbe))
+        assert np.allclose(res, shouldbe)
         # test in case only one dataset is passed
         res = adj(self.obs[:, 0], self.raw[:, 0])
-        self.assertTrue(np.allclose(res, shouldbe[:, 0]))
+        assert np.allclose(res, shouldbe[:, 0])
 
 
-class AdjustMFBTest(unittest.TestCase):
-    def setUp(self):
-        self.raw_coords = np.array([[0.0, 0.0], [1.0, 1.0]])
-        self.obs_coords = np.array([[0.5, 0.5], [1.5, 1.5]])
-        self.raw = np.array([2.0, 2.0])
-        self.obs = np.array([4.0, 4.0])
-        self.nnear_raws = nnear_raws
-        self.mingages = 0
-        self.mfb_args = dict(method="mean")
+class TestAdjustMFB(Data):
+    raw_coords = np.array([[0.0, 0.0], [1.0, 1.0]])
+    obs_coords = np.array([[0.5, 0.5], [1.5, 1.5]])
+    raw = np.array([2.0, 2.0])
+    obs = np.array([4.0, 4.0])
+    mingages = 0
+    mfb_args = dict(method="mean")
 
     def test_AdjustMFB_1(self):
         adj = adjust.AdjustMFB(
@@ -235,7 +202,7 @@ class AdjustMFBTest(unittest.TestCase):
         )
         res = adj(self.obs, self.raw)
         shouldbe = np.array([4.0, 4.0])
-        self.assertTrue(np.allclose(res, shouldbe))
+        assert np.allclose(res, shouldbe)
 
         adj = adjust.AdjustMFB(
             self.obs_coords,
@@ -255,15 +222,13 @@ class AdjustMFBTest(unittest.TestCase):
         adj(self.obs, self.raw)
 
 
-class AdjustNoneTest(unittest.TestCase):
-    def setUp(self):
-        self.raw_coords = np.array([[0.0, 0.0], [1.0, 1.0]])
-        self.obs_coords = np.array([[0.5, 0.5], [1.5, 1.5]])
-        self.raw = np.array([2.0, 2.0])
-        self.obs = np.array([4.0, 4.0])
-        self.nnear_raws = nnear_raws
-        self.mingages = 0
-        self.mfb_args = dict(method="mean")
+class TestAdjustNone(Data):
+    raw_coords = np.array([[0.0, 0.0], [1.0, 1.0]])
+    obs_coords = np.array([[0.5, 0.5], [1.5, 1.5]])
+    raw = np.array([2.0, 2.0])
+    obs = np.array([4.0, 4.0])
+    mingages = 0
+    mfb_args = dict(method="mean")
 
     def test_AdjustNone_1(self):
         adj = adjust.AdjustNone(
@@ -274,18 +239,16 @@ class AdjustNoneTest(unittest.TestCase):
         )
         res = adj(self.obs, self.raw)
         shouldbe = np.array([2.0, 2.0])
-        self.assertTrue(np.allclose(res, shouldbe))
+        assert np.allclose(res, shouldbe)
 
 
-class GageOnlyTest(unittest.TestCase):
-    def setUp(self):
-        self.raw_coords = np.array([[0.0, 0.0], [1.0, 1.0]])
-        self.obs_coords = np.array([[0.5, 0.5], [1.5, 1.5]])
-        self.raw = np.array([2.0, 2.0])
-        self.obs = np.array([4.0, 4.0])
-        self.nnear_raws = nnear_raws
-        self.mingages = 0
-        self.mfb_args = dict(method="mean")
+class TestGageOnly(Data):
+    raw_coords = np.array([[0.0, 0.0], [1.0, 1.0]])
+    obs_coords = np.array([[0.5, 0.5], [1.5, 1.5]])
+    raw = np.array([2.0, 2.0])
+    obs = np.array([4.0, 4.0])
+    mingages = 0
+    mfb_args = dict(method="mean")
 
     def test_GageOnly_1(self):
         adj = adjust.GageOnly(
@@ -296,24 +259,20 @@ class GageOnlyTest(unittest.TestCase):
         )
         res = adj(self.obs, self.raw)
         shouldbe = np.array([4.0, 4.0])
-        self.assertTrue(np.allclose(res, shouldbe))
+        assert np.allclose(res, shouldbe)
 
 
-class AdjustHelperTest(unittest.TestCase):
+class TestAdjustHelper:
     def test__get_neighbours_ix(self):
         pass
 
     def test__get_statfunc(self):
         adjust._get_statfunc("median")
         adjust._get_statfunc("best")
-        with self.assertRaises(NameError):
+        with pytest.raises(NameError):
             adjust._get_statfunc("wradlib")
 
     def test_best(self):
         x = 7.5
         y = np.array([0.0, 1.0, 0.0, 1.0, 0.0, 7.7, 8.0, 8.0, 8.0, 8.0])
-        self.assertEqual(adjust.best(x, y), 7.7)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert adjust.best(x, y) == 7.7
