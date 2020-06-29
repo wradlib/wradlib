@@ -4,10 +4,10 @@
 
 import sys
 import tempfile
-import unittest
 
 import matplotlib.pyplot as pl
 import numpy as np
+import pytest
 
 from wradlib import georef, util, vis  # noqa: 402
 
@@ -17,27 +17,24 @@ pl.interactive(True)  # noqa
 cartopy = util.import_optional("cartopy")
 
 
-class PolarPlotTest(unittest.TestCase):
-    def setUp(self):
-        img = np.zeros((360, 10), dtype=np.float32)
-        img[2, 2] = 10  # isolated pixel
-        img[5, 6:8] = 10  # line
-        img[20, :] = 5  # spike
-        img[60:120, 2:7] = 11  # precip field
-        self.r = np.arange(0, 100000, 10000)
-        self.az = np.arange(0, 360)
-        self.el = np.arange(0, 90)
-        self.th = np.zeros_like(self.az)
-        self.az1 = np.ones_like(self.el) * 225
-        self.img = img
-        self.proj = georef.create_osr("dwd-radolan")
+class TestPolarPlot:
+    img = np.zeros((360, 10), dtype=np.float32)
+    img[2, 2] = 10  # isolated pixel
+    img[5, 6:8] = 10  # line
+    img[20, :] = 5  # spike
+    img[60:120, 2:7] = 11  # precip field
+    r = np.arange(0, 100000, 10000)
+    az = np.arange(0, 360)
+    el = np.arange(0, 90)
+    th = np.zeros_like(az)
+    az1 = np.ones_like(el) * 225
+    img = img
+    proj = georef.create_osr("dwd-radolan")
 
-        self.da_ppi = georef.create_xarray_dataarray(img, self.r, self.az, self.th)
-        self.da_ppi = georef.georeference_dataset(self.da_ppi, proj=None)
-        self.da_rhi = georef.create_xarray_dataarray(
-            img[0:90], self.r, self.az1, self.el
-        )
-        self.da_rhi = georef.georeference_dataset(self.da_rhi, proj=None)
+    da_ppi = georef.create_xarray_dataarray(img, r, az, th)
+    da_ppi = georef.georeference_dataset(da_ppi, proj=None)
+    da_rhi = georef.create_xarray_dataarray(img[0:90], r, az1, el)
+    da_rhi = georef.georeference_dataset(da_rhi, proj=None)
 
     def test_plot_ppi(self):
         ax, pm = vis.plot_ppi(self.img, re=6371000.0, ke=(4.0 / 3.0))
@@ -67,15 +64,15 @@ class PolarPlotTest(unittest.TestCase):
         ax, pm = vis.plot_ppi(self.img, func="contour")
         ax, pm = vis.plot_ppi(self.img, func="contourf")
         ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=self.proj, site=(0, 0, 0))
-        with self.assertWarns(UserWarning):
+        with pytest.warns(UserWarning):
             ax, pm = vis.plot_ppi(self.img, site=(10.0, 45.0, 0.0), proj=self.proj)
-        with self.assertWarns(UserWarning):
+        with pytest.warns(UserWarning):
             ax, pm = vis.plot_ppi(self.img, proj=None, site=(0, 0, 0))
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             ax, pm = vis.plot_ppi(self.img, proj=self.proj)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             ax, pm = vis.plot_ppi(self.img, site=(0, 0), proj=self.proj)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             vis.plot_ppi_crosshair(site=(0, 0), ranges=[2, 4, 8])
 
     def test_plot_ppi_xarray(self):
@@ -90,20 +87,20 @@ class PolarPlotTest(unittest.TestCase):
         self.da_ppi.wradlib.contour(proj="cg")
         self.da_ppi.wradlib.contourf(proj="cg")
         self.da_ppi.wradlib.pcolormesh(proj="cg")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             self.da_ppi.wradlib.pcolormesh(proj=self.proj)
         fig = pl.figure()
         ax = fig.add_subplot(111)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             self.da_ppi.wradlib.pcolormesh(proj={"rot": 0, "scale": 1}, ax=ax)
 
-    @unittest.skipIf("cartopy" not in sys.modules, "without Cartopy")
+    @pytest.mark.skipif("cartopy" not in sys.modules, reason="without Cartopy")
     def test_plot_ppi_cartopy(self):
         if cartopy:
             site = (7, 45, 0.0)
             map_proj = cartopy.crs.Mercator(central_longitude=site[1])
             ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=map_proj)
-            self.assertIsInstance(ax, cartopy.mpl.geoaxes.GeoAxes)
+            assert isinstance(ax, cartopy.mpl.geoaxes.GeoAxes)
             fig = pl.figure(figsize=(10, 10))
             ax = fig.add_subplot(111, projection=map_proj)
             self.da_ppi.wradlib.plot_ppi(ax=ax)
@@ -125,9 +122,9 @@ class PolarPlotTest(unittest.TestCase):
         )
 
     def test_plot_rhi_xarray(self):
-        self.assertEqual(
-            repr(self.da_rhi.wradlib).split("\n", 1)[1],
-            repr(self.da_rhi).split("\n", 1)[1],
+        assert (
+            repr(self.da_rhi.wradlib).split("\n", 1)[1]
+            == repr(self.da_rhi).split("\n", 1)[1]
         )
         self.da_rhi.wradlib.rays
         self.da_rhi.wradlib.plot()
@@ -146,7 +143,7 @@ class PolarPlotTest(unittest.TestCase):
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", site=(0, 0, 0))
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=cgax)
         fig, ax = pl.subplots(2, 2)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=ax[0, 0])
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=111)
         cgax, pm = vis.plot_ppi(self.img, elev=2.0, proj="cg", ax=121)
@@ -159,7 +156,7 @@ class PolarPlotTest(unittest.TestCase):
         cgax, pm = vis.plot_rhi(self.img[0:90, :], proj="cg")
         cgax, pm = vis.plot_rhi(self.img[0:90, :], proj="cg", ax=cgax)
         fig, ax = pl.subplots(2, 2)
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             vis.plot_rhi(self.img[0:90, :], proj="cg", ax=ax[0, 0])
         cgax, pm = vis.plot_rhi(self.img[0:90, :], th_res=0.5, proj="cg")
         cgax, pm = vis.plot_rhi(self.img[0:90, :], proj="cg")
@@ -174,7 +171,7 @@ class PolarPlotTest(unittest.TestCase):
         cgax, caax, paax = vis.create_cg(subplot=121)
 
 
-class MiscPlotTest(unittest.TestCase):
+class TestMiscPlot:
     def test_plot_scan_strategy(self):
         ranges = np.arange(0, 100000, 1000)
         elevs = np.arange(1, 30, 3)
@@ -211,7 +208,3 @@ class MiscPlotTest(unittest.TestCase):
         xy = np.dstack((x, y))
         vis.add_patches(ax, xy)
         vis.add_patches(ax, np.array([xy]))
-
-
-if __name__ == "__main__":
-    unittest.main()
