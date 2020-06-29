@@ -164,26 +164,6 @@ class TestKDPFromPHIDP:
         else:
             assert not np.array_equal(in4, phidp_raw4)
 
-    def test_kdp_from_phidp(self, derivation_method):
-        if derivation_method == "lstsq" and sys.platform.startswith("win"):
-            pytest.skip("fails on windows due to MKL issue")
-
-        window = 7
-
-        # compare with true kdp
-        out = dp.kdp_from_phidp(
-            self.phidp_true.copy(), dr=self.dr, method=derivation_method, winlen=window
-        )
-        outx = out[:, self.pad : -self.pad]
-        res = self.kdp_true[:, self.pad : -self.pad]
-        np.testing.assert_array_almost_equal(outx, res, decimal=4)
-
-        # intercompare with lanczos method with NaN handling
-        out0 = dp.kdp_from_phidp(
-            self.phidp_true.copy(), dr=self.dr, method="lanczos_conv", winlen=window
-        )
-        np.testing.assert_array_almost_equal(out, out0, decimal=4)
-
     def test_kdp_from_phidp_nan(self, derivation_method):
         if derivation_method == "lstsq" and sys.platform.startswith("win"):
             pytest.skip("fails on windows due to MKL issue")
@@ -206,6 +186,26 @@ class TestKDPFromPHIDP:
             winlen=window,
         )
         np.testing.assert_array_almost_equal(outx, out0, decimal=4)
+
+    def test_kdp_from_phidp(self, derivation_method):
+        if derivation_method == "lstsq" and sys.platform.startswith("win"):
+            pytest.skip("fails on windows due to MKL issue")
+
+        window = 7
+
+        # compare with true kdp
+        out = dp.kdp_from_phidp(
+            self.phidp_true.copy(), dr=self.dr, method=derivation_method, winlen=window
+        )
+        outx = out[:, self.pad : -self.pad]
+        res = self.kdp_true[:, self.pad : -self.pad]
+        np.testing.assert_array_almost_equal(outx, res, decimal=4)
+
+        # intercompare with lanczos method with NaN handling
+        out0 = dp.kdp_from_phidp(
+            self.phidp_true.copy(), dr=self.dr, method="lanczos_conv", winlen=window
+        )
+        np.testing.assert_array_almost_equal(out, out0, decimal=4)
 
     def test_linear_despeckle(self, ndespeckle):
         dp.linear_despeckle(self.phidp_raw0, ndespeckle=ndespeckle, copy=True)
