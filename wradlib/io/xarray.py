@@ -991,7 +991,7 @@ def _reindex_azimuth(ds, sweep, force=False):
         # check other coordinates
         # check elevation (no nan)
         # set nan values to reasonable median
-        if np.count_nonzero(xr.ufuncs.isnan(ds["elevation"])):
+        if np.count_nonzero(np.isnan(ds["elevation"])):
             ds["elevation"] = ds["elevation"].fillna(ds["elevation"].median())
         # todo: rtime is also affected, might need to be treated accordingly
 
@@ -1701,9 +1701,9 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
             if self.decode_coords:
                 coords = self._get_coords().coords
                 self._data = self._data.assign_coords(coords)
+                self._data = self._data.sortby(self._dim0[0])
                 # todo: only if PPI
                 if self._dim0[0] == "azimuth":
-                    self._data = self._data.sortby(self._dim0[0])
                     self._data = self._data.pipe(_reindex_azimuth, self)
                     self._data = self._data.assign_coords(
                         {"sweep_mode": "azimuth_surveillance"}
@@ -1755,10 +1755,16 @@ class XRadSweepOdim(XRadSweep):
         return self.azimuth.diff(self._dim0[0]).median().round(decimals=1)
 
     def _get_fixed_angle(self):
-        try:
-            angle = np.round(self.where["az_angle"], decimals=1)
+        # try RHI first
+        angle_keys = ["az_angle", "azangle"]
+        for ak in angle_keys:
+            angle = self.where.get(ak, None)
+            if angle is not None:
+                break
+        if angle is not None:
+            angle = np.round(angle, decimals=1)
             self._dim0 = (self._dim0[1], self._dim0[0])
-        except KeyError:
+        else:
             angle = np.round(self.where["elangle"], decimals=1)
         return angle
 
@@ -1850,7 +1856,8 @@ class XRadSweepOdim(XRadSweep):
             elevation_data = self._get_elevation_where()
         da = xr.DataArray(elevation_data, dims=[self._dim0[0]], attrs=el_attrs)
         # todo: do only if requested by user
-        da = da.pipe(_fix_elevation)
+        if self._dim0[0] == "azimuth":
+            da = da.pipe(_fix_elevation)
         return da
 
     def _get_mdesc(self):
