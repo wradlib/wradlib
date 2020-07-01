@@ -72,6 +72,16 @@ jobs:
   steps:
   - template: ci/azure/notebook-tests.yml
 
+- job: Flake8_Linting_Check
+  pool:
+    vmImage: 'ubuntu-20.04'
+  steps:
+  - task: UsePythonVersion@0
+  - bash: python -m pip install flake8
+    displayName: Install flake8
+  - bash: flake8 .
+    displayName: flake8 linting check
+
 - job: Black_Formatting_Check
   pool:
     vmImage: 'ubuntu-20.04'
