@@ -8,6 +8,6 @@ steps:
   displayName: Run tests
 
 - bash: |
-    bash <(curl -s https://codecov.io/bash) -v
+    bash <(curl -s https://codecov.io/bash)
   displayName: Upload coverage to codecov.io
 
