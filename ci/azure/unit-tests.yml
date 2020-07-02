@@ -7,11 +7,13 @@ steps:
     export COVERAGE_PROCESS_START=$PWD/.coveragerc
     coverage run -m pytest --verbose --doctest-modules --durations=15 wradlib
     ls -lart
+    coverage combine
+    ls -lart
   displayName: Run tests
 
 - bash: |
     source activate wradlib-tests
-    coverage combine
+    ls -lart
     bash <(curl -s https://codecov.io/bash)
   displayName: Upload coverage to codecov.io
 
