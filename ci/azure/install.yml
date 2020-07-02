@@ -16,13 +16,13 @@ steps:
   displayName: Install wradlib
 
 - bash: |
-    git clone https://github.com/wradlib/wradlib-data.git data
+    git clone --depth 1 https://github.com/wradlib/wradlib-data.git data
     echo "##vso[task.setvariable variable=WRADLIB_DATA]$PWD/data"
   condition: eq(variables.test_data, true)
   displayName: Install wradlib-data
 
 - bash: |
-    git clone https://github.com/wradlib/wradlib-notebooks.git notebooks
+    git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
   condition: eq(variables.notebooks, true)
   displayName: Install wradlib-notebooks
 

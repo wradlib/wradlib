@@ -4,5 +4,10 @@ steps:
 
 - bash: |
     source activate wradlib-tests
-    pytest --verbose --doctest-modules --durations=15 wradlib
+    pytest -n 2 --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
   displayName: Run tests
+
+- bash: |
+    bash <(curl -s https://codecov.io/bash)
+  displayName: Upload coverage to codecov.io
+
