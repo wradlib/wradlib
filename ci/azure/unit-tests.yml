@@ -5,16 +5,11 @@ steps:
 - bash: |
     source activate wradlib-tests
     export COVERAGE_PROCESS_START=$PWD/.coveragerc
-    coverage run -m pytest --verbose --doctest-modules --durations=15 wradlib
-    ls -lart
-    coverage combine
-    coverage xml
-    ls -lart
+    pytest -n 2 --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
   displayName: Run tests
 
 - bash: |
     source activate wradlib-tests
-    ls -lart
     codecov -f coverage.xml -F wradlib_azure_tests
   env:
     CODECOV_TOKEN: $(codecov_token)
