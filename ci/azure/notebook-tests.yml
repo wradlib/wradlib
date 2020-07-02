@@ -4,7 +4,7 @@ steps:
 
 - bash: |
     source activate wradlib-tests
-    pytest --verbose --tb=long --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+    pytest -n 2 --verbose --tb=long --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
   displayName: Run tests
 
 - bash: |
