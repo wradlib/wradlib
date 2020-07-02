@@ -10,7 +10,5 @@ steps:
 
 - bash: |
     bash <(curl -s https://codecov.io/bash)
-  env:
-    CODECOV_TOKEN: $(codecov_token)
   displayName: Upload coverage to codecov.io
 
