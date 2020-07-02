@@ -9,8 +9,7 @@ steps:
   displayName: Run tests
 
 - bash: |
-    source activate wradlib-tests
-    codecov -f coverage.xml -F wradlib_azure_tests
+    bash <(curl -s https://codecov.io/bash)
   env:
     CODECOV_TOKEN: $(codecov_token)
   displayName: Upload coverage to codecov.io
