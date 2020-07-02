@@ -8,6 +8,7 @@ steps:
     coverage run -m pytest --verbose --doctest-modules --durations=15 wradlib
     ls -lart
     coverage combine
+    coverage xml
     ls -lart
   displayName: Run tests
 
