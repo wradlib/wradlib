@@ -12,7 +12,7 @@ Below you see the status of wradlib. A green status indicates that the current r
 
 | Item  | Status  |
 |:---:|:---:|
-| Travis CI | [![Build Status](https://travis-ci.org/wradlib/wradlib.svg?branch=master)](https://travis-ci.org/wradlib/wradlib) |
+| Travis CI | [![Build Status](https://travis-ci.com/wradlib/wradlib.svg?branch=master)](https://travis-ci.org/wradlib/wradlib) |
 | Appveyor | [![Build status](https://ci.appveyor.com/api/projects/status/7x7xs1t6hg9m3h2b?svg=true)](https://ci.appveyor.com/project/wradlib/wradlib) |
 | Azure | [![Build Status](https://dev.azure.com/wradlib/wradlib/_apis/build/status/wradlib.wradlib?branchName=master)](https://dev.azure.com/wradlib/wradlib/_build/latest?definitionId=1&branchName=master) |
 | Codecov | [![codecov](https://codecov.io/gh/wradlib/wradlib/branch/master/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib) |
