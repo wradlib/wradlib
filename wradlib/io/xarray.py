@@ -904,15 +904,13 @@ def _preprocess_moment(ds, mom, non_uniform_shape):
 
     attrs = mom._decode(ds.data.attrs)
     quantity = mom.quantity
-    if mom.parent.mask_and_scale:
-        what = mom.what
-        attrs["scale_factor"] = what["gain"]
-        attrs["add_offset"] = what["offset"]
-        attrs["_FillValue"] = what["nodata"]
-        attrs["_Undetect"] = what["undetect"]
-    else:
-        attrs.update(mom.what)
-        attrs.pop("quantity")
+
+    # extract and translate attributes to cf
+    what = mom.what
+    attrs["scale_factor"] = what["gain"]
+    attrs["add_offset"] = what["offset"]
+    attrs["_FillValue"] = what["nodata"]
+    attrs["_Undetect"] = what["undetect"]
 
     if mom.parent.decode_coords:
         attrs["coordinates"] = "elevation azimuth range"
@@ -1570,12 +1568,15 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
         super(XRadSweep, self).__init__(ncfile, ncpath, parent)
-        kwargs.setdefault("chunks", None)
-        kwargs.setdefault("parallel", False)
-        kwargs.setdefault("mask_and_scale", True)
-        kwargs.setdefault("decode_coords", True)
-        kwargs.setdefault("decode_times", True)
-        self._kwargs = kwargs
+        self._dask_kwargs = {
+            "chunks": kwargs.get("chunks", None),
+            "parallel": kwargs.get("parallel", False),
+        }
+        self._cf_kwargs = {
+            "mask_and_scale": kwargs.get("mask_and_scale", True),
+            "decode_coords": kwargs.get("decode_coords", True),
+            "decode_times": kwargs.get("decode_times", True),
+        }
         self._data = None
         self._need_time_recalc = False
         self._seq.extend(self._get_moments())
@@ -1611,9 +1612,9 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
 
     def _decode_cf(self, obj):
         if isinstance(obj, xr.DataArray):
-            out = xr.decode_cf(xr.Dataset({"arr": obj}), self._kwargs).arr
+            out = xr.decode_cf(xr.Dataset({"arr": obj}), **self._cf_kwargs).arr
         else:
-            out = xr.decode_cf(obj, self._kwargs)
+            out = xr.decode_cf(obj, **self._cf_kwargs)
         return out
 
     def _get_coords(self):
@@ -1654,31 +1655,31 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
     def chunks(self):
         """Return `chunks` setting.
         """
-        return self._kwargs.get("chunks")
+        return self._dask_kwargs.get("chunks")
 
     @property
     def parallel(self):
         """Return `parallel` setting.
         """
-        return self._kwargs.get("parallel")
+        return self._dask_kwargs.get("parallel")
 
     @property
     def mask_and_scale(self):
         """Return `mask_and_scale` setting.
         """
-        return self._kwargs.get("mask_and_scale")
+        return self._cf_kwargs.get("mask_and_scale")
 
     @property
     def decode_coords(self):
         """Return `decode_coords` setting.
         """
-        return self._kwargs.get("decode_coords")
+        return self._cf_kwargs.get("decode_coords")
 
     @property
     def decode_times(self):
         """Return `decode_times` setting.
         """
-        return self._kwargs.get("decode_times")
+        return self._cf_kwargs.get("decode_times")
 
     @property
     def data(self):
@@ -2037,26 +2038,25 @@ class XRadSweepGamic(XRadSweep):
             try:
                 name = GAMIC_NAMES[name]
             except KeyError:
-                ds = ds.drop(mom_name)
+                ds = ds.drop_vars(mom_name)
                 continue
 
-            # extract attributes
+            # extract and translate attributes to cf
             attrs = collections.OrderedDict()
-            if self.mask_and_scale:
-                dmax = np.iinfo(dmom.dtype).max
-                dmin = np.iinfo(dmom.dtype).min
-                minval = dmom.dyn_range_min
-                maxval = dmom.dyn_range_max
-                if maxval != minval:
-                    gain = (maxval - minval) / dmax
-                else:
-                    gain = (dmax - dmin) / dmax
-                    minval = dmin
-                undetect = float(dmin)
-                attrs["scale_factor"] = gain
-                attrs["add_offset"] = minval
-                attrs["_FillValue"] = float(dmax)
-                attrs["_Undetect"] = undetect
+            dmax = np.iinfo(dmom.dtype).max
+            dmin = np.iinfo(dmom.dtype).min
+            minval = dmom.dyn_range_min
+            maxval = dmom.dyn_range_max
+            if maxval != minval:
+                gain = (maxval - minval) / dmax
+            else:
+                gain = (dmax - dmin) / dmax
+                minval = dmin
+            undetect = float(dmin)
+            attrs["scale_factor"] = gain
+            attrs["add_offset"] = minval
+            attrs["_FillValue"] = float(dmax)
+            attrs["_Undetect"] = undetect
 
             if self.decode_coords:
                 attrs["coordinates"] = "elevation azimuth range"
