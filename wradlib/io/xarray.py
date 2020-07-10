@@ -744,7 +744,7 @@ def to_cfradial2(volume, filename, timestep=None):
         swp.to_netcdf(filename, mode="a", group=key)
 
 
-def to_netcdf(volume, filename, timestep=None):
+def to_netcdf(volume, filename, timestep=None, keys=None):
     """ Save XRadVolume to netcdf compliant file.
 
     Parameters
@@ -754,15 +754,20 @@ def to_netcdf(volume, filename, timestep=None):
         output filename
     timestep : int, slice
         timestep/slice of wanted volume
+    keys : list
+        list of sweep_group_names which should be written to the file
     """
     volume.root.load()
     root = volume.root.copy(deep=True)
     root.attrs["Conventions"] = "Cf/Radial"
     root.attrs["version"] = "2.0"
     root.to_netcdf(filename, mode="w", group="/")
+    if keys is None:
+        keys = root.sweep_group_name.values
     for idx, key in enumerate(root.sweep_group_name.values):
-        swp = volume[idx].data.isel(time=timestep)
-        swp.to_netcdf(filename, mode="a", group=key)
+        if key in keys:
+            swp = volume[idx].data.isel(time=timestep)
+            swp.to_netcdf(filename, mode="a", group=key)
 
 
 def to_odim(volume, filename, timestep=0):
@@ -2373,7 +2378,7 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
                 UserWarning,
             )
 
-    def to_netcdf(self, filename, timestep=None):
+    def to_netcdf(self, filename, timestep=None, keys=None):
         """ Save volume to netcdf compliant file.
 
         Parameters
@@ -2382,9 +2387,11 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
             Name of the output file
         timestep : int, slice
             timestep/slice of wanted volume
+        keys : list
+            list of sweep_group_names which should be written to the file
         """
         if self.root:
-            to_netcdf(self, filename, timestep=timestep)
+            to_netcdf(self, filename, keys=keys, timestep=timestep)
         else:
             warnings.warn(
                 "WRADLIB: No netcdf-compliant data structure " "available. Not saving.",
