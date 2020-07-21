@@ -1582,6 +1582,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
             "decode_coords": kwargs.get("decode_coords", True),
             "decode_times": kwargs.get("decode_times", True),
         }
+        self._misc_kwargs = {"keep_elevation": kwargs.get("keep_elevation", False)}
         self._data = None
         self._need_time_recalc = False
         self._seq.extend(self._get_moments())
@@ -1861,8 +1862,7 @@ class XRadSweepOdim(XRadSweep):
         except (AttributeError, KeyError, TypeError):
             elevation_data = self._get_elevation_where()
         da = xr.DataArray(elevation_data, dims=[self._dim0[0]], attrs=el_attrs)
-        # todo: do only if requested by user
-        if self._dim0[0] == "azimuth":
+        if not self._misc_kwargs["keep_elevation"] and self._dim0[0] == "azimuth":
             da = da.pipe(_fix_elevation)
         return da
 
@@ -1969,8 +1969,7 @@ class XRadSweepGamic(XRadSweep):
         elstop = self.ray_header["elevation_stop"]
         elevation = (elstart + elstop) / 2.0
         da = xr.DataArray(elevation, dims=[self._dim0[0]], attrs=el_attrs)
-        # todo: do only if requested by user
-        if self._dim0[0] == "azimuth":
+        if not self._misc_kwargs["keep_elevation"] and self._dim0[0] == "azimuth":
             da = da.pipe(_fix_elevation)
         return da
 
