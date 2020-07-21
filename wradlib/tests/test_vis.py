@@ -4,12 +4,16 @@
 
 import sys
 import tempfile
+from distutils.version import LooseVersion
 
+import matplotlib as mpl
 import matplotlib.pyplot as pl
 import numpy as np
 import pytest
 
-from wradlib import georef, util, vis  # noqa: 402
+from wradlib import georef, util, vis
+
+from . import requires_data
 
 pl.interactive(True)  # noqa
 
@@ -97,6 +101,10 @@ class TestPolarPlot:
     @pytest.mark.skipif("cartopy" not in sys.modules, reason="without Cartopy")
     def test_plot_ppi_cartopy(self):
         if cartopy:
+            if (LooseVersion(cartopy.__version__) < LooseVersion("0.18.0")) and (
+                LooseVersion(mpl.__version__) >= LooseVersion("3.3.0")
+            ):
+                pytest.skip("fails for cartopy < 0.18.0 and matplotlib >= 3.3.0")
             site = (7, 45, 0.0)
             map_proj = cartopy.crs.Mercator(central_longitude=site[1])
             ax, pm = vis.plot_ppi(self.img, self.r, self.az, proj=map_proj)
@@ -172,12 +180,16 @@ class TestPolarPlot:
 
 
 class TestMiscPlot:
+    @requires_data
     def test_plot_scan_strategy(self):
         ranges = np.arange(0, 100000, 1000)
         elevs = np.arange(1, 30, 3)
-        site = (7.0, 53.0)
+        site = (7.0, 53.0, 100.0)
         vis.plot_scan_strategy(ranges, elevs, site)
-        vis.plot_scan_strategy(ranges, elevs, site, ax=pl.gca())
+        vis.plot_scan_strategy(ranges, elevs, site, cg=True)
+        if not sys.platform.startswith("win"):
+            vis.plot_scan_strategy(ranges, elevs, site, terrain=True)
+            vis.plot_scan_strategy(ranges, elevs, site, cg=True, terrain=True)
 
     def test_plot_plan_and_vert(self):
         x = np.arange(0, 10)

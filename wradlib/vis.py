@@ -43,7 +43,7 @@ import xarray as xr
 from matplotlib import axes, lines, patches
 from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.projections import PolarAxes
-from matplotlib.ticker import FuncFormatter, NullFormatter
+from matplotlib.ticker import FuncFormatter, MaxNLocator, MultipleLocator, NullFormatter
 from matplotlib.transforms import Affine2D
 from mpl_toolkits.axisartist import (
     GridHelperCurveLinear,
@@ -52,7 +52,7 @@ from mpl_toolkits.axisartist import (
 )
 from osgeo import osr
 
-from wradlib import georef, util
+from wradlib import georef, io, ipol, util
 
 
 @xr.register_dataarray_accessor("wradlib")
@@ -957,54 +957,253 @@ def create_cg(
     return cgax, caax, paax
 
 
-def plot_scan_strategy(ranges, elevs, site, vert_res=500.0, maxalt=10000.0, ax=None):
-    """Plot the vertical scanning strategy
+def _height_formatter(x, pos, cg=False, scale=1.0, er=6370000.0):
+    if not cg:
+        er = 0
+    x = (x - er) / scale
+    fmt_str = "{:g}".format(x)
+    return fmt_str
+
+
+def _range_formatter(x, pos, scale=1.0):
+    x = x / scale
+    fmt_str = "{:g}".format(x)
+    return fmt_str
+
+
+def _plot_beam(r, alt, beamradius, ax=None, label=None):
+    """Plot single beam on ax
+    """
+    if label is None:
+        label = ""
+    if ax is None:
+        raise TypeError("wradlib: keyword argument `ax` not specified.")
+    center = ax.plot(r, alt, "-k", linewidth=0.5, alpha=1.0, label="_Center", zorder=1)
+    edge = ax.plot(
+        r, (alt + beamradius), ":k", linewidth=0.5, alpha=1.0, label="_Edge", zorder=1
+    )
+    ax.plot(r, (alt - beamradius), ":k", linewidth=0.2, alpha=1.0, zorder=1)
+    fill = ax.fill_between(
+        r, (alt - beamradius), (alt + beamradius), label=label, alpha=0.45, zorder=1
+    )
+    return fill, center, edge
+
+
+def plot_scan_strategy(
+    ranges,
+    elevs,
+    sitecoords,
+    beamwidth=1.0,
+    vert_res=500.0,
+    maxalt=10000.0,
+    range_res=None,
+    maxrange=None,
+    units="m",
+    terrain=None,
+    az=0.0,
+    cg=False,
+    ax=111,
+    cmap="tab10",
+):
+    """Plot the vertical scanning strategy.
 
     Parameters
     ----------
-    ranges : array of ranges
-    elevs : array of elevation angles
-    site : tuple of site coordinates (longitude, latitude, altitude)
+    ranges : sequence of floats
+        array of ranges
+    elevs : sequence of floats
+        elevation angles
+    sitecoords : sequence of floats
+        radar site coordinates (longitude, latitude, altitude)
+    beamwidth : float
+        3dB width of the radar beam, defaults to 1.0 deg.
     vert_res : float
-        Vertical resolution in [m]
+        Vertical resolution in [m].
     maxalt : float
-        Maximum altitude in [m]
-    ax : :class:`matplotlib:matplotlib.axes.Axes`
-        The axes object to be plotted to.
-    """
-    # just a dummy
-    az = np.array([90.0])
-    coords, _ = georef.spherical_to_xyz(ranges, az, elevs, site, squeeze=True)
-    alt = coords[..., 2]
-    if ax is None:
-        returnax = False
-        fig = pl.figure()
-        ax = fig.add_subplot(111)
-    else:
-        returnax = True
-    # actual plotting
-    for y in np.arange(0, 10000.0, vert_res):
-        ax.axhline(y=y, color="grey")
-    for x in ranges:
-        ax.axvline(x=x, color="grey")
-    for i in range(len(elevs)):
-        ax.plot(ranges, alt[i, :], lw=2, color="black")
-    pl.ylim(top=maxalt)
-    ax.tick_params(labelsize="large")
-    pl.xlabel("Range (m)", size="large")
-    pl.ylabel("Height over radar (m)", size="large")
-    for i, elev in enumerate(elevs):
-        x = ranges[-1] + 1500.0
-        y = alt[i, :][-1]
-        if y > maxalt:
-            ix = np.where(alt[i, :] < maxalt)[0][-1]
-            x = ranges[ix]
-            y = maxalt + 100.0
-        pl.text(x, y, str(elev), fontsize="large")
+        Maximum altitude in [m].
+    range_res : float
+        Horizontal resolution in [m].
+    maxrange : float
+        Maximum range in [m].
+    units : str
+        Units to plot in, can be 'm' or 'km'. Defaults to 'm'.
+    terrain : bool | :class:`numpy:numpy.ndarray`
+        If True, downloads srtm data and add orography for given `az`.
+    az : float
+        Used to specify azimuth for terrain plots.
+    cg : bool
+        If True, plot in curvelinear grid, defaults to False (cartesian grid).
+    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid definition
+        If matplotlib Axes object is given, the scan strategy will be plotted into this
+        axes object.
+        If matplotlib grid definition is given (nrows/ncols/plotnumber),
+        axis are created in the specified place.
+        Defaults to '111', only one subplot/axis.
+    cmap : str
+        matplotlib colormap string.
 
-    if returnax:
-        return ax
-    pl.show()
+    Returns
+    -------
+    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib toolkit axisartist Axes object
+        matplotlib Axes or curvelinear Axes (r-theta-grid) depending on keyword argument `cg`.
+    """
+
+    if units == "m":
+        scale = 1.0
+    elif units == "km":
+        scale = 1000.0
+    else:
+        raise ValueError(f"wradlib: unknown value for keyword argument units={units}")
+
+    az = np.array([az])
+
+    if maxrange is None:
+        maxrange = ranges.max()
+
+    xyz, rad = georef.spherical_to_xyz(ranges, az, elevs, sitecoords, squeeze=True)
+
+    add_title = ""
+    if terrain is True:
+        add_title += f" - Azimuth {az[0]}°"
+        ll = georef.reproject(xyz, projection_source=rad)
+        # (down-)load srtm data
+        ds = io.get_srtm(
+            [ll[..., 0].min(), ll[..., 0].max(), ll[..., 1].min(), ll[..., 1].max()],
+            download={},
+        )
+        rastervalues, rastercoords, proj = georef.extract_raster_dataset(
+            ds, nodata=-32768.0
+        )
+        # map rastervalues to polar grid points
+        terrain = ipol.cart_to_irregular_spline(
+            rastercoords, rastervalues, ll[-1, ..., :2], order=3, prefilter=False
+        )
+    if ax == 111:
+        fig = pl.figure(figsize=(16, 8))
+    else:
+        fig = pl.gcf()
+
+    legend2 = {}
+
+    if cg is True:
+        ax, caax, paax = create_cg(fig=fig, subplot=ax, rot=0, scale=1)
+        # for nice plotting we assume earth_radius = 6370000 m
+        er = 6370000
+        # calculate beam_height and arc_distance for ke=1
+        # means line of sight
+        ade = georef.bin_distance(ranges, 0, sitecoords[2], re=er, ke=1.0)
+        nn0 = np.zeros_like(ranges)
+        ecp = nn0 + er
+        # theta (arc_distance sector angle)
+        thetap = -np.degrees(ade / er) + 90.0
+
+        # zero degree elevation with standard refraction
+        (bes,) = paax.plot(thetap, ecp, "-k", linewidth=3, label="_MSL", zorder=3)
+        legend2["MSL"] = bes
+
+        if terrain is not None:
+            paax.fill_between(
+                thetap, ecp.min() - 2500, ecp + terrain, color="0.75", zorder=2
+            )
+
+        # axes layout
+        ax.set_xlim(0, np.max(ade))
+        ax.set_ylim([ecp.min() - maxalt / 5, ecp.max() + maxalt])
+        caax.grid(True, axis="x")
+        ax.grid(True, axis="y")
+        ax.axis["top"].toggle(all=False)
+        gh = ax.get_grid_helper()
+        yrange = maxalt + maxalt / 5
+        nbins = ((yrange // vert_res) * 2 + 1) // np.sqrt(2)
+        gh.grid_finder.grid_locator2._nbins = nbins
+    else:
+        ax = fig.add_subplot(ax)
+        paax = ax
+        caax = ax
+        if terrain is not None:
+            paax.fill_between(ranges, 0, terrain, color="0.75", zorder=2)
+        ax.set_xlim(0.0, maxrange)
+        ax.set_ylim(0.0, maxalt)
+        ax.grid()
+
+    # axes ticks and formatting
+    if range_res is not None:
+        xloc = range_res
+        caax.xaxis.set_major_locator(MultipleLocator(xloc))
+    else:
+        caax.xaxis.set_major_locator(MaxNLocator())
+    yloc = vert_res
+    caax.yaxis.set_major_locator(MultipleLocator(yloc))
+
+    import functools
+
+    hform = functools.partial(_height_formatter, cg=cg, scale=scale)
+    rform = functools.partial(_range_formatter, scale=scale)
+    caax.yaxis.set_major_formatter(FuncFormatter(hform))
+    caax.xaxis.set_major_formatter(FuncFormatter(rform))
+
+    # color management
+    from cycler import cycler
+
+    NUM_COLORS = len(elevs)
+    cmap = pl.get_cmap(cmap)
+    if cmap.N >= 256:
+        colors = [cmap(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)]
+    else:
+        colors = cmap.colors
+    cycle = cycler(color=colors)
+    paax.set_prop_cycle(cycle)
+
+    # plot beams
+    for i, el in enumerate(elevs):
+        alt = xyz[i, ..., 2]
+        groundrange = np.sqrt(xyz[i, ..., 0] ** 2 + xyz[i, ..., 1] ** 2)
+
+        if cg:
+            plrange = thetap
+            plalt = ecp + alt
+            beamradius = util.half_power_radius(ranges, beamwidth)
+        else:
+            plrange = np.insert(groundrange, 0, 0)
+            plalt = np.insert(alt, 0, sitecoords[2])
+            beamradius = util.half_power_radius(plrange, beamwidth)
+
+        _, center, edge = _plot_beam(
+            plrange, plalt, beamradius, label=f"{el:4.1f}°", ax=paax
+        )
+
+    # legend 1
+    handles, labels = ax.get_legend_handles_labels()
+    leg1 = ax.legend(
+        handles,
+        labels,
+        prop={"family": "monospace"},
+        loc="upper left",
+        bbox_to_anchor=(1.04, 1),
+        borderaxespad=0,
+    )
+
+    # legend 2
+    legend2["Center"] = center[0]
+    legend2["3 dB"] = edge[0]
+    ax.legend(
+        legend2.values(),
+        legend2.keys(),
+        prop={"family": "monospace"},
+        loc="lower left",
+        bbox_to_anchor=(1.04, 0),
+        borderaxespad=0,
+    )
+
+    # add legend 1
+    ax.add_artist(leg1)
+
+    # set axes labels
+    ax.set_title(f"Radar Scan Strategy - {sitecoords}" + add_title)
+    caax.set_xlabel(f"Range ({units})")
+    caax.set_ylabel(f"Altitude ({units})")
+
+    return ax
 
 
 def plot_plan_and_vert(
