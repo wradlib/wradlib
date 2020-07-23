@@ -182,14 +182,13 @@ class TestPolarPlot:
 class TestMiscPlot:
     @requires_data
     def test_plot_scan_strategy(self):
-        ranges = np.arange(0, 100000, 1000)
+        ranges = np.arange(0, 10000, 100)
         elevs = np.arange(1, 30, 3)
         site = (7.0, 53.0, 100.0)
         vis.plot_scan_strategy(ranges, elevs, site)
         vis.plot_scan_strategy(ranges, elevs, site, cg=True)
-        if not sys.platform.startswith("win"):
-            vis.plot_scan_strategy(ranges, elevs, site, terrain=True)
-            vis.plot_scan_strategy(ranges, elevs, site, cg=True, terrain=True)
+        vis.plot_scan_strategy(ranges, elevs, site, terrain=True)
+        vis.plot_scan_strategy(ranges, elevs, site, cg=True, terrain=True)
 
     def test_plot_plan_and_vert(self):
         x = np.arange(0, 10)

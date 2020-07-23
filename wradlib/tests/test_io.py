@@ -1614,7 +1614,6 @@ class TestXarray:
 
 
 class TestDem:
-    @pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
     @requires_data
     def test_get_srtm(self):
         targets = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
