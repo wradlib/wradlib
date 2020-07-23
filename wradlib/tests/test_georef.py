@@ -833,7 +833,6 @@ class TestGdal:
         data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
         assert coords.shape[-1] == 2
 
-    @pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
     def test_get_raster_elevation(self):
         georef.get_raster_elevation(self.ds, download={"region": "Eurasia"})
 
