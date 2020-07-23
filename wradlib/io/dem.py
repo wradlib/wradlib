@@ -52,18 +52,25 @@ def download_srtm(
 
     """
     if region is None:
-        region = ["Africa", "Australia", "Eurasia", "Islands", "North_America", "South_America"]
+        region = [
+            "Africa",
+            "Australia",
+            "Eurasia",
+            "Islands",
+            "North_America",
+            "South_America",
+        ]
     else:
         region = [region]
     if version == 2:
         website = "https://dds.cr.usgs.gov/srtm/version2_1"
         resolution = "SRTM%s" % (resolution)
-        source = '/'.join([website, resolution, '{}'])
+        source = "/".join([website, resolution, "{}"])
     if version == 3:
         website = "https://e4ftl01.cr.usgs.gov/MEASURES"
         resolution = "SRTMGL%d.003" % (resolution)
-        source = '/'.join([website, resolution, "2000.02.11"])
-    url = '/'.join([source, filename])
+        source = "/".join([website, resolution, "2000.02.11"])
+    url = "/".join([source, filename])
 
     headers = None
 
