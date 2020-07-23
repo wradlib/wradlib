@@ -28,7 +28,7 @@ from wradlib import util
 
 
 def download_srtm(
-    filename, destination=None, version=2, resolution=3, region="Eurasia", token=None
+    filename, destination=None, version=2, resolution=3, region=None, token=None
 ):
     """
     Download NASA SRTM elevation data
@@ -51,34 +51,56 @@ def download_srtm(
         filename with authorization token (required for version 3)
 
     """
+    if region is None:
+        region = ["Africa", "Australia", "Eurasia", "Islands", "North_America", "South_America"]
+    else:
+        region = [region]
     if version == 2:
         website = "https://dds.cr.usgs.gov/srtm/version2_1"
         resolution = "SRTM%s" % (resolution)
-        source = os.path.join(website, resolution, region)
+        source = '/'.join([website, resolution, '{}'])
     if version == 3:
         website = "https://e4ftl01.cr.usgs.gov/MEASURES"
         resolution = "SRTMGL%d.003" % (resolution)
-        source = os.path.join(website, resolution, "2000.02.11")
-    url = os.path.join(source, filename)
+        source = '/'.join([website, resolution, "2000.02.11"])
+    url = '/'.join([source, filename])
 
     headers = None
-    if token is not None:
-        headers = {"Authorization": "Bearer %s" % (token)}
-    try:
-        r = requests.get(url, headers=headers, stream=True)
-        r.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        status_code = err.response.status_code
-        if status_code == 404:
-            return
-        else:
-            raise err
 
-    if destination is None:
-        destination = filename
-    with open(destination, "wb") as fd:
-        for chunk in r.iter_content(chunk_size=128):
-            fd.write(chunk)
+    if version == 2:
+        for reg in region:
+            try:
+                r = requests.get(url.format(reg), headers=headers, stream=True)
+                r.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                status_code = err.response.status_code
+                if status_code == 404:
+                    continue
+                else:
+                    raise err
+            finally:
+                if r.status_code == 200:
+                    break
+
+    elif version == 3:
+        if token is not None:
+            headers.update({"Authorization": "Bearer %s" % (token)})
+        try:
+            r = requests.get(url, headers=headers, stream=True)
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            status_code = err.response.status_code
+            if status_code == 404:
+                return
+            else:
+                raise err
+
+    if r.status_code == 200:
+        if destination is None:
+            destination = filename
+        with open(destination, "wb") as fd:
+            for chunk in r.iter_content(chunk_size=128):
+                fd.write(chunk)
 
 
 def get_srtm(extent, version=2, resolution=3, merge=True, download=None):
