@@ -707,15 +707,15 @@ class TestPixMap:
 @requires_data
 class TestGdal:
     if has_data:
-        filename = "geo/bonn_new.tif"
-        geofile = util.get_wradlib_data_file(filename)
-        ds = wradlib.io.open_raster(geofile)
+        filename1 = "geo/bonn_new.tif"
+        geofile1 = util.get_wradlib_data_file(filename1)
+        ds = wradlib.io.open_raster(geofile1)
         (data, coords, proj) = georef.extract_raster_dataset(ds)
 
-        filename = "hdf5/belgium.comp.hdf"
-        geofile = util.get_wradlib_data_file(filename)
-        ds2 = wradlib.io.open_raster(geofile)
-        (data2, coords2, proj2) = georef.extract_raster_dataset(ds, mode="edge")
+        filename2 = "hdf5/belgium.comp.hdf"
+        geofile2 = util.get_wradlib_data_file(filename2)
+        ds2 = wradlib.io.open_raster(geofile2)
+        (data2, coords2, proj2) = georef.extract_raster_dataset(ds2, mode="edge")
 
     corner_gdalinfo = np.array([[3e5, 1e6], [3e5, 3e5], [1e6, 3e5], [1e6, 1e6]])
 
@@ -832,7 +832,12 @@ class TestGdal:
         assert coords.shape[-1] == 2
 
     def test_get_raster_elevation(self):
-        georef.get_raster_elevation(self.ds, download={"region": "Eurasia"})
+        # crop file using translate to keep download sizes minimal
+        gdal.Translate(
+            "/vsimem/clip.tif", self.geofile1, projWin=[5.5, 49.5, 5.6, 49.4]
+        )
+        ds = wradlib.io.open_raster("/vsimem/clip.tif")
+        georef.get_raster_elevation(ds, download={"region": "Eurasia"})
 
     def test_get_raster_extent(self):
 
@@ -850,11 +855,10 @@ class TestGdal:
         extent = georef.get_raster_extent(self.ds2, geo=True, window=False)
         np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
 
-    @pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
     def test_merge_raster_datasets(self):
         download = {"region": "Eurasia"}
         datasets = wradlib.io.dem.get_srtm(
-            [3, 4, 47, 48], merge=False, download=download
+            [5, 6, 49.4, 49.5], merge=False, download=download
         )
         georef.merge_raster_datasets(datasets)
 
