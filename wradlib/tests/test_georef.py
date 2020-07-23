@@ -735,8 +735,6 @@ class TestGdal:
         ul_center = (edge_coords[0, 0] + edge_coords[1, 1]) / 2
         np.testing.assert_array_almost_equal(center_coords[0, 0], ul_center)
 
-    requires_data
-
     def test_read_gdal_projection(self):
         georef.read_gdal_projection(self.ds)
 
