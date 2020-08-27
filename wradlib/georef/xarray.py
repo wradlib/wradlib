@@ -174,8 +174,6 @@ def georeference_dataset(obj, **kwargs):
     if site == (0.0, 0.0, 0.0):
         re = 6378137.0
 
-    dim0 = obj["azimuth"].dims[0]
-
     # create meshgrid to overcome dimension problem with spherical_to_xyz
     r, az = np.meshgrid(obj["range"], obj["azimuth"])
 
@@ -187,27 +185,36 @@ def georeference_dataset(obj, **kwargs):
     # other proj, convert to aeqd
     elif proj:
         xyz, dst_proj = polar.spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
+            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True,
         )
     # proj, convert to aeqd and add offset
     else:
         xyz, dst_proj = polar.spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
+            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True,
         )
         xyz += np.array(site).T
 
     # calculate center point
     # use first range bins
-    center = np.mean(xyz[:, 0, :], axis=0)
+    ax = tuple(range(xyz.ndim - 2))
+    center = np.mean(xyz[..., 0, :], axis=ax)
 
     # calculate ground range
     gr = np.sqrt((xyz[..., 0] - center[0]) ** 2 + (xyz[..., 1] - center[1]) ** 2)
 
-    gr = np.sqrt(xyz[..., 0] ** 2 + xyz[..., 1] ** 2)
-    obj.coords["x"] = ([dim0, "range"], xyz[..., 0])
-    obj.coords["y"] = ([dim0, "range"], xyz[..., 1])
-    obj.coords["z"] = ([dim0, "range"], xyz[..., 2])
-    obj.coords["gr"] = ([dim0, "range"], gr)
+    # dimension handling
+    dim0 = obj['azimuth'].dims[-1]
+    if obj['elevation'].dims:
+        dimlist = list(obj['elevation'].dims)
+    else:
+        dimlist = list(obj['azimuth'].dims)
+    dimlist += ["range"]
+
+    # add xyz, ground range coordinates
+    obj.coords["x"] = (dimlist, xyz[..., 0])
+    obj.coords["y"] = (dimlist, xyz[..., 1])
+    obj.coords["z"] = (dimlist, xyz[..., 2])
+    obj.coords["gr"] = (dimlist, gr)
 
     # adding rays, bins coordinates
     if obj.sweep_mode == "azimuth_surveillance":
