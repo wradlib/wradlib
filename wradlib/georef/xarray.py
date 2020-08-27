@@ -203,11 +203,11 @@ def georeference_dataset(obj, **kwargs):
     gr = np.sqrt((xyz[..., 0] - center[0]) ** 2 + (xyz[..., 1] - center[1]) ** 2)
 
     # dimension handling
-    dim0 = obj['azimuth'].dims[-1]
-    if obj['elevation'].dims:
-        dimlist = list(obj['elevation'].dims)
+    dim0 = obj["azimuth"].dims[-1]
+    if obj["elevation"].dims:
+        dimlist = list(obj["elevation"].dims)
     else:
-        dimlist = list(obj['azimuth'].dims)
+        dimlist = list(obj["azimuth"].dims)
     dimlist += ["range"]
 
     # add xyz, ground range coordinates
