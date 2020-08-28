@@ -112,14 +112,14 @@ class TestCoordinateTransform:
         def check(rc, azc, elc, outc, squeeze=False, strict_dims=False):
             assert (
                 georef.spherical_to_xyz(
-                    rc, azc, elc, self.csite, squeeze=squeeze, strict_dims=strict_dims,
+                    rc, azc, elc, self.csite, squeeze=squeeze, strict_dims=strict_dims
                 )[0].shape
                 == outc
             )
 
         check(np.arange(10), np.arange(36), 10.0, (1, 36, 10, 3))
-        check(np.arange(10), np.arange(36), np.arange(36), (1, 36, 10, 3,))
-        check(np.arange(10), np.arange(36), np.arange(36), (36, 10, 3,), squeeze=True)
+        check(np.arange(10), np.arange(36), np.arange(36), (1, 36, 10, 3))
+        check(np.arange(10), np.arange(36), np.arange(36), (36, 10, 3), squeeze=True)
         check(
             np.arange(10),
             np.arange(36),
@@ -136,7 +136,7 @@ class TestCoordinateTransform:
         r, phi = np.meshgrid(np.arange(10), np.arange(36))
         check(r, phi, np.arange(18), (18, 36, 10, 3))
         r, phi = np.meshgrid(np.arange(10), np.arange(36))
-        check(r, phi, np.arange(36), (36, 36, 10, 3,), strict_dims=True)
+        check(r, phi, np.arange(36), (36, 36, 10, 3), strict_dims=True)
         check(10, 36, 10.0, (1, 1, 1, 3))
         check(np.arange(10), 36, 10.0, (1, 1, 10, 3))
         check(10, np.arange(36), 10.0, (1, 36, 1, 3))
@@ -156,7 +156,7 @@ class TestCoordinateTransform:
         )
         re = georef.get_earth_radius(self.csite[1])
         coords, rad = georef.spherical_to_xyz(
-            self.r, self.az, self.th, self.csite, re=re, squeeze=True,
+            self.r, self.az, self.th, self.csite, re=re, squeeze=True
         )
         np.testing.assert_allclose(
             coords[..., 0], self.result_xyz[0], rtol=2e-10, atol=3e-5

@@ -152,7 +152,7 @@ def get_rb_blob_attribute(blobdict, attr):
 
 
 def get_rb_blob_data(datastring, blobid):
-    """ Read BLOB data from datastring and return it
+    """Read BLOB data from datastring and return it
 
     Parameters
     ----------
@@ -191,7 +191,7 @@ def get_rb_blob_data(datastring, blobid):
 
 
 def map_rb_data(data, datadepth):
-    """ Map BLOB data to correct DataWidth and Type and convert it
+    """Map BLOB data to correct DataWidth and Type and convert it
     to numpy array
 
     Parameters
@@ -334,7 +334,7 @@ def get_rb_blob_from_file(f, blobdict):
 
 
 def get_rb_file_as_string(fid):
-    """ Read Rainbow File Contents in data_string
+    """Read Rainbow File Contents in data_string
 
     Parameters
     ----------

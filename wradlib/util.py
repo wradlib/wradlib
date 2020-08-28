@@ -628,8 +628,7 @@ def calculate_polynomial(data, w):
 
 
 def medfilt_along_axis(x, n, axis=-1):
-    """Applies median filter smoothing on one axis of an N-dimensional array.
-    """
+    """Applies median filter smoothing on one axis of an N-dimensional array."""
     kernel_size = np.array(x.shape)
     kernel_size[:] = 1
     kernel_size[axis] = n
@@ -637,8 +636,7 @@ def medfilt_along_axis(x, n, axis=-1):
 
 
 def gradient_along_axis(x):
-    """Computes gradient along last axis of an N-dimensional array
-    """
+    """Computes gradient along last axis of an N-dimensional array"""
     axis = -1
     newshape = np.array(x.shape)
     newshape[axis] = 1
@@ -650,8 +648,7 @@ def gradient_along_axis(x):
 
 
 def gradient_from_smoothed(x, n=5):
-    """Computes gradient of smoothed data along final axis of an array
-    """
+    """Computes gradient of smoothed data along final axis of an array"""
     return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
 
 
@@ -663,8 +660,7 @@ def center_to_edge(centers):
 
 
 def _pad_array(data, pad, mode="reflect", **kwargs):
-    """Returns array with padding added along last dimension.
-    """
+    """Returns array with padding added along last dimension."""
     pad_width = [(0,)] * (data.ndim - 1) + [(pad,)]
     if mode in ["maximum", "mean", "median", "minimum"]:
         kwargs["stat_length"] = kwargs.pop("stat_length", pad)
@@ -673,8 +669,7 @@ def _pad_array(data, pad, mode="reflect", **kwargs):
 
 
 def _rolling_dim(data, window):
-    """Return array with rolling dimension of window-length added at the end.
-    """
+    """Return array with rolling dimension of window-length added at the end."""
     shape = data.shape[:-1] + (data.shape[-1] - window + 1, window)
     strides = data.strides + (data.strides[-1],)
     return np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
@@ -734,16 +729,14 @@ def _linregress_1d(rhs, method="lstsq"):
 
 
 def _nan_lstsq(y, x):
-    """Calculate slope by lstsq considering NaN.
-    """
+    """Calculate slope by lstsq considering NaN."""
     mask = np.isnan(y)
     out, _, _, _ = np.linalg.lstsq(x[~mask, :], y[~mask], rcond=None)
     return out[0]
 
 
 def _nan_matrix_inv(y, x):
-    """Calculate slope by matrix inversion considering NaN.
-    """
+    """Calculate slope by matrix inversion considering NaN."""
     mask = np.isnan(y)
     x = x[~mask]
     out = np.dot(np.linalg.inv(np.dot(x.T, x)), np.dot(x.T, y[~mask]))
@@ -751,15 +744,13 @@ def _nan_matrix_inv(y, x):
 
 
 def _matrix_inv(x, y):
-    """Calculate slope by matrix inversion considering NaN.
-    """
+    """Calculate slope by matrix inversion considering NaN."""
     out = np.dot(np.linalg.inv(np.dot(x.T, x)), np.dot(x.T, y))
     return out[0]
 
 
 def _nan_cov(x, y):
-    """Calculate slope using covariances considering NaN.
-    """
+    """Calculate slope using covariances considering NaN."""
     y = np.ma.masked_invalid(y)
     x = np.ma.masked_array(x, mask=np.ma.getmask(y))
 
@@ -773,8 +764,7 @@ def _nan_cov(x, y):
 
 
 def _cov(x, y):
-    """Calculate slope using covariances.
-    """
+    """Calculate slope using covariances."""
     # calculate covariances
     cov = np.sum((x - x.mean(axis=0)) * (y - y.mean(axis=0)), axis=0) / y.shape[0]
     # calculate slope
@@ -783,8 +773,7 @@ def _cov(x, y):
 
 
 def _lanczos_differentiator(winlen):
-    """Returns Lanczos Differentiator.
-    """
+    """Returns Lanczos Differentiator."""
     m = (winlen - 1) / 2
     denom = m * (m + 1.0) * (2 * m + 1.0)
     k = np.arange(1, m + 1)

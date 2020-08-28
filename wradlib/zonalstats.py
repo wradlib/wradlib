@@ -114,8 +114,7 @@ class DataSource(object):
 
     @property
     def ds(self):
-        """ Returns DataSource
-        """
+        """Returns DataSource"""
         self._check_ds()
         return self._ds
 
@@ -124,14 +123,13 @@ class DataSource(object):
         self._ds = value
 
     def _check_ds(self):
-        """ Raise ValueError if empty DataSource
-        """
+        """Raise ValueError if empty DataSource"""
         if self._ds is None:
             raise ValueError("Trying to access empty Datasource.")
 
     @property
     def data(self):
-        """ Returns DataSource geometries as numpy ndarrays
+        """Returns DataSource geometries as numpy ndarrays
 
         Note
         ----
@@ -144,8 +142,7 @@ class DataSource(object):
         return self._get_data()
 
     def _get_data(self):
-        """ Returns DataSource geometries as numpy ndarrays
-        """
+        """Returns DataSource geometries as numpy ndarrays"""
         lyr = self.ds.GetLayer()
         sources = []
         for feature in lyr:
@@ -155,7 +152,7 @@ class DataSource(object):
         return np.array(sources)
 
     def get_data_by_idx(self, idx):
-        """ Returns DataSource geometries as numpy ndarrays from given index
+        """Returns DataSource geometries as numpy ndarrays from given index
 
         Parameters
         ----------
@@ -204,16 +201,14 @@ class DataSource(object):
         return self._get_data()
 
     def _create_spatial_index(self):
-        """Creates spatial index file .qix
-        """
+        """Creates spatial index file .qix"""
         sql1 = "DROP SPATIAL INDEX ON {}".format(self._name)
         sql2 = "CREATE SPATIAL INDEX ON {}".format(self._name)
         self.ds.ExecuteSQL(sql1)
         self.ds.ExecuteSQL(sql2)
 
     def _create_table_index(self, col):
-        """Creates attribute index files
-        """
+        """Creates attribute index files"""
         sql1 = "DROP INDEX ON {}".format(self._name)
         sql2 = "CREATE INDEX ON {} USING {}".format(self._name, col)
         self.ds.ExecuteSQL(sql1)
@@ -222,10 +217,10 @@ class DataSource(object):
     def _check_src(self, src):
         """Basic check of source elements (sequence of points or polygons).
 
-            - array cast of source elements
-            - create ogr_src datasource/layer holding src points/polygons
-            - transforming source grid points/polygons to ogr.geometries
-              on ogr.layer
+        - array cast of source elements
+        - create ogr_src datasource/layer holding src points/polygons
+        - transforming source grid points/polygons to ogr.geometries
+          on ogr.layer
         """
         tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
         ogr_src = io.gdal.gdal_create_dataset(
@@ -541,14 +536,12 @@ class ZonalDataBase(object):
 
     @property
     def count_intersections(self):
-        """Returns number of intersections
-        """
+        """Returns number of intersections"""
         return self._count_intersections
 
     @property
     def srs(self):
-        """Returns SpatialReferenceSystem object
-        """
+        """Returns SpatialReferenceSystem object"""
         return self._srs
 
     @property
@@ -699,8 +692,7 @@ class ZonalDataBase(object):
         self._srs = self.src.ds.GetLayer().GetSpatialRef()
 
     def _get_idx_weights(self):
-        """Retrieve index and weight from dst DataSource
-        """
+        """Retrieve index and weight from dst DataSource"""
         raise NotImplementedError
 
     def _get_intersection(self, trg=None, idx=None, buf=0.0):
@@ -778,7 +770,7 @@ class ZonalDataPoly(ZonalDataBase):
         -------
         ret : tuple
             (index, weight) arrays
-       """
+        """
         trg = self.trg.ds.GetLayer()
         cnt = trg.GetFeatureCount()
         ret = [[] for _ in range(2)]
@@ -910,8 +902,7 @@ class ZonalStatsBase(object):
         self._w = value
 
     def check_empty(self):
-        """
-        """
+        """"""
         isempty = np.repeat(False, len(self.w))
         for i, weights in enumerate(self.w):
             if np.sum(weights) == 0 or np.isnan(np.sum(weights)):
@@ -919,9 +910,7 @@ class ZonalStatsBase(object):
         return isempty
 
     def _check_ix_w(self, ix, w):
-        """TODO Basic check of target attributes (sequence of values).
-
-        """
+        """TODO Basic check of target attributes (sequence of values)."""
         if ix is not None and w is not None:
             if len(ix) != len(w):
                 raise TypeError("parameters ix and w must be of equal length")
@@ -932,9 +921,7 @@ class ZonalStatsBase(object):
             )
 
     def _check_vals(self, vals):
-        """TODO Basic check of target elements (sequence of polygons).
-
-        """
+        """TODO Basic check of target elements (sequence of polygons)."""
         if self.zdata is not None:
             lyr = self.zdata.src.ds.GetLayerByName("src")
             lyr.ResetReading()
