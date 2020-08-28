@@ -98,7 +98,7 @@ class TestInterpolation:
             ipol.cov_cau([0.0, 5.0, 10.0]), np.array([1.0, 0.16666667, 0.09090909])
         )
         assert np.allclose(
-            ipol.cov_cau([0.0, 5.0, 10.0], sill=2.0, rng=10.0,),
+            ipol.cov_cau([0.0, 5.0, 10.0], sill=2.0, rng=10.0),
             np.array([2.0, 1.33333333, 1.0]),
         )
         assert np.allclose(

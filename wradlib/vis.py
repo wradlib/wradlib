@@ -57,8 +57,7 @@ from wradlib import georef, io, ipol, util
 
 @xr.register_dataarray_accessor("wradlib")
 class WradlibAccessor(object):
-    """Dataarray Accessor for plotting radar moments
-    """
+    """Dataarray Accessor for plotting radar moments"""
 
     def __init__(self, xarray_obj):
         self._obj = xarray_obj
@@ -972,8 +971,7 @@ def _range_formatter(x, pos, scale=1.0):
 
 
 def _plot_beam(r, alt, beamradius, ax=None, label=None):
-    """Plot single beam on ax
-    """
+    """Plot single beam on ax"""
     if label is None:
         label = ""
     if ax is None:

@@ -63,9 +63,7 @@ def msf_index_indep(msf, idp, obs):
     idxm = np.ma.masked_outside(idxm, 0, bins.shape[0] - 2)
     out = np.zeros((msf.shape[0], msf.shape[1], obs.size, msf.shape[-1]))
     out[:, :, ~idxm.mask.flatten(), :] = msf[:, :, idxm.compressed(), :]
-    out = np.reshape(
-        out, ((msf.shape[0], msf.shape[1],) + obs.shape + (msf.shape[-1],))
-    )
+    out = np.reshape(out, ((msf.shape[0], msf.shape[1]) + obs.shape + (msf.shape[-1],)))
     return out
 
 
@@ -155,7 +153,7 @@ def probability(data, weights):
     data = data.copy()
     weights = weights.copy()
     maxw = np.sum(weights)
-    weights.shape = (1, len(weights),) + len(data.shape[2:]) * (1,)
+    weights.shape = (1, len(weights)) + len(data.shape[2:]) * (1,)
     weights = np.broadcast_to(weights, data.shape)
     return np.sum(data * weights, axis=1) / maxw
 

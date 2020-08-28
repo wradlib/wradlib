@@ -192,67 +192,55 @@ class ErrorMetrics:
         self.resids = self.est[self.ix] - self.obs[self.ix]
 
     def corr(self):
-        """Correlation coefficient
-        """
+        """Correlation coefficient"""
         return np.round(np.corrcoef(self.obs[self.ix], self.est[self.ix])[0, 1], 2)
 
     def r2(self):
-        """Coefficient of determination
-        """
+        """Coefficient of determination"""
         return np.round(
             (np.corrcoef(self.obs[self.ix], self.est[self.ix])[0, 1]) ** 2, 2
         )
 
     def spearman(self):
-        """Spearman rank correlation coefficient
-        """
+        """Spearman rank correlation coefficient"""
         return np.round(
             stats.stats.spearmanr(self.obs[self.ix], self.est[self.ix])[0], 2
         )
 
     def nash(self):
-        """Nash-Sutcliffe Efficiency
-        """
+        """Nash-Sutcliffe Efficiency"""
         return np.round(1.0 - (self.mse() / np.var(self.obs[self.ix])), 2)
 
     def sse(self):
-        """Sum of Squared Errors
-        """
+        """Sum of Squared Errors"""
         return np.round(np.sum(self.resids ** 2), 2)
 
     def mse(self):
-        """Mean Squared Error
-        """
+        """Mean Squared Error"""
         return np.round(self.sse() / self.n, 2)
 
     def rmse(self):
-        """Root Mean Squared Error
-        """
+        """Root Mean Squared Error"""
         return np.round(self.mse() ** 0.5, 2)
 
     def mas(self):
-        """Mean Absolute Error
-        """
+        """Mean Absolute Error"""
         return np.round(np.mean(np.abs(self.resids)), 2)
 
     def meanerr(self):
-        """Mean Error
-        """
+        """Mean Error"""
         return np.round(np.mean(self.resids), 2)
 
     def ratio(self):
-        """Mean ratio between observed and estimated
-        """
+        """Mean ratio between observed and estimated"""
         return np.round(np.mean(self.est[self.ix] / self.obs[self.ix]), 2)
 
     def pbias(self):
-        """Percent bias
-        """
+        """Percent bias"""
         return np.round(self.meanerr() * 100.0 / np.mean(self.obs[self.ix]), 1)
 
     def all(self):
-        """Returns a dictionary of all error metrics
-        """
+        """Returns a dictionary of all error metrics"""
         out = {
             "corr": self.corr(),
             "r2": self.r2(),
@@ -270,8 +258,7 @@ class ErrorMetrics:
         return out
 
     def pprint(self):
-        """Pretty prints a summary of error metrics
-        """
+        """Pretty prints a summary of error metrics"""
         pprint(self.all())
 
 

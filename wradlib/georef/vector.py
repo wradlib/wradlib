@@ -208,7 +208,7 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
 
 
 def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
-    """ Copy OGR.Layer object.
+    """Copy OGR.Layer object.
 
     Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
 
@@ -234,7 +234,7 @@ def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
 
 
 def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
-    """ Copy OGR.Layer object.
+    """Copy OGR.Layer object.
 
     Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
 
@@ -262,7 +262,7 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
 
 
 def ogr_add_feature(ds, src, name=None):
-    """ Creates OGR.Feature objects in OGR.Layer object.
+    """Creates OGR.Feature objects in OGR.Layer object.
 
     OGR.Features are built from numpy src points or polygons.
 
@@ -299,7 +299,7 @@ def ogr_add_feature(ds, src, name=None):
 
 
 def ogr_add_geometry(layer, geom, attrs):
-    """ Copies single OGR.Geometry object to an OGR.Layer object.
+    """Copies single OGR.Geometry object to an OGR.Layer object.
 
     Given OGR.Geometry is copied to new OGR.Feature and
     written to given OGR.Layer by given index. Attributes are attached.

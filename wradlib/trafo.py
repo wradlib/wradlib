@@ -55,7 +55,7 @@ class SBandToKu:
 
 
 class KuBandToS:
-    """ Class to hold coefficients for Radar Reflectivity Conversion
+    """Class to hold coefficients for Radar Reflectivity Conversion
 
     From Ku-band (13.8 GHz) to S-band (2.8 GHz)
 
