@@ -100,7 +100,7 @@ class TestCartesianVolume:
     xyz = vpr.volcoords_from_polar(site, elev, az, r, proj)
     data = vpr.synthetic_polar_volume(xyz)
     trgxyz, trgshape = vpr.make_3d_grid(
-        site, proj, maxrange, maxalt, horiz_res, vert_res,
+        site, proj, maxrange, maxalt, horiz_res, vert_res
     )
 
     def test_CartesianVolume(self):

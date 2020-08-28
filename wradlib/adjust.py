@@ -307,8 +307,7 @@ class AdjustBase(ipol.IpolBase):
         pass
 
     def _get_valid_pairs(self, obs, raw):
-        """INTERNAL: Helper method to identify valid obs-raw pairs
-        """
+        """INTERNAL: Helper method to identify valid obs-raw pairs"""
         # checking input shape consistency
         self._check_shape(obs, raw)
         # radar values at gage locations

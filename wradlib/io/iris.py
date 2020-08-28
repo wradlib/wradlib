@@ -200,8 +200,7 @@ def decode_sqi(data, **kwargs):
 
 
 def decode_time(data):
-    """Decode `YMDS_TIME` into datetime object.
-    """
+    """Decode `YMDS_TIME` into datetime object."""
     time = _unpack_dictionary(data, YMDS_TIME)
     try:
         return dt.datetime(time["year"], time["month"], time["day"]) + dt.timedelta(
@@ -338,8 +337,7 @@ def _unpack_dictionary(buffer, dictionary, rawdata=False):
 
 
 def _data_types_from_dsp_mask(words):
-    """Return a list of the data types from the words in the data_type mask.
-    """
+    """Return a list of the data types from the words in the data_type mask."""
     data_types = []
     for i, word in enumerate(words):
         data_types += [j + (i * 32) for j in range(32) if word >> j & 1]
@@ -347,8 +345,7 @@ def _data_types_from_dsp_mask(words):
 
 
 def _check_product(product_type):
-    """Return IRIS File Class depending on product type.
-    """
+    """Return IRIS File Class depending on product type."""
     if product_type in [
         "MAX",
         "TOPS",
@@ -391,8 +388,7 @@ def _check_product(product_type):
 
 
 def _check_identifier(identifier):
-    """Return IRIS File Class depending on identifier.
-    """
+    """Return IRIS File Class depending on identifier."""
     if identifier == "INGEST_HEADER":
         return IrisIngestHeaderFile
     elif identifier == "INGEST_DATA_HEADER":
@@ -408,8 +404,7 @@ _STRING = {"read": decode_string, "rkw": {}}
 
 
 def string_dict(size):
-    """Return _STRING dictionary
-    """
+    """Return _STRING dictionary"""
     dic = _STRING.copy()
     dic["size"] = "{0}s".format(size)
     return dic
@@ -419,8 +414,7 @@ _ARRAY = {"read": np.frombuffer, "rkw": {}}
 
 
 def array_dict(size, dtype):
-    """Return _ARRAY dictionary
-    """
+    """Return _ARRAY dictionary"""
     dic = _ARRAY.copy()
     dic["size"] = "{0}s".format(size * get_dtype_size(dtype))
     dic["rkw"]["dtype"] = dtype
@@ -2375,8 +2369,7 @@ RECORD_BYTES = 6144
 
 
 class IrisRecord(object):
-    """ Class holding a single record from a Sigmet IRIS file.
-    """
+    """Class holding a single record from a Sigmet IRIS file."""
 
     def __init__(self, record, recnum):
         """
@@ -2393,30 +2386,26 @@ class IrisRecord(object):
 
     @property
     def pos(self):
-        """ Returns current byte offset.
-        """
+        """Returns current byte offset."""
         return self._pos
 
     @pos.setter
     def pos(self, value):
-        """ Sets current byte offset.
-        """
+        """Sets current byte offset."""
         self._pos = value
 
     @property
     def recpos(self):
-        """ Returns current word offset.
-        """
+        """Returns current word offset."""
         return int(self._pos / 2)
 
     @recpos.setter
     def recpos(self, value):
-        """ Sets current word offset.
-        """
+        """Sets current word offset."""
         self._pos = value * 2
 
     def read(self, words, width=2):
-        """ Reads from Record.
+        """Reads from Record.
 
         Parameters
         ----------
@@ -2435,8 +2424,7 @@ class IrisRecord(object):
 
 
 class IrisHeaderBase(object):
-    """ Base Class for Iris Headers.
-    """
+    """Base Class for Iris Headers."""
 
     def __init__(self, **kwargs):
         super(IrisHeaderBase, self).__init__()
@@ -2446,8 +2434,7 @@ class IrisHeaderBase(object):
 
 
 class IrisStructureHeader(IrisHeaderBase):
-    """ Iris Structure Header class.
-    """
+    """Iris Structure Header class."""
 
     len = LEN_STRUCTURE_HEADER
     structure = STRUCTURE_HEADER
@@ -2475,8 +2462,7 @@ class IrisStructureHeader(IrisHeaderBase):
 
 
 class IrisIngestHeader(IrisHeaderBase):
-    """ Iris Ingest Header class.
-    """
+    """Iris Ingest Header class."""
 
     len = LEN_INGEST_HEADER
     structure = INGEST_HEADER
@@ -2489,27 +2475,23 @@ class IrisIngestHeader(IrisHeaderBase):
 
     @property
     def ingest_header(self):
-        """Returns ingest_header dictionary.
-        """
+        """Returns ingest_header dictionary."""
         return self._ingest_header
 
     @property
     def nsweeps(self):
-        """Returns number of sweeps.
-        """
+        """Returns number of sweeps."""
         head = self._ingest_header["task_configuration"]["task_scan_info"]
         return head["sweep_number"]
 
     @property
     def nrays(self):
-        """Returns number of rays.
-        """
+        """Returns number of rays."""
         return self._ingest_header["ingest_configuration"]["number_rays_sweep"]
 
     @property
     def data_types_dict(self):
-        """Returns list of data type dictionaries.
-        """
+        """Returns list of data type dictionaries."""
         return [
             SIGMET_DATA_TYPES.get(i, {"name": "DB_UNKNOWN_{}".format(i), "func": None})
             for i in self._data_types_numbers
@@ -2517,19 +2499,16 @@ class IrisIngestHeader(IrisHeaderBase):
 
     @property
     def data_types_count(self):
-        """Returns number of data types.
-        """
+        """Returns number of data types."""
         return len(self._data_types_numbers)
 
     @property
     def data_types(self):
-        """Returns list of data type names.
-        """
+        """Returns list of data type names."""
         return [d["name"] for d in self.data_types_dict]
 
     def get_data_types_numbers(self):
-        """Returns the available data types.
-        """
+        """Returns the available data types."""
         # determine the available fields
         task_config = self.ingest_header["task_configuration"]
         task_dsp_info = task_config["task_dsp_info"]
@@ -2570,8 +2549,7 @@ class IrisIngestHeader(IrisHeaderBase):
 
 
 class IrisProductHeader(IrisHeaderBase):
-    """Iris Product Header class.
-    """
+    """Iris Product Header class."""
 
     len = LEN_PRODUCT_HDR
     structure = PRODUCT_HDR
@@ -2584,38 +2562,32 @@ class IrisProductHeader(IrisHeaderBase):
 
     @property
     def product_hdr(self):
-        """Returns ingest_header dictionary.
-        """
+        """Returns ingest_header dictionary."""
         return self._product_hdr
 
     @property
     def nbins(self):
-        """Returns number of bins.
-        """
+        """Returns number of bins."""
         return self._product_hdr["product_end"]["number_bins"]
 
     @property
     def product_type_code(self):
-        """Returns product type code.
-        """
+        """Returns product type code."""
         return self._product_type_code
 
     @property
     def product_type(self):
-        """Returns product type.
-        """
+        """Returns product type."""
         return PRODUCT_DATA_TYPE_CODES[self.product_type_code]["name"]
 
     @property
     def product_type_dict(self):
-        """Returns product type dictionary.
-        """
+        """Returns product type dictionary."""
         return PRODUCT_DATA_TYPE_CODES[self.product_type_code]
 
     @property
     def data_type(self):
-        """Returns product configuration data type.
-        """
+        """Returns product configuration data type."""
         data_type = self.product_hdr["product_configuration"]["data_type"]
         return SIGMET_DATA_TYPES[data_type]
 
@@ -2624,14 +2596,12 @@ class IrisProductHeader(IrisHeaderBase):
         self.get_product_specific_info(rawdata)
 
     def get_product_type_code(self):
-        """Returns product type code.
-        """
+        """Returns product type code."""
         prod_conf = self.product_hdr["product_configuration"]
         return prod_conf["product_type_code"]
 
     def get_product_specific_info(self, rawdata):
-        """Retrieves product specific info
-        """
+        """Retrieves product specific info"""
         config = self.product_hdr["product_configuration"]
         pt = self.product_type_dict
         key = "product_specific_info"
@@ -2648,8 +2618,7 @@ class IrisProductHeader(IrisHeaderBase):
 
 
 class IrisIngestDataHeader(IrisHeaderBase):
-    """Iris Ingest Data Header class.
-    """
+    """Iris Ingest Data Header class."""
 
     len = LEN_INGEST_DATA_HEADER
     structure = INGEST_DATA_HEADER
@@ -2664,8 +2633,7 @@ class IrisIngestDataHeader(IrisHeaderBase):
 
     @property
     def ingest_data_header(self):
-        """Returns ingest_header dictionary.
-        """
+        """Returns ingest_header dictionary."""
         return self._ingest_data_header
 
     @property
@@ -2674,8 +2642,7 @@ class IrisIngestDataHeader(IrisHeaderBase):
 
     @property
     def data_types_dict(self):
-        """Returns list of data type dictionaries.
-        """
+        """Returns list of data type dictionaries."""
         i = self._data_types_numbers
 
         return SIGMET_DATA_TYPES.get(
@@ -2684,8 +2651,7 @@ class IrisIngestDataHeader(IrisHeaderBase):
 
     @property
     def data_types(self):
-        """Returns list of data type names.
-        """
+        """Returns list of data type names."""
         return self.data_types_dict["name"]
 
     def init_header(self):
@@ -2693,22 +2659,19 @@ class IrisIngestDataHeader(IrisHeaderBase):
         self._data_types_numbers = self.get_data_types_numbers()
 
     def get_data_types_numbers(self):
-        """Returns the available data types.
-        """
+        """Returns the available data types."""
         return self.ingest_data_header["data_type"]
 
 
 class IrisFileBase(object):
-    """Base class for Iris Files.
-    """
+    """Base class for Iris Files."""
 
     def __init__(self, **kwargs):
         super(IrisFileBase, self).__init__()
 
 
 class IrisFile(IrisFileBase, IrisStructureHeader):
-    """IrisFile class
-    """
+    """IrisFile class"""
 
     identifier = ["PRODUCT_HDR", "INGEST_HEADER", "INGEST_DATA_HEADER"]
 
@@ -2740,14 +2703,12 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
 
     @property
     def loaddata(self):
-        """Returns `loaddata` switch.
-        """
+        """Returns `loaddata` switch."""
         return self._loaddata
 
     @property
     def rawdata(self):
-        """Returns `rawdata` switch.
-        """
+        """Returns `rawdata` switch."""
         return self._rawdata
 
     @property
@@ -2794,8 +2755,7 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
 
 
 class IrisIngestHeaderFile(IrisFile, IrisIngestHeader):
-    """Iris Ingest Header File class.
-    """
+    """Iris Ingest Header File class."""
 
     identifier = "INGEST_HEADER"
 
@@ -2806,8 +2766,7 @@ class IrisIngestHeaderFile(IrisFile, IrisIngestHeader):
 
 
 class IrisIngestDataFile(IrisFile, IrisIngestDataHeader):
-    """Iris Ingest Data File class.
-    """
+    """Iris Ingest Data File class."""
 
     identifier = "INGEST_DATA_HEADER"
 
@@ -2948,8 +2907,7 @@ class IrisIngestDataFile(IrisFile, IrisIngestDataHeader):
 
 
 class IrisRecordFile(IrisFile, IrisProductHeader):
-    """Iris Record File class
-    """
+    """Iris Record File class"""
 
     identifier = ["PRODUCT_HDR"]
     product_identifier = [
@@ -3004,26 +2962,22 @@ class IrisRecordFile(IrisFile, IrisProductHeader):
 
     @property
     def rh(self):
-        """Returns current record object.
-        """
+        """Returns current record object."""
         return self._rh
 
     @rh.setter
     def rh(self, value):
-        """Sets current record object.
-        """
+        """Sets current record object."""
         self._rh = value
 
     @property
     def record_number(self):
-        """Returns current record number.
-        """
+        """Returns current record number."""
         return self._record_number
 
     @record_number.setter
     def record_number(self, value):
-        """Sets current record number.
-        """
+        """Sets current record number."""
         self._record_number = value
 
     def _check_record(self):
@@ -3034,8 +2988,7 @@ class IrisRecordFile(IrisFile, IrisProductHeader):
         return True
 
     def init_record(self, recnum):
-        """Initialize record using given number.
-        """
+        """Initialize record using given number."""
         start = recnum * RECORD_BYTES
         stop = start + RECORD_BYTES
         self.record_number = recnum
@@ -3119,8 +3072,7 @@ class IrisRecordFile(IrisFile, IrisProductHeader):
 
 
 class IrisRawFile(IrisRecordFile, IrisIngestHeader):
-    """Iris Raw File class.
-    """
+    """Iris Raw File class."""
 
     product_identifier = ["RAW"]
 
@@ -3142,8 +3094,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
 
     @property
     def raw_product_bhdrs(self):
-        """Returns `raw_product_bhdrs` dictionary.
-        """
+        """Returns `raw_product_bhdrs` dictionary."""
         return self._raw_product_bhdrs
 
     def _check_record(self):
@@ -3218,15 +3169,13 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
         return cmp_msb, cmp_val
 
     def get_raw_prod_bhdr(self):
-        """Read and unpack raw product bhdr.
-        """
+        """Read and unpack raw product bhdr."""
         return _unpack_dictionary(
             self._rh.read(LEN_RAW_PROD_BHDR, width=1), RAW_PROD_BHDR, self._rawdata
         )
 
     def get_ingest_data_headers(self):
-        """Read and return ingest data headers.
-        """
+        """Read and return ingest data headers."""
         ingest_data_hdrs = OrderedDict()
         for i, dn in enumerate(self.data_types):
             ingest_data_hdrs[dn] = _unpack_dictionary(
@@ -3417,8 +3366,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             return data
 
     def get_data(self):
-        """Retrieve all sweeps from file.
-        """
+        """Retrieve all sweeps from file."""
         dt_names = self.data_types  # [d['name'] for d in self.data_types]
         rsweeps = range(1, self.nsweeps + 1)
 
@@ -3444,8 +3392,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             self._data[sw] = self.get_sweep(moment)
 
     def get_data_headers(self):
-        """Retrieve all sweep `ingest_data_header` from file.
-        """
+        """Retrieve all sweep `ingest_data_header` from file."""
         self.init_record(1)
         sw = 0
         ingest_conf = self.ingest_header["ingest_configuration"]
@@ -3467,8 +3414,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
 
 
 class IrisProductFile(IrisRecordFile):
-    """Class for retrieving data from Sigmet IRIS Product files.
-    """
+    """Class for retrieving data from Sigmet IRIS Product files."""
 
     product_identifier = [
         "CATCH",
@@ -3529,8 +3475,7 @@ class IrisProductFile(IrisRecordFile):
             results[i] = res
 
     def get_data(self):
-        """Retrieves cartesian data from file.
-        """
+        """Retrieves cartesian data from file."""
         # set filepointer accordingly
         self.init_record(0)
         self._rh.pos = 640
@@ -3596,8 +3541,7 @@ class IrisProductFile(IrisRecordFile):
 
 
 class IrisCartesianProductFile(IrisRecordFile):
-    """ Class for retrieving data from Sigmet IRIS Cartesian Product files.
-    """
+    """Class for retrieving data from Sigmet IRIS Cartesian Product files."""
 
     product_identifier = [
         "MAX",
@@ -3697,8 +3641,7 @@ class IrisCartesianProductFile(IrisRecordFile):
         return np.flip(data, axis=1)
 
     def get_data(self):
-        """ Retrieves cartesian data from file.
-        """
+        """Retrieves cartesian data from file."""
         # set filepointer accordingly
         self.init_record(0)
         self.rh.pos = 640

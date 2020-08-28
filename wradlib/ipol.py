@@ -52,15 +52,13 @@ from wradlib import georef, util, zonalstats
 
 
 class MissingSourcesError(Exception):
-    """Is raised in case no source coordinates are available for interpolation.
-    """
+    """Is raised in case no source coordinates are available for interpolation."""
 
     pass
 
 
 class MissingTargetsError(Exception):
-    """Is raised in case no interpolation targets are available.
-    """
+    """Is raised in case no interpolation targets are available."""
 
     pass
 
@@ -1045,8 +1043,7 @@ class OrdinaryKriging(IpolBase):
         self._krige()
 
     def _krig_matrix(self, src):
-        """Sets up the kriging system for a configuration of source points.
-        """
+        """Sets up the kriging system for a configuration of source points."""
         var_matrix = self.cov_func(spatial.distance_matrix(src, src))
 
         ok_matrix = np.ones((len(src) + 1, len(src) + 1))
@@ -1229,8 +1226,7 @@ class ExternalDriftKriging(IpolBase):
         self.estimation_variance = []
 
     def _krig_matrix(self, src, drift):
-        """Sets up the kriging system for a configuration of source points.
-        """
+        """Sets up the kriging system for a configuration of source points."""
         # the basic covariance matrix
         var_matrix = self.cov_func(spatial.distance_matrix(src, src))
         # the extended matrix, initialized to ones

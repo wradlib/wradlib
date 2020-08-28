@@ -161,7 +161,7 @@ def gdal_create_dataset(
 
 
 def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
-    """ Write raster dataset to file format
+    """Write raster dataset to file format
 
     Parameters
     ----------

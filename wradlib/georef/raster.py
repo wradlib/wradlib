@@ -206,7 +206,7 @@ def read_gdal_values(dataset=None, nodata=None):
 
 
 def extract_raster_dataset(dataset, mode="center", nodata=None):
-    """ Extract data, coordinates and projection information
+    """Extract data, coordinates and projection information
 
     Parameters
     ----------
@@ -330,7 +330,7 @@ def get_raster_elevation(dataset, resample=None, **kwargs):
 
 
 def set_raster_origin(data, coords, direction):
-    """ Converts Data and Coordinates Origin
+    """Converts Data and Coordinates Origin
 
     Parameters
     ----------
@@ -573,7 +573,7 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
 
 def create_raster_dataset(data, coords, projection=None, nodata=-9999):
-    """ Create In-Memory Raster Dataset
+    """Create In-Memory Raster Dataset
 
     Parameters
     ----------

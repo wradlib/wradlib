@@ -94,16 +94,14 @@ def write_polygon_to_text(fname, polygons):
 
 
 def to_pickle(fpath, obj):
-    """Pickle object <obj> to file <fpath>
-    """
+    """Pickle object <obj> to file <fpath>"""
     output = open(fpath, "wb")
     pickle.dump(obj, output)
     output.close()
 
 
 def from_pickle(fpath):
-    """Return pickled object from file <fpath>
-    """
+    """Return pickled object from file <fpath>"""
     pkl_file = open(fpath, "rb")
     obj = pickle.load(pkl_file)
     pkl_file.close()
