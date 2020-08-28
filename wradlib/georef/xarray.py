@@ -185,12 +185,12 @@ def georeference_dataset(obj, **kwargs):
     # other proj, convert to aeqd
     elif proj:
         xyz, dst_proj = polar.spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True,
+            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
         )
     # proj, convert to aeqd and add offset
     else:
         xyz, dst_proj = polar.spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True,
+            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
         )
         xyz += np.array(site).T
 
