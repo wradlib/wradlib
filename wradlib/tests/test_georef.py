@@ -940,6 +940,27 @@ class TestGetGrids:
         assert pytest.approx(phi[0]) == 45.0
         assert pytest.approx(theta[0]) == 35.25802956
 
+    @pytest.mark.parametrize(
+        "grid, origin, wgs",
+        [
+            ((450, 450), [3.58892995, 46.95258041], True),
+            ((450, 450), [-523.46216692, -4658.64472426], False),
+            ((460, 460), [3.48137612, 46.86031976], True),
+            ((460, 460), [-533.46216692, -4668.64472426], False),
+            ((900, 900), [3.58892995, 46.95258041], True),
+            ((900, 900), [-523.46216692, -4658.64472426], False),
+            ((1100, 900), [4.67593418, 46.19287861], True),
+            ((1100, 900), [-443.46216692, -4758.64472426], False),
+            ((1200, 1100), [3.5519213, 45.69587048], True),
+            ((1200, 1100), [-543.46216692, -4808.64472426], False),
+            ((1500, 1400), [2.34194262, 43.9335861], True),
+            ((1500, 1400), [-673.46216692, -5008.64472426], False),
+        ],
+    )
+    def test_grid_reference_points(self, grid, origin, wgs):
+        arr = list(georef.get_radolan_grid(grid[0], grid[1], wgs84=wgs)[0, 0])
+        assert pytest.approx(arr, origin[0])
+
 
 class TestSatellite:
     if has_data:

@@ -176,12 +176,14 @@ Polar-Stereographic-Projection`.
     small = {"j_0": 460, "i_0": 460, "res": 2}
     normal = {"j_0": 450, "i_0": 450, "res": 1}
     normal_wx = {"j_0": 370, "i_0": 550, "res": 1}
+    normal_wn = {"j_0": 470, "i_0": 600, "res": 1}
     extended = {"j_0": 600, "i_0": 800, "res": 1}
     griddefs = {
         (450, 450): tiny,
         (460, 460): small,
         (900, 900): normal,
         (1100, 900): normal_wx,
+        (1200, 1100): normal_wn,
         (1500, 1400): extended,
     }
 
