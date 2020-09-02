@@ -800,9 +800,9 @@ def _get_radolan_product_attributes(attrs):
         interval = attrs["intervalseconds"]
         precision = attrs["precision"]
 
-    if product in ["RX", "EX", "WX"]:
+    if product in ["RX", "EX", "WX", "WN"]:
         pattrs.update(radolan["dBZ"])
-    elif product in ["RY", "RZ", "EY", "EZ"]:
+    elif product in ["RY", "RZ", "EY", "EZ", "YW"]:
         pattrs.update(radolan["RR"])
         scale_factor = np.float32(precision * 3600 / interval)
         pattrs.update({"scale_factor": scale_factor})
