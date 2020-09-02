@@ -5,7 +5,7 @@ h5netcdf
 netCDF4
 numpy
 matplotlib
+requests
 scipy
 xarray
 xmltodict
-requests
