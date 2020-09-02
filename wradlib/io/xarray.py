@@ -3330,7 +3330,7 @@ def _get_gamic_ray_header(filename, scan):
         OrderedDict of ray header items
     """
     # ToDo: move rayheader into own dataset
-    h5 = h5py.File(filename)
+    h5 = h5py.File(filename, mode="r")
     ray_header = h5["scan{}/ray_header".format(scan)][:]
     h5.close()
     vars = collections.OrderedDict()
