@@ -262,6 +262,8 @@ class WradlibAccessor(object):
         if cg:
             plax = paax
             infer_intervals = kwargs.pop("infer_intervals", False)
+            if func == "pcolormesh":
+                kwargs.update(dict(shading="auto"))
             xp, yp = "rays", "bins"
         else:
             plax = ax

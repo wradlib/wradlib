@@ -125,7 +125,6 @@ class TestCoordinateTransform:
             np.arange(36),
             np.arange(36),
             (36, 36, 10, 3),
-            squeeze=None,
             strict_dims=True,
         )
         check(np.arange(10), np.arange(36), np.arange(18), (18, 36, 10, 3))

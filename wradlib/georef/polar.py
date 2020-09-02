@@ -32,7 +32,7 @@ from wradlib.georef import misc, projection
 
 
 def spherical_to_xyz(
-    r, phi, theta, sitecoords, re=None, ke=4.0 / 3.0, squeeze=None, strict_dims=False
+    r, phi, theta, sitecoords, re=None, ke=4.0 / 3.0, squeeze=False, strict_dims=False
 ):
     """Transforms spherical coordinates (r, phi, theta) to cartesian
     coordinates (x, y, z) centered at sitecoords (aeqd).
@@ -61,7 +61,7 @@ def spherical_to_xyz(
         dependent. The default of 4/3 is a good approximation for most
         weather radar wavelengths.
     squeeze : bool
-        If True, returns squeezed array.
+        If True, returns squeezed array. Defaults to False.
     strict_dims : bool
         If True, generates output of (theta, phi, r, 3) in any case.
         If False, dimensions with same length are "merged".
@@ -146,14 +146,6 @@ def spherical_to_xyz(
     elif xyz.ndim == 2:
         xyz.shape = (xyz.shape[0],) + (1,) * 2 + (xyz.shape[1],)
 
-    if squeeze is None:
-        warnings.warn(
-            "Function `spherical_to_xyz` returns an array "
-            "of shape (theta, phi, range, 3). Use `squeeze=True` "
-            "to remove singleton dimensions."
-            "",
-            DeprecationWarning,
-        )
     if squeeze:
         xyz = np.squeeze(xyz)
 
