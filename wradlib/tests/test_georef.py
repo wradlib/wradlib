@@ -1326,6 +1326,6 @@ class TestXarray:
 
     def test_georeference_dataset(self):
         src_da = self.da.copy()
-        src_da.drop(["x", "y", "z", "gr", "rays", "bins"])
+        src_da.drop_vars(["x", "y", "z", "gr", "rays", "bins"])
         da = georef.georeference_dataset(src_da)
         xr.testing.assert_equal(self.da, da)
