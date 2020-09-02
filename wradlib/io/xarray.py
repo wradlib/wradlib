@@ -2039,7 +2039,7 @@ class XRadSweepGamic(XRadSweep):
                 ds.assign_coords({"azimuth": self.azimuth})
                 .sortby("azimuth")
                 .pipe(_reindex_azimuth, self)
-                .drop("azimuth")
+                .drop_vars("azimuth")
             )
         return ds
 
