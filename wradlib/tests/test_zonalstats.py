@@ -46,7 +46,7 @@ class TestDataSource:
         ]
     )
 
-    data = np.array([box0, box1])
+    data = np.array([box0, box1], dtype=object)
 
     ds = zonalstats.DataSource(data)
 
@@ -61,22 +61,22 @@ class TestDataSource:
             zonalstats.DataSource("test_zonalstats.py")
 
     def test_data(self):
-        assert np.allclose(self.ds.data, self.data)
+        np.testing.assert_almost_equal(self.ds.data, self.data)
 
     def test__get_data(self):
         ds = zonalstats.DataSource(self.data)
-        assert np.allclose(ds._get_data(), self.data)
+        np.testing.assert_almost_equal(ds._get_data(), self.data)
 
     def test_get_data_by_idx(self):
         ds = zonalstats.DataSource(self.data)
-        assert np.allclose(ds.get_data_by_idx([0]), self.box0)
-        assert np.allclose(ds.get_data_by_idx([1]), self.box1)
-        assert np.allclose(ds.get_data_by_idx([0, 1]), self.data)
+        np.testing.assert_almost_equal(ds.get_data_by_idx([0]), self.data[0:1])
+        np.testing.assert_almost_equal(ds.get_data_by_idx([1]), self.data[1:2])
+        np.testing.assert_almost_equal(ds.get_data_by_idx([0, 1]), self.data)
 
     def test_get_data_by_att(self):
         ds = zonalstats.DataSource(self.data)
-        assert np.allclose(ds.get_data_by_att("index", 0), self.box0)
-        assert np.allclose(ds.get_data_by_att("index", 1), self.box1)
+        np.testing.assert_almost_equal(ds.get_data_by_att("index", 0), self.data[0:1])
+        np.testing.assert_almost_equal(ds.get_data_by_att("index", 1), self.data[1:2])
 
     def test_get_data_by_geom(self):
         ds = zonalstats.DataSource(self.data)
@@ -86,7 +86,9 @@ class TestDataSource:
         lyr.SetAttributeFilter(None)
         for i, feature in enumerate(lyr):
             geom = feature.GetGeometryRef()
-            assert np.allclose(ds.get_data_by_geom(geom), self.data[i])
+            np.testing.assert_almost_equal(
+                ds.get_data_by_geom(geom), self.data[i : i + 1]
+            )
 
     def test_set_attribute(self):
         ds = zonalstats.DataSource(self.data)
@@ -672,7 +674,8 @@ class TestZonalData:
                     [2600091.80406488, 5630100.0],
                 ]
             ),
-        ]
+        ],
+        dtype=object,
     )
     isec_poly1 = np.array(
         [
@@ -702,7 +705,8 @@ class TestZonalData:
                     [2600197.20644071, 5630100.0],
                 ]
             ),
-        ]
+        ],
+        dtype=object,
     )
 
     isec_point0 = np.array([[2600077.2899581, 5630056.0874306]])
@@ -717,20 +721,24 @@ class TestZonalData:
 
     def test_isecs(self):
         # need to iterate over nested array for correct testing
-        for i in range(len(self.zdpoly.isecs)):
-            for k in range(len(self.zdpoly.isecs[i])):
+        for i, ival in enumerate(self.zdpoly.isecs):
+            for k, kval in enumerate(ival):
                 np.testing.assert_allclose(
-                    self.zdpoly.isecs[i, k], self.isec_poly[i, k], rtol=1e-6
+                    kval.astype(float), self.isec_poly[i, k], rtol=1e-6
                 )
 
-        np.testing.assert_allclose(self.zdpoint.isecs, self.isec_point, rtol=1e-6)
+        np.testing.assert_allclose(
+            self.zdpoint.isecs.astype(float), self.isec_point, rtol=1e-6
+        )
 
     def test_get_isec(self):
         for i in [0, 1]:
             for k, arr in enumerate(self.zdpoly.get_isec(i)):
-                np.testing.assert_allclose(arr, self.isec_poly[i, k], rtol=1e-6)
+                np.testing.assert_allclose(
+                    arr.astype(float), self.isec_poly[i, k], rtol=1e-6
+                )
             np.testing.assert_allclose(
-                self.zdpoint.get_isec(i), self.isec_point[i], rtol=1e-6
+                self.zdpoint.get_isec(i).astype(float), self.isec_point[i], rtol=1e-6
             )
 
     def test_get_source_index(self):

@@ -167,7 +167,7 @@ def get_vector_coordinates(layer, **kwargs):
             reslist = list(get_vector_points(geom))
             shp.append(np.squeeze(np.array(reslist)))
 
-    shp = np.squeeze(np.array(shp))
+    shp = np.squeeze(np.array(shp, dtype=object))
 
     return shp, attrs
 
