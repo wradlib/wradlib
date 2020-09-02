@@ -10,8 +10,8 @@ from wradlib import trafo
 class TestTransformation:
     rvp = np.array([0.0, 128.0, 255.0])
     dbz = np.array([-32.5, 31.5, 95.0])
-    lin = np.array([1e-4, 1, 1e4])
-    dec = np.array([-40, 0, 40])
+    lin = np.array([1e-4, 1.0, 1e4])
+    dec = np.array([-40.0, 0.0, 40.0])
     r = np.array([5.0, 10.0, 20.0])
     kdp = np.array([0.0, 1.0, 2.0, 5.0])
     # speed in m/s

@@ -395,7 +395,6 @@ def ogr_geocol_to_numpy(ogrobj):
     jsonobj = eval(ogrobj.ExportToJson())
     mpol = []
     for item in jsonobj["geometries"]:
-        print(item["type"])
         if item["type"] == "Polygon":
             mpol.append(item["coordinates"])
 
