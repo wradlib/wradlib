@@ -149,7 +149,7 @@ class DataSource(object):
             geom = feature.GetGeometryRef()
             poly = georef.vector.ogr_to_numpy(geom)
             sources.append(poly)
-        return np.array(sources)
+        return np.array(sources, dtype=object)
 
     def get_data_by_idx(self, idx):
         """Returns DataSource geometries as numpy ndarrays from given index
@@ -169,7 +169,7 @@ class DataSource(object):
             geom = feature.GetGeometryRef()
             poly = georef.vector.ogr_to_numpy(geom)
             sources.append(poly)
-        return np.array(sources)
+        return np.array(sources, dtype=object)
 
     def get_data_by_att(self, attr=None, value=None):
         """Returns DataSource geometries filtered by given attribute/value
@@ -914,7 +914,8 @@ class ZonalStatsBase(object):
         if ix is not None and w is not None:
             if len(ix) != len(w):
                 raise TypeError("parameters ix and w must be of equal length")
-            return np.array(ix), np.array(w)
+            return np.array(ix, dtype=object), np.array(w, dtype=object)
+
         else:
             raise TypeError(
                 "ix and w are complementary parameters and " "must both be given"
@@ -956,7 +957,7 @@ class ZonalStatsBase(object):
         out = np.zeros(len(self.ix)) * np.nan
         out[~self.isempty] = np.array(
             [
-                np.average(vals[self.ix[i]], weights=self.w[i])
+                np.average(vals[self.ix[i].astype(int)], weights=self.w[i])
                 for i in np.arange(len(self.ix))[~self.isempty]
             ]
         )
@@ -983,7 +984,9 @@ class ZonalStatsBase(object):
         out = np.zeros(len(self.ix)) * np.nan
         out[~self.isempty] = np.array(
             [
-                np.average((vals[self.ix[i]] - mean[i]) ** 2, weights=self.w[i])
+                np.average(
+                    (vals[self.ix[i].astype(int)] - mean[i]) ** 2, weights=self.w[i]
+                )
                 for i in np.arange(len(self.ix))[~self.isempty]
             ]
         )
