@@ -78,6 +78,10 @@ conda config --set channel_priority strict
 
 mamba update --yes conda
 
+# activate conda for current bash
+export PATH=$HOME/miniconda/bin:$PATH
+source $HOME/miniconda/etc/profile.d/conda.sh
+
 # Install wradlib dependencies
 WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
 NOTEBOOK_DEPS="notebook nbconvert psutil tqdm"
