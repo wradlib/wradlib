@@ -8,7 +8,7 @@ steps:
 - bash: |
     conda create -n mamba_env --yes mamba -c conda-forge
     source activate mamba_env
-    mamba create -n wradlib-tests --yes --file ${{ parameters.env_file }}
+    mamba env create --file ${{ parameters.env_file }}
   displayName: Install conda dependencies
 
 - bash: |

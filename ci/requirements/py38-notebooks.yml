@@ -1,3 +1,4 @@
+name: wradlib-test
 channels:
   - conda-forge
 dependencies:
