@@ -6,6 +6,7 @@ steps:
 - template: add-conda-to-path.yml
 
 - bash: |
+    source activate base
     conda install --yes mamba -c conda-forge
     conda config --add channels conda-forge
     conda config --set channel_priority strict
