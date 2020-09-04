@@ -67,9 +67,9 @@ echo $WRADLIB_PYTHON
 echo $GDAL_VERSION
 echo "mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 
-if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
-    mamba deactivate
-fi
+#if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
+#    mamba deactivate
+#fi
 
 # Add conda-forge channel
 mamba config --add channels conda-forge
