@@ -105,7 +105,7 @@ fi
 echo $WRADLIB_DEPS
 echo $MISC_DEPS
 mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
-mamba activate $WRADLIB_ENV
+conda activate $WRADLIB_ENV
 
 # Install wradlib
 python setup.py sdist
