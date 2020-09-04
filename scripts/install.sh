@@ -72,9 +72,9 @@ echo "mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 #fi
 
 # Add conda-forge channel
-mamba config --add channels conda-forge
+conda config --add channels conda-forge
 # Set strict channel priority
-mamba config --set channel_priority strict
+conda config --set channel_priority strict
 
 mamba update --yes conda
 
