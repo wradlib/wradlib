@@ -23,7 +23,7 @@ if ! [ -x "$(command -v conda)" ]; then
         PY_MAJOR="${PYTHON_VERSION%.*}"
 
         # download latest micromamba
-        wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba.exe --strip-components=1
+        wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
         micromamba shell init -s bash -p $HOME/miniconda
         source ~/.bashrc
         micromamba activate
