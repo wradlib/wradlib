@@ -6,8 +6,9 @@ steps:
 - template: add-conda-to-path.yml
 
 - bash: |
-    conda create -n mamba_env --yes mamba -c conda-forge
-    source activate mamba_env
+    conda config --add channels conda-forge
+    conda config --set channel_priority strict
+    conda install --yes mamba
     mamba env create -n wradlib-test --file ${{ parameters.env_file }}
   displayName: Install conda dependencies
 
