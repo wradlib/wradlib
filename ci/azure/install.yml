@@ -7,9 +7,9 @@ steps:
 
 - bash: |
     source activate base
-    conda install --yes mamba -c conda-forge
     conda config --add channels conda-forge
     conda config --set channel_priority strict
+    conda install --yes mamba
     mamba env create -n wradlib-tests --file ${{ parameters.env_file }}
   displayName: Install conda dependencies
 
