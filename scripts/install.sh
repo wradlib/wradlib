@@ -22,13 +22,21 @@ if ! [ -x "$(command -v conda)" ]; then
         # get python major version
         PY_MAJOR="${PYTHON_VERSION%.*}"
 
-        # download and install latest MinicondaX
-        wget http://repo.continuum.io/miniconda/Miniconda$PY_MAJOR-latest-Linux-x86_64.sh \
-            -O miniconda.sh
-        chmod +x miniconda.sh
-        bash miniconda.sh -b -p $HOME/miniconda
-        export PATH=$HOME/miniconda/bin:$PATH
-        source $HOME/miniconda/etc/profile.d/conda.sh
+        # download latest micromamba
+        wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+        ./micromamba shell init -s bash -p $HOME/miniconda
+        source ~/.bashrc
+        micromamba activate
+        micromamba install --yes mamba -c conda-forge
+
+#        # download and install latest MinicondaX
+#        wget http://repo.continuum.io/miniconda/Miniconda$PY_MAJOR-latest-Linux-x86_64.sh \
+#            -O miniconda.sh
+#        chmod +x miniconda.sh
+#        bash miniconda.sh -b -p $HOME/miniconda
+#        export PATH=$HOME/miniconda/bin:$PATH
+#        source $HOME/miniconda/etc/profile.d/conda.sh
+
         WRADLIB_ENV="travis_wradlib"
         WRADLIB_PYTHON=$PYTHON_VERSION
 
@@ -57,18 +65,22 @@ echo $PATH
 echo $WRADLIB_ENV
 echo $WRADLIB_PYTHON
 echo $GDAL_VERSION
-echo "conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
+echo "mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 
-if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
-    conda deactivate
-fi
+#if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
+#    mamba deactivate
+#fi
 
 # Add conda-forge channel
 conda config --add channels conda-forge
 # Set strict channel priority
 conda config --set channel_priority strict
 
-conda update --yes conda
+mamba update --yes conda
+
+# activate conda for current bash
+export PATH=$HOME/miniconda/bin:$PATH
+source $HOME/miniconda/etc/profile.d/conda.sh
 
 # Install wradlib dependencies
 WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
@@ -96,7 +108,7 @@ fi
 # Create environment with the correct Python version and the needed dependencies
 echo $WRADLIB_DEPS
 echo $MISC_DEPS
-conda create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
+mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
 conda activate $WRADLIB_ENV
 
 # Install wradlib
