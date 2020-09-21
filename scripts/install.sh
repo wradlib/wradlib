@@ -27,7 +27,7 @@ if ! [ -x "$(command -v conda)" ]; then
         ./micromamba shell init -s bash -p $HOME/miniconda
         source ~/.bashrc
         micromamba activate
-        micromamba install --yes mamba -c conda-forge
+        # micromamba install --yes mamba -c conda-forge
 
 #        # download and install latest MinicondaX
 #        wget http://repo.continuum.io/miniconda/Miniconda$PY_MAJOR-latest-Linux-x86_64.sh \
@@ -71,16 +71,16 @@ echo "mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 #    mamba deactivate
 #fi
 
-# Add conda-forge channel
-conda config --add channels conda-forge
-# Set strict channel priority
-conda config --set channel_priority strict
+## Add conda-forge channel
+#conda config --add channels conda-forge
+## Set strict channel priority
+#conda config --set channel_priority strict
+#
+#mamba update --yes conda
 
-mamba update --yes conda
-
-# activate conda for current bash
-export PATH=$HOME/miniconda/bin:$PATH
-source $HOME/miniconda/etc/profile.d/conda.sh
+## activate conda for current bash
+#export PATH=$HOME/miniconda/bin:$PATH
+#source $HOME/miniconda/etc/profile.d/conda.sh
 
 # Install wradlib dependencies
 WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
@@ -108,8 +108,8 @@ fi
 # Create environment with the correct Python version and the needed dependencies
 echo $WRADLIB_DEPS
 echo $MISC_DEPS
-mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
-conda activate $WRADLIB_ENV
+micromamba install --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS -c conda-forge
+#conda activate $WRADLIB_ENV
 
 # Install wradlib
 python setup.py sdist
