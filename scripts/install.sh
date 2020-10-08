@@ -40,7 +40,7 @@ if ! [ -x "$(command -v conda)" ]; then
         WRADLIB_ENV=$HOME/miniconda/travis_wradlib
         WRADLIB_PYTHON=$PYTHON_VERSION
 
-        micromamba create -p $WRADLIB_ENV python=$WRADLIB_PYTHON -c conda-forge
+        micromamba create --yes -p $WRADLIB_ENV python=$WRADLIB_PYTHON -c conda-forge
 
         # special packages directory for caching in travis-ci
         # remove temprorarily, it seems it's faster without caching
