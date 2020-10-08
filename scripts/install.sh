@@ -26,7 +26,7 @@ if ! [ -x "$(command -v conda)" ]; then
         wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
         ./micromamba shell init -s bash -p $HOME/miniconda
         source ~/.bashrc
-        micromamba activate
+
         # micromamba install --yes mamba -c conda-forge
 
 #        # download and install latest MinicondaX
@@ -37,8 +37,10 @@ if ! [ -x "$(command -v conda)" ]; then
 #        export PATH=$HOME/miniconda/bin:$PATH
 #        source $HOME/miniconda/etc/profile.d/conda.sh
 
-        WRADLIB_ENV="travis_wradlib"
+        WRADLIB_ENV=$HOME/miniconda/travis_wradlib
         WRADLIB_PYTHON=$PYTHON_VERSION
+
+        micromamba create -p $WRADLIB_ENV python=$WRADLIB_PYTHON -c conda-forge
 
         # special packages directory for caching in travis-ci
         # remove temprorarily, it seems it's faster without caching
@@ -108,7 +110,10 @@ fi
 # Create environment with the correct Python version and the needed dependencies
 echo $WRADLIB_DEPS
 echo $MISC_DEPS
+
+micromamba activate $WRADLIB_ENV
 micromamba install --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS -c conda-forge
+
 #conda activate $WRADLIB_ENV
 
 # Install wradlib
