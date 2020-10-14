@@ -1108,7 +1108,6 @@ def _open_mfmoments(
     if len(set([p.filename for p in moments])) == 1:
         single_file = True
         ds0 = opener(moments[0].filename, "r", **opener_kwargs)
-        #ds0 = moments[0].ncfile
     else:
         single_file = False
 
@@ -1553,8 +1552,10 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
             "decode_coords": kwargs.get("decode_coords", True),
             "decode_times": kwargs.get("decode_times", True),
         }
-        self._misc_kwargs = {"keep_elevation": kwargs.get("keep_elevation", False),
-                             "keep_azimuth": kwargs.get("keep_azimuth", False)}
+        self._misc_kwargs = {
+            "keep_elevation": kwargs.get("keep_elevation", False),
+            "keep_azimuth": kwargs.get("keep_azimuth", False),
+        }
         self._data = None
         self._need_time_recalc = False
         self._seq.extend(self._get_moments())
@@ -1675,7 +1676,9 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
                 self._data = self._data.assign_coords(coords)
                 self._data = self._data.sortby(self._dim0[0])
                 self._data = self._data.pipe(_reindex_angle, self)
-                sweep_mode = "azimuth_surveillance" if self._dim0[0] == "azimuth" else "rhi"
+                sweep_mode = (
+                    "azimuth_surveillance" if self._dim0[0] == "azimuth" else "rhi"
+                )
                 self._data = self._data.assign_coords({"sweep_mode": sweep_mode})
                 self._data = self._data.assign_coords(self.parent.parent.site.coords)
 
