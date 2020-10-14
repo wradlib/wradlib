@@ -848,6 +848,7 @@ def to_odim(volume, filename, timestep=0):
         h5_ds_where = h5_dataset.create_group("where")
         rscale = ds.range.values[1] / 1.0 - ds.range.values[0]
         rstart = (ds.range.values[0] - rscale / 2.0) / 1000.0
+        # todo: make this work for RHI's
         try:
             a1gate = np.argsort(ds.sortby("time").azimuth.values)[0]
         except ValueError:
@@ -948,9 +949,11 @@ def _preprocess_moment(ds, mom, non_uniform_shape):
 
 
 def _reindex_angle(ds, sweep, force=False):
+    # Todo: The current code assumes to have PPI's of 360deg and RHI's of 90deg,
+    #       make this work also for sectorized measurements
     full_range = dict(azimuth=360, elevation=90)
     dimname = list(ds.dims)[0]
-    secname = list(ds.dims)[1]
+    secname = sweep._dim0[1]
     dim = ds[dimname]
     diff = dim.diff(dimname)
     # this captures different angle spacing
@@ -992,123 +995,19 @@ def _reindex_angle(ds, sweep, force=False):
             # fill_value=xr.core.dtypes.NA,
         )
         # check other coordinates
-        # check elevation (no nan)
+        # check secondary angle coordinate (no nan)
         # set nan values to reasonable median
         if np.count_nonzero(np.isnan(ds[secname])):
-            ds[secname] = ds[secname].fillna(ds[secname].median())
+            ds[secname] = ds[secname].fillna(ds[secname].median(skipna=True))
         # todo: rtime is also affected, might need to be treated accordingly
 
     return ds
 
 
-# def _reindex_azimuth(ds, sweep, force=False):
-#     dimname = list(ds.dims)[0]
-#     dim = ds[dimname]
-#     diff = dim.diff(dimname)
-#     # this captures different angle spacing
-#     # catches also missing rays and double rays
-#     # and other erroneous ray alignments which result in different diff values
-#     diffset = set(diff.values)
-#     non_uniform_angle_spacing = len(diffset) > 1
-#     # this captures missing and additional rays in case the angle differences
-#     # are equal
-#     non_full_circle = False
-#     if not non_uniform_angle_spacing:
-#         res = list(diffset)[0]
-#         non_full_circle = ((res * sweep.nrays) % 360) != 0
-#
-#     # fix issues with ray alignment
-#     if force | non_uniform_angle_spacing | non_full_circle:
-#         # create new array and reindex
-#         res = sweep.angle_resolution
-#         new_rays = int(np.round(360 / res, decimals=0))
-#
-#         # find exact duplicates and remove
-#         _, idx = np.unique(ds[dimname], return_index=True)
-#         if len(idx) < len(ds[dimname]):
-#             ds = ds.isel(azimuth=idx)
-#             # if ray_time was errouneously created from wrong dimensions
-#             # we need to recalculate it
-#             if sweep._need_time_recalc:
-#                 ray_times = sweep._get_ray_times(nrays=len(idx))
-#                 ray_times = sweep._decode_cf(ray_times)
-#                 ds = ds.assign({"rtime": ray_times})
-#
-#         # todo: check if assumption that beam center points to
-#         #       multiples of res/2. is correct in any case
-#         azr = np.arange(res / 2.0, new_rays * res, res, dtype=diff.dtype)
-#         ds = ds.reindex(
-#             {dimname: azr},
-#             method="nearest",
-#             tolerance=res / 4.0,
-#             # fill_value=xr.core.dtypes.NA,
-#         )
-#         # check other coordinates
-#         # check elevation (no nan)
-#         # set nan values to reasonable median
-#         if np.count_nonzero(np.isnan(ds["elevation"])):
-#             ds["elevation"] = ds["elevation"].fillna(ds["elevation"].median())
-#         # todo: rtime is also affected, might need to be treated accordingly
-#
-#     return ds
-#
-#
-# def _reindex_elevation(ds, sweep, force=False):
-#     dimname = list(ds.dims)[0]
-#     dim = ds[dimname]
-#     diff = dim.diff(dimname)
-#     # this captures different angle spacing
-#     # catches also missing rays and double rays
-#     # and other erroneous ray alignments which result in different diff values
-#     diffset = set(diff.values)
-#     non_uniform_angle_spacing = len(diffset) > 1
-#     # this captures missing and additional rays in case the angle differences
-#     # are equal
-#     non_full_circle = False
-#     if not non_uniform_angle_spacing:
-#         res = list(diffset)[0]
-#         non_full_circle = ((res * sweep.nrays) % 90) != 0
-#
-#     # fix issues with ray alignment
-#     if force | non_uniform_angle_spacing | non_full_circle:
-#         # create new array and reindex
-#         res = sweep.angle_resolution
-#         new_rays = int(np.round(90 / res, decimals=0))
-#
-#         # find exact duplicates and remove
-#         _, idx = np.unique(ds[dimname], return_index=True)
-#         if len(idx) < len(ds[dimname]):
-#             ds = ds.isel(elevation=idx)
-#             # if ray_time was errouneously created from wrong dimensions
-#             # we need to recalculate it
-#             if sweep._need_time_recalc:
-#                 ray_times = sweep._get_ray_times(nrays=len(idx))
-#                 ray_times = sweep._decode_cf(ray_times)
-#                 ds = ds.assign({"rtime": ray_times})
-#
-#         # todo: check if assumption that beam center points to
-#         #       multiples of res/2. is correct in any case
-#         azr = np.arange(res / 2.0, new_rays * res, res, dtype=diff.dtype)
-#         ds = ds.reindex(
-#             {dimname: azr},
-#             method="nearest",
-#             tolerance=res / 4.0,
-#             # fill_value=xr.core.dtypes.NA,
-#         )
-#         # check other coordinates
-#         # check azimuth (no nan)
-#         # set nan values to reasonable median
-#         if np.count_nonzero(np.isnan(ds["azimuth"])):
-#             ds["azimuth"] = ds["azimuth"].fillna(ds["azimuth"].median())
-#         # todo: rtime is also affected, might need to be treated accordingly
-#
-#     return ds
-
-
 def _fix_angle(da):
     # fix elevation outliers
     if len(set(da.values)) > 1:
-        med = da.median()
+        med = da.median(skipna=True)
         da = da.where(da == med).fillna(med)
     return da
 
@@ -1775,16 +1674,9 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
                 coords = self._get_coords().coords
                 self._data = self._data.assign_coords(coords)
                 self._data = self._data.sortby(self._dim0[0])
-                # todo: only if PPI
-                if self._dim0[0] == "azimuth":
-                    self._data = self._data.pipe(_reindex_angle, self)
-                    self._data = self._data.assign_coords(
-                        {"sweep_mode": "azimuth_surveillance"}
-                    )
-                else:
-                    self._data = self._data.pipe(_reindex_angle, self)
-                    self._data = self._data.assign_coords({"sweep_mode": "rhi"})
-
+                self._data = self._data.pipe(_reindex_angle, self)
+                sweep_mode = "azimuth_surveillance" if self._dim0[0] == "azimuth" else "rhi"
+                self._data = self._data.assign_coords({"sweep_mode": sweep_mode})
                 self._data = self._data.assign_coords(self.parent.parent.site.coords)
 
             if self.mask_and_scale | self.decode_coords | self.decode_times:
@@ -1824,7 +1716,7 @@ class XRadSweepOdim(XRadSweep):
         return self.where["a1gate"]
 
     def _get_angle_resolution(self):
-        return self.azimuth.diff(self._dim0[0]).median().round(decimals=1)
+        return self.azimuth.diff(self._dim0[0]).median(skipna=True).round(decimals=1)
 
     def _get_fixed_angle(self):
         # try RHI first
