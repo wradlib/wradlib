@@ -115,7 +115,7 @@ fi
 echo $WRADLIB_DEPS
 echo $MISC_DEPS
 #mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
-mamba install --yes pip $WRADLIB_DEPS $MISC_DEPS --channel conda-forge
+mamba install --yes --strict-channel-priority --channel conda-forge pip $WRADLIB_DEPS $MISC_DEPS
 #conda activate $WRADLIB_ENV
 
 # Install wradlib
