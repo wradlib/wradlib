@@ -44,8 +44,8 @@ if ! [ -x "$(command -v conda)" ]; then
         WRADLIB_ENV="travis_wradlib"
         WRADLIB_PYTHON=$PYTHON_VERSION
 
-        micromamba create --yes --name $WRADLIB_ENV python=$WRADLIB_PYTHON mamba --channel conda-forge
-        micromamba activate $WRADLIB_ENV
+        #micromamba create --yes --name $WRADLIB_ENV python=$WRADLIB_PYTHON mamba --channel conda-forge
+        #micromamba activate $WRADLIB_ENV
 
         # special packages directory for caching in travis-ci
         # remove temprorarily, it seems it's faster without caching
@@ -116,7 +116,9 @@ fi
 echo $WRADLIB_DEPS
 echo $MISC_DEPS
 #mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
-mamba install --yes --strict-channel-priority --channel conda-forge pip $WRADLIB_DEPS $MISC_DEPS
+micromamba create --yes --strict-channel-priority --name $WRADLIB_ENV python=$WRADLIB_PYTHON pip $WRADLIB_DEPS $MISC_DEPS --channel conda-forge
+micromamba activate $WRADLIB_ENV
+#mamba install --yes --strict-channel-priority --channel conda-forge pip $WRADLIB_DEPS $MISC_DEPS
 #conda activate $WRADLIB_ENV
 
 # Install wradlib
