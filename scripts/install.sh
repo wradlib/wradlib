@@ -26,7 +26,7 @@ if ! [ -x "$(command -v conda)" ]; then
         wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
         ./micromamba shell init -s bash -p $HOME/miniconda
         source ~/.bashrc
-        micromamba activate
+        micromamba activate -p $HOME/miniconda
         echo "Micromamba activated"
         micromamba --version
         micromamba install mamba -c conda-forge -y
