@@ -24,12 +24,15 @@ if ! [ -x "$(command -v conda)" ]; then
 
         # download latest micromamba
         wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+        ./micromamba --version
         ./micromamba shell init -s bash -p $HOME/miniconda
+        cat ~/.bashrc
         source ~/.bashrc
-        micromamba activate -p $HOME/miniconda
+        micromamba --version
+        micromamba activate
         echo "Micromamba activated"
         micromamba --version
-        micromamba install mamba -c conda-forge -y
+        micromamba install -y mamba -c conda-forge
 
 #        # download and install latest MinicondaX
 #        wget http://repo.continuum.io/miniconda/Miniconda$PY_MAJOR-latest-Linux-x86_64.sh \
