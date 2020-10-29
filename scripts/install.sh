@@ -25,6 +25,7 @@ if ! [ -x "$(command -v conda)" ]; then
         # download latest micromamba
         wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
         ./micromamba shell init -s bash -p ~/micromamba
+        cat ~/.bash
         export MAMBA_ROOT_PREFIX=~/micromamba
         export MAMBA_EXE=$(pwd)/micromamba
         . ${MAMBA_ROOT_PREFIX}/etc/profile.d/mamba.sh
