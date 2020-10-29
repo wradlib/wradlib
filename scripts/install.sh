@@ -90,7 +90,7 @@ echo $GDAL_VERSION
 #source $HOME/miniconda/etc/profile.d/conda.sh
 
 # Install wradlib dependencies
-WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
+WRADLIB_DEPS="gdal=$GDAL_VERSION proj-data numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
 NOTEBOOK_DEPS="notebook nbconvert psutil tqdm"
 MISC_DEPS="coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
