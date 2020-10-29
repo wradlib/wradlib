@@ -71,22 +71,22 @@ echo $PATH
 echo $WRADLIB_ENV
 echo $WRADLIB_PYTHON
 echo $GDAL_VERSION
-echo "mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
+#echo "mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON"
 
 #if [ ! -z ${CONDA_DEFAULT_ENV+x} ]; then
 #    mamba deactivate
 #fi
 
 # Add conda-forge channel
-conda config --add channels conda-forge
+#conda config --add channels conda-forge
 # Set strict channel priority
-conda config --set channel_priority strict
+#conda config --set channel_priority strict
 
-mamba update --yes conda
+#mamba update --yes conda
 
 # activate conda for current bash
-export PATH=$HOME/miniconda/bin:$PATH
-source $HOME/miniconda/etc/profile.d/conda.sh
+#export PATH=$HOME/miniconda/bin:$PATH
+#source $HOME/miniconda/etc/profile.d/conda.sh
 
 # Install wradlib dependencies
 WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
@@ -115,7 +115,7 @@ fi
 echo $WRADLIB_DEPS
 echo $MISC_DEPS
 #mamba create -n $WRADLIB_ENV --yes pip python=$WRADLIB_PYTHON $WRADLIB_DEPS $MISC_DEPS
-mamba install --yes pip $WRADLIB_DEPS $MISC_DEPS
+mamba install --yes pip $WRADLIB_DEPS $MISC_DEPS --channel conda-forge
 #conda activate $WRADLIB_ENV
 
 # Install wradlib
