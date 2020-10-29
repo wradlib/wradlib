@@ -43,7 +43,7 @@ if ! [ -x "$(command -v conda)" ]; then
         WRADLIB_ENV="travis_wradlib"
         WRADLIB_PYTHON=$PYTHON_VERSION
 
-        micromamba create --yes --name $WRADLIB_ENV python=WRADLIB_PYTHON mamba --channel conda-forge
+        micromamba create --yes --name $WRADLIB_ENV python=$WRADLIB_PYTHON mamba --channel conda-forge
         micromamba activate $WRADLIB_ENV
 
         # special packages directory for caching in travis-ci
