@@ -27,7 +27,9 @@ if ! [ -x "$(command -v conda)" ]; then
         ./micromamba shell init -s bash -p $HOME/miniconda
         source ~/.bashrc
         micromamba activate
-        micromamba install --yes mamba -c conda-forge
+        echo "Micromamba activated"
+        micromamba --version
+        micromamba install mamba -c conda-forge -y
 
 #        # download and install latest MinicondaX
 #        wget http://repo.continuum.io/miniconda/Miniconda$PY_MAJOR-latest-Linux-x86_64.sh \
