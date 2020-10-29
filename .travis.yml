@@ -17,7 +17,7 @@ matrix:
         - GDAL_VERSION="2"
     - python: 3.7
       sudo: required
-      dist: xenial
+      dist: focal
       services: xvfb
       env:
         - WRADLIB_UNITTEST="true"
@@ -25,7 +25,7 @@ matrix:
         - GDAL_VERSION="2"
     - python: 3.8
       sudo: required
-      dist: xenial
+      dist: focal
       services: xvfb
       env:
         - WRADLIB_UNITTEST="true"
@@ -39,7 +39,7 @@ matrix:
         - DEPLOY="true"
     - python: 3.7
       sudo: required
-      dist: xenial
+      dist: focal
       services: xvfb
       env:
         - WRADLIB_UNITTEST="true"
@@ -47,26 +47,47 @@ matrix:
         - GDAL_VERSION="3"
     - python: 3.8
       sudo: required
-      dist: xenial
+      dist: focal
       services: xvfb
       env:
         - WRADLIB_UNITTEST="true"
         - PYTHON_VERSION="3.8"
         - GDAL_VERSION="3"
+    - python: 3.9
+        sudo: required
+        dist: focal
+        services: xvfb
+        env:
+          - WRADLIB_UNITTEST="true"
+          - PYTHON_VERSION="3.9"
+          - GDAL_VERSION="3"
     - python: 3.8
       sudo: required
-      dist: xenial
+      dist: focal
       services: xvfb
       env:
         - WRADLIB_NOTEBOOKTEST="true"
         - PYTHON_VERSION="3.8"
         - GDAL_VERSION="3"
+    - python: 3.9
+        sudo: required
+        dist: focal
+        services: xvfb
+        env:
+          - WRADLIB_NOTEBOOKTEST="true"
+          - PYTHON_VERSION="3.9"
+          - GDAL_VERSION="3"
     allow_failures:
       - python: 3.8
         env:
           - WRADLIB_NOTEBOOKTEST="true"
           - PYTHON_VERSION="3.8"
           - GDAL_VERSION="3"
+      - python: 3.9
+          env:
+            - WRADLIB_NOTEBOOKTEST="true"
+            - PYTHON_VERSION="3.9"
+            - GDAL_VERSION="3"
 
 # remove temporarily, it seems it's faster without caching
 #  cache:

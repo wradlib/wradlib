@@ -3,6 +3,7 @@ environment:
   CONDA_PATH: "C:\\Miniconda37-x64"
 
   matrix:
+    - PYTHON_VERSION: "3.9"
     - PYTHON_VERSION: "3.8"
     - PYTHON_VERSION: "3.7"
 
