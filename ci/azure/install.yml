@@ -25,7 +25,7 @@ steps:
     echo $MAMBA_ROOT_PREFIX
     #export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
     #export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
-    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.shs -lart /home/vsts/micromamba/envs
+    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
     micromamba activate wradlib-tests
     python -m pip install --no-deps -e .
   displayName: Install wradlib
