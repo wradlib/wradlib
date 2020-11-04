@@ -10,6 +10,8 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
+      cat ~/.bashrc
+      source ~/.bashrc
       micromamba activate
       echo "micromamba version $(micromamba --version)"
       micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
