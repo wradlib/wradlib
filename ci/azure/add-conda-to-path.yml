@@ -11,7 +11,7 @@ steps:
 
 - bash: |
     curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
-    mv bin/micromamba micromamba
+    mv bin/micromamba .
     ./micromamba shell init -s bash -p ~/micromamba
     source ~/.bashrc
     echo $MAMBA_EXE
