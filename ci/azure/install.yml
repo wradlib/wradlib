@@ -12,6 +12,11 @@ steps:
     script: |
       cat ~/.bashrc
       source ~/.bashrc
+      echo $MAMBA_EXE
+      echo $MAMBA_ROOT_PREFIX
+      ls -lart /home/vsts/
+      ls -lart /home/vsts/work
+      ls -lart /home/vsts/work/1/s/
       micromamba activate
       echo "micromamba version $(micromamba --version)"
       micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
