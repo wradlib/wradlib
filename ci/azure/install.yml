@@ -12,14 +12,18 @@ steps:
     script: |
       cat ~/.bashrc
       source ~/.bashrc
+      export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
+      export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
       echo $MAMBA_EXE
       echo $MAMBA_ROOT_PREFIX
       ls -lart /home/vsts/
+      ls -lart /home/vsts/micromamba/etc/profile.d/mamba.sh
       ls -lart /home/vsts/work
       ls -lart /home/vsts/work/1/s/
-      $MAMBA_EXE --version
-      $MAMBA_EXE activate
-      $MAMBA_EXE create --yes --strict-channel-priority --file ${{ parameters.env_file }}
+      echo $PATH
+      /home/vsts/work/1/s/micromamba --version
+      /home/vsts/work/1/s/micromamba activate
+      /home/vsts/work/1/s/micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
     noProfile: false
     noRc: false
 
