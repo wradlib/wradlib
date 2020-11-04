@@ -12,6 +12,8 @@ steps:
     script: |
       export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
       export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
+      /home/vsts/work/1/s/micromamba activate /home/vsts/micromamba
+      echo "$(which micromamba)"
       /home/vsts/work/1/s/micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
     noProfile: false
     noRc: false
@@ -19,6 +21,7 @@ steps:
 - bash: |
     export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
     export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
+    ls -lart /home/vsts/micromamba
     /home/vsts/work/1/s/micromamba activate wradlib-tests
     python -m pip install --no-deps -e .
   displayName: Install wradlib
