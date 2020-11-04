@@ -6,15 +6,13 @@ steps:
 - template: add-conda-to-path.yml
 
 - bash: |
-    source activate base
-    conda config --add channels conda-forge
-    conda config --set channel_priority strict
-    conda install --yes mamba
-    mamba env create -n wradlib-tests --file ${{ parameters.env_file }}
+    micromamba activate
+    echo "micromamba version $(micromamba --version)"
+    micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
   displayName: Install conda dependencies
 
 - bash: |
-    source activate wradlib-tests
+    micromamba activate wradlib-tests
     python -m pip install --no-deps -e .
   displayName: Install wradlib
 
@@ -30,8 +28,7 @@ steps:
   displayName: Install wradlib-notebooks
 
 - bash: |
-    source activate wradlib-tests
-    conda info -a
-    conda list
+    micromamba activate wradlib-tests
+    micromamba list
     python -c "import wradlib; print(wradlib.version.full_version)"
   displayName: Version info
