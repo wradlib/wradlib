@@ -3,7 +3,10 @@ steps:
 - template: install.yml
 
 - bash: |
-    source activate wradlib-tests
+    export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
+    export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
+    source /home/vsts/micromamba/etc/profile.d/mamba.sh
+    micromamba activate wradlib-tests
     pytest --verbose --tb=long --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
   displayName: Run tests
 

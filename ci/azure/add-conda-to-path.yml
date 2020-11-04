@@ -1,29 +1,21 @@
 steps:
 
-- task: Bash@3
-  displayName: Install conda environment
+- bash: |
+    wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+    ./micromamba shell init -s bash -p ~/micromamba
+    source ~/.bashrc
+    echo $MAMBA_EXE
+    echo $MAMBA_PEFIX_PATH
+  displayName: Add micromamba to PATH (Linux)
   condition: eq(variables['Agent.OS'], 'Linux')
-  inputs:
-    targetType: 'inline'
-    script: |
-      wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
-      ./micromamba shell init -s bash -p ~/micromamba
-      source ~/.bashrc
-    noProfile: false
-    noRc: false
-
-#- bash: |
-#    wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
-#    ./micromamba shell init -s bash -p ~/micromamba
-#    source ~/.bashrc
-#  displayName: Add micromamba to PATH (Linux)
-#  condition: eq(variables['Agent.OS'], 'Linux')
 
 - bash: |
     curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
     mv bin/micromamba ./micromamba
-    ./micromamba shell init -s zsh -p ~/micromamba
-    source ~/.zshrc
+    ./micromamba shell init -s bash -p ~/micromamba
+    source ~/.bashrc
+    echo $MAMBA_EXE
+    echo $MAMBA_PEFIX_PATH
   displayName: Add micromamba to PATH (OS X)
   condition: eq(variables['Agent.OS'], 'Darwin')
 
