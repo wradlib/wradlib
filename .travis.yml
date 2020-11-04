@@ -80,7 +80,7 @@ install:
     - flake8 --max-line-length=88 --extend-ignore=E203 .
     - deactivate
     # install build environment
-    - source scripts/install.sh
+    - source ci/travis/install.sh
 
 script:
     - if [ "${WRADLIB_UNITTEST}" == "true" ]; then
