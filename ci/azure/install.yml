@@ -10,25 +10,16 @@ steps:
   inputs:
     targetType: 'inline'
     script: |
-      cat ~/.bashrc
-      source ~/.bashrc
       export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
       export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
-      echo $MAMBA_EXE
-      echo $MAMBA_ROOT_PREFIX
-      ls -lart /home/vsts/
-      ls -lart /home/vsts/micromamba/etc/profile.d/mamba.sh
-      ls -lart /home/vsts/work
-      ls -lart /home/vsts/work/1/s/
-      echo $PATH
-      /home/vsts/work/1/s/micromamba --version
-      /home/vsts/work/1/s/micromamba activate
       /home/vsts/work/1/s/micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
     noProfile: false
     noRc: false
 
 - bash: |
-    micromamba activate wradlib-tests
+    export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
+    export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
+    /home/vsts/work/1/s/micromamba activate wradlib-tests
     python -m pip install --no-deps -e .
   displayName: Install wradlib
 
@@ -44,7 +35,7 @@ steps:
   displayName: Install wradlib-notebooks
 
 - bash: |
-    micromamba activate wradlib-tests
-    micromamba list
+    /home/vsts/work/1/s/micromamba activate wradlib-tests
+    /home/vsts/work/1/s/micromamba list
     python -c "import wradlib; print(wradlib.version.full_version)"
   displayName: Version info
