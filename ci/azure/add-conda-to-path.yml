@@ -3,9 +3,10 @@ steps:
 - bash: |
     wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
     ./micromamba shell init -s bash -p ~/micromamba
-    source ~/.bashrc
+    echo "##vso[task.setvariable variable=MAMBA_EXE]$PWD/micromamba"
+    echo "##vso[task.setvariable variable=MAMBA_PREFIX_PATH]~/micromamba"
     echo $MAMBA_EXE
-    echo $MAMBA_PEFIX_PATH
+    echo $MAMBA_PREFIX_PATH
   displayName: Add micromamba to PATH (Linux)
   condition: eq(variables['Agent.OS'], 'Linux')
 
@@ -14,11 +15,10 @@ steps:
     mv bin/micromamba .
     ls -lart
     ./micromamba shell init -s bash -p ~/micromamba
-    cat ~/.bashrc
-    cat ~/micromamba/etc/profile.d/mamba.sh
-    source ~/.bashrc
+    echo "##vso[task.setvariable variable=MAMBA_EXE]$PWD/micromamba"
+    echo "##vso[task.setvariable variable=MAMBA_PREFIX_PATH]~/micromamba"
     echo $MAMBA_EXE
-    echo $MAMBA_PEFIX_PATH
+    echo $MAMBA_PREFIX_PATH
   displayName: Add micromamba to PATH (OS X)
   condition: eq(variables['Agent.OS'], 'Darwin')
 
