@@ -10,8 +10,8 @@ steps:
   condition: eq(variables['Agent.OS'], 'Linux')
 
 - bash: |
-    curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba --strip-components=1
-    # mv bin/micromamba .
+    curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+    mv bin/micromamba .
     ls -lart
     bash micromamba shell init -s bash -p ~/micromamba
     source ~/.bashrc
