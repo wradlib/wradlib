@@ -6,14 +6,15 @@ steps:
 - template: add-conda-to-path.yml
 
 - task: Bash@3
+  displayName: Install conda environment
   inputs:
     targetType: 'inline'
-      script: |
-        micromamba activate
-        echo "micromamba version $(micromamba --version)"
-        micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
-      noProfile: false
-      noRc: false
+    script: |
+      micromamba activate
+      echo "micromamba version $(micromamba --version)"
+      micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
+    noProfile: false
+    noRc: false
 
 - bash: |
     micromamba activate wradlib-tests
