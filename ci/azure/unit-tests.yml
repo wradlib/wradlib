@@ -3,9 +3,9 @@ steps:
 - template: install.yml
 
 - bash: |
-    export MAMBA_EXE="/home/vsts/work/1/s/micromamba"
-    export MAMBA_ROOT_PREFIX="/home/vsts/micromamba"
-    source /home/vsts/micromamba/etc/profile.d/mamba.sh
+    echo $MAMBA_EXE
+    echo $MAMBA_ROOT_PREFIX
+    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
     micromamba activate wradlib-tests
     pytest --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
   displayName: Run tests
