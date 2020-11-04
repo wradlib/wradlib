@@ -10,25 +10,30 @@ steps:
     echo "micromamba version $(micromamba --version)"
     micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
   displayName: Install conda dependencies
+  noRc: false
 
 - bash: |
     micromamba activate wradlib-tests
     python -m pip install --no-deps -e .
   displayName: Install wradlib
+  noRc: false
 
 - bash: |
     git clone --depth 1 https://github.com/wradlib/wradlib-data.git data
     echo "##vso[task.setvariable variable=WRADLIB_DATA]$PWD/data"
   condition: eq(variables.test_data, true)
   displayName: Install wradlib-data
+  noRc: false
 
 - bash: |
     git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
   condition: eq(variables.notebooks, true)
   displayName: Install wradlib-notebooks
+  noRc: false
 
 - bash: |
     micromamba activate wradlib-tests
     micromamba list
     python -c "import wradlib; print(wradlib.version.full_version)"
   displayName: Version info
+  noRc: false
