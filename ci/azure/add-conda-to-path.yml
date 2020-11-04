@@ -4,7 +4,9 @@ steps:
     wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
     ./micromamba shell init -s bash -p ~/micromamba
     echo "##vso[task.setvariable variable=MAMBA_EXE]$PWD/micromamba"
-    echo "##vso[task.setvariable variable=MAMBA_ROOT_PREFIX]~/micromamba"
+    #echo "##vso[task.setvariable variable=MAMBA_ROOT_PREFIX]~/micromamba"
+    echo "$(cd "$(~/micromamba "$1")"; pwd -P)/$(basename "$1")"
+    echo "##vso[task.setvariable variable=MAMBA_ROOT_PREFIX]$(cd "$(~/micromamba "$1")"; pwd -P)/$(basename "$1")"
     echo $MAMBA_EXE
     echo $MAMBA_ROOT_PREFIX
   displayName: Add micromamba to PATH (Linux)
@@ -16,7 +18,8 @@ steps:
     ls -lart
     ./micromamba shell init -s bash -p ~/micromamba
     echo "##vso[task.setvariable variable=MAMBA_EXE]$PWD/micromamba"
-    echo "##vso[task.setvariable variable=MAMBA_ROOT_PREFIX]~/micromamba"
+    echo "$(cd "$(~/micromamba "$1")"; pwd -P)/$(basename "$1")"
+    echo "##vso[task.setvariable variable=MAMBA_ROOT_PREFIX]$(cd "$(~/micromamba "$1")"; pwd -P)/$(basename "$1")"
     echo $MAMBA_EXE
     echo $MAMBA_ROOT_PREFIX
   displayName: Add micromamba to PATH (OS X)
