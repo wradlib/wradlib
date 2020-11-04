@@ -13,7 +13,9 @@ steps:
     curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
     mv bin/micromamba .
     ls -lart
-    bash micromamba shell init -s bash -p ~/micromamba
+    ./micromamba shell init -s bash -p ~/micromamba
+    cat ~/.bashrc
+    cat ~/micromamba/etc/profile.d/mamba.sh
     source ~/.bashrc
     echo $MAMBA_EXE
     echo $MAMBA_PEFIX_PATH
