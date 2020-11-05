@@ -7,7 +7,8 @@ import tempfile
 from distutils.version import LooseVersion
 
 import matplotlib as mpl
-mpl.use('Agg')
+
+mpl.use("Agg")
 import matplotlib.pyplot as pl
 import numpy as np
 import pytest
@@ -15,9 +16,6 @@ import pytest
 from wradlib import georef, util, vis
 
 from . import requires_data
-
-#pl.interactive(True)  # noqa
-
 
 cartopy = util.import_optional("cartopy")
 
@@ -191,7 +189,6 @@ class TestMiscPlot:
         vis.plot_scan_strategy(ranges, elevs, site, terrain=True)
         vis.plot_scan_strategy(ranges, elevs, site, cg=True, terrain=True)
 
-    @pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
     def test_plot_plan_and_vert(self):
         x = np.arange(0, 10)
         y = np.arange(0, 10)
