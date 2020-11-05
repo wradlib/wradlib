@@ -54,13 +54,13 @@ matrix:
         - PYTHON_VERSION="3.8"
         - GDAL_VERSION="3"
     - python: 3.9
-        sudo: required
-        dist: xenial
-        services: xvfb
-        env:
-          - WRADLIB_UNITTEST="true"
-          - PYTHON_VERSION="3.9"
-          - GDAL_VERSION="3"
+      sudo: required
+      dist: xenial
+      services: xvfb
+      env:
+        - WRADLIB_UNITTEST="true"
+        - PYTHON_VERSION="3.9"
+        - GDAL_VERSION="3"
     - python: 3.8
       sudo: required
       dist: xenial
@@ -70,13 +70,13 @@ matrix:
         - PYTHON_VERSION="3.8"
         - GDAL_VERSION="3"
     - python: 3.9
-        sudo: required
-        dist: xenial
-        services: xvfb
-        env:
-          - WRADLIB_NOTEBOOKTEST="true"
-          - PYTHON_VERSION="3.9"
-          - GDAL_VERSION="3"
+      sudo: required
+      dist: xenial
+      services: xvfb
+      env:
+        - WRADLIB_NOTEBOOKTEST="true"
+        - PYTHON_VERSION="3.9"
+        - GDAL_VERSION="3"
     allow_failures:
       - python: 3.8
         env:
