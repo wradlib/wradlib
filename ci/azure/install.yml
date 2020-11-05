@@ -19,9 +19,10 @@ steps:
     $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
     $Env:MAMBA_EXE
     echo $env:CENV
+    echo $env:CONDA_ENV
     get-childitem -file
     .\micromamba.exe --help
-    .\micromamba.exe create --yes --strict-channel-priority --file $env:CENV
+    .\micromamba.exe "create --yes --strict-channel-priority --file $PWD\$env:CENV"
   displayName: Install conda environment (Windows_NT)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
   env:
