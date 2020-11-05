@@ -20,13 +20,15 @@ install:
   # Create and activate a conda environment with the wanted Python version
   - "conda config --add channels conda-forge"
   - "conda config --set channel_priority strict"
-  - "conda update --yes --quiet conda"
+  - "conda install --yes mamba"
+  # - "conda update --yes --quiet conda"
   - "conda config --set changeps1 no"
-  - "conda create --yes --quiet -n wradlib python=%PYTHON_VERSION%"
-  - "activate wradlib"
+  # - "conda install --yes mamba"
+  - "mamba create --yes --quiet -n wradlib-tests python=%PYTHON_VERSION% %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  - "activate wradlib-tests"
 
   # Install wradlib dependecies
-  - "conda install -y -q %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
+  # - "conda install -y -q %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
   # Some checks
   - "python -VV"

@@ -1,6 +1,7 @@
 name: wradlib-tests
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - python=3.8
   - bottleneck
@@ -13,7 +14,7 @@ dependencies:
   - h5netcdf
   - netCDF4
   - numpy
-  - matplotlib
+  - matplotlib-base
   - pip
   - pytest
   - pytest-cov
