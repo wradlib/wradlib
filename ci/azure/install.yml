@@ -14,28 +14,28 @@ steps:
   displayName: Install conda environment (Linux, OSX)
   condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
 
-#- bash: |
-#    source activate base
-#    conda config --add channels conda-forge
-#    conda config --set channel_priority strict
-#    conda install --yes mamba
-#    mamba env create -n wradlib-tests --file ${{ parameters.env_file }}
-#  displayName: Install conda environment (Windows_NT)
-#  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-- powershell: |
-    $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
-    $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-    $Env:MAMBA_EXE
-    echo $env:CENV
-    echo $env:CONDA_ENV
-    get-childitem -file
-    .\micromamba.exe --help
-    .\micromamba.exe create -v --yes --strict-channel-priority --file $PWD\$env:CENV\$env:CONDA_ENV.yml
+- bash: |
+    source activate base
+    conda config --add channels conda-forge
+    conda config --set channel_priority strict
+    conda install --yes mamba
+    mamba env create -n wradlib-tests --file ${{ parameters.env_file }}
   displayName: Install conda environment (Windows_NT)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
-  env:
-    Cenv: ci\requirements
+
+#- powershell: |
+#    $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
+#    $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
+#    $Env:MAMBA_EXE
+#    echo $env:CENV
+#    echo $env:CONDA_ENV
+#    get-childitem -file
+#    .\micromamba.exe --help
+#    .\micromamba.exe create -v --yes --strict-channel-priority --file $PWD\$env:CENV\$env:CONDA_ENV.yml
+#  displayName: Install conda environment (Windows_NT)
+#  condition: eq(variables['Agent.OS'], 'Windows_NT')
+#  env:
+#    Cenv: ci\requirements
 
 - bash: |
     echo $MAMBA_EXE
