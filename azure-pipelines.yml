@@ -97,7 +97,7 @@ jobs:
     vmImage: 'ubuntu-20.04'
   steps:
   - task: UsePythonVersion@0
-  - bash: python -m pip install isort==4.3.21
+  - bash: python -m pip install isort
     displayName: Install isort
-  - bash: isort -rc --check .
+  - bash: isort --check .
     displayName: isort formatting check

@@ -957,6 +957,7 @@ def despeckle(data, n=3, copy=False):
 
 def show_versions(file=None):
     import sys
+
     import xarray as xr
 
     if file is None:

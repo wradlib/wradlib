@@ -167,7 +167,7 @@ def setup_package():
     # rewrite version file
     VERSION = write_version_py()
 
-    from setuptools import setup, find_packages
+    from setuptools import find_packages, setup
 
     with open("requirements.txt", "r") as f:
         INSTALL_REQUIRES = [rq for rq in f.read().split("\n") if rq != ""]
