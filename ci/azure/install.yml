@@ -22,11 +22,11 @@ steps:
     echo $env:CONDA_ENV
     get-childitem -file
     .\micromamba.exe --help
-    .\micromamba.exe "create --yes --strict-channel-priority --file $PWD\$env:CENV"
+    .\micromamba.exe "create --yes --strict-channel-priority --file $PWD\$env:CENV\$env:CONDA_ENV.yml
   displayName: Install conda environment (Windows_NT)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
   env:
-    Cenv: ci\requirements\$CONDA_ENV.yml
+    Cenv: ci\requirements
 
 - bash: |
     echo $MAMBA_EXE
