@@ -6,9 +6,9 @@ import sys
 import tempfile
 from distutils.version import LooseVersion
 
-import matplotlib as mpl
+import matplotlib as mpl  # isort:skip
 
-mpl.use("Agg")
+mpl.use("Agg")  # noqa: E402
 import matplotlib.pyplot as pl
 import numpy as np
 import pytest

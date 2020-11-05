@@ -6,6 +6,7 @@
 wradlib
 =======
 
+isort:skip_file
 """
 
 # Detect if we're being called as part of wradlib's setup procedure
