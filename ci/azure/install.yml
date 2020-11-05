@@ -21,12 +21,11 @@ steps:
     echo $env:CENV
     get-childitem -file
     .\micromamba.exe --help
-    .\micromamba.exe activate
-    # .\micromamba.exe create --yes --strict-channel-priority --file $env:CENV
+    .\micromamba.exe create --yes --strict-channel-priority --file $env:CENV
   displayName: Install conda environment (Windows_NT)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
   env:
-    Cenv: ${{ parameters.env_file }}
+    Cenv: ci\requirements\$CONDA_ENV.yml
 
 - bash: |
     echo $MAMBA_EXE
