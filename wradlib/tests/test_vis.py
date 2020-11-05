@@ -7,6 +7,7 @@ import tempfile
 from distutils.version import LooseVersion
 
 import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as pl
 import numpy as np
 import pytest
@@ -15,7 +16,7 @@ from wradlib import georef, util, vis
 
 from . import requires_data
 
-pl.interactive(True)  # noqa
+#pl.interactive(True)  # noqa
 
 
 cartopy = util.import_optional("cartopy")
