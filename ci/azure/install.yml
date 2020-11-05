@@ -18,11 +18,15 @@ steps:
     $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
     $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
     $Env:MAMBA_EXE
+    echo $env:CENV
     get-childitem -file
     .\micromamba.exe --help
+
     # .\micromamba.exe create --yes --strict-channel-priority --file ${{ parameters.env_file }}
   displayName: Install conda environment (Windows_NT)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
+  env:
+    Cenv: ${{ parameters.env_file }}
 
 - bash: |
     echo $MAMBA_EXE
