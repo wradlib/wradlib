@@ -14,8 +14,9 @@ steps:
   displayName: Install conda environment (Linux, OSX)
   condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
 
-- bash: |
-    .\micromamba.exe
+- powershell: |
+    $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
+    $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
     .\micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
   displayName: Install conda environment (Windows_NT)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
