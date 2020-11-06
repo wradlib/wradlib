@@ -74,6 +74,13 @@ class TestDX:
             head += str(c.decode())
         io.radolan.parse_dx_header(head)
 
+    def test_parse_old_dx_header(self):
+        header = b"DX010000109080100BY 4173VS 1CO2CD2CS0MS***XXXXXXXX"
+        head = ""
+        for c in sio.BytesIO(header):
+            head += str(c.decode())
+        io.radolan.parse_dx_header(head)
+
     def test_unpack_dx(self):
         pass
 
