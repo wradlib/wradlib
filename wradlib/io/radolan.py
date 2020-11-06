@@ -164,7 +164,7 @@ def parse_dx_header(header):
     for k, v in head.items():
         if v:
             if k == "BY":
-                out["bytes"] = int(header[v[0] : v[1]]) - len(header) - 1
+                out["bytes"] = int(header[v[0] : v[1]])
             if k == "VS":
                 out["version"] = header[v[0] : v[1]]
             if k == "CO":
