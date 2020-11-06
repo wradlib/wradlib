@@ -22,6 +22,7 @@ jobs:
   - template: ci/azure/unit-tests.yml
 
 - job: Linux_Notebook_Tests
+  continueOnError: true
   strategy:
     matrix:
       py39:
@@ -45,6 +46,7 @@ jobs:
   - template: ci/azure/unit-tests.yml
 
 - job: MacOSX_Notebook_Tests
+  continueOnError: true
   strategy:
     matrix:
       py39:
@@ -68,6 +70,7 @@ jobs:
   - template: ci/azure/unit-tests.yml
 
 - job: Windows_Notebook_Tests
+  continueOnError: true
   strategy:
     matrix:
       py39:
