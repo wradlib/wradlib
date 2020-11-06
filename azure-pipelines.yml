@@ -14,16 +14,19 @@ jobs:
     matrix:
       py38:
         conda_env: py38
+      py39:
+        conda_env: py39
   pool:
     vmImage: 'ubuntu-20.04'
   steps:
   - template: ci/azure/unit-tests.yml
 
 - job: Linux_Notebook_Tests
+  continueOnError: true
   strategy:
     matrix:
-      py38:
-        conda_env: py38-notebooks
+      py39:
+        conda_env: py39-notebooks
         notebooks: true
   pool:
     vmImage: 'ubuntu-20.04'
@@ -35,16 +38,19 @@ jobs:
     matrix:
       py38:
         conda_env: py38
+      py39:
+        conda_env: py39
   pool:
     vmImage: 'macOS-10.15'
   steps:
   - template: ci/azure/unit-tests.yml
 
 - job: MacOSX_Notebook_Tests
+  continueOnError: true
   strategy:
     matrix:
-      py38:
-        conda_env: py38-notebooks
+      py39:
+        conda_env: py39-notebooks
         notebooks: true
   pool:
     vmImage: 'macOS-10.15'
@@ -56,16 +62,19 @@ jobs:
     matrix:
       py38:
         conda_env: py38
+      py39:
+        conda_env: py39
   pool:
     vmImage: 'windows-latest'
   steps:
   - template: ci/azure/unit-tests.yml
 
 - job: Windows_Notebook_Tests
+  continueOnError: true
   strategy:
     matrix:
-      py38:
-        conda_env: py38-notebooks
+      py39:
+        conda_env: py39-notebooks
         notebooks: true
   pool:
     vmImage: 'windows-latest'
