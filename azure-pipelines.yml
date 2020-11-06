@@ -24,9 +24,6 @@ jobs:
 - job: Linux_Notebook_Tests
   strategy:
     matrix:
-      py38:
-        conda_env: py38-notebooks
-        notebooks: true
       py39:
         conda_env: py39-notebooks
         notebooks: true
@@ -50,9 +47,6 @@ jobs:
 - job: MacOSX_Notebook_Tests
   strategy:
     matrix:
-      py38:
-        conda_env: py38-notebooks
-        notebooks: true
       py39:
         conda_env: py39-notebooks
         notebooks: true
@@ -76,9 +70,6 @@ jobs:
 - job: Windows_Notebook_Tests
   strategy:
     matrix:
-      py38:
-        conda_env: py38-notebooks
-        notebooks: true
       py39:
         conda_env: py39-notebooks
         notebooks: true
