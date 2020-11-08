@@ -23,6 +23,7 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import datetime as dt
+from distutils.version import LooseVersion
 
 import h5py
 import netCDF4 as nc
@@ -239,7 +240,10 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
         if "moment" in mom:
             data1 = {}
             sg2 = scan[mom]
-            actual_moment = sg2.attrs.get("moment").decode().upper()
+            actual_moment = sg2.attrs.get("moment")
+            if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
+                actual_moment = actual_moment.decode()
+            actual_moment = actual_moment.upper()
             if (actual_moment in wanted_moments) or (wanted_moments == "all"):
                 # read attributes only once
                 if not sattrs:
@@ -247,7 +251,9 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
                 mdata = sg2[...]
                 dyn_range_max = sg2.attrs.get("dyn_range_max")
                 dyn_range_min = sg2.attrs.get("dyn_range_min")
-                bin_format = sg2.attrs.get("format").decode()
+                bin_format = sg2.attrs.get("format")
+                if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
+                    bin_format = bin_format.decode()
                 if bin_format == "UV8":
                     div = 256.0
                 else:
@@ -322,7 +328,9 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
         raise
 
     # get scan_type (PVOL or RHI)
-    scan_type = f["what"].attrs.get("object").decode()
+    scan_type = f["what"].attrs.get("object")
+    if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
+        scan_type = scan_type.decode()
 
     # single or volume scan
     if scan_type == "PVOL":

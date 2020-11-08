@@ -2071,7 +2071,9 @@ class XRadSweepGamic(XRadSweep):
             if isinstance(self.ncfile, nc.Dataset):
                 start = ncid["how"].getncattr("timestamp")
             else:
-                start = ncid["how"].attrs["timestamp"].decode()
+                start = ncid["how"].attrs["timestamp"]
+                if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
+                    start = start.decode()
         except (IndexError, KeyError):
             return None
         start = dateutil.parser.parse(start)
