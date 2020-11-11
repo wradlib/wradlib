@@ -275,6 +275,35 @@ def get_wradlib_data_file(file, file_or_filelike):
 
 
 class TestHDF5:
+    @requires_data
+    def test_read_generic_hdf5(self, file_or_filelike):
+        filename = "hdf5/IDR66_20141206_094829.vol.h5"
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            io.hdf.read_generic_hdf5(f)
+
+    @requires_data
+    def test_read_opera_hdf5(self, file_or_filelike):
+        filename = "hdf5/IDR66_20141206_094829.vol.h5"
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            io.hdf.read_opera_hdf5(f)
+
+    @requires_data
+    def test_read_gamic_hdf5(self, file_or_filelike):
+        ppi = "hdf5/2014-08-10--182000.ppi.mvol"
+        rhi = "hdf5/2014-06-09--185000.rhi.mvol"
+        filename = (
+            "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-"
+            "S095002-E095137.004383.V05A.HDF5"
+        )
+
+        with get_wradlib_data_file(ppi, file_or_filelike) as f:
+            io.hdf.read_gamic_hdf5(f)
+        with get_wradlib_data_file(rhi, file_or_filelike) as f:
+            io.hdf.read_gamic_hdf5(f)
+        with pytest.raises(KeyError):
+            with get_wradlib_data_file(filename, file_or_filelike) as f:
+                io.hdf.read_gamic_hdf5(f)
+
     def test_to_hdf5(self):
         arr = np.zeros((124, 248), dtype=np.int16)
         metadata = {"test": 12.0}
@@ -361,35 +390,6 @@ class TestHDF5:
         bbox = zonalstats.get_bbox(lon, lat)
 
         io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
-
-    @requires_data
-    def test_read_generic_hdf5(self, file_or_filelike):
-        filename = "hdf5/IDR66_20141206_094829.vol.h5"
-        with get_wradlib_data_file(filename, file_or_filelike) as f:
-            io.hdf.read_generic_hdf5(f)
-
-    @requires_data
-    def test_read_opera_hdf5(self, file_or_filelike):
-        filename = "hdf5/IDR66_20141206_094829.vol.h5"
-        with get_wradlib_data_file(filename, file_or_filelike) as f:
-            io.hdf.read_opera_hdf5(f)
-
-    @requires_data
-    def test_read_gamic_hdf5(self, file_or_filelike):
-        ppi = "hdf5/2014-08-10--182000.ppi.mvol"
-        rhi = "hdf5/2014-06-09--185000.rhi.mvol"
-        filename = (
-            "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-"
-            "S095002-E095137.004383.V05A.HDF5"
-        )
-
-        with get_wradlib_data_file(ppi, file_or_filelike) as f:
-            io.hdf.read_gamic_hdf5(f)
-        with get_wradlib_data_file(rhi, file_or_filelike) as f:
-            io.hdf.read_gamic_hdf5(f)
-        with pytest.raises(KeyError):
-            with get_wradlib_data_file(filename, file_or_filelike) as f:
-                io.hdf.read_gamic_hdf5(f)
 
 
 class TestRadolan:
