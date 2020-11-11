@@ -266,7 +266,7 @@ def get_wradlib_data_file(file, file_or_filelike):
 
 @contextlib.contextmanager
 def get_measured_volume(file, get_loader, format, file_or_filelike):
-    #h5file = util.get_wradlib_data_file(file)
+    # h5file = util.get_wradlib_data_file(file)
     with get_wradlib_data_file(file, file_or_filelike) as h5file:
         yield io.xarray.open_odim(h5file, loader=get_loader, flavour=format)
 
@@ -950,14 +950,18 @@ class DataVolume(DataTimeSeries):
 class MeasuredDataVolume(DataVolume):
     @contextlib.contextmanager
     def get_volume_data(self, get_loader, file_or_filelike, **kwargs):
-        with get_measured_volume(self.name, get_loader, self.format, file_or_filelike) as vol:
+        with get_measured_volume(
+            self.name, get_loader, self.format, file_or_filelike
+        ) as vol:
             yield vol
 
 
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
     def get_volume_data(self, get_loader, file_or_filelike, **kwargs):
-        with get_synthetic_volume(self.name, get_loader, file_or_filelike, **kwargs) as vol:
+        with get_synthetic_volume(
+            self.name, get_loader, file_or_filelike, **kwargs
+        ) as vol:
             yield vol
 
 
