@@ -15,10 +15,19 @@ __all__ = ["read_edge_netcdf", "read_generic_netcdf"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
+import contextlib
 import datetime as dt
 
 import netCDF4 as nc
 import numpy as np
+
+
+@contextlib.contextmanager
+def _open_netcdf(filename):
+    if isinstance(filename, str):
+        yield nc.Dataset(filename)
+    else:
+        yield nc.Dataset("name", mode="r", memory=filename.read())
 
 
 def read_edge_netcdf(filename, enforce_equidist=False):
@@ -33,8 +42,8 @@ def read_edge_netcdf(filename, enforce_equidist=False):
 
     Parameters
     ----------
-    filename : string
-        path of the netCDF file
+    filename : string or file-like
+        path of the netCDF file or file-like object
     enforce_equidist : boolean
         Set True if the values of the azimuth angles should be forced to be
         equidistant; default value is False
@@ -44,44 +53,45 @@ def read_edge_netcdf(filename, enforce_equidist=False):
     output : :func:`numpy:numpy.array`
         of image data (dBZ), dictionary of attributes
     """
-    # read the data from file
-    dset = nc.Dataset(filename)
-    data = dset.variables[dset.TypeName][:]
-    # Check azimuth angles and rotate image
-    az = dset.variables["Azimuth"][:]
-    # These are the indices of the minimum and maximum azimuth angle
-    ix_minaz = np.argmin(az)
-    ix_maxaz = np.argmax(az)
-    if enforce_equidist:
-        az = np.linspace(np.round(az[ix_minaz], 2), np.round(az[ix_maxaz], 2), len(az))
-    else:
-        az = np.roll(az, -ix_minaz)
-    # rotate accordingly
-    data = np.roll(data, -ix_minaz, axis=0)
-    data = np.where(data == dset.getncattr("MissingData"), np.nan, data)
-    # Ranges
-    binwidth = (dset.getncattr("MaximumRange-value") * 1000.0) / len(
-        dset.dimensions["Gate"]
-    )
-    r = np.arange(
-        binwidth, (dset.getncattr("MaximumRange-value") * 1000.0) + binwidth, binwidth
-    )
-    # collect attributes
-    attrs = {}
-    for attrname in dset.ncattrs():
-        attrs[attrname] = dset.getncattr(attrname)
-    # # Limiting the returned range
-    # if range_lim and range_lim / binwidth <= data.shape[1]:
-    #     data = data[:,:range_lim / binwidth]
-    #     r = r[:range_lim / binwidth]
-    # Set additional metadata attributes
-    attrs["az"] = az
-    attrs["r"] = r
-    attrs["sitecoords"] = (attrs["Longitude"], attrs["Latitude"], attrs["Height"])
-    attrs["time"] = dt.datetime.utcfromtimestamp(attrs.pop("Time"))
-    attrs["max_range"] = data.shape[1] * binwidth
-
-    dset.close()
+    with _open_netcdf(filename) as dset:
+        data = dset.variables[dset.TypeName][:]
+        # Check azimuth angles and rotate image
+        az = dset.variables["Azimuth"][:]
+        # These are the indices of the minimum and maximum azimuth angle
+        ix_minaz = np.argmin(az)
+        ix_maxaz = np.argmax(az)
+        if enforce_equidist:
+            az = np.linspace(
+                np.round(az[ix_minaz], 2), np.round(az[ix_maxaz], 2), len(az)
+            )
+        else:
+            az = np.roll(az, -ix_minaz)
+        # rotate accordingly
+        data = np.roll(data, -ix_minaz, axis=0)
+        data = np.where(data == dset.getncattr("MissingData"), np.nan, data)
+        # Ranges
+        binwidth = (dset.getncattr("MaximumRange-value") * 1000.0) / len(
+            dset.dimensions["Gate"]
+        )
+        r = np.arange(
+            binwidth,
+            (dset.getncattr("MaximumRange-value") * 1000.0) + binwidth,
+            binwidth,
+        )
+        # collect attributes
+        attrs = {}
+        for attrname in dset.ncattrs():
+            attrs[attrname] = dset.getncattr(attrname)
+        # # Limiting the returned range
+        # if range_lim and range_lim / binwidth <= data.shape[1]:
+        #     data = data[:,:range_lim / binwidth]
+        #     r = r[:range_lim / binwidth]
+        # Set additional metadata attributes
+        attrs["az"] = az
+        attrs["r"] = r
+        attrs["sitecoords"] = (attrs["Longitude"], attrs["Latitude"], attrs["Height"])
+        attrs["time"] = dt.datetime.utcfromtimestamp(attrs.pop("Time"))
+        attrs["max_range"] = data.shape[1] * binwidth
 
     return data, attrs
 
@@ -191,8 +201,8 @@ def read_generic_netcdf(fname):
 
     Parameters
     ----------
-    fname : string
-        a netcdf file path
+    fname : string or file-like
+        a netcdf file path or file-like object
 
     Returns
     -------
@@ -204,9 +214,7 @@ def read_generic_netcdf(fname):
     --------
     See :ref:`/notebooks/fileio/wradlib_generic_netcdf_example.ipynb`.
     """
-    ncid = nc.Dataset(fname, "r")
+    with _open_netcdf(fname) as ncid:
+        out = read_netcdf_group(ncid)
 
-    out = read_netcdf_group(ncid)
-
-    ncid.close()
     return out
