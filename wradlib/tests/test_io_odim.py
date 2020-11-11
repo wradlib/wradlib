@@ -3,6 +3,7 @@
 
 import contextlib
 import gc
+import io as sio
 
 import h5py
 import numpy as np
@@ -244,14 +245,34 @@ def create_coords(i, nrays=360):
     return ds
 
 
-@contextlib.contextmanager
-def get_measured_volume(file, get_loader, format):
-    h5file = util.get_wradlib_data_file(file)
-    yield io.xarray.open_odim(h5file, loader=get_loader, flavour=format)
+@pytest.fixture(params=["file", "filelike"])
+def file_or_filelike(request):
+    return request.param
 
 
 @contextlib.contextmanager
-def get_synthetic_volume(name, get_loader, **kwargs):
+def get_wradlib_data_file(file, file_or_filelike):
+    datafile = util.get_wradlib_data_file(file)
+    if file_or_filelike == "filelike":
+        _open = open
+        if datafile[-3:] == ".gz":
+            gzip = util.import_optional("gzip")
+            _open = gzip.open
+        with _open(datafile, mode="r+b") as f:
+            yield sio.BytesIO(f.read())
+    else:
+        yield datafile
+
+
+@contextlib.contextmanager
+def get_measured_volume(file, get_loader, format, file_or_filelike):
+    #h5file = util.get_wradlib_data_file(file)
+    with get_wradlib_data_file(file, file_or_filelike) as h5file:
+        yield io.xarray.open_odim(h5file, loader=get_loader, flavour=format)
+
+
+@contextlib.contextmanager
+def get_synthetic_volume(name, get_loader, file_or_filelike, **kwargs):
     import tempfile
 
     tmp_local = tempfile.NamedTemporaryFile(suffix=".h5", prefix=name).name
@@ -262,7 +283,8 @@ def get_synthetic_volume(name, get_loader, **kwargs):
     with h5py.File(str(tmp_local), "w") as f:
         data = globals()[name]()
         write_group(f, data)
-    yield io.xarray.open_odim(tmp_local, loader=get_loader, flavour=format, **kwargs)
+    with get_wradlib_data_file(tmp_local, file_or_filelike) as h5file:
+        yield io.xarray.open_odim(h5file, loader=get_loader, flavour=format, **kwargs)
 
 
 def base_odim_data_00(nrays=360):
@@ -496,10 +518,12 @@ def create_moment_repr(azi, range, ele, mom):
 
 
 class DataMoment:
-    def test_moments(self, get_loader):
+    def test_moments(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
-        with self.get_volume_data(get_loader) as vol:
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
+        with self.get_volume_data(get_loader, file_or_filelike) as vol:
             engine = "h5netcdf" if "h5" in get_loader else "netcdf4"
             num = 1 if self.format == "ODIM" else 0
             for i, ts in enumerate(vol):
@@ -514,7 +538,8 @@ class DataMoment:
                     assert isinstance(mom, io.xarray.XRadMoment)
                     assert mom.__repr__() == repr
                     assert mom.engine == engine
-                    assert self.name.split("/")[-1] in mom.filename
+                    if file_or_filelike == "file":
+                        assert self.name.split("/")[-1] in mom.filename
                     assert mom.quantity == self.moments[k]
                     assert mom.parent == vol[i][j]
                     ncpath = "/".join([self.dsdesc, self.mdesc]).format(
@@ -528,13 +553,16 @@ class DataMoment:
         del vol
         gc.collect()
 
-    def test_moment_data(self, get_loader):
+    def test_moment_data(self, get_loader, file_or_filelike):
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=False,
             mask_and_scale=False,
             decode_times=False,
@@ -551,6 +579,7 @@ class DataMoment:
                         xr.testing.assert_equal(mom.data, ds)
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=True,
             mask_and_scale=False,
             decode_times=True,
@@ -573,6 +602,7 @@ class DataMoment:
 
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=True,
             mask_and_scale=True,
             decode_times=True,
@@ -600,10 +630,12 @@ class DataMoment:
 
 
 class DataSweep(DataMoment):
-    def test_sweeps(self, get_loader):
+    def test_sweeps(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
-        with self.get_volume_data(get_loader) as vol:
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
+        with self.get_volume_data(get_loader, file_or_filelike) as vol:
             num = 1 if self.format == "ODIM" else 0
             for i, ts in enumerate(vol):
                 for j, swp in enumerate(ts):
@@ -615,7 +647,8 @@ class DataSweep(DataMoment):
                         self.moments,
                     )
                     assert isinstance(swp, io.xarray.XRadSweep)
-                    assert self.name.split("/")[-1] in swp.filename
+                    if file_or_filelike == "file":
+                        assert self.name.split("/")[-1] in swp.filename
                     assert swp.__repr__() == repr
 
                     # mixins
@@ -641,13 +674,16 @@ class DataSweep(DataMoment):
         del vol
         gc.collect()
 
-    def test_sweep_data(self, get_loader):
+    def test_sweep_data(self, get_loader, file_or_filelike):
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=False,
             mask_and_scale=False,
             decode_times=False,
@@ -663,6 +699,7 @@ class DataSweep(DataMoment):
                     xr.testing.assert_equal(swp.data, ds)
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=True,
             mask_and_scale=False,
             decode_times=True,
@@ -681,6 +718,7 @@ class DataSweep(DataMoment):
                     xr.testing.assert_equal(swp.data, data)
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=True,
             mask_and_scale=True,
             decode_times=True,
@@ -702,13 +740,16 @@ class DataSweep(DataMoment):
         del vol
         gc.collect()
 
-    def test_sweep_coords_data(self, get_loader):
+    def test_sweep_coords_data(self, get_loader, file_or_filelike):
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=False,
             mask_and_scale=False,
             decode_times=False,
@@ -727,12 +768,13 @@ class DataSweep(DataMoment):
         del vol
         gc.collect()
 
-    def test_sweep_errors(self, get_loader):
+    def test_sweep_errors(self, get_loader, file_or_filelike):
         if not (get_loader == "netcdf4" and self.format == "GAMIC"):
             pytest.skip("only test gamic using netcdf4")
         with pytest.raises(ValueError):
             with self.get_volume_data(
                 get_loader,
+                file_or_filelike,
                 decode_coords=False,
                 mask_and_scale=False,
                 decode_times=False,
@@ -743,10 +785,12 @@ class DataSweep(DataMoment):
 
 
 class DataTimeSeries(DataSweep):
-    def test_timeseries(self, get_loader):
+    def test_timeseries(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
-        with self.get_volume_data(get_loader) as vol:
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
+        with self.get_volume_data(get_loader, file_or_filelike) as vol:
             engine = "h5netcdf" if "h5" in get_loader else "netcdf4"
             num = 1 if self.format == "ODIM" else 0
             for i, ts in enumerate(vol):
@@ -759,18 +803,22 @@ class DataTimeSeries(DataSweep):
                 assert ts.ncid == ts.ncfile[ts.ncpath]
                 assert ts.ncpath == self.dsdesc.format(i + num)
                 assert ts.parent == vol
-                assert self.name.split("/")[-1] in ts.filename
+                if file_or_filelike == "file":
+                    assert self.name.split("/")[-1] in ts.filename
         del ts
         del vol
         gc.collect()
 
-    def test_timeseries_data(self, get_loader):
+    def test_timeseries_data(self, get_loader, file_or_filelike):
         if isinstance(self, MeasuredDataVolume):
             pytest.skip("requires synthetic data")
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=False,
             mask_and_scale=False,
             decode_times=False,
@@ -786,6 +834,7 @@ class DataTimeSeries(DataSweep):
 
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=True,
             mask_and_scale=False,
             decode_times=True,
@@ -804,6 +853,7 @@ class DataTimeSeries(DataSweep):
 
         with self.get_volume_data(
             get_loader,
+            file_or_filelike,
             decode_coords=True,
             mask_and_scale=True,
             decode_times=True,
@@ -826,17 +876,20 @@ class DataTimeSeries(DataSweep):
 
 
 class DataVolume(DataTimeSeries):
-    def test_volumes(self, get_loader):
+    def test_volumes(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
-        with self.get_volume_data(get_loader) as vol:
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
+        with self.get_volume_data(get_loader, file_or_filelike) as vol:
             engine = "h5netcdf" if "h5" in get_loader else "netcdf4"
             assert isinstance(vol, io.xarray.XRadVolume)
             repr = create_volume_repr(self.sweeps, self.elevations)
             assert vol.__repr__() == repr
             assert vol.engine == engine
             # assert vol.filename == odim_data[0]
-            assert self.name.split("/")[-1] in vol.filename
+            if file_or_filelike == "file":
+                assert self.name.split("/")[-1] in vol.filename
             assert vol.ncid == vol.ncfile
             assert vol.ncpath == "/"
             assert vol.parent is None
@@ -850,10 +903,12 @@ class DataVolume(DataTimeSeries):
         del vol
         gc.collect()
 
-    def test_odim_output(self, get_loader):
+    def test_odim_output(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
-        with self.get_volume_data(get_loader) as vol:
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
+        with self.get_volume_data(get_loader, file_or_filelike) as vol:
             import tempfile
 
             tmp_local = tempfile.NamedTemporaryFile(suffix=".h5", prefix="odim").name
@@ -861,10 +916,12 @@ class DataVolume(DataTimeSeries):
         del vol
         gc.collect()
 
-    def test_cfradial2_output(self, get_loader):
+    def test_cfradial2_output(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
-        with self.get_volume_data(get_loader) as vol:
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
+        with self.get_volume_data(get_loader, file_or_filelike) as vol:
             import tempfile
 
             tmp_local = tempfile.NamedTemporaryFile(
@@ -874,10 +931,12 @@ class DataVolume(DataTimeSeries):
         del vol
         gc.collect()
 
-    def test_netcdf_output(self, get_loader):
+    def test_netcdf_output(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
-        with self.get_volume_data(get_loader) as vol:
+        if get_loader == "h5py" and file_or_filelike == "filelike":
+            pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
+        with self.get_volume_data(get_loader, file_or_filelike) as vol:
             import tempfile
 
             tmp_local = tempfile.NamedTemporaryFile(
@@ -890,15 +949,15 @@ class DataVolume(DataTimeSeries):
 
 class MeasuredDataVolume(DataVolume):
     @contextlib.contextmanager
-    def get_volume_data(self, get_loader, **kwargs):
-        with get_measured_volume(self.name, get_loader, self.format) as vol:
+    def get_volume_data(self, get_loader, file_or_filelike, **kwargs):
+        with get_measured_volume(self.name, get_loader, self.format, file_or_filelike) as vol:
             yield vol
 
 
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
-    def get_volume_data(self, get_loader, **kwargs):
-        with get_synthetic_volume(self.name, get_loader, **kwargs) as vol:
+    def get_volume_data(self, get_loader, file_or_filelike, **kwargs):
+        with get_synthetic_volume(self.name, get_loader, file_or_filelike, **kwargs) as vol:
             yield vol
 
 

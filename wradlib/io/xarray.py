@@ -1107,7 +1107,12 @@ def _open_mfmoments(
     # do not use parallel if all moments in one file
     if len(set([p.filename for p in moments])) == 1:
         single_file = True
-        ds0 = opener(moments[0].filename, "r", **opener_kwargs)
+        import os
+        if os.path.isfile(moments[0].filename):
+            ds0 = opener(moments[0].filename, "r", **opener_kwargs)
+        else:
+            ds0 = moments[0].ncfile
+        #ds0 = opener(moments[0].filename, "r", **opener_kwargs)
     else:
         single_file = False
 
@@ -1133,6 +1138,7 @@ def _open_mfmoments(
             for p in moments
         ]
     else:
+        # todo: use p.filename for file and p.ncfile for file-like
         datasets = [
             open_(
                 store(
@@ -2457,7 +2463,7 @@ def _open_odim_sweep(filename, loader, **kwargs):
                 "loader. Use either 'netcdf4' or 'h5netcdf'."
             )
         if opener == nc.Dataset:
-            handle = opener('name', mode="r" , memory=filename.read(), **ld_kwargs)
+            handle = opener('name', mode="r", memory=filename.read(), **ld_kwargs)
         else:
             handle = opener(filename, "r", **ld_kwargs)
     else:
