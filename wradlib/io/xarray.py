@@ -1992,7 +1992,12 @@ class XRadSweepGamic(XRadSweep):
             opener_kwargs = dict()
             store = xr.backends.NetCDF4DataStore
 
-        ds0 = opener(self.filename, "r", **opener_kwargs)
+        import os
+        if os.path.isfile(self.filename):
+            ds0 = opener(self.filename, "r", **opener_kwargs)
+        else:
+            ds0 = self.ncfile
+
         ds = xr.open_dataset(
             store(ds0, self.ncpath, lock=None, autoclose=None),
             engine=self.engine,
@@ -2445,7 +2450,18 @@ def _open_odim_sweep(filename, loader, **kwargs):
         sweep_cls = XRadSweepGamic
 
     # open file
-    handle = opener(filename, "r", **ld_kwargs)
+    if not isinstance(filename, str):
+        if opener == h5py.File:
+            raise ValueError(
+                "wradlib: file-like objects can't be read using h5py "
+                "loader. Use either 'netcdf4' or 'h5netcdf'."
+            )
+        if opener == nc.Dataset:
+            handle = opener('name', mode="r" , memory=filename.read(), **ld_kwargs)
+        else:
+            handle = opener(filename, "r", **ld_kwargs)
+    else:
+        handle = opener(filename, "r", **ld_kwargs)
 
     # get group names
     fattr = getattr(handle, attr)
