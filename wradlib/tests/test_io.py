@@ -597,8 +597,6 @@ class TestRadolan:
         assert rw_file[:-3] == rw_fid.name
         rw_fid.close()
 
-
-
     def test_read_radolan_header(self):
         rx_header = (
             b"RW030950100000814BY1620130VS 3SW   2.13.1PR E-01"
