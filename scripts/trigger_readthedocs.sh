@@ -4,6 +4,6 @@
 
 set -e
 
-if [ "$TRAVIS_PYTHON_VERSION" = "3.6" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ] ; then
+if [ "$TRAVIS_PYTHON_VERSION" = "3.7" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ] ; then
     curl -X POST -d "token=$RTD_TOKEN" $RTD_URL
 fi
