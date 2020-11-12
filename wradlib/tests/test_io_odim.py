@@ -879,7 +879,7 @@ class DataVolume(DataTimeSeries):
     def test_unknown_loader_error(self):
         with pytest.raises(ValueError) as err:
             with self.get_volume_data("noloader", "file") as vol:
-                pass
+                print(vol)
         assert "Unknown loader" in str(err.value)
 
     def test_gamic_netcdf4_error(self):
@@ -887,13 +887,13 @@ class DataVolume(DataTimeSeries):
             pytest.skip("need GAMIC file")
         with pytest.raises(ValueError) as err:
             with self.get_volume_data("netcdf4", "file") as vol:
-                pass
+                print(vol)
         assert "GAMIC files can't be read using netcdf4" in str(err.value)
 
     def test_file_like_h5py_error(self):
         with pytest.raises(ValueError) as err:
             with self.get_volume_data("h5py", "filelike") as vol:
-                pass
+                print(vol)
         assert "file-like objects can't be read using h5py" in str(err.value)
 
     def test_volumes(self, get_loader, file_or_filelike):
@@ -977,7 +977,7 @@ class MeasuredDataVolume(DataVolume):
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
     def get_volume_data(self, loader, fileobj, **kwargs):
-        with get_synthetic_volume(self.name, loader, file_obj, **kwargs) as vol:
+        with get_synthetic_volume(self.name, loader, fileobj, **kwargs) as vol:
             yield vol
 
 
