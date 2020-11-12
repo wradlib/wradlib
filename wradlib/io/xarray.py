@@ -1141,11 +1141,13 @@ def _open_mfmoments(
         for p in moments:
             if os.path.isfile(p.filename):
                 p = opener(p.filename, "r", **opener_kwargs)
+            else:
+                p = p.ncfile
             fileid.append(p)
         datasets = [
             open_(
                 store(
-                    p.ncfile,
+                    f,
                     group=p.ncpath,
                     lock=lock,
                     autoclose=None,
@@ -1153,7 +1155,7 @@ def _open_mfmoments(
                 engine=engine,
                 **open_kwargs,
             )
-            for p in fileid
+            for f, p in zip(fileid, moments)
         ]
 
     file_objs = [getattr_(ds, "_file_obj") for ds in datasets]
@@ -2518,7 +2520,7 @@ def open_odim(paths, loader="netcdf4", **kwargs):
         paths = np.array(paths).flatten().tolist()
 
     if loader not in ["netcdf4", "h5netcdf", "h5py"]:
-        raise ValueError("wradlib: Unkown loader: {}".format(loader))
+        raise ValueError("wradlib: Unknown loader: {}".format(loader))
 
     sweeps = []
     [

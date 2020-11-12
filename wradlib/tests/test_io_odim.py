@@ -265,10 +265,10 @@ def get_wradlib_data_file(file, file_or_filelike):
 
 
 @contextlib.contextmanager
-def get_measured_volume(file, get_loader, format, file_or_filelike):
+def get_measured_volume(file, loader, format, fileobj):
     # h5file = util.get_wradlib_data_file(file)
-    with get_wradlib_data_file(file, file_or_filelike) as h5file:
-        yield io.xarray.open_odim(h5file, loader=get_loader, flavour=format)
+    with get_wradlib_data_file(file, fileobj) as h5file:
+        yield io.xarray.open_odim(h5file, loader=loader, flavour=format)
 
 
 @contextlib.contextmanager
@@ -876,6 +876,26 @@ class DataTimeSeries(DataSweep):
 
 
 class DataVolume(DataTimeSeries):
+    def test_unknown_loader_error(self):
+        with pytest.raises(ValueError) as err:
+            with self.get_volume_data("noloader", "file") as vol:
+                pass
+        assert "Unknown loader" in str(err.value)
+
+    def test_gamic_netcdf4_error(self):
+        if self.format != "GAMIC":
+            pytest.skip("need GAMIC file")
+        with pytest.raises(ValueError) as err:
+            with self.get_volume_data("netcdf4", "file") as vol:
+                pass
+        assert "GAMIC files can't be read using netcdf4" in str(err.value)
+
+    def test_file_like_h5py_error(self):
+        with pytest.raises(ValueError) as err:
+            with self.get_volume_data("h5py", "filelike") as vol:
+                pass
+        assert "file-like objects can't be read using h5py" in str(err.value)
+
     def test_volumes(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
@@ -949,19 +969,15 @@ class DataVolume(DataTimeSeries):
 
 class MeasuredDataVolume(DataVolume):
     @contextlib.contextmanager
-    def get_volume_data(self, get_loader, file_or_filelike, **kwargs):
-        with get_measured_volume(
-            self.name, get_loader, self.format, file_or_filelike
-        ) as vol:
+    def get_volume_data(self, loader, fileobj, **kwargs):
+        with get_measured_volume(self.name, loader, self.format, fileobj) as vol:
             yield vol
 
 
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
-    def get_volume_data(self, get_loader, file_or_filelike, **kwargs):
-        with get_synthetic_volume(
-            self.name, get_loader, file_or_filelike, **kwargs
-        ) as vol:
+    def get_volume_data(self, loader, fileobj, **kwargs):
+        with get_synthetic_volume(self.name, loader, file_obj, **kwargs) as vol:
             yield vol
 
 
