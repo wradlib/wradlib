@@ -25,7 +25,6 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import contextlib
 import datetime as dt
 import io
 import re
@@ -636,7 +635,6 @@ def read_radolan_binary_array(fid, size):
     return binarr
 
 
-@contextlib.contextmanager
 def get_radolan_filehandle(fname):
     """Opens radolan file and returns file handle
 
@@ -648,8 +646,9 @@ def get_radolan_filehandle(fname):
     Returns
     -------
     f : object
-        filehandle
+        file handle
     """
+    ret = lambda obj: obj
     if isinstance(fname, str):
         gzip = util.import_optional("gzip")
         # open file handle
@@ -657,14 +656,15 @@ def get_radolan_filehandle(fname):
             with gzip.open(fname, "rb") as f:
                 f.read(1)
                 f.seek(0, 0)
-                yield f
+                ret = gzip.open
         except IOError:
             with open(fname, "rb") as f:
                 f.read(1)
                 f.seek(0, 0)
-                yield f
+                ret = open
+        return ret(fname, "rb")
     else:
-        yield fname
+        return ret(fname)
 
 
 def read_radolan_header(fid):

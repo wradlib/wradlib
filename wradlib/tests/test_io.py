@@ -583,12 +583,21 @@ class TestRadolan:
         rw_file = util.get_wradlib_data_file(filename)
         with io.radolan.get_radolan_filehandle(rw_file) as rw_fid:
             assert rw_file == rw_fid.name
+        rw_fid = io.radolan.get_radolan_filehandle(rw_file)
+        assert rw_file == rw_fid.name
+        rw_fid.close()
 
         command = "gunzip -k -f {}".format(rw_file)
         subprocess.check_call(command, shell=True)
 
         with io.radolan.get_radolan_filehandle(rw_file[:-3]) as rw_fid:
             assert rw_file[:-3] == rw_fid.name
+
+        rw_fid = io.radolan.get_radolan_filehandle(rw_file[:-3])
+        assert rw_file[:-3] == rw_fid.name
+        rw_fid.close()
+
+
 
     def test_read_radolan_header(self):
         rx_header = (
