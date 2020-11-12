@@ -90,6 +90,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import collections
 import datetime as dt
 import glob
+import os
 import warnings
 from distutils.version import LooseVersion
 
@@ -1107,7 +1108,10 @@ def _open_mfmoments(
     # do not use parallel if all moments in one file
     if len(set([p.filename for p in moments])) == 1:
         single_file = True
-        ds0 = opener(moments[0].filename, "r", **opener_kwargs)
+        if os.path.isfile(moments[0].filename):
+            ds0 = opener(moments[0].filename, "r", **opener_kwargs)
+        else:
+            ds0 = moments[0].ncfile
     else:
         single_file = False
 
@@ -1133,11 +1137,17 @@ def _open_mfmoments(
             for p in moments
         ]
     else:
+        fileid = []
+        for p in moments:
+            if os.path.isfile(p.filename):
+                p = opener(p.filename, "r", **opener_kwargs)
+            else:
+                p = p.ncfile
+            fileid.append(p)
         datasets = [
             open_(
                 store(
-                    opener(p.filename, "r", **opener_kwargs),
-                    # p.ncfile,
+                    f,
                     group=p.ncpath,
                     lock=lock,
                     autoclose=None,
@@ -1145,7 +1155,7 @@ def _open_mfmoments(
                 engine=engine,
                 **open_kwargs,
             )
-            for p in moments
+            for f, p in zip(fileid, moments)
         ]
 
     file_objs = [getattr_(ds, "_file_obj") for ds in datasets]
@@ -1992,7 +2002,11 @@ class XRadSweepGamic(XRadSweep):
             opener_kwargs = dict()
             store = xr.backends.NetCDF4DataStore
 
-        ds0 = opener(self.filename, "r", **opener_kwargs)
+        if os.path.isfile(self.filename):
+            ds0 = opener(self.filename, "r", **opener_kwargs)
+        else:
+            ds0 = self.ncfile
+
         ds = xr.open_dataset(
             store(ds0, self.ncpath, lock=None, autoclose=None),
             engine=self.engine,
@@ -2445,7 +2459,20 @@ def _open_odim_sweep(filename, loader, **kwargs):
         sweep_cls = XRadSweepGamic
 
     # open file
-    handle = opener(filename, "r", **ld_kwargs)
+    if not isinstance(filename, str):
+        if opener == h5py.File:
+            raise ValueError(
+                "wradlib: file-like objects can't be read using h5py "
+                "loader. Use either 'netcdf4' or 'h5netcdf'."
+            )
+        if opener == nc.Dataset:
+            handle = opener(
+                f"{str(filename)}", mode="r", memory=filename.read(), **ld_kwargs
+            )
+        else:
+            handle = opener(filename, "r", **ld_kwargs)
+    else:
+        handle = opener(filename, "r", **ld_kwargs)
 
     # get group names
     fattr = getattr(handle, attr)
@@ -2493,7 +2520,7 @@ def open_odim(paths, loader="netcdf4", **kwargs):
         paths = np.array(paths).flatten().tolist()
 
     if loader not in ["netcdf4", "h5netcdf", "h5py"]:
-        raise ValueError("wradlib: Unkown loader: {}".format(loader))
+        raise ValueError("wradlib: Unknown loader: {}".format(loader))
 
     sweeps = []
     [

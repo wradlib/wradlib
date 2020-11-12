@@ -212,8 +212,8 @@ def read_dx(filename):
 
     Parameters
     ----------
-    filename : string
-        binary file of DX raw data
+    filename : string or file-like
+        filename of binary file of DX raw data or file-like object
 
     Returns
     -------
@@ -249,48 +249,44 @@ def read_dx(filename):
     clutterflag = 2 ** 15
     dataflag = 2 ** 13 - 1
 
-    f = get_radolan_filehandle(filename)
+    with get_radolan_filehandle(filename) as f:
 
-    # header string for later processing
-    header = ""
-    atend = False
+        # header string for later processing
+        header = ""
+        atend = False
 
-    # read header
-    while True:
-        mychar = f.read(1)
-        # 0x03 signals the end of the header but sometimes there might be
-        # an additional 0x03 char after that
+        # read header
+        while True:
+            mychar = f.read(1)
+            # 0x03 signals the end of the header but sometimes there might be
+            # an additional 0x03 char after that
 
-        if mychar == b"\x03":
-            atend = True
-        if mychar != b"\x03" and atend:
-            break
-        header += str(mychar.decode())
+            if mychar == b"\x03":
+                atend = True
+            if mychar != b"\x03" and atend:
+                break
+            header += str(mychar.decode())
 
-    attrs = parse_dx_header(header)
+        attrs = parse_dx_header(header)
 
-    # position file at end of header
-    f.seek(len(header))
+        # position file at end of header
+        f.seek(len(header))
 
-    # read number of bytes as declared in the header
-    # intermediate fix:
-    # if product length is uneven but header is even (e.g. because it has two
-    # chr(3) at the end, read one byte less
-    buflen = attrs["bytes"] - len(header)
-    if (buflen % 2) != 0:
-        # make sure that this is consistent with our assumption
-        # i.e. contact DWD again, if DX files show up with uneven byte lengths
-        # *and* only one 0x03 character
-        # assert header[-2] == chr(3)
-        buflen -= 1
+        # read number of bytes as declared in the header
+        # intermediate fix:
+        # if product length is uneven but header is even (e.g. because it has two
+        # chr(3) at the end, read one byte less
+        buflen = attrs["bytes"] - len(header)
+        if (buflen % 2) != 0:
+            # make sure that this is consistent with our assumption
+            # i.e. contact DWD again, if DX files show up with uneven byte lengths
+            # *and* only one 0x03 character
+            # assert header[-2] == chr(3)
+            buflen -= 1
 
-    buf = f.read(buflen)
-    # we can interpret the rest directly as a 1-D array of 16 bit unsigned ints
-    raw = np.frombuffer(buf, dtype="uint16")
-
-    # reading finished, close file, but only if we opened it.
-    if isinstance(f, io.IOBase):
-        f.close()
+        buf = f.read(buflen)
+        # we can interpret the rest directly as a 1-D array of 16 bit unsigned ints
+        raw = np.frombuffer(buf, dtype="uint16")
 
     # a new ray/beam starts with bit 14 set
     # careful! where always returns its results in a tuple, so in order to get
@@ -631,7 +627,6 @@ def read_radolan_binary_array(fid, size):
         array of binary data
     """
     binarr = fid.read(size)
-    fid.close()
     if len(binarr) != size:
         raise IOError(
             "{0}: File corruption while reading {1}! \nCould not "
@@ -645,29 +640,31 @@ def get_radolan_filehandle(fname):
 
     Parameters
     ----------
-    fname : string
-        filename
+    fname : string or file-like
+        filename or file-like object
 
     Returns
     -------
     f : object
-        filehandle
+        file handle
     """
-
-    gzip = util.import_optional("gzip")
-
-    # open file handle
-    try:
-        f = gzip.open(fname, "rb")
-        f.read(1)
-    except IOError:
-        f = open(fname, "rb")
-        f.read(1)
-
-    # rewind file
-    f.seek(0, 0)
-
-    return f
+    ret = lambda obj: obj
+    if isinstance(fname, str):
+        gzip = util.import_optional("gzip")
+        # open file handle
+        try:
+            with gzip.open(fname, "rb") as f:
+                f.read(1)
+                f.seek(0, 0)
+                ret = gzip.open
+        except IOError:
+            with open(fname, "rb") as f:
+                f.read(1)
+                f.seek(0, 0)
+                ret = open
+        return ret(fname, "rb")
+    else:
+        return ret(fname)
 
 
 def read_radolan_header(fid):
@@ -723,8 +720,8 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
 
     Parameters
     ----------
-    f : string or file handle
-        path to the composite file or file handle
+    f : string or file-like
+        path to the composite file or file-like object
     missing : int
         value assigned to no-data cells
     loaddata : bool | str
@@ -746,34 +743,31 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
 
     NODATA = missing
     mask = 0xFFF  # max value integer
-    close = False
 
-    # If a file name is supplied, get a file handle
-    if isinstance(f, str):
-        f = get_radolan_filehandle(f)
-        close = True
+    # get file handle
+    with get_radolan_filehandle(f) as fid:
 
-    header = read_radolan_header(f)
-    attrs = parse_dwd_composite_header(header)
+        header = read_radolan_header(fid)
+        attrs = parse_dwd_composite_header(header)
 
-    if not loaddata:
-        if close:
-            f.close()
-        return None, attrs
+        if not loaddata:
+            # if close:
+            #     f.close()
+            return None, attrs
 
-    attrs["nodataflag"] = NODATA
+        attrs["nodataflag"] = NODATA
 
-    if not attrs["radarid"] == "10000":
-        warnings.warn(
-            "WARNING: You are using function e"
-            + "wradlib.io.read_RADOLAN_composit for a non "
-            + "composite file.\n "
-            + "This might work...but please check the validity "
-            + "of the results"
-        )
+        if not attrs["radarid"] == "10000":
+            warnings.warn(
+                "WARNING: You are using function e"
+                + "wradlib.io.read_RADOLAN_composit for a non "
+                + "composite file.\n "
+                + "This might work...but please check the validity "
+                + "of the results"
+            )
 
-    # read the actual data
-    indat = read_radolan_binary_array(f, attrs["datasize"])
+        # read the actual data
+        indat = read_radolan_binary_array(fid, attrs["datasize"])
 
     if attrs["producttype"] in ["RX", "EX", "WX"]:
         # convert to 8bit integer
@@ -811,9 +805,6 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
         # set nodata value
         if "nodatamask" in attrs:
             arr.flat[attrs["nodatamask"]] = NODATA
-
-    if close:
-        f.close()
 
     return arr, attrs
 

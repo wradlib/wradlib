@@ -46,6 +46,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import copy
 import datetime as dt
+import io
 import struct
 import warnings
 from collections import OrderedDict
@@ -2679,7 +2680,12 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
         self._debug = kwargs.get("debug", False)
         self._rawdata = kwargs.get("rawdata", False)
         self._loaddata = kwargs.get("loaddata", True)
-        self._fh = np.memmap(filename, mode="r")
+        if isinstance(filename, str):
+            self._fh = np.memmap(filename, mode="r")
+        else:
+            if isinstance(filename, io.BytesIO):
+                filename = filename.read()
+            self._fh = np.frombuffer(filename, dtype=np.uint8)
         self._filepos = 0
         self._data = None
         super(IrisFile, self).__init__(**kwargs)
@@ -3709,8 +3715,8 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
 
     Parameters
     ----------
-    filename : str
-        Filename of data file.
+    filename : str or file-like
+        Filename of data file or file-like object.
     loaddata : bool | kwdict
                 If true, retrieves whole data section from file.
                 If false, retrievs only ingest_data_headers, but no data.
@@ -3729,6 +3735,9 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
     data : OrderedDict
         Dictionary with data and metadata retrieved from file.
     """
+    if not isinstance(filename, str):
+        filename = filename.read()
+
     irisfile = IrisFile(filename)
     id = irisfile.check_identifier()
     ic = _check_identifier(irisfile.check_identifier())

@@ -41,8 +41,8 @@ def read_generic_hdf5(fname):
 
     Parameters
     ----------
-    fname : string
-        a hdf5 file path
+    fname : string or file-like
+        a hdf5 file path or file-like object
 
     Returns
     -------
@@ -54,7 +54,6 @@ def read_generic_hdf5(fname):
     --------
     See :ref:`/notebooks/fileio/wradlib_radar_formats.ipynb#Generic-HDF5`.
     """
-    f = h5py.File(fname, "r")
     fcontent = {}
 
     def filldict(x, y):
@@ -70,9 +69,8 @@ def read_generic_hdf5(fname):
         if tmp != {}:
             fcontent[x] = tmp
 
-    f.visititems(filldict)
-
-    f.close()
+    with h5py.File(fname, "r") as f:
+        f.visititems(filldict)
 
     return fcontent
 
@@ -98,8 +96,8 @@ def read_opera_hdf5(fname):
 
     Parameters
     ----------
-    fname : string
-        a hdf5 file path
+    fname : string or file-like
+        a hdf5 file path or file-like object
 
     Returns
     -------
@@ -107,8 +105,6 @@ def read_opera_hdf5(fname):
         a dictionary that contains both data and metadata according to the
         original hdf5 file structure
     """
-    f = h5py.File(fname, "r")
-
     # now we browse through all Groups and Datasets and store the info in one
     # dictionary
     fcontent = {}
@@ -120,9 +116,8 @@ def read_opera_hdf5(fname):
         elif isinstance(y, h5py.Dataset):
             fcontent[x] = np.array(y)
 
-    f.visititems(filldict)
-
-    f.close()
+    with h5py.File(fname, "r") as f:
+        f.visititems(filldict)
 
     return fcontent
 
@@ -285,8 +280,8 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     Parameters
     ----------
-    filename : string
-        path of the gamic hdf5 file
+    filename : string or file-like
+        path of the gamic hdf5 file or file-like object
     wanted_elevations : strings
         sequence of strings of elevation_angle(s) of scan (only needed for PPI)
     wanted_moments : strings
@@ -313,74 +308,72 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
         wanted_moments = "all"
 
     # read the data from file
-    f = h5py.File(filename, "r")
+    with h5py.File(filename, "r") as f:
 
-    # placeholder for attributes and data
-    attrs = {}
-    vattrs = {}
-    data = {}
+        # placeholder for attributes and data
+        attrs = {}
+        vattrs = {}
+        data = {}
 
-    # check if GAMIC file and
-    try:
-        f["how"].attrs.get("software")
-    except KeyError:
-        print("WRADLIB: File is no GAMIC hdf5!")
-        raise
+        # check if GAMIC file and
+        try:
+            f["how"].attrs.get("software")
+        except KeyError:
+            print("WRADLIB: File is no GAMIC hdf5!")
+            raise
 
-    # get scan_type (PVOL or RHI)
-    scan_type = f["what"].attrs.get("object")
-    if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
-        scan_type = scan_type.decode()
+        # get scan_type (PVOL or RHI)
+        scan_type = f["what"].attrs.get("object")
+        if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
+            scan_type = scan_type.decode()
 
-    # single or volume scan
-    if scan_type == "PVOL":
-        # loop over 'main' hdf5 groups (how, scanX, what, where)
-        for n in list(f):
-            if "scan" in n:
-                g = f[n]
-                sg1 = g["how"]
+        # single or volume scan
+        if scan_type == "PVOL":
+            # loop over 'main' hdf5 groups (how, scanX, what, where)
+            for n in list(f):
+                if "scan" in n:
+                    g = f[n]
+                    sg1 = g["how"]
 
-                # get scan elevation
-                el = sg1.attrs.get("elevation")
-                el = str(round(el, 2))
+                    # get scan elevation
+                    el = sg1.attrs.get("elevation")
+                    el = str(round(el, 2))
 
-                # try to read scan data and attrs
-                # if wanted_elevations are found
-                if (el in wanted_elevations) or (wanted_elevations == "all"):
+                    # try to read scan data and attrs
+                    # if wanted_elevations are found
+                    if (el in wanted_elevations) or (wanted_elevations == "all"):
+                        sdata, sattrs = read_gamic_scan(
+                            scan=g, scan_type=scan_type, wanted_moments=wanted_moments
+                        )  # noqa
+                        if sdata:
+                            data[n.upper()] = sdata
+                        if sattrs:
+                            attrs[n.upper()] = sattrs
+
+        # single rhi scan
+        elif scan_type == "RHI":
+            # loop over 'main' hdf5 groups (how, scanX, what, where)
+            for n in list(f):
+                if "scan" in n:
+                    g = f[n]
+                    # try to read scan data and attrs
                     sdata, sattrs = read_gamic_scan(
                         scan=g, scan_type=scan_type, wanted_moments=wanted_moments
-                    )  # noqa
+                    )
                     if sdata:
                         data[n.upper()] = sdata
                     if sattrs:
                         attrs[n.upper()] = sattrs
 
-    # single rhi scan
-    elif scan_type == "RHI":
-        # loop over 'main' hdf5 groups (how, scanX, what, where)
-        for n in list(f):
-            if "scan" in n:
-                g = f[n]
-                # try to read scan data and attrs
-                sdata, sattrs = read_gamic_scan(
-                    scan=g, scan_type=scan_type, wanted_moments=wanted_moments
-                )
-                if sdata:
-                    data[n.upper()] = sdata
-                if sattrs:
-                    attrs[n.upper()] = sattrs
-
-    # collect volume attributes if wanted data is available
-    if data:
-        vattrs["Latitude"] = f["where"].attrs.get("lat")
-        vattrs["Longitude"] = f["where"].attrs.get("lon")
-        vattrs["Height"] = f["where"].attrs.get("height")
-        # check whether its useful to implement that feature
-        # vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'],
-        #                         vattrs['Height'])
-        attrs["VOL"] = vattrs
-
-    f.close()
+        # collect volume attributes if wanted data is available
+        if data:
+            vattrs["Latitude"] = f["where"].attrs.get("lat")
+            vattrs["Longitude"] = f["where"].attrs.get("lon")
+            vattrs["Height"] = f["where"].attrs.get("height")
+            # check whether its useful to implement that feature
+            # vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'],
+            #                         vattrs['Height'])
+            attrs["VOL"] = vattrs
 
     return data, attrs
 
@@ -394,8 +387,8 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
 
     Parameters
     ----------
-    fpath : string
-        path to the hdf5 file
+    fpath : string or file-like
+        path to the hdf5 file or file-like object
     data : :func:`numpy:numpy.array`
     mode : string
         file open mode, defaults to "w" (create, truncate if exists)
@@ -407,14 +400,12 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
         h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation
         for details
     """
-    f = h5py.File(fpath, mode=mode)
-    dset = f.create_dataset(dataset, data=data, compression=compression)
-    # store metadata
-    if metadata:
-        for key in metadata.keys():
-            dset.attrs[key] = metadata[key]
-    # close hdf5 file
-    f.close()
+    with h5py.File(fpath, mode=mode) as f:
+        dset = f.create_dataset(dataset, data=data, compression=compression)
+        # store metadata
+        if metadata:
+            for key in metadata.keys():
+                dset.attrs[key] = metadata[key]
 
 
 def from_hdf5(fpath, dataset="data"):
@@ -423,23 +414,24 @@ def from_hdf5(fpath, dataset="data"):
 
     Parameters
     ----------
-    fpath : string
-        path to the hdf5 file
+    fpath : string or file-like
+        path to the hdf5 file or file-like object
     dataset : string
         name of the Dataset in which the data is stored
     """
-    f = h5py.File(fpath, mode="r")
-    # Check whether Dataset exists
-    if dataset not in f.keys():
-        raise KeyError(
-            "WRADLIB: Cannot read Dataset <%s> from hdf5 file " "<%s>" % (dataset, f)
-        )
-    data = np.array(f[dataset][:])
-    # get metadata
-    metadata = {}
-    for key in f[dataset].attrs.keys():
-        metadata[key] = f[dataset].attrs[key]
-    f.close()
+    with h5py.File(fpath, mode="r") as f:
+        # Check whether Dataset exists
+        if dataset not in f.keys():
+            raise KeyError(
+                "WRADLIB: Cannot read Dataset <%s> from hdf5 file "
+                "<%s>" % (dataset, f)
+            )
+        data = np.array(f[dataset][:])
+        # get metadata
+        metadata = {}
+        for key in f[dataset].attrs.keys():
+            metadata[key] = f[dataset].attrs[key]
+
     return data, metadata
 
 

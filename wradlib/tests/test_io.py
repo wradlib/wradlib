@@ -1,6 +1,7 @@
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import contextlib
 import datetime
 import gzip
 import io as sio
@@ -85,10 +86,10 @@ class TestDX:
         pass
 
     @requires_data
-    def test_read_dx(self):
+    def test_read_dx(self, file_or_filelike):
         filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-        dxfile = util.get_wradlib_data_file(filename)
-        data, attrs = io.radolan.read_dx(dxfile)
+        with get_wradlib_data_file(filename, file_or_filelike) as dxfile:
+            data, attrs = io.radolan.read_dx(dxfile)
 
 
 class TestMisc:
@@ -250,10 +251,59 @@ class TestMisc:
             ]
         )
         assert msf.shape == (11, 5, 55, 5)
+        print(msf[0, :, 8, :])
         np.testing.assert_array_equal(msf[0, :, 8, :], res)
 
 
+@pytest.fixture(params=["file", "filelike"])
+def file_or_filelike(request):
+    return request.param
+
+
+@contextlib.contextmanager
+def get_wradlib_data_file(file, file_or_filelike):
+    datafile = util.get_wradlib_data_file(file)
+    if file_or_filelike == "filelike":
+        _open = open
+        if datafile[-3:] == ".gz":
+            gzip = util.import_optional("gzip")
+            _open = gzip.open
+        with _open(datafile, mode="r+b") as f:
+            yield sio.BytesIO(f.read())
+    else:
+        yield datafile
+
+
 class TestHDF5:
+    @requires_data
+    def test_read_generic_hdf5(self, file_or_filelike):
+        filename = "hdf5/IDR66_20141206_094829.vol.h5"
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            io.hdf.read_generic_hdf5(f)
+
+    @requires_data
+    def test_read_opera_hdf5(self, file_or_filelike):
+        filename = "hdf5/IDR66_20141206_094829.vol.h5"
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            io.hdf.read_opera_hdf5(f)
+
+    @requires_data
+    def test_read_gamic_hdf5(self, file_or_filelike):
+        ppi = "hdf5/2014-08-10--182000.ppi.mvol"
+        rhi = "hdf5/2014-06-09--185000.rhi.mvol"
+        filename = (
+            "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-"
+            "S095002-E095137.004383.V05A.HDF5"
+        )
+
+        with get_wradlib_data_file(ppi, file_or_filelike) as f:
+            io.hdf.read_gamic_hdf5(f)
+        with get_wradlib_data_file(rhi, file_or_filelike) as f:
+            io.hdf.read_gamic_hdf5(f)
+        with pytest.raises(KeyError):
+            with get_wradlib_data_file(filename, file_or_filelike) as f:
+                io.hdf.read_gamic_hdf5(f)
+
     def test_to_hdf5(self):
         arr = np.zeros((124, 248), dtype=np.int16)
         metadata = {"test": 12.0}
@@ -340,35 +390,6 @@ class TestHDF5:
         bbox = zonalstats.get_bbox(lon, lat)
 
         io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
-
-    @requires_data
-    def test_read_generic_hdf5(self):
-        filename = "hdf5/IDR66_20141206_094829.vol.h5"
-        h5_file = util.get_wradlib_data_file(filename)
-        io.hdf.read_generic_hdf5(h5_file)
-
-    @requires_data
-    def test_read_opera_hdf5(self):
-        filename = "hdf5/IDR66_20141206_094829.vol.h5"
-        h5_file = util.get_wradlib_data_file(filename)
-        io.hdf.read_opera_hdf5(h5_file)
-
-    @requires_data
-    def test_read_gamic_hdf5(self):
-        ppi = "hdf5/2014-08-10--182000.ppi.mvol"
-        rhi = "hdf5/2014-06-09--185000.rhi.mvol"
-        filename = (
-            "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-"
-            "S095002-E095137.004383.V05A.HDF5"
-        )
-
-        h5_file = util.get_wradlib_data_file(ppi)
-        io.hdf.read_gamic_hdf5(h5_file)
-        h5_file = util.get_wradlib_data_file(rhi)
-        io.hdf.read_gamic_hdf5(h5_file)
-        h5_file = util.get_wradlib_data_file(filename)
-        with pytest.raises(KeyError):
-            io.hdf.read_gamic_hdf5(h5_file)
 
 
 class TestRadolan:
@@ -531,10 +552,10 @@ class TestRadolan:
     def test_decode_radolan_runlength_array(self):
         filename = "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz"
         pg_file = util.get_wradlib_data_file(filename)
-        pg_fid = io.radolan.get_radolan_filehandle(pg_file)
-        header = io.radolan.read_radolan_header(pg_fid)
-        attrs = io.radolan.parse_dwd_composite_header(header)
-        data = io.radolan.read_radolan_binary_array(pg_fid, attrs["datasize"])
+        with io.get_radolan_filehandle(pg_file) as pg_fid:
+            header = io.radolan.read_radolan_header(pg_fid)
+            attrs = io.radolan.parse_dwd_composite_header(header)
+            data = io.radolan.read_radolan_binary_array(pg_fid, attrs["datasize"])
         attrs["nodataflag"] = 255
         arr = io.radolan.decode_radolan_runlength_array(data, attrs)
         assert arr.shape == (460, 460)
@@ -543,31 +564,38 @@ class TestRadolan:
     def test_read_radolan_binary_array(self):
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         rw_file = util.get_wradlib_data_file(filename)
-        rw_fid = io.radolan.get_radolan_filehandle(rw_file)
-        header = io.radolan.read_radolan_header(rw_fid)
-        attrs = io.radolan.parse_dwd_composite_header(header)
-        data = io.radolan.read_radolan_binary_array(rw_fid, attrs["datasize"])
+        with io.radolan.get_radolan_filehandle(rw_file) as rw_fid:
+            header = io.radolan.read_radolan_header(rw_fid)
+            attrs = io.radolan.parse_dwd_composite_header(header)
+            data = io.radolan.read_radolan_binary_array(rw_fid, attrs["datasize"])
         assert len(data) == attrs["datasize"]
 
-        rw_fid = io.radolan.get_radolan_filehandle(rw_file)
-        header = io.radolan.read_radolan_header(rw_fid)
-        attrs = io.radolan.parse_dwd_composite_header(header)
-        with pytest.raises(IOError):
-            io.radolan.read_radolan_binary_array(rw_fid, attrs["datasize"] + 10)
+        with io.radolan.get_radolan_filehandle(rw_file) as rw_fid:
+            header = io.radolan.read_radolan_header(rw_fid)
+            attrs = io.radolan.parse_dwd_composite_header(header)
+            with pytest.raises(IOError):
+                io.radolan.read_radolan_binary_array(rw_fid, attrs["datasize"] + 10)
 
     @pytest.mark.skipif(sys.platform.startswith("win"), reason="no gunzip on windows")
     @requires_data
     def test_get_radolan_filehandle(self):
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         rw_file = util.get_wradlib_data_file(filename)
+        with io.radolan.get_radolan_filehandle(rw_file) as rw_fid:
+            assert rw_file == rw_fid.name
         rw_fid = io.radolan.get_radolan_filehandle(rw_file)
         assert rw_file == rw_fid.name
+        rw_fid.close()
 
         command = "gunzip -k -f {}".format(rw_file)
         subprocess.check_call(command, shell=True)
 
+        with io.radolan.get_radolan_filehandle(rw_file[:-3]) as rw_fid:
+            assert rw_file[:-3] == rw_fid.name
+
         rw_fid = io.radolan.get_radolan_filehandle(rw_file[:-3])
         assert rw_file[:-3] == rw_fid.name
+        rw_fid.close()
 
     def test_read_radolan_header(self):
         rx_header = (
@@ -906,18 +934,14 @@ class TestRadolan:
 
 class TestRainbow:
     @requires_data
-    def test_read_rainbow(self):
+    def test_read_rainbow(self, file_or_filelike):
         filename = "rainbow/2013070308340000dBuZ.azi"
-        rb_file = util.get_wradlib_data_file(filename)
         with pytest.raises(IOError):
             io.rainbow.read_rainbow("test")
-        # Test reading from file name
-        rb_dict = io.rainbow.read_rainbow(rb_file)
+        # Test reading from filename or file-like object
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            rb_dict = io.rainbow.read_rainbow(f)
         assert rb_dict["volume"]["@datetime"] == "2013-07-03T08:33:55"
-        # Test reading from file handle
-        with open(rb_file, "rb") as rb_fh:
-            rb_dict = io.rainbow.read_rainbow(rb_fh)
-            assert rb_dict["volume"]["@datetime"] == "2013-07-03T08:33:55"
 
     def test_find_key(self):
         indict = {
@@ -1037,22 +1061,18 @@ class TestRainbow:
             io.rainbow.get_rb_blob_data(datastring, 1)
 
     @requires_data
-    def test_get_rb_blob_from_file(self):
+    def test_get_rb_blob_from_file(self, file_or_filelike):
         filename = "rainbow/2013070308340000dBuZ.azi"
         rb_file = util.get_wradlib_data_file(filename)
         rbdict = io.rainbow.read_rainbow(rb_file, loaddata=False)
         rbblob = rbdict["volume"]["scan"]["slice"]["slicedata"]["rawdata"]
-        # Check reading from file handle
-        with open(rb_file, "rb") as rb_fh:
-            data = io.rainbow.get_rb_blob_from_file(rb_fh, rbblob)
+
+        # Test reading from filename or file-like object
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            data = io.rainbow.get_rb_blob_from_file(f, rbblob)
             assert data.shape[0] == int(rbblob["@rays"])
             assert data.shape[1] == int(rbblob["@bins"])
-            with pytest.raises(IOError):
-                io.rainbow.get_rb_blob_from_file("rb_fh", rbblob)
-        # Check reading from file path
-        data = io.rainbow.get_rb_blob_from_file(rb_file, rbblob)
-        assert data.shape[0] == int(rbblob["@rays"])
-        assert data.shape[1] == int(rbblob["@bins"])
+
         with pytest.raises(IOError):
             io.rainbow.get_rb_blob_from_file("rb_fh", rbblob)
 
@@ -1139,21 +1159,22 @@ class TestVector:
 
 class TestIris:
     @requires_data
-    def test_open_iris(self):
+    def test_open_iris(self, file_or_filelike):
         filename = "sigmet/cor-main131125105503.RAW2049"
-        sigmetfile = util.get_wradlib_data_file(filename)
-        data = io.iris.IrisRawFile(sigmetfile, loaddata=False)
+        with get_wradlib_data_file(filename, file_or_filelike) as sigmetfile:
+            data = io.iris.IrisRawFile(sigmetfile, loaddata=False)
         assert isinstance(data.rh, io.iris.IrisRecord)
-        assert isinstance(data.fh, np.memmap)
-        data = io.iris.IrisRawFile(sigmetfile, loaddata=True)
+        assert isinstance(data.fh, (np.memmap, np.ndarray))
+        with get_wradlib_data_file(filename, file_or_filelike) as sigmetfile:
+            data = io.iris.IrisRawFile(sigmetfile, loaddata=True)
         assert data._record_number == 511
         assert data.filepos == 3139584
 
     @requires_data
-    def test_read_iris(self):
+    def test_read_iris(self, file_or_filelike):
         filename = "sigmet/cor-main131125105503.RAW2049"
-        sigmetfile = util.get_wradlib_data_file(filename)
-        data = io.iris.read_iris(sigmetfile, loaddata=True, rawdata=True)
+        with get_wradlib_data_file(filename, file_or_filelike) as sigmetfile:
+            data = io.iris.read_iris(sigmetfile, loaddata=True, rawdata=True)
         data_keys = [
             "product_hdr",
             "product_type",
@@ -1191,15 +1212,17 @@ class TestIris:
         data_types = ["DB_DBZ", "DB_VEL"]
         selected_data = [1, 3, 8]
         loaddata = {"moment": data_types, "sweep": selected_data}
-        data = io.iris.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
+
+        with get_wradlib_data_file(filename, file_or_filelike) as sigmetfile:
+            data = io.iris.read_iris(sigmetfile, loaddata=loaddata, rawdata=True)
         assert list(data["data"][1]["sweep_data"].keys()) == data_types
         assert list(data["data"].keys()) == selected_data
 
     @requires_data
-    def test_IrisRecord(self):
+    def test_IrisRecord(self, file_or_filelike):
         filename = "sigmet/cor-main131125105503.RAW2049"
-        sigmetfile = util.get_wradlib_data_file(filename)
-        data = io.iris.IrisRecordFile(sigmetfile, loaddata=False)
+        with get_wradlib_data_file(filename, file_or_filelike) as sigmetfile:
+            data = io.iris.IrisRecordFile(sigmetfile, loaddata=False)
         # reset record after init
         data.init_record(1)
         assert isinstance(data.rh, io.iris.IrisRecord)
@@ -1360,38 +1383,40 @@ class TestIris:
 
 class TestNetcdf:
     @requires_data
-    def test_read_edge_netcdf(self):
+    def test_read_edge_netcdf(self, file_or_filelike):
         filename = "netcdf/edge_netcdf.nc"
-        edgefile = util.get_wradlib_data_file(filename)
-        data, attrs = io.netcdf.read_edge_netcdf(edgefile)
-        data, attrs = io.netcdf.read_edge_netcdf(edgefile, enforce_equidist=True)
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            data, attrs = io.netcdf.read_edge_netcdf(f)
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            data, attrs = io.netcdf.read_edge_netcdf(f, enforce_equidist=True)
 
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
-        ncfile = util.get_wradlib_data_file(filename)
-        with pytest.raises(Exception):
-            io.netcdf.read_edge_netcdf(ncfile)
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            with pytest.raises(Exception):
+                io.netcdf.read_edge_netcdf(f)
         with pytest.raises(Exception):
             io.netcdf.read_edge_netcdf("test")
 
     @requires_data
-    def test_read_generic_netcdf(self):
+    def test_read_generic_netcdf(self, file_or_filelike):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
-        ncfile = util.get_wradlib_data_file(filename)
-        io.netcdf.read_generic_netcdf(ncfile)
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            io.netcdf.read_generic_netcdf(f)
         with pytest.raises(IOError):
             io.netcdf.read_generic_netcdf("test")
+
         filename = "sigmet/cor-main131125105503.RAW2049"
-        ncfile = util.get_wradlib_data_file(filename)
-        with pytest.raises(IOError):
-            io.netcdf.read_generic_netcdf(ncfile)
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            with pytest.raises(IOError):
+                io.netcdf.read_generic_netcdf(f)
 
         filename = "hdf5/IDR66_20100206_111233.vol.h5"
-        ncfile = util.get_wradlib_data_file(filename)
-        io.netcdf.read_generic_netcdf(ncfile)
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            io.netcdf.read_generic_netcdf(f)
 
         filename = "netcdf/example_cfradial_ppi.nc"
-        ncfile = util.get_wradlib_data_file(filename)
-        io.netcdf.read_generic_netcdf(ncfile)
+        with get_wradlib_data_file(filename, file_or_filelike) as f:
+            io.netcdf.read_generic_netcdf(f)
 
 
 class TestXarray:

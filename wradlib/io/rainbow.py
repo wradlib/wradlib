@@ -295,14 +295,14 @@ def get_rb_blob_from_string(datastring, blobdict):
     return data
 
 
-def get_rb_blob_from_file(f, blobdict):
+def get_rb_blob_from_file(name, blobdict):
     """Read BLOB data from file and return it with correct
     dataWidth and shape
 
     Parameters
     ----------
-    f : string or file handle
-        File handle of or path to Rainbow file
+    name : string or file-like object
+        Path to Rainbow file or file-like object
     blobdict : dict
         Blob Dict
 
@@ -311,22 +311,8 @@ def get_rb_blob_from_file(f, blobdict):
     data : numpy array
         Content of blob as numpy array
     """
-
-    # Try to read the data from a file handle
-    try:
-        f.seek(0, 0)
-        fid = f
-        datastring = fid.read()
-    except AttributeError:
-        # If we did not get a file handle, assume that we got a filename,
-        # get a file handle and read the data
-        try:
-            fid = open(f, "rb")
-            datastring = fid.read()
-            fid.close()
-        except IOError:
-            print("WRADLIB: Error opening Rainbow file ", f)
-            raise IOError
+    with util._open_file(name) as f:
+        datastring = f.read()
 
     data = get_rb_blob_from_string(datastring, blobdict)
 
@@ -412,7 +398,7 @@ def get_rb_header(fid):
     return xmltodict.parse(header)
 
 
-def read_rainbow(f, loaddata=True):
+def read_rainbow(filename, loaddata=True):
     """Reads Rainbow files files according to their structure
 
     In contrast to other file readers under :meth:`wradlib.io`, this function
@@ -426,8 +412,8 @@ def read_rainbow(f, loaddata=True):
 
     Parameters
     ----------
-    f : string or file handle
-        a rainbow file path or file handle of rainbow file
+    filename : string or file-like object
+        a rainbow file path or file-like object of rainbow file
     loaddata : bool
         True | False, If False function returns only metadata
 
@@ -441,19 +427,9 @@ def read_rainbow(f, loaddata=True):
     --------
     See :ref:`/notebooks/fileio/wradlib_load_rainbow_example.ipynb`.
     """
-
-    # Check if a file handle has been passed
-    try:
-        f.seek(0, 0)
+    with util._open_file(filename) as f:
         rbdict = get_rb_header(f)
         if loaddata:
             rbdict = get_rb_blobs_from_file(f, rbdict)
-    except AttributeError:
-        # If we did not get a file handle, assume that we got a filename and
-        # use with-statement to retrieve the file content
-        with open(f, "rb") as fid:
-            rbdict = get_rb_header(fid)
-            if loaddata:
-                rbdict = get_rb_blobs_from_file(fid, rbdict)
 
     return rbdict

@@ -28,6 +28,7 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import contextlib
 import datetime as dt
 import importlib
 import os
@@ -44,7 +45,7 @@ from wradlib import version
     deprecated_in="1.6",
     removed_in="2.0",
     current_version=version.version,
-    details="Use `wradlib.georef.maximum_intensity_" "projection` instead.",
+    details="Use `wradlib.georef.maximum_intensity_projection` instead.",
 )
 def maximum_intensity_projection(*args, **kwargs):
     from wradlib.georef import polar
@@ -965,6 +966,17 @@ def show_versions(file=None):
     xr.show_versions(file)
     print("", file=file)
     print(f"wradlib: {version.full_version}")
+
+
+@contextlib.contextmanager
+def _open_file(name):
+    # Check if string has been passed
+    if isinstance(name, str):
+        with open(name, "rb") as fid:
+            yield fid
+    else:
+        # otherwise assume file-like object and pass
+        yield name
 
 
 if __name__ == "__main__":
