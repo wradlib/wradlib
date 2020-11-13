@@ -8,14 +8,7 @@ environment:
     - PYTHON_VERSION: "3.7"
 
 install:
-  # clone wradlib-data
-  - ps: |
-      & cmd /C "git clone https://github.com/wradlib/wradlib-data.git C:\projects\wradlib\wradlib-data 2>&1"
-  # Use the pre-installed Miniconda for the desired arch
-  #- ps: if($env:PLATFORM -eq 'x64')
-  #        { $env:CONDA_PATH="$($env:CONDA_PATH)-x64" }
-  #- ps: $env:path="$($env:CONDA_PATH);$($env:CONDA_PATH)\Scripts;$($env:CONDA_PATH)\Library\bin;C:\cygwin\bin;$($env:PATH)"
-
+  # install micromamba
   - ps: |
       Invoke-Webrequest -URI https://micromamba.snakepit.net/api/micromamba/win-64/latest -OutFile micromamba.tar.bz2
       C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar.bz2 -aoa
@@ -24,18 +17,7 @@ install:
       $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
       $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
 
-  - ps: .\micromamba shell hook -s powershell | Out-String | Invoke-Expression
-
-  # set WRADLIB_DATA
-  - ps: $env:WRADLIB_DATA="C:\projects\wradlib\wradlib-data"
-
-  # Create and activate a conda environment with the wanted Python version
-  #- "conda config --add channels conda-forge"
-  #- "conda config --set channel_priority strict"
-  #- "conda install --yes mamba"
-  # - "conda update --yes --quiet conda"
-  #- "conda config --set changeps1 no"
-  # - "conda install --yes mamba"
+  # bootstrap python environment
   - ps: |
       .\micromamba shell hook -s powershell | Out-String | Invoke-Expression
       micromamba create --yes --strict-channel-priority --quiet -n wradlib-tests python=$Env:PYTHON_VERSION gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar --channel conda-forge --channel defaults
@@ -44,6 +26,13 @@ install:
       python -VV
       python -c \"import struct; print(struct.calcsize('P') * 8)\"
       micromamba list
+
+  # clone wradlib-data
+  - ps: |
+      & cmd /C "git clone https://github.com/wradlib/wradlib-data.git C:\projects\wradlib\wradlib-data 2>&1"
+
+  # set WRADLIB_DATA
+  - ps: $env:WRADLIB_DATA="C:\projects\wradlib\wradlib-data"
 
   # build wradlib
   - "python -m pip install . --no-deps --ignore-installed --no-cache-dir"
