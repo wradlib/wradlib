@@ -30,21 +30,11 @@ steps:
   env:
     Cenv: ci\requirements
 
-#- bash: |
-#    echo $MAMBA_EXE
-#    echo $MAMBA_ROOT_PREFIX
-#    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-#    micromamba activate wradlib-tests
-#    python -m pip install --no-deps -e .
-#  displayName: Install wradlib (Linux, OSX)
-#  condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
-
 - bash: |
     eval "$(./micromamba shell hook -s bash)"
     micromamba activate wradlib-tests
     python -m pip install --no-deps -e .
-  displayName: Install wradlib #(Windows)
-#  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  displayName: Install wradlib
 
 - bash: |
     git clone --depth 1 https://github.com/wradlib/wradlib-data.git data
@@ -57,22 +47,9 @@ steps:
   condition: eq(variables.notebooks, true)
   displayName: Install wradlib-notebooks
 
-#- bash: |
-#    echo $MAMBA_EXE
-#    echo $MAMBA_ROOT_PREFIX
-#    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-#    micromamba activate wradlib-tests
-#    micromamba list
-#    python -c "import wradlib; print(wradlib.version.full_version)"
-#  displayName: Version info (Linux, OSX)
-#  condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
-
 - bash: |
     eval "$(./micromamba shell hook -s bash)"
     micromamba activate wradlib-tests
     micromamba list
     python -c "import wradlib; print(wradlib.version.full_version)"
-  displayName: Version info #(Windows)
-#  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-
+  displayName: Version info
