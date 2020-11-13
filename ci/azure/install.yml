@@ -84,8 +84,8 @@ steps:
 - bash: |
     eval "$(./micromamba shell hook -s bash)"
     micromamba activate wradlib-tests
-    conda info -a
-    conda list
+    micromamba list
+    python -c "import wradlib; print(wradlib.version.full_version)"
   displayName: Version info (Windows)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
