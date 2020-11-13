@@ -23,7 +23,8 @@ install:
       MOVE -Force Library\bin\micromamba.exe micromamba.exe
       $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
       $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-      .\micromamba shell hook -s powershell | Out-String | Invoke-Expression
+
+  - ps: .\micromamba shell hook -s powershell | Out-String | Invoke-Expression
 
   # set WRADLIB_DATA
   - ps: $env:WRADLIB_DATA="C:\projects\wradlib\wradlib-data"
@@ -36,6 +37,7 @@ install:
   #- "conda config --set changeps1 no"
   # - "conda install --yes mamba"
   - ps: |
+      .\micromamba shell hook -s powershell | Out-String | Invoke-Expression
       micromamba create --yes --quiet -n wradlib-tests python=%PYTHON_VERSION% %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar
       micromamba activate wradlib-tests
       # Some checks
