@@ -38,7 +38,7 @@ install:
   # - "conda install --yes mamba"
   - ps: |
       .\micromamba shell hook -s powershell | Out-String | Invoke-Expression
-      micromamba create --yes --strict-channel-priority --quiet -n wradlib-tests python=$Env:PYTHON_VERSION gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar --channel conda-forge
+      micromamba create --yes --strict-channel-priority --quiet -n wradlib-tests python=$Env:PYTHON_VERSION gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar --channel conda-forge --channel defaults
       micromamba activate wradlib-tests
       # Some checks
       python -VV
