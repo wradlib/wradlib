@@ -3,16 +3,14 @@ steps:
 - template: install.yml
 
 - bash: |
-    echo $MAMBA_EXE
-    echo $MAMBA_ROOT_PREFIX
-    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+    eval "$(./micromamba shell hook -s bash)"
     micromamba activate wradlib-tests
     pytest --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
   displayName: Run tests (Linux, OSX)
   condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
 
-- powershell: |
-    .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
+- bash: |
+    eval "$(./micromamba shell hook -s bash)"
     micromamba activate wradlib-tests
     pytest --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
   displayName: Run tests (Windows)
