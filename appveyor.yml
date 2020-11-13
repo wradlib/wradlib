@@ -15,26 +15,31 @@ install:
   - ps: if($env:PLATFORM -eq 'x64')
           { $env:CONDA_PATH="$($env:CONDA_PATH)-x64" }
   - ps: $env:path="$($env:CONDA_PATH);$($env:CONDA_PATH)\Scripts;$($env:CONDA_PATH)\Library\bin;C:\cygwin\bin;$($env:PATH)"
+
+  - ps: |
+      Invoke-Webrequest -URI https://micromamba.snakepit.net/api/micromamba/win-64/latest -OutFile micromamba.tar.bz2
+      C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar.bz2 -aoa
+      C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe
+      MOVE -Force Library\bin\micromamba.exe micromamba.exe
+      eval "$(./micromamba shell hook -s powershell)"
+
   # set WRADLIB_DATA
   - ps: $env:WRADLIB_DATA="C:\projects\wradlib\wradlib-data"
 
   # Create and activate a conda environment with the wanted Python version
-  - "conda config --add channels conda-forge"
-  - "conda config --set channel_priority strict"
-  - "conda install --yes mamba"
+  #- "conda config --add channels conda-forge"
+  #- "conda config --set channel_priority strict"
+  #- "conda install --yes mamba"
   # - "conda update --yes --quiet conda"
-  - "conda config --set changeps1 no"
+  #- "conda config --set changeps1 no"
   # - "conda install --yes mamba"
-  - "mamba create --yes --quiet -n wradlib-tests python=%PYTHON_VERSION% %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
-  - "activate wradlib-tests"
-
-  # Install wradlib dependecies
-  # - "conda install -y -q %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
-
-  # Some checks
-  - "python -VV"
-  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
-  - "conda list"
+  - ps: |
+      micromamba create --yes --quiet -n wradlib-tests python=%PYTHON_VERSION% %MKL% gdal numpy scipy matplotlib netcdf4 h5py h5netcdf xarray cartopy deprecation xmltodict coverage codecov pytest pytest-cov pytest-xdist pytest-sugar
+      micromamba activate wradlib-tests
+      # Some checks
+      python -VV
+      python -c \"import struct; print(struct.calcsize('P') * 8)\"
+      micromamba list
 
   # build wradlib
   - "python -m pip install . --no-deps --ignore-installed --no-cache-dir"
