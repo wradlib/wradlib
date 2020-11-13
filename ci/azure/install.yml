@@ -81,7 +81,7 @@ steps:
   displayName: Version info (Linux, OSX)
   condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
 
-- powersehll: |
+- powershell: |
     .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
     micromamba activate wradlib-tests
     conda info -a
