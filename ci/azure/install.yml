@@ -6,52 +6,35 @@ steps:
 - template: add-conda-to-path.yml
 
 - bash: |
-    echo $MAMBA_EXE
-    echo $MAMBA_ROOT_PREFIX
-    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-    micromamba activate
+    eval "$(./micromamba shell hook -s bash)"
+    #echo $MAMBA_EXE
+    #echo $MAMBA_ROOT_PREFIX
+    #source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+    ##micromamba activate
     micromamba create --yes --strict-channel-priority --file ${{ parameters.env_file }}
   displayName: Install conda environment (Linux, OSX)
   condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
 
-- bash: |
-    source activate base
-    conda config --add channels conda-forge
-    conda config --set channel_priority strict
-    conda install --yes mamba
-    mamba env create -n wradlib-tests --file ${{ parameters.env_file }}
+- powershell: |
+    $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
+    $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
+    $Env:MAMBA_EXE
+    echo $env:CENV
+    echo $env:CONDA_ENV
+    get-childitem -file
+    .\micromamba.exe --help
+    .\micromamba.exe init --help
+    .\micromamba.exe create -v --yes --strict-channel-priority --file $PWD\$env:CENV\$env:CONDA_ENV.yml
   displayName: Install conda environment (Windows_NT)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-#- powershell: |
-#    $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
-#    $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-#    $Env:MAMBA_EXE
-#    echo $env:CENV
-#    echo $env:CONDA_ENV
-#    get-childitem -file
-#    .\micromamba.exe --help
-#    .\micromamba.exe create -v --yes --strict-channel-priority --file $PWD\$env:CENV\$env:CONDA_ENV.yml
-#  displayName: Install conda environment (Windows_NT)
-#  condition: eq(variables['Agent.OS'], 'Windows_NT')
-#  env:
-#    Cenv: ci\requirements
+  env:
+    Cenv: ci\requirements
 
 - bash: |
-    echo $MAMBA_EXE
-    echo $MAMBA_ROOT_PREFIX
-    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+    eval "$(./micromamba shell hook -s bash)"
     micromamba activate wradlib-tests
     python -m pip install --no-deps -e .
-  displayName: Install wradlib (Linux, OSX)
-  condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
-
-- bash: |
-    source activate wradlib-tests
-    python -m pip install --no-deps -e .
-  displayName: Install wradlib (Windows)
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
+  displayName: Install wradlib
 
 - bash: |
     git clone --depth 1 https://github.com/wradlib/wradlib-data.git data
@@ -65,20 +48,8 @@ steps:
   displayName: Install wradlib-notebooks
 
 - bash: |
-    echo $MAMBA_EXE
-    echo $MAMBA_ROOT_PREFIX
-    source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+    eval "$(./micromamba shell hook -s bash)"
     micromamba activate wradlib-tests
     micromamba list
     python -c "import wradlib; print(wradlib.version.full_version)"
-  displayName: Version info (Linux, OSX)
-  condition: or(eq(variables['Agent.OS'], 'Darwin'), eq(variables['Agent.OS'], 'Linux'))
-
-- bash: |
-    source activate wradlib-tests
-    conda info -a
-    conda list
-  displayName: Version info (Windows)
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-
+  displayName: Version info
