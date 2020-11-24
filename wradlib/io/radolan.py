@@ -621,7 +621,7 @@ def read_radolan_binary_array(fid, size, fillwith = None):
     size : int
         number of bytes to read
     fillwith
-        bytes for filling missing values. If not set and values are missing an IOError will be raused
+        bytes for filling missing values. If not set and values are missing an IOError will be raised
 
     Returns
     -------
