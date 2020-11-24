@@ -611,7 +611,7 @@ def decode_radolan_runlength_array(binarr, attrs):
     return np.flipud(arr)
 
 
-def read_radolan_binary_array(fid, size):
+def read_radolan_binary_array(fid, size, fillwith = None):
     """Read binary data from file given by filehandle
 
     Parameters
@@ -620,6 +620,8 @@ def read_radolan_binary_array(fid, size):
         file handle
     size : int
         number of bytes to read
+    fillwith
+        bytes for filling missing values. If not set and values are missing an IOError will be raused
 
     Returns
     -------
@@ -628,10 +630,16 @@ def read_radolan_binary_array(fid, size):
     """
     binarr = fid.read(size)
     if len(binarr) != size:
-        raise IOError(
-            "{0}: File corruption while reading {1}! \nCould not "
-            "read enough data!".format(__name__, fid.name)
-        )
+        if fillwith is None:
+            raise IOError(
+                "{0}: File corruption while reading {1}! \nCould not "
+                "read enough data!".format(__name__, fid.name)
+            )
+        else:
+            arr = bytearray(binarr)
+            while len(arr) != size:
+                arr += fillwith[len(arr) % len(fillwith)]
+            binarr = bytes(arr)
     return binarr
 
 
@@ -691,7 +699,7 @@ def read_radolan_header(fid):
     return header
 
 
-def read_radolan_composite(f, missing=-9999, loaddata=True):
+def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
@@ -727,6 +735,8 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
     loaddata : bool | str
         True | False | 'xarray', If False function returns (None, attrs)
         If 'xarray' returns (xarray Dataset, attrs)
+    fillmissing : bool
+        Fills missing values with missing if set. Some files are missing values and produce an error if not set.
 
     Returns
     -------
@@ -767,7 +777,13 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
             )
 
         # read the actual data
-        indat = read_radolan_binary_array(fid, attrs["datasize"])
+        if not fillmissing:
+            indat = read_radolan_binary_array(fid, attrs["datasize"])
+        else:
+            if attrs["producttype"] in ["RX", "EX", "WX"]:
+                indat = read_radolan_binary_array(fid, attrs["datasize"], [b'\xfa'])
+            else:
+                indat = read_radolan_binary_array(fid, attrs["datasize"], [b'\xc4', b'\x29'])
 
     if attrs["producttype"] in ["RX", "EX", "WX"]:
         # convert to 8bit integer
