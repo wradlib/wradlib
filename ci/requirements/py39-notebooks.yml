@@ -31,3 +31,4 @@ dependencies:
   - nbconvert
   - psutil
   - tqdm
+  - wetterdienst
