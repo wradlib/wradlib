@@ -931,6 +931,7 @@ class TestRadolan:
         assert data.RX.dims == ("y", "x")
         assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
 
+    @requires_data
     def test_read_radolan_composit_corrupted(self):
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         rw_file = util.get_wradlib_data_file(filename)
