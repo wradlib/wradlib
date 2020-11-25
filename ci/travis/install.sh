@@ -31,7 +31,7 @@ echo "GDAL_VERSION:" $GDAL_VERSION
 
 # setup wradlib dependencies
 WRADLIB_DEPS="gdal=$GDAL_VERSION numpy scipy matplotlib netcdf4 h5py h5netcdf xarray dask cartopy deprecation xmltodict semver"
-NOTEBOOK_DEPS="notebook nbconvert psutil tqdm"
+NOTEBOOK_DEPS="notebook nbconvert psutil tqdm wetterdienst"
 MISC_DEPS="coverage codecov pytest pytest-cov pytest-xdist pytest-sugar"
 
 # Install twine for pypi upload
