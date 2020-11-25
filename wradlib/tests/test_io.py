@@ -931,6 +931,59 @@ class TestRadolan:
         assert data.RX.dims == ("y", "x")
         assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
 
+    def test_read_radolan_composit_corrupted(self):
+        filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
+        rw_file = util.get_wradlib_data_file(filename)
+        # Do the same for the case where a file handle is passed
+        # instead of a file name
+        with gzip.open(rw_file) as fh:
+            fdata = sio.BytesIO(fh.read(20001))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (900, 900)
+            fh.seek(0)
+            fdata = sio.BytesIO(fh.read(20002))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (900, 900)
+
+        filename = "radolan/misc/raa01-ex_10000-1408102050-dwd---bin.gz"
+        ex_file = util.get_wradlib_data_file(filename)
+        # Do the same for the case where a file handle is passed
+        # instead of a file name
+        with gzip.open(ex_file) as fh:
+            fdata = sio.BytesIO(fh.read(20001))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (1500, 1400)
+            fh.seek(0)
+            fdata = sio.BytesIO(fh.read(20002))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (1500, 1400)
+
+        filename = "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz"
+        rx_file = util.get_wradlib_data_file(filename)
+        # Do the same for the case where a file handle is passed
+        # instead of a file name
+        with gzip.open(rx_file) as fh:
+            fdata = sio.BytesIO(fh.read(20001))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (900, 900)
+            fh.seek(0)
+            fdata = sio.BytesIO(fh.read(20002))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (900, 900)
+
+        filename = "radolan/misc/raa01-sf_10000-1305270050-dwd---bin.gz"
+        sf_file = util.get_wradlib_data_file(filename)
+        # Do the same for the case where a file handle is passed
+        # instead of a file name
+        with gzip.open(sf_file) as fh:
+            fdata = sio.BytesIO(fh.read(20001))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (900, 900)
+            fh.seek(0)
+            fdata = sio.BytesIO(fh.read(20002))
+            data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
+            assert data.shape == (900, 900)
+
 
 class TestRainbow:
     @requires_data
