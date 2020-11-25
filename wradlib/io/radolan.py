@@ -611,7 +611,7 @@ def decode_radolan_runlength_array(binarr, attrs):
     return np.flipud(arr)
 
 
-def read_radolan_binary_array(fid, size):
+def read_radolan_binary_array(fid, size, raise_on_error=True):
     """Read binary data from file given by filehandle
 
     Parameters
@@ -620,6 +620,8 @@ def read_radolan_binary_array(fid, size):
         file handle
     size : int
         number of bytes to read
+    raise_on_error : bool
+        raise IOError if data is truncated
 
     Returns
     -------
@@ -627,10 +629,14 @@ def read_radolan_binary_array(fid, size):
         array of binary data
     """
     binarr = fid.read(size)
-    if len(binarr) != size:
+    if raise_on_error and len(binarr) != size:
+        try:
+            desc = fid.name
+        except AttributeError:
+            desc = repr(fid)
         raise IOError(
             "{0}: File corruption while reading {1}! \nCould not "
-            "read enough data!".format(__name__, fid.name)
+            "read enough data!".format(__name__, desc)
         )
     return binarr
 
@@ -691,7 +697,7 @@ def read_radolan_header(fid):
     return header
 
 
-def read_radolan_composite(f, missing=-9999, loaddata=True):
+def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
@@ -727,6 +733,9 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
     loaddata : bool | str
         True | False | 'xarray', If False function returns (None, attrs)
         If 'xarray' returns (xarray Dataset, attrs)
+    fillmissing : bool
+        If True fills truncated values with "missing". Defaults to False.
+        Does not work for run-length encoded files ("PC" and "PG).
 
     Returns
     -------
@@ -766,12 +775,28 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
                 + "of the results"
             )
 
+        # handle truncated data
+        binarr_kwargs = {}
+        if fillmissing and attrs["producttype"] not in ["PG", "PC"]:
+            binarr_kwargs.update(dict(raise_on_error=False))
+
         # read the actual data
-        indat = read_radolan_binary_array(fid, attrs["datasize"])
+        indat = read_radolan_binary_array(fid, attrs["datasize"], **binarr_kwargs)
+
+        # helper function to fill truncated data with 'nodata' values
+        def _from_buffer(data, size, dtype):
+            if len(data) < size:
+                isize = np.dtype(dtype).itemsize
+                fill_value = 250 if isize == 1 else 8192
+                if len(data) % isize:
+                    data = data[:-1]
+                fill = np.full((size - len(data)) // isize, fill_value, dtype=dtype)
+                data += fill.tobytes()
+            return np.frombuffer(data, dtype).astype(dtype)
 
     if attrs["producttype"] in ["RX", "EX", "WX"]:
         # convert to 8bit integer
-        arr = np.frombuffer(indat, np.uint8).astype(np.uint8)
+        arr = _from_buffer(indat, attrs["datasize"], np.uint8)
         attrs["nodatamask"] = np.where(arr == 250)[0]
         attrs["cluttermask"] = np.where(arr == 249)[0]
     elif attrs["producttype"] in ["PG", "PC"]:
@@ -779,7 +804,7 @@ def read_radolan_composite(f, missing=-9999, loaddata=True):
         attrs["nodatamask"] = np.where(arr == 255)[0]
     else:
         # convert to 16-bit integers
-        arr = np.frombuffer(indat, np.uint16).astype(np.uint16)
+        arr = _from_buffer(indat, attrs["datasize"], np.uint16)
         # evaluate bits 13, 14, 15 and 16
         attrs["secondary"] = np.where(arr & 0x1000)[0]
         attrs["nodatamask"] = np.where(arr & 0x2000)[0]
