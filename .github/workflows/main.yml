@@ -86,7 +86,7 @@ jobs:
         fail_ci_if_error: true
 
   trigger_rtd:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'push'
     needs: [lint, build_0]
     name: trigger readthedocs
     runs-on: ubuntu-latest
