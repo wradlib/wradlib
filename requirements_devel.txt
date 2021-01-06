@@ -1,8 +1,9 @@
 codecov
 coverage
+nbconvert
+nbformat
 pytest
 pytest-cov
 pytest-sugar
 pytest-xdist
-nbconvert
-nbformat
+semver
