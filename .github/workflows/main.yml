@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: lint and style checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort
+      - name: Lint with flake8
+        run: |
+          flake8 .
+      - name: Black style check
+        run: |
+          black --check .
+      - name: Isort import check
+        run: |
+          isort --check .
+
+  build_0:
+    name: wradlib tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      WRADLIB_DATA: ./wradlib-data
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8"]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install micromamba
+      run: |
+        wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+        ./micromamba shell init -s bash -p ~/micromamba
+    - name: Install deps
+      run: |
+        export MAMBA_ROOT_PREFIX=~/micromamba
+        export MAMBA_EXE=$(pwd)/micromamba
+        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+        ./micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
+    - name: Install wradlib
+      run: |
+        export MAMBA_ROOT_PREFIX=~/micromamba
+        export MAMBA_EXE=$(pwd)/micromamba
+        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+        micromamba activate wradlib-tests
+        python setup.py sdist
+        python -m pip install . --no-deps
+    - name: Clone wradlib-data
+      run: |
+        git clone https://github.com/wradlib/wradlib-data.git
+    - name: Test with pytest
+      run: |
+        export MAMBA_ROOT_PREFIX=~/micromamba
+        export MAMBA_EXE=$(pwd)/micromamba
+        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+        micromamba activate wradlib-tests
+        echo $WRADLIB_DATA
+        export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+        pytest --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1.2.1
+      with:
+        env_vars: OS,PYTHON
+        name: codecov-gha
+        fail_ci_if_error: true
+
