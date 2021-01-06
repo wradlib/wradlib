@@ -85,3 +85,18 @@ jobs:
         name: codecov-gha
         fail_ci_if_error: true
 
+  trigger_rtd:
+    if: github.event.pull_request.merged == true
+    needs: [lint, build_0]
+    name: trigger readthedocs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      RTD_TOKEN: ${{ secrets.RTD_TOKEN }}
+      RTD_URL: ${{ secrets.RTD_URL }}
+    steps:
+    - name: trigger readthedocs
+      run: |
+        curl -X POST -d "token=$RTD_TOKEN" "$RTD_URL"
