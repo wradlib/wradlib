@@ -337,7 +337,12 @@ class Idw(IpolBase):
 
         self.p = p
         # query tree
-        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, n_jobs=-1)
+        # scipy kwarg changed from version 1.6
+        if LooseVersion(scipy.__version__) < "1.6":
+            query_kwargs = dict(n_jobs=-1)
+        else:
+            query_kwargs = dict(workers=-1)
+        self.dists, self.ix = self.tree.query(trg, k=self.nnearest, **query_kwargs)
         # avoid bug, if there is only one neighbor at all
         if self.dists.ndim == 1:
             self.dists = self.dists[:, np.newaxis]
