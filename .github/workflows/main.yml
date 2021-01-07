@@ -46,7 +46,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"]
+        python-version: ["3.7", "3.8", "3.9"]
     steps:
     - name: Cancel Previous Runs
       uses: styfle/cancel-workflow-action@0.6.0
@@ -65,7 +65,7 @@ jobs:
         mv .bashrcBAK "$HOME/.bashrc"
     - name: Install deps
       run: |
-        micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
+        micromamba create -y -n wradlib-tests python=${{ matrix.python_version }} -f ci/requirements/unittests.txt --channel conda-forge
         echo "set -eo pipefail" >> "$HOME/.bash_profile"
         echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
     - name: Install wradlib
@@ -75,6 +75,11 @@ jobs:
     - name: Clone wradlib-data
       run: |
         git clone https://github.com/wradlib/wradlib-data.git
+    - name: Version Info
+      run: |
+        micromamba list
+        python -c "import wradlib; print(wradlib.version.full_version)"
+        python -c "import wradlib; print(wradlib.show_versions())"
     - name: Test with pytest
       run: |
         echo $WRADLIB_DATA
@@ -84,7 +89,7 @@ jobs:
       uses: codecov/codecov-action@v1.2.1
       with:
         file: ./coverage.xml
-        flags: unittests,${{ matrix.env }}
+        flags: unittests
         env_vars: RUNNER_OS,PYTHON_VERSION
         name: codecov-gha
         fail_ci_if_error: false
@@ -120,7 +125,7 @@ jobs:
           mv .bashrcBAK "$HOME/.bashrc"
       - name: Install deps
         run: |
-          micromamba create --strict-channel-priority -y -f ci/requirements/py39-notebooks.yml
+          micromamba create -y -n wradlib-tests python=${{ matrix.python_version }} -f ci/requirements/notebooktests.txt --channel conda-forge
           echo "set -eo pipefail" >> "$HOME/.bash_profile"
           echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
       - name: Install wradlib
@@ -133,6 +138,11 @@ jobs:
       - name: Clone wradlib-notebooks
         run: |
           git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
+      - name: Version Info
+        run: |
+          micromamba list
+          python -c "import wradlib; print(wradlib.version.full_version)"
+          python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
         run: |
           echo $WRADLIB_DATA
@@ -142,7 +152,7 @@ jobs:
         uses: codecov/codecov-action@v1.2.1
         with:
           file: ./coverage.xml
-          flags: notebooktests,${{ matrix.env }}
+          flags: notebooktests
           env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-gha
           fail_ci_if_error: false
