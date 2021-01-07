@@ -147,6 +147,7 @@ jobs:
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
           .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
           micromamba activate wradlib-tests
+          micromamba list
           python -c "import wradlib; print(wradlib.version.full_version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
@@ -156,7 +157,7 @@ jobs:
           $Env:WRADLIB_DATA=(Join-Path -Path (Get-Location) -ChildPath wradlib-data)
           .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
           micromamba activate wradlib-tests
-          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+          pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.2.1
         with:
