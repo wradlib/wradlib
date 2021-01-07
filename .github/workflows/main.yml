@@ -65,7 +65,7 @@ jobs:
         mv .bashrcBAK "$HOME/.bashrc"
     - name: Install deps
       run: |
-        micromamba create -y -n wradlib-tests python=${{ matrix.python_version }} -f ci/requirements/unittests.txt --channel conda-forge
+        micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
         echo "set -eo pipefail" >> "$HOME/.bash_profile"
         echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
     - name: Install wradlib
@@ -125,10 +125,13 @@ jobs:
         run: |
           $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba create -y -n wradlib-tests python=${{ matrix.python_version }} -f ci/requirements/unittests.txt --channel conda-forge
+          .\micromamba.exe shell init -s powershell -p $HOME/micromamba
+          micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
       - name: Install wradlib
         run: |
-          eval "$(./micromamba shell hook -s bash)"
+          $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
+          $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
+          .\micromamba.exe shell init -s powershell -p $HOME/micromamba
           micromamba activate wradlib-tests
           python setup.py sdist
           python -m pip install . --no-deps
@@ -191,7 +194,7 @@ jobs:
           mv .bashrcBAK "$HOME/.bashrc"
       - name: Install deps
         run: |
-          micromamba create -y -n wradlib-tests python=${{ matrix.python_version }} -f ci/requirements/notebooktests.txt --channel conda-forge
+          micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/notebooktests.txt --channel conda-forge
           echo "set -eo pipefail" >> "$HOME/.bash_profile"
           echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
       - name: Install wradlib
