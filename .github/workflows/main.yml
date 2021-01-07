@@ -92,7 +92,7 @@ jobs:
   build_1:
     name: wradlib notebook tests
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: true
     defaults:
       run:
         shell: bash -l {0}
@@ -102,7 +102,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9"]
-        experimental: [true]
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.6.0
@@ -121,7 +120,7 @@ jobs:
           mv .bashrcBAK "$HOME/.bashrc"
       - name: Install deps
         run: |
-          micromamba create --yes --file ci/azure/py39-notebooks.yml
+          micromamba create --strict-channel-priority -y -f ci/requirements/py39-notebooks.yml
           echo "set -eo pipefail" >> "$HOME/.bash_profile"
           echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
       - name: Install wradlib
