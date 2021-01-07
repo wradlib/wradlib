@@ -125,14 +125,13 @@ jobs:
         run: |
           $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
+          .\micromamba.exe create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
       - name: Install wradlib
         run: |
           $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba activate wradlib-tests
-          python setup.py sdist
-          python -m pip install . --no-deps
+          $HOME/micromamba/envs/wradlib-tests/python.exe setup.py sdist
+          $HOME/micromamba/envs/wradlib-tests/python.exe -m pip install . --no-deps
       - name: Clone wradlib-data
         run: |
           git clone https://github.com/wradlib/wradlib-data.git
@@ -143,17 +142,14 @@ jobs:
         run: |
           $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba activate wradlib-tests
-          .\micromamba list
-          python -c "import wradlib; print(wradlib.version.full_version)"
-          python -c "import wradlib; print(wradlib.show_versions())"
+          $HOME/micromamba/envs/wradlib-tests/python.exe -c "import wradlib; print(wradlib.version.full_version)"
+          $HOME/micromamba/envs/wradlib-tests/python.exe -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
         run: |
           $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba activate wradlib-tests
           $Env:WRADLIB_DATA=(Join-Path -Path (Get-Location) -ChildPath wradlib-data)
-          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+          $HOME/micromamba/envs/wradlib-tests/pytest.exe -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.2.1
         with:
