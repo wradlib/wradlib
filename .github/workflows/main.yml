@@ -36,7 +36,7 @@ jobs:
           isort --check .
 
   build_0:
-    name: wradlib tests
+    name: wradlib unit tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -83,9 +83,70 @@ jobs:
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.2.1
       with:
-        env_vars: OS,PYTHON
+        file: ./coverage.xml
+        flags: unittests,${{ matrix.env }}
+        env_vars: RUNNER_OS,PYTHON_VERSION
         name: codecov-gha
-        fail_ci_if_error: true
+        fail_ci_if_error: false
+
+  build_1:
+    name: wradlib notebook tests
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      WRADLIB_DATA: ./wradlib-data
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8"]
+        experimental: [true]
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: install micromamba
+        run: |
+          wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+          mv "$HOME/.bashrc" .bashrcBAK
+          touch "$HOME/.bashrc"
+          ./micromamba shell init -s bash -p ~/micromamba
+          cat "$HOME/.bashrc" >> "$HOME/.bash_profile"
+          mv .bashrcBAK "$HOME/.bashrc"
+      - name: Install deps
+        run: |
+          micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
+          echo "set -eo pipefail" >> "$HOME/.bash_profile"
+          echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
+      - name: Install wradlib
+        run: |
+          python setup.py sdist
+          python -m pip install . --no-deps
+      - name: Clone wradlib-data
+        run: |
+          git clone https://github.com/wradlib/wradlib-data.git
+      - name: Clone wradlib-notebooks
+          run: |
+            git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
+      - name: Test with pytest
+        run: |
+          echo $WRADLIB_DATA
+          export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.2.1
+        with:
+          file: ./coverage.xml
+          flags: notebooktests,${{ matrix.env }}
+          env_vars: RUNNER_OS,PYTHON_VERSION
+          name: codecov-gha
+          fail_ci_if_error: false
 
   trigger_rtd:
     if: github.event_name == 'push' || github.event_name == 'release'
