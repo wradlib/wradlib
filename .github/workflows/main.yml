@@ -101,7 +101,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"]
+        python-version: ["3.9"]
         experimental: [true]
     steps:
       - name: Cancel Previous Runs
@@ -121,7 +121,7 @@ jobs:
           mv .bashrcBAK "$HOME/.bashrc"
       - name: Install deps
         run: |
-          micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
+          micromamba create --yes --file ci/azure/py39-notebooks.yml
           echo "set -eo pipefail" >> "$HOME/.bash_profile"
           echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
       - name: Install wradlib
