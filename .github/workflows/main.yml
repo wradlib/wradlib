@@ -58,20 +58,14 @@ jobs:
         touch "$HOME/.bashrc"
         ./micromamba shell init -s bash -p ~/micromamba
         cat "$HOME/.bashrc" >> "$HOME/.bash_profile"
-        mv .bashrcBAK $HOME/.bashrc
-        # . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+        mv .bashrcBAK "$HOME/.bashrc"
     - name: Install deps
       run: |
-        #export MAMBA_ROOT_PREFIX=~/micromamba
-        #export MAMBA_EXE=$(pwd)/micromamba
-        #. $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
         micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
+        echo "set -eo pipefail" >> "HOME/.bash_profile"
+        echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
     - name: Install wradlib
       run: |
-        #export MAMBA_ROOT_PREFIX=~/micromamba
-        #export MAMBA_EXE=$(pwd)/micromamba
-        #. $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-        micromamba activate wradlib-tests
         python setup.py sdist
         python -m pip install . --no-deps
     - name: Clone wradlib-data
@@ -79,10 +73,6 @@ jobs:
         git clone https://github.com/wradlib/wradlib-data.git
     - name: Test with pytest
       run: |
-        #export MAMBA_ROOT_PREFIX=~/micromamba
-        #export MAMBA_EXE=$(pwd)/micromamba
-        #. $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-        micromamba activate wradlib-tests
         echo $WRADLIB_DATA
         export WRADLIB_DATA=`realpath $WRADLIB_DATA`
         pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
