@@ -54,10 +54,11 @@ jobs:
     - name: install micromamba
       run: |
         wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+        mv "$HOME/.bashrc" .bashrcBAK
+        touch "$HOME/.bashrc"
         ./micromamba shell init -s bash -p ~/micromamba
-        export MAMBA_ROOT_PREFIX=~/micromamba
-        export MAMBA_EXE=$(pwd)/micromamba
-        echo "source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh" >> "$HOME/.bash_profile"
+        cat "$HOME/.bashrc" >> "$HOME/.bash_profile"
+        mv .bashrcBAK $HOME/.bashrc
         # . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
     - name: Install deps
       run: |
