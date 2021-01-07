@@ -55,17 +55,21 @@ jobs:
       run: |
         wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
         ./micromamba shell init -s bash -p ~/micromamba
+        export MAMBA_ROOT_PREFIX=~/micromamba
+        export MAMBA_EXE=$(pwd)/micromamba
+        echo "source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh" >> $HOME/.bash_profile"
+        # . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
     - name: Install deps
       run: |
-        export MAMBA_ROOT_PREFIX=~/micromamba
-        export MAMBA_EXE=$(pwd)/micromamba
-        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-        ./micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
+        #export MAMBA_ROOT_PREFIX=~/micromamba
+        #export MAMBA_EXE=$(pwd)/micromamba
+        #. $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+        micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
     - name: Install wradlib
       run: |
-        export MAMBA_ROOT_PREFIX=~/micromamba
-        export MAMBA_EXE=$(pwd)/micromamba
-        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+        #export MAMBA_ROOT_PREFIX=~/micromamba
+        #export MAMBA_EXE=$(pwd)/micromamba
+        #. $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
         micromamba activate wradlib-tests
         python setup.py sdist
         python -m pip install . --no-deps
@@ -74,9 +78,9 @@ jobs:
         git clone https://github.com/wradlib/wradlib-data.git
     - name: Test with pytest
       run: |
-        export MAMBA_ROOT_PREFIX=~/micromamba
-        export MAMBA_EXE=$(pwd)/micromamba
-        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
+        #export MAMBA_ROOT_PREFIX=~/micromamba
+        #export MAMBA_EXE=$(pwd)/micromamba
+        #. $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
         micromamba activate wradlib-tests
         echo $WRADLIB_DATA
         export WRADLIB_DATA=`realpath $WRADLIB_DATA`
