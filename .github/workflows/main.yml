@@ -132,8 +132,8 @@ jobs:
         run: |
           git clone https://github.com/wradlib/wradlib-data.git
       - name: Clone wradlib-notebooks
-          run: |
-            git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
+        run: |
+          git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
       - name: Test with pytest
         run: |
           echo $WRADLIB_DATA
