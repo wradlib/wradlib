@@ -57,7 +57,7 @@ jobs:
         ./micromamba shell init -s bash -p ~/micromamba
         export MAMBA_ROOT_PREFIX=~/micromamba
         export MAMBA_EXE=$(pwd)/micromamba
-        echo "source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh" >> $HOME/.bash_profile"
+        echo "source $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh" >> "$HOME/.bash_profile"
         # . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
     - name: Install deps
       run: |
