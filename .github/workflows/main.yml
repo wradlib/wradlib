@@ -99,7 +99,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        shell: powershell
+        shell: bash
     env:
       WRADLIB_DATA: ./wradlib-data
     strategy:
@@ -121,17 +121,16 @@ jobs:
           C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe
           MOVE -Force Library\bin\micromamba.exe micromamba.exe
           .\micromamba.exe shell init -s powershell -p $HOME/micromamba
+        shell: powershell
       - name: Install deps
         run: |
           $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
-          micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
+          .\micromamba.exe create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
+        shell: powershell
       - name: Install wradlib
         run: |
-          $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
-          $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
+          eval "$(./micromamba shell hook -s bash)"
           micromamba activate wradlib-tests
           python setup.py sdist
           python -m pip install . --no-deps
@@ -143,19 +142,14 @@ jobs:
           git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
       - name: Version Info
         run: |
-          $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
-          $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
+          eval "$(./micromamba shell hook -s bash)"
           micromamba activate wradlib-tests
           micromamba list
           python -c "import wradlib; print(wradlib.version.full_version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
         run: |
-          $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
-          $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
-          $Env:WRADLIB_DATA=(Join-Path -Path (Get-Location) -ChildPath wradlib-data)
-          .\micromamba.exe shell hook -s powershell | Out-String | Invoke-Expression
+          eval "$(./micromamba shell hook -s bash)"
           micromamba activate wradlib-tests
           pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
