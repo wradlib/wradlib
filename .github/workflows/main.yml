@@ -38,6 +38,7 @@ jobs:
   build_0:
     name: wradlib unit tests - linux
     runs-on: ubuntu-latest
+    needs: [lint]
     defaults:
       run:
         shell: bash -l {0}
@@ -97,6 +98,7 @@ jobs:
   build_1:
     name: wradlib unit tests - macosx
     runs-on: macos-latest
+    needs: [lint]
     defaults:
       run:
         shell: bash -l {0}
@@ -128,7 +130,6 @@ jobs:
         micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
         echo "set -eo pipefail" >> "$HOME/.bash_profile"
         echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
-        echo "alias realpath='python -c \"import os, sys; print(os.path.realpath(sys.argv[1]))\"'" >> "$HOME/.bash_profile"
     - name: Install wradlib
       run: |
         cat "$HOME/.bash_profile"
@@ -145,7 +146,7 @@ jobs:
     - name: Test with pytest
       run: |
         echo $WRADLIB_DATA
-        export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+        export WRADLIB_DATA=`python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" $WRADLIB_DATA`
         pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.2.1
@@ -159,6 +160,7 @@ jobs:
   build_2:
     name: wradlib unit tests - windows
     runs-on: windows-latest
+    needs: [lint]
     defaults:
       run:
         shell: bash
@@ -199,9 +201,6 @@ jobs:
       - name: Clone wradlib-data
         run: |
           git clone https://github.com/wradlib/wradlib-data.git
-      - name: Clone wradlib-notebooks
-        run: |
-          git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
       - name: Version Info
         run: |
           eval "$(./micromamba shell hook -s bash)"
@@ -226,6 +225,7 @@ jobs:
   build_3:
     name: wradlib notebook tests
     runs-on: ubuntu-latest
+    needs: [lint]
     continue-on-error: true
     defaults:
       run:
