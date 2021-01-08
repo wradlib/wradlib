@@ -114,6 +114,9 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
+    - name: Install realpath on macos
+      run: |
+        brew install coreutils
     - name: install micromamba
       run: |
         curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
