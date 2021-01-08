@@ -131,7 +131,7 @@ jobs:
         echo "alias realpath='python -c \"import os, sys; print(os.path.realpath(sys.argv[1]))\"'" >> "$HOME/.bashrc"
     - name: Install wradlib
       run: |
-        cat "$HOME/.bash_profile
+        cat "$HOME/.bash_profile"
         python setup.py sdist
         python -m pip install . --no-deps
     - name: Clone wradlib-data
