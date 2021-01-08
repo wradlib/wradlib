@@ -114,9 +114,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
-    - name: Install realpath on macos
-      run: |
-        brew install coreutils
     - name: install micromamba
       run: |
         curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
@@ -131,6 +128,7 @@ jobs:
         micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
         echo "set -eo pipefail" >> "$HOME/.bash_profile"
         echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
+        echo "alias realpath=\"python -c 'import os, sys; print(os.path.realpath(sys.argv[1]))'\"" >> $HOME/.bash_profile
     - name: Install wradlib
       run: |
         python setup.py sdist
