@@ -95,6 +95,66 @@ jobs:
         fail_ci_if_error: false
 
   build_1:
+    name: wradlib unit tests - macosx
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      WRADLIB_DATA: ./wradlib-data
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+    steps:
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.6.0
+      with:
+        access_token: ${{ github.token }}
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install micromamba
+      run: |
+        curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+        mv bin/micromamba .
+        mv "$HOME/.bashrc" .bashrcBAK
+        touch "$HOME/.bashrc"
+        ./micromamba shell init -s bash -p ~/micromamba
+        cat "$HOME/.bashrc" >> "$HOME/.bash_profile"
+        mv .bashrcBAK "$HOME/.bashrc"
+    - name: Install deps
+      run: |
+        micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
+        echo "set -eo pipefail" >> "$HOME/.bash_profile"
+        echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
+    - name: Install wradlib
+      run: |
+        python setup.py sdist
+        python -m pip install . --no-deps
+    - name: Clone wradlib-data
+      run: |
+        git clone https://github.com/wradlib/wradlib-data.git
+    - name: Version Info
+      run: |
+        micromamba list
+        python -c "import wradlib; print(wradlib.version.full_version)"
+        python -c "import wradlib; print(wradlib.show_versions())"
+    - name: Test with pytest
+      run: |
+        echo $WRADLIB_DATA
+        export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+        pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1.2.1
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: RUNNER_OS,PYTHON_VERSION
+        name: codecov-gha
+        fail_ci_if_error: false
+
+  build_2:
     name: wradlib unit tests - windows
     runs-on: windows-latest
     defaults:
@@ -161,7 +221,7 @@ jobs:
           name: codecov-gha
           fail_ci_if_error: false
 
-  build_2:
+  build_3:
     name: wradlib notebook tests
     runs-on: ubuntu-latest
     continue-on-error: true
