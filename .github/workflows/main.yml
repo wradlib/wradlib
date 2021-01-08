@@ -36,8 +36,9 @@ jobs:
           isort --check .
 
   build_0:
-    name: wradlib tests
+    name: wradlib unit tests - linux
     runs-on: ubuntu-latest
+    needs: [lint]
     defaults:
       run:
         shell: bash -l {0}
@@ -46,51 +47,248 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"]
+        python-version: ["3.7", "3.8", "3.9"]
     steps:
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.6.0
+      with:
+        access_token: ${{ github.token }}
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
     - name: install micromamba
       run: |
         wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+        mv "$HOME/.bashrc" .bashrcBAK
+        touch "$HOME/.bashrc"
         ./micromamba shell init -s bash -p ~/micromamba
+        cat "$HOME/.bashrc" >> "$HOME/.bash_profile"
+        mv .bashrcBAK "$HOME/.bashrc"
     - name: Install deps
       run: |
-        export MAMBA_ROOT_PREFIX=~/micromamba
-        export MAMBA_EXE=$(pwd)/micromamba
-        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-        ./micromamba create --yes -n wradlib-tests python=${{ matrix.python-version }} --file requirements.txt --file requirements_devel.txt --channel conda-forge
+        micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
+        echo "set -eo pipefail" >> "$HOME/.bash_profile"
+        echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
     - name: Install wradlib
       run: |
-        export MAMBA_ROOT_PREFIX=~/micromamba
-        export MAMBA_EXE=$(pwd)/micromamba
-        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-        micromamba activate wradlib-tests
         python setup.py sdist
         python -m pip install . --no-deps
     - name: Clone wradlib-data
       run: |
         git clone https://github.com/wradlib/wradlib-data.git
+    - name: Version Info
+      run: |
+        micromamba list
+        python -c "import wradlib; print(wradlib.version.full_version)"
+        python -c "import wradlib; print(wradlib.show_versions())"
     - name: Test with pytest
       run: |
-        export MAMBA_ROOT_PREFIX=~/micromamba
-        export MAMBA_EXE=$(pwd)/micromamba
-        . $MAMBA_ROOT_PREFIX/etc/profile.d/mamba.sh
-        micromamba activate wradlib-tests
         echo $WRADLIB_DATA
         export WRADLIB_DATA=`realpath $WRADLIB_DATA`
         pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.2.1
       with:
-        env_vars: OS,PYTHON
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: RUNNER_OS,PYTHON_VERSION
         name: codecov-gha
-        fail_ci_if_error: true
+        fail_ci_if_error: false
+
+  build_1:
+    name: wradlib unit tests - macosx
+    runs-on: macos-latest
+    needs: [lint]
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      WRADLIB_DATA: ./wradlib-data
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+    steps:
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.6.0
+      with:
+        access_token: ${{ github.token }}
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: install micromamba
+      run: |
+        curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+        mv bin/micromamba .
+        mv "$HOME/.bashrc" .bashrcBAK
+        touch "$HOME/.bashrc"
+        ./micromamba shell init -s bash -p ~/micromamba
+        cat "$HOME/.bashrc" >> "$HOME/.bash_profile"
+        mv .bashrcBAK "$HOME/.bashrc"
+    - name: Install deps
+      run: |
+        micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
+        echo "set -eo pipefail" >> "$HOME/.bash_profile"
+        echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
+    - name: Install wradlib
+      run: |
+        cat "$HOME/.bash_profile"
+        python setup.py sdist
+        python -m pip install . --no-deps
+    - name: Clone wradlib-data
+      run: |
+        git clone https://github.com/wradlib/wradlib-data.git
+    - name: Version Info
+      run: |
+        micromamba list
+        python -c "import wradlib; print(wradlib.version.full_version)"
+        python -c "import wradlib; print(wradlib.show_versions())"
+    - name: Test with pytest
+      run: |
+        echo $WRADLIB_DATA
+        export WRADLIB_DATA=`python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" $WRADLIB_DATA`
+        pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1.2.1
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        env_vars: RUNNER_OS,PYTHON_VERSION
+        name: codecov-gha
+        fail_ci_if_error: false
+
+  build_2:
+    name: wradlib unit tests - windows
+    runs-on: windows-latest
+    needs: [lint]
+    defaults:
+      run:
+        shell: bash
+    env:
+      WRADLIB_DATA: ./wradlib-data
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: install micromamba
+        run: |
+          Invoke-Webrequest -URI https://micromamba.snakepit.net/api/micromamba/win-64/latest -OutFile micromamba.tar.bz2
+          C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar.bz2 -aoa
+          C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe
+          MOVE -Force Library\bin\micromamba.exe micromamba.exe
+          .\micromamba.exe shell init -s powershell -p $HOME/micromamba
+        shell: powershell
+      - name: Install deps
+        run: |
+          $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
+          $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
+          .\micromamba.exe create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
+        shell: powershell
+      - name: Install wradlib
+        run: |
+          eval "$(./micromamba shell hook -s bash)"
+          micromamba activate wradlib-tests
+          python setup.py sdist
+          python -m pip install . --no-deps
+      - name: Clone wradlib-data
+        run: |
+          git clone https://github.com/wradlib/wradlib-data.git
+      - name: Version Info
+        run: |
+          eval "$(./micromamba shell hook -s bash)"
+          micromamba activate wradlib-tests
+          micromamba list
+          python -c "import wradlib; print(wradlib.version.full_version)"
+          python -c "import wradlib; print(wradlib.show_versions())"
+      - name: Test with pytest
+        run: |
+          eval "$(./micromamba shell hook -s bash)"
+          micromamba activate wradlib-tests
+          pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.2.1
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: RUNNER_OS,PYTHON_VERSION
+          name: codecov-gha
+          fail_ci_if_error: false
+
+  build_3:
+    name: wradlib notebook tests
+    runs-on: ubuntu-latest
+    needs: [lint]
+    continue-on-error: true
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      WRADLIB_DATA: ./wradlib-data
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: install micromamba
+        run: |
+          wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+          mv "$HOME/.bashrc" .bashrcBAK
+          touch "$HOME/.bashrc"
+          ./micromamba shell init -s bash -p ~/micromamba
+          cat "$HOME/.bashrc" >> "$HOME/.bash_profile"
+          mv .bashrcBAK "$HOME/.bashrc"
+      - name: Install deps
+        run: |
+          micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/notebooktests.txt --channel conda-forge
+          echo "set -eo pipefail" >> "$HOME/.bash_profile"
+          echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
+      - name: Install wradlib
+        run: |
+          python setup.py sdist
+          python -m pip install . --no-deps
+      - name: Clone wradlib-data
+        run: |
+          git clone https://github.com/wradlib/wradlib-data.git
+      - name: Clone wradlib-notebooks
+        run: |
+          git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
+      - name: Version Info
+        run: |
+          micromamba list
+          python -c "import wradlib; print(wradlib.version.full_version)"
+          python -c "import wradlib; print(wradlib.show_versions())"
+      - name: Test with pytest
+        run: |
+          echo $WRADLIB_DATA
+          export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+          pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.2.1
+        with:
+          file: ./coverage.xml
+          flags: notebooktests
+          env_vars: RUNNER_OS,PYTHON_VERSION
+          name: codecov-gha
+          fail_ci_if_error: false
 
   trigger_rtd:
     if: github.event_name == 'push' || github.event_name == 'release'
-    needs: [lint, build_0]
+    needs: [lint, build_0, build_1, build_2]
     name: trigger readthedocs
     runs-on: ubuntu-latest
     defaults:
@@ -106,7 +304,7 @@ jobs:
 
   upload_testpypi:
     if: github.event_name == 'push' || github.event_name == 'release'
-    needs: [lint, build_0]
+    needs: [lint, build_0, build_1, build_2]
     name: deploy to testpypi
     runs-on: ubuntu-latest
     defaults:
@@ -134,7 +332,7 @@ jobs:
 
   upload_pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_0, upload_testpypi]
+    needs: [lint, build_0, build_1, build_2, upload_testpypi]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:
