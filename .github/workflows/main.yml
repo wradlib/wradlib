@@ -128,7 +128,7 @@ jobs:
         micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
         echo "set -eo pipefail" >> "$HOME/.bash_profile"
         echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
-        echo "alias realpath='python -c \"import os, sys; print(os.path.realpath(sys.argv[1]))\"'" >> "$HOME/.bashrc"
+        echo "alias realpath='python -c \"import os, sys; print(os.path.realpath(sys.argv[1]))\"'" >> "$HOME/.bash_profile"
     - name: Install wradlib
       run: |
         cat "$HOME/.bash_profile"
