@@ -154,7 +154,7 @@ class CartesianVolume:
         self.trgix = np.where(np.logical_not(self.mask))
         self.ip = ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
 
-    def __call__(self, data):
+    def __call__(self, data, **kwargs):
         """Interpolates the polar data to 3-dimensional Cartesian coordinates
 
         Parameters
@@ -171,7 +171,7 @@ class CartesianVolume:
         """
         # Interpolate data in 3-D
         ipdata = np.repeat(np.nan, len(self.mask))
-        ipdata[self.trgix] = self.ip(data)
+        ipdata[self.trgix] = self.ip(data, **kwargs)
 
         return ipdata
 
