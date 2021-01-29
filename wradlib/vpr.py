@@ -32,48 +32,46 @@ CAPPIS (:class:`~wradlib.vpr.CAPPI`) and Pseudo CAPPIs
 (:class:`~wradlib.vpr.PseudoCAPPI`) for different altitudes at once.
 
 Here's an example how a set of CAPPIs can be created from synthetic polar
-volume data::
+volume data:
 
-    import wradlib
-    import numpy as np
-    from osgeo import osr
-    import matplotlib.pyplot as pl
-
-    # define elevation and azimuth angles, ranges, radar site coordinates,
-    # projection
-    elevs  = np.array([0.5,1.5,2.4,3.4,4.3,5.3,6.2,7.5,8.7,10,12,14,16.7,19.5])
-    azims  = np.arange(0., 360., 1.)
-    ranges = np.arange(0., 120000., 1000.)
-    sitecoords = (120.255547,14.924218,500.)
-    proj = osr.SpatialReference()
-    proj.ImportFromEPSG(32651)
-
-    # create Cartesian coordinates corresponding the location of the
-    # polar volume bins
-    polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs,
-                                               azims, ranges, proj)  # noqa
-    poldata = wradlib.vpr.synthetic_polar_volume(polxyz)
-    # this is the shape of our polar volume
-    polshape = (len(elevs),len(azims),len(ranges))
-
-    # now we define the coordinates for the 3-D grid (the CAPPI layers)
-    x = np.linspace(polxyz[:,0].min(), polxyz[:,0].max(), 120)
-    y = np.linspace(polxyz[:,1].min(), polxyz[:,1].max(), 120)
-    z = np.arange(500.,10500.,500.)
-    xyz = wradlib.util.gridaspoints(z, y, x)
-    gridshape = (len(z), len(y), len(x))
-
-    # create an instance of the CAPPI class and
-    # use it to create a series of CAPPIs
-    gridder = wradlib.vpr.CAPPI(polxyz, xyz, gridshape=gridshape, maxrange=ranges.max(),
-                                minelev=elevs.min(), maxelev=elevs.max(),
-                                ipclass=wradlib.ipol.Idw)
-    gridded = np.ma.masked_invalid( gridder(poldata) ).reshape(gridshape)
-
-    # plot results
-    levels = np.linspace(0,100,25)
-    wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels,
-                                       cmap=pl.cm.viridis)
+    >>> import wradlib
+    >>> import numpy as np
+    >>> from osgeo import osr
+    >>> import matplotlib.pyplot as pl
+    >>> pl.interactive(True)
+    >>> # define elevation and azimuth angles, ranges, radar site coordinates,
+    >>> # projection
+    >>> elevs  = np.array([0.5,1.5,2.4,3.4,4.3,5.3,6.2,7.5,8.7,10,12,14,16.7,19.5])
+    >>> azims  = np.arange(0., 360., 1.)
+    >>> ranges = np.arange(0., 120000., 1000.)
+    >>> sitecoords = (120.255547,14.924218,500.)
+    >>> proj = osr.SpatialReference()
+    >>> _ = proj.ImportFromEPSG(32651)
+    >>> # create Cartesian coordinates corresponding the location of the
+    >>> # polar volume bins
+    >>> polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs,
+    ...                                            azims, ranges, proj)  # noqa
+    >>> poldata = wradlib.vpr.synthetic_polar_volume(polxyz)
+    >>> # this is the shape of our polar volume
+    >>> polshape = (len(elevs),len(azims),len(ranges))
+    >>> # now we define the coordinates for the 3-D grid (the CAPPI layers)
+    >>> x = np.linspace(polxyz[:,0].min(), polxyz[:,0].max(), 120)
+    >>> y = np.linspace(polxyz[:,1].min(), polxyz[:,1].max(), 120)
+    >>> z = np.arange(500.,10500.,500.)
+    >>> xyz = wradlib.util.gridaspoints(z, y, x)
+    >>> gridshape = (len(z), len(y), len(x))
+    >>> # create an instance of the CAPPI class and
+    >>> # use it to create a series of CAPPIs
+    >>> gridder = wradlib.vpr.CAPPI(polxyz, xyz, gridshape=gridshape, maxrange=ranges.max(),  # noqa
+    ...                             minelev=elevs.min(), maxelev=elevs.max(),
+    ...                             ipclass=wradlib.ipol.Idw)
+    >>> gridded = np.ma.masked_invalid( gridder(poldata) ).reshape(gridshape)
+    >>>
+    >>> # plot results
+    >>> levels = np.linspace(0,100,25)
+    >>> wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels,
+    ...                                    cmap=pl.cm.viridis)
+    >>> pl.show()
 
 
 .. autosummary::
