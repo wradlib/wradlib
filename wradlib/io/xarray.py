@@ -492,7 +492,7 @@ global_attrs = [
 
 global_variables = dict(
     [
-        ("volume_number", np.int),
+        ("volume_number", np.int_),
         ("platform_type", "fixed"),
         ("instrument_type", "radar"),
         ("primary_axis", "axis_z"),
@@ -3306,7 +3306,7 @@ def _write_odim_dataspace(src, dest):
         try:
             undetect = float(value._Undetect)
         except AttributeError:
-            undetect = np.finfo(np.float).max
+            undetect = np.finfo(np.float_).max
         what = {
             "quantity": value.name,
             "gain": float(enc["scale_factor"]),

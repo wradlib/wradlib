@@ -1261,7 +1261,7 @@ def get_clip_mask(coords, clippoly, srs=None):
     zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]), clip, srs=srs)
 
     # Subsetting in order to use only precipitating profiles
-    src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool)
+    src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool_)
 
     try:
         obj = ZonalStatsPoint(zd)

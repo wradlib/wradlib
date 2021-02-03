@@ -58,7 +58,7 @@ def msf_index_indep(msf, idp, obs):
     """
     bins = np.append(idp, idp[-1] + (idp[-1] - idp[-2]))
     idx = np.digitize(obs, bins) - 1
-    idx_mask = np.zeros_like(idx, dtype=np.bool)
+    idx_mask = np.zeros_like(idx, dtype=np.bool_)
     idxm = np.ma.array(idx, mask=idx_mask)
     idxm = np.ma.masked_outside(idxm, 0, bins.shape[0] - 2)
     out = np.zeros((msf.shape[0], msf.shape[1], obs.size, msf.shape[-1]))

@@ -314,10 +314,10 @@ def _sector_filter(mask, min_sector_size):
     forward_origin = -(min_sector_size - (min_sector_size // 2)) + min_sector_size % 2
     backward_origin = (min_sector_size - (min_sector_size // 2)) - 1
     forward_sum = ndimage.correlate1d(
-        mask.astype(np.int), kernelb, axis=-1, mode="wrap", origin=forward_origin
+        mask.astype(np.int_), kernelb, axis=-1, mode="wrap", origin=forward_origin
     )
     backward_sum = ndimage.correlate1d(
-        mask.astype(np.int), kernelb, axis=-1, mode="wrap", origin=backward_origin
+        mask.astype(np.int_), kernelb, axis=-1, mode="wrap", origin=backward_origin
     )
     forward_corners = forward_sum == min_sector_size
     backward_corners = backward_sum == min_sector_size
@@ -495,8 +495,8 @@ def correct_attenuation_constrained(
 
     # Calculate attenuation forward.
     # Indexing all rows of last dimension (radarbeams)
-    beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype=np.bool))
-    small_sectors = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
+    beams2correct = np.where(np.ones(tmp_gateset.shape[:-1], dtype=np.bool_))
+    small_sectors = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool_)
 
     if n_a != 1:
         delta_a = (a_max - a_min) / (n_a - 1)
@@ -520,7 +520,7 @@ def correct_attenuation_constrained(
             a_used[beams2correct] = a
             b_used[beams2correct] = b
             # Indexing threshold exceeding beams
-            incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool)
+            incorrectbeams = np.zeros(tmp_gateset.shape[:-1], dtype=np.bool_)
             for constraint, constraint_arg in zip(constraints, constraint_args):
                 incorrectbeams = np.logical_or(
                     incorrectbeams, constraint(tmp_gateset, pia, *constraint_arg)

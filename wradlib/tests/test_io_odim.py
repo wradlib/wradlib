@@ -182,10 +182,10 @@ def create_dset_how(i, nrays=360):
 
 def create_dset_where(i, nrays=360):
     return {
-        "a1gate": np.array([create_a1gate(i)], dtype=np.int),
+        "a1gate": np.array([create_a1gate(i)], dtype=np.int_),
         "elangle": np.array([i + 0.5], dtype=np.float32),
-        "nrays": np.array([nrays], dtype=np.int),
-        "nbins": np.array([100], dtype=np.int),
+        "nrays": np.array([nrays], dtype=np.int_),
+        "nbins": np.array([100], dtype=np.int_),
         "rstart": np.array([0], dtype=np.float32),
         "rscale": np.array([1000], dtype=np.float32),
     }
