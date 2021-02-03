@@ -85,7 +85,7 @@ jobs:
       run: |
         echo $WRADLIB_DATA
         export WRADLIB_DATA=`realpath $WRADLIB_DATA`
-        pytest -n auto --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+        pytest -n auto --dist loadfile --verbose --doctest-modules --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1.2.1
       with:
