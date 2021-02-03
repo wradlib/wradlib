@@ -468,7 +468,7 @@ def parse_dwd_composite_header(header):
                 out["ncol"] = int(dimstrings[1])
             if k == "LV":
                 lv = header[v[0] : v[1]].split()
-                out["nlevel"] = np.int(lv[0])
+                out["nlevel"] = np.int_(lv[0])
                 out["level"] = np.array(lv[1:]).astype("float")
             if k == "MS":
                 locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
@@ -936,7 +936,7 @@ radolan = {
         "unit": "dBZ",
     },
     "RR": {
-        "add_offset": np.float(0),
+        "add_offset": np.float_(0),
         "valid_min": np.int32(0),
         "valid_max": np.int32(4095),
         "_FillValue": np.int32(65535),
@@ -945,7 +945,7 @@ radolan = {
         "unit": "mm h-1",
     },
     "RA": {
-        "add_offset": np.float(0),
+        "add_offset": np.float_(0),
         "valid_min": np.int32(0),
         "valid_max": np.int32(4095),
         "_FillValue": np.int32(65535),

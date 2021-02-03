@@ -296,10 +296,10 @@ def reproject(*args, **kwargs):
     area_of_interest = kwargs.get(
         "area_of_interest",
         (
-            np.float(C[..., 0].min()),
-            np.float(C[..., 1].min()),
-            np.float(C[..., 0].max()),
-            np.float(C[..., 1].max()),
+            np.float_(C[..., 0].min()),
+            np.float_(C[..., 1].min()),
+            np.float_(C[..., 0].max()),
+            np.float_(C[..., 1].max()),
         ),
     )
 
