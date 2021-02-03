@@ -459,7 +459,7 @@ def plot_ppi(
     kw_spherical = {"re": kwargs.pop("re", None), "ke": kwargs.pop("ke", 4.0 / 3.0)}
 
     if az is None:
-        az = np.arange(data.shape[0], dtype=np.float)
+        az = np.arange(data.shape[0], dtype=np.float_)
         az += (az[1] - az[0]) / 2.0
 
     if r is None:
@@ -470,7 +470,7 @@ def plot_ppi(
                 "array with units m."
             )
             proj = None
-        r = np.arange(data.shape[1], dtype=np.float)
+        r = np.arange(data.shape[1], dtype=np.float_)
         r += (r[1] - r[0]) / 2.0
 
     if np.isscalar(elev):
@@ -793,7 +793,7 @@ def plot_rhi(
                 "array with units m."
             )
             proj = None
-        r = np.arange(data.shape[1], dtype=np.float)
+        r = np.arange(data.shape[1], dtype=np.float_)
         r += (r[1] - r[0]) / 2.0
 
     if np.isscalar(az):

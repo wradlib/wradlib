@@ -11,10 +11,10 @@ from wradlib import qual
 class TestHelperFunctions:
     def test_get_bb_ratio(self):
         heights = np.array(
-            [[1100, 1100], [1100, 1100], [1100, 1100], [1100, 1100]], dtype=np.float
+            [[1100, 1100], [1100, 1100], [1100, 1100], [1100, 1100]], dtype=np.float_
         )
-        widths = np.array([[50, 50], [50, 50], [50, 50], [50, 50]], dtype=np.float)
-        quality = np.array([[1, 1], [1, 1], [1, 0], [0, 1]], dtype=np.float)
+        widths = np.array([[50, 50], [50, 50], [50, 50], [50, 50]], dtype=np.float_)
+        quality = np.array([[1, 1], [1, 1], [1, 0], [0, 1]], dtype=np.float_)
         z = np.array(
             [
                 [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
@@ -22,7 +22,7 @@ class TestHelperFunctions:
                 [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
                 [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
             ],
-            dtype=np.float,
+            dtype=np.float_,
         )
         ratio_out = np.array(
             [
