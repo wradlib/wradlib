@@ -18,7 +18,7 @@ import xarray as xr
 
 from wradlib import georef, io, util, zonalstats
 
-from . import requires_data
+from . import requires_data, requires_secrets
 
 
 class TestDX:
@@ -1701,6 +1701,7 @@ class TestXarray:
 
 class TestDem:
     @requires_data
+    @requires_secrets
     def test_get_srtm(self):
         targets = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
         targets = ["%s.SRTMGL3.hgt.zip" % (f) for f in targets]

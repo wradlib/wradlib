@@ -12,7 +12,7 @@ from osgeo import gdal, ogr, osr
 import wradlib
 from wradlib import georef, util
 
-from . import has_data, requires_data
+from . import has_data, requires_data, requires_secrets
 
 np.set_printoptions(
     edgeitems=3,
@@ -830,6 +830,8 @@ class TestGdal:
         data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
         assert coords.shape[-1] == 2
 
+    @requires_data
+    @requires_secrets
     def test_get_raster_elevation(self):
         # crop file using translate to keep download sizes minimal
         gdal.Translate(
@@ -854,6 +856,8 @@ class TestGdal:
         extent = georef.get_raster_extent(self.ds2, geo=True, window=False)
         np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
 
+    @requires_data
+    @requires_secrets
     def test_merge_raster_datasets(self):
         datasets = wradlib.io.dem.get_srtm([5, 6, 49.4, 49.5], merge=False)
         georef.merge_raster_datasets(datasets)
