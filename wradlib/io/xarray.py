@@ -73,6 +73,7 @@ Warning
    {}
 """
 __all__ = [
+    "WradlibVariable",
     "XRadVol",
     "CfRadial",
     "OdimH5",
@@ -117,6 +118,46 @@ except ImportError:
             "instead."
         )
         return val
+
+
+def raise_on_missing_xarray_backend():
+    """Raise errors if functionality isn't available."""
+    if LooseVersion(xr.__version__) < LooseVersion("0.17.0"):
+        raise ImportError(
+            f"'xarray>=0.17.0' needed to perform this operation. "
+            f"'xarray={xr.__version__}'  available.",
+        )
+    else:
+        xarray_backend_api = os.environ.get("XARRAY_BACKEND_API", None)
+        if xarray_backend_api is None:
+            os.environ["XARRAY_BACKEND_API"] = "v2"
+        else:
+            if xarray_backend_api != "v2":
+                raise ValueError(
+                    "Environment variable `XARRAY_BACKEND_API='v2'` needed to perform "
+                    "this operation. "
+                )
+
+
+class WradlibVariable(object):
+    """Minimal variable wrapper."""
+
+    def __init__(self, dims, data, attrs):
+        self._dimensions = dims
+        self._data = data
+        self._attrs = attrs
+
+    @property
+    def dimensions(self):
+        return self._dimensions
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def attributes(self):
+        return self._attrs
 
 
 @deprecation.deprecated(
