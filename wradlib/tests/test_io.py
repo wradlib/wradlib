@@ -1,7 +1,6 @@
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import contextlib
 import datetime
 import gzip
 import io as sio
@@ -18,7 +17,12 @@ import xarray as xr
 
 from wradlib import georef, io, util, zonalstats
 
-from . import requires_data, requires_secrets
+from . import get_wradlib_data_file, requires_data, requires_secrets
+
+
+@pytest.fixture(params=["file", "filelike"])
+def file_or_filelike(request):
+    return request.param
 
 
 class TestDX:
@@ -253,25 +257,6 @@ class TestMisc:
         assert msf.shape == (11, 5, 55, 5)
         print(msf[0, :, 8, :])
         np.testing.assert_array_equal(msf[0, :, 8, :], res)
-
-
-@pytest.fixture(params=["file", "filelike"])
-def file_or_filelike(request):
-    return request.param
-
-
-@contextlib.contextmanager
-def get_wradlib_data_file(file, file_or_filelike):
-    datafile = util.get_wradlib_data_file(file)
-    if file_or_filelike == "filelike":
-        _open = open
-        if datafile[-3:] == ".gz":
-            gzip = util.import_optional("gzip")
-            _open = gzip.open
-        with _open(datafile, mode="r+b") as f:
-            yield sio.BytesIO(f.read())
-    else:
-        yield datafile
 
 
 class TestHDF5:
@@ -984,6 +969,87 @@ class TestRadolan:
             fdata = sio.BytesIO(fh.read(20002))
             data, attrs = io.radolan.read_radolan_composite(fdata, fillmissing=True)
             assert data.shape == (900, 900)
+
+    @requires_data
+    def test__radolan_file(self, file_or_filelike):
+        filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
+        test_attrs = {
+            "maxrange": "150 km",
+            "radarlocations": [
+                "boo",
+                "ros",
+                "emd",
+                "hnr",
+                "pro",
+                "ess",
+                "asd",
+                "neu",
+                "nhb",
+                "oft",
+                "tur",
+                "isn",
+                "fbg",
+                "mem",
+            ],
+            "nrow": 900,
+            "intervalseconds": 3600,
+            "precision": 0.1,
+            "datetime": datetime.datetime(2014, 8, 3, 9, 50),
+            "ncol": 900,
+            "radolanversion": "2.13.1",
+            "producttype": "RW",
+            "datasize": 1620000,
+            "radarid": "10000",
+        }
+        with get_wradlib_data_file(filename, file_or_filelike) as rwfile:
+            radfile = io.radolan._radolan_file(rwfile)
+            assert radfile.dtype == np.uint16
+            assert radfile.product == "RW"
+            assert radfile.attrs == test_attrs
+            assert radfile.data.shape == (900, 900)
+
+    @requires_data
+    def test_open_radolan_dataset(self):
+        filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
+        rw_file = util.get_wradlib_data_file(filename)
+
+        # test for complete file
+        data = io.radolan.open_radolan_dataset(rw_file)
+        assert data.RW.shape == (900, 900)
+
+        # Do the same for the case where a file handle is passed
+        # instead of a file name
+        with gzip.open(rw_file) as fh:
+            data = io.radolan.open_radolan_dataset(fh)
+            assert data.RW.shape == (900, 900)
+
+        filename = "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz"
+        rx_file = util.get_wradlib_data_file(filename)
+        data = io.radolan.open_radolan_dataset(rx_file)
+        assert data.RX.shape == (900, 900)
+        assert data.dims == {"x": 900, "y": 900, "time": 1}
+        assert data.RX.dims == ("y", "x")
+        assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
+
+        filename = "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz"
+        pc_file = util.get_wradlib_data_file(filename)
+        data = io.radolan.open_radolan_dataset(pc_file)
+        assert data.PG.shape == (460, 460)
+
+    @requires_data
+    def test_open_radolan_mfdataset(self):
+        filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
+        rw_file = util.get_wradlib_data_file(filename)
+
+        data = io.radolan.open_radolan_mfdataset(rw_file)
+        assert data.RW.shape == (900, 900)
+
+        data = io.radolan.open_radolan_mfdataset(rw_file[:-23] + "*", concat_dim="time")
+        assert data.RW.shape == (2, 900, 900)
+        assert data.dims == {"x": 900, "y": 900, "time": 2}
+        assert data.RW.dims == ("time", "y", "x")
+        assert data.time[0].values == np.datetime64("2014-08-03T09:50:00.000000000")
+        assert data.time[1].values == np.datetime64("2014-08-10T20:50:00.000000000")
 
 
 class TestRainbow:

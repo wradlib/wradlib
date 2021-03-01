@@ -2,6 +2,7 @@ bottleneck
 cartopy
 codecov
 coverage
+dask
 deprecation
 gdal
 h5py

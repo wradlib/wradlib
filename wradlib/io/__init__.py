@@ -11,6 +11,7 @@ for an introduction on how to deal with different file formats.
 .. toctree::
     :maxdepth: 2
 
+.. automodule:: wradlib.io.backends
 .. automodule:: wradlib.io.dem
 .. automodule:: wradlib.io.gdal
 .. automodule:: wradlib.io.hdf
@@ -22,6 +23,7 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.xarray
 """
 
+from .backends import *
 from .dem import *
 from .gdal import *
 from .hdf import *

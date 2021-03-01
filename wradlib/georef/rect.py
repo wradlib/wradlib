@@ -15,6 +15,7 @@ Rectangular Grid Functions
 """
 __all__ = [
     "get_radolan_coords",
+    "get_radolan_coordinates",
     "get_radolan_grid",
     "xyz_to_spherical",
     "grid_to_polyvert",
@@ -70,6 +71,77 @@ def get_radolan_coords(lon, lat, trig=False):
         )
 
     return x, y
+
+
+def get_radolan_coordinates(nrows=None, ncols=None, trig=False):
+    """Calculates x/y coordinates of radolan  projection of the German Weather Service
+
+    Returns the 1D x,y coordinates of the radolan projection for the given grid
+    layout.
+
+    Parameters
+    ----------
+    nrows : int
+        number of rows (460, 900 by default, 1100, 1500)
+    ncols : int
+        number of columns (460, 900 by default, 1400)
+    trig : boolean
+        if True, uses trigonometric formulas for calculation
+        if False, uses osr spatial reference system to transform between
+        projections
+        `trig` is recommended to be False, however, the two ways of computation
+        are expected to be equivalent.
+    wgs84 : boolean
+        if True, output coordinates are in wgs84 lonlat format (default: False)
+
+    Returns
+    -------
+    radolan_ccords : tuple
+        tuple x and y 1D coordinate :class:`numpy:numpy.ndarray`
+    """
+    # setup default parameters in dicts
+    tiny = {"j_0": 450, "i_0": 450, "res": 2}
+    small = {"j_0": 460, "i_0": 460, "res": 2}
+    normal = {"j_0": 450, "i_0": 450, "res": 1}
+    normal_wx = {"j_0": 370, "i_0": 550, "res": 1}
+    normal_wn = {"j_0": 470, "i_0": 600, "res": 1}
+    extended = {"j_0": 600, "i_0": 800, "res": 1}
+    griddefs = {
+        (450, 450): tiny,
+        (460, 460): small,
+        (900, 900): normal,
+        (1100, 900): normal_wx,
+        (1200, 1100): normal_wn,
+        (1500, 1400): extended,
+    }
+
+    # type and value checking
+    if nrows and ncols:
+        if not (isinstance(nrows, int) and isinstance(ncols, int)):
+            raise TypeError(
+                "wradlib.georef: Parameter *nrows* " "and *ncols* not integer"
+            )
+        if (nrows, ncols) not in griddefs.keys():
+            raise ValueError(
+                "wradlib.georef: Parameter *nrows* " "and *ncols* mismatch."
+            )
+    else:
+        # fallback for call without parameters
+        nrows = 900
+        ncols = 900
+
+    # tiny, small, normal or extended grid check
+    # reference point changes according to radolan composit format
+    j_0 = griddefs[(nrows, ncols)]["j_0"]
+    i_0 = griddefs[(nrows, ncols)]["i_0"]
+    res = griddefs[(nrows, ncols)]["res"]
+
+    x_0, y_0 = get_radolan_coords(9.0, 51.0, trig=trig)
+
+    x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols * res, res)
+    y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows * res, res)
+
+    return x_arr, y_arr
 
 
 def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
@@ -171,47 +243,8 @@ Polar-Stereographic-Projection`.
         TypeError, ValueError
     """
 
-    # setup default parameters in dicts
-    tiny = {"j_0": 450, "i_0": 450, "res": 2}
-    small = {"j_0": 460, "i_0": 460, "res": 2}
-    normal = {"j_0": 450, "i_0": 450, "res": 1}
-    normal_wx = {"j_0": 370, "i_0": 550, "res": 1}
-    normal_wn = {"j_0": 470, "i_0": 600, "res": 1}
-    extended = {"j_0": 600, "i_0": 800, "res": 1}
-    griddefs = {
-        (450, 450): tiny,
-        (460, 460): small,
-        (900, 900): normal,
-        (1100, 900): normal_wx,
-        (1200, 1100): normal_wn,
-        (1500, 1400): extended,
-    }
+    x_arr, y_arr = get_radolan_coordinates(nrows=nrows, ncols=ncols, trig=trig)
 
-    # type and value checking
-    if nrows and ncols:
-        if not (isinstance(nrows, int) and isinstance(ncols, int)):
-            raise TypeError(
-                "wradlib.georef: Parameter *nrows* " "and *ncols* not integer"
-            )
-        if (nrows, ncols) not in griddefs.keys():
-            raise ValueError(
-                "wradlib.georef: Parameter *nrows* " "and *ncols* mismatch."
-            )
-    else:
-        # fallback for call without parameters
-        nrows = 900
-        ncols = 900
-
-    # tiny, small, normal or extended grid check
-    # reference point changes according to radolan composit format
-    j_0 = griddefs[(nrows, ncols)]["j_0"]
-    i_0 = griddefs[(nrows, ncols)]["i_0"]
-    res = griddefs[(nrows, ncols)]["res"]
-
-    x_0, y_0 = get_radolan_coords(9.0, 51.0, trig=trig)
-
-    x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols * res, res)
-    y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows * res, res)
     x, y = np.meshgrid(x_arr, y_arr)
 
     radolan_grid = np.dstack((x, y))
