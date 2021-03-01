@@ -15,7 +15,7 @@ import pytest
 
 from wradlib import georef, util, vis
 
-from . import requires_data
+from . import requires_data, requires_secrets
 
 cartopy = util.import_optional("cartopy")
 
@@ -186,6 +186,13 @@ class TestMiscPlot:
         site = (7.0, 53.0, 100.0)
         vis.plot_scan_strategy(ranges, elevs, site)
         vis.plot_scan_strategy(ranges, elevs, site, cg=True)
+
+    @requires_data
+    @requires_secrets
+    def test_plot_scan_strategy_terrain(self):
+        ranges = np.arange(0, 10000, 100)
+        elevs = np.arange(1, 30, 3)
+        site = (7.0, 53.0, 100.0)
         vis.plot_scan_strategy(ranges, elevs, site, terrain=True)
         vis.plot_scan_strategy(ranges, elevs, site, cg=True, terrain=True)
 
