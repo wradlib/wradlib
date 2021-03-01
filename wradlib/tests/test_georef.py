@@ -836,7 +836,7 @@ class TestGdal:
             "/vsimem/clip.tif", self.geofile1, projWin=[5.5, 49.5, 5.6, 49.4]
         )
         ds = wradlib.io.open_raster("/vsimem/clip.tif")
-        georef.get_raster_elevation(ds, download={"region": "Eurasia"})
+        georef.get_raster_elevation(ds)
 
     def test_get_raster_extent(self):
 
@@ -855,10 +855,7 @@ class TestGdal:
         np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
 
     def test_merge_raster_datasets(self):
-        download = {"region": "Eurasia"}
-        datasets = wradlib.io.dem.get_srtm(
-            [5, 6, 49.4, 49.5], merge=False, download=download
-        )
+        datasets = wradlib.io.dem.get_srtm([5, 6, 49.4, 49.5], merge=False)
         georef.merge_raster_datasets(datasets)
 
     def test_raster_to_polyvert(self):
