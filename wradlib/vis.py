@@ -1069,7 +1069,6 @@ def plot_scan_strategy(
         # (down-)load srtm data
         ds = io.get_srtm(
             [ll[..., 0].min(), ll[..., 0].max(), ll[..., 1].min(), ll[..., 1].max()],
-            download={},
         )
         rastervalues, rastercoords, proj = georef.extract_raster_dataset(
             ds, nodata=-32768.0
