@@ -82,6 +82,9 @@ jobs:
         python -c "import wradlib; print(wradlib.version.full_version)"
         python -c "import wradlib; print(wradlib.show_versions())"
     - name: Test with pytest
+      env:
+        WRADLIB_EARTHDATA_USER: ${{ secrets.WRADLIB_EARTHDATA_USER }}
+        WRADLIB_EARTHDATA_PASS: ${{ secrets.WRADLIB_EARTHDATA_PASS }}
       run: |
         echo $WRADLIB_DATA
         export WRADLIB_DATA=`realpath $WRADLIB_DATA`
@@ -144,6 +147,9 @@ jobs:
         python -c "import wradlib; print(wradlib.version.full_version)"
         python -c "import wradlib; print(wradlib.show_versions())"
     - name: Test with pytest
+      env:
+        WRADLIB_EARTHDATA_USER: ${{ secrets.WRADLIB_EARTHDATA_USER }}
+        WRADLIB_EARTHDATA_PASS: ${{ secrets.WRADLIB_EARTHDATA_PASS }}
       run: |
         echo $WRADLIB_DATA
         export WRADLIB_DATA=`python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" $WRADLIB_DATA`
@@ -209,6 +215,9 @@ jobs:
           python -c "import wradlib; print(wradlib.version.full_version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_USER: ${{ secrets.WRADLIB_EARTHDATA_USER }}
+          WRADLIB_EARTHDATA_PASS: ${{ secrets.WRADLIB_EARTHDATA_PASS }}
         run: |
           eval "$(./micromamba shell hook -s bash)"
           micromamba activate wradlib-tests
@@ -273,6 +282,9 @@ jobs:
           python -c "import wradlib; print(wradlib.version.full_version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_USER: ${{ secrets.WRADLIB_EARTHDATA_USER }}
+          WRADLIB_EARTHDATA_PASS: ${{ secrets.WRADLIB_EARTHDATA_PASS }}
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`

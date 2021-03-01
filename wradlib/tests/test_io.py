@@ -1703,20 +1703,18 @@ class TestDem:
     @requires_data
     def test_get_srtm(self):
         targets = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
-        targets = ["%s.hgt.zip" % (f) for f in targets]
+        targets = ["%s.SRTMGL3.hgt.zip" % (f) for f in targets]
 
-        opts = {"region": "Eurasia"}
         extent = [-0.3, 1.5, 51.4, 52.5]
-        datasets = io.dem.get_srtm(extent, merge=False, download=opts)
+        datasets = io.dem.get_srtm(extent, merge=False)
         filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
         assert targets == filelist
 
         targets = ["S02E015", "S02E016", "S01E015", "S01E016", "N00E015", "N00E016"]
-        targets = ["%s.hgt.zip" % (f) for f in targets]
+        targets = ["%s.SRTMGL3.hgt.zip" % (f) for f in targets]
 
-        opts = {"region": "Africa"}
         extent = [15.3, 16.6, -1.4, 0.4]
-        datasets = io.dem.get_srtm(extent, merge=False, download=opts)
+        datasets = io.dem.get_srtm(extent, merge=False)
         filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
         assert targets == filelist
 
