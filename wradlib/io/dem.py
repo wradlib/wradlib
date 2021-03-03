@@ -118,7 +118,7 @@ def get_srtm(extent, resolution=3, merge=True):
         Raster dataset containing elevation information
     """
 
-    extent = [int(np.floor(x)) for x in extent]
+    extent = [int(np.floor(abs(x)) * np.sign(x)) for x in extent]
     lonmin, lonmax, latmin, latmax = extent
 
     filelist = []
