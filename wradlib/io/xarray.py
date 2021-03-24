@@ -989,16 +989,22 @@ def _reindex_angle(ds, sweep, force=False):
         # todo: check if assumption that beam center points to
         #       multiples of res/2. is correct in any case
         azr = np.arange(res / 2.0, new_rays * res, res, dtype=diff.dtype)
+        fill_value = {
+            k: v._FillValue.astype(v.dtype)
+            for k, v in ds.items()
+            if hasattr(v, "_FillValue")
+        }
+        # todo: make tolerance parameterizable
         ds = ds.reindex(
             {dimname: azr},
             method="nearest",
-            tolerance=res / 4.0,
-            # fill_value=xr.core.dtypes.NA,
+            tolerance=res / 2.5,
+            fill_value=fill_value,
         )
         # check other coordinates
         # check secondary angle coordinate (no nan)
         # set nan values to reasonable median
-        if np.count_nonzero(np.isnan(ds[secname])):
+        if hasattr(ds, secname) and np.count_nonzero(np.isnan(ds[secname])):
             ds[secname] = ds[secname].fillna(ds[secname].median(skipna=True))
         # todo: rtime is also affected, might need to be treated accordingly
 
