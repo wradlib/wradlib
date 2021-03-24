@@ -250,10 +250,12 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
                 if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
                     bin_format = bin_format.decode()
                 if bin_format == "UV8":
-                    div = 256.0
+                    div = 254
                 else:
-                    div = 65536.0
-                mdata = dyn_range_min + mdata * (dyn_range_max - dyn_range_min) / div
+                    div = 65534
+                mdata = (
+                    dyn_range_min + (mdata - 1) * (dyn_range_max - dyn_range_min) / div
+                )
 
                 if scan_type == "PVOL":
                     # rotate accordingly

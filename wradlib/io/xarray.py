@@ -990,7 +990,7 @@ def _reindex_angle(ds, sweep, force=False):
         #       multiples of res/2. is correct in any case
         azr = np.arange(res / 2.0, new_rays * res, res, dtype=diff.dtype)
         fill_value = {
-            k: v._FillValue.astype(v.dtype)
+            k: np.asarray(v._FillValue).astype(v.dtype)
             for k, v in ds.items()
             if hasattr(v, "_FillValue")
         }
@@ -2048,15 +2048,20 @@ class XRadSweepGamic(XRadSweep):
             dmin = np.iinfo(dmom.dtype).min
             minval = dmom.dyn_range_min
             maxval = dmom.dyn_range_max
+            dtype = minval.dtype
+            dyn_range = maxval - minval
             if maxval != minval:
-                gain = (maxval - minval) / dmax
+                gain = dyn_range / (dmax - 1)
+                minval -= gain
             else:
                 gain = (dmax - dmin) / dmax
                 minval = dmin
-            undetect = float(dmin)
+            gain = gain.astype(dtype)
+            minval = minval.astype(dtype)
+            undetect = np.array([dmin])[0].astype(dtype)
             attrs["scale_factor"] = gain
             attrs["add_offset"] = minval
-            attrs["_FillValue"] = float(dmax)
+            attrs["_FillValue"] = undetect
             attrs["_Undetect"] = undetect
 
             if self.decode_coords:
@@ -3461,10 +3466,13 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
         dmin = np.iinfo(dmom.dtype).min
         minval = dmom.dyn_range_min
         maxval = dmom.dyn_range_max
-        gain = (maxval - minval) / dmax
-        offset = minval
-        fillval = float(dmax)
-        undetect = float(dmin)
+        dtype = minval.dtype
+        gain = (maxval - minval) / (dmax - 1)
+        offset = minval - gain
+
+        gain = gain.astype(dtype)
+        offset = offset.astype(dtype)
+        undetect = np.array([dmin])[0].astype(dtype)
 
         # create attribute dict
         attrs = collections.OrderedDict()
@@ -3475,7 +3483,7 @@ def _get_odim_variables_moments(ds, moments=None, **kwargs):
         if standard in ["odim"]:
             attrs["gain"] = gain
             attrs["offset"] = offset
-            attrs["nodata"] = fillval
+            attrs["nodata"] = undetect
             attrs["undetect"] = undetect
 
         # add cfradial moment attributes

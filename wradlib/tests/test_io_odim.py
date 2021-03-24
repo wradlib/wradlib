@@ -223,11 +223,16 @@ def create_dataset(i, type=None, nrays=360):
     attrs = {}
     attrs["scale_factor"] = what["gain"]
     attrs["add_offset"] = what["offset"]
-    if type == "GAMIC":
-        attrs["add_offset"] -= 0.5
     attrs["_FillValue"] = what["nodata"]
-    attrs["coordinates"] = b"elevation azimuth range"
     attrs["_Undetect"] = what["undetect"]
+
+    if type == "GAMIC":
+        attrs["add_offset"] -= 0.5 + 127.5 / 254
+        attrs["scale_factor"] = 127.5 / 254
+        attrs["_FillValue"] = what["undetect"]
+        attrs["_Undetect"] = what["undetect"]
+
+    attrs["coordinates"] = b"elevation azimuth range"
     ds = xr.Dataset({"DBZH": (["azimuth", "range"], create_data(nrays=nrays), attrs)})
     return ds
 
