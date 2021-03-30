@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 
@@ -1175,14 +1175,7 @@ def _open_mfmoments(
         getattr_ = getattr
 
     if single_file:
-        datasets = [
-            open_(
-                store(ds0, group=p.ncpath, lock=lock, autoclose=None),
-                engine=engine,
-                **open_kwargs,
-            )
-            for p in moments
-        ]
+        datasets = [open_(store(ds0, group=p.ncpath)) for p in moments]
     else:
         fileid = []
         for p in moments:
@@ -1192,16 +1185,7 @@ def _open_mfmoments(
                 p = p.ncfile
             fileid.append(p)
         datasets = [
-            open_(
-                store(
-                    f,
-                    group=p.ncpath,
-                    lock=lock,
-                    autoclose=None,
-                ),
-                engine=engine,
-                **open_kwargs,
-            )
+            open_(store(f, group=p.ncpath), **open_kwargs)
             for f, p in zip(fileid, moments)
         ]
     if LooseVersion(xr.__version__) <= LooseVersion("0.16.2"):
@@ -2067,11 +2051,8 @@ class XRadSweepGamic(XRadSweep):
         else:
             ds0 = self.ncfile
 
-        ds = xr.open_dataset(
-            store(ds0, self.ncpath, lock=None, autoclose=None),
-            engine=self.engine,
-            chunks=self.chunks,
-        )
+        ds = xr.open_dataset(store(ds0, self.ncpath), chunks=self.chunks)
+
         ds = ds.drop_vars("ray_header", errors="ignore")
         for mom in self:
             mom_name = mom.ncpath.split("/")[-1]
