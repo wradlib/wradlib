@@ -27,11 +27,7 @@ from xarray.backends.common import AbstractDataStore, BackendArray, BackendEntry
 from xarray.backends.file_manager import CachingFileManager, DummyFileManager
 from xarray.backends.locks import SerializableLock, ensure_lock
 from xarray.backends.store import StoreBackendEntrypoint
-from xarray.core.indexing import (
-    IndexingSupport,
-    LazilyOuterIndexedArray,
-    explicit_indexing_adapter,
-)
+from xarray.core import indexing
 from xarray.core.utils import Frozen, FrozenDict, close_on_error
 from xarray.core.variable import Variable
 
@@ -52,10 +48,10 @@ class RadolanArrayWrapper(BackendArray):
         return self.datastore.ds.data[key]
 
     def __getitem__(self, key):
-        return explicit_indexing_adapter(
+        return indexing.explicit_indexing_adapter(
             key,
             self.shape,
-            IndexingSupport.BASIC,
+            indexing.IndexingSupport.BASIC,
             self._getitem,
         )
 
@@ -99,7 +95,7 @@ class RadolanDataStore(AbstractDataStore):
         if isinstance(var.data, np.ndarray):
             data = var.data
         else:
-            data = LazilyOuterIndexedArray(RadolanArrayWrapper(self, var.data))
+            data = indexing.LazilyOuterIndexedArray(RadolanArrayWrapper(self, var.data))
         return Variable(var.dimensions, data, var.attributes, encoding)
 
     def get_variables(self):

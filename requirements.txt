@@ -8,5 +8,5 @@ numpy
 matplotlib
 requests
 scipy
-xarray
+xarray>=0.17.0
 xmltodict
