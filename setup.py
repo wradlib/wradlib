@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """wradlib - An Open Source Library for Weather Radar Data Processing
@@ -193,7 +193,11 @@ def setup_package():
         packages=find_packages(),
         entry_points={
             "xarray.backends": [
-                "radolan = wradlib.io.backends:RadolanBackendEntrypoint"
+                "cfradial1 = wradlib.io.backends:CfRadial1BackendEntrypoint",
+                "cfradial2 = wradlib.io.backends:CfRadial2BackendEntrypoint",
+                "gamic = wradlib.io.backends:GamicBackendEntrypoint",
+                "odim = wradlib.io.backends:OdimBackendEntrypoint",
+                "radolan = wradlib.io.backends:RadolanBackendEntrypoint",
             ]
         },
     )
