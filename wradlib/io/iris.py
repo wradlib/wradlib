@@ -220,12 +220,12 @@ def decode_string(data):
 # 4.2 Scalar Definitions, Page 23
 # https://docs.python.org/3/library/struct.html#format-characters
 
-SINT1 = {"fmt": "b"}
-SINT2 = {"fmt": "h"}
-SINT4 = {"fmt": "i"}
-UINT1 = {"fmt": "B"}
-UINT2 = {"fmt": "H"}
-UINT4 = {"fmt": "I"}
+SINT1 = {"fmt": "b", "dtype": "int8"}
+SINT2 = {"fmt": "h", "dtype": "int16"}
+SINT4 = {"fmt": "i", "dtype": "int32"}
+UINT1 = {"fmt": "B", "dtype": "unit8"}
+UINT2 = {"fmt": "H", "dtype": "uint16"}
+UINT4 = {"fmt": "I", "dtype": "unint32"}
 FLT4 = {"fmt": "f"}
 FLT8 = {"fmt": "d"}
 BIN1 = {
@@ -288,6 +288,29 @@ def _get_fmt_string(dictionary, retsub=False):
         return fmt, sub
     else:
         return fmt
+
+
+def _get_struct_dtype(dictionary):
+    """Get numpy struct dtype from given dictionary.
+
+    Parameters
+    ----------
+    dictionary : dict
+        Dictionary containing data structure with dtype-strings.
+
+    Returns
+    -------
+    dtype : np.dtype
+        numpy struct dtype
+    """
+    dtypes = []
+    for k, v in dictionary.items():
+        try:
+            dtypes.append((k, v["dtype"]))
+        except KeyError:
+            dtypes.append((k, "S{0}".format(v["fmt"][:-1])))
+
+    return np.dtype(dtypes)
 
 
 def _unpack_dictionary(buffer, dictionary, rawdata=False):
@@ -1579,6 +1602,62 @@ RAY_HEADER = OrderedDict(
     ]
 )
 
+# extended_header_v0 Structure
+# 4.3.8, page 28
+
+EXTENDED_HEADER_V0 = OrderedDict(
+    [
+        ("dtime_ms", SINT4),
+        ("calib_signal_level", SINT2),
+        ("spare_0", {"fmt": "14s"}),
+    ]
+)
+
+# extended_header_v1 Structure
+# 4.3.9, page 28f
+
+EXTENDED_HEADER_V1 = OrderedDict(
+    [
+        ("dtime_ms", SINT4),
+        ("calib_signal_level", SINT2),
+        ("azimuth", BIN2),
+        ("elevation", BIN2),
+        ("train_order", BIN2),
+        ("elevation_order", BIN2),
+        ("pitch", BIN2),
+        ("roll", BIN2),
+        ("heading", BIN2),
+        ("azimuth_rate", BIN2),
+        ("elevation_rate", BIN2),
+        ("pitch_rate", BIN2),
+        ("roll_rate", BIN2),
+        ("latitude", BIN4),
+        ("longitude", BIN4),
+        ("heading_rate", BIN2),
+        ("altitude", SINT2),
+        ("velocity_east", SINT2),
+        ("velocity_north", SINT2),
+        ("time_since_last_update", SINT4),
+        ("velocity_up", SINT2),
+        ("navigation_system_ok_flag", UINT2),
+        ("radial_velocity_correction", SINT2),
+    ]
+)
+
+# extended_header_v2 Structure
+# 4.3.10, page 29
+
+EXTENDED_HEADER_V2 = OrderedDict(
+    [
+        ("dtime_ms", SINT4),
+        ("calib_signal_level", SINT2),
+        ("spare_0", {"fmt": "2s"}),
+        ("num_bytes_header", SINT4),
+        # todo: implement customer remainder
+    ]
+)
+
+
 # some length's of data structures
 LEN_STRUCTURE_HEADER = struct.calcsize(_get_fmt_string(STRUCTURE_HEADER))
 LEN_PRODUCT_HDR = struct.calcsize(_get_fmt_string(PRODUCT_HDR))
@@ -1618,7 +1697,7 @@ STRUCTURE_HEADER_FORMAT_VERSION = OrderedDict(
 SIGMET_DATA_TYPES = OrderedDict(
     [
         # Extended Headers
-        (0, {"name": "DB_XHDR", "func": None}),
+        (0, {"name": "DB_XHDR", "dtype": "uint8", "func": None}),
         # Total H power (1 byte)
         (
             1,
@@ -3287,9 +3366,10 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
         # get boolean True for selected available rays
         raylist = skip * rays_per_data_type[0]
 
+        phdr = self._product_hdr
         # get sum of rays for selected available data types
         rays = sum(rays_per_selected_type)
-        bins = self._product_hdr["product_end"]["number_bins"]
+        bins = phdr["product_end"]["number_bins"]
 
         raw_data = np.zeros((rays, bins + 6), dtype="int16")
         single_data = np.zeros((bins + 6), dtype="int16")
@@ -3305,9 +3385,32 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
 
         sweep_data = OrderedDict()
         cnt = len(selected_type)
+        xhdr_type = phdr["product_configuration"]["product_specific_info"]["xhdr_type"]
+
         for i, prod in enumerate(selected_type):
             sweep_prod = OrderedDict()
-            sweep_prod["data"] = self.decode_data(raw_data[i::cnt, 6:], prod)
+            data = raw_data[i::cnt, 6:]
+            if prod["name"] == "DB_XHDR":
+                if xhdr_type == 0:
+                    ext_hdr = EXTENDED_HEADER_V0
+                elif xhdr_type == 1:
+                    ext_hdr = EXTENDED_HEADER_V1
+                elif xhdr_type == 2:
+                    ext_hdr = EXTENDED_HEADER_V2
+                    warnings.warn(
+                        "wradlib: Sigmet/Iris Extended Header V2 not implemented "
+                        "completely. The customer specified reminder will not be "
+                        "decoded. Please use `rawdata=True` to load undecoded data."
+                    )
+                else:
+                    raise ValueError(
+                        f"wradlib: unknown extended header type V{xhdr_type}"
+                    )
+                len_ext_hdr = struct.calcsize(_get_fmt_string(ext_hdr))
+                dtype = _get_struct_dtype(ext_hdr)
+                if not self.rawdata:
+                    data = data[:, : len_ext_hdr // 2].copy().view(dtype)
+            sweep_prod["data"] = self.decode_data(data, prod)
             sweep_prod["azi_start"] = self.decode_data(raw_data[i::cnt, 0], BIN2)
             sweep_prod["ele_start"] = self.decode_data(raw_data[i::cnt, 1], BIN2)
             sweep_prod["azi_stop"] = self.decode_data(raw_data[i::cnt, 2], BIN2)
