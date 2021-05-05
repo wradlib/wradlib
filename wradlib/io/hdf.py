@@ -12,6 +12,10 @@ HDF Data I/O
    {}
 """
 __all__ = [
+    "open_gamic_dataset",
+    "open_gamic_mfdataset",
+    "open_odim_dataset",
+    "open_odim_mfdataset",
     "read_generic_hdf5",
     "read_opera_hdf5",
     "read_gamic_hdf5",
@@ -28,6 +32,140 @@ from distutils.version import LooseVersion
 import h5py
 import netCDF4 as nc
 import numpy as np
+
+from wradlib.io.xarray import (
+    open_radar_dataset,
+    open_radar_mfdataset,
+    raise_on_missing_xarray_backend,
+)
+
+
+def open_odim_dataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an ODIM radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_odim_mfdataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_dataset(filename_or_obj, engine="odim", **kwargs)
+
+
+def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_gamic_mfdataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_dataset(filename_or_obj, engine="gamic", **kwargs)
+
+
+def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an ODIM radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_odim_dataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_mfdataset(filename_or_obj, engine="odim", **kwargs)
+
+
+def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_gamic_dataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_mfdataset(filename_or_obj, engine="gamic", **kwargs)
 
 
 def read_generic_hdf5(fname):

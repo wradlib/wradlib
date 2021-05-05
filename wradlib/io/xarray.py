@@ -79,14 +79,6 @@ Warning
 __all__ = [
     "WradlibVariable",
     "RadarVolume",
-    "open_cfradial1_dataset",
-    "open_cfradial1_mfdataset",
-    "open_cfradial2_dataset",
-    "open_cfradial2_mfdataset",
-    "open_gamic_dataset",
-    "open_gamic_mfdataset",
-    "open_odim_dataset",
-    "open_odim_mfdataset",
     "open_radar_dataset",
     "open_radar_mfdataset",
     "XRadVol",
@@ -146,7 +138,7 @@ def raise_on_missing_xarray_backend():
             f"'xarray>=0.17.0' needed to perform this operation. "
             f"'xarray={xr.__version__}'  available.",
         )
-    else:
+    elif LooseVersion(xr.__version__) < LooseVersion("0.18.0"):
         xarray_backend_api = os.environ.get("XARRAY_BACKEND_API", None)
         if xarray_backend_api is None:
             os.environ["XARRAY_BACKEND_API"] = "v2"
@@ -156,6 +148,8 @@ def raise_on_missing_xarray_backend():
                     "Environment variable `XARRAY_BACKEND_API='v2'` needed to perform "
                     "this operation. "
                 )
+    else:
+        pass
 
 
 class WradlibVariable(object):
@@ -900,13 +894,13 @@ def to_odim(volume, filename, timestep=0):
             ds = volume["sweep_{}".format(idx + 1)]
         elif isinstance(volume, XRadVolume):
             ds = volume[idx][timestep].data
-            ds = ds.drop_vars("time").rename({"rtime": "time"})
+            ds = ds.drop_vars("time", errors="ignore").rename({"rtime": "time"})
         else:
             ds = volume[idx]
             if "time" not in ds.dims:
                 ds = ds.expand_dims("time")
             ds = ds.isel(time=timestep, drop=True)
-            ds = ds.rename({"rtime": "time"})
+            ds = ds.drop_vars("time", errors="ignore").rename({"rtime": "time"})
         h5_dataset = h5.create_group(ds_list[idx])
 
         # what group p. 21 ff.
@@ -1708,262 +1702,6 @@ def _assign_data_radial2(ds):
     ds = ds.assign_coords(**coords)
 
     return ds
-
-
-def open_odim_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an ODIM radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_odim_mfdataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="odim", **kwargs)
-
-
-def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_gamic_mfdataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="gamic", **kwargs)
-
-
-def open_cfradial1_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an CfRadial1 radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_cfradial1_mfdataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="cfradial1", **kwargs)
-
-
-def open_cfradial2_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an CfRadial2 radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_cfradial2_mfdataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="cfradial2", **kwargs)
-
-
-def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an ODIM radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_odim_dataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="odim", **kwargs)
-
-
-def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_gamic_dataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="gamic", **kwargs)
-
-
-def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an CfRadial1 radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_cfradial1_dataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="cfradial1", **kwargs)
-
-
-def open_cfradial2_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an CfRadial2 radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    wradlib.io.open_cfradial1_dataset
-    """
-    raise_on_missing_xarray_backend()
-    kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="cfradial2", **kwargs)
 
 
 def open_radar_dataset(filename_or_obj, engine=None, **kwargs):

@@ -166,14 +166,12 @@ class RadolanBackendEntrypoint(BackendEntrypoint):
         drop_variables=None,
         use_cftime=None,
         decode_timedelta=None,
-        lock=None,
         fillmissing=False,
         copy=False,
     ):
 
         store = RadolanDataStore(
             filename_or_obj,
-            lock=lock,
             fillmissing=fillmissing,
             copy=copy,
         )
@@ -490,15 +488,14 @@ class OdimBackendEntrypoint(BackendEntrypoint):
         filename_or_obj,
         *,
         mask_and_scale=True,
-        decode_times=None,
-        concat_characters=None,
-        decode_coords=None,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
         drop_variables=None,
         use_cftime=None,
         decode_timedelta=None,
         format=None,
         group="dataset1",
-        lock=None,
         invalid_netcdf=None,
         phony_dims="access",
         decode_vlen_strings=True,
@@ -513,7 +510,6 @@ class OdimBackendEntrypoint(BackendEntrypoint):
             filename_or_obj,
             format=format,
             group=group,
-            lock=lock,
             invalid_netcdf=invalid_netcdf,
             phony_dims=phony_dims,
             decode_vlen_strings=decode_vlen_strings,
@@ -687,15 +683,14 @@ class GamicBackendEntrypoint(BackendEntrypoint):
         filename_or_obj,
         *,
         mask_and_scale=True,
-        decode_times=None,
-        concat_characters=None,
-        decode_coords=None,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
         drop_variables=None,
         use_cftime=None,
         decode_timedelta=None,
         format=None,
         group="scan0",
-        lock=None,
         invalid_netcdf=None,
         phony_dims="access",
         decode_vlen_strings=True,
@@ -710,7 +705,6 @@ class GamicBackendEntrypoint(BackendEntrypoint):
             filename_or_obj,
             format=format,
             group=group,
-            lock=lock,
             invalid_netcdf=invalid_netcdf,
             phony_dims=phony_dims,
             decode_vlen_strings=decode_vlen_strings,
@@ -750,22 +744,20 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
         filename_or_obj,
         *,
         mask_and_scale=True,
-        decode_times=None,
-        concat_characters=None,
-        decode_coords=None,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
         drop_variables=None,
         use_cftime=None,
         decode_timedelta=None,
         format=None,
         group=None,
-        lock=None,
     ):
 
         store = NetCDF4DataStore.open(
             filename_or_obj,
             format=format,
             group=None,
-            lock=lock,
         )
 
         store_entrypoint = StoreBackendEntrypoint()
@@ -793,15 +785,14 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
         filename_or_obj,
         *,
         mask_and_scale=True,
-        decode_times=False,
-        concat_characters=None,
-        decode_coords=None,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
         drop_variables=None,
         use_cftime=None,
         decode_timedelta=None,
         format=None,
         group=None,
-        lock=None,
     ):
 
         # 1. first open store with group=None
@@ -815,7 +806,6 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
             filename_or_obj,
             format=format,
             group=None,
-            lock=lock,
         )
 
         if group is not None:
@@ -839,7 +829,6 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
                 filename_or_obj,
                 format=format,
                 group=group,
-                lock=lock,
             )
 
         store_entrypoint = StoreBackendEntrypoint()

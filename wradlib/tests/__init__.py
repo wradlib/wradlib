@@ -30,7 +30,7 @@ requires_secrets = pytest.mark.skipif(
 
 requires_xarray_backend_api = pytest.mark.skipif(
     (LooseVersion(xr_version) < LooseVersion("0.17.0")),
-    reason="requires xarray version 0.17.0",
+    reason="requires xarray version 0.18.0",
 )
 
 
