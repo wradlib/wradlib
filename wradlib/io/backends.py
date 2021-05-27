@@ -25,7 +25,6 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import io
-import os
 from distutils.version import LooseVersion
 
 import h5netcdf
@@ -52,7 +51,6 @@ from xarray.core.utils import (
     FrozenDict,
     close_on_error,
     is_remote_uri,
-    read_magic_number,
 )
 from xarray.core.variable import Variable
 
@@ -382,12 +380,6 @@ class OdimStore(AbstractDataStore):
                 "can't open netCDF4/HDF5 as bytes "
                 "try passing a path or file-like object"
             )
-        elif isinstance(filename, io.IOBase):
-            magic_number = read_magic_number(filename)
-            if not magic_number.startswith(b"\211HDF\r\n\032\n"):
-                raise ValueError(
-                    f"{magic_number} is not the signature of a valid netCDF file"
-                )
 
         if format not in [None, "NETCDF4"]:
             raise ValueError("invalid format for h5netcdf backend")
@@ -470,18 +462,6 @@ class OdimStore(AbstractDataStore):
 
 
 class OdimBackendEntrypoint(BackendEntrypoint):
-    def guess_can_open(self, store_spec):
-        try:
-            return read_magic_number(store_spec).startswith(b"\211HDF\r\n\032\n")
-        except TypeError:
-            pass
-
-        try:
-            _, ext = os.path.splitext(store_spec)
-        except TypeError:
-            return False
-
-        return ext in {".hdf5", ".h5"}
 
     def open_dataset(
         self,
@@ -541,7 +521,6 @@ class OdimBackendEntrypoint(BackendEntrypoint):
         return ds
 
 
-# todo: clean-up, move all possible processing into .xarray
 class GamicStore(AbstractDataStore):
     """Store for reading ODIM dataset groups via h5netcdf."""
 
@@ -583,12 +562,6 @@ class GamicStore(AbstractDataStore):
                 "can't open netCDF4/HDF5 as bytes "
                 "try passing a path or file-like object"
             )
-        elif isinstance(filename, io.IOBase):
-            magic_number = read_magic_number(filename)
-            if not magic_number.startswith(b"\211HDF\r\n\032\n"):
-                raise ValueError(
-                    f"{magic_number} is not the signature of a valid netCDF file"
-                )
 
         if format not in [None, "NETCDF4"]:
             raise ValueError("invalid format for h5netcdf backend")
@@ -665,18 +638,6 @@ class GamicStore(AbstractDataStore):
 
 
 class GamicBackendEntrypoint(BackendEntrypoint):
-    def guess_can_open(self, store_spec):
-        try:
-            return read_magic_number(store_spec).startswith(b"\211HDF\r\n\032\n")
-        except TypeError:
-            pass
-
-        try:
-            _, ext = os.path.splitext(store_spec)
-        except TypeError:
-            return False
-
-        return ext in {".mvol", ".h5"}
 
     def open_dataset(
         self,

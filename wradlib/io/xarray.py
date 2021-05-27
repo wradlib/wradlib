@@ -138,7 +138,7 @@ def raise_on_missing_xarray_backend():
             f"'xarray>=0.17.0' needed to perform this operation. "
             f"'xarray={xr.__version__}'  available.",
         )
-    elif LooseVersion(xr.__version__) < LooseVersion("0.18.0"):
+    elif LooseVersion(xr.__version__) < LooseVersion("0.18.2"):
         xarray_backend_api = os.environ.get("XARRAY_BACKEND_API", None)
         if xarray_backend_api is None:
             os.environ["XARRAY_BACKEND_API"] = "v2"
