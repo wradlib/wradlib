@@ -902,7 +902,7 @@ class ZonalStatsBase(object):
         self._w = value
 
     def check_empty(self):
-        """"""
+        """ """
         isempty = np.repeat(False, len(self.w))
         for i, weights in enumerate(self.w):
             if np.sum(weights) == 0 or np.isnan(np.sum(weights)):

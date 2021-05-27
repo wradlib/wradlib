@@ -805,7 +805,7 @@ class IpolChain(IpolBase):
 # Covariance routines needed for Kriging
 # -----------------------------------------------------------------------------
 def parse_covariogram(cov_model):
-    """"""
+    """ """
     patterns = [
         re.compile(r"([\d\.]+) Nug\(([\d\.]+)\)"),  # nugget
         re.compile(r"([\d\.]+) Lin\(([\d\.]+)\)"),  # linear
@@ -1001,7 +1001,7 @@ class OrdinaryKriging(IpolBase):
         remove_missing=False,
         **kwargs,
     ):
-        """"""
+        """ """
         if isinstance(src, spatial.cKDTree):
             self.tree = src
             self.src = self.tree.data
@@ -1184,7 +1184,7 @@ class ExternalDriftKriging(IpolBase):
         remove_missing=False,
         **kwargs,
     ):
-        """"""
+        """ """
         if isinstance(src, spatial.cKDTree):
             self.tree = src
             self.src = self.tree.data

@@ -46,12 +46,7 @@ from xarray.backends.locks import (
 )
 from xarray.backends.store import StoreBackendEntrypoint
 from xarray.core import indexing
-from xarray.core.utils import (
-    Frozen,
-    FrozenDict,
-    close_on_error,
-    is_remote_uri,
-)
+from xarray.core.utils import Frozen, FrozenDict, close_on_error, is_remote_uri
 from xarray.core.variable import Variable
 
 from wradlib.io.radolan import _radolan_file
@@ -462,7 +457,6 @@ class OdimStore(AbstractDataStore):
 
 
 class OdimBackendEntrypoint(BackendEntrypoint):
-
     def open_dataset(
         self,
         filename_or_obj,
@@ -638,7 +632,6 @@ class GamicStore(AbstractDataStore):
 
 
 class GamicBackendEntrypoint(BackendEntrypoint):
-
     def open_dataset(
         self,
         filename_or_obj,
