@@ -240,7 +240,7 @@ def reproject(*args, **kwargs):
         defaults to EPSG(4326)
     area_of_interest : tuple
         tuple of floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
-    dfNorthLatitudeDeg), only gdal>=3
+        NorthLatitudeDeg), only gdal>=3
 
     Returns
     -------
@@ -293,22 +293,15 @@ def reproject(*args, **kwargs):
 
     projection_source = kwargs.get("projection_source", get_default_projection())
     projection_target = kwargs.get("projection_target", get_default_projection())
-    area_of_interest = kwargs.get(
-        "area_of_interest",
-        (
-            np.float_(C[..., 0].min()),
-            np.float_(C[..., 1].min()),
-            np.float_(C[..., 0].max()),
-            np.float_(C[..., 1].max()),
-        ),
-    )
+    area_of_interest = kwargs.get("area_of_interest", None)
 
     if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
         axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
         projection_source.SetAxisMappingStrategy(axis_order)
         projection_target.SetAxisMappingStrategy(axis_order)
         options = osr.CoordinateTransformationOptions()
-        options.SetAreaOfInterest(*area_of_interest)
+        if area_of_interest is not None:
+            options.SetAreaOfInterest(*area_of_interest)
         ct = osr.CreateCoordinateTransformation(
             projection_source, projection_target, options
         )

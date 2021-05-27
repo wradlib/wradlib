@@ -29,15 +29,9 @@ from .test_io_odim import (  # noqa: F401
 )
 
 
-@pytest.fixture(params=["v1", "v2"])
-def xarray_backend_api(request, monkeypatch):
-    monkeypatch.setenv("XARRAY_BACKEND_API", request.param)
-    return request.param
-
-
 @requires_data
 @requires_xarray_backend_api
-def test_radolan_backend(file_or_filelike, xarray_backend_api):
+def test_radolan_backend(file_or_filelike):
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
     test_attrs = {
         "radarlocations": [
@@ -60,26 +54,21 @@ def test_radolan_backend(file_or_filelike, xarray_backend_api):
         "radarid": "10000",
     }
     with get_wradlib_data_file(filename, file_or_filelike) as rwfile:
-        if xarray_backend_api == "v1":
-            with pytest.raises(ValueError):
-                with io.radolan.open_radolan_dataset(rwfile, engine="radolan") as ds:
-                    pass
-        else:
-            data, meta = io.read_radolan_composite(rwfile)
-            data[data == -9999.0] = np.nan
-            with xr.open_dataset(rwfile, engine="radolan") as ds:
-                assert ds["RW"].encoding["dtype"] == np.uint16
-                if file_or_filelike == "file":
-                    assert ds["RW"].encoding["source"] == os.path.abspath(rwfile)
-                else:
-                    assert ds["RW"].encoding["source"] == "None"
-                assert ds.attrs == test_attrs
-                assert ds["RW"].shape == (900, 900)
-                np.testing.assert_almost_equal(
-                    ds["RW"].values,
-                    (data * 3600.0 / meta["intervalseconds"]),
-                    decimal=5,
-                )
+        data, meta = io.read_radolan_composite(rwfile)
+        data[data == -9999.0] = np.nan
+        with xr.open_dataset(rwfile, engine="radolan") as ds:
+            assert ds["RW"].encoding["dtype"] == np.uint16
+            if file_or_filelike == "file":
+                assert ds["RW"].encoding["source"] == os.path.abspath(rwfile)
+            else:
+                assert ds["RW"].encoding["source"] == "None"
+            assert ds.attrs == test_attrs
+            assert ds["RW"].shape == (900, 900)
+            np.testing.assert_almost_equal(
+                ds["RW"].values,
+                (data * 3600.0 / meta["intervalseconds"]),
+                decimal=5,
+            )
 
 
 @contextlib.contextmanager
@@ -88,13 +77,13 @@ def get_measured_volume(file, format, fileobj, **kwargs):
     with get_wradlib_data_file(file, fileobj) as h5file:
         engine = format.lower()
         if engine == "odim":
-            open_ = io.xarray.open_odim_dataset
+            open_ = io.open_odim_dataset
         if engine == "gamic":
-            open_ = io.xarray.open_gamic_dataset
+            open_ = io.open_gamic_dataset
         if engine == "cfradial1":
-            open_ = io.xarray.open_cfradial1_dataset
+            open_ = io.open_cfradial1_dataset
         if engine == "cfradial2":
-            open_ = io.xarray.open_cfradial2_dataset
+            open_ = io.open_cfradial2_dataset
         yield open_(h5file, **kwargs)
 
 
@@ -111,9 +100,9 @@ def get_synthetic_volume(name, file_or_filelike, **kwargs):
     with get_wradlib_data_file(tmp_local, file_or_filelike) as h5file:
         engine = format.lower()
         if engine == "odim":
-            open_ = io.xarray.open_odim_dataset
+            open_ = io.open_odim_dataset
         if engine == "gamic":
-            open_ = io.xarray.open_gamic_dataset
+            open_ = io.open_gamic_dataset
         yield open_(h5file, **kwargs)
 
 

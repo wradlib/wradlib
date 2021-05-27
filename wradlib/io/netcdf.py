@@ -11,7 +11,15 @@ Read NetCDF
 
    {}
 """
-__all__ = ["read_edge_netcdf", "read_generic_netcdf"]
+__all__ = [
+    "open_cfradial1_dataset",
+    "open_cfradial1_mfdataset",
+    "open_cfradial2_dataset",
+    "open_cfradial2_mfdataset",
+    "read_edge_netcdf",
+    "read_generic_netcdf",
+]
+
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
@@ -21,6 +29,12 @@ import datetime as dt
 import netCDF4 as nc
 import numpy as np
 
+from wradlib.io.xarray import (
+    open_radar_dataset,
+    open_radar_mfdataset,
+    raise_on_missing_xarray_backend,
+)
+
 
 @contextlib.contextmanager
 def _open_netcdf(filename):
@@ -28,6 +42,134 @@ def _open_netcdf(filename):
         yield nc.Dataset(filename)
     else:
         yield nc.Dataset("name", mode="r", memory=filename.read())
+
+
+def open_cfradial1_dataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an CfRadial1 radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_cfradial1_mfdataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_dataset(filename_or_obj, engine="cfradial1", **kwargs)
+
+
+def open_cfradial2_dataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an CfRadial2 radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_cfradial2_mfdataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_dataset(filename_or_obj, engine="cfradial2", **kwargs)
+
+
+def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an CfRadial1 radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_cfradial1_dataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_mfdataset(filename_or_obj, engine="cfradial1", **kwargs)
+
+
+def open_cfradial2_mfdataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an CfRadial2 radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : xarray.Dataset | wradlib.io.RadarVolume
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    wradlib.io.open_cfradial1_dataset
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_mfdataset(filename_or_obj, engine="cfradial2", **kwargs)
 
 
 def read_edge_netcdf(filename, enforce_equidist=False):
