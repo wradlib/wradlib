@@ -4,8 +4,8 @@
 
 
 """
-Xarray powered Data I/O
-^^^^^^^^^^^^^^^^^^^^^^^
+Xarray based Data I/O
+^^^^^^^^^^^^^^^^^^^^^
 
 Reads data from netcdf-based CfRadial1, CfRadial2 and hdf5-based ODIM_H5 and
 other hdf5-flavours (GAMIC). More radar backends (sigmet, rainbow) will be

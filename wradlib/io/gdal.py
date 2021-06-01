@@ -3,8 +3,8 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
-Raster and Vector I/O using GDAL
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+GDAL Raster/Vector Data I/O
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autosummary::
    :nosignatures:
    :toctree: generated/

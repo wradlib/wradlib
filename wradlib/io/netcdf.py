@@ -3,8 +3,8 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
-Read NetCDF
-^^^^^^^^^^^
+NetCDF Data I/O
+^^^^^^^^^^^^^^^
 .. autosummary::
    :nosignatures:
    :toctree: generated/
