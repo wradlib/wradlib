@@ -3,8 +3,8 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
-Read RADOLAN and DX
-^^^^^^^^^^^^^^^^^^^
+RADOLAN and DX Data I/O
+^^^^^^^^^^^^^^^^^^^^^^^
 Reading DX and RADOLAN data from German Weather Service
 
 .. autosummary::

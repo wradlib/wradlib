@@ -3,8 +3,8 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
-wradlib backends for xarray
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Xarray backends
+^^^^^^^^^^^^^^^
 Reading radar data into xarray Datasets using ``xarray.open_dataset``
 and ``xarray.open_mfdataset``.
 
@@ -457,6 +457,8 @@ class OdimStore(AbstractDataStore):
 
 
 class OdimBackendEntrypoint(BackendEntrypoint):
+    """Xarray BackendEntrypoint for ODIM data."""
+
     def open_dataset(
         self,
         filename_or_obj,
@@ -632,6 +634,8 @@ class GamicStore(AbstractDataStore):
 
 
 class GamicBackendEntrypoint(BackendEntrypoint):
+    """Xarray BackendEntrypoint for GAMIC data."""
+
     def open_dataset(
         self,
         filename_or_obj,
@@ -693,6 +697,8 @@ class GamicBackendEntrypoint(BackendEntrypoint):
 
 
 class CfRadial1BackendEntrypoint(BackendEntrypoint):
+    """Xarray BackendEntrypoint for CfRadial1 data."""
+
     def open_dataset(
         self,
         filename_or_obj,
@@ -734,6 +740,8 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
 
 
 class CfRadial2BackendEntrypoint(BackendEntrypoint):
+    """Xarray BackendEntrypoint for CfRadial2 data."""
+
     def open_dataset(
         self,
         filename_or_obj,

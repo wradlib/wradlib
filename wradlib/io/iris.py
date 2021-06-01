@@ -4,8 +4,8 @@
 
 
 """
-Read IRIS Data Format
-^^^^^^^^^^^^^^^^^^^^^
+IRIS/Sigmet Data I/O
+^^^^^^^^^^^^^^^^^^^^
 
 Reads data from Vaisala's IRIS data formats
 

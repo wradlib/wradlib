@@ -4,8 +4,8 @@
 
 
 """
-Digital Elevation Model I/O
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Digital Elevation Model Data I/O
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Provide surface/terrain elevation information from SRTM data
 
