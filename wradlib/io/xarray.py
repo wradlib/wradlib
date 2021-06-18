@@ -503,7 +503,17 @@ sweep_vars2 = {
     "scan_rate",
 }
 
-sweep_vars3 = {"DBZ", "VR", "time", "range", "reflectivity_horizontal"}
+sweep_vars3 = {
+    "DBZH",
+    "DBZV",
+    "VELH",
+    "VELV",
+    "DBZ",
+    "VR",
+    "time",
+    "range",
+    "reflectivity_horizontal",
+}
 
 cf_full_vars = {"prt": "prf", "n_samples": "pulse"}
 
@@ -1659,8 +1669,10 @@ def _assign_data_radial(root, sweep="sweep_1"):
 
         ds.attrs["fixed_angle"] = np.round(ds.fixed_angle.item(), decimals=1)
         time = ds.rtime[0].reset_coords(drop=True)
-        key = [key for key in time.attrs.keys() if "comment" in key][0]
-        del time.attrs[key]
+        # get and delete "comment" attribute for time variable
+        key = [key for key in time.attrs.keys() if "comment" in key]
+        for k in key:
+            del time.attrs[k]
         coords = {
             "longitude": root1.longitude,
             "latitude": root1.latitude,
