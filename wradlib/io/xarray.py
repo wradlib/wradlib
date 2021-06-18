@@ -2195,6 +2195,20 @@ class RadarVolume(XRadBase):
             self.assign_root()
         return self._root
 
+    def get_attrs(self, sweep, group):
+        for v in self[sweep].variables.values():
+            if "source" in v.encoding:
+                src = v.encoding["source"]
+                break
+        return xr.open_dataset(src, group=group).attrs
+
+    def get_attr(self, sweep, group, attr):
+        for v in self[sweep].variables.values():
+            if "source" in v.encoding:
+                src = v.encoding["source"]
+                break
+        return xr.open_dataset(src, group=group).attrs[attr]
+
     def assign_root(self):
         """(Re-)Create root object according CfRadial2 standard"""
         # assign root variables
