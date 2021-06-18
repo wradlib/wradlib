@@ -1,9 +1,6 @@
 bottleneck
 cartopy
 codecov
-bottleneck
-cartopy
-codecov
 coverage
 dask
 deprecation
