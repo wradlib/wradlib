@@ -14,7 +14,7 @@ Below you see the status of wradlib. A green status indicates that the current r
 |:---:|:---:|
 | Github Latest | [![Build Status](https://github.com/wradlib/wradlib/workflows/CI/badge.svg)](https://github.com/wradlib/wradlib/actions) |
 | Github Release | [![Build Status](https://github.com/wradlib/wradlib/workflows/main.yml/badge.svg?event=pull_request)](https://github.com/wradlib/wradlib/actions/workflows/main.yml)
-| Codecov | [![codecov](https://codecov.io/gh/wradlib/wradlib/branch/master/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib) |
+| Codecov | [![codecov](https://codecov.io/gh/wradlib/wradlib/branch/main/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib) |
 | RTD Latest | [![ReadTheDocs Latest](https://readthedocs.org/projects/wradlib-docs/badge/?version=latest)](https://docs.wradlib.org/en/latest/) |
 | RTD Stable | [![ReadTheDocs Stable](https://readthedocs.org/projects/wradlib-docs/badge/?version=stable)](https://docs.wradlib.org/en/stable/) |
 | Anaconda Latest | [![Anaconda Latest](https://anaconda.org/conda-forge/wradlib/badges/latest_release_date.svg)](https://anaconda.org/conda-forge/wradlib/) |
