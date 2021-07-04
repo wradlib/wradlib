@@ -1011,6 +1011,8 @@ class _radolan_file(object):
         if self._dtype is None:
             if self.product in ["RX", "EX", "WX"]:
                 self._dtype = np.dtype(np.uint8)
+            elif self.product in ["HG"]:
+                self._dtype = np.dtype(np.uint32)
             else:
                 self._dtype = np.dtype(np.uint16)
         return self._dtype
