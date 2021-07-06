@@ -1231,10 +1231,10 @@ class _OdimH5NetCDFMetadata(object):
     def _get_dset_what(self):
         attrs = {}
         what = self._root[self._group]["what"].attrs
-        attrs["scale_factor"] = what["gain"]
-        attrs["add_offset"] = what["offset"]
-        attrs["_FillValue"] = what["nodata"]
-        attrs["_Undetect"] = what["undetect"]
+        attrs["scale_factor"] = what.get("gain", 1)
+        attrs["add_offset"] = what.get("offset", 0)
+        attrs["_FillValue"] = what.get("nodata", None)
+        attrs["_Undetect"] = what.get("undetect", 0)
         attrs["quantity"] = what["quantity"].item().decode()
         return attrs
 
