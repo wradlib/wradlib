@@ -1647,9 +1647,11 @@ def _assign_data_radial(root, sweep="sweep_1"):
     for i in range(root1.dims["sweep"]):
         sweep_group_name.append("sweep_{}".format(i + 1))
 
-    keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
-    remove_vars = var ^ keep_vars
-    remove_vars &= var
+    # keep all vars for now
+    # keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
+    # remove_vars = var ^ keep_vars
+    # remove_vars &= var
+    remove_vars = {}
     data = root.drop_vars(remove_vars)
     data.attrs = {}
     start_idx = data.sweep_start_ray_index.values
