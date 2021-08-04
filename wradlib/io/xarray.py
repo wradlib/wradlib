@@ -950,7 +950,7 @@ def to_odim(volume, filename, timestep=0):
 
         # how group, p. 14 ff.
         h5_ds_how = h5_dataset.create_group("how")
-        tout = [tx.astype("O") / 1e9 for tx in ds.sortby("azimuth").time.values]
+        tout = [tx.astype("O") / 1e9 for tx in ds.sortby("azimuth").time.values[valid_times]]
         tout_sorted = sorted(tout)
 
         # handle non-uniform times (eg. only second-resolution)
