@@ -990,6 +990,15 @@ def to_odim(volume, filename, timestep=0):
     h5.close()
 
 
+def _calculate_angle_res(dim):
+    angle_diff = np.diff(dim)
+    angle_diff2 = np.abs(np.diff(angle_diff))
+
+    # only select angle_diff, where angle_diff2 is less than 0.1 deg
+    angle_diff_wanted = angle_diff[:-1][angle_diff2 < 0.1]
+    return np.round(np.nanmean(angle_diff_wanted), decimals=2)
+
+
 class _OdimH5NetCDFMetadata(object):
     """Wrapper around OdimH5 data fileobj for easy access of metadata.
 
@@ -1032,7 +1041,7 @@ class _OdimH5NetCDFMetadata(object):
         a1gate = self.a1gate
         rtime = self.ray_times
         dim, angle = self.fixed_dim_and_angle
-        angle_res = np.round(np.nanmedian(np.diff(locals()[dim])), decimals=2)
+        angle_res = _calculate_angle_res(locals()[dim])
 
         dims = ("azimuth", "elevation")
         if dim == dims[1]:
@@ -1304,7 +1313,7 @@ class _GamicH5NetCDFMetadata(object):
         dim, angle = self.fixed_dim_and_angle
         angles = ray_header[dim]
 
-        angle_res = np.round(np.nanmedian(np.diff(angles)), decimals=1)
+        angle_res = _calculate_angle_res(angles)
         dims = ("azimuth", "elevation")
         if dim == dims[1]:
             dims = (dims[1], dims[0])
