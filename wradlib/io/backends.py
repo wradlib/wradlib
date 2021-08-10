@@ -810,6 +810,7 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
             ds = ds.assign_coords(site)
             ds.attrs["fixed_angle"] = fixed_angle
             ds = _assign_data_radial2(ds)
-            ds = ds.sortby(list(ds.dims.keys())[0])
+            dim0 = list(set(ds.dims) & {"azimuth", "elevation", "time"})[0]
+            ds = ds.sortby(dim0)
 
         return ds

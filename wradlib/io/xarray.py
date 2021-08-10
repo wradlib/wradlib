@@ -800,9 +800,7 @@ def to_cfradial2(volume, filename, timestep=None):
                 ds = ds.expand_dims("time")
             swp = ds.isel(time=timestep)
         swp.load()
-        dims = list(swp.dims)
-        dims.remove("range")
-        dim0 = dims[0]
+        dim0 = list(set(swp.dims) & {"azimuth", "elevation", "time"})[0]
         try:
             swp = swp.swap_dims({dim0: "time"})
         except ValueError:
@@ -2191,8 +2189,8 @@ class RadarVolume(XRadBase):
         dims = "Dimension(s):"
         dims_summary = f"sweep: {len(self)}"
         summary.append("{} ({})".format(dims, dims_summary))
-        dim = list(self[0].dims.keys())[0]
-        angle = f"{self._dims[dim].capitalize()}(s):"
+        dim0 = list(set(self[0].dims) & {"azimuth", "elevation", "time"})[0]
+        angle = f"{self._dims[dim0].capitalize()}(s):"
         angle_summary = [f"{v.attrs['fixed_angle']:.1f}" for v in self]
         angle_summary = ", ".join(angle_summary)
         summary.append("{} ({})".format(angle, angle_summary))
