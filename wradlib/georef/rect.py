@@ -73,7 +73,7 @@ def get_radolan_coords(lon, lat, trig=False):
     return x, y
 
 
-def get_radolan_coordinates(nrows=None, ncols=None, trig=False):
+def get_radolan_coordinates(nrows=None, ncols=None, trig=False, mode="radolan"):
     """Calculates x/y coordinates of radolan  projection of the German Weather Service
 
     Returns the 1D x,y coordinates of the radolan projection for the given grid
@@ -93,11 +93,18 @@ def get_radolan_coordinates(nrows=None, ncols=None, trig=False):
         are expected to be equivalent.
     wgs84 : boolean
         if True, output coordinates are in wgs84 lonlat format (default: False)
+    mode : str
+        'radolan' - lower left pixel coordinates
+        'center' - pixel center coordinates
+        'edge' - pixel edge coordinates
 
     Returns
     -------
     radolan_ccords : tuple
         tuple x and y 1D coordinate :class:`numpy:numpy.ndarray`
+        shape is (nrows,) and  (ncols,) if `mode='radolan'`
+        shape is (nrows,) and (ncols,) if `mode='center'`
+        shape is (nrows+1,) and (ncols+1,) if `mode='edge'`
     """
     # setup default parameters in dicts
     tiny = {"j_0": 450, "i_0": 450, "res": 2}
@@ -138,13 +145,21 @@ def get_radolan_coordinates(nrows=None, ncols=None, trig=False):
 
     x_0, y_0 = get_radolan_coords(9.0, 51.0, trig=trig)
 
+    if mode == "edge":
+        ncols += 1
+        nrows += 1
+
     x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols * res, res)
     y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows * res, res)
+
+    if mode == "center":
+        x_arr += res / 2.0
+        y_arr += res / 2.0
 
     return x_arr, y_arr
 
 
-def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
+def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False, mode="radolan"):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
 
     Returns the x,y coordinates of the radolan grid positions
@@ -177,7 +192,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
         +------------+-----------+------------+-----------+-----------+
         | UpperRight | 17.1128E  |  55.5342N  |  456.5378 | -3658.645 |
         +------------+-----------+------------+-----------+-----------+
-        | UpperLeft  |  3.0889E  |  55.5482N  | -433.4622 | -3658.645 |
+        | UpperLeft  |  3.0889E  |  55.5482N  | -443.4622 | -3658.645 |
         +------------+-----------+------------+-----------+-----------+
 
     .. table:: Coordinates for 1500km x 1400km grid
@@ -202,11 +217,19 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False):
         are expected to be equivalent.
     wgs84 : boolean
         if True, output coordinates are in wgs84 lonlat format (default: False)
+    mode :  str
+        'radolan' - lower left pixel coordinates
+        'center' - pixel center coordinates
+        'edge' - pixel edge coordinates
 
     Returns
     -------
     radolan_grid : :class:`numpy:numpy.ndarray`
-        Array of shape (rows, cols, 2) xy- or lonlat-grid.
+        Array of xy- or lonlat-grid.
+        shape is (nrows, ncols, 2) if `mode='radolan'`
+        shape is (nrows, ncols, 2) if `mode='center'`
+        shape is (nrows+1, ncols+1, 2) if `mode='edge'`
+
 
     Examples
     --------
@@ -243,7 +266,9 @@ Polar-Stereographic-Projection`.
         TypeError, ValueError
     """
 
-    x_arr, y_arr = get_radolan_coordinates(nrows=nrows, ncols=ncols, trig=trig)
+    x_arr, y_arr = get_radolan_coordinates(
+        nrows=nrows, ncols=ncols, trig=trig, mode=mode
+    )
 
     x, y = np.meshgrid(x_arr, y_arr)
 
