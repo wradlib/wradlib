@@ -3680,12 +3680,26 @@ class IrisCartesianProductFile(IrisRecordFile):
         irisfile : IrisWrapperFile class instance handle
             class instance handle
         """
+        origin = kwargs.get("origin", None)
+        if origin is None:
+            self._origin = "upper"
+        else:
+            self._origin = origin
+
         super(IrisCartesianProductFile, self).__init__(irisfile, **kwargs)
 
         self.check_product_identifier()
 
         self._data = OrderedDict()
         if self.loaddata:
+            if origin is None:
+                warnings.warn(
+                    "IRIS Cartesian Product is currently returned with ``origin='upper'``.\n"
+                    "From wradlib version 2.0 the images will be returned with ``origin='lower'``.\n"
+                    "To silence this warning set kwarg ``origin='upper'`` or ``origin='lower'``.",
+                    FutureWarning,
+                    stacklevel=2,
+                )
             self.get_data()
 
     @property
@@ -3747,7 +3761,9 @@ class IrisCartesianProductFile(IrisRecordFile):
         data = self.read_from_record(cnt, prod["dtype"])
         data = self.decode_data(data, prod=prod)
         data.shape = (z_size, y_size, x_size)
-        return np.flip(data, axis=1)
+        if self._origin == "upper":
+            data = np.flip(data, axis=1)
+        return data
 
     def get_data(self):
         """Retrieves cartesian data from file."""
