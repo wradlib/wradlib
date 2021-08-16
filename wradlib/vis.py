@@ -1153,6 +1153,10 @@ def plot_scan_strategy(
     cycle = cycler(color=colors)
     paax.set_prop_cycle(cycle)
 
+    # correctly handle single/multiple elevations
+    if xyz.ndim == 2:
+        xyz = xyz[np.newaxis, ...]
+
     # plot beams
     for i, el in enumerate(elevs):
         alt = xyz[i, ..., 2]
@@ -1166,7 +1170,6 @@ def plot_scan_strategy(
             plrange = np.insert(groundrange, 0, 0)
             plalt = np.insert(alt, 0, sitecoords[2])
             beamradius = util.half_power_radius(plrange, beamwidth)
-
         _, center, edge = _plot_beam(
             plrange, plalt, beamradius, label=f"{el:4.1f}°", ax=paax
         )
