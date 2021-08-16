@@ -1291,6 +1291,23 @@ class TestIris:
         assert data.filepos == 3139584
 
     @requires_data
+    def test_open_iris_cartesian_product(self):
+        filename = "sigmet/SUR160703220000.MAX71NP.gz"
+        with get_wradlib_data_file(filename, "filelike") as sigmetfile:
+            data = io.iris.IrisCartesianProductFile(
+                sigmetfile, loaddata=True, origin="lower"
+            )
+        assert isinstance(data.rh, io.iris.IrisRecord)
+        assert isinstance(data.fh, (np.memmap, np.ndarray))
+
+    @requires_data
+    def test_iris_cartesian_product_origin_future_warning(self):
+        filename = "sigmet/SUR160703220000.MAX71NP.gz"
+        with get_wradlib_data_file(filename, "filelike") as sigmetfile:
+            with pytest.warns(FutureWarning):
+                io.iris.IrisCartesianProductFile(sigmetfile, loaddata=True, origin=None)
+
+    @requires_data
     def test_read_iris(self, file_or_filelike):
         filename = "sigmet/cor-main131125105503.RAW2049"
         with get_wradlib_data_file(filename, file_or_filelike) as sigmetfile:
