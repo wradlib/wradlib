@@ -923,6 +923,8 @@ class TestGetGrids:
     def test_get_radolan_grid_shape(self):
         radolan_grid_xy = georef.get_radolan_grid()
         assert radolan_grid_xy.shape == (900, 900, 2)
+        radolan_grid_xy = georef.get_radolan_grid(mode="edge")
+        assert radolan_grid_xy.shape == (901, 901, 2)
 
     def test_radolan_coords(self):
         x, y = georef.get_radolan_coords(7.0, 53.0)
