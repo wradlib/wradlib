@@ -62,7 +62,7 @@ volume data:
     >>> gridshape = (len(z), len(y), len(x))
     >>> # create an instance of the CAPPI class and
     >>> # use it to create a series of CAPPIs
-    >>> gridder = wradlib.vpr.CAPPI(polxyz, xyz, gridshape=gridshape, maxrange=ranges.max(),  # noqa
+    >>> gridder = wradlib.vpr.CAPPI(polxyz, xyz, maxrange=ranges.max(),  # noqa
     ...                             minelev=elevs.min(), maxelev=elevs.max(),
     ...                             ipclass=wradlib.ipol.Idw)
     >>> gridded = np.ma.masked_invalid( gridder(poldata) ).reshape(gridshape)
@@ -83,11 +83,14 @@ volume data:
 __all__ = [
     "volcoords_from_polar",
     "make_3d_grid",
+    "norm_vpr_stats",
     "CartesianVolume",
     "CAPPI",
     "PseudoCAPPI",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
+
+import warnings
 
 import numpy as np
 
@@ -104,10 +107,12 @@ class CartesianVolume:
         of shape (num bins, 3)
     gridcoords : :class:`numpy:numpy.ndarray`
         of shape (num voxels, 3)
-    gridshape : tuple
-        shape of the Cartesian grid (num x, num y, num z)
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
+    minelev : float
+        The minimum elevation angle of the volume (degree)
+    maxelev : float
+        The maximum elevation angle of the volume (degree)
     ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : `**kwargs`
@@ -134,6 +139,12 @@ class CartesianVolume:
         ipclass=ipol.Idw,
         **ipargs,
     ):
+        if gridshape is not None:
+            warnings.warn(
+                f"``gridshape`` is not used in {self.__class__}. "
+                f"It will be removed in wradlib version 2.0.",
+                DeprecationWarning,
+            )
         # radar location in Cartesian coordinates
         # TODO: pass projected radar location as argument
         # (allows processing of incomplete polar volumes)
@@ -145,9 +156,7 @@ class CartesianVolume:
             ]
         ).reshape((-1, 3))
         # Set the mask which masks the blind voxels of the 3-D volume grid
-        self.mask = self._get_mask(
-            gridcoords, polcoords, gridshape, maxrange, minelev, maxelev
-        )
+        self.mask = self._get_mask(gridcoords, polcoords, maxrange, minelev, maxelev)
         # create an instance of the Interpolation class
         self.trgix = np.where(np.logical_not(self.mask))
         self.ip = ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
@@ -177,7 +186,6 @@ class CartesianVolume:
         self,
         gridcoords,
         polcoords=None,
-        gridshape=None,
         maxrange=None,
         minelev=None,
         maxelev=None,
@@ -195,8 +203,6 @@ class CartesianVolume:
             of shape (num voxels, 3)
         polcoords : :class:`numpy:numpy.ndarray`
             of shape (num bins, 3)
-        gridshape : tuple
-            shape of the Cartesian grid (num x, num y, num z)
         maxrange : float
             The maximum radar range
             (must be the same for each elevation angle,
@@ -230,14 +236,10 @@ class CAPPI(CartesianVolume):
     ----------
     polcoords : :class:`numpy:numpy.ndarray`
         coordinate array of shape (num bins, 3)
-        Represents the 3-D coordinates of the orginal radar bins
-    gridcoords : :func:`numpy:numpy.array`
+        Represents the 3-D coordinates of the original radar bins
+    gridcoords : :class:`numpy:numpy.ndarray`
         coordinate array of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    gridshape : tuple
-        shape of the original polar volume (num elevation angles,
-        num azimuth angles, num range bins)
-        size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
     ipclass : object
@@ -260,7 +262,7 @@ class CAPPI(CartesianVolume):
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
-    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
+    def _get_mask(self, gridcoords, polcoords, maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume
 
         For the CAPPI, blind voxels are below `minelev` and above `maxelev`
@@ -292,16 +294,16 @@ class PseudoCAPPI(CartesianVolume):
     ----------
     polcoords : :class:`numpy:numpy.ndarray`
         coordinate array of shape (num bins, 3)
-        Represents the 3-D coordinates of the orginal radar bins
+        Represents the 3-D coordinates of the original radar bins
     gridcoords : :class:`numpy:numpy.ndarray`
         coordinate array of shape (num voxels, 3)
         Represents the 3-D coordinates of the Cartesian grid
-    gridshape : tuple
-        shape of the original polar volume (num elevation angles,
-        num azimuth angles, num range bins)
-        size must correspond to length of polcoords
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
+    minelev : float
+        The minimum elevation angle of the volume (degree)
+    maxelev : float
+        The maximum elevation angle of the volume (degree)
     ipclass : object
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : `**kwargs`
@@ -321,7 +323,7 @@ class PseudoCAPPI(CartesianVolume):
     See :ref:`/notebooks/workflow/recipe2.ipynb`.
     """
 
-    def _get_mask(self, gridcoords, polcoords, gridshape, maxrange, minelev, maxelev):
+    def _get_mask(self, gridcoords, polcoords, maxrange, minelev, maxelev):
         """Masks the "blind" voxels of the Cartesian 3D-volume grid
 
         For the Pseudo CAPPI, blind voxels are only those beyond `maxrange`.
@@ -398,7 +400,8 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
 
     Parameters
     ----------
-    sitecoords : sequence of three floats indicating the radar position
+    sitecoords : tuple
+        sequence of three floats indicating the radar position
         (longitude in decimal degrees, latitude in decimal degrees,
         height a.s.l. in meters)
     elevs : sequence of elevation angles
@@ -434,7 +437,8 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
 
     Parameters
     ----------
-    sitecoords : sequence of three floats indicating the radar position
+    sitecoords : tuple
+        sequence of three floats indicating the radar position
         (longitude in decimal degrees, latitude in decimal degrees,
         height a.s.l. in meters)
     elevs : sequence of elevation angles
@@ -587,7 +591,7 @@ def synthetic_polar_volume(coords):
     return out
 
 
-def norm_vpr_stats(volume, reference_layer, stat=np.mean, **kwargs):
+def norm_vpr_stats(volume, reference_layer, stat=None, **kwargs):
     """Returns the average normalised vertical profile of a volume or \
     any other desired statistics
 
@@ -617,6 +621,8 @@ def norm_vpr_stats(volume, reference_layer, stat=np.mean, **kwargs):
         mean normalised vertical profile if numpy.mean is used)
 
     """
+    if stat is None:
+        stat = np.mean
     tmp = volume / volume[reference_layer]
     return stat(tmp.reshape((-1, np.prod(tmp.shape[-2:]))), axis=1, **kwargs)
 
