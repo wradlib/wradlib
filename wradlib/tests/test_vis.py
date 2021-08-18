@@ -186,6 +186,8 @@ class TestMiscPlot:
         site = (7.0, 53.0, 100.0)
         vis.plot_scan_strategy(ranges, elevs, site)
         vis.plot_scan_strategy(ranges, elevs, site, cg=True)
+        vis.plot_scan_strategy(ranges, [1.0], site)
+        vis.plot_scan_strategy(ranges, [1.0], site, cg=True)
 
     @requires_data
     @requires_secrets
@@ -195,6 +197,8 @@ class TestMiscPlot:
         site = (7.0, 53.0, 100.0)
         vis.plot_scan_strategy(ranges, elevs, site, terrain=True)
         vis.plot_scan_strategy(ranges, elevs, site, cg=True, terrain=True)
+        vis.plot_scan_strategy(ranges, [1.0], site, terrain=True)
+        vis.plot_scan_strategy(ranges, [1.0], site, cg=True, terrain=True)
 
     def test_plot_plan_and_vert(self):
         x = np.arange(0, 10)
