@@ -1040,7 +1040,6 @@ class _OdimH5NetCDFMetadata(object):
         rtime = self.ray_times
         dim, angle = self.fixed_dim_and_angle
         angle_res = _calculate_angle_res(locals()[dim])
-
         dims = ("azimuth", "elevation")
         if dim == dims[1]:
             dims = (dims[1], dims[0])
@@ -1158,7 +1157,7 @@ class _OdimH5NetCDFMetadata(object):
         if startaz is not False and stopaz is not False:
             elevation_data = (startaz + stopaz) / 2.0
         else:
-            elevation_data = how.get("elangles")
+            elevation_data = how["elangles"]
         return elevation_data
 
     def _get_elevation_where(self):
