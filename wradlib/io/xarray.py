@@ -1468,7 +1468,10 @@ def _reindex_angle(ds, store=None, force=False, tol=None):
     # disentangle different functionality
     full_range = dict(azimuth=360, elevation=90)
     dimname = list(ds.dims)[0]
-    secname = "elevation"
+    # sort in any case, to prevent unsorted errors
+    ds = ds.sortby(dimname)
+    secname = dict(azimuth="elevation",
+                   elevation="azimuth").get(dimname)
     dim = ds[dimname]
     diff = dim.diff(dimname)
     # this captures different angle spacing
