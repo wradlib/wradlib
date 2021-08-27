@@ -1803,6 +1803,7 @@ def open_radar_mfdataset(paths, **kwargs):
 
     This function uses ``xarray.open_mfdataset`` under the hood. Please refer for
     details to the documentation of ``xarray.open_mfdataset``.
+    Needs `dask` package to be installed.
 
     Parameters
     ----------
