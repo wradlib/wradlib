@@ -377,6 +377,13 @@ class TestHDF5:
         io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
 
 
+def radolan_files():
+    from pathlib import Path
+
+    path = os.path.join(util.get_wradlib_data_path(), "radolan")
+    return [p for p in Path(path).rglob("raa*.gz")]
+
+
 class TestRadolan:
     def test_get_radolan_header_token(self):
         keylist = [
@@ -1050,6 +1057,16 @@ class TestRadolan:
         assert data.RW.dims == ("time", "y", "x")
         assert data.time[0].values == np.datetime64("2014-08-03T09:50:00.000000000")
         assert data.time[1].values == np.datetime64("2014-08-10T20:50:00.000000000")
+
+    @requires_data
+    @pytest.mark.parametrize("radfile", radolan_files())
+    def test_read_radolan_data_files(self, radfile):
+        data = io.radolan.open_radolan_dataset(str(radfile))
+        assert isinstance(data, xr.Dataset)
+        name = list(data.variables.keys())[0]
+        var = data[name]
+        assert isinstance(var, xr.DataArray)
+        assert isinstance(var.values, np.ndarray)
 
 
 class TestRainbow:

@@ -842,6 +842,8 @@ def _get_radolan_product_attributes(attrs):
         pattrs.update({"scale_factor": np.float32(precision)})
     elif product in ["PG", "PC"]:
         pattrs.update(radolan["PG"])
+    elif product in ["%M", "%J", "%Y"]:
+        pattrs.update(radolan["%"])
     else:
         raise ValueError("WRADLIB: unkown RADOLAN product!")
 
@@ -927,6 +929,15 @@ radolan = {
         "valid_min": np.int32(0),
         "valid_max": np.int32(255),
         "_FillValue": np.int32(255),
+    },
+    "%": {
+        "add_offset": np.float32(0),
+        "valid_min": np.int32(0),
+        "valid_max": np.int32(4095),
+        "_FillValue": np.array([2490, 2500, 65535], dtype=np.int32),
+        "standard_name": "relativ_rainfall_amount_to_30_year_average",
+        "long_name": "relativ_rainfall_amount_to_30_year_average",
+        "unit": "1",
     },
 }
 
