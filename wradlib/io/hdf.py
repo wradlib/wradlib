@@ -108,6 +108,7 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an ODIM radar sweep or volume from a file or file-like object.
 
     This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    Needs `dask` package to be installed.
 
     Parameters
     ----------
@@ -140,6 +141,7 @@ def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
 
     This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    Needs `dask` package to be installed.
 
     Parameters
     ----------

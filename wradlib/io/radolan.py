@@ -1183,6 +1183,8 @@ def open_radolan_dataset(filename_or_obj, **kwargs):
 def open_radolan_mfdataset(paths, **kwargs):
     """Open multiple RADOLAN files as a single dataset.
 
+    Needs `dask` package to be installed.
+
     Parameters
     ----------
     paths : str or sequence

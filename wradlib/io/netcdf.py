@@ -112,6 +112,7 @@ def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an CfRadial1 radar sweep or volume from a file or file-like object.
 
     This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    Needs `dask` package to be installed.
 
     Parameters
     ----------
@@ -144,6 +145,7 @@ def open_cfradial2_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an CfRadial2 radar sweep or volume from a file or file-like object.
 
     This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    Needs `dask` package to be installed.
 
     Parameters
     ----------
