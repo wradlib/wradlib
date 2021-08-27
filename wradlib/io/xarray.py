@@ -1449,9 +1449,11 @@ def _remove_duplicate_rays(ds, store=None):
     return ds
 
 
-def _reindex_angle(ds, store=None, force=False, tol=0.4):
+def _reindex_angle(ds, store=None, force=False, tol=None):
     # Todo: The current code assumes to have PPI's of 360deg and RHI's of 90deg,
     #       make this work also for sectorized measurements
+    if tol is True or tol is None:
+        tol = 0.4
     # disentangle different functionality
     full_range = dict(azimuth=360, elevation=90)
     dimname = list(ds.dims)[0]
