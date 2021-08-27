@@ -17,7 +17,12 @@ import xarray as xr
 
 from wradlib import georef, io, util, zonalstats
 
-from . import get_wradlib_data_file, requires_data, requires_secrets, requires_xarray_backend_api
+from . import (
+    get_wradlib_data_file,
+    requires_data,
+    requires_secrets,
+    requires_xarray_backend_api,
+)
 
 
 @pytest.fixture(params=["file", "filelike"])
@@ -378,7 +383,9 @@ class TestHDF5:
 
     @requires_data
     @requires_xarray_backend_api
-    @pytest.mark.parametrize("opener", [io.hdf.open_odim_dataset, io.hdf.open_odim_mfdataset])
+    @pytest.mark.parametrize(
+        "opener", [io.hdf.open_odim_dataset, io.hdf.open_odim_mfdataset]
+    )
     def test_open_odim_functions(self, opener):
         filename = "hdf5/knmi_polar_volume.h5"
         with get_wradlib_data_file(filename, "file") as odim_file:
@@ -403,8 +410,9 @@ class TestHDF5:
 
     @requires_data
     @requires_xarray_backend_api
-    @pytest.mark.parametrize("opener",
-                             [io.hdf.open_gamic_dataset, io.hdf.open_gamic_mfdataset])
+    @pytest.mark.parametrize(
+        "opener", [io.hdf.open_gamic_dataset, io.hdf.open_gamic_mfdataset]
+    )
     def test_open_gamic_functions(self, opener):
         filename = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
         with get_wradlib_data_file(filename, "file") as gamic_file:
