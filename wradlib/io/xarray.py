@@ -1111,11 +1111,18 @@ class _OdimH5NetCDFMetadata(object):
 
     def _get_azimuth_how(self):
         grp = self._group.split("/")[0]
-        startaz = self._root[grp]["how"].attrs["startazA"]
-        stopaz = self._root[grp]["how"].attrs["stopazA"]
+        how = self._root[grp]["how"].attrs
+        startaz = how["startazA"]
+        stopaz = how.get("stopazA", False)
+        if stopaz is False:
+            # stopazA missing
+            # create from startazA
+            stopaz = np.roll(startaz, -1)
+            stopaz[-1] += 360
         zero_index = np.where(stopaz < startaz)
         stopaz[zero_index[0]] += 360
         azimuth_data = (startaz + stopaz) / 2.0
+        azimuth_data[azimuth_data >= 360] -= 360
         return azimuth_data
 
     def _get_azimuth_where(self):
@@ -1145,9 +1152,13 @@ class _OdimH5NetCDFMetadata(object):
 
     def _get_elevation_how(self):
         grp = self._group.split("/")[0]
-        startaz = self._root[grp]["how"].attrs["startelA"]
-        stopaz = self._root[grp]["how"].attrs["stopelA"]
-        elevation_data = (startaz + stopaz) / 2.0
+        how = self._root[grp]["how"].attrs
+        startaz = how.get("startelA", False)
+        stopaz = how.get("stopelA", False)
+        if startaz is not False and stopaz is not False:
+            elevation_data = (startaz + stopaz) / 2.0
+        else:
+            elevation_data = how.get("elangles")
         return elevation_data
 
     def _get_elevation_where(self):
