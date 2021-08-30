@@ -477,6 +477,7 @@ class OdimBackendEntrypoint(BackendEntrypoint):
         decode_vlen_strings=True,
         keep_elevation=False,
         keep_azimuth=False,
+        reindex_angle=None,
     ):
 
         if isinstance(filename_or_obj, io.IOBase):
@@ -504,8 +505,8 @@ class OdimBackendEntrypoint(BackendEntrypoint):
             decode_timedelta=decode_timedelta,
         )
 
-        if decode_coords:
-            ds = ds.pipe(_reindex_angle, store=store)
+        if decode_coords and reindex_angle is not False:
+            ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)
 
         if not keep_azimuth:
             if ds.azimuth.dims[0] == "elevation":
@@ -654,6 +655,7 @@ class GamicBackendEntrypoint(BackendEntrypoint):
         decode_vlen_strings=True,
         keep_elevation=False,
         keep_azimuth=False,
+        reindex_angle=None,
     ):
 
         if isinstance(filename_or_obj, io.IOBase):
@@ -683,8 +685,8 @@ class GamicBackendEntrypoint(BackendEntrypoint):
 
         ds = ds.sortby(list(ds.dims.keys())[0])
 
-        if decode_coords:
-            ds = ds.pipe(_reindex_angle, store=store)
+        if decode_coords and reindex_angle is not False:
+            ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)
 
         if not keep_azimuth:
             if ds.azimuth.dims[0] == "elevation":

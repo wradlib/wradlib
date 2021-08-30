@@ -17,7 +17,12 @@ import xarray as xr
 
 from wradlib import georef, io, util, zonalstats
 
-from . import get_wradlib_data_file, requires_data, requires_secrets
+from . import (
+    get_wradlib_data_file,
+    requires_data,
+    requires_secrets,
+    requires_xarray_backend_api,
+)
 
 
 @pytest.fixture(params=["file", "filelike"])
@@ -375,6 +380,60 @@ class TestHDF5:
         bbox = zonalstats.get_bbox(lon, lat)
 
         io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
+
+    @requires_data
+    @requires_xarray_backend_api
+    @pytest.mark.parametrize(
+        "opener", [io.hdf.open_odim_dataset, io.hdf.open_odim_mfdataset]
+    )
+    def test_open_odim_functions(self, opener):
+        filename = "hdf5/knmi_polar_volume.h5"
+        with get_wradlib_data_file(filename, "file") as odim_file:
+            ds = opener(odim_file)
+            assert isinstance(ds, io.xarray.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
+            ds = opener(odim_file, group="dataset1")
+            assert isinstance(ds, xr.Dataset)
+            ds = opener(odim_file, reindex_angle=False)
+            assert isinstance(ds, io.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
+            ds = opener(odim_file, reindex_angle=True)
+            assert isinstance(ds, io.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
+            ds = opener(odim_file, reindex_angle=0.4)
+            assert isinstance(ds, io.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
+
+    @requires_data
+    @requires_xarray_backend_api
+    @pytest.mark.parametrize(
+        "opener", [io.hdf.open_gamic_dataset, io.hdf.open_gamic_mfdataset]
+    )
+    def test_open_gamic_functions(self, opener):
+        filename = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
+        with get_wradlib_data_file(filename, "file") as gamic_file:
+            ds = opener(gamic_file)
+            assert isinstance(ds, io.xarray.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
+            ds = opener(gamic_file, group="scan0")
+            assert isinstance(ds, xr.Dataset)
+            ds = opener(gamic_file, reindex_angle=False)
+            assert isinstance(ds, io.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
+            ds = opener(gamic_file, reindex_angle=True)
+            assert isinstance(ds, io.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
+            ds = opener(gamic_file, reindex_angle=0.4)
+            assert isinstance(ds, io.RadarVolume)
+            for d in ds:
+                assert isinstance(d, xr.Dataset)
 
 
 class TestRadolan:

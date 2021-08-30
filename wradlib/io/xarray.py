@@ -1040,7 +1040,6 @@ class _OdimH5NetCDFMetadata(object):
         rtime = self.ray_times
         dim, angle = self.fixed_dim_and_angle
         angle_res = _calculate_angle_res(locals()[dim])
-
         dims = ("azimuth", "elevation")
         if dim == dims[1]:
             dims = (dims[1], dims[0])
@@ -1111,11 +1110,18 @@ class _OdimH5NetCDFMetadata(object):
 
     def _get_azimuth_how(self):
         grp = self._group.split("/")[0]
-        startaz = self._root[grp]["how"].attrs["startazA"]
-        stopaz = self._root[grp]["how"].attrs["stopazA"]
+        how = self._root[grp]["how"].attrs
+        startaz = how["startazA"]
+        stopaz = how.get("stopazA", False)
+        if stopaz is False:
+            # stopazA missing
+            # create from startazA
+            stopaz = np.roll(startaz, -1)
+            stopaz[-1] += 360
         zero_index = np.where(stopaz < startaz)
         stopaz[zero_index[0]] += 360
         azimuth_data = (startaz + stopaz) / 2.0
+        azimuth_data[azimuth_data >= 360] -= 360
         return azimuth_data
 
     def _get_azimuth_where(self):
@@ -1145,9 +1151,13 @@ class _OdimH5NetCDFMetadata(object):
 
     def _get_elevation_how(self):
         grp = self._group.split("/")[0]
-        startaz = self._root[grp]["how"].attrs["startelA"]
-        stopaz = self._root[grp]["how"].attrs["stopelA"]
-        elevation_data = (startaz + stopaz) / 2.0
+        how = self._root[grp]["how"].attrs
+        startaz = how.get("startelA", False)
+        stopaz = how.get("stopelA", False)
+        if startaz is not False and stopaz is not False:
+            elevation_data = (startaz + stopaz) / 2.0
+        else:
+            elevation_data = how["elangles"]
         return elevation_data
 
     def _get_elevation_where(self):
@@ -1449,13 +1459,17 @@ def _remove_duplicate_rays(ds, store=None):
     return ds
 
 
-def _reindex_angle(ds, store=None, force=False, tol=0.4):
+def _reindex_angle(ds, store=None, force=False, tol=None):
     # Todo: The current code assumes to have PPI's of 360deg and RHI's of 90deg,
     #       make this work also for sectorized measurements
+    if tol is True or tol is None:
+        tol = 0.4
     # disentangle different functionality
     full_range = dict(azimuth=360, elevation=90)
     dimname = list(ds.dims)[0]
-    secname = "elevation"
+    # sort in any case, to prevent unsorted errors
+    ds = ds.sortby(dimname)
+    secname = dict(azimuth="elevation", elevation="azimuth").get(dimname)
     dim = ds[dimname]
     diff = dim.diff(dimname)
     # this captures different angle spacing

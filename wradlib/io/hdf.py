@@ -55,6 +55,16 @@ def open_odim_dataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
+    keep_elevation : bool
+        For PPI only. Keep original elevation data if True. Defaults to False,
+        which fixes erroneous elevation data.
+    keep_azimuth : bool
+        For RHI only. Keep original azimuth data if True. Defaults to False,
+        which fixes erroneous azimuth data.
+    reindex_angle : bool | float
+        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
+        number, it is used as tolerance. If False, no reindexing is performed.
+        Only invoked if `decode_coord=True`.
     **kwargs : optional
         Additional arguments passed on to :py:func:`xarray.open_dataset`.
 
@@ -87,6 +97,16 @@ def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
+    keep_elevation : bool
+        For PPI only. Keep original elevation data if True. Defaults to False,
+        which fixes erroneous elevation data.
+    keep_azimuth : bool
+        For RHI only. Keep original azimuth data if True. Defaults to False,
+        which fixes erroneous azimuth data.
+    reindex_angle : bool | float
+        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
+        number, it is used as tolerance. If False, no reindexing is performed.
+        Only invoked if `decode_coord=True`.
     **kwargs : optional
         Additional arguments passed on to :py:func:`xarray.open_dataset`.
 
@@ -120,6 +140,16 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
+    keep_elevation : bool
+        For PPI only. Keep original elevation data if True. Defaults to False,
+        which fixes erroneous elevation data.
+    keep_azimuth : bool
+        For RHI only. Keep original azimuth data if True. Defaults to False,
+        which fixes erroneous azimuth data.
+    reindex_angle : bool | float
+        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
+        number, it is used as tolerance. If False, no reindexing is performed.
+        Only invoked if `decode_coord=True`.
     **kwargs : optional
         Additional arguments passed on to :py:func:`xarray.open_dataset`.
 
@@ -153,6 +183,16 @@ def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
+    keep_elevation : bool
+        For PPI only. Keep original elevation data if True. Defaults to False,
+        which fixes erroneous elevation data.
+    keep_azimuth : bool
+        For RHI only. Keep original azimuth data if True. Defaults to False,
+        which fixes erroneous azimuth data.
+    reindex_angle : bool | float
+        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
+        number, it is used as tolerance. If False, no reindexing is performed.
+        Only invoked if `decode_coord=True`.
     **kwargs : optional
         Additional arguments passed on to :py:func:`xarray.open_dataset`.
 
