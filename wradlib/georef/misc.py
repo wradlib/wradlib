@@ -34,9 +34,9 @@ def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
     ----------
     r : :class:`numpy:numpy.ndarray`
         Array of ranges [m]
-    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
-        of r elevation angles in degrees with 0° at horizontal and +90°
-        pointing vertically upwards from the radar
+    theta : scalar or :class:`numpy:numpy.ndarray`
+        Array broadcastable to the shape of r elevation angles in degrees with 0°
+        at horizontal and +90° pointing vertically upwards from the radar
     sitealt : float
         Altitude in [m] a.s.l. of the referencing radar site
     re : float
@@ -73,9 +73,9 @@ def bin_distance(r, theta, sitealt, re, ke=4.0 / 3.0):
     ----------
     r : :class:`numpy:numpy.ndarray`
         Array of ranges [m]
-    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
-        of r elevation angles in degrees with 0° at horizontal and +90°
-        pointing vertically upwards from the radar
+    theta : scalar or :class:`numpy:numpy.ndarray`
+        Array broadcastable to the shape of r elevation angles in degrees with 0°
+        at horizontal and +90° pointing vertically upwards from the radar
     sitealt : float
         site altitude [m] amsl.
     re : float
@@ -116,9 +116,9 @@ def site_distance(r, theta, binalt, re=None, ke=4.0 / 3.0):
     ----------
     r : :class:`numpy:numpy.ndarray`
         Array of ranges [m]
-    theta : scalar or :class:`numpy:numpy.ndarray` broadcastable to the shape
-        of r elevation angles in degrees with 0° at horizontal and +90°
-        pointing vertically upwards from the radar
+    theta : scalar or :class:`numpy:numpy.ndarray`
+        Array broadcastable to the shape of r elevation angles in degrees with 0°
+        at horizontal and +90° pointing vertically upwards from the radar
     binalt : :class:`numpy:numpy.ndarray`
         site altitude [m] amsl. same shape as r.
     re : float

@@ -34,14 +34,14 @@ def as_xarray_dataarray(data, dims, coords):
     ----------
     data : :class:`numpy:numpy.ndarray`
         data array
-    dims : dictionary
+    dims : dict
         dictionary describing xarray dimensions
-    coords : dictionary
+    coords : dict
         dictionary describing xarray coordinates
 
     Returns
     -------
-    dataset : xr.DataArray
+    dataset : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
     da = xr.DataArray(data, coords=dims.values(), dims=dims.keys())
@@ -74,7 +74,7 @@ def create_xarray_dataarray(
         The azimuth angles in degrees.
     theta : :class:`numpy:numpy.ndarray`
         The elevation angles in degrees.
-    proj : osr object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Spatial Reference System (Projection).
     site : tuple
         Tuple of coordinates of the radar site.
@@ -97,7 +97,7 @@ def create_xarray_dataarray(
 
     Returns
     -------
-    dataset : xr.DataArray
+    dataset : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
     if (r is None) or (phi is None) or (theta is None):
@@ -142,11 +142,11 @@ def georeference_dataset(obj, **kwargs):
 
     Parameters
     ----------
-    obj : xarray.Dataset | xarray.DataArray
+    obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
 
     Keyword Arguments
     -----------------
-    proj : GDAL OSR SRS | cartopy CRS | None
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
         If GDAL OSR SRS, output is in this projection, else AEQD.
     re : float
         earth's radius [m]
@@ -158,7 +158,7 @@ def georeference_dataset(obj, **kwargs):
 
     Returns
     ----------
-    obj : xarray.Dataset | xarray.DataArray
+    obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
     """
     proj = kwargs.pop("proj", "None")
     re = kwargs.pop("re", None)

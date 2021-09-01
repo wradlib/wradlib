@@ -22,11 +22,11 @@ This reader implementation uses
 
 Currently there are three different approaches.
 
-The recommended approach makes use of the newly implemented ``xarray.backends.BackendEntrypoint``.
+The recommended approach makes use of the newly implemented :py:class:`xarray:xarray.backends.BackendEntrypoint`.
 For every radar source (CfRadial1, CfRadial2, GAMIC, ODIM) a specific backend is
-implemented in wradlib which returns an specific `sweep` as ``xarray.Dataset``.
-Convenience functions (eg. ``wradlib.io.open_radar_dataset``) are available to read
-volume data into shallow ``wradlib.io.RadarVolume``-wrapper.
+implemented in wradlib which returns an specific `sweep` as :py:class:`xarray:xarray.Dataset`.
+Convenience functions (eg. :func:`wradlib.io.xarray.open_radar_dataset`) are available to read
+volume data into shallow :class:`wradlib.io.xarray.RadarVolume`-wrapper.
 
 The following two approaches are not recommended and will be removed from the codebase
 in wradlib v 2.0.0.
@@ -51,7 +51,7 @@ structure::
     vol = wradlib.io.open_odim(paths, loader='netcdf4', **kwargs)
 
 All datafiles are accessed via the given loader ('netcdf4', 'h5py',
-'h5netcdf'). Only absolutely neccessary data is actually read in this process,
+'h5netcdf'). Only absolutely necessary data is actually read in this process,
 eg. acquisition time and elevation, to fill the structure accordingly. All
 subsequent metadata retrievals are cached to further improve performance.
 Actual data access is realised via xarray using engine 'netcdf4' or 'h5netcdf',
@@ -778,7 +778,7 @@ def to_cfradial2(volume, filename, timestep=None):
 
     Parameters
     ----------
-    volume : RadarVolume/XRadVol/XRadVolume object
+    volume : :class:`wradlib.io.xarray.RadarVolume`, :class:`wradlib.io.xarray.XRadVol` or :class:`wradlib.io.xarray.XRadVolume`
     filename : str
         output filename
     timestep : int
@@ -816,7 +816,7 @@ def to_netcdf(volume, filename, timestep=None, keys=None):
 
     Parameters
     ----------
-    volume : RadarVolume/XRadVolume object
+    volume : :class:`wradlib.io.xarray.RadarVolume`, :class:`wradlib.io.xarray.XRadVol` or :class:`wradlib.io.xarray.XRadVolume`
     filename : str
         output filename
     timestep : int, slice
@@ -848,7 +848,7 @@ def to_odim(volume, filename, timestep=0):
 
     Parameters
     ----------
-    volume : RadarVolume/XRadVol/XRadVolume object
+    volume : :class:`wradlib.io.xarray.RadarVolume`, :class:`wradlib.io.xarray.XRadVol` or :class:`wradlib.io.xarray.XRadVolume`
     filename : str
         output filename
     timestep : int
@@ -1743,12 +1743,12 @@ def _assign_data_radial2(ds):
 def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     """Open and decode a radar sweep or volume from a single file or file-like object.
 
-    This function uses ``xarray.open_dataset`` under the hood. Please refer for
-    details to the documentation of ``xarray.open_dataset``.
+    This function uses :py:func:`xarray:xarray.open_dataset` under the hood. Please refer for
+    details to the documentation of :py:func:`xarray:xarray.open_dataset`.
 
     Parameters
     ----------
-    filename_or_obj : str, Path, file-like or DataStore
+    filename_or_obj : str, Path, file-like or Datastore
         Strings and Path objects are interpreted as a path to a local or remote
         radar file and opened with an appropriate engine.
     engine : {"odim", "gamic", "cfradial1", "cfradial2"}
@@ -1758,17 +1758,17 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     -----------------
     group : str, optional
         Path to a sweep group in the given file to open.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_radar_mfdataset
+    :func:`~wradlib.io.xarray.open_radar_mfdataset`
     """
     if engine not in ["cfradial1", "cfradial2", "gamic", "odim"]:
         raise TypeError(f"Missing or unknown `engine` keyword argument '{engine}'.")
@@ -1815,9 +1815,9 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
 def open_radar_mfdataset(paths, **kwargs):
     """Open multiple radar files as a single radar sweep dataset or radar volume.
 
-    This function uses ``xarray.open_mfdataset`` under the hood. Please refer for
-    details to the documentation of ``xarray.open_mfdataset``.
-    Needs `dask` package to be installed.
+    This function uses :py:func:`xarray:xarray.open_mfdataset` under the hood. Please refer for
+    details to the documentation of :py:func:`xarray:xarray.open_mfdataset`.
+    Needs ``dask`` package to be installed [1]_.
 
     Parameters
     ----------
@@ -1825,8 +1825,8 @@ def open_radar_mfdataset(paths, **kwargs):
         Either a string glob in the form ``"path/to/my/files/*"`` or an explicit list of
         files to open. Paths can be given as strings or as pathlib Paths. If
         concatenation along more than one dimension is desired, then ``paths`` must be a
-        nested list-of-lists (see ``xarray.combine_nested`` for details). (A string glob will
-        be expanded to a 1-dimensional list.)
+        nested list-of-lists (see :py:func:`xarray:xarray.combine_nested` for details).
+        (A string glob will be expanded to a 1-dimensional list.)
     chunks : int or dict, optional
         Dictionary with keys given by dimension names and values given by chunk sizes.
         In general, these should divide the dimensions of each dataset. If int, chunk
@@ -1841,22 +1841,27 @@ def open_radar_mfdataset(paths, **kwargs):
         ``concat_dim=[..., None, ...]`` explicitly to disable concatenation along a
         particular dimension. Default is None, which for a 1D list of filepaths is
         equivalent to opening the files separately and then merging them with
-        ``xarray.merge``.
+        :py:func:`xarray:xarray.merge`.
     combine : {"by_coords", "nested"}, optional
-        Whether ``xarray.combine_by_coords`` or ``xarray.combine_nested`` is used to
-        combine all the data. Default is to use ``xarray.combine_by_coords``.
+        Whether :py:func:`xarray:xarray.combine_by_coords` or :py:func:`xarray:xarray.combine_nested`
+        is used to combine all the data. Default is to use :py:func:`xarray:xarray.combine_by_coords`.
     engine : {"odim", "gamic", "cfradial1", "cfradial2"}
         Engine to use when reading files.
     **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_mfdataset`.
+        Additional arguments passed on to :py:func:`xarray:xarray.open_mfdataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`~wradlib.io.xarray.RadarVolume`
 
     See Also
     --------
-    wradlib.io.open_radar_dataset
+    :func:`~wradlib.io.xarray.open_radar_dataset`
+
+    References
+    ----------
+    .. [1] https://docs.dask.org/en/latest/
+    .. [2] https://xarray.pydata.org/en/stable/user-guide/dask.html#chunking-and-performance
     """
 
     def _unpack_paths(paths):
@@ -2027,8 +2032,8 @@ def _open_mfmoments(
     parallel : bool, optional
         If True, the open and preprocess steps of this function will be
         performed in parallel using ``dask.delayed``. Default is False.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
@@ -3569,7 +3574,7 @@ def collect_by_angle(obj):
 
     Returns
     -------
-    out : XRadVolume
+    out : :class:`wradlib.io.xarray.XRadVolume`
         wrapper around nested list of XRadSweep objects
     """
     out = XRadVolume()
@@ -3658,12 +3663,10 @@ def open_odim(paths, loader="netcdf4", **kwargs):
     paths : str or sequence
         Either a filename or string glob in the form `'path/to/my/files/*.h5'`
         or an explicit list of files to open.
-
     loader : {'netcdf4', 'h5py', 'h5netcdf'}
         Loader used for accessing file metadata, defaults to 'netcdf4'.
-
-    kwargs : optional
-        Additional arguments passed on to :py:class:`wradlib.io.XRadSweep`.
+    kwargs : dict, optional
+        Additional arguments passed on to :class:`wradlib.io.xarray.XRadSweep`.
     """
     if (loader == "h5netcdf") & (
         LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0")
@@ -4024,7 +4027,7 @@ class CfRadial(XRadVol):
         mask_and_scale : bool
             If True, lazily scale (using scale_factor and add_offset)
             and mask (using _FillValue). Defaults to True.
-        chunks : int | dict, optional
+        chunks : int or dict, optional
             If chunks is provided, it used to load the new dataset into dask
             arrays. chunks={} loads the dataset with dask using a single
             chunk for all arrays.
@@ -4052,7 +4055,8 @@ class CfRadial(XRadVol):
 
         Parameters
         ----------
-        nch : NetCDF4File object
+        nch : object
+            NetCDF4 File object
 
         Keyword Arguments
         -----------------
@@ -4064,7 +4068,7 @@ class CfRadial(XRadVol):
         mask_and_scale : bool
             If True, lazily scale (using scale_factor and add_offset)
             and mask (using _FillValue). Defaults to True.
-        chunks : int | dict, optional
+        chunks : int or dict, optional
             If chunks is provided, it used to load the new dataset into dask
             arrays. chunks={} loads the dataset with dask using a single
             chunk for all arrays.
@@ -4113,7 +4117,7 @@ class CfRadial(XRadVol):
         mask_and_scale : bool
             If True, lazily scale (using scale_factor and add_offset)
             and mask (using _FillValue). Defaults to True.
-        chunks : int | dict, optional
+        chunks : int or dict, optional
             If chunks is provided, it used to load the new dataset into dask
             arrays. chunks={} loads the dataset with dask using a single
             chunk for all arrays.
@@ -4198,7 +4202,7 @@ class OdimH5(XRadVol):
         mask_and_scale : bool
             If True, lazily scale (using scale_factor and add_offset)
             and mask (using _FillValue). Defaults to True.
-        chunks : int | dict, optional
+        chunks : int or dict, optional
             If chunks is provided, it used to load the new dataset into dask
             arrays. chunks={} loads the dataset with dask using a single
             chunk for all arrays.
@@ -4252,7 +4256,7 @@ class OdimH5(XRadVol):
         mask_and_scale : bool
             If True, lazily scale (using scale_factor and add_offset)
             and mask (using _FillValue). Defaults to True.
-        chunks : int | dict, optional
+        chunks : int or dict, optional
             If chunks is provided, it used to load the new dataset into dask
             arrays. chunks={} loads the dataset with dask using a single
             chunk for all arrays.

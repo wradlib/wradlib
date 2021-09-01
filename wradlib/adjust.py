@@ -126,20 +126,22 @@ class AdjustBase(ipol.IpolBase):
 
     Parameters
     ----------
-    obs_coords : array of floats of shape (number of points, 2)
+    obs_coords : :py:class:`numpy:numpy.ndarray`
+        array of floats of shape (number of points, 2)
         x and y coordinate pairs of observation locations (e.g. rain gauges).
-    raw_coords : array of floats of shape (number of points, 2)
+    raw_coords : :py:class:`numpy:numpy.ndarray`
+        array of floats of shape (number of points, 2)
         x and y coordinate pairs of raw (unadjusted) radar field
-    nnear_raws : integer
+    nnear_raws : int
         Defaults to 9. This parameter controls the number of radar bins or
         grid cells (in the neighbourhood of a rain gauge) which is used to
         compute the value of the radar observation AT a rain gauge.
-    stat : string
+    stat : str
         Defaults to 'median'. Must be either 'mean', 'median', or 'best'.
         This parameter controls the statistic that is used to compute the value
         of the radar observation AT a rain gauge based on the neighbourhood
         specified by parameter ``nnear_raws``.
-    mingages : integer
+    mingages : int
         Defaults to 5. Minimum number of valid gages required for an
         adjustment. If less valid gauges are available, the adjustment
         procedure will return unadjusted raw values. If you do not want to use
@@ -150,27 +152,29 @@ class AdjustBase(ipol.IpolBase):
         should be set to zero (default value). For multiplicative adjustment,
         values larger than zero might be chosen in order to minimize
         artifacts.
-    mfb_args : dictionary
+    mfb_args : dict
         **Only used for AdjustMFB** - This set of parameters controls how the
         mean field bias is computed. Items of the dictionary are:
 
-        - *method*: string
-          defaults to 'linregr' which fits a regression line through observed
-          and estimated values and than gets the bias from the inverse of
-          the slope.
-          Other values: 'mean' or 'median' compute the mean or the median of
-          the ratios between gauge and radar observations.
-        - *minslope*, *minr*, *maxp*:
-          When using method='linregr', these parameters control whether a
-          linear regression turned out to be robust (minimum allowable slope,
-          minimum allowable correlation, maximim allowable p-value). If the
-          regression result is not considered robust, no adjustment will
-          take place.
+            - *method*: string
+              defaults to 'linregr' which fits a regression line through observed
+              and estimated values and than gets the bias from the inverse of
+              the slope.
+              Other values: 'mean' or 'median' compute the mean or the median of
+              the ratios between gauge and radar observations.
+            - *minslope*, *minr*, *maxp*:
+              When using method='linregr', these parameters control whether a
+              linear regression turned out to be robust (minimum allowable slope,
+              minimum allowable correlation, maximim allowable p-value). If the
+              regression result is not considered robust, no adjustment will
+              take place.
 
-    Ipclass : an interpolation class from :mod:`wradlib.ipol`
+    Ipclass : :class:`wradlib.ipol.IpolBase`
+        an interpolation class from :mod:`wradlib.ipol`
         **Not used for AdjustMFB** - default value is
         :class:`~wradlib.ipol.Idw` (Inverse Distance Weighting).
-    ipargs : keyword arguments to create an instance of ipclass
+    ipargs : dict
+        keyword arguments to create an instance of ipclass
         **Not used for AdjustMFB** - for :class:`~wradlib.ipol.Idw`, these
         keyword arguments would e.g. be ``nnear`` or ``p``.
 
@@ -248,16 +252,18 @@ class AdjustBase(ipol.IpolBase):
 
         Parameters
         ----------
-        ix : array of integers
+        ix : :py:class:`numpy:numpy.ndarray`
+            array of integers
             These are the indices of observation points with valid
             observation-radar pairs
-        targets : array of floats of shape (number of target points, 2)
+        targets : :py:class:`numpy:numpy.ndarray`
+            array of floats of shape (number of target points, 2)
             Target coordinates for the interpolation
 
         Returns
         -------
-        output : an instance of a class that inherited from
-            wradlib.ipol.IpolBase
+        output : :class:`wradlib.ipol.IpolBase`
+            an instance of a class that inherited from :class:`wradlib.ipol.IpolBase`
 
         """
         #    first, set interpolation targets (default: the radar coordinates)
@@ -276,23 +282,28 @@ class AdjustBase(ipol.IpolBase):
 
         Parameters
         ----------
-        obs : flat (1-D) array of floats with shape (num gauges,)
+        obs : :py:class:`numpy:numpy.ndarray`
+            flat (1-D) array of floats with shape (num gauges,)
             These are the gage observations used for adjustment. This array
             needs to be of the same length as the array "obs_coords" used to
             initialize the adjustment object.
-        raw : flat (1-D) array of floats with shape (num radar cells,)
+        raw : :py:class:`numpy:numpy.ndarray`
+            flat (1-D) array of floats with shape (num radar cells,)
             These are the raw (unadjusted) radar rainfall values. This array
             needs to be of the same length as the array "raw_coords" used to
             initialize the adjustment object.
-        targets : (INTERNAL - DO NOT USE)
+        targets : :py:class:`numpy:numpy.ndarray`
+            (INTERNAL - DO NOT USE)
             Array of floats. Coordinate pairs for locations on which the final
             adjustment product is interpolated
             Defaults to None. In this case, the output locations will be
             identical to the radar coordinates
-        rawatobs : (INTERNAL - DO NOT USE)
+        rawatobs : :py:class:`numpy:numpy.ndarray`
+            (INTERNAL - DO NOT USE)
             Array of floats. For internal use from AdjustBase.xvalidate only
             (defaults to None)
-        ix : (INTERNAL - DO NOT USE)
+        ix : :py:class:`numpy:numpy.ndarray`
+            (INTERNAL - DO NOT USE)
             Array of integers. For internal use from AdjustBase.xvalidate only
             (defaults to None)
 
@@ -333,15 +344,19 @@ class AdjustBase(ipol.IpolBase):
 
         Parameters
         ----------
-        obs : array of floats
-        raw : array of floats
+        obs : :py:class:`numpy:numpy.ndarray`
+            array of floats
+        raw : :py:class:`numpy:numpy.ndarray`
+            array of floats
 
         Returns
         -------
-        obs : array of floats
+        obs : :py:class:`numpy:numpy.ndarray`
+            array of floats
             valid observations at those locations which have a valid radar
             observation
-        estatobs : array of floats
+        estatobs : :py:class:`numpy:numpy.ndarray`
+            array of floats
             estimated values at the valid observation locations
 
         """
@@ -397,7 +412,8 @@ class AdjustAdd(AdjustBase):
 
     Returns
     -------
-    output : array of adjusted radar values
+    output : :py:class:`numpy:numpy.ndarray`
+        array of adjusted radar values
 
     """
 
@@ -455,7 +471,8 @@ class AdjustMultiply(AdjustBase):
 
     Returns
     -------
-    output : array of adjusted radar values
+    output : :py:class:`numpy:numpy.ndarray`
+        array of adjusted radar values
 
     """
 
@@ -537,7 +554,8 @@ class AdjustMixed(AdjustBase):
 
     Returns
     -------
-    output : array of adjusted radar values
+    output : :py:class:`numpy:numpy.ndarray`
+        array of adjusted radar values
 
 
 
@@ -589,7 +607,8 @@ class AdjustMFB(AdjustBase):
 
     Returns
     -------
-    output : array of adjusted radar values
+    output : :py:class:`numpy:numpy.ndarray`
+        array of adjusted radar values
 
     """
 
@@ -667,7 +686,8 @@ class AdjustNone(AdjustBase):
 
     Returns
     -------
-    output : array of unadjusted radar values
+    output : :py:class:`numpy:numpy.ndarray`
+        array of unadjusted radar values
 
     """
 
@@ -704,7 +724,7 @@ class GageOnly(AdjustBase):
     (e.g. NaN, Inf or other typical missing data flags such as -9999).
     However, in case e.g. the observation data contain missing values, the
     computation of the inverse distance weights needs to be repeated in
-    :func:`~wradlib.adjust.GageOnly.__call__` which is at the expense of
+    :meth:`~wradlib.adjust.GageOnly.__call__` which is at the expense of
     performance.
 
     Note
@@ -717,7 +737,8 @@ class GageOnly(AdjustBase):
 
     Returns
     -------
-    output : array of adjusted radar values
+    output : :py:class:`numpy:numpy.ndarray`
+        array of adjusted radar values
     """
 
     def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
@@ -749,14 +770,16 @@ class RawAtObs:
 
     Parameters
     ----------
-    obs_coords : array of float
+    obs_coords : :py:class:`numpy:numpy.ndarray`
+        array of float
         coordinate pairs of observations points
-    raw_coords : array of float
+    raw_coords : :py:class:`numpy:numpy.ndarray`
+        array of float
         coordinate pairs of raw (unadjusted) field
-    nnear: integer
+    nnear: int
         number of neighbours which should be considered in the vicinity of each
         point in obs
-    stat: string
+    stat: str
         function name
 
     """
@@ -771,7 +794,8 @@ class RawAtObs:
 
         Parameters
         ----------
-        raw : array of float
+        raw : :py:class:`numpy:numpy.ndarray`
+            array of float
             raw values
 
         """
@@ -792,11 +816,13 @@ def _get_neighbours_ix(obs_coords, raw_coords, nnear):
 
     Parameters
     ----------
-    obs_coords : array of float of shape (num_points,ndim)
+    obs_coords : :py:class:`numpy:numpy.ndarray`
+        array of float of shape (num_points,ndim)
         in the neighbourhood of these coordinate pairs we look for neighbours
-    raw_coords : array of float of shape (num_points,ndim)
+    raw_coords : :py:class:`numpy:numpy.ndarray`
+        array of float of shape (num_points,ndim)
         from these coordinate pairs the neighbours are selected
-    nnear : integer
+    nnear : int
         number of neighbours to be selected per coordinate pair of
         ``obs_coords``
 
@@ -812,7 +838,7 @@ def _get_statfunc(funcname):
 
     Parameters
     ----------
-    funcname : string
+    funcname : str
         a name of a numpy function OR another option known by _get_statfunc
         Potential options: 'mean', 'median', 'best'
 
@@ -841,12 +867,15 @@ def best(x, y):
 
     Parameters
     ----------
-    x : float or 1-d array of float
-    y : array of float
+    x : float | :py:class:`numpy:numpy.ndarray`
+        float or 1-d array of float
+    y : :py:class:`numpy:numpy.ndarray`
+        array of float
 
     Returns
     -------
-    output : 1-d array of float with length len(y)
+    output : :py:class:`numpy:numpy.ndarray`
+        1-d array of float with length len(y)
 
     """
     if type(x) == np.ndarray:

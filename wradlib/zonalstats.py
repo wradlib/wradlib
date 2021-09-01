@@ -83,16 +83,17 @@ class DataSource(object):
 
     Parameters
     ----------
-    data : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
+    data : sequence or str
+        sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         ESRI Shapefile filename containing source points/polygons
 
-    srs : object
-        ogr.SpatialReferenceSystem SRS describing projection of given data
+    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        SRS describing projection of given data
 
     Warning
     -------
     Writing shapefiles with the wrong locale settings can have impact on the
-    type of the decimal. If problem arise use LC_NUMERIC=C in your environment.
+    type of the decimal. If problem arise use ``LC_NUMERIC=C`` in your environment.
 
     Examples
     --------
@@ -156,8 +157,8 @@ class DataSource(object):
 
         Parameters
         ----------
-        idx : sequence of int
-            indices
+        idx : sequence
+            sequence of int indices
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -176,9 +177,9 @@ class DataSource(object):
 
         Parameters
         ----------
-        attr : string
+        attr : str
             attribute name
-        value : string
+        value : str
             attribute value
         """
         lyr = self.ds.GetLayer()
@@ -192,7 +193,8 @@ class DataSource(object):
 
         Parameters
         ----------
-        geom : OGR.Geometry object
+        geom : :py:class:`gdal:osgeo.ogr.Geometry`
+            OGR.Geometry object
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -247,9 +249,9 @@ class DataSource(object):
 
         Parameters
         ----------
-        filename : string
+        filename : str
             path to shape-filename
-        driver : string
+        driver : str
             driver string
         remove : bool
             if True removes existing output file
@@ -268,11 +270,11 @@ class DataSource(object):
 
         Parameters
         ----------
-        filename : string
+        filename : str
             path to shape-filename
-        source : int or string
+        source : int or str
             number or name of wanted layer, defaults to 0
-        driver : string
+        driver : str
             driver string
         """
         tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
@@ -300,11 +302,11 @@ class DataSource(object):
 
         Parameters
         ----------
-        filename : string
+        filename : str
             path to shape-filename
-        driver : string
+        driver : str
             GDAL Raster Driver
-        attr : string
+        attr : str
             attribute to burn into raster
         pixel_size : float
             pixel Size in source units
@@ -368,7 +370,7 @@ class DataSource(object):
 
         Parameters
         ----------
-        name : string
+        name : str
             Attribute Name
         values : :class:`numpy:numpy.ndarray`
             Values to fill in attributes
@@ -393,7 +395,7 @@ class DataSource(object):
         attrs : list
             Attribute Names to retrieve
         filt : tuple
-            (attname,value) for Attribute Filter
+            (attname, value) for Attribute Filter
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
@@ -413,7 +415,7 @@ class DataSource(object):
         props : list
             Property Names to retrieve
         filt : tuple
-            (attname,value) for Attribute Filter
+            (attname, value) for Attribute Filter
 
         """
         lyr = self.ds.GetLayer()
@@ -436,7 +438,7 @@ class DataSource(object):
         props : list
            Property Names to retrieve
         filt : tuple
-           (attname,value) for Attribute Filter
+           (attname, value) for Attribute Filter
 
         """
         lyr = self.ds.GetLayer()
@@ -479,10 +481,12 @@ class ZonalDataBase(object):
 
     Parameters
     ----------
-    src : sequence of source points (shape Nx2) or polygons (shape NxMx2) or
+    src : sequence or str
+        sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         ESRI Shapefile filename containing source points/polygons or
         DataSource object
-    trg : sequence of target polygons (shape Nx2, num vertices x 2) or
+    trg : sequence or str
+        sequence of target polygons (shape Nx2, num vertices x 2) or
         ESRI Shapefile filename containing target polygons or DataSource object
 
     Keyword arguments
@@ -492,9 +496,8 @@ class ZonalDataBase(object):
         Points/Polygons  will be considered inside the target if they are
         contained in the buffer.
 
-    srs : object
-        OGR.SpatialReference
-        will be used for DataSource object.
+    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        OGR.SpatialReference will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
     silent : bool
@@ -551,7 +554,7 @@ class ZonalDataBase(object):
         Returns
         -------
         array : :class:`numpy:numpy.ndarray`
-            of Nx2 point coordinate arrays
+            Array of Nx2 point coordinate arrays
         """
         return np.array(
             [
@@ -571,7 +574,7 @@ class ZonalDataBase(object):
         Returns
         -------
         array : :class:`numpy:numpy.ndarray`
-            of Nx2 point coordinate arrays
+            Array of Nx2 point coordinate arrays
         """
         return self._get_intersection(idx=idx)
 
@@ -600,7 +603,7 @@ class ZonalDataBase(object):
 
         Returns
         -------
-        ds_mem : object
+        ds_mem : :py:class:`gdal:osgeo.gdal.Dataset`
             gdal.Dataset object
         """
         progress = None if (silent or isWindows) else gdal.TermProgress
@@ -665,9 +668,9 @@ class ZonalDataBase(object):
 
         Parameters
         ----------
-        filename : string
+        filename : str
             path to shape-filename
-        driver : string
+        driver : str
             OGR Vector Driver String, defaults to 'ESRI Shapefile'
         remove : bool
             if True, existing file will be removed before creation
@@ -681,7 +684,7 @@ class ZonalDataBase(object):
 
         Parameters
         ----------
-        filename : string
+        filename : str
             path to vector file
         """
         self.src = DataSource(filename, name="src", source="src")
@@ -737,10 +740,12 @@ class ZonalDataPoly(ZonalDataBase):
 
     Parameters
     ----------
-    src : sequence of source polygons (shape NxMx2) or
+    src : sequence or str
+        sequence of source polygons (shape NxMx2) or
         ESRI Shapefile filename containing source polygons
 
-    trg : sequence of target polygons (shape Nx2, num vertices x 2) or
+    trg : sequence or str
+        sequence of target polygons (shape Nx2, num vertices x 2) or
         ESRI Shapefile filename containing target polygons
 
     Keyword Arguments
@@ -750,9 +755,8 @@ class ZonalDataPoly(ZonalDataBase):
         Polygons will be considered inside the target if they are contained
         in the buffer.
 
-    srs : object
-        OGR.SpatialReference
-        will be used for DataSource object.
+    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        OGR.SpatialReference will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
     Examples
@@ -789,9 +793,11 @@ class ZonalDataPoint(ZonalDataBase):
 
     Parameters
     ----------
-    src : sequence of source points (shape Nx2) or
+    src : sequence or str
+        sequence of source points (shape Nx2) or
         ESRI Shapefile filename containing source points
-    trg : sequence of target polygons (shape Nx2, num vertices x 2) or
+    trg : sequence or str
+        sequence of target polygons (shape Nx2, num vertices x 2) or
         ESRI Shapefile filename containing target polygons
 
     Keyword Arguments
@@ -801,9 +807,8 @@ class ZonalDataPoint(ZonalDataBase):
         Points will be considered inside the target if they are contained
         in the buffer.
 
-    srs : object
-        OGR.SpatialReference
-        will be used for DataSource object.
+    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        OGR.SpatialReference will be used for DataSource object.
         src and trg data have to be in the same srs-format
 
     Examples
@@ -845,7 +850,7 @@ class ZonalStatsBase(object):
 
     Parameters
     ----------
-    src : object | string
+    src : :class:`wradlib.zonalstats.ZonalDataPoly` or str
         ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI
         shapefile containing necessary ZonalData
         ZonalData is available as ``zdata``-property inside class instance.
@@ -1002,7 +1007,7 @@ class ZonalStatsPoly(ZonalStatsBase):
 
     Parameters
     ----------
-    src : :class:`~wradlib.zonalstats.ZonalDataPoly` | str
+    src : :class:`~wradlib.zonalstats.ZonalDataPoly` or str
         ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI
         shapefile containing necessary Zonal Data
 
@@ -1028,7 +1033,7 @@ class ZonalStatsPoint(ZonalStatsBase):
 
     Parameters
     ----------
-    src : :class:`~wradlib.zonalstats.ZonalDataPoint` | str
+    src : :class:`~wradlib.zonalstats.ZonalDataPoint` or str
         ZonalDataPoint object or filename pointing to ZonalDataPoly ESRI
         shapefile containing necessary Zonal Data
 
@@ -1171,8 +1176,10 @@ def angle_between(source_angle, target_angle):
 
     Parameters
     ----------
-    source_angle : starting angle
-    target_angle : target angle
+    source_angle : float or :class:`numpy:numpy.ndarray`
+        starting angle
+    target_angle : float or :class:`numpy:numpy.ndarray`
+        target angle
     """
     sin1 = np.sin(np.radians(target_angle) - np.radians(source_angle))
     cos1 = np.cos(np.radians(target_angle) - np.radians(source_angle))
@@ -1189,7 +1196,6 @@ def get_bbox(x, y):
         x-coordinate values
     y : :class:`numpy:numpy.ndarray`
         y-coordinate values
-
     """
     return dict(left=np.min(x), right=np.max(x), bottom=np.min(y), top=np.max(y))
 
@@ -1216,8 +1222,8 @@ def grid_centers_to_vertices(x, y, dx, dy):
 
     Returns
     -------
-    out : 3-d array
-        of vertices for each grid cell of shape (n grid points,5, 2)
+    out : :class:`numpy:numpy.ndarray`
+        3-d array of vertices for each grid cell of shape (n grid points,5, 2)
     """
     top = y + dy / 2
     left = x - dx / 2
@@ -1247,7 +1253,7 @@ def get_clip_mask(coords, clippoly, srs=None):
     clippoly : :class:`numpy:numpy.ndarray`
         array of xy coords with shape (N,2) representing closed
         polygon coordinates
-    srs: object
+    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
         osr.SpatialReference
 
     Returns

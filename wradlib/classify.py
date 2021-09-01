@@ -163,7 +163,7 @@ def classify(data, threshold=0.0):
 
     Parameters
     ----------
-    data : np.ndarray
+    data : :py:class:`numpy:numpy.ndarray`
         Array which is of size (hmc-class, data.shape), containing the
         weighted hmc-membership probability values.
 
@@ -175,11 +175,11 @@ def classify(data, threshold=0.0):
 
     Returns
     -------
-    idx : np.ndarray
+    idx : :py:class:`numpy:numpy.ndarray`
         Array which is of (data.shape) containing the (sorted) index into
         the hydrometeor-class.
         No precip is added on the top.
-    vals : np.ndarray
+    vals : :py:class:`numpy:numpy.ndarray`
         Array which is of (data.shape) containing the (sorted) probability
         scores. No precip is added on the top.
     """

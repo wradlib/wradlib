@@ -87,6 +87,8 @@ __all__ = [
     "CartesianVolume",
     "CAPPI",
     "PseudoCAPPI",
+    "out_of_range",
+    "blindspots",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
@@ -113,9 +115,9 @@ class CartesianVolume:
         The minimum elevation angle of the volume (degree)
     maxelev : float
         The maximum elevation angle of the volume (degree)
-    ipclass : object
+    ipclass : :class:`wradlib.ipol.IpolBase`
         an interpolation class from :mod:`wradlib.ipol`
-    ipargs : `**kwargs`
+    ipargs : dict
         keyword arguments corresponding to ``ipclass``
 
     Returns
@@ -200,9 +202,9 @@ class CartesianVolume:
         Parameters
         ----------
         gridcoords : :class:`numpy:numpy.ndarray`
-            of shape (num voxels, 3)
+            Array of shape (num voxels, 3)
         polcoords : :class:`numpy:numpy.ndarray`
-            of shape (num bins, 3)
+            Array of shape (num bins, 3)
         maxrange : float
             The maximum radar range
             (must be the same for each elevation angle,
@@ -216,7 +218,6 @@ class CartesianVolume:
         -------
         output : :class:`numpy:numpy.ndarray`
             Boolean array of length (num voxels,)
-
         """
         return np.repeat(False, len(gridcoords))
 
@@ -242,9 +243,9 @@ class CAPPI(CartesianVolume):
         Represents the 3-D coordinates of the Cartesian grid
     maxrange : float
         The maximum radar range (must be the same for each elevation angle)
-    ipclass : object
+    ipclass : :class:`wradlib.ipol.IpolBase`
         an interpolation class from :mod:`wradlib.ipol`
-    ipargs : `**kwargs`
+    ipargs : dict
         keyword arguments corresponding to ``ipclass``
 
     Returns
@@ -254,8 +255,8 @@ class CAPPI(CartesianVolume):
 
     See Also
     --------
-    out_of_range
-    blindspots
+    :func:`~wradlib.vpr.out_of_range`
+    :func:`~wradlib.vpr.blindspots`
 
     Examples
     --------
@@ -304,9 +305,9 @@ class PseudoCAPPI(CartesianVolume):
         The minimum elevation angle of the volume (degree)
     maxelev : float
         The maximum elevation angle of the volume (degree)
-    ipclass : object
+    ipclass : :class:`wradlib.ipol.IpolBase`
         an interpolation class from :mod:`wradlib.ipol`
-    ipargs : `**kwargs`
+    ipargs : dict
         keyword arguments corresponding to ``ipclass``
 
     Returns
@@ -316,7 +317,7 @@ class PseudoCAPPI(CartesianVolume):
 
     See Also
     --------
-    out_of_range
+    :func:`~wradlib.vpr.out_of_range`
 
     Examples
     --------
@@ -377,8 +378,9 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
 
     Returns
     -------
-    output : tuple of three Boolean arrays each of length (num grid points)
-
+    output : tuple
+        tuple of three boolean arrays (below, above, out_of_range) each of length
+        (num grid points)
     """
     # distances of 3-D grid nodes from radar site (center)
     dist_from_rad = np.sqrt(((gridcoords - center) ** 2).sum(axis=-1))
@@ -404,16 +406,19 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
         sequence of three floats indicating the radar position
         (longitude in decimal degrees, latitude in decimal degrees,
         height a.s.l. in meters)
-    elevs : sequence of elevation angles
-    azimuths : sequence of azimuth angles
-    ranges : sequence of ranges
-    proj : osr spatial reference object
+    elevs : sequence
+        sequence of elevation angles
+    azimuths : sequence
+        sequence of azimuth angles
+    ranges : sequence
+        sequence of ranges
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
 
     Returns
     -------
-    output :  :class:`numpy:numpy.ndarray`
-        (num volume bins, 3)
+    output : :class:`numpy:numpy.ndarray`
+        Array of shape (num volume bins, 3)
 
     Examples
     --------
@@ -441,16 +446,19 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         sequence of three floats indicating the radar position
         (longitude in decimal degrees, latitude in decimal degrees,
         height a.s.l. in meters)
-    elevs : sequence of elevation angles
-    azimuths : sequence of azimuth angles
-    ranges : sequence of ranges
-    proj : object
+    elevs : sequence
+        sequence of elevation angles
+    azimuths : sequence
+        sequence of azimuth angles
+    ranges : sequence
+        sequence of ranges
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
 
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        (num volume bins, 3)
+        Array of shape (num volume bins, 3)
 
     """
     # check structure: Are azimuth angles and range bins the same for each
@@ -534,7 +542,7 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res, minalt
     ----------
     sitecoords : tuple
         Radar location coordinates in lon, lat
-    proj : object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
     maxrange : float
         maximum radar range (same unit as SRS defined by ``proj``,
@@ -603,22 +611,23 @@ def norm_vpr_stats(volume, reference_layer, stat=None, **kwargs):
     Parameters
     ----------
     volume : :class:`numpy:numpy.ndarray` or
-        :class:`numpy.ma.core.MaskedArray`
+        :class:`numpy:numpy.ma.MaskedArray`
         Cartesian 3-d grid with shape (num vertical layers, num x intervals,
         num y intervals)
-    reference_layer : integer
+    reference_layer : int
         This index defines the vertical layers of ``volume`` that is used to
         normalise all vertical profiles
-    stat : function
+    stat : callable
         typically a numpy statistics function (defaults to numpy.mean)
-    kwargs : further keyword arguments taken by ``stat``
+    kwargs : dict
+        further keyword arguments taken by ``stat``
 
     Returns
     -------
-    output : :class:`numpy:numpy.ndarray` or :class:`numpy.ma.core.MaskedArray`
-        of shape (num vertical layers,) which provides the statistic from
+    output : :py:class:`numpy:numpy.ndarray` or :py:class:`numpy:numpy.ma.MaskedArray`
+        Array of shape (num vertical layers,) which provides the statistic from
         ``stat`` applied over all normalised vertical profiles (e.g. the
-        mean normalised vertical profile if numpy.mean is used)
+        mean normalised vertical profile if :py:func:`numpy:numpy.mean` is used)
 
     """
     if stat is None:

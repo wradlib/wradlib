@@ -14,6 +14,7 @@ Attenuation Correction
     {}
 """
 __all__ = [
+    "AttenuationOverflowError",
     "correct_attenuation_hb",
     "constraint_dbz",
     "constraint_pia",
@@ -34,6 +35,11 @@ logger = logging.getLogger("attcorr")
 
 
 class AttenuationOverflowError(Exception):
+    """Attenuation Overflow Error
+
+    Exception, if attenuation exceeds ``thrs`` and no handling ``mode`` is set.
+    """
+
     pass
 
 
@@ -48,7 +54,7 @@ def correct_attenuation_hb(
 
     Parameters
     ----------
-    gateset : :class:`numpy:numpy.ndarray`
+    gateset : :py:class:`numpy:numpy.ndarray`
         multidimensional array. The range gates (over which iteration has to
         be performed) are supposed to vary along
         the *last* dimension so, e.g., for a set of `l` radar images stored in
@@ -63,7 +69,7 @@ def correct_attenuation_hb(
         set to 0.7.
     gate_length : float
         length of a range gate [km]. Per default set to 1.0.
-    mode : string
+    mode : str
         controls how the function reacts, if the sum of signal and attenuation
         exceeds the threshold ``thrs``
         Possible values:
@@ -81,15 +87,13 @@ def correct_attenuation_hb(
 
     Returns
     -------
-    pia : :class:`numpy:numpy.ndarray
+    pia : :py:class:`numpy:numpy.ndarray`
         Array with the same shape as ``gateset`` containing the calculated
         attenuation [dB] for each range gate.
 
     Raises
     ------
-    AttenuationOverflowError
-        Exception, if attenuation exceeds ``thrs`` and no handling ``mode`` is
-        set.
+    :exc:`wradlib.atten.AttenuationOverflowError`
 
     Examples
     --------
@@ -236,7 +240,7 @@ def bisect_reference_attenuation(
         Radial length of a range gate [km].
 
         Per default set to 1.0.
-    mode : string
+    mode : str
         {‘ratio’ or ‘difference’}
         Kind of tolerance of calculated pia in relation to reference pia.
 
@@ -603,8 +607,8 @@ def correct_radome_attenuation_empirical(
         The radius of rangebins within the rain-intensity is
         statistically evaluated as the representative rain-intensity
         over radome.
-    stat : object
-        A name of a numpy function for statistical aggregation of the
+    stat : callable
+        A numpy function for statistical aggregation of the
         central rangebins defined by n_r.
 
         Potential options: np.mean, np.median, np.max, np.min.
@@ -645,7 +649,8 @@ def pia_from_kdp(kdp, dr, gamma=0.08):
     kdp : :class:`numpy:numpy.ndarray`
        array specific differential phase
        Range dimension must be the last dimension.
-    dr : gate length (km)
+    dr : float
+        gate length (km)
     gamma : float
        linear coefficient (default value: 0.08) in the relation between
        Kdp phase and specific attenuation (alpha)

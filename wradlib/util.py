@@ -67,8 +67,8 @@ class OptionalModuleStub(object):
 
     def __getattr__(self, name):
         link = (
-            "https://wradlib.github.io/wradlib-docs/latest/"
-            "gettingstarted.html#optional-dependencies"
+            "https://docs.wradlib.org/en/stable/"
+            "installation.html#optional-dependencies"
         )
         raise AttributeError(
             'Module "{0}" is not installed.\n\n'
@@ -90,7 +90,7 @@ def import_optional(module):
 
     Parameters
     ----------
-    module : string
+    module : str
              name of the module
 
     Returns
@@ -122,8 +122,7 @@ def import_optional(module):
     from module "nonexistentmodule".
     This module is optional right now in wradlib.
     You need to separately install this dependency.
-    Please refer to https://wradlib.github.io/wradlib-docs/\
-latest/gettingstarted.html#optional-dependencies
+    Please refer to https://docs.wradlib.org/en/stable/installation.html#optional-dependencies
     for further instructions.
     """
     try:
@@ -149,15 +148,17 @@ def from_to(tstart, tend, tdelta):
 
     Parameters
     ----------
-    tstart : datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12
-        or datetime object
-    tend : datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12
-        or datetime object
-    tdelta : integer representing time interval in SECONDS
+    tstart : str or :py:class:`datetime.datetime`
+        datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12 or datetime object
+    tend : str or :py:class:`datetime.datetime`
+        datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12 or datetime object
+    tdelta : int
+        representing time interval in SECONDS
 
     Returns
     -------
-    output : list of datetime.datetime objects
+    output : list
+        list of datetime.datetime objects
 
     """
     if not type(tstart) == dt.datetime:
@@ -187,8 +188,9 @@ def _idvalid(data, isinvalid=None, minval=None, maxval=None):
 
     Parameters
     ----------
-    data : :class:`numpy:numpy.ndarray` of floats
-    isinvalid : list of what is considered an invalid value
+    data : :class:`numpy:numpy.ndarray`
+    isinvalid : list
+        list of what is considered an invalid value
 
     """
     if isinvalid is None:
@@ -253,7 +255,8 @@ def issequence(x):
 
     Parameters
     ----------
-    x : sequence to test
+    x : sequence
+        sequence to test
 
     """
     out = True
@@ -319,7 +322,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
         2d array of values to which the filter is to be applied
     wsize : float
         Half size of the window centred on the pixel [m]
-    fun : string
+    fun : str
         name of the 1d filter from :mod:`scipy:scipy.ndimage`
     rscale : float
         range [m] scale of the polar grid
@@ -369,7 +372,8 @@ def prob_round(x, prec=0):
     Parameters
     ----------
     x : float
-    prec : precision
+    prec : int
+        precision
     """
     fixup = np.sign(x) * 10 ** prec
     x *= fixup
@@ -388,9 +392,10 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
         2d array of values to which the filter is to be applied
     wsize : float
         Half size of the window centred on the pixel [m]
-    fun : string
+    fun : str
         name of the 2d filter from :mod:`scipy:scipy.ndimage`
-    scale : tuple of 2 floats
+    scale : tuple
+        tuple of 2 floats
         x and y scale of the cartesian grid [m]
 
     Returns
@@ -419,7 +424,8 @@ def roll2d_polar(img, shift=1, axis=0):
         axis which will be shifted
     Returns
     -------
-    out: new array with shifted values
+    out: :class:`numpy:numpy.ndarray`
+        new array with shifted values
     """
     if shift == 0:
         return img
@@ -474,14 +480,14 @@ def half_power_radius(r, bwhalf):
 
     Parameters
     ----------
-    r : float, :class:`numpy:numpy.ndarray` of floats
+    r : float | :class:`numpy:numpy.ndarray`
         Range from radar [m]
     bwhalf : float
         Half-power beam width [degrees]
 
     Returns
     -------
-    Rhalf : float, :class:`numpy:numpy.ndarray` of floats
+    Rhalf : float | :class:`numpy:numpy.ndarray`
         Half-power radius [m]
 
     Examples
@@ -522,8 +528,8 @@ def find_bbox_indices(coords, bbox):
     ----------
     coords : :class:`numpy:numpy.ndarray`
         3 dimensional array (ny, nx, lon/lat) of floats
-    bbox : 4-element :class:`numpy:numpy.ndarray`, list or tuple of floats
-        (llx,lly,urx,ury)
+    bbox : :class:`numpy:numpy.ndarray` | list | tuple
+         4-element (llx,lly,urx,ury)
 
     Returns
     -------

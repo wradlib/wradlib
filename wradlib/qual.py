@@ -79,16 +79,16 @@ def beam_block_frac(th, bh, a):
 
     Parameters
     ----------
-    th : float | :class:`numpy:numpy.ndarray` of floats
+    th : float or :class:`numpy:numpy.ndarray`
         Terrain height [m]
-    bh : float | :class:`numpy:numpy.ndarray` of floats
+    bh : float or :class:`numpy:numpy.ndarray`
         Beam height [m]
-    a : float | :class:`numpy:numpy.ndarray` of floats
+    a : float or :class:`numpy:numpy.ndarray`
         Half power beam radius [m]
 
     Returns
     -------
-    pbb : float
+    pbb : float or :class:`numpy:numpy.ndarray`
         Partial beam blockage fraction [unitless]
 
     Examples

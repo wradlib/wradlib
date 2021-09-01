@@ -234,7 +234,7 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.0):
     ----------
     dat : :class:`numpy:numpy.ndarray`
         array of shape (n azimuth angles, n range gates)
-    kind : string
+    kind : str
         Defines how the filling is done.
     fill_value : float
         Fill value in areas of extrapolation.
