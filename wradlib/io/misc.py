@@ -47,10 +47,10 @@ def write_polygon_to_text(fname, polygons):
 
     Parameters
     ----------
-    fname : string
+    fname : str
         name of the file to save the vertex data to
-    polygons : list of lists
-        list of polygon vertices.
+    polygons : list
+        list of lists of polygon vertices.
         Each vertex itself is a list of 3 coordinate values and an
         additional value. The third coordinate and the fourth value may be nan.
 
@@ -117,7 +117,7 @@ def get_radiosonde(wmoid, date, cols=None):
     ----------
     wmoid : int
         WMO radiosonde ID
-    date : datetime object
+    date : :py:class:`datetime.datetime`
         Date and Time
 
     Keyword Arguments
@@ -128,7 +128,7 @@ def get_radiosonde(wmoid, date, cols=None):
 
     Returns
     -------
-    data : :class:`numpy:numpy.ndarray`
+    data : :py:class:`numpy:numpy.ndarray`
         Structured array of radiosonde data
     meta : dict
         radiosonde metadata
@@ -212,12 +212,12 @@ def get_membership_functions(filename):
 
     Parameters
     ----------
-    filename : filename
+    filename : str
         Filename of wradlib-data file
 
     Returns
     -------
-    msf : :class:`numpy:numpy.ndarray`
+    msf : :py:class:`numpy:numpy.ndarray`
         Array of membership funcions with shape (hm-classes, observables,
         indep-ranges, 5)
     """

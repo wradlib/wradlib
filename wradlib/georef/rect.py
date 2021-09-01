@@ -34,11 +34,11 @@ def get_radolan_coords(lon, lat, trig=False):
     Parameters
     ----------
 
-    lon :   float, :class:`numpy:numpy.ndarray` of floats
+    lon : float or :class:`numpy:numpy.ndarray`
         longitude
-    lat :   float, :class:`numpy:numpy.ndarray` of floats
+    lat : float, :class:`numpy:numpy.ndarray`
         latitude
-    trig : boolean
+    trig : bool
         if True, uses trigonometric formulas for calculation,
         otherwise osr transformations
         if False, uses osr spatial reference system to transform
@@ -85,13 +85,13 @@ def get_radolan_coordinates(nrows=None, ncols=None, trig=False, mode="radolan"):
         number of rows (460, 900 by default, 1100, 1500)
     ncols : int
         number of columns (460, 900 by default, 1400)
-    trig : boolean
+    trig : bool
         if True, uses trigonometric formulas for calculation
         if False, uses osr spatial reference system to transform between
         projections
         `trig` is recommended to be False, however, the two ways of computation
         are expected to be equivalent.
-    wgs84 : boolean
+    wgs84 : bool
         if True, output coordinates are in wgs84 lonlat format (default: False)
     mode : str
         'radolan' - lower left pixel coordinates
@@ -209,13 +209,13 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False, mode="rado
         number of rows (460, 900 by default, 1100, 1500)
     ncols : int
         number of columns (460, 900 by default, 1400)
-    trig : boolean
+    trig : bool
         if True, uses trigonometric formulas for calculation
         if False, uses osr spatial reference system to transform between
         projections
         `trig` is recommended to be False, however, the two ways of computation
         are expected to be equivalent.
-    wgs84 : boolean
+    wgs84 : bool
         if True, output coordinates are in wgs84 lonlat format (default: False)
     mode :  str
         'radolan' - lower left pixel coordinates
@@ -315,7 +315,7 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4.0 / 3.0):
     alt : float
         Altitude (in meters)
         defaults to 0.
-    proj : osr object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`)
         projection of the source coordinates (aeqd) with spheroid model
         defaults to None.
     ke : float
@@ -374,7 +374,7 @@ def grid_to_polyvert(grid, ravel=False):
 
     Parameters
     ----------
-    grid : numpy array
+    grid : :class:`numpy:numpy.ndarray`
         grid edge coordinates
     ravel : bool
         option to flatten the grid

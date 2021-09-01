@@ -46,7 +46,7 @@ def _pixel_coordinates(nx, ny, mode):
         x size (number of columns)
     ny : int
         y size (numbers or rows)
-    mode : string
+    mode : str
         either 'center' (0.5 1.5 ...) or 'edge' (0 1 ...)
 
     Returns
@@ -113,9 +113,9 @@ def read_gdal_coordinates(dataset, mode="center"):
 
     Parameters
     ----------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         raster image with georeferencing
-    mode : string
+    mode : str
         either 'center' or 'edge'
 
     Returns
@@ -147,12 +147,12 @@ def read_gdal_projection(dataset):
 
     Parameters
     ----------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         raster image with georeferencing
 
     Returns
     -------
-    srs : OSR.SpatialReference
+    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
         dataset projection object
 
     Examples
@@ -173,7 +173,7 @@ def read_gdal_values(dataset=None, nodata=None):
 
     Parameters
     ----------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         raster image with georeferencing
     nodata : float
         replace nodata values
@@ -210,9 +210,9 @@ def extract_raster_dataset(dataset, mode="center", nodata=None):
 
     Parameters
     ----------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         raster dataset
-    mode : string
+    mode : str
         either 'center' or 'edge'
     nodata : float
         replace nodata values
@@ -227,7 +227,7 @@ def extract_raster_dataset(dataset, mode="center", nodata=None):
         The array indexing follows image convention with origin
         at the upper left pixel (northup).
         The shape is (nrows+1,ncols+1,2) if mode == edge.
-    projection : osr object
+    projection : :py:class:`gdal:osgeo.osr.SpatialReference`
         Spatial reference system of the used coordinates.
     """
 
@@ -245,7 +245,7 @@ def get_raster_extent(dataset, geo=False, window=True):
 
     Parameters
     ----------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         raster image with georeferencing (GeoTransform at least)
     geo : bool
         True to get geographical coordinates
@@ -287,15 +287,15 @@ def get_raster_elevation(dataset, resample=None, **kwargs):
 
     Parameters
     ----------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         raster image with georeferencing (GeoTransform at least)
-    resample : GDALResampleAlg
+    resample : :py:class:`gdal:osgeo.gdalconst.ResampleAlg`
         If None the best algorithm is chosen based on scales.
         GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2,
         GRA_CubicSpline = 3, GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6,
         GRA_Max = 8, GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
-    kwargs : keyword arguments
-        passed to wradlib.io.dem.get_strm()
+    kwargs : dict
+        keyword arguments passed to :func:`wradlib.io.dem.get_srtm`
 
     Returns
     -------
@@ -444,7 +444,7 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
     Parameters
     ----------
-    src_ds : gdal.Dataset
+    src_ds : :py:class:`gdal:osgeo.gdal.Dataset`
         raster image with georeferencing (GeoTransform at least)
 
     Keyword Arguments
@@ -455,23 +455,22 @@ def reproject_raster_dataset(src_ds, **kwargs):
     size : int
         tuple of two ints
         X/YRasterSize of destination dataset
-    resample : GDALResampleAlg
+    resample : :py:class:`gdal:osgeo.gdalconst.ResampleAlg`
         defaults to GRA_Bilinear
         GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2,
         GRA_CubicSpline = 3, GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6,
         GRA_Max = 8, GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
-    projection_target : osr object
+    projection_target : :py:class:`gdal:osgeo.osr.SpatialReference`
         destination dataset projection, defaults to None
-    align : bool or Point
+    align : bool or tuple
         If False, there is no destination grid aligment.
         If True, aligns the destination grid to the next integer multiple of
         destination grid.
-        If Point (tuple, list of upper-left x,y-coordinate), the destination
-        grid is aligned to this point.
+        If tuple (upper-left x,y-coordinate), the destination grid is aligned to this point.
 
     Returns
     -------
-    dst_ds : gdal.Dataset
+    dst_ds : :py:class:`gdal:osgeo.gdal.Dataset`
         reprojected/resampled raster dataset
     """
 
@@ -584,14 +583,14 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
         Array of shape (nrows, ncols, 2) containing pixel center coordinates
         or
         Array of shape (nrows+1, ncols+1, 2) containing pixel edge coordinates
-    projection : osr object
+    projection : :py:class:`gdal:osgeo.osr.SpatialReference`
         Spatial reference system of the used coordinates, defaults to None.
     nodata : int
         Value of NODATA
 
     Returns
     -------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         In-Memory raster dataset
 
     Note
@@ -638,14 +637,15 @@ def merge_raster_datasets(datasets, **kwargs):
 
     Parameters
     ----------
-    datasets : list of gdal.Dataset
+    datasets : list
+        list of :py:class:`gdal:osgeo.gdal.Dataset`
         raster images with georeferencing
-    kwargs : keyword arguments
-        passed to gdal.Warp()
+    kwargs : dict
+        keyword arguments passed to gdal.Warp()
 
     Returns
     -------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         merged raster dataset
     """
 
@@ -659,7 +659,7 @@ def raster_to_polyvert(dataset):
 
     Parameters
     ----------
-    dataset : gdal.Dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         raster image with georeferencing (GeoTransform at least)
 
     Returns

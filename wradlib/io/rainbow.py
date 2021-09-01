@@ -28,12 +28,12 @@ def find_key(key, dictionary):
 
     Parameters
     ----------
-    key : string
+    key : str
         the key to be searched for in the nested dict
     dictionary : dict
         the dictionary to be searched
 
-    Returns
+    Yields
     -------
     output : dict
         a dictionary or list of dictionaries
@@ -56,7 +56,7 @@ def decompress(data):
 
     Parameters
     ----------
-    data : string
+    data : str
         (from xml) data string containing compressed data.
     """
     zlib = util.import_optional("zlib")
@@ -76,7 +76,7 @@ def get_rb_data_layout(datadepth):
     -------
     datawidth : int
         Width in Byte of data.
-    datatype : string
+    datatype : str
         conversion string .
     """
 
@@ -104,7 +104,7 @@ def get_rb_data_attribute(xmldict, attr):
     ----------
     xmldict : dict
         Blob Description Dictionary
-    attr : string
+    attr : str
         Attribute key
 
     Returns
@@ -131,7 +131,7 @@ def get_rb_blob_attribute(blobdict, attr):
     ----------
     blobdict : dict
         Blob Description Dictionary
-    attr : string
+    attr : str
         Attribute key
 
     Returns
@@ -156,14 +156,14 @@ def get_rb_blob_data(datastring, blobid):
 
     Parameters
     ----------
-    datastring : string
+    datastring : str
         Blob Description String
     blobid : int
         Number of requested blob
 
     Returns
     -------
-    data : string
+    data : str
         Content of blob
     """
     xmltodict = util.import_optional("xmltodict")
@@ -196,14 +196,14 @@ def map_rb_data(data, datadepth):
 
     Parameters
     ----------
-    data : string
+    data : str
         Blob Data
     datadepth : int
         bit depth of Blob data
 
     Returns
     -------
-    data : numpy array
+    data : :py:class:`numpy:numpy.ndarray`
         Content of blob
     """
     flagdepth = None
@@ -232,7 +232,7 @@ def get_rb_data_shape(blobdict):
 
     Returns
     -------
-    tuple : shape
+    shape : tuple
         shape of data
     """
     # this is a bit hacky, but we do not know beforehand,
@@ -271,14 +271,14 @@ def get_rb_blob_from_string(datastring, blobdict):
 
     Parameters
     ----------
-    datastring : string
+    datastring : str
         Blob Description String
     blobdict : dict
         Blob Description Dict
 
     Returns
     -------
-    data : numpy array
+    data : :py:class:`numpy:numpy.ndarray`
         Content of blob as numpy array
     """
 
@@ -301,14 +301,14 @@ def get_rb_blob_from_file(name, blobdict):
 
     Parameters
     ----------
-    name : string or file-like object
+    name : str or file-like
         Path to Rainbow file or file-like object
     blobdict : dict
         Blob Dict
 
     Returns
     -------
-    data : numpy array
+    data : :py:class:`numpy:numpy.ndarray`
         Content of blob as numpy array
     """
     with util._open_file(name) as f:
@@ -324,12 +324,12 @@ def get_rb_file_as_string(fid):
 
     Parameters
     ----------
-    fid : file handle
+    fid : object
         File handle of Data File
 
     Returns
     -------
-    data_string : string
+    data_string : str
         File Contents as data_string
     """
 
@@ -347,7 +347,7 @@ def get_rb_blobs_from_file(fid, rbdict):
 
     Parameters
     ----------
-    fid : file handle
+    fid : object
         File handle of Data File
     rbdict : dict
         Rainbow file Contents
@@ -373,12 +373,12 @@ def get_rb_header(fid):
 
     Parameters
     ----------
-    fid : file handle
+    fid : object
         File handle of Data File
 
     Returns
     -------
-    object : dictionary
+    object : dict
         Rainbow File Contents
     """
 
@@ -401,7 +401,7 @@ def get_rb_header(fid):
 def read_rainbow(filename, loaddata=True):
     """Reads Rainbow files files according to their structure
 
-    In contrast to other file readers under :meth:`wradlib.io`, this function
+    In contrast to other file readers under :mod:`wradlib.io`, this function
     will *not* return a two item tuple with (data, metadata). Instead, this
     function returns ONE dictionary that contains all the file contents - both
     data and metadata. The keys of the output dictionary conform to the XML
@@ -412,10 +412,10 @@ def read_rainbow(filename, loaddata=True):
 
     Parameters
     ----------
-    filename : string or file-like object
+    filename : str or file-like
         a rainbow file path or file-like object of rainbow file
     loaddata : bool
-        True | False, If False function returns only metadata
+        Defaults to True. If False function returns only metadata.
 
     Returns
     -------

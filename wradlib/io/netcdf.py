@@ -47,7 +47,7 @@ def _open_netcdf(filename):
 def open_cfradial1_dataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an CfRadial1 radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` under the hood.
 
     Parameters
     ----------
@@ -59,17 +59,17 @@ def open_cfradial1_dataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_cfradial1_mfdataset
+    :func:`~wradlib.io.netcdf.open_cfradial1_mfdataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -79,7 +79,7 @@ def open_cfradial1_dataset(filename_or_obj, group=None, **kwargs):
 def open_cfradial2_dataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an CfRadial2 radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` under the hood.
 
     Parameters
     ----------
@@ -91,17 +91,17 @@ def open_cfradial2_dataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_cfradial2_mfdataset
+    :func:`~wradlib.io.netcdf.open_cfradial2_mfdataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -111,7 +111,7 @@ def open_cfradial2_dataset(filename_or_obj, group=None, **kwargs):
 def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an CfRadial1 radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
     Needs `dask` package to be installed.
 
     Parameters
@@ -124,17 +124,17 @@ def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_cfradial1_dataset
+    :func:`~wradlib.io.netcdf.open_cfradial1_dataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -144,7 +144,7 @@ def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
 def open_cfradial2_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an CfRadial2 radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
     Needs `dask` package to be installed.
 
     Parameters
@@ -157,17 +157,17 @@ def open_cfradial2_mfdataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_cfradial1_dataset
+    :func:`~wradlib.io.netcdf.open_cfradial1_dataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -186,16 +186,16 @@ def read_edge_netcdf(filename, enforce_equidist=False):
 
     Parameters
     ----------
-    filename : string or file-like
+    filename : str or file-like
         path of the netCDF file or file-like object
-    enforce_equidist : boolean
+    enforce_equidist : bool
         Set True if the values of the azimuth angles should be forced to be
         equidistant; default value is False
 
     Returns
     -------
-    output : :func:`numpy:numpy.array`
-        of image data (dBZ), dictionary of attributes
+    output : tuple
+        Array of image data (dBZ), dictionary of attributes
     """
     with _open_netcdf(filename) as dset:
         data = dset.variables[dset.TypeName][:]
@@ -256,7 +256,7 @@ def read_netcdf_group(ncid):
 
     Returns
     -------
-    out : ordered dict
+    out : dict
         an ordered dictionary that contains both data and metadata
         according to the original netcdf file structure
     """
@@ -327,7 +327,7 @@ def read_generic_netcdf(fname):
     """Reads netcdf files and returns a dictionary with corresponding
     structure.
 
-    In contrast to other file readers under :meth:`wradlib.io`, this function
+    In contrast to other file readers under :mod:`wradlib.io`, this function
     will *not* return a two item tuple with (data, metadata). Instead, this
     function returns ONE dictionary that contains all the file contents - both
     data and metadata. The keys of the output dictionary conform to the
@@ -345,12 +345,12 @@ def read_generic_netcdf(fname):
 
     Parameters
     ----------
-    fname : string or file-like
+    fname : str or file-like
         a netcdf file path or file-like object
 
     Returns
     -------
-    out : ordered dict
+    out : dict
         an ordered dictionary that contains both data and metadata according
         to the original netcdf file structure
 

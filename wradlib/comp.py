@@ -58,17 +58,19 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
         array of float, the location coordinates of the radar
     data : :class:`numpy:numpy.ndarray`
         array of float, the data that should be transferred to composite
-    interpol : object
+    interpol : :class:`~wradlib.ipol.IpolBase`
         an interpolation class name from :mod:`wradlib.ipol`
         e.g. :class:`~wradlib.ipol.Nearest` or :class:`~wradlib.ipol.Idw`
 
     Other Parameters
     ----------------
-    *args : arguments of Interpolator (see class documentation)
+    *args : dict
+        arguments of Interpolator (see class documentation)
 
     Keyword Arguments
     -----------------
-    **kwargs : keyword arguments of Interpolator (see class documentation)
+    **kwargs : dict
+        keyword arguments of Interpolator (see class documentation)
 
     Returns
     -------
@@ -113,10 +115,10 @@ def compose_ko(radargrids, qualitygrids):
 
     Parameters
     ----------
-    radargrids : list of arrays
+    radargrids : list
         radar data to be composited. Each item in the list corresponds to the
         data of one radar location. All items must have the same shape.
-    qualitygrids : list of arrays
+    qualitygrids : list
         quality data to decide upon which radar site will contribute its pixel
         to the composite. Then length of this list must be the same as that
         of `radargrids`. All items must have the same shape and be aligned with
@@ -161,8 +163,10 @@ def compose_weighted(radargrids, qualitygrids):
 
     Parameters
     ----------
-    radargrids : list of arrays
-    qualitygrids : list of arrays
+    radargrids : list
+        list of arrays
+    qualitygrids : list
+        list of arrays
 
     Returns
     -------
@@ -175,9 +179,7 @@ def compose_weighted(radargrids, qualitygrids):
 
     See Also
     --------
-    :func:`~wradlib.comp.compose_ko` : for more description about the shape of
-    the input arrays
-
+    :func:`~wradlib.comp.compose_ko`
     """
     radarinfo = np.array(radargrids)
     qualityinfo = np.array(qualitygrids)

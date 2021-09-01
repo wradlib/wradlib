@@ -300,7 +300,7 @@ def _get_struct_dtype(dictionary):
 
     Returns
     -------
-    dtype : np.dtype
+    dtype : :py:class:`numpy:numpy.dtype`
         numpy struct dtype
     """
     dtypes = []
@@ -319,12 +319,13 @@ def _unpack_dictionary(buffer, dictionary, rawdata=False):
     Parameters
     ----------
     buffer : array-like
-    dictionary : data structure in dictionary, keys are names and values are
-        structure formats
+    dictionary : dict
+        data structure in dictionary, keys are names and values are structure formats
 
     Returns
     -------
-    Ordered Dictionary with unpacked data
+    data : dict
+        Ordered Dictionary with unpacked data
     """
     # get format and substructures of dictionary
     fmt, sub = _get_fmt_string(dictionary, retsub=True)
@@ -2489,9 +2490,9 @@ class IrisRecord(object):
 
         Parameters
         ----------
-        words : unsigned int
+        words : int
             Number of data words to be read.
-        width : unsigned int
+        width : int
             Width (bytes) of data words to be read. Defaults to 2.
 
         Returns
@@ -2933,12 +2934,15 @@ class IrisIngestDataFile(IrisFile, IrisIngestDataHeader):
 
         Parameters
         ----------
-        data : data to decode
+        data : :py:class:`numpy:numpy.ndarray`
+            data to decode
         prod : dict
+            dictionary holding decoding information
 
         Returns
         -------
-        data : decoded data
+        data : :py:class:`numpy:numpy.ndarray`
+            decoded data
 
         """
         if self._rawdata:
@@ -3329,13 +3333,13 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
 
         Parameters
         ----------
-        moment : list of strings
-            Data Types to retrieve.
+        moment : list
+            List of Data Types strings to retrieve.
 
         Returns
         -------
-        sweep : OrderedDict
-            Dictionary containing sweep data.
+        sweep : dict
+            Ordered Dictionary containing sweep data.
         """
         sweep = OrderedDict()
 
@@ -3428,12 +3432,15 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
 
         Parameters
         ----------
-        data : data to decode
+        data : :py:class:`numpy:numpy.ndarray`
+            data to decode
         prod : dict
+            dictionary holding decoding information
 
         Returns
         -------
-        data : decoded data
+        data : :py:class:`numpy:numpy.ndarray`
+            decoded data
 
         """
         if self._rawdata:
@@ -3543,8 +3550,8 @@ class IrisProductFile(IrisRecordFile):
         """
         Parameters
         ----------
-        irisfile : IrisWrapperFile class instance handle
-            class instance handle
+        filename : str
+            filename
         """
         super(IrisProductFile, self).__init__(filename, **kwargs)
 
@@ -3677,8 +3684,8 @@ class IrisCartesianProductFile(IrisRecordFile):
         """
         Parameters
         ----------
-        irisfile : IrisWrapperFile class instance handle
-            class instance handle
+        irisfile : str
+            filename
         """
         origin = kwargs.get("origin", None)
         if origin is None:
@@ -3799,12 +3806,15 @@ class IrisCartesianProductFile(IrisRecordFile):
 
         Parameters
         ----------
-        data : data to decode
+        data : :py:class:`numpy:numpy.ndarray`
+            data to decode
         prod : dict
+            dictionary holding decoding information
 
         Returns
         -------
-        data : decoded data
+        data : :py:class:`numpy:numpy.ndarray`
+            decoded data
 
         """
         if self._rawdata:
@@ -3836,10 +3846,10 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
     ----------
     filename : str or file-like
         Filename of data file or file-like object.
-    loaddata : bool | kwdict
+    loaddata : bool or dict
                 If true, retrieves whole data section from file.
                 If false, retrievs only ingest_data_headers, but no data.
-                If kwdict, retrieves according to given kwdict::
+                If dict, retrieves according to given dict::
 
                     loaddata = {'moment': ['DB_DBZ', 'DB_VEL'],
                                 'sweep': [1, 3, 9]}
@@ -3851,8 +3861,8 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
 
     Returns
     -------
-    data : OrderedDict
-        Dictionary with data and metadata retrieved from file.
+    data : dict
+        Ordered Dictionary with data and metadata retrieved from file.
     """
     if not isinstance(filename, str):
         filename = filename.read()

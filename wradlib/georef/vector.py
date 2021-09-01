@@ -47,11 +47,11 @@ def get_vector_points(geom):
 
     Parameters
     ----------
-    geom : ogr.Geometry
+    geom : :py:class:`gdal:osgeo.ogr.Geometry`
 
-    Returns
-    -------
-    result : generator object
+    Yields
+    ------
+    result : :py:class:`numpy:numpy.ndarray`
         expands to Nx2 dimensional nested point arrays
     """
     geomtype = geom.GetGeometryType()
@@ -81,18 +81,18 @@ def transform_geometry(geom, dest_srs, **kwargs):
 
     Parameters
     ----------
-    geom : ogr.geometry
-    dest_srs : osr.SpatialReference
+    geom : :py:class:`gdal:osgeo.ogr.Geometry`
+    dest_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Projection
 
     Keyword Arguments
     -----------------
-    source_srs : osr.SpatialReference
+    source_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
         Source Projection
 
     Returns
     -------
-    geom : ogr.Geometry
+    geom : :py:class:`gdal:osgeo.ogr.Geometry`
         Transformed Geometry
     """
     gsrs = geom.GetSpatialReference()
@@ -121,24 +121,24 @@ def get_vector_coordinates(layer, **kwargs):
     vector coordinate points into nested ndarray
 
     It transforms coordinates to a given destination osr spatial reference if
-    dest_srs is given and a geotransform is neccessary.
+    dest_srs is given and a geotransform is necessary.
 
     Parameters
     ----------
-    layer : ogr.Layer
+    layer : :py:class:`gdal:osgeo.ogr.Layer`
 
     Keyword Arguments
     -----------------
-    source_srs : osr.SpatialReference
+    source_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
         Source Projection
-    dest_srs: osr.SpatialReference
+    dest_srs: :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Projection
-    key : string
+    key : str
         attribute key to extract from layer feature
 
     Returns
     -------
-    shp : nested :class:`numpy:numpy.ndarray`
+    shp : :class:`numpy:numpy.ndarray`
         Dimension of subarrays Nx2
         extracted shape coordinate points
     attrs : list
@@ -180,20 +180,21 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
 
     Parameters
     ----------
-    ds : gdal.Dataset
+    ds : :py:class:`gdal:osgeo.gdal.Dataset`
         object
-    name : string
+    name : str
         OGRLayer name
-    srs : OSR.SpatialReference
+    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
         object
-    geom_type : OGR GeometryType
+    geom_type : :py:class:`gdal:osgeo.ogr.GeometryType`
         (eg. ogr.wkbPolygon)
-    fields : list of 2 element tuples
-        (strings, OGR.DataType) field name, field type
+    fields : list
+        list of 2 element tuples
+        (str, :py:class:`gdal:osgeo.ogr.DataType`) field name, field type
 
     Returns
     -------
-    out : OGR.Layer
+    out : :py:class:`gdal:osgeo.ogr.Layer`
         object
     """
     if geom_type is None:
@@ -214,11 +215,11 @@ def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
 
     Parameters
     ----------
-    src_ds : gdal.Dataset
+    src_ds : :py:class:`gdal:osgeo.gdal.Dataset`
         object
     index : int
         layer index
-    dst_ds : gdal.Dataset
+    dst_ds : :py:class:`gdal:osgeo.gdal.Dataset`
         object
     reset : bool
         if True resets src_layer
@@ -240,11 +241,11 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
 
     Parameters
     ----------
-    src_ds : gdal.Dataset
+    src_ds : :py:class:`gdal:osgeo.gdal.Dataset`
         object
-    name : string
+    name : str
         layer name
-    dst_ds : gdal.Dataset
+    dst_ds : :py:class:`gdal:osgeo.gdal.Dataset`
         object
     reset : bool
         if True resets src_layer
@@ -270,11 +271,11 @@ def ogr_add_feature(ds, src, name=None):
 
     Parameters
     ----------
-    ds : gdal.Dataset
+    ds : :py:class:`gdal:osgeo.gdal.Dataset`
         object
-    src : :func:`numpy:numpy.array`
+    src : :py:class:`numpy:numpy.ndarray`
         source data
-    name : string
+    name : str
         name of wanted Layer
     """
 
@@ -306,9 +307,9 @@ def ogr_add_geometry(layer, geom, attrs):
 
     Parameters
     ----------
-    layer : OGR.Layer
+    layer : :py:class:`gdal:osgeo.ogr.Layer`
         object
-    geom : OGR.Geometry
+    geom : :py:class:`gdal:osgeo.ogr.Geometry`
         object
     attrs : list
         attributes referring to layer fields
@@ -330,14 +331,14 @@ def numpy_to_ogr(vert, geom_name):
 
     Parameters
     ----------
-    vert : array_like
+    vert : array-like
         a numpy array of vertices of shape (num vertices, 2)
-    geom_name : string
+    geom_name : str
         Name of Geometry
 
     Returns
     -------
-    out : ogr.Geometry
+    out : :py:class:`gdal:osgeo.ogr.Geometry`
         object of type geom_name
     """
 
@@ -360,7 +361,7 @@ def ogr_to_numpy(ogrobj):
 
     Parameters
     ----------
-    ogrobj : ogr.Geometry
+    ogrobj : :py:class:`gdal:osgeo.ogr.Geometry`
         object
 
     Returns
@@ -383,7 +384,7 @@ def ogr_geocol_to_numpy(ogrobj):
 
     Parameters
     ----------
-    ogrobj : ogr.Geometry
+    ogrobj : :py:class:`gdal:osgeo.ogr.Geometry`
         Collection object
 
     Returns
@@ -411,7 +412,8 @@ def get_centroid(polyg):
 
     Returns
     -------
-    out : x and y coordinate of the centroid
+    out : tuple
+        x and y coordinate of the centroid
 
     """
     if not type(polyg) == ogr.Geometry:

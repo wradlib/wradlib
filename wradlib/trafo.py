@@ -60,7 +60,6 @@ class KuBandToS:
     From Ku-band (13.8 GHz) to S-band (2.8 GHz)
 
     See :cite:`Cao2013` for reference.
-
     """
 
     # Rain 90% 80% 70% 60% 50% 40% 30% 20% 10% Snow
@@ -212,7 +211,7 @@ def rvp_to_dbz(x):
 
     Parameters
     ----------
-    x : int
+    x : float or :class:`numpy:numpy.ndarray`
         a number or an array
 
     Examples
@@ -231,7 +230,7 @@ def decibel(x):
 
     Parameters
     ----------
-    x : a number or an array
+    x : float or :class:`numpy:numpy.ndarray`
         (must not be <= 0.)
 
     Examples
@@ -250,7 +249,7 @@ def idecibel(x):
 
     Parameters
     ----------
-    x : a number or an array
+    x : float or :class:`numpy:numpy.ndarray`
 
     Examples
     --------
@@ -267,16 +266,14 @@ def r_to_depth(x, interval):
 
     Parameters
     ----------
-    x : float,
-        float or array of float
+    x : float or :class:`numpy:numpy.ndarray`
         rainfall intensity in mm/h
-    interval : number
+    interval : float
         time interval (s) the values of `x` represent
 
     Returns
     -------
-    output : float
-        float or array of float
+    output : float or :class:`numpy:numpy.ndarray`
         rainfall depth (mm)
 
     """
@@ -298,7 +295,7 @@ def kdp_to_r(kdp, f, a=129.0, b=0.85):
 
     Parameters
     ----------
-    kdp : float
+    kdp : float or :class:`numpy:numpy.ndarray`
         :math:`K_{DP}` as array of floats
     f : float
         radar frequency [GHz]
@@ -314,7 +311,7 @@ def kdp_to_r(kdp, f, a=129.0, b=0.85):
 
     Returns
     -------
-    output : array
+    output : :class:`numpy:numpy.ndarray`
         array of rainfall intensity
     """
     return np.sign(kdp) * a * (np.abs(kdp) / f) ** b
@@ -329,14 +326,12 @@ def si_to_kmh(vals):
 
     Parameters
     ----------
-    vals : float
-        float or array of floats
+    vals : float or :class:`numpy:numpy.ndarray`
         Speed in SI units (m/s)
 
     Returns
     -------
-    output: float
-        float or array of floats
+    output: float or :class:`numpy:numpy.ndarray`
         Speed in km/hr
 
     Examples
@@ -357,14 +352,12 @@ def si_to_mph(vals):
 
     Parameters
     ----------
-    vals : float
-        float or array of floats
+    vals : float or :class:`numpy:numpy.ndarray`
         Speed in SI units (m/s)
 
     Returns
     -------
-    output: float
-        float or array of floats
+    output: float or :class:`numpy:numpy.ndarray`
         Speed in miles per hour
 
     Examples
@@ -386,14 +379,12 @@ def si_2_kts(vals):
 
     Parameters
     ----------
-    vals : float
-        float or array of floats
+    vals : float or :class:`numpy:numpy.ndarray`
         Speed in SI units (m/s)
 
     Returns
     -------
-    output: float
-        float or array of floats
+    output: float or :class:`numpy:numpy.ndarray`
         Speed in knots
 
     Examples
@@ -415,14 +406,12 @@ def kmh_to_si(vals):
 
     Parameters
     ----------
-    vals: float
-        float or array of floats
+    vals: float or :class:`numpy:numpy.ndarray`
         Wind speed in km/hr
 
     Returns
     -------
-    output: float
-        float or array of floats
+    output: float or :class:`numpy:numpy.ndarray`
         Wind speed in SI units (m/s)
 
     Examples
@@ -444,14 +433,12 @@ def mph_to_si(vals):
 
     Parameters
     ----------
-    vals: float
-        float or array of floats
+    vals: float or :class:`numpy:numpy.ndarray`
         Wind speed in miles per hour
 
     Returns
     -------
-    output: float
-        float or array of floats
+    output: float or :class:`numpy:numpy.ndarray`
         Wind speed in SI units (m/s)
 
     Examples
@@ -473,14 +460,12 @@ def kts_to_si(vals):
 
     Parameters
     ----------
-    vals: float
-        float or array of floats
+    vals: float or :class:`numpy:numpy.ndarray`
         Wind speed in knots
 
     Returns
     -------
-    output: float
-        float or array of floats
+    output: float or :class:`numpy:numpy.ndarray`
         Wind speed in SI units (m/s)
 
     Examples

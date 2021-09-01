@@ -59,12 +59,13 @@ def get_dx_timestamp(name):
 
     Parameters
     ----------
-    name : string
+    name : str
         representing a DWD product name
 
     Returns
     -------
-    time : timezone-aware datetime.datetime object
+    time : :py:class:`datetime.datetime`
+        timezone-aware datetime.datetime object
     """
     return _get_timestamp_from_filename(name).replace(tzinfo=util.UTC())
 
@@ -146,7 +147,7 @@ def parse_dx_header(header):
 
     Parameters
     ----------
-    header : string
+    header : str
         string representation of DX header
     """
     # empty container
@@ -216,13 +217,13 @@ def read_dx(filename):
 
     Parameters
     ----------
-    filename : string or file-like
+    filename : str or file-like
         filename of binary file of DX raw data or file-like object
 
     Returns
     -------
-    data : :func:`numpy:numpy.array`
-        of image data [dBZ]; shape (360,128)
+    data : :py:class:`numpy:numpy.ndarray`
+        Array of image data [dBZ]; shape (360,128)
     attributes : dict
         dictionary of attributes - currently implemented keys:
 
@@ -363,7 +364,7 @@ def get_radolan_header_token_pos(header, mode="composite"):
 
     Parameters
     ----------
-    header : string
+    header : str
         (ASCII header)
 
     Keyword Arguments
@@ -373,7 +374,7 @@ def get_radolan_header_token_pos(header, mode="composite"):
 
     Returns
     -------
-    head : dictionary
+    head : dict
         with found header tokens and positions
     """
 
@@ -414,12 +415,12 @@ def parse_dwd_composite_header(header):
 
     Parameters
     ----------
-    header : string
+    header : str
         (ASCII header)
 
     Returns
     -------
-    output : dictionary
+    output : dict
         of metadata retrieved from file header
     """
     # empty container
@@ -505,14 +506,14 @@ def decode_radolan_runlength_line(line, attrs):
 
     Parameters
     ----------
-    line : :func:`numpy:numpy.array`
+    line : :py:class:`numpy:numpy.ndarray`
         of byte values
     attrs : dict
         dictionary of attributes derived from file header
 
     Returns
     -------
-    arr : :func:`numpy:numpy.array`
+    arr : :py:class:`numpy:numpy.ndarray`
         of decoded values
     """
     # byte '0' is line number, we don't need it
@@ -567,8 +568,8 @@ def read_radolan_runlength_line(fid):
 
     Returns
     -------
-    line : :func:`numpy:numpy.array`
-        of coded values
+    line : :py:class:`numpy:numpy.ndarray`
+        Array of coded values
     """
     line = fid.readline()
 
@@ -588,15 +589,15 @@ def decode_radolan_runlength_array(binarr, attrs):
 
     Parameters
     ----------
-    binarr : string
+    binarr : str
         Buffer
     attrs : dict
         Attribute dict of file header
 
     Returns
     -------
-    arr : :func:`numpy:numpy.array`
-        of decoded values
+    arr : :py:class:`numpy:numpy.ndarray`
+        Array of decoded values
     """
     buf = io.BytesIO(binarr)
 
@@ -625,12 +626,12 @@ def read_radolan_binary_array(fid, size, raise_on_error=True):
     size : int
         number of bytes to read
     raise_on_error : bool
-        raise IOError if data is truncated
+        If True, raise IOError if data is truncated.
 
     Returns
     -------
-    binarr : string
-        array of binary data
+    binarr : bytes
+        binary data
     """
     binarr = fid.read(size)
     if raise_on_error and len(binarr) != size:
@@ -650,7 +651,7 @@ def get_radolan_filehandle(fname):
 
     Parameters
     ----------
-    fname : string or file-like
+    fname : str or file-like
         filename or file-like object
 
     Returns
@@ -677,7 +678,7 @@ def read_radolan_header(fid):
 
     Returns
     -------
-    header : string
+    header : str
     """
 
     header = ""
@@ -731,11 +732,11 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
 
     Parameters
     ----------
-    f : string or file-like
+    f : str or file-like
         path to the composite file or file-like object
     missing : int
         value assigned to no-data cells
-    loaddata : bool | str
+    loaddata : bool or str
         True | False | 'xarray', If False function returns (None, attrs)
         If 'xarray' returns (xarray Dataset, attrs)
     fillmissing : bool
@@ -746,9 +747,9 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
     -------
     output : tuple
         tuple of two items (data, attrs):
-            - data : :func:`numpy:numpy.array` of shape (number of rows,
-              number of columns) | xarray.Dataset
-            - attrs : dictionary of metadata information from the file header
+            - data : :class:`numpy:numpy.ndarray` of shape (number of rows,
+              number of columns) or :py:class:`xarray:xarray.Dataset`
+            - attrs : dict of metadata information from the file header
 
     Examples
     --------
@@ -864,14 +865,14 @@ def radolan_to_xarray(data, attrs):
 
     Parameters
     ----------
-    data : :func:`numpy:numpy.array`
+    data : :py:class:`numpy:numpy.ndarray`
         array of shape (number of rows, number of columns)
     attrs : dict
         dictionary of metadata information from the file header
 
     Returns
     -------
-    dset : xarray.Dataset
+    dset : :py:class:`xarray:xarray.Dataset`
         RADOLAN data and coordinates
     """
     product = attrs["producttype"]
@@ -949,7 +950,7 @@ class _radolan_file(object):
 
     Parameters
     ----------
-    filename : string or file-like
+    filename : str or file-like
         path to the composite file or file-like object
     fillmissing : bool
         If True fills truncated values with "missing". Defaults to False.
@@ -960,7 +961,7 @@ class _radolan_file(object):
 
     Returns
     -------
-    dset : xarray.Dataset
+    dset : :py:class:`xarray:xarray.Dataset`
         RADOLAN data and coordinates
 
     """
@@ -1175,12 +1176,12 @@ def open_radolan_dataset(filename_or_obj, **kwargs):
         Fill truncated data, defaults to False.
     copy : bool
         Create copies instead of views into the data, defaults to False.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset
+    dataset : :py:class:`xarray:xarray.Dataset`
     """
     raise_on_missing_xarray_backend()
     backend_kwargs = dict(
@@ -1208,12 +1209,12 @@ def open_radolan_mfdataset(paths, **kwargs):
         Fill truncated data, defaults to False.
     copy : bool
         Create copies instead of views into the data, defaults to False.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_mfdataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_mfdataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset
+    dataset : :py:class:`xarray:xarray.Dataset`
     """
     raise_on_missing_xarray_backend()
     backend_kwargs = dict(

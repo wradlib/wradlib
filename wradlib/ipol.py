@@ -23,6 +23,7 @@ This includes for example:
    {}
 """
 __all__ = [
+    "IpolBase",
     "Nearest",
     "Idw",
     "Linear",
@@ -72,11 +73,12 @@ class IpolBase:
 
     Parameters
     ----------
-    src : ndarray of floats, shape (npoints, ndims)
+    src : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the source points.
-    trg : ndarray of floats, shape (npoints, ndims)
+    trg : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
-
     """
 
     def __init__(self, src, trg, **kwargs):
@@ -91,7 +93,8 @@ class IpolBase:
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsources, ...)
+        vals : :class:`numpy:numpy.ndarray`
+            ndarray of float, shape (numsources, ...)
             Values at the source points which to interpolate
 
         Returns
@@ -108,7 +111,8 @@ class IpolBase:
 
         Parameters
         ----------
-        vals : ndarray of float
+        vals : :class:`numpy:numpy.ndarray`
+            ndarray of float
 
         """
         assert len(vals) == self.numsources, (
@@ -125,7 +129,8 @@ class IpolBase:
 
         Parameters
         ----------
-        x : ndarray of float with shape (numpoints, ndim)
+        x : :class:`numpy:numpy.ndarray`
+            ndarray of float with shape (numpoints, ndim)
             OR a sequence of ndarrays of float with len(sequence)==ndim and
             the length of the ndarray corresponding to the number of points
 
@@ -149,15 +154,15 @@ class IpolBase:
 
         Parameters
         ----------
-        vals : ndarray
-               values who are to be reshaped to the right shape
+        vals : :class:`numpy:numpy.ndarray`
+            values who are to be reshaped to the right shape
 
         Returns
         -------
-        output : ndarray
-                 if vals.shape==() [a scalar] output.shape will be (1,1)
-                 if vals.shape==(npt,) output.shape will be (npt,1)
-                 if vals.ndim > 1 vals will be returned as is
+        output : :class:`numpy:numpy.ndarray`
+            if vals.shape==() [a scalar] output.shape will be (1,1)
+            if vals.shape==(npt,) output.shape will be (npt,1)
+            if vals.ndim > 1 vals will be returned as is
         """
         if vals.ndim < 2:
             # ndmin might be 0 so we get it to 1-d first
@@ -175,16 +180,19 @@ class Nearest(IpolBase):
 
     Parameters
     ----------
-    src : ndarray of floats, shape (npoints, ndims) or cKDTree object
+    src : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims) or cKDTree object
         Data point coordinates of the source points.
-    trg : ndarray of floats, shape (npoints, ndims)
+    trg : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
     remove_missing : int
         Number of neighbours to consider in the presence of NaN, defaults to 0.
 
     Keyword Arguments
     -----------------
-    **kwargs : keyword arguments of ipclass (see class documentation)
+    **kwargs : dict
+        keyword arguments of ipclass (see class documentation)
 
     Examples
     --------
@@ -236,15 +244,18 @@ class Nearest(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, ...)
+        vals : :class:`numpy:numpy.ndarray`
+            ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
-        maxdist : the maximum distance up to which an interpolated values is
+        maxdist : float
+            the maximum distance up to which an interpolated values is
             assigned - if maxdist is exceeded, np.nan will be assigned
             If maxdist==None, values will be assigned everywhere
 
         Returns
         -------
-        output : ndarray of float with shape (numtargetpoints,...)
+        output : :class:`numpy:numpy.ndarray`
+            ndarray of float with shape (numtargetpoints,...)
 
         """
         self._check_shape(vals)
@@ -279,19 +290,24 @@ class Idw(IpolBase):
 
     Parameters
     ----------
-    src : ndarray of floats, shape (npoints, ndims) of cKDTree object
+    src : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims) of cKDTree object
         Data point coordinates of the source points.
-    trg : ndarray of floats, shape (npoints, ndims)
+    trg : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
-    nnearest : integer - max. number of neighbours to be considered
-    p : float - inverse distance power used in 1/dist**p
+    nnearest : int
+        max. number of neighbours to be considered
+    p : float
+        inverse distance power used in 1/dist**p
     remove_missing : bool
         If True masks NaN values in the data values, defaults to False
 
 
     Keyword Arguments
     -----------------
-    **kwargs : keyword arguments of ipclass (see class documentation)
+    **kwargs : dict
+        keyword arguments of ipclass (see class documentation)
 
     Examples
     --------
@@ -362,7 +378,8 @@ class Idw(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, ...)
+        vals : :class:`numpy:numpy.ndarray`
+            ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
 
         maxdist : float
@@ -371,7 +388,8 @@ class Idw(IpolBase):
 
         Returns
         -------
-        output : ndarray of float with shape (numtargetpoints,...)
+        output : :class:`numpy:numpy.ndarray`
+            ndarray of float with shape (numtargetpoints,...)
 
         """
         self._check_shape(vals)
@@ -418,9 +436,11 @@ class Linear(IpolBase):
 
     Parameters
     ----------
-    src : ndarray of floats, shape (npoints, ndims)
+    src : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the source points.
-    trg : ndarray of floats, shape (npoints, ndims)
+    trg : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
 
     Examples
@@ -454,14 +474,16 @@ class Linear(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, ...)
+        vals : :class:`numpy:numpy.ndarray`
+            ndarray of float, shape (numsourcepoints, ...)
             Values at the source points which to interpolate
         fill_value : float
             is needed if linear interpolation fails; defaults to np.nan
 
         Returns
         -------
-        output : ndarray of float with shape (numtargetpoints,...)
+        output : :class:`numpy:numpy.ndarray`
+            ndarray of float with shape (numtargetpoints,...)
 
         """
         self._check_shape(vals)
@@ -582,17 +604,17 @@ class RectGrid(RectGridBase):
     however may be uneven. Linear, nearest-neighbour and spline
     interpolation are supported.
 
-    Based on :func:`scipy:scipy.interpolate.interpn`, uses:
-    - `nearest` :func:`scipy:scipy.interpolate.RegularGridInterpolator`
-    - `linear` :func:`scipy:scipy.interpolate.RegularGridInterpolator`
-    - `splinef2d` :func:`scipy.interpolate.RectBivariateSpline`
+    Based on :py:func:`scipy:scipy.interpolate.interpn`, uses:
+    - `nearest` :py:class:`scipy:scipy.interpolate.RegularGridInterpolator`
+    - `linear` :py:class:`scipy:scipy.interpolate.RegularGridInterpolator`
+    - `splinef2d` :py:class:`scipy.interpolate.RectBivariateSpline`
 
     Parameters
     ----------
-    src : :class:`numpy:numpy.ndarray` of floats
+    src : :class:`numpy:numpy.ndarray`
         3d array of shape (..., 2)
         The points defining the regular grid in n dimensions.
-    trg : :class:`numpy:numpy.ndarray` of floats
+    trg : :class:`numpy:numpy.ndarray`
         Array of shape (..., ndim)
         The coordinates to sample the gridded data at
 
@@ -612,12 +634,12 @@ class RectGrid(RectGridBase):
 
         Parameters
         ----------
-        values : :class:`numpy:numpy.ndarray` of floats
+        values : :class:`numpy:numpy.ndarray`
             Values at the source points which to interpolate, shape (num src pts, ...)
 
         Returns
         -------
-        result : :class:`numpy:numpy.ndarray` of floats
+        result : :class:`numpy:numpy.ndarray`
             Target values with shape (num trg pts, ...)
 
         """
@@ -638,13 +660,13 @@ class RectGrid(RectGridBase):
 class RectBin(RectGridBase):
     """Bin points values to regular grid cells
 
-    Based on :class:`scipy:scipy.stats.binned_statistic_dd`
+    Based on :py:func:`scipy:scipy.stats.binned_statistic_dd`
 
     Parameters
     ----------
-    src : :class:`numpy:numpy.ndarray` of floats
+    src : :class:`numpy:numpy.ndarray`
         data point coordinates of the source points with shape (..., ndims).
-    trg : :class:`numpy:numpy.ndarray` of floats
+    trg : :class:`numpy:numpy.ndarray`
         rectangular grid coordinates (center) with shape (..., 2)
     """
 
@@ -669,14 +691,14 @@ class RectBin(RectGridBase):
 
         Parameters
         ----------
-        values : :class:`numpy:numpy.ndarray` of floats
+        values : :class:`numpy:numpy.ndarray`
             Values at the source points which to interpolate, shape (num src pts, ...)
-        kwargs : keyword arguments
-            Passed to scipy.stats.binned_statistic_dd
+        kwargs : dict
+            keyword arguments passed to scipy.stats.binned_statistic_dd
 
         Returns
         -------
-        stat : :class:`numpy:numpy.ndarray` of floats
+        stat : :class:`numpy:numpy.ndarray`
             Target values with shape (num trg pts, ...)
         """
         # reshape into flat array
@@ -706,13 +728,13 @@ class RectBin(RectGridBase):
 class PolyArea:
     """Map values representing polygons to another polygons
 
-    Based on wradlib.zonalstats
+    Based on :mod:`wradlib.zonalstats`
 
     Parameters
     ----------
-    src : :class:`numpy:numpy.ndarray` of floats
+    src : :class:`numpy:numpy.ndarray`
         Source grid edge coordinates with shape (..., 5, 2).
-    trg : :class:`numpy:numpy.ndarray` of floats
+    trg : :class:`numpy:numpy.ndarray`
         Target grid edge coordinates with shape (..., 5, 2).
     """
 
@@ -730,12 +752,12 @@ class PolyArea:
 
         Parameters
         ----------
-        values : :class:`numpy:numpy.ndarray` of floats
+        values : :class:`numpy:numpy.ndarray`
             Values representing the source cells, shape corresponding to src
 
         Returns
         -------
-        result : :class:`numpy:numpy.ndarray` of floats
+        result : :class:`numpy:numpy.ndarray`
             Values representing the target cells, shape corresponding to trg
         """
 
@@ -748,13 +770,13 @@ class PolyArea:
 class QuadriArea(PolyArea):
     """Map values representing quadrilateral grid cells to another quadrilateral grid.
 
-    Based on wradlib.zonalstats
+    Based on :mod:`wradlib.zonalstats`
 
     Parameters
     ----------
-    src : :class:`numpy:numpy.ndarray` of floats
+    src : :class:`numpy:numpy.ndarray`
         Source grid edge coordinates with shape (n+1, m+1, 2).
-    trg : :class:`numpy:numpy.ndarray` of floats
+    trg : :class:`numpy:numpy.ndarray`
         Target grid edge coordinates with shape (o+1, p+1, 2).
     """
 
@@ -769,8 +791,8 @@ class IpolChain(IpolBase):
 
     Parameters
     ----------
-    interpolators: list of IpolBase objects
-        list of interpolators to apply successivly
+    interpolators: list
+        list of interpolators (IpolBase) to apply successivly
     """
 
     def __init__(self, interpolators):
@@ -781,12 +803,12 @@ class IpolChain(IpolBase):
 
         Parameters
         ----------
-        values : :class:`numpy:numpy.ndarray` of floats
+        values : :class:`numpy:numpy.ndarray`
             Values at src points which to interpolate with shape (num src pts, ...)
 
         Returns
         -------
-        result : class:`numpy:numpy.ndarray` of floats
+        result : class:`numpy:numpy.ndarray`
             Values at the trg points with shape (num trg pts, ...)
         """
 
@@ -962,14 +984,17 @@ class OrdinaryKriging(IpolBase):
 
     Parameters
     ----------
-    src : ndarray of floats, shape (npoints, ndims)
+    src : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the source points.
-    trg : ndarray of floats, shape (npoints, ndims)
+    trg : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
-    cov : string
+    cov : str
         covariance (variogram) model string in the syntax ``gstat``
         uses.
-    nnearest : integer - max. number of neighbours to be considered
+    nnearest : int
+        max. number of neighbours to be considered
     remove_missing : bool
         If True masks NaN values in the data values, defaults to False
 
@@ -1092,7 +1117,8 @@ class OrdinaryKriging(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, numfields)
+        vals : :class:`numpy:numpy.ndarray`
+            ndarray of float, shape (numsourcepoints, numfields)
             Values at the source points from which to interpolate
             Several fields may be calculated at once by passing them
             along the second dimension.
@@ -1101,7 +1127,8 @@ class OrdinaryKriging(IpolBase):
 
         Returns
         -------
-        output : ndarray of float with shape (numtargetpoints, numfields)
+        output : :class:`numpy:numpy.ndarray`
+            ndarray of float with shape (numtargetpoints, numfields)
 
         """
         v = self._make_2d(vals)
@@ -1138,23 +1165,27 @@ class ExternalDriftKriging(IpolBase):
 
     Parameters
     ----------
-    src : ndarray of floats, shape (nsrcpoints, ndims)
+    src : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (nsrcpoints, ndims)
         Data point coordinates of the source points.
-    trg : ndarray of floats, shape (ntrgpoints, ndims)
+    trg : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (ntrgpoints, ndims)
         Data point coordinates of the target points.
-    cov : string
+    cov : str
         covariance (variogram) model string in the syntax ``gstat``
         uses.
     nnearest : int
         max. number of neighbours to be considered
-    src_drift : ndarray of floats, shape (nsrcpoints,)
+    src_drift : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (nsrcpoints,)
         values of the external drift at each source point
-    trg_drift : ndarray of floats, shape (ntrgpoints,)
+    trg_drift : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (ntrgpoints,)
         values of the external drift at each target point
 
     See Also
     --------
-    OrdinaryKriging
+    :class:`~wradlib.ipol.OrdinaryKriging`
 
     Note
     ----
@@ -1291,7 +1322,8 @@ class ExternalDriftKriging(IpolBase):
 
         Parameters
         ----------
-        vals : ndarray of float, shape (numsourcepoints, numfields)
+        vals : :class:`numpy:numpy.ndarray`
+            ndarray of float, shape (numsourcepoints, numfields)
             Values at the source points from which to interpolate
             Several fields may be calculated at once by passing them
             along the second dimension.
@@ -1300,7 +1332,8 @@ class ExternalDriftKriging(IpolBase):
 
         Returns
         -------
-        output : ndarray of float with shape (numtargetpoints, numfields)
+        output : :class:`numpy:numpy.ndarray`
+            ndarray of float with shape (numtargetpoints, numfields)
 
         """
         assert vals.ndim <= 2
@@ -1388,7 +1421,7 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     """
     Convenience function to use the interpolation classes in an efficient way
 
-    The interpolation classes in wradlib.ipol are computationally very
+    The interpolation classes in :mod:`wradlib.ipol` are computationally very
     efficient if they are applied on large multi-dimensional arrays of which
     the first dimension must be the locations' dimension (1d or 2d coordinates)
     and the following dimensions can be anything (e.g. time or ensembles). This
@@ -1416,21 +1449,27 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
 
     Parameters
     ----------
-    src : ndarray of floats, shape (npoints, ndims)
+    src : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the source points.
-    trg : ndarray of floats, shape (npoints, ndims)
+    trg : :class:`numpy:numpy.ndarray`
+        ndarray of floats, shape (npoints, ndims)
         Data point coordinates of the target points.
-    vals : ndarray of float, shape (numsourcepoints, ...)
+    vals : :class:`numpy:numpy.ndarray`
+        ndarray of float, shape (numsourcepoints, ...)
         Values at the source points which to interpolate
-    ipclass : a class which inherits from IpolBase
+    ipclass : :class:`wradlib.ipol.IpolBase`
+        A class which inherits from IpolBase.
 
     Other Parameters
     ----------------
-    *args : arguments of ipclass (see class documentation)
+    *args : list
+        arguments of ipclass (see class documentation)
 
     Keyword Arguments
     -----------------
-    **kwargs : keyword arguments of ipclass (see class documentation)
+    **kwargs : dict
+        keyword arguments of ipclass (see class documentation)
 
     Examples
     --------
@@ -1492,20 +1531,21 @@ def interpolate_polar(data, mask=None, ipclass=Nearest):
 
     Parameters
     ----------
-    data : 2d-array
+    data : :class:`numpy:numpy.ndarray`
         2 dimensional array (azimuth, ranges) of floats;
 
         if no mask is assigned explicitly polar data should be a masked array
-    mask : array
+    mask : :class:`numpy:numpy.ndarray`
         boolean array with pixels to be interpolated set to True;
 
         must have the same shape as data
-    ipclass : a class which inherits from IpolBase
+    ipclass : :class:`wradlib.ipol.IpolBase`
+        A class which inherits from IpolBase.
 
     Returns
     -------
-    filled_data : 2d-array
-        array with interpolated values for the values set to True in the mask
+    filled_data : :class:`numpy:numpy.ndarray`
+        2D array with interpolated values for the values set to True in the mask
 
     Examples
     --------
@@ -1584,17 +1624,17 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
 
     Parameters
     ----------
-    cartgrid : numpy ndarray
+    cartgrid : :class:`numpy:numpy.ndarray`
         3 dimensional array (nx, ny, lon/lat) of floats;
-    values : numpy 2d-array
+    values : :class:`numpy:numpy.ndarray`
         2 dimensional array (nx, ny) of data values
-    newgrid : numpy ndarray
+    newgrid : :class:`numpy:numpy.ndarray`
         Nx2 dimensional array (..., lon/lat) of floats
     kwargs : :func:`scipy:scipy.interpolate.griddata`
 
     Returns
     -------
-    interp : numpy ndarray
+    interp : :class:`numpy:numpy.ndarray`
         array with interpolated values of size N
     """
 
@@ -1624,17 +1664,17 @@ def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
 
     Parameters
     ----------
-    cartgrid : numpy ndarray
+    cartgrid : :class:`numpy:numpy.ndarray`
         3 dimensional array (nx, ny, lon/lat) of floats
-    values : numpy 2d-array
+    values : :class:`numpy:numpy.ndarray`
         2 dimensional array (nx, ny) of data values
-    newgrid : numpy ndarray
+    newgrid : :class:`numpy:numpy.ndarray`
         Nx2 dimensional array (..., lon/lat) of floats
     kwargs : :func:`scipy:scipy.ndimage.map_coordinates`
 
     Returns
     -------
-    interp : numpy ndarray
+    interp : :class:`numpy:numpy.ndarray`
         array with interpolated values of size N
 
     Examples

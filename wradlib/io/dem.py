@@ -62,7 +62,6 @@ def download_srtm(filename, destination, resolution=3):
         output filename
     resolution : int
         resolution of SRTM data (1, 3 or 30)
-
     """
 
     website = "https://e4ftl01.cr.usgs.gov/MEASURES"
@@ -105,8 +104,8 @@ def get_srtm(extent, resolution=3, merge=True):
 
     Parameters
     ----------
-    extent : str
-        lonmin, lonmax, latmin, latmax
+    extent : list
+        list containing lonmin, lonmax, latmin, latmax
     resolution : int
         resolution of SRTM data (1, 3 or 30)
     merge : bool
@@ -114,8 +113,8 @@ def get_srtm(extent, resolution=3, merge=True):
 
     Returns
     -------
-    dataset : gdal.Dataset
-        Raster dataset containing elevation information
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
+        gdal.Dataset Raster dataset containing elevation information
     """
 
     extent = [int(np.floor(x)) for x in extent]

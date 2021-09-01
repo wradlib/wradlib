@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -34,12 +34,11 @@ def z_to_r(z, a=200.0, b=1.6):
 
     Parameters
     ----------
-    z : float
-        a float or an array of floats
+    z : float or :class:`numpy:numpy.ndarray`
         Corresponds to reflectivity Z in mm**6/m**3
     a : float
         Parameter a of the Z/R relationship
-            Standard value according to Marshall-Palmer is a=200., b=1.6
+        Standard value according to Marshall-Palmer is a=200., b=1.6
     b : float
         Parameter b of the Z/R relationship
         Standard value according to Marshall-Palmer is b=1.6
@@ -51,8 +50,7 @@ def z_to_r(z, a=200.0, b=1.6):
 
     Returns
     -------
-    output : float
-        a float or an array of floats
+    output : float or :class:`numpy:numpy.ndarray`
         rainfall intensity in mm/h
 
     """
@@ -65,11 +63,11 @@ def r_to_z(r, a=200.0, b=1.6):
 
     Parameters
     ----------
-    r : a float or an array of floats
+    r : float or :class:`numpy:numpy.ndarray`
         Corresponds to rainfall intensity in mm/h
     a : float
         Parameter a of the Z/R relationship
-            Standard value according to Marshall-Palmer is a=200., b=1.6
+        Standard value according to Marshall-Palmer is a=200., b=1.6
     b : float
         Parameter b of the Z/R relationship
         Standard value according to Marshall-Palmer is b=1.6
@@ -81,8 +79,8 @@ def r_to_z(r, a=200.0, b=1.6):
 
     Returns
     -------
-    output : a float or an array of floats
-             reflectivity in mm**6/m**3
+    output : float or :class:`numpy:numpy.ndarray`
+        reflectivity in mm**6/m**3
 
     """
     return a * r ** b

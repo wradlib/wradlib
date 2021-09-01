@@ -44,14 +44,15 @@ class PolarNeighbours:
     Parameters
     ----------
     r : :class:`numpy:numpy.ndarray`
-        (see georef for documentation)
+        (see :mod:`wradlib.georef` for documentation)
     az : :class:`numpy:numpy.ndarray`
-        (see georef for documentation)
-    sitecoords : sequence of floats
-        (see georef for documentation)
-    proj : osr spatial reference object
+        (see :mod:`wradlib.georef` for documentation)
+    sitecoords : sequence
+        sequence of floats
+        (see :mod:`wradlib.georef` for documentation)
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
-        (see georef for documentation)
+        (see :mod:`wradlib.georef` for documentation)
     x : :class:`numpy:numpy.ndarray`
         array of x coordinates of the points in map projection
         corresponding to proj
@@ -65,7 +66,6 @@ class PolarNeighbours:
     --------
 
     See :ref:`/notebooks/verification/wradlib_verify_example.ipynb`.
-
     """
 
     def __init__(self, r, az, sitecoords, proj, x, y, nnear=9):

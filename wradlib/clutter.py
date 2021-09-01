@@ -38,7 +38,7 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
 
     Parameters
     ----------
-    img : array_like
+    img : :py:class:`numpy:numpy.ndarray`
         radar image to which the filter is to be applied
     wsize : int
         Size of the window surrounding the central pixel
@@ -51,7 +51,7 @@ def filter_gabella_a(img, wsize, tr1, cartesian=False, radial=False):
 
     Returns
     -------
-    output : array_like
+    output : :py:class:`numpy:numpy.ndarray`
         an array with the same shape as ``img``, containing the
         filter's results.
 
@@ -92,13 +92,13 @@ def filter_gabella_b(img, thrs=0.0):
 
     Parameters
     ----------
-    img : array_like
+    img : :py:class:`numpy:numpy.ndarray`
     thrs : float
         Threshold below which the field values will be considered as no rain
 
     Returns
     -------
-    output : array_like
+    output : :py:class:`numpy:numpy.ndarray`
         contains in each pixel the ratio between area and circumference of the
         meteorological echo it is assigned to or 0 for non precipitation
         pixels.
@@ -164,7 +164,7 @@ def filter_gabella(
 
     Parameters
     ----------
-    img : array_like
+    img : :py:class:`numpy:numpy.ndarray`
     wsize : int
         Size of the window surrounding the central pixel
     thrsnorain : float
@@ -177,12 +177,12 @@ def filter_gabella(
     radial : bool
         True to use radial information only in
         :func:`~wradlib.clutter.filter_gabella_a`.
-    cartesian : boolean
+    cartesian : bool
         True if cartesian data are used, polar assumed if False.
 
     Returns
     -------
-    output : array
+    output : :py:class:`numpy:numpy.ndarray`
         boolean array with pixels identified as clutter set to True.
 
     See Also
@@ -227,12 +227,12 @@ def histo_cut(prec_accum):
 
     Parameters
     ----------
-    prec_accum : array_like
+    prec_accum : :py:class:`numpy:numpy.ndarray`
         spatial array containing rain accumulation
 
     Returns
     -------
-    output : array_like
+    output : :py:class:`numpy:numpy.ndarray`
         boolean array with pixels identified as clutter/shadings set to True.
 
     Examples
@@ -524,9 +524,9 @@ def filter_cloudtype(
 
     Parameters
     ----------
-    img : array_like
+    img : :py:class:`numpy:numpy.ndarray`
         radar image to which the filter is to be applied
-    cloud : array_like
+    cloud : :py:class:`numpy:numpy.ndarray`
         image with collocated cloud value from MSG SAFNWC PGE02 product
     thrs : float
         Threshold above which to identify clutter
@@ -541,15 +541,16 @@ def filter_cloudtype(
     smoothing : float
         Size [m] of the smoothing window used to take into account various
         localisation errors (e.g. advection, parallax)
-    grid : string
+    grid : str
         "polar" or "cartesian"
-    scale : float or tuple of 2 floats
+    scale : float or tuple
+        float or tuple of 2 floats
         range [m] scale for polar grid
         x[m] and y[m] scale for cartesian grid
 
     Returns
     -------
-    output : array_like
+    output : :py:class:`numpy:numpy.ndarray`
         a boolean array containing TRUE where clutter has been identified.
 
     """
@@ -576,7 +577,7 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
 
     Parameters
     ----------
-    img : array_like
+    img : :py:class:`numpy:numpy.ndarray`
         2d polar data to which the filter is to be applied
     rscale : float
         range [m] scale of the polar grid
@@ -587,7 +588,7 @@ def filter_window_distance(img, rscale, fsize=1500, tr1=7):
 
     Returns
     -------
-    output : array_like
+    output : :py:class:`numpy:numpy.ndarray`
         an array with the same shape as ``img``, containing the
         filter's results.
 

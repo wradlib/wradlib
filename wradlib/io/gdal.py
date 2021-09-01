@@ -33,18 +33,18 @@ def open_vector(filename, driver=None, layer=0):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         vector file name
-    driver : string
+    driver : str
         gdal driver string
-    layer : int or string
+    layer : int or str
 
     Returns
     -------
-    dataset : gdal.Dataset
-        dataset
-    layer : ogr.Layer
-        layer
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
+        gdal.Dataset
+    layer : :py:class:`gdal:osgeo.ogr.Layer`
+        ogr.Layer
     """
     dataset = gdal.OpenEx(filename)
 
@@ -61,15 +61,15 @@ def open_raster(filename, driver=None):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         raster file name
-    driver : string
+    driver : str
         gdal driver string
 
     Returns
     -------
-    dataset : gdal.Dataset
-        dataset
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
+        gdal.Dataset
     """
 
     dataset = gdal.OpenEx(filename)
@@ -85,13 +85,13 @@ def read_safnwc(filename):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         satellite file name
 
     Returns
     -------
-    ds : gdal.DataSet
-        with satellite data
+    ds : :py:class:`gdal:osgeo.gdal.Dataset`
+        gdal.DataSet with satellite data
     """
 
     root = gdal.Open(filename)
@@ -122,9 +122,9 @@ def gdal_create_dataset(
 
     Parameters
     ----------
-    drv : string
+    drv : str
         GDAL driver string
-    name : string
+    name : str
         path to filename
     cols : int
         # of columns
@@ -132,17 +132,16 @@ def gdal_create_dataset(
         # of rows
     bands : int
         # of raster bands
-    gdal_type : raster data type
-        eg. gdal.GDT_Float32
+    gdal_type : :py:class:`gdal:osgeo.ogr.DataType`
+        raster data type  eg. gdal.GDT_Float32
     remove : bool
         if True, existing gdal.Dataset will be
         removed before creation
 
     Returns
     -------
-    out : gdal.Dataset
-        object
-
+    out : :py:class:`gdal:osgeo.gdal.Dataset`
+        gdal.Dataset
     """
     driver = gdal.GetDriverByName(drv)
     metadata = driver.GetMetadata()
@@ -165,11 +164,11 @@ def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
 
     Parameters
     ----------
-    fpath : string
+    fpath : str
         A file path - should have file extension corresponding to format.
-    dataset : gdal.Dataset
-        gdal raster dataset
-    rformat : string
+    dataset : :py:class:`gdal:osgeo.gdal.Dataset`
+        gdal.Dataset  gdal raster dataset
+    rformat : str
         gdal raster format string
     options : list
         List of option strings for the corresponding format.
@@ -180,7 +179,7 @@ def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
     Note
     ----
     For format and options refer to
-    `formats_list <http://www.gdal.org/formats_list.html>`_.
+    `formats_list <https://gdal.org/formats_list.html>`_.
 
     Examples
     --------

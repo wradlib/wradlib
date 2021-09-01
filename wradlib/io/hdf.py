@@ -43,7 +43,7 @@ from wradlib.io.xarray import (
 def open_odim_dataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an ODIM radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` under the hood.
 
     Parameters
     ----------
@@ -61,21 +61,21 @@ def open_odim_dataset(filename_or_obj, group=None, **kwargs):
     keep_azimuth : bool
         For RHI only. Keep original azimuth data if True. Defaults to False,
         which fixes erroneous azimuth data.
-    reindex_angle : bool | float
+    reindex_angle : bool or float
         Defaults to None (reindex angle with tol=0.4deg). If given a floating point
         number, it is used as tolerance. If False, no reindexing is performed.
         Only invoked if `decode_coord=True`.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_odim_mfdataset
+    :func:`~wradlib.io.hdf.open_odim_mfdataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -85,7 +85,7 @@ def open_odim_dataset(filename_or_obj, group=None, **kwargs):
 def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` under the hood.
 
     Parameters
     ----------
@@ -103,21 +103,21 @@ def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
     keep_azimuth : bool
         For RHI only. Keep original azimuth data if True. Defaults to False,
         which fixes erroneous azimuth data.
-    reindex_angle : bool | float
+    reindex_angle : bool or float
         Defaults to None (reindex angle with tol=0.4deg). If given a floating point
         number, it is used as tolerance. If False, no reindexing is performed.
         Only invoked if `decode_coord=True`.
     **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_gamic_mfdataset
+    :func:`~wradlib.io.hdf.open_gamic_mfdataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -127,7 +127,7 @@ def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
 def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an ODIM radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
     Needs `dask` package to be installed.
 
     Parameters
@@ -146,21 +146,21 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
     keep_azimuth : bool
         For RHI only. Keep original azimuth data if True. Defaults to False,
         which fixes erroneous azimuth data.
-    reindex_angle : bool | float
+    reindex_angle : bool or float
         Defaults to None (reindex angle with tol=0.4deg). If given a floating point
         number, it is used as tolerance. If False, no reindexing is performed.
         Only invoked if `decode_coord=True`.
     **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_odim_dataset
+    :func:`~wradlib.io.hdf.open_odim_dataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -170,7 +170,7 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
 def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.open_radar_mfdataset`` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
     Needs `dask` package to be installed.
 
     Parameters
@@ -189,21 +189,21 @@ def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
     keep_azimuth : bool
         For RHI only. Keep original azimuth data if True. Defaults to False,
         which fixes erroneous azimuth data.
-    reindex_angle : bool | float
+    reindex_angle : bool or float
         Defaults to None (reindex angle with tol=0.4deg). If given a floating point
         number, it is used as tolerance. If False, no reindexing is performed.
         Only invoked if `decode_coord=True`.
     **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
     Returns
     -------
-    dataset : xarray.Dataset | wradlib.io.RadarVolume
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
         The newly created radar dataset or radar volume.
 
     See Also
     --------
-    wradlib.io.open_gamic_dataset
+    :func:`~wradlib.io.hdf.open_gamic_dataset`
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -221,7 +221,7 @@ def read_generic_hdf5(fname):
 
     Parameters
     ----------
-    fname : string or file-like
+    fname : str or file-like
         a hdf5 file path or file-like object
 
     Returns
@@ -276,7 +276,7 @@ def read_opera_hdf5(fname):
 
     Parameters
     ----------
-    fname : string or file-like
+    fname : str or file-like
         a hdf5 file path or file-like object
 
     Returns
@@ -309,7 +309,7 @@ def read_gamic_scan_attributes(scan, scan_type):
     ----------
     scan : object
         scan object from hdf5 file
-    scan_type : string
+    scan_type : str
         "PVOL" (plan position indicator) or "RHI" (range height indicator)
 
     Returns
@@ -392,9 +392,9 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
     ----------
     scan : object
         scan object from hdf5 file
-    scan_type : string
+    scan_type : str
         "PVOL" (plan position indicator) or "RHI" (range height indicator)
-    wanted_moments : strings
+    wanted_moments : sequence
         sequence of strings containing upper case names of moment(s) to
         be returned
 
@@ -462,11 +462,11 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     Parameters
     ----------
-    filename : string or file-like
+    filename : str or file-like
         path of the gamic hdf5 file or file-like object
-    wanted_elevations : strings
+    wanted_elevations : sequence
         sequence of strings of elevation_angle(s) of scan (only needed for PPI)
-    wanted_moments : strings
+    wanted_moments : sequence
         sequence of strings of moment name(s)
 
     Returns
@@ -565,20 +565,20 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
 
     This is more efficient than pickle, cPickle or numpy.save. The data is
     stored in a subgroup named ``data`` (i.e. hdf5file["data").
-    See :meth:`~wradlib.io.from_hdf5` for retrieving stored data.
+    See :func:`~wradlib.io.hdf.from_hdf5` for retrieving stored data.
 
     Parameters
     ----------
-    fpath : string or file-like
+    fpath : str or file-like
         path to the hdf5 file or file-like object
-    data : :func:`numpy:numpy.array`
-    mode : string
+    data : :py:class:`numpy:numpy.ndarray`
+    mode : str
         file open mode, defaults to "w" (create, truncate if exists)
     metadata : dict
         dictionary of data's attributes
-    dataset : string
+    dataset : str
         describing dataset
-    compression : string
+    compression : str
         h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation
         for details
     """
@@ -592,13 +592,13 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
 
 def from_hdf5(fpath, dataset="data"):
     """Loading data from hdf5 files that was stored by \
-    :meth:`~wradlib.io.to_hdf5`
+    :func:`~wradlib.io.hdf.to_hdf5`
 
     Parameters
     ----------
-    fpath : string or file-like
+    fpath : str or file-like
         path to the hdf5 file or file-like object
-    dataset : string
+    dataset : str
         name of the Dataset in which the data is stored
     """
     with h5py.File(fpath, mode="r") as f:
@@ -622,7 +622,7 @@ def read_gpm(filename, bbox=None):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         path of the GPM file
     bbox : dict
         dictionary with bounding box coordinates (lon, lat),
@@ -772,9 +772,9 @@ def read_trmm(filename1, filename2, bbox=None):
 
     Parameters
     ----------
-    filename1 : string
+    filename1 : str
         path of the TRMM 2A23 file
-    filename2 : string
+    filename2 : str
         path of the TRMM 2A25 file
     bbox : dict
         dictionary with bounding box coordinates (lon, lat),

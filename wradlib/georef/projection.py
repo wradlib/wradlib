@@ -58,13 +58,14 @@ def create_osr(projname, **kwargs):
 
     Parameters
     ----------
-    projname : string
+    projname : str
         "aeqd" or "dwd-radolan"
-    kwargs : depends on projname - see above!
+    kwargs : dict
+        depends on projname - see above!
 
     Returns
     -------
-    output : osr.SpatialReference
+    output : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL/OSR object defining projection
 
     Examples
@@ -184,7 +185,7 @@ def proj4_to_osr(proj4str):
 
     Parameters
     ----------
-    proj4str : string
+    proj4str : str
         Proj4 string describing projection
 
     Examples
@@ -222,7 +223,7 @@ def reproject(*args, **kwargs):
 
     Parameters
     ----------
-    C : multidimensional :class:`numpy:numpy.ndarray`
+    C : :class:`numpy:numpy.ndarray`
         Array of shape (...,2) or (...,3) with coordinates (x,y) or (x,y,z)
         respectively
     X : :class:`numpy:numpy.ndarray`
@@ -234,9 +235,9 @@ def reproject(*args, **kwargs):
 
     Keyword Arguments
     -----------------
-    projection_source : osr object
+    projection_source : :py:class:`gdal:osgeo.osr.SpatialReference`
         defaults to EPSG(4326)
-    projection_target : osr object
+    projection_target : :py:class:`gdal:osgeo.osr.SpatialReference`
         defaults to EPSG(4326)
     area_of_interest : tuple
         tuple of floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
@@ -342,7 +343,7 @@ def epsg_to_osr(epsg=None):
 
     Returns
     -------
-    proj : osr.SpatialReference
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL/OSR object defining projection
     """
     proj = None
@@ -364,7 +365,7 @@ def wkt_to_osr(wkt=None):
 
     Returns
     -------
-    proj : osr.SpatialReference
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL/OSR object defining projection
 
     """
@@ -395,7 +396,7 @@ def get_earth_radius(latitude, sr=None):
 
     Parameters
     ----------
-    sr : osr object
+    sr : :py:class:`gdal:osgeo.osr.SpatialReference`
         spatial reference
     latitude : float
         geodetic latitude in degrees
@@ -438,7 +439,7 @@ def get_earth_projection(model="ellipsoid"):
 
     Returns
     -------
-    proj : osr.SpatialReference
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         projection definition
 
     """
@@ -467,12 +468,12 @@ def get_radar_projection(sitecoords):
 
     Parameters
     ----------
-    sitecoords : a sequence of two floats
+    sitecoords : sequence
         the WGS84 lon / lat coordinates of the radar location
 
     Returns
     -------
-    proj : osr.SpatialReference
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         projection definition
 
     """
@@ -493,7 +494,7 @@ def get_extent(coords):
 
     Returns
     -------
-    proj : osr.SpatialReference
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL/OSR object defining projection
     """
 

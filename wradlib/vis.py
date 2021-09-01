@@ -146,18 +146,17 @@ class WradlibAccessor(object):
 
         Parameters
         ----------
-        proj : cartopy CRS | curvelinear grid dict | None
+        proj : :py:class:`cartopy.crs.CRS`, dict or None
             cartopy CRS Coordinate Reference System describing projection
             If this parameter is not None, ``site`` must be set properly.
             Then the function will attempt to georeference the radar bins and
             display the PPI in the coordinate system defined by the
             projection string.
-        fig : :class:`matplotlib:matplotlib.figure.Figure`
+        fig : :class:`matplotlib.figure.Figure`
             If given, the PPI/RHI will be plotted into this figure object.
             Axes are created as needed. If None, a new figure object will be
             created or current figure will be used, depending on ``ax``.
-        ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid
-        definition
+        ax : :class:`matplotlib.axes.Axes` or :class:`matplotlib.gridspec.SubplotSpec`
             If matplotlib Axes object is given, the PPI will be plotted into
             this axes object.
             If matplotlib grid definition is given (nrows/ncols/plotnumber),
@@ -172,7 +171,7 @@ class WradlibAccessor(object):
 
         Returns
         -------
-        pm : :class:`matplotlib:matplotlib.collections.QuadMesh` | \
+        pm : :class:`matplotlib:matplotlib.collections.QuadMesh` or \
             :class:`matplotlib:matplotlib.contour.QuadContourSet`
             The result of the plotting function. Necessary, if you want to
             add a colorbar to the plot.
@@ -187,22 +186,17 @@ class WradlibAccessor(object):
             caax = cgax.parasites[0]
             paax = cgax.parasites[1]
 
-        The function :func:`~wradlib.vis.create_cg` uses the
-        Matplotlib AXISARTIST namespace `mpl_toolkits.axisartist`_.
+        The function :func:`~wradlib.vis.create_cg` uses the Matplotlib
+        `AXISARTIST <https://matplotlib.org/stable/api/toolkits/axisartist.html>`_ namespace.
 
-        Here are some limitations to normal Matplotlib Axes. See
-        `AxesGridToolkitUserGuide`_.
+        Here are some limitations to normal Matplotlib Axes (see
+        `AXES_GRID1 <https://matplotlib.org/stable/api/toolkits/axes_grid1.html>`_).
 
         Examples
         --------
         See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
         and
         :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
-
-        .. _mpl_toolkits.axisartist:
-            https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
-        .. _AxesGridToolkitUserGuide:
-            https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
         """
         cg = False
         caax = None
@@ -364,7 +358,8 @@ def plot_ppi(
     az : :class:`numpy:numpy.ndarray`
         The azimuth angles in degrees. If None, a default is
         calculated from the dimensions of ``data``.
-    elev : float or array of same shape as ``az``
+    elev : float or :class:`numpy:numpy.ndarray`
+        float or array of same shape as ``az``
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
     site : tuple or None
@@ -374,16 +369,16 @@ def plot_ppi(
         If ``proj`` is used, values must be given as (longitude, latitude,
         altitude) tuple of geographical coordinates.
         Defaults to None.
-    proj : GDAL OSR SRS | cartopy CRS | curvelinear grid dict | None
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS`, dict or None
         GDAL OSR Spatial Reference Object describing projection
         If this parameter is not None, ``site`` must be set. Then the function
         will attempt to georeference the radar bins and display the PPI in the
         coordinate system defined by the projection string.
-    fig : :class:`matplotlib:matplotlib.figure.Figure`
+    fig : :class:`matplotlib.figure.Figure`
         If given, the PPI will be plotted into this figure object. Axes are
         created as needed. If None, a new figure object will be created or
         current figure will be used, depending on ``ax``.
-    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid definition
+    ax : :class:`matplotlib:matplotlib.axes.Axes` or :class:`matplotlib.gridspec.SubplotSpec`
         If matplotlib Axes object is given, the PPI will be plotted into this
         axes object.
         If matplotlib grid definition is given (nrows/ncols/plotnumber),
@@ -402,7 +397,7 @@ def plot_ppi(
     -------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
         The axes object into which the PPI was plotted
-    pm : :class:`matplotlib:matplotlib.collections.QuadMesh` | \
+    pm : :class:`matplotlib:matplotlib.collections.QuadMesh` or \
         :class:`matplotlib:matplotlib.contour.QuadContourSet`
         The result of the plotting function. Necessary, if you want to
         add a colorbar to the plot.
@@ -416,22 +411,17 @@ def plot_ppi(
         caax = cgax.parasites[0]
         paax = cgax.parasites[1]
 
-    The function :func:`~wradlib.vis.create_cg` uses the
-    Matplotlib AXISARTIST namespace `mpl_toolkits.axisartist`_.
+    The function :func:`~wradlib.vis.create_cg` uses the Matplotlib
+    `AXISARTIST <https://matplotlib.org/stable/api/toolkits/axisartist.html>`_ namespace.
 
-    Here are some limitations to normal Matplotlib Axes. See
-    `AxesGridToolkitUserGuide`_.
+    Here are some limitations to normal Matplotlib Axes (see
+    `AXES_GRID1 <https://matplotlib.org/stable/api/toolkits/axes_grid1.html>`_).
 
     Examples
     --------
     See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
     and
     :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
-
-    .. _mpl_toolkits.axisartist:
-        https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
-    .. _AxesGridToolkitUserGuide:
-        https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
     # check coordinate tuple
     if site and len(site) < 3:
@@ -521,7 +511,7 @@ def plot_ppi_crosshair(
         List of angles (in degrees) for which straight lines should be drawn.
         These lines will be drawn starting from the center and until the
         largest range.
-    proj : osr spatial reference object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
         The function will calculate lines and circles according to
         georeferenced coordinates taking beam propagation, earth's curvature
@@ -529,7 +519,8 @@ def plot_ppi_crosshair(
         Depending on the projection, crosshair lines might not be straight and
         range circles might appear elliptical (also check if the aspect of the
         axes might not also be responsible for this).
-    elev : float or array of same shape as az
+    elev : float or :class:`numpy:numpy.ndarray`
+        float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
     ax : :class:`matplotlib:matplotlib.axes.Axes`
@@ -680,21 +671,22 @@ def plot_rhi(
     th : :class:`numpy:numpy.ndarray`
         The elevation angles in degrees. If None, a default is
         calculated from the dimensions of ``data``.
-    th_res : float or :class:`numpy:numpy.ndarray` of same shape as ``th``
+    th_res : float or :class:`numpy:numpy.ndarray`
+        float or array of same shape as ``th``.
         In RHI's it happens that the elevation angles are spaced wider than
         the beam width. If this beam width (in degrees) is given in ``th_res``,
         plot_rhi will plot the beams accordingly. Otherwise the behavior of
-        :func:`matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
+        :func:`matplotlib:matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
         to each other, which might lead to unexpected results.
-    az : float or :class:`numpy:numpy.ndarray` of same shape as ``th``
+    az : float or :class:`numpy:numpy.ndarray`
+        float or array of same shape as ``th``.
     site : tuple
         Tuple of coordinates of the radar site.
         If ``proj`` is not used, this simply becomes the offset for the origin
         of the coordinate system.
         If ``proj`` is used, values must be given as (longitude, latitude,
-        altitude)
-        tuple of geographical coordinates.
-    proj : osr spatial reference object
+        altitude) tuple of geographical coordinates.
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
         If this parameter is not None, ``site`` must be set. Then the function
         will attempt to georeference the radar bins in the
@@ -703,7 +695,7 @@ def plot_rhi(
         If given, the RHI will be plotted into this figure object. Axes are
         created as needed. If None, a new figure object will be created or
         current figure will be used, depending on ``ax``.
-    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid definition
+    ax : :class:`matplotlib:matplotlib.axes.Axes` or :class:`matplotlib:matplotlib.gridspec.SubplotSpec`
         If matplotlib Axes object is given, the RHI will be plotted into this
         axes object.
         If matplotlib grid definition is given (nrows/ncols/plotnumber),
@@ -721,7 +713,7 @@ def plot_rhi(
     -------
     ax : :class:`matplotlib:matplotlib.axes.Axes`
         The axes object into which the RHI was plotted.
-    pm : :class:`matplotlib:matplotlib.collections.QuadMesh` | \
+    pm : :class:`matplotlib:matplotlib.collections.QuadMesh` or \
         :class:`matplotlib:matplotlib.contour.QuadContourSet`
         The result of the plotting function. Necessary, if you want to
         add a colorbar to the plot.
@@ -735,20 +727,15 @@ def plot_rhi(
         caax = cgax.parasites[0]
         paax = cgax.parasites[1]
 
-    The function :func:`~wradlib.vis.create_cg` uses the
-    Matplotlib AXISARTIST namespace `mpl_toolkits.axisartist`_.
+    The function :func:`~wradlib.vis.create_cg` uses the Matplotlib
+    `AXISARTIST <https://matplotlib.org/stable/api/toolkits/axisartist.html>`_ namespace.
 
-    Here are some limitations to normal Matplotlib Axes. See
-    `AxesGridToolkitUserGuide`_.
+    Here are some limitations to normal Matplotlib Axes (see
+    `AXES_GRID1 <https://matplotlib.org/stable/api/toolkits/axes_grid1.html>`_).
 
     Examples
     --------
     See :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
-
-    .. _mpl_toolkits.axisartist:
-        https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html
-    .. _AxesGridToolkitUserGuide:
-        https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html
     """
     # kwargs handling
     kwargs["zorder"] = kwargs.pop("zorder", 0)
@@ -834,25 +821,23 @@ def create_cg(
 ):
     """ Helper function to create curvelinear grid
 
-    The function makes use of the Matplotlib AXISARTIST namespace
-    `mpl_toolkits.axisartist \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/users/axisartist.html>`_.
+    The function makes use of the Matplotlib
+    `AXISARTIST <https://matplotlib.org/stable/api/toolkits/axisartist.html>`_ toolkit.
 
     Here are some limitations to normal Matplotlib Axes. While using the
-    Matplotlib `AxesGrid Toolkit \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/index.html>`_
+    Matplotlib `AxesGrid1 Toolkit \
+    <https://matplotlib.org/stable/api/toolkits/axes_grid1.html>`_
     most of the limitations can be overcome.
-    See `Matplotlib AxesGrid Toolkit User’s Guide \
-    <https://matplotlib.org/mpl_toolkits/axes_grid/users/index.html>`_.
+    See `Overview of axes_grid1 toolkit \
+    <https://matplotlib.org/stable/tutorials/toolkits/axes_grid.html>`_.
 
     Parameters
     ----------
-    fig : matplotlib Figure object
+    fig : :py:class:`matplotlib:matplotlib.figure.Figure`
         If given, the PPI/RHI will be plotted into this figure object.
         Axes are created as needed. If None a new figure object will
         be created or current figure will be used, depending on "subplot".
-    subplot : :class:`matplotlib:matplotlib.gridspec.GridSpec`, \
-        matplotlib grid definition
+    subplot : :class:`matplotlib:matplotlib.gridspec.SubplotSpec`
         nrows/ncols/plotnumber, see examples section
         defaults to '111', only one subplot
     rot : float
@@ -871,11 +856,13 @@ def create_cg(
 
     Returns
     -------
-    cgax : matplotlib toolkit axisartist Axes object
+    cgax : :py:class:`matplotlib:mpl_toolkits.axisartist.axis_artist.AxisArtist`
         curvelinear Axes (r-theta-grid)
-    caax : matplotlib Axes object (twin to cgax)
+    caax : :py:class:`matplotlib:matplotlib.axes.Axes`
+        matplotlib Axes object (twin to cgax)
         Cartesian Axes (x-y-grid) for plotting cartesian data
-    paax : matplotlib Axes object (parasite to cgax)
+    paax : :py:class:`matplotlib:matplotlib.axes.Axes`
+        matplotlib Axes object (parasite to cgax)
         The parasite axes object for plotting polar data
     """
     # create transformation
@@ -1009,11 +996,11 @@ def plot_scan_strategy(
 
     Parameters
     ----------
-    ranges : sequence of floats
-        array of ranges
-    elevs : sequence of floats
+    ranges : sequence of float or :class:`numpy:numpy.ndarray`
+        sequence or array of float ranges
+    elevs : sequence of float or :class:`numpy:numpy.ndarray`
         elevation angles
-    sitecoords : sequence of floats
+    sitecoords : sequence of tuple or :class:`numpy:numpy.ndarray`
         radar site coordinates (longitude, latitude, altitude)
     beamwidth : float
         3dB width of the radar beam, defaults to 1.0 deg.
@@ -1027,13 +1014,13 @@ def plot_scan_strategy(
         Maximum range in [m].
     units : str
         Units to plot in, can be 'm' or 'km'. Defaults to 'm'.
-    terrain : bool | :class:`numpy:numpy.ndarray`
+    terrain : bool or :class:`numpy:numpy.ndarray`
         If True, downloads srtm data and add orography for given `az`.
     az : float
         Used to specify azimuth for terrain plots.
     cg : bool
         If True, plot in curvelinear grid, defaults to False (cartesian grid).
-    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib grid definition
+    ax : :class:`matplotlib:matplotlib.axes.Axes` or :class:`matplotlib:matplotlib.gridspec.SubplotSpec`
         If matplotlib Axes object is given, the scan strategy will be plotted into this
         axes object.
         If matplotlib grid definition is given (nrows/ncols/plotnumber),
@@ -1044,8 +1031,9 @@ def plot_scan_strategy(
 
     Returns
     -------
-    ax : :class:`matplotlib:matplotlib.axes.Axes` | matplotlib toolkit axisartist Axes object
-        matplotlib Axes or curvelinear Axes (r-theta-grid) depending on keyword argument `cg`.
+    ax : :class:`matplotlib:matplotlib.axes.Axes`
+        matplotlib Axes or curvelinear Axes (matplotlib toolkit axisartist Axes object,
+        r-theta-grid) depending on keyword argument `cg`.
     """
 
     if units == "m":
@@ -1228,17 +1216,17 @@ def plot_plan_and_vert(
         2d array of shape (len(z), len(x))
     datazy : :class:`numpy:numpy.ndarray`
         2d array of shape (len(z), len(y))
-    unit : string
+    unit : str
         unit of data arrays
-    title: string
+    title: str
         figure title
-    saveto : string
+    saveto : str
         file path if figure should be saved
 
     Keyword Arguments
     -----------------
-    **kwargs : other kwargs which can be passed to \
-               :func:`matplotlib.pyplot.contourf`
+    **kwargs : dict
+        other kwargs which can be passed to :func:`matplotlib:matplotlib.pyplot.contourf`
 
     """
 

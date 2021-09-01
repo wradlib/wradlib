@@ -49,7 +49,7 @@ def spherical_to_xyz(
         Contains the azimuthal angles in degree.
     theta: :class:`numpy:numpy.ndarray`
         Contains the elevation angles in degree.
-    sitecoords : a sequence of three floats
+    sitecoords : sequence
         the lon / lat coordinates of the radar location and its altitude
         a.m.s.l. (in meters)
         if sitecoords is of length two, altitude is assumed to be zero
@@ -70,7 +70,7 @@ def spherical_to_xyz(
     -------
     xyz : :class:`numpy:numpy.ndarray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    rad : osr object
+    rad : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Spatial Reference System (Projection).
         Defaults to wgs84 (epsg 4326).
     """
@@ -168,11 +168,11 @@ def spherical_to_proj(r, phi, theta, sitecoords, proj=None, re=None, ke=4.0 / 3.
         Contains the azimuthal angles.
     theta: :class:`numpy:numpy.ndarray`
         Contains the elevation angles.
-    sitecoords : a sequence of three floats
+    sitecoords : sequence
         the lon / lat coordinates of the radar location and its altitude
         a.m.s.l. (in meters)
         if sitecoords is of length two, altitude is assumed to be zero
-    proj : osr object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Spatial Reference System (Projection).
         Defaults to wgs84 (epsg 4326).
     re : float
@@ -237,17 +237,17 @@ def centroid_to_polyvert(centroid, delta):
 
     Parameters
     ----------
-    centroid : array_like
-               List of 2-D coordinates of the center point of the rectangle.
-    delta :    scalar or :class:`numpy:numpy.ndarray`
-               Symmetric distances of the vertices from the centroid in each
-               direction. If ``delta`` is scalar, it is assumed to apply to
-               both dimensions.
+    centroid : array-like
+        List of 2-D coordinates of the center point of the rectangle.
+    delta : scalar or :class:`numpy:numpy.ndarray`
+        Symmetric distances of the vertices from the centroid in each
+        direction. If ``delta`` is scalar, it is assumed to apply to
+        both dimensions.
 
     Returns
     -------
     vertices : :class:`numpy:numpy.ndarray`
-               An array with 5 vertices per centroid.
+        An array with 5 vertices per centroid.
 
     Note
     ----
@@ -298,13 +298,13 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
     Generate 3-D polygon vertices directly from spherical coordinates
     (r, phi, theta).
 
-    This is an alternative to :func:`~wradlib.georef.centroid_to_polyvert`
+    This is an alternative to :func:`~wradlib.georef.polar.centroid_to_polyvert`
     which does not use centroids, but generates the polygon vertices by simply
     connecting the corners of the radar bins.
 
     Both azimuth and range arrays are assumed to be equidistant and to contain
     only unique values. For further information refer to the documentation of
-    :func:`~wradlib.georef.spherical_to_xyz`.
+    :func:`~wradlib.georef.polar.spherical_to_xyz`.
 
     Parameters
     ----------
@@ -320,9 +320,9 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
         equidistant. An angle if 0 degree is pointing north.
     theta : float
         Elevation angle of scan
-    sitecoords : a sequence of three floats
+    sitecoords : sequence
         the lon/lat/alt coordinates of the radar location
-    proj : osr object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Projection
 
     Returns
@@ -331,7 +331,7 @@ def spherical_to_polyvert(r, phi, theta, sitecoords, proj=None):
         A 3-d array of polygon vertices with shape(num_vertices,
         num_vertex_nodes, 2). The last dimension carries the xyz-coordinates
         either in `aeqd` or given proj.
-    proj : osr object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         only returned if proj is None
 
     Examples
@@ -402,7 +402,7 @@ def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
     assumed to describe the pointing direction fo the main beam lobe.
 
     For further information refer to the documentation of
-    :meth:`~wradlib.georef.polar2lonlat`.
+    :func:`~wradlib.georef.polar.spherical_to_xyz`.
 
     Parameters
     ----------
@@ -418,18 +418,18 @@ def spherical_to_centroids(r, phi, theta, sitecoords, proj=None):
         equidistant. An angle if 0 degree is pointing north.
     theta : float
         Elevation angle of scan
-    sitecoords : a sequence of three floats
+    sitecoords : sequence
         the lon/lat/alt coordinates of the radar location
-    proj : osr object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Projection
 
     Returns
     -------
-    output : centroids :class:`numpy:numpy.ndarray`
+    output : :class:`numpy:numpy.ndarray`
         A 3-d array of bin centroids with shape(num_rays, num_bins, 3).
         The last dimension carries the xyz-coordinates
         either in `aeqd` or given proj.
-    proj : osr object
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         only returned if proj is None
 
     Note
@@ -569,7 +569,7 @@ def sweep_centroids(nrays, rscale, nbins, elangle):
 
     Returns
     -------
-    coordinates : 3d array
+    coordinates : :py:class:`numpy:numpy.ndarray`
         array of shape (nrays,nbins,3) containing native centroid radar
         coordinates (slant range, azimuth, elevation)
     """
@@ -595,14 +595,14 @@ def maximum_intensity_projection(
         Array containing polar data (azimuth, range)
     r : :class:`numpy:numpy.ndarray`
         Array containing range data
-    az : array
+    az : :class:`numpy:numpy.ndarray`
         Array containing azimuth data
     angle : float
         angle of slice, Defaults to 0. Should be between 0 and 180.
         0. means horizontal slice, 90. means vertical slice
     elev : float
         elevation angle of scan, Defaults to 0.
-    autoext : True | False
+    autoext : bool
         This routine uses numpy.digitize to bin the data.
         As this function needs bounds, we create one set of coordinates more
         than would usually be provided by `r` and `az`.
