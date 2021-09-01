@@ -1,0 +1,14 @@
+# fix docstrings (links, types, etc) 2021-09-01
+20ade37ebbd8dadcd8a11676304c34218a89eca2
+
+# black/isort/flake8 2020-06-17
+64ac7df40cec7326dca58a80fa844afa42467387
+
+# docstring review 2018-02-22
+f402ef317dc2e0d530ed33190f06ae259ae9ab78
+
+# PEP8 fixes 2016-04-14
+aa8192276717b3339acbb39ca389d0c3f256c5d5
+
+# python 2/3 issues, code reformatting, docstrings
+0794544a401b3d65ff5be60a1c61f7c9f985017d

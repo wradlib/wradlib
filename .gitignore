@@ -4,6 +4,7 @@
 # allowlist block
 # allowlist root .gitignore
 !/.gitignore
+!/.git-blame-ignore-revs
 
 # allowlist .py, .f-files and .sh files
 !*.py
