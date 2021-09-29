@@ -4471,28 +4471,36 @@ def _write_odim_dataspace(src, dest):
             undetect = float(value._Undetect)
         except AttributeError:
             undetect = np.finfo(np.float_).max
+
+        # set some defaults, if not available
+        scale_factor = float(enc.get("scale_factor", 1.0))
+        add_offset = float(enc.get("add_offset", 0.0))
+        _fillvalue = float(enc.get("_FillValue", undetect))
+        dtype = enc.get("dtype", value.dtype)
         what = {
             "quantity": value.name,
-            "gain": float(enc["scale_factor"]),
-            "offset": float(enc["add_offset"]),
-            "nodata": float(enc["_FillValue"]),
+            "gain": scale_factor,
+            "offset": add_offset,
+            "nodata": _fillvalue,
             "undetect": undetect,
         }
         _write_odim(what, h5_what)
 
         # moments handling
         val = value.sortby("azimuth").values
-        fillval = enc["_FillValue"] * enc["scale_factor"]
-        fillval += enc["add_offset"]
+        fillval = _fillvalue * scale_factor
+        fillval += add_offset
         val[np.isnan(val)] = fillval
-        val = (val - enc["add_offset"]) / enc["scale_factor"]
-        val = np.rint(val).astype(enc["dtype"])
+        val = (val - add_offset) / scale_factor
+        if np.issubdtype(dtype, np.integer):
+            val = np.rint(val).astype(dtype)
         ds = h5_data.create_dataset(
             "data",
             data=val,
             compression="gzip",
             compression_opts=6,
-            fillvalue=enc["_FillValue"],
+            fillvalue=_fillvalue,
+            dtype=dtype,
         )
         if enc["dtype"] == "uint8":
             image = "IMAGE"
