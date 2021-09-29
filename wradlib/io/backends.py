@@ -232,7 +232,7 @@ class H5NetCDFArrayWrapper(BackendArray):
             return array[key]
 
 
-def _get_encoding(self, var):
+def _get_h5netcdf_encoding(self, var):
     """get encoding from h5netcdf Variable
 
     adapted from https://github.com/pydata/xarray/
@@ -310,7 +310,7 @@ class OdimSubStore(AbstractDataStore):
 
         dimensions = self.root.get_variable_dimensions(var.dimensions)
         data = indexing.LazilyOuterIndexedArray(H5NetCDFArrayWrapper(name, self))
-        encoding = _get_encoding(self, var)
+        encoding = _get_h5netcdf_encoding(self, var)
         encoding["group"] = self._group
         name, attrs = _get_odim_variable_name_and_attrs(name, self.root.what)
 
@@ -608,7 +608,7 @@ class GamicStore(AbstractDataStore):
     def open_store_variable(self, name, var):
         dimensions = self.root.get_variable_dimensions(var.dimensions)
         data = indexing.LazilyOuterIndexedArray(H5NetCDFArrayWrapper(name, self))
-        encoding = _get_encoding(self, var)
+        encoding = _get_h5netcdf_encoding(self, var)
         encoding["group"] = self._group
         # cheat attributes
         if "moment" in name:
