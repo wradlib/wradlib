@@ -1195,7 +1195,7 @@ def open_radolan_dataset(filename_or_obj, **kwargs):
 def open_radolan_mfdataset(paths, **kwargs):
     """Open multiple RADOLAN files as a single dataset.
 
-    Needs `dask` package to be installed.
+    Needs ``dask`` package to be installed [1]_.
 
     Parameters
     ----------
@@ -1215,6 +1215,10 @@ def open_radolan_mfdataset(paths, **kwargs):
     Returns
     -------
     dataset : :py:class:`xarray:xarray.Dataset`
+
+    References
+    ----------
+    .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
     backend_kwargs = dict(

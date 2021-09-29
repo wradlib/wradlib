@@ -43,7 +43,8 @@ from wradlib.io.xarray import (
 def open_odim_dataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an ODIM radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` and
+    :py:func:`xarray.open_dataset` under the hood.
 
     Parameters
     ----------
@@ -85,7 +86,8 @@ def open_odim_dataset(filename_or_obj, group=None, **kwargs):
 def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` under the hood.
+    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` and
+    :py:func:`xarray.open_dataset` under the hood.
 
     Parameters
     ----------
@@ -127,8 +129,9 @@ def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
 def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an ODIM radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
-    Needs `dask` package to be installed.
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` and
+    :py:func:`xarray:xarray.open_mfdataset` under the hood.
+    Needs ``dask`` package to be installed [1]_.
 
     Parameters
     ----------
@@ -161,6 +164,10 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
     See Also
     --------
     :func:`~wradlib.io.hdf.open_odim_dataset`
+
+    References
+    ----------
+    .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
@@ -170,8 +177,9 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
 def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
     """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
 
-    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
-    Needs `dask` package to be installed.
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` and
+    :py:func:`xarray:xarray.open_mfdataset` under the hood.
+    Needs ``dask`` package to be installed [1]_.
 
     Parameters
     ----------
@@ -204,6 +212,10 @@ def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
     See Also
     --------
     :func:`~wradlib.io.hdf.open_gamic_dataset`
+
+    References
+    ----------
+    .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
     kwargs["group"] = group
