@@ -74,7 +74,7 @@ def test_radolan_backend(file_or_filelike):
 @contextlib.contextmanager
 def get_measured_volume(file, format, fileobj, **kwargs):
     # h5file = util.get_wradlib_data_file(file)
-    with get_wradlib_data_file(file, fileobj) as h5file:
+    with get_wradlib_data_file(file, fileobj) as radfile:
         engine = format.lower()
         if engine == "odim":
             open_ = io.open_odim_dataset
@@ -84,7 +84,9 @@ def get_measured_volume(file, format, fileobj, **kwargs):
             open_ = io.open_cfradial1_dataset
         if engine == "cfradial2":
             open_ = io.open_cfradial2_dataset
-        yield open_(h5file, **kwargs)
+        if engine == "iris":
+            open_ = io.open_iris_dataset
+        yield open_(radfile, **kwargs)
 
 
 @contextlib.contextmanager
@@ -123,21 +125,12 @@ class DataVolume:
         with self.get_volume_data(file_or_filelike) as vol:
             assert isinstance(vol, io.xarray.RadarVolume)
             repr = create_volume_repr(self.sweeps, self.elevations, type(vol).__name__)
-            print("repr", repr)
-            print(vol.__repr__())
             assert vol.__repr__() == repr
-            print(vol[0])
         del vol
         gc.collect()
 
     def test_sweeps(self, file_or_filelike):
-        if self.format.lower() in ["gamic", "odim"]:
-            backend_kwargs = dict(keep_azimuth=True)
-        else:
-            backend_kwargs = {}
-        with self.get_volume_data(
-            file_or_filelike, backend_kwargs=backend_kwargs
-        ) as vol:
+        with self.get_volume_data(file_or_filelike) as vol:
             for i, ds in enumerate(vol):
                 assert isinstance(ds, xr.Dataset)
                 assert self.azimuths[i] == ds.dims["azimuth"]
@@ -178,14 +171,22 @@ class MeasuredDataVolume(DataVolume):
     def get_volume_data(self, fileobj, **kwargs):
         if "cfradial" in self.format.lower() and fileobj == "filelike":
             pytest.skip("cfradial doesn't work with filelike")
-        with get_measured_volume(self.name, self.format, fileobj, **kwargs) as vol:
+        with get_measured_volume(
+            self.name,
+            self.format,
+            fileobj,
+            backend_kwargs=self.backend_kwargs,
+            **kwargs,
+        ) as vol:
             yield vol
 
 
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
     def get_volume_data(self, fileobj, **kwargs):
-        with get_synthetic_volume(self.name, fileobj, **kwargs) as vol:
+        with get_synthetic_volume(
+            self.name, fileobj, backend_kwargs=self.backend_kwargs, **kwargs
+        ) as vol:
             yield vol
 
 
@@ -222,6 +223,8 @@ class TestKNMIVolume(MeasuredDataVolume):
         dsdesc = "dataset{}"
         mdesc = "data{}"
 
+        backend_kwargs = dict(keep_azimuth=True)
+
 
 @requires_data
 @requires_xarray_backend_api
@@ -253,6 +256,8 @@ class TestGamicVolume(MeasuredDataVolume):
 
         dsdesc = "scan{}"
         mdesc = "moment_{}"
+
+        backend_kwargs = dict(keep_azimuth=True)
 
 
 @requires_data
@@ -286,6 +291,8 @@ class TestCfRadial1Volume(MeasuredDataVolume):
         dsdesc = "sweep{}"
         mdesc = "moment_{}"
 
+        backend_kwargs = {}
+
 
 @requires_data
 @requires_xarray_backend_api
@@ -318,6 +325,42 @@ class TestCfRadial2Volume(MeasuredDataVolume):
         dsdesc = "sweep{}"
         mdesc = "moment_{}"
 
+        backend_kwargs = {}
+
+
+@requires_data
+@requires_xarray_backend_api
+class TestIrisVolume(MeasuredDataVolume):
+    if has_data:
+        name = "sigmet/cor-main131125105503.RAW2049"
+        format = "Iris"
+        volumes = 1
+        sweeps = 10
+        moments = [
+            "DBZH",
+            "DBZV",
+            "DBTH",
+            "DBTV",
+            "ZDR",
+            "VRADH",
+            "VRADV",
+            "WRADH",
+            "WRADV",
+            "PHIDP",
+            "KDP",
+            "RHOHV",
+        ]
+        elevations = [0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0]
+        azimuths = [360, 360, 360, 360, 360, 360, 360, 360, 360, 360]
+        ranges = [664, 664, 664, 664, 664, 664, 664, 664, 664, 664]
+
+        data = io.read_iris(util.get_wradlib_data_file(name))
+
+        dsdesc = "sweep{}"
+        mdesc = "moment_{}"
+
+        backend_kwargs = dict(reindex_angle=False)
+
 
 @requires_xarray_backend_api
 class TestSyntheticOdimVolume01(SyntheticDataVolume):
@@ -334,6 +377,8 @@ class TestSyntheticOdimVolume01(SyntheticDataVolume):
 
     dsdesc = "dataset{}"
     mdesc = "data{}"
+
+    backend_kwargs = dict(keep_azimuth=True)
 
 
 @requires_xarray_backend_api
@@ -352,6 +397,8 @@ class TestSyntheticOdimVolume02(SyntheticDataVolume):
     dsdesc = "dataset{}"
     mdesc = "data{}"
 
+    backend_kwargs = dict(keep_azimuth=True)
+
 
 @requires_xarray_backend_api
 class TestSyntheticOdimVolume03(SyntheticDataVolume):
@@ -368,6 +415,8 @@ class TestSyntheticOdimVolume03(SyntheticDataVolume):
 
     dsdesc = "dataset{}"
     mdesc = "data{}"
+
+    backend_kwargs = dict(keep_azimuth=True)
 
 
 @requires_xarray_backend_api
@@ -386,6 +435,8 @@ class TestSyntheticOdimVolume04(SyntheticDataVolume):
     dsdesc = "dataset{}"
     mdesc = "data{}"
 
+    backend_kwargs = dict(keep_azimuth=True)
+
 
 @requires_xarray_backend_api
 class TestSyntheticGamicVolume01(SyntheticDataVolume):
@@ -402,3 +453,5 @@ class TestSyntheticGamicVolume01(SyntheticDataVolume):
 
     dsdesc = "scan{}"
     mdesc = "moment_{}"
+
+    backend_kwargs = dict(keep_azimuth=True)
