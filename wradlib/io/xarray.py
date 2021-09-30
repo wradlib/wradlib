@@ -209,6 +209,21 @@ iris_mapping = {
 }
 
 
+rainbow_mapping = {
+    "dBuZ": "DBTH",
+    "dBZ": "DBZH",
+    "dBuZv": "DBTV",
+    "dBZv": "DBZV",
+    "V": "VRADH",
+    "W": "WRADH",
+    "ZDR": "ZDR",
+    "KDP": "KDP",
+    "PhiDP": "PHIDP",
+    "SQI": "SQIH",
+    "SNR": "SNR",
+    "RhoHV": "RHOHV",
+}
+
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
     "DBZH": {
@@ -1592,6 +1607,14 @@ def _get_iris_group_names(filename):
     return keys
 
 
+def _get_rainbow_group_names(filename):
+    from wradlib.io.rainbow import RainbowFile
+
+    with RainbowFile(filename, loaddata=False) as fh:
+        cnt = len(fh.slices)
+    return list(range(cnt))
+
+
 def _get_odim_variable_name_and_attrs(name, attrs):
     if "data" in name:
         name = attrs.pop("quantity")
@@ -1797,7 +1820,7 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     filename_or_obj : str, Path, file-like or Datastore
         Strings and Path objects are interpreted as a path to a local or remote
         radar file and opened with an appropriate engine.
-    engine : {"odim", "gamic", "cfradial1", "cfradial2", "iris"}
+    engine : {"odim", "gamic", "cfradial1", "cfradial2", "iris", "rainbow"}
         Engine to use when reading files.
 
     Keyword Arguments
@@ -1816,17 +1839,19 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     --------
     :func:`~wradlib.io.xarray.open_radar_mfdataset`
     """
-    if engine not in ["cfradial1", "cfradial2", "gamic", "odim", "iris"]:
+    if engine not in ["cfradial1", "cfradial2", "gamic", "odim", "iris", "rainbow"]:
         raise TypeError(f"Missing or unknown `engine` keyword argument '{engine}'.")
 
     group = kwargs.pop("group", None)
-
+    groups = []
     backend_kwargs = kwargs.pop("backend_kwargs", {})
 
     if engine == "cfradial1":
         groups = [None]
     elif isinstance(group, (str, int)):
         groups = [group]
+    elif isinstance(group, list):
+        pass
     else:
         if engine == "cfradial2":
             groups = _get_nc4group_names(filename_or_obj, engine)
@@ -1834,6 +1859,12 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
             groups = _get_h5group_names(filename_or_obj, engine)
         elif engine == "iris":
             groups = _get_iris_group_names(filename_or_obj)
+        elif engine in ["rainbow"]:
+            groups = _get_rainbow_group_names(filename_or_obj)
+        elif isinstance(group, str):
+            groups = [group]
+        elif isinstance(group, int):
+            groups = [group]
         else:
             pass
 
@@ -1969,6 +2000,8 @@ def open_radar_mfdataset(paths, **kwargs):
             group = _get_h5group_names(patharr.flat[0], engine)
         elif engine == "iris":
             group = _get_iris_group_names(patharr.flat[0])
+        elif engine in ["rainbow"]:
+            group = _get_rainbow_group_names(patharr.flat[0])
     elif isinstance(group, str):
         group = [group]
     elif isinstance(group, int):

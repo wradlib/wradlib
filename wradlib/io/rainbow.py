@@ -11,14 +11,27 @@ Rainbow Data I/O
 
    {}
 """
-__all__ = ["read_rainbow"]
+__all__ = ["read_rainbow", "open_rainbow_dataset", "open_rainbow_mfdataset"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import datetime as dt
 import sys
 
 import numpy as np
 
 from wradlib import util
+from wradlib.io.xarray import (
+    open_radar_dataset,
+    open_radar_mfdataset,
+    raise_on_missing_xarray_backend,
+)
+
+
+def _get_dict_value(d, k1, k2):
+    v = d.get(k1, None)
+    if v is None:
+        v = d[k2]
+    return v
 
 
 def find_key(key, dictionary):
@@ -183,9 +196,15 @@ def get_rb_blob_data(datastring, blobid):
     data = datastring[end + 2 : end + 2 + size]  # read blob data to string
 
     # decompress if necessary
-    # the first 4 bytes are neglected for an unknown reason
     if cmpr == "qt":
+        # the first 4 bytes contain the uncompressed size in big endian
+        usize = int.from_bytes(data[:4], "big")
         data = decompress(data[4:])
+        if len(data) != usize:
+            raise ValueError(
+                f"Data size mismatch. {usize} bytes expected, "
+                f"{len(data)} bytes read."
+            )
 
     return data
 
@@ -284,7 +303,6 @@ def get_rb_blob_from_string(datastring, blobdict):
 
     blobid = get_rb_data_attribute(blobdict, "blobid")
     data = get_rb_blob_data(datastring, blobid)
-
     # map data to correct datatype and width
     datadepth = get_rb_data_attribute(blobdict, "depth")
     data = map_rb_data(data, datadepth)
@@ -433,3 +451,230 @@ def read_rainbow(filename, loaddata=True):
             rbdict = get_rb_blobs_from_file(f, rbdict)
 
     return rbdict
+
+
+class RainbowFileBase(object):
+    """Base class for Rainbow Files."""
+
+    def __init__(self, **kwargs):
+        super(RainbowFileBase, self).__init__()
+
+
+class RainbowFile(RainbowFileBase):
+    """RainbowFile class"""
+
+    def __init__(self, filename, **kwargs):
+        self._debug = kwargs.get("debug", False)
+        self._rawdata = kwargs.get("rawdata", False)
+        self._loaddata = kwargs.get("loaddata", True)
+
+        self._fp = None
+        self._filename = filename
+        if isinstance(filename, str):
+            self._fp = open(filename, "rb")
+            import mmap
+
+            self._fh = mmap.mmap(self._fp.fileno(), 0, access=mmap.ACCESS_READ)
+        else:
+            raise TypeError(
+                "Rainbow5 reader currently doesn't support file-like objects"
+            )
+        self._data = None
+        super(RainbowFile, self).__init__(**kwargs)
+        # read rainbow header
+        self._header = get_rb_header(self._fh)["volume"]
+        self._coordinates = None
+        slices = self._header["scan"]["slice"]
+        if not isinstance(slices, list):
+            slices = [slices]
+        else:
+            self._update_volume_slices()
+        self._blobs = [list(find_key("@blobid", slc)) for slc in slices]
+        if self._loaddata:
+            for i, slc in enumerate(self._blobs):
+                for blob in slc:
+                    blobid = get_rb_data_attribute(blob, "blobid")
+                    self.get_blob(blobid, i)
+
+    def close(self):
+        if self._fp is not None:
+            self._fp.close()
+
+    __del__ = close
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @property
+    def version(self):
+        return self._header["@version"]
+
+    @property
+    def type(self):
+        return self._header["@type"]
+
+    @property
+    def datetime(self):
+        return dt.datetime.strptime(self._header["@datetime"], "%Y-%m-%dT%H:%M:%S")
+
+    @property
+    def first_dimension(self):
+        if self.type in ["vol", "azi"]:
+            return "azimuth"
+        elif self.type in ["ele"]:
+            return "elevation"
+        else:
+            raise TypeError("Unknown Rainbow File Type: {}".format(type))
+
+    @property
+    def header(self):
+        return self._header
+
+    @property
+    def blobs(self):
+        return self._blobs
+
+    @property
+    def slices(self):
+        slices = self._header["scan"]["slice"]
+        if not isinstance(slices, list):
+            slices = [slices]
+        return slices
+
+    @property
+    def pargroup(self):
+        return self._header["scan"]["pargroup"]
+
+    @property
+    def sensorinfo(self):
+        try:
+            return self.header["sensorinfo"]
+        except KeyError:
+            return self.header.get("radarinfo", None)
+
+    @property
+    def history(self):
+        return self.header.get("history", None)
+
+    @property
+    def site_coords(self):
+        si = self.sensorinfo
+        return (
+            float(_get_dict_value(si, "lon", "@lon")),
+            float(_get_dict_value(si, "lat", "@lat")),
+            float(_get_dict_value(si, "alt", "@alt")),
+        )
+
+    def _get_rbdict_value(self, rbdict, name, dtype=None, default=None):
+        value = rbdict.get(name, None)
+        if value is None:
+            value = self.pargroup.get(name, default)
+        if dtype is not None:
+            value = dtype(value)
+        return value
+
+    def _update_volume_slices(self):
+        if isinstance(self._header["scan"]["slice"], list):
+            slice0 = self._header["scan"]["slice"][0]
+            for i, slice in enumerate(self._header["scan"]["slice"][1:]):
+                newdict = dict(list(slice0.items()) + list(slice.items()))
+                self._header["scan"]["slice"][i + 1] = newdict
+
+    def get_blob(self, blobid, slc):
+        self._fh.seek(0)
+        blob = next(filter(lambda x: int(x["@blobid"]) == blobid, self._blobs[slc]))
+        if blob.get("data", False) is False:
+            data = get_rb_blob_from_string(self._fh, blob)
+            # azimuth
+            if blob.get("@refid", "") in ["startangle", "stopangle"]:
+                # anglestep = self._get_rbdict_value(self.slices[slc], "anglestep", None, float)
+                # anglestep = self.slices[slc].get("anglestep", None)
+                # if anglestep is None:
+                #     anglestep = self.pargroup["anglestep"]
+                # anglestep = float(anglestep)
+                # todo: correctly decode elevation angles
+                #   elevation can decode negative values
+                data = data * 360.0 / 2 ** float(blob["@depth"])
+            blob["data"] = data
+
+
+def open_rainbow_dataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an RAINBOW5 radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    :func:`~wradlib.io.rainbow.open_rainbow_dataset`
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_dataset(filename_or_obj, engine="rainbow", **kwargs)
+
+
+def open_rainbow_mfdataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an RAINBOW5 radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
+    Needs `dask` package to be installed.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    keep_elevation : bool
+        For PPI only. Keep original elevation data if True. Defaults to False,
+        which fixes erroneous elevation data.
+    keep_azimuth : bool
+        For RHI only. Keep original azimuth data if True. Defaults to False,
+        which fixes erroneous azimuth data.
+    reindex_angle : bool or float
+        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
+        number, it is used as tolerance. If False, no reindexing is performed.
+        Only invoked if `decode_coord=True`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    :func:`~wradlib.io.rainbow.open_rainbow_dataset`
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_mfdataset(filename_or_obj, engine="rainbow", **kwargs)

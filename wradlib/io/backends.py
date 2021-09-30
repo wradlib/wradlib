@@ -21,6 +21,7 @@ __all__ = [
     "IrisBackendEntrypoint",
     "OdimBackendEntrypoint",
     "RadolanBackendEntrypoint",
+    "RainbowBackendEntrypoint",
 ]
 
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -53,6 +54,7 @@ from xarray.core.variable import Variable
 
 from wradlib.io.iris import IrisRawFile
 from wradlib.io.radolan import _radolan_file
+from wradlib.io.rainbow import RainbowFile
 from wradlib.io.xarray import (
     _assign_data_radial,
     _assign_data_radial2,
@@ -67,6 +69,7 @@ from wradlib.io.xarray import (
     iris_mapping,
     moment_attrs,
     moments_mapping,
+    rainbow_mapping,
     range_attrs,
     time_attrs,
 )
@@ -1085,5 +1088,305 @@ class IrisBackendEntrypoint(BackendEntrypoint):
 
         ds.attrs.pop("elevation_lower_limit", None)
         ds.attrs.pop("elevation_upper_limit", None)
+
+        return ds
+
+
+class RainbowArrayWrapper(BackendArray):
+    """Wraps array of RAINBOW5 data."""
+
+    def __init__(self, datastore, name, var):
+        self.datastore = datastore
+        self.name = name
+
+        # get rays and bins
+        nrays = int(var.get("@rays", False))
+        nbins = int(var.get("@bins", False))
+        dtype = np.dtype(f"uint{var.get('@depth')}")
+        self.dtype = dtype
+        if nbins:
+            self.shape = (nrays, nbins)
+        else:
+            self.shape = (nrays,)
+        self.blobid = int(var["@blobid"])
+
+    def _getitem(self, key):
+        # read the data and put it into dict
+        self.datastore.root.get_blob(self.blobid, self.datastore._group)
+        if isinstance(self.name, int):
+            return self.datastore.ds["slicedata"]["rayinfo"][self.name]["data"][key]
+        else:
+            return self.datastore.ds["slicedata"]["rawdata"]["data"][key]
+
+    def __getitem__(self, key):
+        return indexing.explicit_indexing_adapter(
+            key,
+            self.shape,
+            indexing.IndexingSupport.BASIC,
+            self._getitem,
+        )
+
+
+class RainbowStore(AbstractDataStore):
+    """Store for reading RAINBOW5 sweeps via wradlib."""
+
+    def __init__(self, manager, group=None):
+
+        self._manager = manager
+        self._group = group
+        self._filename = self.filename
+        self._need_time_recalc = False
+
+    @classmethod
+    def open(cls, filename, mode="r", group=None, **kwargs):
+        manager = CachingFileManager(RainbowFile, filename, mode=mode, kwargs=kwargs)
+        return cls(manager, group=group)
+
+    @property
+    def filename(self):
+        with self._manager.acquire_context(False) as root:
+            return root.filename
+
+    @property
+    def root(self):
+        with self._manager.acquire_context(False) as root:
+            return root
+
+    def _acquire(self, needs_lock=True):
+        with self._manager.acquire_context(needs_lock) as root:
+            try:
+                ds = root.header["scan"]["slice"][self._group]
+            except KeyError:
+                ds = root.header["scan"]["slice"]
+        return ds
+
+    @property
+    def ds(self):
+        return self._acquire()
+
+    def open_store_variable(self, var):
+        dim = self.root.first_dimension
+        raw = var["slicedata"]["rawdata"]
+        name = raw["@type"]
+
+        data = indexing.LazilyOuterIndexedArray(RainbowArrayWrapper(self, name, raw))
+        encoding = dict(group=self._group)
+
+        vmin = float(raw.get("@min"))
+        vmax = float(raw.get("@max"))
+        depth = int(raw.get("@depth"))
+        scale_factor = (vmax - vmin) / (2 ** depth - 2)
+        mname = rainbow_mapping.get(name, name)
+        mapping = moments_mapping.get(mname, {})
+        attrs = {key: mapping[key] for key in moment_attrs if key in mapping}
+        attrs["add_offset"] = -scale_factor
+        attrs["scale_factor"] = scale_factor
+        attrs["_FillValue"] = 0
+        attrs[
+            "coordinates"
+        ] = "elevation azimuth range latitude longitude altitude time rtime sweep_mode"
+        return {mname: Variable((dim, "range"), data, attrs, encoding)}
+
+    def open_store_coordinates(self, var):
+
+        dim = self.root.first_dimension
+        ray = var["slicedata"]["rayinfo"]
+
+        if not isinstance(ray, list):
+            var["slicedata"]["rayinfo"] = [ray]
+            ray = var["slicedata"]["rayinfo"]
+
+        start = next(filter(lambda x: x["@refid"] == "startangle", ray), False)
+        start_idx = ray.index(start)
+        stop = next(filter(lambda x: x["@refid"] == "stopangle", ray), False)
+
+        anglestep = self.root._get_rbdict_value(var, "anglestep", dtype=float)
+        antdirection = self.root._get_rbdict_value(
+            var, "antdirection", default=0, dtype=bool
+        )
+
+        encoding = dict(group=self._group)
+        startangle = indexing.LazilyOuterIndexedArray(
+            RainbowArrayWrapper(self, start_idx, start)
+        )
+
+        step = anglestep
+        # antdirection == True ->> negative angles
+        # antdirection == False ->> positive angles
+        if antdirection:
+            step = -anglestep
+
+        if dim == "azimuth":
+            startaz = Variable((dim,), startangle, az_attrs, encoding)
+
+            if stop:
+                stop_idx = ray.index(stop)
+                stopangle = indexing.LazilyOuterIndexedArray(
+                    RainbowArrayWrapper(self, stop_idx, stop)
+                )
+                stopaz = Variable((dim,), stopangle, az_attrs, encoding)
+                zero_index = np.where(startaz - stopaz > 5)
+                stopazv = stopaz.values
+                stopazv[zero_index[0]] += 360
+                azimuth = (startaz + stopazv) / 2.0
+                azimuth[azimuth >= 360] -= 360
+            else:
+                azimuth = startaz + step / 2.0
+
+            elevation = np.ones_like(azimuth) * float(var["posangle"])
+        else:
+            startel = Variable((dim,), startangle, el_attrs, encoding)
+
+            if stop:
+                stop_idx = ray.index(stop)
+                stopangle = indexing.LazilyOuterIndexedArray(
+                    RainbowArrayWrapper(self, stop_idx, stop)
+                )
+                stopel = Variable((dim,), stopangle, el_attrs, encoding)
+                elevation = (startel + stopel) / 2.0
+            else:
+                elevation = startel + step / 2.0
+
+            azimuth = np.ones_like(elevation) * float(var["posangle"])
+
+        dstr = var["slicedata"]["@date"]
+        tstr = var["slicedata"]["@time"]
+
+        timestr = f"{dstr}T{tstr}Z"
+        time = dt.datetime.strptime(timestr, "%Y-%m-%dT%H:%M:%SZ")
+        total_seconds = (time - dt.datetime(1970, 1, 1)).total_seconds()
+
+        # range is in km
+        start_range = self.root._get_rbdict_value(
+            var, "startrange", default=0, dtype=float
+        )
+        start_range *= 1000.0
+
+        stop_range = self.root._get_rbdict_value(var, "stoprange", dtype=float)
+        stop_range *= 1000.0
+
+        range_step = self.root._get_rbdict_value(var, "rangestep", dtype=float)
+        range_step *= 1000.0
+        rng = np.arange(
+            start_range + range_step / 2,
+            stop_range + range_step / 2,
+            range_step,
+            dtype="float32",
+        )[: int(var["slicedata"]["rawdata"]["@bins"])]
+
+        range_attrs["meters_to_center_of_first_gate"] = start_range + range_step / 2
+        range_attrs["meters_between_gates"] = range_step
+
+        # making-up ray times
+        antspeed = self.root._get_rbdict_value(var, "antspeed", dtype=float)
+        raytime = anglestep / antspeed
+        raytimes = np.array(
+            [
+                dt.timedelta(seconds=x * raytime).total_seconds()
+                for x in range(azimuth.shape[0] + 1)
+            ]
+        )
+
+        diff = np.diff(raytimes) / 2.0
+        rtime = raytimes[:-1] + diff
+        rtime_attrs = {
+            "units": f"seconds since {time.isoformat()}Z",
+            "standard_name": "time",
+        }
+
+        rng = Variable(("range",), rng, range_attrs)
+        azimuth = Variable((dim,), azimuth, az_attrs, encoding)
+        elevation = Variable((dim,), elevation, el_attrs, encoding)
+        rtime = Variable((dim,), rtime, rtime_attrs, encoding)
+        time = Variable((), total_seconds, time_attrs, encoding)
+
+        # get coordinates from RainbowFile
+        sweep_mode = "azimuth_surveillance" if dim == "azimuth" else "rhi"
+        lon_attrs = dict(
+            long_name="longitude", units="degrees_east", standard_name="longitude"
+        )
+        lat_attrs = dict(
+            long_name="latitude",
+            units="degrees_north",
+            positive="up",
+            standard_name="latitude",
+        )
+        alt_attrs = dict(long_name="altitude", units="meters", standard_name="altitude")
+        lon, lat, alt = self.root.site_coords
+
+        coords = dict(
+            azimuth=azimuth,
+            elevation=elevation,
+            range=rng,
+            time=time,
+            rtime=rtime,
+            longitude=Variable((), lon, lon_attrs),
+            latitude=Variable((), lat, lat_attrs),
+            altitude=Variable((), alt, alt_attrs),
+            sweep_mode=Variable((), sweep_mode),
+        )
+
+        # a1gate, this might be off by 1 if reindexing is applied
+        if dim == "azimuth":
+            a1gate = np.argmin(azimuth[::-1].values)
+        else:
+            a1gate = np.argmin(elevation[::-1].values)
+        coords[dim].attrs["a1gate"] = a1gate
+        # angle_res
+        coords[dim].attrs["angle_res"] = anglestep
+        return coords
+
+    def get_variables(self):
+        return FrozenDict(
+            (k1, v1)
+            for k1, v1 in {
+                **self.open_store_variable(self.ds),
+                **self.open_store_coordinates(self.ds),
+            }.items()
+        )
+
+    def get_attrs(self):
+        attributes = dict(fixed_angle=float(self.ds["posangle"]))
+        return FrozenDict(attributes)
+
+
+class RainbowBackendEntrypoint(BackendEntrypoint):
+    def open_dataset(
+        self,
+        filename_or_obj,
+        *,
+        mask_and_scale=True,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
+        drop_variables=None,
+        use_cftime=None,
+        decode_timedelta=None,
+        group=None,
+        keep_elevation=False,
+        keep_azimuth=False,
+        reindex_angle=None,
+    ):
+        store = RainbowStore.open(
+            filename_or_obj,
+            group=group,
+            loaddata=False,
+        )
+
+        store_entrypoint = StoreBackendEntrypoint()
+
+        ds = store_entrypoint.open_dataset(
+            store,
+            mask_and_scale=mask_and_scale,
+            decode_times=decode_times,
+            concat_characters=concat_characters,
+            decode_coords=decode_coords,
+            drop_variables=drop_variables,
+            use_cftime=use_cftime,
+            decode_timedelta=decode_timedelta,
+        )
+
+        if decode_coords and reindex_angle is not False:
+            ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)
 
         return ds

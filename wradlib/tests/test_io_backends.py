@@ -86,6 +86,8 @@ def get_measured_volume(file, format, fileobj, **kwargs):
             open_ = io.open_cfradial2_dataset
         if engine == "iris":
             open_ = io.open_iris_dataset
+        if engine == "rainbow":
+            open_ = io.open_rainbow_dataset
         yield open_(radfile, **kwargs)
 
 
@@ -170,7 +172,9 @@ class MeasuredDataVolume(DataVolume):
     @contextlib.contextmanager
     def get_volume_data(self, fileobj, **kwargs):
         if "cfradial" in self.format.lower() and fileobj == "filelike":
-            pytest.skip("cfradial doesn't work with filelike")
+            pytest.skip(f"{self.format.lower()} doesn't work with filelike")
+        if "rainbow" in self.format.lower() and fileobj == "filelike":
+            pytest.skip(f"{self.format.lower()} doesn't work with filelike")
         with get_measured_volume(
             self.name,
             self.format,
@@ -388,6 +392,44 @@ class TestIrisVolume02(MeasuredDataVolume):
         ranges = [833]
 
         data = io.read_iris(util.get_wradlib_data_file(name))
+
+        dsdesc = "sweep{}"
+        mdesc = "moment_{}"
+
+        backend_kwargs = dict(reindex_angle=1.0)
+
+
+@requires_data
+@requires_xarray_backend_api
+class TestRainbowVolume01(MeasuredDataVolume):
+    if has_data:
+        name = "rainbow/2013051000000600dBZ.vol"
+        format = "Rainbow"
+        volumes = 1
+        sweeps = 14
+        moments = [
+            "DBZH",
+        ]
+        elevations = [
+            0.6,
+            1.4,
+            2.4,
+            3.5,
+            4.8,
+            6.3,
+            8.0,
+            9.9,
+            12.2,
+            14.8,
+            17.9,
+            21.3,
+            25.4,
+            30.0,
+        ]
+        azimuths = [360] * sweeps
+        ranges = [400] * sweeps
+
+        data = io.read_rainbow(util.get_wradlib_data_file(name))
 
         dsdesc = "sweep{}"
         mdesc = "moment_{}"
