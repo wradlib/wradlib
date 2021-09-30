@@ -185,6 +185,18 @@ def create_xarray_dataarray(*args, **kwargs):
 
 moment_attrs = {"standard_name", "long_name", "units"}
 
+iris_mapping = {
+    "DB_DBT": "DBTH",
+    "DB_DBZ": "DBZH",
+    "DB_VEL": "VRADH",
+    "DB_WIDTH": "WRADH",
+    "DB_ZDR": "ZDR",
+    "DB_KDP": "KDP",
+    "DB_PHIDP": "PHIDP",
+    "DB_SQI": "SQIH",
+    "DB_RHOHV": "RHOHV",
+}
+
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
     "DBZH": {
@@ -1461,7 +1473,8 @@ def _remove_duplicate_rays(ds, store=None):
 
 def _reindex_angle(ds, store=None, force=False, tol=None):
     # Todo: The current code assumes to have PPI's of 360deg and RHI's of 90deg,
-    #       make this work also for sectorized measurements
+    #       make this work also for sectorized (!!!) measurements
+    #       this needs refactoring, it's too complex
     if tol is True or tol is None:
         tol = 0.4
     # disentangle different functionality
@@ -1469,6 +1482,11 @@ def _reindex_angle(ds, store=None, force=False, tol=None):
     dimname = list(ds.dims)[0]
     # sort in any case, to prevent unsorted errors
     ds = ds.sortby(dimname)
+    # fix angle range for rhi
+    if hasattr(ds, "elevation_upper_limit"):
+        ul = np.rint(ds.elevation_upper_limit)
+        full_range["elevation"] = ul
+
     secname = dict(azimuth="elevation", elevation="azimuth").get(dimname)
     dim = ds[dimname]
     diff = dim.diff(dimname)
@@ -1494,7 +1512,6 @@ def _reindex_angle(ds, store=None, force=False, tol=None):
         else:
             res = diff.median(dimname).values
         new_rays = int(np.round(full_range[dimname] / res, decimals=0))
-
         # find exact duplicates and remove
         ds = _remove_duplicate_rays(ds, store=store)
 
@@ -1553,6 +1570,14 @@ def _get_nc4group_names(filename, engine):
     if isinstance(filename, io.BytesIO):
         filename.seek(0)
     return groups
+
+
+def _get_iris_group_names(filename):
+    from wradlib.io.iris import _check_iris_file
+
+    sid, opener = _check_iris_file(filename)
+    ds = opener(filename, loaddata=False)
+    return list(ds.data.keys())
 
 
 def _get_odim_variable_name_and_attrs(name, attrs):
@@ -1751,7 +1776,7 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     filename_or_obj : str, Path, file-like or Datastore
         Strings and Path objects are interpreted as a path to a local or remote
         radar file and opened with an appropriate engine.
-    engine : {"odim", "gamic", "cfradial1", "cfradial2"}
+    engine : {"odim", "gamic", "cfradial1", "cfradial2", "iris"}
         Engine to use when reading files.
 
     Keyword Arguments
@@ -1770,7 +1795,7 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     --------
     :func:`~wradlib.io.xarray.open_radar_mfdataset`
     """
-    if engine not in ["cfradial1", "cfradial2", "gamic", "odim"]:
+    if engine not in ["cfradial1", "cfradial2", "gamic", "odim", "iris"]:
         raise TypeError(f"Missing or unknown `engine` keyword argument '{engine}'.")
 
     group = kwargs.pop("group", None)
@@ -1779,13 +1804,15 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
 
     if engine == "cfradial1":
         groups = [None]
-    elif isinstance(group, str):
+    elif isinstance(group, (str, int)):
         groups = [group]
     else:
         if engine == "cfradial2":
             groups = _get_nc4group_names(filename_or_obj, engine)
-        else:
+        elif engine in ["gamic", "odim"]:
             groups = _get_h5group_names(filename_or_obj, engine)
+        else:
+            groups = _get_iris_group_names(filename_or_obj)
 
     if engine in ["gamic", "odim"]:
         keep_azimuth = kwargs.pop("keep_azimuth", False)
@@ -1815,8 +1842,8 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
 def open_radar_mfdataset(paths, **kwargs):
     """Open multiple radar files as a single radar sweep dataset or radar volume.
 
-    This function uses :py:func:`xarray:xarray.open_mfdataset` under the hood. Please refer for
-    details to the documentation of :py:func:`xarray:xarray.open_mfdataset`.
+    This function uses :py:func:`xarray:xarray.open_mfdataset` under the hood. Please
+    refer for details to the documentation of :py:func:`xarray:xarray.open_mfdataset`.
     Needs ``dask`` package to be installed [1]_.
 
     Parameters
@@ -1913,8 +1940,15 @@ def open_radar_mfdataset(paths, **kwargs):
 
     group = kwargs.pop("group", None)
     if group is None:
-        group = _get_h5group_names(patharr.flat[0], engine)
+        if engine == "cfradial2":
+            group = _get_nc4group_names(patharr.flat[0], engine)
+        elif engine in ["gamic", "odim"]:
+            group = _get_h5group_names(patharr.flat[0], engine)
+        elif engine == "iris":
+            group = _get_iris_group_names(patharr.flat[0])
     elif isinstance(group, str):
+        group = [group]
+    elif isinstance(group, int):
         group = [group]
     else:
         pass

@@ -18,12 +18,14 @@ __all__ = [
     "CfRadial1BackendEntrypoint",
     "CfRadial2BackendEntrypoint",
     "GamicBackendEntrypoint",
+    "IrisBackendEntrypoint",
     "OdimBackendEntrypoint",
     "RadolanBackendEntrypoint",
 ]
 
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import datetime as dt
 import io
 from distutils.version import LooseVersion
 
@@ -49,6 +51,7 @@ from xarray.core import indexing
 from xarray.core.utils import Frozen, FrozenDict, close_on_error, is_remote_uri
 from xarray.core.variable import Variable
 
+from wradlib.io.iris import IrisRawFile
 from wradlib.io.radolan import _radolan_file
 from wradlib.io.xarray import (
     _assign_data_radial,
@@ -59,6 +62,13 @@ from wradlib.io.xarray import (
     _get_odim_variable_name_and_attrs,
     _OdimH5NetCDFMetadata,
     _reindex_angle,
+    az_attrs,
+    el_attrs,
+    iris_mapping,
+    moment_attrs,
+    moments_mapping,
+    range_attrs,
+    time_attrs,
 )
 
 RADOLAN_LOCK = SerializableLock()
@@ -814,5 +824,264 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
             ds = _assign_data_radial2(ds)
             dim0 = list(set(ds.dims) & {"azimuth", "elevation", "time"})[0]
             ds = ds.sortby(dim0)
+
+        return ds
+
+
+class IrisArrayWrapper(BackendArray):
+    """Wraps array of Iris RAW data."""
+
+    def __init__(self, datastore, name, var):
+        self.datastore = datastore
+        self.group = var["sweep_number"]
+        self.name = name
+        # get rays and bins
+        nrays = var["number_rays_file_written"]
+        nbins = datastore.root.product_hdr["product_end"]["number_bins"]
+        # todo: retrieve datatype from io.iris.SIGMET_DATA_TYPES
+        # hint: source data for RAW files is int16
+        # for now: assume floating point for all moments
+        self.dtype = np.dtype("float32")
+        # and for undecoded moments use int16
+        prod = [v for v in datastore.root.data_types_dict if v["name"] == name]
+        if prod and prod[0]["func"] is None:
+            self.dtype = np.dtype("int16")
+        if name == "DB_XHDR":
+            self.dtype = np.dtype("O")
+        if name in ["azimuth", "elevation"]:
+            self.shape = (nrays,)
+        elif name == "dtime":
+            self.shape = (nrays,)
+            self.dtype = np.dtype("uint16")
+        elif name == "dtime_ms":
+            self.shape = (nrays,)
+            self.dtype = np.dtype("int32")
+        else:
+            self.shape = (nrays, nbins)
+
+    def _getitem(self, key):
+        # read the data and put it into dict
+        self.datastore.root.get_moment(self.group, self.name)
+        return self.datastore.ds["sweep_data"][self.name][key]
+
+    def __getitem__(self, key):
+        return indexing.explicit_indexing_adapter(
+            key,
+            self.shape,
+            indexing.IndexingSupport.BASIC,
+            self._getitem,
+        )
+
+
+class IrisStore(AbstractDataStore):
+    """Store for reading IRIS sweeps via wradlib."""
+
+    def __init__(self, manager, group=None):
+
+        self._manager = manager
+        self._group = group
+        self._filename = self.filename
+        self._need_time_recalc = False
+
+    @classmethod
+    def open(cls, filename, mode="r", group=None, **kwargs):
+        manager = CachingFileManager(IrisRawFile, filename, mode=mode, kwargs=kwargs)
+        return cls(manager, group=group)
+
+    @property
+    def filename(self):
+        with self._manager.acquire_context(False) as root:
+            return root.filename
+
+    @property
+    def root(self):
+        with self._manager.acquire_context(False) as root:
+            return root
+
+    def _acquire(self, needs_lock=True):
+        with self._manager.acquire_context(needs_lock) as root:
+            ds = root.data[self._group]
+        return ds
+
+    @property
+    def ds(self):
+        return self._acquire()
+
+    def open_store_variable(self, name, var):
+        dim = self.root.first_dimension
+
+        data = indexing.LazilyOuterIndexedArray(IrisArrayWrapper(self, name, var))
+        encoding = dict(group=self._group)
+
+        mname = iris_mapping.get(name, name)
+        mapping = moments_mapping.get(mname, {})
+        attrs = {key: mapping[key] for key in moment_attrs if key in mapping}
+        attrs[
+            "coordinates"
+        ] = "elevation azimuth range latitude longitude altitude time rtime sweep_mode"
+        return mname, Variable((dim, "range"), data, attrs, encoding)
+
+    def open_store_coordinates(self, var):
+        azimuth = indexing.LazilyOuterIndexedArray(
+            IrisArrayWrapper(self, "azimuth", var)
+        )
+        elevation = indexing.LazilyOuterIndexedArray(
+            IrisArrayWrapper(self, "elevation", var)
+        )
+
+        # handle DB_XHDR time
+        dtime = "dtime"
+        time_prefix = ""
+        if "DB_XHDR" in self.ds["ingest_data_hdrs"]:
+            dtime = "dtime_ms"
+            time_prefix = "milli"
+
+        rtime = indexing.LazilyOuterIndexedArray(IrisArrayWrapper(self, dtime, var))
+        time = (
+            var["sweep_start_time"] - dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
+        ).total_seconds()
+        encoding = dict(group=self._group)
+        rtime_attrs = {
+            "units": f"{time_prefix}seconds since {var['sweep_start_time'].replace(tzinfo=None).isoformat()}Z",
+            "standard_name": "time",
+        }
+        dim = self.root.first_dimension
+
+        # get coordinates from IrisFile
+        sweep_mode = "azimuth_surveillance" if dim == "azimuth" else "rhi"
+        lon_attrs = dict(
+            long_name="longitude", units="degrees_east", standard_name="longitude"
+        )
+        lat_attrs = dict(
+            long_name="latitude",
+            units="degrees_north",
+            positive="up",
+            standard_name="latitude",
+        )
+        alt_attrs = dict(long_name="altitude", units="meters", standard_name="altitude")
+        lon, lat, alt = self.root.site_coords
+
+        task = self.root.ingest_header["task_configuration"]["task_range_info"]
+        range_first_bin = task["range_first_bin"]
+        range_last_bin = task["range_last_bin"]
+        if range_first_bin == 0:
+            range_first_bin = task["step_output_bins"] / 2
+            range_last_bin += task["step_output_bins"]
+        range = (
+            np.arange(
+                range_first_bin,
+                range_last_bin,
+                task["step_output_bins"],
+                dtype="float32",
+            )[: task["number_output_bins"]]
+            / 1e2
+        )
+        range_attrs["meters_to_center_of_first_gate"] = range_first_bin
+        range_attrs["meters_between_gates"] = task["step_output_bins"]
+
+        rtime = Variable((dim,), rtime, rtime_attrs, encoding)
+
+        coords = dict(
+            azimuth=Variable((dim,), azimuth, az_attrs, encoding),
+            elevation=Variable((dim,), elevation, el_attrs, encoding),
+            rtime=rtime,
+            time=Variable((), time, time_attrs, encoding),
+            range=Variable(("range",), range, range_attrs),
+            longitude=Variable((), lon, lon_attrs),
+            latitude=Variable((), lat, lat_attrs),
+            altitude=Variable((), alt, alt_attrs),
+            sweep_mode=Variable((), sweep_mode),
+        )
+
+        # a1gate
+        a1gate = np.where(rtime.values == rtime.values.min())[0][0]
+        coords[dim].attrs["a1gate"] = a1gate
+        # angle_res
+        task_scan_info = self.root.ingest_header["task_configuration"]["task_scan_info"]
+        coords[dim].attrs["angle_res"] = (
+            task_scan_info["desired_angular_resolution"] / 1000.0
+        )
+
+        return coords
+
+    def get_variables(self):
+        return FrozenDict(
+            (k1, v1)
+            for k1, v1 in {
+                **dict(
+                    self.open_store_variable(k, v)
+                    for k, v in self.ds["ingest_data_hdrs"].items()
+                ),
+                **self.open_store_coordinates(
+                    list(self.ds["ingest_data_hdrs"].values())[0]
+                ),
+            }.items()
+        )
+
+    def get_attrs(self):
+        ing_head = self.ds["ingest_data_hdrs"]
+        data = ing_head[list(ing_head.keys())[0]]
+
+        attributes = dict(
+            fixed_angle=data["fixed_angle"],
+        )
+        # RHI limits
+        if self.root.scan_mode == 2:
+            tsi = self.root.ingest_header["task_configuration"]["task_scan_info"][
+                "task_type_scan_info"
+            ]
+            ll = tsi["lower_elevation_limit"]
+            ul = tsi["upper_elevation_limit"]
+            attributes.update(
+                dict(
+                    elevation_lower_limit=ll,
+                    elevation_upper_limit=ul,
+                )
+            )
+        return FrozenDict(attributes)
+
+
+class IrisBackendEntrypoint(BackendEntrypoint):
+    def open_dataset(
+        self,
+        filename_or_obj,
+        *,
+        mask_and_scale=True,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
+        drop_variables=None,
+        use_cftime=None,
+        decode_timedelta=None,
+        group=None,
+        keep_elevation=False,
+        keep_azimuth=False,
+        reindex_angle=None,
+    ):
+        store = IrisStore.open(
+            filename_or_obj,
+            group=group,
+            loaddata=False,
+        )
+
+        store_entrypoint = StoreBackendEntrypoint()
+
+        ds = store_entrypoint.open_dataset(
+            store,
+            mask_and_scale=mask_and_scale,
+            decode_times=decode_times,
+            concat_characters=concat_characters,
+            decode_coords=decode_coords,
+            drop_variables=drop_variables,
+            use_cftime=use_cftime,
+            decode_timedelta=decode_timedelta,
+        )
+
+        if decode_coords and reindex_angle is not False:
+            ds = ds.drop_vars("DB_XHDR", errors="ignore")
+            ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)
+
+        ds.attrs.pop("elevation_lower_limit", None)
+        ds.attrs.pop("elevation_upper_limit", None)
 
         return ds

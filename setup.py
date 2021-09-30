@@ -198,6 +198,7 @@ def setup_package():
                 "gamic = wradlib.io.backends:GamicBackendEntrypoint",
                 "odim = wradlib.io.backends:OdimBackendEntrypoint",
                 "radolan = wradlib.io.backends:RadolanBackendEntrypoint",
+                "iris = wradlib.io.backends:IrisBackendEntrypoint",
             ]
         },
     )
