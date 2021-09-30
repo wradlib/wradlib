@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 
@@ -26,6 +26,9 @@ Using `rawdata=True` the data will be kept undecoded.
    {}
 """
 __all__ = [
+    "open_iris_dataset",
+    "open_iris_mfdataset",
+    "read_iris",
     "IrisRecord",
     "IrisHeaderBase",
     "IrisStructureHeader",
@@ -40,10 +43,10 @@ __all__ = [
     "IrisRawFile",
     "IrisProductFile",
     "IrisCartesianProductFile",
-    "read_iris",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import contextlib
 import copy
 import datetime as dt
 import io
@@ -52,6 +55,12 @@ import warnings
 from collections import OrderedDict
 
 import numpy as np
+
+from wradlib.io.xarray import (
+    open_radar_dataset,
+    open_radar_mfdataset,
+    raise_on_missing_xarray_backend,
+)
 
 
 def get_dtype_size(dtype):
@@ -203,10 +212,21 @@ def decode_sqi(data, **kwargs):
 def decode_time(data):
     """Decode `YMDS_TIME` into datetime object."""
     time = _unpack_dictionary(data, YMDS_TIME)
+    ms = time["milliseconds"]
+    ms &= 0x3FF
+    # assume UTC for now
+    # dst = (time["milliseconds"] & 0x400) == 0x400
+    utc = (time["milliseconds"] & 0x800) == 0x800
+    # local_dst = (time["milliseconds"] & 0x1000) == 0x1000
+
     try:
-        return dt.datetime(time["year"], time["month"], time["day"]) + dt.timedelta(
-            seconds=time["seconds"], milliseconds=time["milliseconds"]
+        t = dt.datetime(time["year"], time["month"], time["day"]) + dt.timedelta(
+            seconds=time["seconds"],
+            milliseconds=ms,
         )
+        if utc:
+            t = t.replace(tzinfo=dt.timezone.utc)
+        return t
     except ValueError:
         return None
 
@@ -422,6 +442,34 @@ def _check_identifier(identifier):
         return IrisRecordFile
     else:
         return False
+
+
+@contextlib.contextmanager
+def _get_iris_memmap_handle(filename):
+    if isinstance(filename, str):
+        yield np.memmap(open(filename, "rb"), mode="r")
+    elif isinstance(filename, io.BytesIO):
+        # only read first record
+        yield np.frombuffer(filename.read(RECORD_BYTES), dtype=np.uint8)
+    else:
+        yield filename
+
+
+def _check_iris_file(filename):
+    with _get_iris_memmap_handle(filename) as fh:
+        head = _unpack_dictionary(fh[0:LEN_STRUCTURE_HEADER], STRUCTURE_HEADER, False)
+        structure_identifier = STRUCTURE_HEADER_IDENTIFIERS[
+            head["structure_identifier"]
+        ]["name"]
+        opener = _check_identifier(structure_identifier)
+
+        if structure_identifier == "PRODUCT_HDR":
+            head = _unpack_dictionary(fh[0:LEN_PRODUCT_HDR], PRODUCT_HDR, False)
+            product_type = PRODUCT_DATA_TYPE_CODES[
+                head["product_configuration"]["product_type_code"]
+            ]["name"]
+            opener = _check_product(product_type)
+    return structure_identifier, opener
 
 
 # IRIS Data Structures
@@ -1435,8 +1483,8 @@ _ANGLE_LIST = {
 
 TASK_RHI_SCAN_INFO = OrderedDict(
     [
-        ("lower_elevation_limit", UINT2),
-        ("upper_elevation_limit", UINT2),
+        ("lower_elevation_limit", BIN2),
+        ("upper_elevation_limit", BIN2),
         ("list_of_azimuths", _ANGLE_LIST),
         ("spare_0", {"fmt": "115s"}),
         ("start_first_sector_sweep", UINT1),
@@ -2461,7 +2509,7 @@ class IrisRecord(object):
             Slice into memory mapped file.
         recnum : int
         """
-        self.record = record.copy()
+        self.record = record  # .copy()
         self._pos = 0
         self.recnum = recnum
 
@@ -2500,7 +2548,7 @@ class IrisRecord(object):
         ret : array-like
         """
         ret = self.record[self._pos : self._pos + words * width]
-        self.pos += words * width
+        self.pos += len(ret)
         return ret
 
 
@@ -2760,10 +2808,14 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
         self._debug = kwargs.get("debug", False)
         self._rawdata = kwargs.get("rawdata", False)
         self._loaddata = kwargs.get("loaddata", True)
+        self._fp = None
+        self._filename = filename
         if isinstance(filename, str):
-            self._fh = np.memmap(filename, mode="r")
+            self._fp = open(filename, "rb")
+            self._fh = np.memmap(self._fp, mode="r")
         else:
             if isinstance(filename, io.BytesIO):
+                filename.seek(0)
                 filename = filename.read()
             self._fh = np.frombuffer(filename, dtype=np.uint8)
         self._filepos = 0
@@ -2772,6 +2824,18 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
         # read first structure header
         self.get_header(IrisStructureHeader)
         self._filepos = 0
+
+    def close(self):
+        if self._fp is not None:
+            self._fp.close()
+
+    __del__ = close
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
 
     def check_identifier(self):
         if self.structure_identifier in self.identifier:
@@ -2802,6 +2866,10 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
         return self._debug
 
     @property
+    def filename(self):
+        return self._filename
+
+    @property
     def fh(self):
         return self._fh
 
@@ -2818,10 +2886,8 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
 
         Parameters
         ----------
-        words : int
+        size : int
             Number of data words to read.
-        dtype : str
-            dtype string specifying data format.
 
         Returns
         -------
@@ -3176,10 +3242,10 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
         # get RAW file specifics
         self._raw_product_bhdrs = []
         self._data = OrderedDict()
+        # get data headers in any case
+        self.get_data_headers()
         if self.loaddata:
             self.get_data()
-        else:
-            self.get_data_headers()
 
     @property
     def raw_product_bhdrs(self):
@@ -3194,10 +3260,10 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
         chk : bool
             False, if record is truncated.
         """
-        # we do not know filesize before reading first record,
+        # we do not know filesize (structure_size) before reading first record,
         # so we try and pass
         try:
-            if self.record_number >= self.filesize / RECORD_BYTES:
+            if self.record_number >= self.structure_size / RECORD_BYTES:
                 return False
         except AttributeError:
             pass
@@ -3232,6 +3298,32 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             data = np.append(data, next_data)
             words -= len(next_data)
         return data
+
+    def skip_from_record(self, words, dtype):
+        """Only move filepointer.
+
+        Parameters
+        ----------
+        words : int
+            Number of data words to skip.
+        dtype : str
+            dtype string specifying data format.
+        """
+        width = get_dtype_size(dtype)
+        size = words * width
+        remain = RECORD_BYTES - self.rh.pos
+        remain -= size
+        if remain >= 0:
+            self.rh.pos += size
+        size = -remain
+        while size > 0:
+            self.init_next_record()
+            self.get_raw_prod_bhdr()
+            remain = RECORD_BYTES - self.rh.pos
+            remain -= size
+            if remain >= 0:
+                self.rh.pos += size
+            size = -remain
 
     def get_compression_code(self):
         """Read and return data compression code.
@@ -3275,7 +3367,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
 
         return ingest_data_hdrs
 
-    def get_ray(self, data):
+    def get_ray(self, data, skip=False):
         """Retrieve single ray.
 
         Returns
@@ -3284,6 +3376,8 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             Numpy array containing data of one ray.
         """
         ray_pos = 0
+        recnum = self.rh.recnum
+        recoff = self.rh.pos
 
         cmp_msb, cmp_val = self.get_compression_code()
 
@@ -3291,11 +3385,9 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
         if (cmp_val == 1) & (cmp_msb == 0):
             if self._debug:
                 print("ray missing")
-            return None
+            return recnum, recoff
 
         while not ((cmp_val == 1) & (not cmp_msb)):
-
-            # data words follow
             if cmp_msb:
                 if self._debug:
                     print(
@@ -3304,128 +3396,211 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
                             cmp_val, ray_pos, self._rh.recpos, self._rh.recpos + cmp_val
                         )
                     )
-                data[ray_pos : ray_pos + cmp_val] = self.read_from_record(
-                    cmp_val, "int16"
-                )
-            # compressed zeros follow
-            # can be skipped, if data array is created all zeros
-            else:
-                if self._debug:
-                    print(
-                        "--- Add {0} Zeros at range {1}, record {2}:{3}:"
-                        "".format(
-                            cmp_val, ray_pos, self._rh.recpos, self._rh.recpos + 1
-                        )
+                if skip:
+                    self.skip_from_record(cmp_val, "int16")
+                else:
+                    data[ray_pos : ray_pos + cmp_val] = self.read_from_record(
+                        cmp_val, "int16"
                     )
-                if cmp_val + ray_pos > self.nbins + 6:
-                    return data
-                data[ray_pos : ray_pos + cmp_val] = 0
+            # # compressed zeros follow
+            # # can be skipped, if data array is created all zeros
+            # else:
+            #     if not skip:
+            #         if self._debug:
+            #             print(
+            #                 "--- Add {0} Zeros at range {1}, record {2}:{3}:"
+            #                 "".format(
+            #                     cmp_val, ray_pos, self._rh.recpos, self._rh.recpos + 1
+            #                 )
+            #             )
+            #         if cmp_val + ray_pos > self.nbins + 6:
+            #             return recnum, recoff
+            #         data[ray_pos : ray_pos + cmp_val] = 0
 
             ray_pos += cmp_val
 
             # read next compression code
             cmp_msb, cmp_val = self.get_compression_code()
 
-        return data
+        return recnum, recoff
 
-    def get_sweep(self, moment):
-        """Retrieve a single sweep.
-
-        Parameters
-        ----------
-        moment : list
-            List of Data Types strings to retrieve.
-
-        Returns
-        -------
-        sweep : dict
-            Ordered Dictionary containing sweep data.
-        """
-        sweep = OrderedDict()
-
-        sweep["ingest_data_hdrs"] = self.get_ingest_data_headers()
-
-        # get boolean True for moment in available data_types
-        skip = [
-            True if k in moment else False for k in sweep["ingest_data_hdrs"].keys()
-        ]
+    def _get_ray_record_offsets_and_data(self, sweep_number, raw_data, idx=None):
+        """Get record numbers and ray offsets for specific sweep."""
+        sweep = self.data[sweep_number]
 
         # get rays per available data type
         rays_per_data_type = [
             d["number_rays_file_expected"] for d in sweep["ingest_data_hdrs"].values()
         ]
+        # data type count
+        data_type_count = len(rays_per_data_type)
+        ray_count = sum(rays_per_data_type)
+        rnums = np.zeros((ray_count,), dtype=int)
+        roffs = np.zeros((ray_count,), dtype=int)
+        phdr = self._product_hdr
+        bins = phdr["product_end"]["number_bins"]
+        single_data = np.zeros((bins + 6), dtype="int16")
 
-        # get rays per selected data type
-        rays_per_selected_type = [
-            d["number_rays_file_expected"] if k in moment else 0
-            for k, d in sweep["ingest_data_hdrs"].items()
-        ]
+        # initialize first record
+        self.init_record(sweep["record_number"])
+        self.rh.pos = sweep["first_ray_byte_offset"]
 
-        # get available selected data types
-        selected_type = []
-        for i, k in enumerate(sweep["ingest_data_hdrs"].keys()):
-            if k in moment:
-                selected_type.append(self.data_types_dict[i])
+        #  get all ray record numbers and offsets
+        # also get data for
+        j = -1
+        for i in range(ray_count):
+            if idx is not None:
+                if (i % data_type_count) == idx:
+                    recnum, recoff = self.get_ray(raw_data[j])
+                    j += 1
+                else:
+                    recnum, recoff = self.get_ray(single_data, skip=True)
+            else:
+                recnum, recoff = self.get_ray(single_data, skip=True)
+            rnums[i] = recnum
+            roffs[i] = recoff
 
-        # get boolean True for selected available rays
-        raylist = skip * rays_per_data_type[0]
+        ray_offsets = np.stack([rnums, roffs], axis=-1)
+        ray_offsets = ray_offsets.reshape(
+            rays_per_data_type[0], len(rays_per_data_type), 2
+        )
+        ray_offsets = ray_offsets.swapaxes(0, 1)
+        offsets = OrderedDict()
+        for i, data_type in enumerate(sweep["ingest_data_hdrs"].keys()):
+            offsets[data_type] = ray_offsets[i]
+        sweep["ray_offsets"] = offsets
+
+    def get_moment(self, sweep_number, moment):
+        """Load a single moment of a given sweep.
+
+        Parameters
+        ----------
+        sweep_number : int
+            Sweep Number.
+        moment : str
+            Data Type to retrieve.
+
+        """
+        sweep = self.data[sweep_number]
+
+        # create new sweep_data OrderedDict
+        if not sweep.get("sweep_data", False):
+            sweep["sweep_data"] = OrderedDict()
+
+        # check if moment exist and return early
+        data = sweep["sweep_data"].get(moment, False)
+        if data is not False:
+            return
+
+        all_types = list(sweep["ingest_data_hdrs"].keys())
+
+        # if coordinate is wanted, get from first moment
+        if moment in ["azimuth", "elevation", "dtime", "dtime_ms", "range"]:
+            moment = all_types[0]
+
+        idx = self.data_types.index(moment)
+        prod = self.data_types_dict[idx]
+        moment_num = all_types.index(moment)
+        moment_type = self.data_types_dict[moment_num]
 
         phdr = self._product_hdr
-        # get sum of rays for selected available data types
-        rays = sum(rays_per_selected_type)
+
+        rays = sweep["ingest_data_hdrs"][moment]["number_rays_file_expected"]
         bins = phdr["product_end"]["number_bins"]
 
         raw_data = np.zeros((rays, bins + 6), dtype="int16")
-        single_data = np.zeros((bins + 6), dtype="int16")
-        cnt = 0
-        for i, ray_i in enumerate(raylist):
-            if ray_i:
-                ret = self.get_ray(raw_data[cnt])
-                if ret is not None:
-                    raw_data[cnt] = ret
-                cnt += 1
-            else:
-                self.get_ray(single_data)
 
-        sweep_data = OrderedDict()
-        cnt = len(selected_type)
+        # get raw_data
+        if not sweep.get("ray_offsets", False):
+            self._get_ray_record_offsets_and_data(sweep_number, raw_data, idx=idx)
+        else:
+            for i, (rnum, roff) in enumerate(sweep["ray_offsets"][moment_type["name"]]):
+                if self.rh.recnum != rnum:
+                    self.init_record(rnum)
+                self.rh.pos = roff
+                self.get_ray(raw_data[i])
+
         xhdr_type = phdr["product_configuration"]["product_specific_info"]["xhdr_type"]
 
-        for i, prod in enumerate(selected_type):
-            sweep_prod = OrderedDict()
-            data = raw_data[i::cnt, 6:]
-            if prod["name"] == "DB_XHDR":
-                if xhdr_type == 0:
-                    ext_hdr = EXTENDED_HEADER_V0
-                elif xhdr_type == 1:
-                    ext_hdr = EXTENDED_HEADER_V1
-                elif xhdr_type == 2:
-                    ext_hdr = EXTENDED_HEADER_V2
-                    warnings.warn(
-                        "wradlib: Sigmet/Iris Extended Header V2 not implemented "
-                        "completely. The customer specified reminder will not be "
-                        "decoded. Please use `rawdata=True` to load undecoded data."
-                    )
-                else:
-                    raise ValueError(
-                        f"wradlib: unknown extended header type V{xhdr_type}"
-                    )
-                len_ext_hdr = struct.calcsize(_get_fmt_string(ext_hdr))
-                dtype = _get_struct_dtype(ext_hdr)
-                if not self.rawdata:
-                    data = data[:, : len_ext_hdr // 2].copy().view(dtype)
-            sweep_prod["data"] = self.decode_data(data, prod)
-            sweep_prod["azi_start"] = self.decode_data(raw_data[i::cnt, 0], BIN2)
-            sweep_prod["ele_start"] = self.decode_data(raw_data[i::cnt, 1], BIN2)
-            sweep_prod["azi_stop"] = self.decode_data(raw_data[i::cnt, 2], BIN2)
-            sweep_prod["ele_stop"] = self.decode_data(raw_data[i::cnt, 3], BIN2)
-            sweep_prod["rbins"] = raw_data[i::cnt, 4]
-            sweep_prod["dtime"] = raw_data[i::cnt, 5]
-            sweep_data[prod["name"]] = sweep_prod
+        data = raw_data[:, 6:]
 
-        sweep["sweep_data"] = sweep_data
+        # extended header contains exact ray times with ms resolution
+        if moment == "DB_XHDR":
+            if xhdr_type == 0:
+                ext_hdr = EXTENDED_HEADER_V0
+            elif xhdr_type == 1:
+                ext_hdr = EXTENDED_HEADER_V1
+            elif xhdr_type == 2:
+                ext_hdr = EXTENDED_HEADER_V2
+                warnings.warn(
+                    "wradlib: Sigmet/Iris Extended Header V2 not implemented "
+                    "completely. The customer specified reminder will not be "
+                    "decoded. Please use `rawdata=True` to load undecoded data."
+                )
+            else:
+                raise ValueError(f"wradlib: unknown extended header type V{xhdr_type}")
+            len_ext_hdr = struct.calcsize(_get_fmt_string(ext_hdr))
+            dtype = _get_struct_dtype(ext_hdr)
+            if not self.rawdata:
+                data = data[:, : len_ext_hdr // 2].copy().view(dtype)
 
-        return sweep
+        # remove missing rays marked as 0 in the following arrays
+        idx = np.where(raw_data[:, 4] != 0)[0]
+        if idx.size:
+            data = data[idx]
+            raw_data = raw_data[idx]
+
+        sweep_data = sweep["sweep_data"]
+
+        sweep_data[moment] = self.decode_data(data, prod)
+
+        # get millisecond times if available
+        if moment == "DB_XHDR":
+            sweep_data["dtime_ms"] = np.squeeze(data.T["dtime_ms"])
+
+        if sweep_data.get("azimuth", False) is False:
+            dec_data = self.decode_data(raw_data[:, :4], BIN2)
+            azi_start = dec_data[:, 0]
+            ele_start = dec_data[:, 1]
+            azi_stop = dec_data[:, 2]
+            ele_stop = dec_data[:, 3]
+
+            # calculate beam center values
+            # find locations with reasonable difference
+            zero_index = np.where(azi_start - azi_stop > 5)
+            azi_stop2 = azi_stop.copy()
+            azi_stop2[zero_index[0]] += 360
+            az = (azi_start + azi_stop2) / 2.0
+            az[az >= 360] -= 360
+            el = (ele_start + ele_stop) / 2.0
+
+            sweep_data["azi_start"] = azi_start
+            sweep_data["azi_stop"] = azi_stop
+            sweep_data["azimuth"] = az
+            sweep_data["ele_start"] = ele_start
+            sweep_data["ele_stop"] = ele_stop
+            sweep_data["elevation"] = el
+            sweep_data["rbins"] = raw_data[:, 4]
+            sweep_data["dtime"] = raw_data[:, 5]
+
+    def get_sweep(self, sweep_number, moments):
+        """Load a single sweep.
+
+        Parameters
+        ----------
+        sweep_number : int
+            Sweep number.
+        moments : list of strings
+            Data Types to retrieve.
+
+        """
+        sweep = self.data[sweep_number]
+
+        # get selected data type names
+        selected = [k for k in sweep["ingest_data_hdrs"].keys() if k in moments]
+
+        for moment in selected:
+            self.get_moment(sweep_number, moment)
 
     def decode_data(self, data, prod):
         """Decode data according given prod-dict.
@@ -3482,7 +3657,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             return data
 
     def get_data(self):
-        """Retrieve all sweeps from file."""
+        """Load all sweeps from file."""
         dt_names = self.data_types  # [d['name'] for d in self.data_types]
         rsweeps = range(1, self.nsweeps + 1)
 
@@ -3495,38 +3670,68 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             moment = dt_names
 
         self.init_record(1)
-        sw = 0
-        ingest_conf = self.ingest_header["ingest_configuration"]
-        sw_completed = ingest_conf["number_sweeps_completed"]
-        while sw < sw_completed and self.init_next_record():
-            raw_prod_bhdr = self.get_raw_prod_bhdr()
-            sw = raw_prod_bhdr["sweep_number"]
-            # continue to next record if not belonging to wanted sweeps
-            if sw not in sweep:
+        for num, sw in self.data.items():
+            if num not in sweep:
                 continue
-            self.raw_product_bhdrs.append(raw_prod_bhdr)
-            self._data[sw] = self.get_sweep(moment)
+            self.init_record(sw["record_number"])
+            self.rh.pos = sw["first_ray_byte_offset"]
+            self.get_sweep(num, moment)
 
     def get_data_headers(self):
-        """Retrieve all sweep `ingest_data_header` from file."""
+        """Load all sweep's `ingest_data_header` from file.
+
+        Also saves all `raw_prod_bhdr`. `record_number` and `first_ray_byte_offset`
+        per sweep for easy access.
+        """
+        try:
+            sweeps = self.loaddata.get("sweep", None)
+        except AttributeError:
+            sweeps = None
+
         self.init_record(1)
-        sw = 0
-        ingest_conf = self.ingest_header["ingest_configuration"]
-        sw_completed = ingest_conf["number_sweeps_completed"]
-        while sw < sw_completed and self.init_next_record():
+        current_sweep = 0
+        # try to read claim all sweep headers
+        while self.init_next_record():
             # get raw_prod_bhdr
             raw_prod_bhdr = self.get_raw_prod_bhdr()
-            # continue to next record if belonging to same sweep
-            if raw_prod_bhdr["sweep_number"] == sw:
-                continue
-            # else set current sweep number
-            else:
-                sw = raw_prod_bhdr["sweep_number"]
-            # read headers and add to _data
+            # append to bhdrs list
             self.raw_product_bhdrs.append(raw_prod_bhdr)
-            sweep = OrderedDict()
-            sweep["ingest_data_hdrs"] = self.get_ingest_data_headers()
-            self._data[sw] = sweep
+            # if new sweep: set current sweep number, read ingest_data_headers
+            # and add to _data
+            if raw_prod_bhdr["sweep_number"] != current_sweep:
+                current_sweep = raw_prod_bhdr["sweep_number"]
+                if sweeps is not None and current_sweep not in sweeps:
+                    continue
+                sweep = OrderedDict()
+                sweep["ingest_data_hdrs"] = self.get_ingest_data_headers()
+                sweep["record_number"] = self.rh.recnum
+                sweep["first_ray_byte_offset"] = self.rh.pos
+                self._data[current_sweep] = sweep
+
+    @property
+    def site_coords(self):
+        """Return Radar Location Tuple"""
+        ing_conf = self.ingest_header["ingest_configuration"]
+        return (
+            ing_conf["longitude_radar"],
+            ing_conf["latitude_radar"],
+            ing_conf["altitude_radar"] / 100.0,
+        )
+
+    @property
+    def scan_mode(self):
+        """Return Antenna Scan Mode"""
+        task_conf = self.ingest_header["task_configuration"]
+        scan_info = task_conf["task_scan_info"]
+        return scan_info["antenna_scan_mode"]
+
+    @property
+    def first_dimension(self):
+        """Returns first dimension"""
+        if self.scan_mode == 2:
+            return "elevation"
+        else:
+            return "azimuth"
 
 
 class IrisProductFile(IrisRecordFile):
@@ -3839,7 +4044,14 @@ class IrisCartesianProductFile(IrisRecordFile):
             return data
 
 
-def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
+def read_iris(
+    filename,
+    loaddata=True,
+    rawdata=False,
+    debug=False,
+    keep_old_sweep_data=None,
+    **kwargs,
+):
     """Read Iris file and return dictionary.
 
     Parameters
@@ -3858,27 +4070,37 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
         If true, returns raw unconverted/undecoded data.
     debug : bool
         If true, print debug messages.
+    keep_old_sweep_data : bool
+        If true, keeps old ``sweep_data`` structure. Defaults to False. This will
+        change to True in a future version.
 
     Returns
     -------
     data : dict
         Ordered Dictionary with data and metadata retrieved from file.
     """
+    if keep_old_sweep_data is None:
+        keep_old_sweep_data = True
+        warnings.warn(
+            "WRADLIB: Iris ``sweep_data`` sub-dict structure has changed and will "
+            "default to new structure in a future version. Currently backwards "
+            "compatibility is preserved."
+            "To silence this warning set ``keep_old_sweep_data=False`` for new "
+            "structure or ``keep_old_sweep_data=True`` to keep old behaviour.",
+            DeprecationWarning,
+        )
+
     if not isinstance(filename, str):
         filename = filename.read()
 
-    irisfile = IrisFile(filename)
-    id = irisfile.check_identifier()
-    ic = _check_identifier(irisfile.check_identifier())
-    if id == "PRODUCT_HDR":
-        irisfile = IrisRecordFile(filename)
-        pi = irisfile.check_product_identifier()
-        ic = _check_product(pi)
+    sid, opener = _check_iris_file(filename)
 
-    if not ic:
-        raise TypeError("Unknown File or Product Type {}".format(id))
+    if not opener:
+        raise TypeError("Unknown File or Product Type {}".format(sid))
 
-    irisfile = ic(filename, loaddata=loaddata, rawdata=rawdata, debug=debug, **kwargs)
+    irisfile = opener(
+        filename, loaddata=loaddata, rawdata=rawdata, debug=debug, **kwargs
+    )
 
     properties = [
         "product_hdr",
@@ -3904,4 +4126,109 @@ def read_iris(filename, loaddata=True, rawdata=False, debug=False, **kwargs):
         if item:
             data.update({k: item})
 
+    # backwards compatibility
+    if opener == IrisRawFile and keep_old_sweep_data:
+        meta = {
+            "azi_start",
+            "azi_stop",
+            "azimuth",
+            "ele_start",
+            "ele_stop",
+            "elevation",
+            "rbins",
+            "dtime",
+        }
+        for _, swp in data["data"].items():
+            try:
+                swp_data = swp["sweep_data"]
+            except KeyError:
+                continue
+            for key, mom in swp_data.items():
+                if "DB_" in key:
+                    d = dict(data=mom)
+                    for m in meta:
+                        d[m] = swp_data[m]
+                    swp_data[key] = d
+            for m in meta:
+                swp_data.pop(m)
+
     return data
+
+
+def open_iris_dataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an IRIS radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.open_radar_dataset` and
+    :py:func:`xarray.open_dataset` under the hood.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    reindex_angle : bool or float
+        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
+        number, it is used as tolerance. If False, no reindexing is performed.
+        Only invoked if `decode_coord=True`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray.open_dataset`.
+
+    Returns
+    -------
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    :func:`~wradlib.io.iris.open_iris_mfdataset`
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_dataset(filename_or_obj, engine="iris", **kwargs)
+
+
+def open_iris_mfdataset(filename_or_obj, group=None, **kwargs):
+    """Open and decode an Iris radar sweep or volume from a file or file-like object.
+
+    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` and
+    :py:func:`xarray:xarray.open_mfdataset` under the hood.
+    Needs ``dask`` package to be installed [1]_.
+
+    Parameters
+    ----------
+    filename_or_obj : str, Path, file-like or DataStore
+        Strings and Path objects are interpreted as a path to a local or remote
+        radar file and opened with an appropriate engine.
+    group : str, optional
+        Path to a sweep group in the given file to open.
+
+    Keyword Arguments
+    -----------------
+    reindex_angle : bool or float
+        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
+        number, it is used as tolerance. If False, no reindexing is performed.
+        Only invoked if `decode_coord=True`.
+    **kwargs : dict, optional
+        Additional arguments passed on to :py:func:`xarray:xarray.open_mfdataset`.
+
+    Returns
+    -------
+    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
+        The newly created radar dataset or radar volume.
+
+    See Also
+    --------
+    :func:`~wradlib.io.iris.open_iris_dataset`
+
+    References
+    ----------
+    .. [1] https://docs.dask.org/en/latest/
+    """
+    raise_on_missing_xarray_backend()
+    kwargs["group"] = group
+    return open_radar_mfdataset(filename_or_obj, engine="iris", **kwargs)
