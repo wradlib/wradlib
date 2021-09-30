@@ -1526,11 +1526,10 @@ def _reindex_angle(ds, store=None, force=False, tol=None):
                 for k, v in ds.items()
                 if hasattr(v, "_FillValue")
             }
-            # todo: make tolerance parameterizable
             ds = ds.reindex(
                 {dimname: azr},
                 method="nearest",
-                tolerance=res * tol,
+                tolerance=tol,
                 fill_value=fill_value,
             )
 
