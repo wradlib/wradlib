@@ -330,7 +330,7 @@ class TestCfRadial2Volume(MeasuredDataVolume):
 
 @requires_data
 @requires_xarray_backend_api
-class TestIrisVolume(MeasuredDataVolume):
+class TestIrisVolume01(MeasuredDataVolume):
     if has_data:
         name = "sigmet/cor-main131125105503.RAW2049"
         format = "Iris"
@@ -360,6 +360,39 @@ class TestIrisVolume(MeasuredDataVolume):
         mdesc = "moment_{}"
 
         backend_kwargs = dict(reindex_angle=False)
+
+
+@requires_data
+@requires_xarray_backend_api
+class TestIrisVolume02(MeasuredDataVolume):
+    if has_data:
+        name = "sigmet/SUR210819000227.RAWKPJV"
+        format = "Iris"
+        volumes = 1
+        sweeps = 1
+        moments = [
+            "DBTH",
+            "DBZH",
+            "VRADH",
+            "WRADH",
+            "ZDR",
+            "KDP",
+            "RHOHV",
+            "SQIH",
+            "PHIDP",
+            "DB_HCLASS2",
+            "SNRH",
+        ]
+        elevations = [0.5]
+        azimuths = [360]
+        ranges = [833]
+
+        data = io.read_iris(util.get_wradlib_data_file(name))
+
+        dsdesc = "sweep{}"
+        mdesc = "moment_{}"
+
+        backend_kwargs = dict(reindex_angle=1.0)
 
 
 @requires_xarray_backend_api

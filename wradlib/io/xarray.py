@@ -185,17 +185,29 @@ def create_xarray_dataarray(*args, **kwargs):
 
 moment_attrs = {"standard_name", "long_name", "units"}
 
+
 iris_mapping = {
     "DB_DBT": "DBTH",
+    "DB_DBT2": "DBTH",
     "DB_DBZ": "DBZH",
+    "DB_DBZ2": "DBZH",
     "DB_VEL": "VRADH",
+    "DB_VEL2": "VRADH",
     "DB_WIDTH": "WRADH",
+    "DB_WIDTH2": "WRADH",
     "DB_ZDR": "ZDR",
+    "DB_ZDR2": "ZDR",
     "DB_KDP": "KDP",
+    "DB_KDP2": "KDP",
     "DB_PHIDP": "PHIDP",
+    "DB_PHIDP2": "PHIDP",
     "DB_SQI": "SQIH",
+    "DB_SQI2": "SQIH",
+    "DB_SNR16": "SNRH",
     "DB_RHOHV": "RHOHV",
+    "DB_RHOHV2": "RHOHV",
 }
+
 
 # CfRadial 2.0 - ODIM_H5 mapping
 moments_mapping = {
@@ -1575,8 +1587,9 @@ def _get_iris_group_names(filename):
     from wradlib.io.iris import _check_iris_file
 
     sid, opener = _check_iris_file(filename)
-    ds = opener(filename, loaddata=False)
-    return list(ds.data.keys())
+    with opener(filename, loaddata=False) as ds:
+        keys = list(ds.data.keys())
+    return keys
 
 
 def _get_odim_variable_name_and_attrs(name, attrs):
