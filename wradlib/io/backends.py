@@ -1023,7 +1023,7 @@ class IrisStore(AbstractDataStore):
         data = ing_head[list(ing_head.keys())[0]]
 
         attributes = dict(
-            fixed_angle=data["fixed_angle"],
+            fixed_angle=np.round(data["fixed_angle"], 1),
         )
         # RHI limits
         if self.root.scan_mode == 2:
@@ -1080,6 +1080,8 @@ class IrisBackendEntrypoint(BackendEntrypoint):
         if decode_coords and reindex_angle is not False:
             ds = ds.drop_vars("DB_XHDR", errors="ignore")
             ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)
+        else:
+            ds = ds.sortby(store.root.first_dimension)
 
         ds.attrs.pop("elevation_lower_limit", None)
         ds.attrs.pop("elevation_upper_limit", None)
