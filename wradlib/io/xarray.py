@@ -1826,8 +1826,10 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
             groups = _get_nc4group_names(filename_or_obj, engine)
         elif engine in ["gamic", "odim"]:
             groups = _get_h5group_names(filename_or_obj, engine)
-        else:
+        elif engine == "iris":
             groups = _get_iris_group_names(filename_or_obj)
+        else:
+            pass
 
     if engine in ["gamic", "odim"]:
         keep_azimuth = kwargs.pop("keep_azimuth", False)
