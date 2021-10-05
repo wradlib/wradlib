@@ -1612,9 +1612,12 @@ def _get_gamic_variable_name_and_attrs(attrs, dtype):
     name = attrs.pop("moment").lower()
     try:
         name = GAMIC_NAMES[name]
+        mapping = moments_mapping[name]
     except KeyError:
         # ds = ds.drop_vars(mom)
         pass
+    else:
+        attrs.update({key: mapping[key] for key in moment_attrs})
 
     dmax = np.iinfo(dtype).max
     dmin = np.iinfo(dtype).min
