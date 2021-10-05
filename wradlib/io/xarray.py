@@ -3231,8 +3231,8 @@ class XRadSweepGamic(XRadSweep):
             else:
                 gain = (dmax - dmin) / dmax
                 minval = dmin
-            gain = gain.astype(dtype)
-            minval = minval.astype(dtype)
+            gain = np.array([gain])[0].astype(dtype)
+            minval = np.array([minval])[0].astype(dtype)
             undetect = np.array([dmin])[0].astype(dtype)
             attrs["scale_factor"] = gain
             attrs["add_offset"] = minval
