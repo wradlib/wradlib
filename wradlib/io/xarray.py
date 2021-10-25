@@ -1764,7 +1764,13 @@ def _assign_data_radial2(ds):
     dim0 = "elevation" if sweep_mode == "rhi" else "azimuth"
     ds = ds.swap_dims({"time": dim0})
     ds = ds.rename({"time": "rtime"})
-    time = ds.rtime[0].reset_coords(drop=True).dt.round("S")
+    time = ds.rtime[0].reset_coords(drop=True)
+    # catch `decode_times=False` case
+    try:
+        time = time.dt.round("S")
+    except TypeError:
+        pass
+
     # todo: check use-case
     key = [key for key in time.attrs.keys() if "comment" in key]
     if key:
