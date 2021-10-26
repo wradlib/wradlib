@@ -344,7 +344,7 @@ def plot_ppi(
     rf: float
         If present, factor for scaling range axes, defaults to 1.
     az : :class:`numpy:numpy.ndarray`
-        The azimuth angles in degrees. If None, a default is
+        The azimuth angles in degrees in increasing order. If None, a default is
         calculated from the dimensions of ``data``.
     elev : float or :class:`numpy:numpy.ndarray`
         float or array of same shape as ``az``
@@ -657,7 +657,7 @@ def plot_rhi(
     rf: float
         If present, factor for scaling range axis, defaults to 1.
     th : :class:`numpy:numpy.ndarray`
-        The elevation angles in degrees. If None, a default is
+        The elevation angles in degrees in increasing order. If None, a default is
         calculated from the dimensions of ``data``.
     th_res : float or :class:`numpy:numpy.ndarray`
         float or array of same shape as ``th``.
