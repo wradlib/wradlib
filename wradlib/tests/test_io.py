@@ -1303,6 +1303,43 @@ class TestRainbow:
             rb_header = io.rainbow.get_rb_header(rb_fh)
             assert rb_header["volume"]["@version"] == "5.34.16"
 
+    @requires_data
+    def test_rainbow_file_meta(self):
+        filename = "rainbow/2013070308340000dBuZ.azi"
+        rb_file = util.get_wradlib_data_file(filename)
+        with io.rainbow.RainbowFile(rb_file, loaddata=False) as rbdict:
+            assert rbdict.version == "5.34.16"
+            assert rbdict.header
+            assert rbdict.site_coords == (6.33097, 50.5049, 0.0)
+            assert rbdict.first_dimension == "azimuth"
+            assert rbdict.history
+            assert rbdict.pargroup
+            assert rbdict.sensorinfo == dict(
+                [
+                    ("@type", "rainscanner"),
+                    ("@id", "WUE"),
+                    ("@name", "Wuestebach"),
+                    ("lon", "6.330970"),
+                    ("lat", "50.504900"),
+                    ("alt", "0.000000"),
+                    ("wavelen", "0.05"),
+                    ("beamwidth", "1"),
+                ]
+            )
+            assert rbdict.datetime == datetime.datetime(2013, 7, 3, 8, 33, 55)
+            assert rbdict.type == "azi"
+
+    def test_rainbow_file_data(self):
+        filename = "rainbow/2013070308340000dBuZ.azi"
+        rb_file = util.get_wradlib_data_file(filename)
+        with io.rainbow.RainbowFile(rb_file, loaddata=True) as rbdict:
+            sdata = rbdict.slices[0]["slicedata"]
+            np.testing.assert_equal(
+                sdata["rayinfo"]["data"][0], np.array([120.9979248046875])
+            )
+            np.testing.assert_equal(sdata["rawdata"]["data"][0, 0], np.array([167]))
+            assert sdata["rawdata"]["data"].shape == (360, 500)
+
 
 class TestRaster:
     def test_gdal_create_dataset(self):

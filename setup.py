@@ -199,6 +199,7 @@ def setup_package():
                 "odim = wradlib.io.backends:OdimBackendEntrypoint",
                 "radolan = wradlib.io.backends:RadolanBackendEntrypoint",
                 "iris = wradlib.io.backends:IrisBackendEntrypoint",
+                "rainbow = wradlib.io.backends:RainbowBackendEntrypoint",
             ]
         },
     )
