@@ -5,6 +5,17 @@
 """
 Rainbow Data I/O
 ^^^^^^^^^^^^^^^^
+
+Reads data from Leonardo's Rainbow5 data formats
+
+:func:`~wradlib.io.rainbow.read_rainbow` reads all data and metadata into a dictionary.
+Reading sweep data can be skipped by setting `loaddata=False`.
+
+:func:`~wradlib.io.rainbow.open_rainbow_dataset` and :func:`~wradlib.io.rainbow.open_rainbow_mfdataset`
+read Rainbow5 data into xarray Datasets with a CfRadial2-like structure.
+For this `mmap.mmap` is utilized.
+
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -657,12 +668,6 @@ def open_rainbow_mfdataset(filename_or_obj, group=None, **kwargs):
 
     Keyword Arguments
     -----------------
-    keep_elevation : bool
-        For PPI only. Keep original elevation data if True. Defaults to False,
-        which fixes erroneous elevation data.
-    keep_azimuth : bool
-        For RHI only. Keep original azimuth data if True. Defaults to False,
-        which fixes erroneous azimuth data.
     reindex_angle : bool or float
         Defaults to None (reindex angle with tol=0.4deg). If given a floating point
         number, it is used as tolerance. If False, no reindexing is performed.

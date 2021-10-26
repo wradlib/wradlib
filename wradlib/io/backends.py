@@ -1363,8 +1363,6 @@ class RainbowBackendEntrypoint(BackendEntrypoint):
         use_cftime=None,
         decode_timedelta=None,
         group=None,
-        keep_elevation=False,
-        keep_azimuth=False,
         reindex_angle=None,
     ):
         store = RainbowStore.open(
