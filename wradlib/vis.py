@@ -63,19 +63,12 @@ class WradlibAccessor(object):
         self._obj = xarray_obj
         self._site = None
         self._proj = None
-        self.fix_cyclic()
 
     def __getattr__(self, attr):
         return getattr(self._obj, attr)
 
     def __repr__(self):
         return re.sub(r"<.+>", "<{}>".format(self.__class__.__name__), str(self._obj))
-
-    def fix_cyclic(self):
-        rays = self._obj.azimuth
-        dim0 = rays.dims[0]
-        if (360 - (rays[-1] - rays[0])) == (rays[1] - rays[0]):
-            self._obj = xr.concat([self._obj, self._obj.isel({dim0: 0})], dim=dim0)
 
     @property
     def site(self):
