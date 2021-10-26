@@ -530,6 +530,10 @@ class RainbowFile(RainbowFileBase):
             return "azimuth"
         elif self.type in ["ele"]:
             return "elevation"
+        elif self.type in ["poi"]:
+            raise NotImplementedError(
+                "Rainbow5 data of type `poi` (pointmode) is currently not supported."
+            )
         else:
             raise TypeError("Unknown Rainbow File Type: {}".format(type))
 
