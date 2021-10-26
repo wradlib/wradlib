@@ -37,7 +37,6 @@ import re
 import warnings
 
 import matplotlib.pyplot as pl
-import mpl_toolkits.axisartist.angle_helper as ah
 import numpy as np
 import xarray as xr
 from matplotlib import axes, lines, patches
@@ -45,11 +44,7 @@ from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.projections import PolarAxes
 from matplotlib.ticker import FuncFormatter, MaxNLocator, MultipleLocator, NullFormatter
 from matplotlib.transforms import Affine2D
-from mpl_toolkits.axisartist import (
-    GridHelperCurveLinear,
-    ParasiteAxesAuxTrans,
-    SubplotHost,
-)
+from mpl_toolkits.axisartist import GridHelperCurveLinear, HostAxes, angle_helper
 from osgeo import osr
 
 from wradlib import georef, io, ipol, util
@@ -869,7 +864,7 @@ def create_cg(
     tr = tr_rotate + tr_scale + tr_polar
 
     # build up curvelinear grid
-    extreme_finder = ah.ExtremeFinderCycle(
+    extreme_finder = angle_helper.ExtremeFinderCycle(
         360,
         360,
         lon_cycle=lon_cycle,
@@ -878,8 +873,8 @@ def create_cg(
         lat_minmax=(latmin, np.inf),
     )
     # locator and formatter for angular annotation
-    grid_locator1 = ah.LocatorDMS(lon_cycle // angular_spacing)
-    tick_formatter1 = ah.FormatterDMS()
+    grid_locator1 = angle_helper.LocatorDMS(lon_cycle // angular_spacing)
+    tick_formatter1 = angle_helper.FormatterDMS()
 
     # grid_helper for curvelinear grid
     grid_helper = GridHelperCurveLinear(
@@ -905,8 +900,7 @@ def create_cg(
             fig = pl.gcf()
 
     # generate Axis
-    cgax = SubplotHost(fig, subplot, grid_helper=grid_helper)
-    fig.add_axes(cgax)
+    cgax = fig.add_subplot(subplot, axes_class=HostAxes, grid_helper=grid_helper)
 
     # get twin axis for cartesian grid
     caax = cgax.twin()
@@ -930,7 +924,7 @@ def create_cg(
     cgax.axis["right"].get_helper().nth_coord_ticks = 0
 
     # generate and add parasite axes with given transform
-    paax = ParasiteAxesAuxTrans(cgax, tr, "equal")
+    paax = cgax.get_aux_axes(tr, "equal")
     # note that paax.transData == tr + cgax.transData
     # Anything you draw in paax will match the ticks and grids of cgax.
     cgax.parasites.append(paax)
