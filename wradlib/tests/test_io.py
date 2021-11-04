@@ -1138,7 +1138,9 @@ class TestRadolan:
         data = io.radolan.open_radolan_mfdataset(rw_file)
         assert data.RW.shape == (900, 900)
 
-        data = io.radolan.open_radolan_mfdataset(rw_file[:-23] + "*", concat_dim="time")
+        data = io.radolan.open_radolan_mfdataset(
+            rw_file[:-23] + "*.gz", concat_dim="time"
+        )
         assert data.RW.shape == (2, 900, 900)
         assert data.dims == {"x": 900, "y": 900, "time": 2}
         assert data.RW.dims == ("time", "y", "x")

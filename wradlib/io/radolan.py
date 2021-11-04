@@ -1226,4 +1226,6 @@ def open_radolan_mfdataset(paths, **kwargs):
         copy=kwargs.pop("copy", False),
     )
     kwargs["backend_kwargs"] = backend_kwargs
+    if kwargs.get("concat_dim", False):
+        kwargs["combine"] = "nested"
     return xr.open_mfdataset(paths, engine="radolan", **kwargs)

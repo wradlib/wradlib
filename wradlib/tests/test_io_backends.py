@@ -198,10 +198,6 @@ class MeasuredDataVolume(DataVolume):
         ) as vol:
             yield vol
 
-    @property
-    def data(self):
-        return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
-
 
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
