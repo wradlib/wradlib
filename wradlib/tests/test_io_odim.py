@@ -1032,9 +1032,9 @@ class TestKNMIVolume(MeasuredDataVolume):
         dsdesc = "dataset{}"
         mdesc = "data{}"
 
-        @property
-        def data(self):
-            return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
+    @property
+    def data(self):
+        return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
 
 
 @requires_data
