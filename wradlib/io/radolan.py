@@ -473,7 +473,7 @@ def parse_dwd_composite_header(header):
                 out["ncol"] = int(dimstrings[1])
             if k == "LV":
                 lv = header[v[0] : v[1]].split()
-                out["nlevel"] = np.int(lv[0])
+                out["nlevel"] = int(lv[0])
                 out["level"] = np.array(lv[1:]).astype("float")
             if k == "MS":
                 locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
