@@ -173,8 +173,13 @@ def setup_package():
     with open("requirements.txt", "r") as f:
         INSTALL_REQUIRES = [rq for rq in f.read().split("\n") if rq != ""]
 
+    with open("requirements_optional.txt", "r") as f:
+        OPTIONAL_REQUIRES = [rq for rq in f.read().split("\n") if rq != ""]
+
     with open("requirements_devel.txt", "r") as f:
         DEVEL_REQUIRES = [rq for rq in f.read().split("\n") if rq != ""]
+
+    INSTALL_REQUIRES += OPTIONAL_REQUIRES
 
     metadata = dict(
         name=NAME,
@@ -189,7 +194,9 @@ def setup_package():
         classifiers=CLASSIFIERS,
         platforms=PLATFORMS,
         install_requires=INSTALL_REQUIRES,
-        extras_require={"dev": DEVEL_REQUIRES},
+        extras_require=dict(
+            dev=DEVEL_REQUIRES,
+        ),
         packages=find_packages(),
         entry_points={
             "xarray.backends": [

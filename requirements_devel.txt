@@ -4,6 +4,7 @@ nbconvert
 nbformat
 pytest
 pytest-cov
+pytest-doctestplus
 pytest-sugar
 pytest-xdist
 semver
