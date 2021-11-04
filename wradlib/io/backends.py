@@ -30,7 +30,6 @@ import datetime as dt
 import io
 from distutils.version import LooseVersion
 
-import h5netcdf
 import numpy as np
 from xarray import Dataset
 from xarray.backends import NetCDF4DataStore
@@ -41,12 +40,7 @@ from xarray.backends.common import (
     find_root_and_group,
 )
 from xarray.backends.file_manager import CachingFileManager, DummyFileManager
-from xarray.backends.locks import (
-    SerializableLock,
-    combine_locks,
-    ensure_lock,
-    get_write_lock,
-)
+from xarray.backends.locks import SerializableLock, ensure_lock
 from xarray.backends.store import StoreBackendEntrypoint
 from xarray.core import indexing
 from xarray.core.utils import Frozen, FrozenDict, close_on_error, is_remote_uri
@@ -73,6 +67,12 @@ from wradlib.io.xarray import (
     range_attrs,
     time_attrs,
 )
+from wradlib.util import has_import, import_optional
+
+h5netcdf = import_optional("h5netcdf")
+netCDF4 = import_optional("netCDF4")
+dask = import_optional("dask")
+
 
 RADOLAN_LOCK = SerializableLock()
 HDF5_LOCK = SerializableLock()
@@ -407,7 +407,7 @@ class OdimStore(AbstractDataStore):
             kwargs["decode_vlen_strings"] = decode_vlen_strings
 
         if lock is None:
-            if mode == "r":
+            if has_import(dask):
                 lock = HDF5_LOCK
             else:
                 lock = combine_locks([HDF5_LOCK, get_write_lock(filename)])
@@ -471,6 +471,8 @@ class OdimStore(AbstractDataStore):
 
 class OdimBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for ODIM data."""
+
+    available = has_import(h5netcdf)
 
     def open_dataset(
         self,
@@ -591,7 +593,7 @@ class GamicStore(AbstractDataStore):
             kwargs["decode_vlen_strings"] = decode_vlen_strings
 
         if lock is None:
-            if mode == "r":
+            if has_import(dask):
                 lock = HDF5_LOCK
             else:
                 lock = combine_locks([HDF5_LOCK, get_write_lock(filename)])
@@ -649,6 +651,8 @@ class GamicStore(AbstractDataStore):
 
 class GamicBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for GAMIC data."""
+
+    available = has_import(h5netcdf)
 
     def open_dataset(
         self,
@@ -714,6 +718,8 @@ class GamicBackendEntrypoint(BackendEntrypoint):
 class CfRadial1BackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for CfRadial1 data."""
 
+    available = has_import(netCDF4)
+
     def open_dataset(
         self,
         filename_or_obj,
@@ -756,6 +762,8 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
 
 class CfRadial2BackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for CfRadial2 data."""
+
+    available = has_import(netCDF4)
 
     def open_dataset(
         self,

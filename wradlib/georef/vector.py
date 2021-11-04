@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -32,12 +32,17 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import warnings
 
 import numpy as np
-from osgeo import gdal, ogr, osr
 
 from wradlib.georef import projection
+from wradlib.util import has_import, import_optional
 
-ogr.UseExceptions()
-gdal.UseExceptions()
+gdal = import_optional("osgeo.gdal")
+ogr = import_optional("osgeo.ogr")
+osr = import_optional("osgeo.osr")
+
+if has_import(gdal):
+    ogr.UseExceptions()
+    gdal.UseExceptions()
 
 
 def get_vector_points(geom):

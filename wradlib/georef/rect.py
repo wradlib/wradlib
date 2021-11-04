@@ -21,13 +21,15 @@ __all__ = [
     "grid_to_polyvert",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
+__doctest_requires__ = {"get_radolan_grid": ["osgeo"]}
 
 import numpy as np
 
 from wradlib.georef import projection
+from wradlib.util import has_import, import_optional
 
 
-def get_radolan_coords(lon, lat, trig=False):
+def get_radolan_coords(lon, lat, trig=None):
     """
     Calculates x,y coordinates of radolan grid from lon, lat
 
@@ -46,8 +48,12 @@ def get_radolan_coords(lon, lat, trig=False):
         `trig` is recommended to be False, however, the two ways of
         computation are expected to be equivalent.
     """
-
+    osr = import_optional("osgeo.osr")
+    # use trig if osgeo.osr is not available
+    if trig is None:
+        trig = not has_import(osr)
     if trig:
+
         # calculation of x_0 and y_0 coordinates of radolan grid
         # as described in the format description
         phi_0 = np.radians(60)

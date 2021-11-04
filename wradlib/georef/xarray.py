@@ -20,9 +20,11 @@ import collections
 
 import numpy as np
 import xarray as xr
-from osgeo import osr
 
 from wradlib.georef import polar
+from wradlib.util import has_import, import_optional
+
+osr = import_optional("osgeo.osr")
 
 
 def as_xarray_dataarray(data, dims, coords):
@@ -178,7 +180,7 @@ def georeference_dataset(obj, **kwargs):
     r, az = np.meshgrid(obj["range"], obj["azimuth"])
 
     # GDAL OSR, convert to this proj
-    if isinstance(proj, osr.SpatialReference):
+    if has_import(osr) and isinstance(proj, osr.SpatialReference):
         xyz = polar.spherical_to_proj(
             r, az, obj["elevation"], site, proj=proj, re=re, ke=ke
         )

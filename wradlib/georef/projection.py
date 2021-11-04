@@ -30,7 +30,12 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 from distutils.version import LooseVersion
 
 import numpy as np
-from osgeo import gdal, ogr, osr
+
+from wradlib.util import import_optional
+
+gdal = import_optional("osgeo.gdal")
+ogr = import_optional("osgeo.ogr")
+osr = import_optional("osgeo.osr")
 
 
 def create_osr(projname, **kwargs):

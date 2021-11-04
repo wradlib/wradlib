@@ -26,7 +26,6 @@ import collections
 import contextlib
 import datetime as dt
 
-import netCDF4 as nc
 import numpy as np
 
 from wradlib.io.xarray import (
@@ -34,6 +33,9 @@ from wradlib.io.xarray import (
     open_radar_mfdataset,
     raise_on_missing_xarray_backend,
 )
+from wradlib.util import import_optional
+
+nc = import_optional("netCDF4")
 
 
 @contextlib.contextmanager

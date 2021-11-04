@@ -1,16 +1,21 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+from dataclasses import dataclass
+
 import numpy as np
+import pytest
 
 from wradlib import comp, georef, io, ipol, util
 
-from . import has_data, requires_data
+from . import requires_data, requires_gdal
 
 
-class TestCompose:
-    if has_data:
+@pytest.fixture
+def comp_data():
+    @dataclass(init=False, repr=False, eq=False)
+    class Data:
         filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
         dx_file = util.get_wradlib_data_file(filename)
         data, metadata = io.read_dx(dx_file)
@@ -25,27 +30,38 @@ class TestCompose:
         x = coords[..., 0]
         y = coords[..., 1]
 
+    yield Data
+
+
+class TestCompose:
     @requires_data
-    def test_extract_circle(self):
-        xgrid = np.linspace(self.x.min(), self.x.mean(), 100)
-        ygrid = np.linspace(self.y.min(), self.y.mean(), 100)
+    @requires_gdal
+    def test_extract_circle(self, comp_data):
+        x = comp_data.x
+        y = comp_data.y
+        xgrid = np.linspace(x.min(), x.mean(), 100)
+        ygrid = np.linspace(y.min(), y.mean(), 100)
         grid_xy = np.meshgrid(xgrid, ygrid)
         grid_xy = np.vstack((grid_xy[0].ravel(), grid_xy[1].ravel())).transpose()
-        comp.extract_circle(np.array([self.x.mean(), self.y.mean()]), 128000.0, grid_xy)
+        comp.extract_circle(np.array([x.mean(), y.mean()]), 128000.0, grid_xy)
 
     @requires_data
-    def test_togrid(self):
-        xgrid = np.linspace(self.x.min(), self.x.mean(), 100)
-        ygrid = np.linspace(self.y.min(), self.y.mean(), 100)
+    @requires_gdal
+    def test_togrid(self, comp_data):
+        x = comp_data.x
+        y = comp_data.y
+        data = comp_data.data
+        xgrid = np.linspace(x.min(), x.mean(), 100)
+        ygrid = np.linspace(y.min(), y.mean(), 100)
         grid_xy = np.meshgrid(xgrid, ygrid)
         grid_xy = np.vstack((grid_xy[0].ravel(), grid_xy[1].ravel())).transpose()
-        xy = np.concatenate([self.x.ravel()[:, None], self.y.ravel()[:, None]], axis=1)
+        xy = np.concatenate([x.ravel()[:, None], y.ravel()[:, None]], axis=1)
         comp.togrid(
             xy,
             grid_xy,
             128000.0,
-            np.array([self.x.mean(), self.y.mean()]),
-            self.data.ravel(),
+            np.array([x.mean(), y.mean()]),
+            data.ravel(),
             ipol.Nearest,
         )
 
