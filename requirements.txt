@@ -1,12 +1,5 @@
-dask
 deprecation
-gdal
-h5py
-h5netcdf
-netCDF4
-numpy
 matplotlib
-requests
+numpy
 scipy
 xarray>=0.17.0
-xmltodict
