@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import warnings
@@ -9,6 +9,8 @@ import numpy as np
 import pytest
 
 from wradlib import georef, ipol
+
+from . import requires_gdal
 
 
 class TestInterpolation:
@@ -381,6 +383,7 @@ class TestRectGridInterpolation:
         np.testing.assert_allclose(res0, res1)
         np.testing.assert_allclose(res0a, res1)
 
+    @requires_gdal
     def test_QuadriArea(self):
         grid2 = self.grid2 + (-0.01, 0.01)
         ip = ipol.QuadriArea(grid2, self.grid)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -36,18 +36,23 @@ import os.path
 import re
 import warnings
 
-import matplotlib.pyplot as pl
 import numpy as np
 import xarray as xr
-from matplotlib import axes, lines, patches
-from matplotlib.collections import LineCollection, PolyCollection
-from matplotlib.projections import PolarAxes
-from matplotlib.ticker import FuncFormatter, MaxNLocator, MultipleLocator, NullFormatter
-from matplotlib.transforms import Affine2D
-from mpl_toolkits.axisartist import GridHelperCurveLinear, HostAxes, angle_helper
-from osgeo import osr
 
 from wradlib import georef, io, ipol, util
+
+pl = util.import_optional("matplotlib.pyplot")
+axes = util.import_optional("matplotlib.axes")
+lines = util.import_optional("matplotlib.lines")
+patches = util.import_optional("matplotlib.patches")
+coll = util.import_optional("matplotlib.collections")
+proj = util.import_optional("matplotlib.projections")
+tick = util.import_optional("matplotlib.ticker")
+trans = util.import_optional("matplotlib.transforms")
+axisartist = util.import_optional("mpl_toolkits.axisartist")
+angle_helper = util.import_optional("mpl_toolkits.axisartist.angle_helper")
+osr = util.import_optional("osgeo.osr")
+cartopy = util.import_optional("cartopy")
 
 
 @xr.register_dataarray_accessor("wradlib")
@@ -205,8 +210,9 @@ class WradlibAccessor(object):
             if isinstance(proj, collections.abc.Mapping):
                 cg.update(proj)
 
-        if isinstance(proj, osr.SpatialReference):
-            raise TypeError("WRADLIB: Currently GDAL OSR SRS are not supported")
+        if util.has_import(osr):
+            if isinstance(proj, osr.SpatialReference):
+                raise TypeError("WRADLIB: Currently GDAL OSR SRS are not supported")
 
         if isinstance(ax, axes.Axes):
             if cg:
@@ -256,8 +262,7 @@ class WradlibAccessor(object):
                 xp, yp = "gr", "z"
 
         # use cartopy, if available
-        if hasattr(plax, "projection"):
-            cartopy = util.import_optional("cartopy")
+        if hasattr(plax, "projection") and util.has_import(cartopy):
             map_trans = cartopy.crs.AzimuthalEquidistant(
                 central_longitude=self.site[0], central_latitude=self.site[1]
             )
@@ -419,7 +424,7 @@ def plot_ppi(
         )
 
     # site must be given, if proj is OSR
-    if isinstance(proj, osr.SpatialReference) and site is None:
+    if util.has_import(osr) and isinstance(proj, osr.SpatialReference) and site is None:
         raise TypeError(
             "WRADLIB: If `proj` is Spatial Reference System "
             "(GDAL OSR SRS) site need to be given "
@@ -468,9 +473,10 @@ def plot_ppi(
 
     da = georef.georeference_dataset(da, proj=proj)
 
-    # fallback to proj=None for GDAL OSR
-    if isinstance(proj, osr.SpatialReference):
-        proj = None
+    if util.has_import(osr):
+        # fallback to proj=None for GDAL OSR
+        if isinstance(proj, osr.SpatialReference):
+            proj = None
 
     pm = da.wradlib.plot_ppi(ax=ax, fig=fig, func=func, proj=proj, **kwargs)
 
@@ -788,9 +794,10 @@ def plot_rhi(
 
     da = georef.georeference_dataset(da, proj=proj)
 
-    # fallback to proj=None for GDAL OSR
-    if isinstance(proj, osr.SpatialReference):
-        proj = None
+    if util.has_import(osr):
+        # fallback to proj=None for GDAL OSR
+        if isinstance(proj, osr.SpatialReference):
+            proj = None
 
     pm = da.wradlib.plot_rhi(ax=ax, fig=fig, func=func, proj=proj, **kwargs)
 
@@ -855,11 +862,11 @@ def create_cg(
     """
     # create transformation
     # rotate
-    tr_rotate = Affine2D().translate(rot, 0)
+    tr_rotate = trans.Affine2D().translate(rot, 0)
     # scale
-    tr_scale = Affine2D().scale(scale * np.pi / 180, 1)
+    tr_scale = trans.Affine2D().scale(scale * np.pi / 180, 1)
     # polar
-    tr_polar = PolarAxes.PolarTransform()
+    tr_polar = proj.PolarAxes.PolarTransform()
 
     tr = tr_rotate + tr_scale + tr_polar
 
@@ -877,7 +884,7 @@ def create_cg(
     tick_formatter1 = angle_helper.FormatterDMS()
 
     # grid_helper for curvelinear grid
-    grid_helper = GridHelperCurveLinear(
+    grid_helper = axisartist.GridHelperCurveLinear(
         tr,
         extreme_finder=extreme_finder,
         grid_locator1=grid_locator1,
@@ -900,7 +907,9 @@ def create_cg(
             fig = pl.gcf()
 
     # generate Axis
-    cgax = fig.add_subplot(subplot, axes_class=HostAxes, grid_helper=grid_helper)
+    cgax = fig.add_subplot(
+        subplot, axes_class=axisartist.HostAxes, grid_helper=grid_helper
+    )
 
     # get twin axis for cartesian grid
     caax = cgax.twin()
@@ -1103,18 +1112,18 @@ def plot_scan_strategy(
     # axes ticks and formatting
     if range_res is not None:
         xloc = range_res
-        caax.xaxis.set_major_locator(MultipleLocator(xloc))
+        caax.xaxis.set_major_locator(tick.MultipleLocator(xloc))
     else:
-        caax.xaxis.set_major_locator(MaxNLocator())
+        caax.xaxis.set_major_locator(tick.MaxNLocator())
     yloc = vert_res
-    caax.yaxis.set_major_locator(MultipleLocator(yloc))
+    caax.yaxis.set_major_locator(tick.MultipleLocator(yloc))
 
     import functools
 
     hform = functools.partial(_height_formatter, cg=cg, scale=scale)
     rform = functools.partial(_range_formatter, scale=scale)
-    caax.yaxis.set_major_formatter(FuncFormatter(hform))
-    caax.xaxis.set_major_formatter(FuncFormatter(rform))
+    caax.yaxis.set_major_formatter(tick.FuncFormatter(hform))
+    caax.xaxis.set_major_formatter(tick.FuncFormatter(rform))
 
     # color management
     from cycler import cycler
@@ -1227,8 +1236,8 @@ def plot_plan_and_vert(
     ax_cb = pl.axes((left + width + height + 0.02, bottom, 0.02, width))
 
     # set axis label formatters
-    ax_x.xaxis.set_major_formatter(NullFormatter())
-    ax_y.yaxis.set_major_formatter(NullFormatter())
+    ax_x.xaxis.set_major_formatter(tick.NullFormatter())
+    ax_y.yaxis.set_major_formatter(tick.NullFormatter())
 
     # draw CAPPI
     pl.sca(ax_xy)
@@ -1257,13 +1266,13 @@ def plot_plan_and_vert(
         """The two args are the value and tick position"""
         return "%d" % (x / 1000.0)
 
-    xyformatter = FuncFormatter(xycoords)
+    xyformatter = tick.FuncFormatter(xycoords)
 
     def zcoords(x, pos):
         """The two args are the value and tick position"""
         return ("%.1f" % (x / 1000.0)).rstrip("0").rstrip(".")
 
-    zformatter = FuncFormatter(zcoords)
+    zformatter = tick.FuncFormatter(zcoords)
 
     ax_xy.xaxis.set_major_formatter(xyformatter)
     ax_xy.yaxis.set_major_formatter(xyformatter)
@@ -1334,9 +1343,9 @@ def add_lines(ax, lines, **kwargs):
     See :ref:`/notebooks/visualisation/wradlib_overlay.ipynb`.
     """
     try:
-        ax.add_collection(LineCollection([lines], **kwargs))
+        ax.add_collection(coll.LineCollection([lines], **kwargs))
     except AssertionError:
-        ax.add_collection(LineCollection([lines[None, ...]], **kwargs))
+        ax.add_collection(coll.LineCollection([lines[None, ...]], **kwargs))
     except ValueError:
         for line in lines:
             add_lines(ax, line, **kwargs)
@@ -1362,9 +1371,9 @@ def add_patches(ax, patch_array, **kwargs):
     """
 
     try:
-        ax.add_collection(PolyCollection([patch_array], **kwargs))
+        ax.add_collection(coll.PolyCollection([patch_array], **kwargs))
     except AssertionError:
-        ax.add_collection(PolyCollection([patch_array[None, ...]], **kwargs))
+        ax.add_collection(coll.PolyCollection([patch_array[None, ...]], **kwargs))
     except ValueError:
         for patch in patch_array:
             add_patches(ax, patch, **kwargs)

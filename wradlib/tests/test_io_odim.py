@@ -4,14 +4,21 @@
 import contextlib
 import gc
 
-import h5py
 import numpy as np
 import pytest
 import xarray as xr
 
 from wradlib import io, util
 
-from . import get_wradlib_data_file, has_data, requires_data
+from . import (
+    get_wradlib_data_file,
+    h5py,
+    has_data,
+    requires_data,
+    requires_h5netcdf,
+    requires_h5py,
+    requires_netcdf,
+)
 
 
 @pytest.fixture(params=["file", "filelike"])
@@ -256,7 +263,13 @@ def create_coords(i, nrays=360):
 
 @contextlib.contextmanager
 def get_measured_volume(file, loader, format, fileobj):
-    # h5file = util.get_wradlib_data_file(file)
+    if loader == "noloader":
+        pass
+    elif loader == "netcdf4":
+        pytest.importorskip("netCDF4")
+    else:
+        pytest.importorskip(loader)
+        pytest.importorskip("h5netcdf")
     with get_wradlib_data_file(file, fileobj) as h5file:
         yield io.xarray.open_odim(h5file, loader=loader, flavour=format)
 
@@ -264,6 +277,15 @@ def get_measured_volume(file, loader, format, fileobj):
 @contextlib.contextmanager
 def get_synthetic_volume(name, get_loader, file_or_filelike, **kwargs):
     import tempfile
+
+    if get_loader == "noloader":
+        pass
+    elif get_loader == "netcdf4":
+        pytest.importorskip("netCDF4")
+    else:
+        pytest.importorskip(get_loader)
+        pytest.importorskip("h5netcdf")
+    pytest.importorskip("h5py")
 
     tmp_local = tempfile.NamedTemporaryFile(suffix=".h5", prefix=name).name
     if "gamic" in name:
@@ -913,6 +935,7 @@ class DataVolume(DataTimeSeries):
         del vol
         gc.collect()
 
+    @requires_h5py
     def test_odim_output(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
@@ -926,6 +949,7 @@ class DataVolume(DataTimeSeries):
         del vol
         gc.collect()
 
+    @requires_netcdf
     def test_cfradial2_output(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
@@ -941,6 +965,7 @@ class DataVolume(DataTimeSeries):
         del vol
         gc.collect()
 
+    @requires_netcdf
     def test_netcdf_output(self, get_loader, file_or_filelike):
         if get_loader == "netcdf4" and self.format == "GAMIC":
             pytest.skip("gamic needs hdf-based loader")
@@ -963,6 +988,10 @@ class MeasuredDataVolume(DataVolume):
         with get_measured_volume(self.name, loader, self.format, fileobj) as vol:
             yield vol
 
+    @property
+    def data(self):
+        return self._data
+
 
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
@@ -972,6 +1001,8 @@ class SyntheticDataVolume(DataVolume):
 
 
 @requires_data
+@requires_h5netcdf
+@requires_netcdf
 class TestKNMIVolume(MeasuredDataVolume):
     if has_data:
         name = "hdf5/knmi_polar_volume.h5"
@@ -998,13 +1029,17 @@ class TestKNMIVolume(MeasuredDataVolume):
         azimuths = [360] * sweeps
         ranges = [320, 240, 240, 240, 240, 340, 340, 300, 300, 240, 240, 240, 240, 240]
 
-        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
-
         dsdesc = "dataset{}"
         mdesc = "data{}"
 
+        @property
+        def data(self):
+            return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
+
 
 @requires_data
+@requires_h5netcdf
+@requires_netcdf
 class TestGamicVolume(MeasuredDataVolume):
     if has_data:
         name = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
@@ -1029,10 +1064,12 @@ class TestGamicVolume(MeasuredDataVolume):
         azimuths = [361, 361, 361, 360, 361, 360, 360, 361, 360, 360]
         ranges = [360, 500, 620, 800, 1050, 1400, 1000, 1000, 1000, 1000]
 
-        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
-
         dsdesc = "scan{}"
         mdesc = "moment_{}"
+
+    @property
+    def data(self):
+        return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
 
 
 class TestSyntheticOdimVolume01(SyntheticDataVolume):

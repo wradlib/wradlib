@@ -107,9 +107,6 @@ from distutils.version import LooseVersion
 
 import dateutil
 import deprecation
-import h5netcdf
-import h5py
-import netCDF4 as nc
 import numpy as np
 import xarray as xr
 from xarray.backends.api import combine_by_coords
@@ -117,6 +114,7 @@ from xarray.core.variable import Variable
 
 from wradlib import version
 from wradlib.georef import xarray
+from wradlib.util import has_import, import_optional
 
 try:
     from tqdm import tqdm
@@ -129,6 +127,11 @@ except ImportError:
             "instead."
         )
         return val
+
+
+h5py = import_optional("h5py")
+h5netcdf = import_optional("h5netcdf")
+netCDF4 = import_optional("netCDF4")
 
 
 def raise_on_missing_xarray_backend():
@@ -812,7 +815,7 @@ class OdimAccessor(object):
         return self._n_samples
 
 
-def to_cfradial2(volume, filename, timestep=None):
+def to_cfradial2(volume, filename, timestep=None, engine=None):
     """Save RadarVolume/XRadVol/XRadVolume to CfRadial2.0 compliant file.
 
     Parameters
@@ -823,11 +826,20 @@ def to_cfradial2(volume, filename, timestep=None):
     timestep : int
         timestep of wanted volume
     """
+    if engine is None:
+        if has_import(netCDF4):
+            engine == "netcdf4"
+        elif has_import(h5netcdf):
+            engine == "h5netcdf"
+        else:
+            raise ImportError(
+                "wradlib: ``netCDF4`` or ``h5netcdf`` needed to perform this operation."
+            )
     volume.root.load()
     root = volume.root.copy(deep=True)
     root.attrs["Conventions"] = "Cf/Radial"
     root.attrs["version"] = "2.0"
-    root.to_netcdf(filename, mode="w", group="/")
+    root.to_netcdf(filename, mode="w", group="/", engine=engine)
     for idx, key in enumerate(root.sweep_group_name.values):
         if isinstance(volume, (OdimH5, CfRadial)):
             swp = volume[key]
@@ -847,10 +859,10 @@ def to_cfradial2(volume, filename, timestep=None):
             swp = swp.swap_dims({dim0: "time"})
         swp = swp.drop_vars(["x", "y", "z", "gr", "rays", "bins"], errors="ignore")
         swp = swp.sortby("time")
-        swp.to_netcdf(filename, mode="a", group=key)
+        swp.to_netcdf(filename, mode="a", group=key, engine=engine)
 
 
-def to_netcdf(volume, filename, timestep=None, keys=None):
+def to_netcdf(volume, filename, timestep=None, keys=None, engine=None):
     """Save RadarVolume/XRadVolume to netcdf compliant file.
 
     Parameters
@@ -863,11 +875,20 @@ def to_netcdf(volume, filename, timestep=None, keys=None):
     keys : list
         list of sweep_group_names which should be written to the file
     """
+    if engine is None:
+        if has_import(netCDF4):
+            engine == "netcdf4"
+        elif has_import(h5netcdf):
+            engine == "h5netcdf"
+        else:
+            raise ImportError(
+                "wradlib: ``netCDF4`` or ``h5netcdf`` needed to perform this operation."
+            )
     volume.root.load()
     root = volume.root.copy(deep=True)
     root.attrs["Conventions"] = "Cf/Radial"
     root.attrs["version"] = "2.0"
-    root.to_netcdf(filename, mode="w", group="/")
+    root.to_netcdf(filename, mode="w", group="/", engine=engine)
     if keys is None:
         keys = root.sweep_group_name.values
     for idx, key in enumerate(root.sweep_group_name.values):
@@ -879,7 +900,7 @@ def to_netcdf(volume, filename, timestep=None, keys=None):
                 if "time" not in ds.dims:
                     ds = ds.expand_dims("time")
                 swp = ds.isel(time=timestep)
-            swp.to_netcdf(filename, mode="a", group=key)
+            swp.to_netcdf(filename, mode="a", group=key, engine=engine)
 
 
 def to_odim(volume, filename, timestep=0):
@@ -1591,7 +1612,7 @@ def _get_nc4group_names(filename, engine):
         groupname = "sweep"
     else:
         raise ValueError(f"wradlib: unknown engine `{engine}`.")
-    with nc.Dataset(filename, "r") as fh:
+    with netCDF4.Dataset(filename, "r") as fh:
         groups = ["".join(["", grp]) for grp in fh.groups if groupname in grp.lower()]
     if isinstance(filename, io.BytesIO):
         filename.seek(0)
@@ -2144,7 +2165,7 @@ def _open_mfmoments(
 
     engine = moments[0].engine
     if engine == "netcdf4":
-        opener = nc.Dataset
+        opener = netCDF4.Dataset
         opener_kwargs = {}
         store = xr.backends.NetCDF4DataStore
     else:
@@ -2477,6 +2498,14 @@ class OdimH5GroupAttributeMixin:
         self._where = None
 
     @property
+    def is_netcdf(self):
+        return has_import(netCDF4) and isinstance(self.ncfile, netCDF4.Dataset)
+
+    @property
+    def is_h5netcdf(self):
+        return has_import(h5netcdf) and isinstance(self.ncfile, h5netcdf.File)
+
+    @property
     def ncpath(self):
         """Returns path string inside HDF5 File."""
         return self._ncpath
@@ -2486,7 +2515,7 @@ class OdimH5GroupAttributeMixin:
         """Returns handle for current path."""
         # root-group can't be subset with netcdf4 and h5netcdf
         if self._ncpath == "/":
-            if isinstance(self.ncfile, (nc.Dataset, h5netcdf.File)):
+            if self.is_netcdf or self.is_h5netcdf:
                 return self._ncfile
         return self._ncfile[self.ncpath]
 
@@ -2520,7 +2549,7 @@ class OdimH5GroupAttributeMixin:
     def attrs(self):
         """Return group attributes."""
         if self._attrs is None:
-            if isinstance(self.ncfile, nc.Dataset):
+            if self.is_netcdf:
                 self._attrs = {k: self.ncid.getncattr(k) for k in self.ncid.ncattrs()}
             else:
                 self._attrs = self._decode({**self.ncid.attrs})
@@ -2529,7 +2558,7 @@ class OdimH5GroupAttributeMixin:
     @property
     def filename(self):
         """Return filename group belongs to."""
-        if isinstance(self.ncfile, nc.Dataset):
+        if self.is_netcdf:
             return self.ncfile.filepath()
         else:
             return self.ncfile.filename
@@ -2537,7 +2566,7 @@ class OdimH5GroupAttributeMixin:
     @property
     def groups(self):
         """Return list of available groups."""
-        if isinstance(self.ncfile, nc.Dataset):
+        if self.is_netcdf:
             return list(self.ncid.groups)
         else:
             return list(self.ncid.keys())
@@ -2545,7 +2574,7 @@ class OdimH5GroupAttributeMixin:
     @property
     def engine(self):
         """Return engine used for accessing data"""
-        if isinstance(self.ncfile, nc.Dataset):
+        if self.is_netcdf:
             return "netcdf4"
         else:
             return "h5netcdf"
@@ -2560,7 +2589,7 @@ class OdimH5GroupAttributeMixin:
         if ncid is None:
             ncid = self.ncid
         try:
-            if isinstance(self.ncfile, nc.Dataset):
+            if self.is_netcdf:
                 attrs = {k: ncid[grp].getncattr(k) for k in ncid[grp].ncattrs()}
                 return attrs
             else:
@@ -2575,7 +2604,7 @@ class OdimH5GroupAttributeMixin:
         if ncid is None:
             ncid = self.ncid
         try:
-            if isinstance(self.ncfile, nc.Dataset):
+            if self.is_netcdf:
                 return ncid[grp].getncattr(attr)
             else:
                 v = ncid[grp].attrs[attr]
@@ -3121,7 +3150,7 @@ class XRadSweepOdim(XRadSweep):
     def _get_time_fast(self):
         ncid = self.ncid
         try:
-            if isinstance(self.ncfile, nc.Dataset):
+            if self.is_netcdf:
                 startdate = ncid["what"].getncattr("startdate")
                 starttime = ncid["what"].getncattr("starttime")
             else:
@@ -3234,7 +3263,7 @@ class XRadSweepGamic(XRadSweep):
             opener_kwargs = dict(phony_dims="access")
             store = xr.backends.H5NetCDFStore
         else:
-            opener = nc.Dataset
+            opener = netCDF4.Dataset
             opener_kwargs = dict()
             store = xr.backends.NetCDF4DataStore
 
@@ -3320,7 +3349,7 @@ class XRadSweepGamic(XRadSweep):
     def _get_time_fast(self):
         ncid = self.ncid
         try:
-            if isinstance(self.ncfile, nc.Dataset):
+            if self.is_netcdf:
                 start = ncid["how"].getncattr("timestamp")
             else:
                 start = ncid["how"].attrs["timestamp"]
@@ -3687,7 +3716,7 @@ def _open_odim_sweep(filename, loader, **kwargs):
     """
     ld_kwargs = kwargs.get("ld_kwargs", {})
     if loader == "netcdf4":
-        opener = nc.Dataset
+        opener = netCDF4.Dataset
         attr = "groups"
     elif loader == "h5netcdf":
         opener = h5netcdf.File
@@ -3710,12 +3739,12 @@ def _open_odim_sweep(filename, loader, **kwargs):
 
     # open file
     if not isinstance(filename, str):
-        if opener == h5py.File:
+        if has_import(h5py) and opener == h5py.File:
             raise ValueError(
                 "wradlib: file-like objects can't be read using h5py "
                 "loader. Use either 'netcdf4' or 'h5netcdf'."
             )
-        if opener == nc.Dataset:
+        if has_import(netCDF4) and opener == netCDF4.Dataset:
             handle = opener(
                 f"{str(filename)}", mode="r", memory=filename.read(), **ld_kwargs
             )
@@ -3758,8 +3787,9 @@ def open_odim(paths, loader="netcdf4", **kwargs):
     kwargs : dict, optional
         Additional arguments passed on to :class:`wradlib.io.xarray.XRadSweep`.
     """
-    if (loader == "h5netcdf") & (
-        LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0")
+    if (loader == "h5netcdf") and (
+        has_import(h5netcdf)
+        and (LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0"))
     ):
         warnings.warn(
             f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
@@ -3836,7 +3866,7 @@ class OdimH5File(XRadVolFile):
         super(OdimH5File, self).__init__(filename=filename, flavour=flavour, **kwargs)
 
     def _check_file(self, filename, flavour):
-        nch = nc.Dataset(filename, diskless=True, persist=False)
+        nch = netCDF4.Dataset(filename, diskless=True, persist=False)
         if nch.disk_format != "HDF5":
             raise TypeError(
                 'wradlib: File {} is neither "NETCDF4" (using HDF5 groups) '
@@ -3896,7 +3926,7 @@ class NetCDF4File(XRadVolFile):
         super(NetCDF4File, self).__init__(filename=filename, flavour=flavour, **kwargs)
 
     def _check_file(self, filename, flavour):
-        nch = nc.Dataset(filename, diskless=True, persist=False)
+        nch = netCDF4.Dataset(filename, diskless=True, persist=False)
         if flavour is None:
             try:
                 Conventions = nch.Conventions

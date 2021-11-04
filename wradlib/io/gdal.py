@@ -22,7 +22,10 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
 
-from osgeo import gdal, osr
+from wradlib.util import import_optional
+
+osr = import_optional("osgeo.osr")
+gdal = import_optional("osgeo.gdal")
 
 
 def open_vector(filename, driver=None, layer=0):
@@ -116,7 +119,7 @@ def read_safnwc(filename):
 
 
 def gdal_create_dataset(
-    drv, name, cols=0, rows=0, bands=0, gdal_type=gdal.GDT_Unknown, remove=False
+    drv, name, cols=0, rows=0, bands=0, gdal_type=None, remove=False
 ):
     """Creates GDAL.DataSet object.
 
@@ -143,6 +146,9 @@ def gdal_create_dataset(
     out : :py:class:`gdal:osgeo.gdal.Dataset`
         gdal.Dataset
     """
+    if gdal_type is None:
+        gdal_type = gdal.GDT_Unknown
+
     driver = gdal.GetDriverByName(drv)
     metadata = driver.GetMetadata()
 

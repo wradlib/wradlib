@@ -23,12 +23,14 @@ __all__ = [
     "maximum_intensity_projection",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
+__doctest_requires__ = {"spherical*": ["osgeo"]}
 
 import warnings
 
 import numpy as np
 
 from wradlib.georef import misc, projection
+from wradlib.util import has_import, import_optional
 
 
 def spherical_to_xyz(
@@ -100,7 +102,11 @@ def spherical_to_xyz(
             "+b={b:f} +units=m +no_defs"
         ).format(lon=sitecoords[0], lat=sitecoords[1], a=re, b=re)
 
-    rad = projection.proj4_to_osr(projstr)
+    osr = import_optional("osgeo.osr")
+    if has_import(osr):
+        rad = projection.proj4_to_osr(projstr)
+    else:
+        rad = projstr
 
     r = np.asanyarray(r)
     theta = np.asanyarray(theta)

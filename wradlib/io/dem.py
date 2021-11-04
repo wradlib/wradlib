@@ -21,32 +21,36 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import os
 
 import numpy as np
-import requests
-from osgeo import gdal
 
 from wradlib import util
 
+gdal = util.import_optional("osgeo.gdal")
+requests = util.import_optional("requests")
 
-class HeaderRedirection(requests.Session):
-    AUTH_HOST = "urs.earthdata.nasa.gov"
 
-    def __init__(self, username, password):
-        super().__init__()
-        self.auth = (username, password)
+def init_header_redirect_session(user, pwd):
+    class HeaderRedirection(requests.Session):
+        AUTH_HOST = "urs.earthdata.nasa.gov"
 
-    def rebuild_auth(self, request, response):
-        headers = request.headers
-        url = request.url
-        if "Authorization" in headers:
-            original = requests.utils.urlparse(response.request.url).hostname
-            redirect = requests.utils.urlparse(url).hostname
-            if (
-                original != redirect
-                and redirect != self.AUTH_HOST
-                and original != self.AUTH_HOST
-            ):
-                del headers["Authorization"]
-        return
+        def __init__(self, username, password):
+            super().__init__()
+            self.auth = (username, password)
+
+        def rebuild_auth(self, request, response):
+            headers = request.headers
+            url = request.url
+            if "Authorization" in headers:
+                original = requests.utils.urlparse(response.request.url).hostname
+                redirect = requests.utils.urlparse(url).hostname
+                if (
+                    original != redirect
+                    and redirect != self.AUTH_HOST
+                    and original != self.AUTH_HOST
+                ):
+                    del headers["Authorization"]
+            return
+
+    return HeaderRedirection(user, pwd)
 
 
 def download_srtm(filename, destination, resolution=3):
@@ -82,7 +86,7 @@ def download_srtm(filename, destination, resolution=3):
             "please visit https://urs.earthdata.nasa.gov/users/new/."
         )
 
-    session = HeaderRedirection(user, pwd)
+    session = init_header_redirect_session(user, pwd)
 
     try:
         r = session.get(url, stream=True)

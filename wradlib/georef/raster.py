@@ -31,10 +31,14 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
-from osgeo import gdal, gdal_array, osr
 
 import wradlib
 from wradlib import georef
+from wradlib.util import import_optional
+
+gdal = import_optional("osgeo.gdal")
+gdal_array = import_optional("osgeo.gdal_array")
+osr = import_optional("osgeo.osr")
 
 
 def _pixel_coordinates(nx, ny, mode):

@@ -29,8 +29,6 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import datetime as dt
 from distutils.version import LooseVersion
 
-import h5py
-import netCDF4 as nc
 import numpy as np
 
 from wradlib.io.xarray import (
@@ -38,6 +36,10 @@ from wradlib.io.xarray import (
     open_radar_mfdataset,
     raise_on_missing_xarray_backend,
 )
+from wradlib.util import import_optional
+
+h5py = import_optional("h5py")
+nc = import_optional("netCDF4")
 
 
 def open_odim_dataset(filename_or_obj, group=None, **kwargs):

@@ -61,15 +61,19 @@ import tempfile
 import warnings
 
 import numpy as np
-from matplotlib import patches
-from matplotlib.path import Path
-from osgeo import gdal, ogr
 from scipy import spatial
 
 from wradlib import georef, io
+from wradlib.util import has_import, import_optional
 
-ogr.UseExceptions()
-gdal.UseExceptions()
+ogr = import_optional("osgeo.ogr")
+gdal = import_optional("osgeo.gdal")
+mpl_patches = import_optional("matplotlib.patches")
+mpl_path = import_optional("matplotlib.path")
+
+if has_import(gdal):
+    ogr.UseExceptions()
+    gdal.UseExceptions()
 
 # check windows
 isWindows = os.name == "nt"
@@ -1074,11 +1078,11 @@ def numpy_to_pathpatch(arr):
             code = np.full(vert.shape[0], 2, dtype=np.int)
             ind = np.cumsum([0] + [len(x) for x in item[:-1]])
             code[ind] = 1
-            path = Path(vert, code)
-            paths.append(patches.PathPatch(path))
+            path = mpl_path.Path(vert, code)
+            paths.append(mpl_patches.PathPatch(path))
         else:
-            path = Path(item, [1] + (len(item) - 1) * [2])
-            paths.append(patches.PathPatch(path))
+            path = mpl_path.Path(item, [1] + (len(item) - 1) * [2])
+            paths.append(mpl_patches.PathPatch(path))
 
     return np.array(paths)
 

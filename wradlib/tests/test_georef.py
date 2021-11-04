@@ -1,18 +1,25 @@
 # !/usr/bin/env python
 # Copyright (c) 2011-2020, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
-
 import sys
+from dataclasses import dataclass
 
 import numpy as np
 import pytest
 import xarray as xr
-from osgeo import gdal, ogr, osr
 
 import wradlib
 from wradlib import georef, util
 
-from . import has_data, requires_data, requires_secrets
+from . import (
+    gdal,
+    ogr,
+    osr,
+    requires_data,
+    requires_gdal,
+    requires_h5py,
+    requires_secrets,
+)
 
 np.set_printoptions(
     edgeitems=3,
@@ -26,93 +33,100 @@ np.set_printoptions(
 )
 
 
-@pytest.fixture(params=[10, 13, 15])
-def r(request):
-    return request.param
+@pytest.fixture
+def coord_transform_data():
+    @dataclass(init=False, repr=False, eq=False)
+    class Data:
+        r = np.array([0.0, 0.0, 111.0, 111.0, 111.0, 111.0, 111.0]) * 1000
+        az = np.array([0.0, 180.0, 0.0, 90.0, 180.0, 270.0, 360.0])
+        th = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5])
+        csite = (9.0, 48.0, 0)
+        result_xyz = tuple(
+            (
+                np.array([0.0, 0.0, 0.0, 110993.6738, 0.0, -110976.7856, 0.0]),
+                np.array(
+                    [0.0, -0.0, 110993.6738, 0.0, -110993.6738, -0.0, 110976.7856]
+                ),
+                np.array(
+                    [
+                        0.0,
+                        0.0,
+                        725.7159843,
+                        725.7159843,
+                        725.7159843,
+                        1694.22337134,
+                        1694.22337134,
+                    ]
+                ),
+            )
+        )
+        result = tuple(
+            (
+                np.array([9.0, 9.0, 9.0, 10.49189531, 9.0, 7.50810469, 9.0]),
+                np.array(
+                    [
+                        48.0,
+                        48.0,
+                        48.99839742,
+                        47.99034027,
+                        47.00160258,
+                        47.99034027,
+                        47.99034027,
+                    ]
+                ),
+                np.array(
+                    [
+                        0.0,
+                        0.0,
+                        967.03198482,
+                        967.03198482,
+                        967.03198482,
+                        1935.45679527,
+                        1935.45679527,
+                    ]
+                ),
+            )
+        )
+        result_n = tuple(
+            (
+                np.array([9.0, 9.0, 9.0, 10.48716091, 9.0, 7.51306531, 9.0]),
+                np.array(
+                    [
+                        48.0,
+                        48.0,
+                        48.99814438,
+                        47.99037251,
+                        47.00168131,
+                        47.99037544,
+                        48.997993,
+                    ]
+                ),
+                np.array(
+                    [
+                        0.0,
+                        0.0,
+                        725.7159843,
+                        725.7159843,
+                        725.7159843,
+                        1694.22337134,
+                        1694.22337134,
+                    ]
+                ),
+            )
+        )
+
+    yield Data
 
 
 class TestCoordinateTransform:
-    r = np.array([0.0, 0.0, 111.0, 111.0, 111.0, 111.0, 111.0]) * 1000
-    az = np.array([0.0, 180.0, 0.0, 90.0, 180.0, 270.0, 360.0])
-    th = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5])
-    csite = (9.0, 48.0, 0)
-    result_xyz = tuple(
-        (
-            np.array([0.0, 0.0, 0.0, 110993.6738, 0.0, -110976.7856, 0.0]),
-            np.array([0.0, -0.0, 110993.6738, 0.0, -110993.6738, -0.0, 110976.7856]),
-            np.array(
-                [
-                    0.0,
-                    0.0,
-                    725.7159843,
-                    725.7159843,
-                    725.7159843,
-                    1694.22337134,
-                    1694.22337134,
-                ]
-            ),
-        )
-    )
-    result = tuple(
-        (
-            np.array([9.0, 9.0, 9.0, 10.49189531, 9.0, 7.50810469, 9.0]),
-            np.array(
-                [
-                    48.0,
-                    48.0,
-                    48.99839742,
-                    47.99034027,
-                    47.00160258,
-                    47.99034027,
-                    47.99034027,
-                ]
-            ),
-            np.array(
-                [
-                    0.0,
-                    0.0,
-                    967.03198482,
-                    967.03198482,
-                    967.03198482,
-                    1935.45679527,
-                    1935.45679527,
-                ]
-            ),
-        )
-    )
-    result_n = tuple(
-        (
-            np.array([9.0, 9.0, 9.0, 10.48716091, 9.0, 7.51306531, 9.0]),
-            np.array(
-                [
-                    48.0,
-                    48.0,
-                    48.99814438,
-                    47.99037251,
-                    47.00168131,
-                    47.99037544,
-                    48.997993,
-                ]
-            ),
-            np.array(
-                [
-                    0.0,
-                    0.0,
-                    725.7159843,
-                    725.7159843,
-                    725.7159843,
-                    1694.22337134,
-                    1694.22337134,
-                ]
-            ),
-        )
-    )
+    @requires_gdal
+    def test_spherical_to_xyz(self, coord_transform_data):
+        data = coord_transform_data
 
-    def test_spherical_to_xyz(self):
         def check(rc, azc, elc, outc, squeeze=False, strict_dims=False):
             assert (
                 georef.spherical_to_xyz(
-                    rc, azc, elc, self.csite, squeeze=squeeze, strict_dims=strict_dims
+                    rc, azc, elc, data.csite, squeeze=squeeze, strict_dims=strict_dims
                 )[0].shape
                 == outc
             )
@@ -142,29 +156,29 @@ class TestCoordinateTransform:
         check(10, 36.0, np.arange(10), (10, 1, 1, 3))
         check(10, np.arange(36), np.arange(10), (10, 36, 1, 3))
         coords, rad = georef.spherical_to_xyz(
-            self.r, self.az, self.th, self.csite, squeeze=True
+            data.r, data.az, data.th, data.csite, squeeze=True
         )
         np.testing.assert_allclose(
-            coords[..., 0], self.result_xyz[0], rtol=2e-10, atol=3e-5
+            coords[..., 0], data.result_xyz[0], rtol=2e-10, atol=3e-5
         )
         np.testing.assert_allclose(
-            coords[..., 1], self.result_xyz[1], rtol=2e-10, atol=3e-5
+            coords[..., 1], data.result_xyz[1], rtol=2e-10, atol=3e-5
         )
         np.testing.assert_allclose(
-            coords[..., 2], self.result_xyz[2], rtol=2e-10, atol=3e-5
+            coords[..., 2], data.result_xyz[2], rtol=2e-10, atol=3e-5
         )
-        re = georef.get_earth_radius(self.csite[1])
+        re = georef.get_earth_radius(data.csite[1])
         coords, rad = georef.spherical_to_xyz(
-            self.r, self.az, self.th, self.csite, re=re, squeeze=True
+            data.r, data.az, data.th, data.csite, re=re, squeeze=True
         )
         np.testing.assert_allclose(
-            coords[..., 0], self.result_xyz[0], rtol=2e-10, atol=3e-5
+            coords[..., 0], data.result_xyz[0], rtol=2e-10, atol=3e-5
         )
         np.testing.assert_allclose(
-            coords[..., 1], self.result_xyz[1], rtol=2e-10, atol=3e-5
+            coords[..., 1], data.result_xyz[1], rtol=2e-10, atol=3e-5
         )
         np.testing.assert_allclose(
-            coords[..., 2], self.result_xyz[2], rtol=2e-10, atol=3e-5
+            coords[..., 2], data.result_xyz[2], rtol=2e-10, atol=3e-5
         )
 
     def test_bin_altitude(self):
@@ -230,11 +244,13 @@ class TestCoordinateTransform:
         )
         np.testing.assert_allclose(distref, distance)
 
-    def test_spherical_to_proj(self):
-        coords = georef.spherical_to_proj(self.r, self.az, self.th, self.csite)
-        np.testing.assert_allclose(coords[..., 0], self.result_n[0])
-        np.testing.assert_allclose(coords[..., 1], self.result_n[1])
-        np.testing.assert_allclose(coords[..., 2], self.result_n[2])
+    @requires_gdal
+    def test_spherical_to_proj(self, coord_transform_data):
+        data = coord_transform_data
+        coords = georef.spherical_to_proj(data.r, data.az, data.th, data.csite)
+        np.testing.assert_allclose(coords[..., 0], data.result_n[0])
+        np.testing.assert_allclose(coords[..., 1], data.result_n[1])
+        np.testing.assert_allclose(coords[..., 2], data.result_n[2])
 
     @requires_data
     def test_maximum_intensity_projection(self):
@@ -273,6 +289,7 @@ class TestCoordinateHelper:
         with pytest.raises(ValueError):
             georef.centroid_to_polyvert([[0.0], [1.0]], [0.5, 1.5])
 
+    @requires_gdal
     def test_spherical_to_polyvert(self):
         sph = georef.get_default_projection()
         polyvert = georef.spherical_to_polyvert(
@@ -352,6 +369,7 @@ class TestCoordinateHelper:
         )
         np.testing.assert_array_almost_equal(polyvert, arr, decimal=3)
 
+    @requires_gdal
     def test_spherical_to_centroids(self):
         r = np.array([10000.0, 10100.0])
         az = np.array([45.0, 90.0])
@@ -435,7 +453,8 @@ class TestCoordinateHelper:
             georef.polar._get_azimuth_resolution(az)
 
 
-class TestProjections:
+@pytest.fixture
+def wgs84():
     wgs84_gdal2 = (
         'GEOGCS["WGS 84",DATUM["WGS_1984",'
         'SPHEROID["WGS 84",6378137,298.257223563,'
@@ -463,9 +482,12 @@ class TestProjections:
         wgs84 = wgs84_gdal3
     else:
         wgs84 = wgs84_gdal2
+    yield wgs84
 
+
+class TestProjections:
+    @requires_gdal
     def test_create_osr(self):
-        self.maxDiff = None
         radolan_wkt = (
             'PROJCS["Radolan projection",'
             'GEOGCS["Radolan Coordinate System",'
@@ -557,6 +579,7 @@ class TestProjections:
         with pytest.raises(ValueError):
             georef.create_osr("lambert")
 
+    @requires_gdal
     def test_proj4_to_osr(self):
         projstr = (
             "+proj=tmerc +lat_0=0 +lon_0=9 +k=1 "
@@ -573,9 +596,11 @@ class TestProjections:
         with pytest.raises(ValueError):
             georef.proj4_to_osr("+proj=lcc1")
 
+    @requires_gdal
     def test_get_earth_radius(self):
         assert georef.get_earth_radius(50.0), 6365631.51753728
 
+    @requires_gdal
     def test_reproject(self):
         proj_gk = osr.SpatialReference()
         proj_gk.ImportFromEPSG(31466)
@@ -615,17 +640,21 @@ class TestProjections:
         with pytest.raises(TypeError):
             georef.reproject([np.arange(10)], [np.arange(10)], [np.arange(11)])
 
-    def test_get_default_projection(self):
-        assert georef.get_default_projection().ExportToWkt() == self.wgs84
+    @requires_gdal
+    def test_get_default_projection(self, wgs84):
+        assert georef.get_default_projection().ExportToWkt() == wgs84
 
-    def test_epsg_to_osr(self):
-        assert georef.epsg_to_osr(4326).ExportToWkt() == self.wgs84
-        assert georef.epsg_to_osr().ExportToWkt() == self.wgs84
+    @requires_gdal
+    def test_epsg_to_osr(self, wgs84):
+        assert georef.epsg_to_osr(4326).ExportToWkt() == wgs84
+        assert georef.epsg_to_osr().ExportToWkt() == wgs84
 
-    def test_wkt_to_osr(self):
-        assert georef.wkt_to_osr(self.wgs84).IsSame(georef.get_default_projection())
+    @requires_gdal
+    def test_wkt_to_osr(self, wgs84):
+        assert georef.wkt_to_osr(wgs84).IsSame(georef.get_default_projection())
         assert georef.wkt_to_osr().IsSame(georef.get_default_projection())
 
+    @requires_gdal
     def test_get_radar_projection(self):
         sitecoords = [5, 52, 90]
         p0 = georef.get_radar_projection(sitecoords)
@@ -636,12 +665,14 @@ class TestProjections:
         assert p0.GetNormProjParm("latitude_of_center") == sitecoords[1]
         assert p0.GetNormProjParm("longitude_of_center") == sitecoords[0]
 
+    @requires_gdal
     def test_get_earth_projection(self):
         georef.get_earth_projection("ellipsoid")
         georef.get_earth_projection("geoid")
         georef.get_earth_projection("sphere")
 
     @pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
+    @requires_gdal
     def test_geoid_to_ellipsoid(self):
         coords = np.array([[5.0, 50.0, 300.0], [2, 54, 300], [50, 5, 300]])
         geoid = georef.get_earth_projection("geoid")
@@ -703,9 +734,10 @@ class TestPixMap:
         pass
 
 
-@requires_data
-class TestGdal:
-    if has_data:
+@pytest.fixture
+def gdal_data():
+    @dataclass(init=False, repr=False, eq=False)
+    class Data:
         filename1 = "geo/bonn_new.tif"
         geofile1 = util.get_wradlib_data_file(filename1)
         ds = wradlib.io.open_raster(geofile1)
@@ -716,115 +748,131 @@ class TestGdal:
         ds2 = wradlib.io.open_raster(geofile2)
         (data2, coords2, proj2) = georef.extract_raster_dataset(ds2, mode="edge")
 
-    corner_gdalinfo = np.array([[3e5, 1e6], [3e5, 3e5], [1e6, 3e5], [1e6, 1e6]])
+        corner_gdalinfo = np.array([[3e5, 1e6], [3e5, 3e5], [1e6, 3e5], [1e6, 1e6]])
 
-    corner_geo_gdalinfo = np.array(
-        [
-            [-0.925465, 53.6928559],
-            [-0.266697, 47.4167912],
-            [9.0028805, 47.4160381],
-            [9.6641599, 53.6919969],
-        ]
-    )
+        corner_geo_gdalinfo = np.array(
+            [
+                [-0.925465, 53.6928559],
+                [-0.266697, 47.4167912],
+                [9.0028805, 47.4160381],
+                [9.6641599, 53.6919969],
+            ]
+        )
 
-    def test_read_gdal_coordinates(self):
-        center_coords = georef.read_gdal_coordinates(self.ds)
+    yield Data
+
+
+@requires_data
+class TestGdal:
+    @requires_gdal
+    def test_read_gdal_coordinates(self, gdal_data):
+        center_coords = georef.read_gdal_coordinates(gdal_data.ds)
         assert center_coords.shape[-1] == 2
-        edge_coords = georef.read_gdal_coordinates(self.ds, mode="edge")
+        edge_coords = georef.read_gdal_coordinates(gdal_data.ds, mode="edge")
         ul_center = (edge_coords[0, 0] + edge_coords[1, 1]) / 2
         np.testing.assert_array_almost_equal(center_coords[0, 0], ul_center)
 
-    def test_read_gdal_projection(self):
-        georef.read_gdal_projection(self.ds)
+    @requires_gdal
+    def test_read_gdal_projection(self, gdal_data):
+        georef.read_gdal_projection(gdal_data.ds)
 
-    def test_read_gdal_values(self):
-        georef.read_gdal_values(self.ds)
-        georef.read_gdal_values(self.ds, nodata=9999.0)
+    @requires_gdal
+    def test_read_gdal_values(self, gdal_data):
+        georef.read_gdal_values(gdal_data.ds)
+        georef.read_gdal_values(gdal_data.ds, nodata=9999.0)
 
-    def test_reproject_raster_dataset(self):
+    @requires_gdal
+    def test_reproject_raster_dataset(self, gdal_data):
         georef.reproject_raster_dataset(
-            self.ds, spacing=0.005, resample=gdal.GRA_Bilinear, align=True
+            gdal_data.ds, spacing=0.005, resample=gdal.GRA_Bilinear, align=True
         )
         georef.reproject_raster_dataset(
-            self.ds, size=(1000, 1000), resample=gdal.GRA_Bilinear, align=True
+            gdal_data.ds, size=(1000, 1000), resample=gdal.GRA_Bilinear, align=True
         )
         with pytest.raises(NameError):
-            georef.reproject_raster_dataset(self.ds)
+            georef.reproject_raster_dataset(gdal_data.ds)
         dst = georef.epsg_to_osr(25832)
         georef.reproject_raster_dataset(
-            self.ds,
+            gdal_data.ds,
             spacing=100.0,
             resample=gdal.GRA_Bilinear,
             align=True,
             projection_target=dst,
         )
 
-    def test_create_raster_dataset(self):
+    @requires_gdal
+    def test_create_raster_dataset(self, gdal_data):
         data, coords = georef.set_raster_origin(
-            self.data.copy(), self.coords.copy(), "upper"
+            gdal_data.data.copy(), gdal_data.coords.copy(), "upper"
         )
         ds = georef.create_raster_dataset(
-            data, coords, projection=self.proj, nodata=-32768
+            data, coords, projection=gdal_data.proj, nodata=-32768
         )
 
         data, coords, proj = georef.extract_raster_dataset(ds)
-        np.testing.assert_array_equal(data, self.data)
-        np.testing.assert_array_almost_equal(coords, self.coords)
-        assert proj.ExportToWkt() == self.proj.ExportToWkt()
+        np.testing.assert_array_equal(data, gdal_data.data)
+        np.testing.assert_array_almost_equal(coords, gdal_data.coords)
+        assert proj.ExportToWkt() == gdal_data.proj.ExportToWkt()
 
         data, coords = georef.set_raster_origin(
-            self.data2.copy(), self.coords2.copy(), "upper"
+            gdal_data.data2.copy(), gdal_data.coords2.copy(), "upper"
         )
         ds = georef.create_raster_dataset(
-            data, coords, projection=self.proj, nodata=-32768
+            data, coords, projection=gdal_data.proj, nodata=-32768
         )
 
         data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
-        np.testing.assert_array_equal(data, self.data2)
-        np.testing.assert_array_almost_equal(coords, self.coords2)
-        assert proj.ExportToWkt() == self.proj.ExportToWkt()
+        np.testing.assert_array_equal(data, gdal_data.data2)
+        np.testing.assert_array_almost_equal(coords, gdal_data.coords2)
+        assert proj.ExportToWkt() == gdal_data.proj.ExportToWkt()
 
-    def test_set_raster_origin(self):
+    @requires_gdal
+    def test_set_raster_origin(self, gdal_data):
         testfunc = georef.set_raster_origin
-        data, coords = testfunc(self.data.copy(), self.coords.copy(), "upper")
-        np.testing.assert_array_equal(data, self.data)
-        np.testing.assert_array_equal(coords, self.coords)
-        data, coords = testfunc(self.data.copy(), self.coords.copy(), "lower")
-        np.testing.assert_array_equal(data, np.flip(self.data, axis=-2))
-        np.testing.assert_array_equal(coords, np.flip(self.coords, axis=-3))
+        data, coords = testfunc(gdal_data.data.copy(), gdal_data.coords.copy(), "upper")
+        np.testing.assert_array_equal(data, gdal_data.data)
+        np.testing.assert_array_equal(coords, gdal_data.coords)
+        data, coords = testfunc(gdal_data.data.copy(), gdal_data.coords.copy(), "lower")
+        np.testing.assert_array_equal(data, np.flip(gdal_data.data, axis=-2))
+        np.testing.assert_array_equal(coords, np.flip(gdal_data.coords, axis=-3))
 
         data, coords = testfunc(
-            self.data.copy()[:, :3600], self.coords.copy()[:3600, :3600], "lower"
+            gdal_data.data.copy()[:, :3600],
+            gdal_data.coords.copy()[:3600, :3600],
+            "lower",
         )
-        np.testing.assert_array_equal(data, np.flip(self.data[:, :3600], axis=-2))
+        np.testing.assert_array_equal(data, np.flip(gdal_data.data[:, :3600], axis=-2))
 
         np.testing.assert_array_equal(
-            coords, np.flip(self.coords[:3600, :3600], axis=-3)
+            coords, np.flip(gdal_data.coords[:3600, :3600], axis=-3)
         )
 
-    def test_set_raster_indexing(self):
+    @requires_gdal
+    def test_set_raster_indexing(self, gdal_data):
         data, coords = georef.set_raster_origin(
-            self.data.copy(), self.coords.copy(), "lower"
+            gdal_data.data.copy(), gdal_data.coords.copy(), "lower"
         )
         data, coords = georef.set_raster_indexing(data, coords, "ij")
         np.testing.assert_array_equal(
-            data, np.swapaxes(np.flip(self.data, axis=-2), 0, 1)
+            data, np.swapaxes(np.flip(gdal_data.data, axis=-2), 0, 1)
         )
         np.testing.assert_array_equal(
-            coords, np.swapaxes(np.flip(self.coords, axis=-3), 0, 1)
+            coords, np.swapaxes(np.flip(gdal_data.coords, axis=-3), 0, 1)
         )
         data, coords = georef.set_raster_indexing(data, coords, "xy")
-        np.testing.assert_array_equal(data, np.flip(self.data, axis=-2))
-        np.testing.assert_array_equal(coords, np.flip(self.coords, axis=-3))
+        np.testing.assert_array_equal(data, np.flip(gdal_data.data, axis=-2))
+        np.testing.assert_array_equal(coords, np.flip(gdal_data.coords, axis=-3))
 
-    def test_set_coordinate_indexing(self):
-        coords = georef.set_coordinate_indexing(self.coords.copy(), "ij")
-        np.testing.assert_array_equal(coords, np.swapaxes(self.coords, 0, 1))
-        coords = georef.set_coordinate_indexing(self.coords.copy(), "xy")
-        np.testing.assert_array_equal(coords, self.coords)
+    @requires_gdal
+    def test_set_coordinate_indexing(self, gdal_data):
+        coords = georef.set_coordinate_indexing(gdal_data.coords.copy(), "ij")
+        np.testing.assert_array_equal(coords, np.swapaxes(gdal_data.coords, 0, 1))
+        coords = georef.set_coordinate_indexing(gdal_data.coords.copy(), "xy")
+        np.testing.assert_array_equal(coords, gdal_data.coords)
 
-    def test_extract_raster_dataset(self):
-        ds = self.ds
+    @requires_gdal
+    def test_extract_raster_dataset(self, gdal_data):
+        ds = gdal_data.ds
         data, coords, proj = georef.extract_raster_dataset(ds)
         assert coords.shape[-1] == 2
         data, coords, proj = georef.extract_raster_dataset(ds, mode="edge")
@@ -832,50 +880,63 @@ class TestGdal:
 
     @requires_data
     @requires_secrets
-    def test_get_raster_elevation(self):
+    @requires_gdal
+    def test_get_raster_elevation(self, gdal_data):
         # crop file using translate to keep download sizes minimal
         gdal.Translate(
-            "/vsimem/clip.tif", self.geofile1, projWin=[5.5, 49.5, 5.6, 49.4]
+            "/vsimem/clip.tif", gdal_data.geofile1, projWin=[5.5, 49.5, 5.6, 49.4]
         )
         ds = wradlib.io.open_raster("/vsimem/clip.tif")
         georef.get_raster_elevation(ds)
 
-    def test_get_raster_extent(self):
+    @requires_gdal
+    def test_get_raster_extent(self, gdal_data):
 
-        extent = georef.get_raster_extent(self.ds2)
+        extent = georef.get_raster_extent(gdal_data.ds2)
         window_map = np.array([3e5, 1e6, 3e5, 1e6])
         np.testing.assert_array_almost_equal(extent, window_map, decimal=3)
 
-        extent = georef.get_raster_extent(self.ds2, geo=True)
+        extent = georef.get_raster_extent(gdal_data.ds2, geo=True)
         window_geo = np.array([-0.925465, 9.6641599, 47.4160381, 53.6928559])
         np.testing.assert_array_almost_equal(extent, window_geo)
 
-        extent = georef.get_raster_extent(self.ds2, window=False)
-        np.testing.assert_array_almost_equal(extent, self.corner_gdalinfo, decimal=3)
+        extent = georef.get_raster_extent(gdal_data.ds2, window=False)
+        np.testing.assert_array_almost_equal(
+            extent, gdal_data.corner_gdalinfo, decimal=3
+        )
 
-        extent = georef.get_raster_extent(self.ds2, geo=True, window=False)
-        np.testing.assert_array_almost_equal(extent, self.corner_geo_gdalinfo)
+        extent = georef.get_raster_extent(gdal_data.ds2, geo=True, window=False)
+        np.testing.assert_array_almost_equal(extent, gdal_data.corner_geo_gdalinfo)
 
     @requires_data
     @requires_secrets
+    @requires_gdal
     def test_merge_raster_datasets(self):
         datasets = wradlib.io.dem.get_srtm([5, 6, 49.4, 49.5], merge=False)
         georef.merge_raster_datasets(datasets)
 
-    def test_raster_to_polyvert(self):
-        ds = self.ds
+    @requires_gdal
+    def test_raster_to_polyvert(self, gdal_data):
+        ds = gdal_data.ds
         polyvert = georef.raster_to_polyvert(ds)
         nx = ds.RasterXSize
         ny = ds.RasterYSize
         assert polyvert.shape == (ny, nx, 5, 2)
 
 
-class TestGetGrids:
-    # calculate xy and lonlat grids with georef function
-    radolan_grid_xy = georef.get_radolan_grid(900, 900, trig=True)
-    radolan_grid_ll = georef.get_radolan_grid(900, 900, trig=True, wgs84=True)
+@pytest.fixture
+def grid_data():
+    @dataclass(init=False, repr=False, eq=False)
+    class Data:
+        radolan_grid_xy = georef.get_radolan_grid(900, 900, trig=True)
+        radolan_grid_ll = georef.get_radolan_grid(900, 900, trig=True, wgs84=True)
 
-    def test_get_radolan_grid_equality(self):
+    yield Data
+
+
+class TestGetGrids:
+    @requires_gdal
+    def test_get_radolan_grid_equality(self, grid_data):
         # create radolan projection osr object
         scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
         dwd_string = (
@@ -893,26 +954,26 @@ class TestGetGrids:
         # to polar stereographic
         # using osr transformation routines
         radolan_grid_ll = georef.reproject(
-            self.radolan_grid_xy,
+            grid_data.radolan_grid_xy,
             projection_source=proj_stereo,
             projection_target=proj_wgs,
         )
         radolan_grid_xy = georef.reproject(
-            self.radolan_grid_ll,
+            grid_data.radolan_grid_ll,
             projection_source=proj_wgs,
             projection_target=proj_stereo,
         )
 
         # check source and target arrays for equality
-        np.testing.assert_allclose(radolan_grid_ll, self.radolan_grid_ll)
-        np.testing.assert_allclose(radolan_grid_xy, self.radolan_grid_xy)
+        np.testing.assert_allclose(radolan_grid_ll, grid_data.radolan_grid_ll)
+        np.testing.assert_allclose(radolan_grid_xy, grid_data.radolan_grid_xy)
 
         radolan_grid_xy = georef.get_radolan_grid(900, 900)
         radolan_grid_ll = georef.get_radolan_grid(900, 900, wgs84=True)
 
         # check source and target arrays for equality
-        np.testing.assert_allclose(radolan_grid_ll, self.radolan_grid_ll)
-        np.testing.assert_allclose(radolan_grid_xy, self.radolan_grid_xy)
+        np.testing.assert_allclose(radolan_grid_ll, grid_data.radolan_grid_ll)
+        np.testing.assert_allclose(radolan_grid_xy, grid_data.radolan_grid_xy)
 
     def test_get_radolan_grid_raises(self):
         with pytest.raises(TypeError):
@@ -920,12 +981,14 @@ class TestGetGrids:
         with pytest.raises(ValueError):
             georef.get_radolan_grid(2000, 2000)
 
+    @requires_gdal
     def test_get_radolan_grid_shape(self):
         radolan_grid_xy = georef.get_radolan_grid()
         assert radolan_grid_xy.shape == (900, 900, 2)
         radolan_grid_xy = georef.get_radolan_grid(mode="edge")
         assert radolan_grid_xy.shape == (901, 901, 2)
 
+    @requires_gdal
     def test_radolan_coords(self):
         x, y = georef.get_radolan_coords(7.0, 53.0)
         assert pytest.approx(x) == -208.15159184860158
@@ -959,13 +1022,17 @@ class TestGetGrids:
             ((1500, 1400), [-673.46216692, -5008.64472426], False),
         ],
     )
+    @requires_gdal
     def test_grid_reference_points(self, grid, origin, wgs):
         arr = list(georef.get_radolan_grid(grid[0], grid[1], wgs84=wgs)[0, 0])
         assert pytest.approx(arr, origin[0])
 
 
-class TestSatellite:
-    if has_data:
+@pytest.fixture
+def sat_data():
+    @dataclass(init=False, repr=False, eq=False)
+    class Data:
+        # todo: make this test work without GDAL
         f = "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-S095002-E095137.004383.V05A.HDF5"  # noqa
         gpm_file = util.get_wradlib_data_file(f)
         pr_data = wradlib.io.read_generic_hdf5(gpm_file)
@@ -1034,9 +1101,17 @@ class TestSatellite:
             ]
         )
 
+    yield Data
+
+
+class TestSatellite:
     @requires_data
-    def test_correct_parallax(self):
-        xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin, self.dr, self.alpha)
+    @requires_gdal
+    @requires_h5py
+    def test_correct_parallax(self, sat_data):
+        xy, r, z = georef.correct_parallax(
+            sat_data.pr_xy, sat_data.nbin, sat_data.dr, sat_data.alpha
+        )
         pr_out = np.array(
             [
                 [
@@ -1084,10 +1159,16 @@ class TestSatellite:
         np.testing.assert_allclose(z[0, 0, 0:10], z_out, rtol=1e-10)
 
     @requires_data
-    def test_dist_from_orbit(self):
-        beta = abs(-17.04 + np.arange(self.nray) * self.bw_pr)
-        xy, r, z = georef.correct_parallax(self.pr_xy, self.nbin, self.dr, self.alpha)
-        dists = georef.dist_from_orbit(self.zt, self.alpha, beta, r, re=self.re)
+    @requires_gdal
+    @requires_h5py
+    def test_dist_from_orbit(self, sat_data):
+        beta = abs(-17.04 + np.arange(sat_data.nray) * sat_data.bw_pr)
+        xy, r, z = georef.correct_parallax(
+            sat_data.pr_xy, sat_data.nbin, sat_data.dr, sat_data.alpha
+        )
+        dists = georef.dist_from_orbit(
+            sat_data.zt, sat_data.alpha, beta, r, re=sat_data.re
+        )
         bd = np.array(
             [
                 426553.58667772,
@@ -1120,38 +1201,46 @@ class TestSatellite:
         np.testing.assert_allclose(dists[0, 0:10, 0], sd, rtol=1e-12)
 
 
+@pytest.fixture
+def vec_data():
+    @dataclass(init=False, repr=False, eq=False)
+    class Data:
+        proj = osr.SpatialReference()
+        proj.ImportFromEPSG(31466)
+        wgs84 = georef.get_default_projection()
+
+        npobj = np.array(
+            [
+                [2600000.0, 5630000.0],
+                [2600000.0, 5630100.0],
+                [2600100.0, 5630100.0],
+                [2600100.0, 5630000.0],
+                [2600000.0, 5630000.0],
+            ]
+        )
+        lonlat = np.array(
+            [
+                [7.41779154, 50.79679579],
+                [7.41781875, 50.79769443],
+                [7.4192367, 50.79767718],
+                [7.41920947, 50.79677854],
+                [7.41779154, 50.79679579],
+            ]
+        )
+
+        ogrobj = georef.numpy_to_ogr(npobj, "Polygon")
+        ogrobj.AssignSpatialReference(None)
+        projobj = georef.numpy_to_ogr(npobj, "Polygon")
+        projobj.AssignSpatialReference(proj)
+
+        # filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+        # ds, layer = wradlib.io.open_vector(filename)
+
+    yield Data
+
+
 class TestVector:
-    proj = osr.SpatialReference()
-    proj.ImportFromEPSG(31466)
-    wgs84 = georef.get_default_projection()
-
-    npobj = np.array(
-        [
-            [2600000.0, 5630000.0],
-            [2600000.0, 5630100.0],
-            [2600100.0, 5630100.0],
-            [2600100.0, 5630000.0],
-            [2600000.0, 5630000.0],
-        ]
-    )
-    lonlat = np.array(
-        [
-            [7.41779154, 50.79679579],
-            [7.41781875, 50.79769443],
-            [7.4192367, 50.79767718],
-            [7.41920947, 50.79677854],
-            [7.41779154, 50.79679579],
-        ]
-    )
-
-    ogrobj = georef.numpy_to_ogr(npobj, "Polygon")
-    ogrobj.AssignSpatialReference(None)
-    projobj = georef.numpy_to_ogr(npobj, "Polygon")
-    projobj.AssignSpatialReference(proj)
-
-    # filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
-    # ds, layer = wradlib.io.open_vector(filename)
-
+    @requires_gdal
     def test_ogr_create_layer(self):
         ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
         with pytest.raises(TypeError):
@@ -1161,15 +1250,18 @@ class TestVector:
         )
         assert isinstance(lyr, ogr.Layer)
 
-    def test_ogr_to_numpy(self):
-        np.testing.assert_allclose(georef.ogr_to_numpy(self.ogrobj), self.npobj)
+    @requires_gdal
+    def test_ogr_to_numpy(self, vec_data):
+        np.testing.assert_allclose(georef.ogr_to_numpy(vec_data.ogrobj), vec_data.npobj)
 
-    def test_get_vector_points(self):
+    @requires_gdal
+    def test_get_vector_points(self, vec_data):
         # this also tests equality with `ogr_to_numpy`
-        x = np.array(list(georef.get_vector_points(self.ogrobj))[0])
-        y = georef.ogr_to_numpy(self.ogrobj)
+        x = np.array(list(georef.get_vector_points(vec_data.ogrobj))[0])
+        y = georef.ogr_to_numpy(vec_data.ogrobj)
         np.testing.assert_allclose(x, y)
 
+    @requires_gdal
     def test_get_vector_points_warning(self):
         point_wkt = "POINT (1198054.34 648493.09)"
         point = ogr.CreateGeometryFromWkt(point_wkt)
@@ -1177,7 +1269,8 @@ class TestVector:
             list(georef.get_vector_points(point))
 
     @requires_data
-    def test_get_vector_coordinates(self):
+    @requires_gdal
+    def test_get_vector_coordinates(self, vec_data):
         filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
         ds, layer = wradlib.io.open_vector(filename)
 
@@ -1199,22 +1292,25 @@ class TestVector:
 
         layer.ResetReading()
         x, attrs = georef.get_vector_coordinates(
-            layer, source_srs=self.proj, dest_srs=self.wgs84
+            layer, source_srs=vec_data.proj, dest_srs=vec_data.wgs84
         )
 
         layer.ResetReading()
-        x, attrs = georef.get_vector_coordinates(layer, dest_srs=self.wgs84)
+        x, attrs = georef.get_vector_coordinates(layer, dest_srs=vec_data.wgs84)
 
-    def test_transform_geometry(self):
-        geom = georef.transform_geometry(self.projobj, dest_srs=self.wgs84)
+    @requires_gdal
+    def test_transform_geometry(self, vec_data):
+        geom = georef.transform_geometry(vec_data.projobj, dest_srs=vec_data.wgs84)
         x = list(georef.get_vector_points(geom))[0]
-        np.testing.assert_allclose(x, self.lonlat, rtol=1e-05)
+        np.testing.assert_allclose(x, vec_data.lonlat, rtol=1e-05)
 
-    def test_transform_geometry_warning(self):
+    @requires_gdal
+    def test_transform_geometry_warning(self, vec_data):
         with pytest.warns(UserWarning):
-            georef.transform_geometry(self.ogrobj, dest_srs=self.wgs84)
+            georef.transform_geometry(vec_data.ogrobj, dest_srs=vec_data.wgs84)
 
     @requires_data
+    @requires_gdal
     def test_ogr_copy_layer(self):
         filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
         src_ds, layer = wradlib.io.open_vector(filename)
@@ -1223,6 +1319,7 @@ class TestVector:
         assert isinstance(ds.GetLayer(), ogr.Layer)
 
     @requires_data
+    @requires_gdal
     def test_ogr_copy_layer_by_name(self):
         filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
         src_ds, layer = wradlib.io.open_vector(filename)
@@ -1232,6 +1329,7 @@ class TestVector:
         with pytest.raises(ValueError):
             georef.ogr_copy_layer_by_name(src_ds, "agger_merge1", ds)
 
+    @requires_gdal
     def test_ogr_add_feature(self):
         ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
         georef.ogr_create_layer(
@@ -1243,6 +1341,7 @@ class TestVector:
         georef.ogr_add_feature(ds, parr)
         georef.ogr_add_feature(ds, parr, name="test")
 
+    @requires_gdal
     def test_ogr_add_geometry(self):
         ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
         lyr = georef.ogr_create_layer(
@@ -1252,6 +1351,7 @@ class TestVector:
         point.AddPoint(1198054.34, 648493.09)
         georef.ogr_add_geometry(lyr, point, [42.42])
 
+    @requires_gdal
     def test_geocol_to_numpy(self):
         # Create a geometry collection
         geomcol = ogr.Geometry(ogr.wkbGeometryCollection)
@@ -1296,15 +1396,17 @@ class TestVector:
 
         np.testing.assert_allclose(arr, res)
 
-    def test_get_centroid(self):
-        cent1 = georef.get_centroid(self.npobj)
-        cent2 = georef.get_centroid(self.ogrobj)
+    @requires_gdal
+    def test_get_centroid(self, vec_data):
+        cent1 = georef.get_centroid(vec_data.npobj)
+        cent2 = georef.get_centroid(vec_data.ogrobj)
 
         assert cent1 == (2600050.0, 5630050.0)
         assert cent2 == (2600050.0, 5630050.0)
 
 
-class TestXarray:
+@pytest.fixture
+def xr_data():
     func = georef.create_xarray_dataarray
     da = func(
         np.random.rand(360, 1000),
@@ -1315,8 +1417,11 @@ class TestXarray:
         proj=True,
         sweep_mode="azimuth_surveillance",
     )
-    da = georef.georeference_dataset(da)
+    yield georef.georeference_dataset(da)
 
+
+class TestXarray:
+    @requires_gdal
     def test_create_xarray_dataarray(self):
         img = np.zeros((360, 10), dtype=np.float32)
         r = np.arange(0, 100000, 10000)
@@ -1327,8 +1432,9 @@ class TestXarray:
             georef.create_xarray_dataarray(img)
         georef.create_xarray_dataarray(img, r, az, th, proj=proj)
 
-    def test_georeference_dataset(self):
-        src_da = self.da.copy()
+    @requires_gdal
+    def test_georeference_dataset(self, xr_data):
+        src_da = xr_data.copy()
         src_da.drop_vars(["x", "y", "z", "gr", "rays", "bins"])
         da = georef.georeference_dataset(src_da)
-        xr.testing.assert_equal(self.da, da)
+        xr.testing.assert_equal(xr_data, da)

@@ -6,18 +6,22 @@ import gc
 import os
 import tempfile
 
-import h5py
 import numpy as np
 import pytest
 import xarray as xr
 
-from wradlib import io, util
+from wradlib import io
 
 from . import (
     get_wradlib_data_file,
+    h5py,
     has_data,
     requires_data,
+    requires_h5netcdf,
+    requires_h5py,
+    requires_netcdf,
     requires_xarray_backend_api,
+    requires_xmltodict,
 )
 from .test_io_odim import (  # noqa: F401
     base_gamic_data,
@@ -73,20 +77,24 @@ def test_radolan_backend(file_or_filelike):
 
 @contextlib.contextmanager
 def get_measured_volume(file, format, fileobj, **kwargs):
-    # h5file = util.get_wradlib_data_file(file)
     with get_wradlib_data_file(file, fileobj) as radfile:
         engine = format.lower()
         if engine == "odim":
+            pytest.importorskip("h5netcdf")
             open_ = io.open_odim_dataset
         if engine == "gamic":
+            pytest.importorskip("h5netcdf")
             open_ = io.open_gamic_dataset
         if engine == "cfradial1":
+            pytest.importorskip("netCDF4")
             open_ = io.open_cfradial1_dataset
         if engine == "cfradial2":
+            pytest.importorskip("netCDF4")
             open_ = io.open_cfradial2_dataset
         if engine == "iris":
             open_ = io.open_iris_dataset
         if engine == "rainbow":
+            pytest.importorskip("xmltodict")
             open_ = io.open_rainbow_dataset
         yield open_(radfile, **kwargs)
 
@@ -98,14 +106,17 @@ def get_synthetic_volume(name, file_or_filelike, **kwargs):
         format = "GAMIC"
     else:
         format = "ODIM"
+    pytest.importorskip("h5py")
     with h5py.File(str(tmp_local), "w") as f:
         data = globals()[name]()
         write_group(f, data)
     with get_wradlib_data_file(tmp_local, file_or_filelike) as h5file:
         engine = format.lower()
         if engine == "odim":
+            pytest.importorskip("h5netcdf")
             open_ = io.open_odim_dataset
         if engine == "gamic":
+            pytest.importorskip("h5netcdf")
             open_ = io.open_gamic_dataset
         yield open_(h5file, **kwargs)
 
@@ -138,6 +149,7 @@ class DataVolume:
                 assert self.azimuths[i] == ds.dims["azimuth"]
                 assert self.ranges[i] == ds.dims["range"]
 
+    @requires_h5py
     def test_odim_output(self, file_or_filelike):
         with self.get_volume_data(file_or_filelike) as vol:
             tmp_local = tempfile.NamedTemporaryFile(suffix=".h5", prefix="odim").name
@@ -149,6 +161,7 @@ class DataVolume:
         del vol
         gc.collect()
 
+    @requires_netcdf
     def test_cfradial2_output(self, file_or_filelike):
         with self.get_volume_data(file_or_filelike) as vol:
             tmp_local = tempfile.NamedTemporaryFile(
@@ -158,6 +171,7 @@ class DataVolume:
         del vol
         gc.collect()
 
+    @requires_netcdf
     def test_netcdf_output(self, file_or_filelike):
         with self.get_volume_data(file_or_filelike) as vol:
             tmp_local = tempfile.NamedTemporaryFile(
@@ -184,6 +198,10 @@ class MeasuredDataVolume(DataVolume):
         ) as vol:
             yield vol
 
+    @property
+    def data(self):
+        return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
+
 
 class SyntheticDataVolume(DataVolume):
     @contextlib.contextmanager
@@ -195,6 +213,7 @@ class SyntheticDataVolume(DataVolume):
 
 
 @requires_data
+@requires_h5netcdf
 @requires_xarray_backend_api
 class TestKNMIVolume(MeasuredDataVolume):
     if has_data:
@@ -222,8 +241,6 @@ class TestKNMIVolume(MeasuredDataVolume):
         azimuths = [360] * sweeps
         ranges = [320, 240, 240, 240, 240, 340, 340, 300, 300, 240, 240, 240, 240, 240]
 
-        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
-
         dsdesc = "dataset{}"
         mdesc = "data{}"
 
@@ -231,210 +248,196 @@ class TestKNMIVolume(MeasuredDataVolume):
 
 
 @requires_data
+@requires_h5netcdf
 @requires_xarray_backend_api
 class TestGamicVolume(MeasuredDataVolume):
-    if has_data:
-        name = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
-        format = "GAMIC"
-        volumes = 1
-        sweeps = 10
-        moments = [
-            "DBZH",
-            "DBZV",
-            "DBTH",
-            "DBTV",
-            "ZDR",
-            "VRADH",
-            "VRADV",
-            "WRADH",
-            "WRADV",
-            "PHIDP",
-            "KDP",
-            "RHOHV",
-        ]
-        elevations = [28.0, 18.0, 14.0, 11.0, 8.2, 6.0, 4.5, 3.1, 1.7, 0.6]
-        azimuths = [360, 360, 360, 360, 360, 360, 360, 360, 360, 360]
-        ranges = [360, 500, 620, 800, 1050, 1400, 1000, 1000, 1000, 1000]
+    name = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
+    format = "GAMIC"
+    volumes = 1
+    sweeps = 10
+    moments = [
+        "DBZH",
+        "DBZV",
+        "DBTH",
+        "DBTV",
+        "ZDR",
+        "VRADH",
+        "VRADV",
+        "WRADH",
+        "WRADV",
+        "PHIDP",
+        "KDP",
+        "RHOHV",
+    ]
+    elevations = [28.0, 18.0, 14.0, 11.0, 8.2, 6.0, 4.5, 3.1, 1.7, 0.6]
+    azimuths = [360, 360, 360, 360, 360, 360, 360, 360, 360, 360]
+    ranges = [360, 500, 620, 800, 1050, 1400, 1000, 1000, 1000, 1000]
 
-        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
+    dsdesc = "scan{}"
+    mdesc = "moment_{}"
 
-        dsdesc = "scan{}"
-        mdesc = "moment_{}"
-
-        backend_kwargs = dict(keep_azimuth=True)
+    backend_kwargs = dict(keep_azimuth=True)
 
 
 @requires_data
+@requires_netcdf
 @requires_xarray_backend_api
 class TestCfRadial1Volume(MeasuredDataVolume):
-    if has_data:
-        name = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
-        format = "CfRadial1"
-        volumes = 1
-        sweeps = 9
-        moments = [
-            "DBZH",
-            "DBZV",
-            "DBTH",
-            "DBTV",
-            "ZDR",
-            "VRADH",
-            "VRADV",
-            "WRADH",
-            "WRADV",
-            "PHIDP",
-            "KDP",
-            "RHOHV",
-        ]
-        elevations = [0.5, 1.1, 1.8, 2.6, 3.6, 4.7, 6.5, 9.1, 12.8]
-        azimuths = [483, 483, 482, 483, 481, 482, 482, 484, 483]
-        ranges = [996, 996, 996, 996, 996, 996, 996, 996, 996]
+    name = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+    format = "CfRadial1"
+    volumes = 1
+    sweeps = 9
+    moments = [
+        "DBZH",
+        "DBZV",
+        "DBTH",
+        "DBTV",
+        "ZDR",
+        "VRADH",
+        "VRADV",
+        "WRADH",
+        "WRADV",
+        "PHIDP",
+        "KDP",
+        "RHOHV",
+    ]
+    elevations = [0.5, 1.1, 1.8, 2.6, 3.6, 4.7, 6.5, 9.1, 12.8]
+    azimuths = [483, 483, 482, 483, 481, 482, 482, 484, 483]
+    ranges = [996, 996, 996, 996, 996, 996, 996, 996, 996]
 
-        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
+    dsdesc = "sweep{}"
+    mdesc = "moment_{}"
 
-        dsdesc = "sweep{}"
-        mdesc = "moment_{}"
-
-        backend_kwargs = {}
+    backend_kwargs = {}
 
 
 @requires_data
+@requires_netcdf
 @requires_xarray_backend_api
 class TestCfRadial2Volume(MeasuredDataVolume):
-    if has_data:
-        name = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR_cfradial2.nc"
-        format = "CfRadial2"
-        volumes = 1
-        sweeps = 9
-        moments = [
-            "DBZH",
-            "DBZV",
-            "DBTH",
-            "DBTV",
-            "ZDR",
-            "VRADH",
-            "VRADV",
-            "WRADH",
-            "WRADV",
-            "PHIDP",
-            "KDP",
-            "RHOHV",
-        ]
-        elevations = [0.5, 1.1, 1.8, 2.6, 3.6, 4.7, 6.5, 9.1, 12.8]
-        azimuths = [480, 480, 480, 480, 480, 480, 480, 480, 480]
-        ranges = [996, 996, 996, 996, 996, 996, 996, 996, 996]
+    name = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR_cfradial2.nc"
+    format = "CfRadial2"
+    volumes = 1
+    sweeps = 9
+    moments = [
+        "DBZH",
+        "DBZV",
+        "DBTH",
+        "DBTV",
+        "ZDR",
+        "VRADH",
+        "VRADV",
+        "WRADH",
+        "WRADV",
+        "PHIDP",
+        "KDP",
+        "RHOHV",
+    ]
+    elevations = [0.5, 1.1, 1.8, 2.6, 3.6, 4.7, 6.5, 9.1, 12.8]
+    azimuths = [480, 480, 480, 480, 480, 480, 480, 480, 480]
+    ranges = [996, 996, 996, 996, 996, 996, 996, 996, 996]
 
-        data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
+    dsdesc = "sweep{}"
+    mdesc = "moment_{}"
 
-        dsdesc = "sweep{}"
-        mdesc = "moment_{}"
-
-        backend_kwargs = {}
+    backend_kwargs = {}
 
 
 @requires_data
 @requires_xarray_backend_api
 class TestIrisVolume01(MeasuredDataVolume):
-    if has_data:
-        name = "sigmet/cor-main131125105503.RAW2049"
-        format = "Iris"
-        volumes = 1
-        sweeps = 10
-        moments = [
-            "DBZH",
-            "DBZV",
-            "DBTH",
-            "DBTV",
-            "ZDR",
-            "VRADH",
-            "VRADV",
-            "WRADH",
-            "WRADV",
-            "PHIDP",
-            "KDP",
-            "RHOHV",
-        ]
-        elevations = [0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0]
-        azimuths = [360, 360, 360, 360, 360, 360, 360, 360, 360, 360]
-        ranges = [664, 664, 664, 664, 664, 664, 664, 664, 664, 664]
+    name = "sigmet/cor-main131125105503.RAW2049"
+    format = "Iris"
+    volumes = 1
+    sweeps = 10
+    moments = [
+        "DBZH",
+        "DBZV",
+        "DBTH",
+        "DBTV",
+        "ZDR",
+        "VRADH",
+        "VRADV",
+        "WRADH",
+        "WRADV",
+        "PHIDP",
+        "KDP",
+        "RHOHV",
+    ]
+    elevations = [0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0]
+    azimuths = [360, 360, 360, 360, 360, 360, 360, 360, 360, 360]
+    ranges = [664, 664, 664, 664, 664, 664, 664, 664, 664, 664]
 
-        data = io.read_iris(util.get_wradlib_data_file(name))
+    dsdesc = "sweep{}"
+    mdesc = "moment_{}"
 
-        dsdesc = "sweep{}"
-        mdesc = "moment_{}"
-
-        backend_kwargs = dict(reindex_angle=False)
+    backend_kwargs = dict(reindex_angle=False)
 
 
 @requires_data
 @requires_xarray_backend_api
 class TestIrisVolume02(MeasuredDataVolume):
-    if has_data:
-        name = "sigmet/SUR210819000227.RAWKPJV"
-        format = "Iris"
-        volumes = 1
-        sweeps = 1
-        moments = [
-            "DBTH",
-            "DBZH",
-            "VRADH",
-            "WRADH",
-            "ZDR",
-            "KDP",
-            "RHOHV",
-            "SQIH",
-            "PHIDP",
-            "DB_HCLASS2",
-            "SNRH",
-        ]
-        elevations = [0.5]
-        azimuths = [360]
-        ranges = [833]
+    name = "sigmet/SUR210819000227.RAWKPJV"
+    format = "Iris"
+    volumes = 1
+    sweeps = 1
+    moments = [
+        "DBTH",
+        "DBZH",
+        "VRADH",
+        "WRADH",
+        "ZDR",
+        "KDP",
+        "RHOHV",
+        "SQIH",
+        "PHIDP",
+        "DB_HCLASS2",
+        "SNRH",
+    ]
+    elevations = [0.5]
+    azimuths = [360]
+    ranges = [833]
 
-        data = io.read_iris(util.get_wradlib_data_file(name))
+    dsdesc = "sweep{}"
+    mdesc = "moment_{}"
 
-        dsdesc = "sweep{}"
-        mdesc = "moment_{}"
-
-        backend_kwargs = dict(reindex_angle=1.0)
+    backend_kwargs = dict(reindex_angle=1.0)
 
 
 @requires_data
+@requires_xmltodict
 @requires_xarray_backend_api
 class TestRainbowVolume01(MeasuredDataVolume):
-    if has_data:
-        name = "rainbow/2013051000000600dBZ.vol"
-        format = "Rainbow"
-        volumes = 1
-        sweeps = 14
-        moments = [
-            "DBZH",
-        ]
-        elevations = [
-            0.6,
-            1.4,
-            2.4,
-            3.5,
-            4.8,
-            6.3,
-            8.0,
-            9.9,
-            12.2,
-            14.8,
-            17.9,
-            21.3,
-            25.4,
-            30.0,
-        ]
-        azimuths = [360] * sweeps
-        ranges = [400] * sweeps
+    name = "rainbow/2013051000000600dBZ.vol"
+    format = "Rainbow"
+    volumes = 1
+    sweeps = 14
+    moments = [
+        "DBZH",
+    ]
+    elevations = [
+        0.6,
+        1.4,
+        2.4,
+        3.5,
+        4.8,
+        6.3,
+        8.0,
+        9.9,
+        12.2,
+        14.8,
+        17.9,
+        21.3,
+        25.4,
+        30.0,
+    ]
+    azimuths = [360] * sweeps
+    ranges = [400] * sweeps
 
-        data = io.read_rainbow(util.get_wradlib_data_file(name))
+    dsdesc = "sweep{}"
+    mdesc = "moment_{}"
 
-        dsdesc = "sweep{}"
-        mdesc = "moment_{}"
-
-        backend_kwargs = dict(reindex_angle=1.0)
+    backend_kwargs = dict(reindex_angle=1.0)
 
 
 @requires_xarray_backend_api

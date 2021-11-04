@@ -25,6 +25,7 @@ __all__ = [
     "calculate_polynomial",
     "derivate",
     "despeckle",
+    "import_optional",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
@@ -35,7 +36,6 @@ import os
 
 import deprecation
 import numpy as np
-from osgeo import gdal, ogr
 from scipy import ndimage, signal
 
 from wradlib import version
@@ -573,6 +573,8 @@ def find_bbox_indices(coords, bbox):
 
 
 def has_geos():
+    gdal = import_optional("osgeo.gdal")
+    ogr = import_optional("osgeo.ogr")
     pnt1 = ogr.CreateGeometryFromWkt("POINT(10 20)")
     pnt2 = ogr.CreateGeometryFromWkt("POINT(30 20)")
     ogrex = ogr.GetUseExceptions()
@@ -983,6 +985,10 @@ def _open_file(name):
     else:
         # otherwise assume file-like object and pass
         yield name
+
+
+def has_import(module):
+    return not isinstance(module, OptionalModuleStub)
 
 
 if __name__ == "__main__":
