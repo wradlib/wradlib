@@ -228,8 +228,7 @@ class H5NetCDFArrayWrapper(BackendArray):
 
     def get_array(self, needs_lock=True):
         ds = self.datastore._acquire(needs_lock)
-        variable = ds.variables[self.variable_name]
-        return variable
+        return ds.variables[self.variable_name]
 
     def __getitem__(self, key):
         return indexing.explicit_indexing_adapter(
@@ -290,7 +289,7 @@ class OdimSubStore(AbstractDataStore):
         self,
         store,
         group=None,
-        lock=HDF5_LOCK,
+        lock=False,
     ):
 
         if not isinstance(store, OdimStore):
@@ -349,13 +348,13 @@ class OdimSubStore(AbstractDataStore):
 class OdimStore(AbstractDataStore):
     """Store for reading ODIM dataset groups via h5netcdf."""
 
-    def __init__(self, manager, group=None, lock=HDF5_LOCK):
+    def __init__(self, manager, group=None, lock=False):
 
         if isinstance(manager, (h5netcdf.File, h5netcdf.Group)):
             if group is None:
                 root, group = find_root_and_group(manager)
             else:
-                if not type(manager) is h5netcdf.File:
+                if type(manager) is not h5netcdf.File:
                     raise ValueError(
                         "must supply a h5netcdf.File if the group "
                         "argument is provided"
@@ -410,7 +409,7 @@ class OdimStore(AbstractDataStore):
             if has_import(dask):
                 lock = HDF5_LOCK
             else:
-                lock = combine_locks([HDF5_LOCK, get_write_lock(filename)])
+                lock = False
 
         manager = CachingFileManager(h5netcdf.File, filename, mode=mode, kwargs=kwargs)
         return cls(manager, group=group, lock=lock)
@@ -536,13 +535,13 @@ class OdimBackendEntrypoint(BackendEntrypoint):
 class GamicStore(AbstractDataStore):
     """Store for reading ODIM dataset groups via h5netcdf."""
 
-    def __init__(self, manager, group=None, lock=HDF5_LOCK):
+    def __init__(self, manager, group=None, lock=False):
 
         if isinstance(manager, (h5netcdf.File, h5netcdf.Group)):
             if group is None:
                 root, group = find_root_and_group(manager)
             else:
-                if not type(manager) is h5netcdf.File:
+                if type(manager) is not h5netcdf.File:
                     raise ValueError(
                         "must supply a h5netcdf.File if the group "
                         "argument is provided"
@@ -596,7 +595,7 @@ class GamicStore(AbstractDataStore):
             if has_import(dask):
                 lock = HDF5_LOCK
             else:
-                lock = combine_locks([HDF5_LOCK, get_write_lock(filename)])
+                lock = False
 
         manager = CachingFileManager(h5netcdf.File, filename, mode=mode, kwargs=kwargs)
         return cls(manager, group=group, lock=lock)
@@ -791,6 +790,7 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
             filename_or_obj,
             format=format,
             group=None,
+            lock=False,
         )
 
         if group is not None:
@@ -814,6 +814,7 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
                 filename_or_obj,
                 format=format,
                 group=group,
+                lock=False,
             )
 
         store_entrypoint = StoreBackendEntrypoint()
