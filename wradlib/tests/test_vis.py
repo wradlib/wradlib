@@ -249,6 +249,7 @@ class TestMiscPlot:
     @requires_data
     @requires_secrets
     @requires_gdal
+    @pytest.mark.xfail(strict=False)
     def test_plot_scan_strategy_terrain(self):
         ranges = np.arange(0, 10000, 100)
         elevs = np.arange(1, 30, 3)

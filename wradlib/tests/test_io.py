@@ -1968,6 +1968,7 @@ class TestDem:
     @requires_data
     @requires_secrets
     @requires_gdal
+    @pytest.mark.xfail(strict=False)
     def test_get_srtm(self):
         targets = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
         targets = ["%s.SRTMGL3.hgt.zip" % (f) for f in targets]

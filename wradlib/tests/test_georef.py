@@ -911,6 +911,7 @@ class TestGdal:
     @requires_data
     @requires_secrets
     @requires_gdal
+    @pytest.mark.xfail(strict=False)
     def test_merge_raster_datasets(self):
         datasets = wradlib.io.dem.get_srtm([5, 6, 49.4, 49.5], merge=False)
         georef.merge_raster_datasets(datasets)
