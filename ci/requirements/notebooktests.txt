@@ -27,5 +27,5 @@ semver
 setuptools
 tqdm
 wetterdienst
-xarray
+xarray>=0.17.0,<0.20
 xmltodict

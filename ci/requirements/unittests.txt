@@ -20,5 +20,5 @@ requests
 scipy
 semver
 setuptools
-xarray
+xarray>=0.17.0,<0.20
 xmltodict
