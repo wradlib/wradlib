@@ -5,5 +5,6 @@ include MANIFEST.in
 include pyproject.toml
 include requirements.txt
 include requirements_devel.txt
+include requirements_optional.txt
 recursive-include wradlib/tests *.py
 recursive-exclude wradlib/tests *.pyc
