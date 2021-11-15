@@ -1735,7 +1735,7 @@ class TestXarray:
     def test_iter(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         assert len(cf) == cf.sweep
         assert len(cf) == 9
 
@@ -1744,7 +1744,7 @@ class TestXarray:
     def test_del(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         for k in list(cf):
             del cf[k]
         assert cf == {}
@@ -1768,7 +1768,7 @@ class TestXarray:
         )
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         np.testing.assert_array_almost_equal(
             cf.root.sweep_fixed_angle.values, fixed_angles
         )
@@ -1792,15 +1792,15 @@ class TestXarray:
         fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.0])
         filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
         h5file = util.get_wradlib_data_file(filename)
-        cf = io.xarray.OdimH5(h5file)
+        cf = io.xarray_depr.OdimH5(h5file)
         np.testing.assert_array_almost_equal(
             cf.root.sweep_fixed_angle.values, fixed_angles
         )
         filename = "hdf5/knmi_polar_volume.h5"
         h5file = util.get_wradlib_data_file(filename)
-        cf = io.xarray.OdimH5(h5file)
+        cf = io.xarray_depr.OdimH5(h5file)
         with pytest.raises(AttributeError):
-            cf = io.xarray.OdimH5(h5file, flavour="None")
+            cf = io.xarray_depr.OdimH5(h5file, flavour="None")
 
     @requires_data
     @requires_netcdf
@@ -1810,15 +1810,15 @@ class TestXarray:
         filename = "hdf5/2014-08-10--182000.ppi.mvol"
         h5file = util.get_wradlib_data_file(filename)
         with pytest.raises(AttributeError):
-            io.xarray.OdimH5(h5file)
-        cf = io.xarray.OdimH5(h5file, flavour="GAMIC")
+            io.xarray_depr.OdimH5(h5file)
+        cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC")
         assert str(cf.root.time_coverage_start.values) == time_cov[0]
         assert str(cf.root.time_coverage_end.values) == time_cov[1]
 
         filename = "hdf5/2014-06-09--185000.rhi.mvol"
         h5file = util.get_wradlib_data_file(filename)
-        cf = io.xarray.OdimH5(h5file, flavour="GAMIC")
-        cf = io.xarray.OdimH5(h5file, flavour="GAMIC", strict=False)
+        cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC")
+        cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC", strict=False)
 
     @requires_data
     @requires_netcdf
@@ -1826,10 +1826,10 @@ class TestXarray:
     def test_odim_roundtrip(self):
         filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
         odimfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.OdimH5(odimfile)
+        cf = io.xarray_depr.OdimH5(odimfile)
         tmp = tempfile.NamedTemporaryFile(mode="w+b").name
         cf.to_odim(tmp)
-        cf2 = io.xarray.OdimH5(tmp)
+        cf2 = io.xarray_depr.OdimH5(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 6):
             key = "sweep_{}".format(i)
@@ -1844,10 +1844,10 @@ class TestXarray:
     def test_cfradial_roundtrip(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         tmp = tempfile.NamedTemporaryFile(mode="w+b").name
         cf.to_cfradial2(tmp)
-        cf2 = io.xarray.CfRadial(tmp)
+        cf2 = io.xarray_depr.CfRadial(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 10):
             key = "sweep_{}".format(i)
@@ -1862,10 +1862,10 @@ class TestXarray:
     def test_cfradial_odim_roundtrip(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         tmp = tempfile.NamedTemporaryFile(mode="w+b").name
         cf.to_odim(tmp)
-        cf2 = io.xarray.OdimH5(tmp)
+        cf2 = io.xarray_depr.OdimH5(tmp)
         xr.testing.assert_allclose(
             cf.root.sweep_fixed_angle, cf2.root.sweep_fixed_angle
         )
@@ -1880,7 +1880,7 @@ class TestXarray:
 
         tmp1 = tempfile.NamedTemporaryFile(mode="w+b").name
         cf2.to_cfradial2(tmp1)
-        cf3 = io.xarray.CfRadial(tmp1)
+        cf3 = io.xarray_depr.CfRadial(tmp1)
         xr.testing.assert_allclose(
             cf.root.time_coverage_start, cf3.root.time_coverage_start
         )
@@ -1891,10 +1891,10 @@ class TestXarray:
     def test_georeference(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile, georef=True)
+        cf = io.xarray_depr.CfRadial(ncfile, georef=True)
         tmp = tempfile.NamedTemporaryFile(mode="w+b").name
         cf.to_cfradial2(tmp)
-        cf2 = io.xarray.CfRadial(tmp, georef=True)
+        cf2 = io.xarray_depr.CfRadial(tmp, georef=True)
         swp1 = cf["sweep_1"].copy()
         cf["sweep_1"] = cf["sweep_1"].drop_vars(["x", "y", "z", "gr", "rays", "bins"])
         cf.georeference()
@@ -1906,7 +1906,7 @@ class TestXarray:
     def test_root_key_warnings(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         with pytest.warns(DeprecationWarning):
             cf["root"]
 
@@ -1916,7 +1916,7 @@ class TestXarray:
     def test_to_odim_warning(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         cf.root = None
         with pytest.warns(UserWarning):
             cf.to_odim("test.h5")
@@ -1926,7 +1926,7 @@ class TestXarray:
     def test_to_cfradial2_warning(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         cf.root = None
         with pytest.warns(UserWarning):
             cf.to_cfradial2("test.nc")
@@ -1936,7 +1936,7 @@ class TestXarray:
     def test_setitem_warning(self):
         filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
         ncfile = util.get_wradlib_data_file(filename)
-        cf = io.xarray.CfRadial(ncfile)
+        cf = io.xarray_depr.CfRadial(ncfile)
         with pytest.warns(UserWarning):
             cf["test"] = None
 
@@ -1946,12 +1946,12 @@ class TestXarray:
         filename = "netcdf/edge_netcdf.nc"
         ncfile = util.get_wradlib_data_file(filename)
         with pytest.raises(TypeError):
-            io.xarray.OdimH5(ncfile)
+            io.xarray_depr.OdimH5(ncfile)
 
         filename = "netcdf/example_cfradial_ppi.nc"
         ncfile = util.get_wradlib_data_file(filename)
         with pytest.raises(AttributeError):
-            io.xarray.OdimH5(ncfile)
+            io.xarray_depr.OdimH5(ncfile)
 
     @requires_data
     @requires_netcdf
@@ -1959,9 +1959,9 @@ class TestXarray:
         filename = "hdf5/2014-08-10--182000.ppi.mvol"
         h5file = util.get_wradlib_data_file(filename)
         with pytest.raises(AttributeError):
-            io.xarray.CfRadial(h5file, flavour="Cf/Radial3")
+            io.xarray_depr.CfRadial(h5file, flavour="Cf/Radial3")
         with pytest.raises(AttributeError):
-            io.xarray.CfRadial(h5file)
+            io.xarray_depr.CfRadial(h5file)
 
 
 class TestDem:

@@ -271,7 +271,7 @@ def get_measured_volume(file, loader, format, fileobj):
         pytest.importorskip(loader)
         pytest.importorskip("h5netcdf")
     with get_wradlib_data_file(file, fileobj) as h5file:
-        yield io.xarray.open_odim(h5file, loader=loader, flavour=format)
+        yield io.xarray_depr.open_odim(h5file, loader=loader, flavour=format)
 
 
 @contextlib.contextmanager
@@ -296,7 +296,9 @@ def get_synthetic_volume(name, get_loader, file_or_filelike, **kwargs):
         data = globals()[name]()
         write_group(f, data)
     with get_wradlib_data_file(tmp_local, file_or_filelike) as h5file:
-        yield io.xarray.open_odim(h5file, loader=get_loader, flavour=format, **kwargs)
+        yield io.xarray_depr.open_odim(
+            h5file, loader=get_loader, flavour=format, **kwargs
+        )
 
 
 def base_odim_data_00(nrays=360):
@@ -547,7 +549,7 @@ class DataMoment:
                             self.elevations[i],
                             self.moments[k],
                         )
-                    assert isinstance(mom, io.xarray.XRadMoment)
+                    assert isinstance(mom, io.xarray_depr.XRadMoment)
                     assert mom.__repr__() == repr
                     assert mom.engine == engine
                     if file_or_filelike == "file":
@@ -658,7 +660,7 @@ class DataSweep(DataMoment):
                         self.elevations[i],
                         self.moments,
                     )
-                    assert isinstance(swp, io.xarray.XRadSweep)
+                    assert isinstance(swp, io.xarray_depr.XRadSweep)
                     if file_or_filelike == "file":
                         assert self.name.split("/")[-1] in swp.filename
                     assert swp.__repr__() == repr
@@ -809,7 +811,7 @@ class DataTimeSeries(DataSweep):
                 repr = create_timeseries_repr(
                     self.volumes, self.azimuths[i], self.ranges[i], self.elevations[i]
                 )
-                assert isinstance(ts, io.xarray.XRadTimeSeries)
+                assert isinstance(ts, io.xarray_depr.XRadTimeSeries)
                 assert ts.__repr__() == repr
                 assert ts.engine == engine
                 assert ts.ncid == ts.ncfile[ts.ncpath]
@@ -915,7 +917,7 @@ class DataVolume(DataTimeSeries):
             pytest.skip("file_like needs 'h5netcdf' or 'netcdf4'")
         with self.get_volume_data(get_loader, file_or_filelike) as vol:
             engine = "h5netcdf" if "h5" in get_loader else "netcdf4"
-            assert isinstance(vol, io.xarray.XRadVolume)
+            assert isinstance(vol, io.xarray_depr.XRadVolume)
             repr = create_volume_repr(self.sweeps, self.elevations)
             assert vol.__repr__() == repr
             assert vol.engine == engine
@@ -1032,9 +1034,11 @@ class TestKNMIVolume(MeasuredDataVolume):
         dsdesc = "dataset{}"
         mdesc = "data{}"
 
-    @property
-    def data(self):
-        return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
+        _data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
+
+    # @property
+    # def data(self):
+    #     return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
 
 
 @requires_data
@@ -1067,9 +1071,11 @@ class TestGamicVolume(MeasuredDataVolume):
         dsdesc = "scan{}"
         mdesc = "moment_{}"
 
-    @property
-    def data(self):
-        return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
+        _data = io.read_generic_hdf5(util.get_wradlib_data_file(name))
+
+    # @property
+    # def data(self):
+    #     return io.read_generic_hdf5(util.get_wradlib_data_file(self.name))
 
 
 class TestSyntheticOdimVolume01(SyntheticDataVolume):
