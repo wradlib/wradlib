@@ -1739,6 +1739,7 @@ class TestXarray:
         assert len(cf) == cf.sweep
         assert len(cf) == 9
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_del(self):
@@ -1749,6 +1750,7 @@ class TestXarray:
             del cf[k]
         assert cf == {}
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_read_cfradial(self):
@@ -1786,6 +1788,7 @@ class TestXarray:
 
         assert repr(cf) == repr(cf._sweeps)
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_read_odim(self):
@@ -1802,6 +1805,7 @@ class TestXarray:
         with pytest.raises(AttributeError):
             cf = io.xarray_depr.OdimH5(h5file, flavour="None")
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     @requires_h5py
@@ -1820,6 +1824,7 @@ class TestXarray:
         cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC")
         cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC", strict=False)
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     @requires_h5py
@@ -1839,6 +1844,7 @@ class TestXarray:
         # this currently breaks on CI, maybe the above `del` does not work correctly
         # cf.to_odim(tmp)
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_cfradial_roundtrip(self):
@@ -1856,6 +1862,7 @@ class TestXarray:
         del cf2
         cf.to_cfradial2(tmp)
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     @requires_h5py
@@ -1885,6 +1892,7 @@ class TestXarray:
             cf.root.time_coverage_start, cf3.root.time_coverage_start
         )
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     @requires_gdal
@@ -1901,6 +1909,7 @@ class TestXarray:
         xr.testing.assert_equal(swp1, cf["sweep_1"])
         xr.testing.assert_equal(swp1, cf2["sweep_1"])
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_root_key_warnings(self):
@@ -1910,6 +1919,7 @@ class TestXarray:
         with pytest.warns(DeprecationWarning):
             cf["root"]
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     @requires_h5py
@@ -1921,6 +1931,7 @@ class TestXarray:
         with pytest.warns(UserWarning):
             cf.to_odim("test.h5")
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_to_cfradial2_warning(self):
@@ -1931,6 +1942,7 @@ class TestXarray:
         with pytest.warns(UserWarning):
             cf.to_cfradial2("test.nc")
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_setitem_warning(self):
@@ -1940,6 +1952,7 @@ class TestXarray:
         with pytest.warns(UserWarning):
             cf["test"] = None
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_odim_errors(self):
@@ -1953,6 +1966,7 @@ class TestXarray:
         with pytest.raises(AttributeError):
             io.xarray_depr.OdimH5(ncfile)
 
+    @deprecation.fail_if_not_removed
     @requires_data
     @requires_netcdf
     def test_netcdf4_errors(self):
