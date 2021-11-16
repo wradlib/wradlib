@@ -21,6 +21,7 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.radolan
 .. automodule:: wradlib.io.rainbow
 .. automodule:: wradlib.io.xarray
+.. automodule:: wradlib.io.xarray_depr
 """
 
 from .backends import *
@@ -33,5 +34,6 @@ from .netcdf import *
 from .radolan import *
 from .rainbow import *
 from .xarray import *
+from .xarray_depr import *
 
 __all__ = [s for s in dir() if not s.startswith("_")]
