@@ -2,14 +2,13 @@
 # Copyright (c) 2011-2021, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-
 """
 Xarray based Data I/O
 ^^^^^^^^^^^^^^^^^^^^^
 
-Reads data from netcdf-based CfRadial1, CfRadial2 and hdf5-based ODIM_H5 and
-other hdf5-flavours (GAMIC). More radar backends (sigmet, rainbow) will be
-implemented too.
+Reads data from netcdf-based CfRadial1, CfRadial2,hdf5-based ODIM_H5 and
+other hdf5-flavours (GAMIC), Iris/Sigmet and Rainbow5. More radar backends will be
+implemented as needed.
 
 Writes data to CfRadial2, ODIM_H5 or plain netCDF files.
 
@@ -20,55 +19,17 @@ This reader implementation uses
 * `h5py <https://www.h5py.org/>`_ and
 * `h5netcdf <https://github.com/h5netcdf/h5netcdf>`_.
 
-Currently there are three different approaches.
-
-The recommended approach makes use of the newly implemented :py:class:`xarray:xarray.backends.BackendEntrypoint`.
-For every radar source (CfRadial1, CfRadial2, GAMIC, ODIM) a specific backend is
+It utilizes the newly implemented :py:class:`xarray:xarray.backends.BackendEntrypoint`.
+For every radar source (CfRadial1, CfRadial2, GAMIC, ODIM, IRIS, Rainbow5) a specific backend is
 implemented in wradlib which returns an specific `sweep` as :py:class:`xarray:xarray.Dataset`.
 Convenience functions (eg. :func:`wradlib.io.xarray.open_radar_dataset`) are available to read
 volume data into shallow :class:`wradlib.io.xarray.RadarVolume`-wrapper.
 
-The following two approaches are not recommended and will be removed from the codebase
-in wradlib v 2.0.0.
-
-In the first approach the data is claimed using netcdf4-Dataset in a diskless
-non-persistent mode as follows::
-
-    vol = io.xarray.OdimH5(ncfile)
-    # or
-    vol = io.xarray.CfRadial(ncfile)
-
-The vol data structure holds one or many ['sweep_X'] xarray datasets, containing the
-sweep data. The root group xarray dataset which corresponds to the
-CfRadial2 root-group is available via the `.root`-object.
-
-The writer implementation uses xarray for CfRadial2 output and relies on h5py
-for the ODIM_H5 output.
-
-The second approach reads ODIM files (metadata) into a *simple* accessible
-structure::
-
-    vol = wradlib.io.open_odim(paths, loader='netcdf4', **kwargs)
-
-All datafiles are accessed via the given loader ('netcdf4', 'h5py',
-'h5netcdf'). Only absolutely necessary data is actually read in this process,
-eg. acquisition time and elevation, to fill the structure accordingly. All
-subsequent metadata retrievals are cached to further improve performance.
-Actual data access is realised via xarray using engine 'netcdf4' or 'h5netcdf',
-depending on the loader.
-
-Since for data handling xarray is utilized all xarray features can be
-exploited, like lazy-loading, pandas-like indexing on N-dimensional data and
-vectorized mathematical operations across multiple dimensions.
-
-Examples
---------
-    See :ref:`/notebooks/fileio/wradlib_odim_multi_file_dataset.ipynb`.
-
 Warning
 -------
-    This implementation is considered experimental. Changes in the API should
-    be expected.
+    This implementation is considered experimental. It will be based on CfRadial2, ODIM_H5
+    and the new standard enforced by WMO JET-OWR `FM301 <https://community.wmo.int/wmo-jet-owr-seminar-series-weather-radar-data-exchange>.
+    Changes in the API should be expected.
 
 .. autosummary::
    :nosignatures:

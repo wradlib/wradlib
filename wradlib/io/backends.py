@@ -1054,6 +1054,8 @@ class IrisStore(AbstractDataStore):
 
 
 class IrisBackendEntrypoint(BackendEntrypoint):
+    """Xarray BackendEntrypoint for IRIS/Sigmet data."""
+
     def open_dataset(
         self,
         filename_or_obj,
@@ -1360,6 +1362,8 @@ class RainbowStore(AbstractDataStore):
 
 
 class RainbowBackendEntrypoint(BackendEntrypoint):
+    """Xarray BackendEntrypoint for Rainbow5 data."""
+
     def open_dataset(
         self,
         filename_or_obj,
