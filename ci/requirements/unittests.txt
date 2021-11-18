@@ -1,5 +1,4 @@
 bottleneck
-cartopy;python_version<3.10
 codecov
 coverage
 dask
