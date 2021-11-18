@@ -62,6 +62,10 @@ jobs:
         mv .bashrcBAK "$HOME/.bashrc"
     - name: Install deps
       run: |
+        if [ ${{ matrix.python-version }} != "3.10" ]
+        then
+          echo "cartopy" >> ci/requirements/unittests.txt
+        fi
         micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
         echo "set -eo pipefail" >> "$HOME/.bash_profile"
         echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
@@ -122,6 +126,7 @@ jobs:
         mv .bashrcBAK "$HOME/.bashrc"
     - name: Install deps
       run: |
+        echo "cartopy" >> ci/requirements/unittests.txt
         micromamba create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
         echo "set -eo pipefail" >> "$HOME/.bash_profile"
         echo "micromamba activate wradlib-tests" >> "$HOME/.bash_profile"
@@ -184,6 +189,7 @@ jobs:
         run: |
           $Env:MAMBA_ROOT_PREFIX=(Join-Path -Path $HOME -ChildPath micromamba)
           $Env:MAMBA_EXE=(Join-Path -Path (Get-Location) -ChildPath micromamba.exe)
+          Add-Content ci/requirements/unittests.txt "cartopy"
           .\micromamba.exe create -y -n wradlib-tests python=${{ matrix.python-version }} -f ci/requirements/unittests.txt --channel conda-forge
         shell: powershell
       - name: Install wradlib
