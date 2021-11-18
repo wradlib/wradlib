@@ -1,4 +1,6 @@
 name: CI
+env:
+  micromamba_version: 0.17.0
 
 on:
   push:
@@ -54,7 +56,8 @@ jobs:
         fetch-depth: 0
     - name: install micromamba
       run: |
-        wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba --strip-components=1
+        echo ${micromamba_version}
+        wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/${micromamba_version} | tar -xvj bin/micromamba --strip-components=1
         mv "$HOME/.bashrc" .bashrcBAK
         touch "$HOME/.bashrc"
         ./micromamba shell init -s bash -p ~/micromamba
@@ -117,7 +120,8 @@ jobs:
         fetch-depth: 0
     - name: install micromamba
       run: |
-        curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+        echo ${micromamba_version}
+        curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/${micromamba_version} | tar -xvj bin/micromamba
         mv bin/micromamba .
         mv "$HOME/.bashrc" .bashrcBAK
         touch "$HOME/.bashrc"
@@ -179,7 +183,8 @@ jobs:
           fetch-depth: 0
       - name: install micromamba
         run: |
-          Invoke-Webrequest -URI https://micromamba.snakepit.net/api/micromamba/win-64/latest -OutFile micromamba.tar.bz2
+          $Env:micromamba_version
+          Invoke-Webrequest -URI https://micromamba.snakepit.net/api/micromamba/win-64/$Env:micromamba_version -OutFile micromamba.tar.bz2
           C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar.bz2 -aoa
           C:\PROGRA~1\7-Zip\7z.exe x micromamba.tar -ttar -aoa -r Library\bin\micromamba.exe
           MOVE -Force Library\bin\micromamba.exe micromamba.exe
