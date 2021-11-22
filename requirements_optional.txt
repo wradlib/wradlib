@@ -1,3 +1,4 @@
+cartopy
 dask
 gdal
 h5netcdf
