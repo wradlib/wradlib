@@ -174,8 +174,8 @@ class ErrorMetrics:
         if len(obs) != len(est):
             raise ValueError(
                 "WRADLIB: obs and est need to have the "
-                "same length. len(obs)={}, "
-                "len(est)={}".format(len(obs), len(est))
+                f"same length. len(obs)={len(obs)}, "
+                f"len(est)={len(est)}"
             )
         self.est = est
         self.obs = obs

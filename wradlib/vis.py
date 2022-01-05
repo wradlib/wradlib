@@ -68,7 +68,7 @@ class WradlibAccessor(object):
         return getattr(self._obj, attr)
 
     def __repr__(self):
-        return re.sub(r"<.+>", "<{}>".format(self.__class__.__name__), str(self._obj))
+        return re.sub(r"<.+>", f"<{self.__class__.__name__}>", str(self._obj))
 
     @property
     def site(self):
@@ -945,13 +945,13 @@ def _height_formatter(x, pos, cg=False, scale=1.0, er=6370000.0):
     if not cg:
         er = 0
     x = (x - er) / scale
-    fmt_str = "{:g}".format(x)
+    fmt_str = f"{x:g}"
     return fmt_str
 
 
 def _range_formatter(x, pos, scale=1.0):
     x = x / scale
-    fmt_str = "{:g}".format(x)
+    fmt_str = f"{x:g}"
     return fmt_str
 
 
@@ -1246,7 +1246,7 @@ def plot_plan_and_vert(
 
     # draw colorbar
     cb = pl.colorbar(xy, cax=ax_cb)
-    cb.set_label("(%s)" % unit)
+    cb.set_label(f"({unit})")
 
     # draw upper vertical profil
     ax_x.contourf(x, z, datazx, **kwargs)
@@ -1264,13 +1264,13 @@ def plot_plan_and_vert(
 
     def xycoords(x, pos):
         """The two args are the value and tick position"""
-        return "%d" % (x / 1000.0)
+        return f"{x / 1000:.0f}"
 
     xyformatter = tick.FuncFormatter(xycoords)
 
     def zcoords(x, pos):
         """The two args are the value and tick position"""
-        return ("%.1f" % (x / 1000.0)).rstrip("0").rstrip(".")
+        return f"{x // 1000:.0f}"
 
     zformatter = tick.FuncFormatter(zcoords)
 
@@ -1294,7 +1294,7 @@ def plot_plan_and_vert(
         # show plot
         pl.show()
         if not pl.isinteractive():
-            # close figure eplicitely if pylab is not in interactive mode
+            # close figure explicitely if pyplot is not in interactive mode
             pl.close()
     else:
         # save plot to file

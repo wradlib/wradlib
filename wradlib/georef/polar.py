@@ -89,18 +89,17 @@ def spherical_to_xyz(
         # Set up aeqd-projection sitecoord-centered, wgs84 datum and ellipsoid
         # use world azimuthal equidistant projection
         projstr = (
-            "+proj=aeqd +lon_0={lon:f} +x_0=0 +y_0=0 +lat_0={lat:f} "
-            + "+ellps=WGS84 +datum=WGS84 +units=m +no_defs"
-            + ""
-        ).format(lon=sitecoords[0], lat=sitecoords[1])
-
+            f"+proj=aeqd +lon_0={sitecoords[0]:f} +x_0=0 +y_0=0 "
+            f"+lat_0={sitecoords[1]:f} +ellps=WGS84 +datum=WGS84 "
+            "+units=m +no_defs"
+        )
     else:
         # Set up aeqd-projection sitecoord-centered, assuming spherical earth
         # use Sphere azimuthal equidistant projection
         projstr = (
-            "+proj=aeqd +lon_0={lon:f} +lat_0={lat:f} +a={a:f} "
-            "+b={b:f} +units=m +no_defs"
-        ).format(lon=sitecoords[0], lat=sitecoords[1], a=re, b=re)
+            f"+proj=aeqd +lon_0={sitecoords[0]:f} +lat_0={sitecoords[1]:f} "
+            f"+a={re:f} +b={re:f} +units=m +no_defs"
+        )
 
     osr = import_optional("osgeo.osr")
     if has_import(osr):

@@ -330,7 +330,7 @@ class TestHDF5:
 
         command = "rm -rf test1.h5"
         subprocess.check_call(command, shell=True)
-        command = "h5copy -i {} -o test1.h5 -s CT -d CT".format(safnwcfile)
+        command = f"h5copy -i {safnwcfile} -o test1.h5 -s CT -d CT"
         subprocess.check_call(command, shell=True)
         with pytest.raises(KeyError):
             io.gdal.read_safnwc("test1.h5")
@@ -347,7 +347,7 @@ class TestHDF5:
         filename2 = "hdf5/IDR66_20141206_094829.vol.h5"
         gr2gpm_file = util.get_wradlib_data_file(filename2)
         gr_data = io.netcdf.read_generic_netcdf(gr2gpm_file)
-        dset = gr_data["dataset{0}".format(2)]
+        dset = gr_data["dataset2"]
         nray_gr = dset["where"]["nrays"]
         ngate_gr = dset["where"]["nbins"].astype("i4")
         elev_gr = dset["where"]["elangle"]
@@ -382,7 +382,7 @@ class TestHDF5:
         filename2 = "hdf5/IDR66_20141206_094829.vol.h5"
         gr2gpm_file = util.get_wradlib_data_file(filename2)
         gr_data = io.netcdf.read_generic_netcdf(gr2gpm_file)
-        dset = gr_data["dataset{0}".format(2)]
+        dset = gr_data["dataset2"]
         nray_gr = dset["where"]["nrays"]
         ngate_gr = dset["where"]["nbins"].astype("i4")
         elev_gr = dset["where"]["elangle"]
@@ -663,7 +663,7 @@ class TestRadolan:
         assert rw_file == rw_fid.name
         rw_fid.close()
 
-        command = "gunzip -k -f {}".format(rw_file)
+        command = f"gunzip -k -f {rw_file}"
         subprocess.check_call(command, shell=True)
 
         with io.radolan.get_radolan_filehandle(rw_file[:-3]) as rw_fid:
@@ -1837,7 +1837,7 @@ class TestXarray:
         cf2 = io.xarray_depr.OdimH5(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 6):
-            key = "sweep_{}".format(i)
+            key = f"sweep_{i}"
             xr.testing.assert_equal(cf[key], cf2[key])
         # test write after del, file lockage
         del cf2
@@ -1856,7 +1856,7 @@ class TestXarray:
         cf2 = io.xarray_depr.CfRadial(tmp)
         xr.testing.assert_equal(cf.root, cf2.root)
         for i in range(1, 10):
-            key = "sweep_{}".format(i)
+            key = f"sweep_{i}"
             xr.testing.assert_equal(cf[key], cf2[key])
         # test write after del, file lockage
         del cf2
@@ -1985,7 +1985,7 @@ class TestDem:
     @pytest.mark.xfail(strict=False)
     def test_get_srtm(self):
         targets = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
-        targets = ["%s.SRTMGL3.hgt.zip" % (f) for f in targets]
+        targets = [f"{f}.SRTMGL3.hgt.zip" for f in targets]
 
         extent = [-0.3, 1.5, 51.4, 52.5]
         datasets = io.dem.get_srtm(extent, merge=False)
@@ -1993,7 +1993,7 @@ class TestDem:
         assert targets == filelist
 
         targets = ["S02E015", "S02E016", "S01E015", "S01E016", "N00E015", "N00E016"]
-        targets = ["%s.SRTMGL3.hgt.zip" % (f) for f in targets]
+        targets = [f"{f}.SRTMGL3.hgt.zip" for f in targets]
 
         extent = [15.3, 16.6, -1.4, 0.4]
         datasets = io.dem.get_srtm(extent, merge=False)

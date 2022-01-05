@@ -619,8 +619,7 @@ def from_hdf5(fpath, dataset="data"):
         # Check whether Dataset exists
         if dataset not in f.keys():
             raise KeyError(
-                "WRADLIB: Cannot read Dataset <%s> from hdf5 file "
-                "<%s>" % (dataset, f)
+                f"WRADLIB: Cannot read Dataset <{dataset}> from hdf5 file <{f}>"
             )
         data = np.array(f[dataset][:])
         # get metadata
@@ -725,7 +724,7 @@ def read_gpm(filename, bbox=None):
     ndim = refl.ndim
     if ndim != 3:
         raise ValueError(
-            "GPM Dimensions do not match! " "Needed 3, given {0}".format(ndim)
+            f"GPM Dimensions do not match! Needed 3, given {ndim}"
         )
 
     tmp = refl.shape
@@ -883,7 +882,7 @@ def read_trmm(filename1, filename2, bbox=None):
     ndim = refl.ndim
     if ndim != 3:
         raise ValueError(
-            "TRMM Dimensions do not match!" "Needed 3, given {0}".format(ndim)
+            f"TRMM Dimensions do not match! Needed 3, given {ndim}"
         )
 
     tmp = refl.shape

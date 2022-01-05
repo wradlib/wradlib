@@ -519,6 +519,8 @@ class OdimBackendEntrypoint(BackendEntrypoint):
             decode_timedelta=decode_timedelta,
         )
 
+        ds.encoding["engine"] = "odim"
+
         if decode_coords and reindex_angle is not False:
             ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)
 
@@ -698,6 +700,8 @@ class GamicBackendEntrypoint(BackendEntrypoint):
             use_cftime=use_cftime,
             decode_timedelta=decode_timedelta,
         )
+
+        ds.encoding["engine"] = "gamic"
 
         ds = ds.sortby(list(ds.dims.keys())[0])
 

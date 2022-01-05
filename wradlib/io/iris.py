@@ -303,7 +303,7 @@ def _get_fmt_string(dictionary, retsub=False):
             if "size" in v:
                 fmt += v["size"]
             else:
-                fmt += "{}s".format(struct.calcsize(_get_fmt_string(v)))
+                fmt += f"{struct.calcsize(_get_fmt_string(v))}s"
     if retsub:
         return fmt, sub
     else:
@@ -328,7 +328,7 @@ def _get_struct_dtype(dictionary):
         try:
             dtypes.append((k, v["dtype"]))
         except KeyError:
-            dtypes.append((k, "S{0}".format(v["fmt"][:-1])))
+            dtypes.append((k, f"S{v['fmt'][:-1]}"))
 
     return np.dtype(dtypes)
 
@@ -479,7 +479,7 @@ _STRING = {"read": decode_string, "rkw": {}}
 def string_dict(size):
     """Return _STRING dictionary"""
     dic = _STRING.copy()
-    dic["size"] = "{0}s".format(size)
+    dic["size"] = f"{size}s"
     return dic
 
 
@@ -489,7 +489,7 @@ _ARRAY = {"read": np.frombuffer, "rkw": {}}
 def array_dict(size, dtype):
     """Return _ARRAY dictionary"""
     dic = _ARRAY.copy()
-    dic["size"] = "{0}s".format(size * get_dtype_size(dtype))
+    dic["size"] = f"{size * get_dtype_size(dtype)}s"
     dic["rkw"]["dtype"] = dtype
     return copy.deepcopy(dic)
 
@@ -520,7 +520,7 @@ YMDS_TIME = OrderedDict(
 
 LEN_YMDS_TIME = struct.calcsize(_get_fmt_string(YMDS_TIME))
 
-_YMDS_TIME = {"size": "{}s".format(LEN_YMDS_TIME), "func": decode_time, "fkw": {}}
+_YMDS_TIME = {"size": f"{LEN_YMDS_TIME}s", "func": decode_time, "fkw": {}}
 
 # product_specific_info Structure(s) _PSI_ with connected _RESULTS
 
@@ -2622,7 +2622,7 @@ class IrisIngestHeader(IrisHeaderBase):
     def data_types_dict(self):
         """Returns list of data type dictionaries."""
         return [
-            SIGMET_DATA_TYPES.get(i, {"name": "DB_UNKNOWN_{}".format(i), "func": None})
+            SIGMET_DATA_TYPES.get(i, {"name": f"DB_UNKNOWN_{i}", "func": None})
             for i in self._data_types_numbers
         ]
 
@@ -2738,9 +2738,8 @@ class IrisProductHeader(IrisHeaderBase):
             config[key] = _unpack_dictionary(config[key], pt["struct"], rawdata)
         except KeyError:
             warnings.warn(
-                "product type {0} not implemented, \n"
-                "only header information "
-                "available".format(pt["name"]),
+                f"product type {pt['name']} not implemented, \n"
+                "only header information available",
                 RuntimeWarning,
                 stacklevel=3,
             )
@@ -2775,7 +2774,7 @@ class IrisIngestDataHeader(IrisHeaderBase):
         i = self._data_types_numbers
 
         return SIGMET_DATA_TYPES.get(
-            i, {"name": "DB_UNKNOWN_{}".format(i), "func": None}
+            i, {"name": f"DB_UNKNOWN_{i}", "func": None}
         )
 
     @property
@@ -2842,9 +2841,8 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
             return self.structure_identifier
         else:
             raise IOError(
-                "Cannot read {0} with {1} class".format(
-                    self.structure_identifier, self.__class__.__name__
-                )
+                f"Cannot read {self.structure_identifier} with "
+                f"{self.__class__.__name__} class"
             )
 
     @property
@@ -3024,7 +3022,7 @@ class IrisIngestDataFile(IrisFile, IrisIngestDataHeader):
             #    dtype = '(2,) {0}'.format(prod['dtype'])
             # else:
             #    dtype = '{0}'.format(prod['dtype'])
-            dtype = "{0}".format(prod["dtype"])
+            dtype = f"{prod['dtype']}"
             try:
                 rays, bins = data.shape
                 data = data.view(dtype).reshape(rays, -1)[:, :bins]
@@ -3110,9 +3108,7 @@ class IrisRecordFile(IrisFile, IrisProductHeader):
             return self.product_type
         else:
             raise IOError(
-                "Cannot read {0} with {1} class".format(
-                    self.product_type, self.__class__.__name__
-                )
+                f"Cannot read {self.product_type} with {self.__class__.__name__} class"
             )
 
     @property
@@ -3270,7 +3266,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
         chk = self._rh.record.shape[0] == RECORD_BYTES
         if not chk:
             raise EOFError(
-                "Unexpected file end detected at " "record {}".format(self.rh.recnum)
+                f"Unexpected file end detected at record {self.rh.recnum}"
             )
         return chk
 
@@ -3391,10 +3387,8 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             if cmp_msb:
                 if self._debug:
                     print(
-                        "--- Add {0} WORDS at range {1}, record {2}:{3}:"
-                        "".format(
-                            cmp_val, ray_pos, self._rh.recpos, self._rh.recpos + cmp_val
-                        )
+                        f"--- Add {cmp_val} WORDS at range {ray_pos}, "
+                        f"record {self._rh.recpos}:{self._rh.recpos + cmp_val}:"
                     )
                 if skip:
                     self.skip_from_record(cmp_val, "int16")
@@ -3627,9 +3621,9 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             except KeyError:
                 pass
             if get_dtype_size(prod["dtype"]) == 1:
-                dtype = "(2,) {0}".format(prod["dtype"])
+                dtype = f"(2,) {prod['dtype']}"
             else:
-                dtype = "{0}".format(prod["dtype"])
+                dtype = f"{prod['dtype']}"
             try:
                 rays, bins = data.shape
                 data = data.view(dtype).reshape(rays, -1)[:, :bins]
@@ -3849,8 +3843,8 @@ class IrisProductFile(IrisRecordFile):
                 self.get_results(result, num_elements, self.product_type_dict["result"])
             else:
                 warnings.warn(
-                    "{0} - No product result "
-                    "array(s) available".format(self.product_type),
+                    f"{self.product_type} - No product result "
+                    "array(s) available",
                     RuntimeWarning,
                     stacklevel=3,
                 )
@@ -3987,9 +3981,9 @@ class IrisCartesianProductFile(IrisRecordFile):
         product_end = product_hdr["product_end"]
         if product_hdr["product_end"]["number_elements"]:
             warnings.warn(
-                "{0} Not Implemented - Product results "
+                f"{self.product_type} Not Implemented - Product results "
                 "array available \nnot loading "
-                "dataset".format(self.product_type),
+                "dataset",
                 RuntimeWarning,
                 stacklevel=3,
             )
@@ -4096,7 +4090,7 @@ def read_iris(
     sid, opener = _check_iris_file(filename)
 
     if not opener:
-        raise TypeError("Unknown File or Product Type {}".format(sid))
+        raise TypeError(f"Unknown File or Product Type {sid}")
 
     irisfile = opener(
         filename, loaddata=loaddata, rawdata=rawdata, debug=debug, **kwargs

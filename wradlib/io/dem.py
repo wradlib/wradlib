@@ -127,17 +127,17 @@ def get_srtm(extent, resolution=3, merge=True):
     filelist = []
     for latitude in range(latmin, min(latmax, 0)):
         for longitude in range(lonmin, min(lonmax, 0)):
-            georef = "S%02gW%03g" % (-latitude, -longitude)
+            georef = f"S{-latitude:02g}W{-longitude:03g}"
             filelist.append(georef)
         for longitude in range(max(lonmin, 0), lonmax + 1):
-            georef = "S%02gE%03g" % (-latitude, longitude)
+            georef = f"S{-latitude:02g}E{longitude:03g}"
             filelist.append(georef)
     for latitude in range(max(0, latmin), latmax + 1):
         for longitude in range(lonmin, min(lonmax, 0)):
-            georef = "N%02gW%03g" % (latitude, -longitude)
+            georef = f"N{latitude:02g}W{-longitude:03g}"
             filelist.append(georef)
         for longitude in range(max(lonmin, 0), lonmax + 1):
-            georef = "N%02gE%03g" % (latitude, longitude)
+            georef = f"N{latitude:02g}E{longitude:03g}"
             filelist.append(georef)
     filelist = [f"{f}.SRTMGL{resolution}.hgt.zip" for f in filelist]
 

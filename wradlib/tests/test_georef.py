@@ -942,8 +942,8 @@ class TestGetGrids:
         scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
         dwd_string = (
             "+proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 "
-            "+k={0:10.8f} +x_0=0 +y_0=0 +a=6370040 +b=6370040 "
-            "+to_meter=1000 +no_defs".format(scale)
+            f"+k={scale:10.8f} +x_0=0 +y_0=0 +a=6370040 +b=6370040 "
+            "+to_meter=1000 +no_defs"
         )
         proj_stereo = georef.proj4_to_osr(dwd_string)
 
@@ -1044,9 +1044,8 @@ def sat_data():
         a = wgs84.GetSemiMajor()
         b = wgs84.GetSemiMinor()
         rad = georef.proj4_to_osr(
-            (
-                "+proj=aeqd +lon_0={lon:f} " + "+lat_0={lat:f} +a={a:f} +b={b:f}" + ""
-            ).format(lon=pr_lon[68, 0], lat=pr_lat[68, 0], a=a, b=b)
+                f"+proj=aeqd +lon_0={pr_lon[68, 0]:f} +lat_0={pr_lat[68, 0]:f} "
+                f"+a={a:f} +b={b:f}"
         )
         pr_x, pr_y = georef.reproject(
             pr_lon, pr_lat, projection_source=wgs84, projection_target=rad

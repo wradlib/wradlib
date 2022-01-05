@@ -71,14 +71,12 @@ class OptionalModuleStub(object):
             "installation.html#optional-dependencies"
         )
         raise AttributeError(
-            'Module "{0}" is not installed.\n\n'
+            f"Module '{self.name}' is not installed.\n\n"
             "You tried to access function/module/attribute "
-            '"{1}"\nfrom module "{0}".\nThis module is '
+            f"'{name}'\nfrom module '{self.name}'.\nThis module is "
             "optional right now in wradlib.\nYou need to "
             "separately install this dependency.\n"
-            "Please refer to {2}\nfor further instructions.".format(
-                self.name, name, link
-            )
+            f"Please refer to {link}\nfor further instructions."
         )
 
 
@@ -337,7 +335,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
     """
     ascale = 2 * np.pi / img.shape[0]
     data_filtered = np.empty(img.shape, dtype=img.dtype)
-    fun = getattr(ndimage.filters, "%s_filter1d" % fun)
+    fun = getattr(ndimage.filters, f"{fun}_filter1d")
     nbins = img.shape[-1]
     ranges = np.arange(nbins) * rscale + rscale / 2
     asize = ranges * ascale
@@ -404,7 +402,7 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
         Array with the same shape as `img`, containing the filter's results.
 
     """
-    fun = getattr(ndimage.filters, "%s_filter" % fun)
+    fun = getattr(ndimage.filters, f"{fun}_filter")
     size = np.fix(wsize / scale + 0.5).astype(int)
     data_filtered = fun(img, size, **kwargs)
     return data_filtered
@@ -595,7 +593,7 @@ def get_wradlib_data_path():
         raise EnvironmentError("'WRADLIB_DATA' environment variable not set")
     if not os.path.isdir(wrl_data_path):
         raise EnvironmentError(
-            "'WRADLIB_DATA' path '{0}' " "does not exist".format(wrl_data_path)
+            f"'WRADLIB_DATA' path '{wrl_data_path}' does not exist"
         )
     return wrl_data_path
 
@@ -604,7 +602,7 @@ def get_wradlib_data_file(relfile):
     data_file = os.path.abspath(os.path.join(get_wradlib_data_path(), relfile))
     if not os.path.exists(data_file):
         raise EnvironmentError(
-            "WRADLIB_DATA file '{0}' " "does not exist".format(data_file)
+            f"WRADLIB_DATA file '{data_file}' does not exist"
         )
     return data_file
 

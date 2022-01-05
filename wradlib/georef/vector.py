@@ -348,14 +348,9 @@ def numpy_to_ogr(vert, geom_name):
     """
 
     if geom_name in ["Polygon", "MultiPolygon"]:
-        json_str = "{{'type':{0!r},'coordinates':[{1!r}]}}".format(
-            geom_name, vert.tolist()
-        )
+        json_str = f"{{'type':'{geom_name}','coordinates':[{repr(vert.tolist())}]}}"
     else:
-        json_str = "{{'type':{0!r},'coordinates':{1!r}}}".format(
-            geom_name, vert.tolist()
-        )
-
+        json_str = f"{{'type':'{geom_name}','coordinates':{repr(vert.tolist())}}}"
     return ogr.CreateGeometryFromJson(json_str)
 
 
