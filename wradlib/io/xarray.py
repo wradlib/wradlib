@@ -106,7 +106,7 @@ def raise_on_missing_xarray_backend():
         pass
 
 
-class WradlibVariable(object):
+class WradlibVariable:
     """Minimal variable wrapper."""
 
     def __init__(self, dims, data, attrs):
@@ -798,7 +798,7 @@ def _calculate_angle_res(dim):
     return np.round(np.nanmean(angle_diff_wanted), decimals=2)
 
 
-class _OdimH5NetCDFMetadata(object):
+class _OdimH5NetCDFMetadata:
     """Wrapper around OdimH5 data fileobj for easy access of metadata.
 
     Parameters
@@ -1081,7 +1081,7 @@ class _OdimH5NetCDFMetadata(object):
         return self._get_ray_times()
 
 
-class _GamicH5NetCDFMetadata(object):
+class _GamicH5NetCDFMetadata:
     """Wrapper around OdimH5 data fileobj for easy access of metadata.
 
     Parameters

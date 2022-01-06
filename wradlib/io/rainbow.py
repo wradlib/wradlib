@@ -464,7 +464,7 @@ def read_rainbow(filename, loaddata=True):
     return rbdict
 
 
-class RainbowFileBase(object):
+class RainbowFileBase:
     """Base class for Rainbow Files."""
 
     def __init__(self, **kwargs):

@@ -943,7 +943,7 @@ radolan = {
 }
 
 
-class _radolan_file(object):
+class _radolan_file:
     """A file object for RADOLAN data.
 
     This class maps RADOLAN data to NetCDF style dimensions, variables and attributes.

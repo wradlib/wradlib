@@ -144,7 +144,7 @@ def create_xarray_dataarray(*args, **kwargs):
 
 
 @xr.register_dataset_accessor("gamic")
-class GamicAccessor(object):
+class GamicAccessor:
     """Dataset Accessor for handling GAMIC HDF5 data files"""
 
     def __init__(self, xarray_obj):
@@ -214,7 +214,7 @@ class GamicAccessor(object):
 
 
 @xr.register_dataset_accessor("odim")
-class OdimAccessor(object):
+class OdimAccessor:
     """Dataset Accessor for handling ODIM_H5 data files"""
 
     def __init__(self, xarray_obj):
@@ -2082,7 +2082,7 @@ def open_odim(paths, loader="netcdf4", **kwargs):
     return angles
 
 
-class XRadVolFile(object):
+class XRadVolFile:
     """BaseClass for holding netCDF4.Dataset handles"""
 
     def __init__(self, filename=None, flavour=None, **kwargs):
