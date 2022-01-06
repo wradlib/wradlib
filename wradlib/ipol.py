@@ -626,7 +626,7 @@ class RectGrid(RectGridBase):
     """
 
     def __init__(self, src, trg, method="linear"):
-        super(RectGrid, self).__init__(src, trg)
+        super().__init__(src, trg)
         self.method = method
 
     def __call__(self, values, **kwargs):
@@ -671,7 +671,7 @@ class RectBin(RectGridBase):
     """
 
     def __init__(self, src, trg):
-        super(RectBin, self).__init__(trg, src)
+        super().__init__(trg, src)
         self._binned_stats = False
 
     @property

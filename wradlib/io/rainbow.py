@@ -468,7 +468,7 @@ class RainbowFileBase:
     """Base class for Rainbow Files."""
 
     def __init__(self, **kwargs):
-        super(RainbowFileBase, self).__init__()
+        super().__init__()
 
 
 class RainbowFile(RainbowFileBase):
@@ -491,7 +491,7 @@ class RainbowFile(RainbowFileBase):
                 "Rainbow5 reader currently doesn't support file-like objects"
             )
         self._data = None
-        super(RainbowFile, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         # read rainbow header
         self._header = get_rb_header(self._fh)["volume"]
         self._coordinates = None

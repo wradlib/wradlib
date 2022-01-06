@@ -1029,7 +1029,7 @@ class ZonalStatsPoly(ZonalStatsBase):
         if src is not None:
             if not isinstance(src, ZonalDataPoly):
                 src = ZonalDataPoly(src, **kwargs)
-        super(ZonalStatsPoly, self).__init__(src, **kwargs)
+        super().__init__(src, **kwargs)
 
 
 class ZonalStatsPoint(ZonalStatsBase):
@@ -1055,7 +1055,7 @@ class ZonalStatsPoint(ZonalStatsBase):
         if src is not None:
             if not isinstance(src, ZonalDataPoint):
                 src = ZonalDataPoint(src, **kwargs)
-        super(ZonalStatsPoint, self).__init__(src, **kwargs)
+        super().__init__(src, **kwargs)
 
 
 def numpy_to_pathpatch(arr):

@@ -1798,7 +1798,7 @@ class XRadBase(collections.abc.MutableSequence):
     """Base Class for all XRad-classes."""
 
     def __init__(self, **kwargs):
-        super(XRadBase, self).__init__()
+        super().__init__()
         self._seq = []
 
     def __getitem__(self, index):
@@ -1836,7 +1836,7 @@ class RadarVolume(XRadBase):
     """Class for holding a volume of radar sweeps"""
 
     def __init__(self, **kwargs):
-        super(RadarVolume, self).__init__()
+        super().__init__()
         self._data = None
         self._root = None
         self._dims = dict(azimuth="elevation", elevation="azimuth")

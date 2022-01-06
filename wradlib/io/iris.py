@@ -2556,7 +2556,7 @@ class IrisHeaderBase:
     """Base Class for Iris Headers."""
 
     def __init__(self, **kwargs):
-        super(IrisHeaderBase, self).__init__()
+        super().__init__()
 
     def init_header(self):
         pass
@@ -2570,7 +2570,7 @@ class IrisStructureHeader(IrisHeaderBase):
     name = "_structure_header"
 
     def __init__(self, **kwargs):
-        super(IrisStructureHeader, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._structure_header = None
 
     @property
@@ -2598,7 +2598,7 @@ class IrisIngestHeader(IrisHeaderBase):
     name = "_ingest_header"
 
     def __init__(self, **kwargs):
-        super(IrisIngestHeader, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._ingest_header = None
         self._data_types_numbers = None
 
@@ -2685,7 +2685,7 @@ class IrisProductHeader(IrisHeaderBase):
     name = "_product_hdr"
 
     def __init__(self, **kwargs):
-        super(IrisProductHeader, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._product_hdr = None
         self._product_type_code = None
 
@@ -2753,7 +2753,7 @@ class IrisIngestDataHeader(IrisHeaderBase):
     name = "_ingest_data_header"
 
     def __init__(self, **kwargs):
-        super(IrisIngestDataHeader, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._ingest_data_header = None
         self._nrays_expected = None
         self._data_types_numbers = None
@@ -2793,7 +2793,7 @@ class IrisFileBase:
     """Base class for Iris Files."""
 
     def __init__(self, **kwargs):
-        super(IrisFileBase, self).__init__()
+        super().__init__()
 
 
 class IrisFile(IrisFileBase, IrisStructureHeader):
@@ -2817,7 +2817,7 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
             self._fh = np.frombuffer(filename, dtype=np.uint8)
         self._filepos = 0
         self._data = None
-        super(IrisFile, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         # read first structure header
         self.get_header(IrisStructureHeader)
         self._filepos = 0
@@ -2908,7 +2908,7 @@ class IrisIngestHeaderFile(IrisFile, IrisIngestHeader):
     identifier = "INGEST_HEADER"
 
     def __init__(self, filename, **kwargs):
-        super(IrisIngestHeaderFile, self).__init__(filename=filename, **kwargs)
+        super().__init__(filename=filename, **kwargs)
         self.check_identifier()
         self.get_header(IrisIngestHeader)
 
@@ -2919,7 +2919,7 @@ class IrisIngestDataFile(IrisFile, IrisIngestDataHeader):
     identifier = "INGEST_DATA_HEADER"
 
     def __init__(self, filename, **kwargs):
-        super(IrisIngestDataFile, self).__init__(filename=filename, **kwargs)
+        super().__init__(filename=filename, **kwargs)
         self.check_identifier()
         self.get_header(IrisIngestDataHeader)
 
@@ -3095,7 +3095,7 @@ class IrisRecordFile(IrisFile, IrisProductHeader):
     ]
 
     def __init__(self, filename, **kwargs):
-        super(IrisRecordFile, self).__init__(filename=filename, **kwargs)
+        super().__init__(filename=filename, **kwargs)
         self._rh = None
         self._record_number = None
         self.get_header(IrisProductHeader)
@@ -3226,7 +3226,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
     product_identifier = ["RAW"]
 
     def __init__(self, filename, **kwargs):
-        super(IrisRawFile, self).__init__(filename, **kwargs)
+        super().__init__(filename, **kwargs)
 
         self.check_product_identifier()
 
@@ -3748,7 +3748,7 @@ class IrisProductFile(IrisRecordFile):
         filename : str
             filename
         """
-        super(IrisProductFile, self).__init__(filename, **kwargs)
+        super().__init__(filename, **kwargs)
 
         self.check_product_identifier()
         self._protect_setup = None
@@ -3887,7 +3887,7 @@ class IrisCartesianProductFile(IrisRecordFile):
         else:
             self._origin = origin
 
-        super(IrisCartesianProductFile, self).__init__(irisfile, **kwargs)
+        super().__init__(irisfile, **kwargs)
 
         self.check_product_identifier()
 
