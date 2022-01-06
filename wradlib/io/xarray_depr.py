@@ -749,7 +749,7 @@ class OdimH5GroupAttributeMixin:
     __slots__ = ["_attrs", "_ncfile", "_ncpath", "_parent", "_how", "_what", "_where"]
 
     def __init__(self, ncfile=None, ncpath=None, parent=None):
-        super(OdimH5GroupAttributeMixin, self).__init__()
+        super().__init__()
         self._ncfile = ncfile
         self._ncpath = ncpath
         self._parent = parent
@@ -900,7 +900,7 @@ class OdimH5SweepMetaDataMixin:
     """Mixin Class for Odim MetaData."""
 
     def __init__(self):
-        super(OdimH5SweepMetaDataMixin, self).__init__()
+        super().__init__()
         self._a1gate = None
         self._angle_resolution = None
         self._azimuth = None
@@ -1022,7 +1022,7 @@ class XRadMoment(OdimH5GroupAttributeMixin):
     """
 
     def __init__(self, ncfile, ncpath, parent):
-        super(XRadMoment, self).__init__(ncfile, ncpath, parent)
+        super().__init__(ncfile, ncpath, parent)
         self._quantity = None
 
     def __repr__(self):
@@ -1078,7 +1078,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
     """
 
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
-        super(XRadSweep, self).__init__(ncfile, ncpath, parent)
+        super().__init__(ncfile, ncpath, parent)
         self._dask_kwargs = {
             "chunks": kwargs.get("chunks", None),
             "parallel": kwargs.get("parallel", False),
@@ -1249,7 +1249,7 @@ class XRadSweepOdim(XRadSweep):
     """
 
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
-        super(XRadSweepOdim, self).__init__(ncfile, ncpath, parent, **kwargs)
+        super().__init__(ncfile, ncpath, parent, **kwargs)
 
     def _get_a1gate(self):
         return self.where["a1gate"]
@@ -1436,7 +1436,7 @@ class XRadSweepGamic(XRadSweep):
     """
 
     def __init__(self, ncfile, ncpath, parent=None, **kwargs):
-        super(XRadSweepGamic, self).__init__(ncfile, ncpath, parent, **kwargs)
+        super().__init__(ncfile, ncpath, parent, **kwargs)
         self._ray_header = None
 
     @property
@@ -1627,7 +1627,7 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
     """Class for holding a timeseries of radar sweeps"""
 
     def __init__(self, **kwargs):
-        super(XRadTimeSeries, self).__init__()
+        super().__init__()
         self._data = None
         self._moments = None
         self._meta = None
@@ -1639,7 +1639,7 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         if not len(self):
             self._ncfile = value.ncfile
             self._ncpath = value.ncpath
-        return super(XRadTimeSeries, self).append(value)
+        return super().append(value)
 
     def __repr__(self):
         summary = [f"<wradlib.{type(self).__name__}>"]
@@ -1739,7 +1739,7 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
     """Class for holding a volume of radar sweeps"""
 
     def __init__(self, **kwargs):
-        super(XRadVolume, self).__init__()
+        super().__init__()
         self._data = None
         self._root = None
 
@@ -2123,7 +2123,7 @@ class OdimH5File(XRadVolFile):
     """
 
     def __init__(self, filename=None, flavour=None, **kwargs):
-        super(OdimH5File, self).__init__(filename=filename, flavour=flavour, **kwargs)
+        super().__init__(filename=filename, flavour=flavour, **kwargs)
 
     def _check_file(self, filename, flavour):
         nch = netCDF4.Dataset(filename, diskless=True, persist=False)
@@ -2181,7 +2181,7 @@ class NetCDF4File(XRadVolFile):
     """
 
     def __init__(self, filename=None, flavour=None, **kwargs):
-        super(NetCDF4File, self).__init__(filename=filename, flavour=flavour, **kwargs)
+        super().__init__(filename=filename, flavour=flavour, **kwargs)
 
     def _check_file(self, filename, flavour):
         nch = netCDF4.Dataset(filename, diskless=True, persist=False)
@@ -2416,7 +2416,7 @@ class CfRadial(XRadVol):
                 * `time` - cfradial2 standard
                 * `azimuth` - better for working with xarray
         """
-        super(CfRadial, self).__init__()
+        super().__init__()
         if not isinstance(filename, list):
             filename = [filename]
         for i, f in enumerate(filename):
@@ -2599,7 +2599,7 @@ class OdimH5(XRadVol):
                 * `time` - cfradial2 standard
                 * `azimuth` - better for working with xarray
         """
-        super(OdimH5, self).__init__()
+        super().__init__()
 
         if not isinstance(filename, list):
             filename = [filename]
