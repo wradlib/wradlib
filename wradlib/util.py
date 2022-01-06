@@ -53,7 +53,7 @@ def maximum_intensity_projection(*args, **kwargs):
     return polar.maximum_intensity_projection(*args, **kwargs)
 
 
-class OptionalModuleStub(object):
+class OptionalModuleStub:
     """Stub class for optional imports.
 
     Objects of this class are instantiated when optional modules are not

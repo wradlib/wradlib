@@ -56,7 +56,7 @@ cartopy = util.import_optional("cartopy")
 
 
 @xr.register_dataarray_accessor("wradlib")
-class WradlibAccessor(object):
+class WradlibAccessor:
     """Dataarray Accessor for plotting radar moments"""
 
     def __init__(self, xarray_obj):

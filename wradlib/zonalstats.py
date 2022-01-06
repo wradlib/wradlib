@@ -79,7 +79,7 @@ if has_import(gdal):
 isWindows = os.name == "nt"
 
 
-class DataSource(object):
+class DataSource:
     """ DataSource class for handling ogr/gdal vector data
 
     DataSource handles creates in-memory (vector) ogr DataSource object with
@@ -460,7 +460,7 @@ class DataSource(object):
         return ret_attrs, ret_props
 
 
-class ZonalDataBase(object):
+class ZonalDataBase:
     """Base class for managing 2-dimensional zonal data.
 
     For target polygons from either source points or source polygons.
@@ -842,7 +842,7 @@ class ZonalDataPoint(ZonalDataBase):
         return tuple(ret)
 
 
-class ZonalStatsBase(object):
+class ZonalStatsBase:
     """Base class for all 2-dimensional zonal statistics.
 
     The base class for computing 2-dimensional zonal statistics for target
