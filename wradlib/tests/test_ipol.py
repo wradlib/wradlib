@@ -263,6 +263,7 @@ class TestInterpolation:
                 print(str(item.message))
                 # assert issubclass(item.category, UserWarning)
                 # assert "nnearest" in str(item.message)
+        assert False
 
     def test_IpolBase(self):
         """testing the basic behaviour of the base class"""
