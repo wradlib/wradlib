@@ -28,9 +28,9 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import datetime as dt
 import io
-from distutils.version import LooseVersion
 
 import numpy as np
+from packaging.version import Version
 from xarray import Dataset
 from xarray.backends import NetCDF4DataStore
 from xarray.backends.common import (
@@ -393,16 +393,16 @@ class OdimStore(AbstractDataStore):
 
         kwargs = {"invalid_netcdf": invalid_netcdf}
         if phony_dims is not None:
-            if LooseVersion(h5netcdf.__version__) >= LooseVersion("0.8.0"):
+            if Version(h5netcdf.__version__) >= Version("0.8.0"):
                 kwargs["phony_dims"] = phony_dims
             else:
                 raise ValueError(
                     "h5netcdf backend keyword argument 'phony_dims' needs "
                     "h5netcdf >= 0.8.0."
                 )
-        if LooseVersion(h5netcdf.__version__) >= LooseVersion(
-            "0.10.0"
-        ) and LooseVersion(h5netcdf.core.h5py.__version__) >= LooseVersion("3.0.0"):
+        if Version(h5netcdf.__version__) >= Version("0.10.0") and Version(
+            h5netcdf.core.h5py.__version__
+        ) >= Version("3.0.0"):
             kwargs["decode_vlen_strings"] = decode_vlen_strings
 
         if lock is None:
@@ -579,16 +579,16 @@ class GamicStore(AbstractDataStore):
 
         kwargs = {"invalid_netcdf": invalid_netcdf}
         if phony_dims is not None:
-            if LooseVersion(h5netcdf.__version__) >= LooseVersion("0.8.0"):
+            if Version(h5netcdf.__version__) >= Version("0.8.0"):
                 kwargs["phony_dims"] = phony_dims
             else:
                 raise ValueError(
                     "h5netcdf backend keyword argument 'phony_dims' needs "
                     "h5netcdf >= 0.8.0."
                 )
-        if LooseVersion(h5netcdf.__version__) >= LooseVersion(
-            "0.10.0"
-        ) and LooseVersion(h5netcdf.core.h5py.__version__) >= LooseVersion("3.0.0"):
+        if Version(h5netcdf.__version__) >= Version("0.10.0") and Version(
+            h5netcdf.core.h5py.__version__
+        ) >= Version("3.0.0"):
             kwargs["decode_vlen_strings"] = decode_vlen_strings
 
         if lock is None:

@@ -55,12 +55,12 @@ import io
 import os
 import re
 import warnings
-from distutils.version import LooseVersion
 
 import dateutil
 import deprecation
 import numpy as np
 import xarray as xr
+from packaging.version import Version
 from xarray.core.variable import Variable
 
 from wradlib import version
@@ -87,12 +87,12 @@ netCDF4 = import_optional("netCDF4")
 
 def raise_on_missing_xarray_backend():
     """Raise errors if functionality isn't available."""
-    if LooseVersion(xr.__version__) < LooseVersion("0.17.0"):
+    if Version(xr.__version__) < Version("0.17.0"):
         raise ImportError(
             f"'xarray>=0.17.0' needed to perform this operation. "
             f"'xarray={xr.__version__}'  available.",
         )
-    elif LooseVersion(xr.__version__) < LooseVersion("0.18.2"):
+    elif Version(xr.__version__) < Version("0.18.2"):
         xarray_backend_api = os.environ.get("XARRAY_BACKEND_API", None)
         if xarray_backend_api is None:
             os.environ["XARRAY_BACKEND_API"] = "v2"

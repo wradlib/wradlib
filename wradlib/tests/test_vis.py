@@ -4,10 +4,10 @@
 
 import tempfile
 from dataclasses import dataclass
-from distutils.version import LooseVersion
 
 import numpy as np
 import pytest
+from packaging.version import Version
 
 from wradlib import georef, util, vis
 
@@ -154,8 +154,8 @@ class TestPolarPlot:
     @requires_cartopy
     @requires_gdal
     def test_plot_ppi_cartopy(self, prj_data):
-        if (LooseVersion(cartopy.__version__) < LooseVersion("0.18.0")) and (
-            LooseVersion(mpl.__version__) >= LooseVersion("3.3.0")
+        if (Version(cartopy.__version__) < Version("0.18.0")) and (
+            Version(mpl.__version__) >= Version("3.3.0")
         ):
             pytest.skip("fails for cartopy < 0.18.0 and matplotlib >= 3.3.0")
         site = (7, 45, 0.0)

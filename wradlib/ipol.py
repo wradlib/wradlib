@@ -42,10 +42,10 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import functools
 import re
 import warnings
-from distutils.version import LooseVersion
 
 import numpy as np
 import scipy
+from packaging.version import Version
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
 
@@ -354,7 +354,7 @@ class Idw(IpolBase):
         self.p = p
         # query tree
         # scipy kwarg changed from version 1.6
-        if LooseVersion(scipy.__version__) < "1.6":
+        if Version(scipy.__version__) < Version("1.6"):
             query_kwargs = dict(n_jobs=-1)
         else:
             query_kwargs = dict(workers=-1)
@@ -704,7 +704,7 @@ class RectBin(RectGridBase):
         # reshape into flat array
         values = values.reshape(-1)
 
-        if not self.binned_stats or LooseVersion(scipy.__version__) < "1.4":
+        if not self.binned_stats or Version(scipy.__version__) < Version("1.4"):
             result = stats.binned_statistic_dd(
                 self.ipol_points, values, bins=self.ipol_grid, **kwargs
             )

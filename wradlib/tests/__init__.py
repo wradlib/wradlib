@@ -9,9 +9,9 @@ wradlib_tests
 import contextlib
 import io
 import os
-from distutils.version import LooseVersion
 
 import pytest
+from packaging.version import Version
 from xarray import __version__ as xr_version
 
 from wradlib import util
@@ -29,7 +29,7 @@ requires_secrets = pytest.mark.skipif(
 )
 
 requires_xarray_backend_api = pytest.mark.skipif(
-    (LooseVersion(xr_version) < LooseVersion("0.17.0")),
+    (Version(xr_version) < Version("0.17.0")),
     reason="requires xarray version 0.18.0",
 )
 
