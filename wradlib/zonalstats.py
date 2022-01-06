@@ -189,7 +189,7 @@ class DataSource(object):
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
         lyr.SetSpatialFilter(None)
-        lyr.SetAttributeFilter("{0}={1}".format(attr, value))
+        lyr.SetAttributeFilter(f"{attr}={value}")
         return self._get_data()
 
     def get_data_by_geom(self, geom=None):
@@ -208,15 +208,15 @@ class DataSource(object):
 
     def _create_spatial_index(self):
         """Creates spatial index file .qix"""
-        sql1 = "DROP SPATIAL INDEX ON {}".format(self._name)
-        sql2 = "CREATE SPATIAL INDEX ON {}".format(self._name)
+        sql1 = f"DROP SPATIAL INDEX ON {self._name}"
+        sql2 = f"CREATE SPATIAL INDEX ON {self._name}"
         self.ds.ExecuteSQL(sql1)
         self.ds.ExecuteSQL(sql2)
 
     def _create_table_index(self, col):
         """Creates attribute index files"""
-        sql1 = "DROP INDEX ON {}".format(self._name)
-        sql2 = "CREATE INDEX ON {} USING {}".format(self._name, col)
+        sql1 = f"DROP INDEX ON {self._name}"
+        sql2 = f"CREATE INDEX ON {self._name} USING {col}"
         self.ds.ExecuteSQL(sql1)
         self.ds.ExecuteSQL(sql2)
 
@@ -352,7 +352,7 @@ class DataSource(object):
                 [1],
                 layer,
                 burn_values=[0],
-                options=["ATTRIBUTE={0}".format(attr), "ALL_TOUCHED=TRUE"],
+                options=[f"ATTRIBUTE={attr}", "ALL_TOUCHED=TRUE"],
                 callback=progress,
             )
         else:
@@ -404,7 +404,7 @@ class DataSource(object):
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
         if filt is not None:
-            lyr.SetAttributeFilter("{0}={1}".format(*filt))
+            lyr.SetAttributeFilter(f"{filt[0]}={filt[1]}")
         ret = [[] for _ in attrs]
         for ogr_src in lyr:
             for i, att in enumerate(attrs):
@@ -425,7 +425,7 @@ class DataSource(object):
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
         if filt is not None:
-            lyr.SetAttributeFilter("{0}={1}".format(*filt))
+            lyr.SetAttributeFilter(f"{filt[0]}={filt[1]}")
         ret = [[] for _ in props]
         for ogr_src in lyr:
             for i, prop in enumerate(props):
@@ -448,7 +448,7 @@ class DataSource(object):
         lyr = self.ds.GetLayer()
         lyr.ResetReading()
         if filt is not None:
-            lyr.SetAttributeFilter("{0}={1}".format(*filt))
+            lyr.SetAttributeFilter(f"{filt[0]}={filt[1]}")
         ret_props = [[] for _ in props]
         ret_attrs = [[] for _ in attrs]
         for ogr_src in lyr:
@@ -716,7 +716,7 @@ class ZonalDataBase(object):
                     feat = lyr.GetFeature(idx)
                     trg = feat.GetGeometryRef()
                 except Exception:
-                    raise TypeError("No target polygon found at index {0}".format(idx))
+                    raise TypeError(f"No target polygon found at index {idx}")
             else:
                 raise TypeError("No target polygons found in object!")
 
@@ -937,7 +937,7 @@ class ZonalStatsBase(object):
             lyr.ResetReading()
             lyr.SetSpatialFilter(None)
             src_len = lyr.GetFeatureCount()
-            assert len(vals) == src_len, "Argument vals must be of length %d" % src_len
+            assert len(vals) == src_len, f"Argument vals must be of length {src_len}"
         else:
             imax = 0
             for i in self.ix:
@@ -1283,7 +1283,7 @@ def get_clip_mask(coords, clippoly, srs=None):
         src_mask[mask] = True
 
     except ValueError as err:
-        warnings.warn("{0}".format(err))
+        warnings.warn(err)
 
     return src_mask
 

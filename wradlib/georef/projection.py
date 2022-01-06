@@ -176,9 +176,9 @@ Georeferencing-and-Projection`.
         proj.ImportFromWkt(radolan_wkt)
     else:
         raise ValueError(
-            "No convenience support for projection %r, "
+            f"No convenience support for projection {projname}, "
             "yet.\nYou need to create projection by using "
-            "other means..." % projname
+            "other means..."
         )
 
     return proj
@@ -269,7 +269,7 @@ def reproject(*args, **kwargs):
         numCols = C.shape[-1]
         C = C.reshape(-1, numCols)
         if numCols < 2 or numCols > 3:
-            raise TypeError("Input Array column mismatch to %s" % ("reproject"))
+            raise TypeError("Input Array column mismatch to 'reproject'")
     else:
         if len(args) == 2:
             X, Y = (np.asanyarray(arg) for arg in args)
@@ -279,17 +279,17 @@ def reproject(*args, **kwargs):
             zshape = Z.shape
             numCols = 3
         else:
-            raise TypeError("Illegal arguments to %s" % ("reproject"))
+            raise TypeError("Illegal arguments to 'reproject'")
 
         xshape = X.shape
         yshape = Y.shape
 
         if xshape != yshape:
-            raise TypeError("Incompatible X, Y inputs to %s" % ("reproject"))
+            raise TypeError("Incompatible X, Y inputs to 'reproject'")
 
         if "Z" in locals():
             if xshape != zshape:
-                raise TypeError("Incompatible Z input to %s" % ("reproject"))
+                raise TypeError("Incompatible Z input to 'reproject'")
             C = np.concatenate(
                 [X.ravel()[:, None], Y.ravel()[:, None], Z.ravel()[:, None]], axis=1
             )

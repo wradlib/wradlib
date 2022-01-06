@@ -97,12 +97,12 @@ def cloudtype_data():
     pvol = io.read_opera_hdf5(filename)
     nrays = int(pvol["dataset1/where"]["nrays"])
     nbins = int(pvol["dataset1/where"]["nbins"])
-    val = pvol["dataset%d/data1/data" % (1)]
+    val = pvol["dataset1/data1/data"]
     gain = float(pvol["dataset1/data1/what"]["gain"])
     offset = float(pvol["dataset1/data1/what"]["offset"])
     val = val * gain + offset
     rscale = int(pvol["dataset1/where"]["rscale"])
-    elangle = pvol["dataset%d/where" % (1)]["elangle"]
+    elangle = pvol["dataset1/where"]["elangle"]
     coord = georef.sweep_centroids(nrays, rscale, nbins, elangle)
     sitecoords = (
         pvol["where"]["lon"],

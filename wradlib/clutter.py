@@ -418,15 +418,15 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
     # check data conformity
     assert np.all(np.in1d(dkeys, list(dat.keys()))), (
         "Argument dat of classify_echo_fuzzy must be a dictionary "
-        "with mandatory keywords %r." % (dkeys,)
+        f"with mandatory keywords {*dkeys,}."
     )
     assert np.all(np.in1d(wkeys, list(weights.keys()))), (
         "Argument weights of classify_echo_fuzzy must be a dictionary "
-        "with keywords %r." % (wkeys,)
+        f"with keywords {*wkeys,}."
     )
     assert np.all(np.in1d(tkeys, list(trpz.keys()))), (
         "Argument trpz of classify_echo_fuzzy must be a dictionary "
-        "with keywords %r." % (tkeys,)
+        "with keywords {*tkeys,}."
     )
 
     # copy rho to rho2
@@ -440,10 +440,10 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
             else:
                 assert dat[key].shape[-2:] == shape[-2:], (
                     "Arrays of the decision variables have inconsistent "
-                    "shapes: %r vs. %r" % (dat[key].shape, shape)
+                    f"shapes: {dat[key].shape} vs. {shape}"
                 )
         else:
-            print("WARNING: Missing decision variable: %s" % key)
+            print(f"WARNING: Missing decision variable: {key}")
 
     # If all dual-pol moments are NaN, can we assume that and echo is
     # non-meteorological?
@@ -562,7 +562,7 @@ def filter_cloudtype(
     if cirrus:
         noprecip = noprecip | (cloud == 14) | (cloud == 18)
     if smoothing is not None:
-        myfilter = getattr(util, "filter_window_%s" % grid)
+        myfilter = getattr(util, f"filter_window_{grid}")
         noprecip = myfilter(noprecip, smoothing, "minimum", scale)
     clutter = noprecip & (img > thrs)
     return clutter

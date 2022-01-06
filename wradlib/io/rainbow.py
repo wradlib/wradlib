@@ -115,7 +115,7 @@ def get_rb_data_layout(datadepth):
         datatype = byteorder + "u" + str(datawidth)
     else:
         raise ValueError(
-            "Wrong DataDepth: %d. " "Conversion only for depth 8, 16, 32" % datadepth
+            f"Wrong DataDepth: {datadepth}. Conversion only for depth 8, 16, 32."
         )
 
     return datawidth, datatype
@@ -141,9 +141,9 @@ def get_rb_data_attribute(xmldict, attr):
         sattr = int(xmldict["@" + attr])
     except KeyError:
         raise KeyError(
-            "Attribute @{0} is missing from "
+            f"Attribute @{attr} is missing from "
             "Blob Description. There may be some "
-            "problems with your file".format(attr)
+            "problems with your file"
         )
     return sattr
 
@@ -193,10 +193,10 @@ def get_rb_blob_data(datastring, blobid):
     xmltodict = util.import_optional("xmltodict")
 
     start = 0
-    search_string = '<BLOB blobid="{0}"'.format(blobid)
+    search_string = f'<BLOB blobid="{blobid}"'
     start = datastring.find(search_string.encode(), start)
     if start == -1:
-        raise EOFError("Blob ID {0} not found!".format(blobid))
+        raise EOFError(f"Blob ID {blobid} not found!")
     end = datastring.find(b">", start)
     xmlstring = datastring[start : end + 1]
 
@@ -546,7 +546,7 @@ class RainbowFile(RainbowFileBase):
                 "Rainbow5 data of type `poi` (pointmode) is currently not supported."
             )
         else:
-            raise TypeError("Unknown Rainbow File Type: {}".format(type))
+            raise TypeError(f"Unknown Rainbow File Type: {self.type}")
 
     @property
     def header(self):

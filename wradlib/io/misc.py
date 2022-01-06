@@ -32,10 +32,10 @@ from wradlib import util
 
 
 def _write_polygon_to_txt(f, idx, vertices):
-    f.write("%i %i\n" % idx)
-    for i, vert in enumerate(vertices):
-        f.write("%i " % (i,))
-        f.write("%f %f %f %f\n" % tuple(vert))
+    f.write(f"{idx[0]} {idx[1]}\n")
+    for i, v in enumerate(vertices):
+        f.write(f"{i} ")
+        f.write(f"{v[0]:f} {v[1]:f} {v[2]:f} {v[3]:f}\n")
 
 
 def write_polygon_to_text(fname, polygons):
@@ -145,9 +145,9 @@ def get_radiosonde(wmoid, date, cols=None):
     url_str = (
         "http://weather.uwyo.edu/cgi-bin/sounding?"
         "TYPE=TEXT%3ALIST&"
-        "YEAR={0}&MONTH={1}&"
-        "FROM={2}{3}&TO={2}{3}&STNM={4}&"
-        "ICE=1".format(year, month, day, hour, wmoid)
+        f"YEAR={year}&MONTH={month}&"
+        f"FROM={day}{hour}&TO={day}{hour}&STNM={wmoid}&"
+        "ICE=1"
     )
 
     # html request

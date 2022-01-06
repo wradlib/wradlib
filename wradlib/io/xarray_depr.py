@@ -441,11 +441,11 @@ def to_odim(volume, filename, timestep=0):
     _write_odim(where, h5_where)
 
     # datasets
-    ds_list = ["dataset{}".format(i + 1) for i in range(len(sweepnames))]
+    ds_list = [f"dataset{i + 1}" for i in range(len(sweepnames))]
     ds_idx = np.argsort(ds_list)
     for idx in ds_idx:
         if isinstance(volume, (OdimH5, CfRadial)):
-            ds = volume["sweep_{}".format(idx + 1)]
+            ds = volume[f"sweep_{idx + 1}"]
         elif isinstance(volume, XRadVolume):
             ds = volume[idx][timestep].data
             ds = ds.drop_vars("time", errors="ignore").rename({"rtime": "time"})
@@ -1026,21 +1026,21 @@ class XRadMoment(OdimH5GroupAttributeMixin):
         self._quantity = None
 
     def __repr__(self):
-        summary = ["<wradlib.{}>".format(type(self).__name__)]
+        summary = [f"<wradlib.{type(self).__name__}>"]
 
         dims = "Dimension(s):"
         dims_summary = [f"{self.parent._dim0[0]}: {self.parent.nrays}"]
         dims_summary.append(f"{self.parent._dim1}: {self.parent.nbins}")
         dims_summary = ", ".join(dims_summary)
-        summary.append("{} ({})".format(dims, dims_summary))
+        summary.append(f"{dims} ({dims_summary})")
 
         angle = "Elevation(s):"
         angle_summary = f"{self.parent.fixed_angle:.1f}"
-        summary.append("{} ({})".format(angle, angle_summary))
+        summary.append(f"{angle} ({angle_summary})")
 
         moms = "Moment:"
         moms_summary = f"{self.quantity}"
-        summary.append("{} ({})".format(moms, moms_summary))
+        summary.append(f"{moms} ({moms_summary})")
 
         return "\n".join(summary)
 
@@ -1100,22 +1100,22 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
         self.fixed_angle
 
     def __repr__(self):
-        summary = ["<wradlib.{}>".format(type(self).__name__)]
+        summary = [f"<wradlib.{type(self).__name__}>"]
 
         dims = "Dimension(s):"
         dims_summary = [f"{self._dim0[0]}: {self.nrays}"]
         dims_summary.append(f"{self._dim1}: {self.nbins}")
         dims_summary = ", ".join(dims_summary)
-        summary.append("{} ({})".format(dims, dims_summary))
+        summary.append(f"{dims} ({dims_summary})")
 
         angle = f"{self._dim0[1].capitalize()}(s):"
         angle_summary = f"{self.fixed_angle:0.1f}"
-        summary.append("{} ({})".format(angle, angle_summary))
+        summary.append(f"{angle} ({angle_summary})")
 
         moms = "Moment(s):"
         moms_summary = self.moments
         moms_summary = ", ".join(moms_summary)
-        summary.append("{} ({})".format(moms, moms_summary))
+        summary.append(f"{moms} ({moms_summary})")
 
         return "\n".join(summary)
 
@@ -1642,13 +1642,13 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
         return super(XRadTimeSeries, self).append(value)
 
     def __repr__(self):
-        summary = ["<wradlib.{}>".format(type(self).__name__)]
+        summary = [f"<wradlib.{type(self).__name__}>"]
         dims = "Dimension(s):"
         dims_summary = [f"time: {len(self)}"]
         dims_summary.append(f"{self._seq[0]._dim0[0]}: {self._seq[0].nrays}")
         dims_summary.append(f"{self._seq[0]._dim1}: {self._seq[0].nbins}")
         dims_summary = ", ".join(dims_summary)
-        summary.append("{} ({})".format(dims, dims_summary))
+        summary.append(f"{dims} ({dims_summary})")
         angle = f"{self._seq[0]._dim0[1].capitalize()}(s):"
         angle_summary = self[0].fixed_angle
         summary.append(f"{angle} ({angle_summary:.1f})")
@@ -1674,10 +1674,10 @@ class XRadTimeSeries(OdimH5GroupAttributeMixin, XRadBase):
             drop = list(self.check_moments().keys())
             if drop:
                 warnings.warn(
-                    "wradlib: Moments {} are not available in all datasets "
+                    f"wradlib: Moments {*drop,} are not available in all datasets "
                     "and will be dropped from the result.\n"
                     "This will be solved in xarray, see "
-                    "https://github.com/pydata/xarray/pull/3545".format(drop)
+                    "https://github.com/pydata/xarray/pull/3545"
                 )
 
             # todo: catch possible error and add precise ErrorMessage
@@ -1744,14 +1744,14 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         self._root = None
 
     def __repr__(self):
-        summary = ["<wradlib.{}>".format(type(self).__name__)]
+        summary = [f"<wradlib.{type(self).__name__}>"]
         dims = "Dimension(s):"
         dims_summary = f"sweep: {len(self)}"
-        summary.append("{} ({})".format(dims, dims_summary))
+        summary.append(f"{dims} ({dims_summary})")
         angle = f"{self[0][0]._dim0[1].capitalize()}(s):"
         angle_summary = [f"{k[0].fixed_angle:.1f}" for k in self]
         angle_summary = ", ".join(angle_summary)
-        summary.append("{} ({})".format(angle, angle_summary))
+        summary.append(f"{angle} ({angle_summary})")
 
         return "\n".join(summary)
 
@@ -2064,7 +2064,7 @@ def open_odim(paths, loader="netcdf4", **kwargs):
         paths = np.array(paths).flatten().tolist()
 
     if loader not in ["netcdf4", "h5netcdf", "h5py"]:
-        raise ValueError("wradlib: Unknown loader: {}".format(loader))
+        raise ValueError(f"wradlib: Unknown loader: {loader}")
 
     sweeps = []
     [
@@ -2129,23 +2129,21 @@ class OdimH5File(XRadVolFile):
         nch = netCDF4.Dataset(filename, diskless=True, persist=False)
         if nch.disk_format != "HDF5":
             raise TypeError(
-                'wradlib: File {} is neither "NETCDF4" (using HDF5 groups) '
-                'nor plain "HDF5".'.format(filename)
+                f"wradlib: File {filename} is neither 'NETCDF4' (using HDF5 groups) "
+                "nor plain 'HDF5'."
             )
         if flavour is None:
             try:
                 flavour = nch.Conventions
             except AttributeError as e:
                 raise AttributeError(
-                    'wradlib: Missing "Conventions" attribute in {} ./n'
-                    'Use the "flavour" kwarg to specify your source '
-                    "data.".format(filename)
+                    f"wradlib: Missing 'Conventions' attribute in {filename} ./n"
+                    "Use the 'flavour' kwarg to specify your source data."
                 ) from e
             if "ODIM" not in flavour:
                 raise AttributeError(
-                    'wradlib: "Conventions" attribute "{}" in {} is unknown./n'
-                    'Use the "flavour" kwarg to specify your source '
-                    "data.".format(flavour, filename)
+                    f"wradlib: 'Conventions' attribute '{flavour}' in {filename} is unknown./n"
+                    "Use the 'flavour' kwarg to specify your source data."
                 )
 
         if "ODIM" in flavour:
@@ -2160,7 +2158,7 @@ class OdimH5File(XRadVolFile):
             self._msrc = "variables"
         else:
             raise AttributeError(
-                'wradlib: Unknown "flavour" kwarg attribute: {} .' "".format(flavour)
+                f"wradlib: Unknown 'flavour' kwarg attribute: {flavour} ."
             )
 
         return nch, flavour
@@ -2193,9 +2191,8 @@ class NetCDF4File(XRadVolFile):
                 version = nch.version
             except AttributeError as e:
                 raise AttributeError(
-                    'wradlib: Missing "Conventions" attribute in {} ./n'
-                    'Use the "flavour" kwarg to specify your source'
-                    "data.".format(filename)
+                    f"wradlib: Missing 'Conventions' attribute in {filename} ./n"
+                    "Use the 'flavour' kwarg to specify your source data."
                 ) from e
             if "cf/radial" in Conventions.lower():
                 if version == "2.0":
@@ -2205,7 +2202,7 @@ class NetCDF4File(XRadVolFile):
 
         if flavour not in ["Cf/Radial", "Cf/Radial2"]:
             raise AttributeError(
-                'wradlib: Unknown "flavour" kwarg attribute: {} .' "".format(flavour)
+                f"wradlib: Unknown 'flavour' kwarg attribute: {flavour} ."
             )
 
         return nch, flavour
@@ -2520,7 +2517,7 @@ class CfRadial(XRadVol):
         root1 = root.drop_vars(remove_root).rename({"fixed_angle": "sweep_fixed_angle"})
         sweep_group_name = []
         for i in range(root1.dims["sweep"]):
-            sweep_group_name.append("sweep_{}".format(i + 1))
+            sweep_group_name.append(f"sweep_{i + 1}")
         self.root = root1.assign({"sweep_group_name": (["sweep"], sweep_group_name)})
 
         keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
@@ -2844,7 +2841,7 @@ def _get_gamic_ray_header(filename, scan):
     """
     # ToDo: move rayheader into own dataset
     h5 = h5py.File(filename, mode="r")
-    ray_header = h5["scan{}/ray_header".format(scan)][:]
+    ray_header = h5[f"scan{scan}/ray_header"][:]
     h5.close()
     vars = collections.OrderedDict()
     for name in ray_header.dtype.names:
@@ -2875,7 +2872,7 @@ def _get_odim_sweep_group_names(nch, name):
     """
     src = [key for key in nch.groups.keys() if name in key]
     src.sort(key=lambda x: int(x[len(name) :]))
-    swp_grp_name = ["sweep_{}".format(i) for i in range(1, len(src) + 1)]
+    swp_grp_name = [f"sweep_{i}" for i in range(1, len(src) + 1)]
     return src, swp_grp_name
 
 

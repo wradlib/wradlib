@@ -116,8 +116,8 @@ class IpolBase:
 
         """
         assert len(vals) == self.numsources, (
-            "Length of value array %d does not correspond to number "
-            "of source points %d" % (len(vals), self.numsources)
+            f"Length of value array {len(vals)} does not correspond to number "
+            f"of source points {self.numsources}"
         )
         self.valsshape = vals.shape
         self.valsndim = vals.ndim
@@ -341,8 +341,8 @@ class Idw(IpolBase):
         if nnearest > self.numsources:
             warnings.warn(
                 "wradlib.ipol.Idw: <nnearest> is larger than number of "
-                "source points and is set to %d corresponding to the "
-                "number of source points." % self.numsources,
+                f"source points and is set to {self.numsources} corresponding to the "
+                "number of source points.",
                 UserWarning,
             )
             self.nnearest = self.numsources
@@ -1051,8 +1051,8 @@ class OrdinaryKriging(IpolBase):
             warnings.warn(
                 "wradlib.ipol.OrdinaryKriging: <nnearest> is "
                 "larger than number of source points and is "
-                "set to %d corresponding to the "
-                "number of source points." % self.numsources,
+                f"set to {self.numsources} corresponding to the "
+                "number of source points.",
                 UserWarning,
             )
             self.nnearest = self.numsources
@@ -1242,9 +1242,8 @@ class ExternalDriftKriging(IpolBase):
         if nnearest > self.numsources:
             warnings.warn(
                 "wradlib.ipol.ExternalDriftKriging: <nnearest> is larger "
-                "than number of source points and is set to %d "
-                "corresponding to the number of source "
-                "points." % self.numsources,
+                f"than number of source points and is set to {self.numsources} "
+                "corresponding to the number of source points.",
                 UserWarning,
             )
             self.nnearest = self.numsources

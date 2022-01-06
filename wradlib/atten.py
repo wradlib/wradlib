@@ -125,7 +125,7 @@ Hitschfeld-and-Bordan`.
         overflow = (gateset[..., gate + 1] + ksum) > thrs
         if np.any(overflow):
             if mode == "warn":
-                logger.warning("corrected signal over threshold (%3.1f)" % thrs)
+                logger.warning(f"corrected signal over threshold ({thrs:3.1f})")
             elif mode == "nan":
                 pia[..., gate + 1][overflow] = np.nan
             elif mode == "zero":

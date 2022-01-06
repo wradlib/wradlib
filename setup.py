@@ -52,7 +52,7 @@ PLATFORMS = ["Linux", "Mac OS-X", "Unix", "Windows"]
 MAJOR = 1
 MINOR = 13
 PATCH = 0
-VERSION = "%d.%d.%d" % (MAJOR, MINOR, PATCH)
+VERSION = f"{MAJOR}.{MINOR}.{PATCH}"
 
 
 # Return the git revision as a string

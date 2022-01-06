@@ -702,7 +702,7 @@ def to_odim(volume, filename, timestep=0):
     _write_odim(where, h5_where)
 
     # datasets
-    ds_list = ["dataset{}".format(i + 1) for i in range(len(sweepnames))]
+    ds_list = [f"dataset{i + 1}" for i in range(len(sweepnames))]
     ds_idx = np.argsort(ds_list)
     for idx in ds_idx:
         ds = volume[idx]
@@ -1491,7 +1491,7 @@ def _assign_data_radial(root, sweep="sweep_1"):
     root1 = root.drop_vars(remove_root).rename({"fixed_angle": "sweep_fixed_angle"})
     sweep_group_name = []
     for i in range(root1.dims["sweep"]):
-        sweep_group_name.append("sweep_{}".format(i + 1))
+        sweep_group_name.append(f"sweep_{i + 1}")
 
     # keep all vars for now
     # keep_vars = sweep_vars1 | sweep_vars2 | sweep_vars3
@@ -1842,15 +1842,15 @@ class RadarVolume(XRadBase):
         self._dims = dict(azimuth="elevation", elevation="azimuth")
 
     def __repr__(self):
-        summary = ["<wradlib.{}>".format(type(self).__name__)]
+        summary = [f"<wradlib.{type(self).__name__}>"]
         dims = "Dimension(s):"
         dims_summary = f"sweep: {len(self)}"
-        summary.append("{} ({})".format(dims, dims_summary))
+        summary.append(f"{dims} ({dims_summary})")
         dim0 = list(set(self[0].dims) & {"azimuth", "elevation", "time"})[0]
         angle = f"{self._dims[dim0].capitalize()}(s):"
         angle_summary = [f"{v.attrs['fixed_angle']:.1f}" for v in self]
         angle_summary = ", ".join(angle_summary)
-        summary.append("{} ({})".format(angle, angle_summary))
+        summary.append(f"{angle} ({angle_summary})")
 
         return "\n".join(summary)
 
@@ -2041,7 +2041,7 @@ def _write_odim_dataspace(src, dest):
         h5py-group handle
     """
     keys = [key for key in src if key in ODIM_NAMES]
-    data_list = ["data{}".format(i + 1) for i in range(len(keys))]
+    data_list = [f"data{i + 1}" for i in range(len(keys))]
     data_idx = np.argsort(data_list)
     for idx in data_idx:
         value = src[keys[idx]]

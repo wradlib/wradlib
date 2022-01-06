@@ -640,8 +640,8 @@ def read_radolan_binary_array(fid, size, raise_on_error=True):
         except AttributeError:
             desc = repr(fid)
         raise IOError(
-            "{0}: File corruption while reading {1}! \nCould not "
-            "read enough data!".format(__name__, desc)
+            f"{__name__}: File corruption while reading {desc}! \nCould not "
+            "read enough data!"
         )
     return binarr
 

@@ -102,7 +102,7 @@ class CartesianVolume:
         if gridshape is not None:
             warnings.warn(
                 f"``gridshape`` is not used in {self.__class__}. "
-                f"It will be removed in wradlib version 2.0.",
+                "It will be removed in wradlib version 2.0.",
                 DeprecationWarning,
             )
         # radar location in Cartesian coordinates

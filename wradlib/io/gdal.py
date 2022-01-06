@@ -105,9 +105,7 @@ def read_safnwc(filename):
         proj = osr.SpatialReference()
         proj.ImportFromProj4(ds.GetMetadata()["PROJECTION"])
     except KeyError:
-        raise KeyError(
-            "WRADLIB: Projection is missing for satellite " "file {}".format(filename)
-        )
+        raise KeyError("WRADLIB: Projection is missing for satellite file {filename}")
 
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
@@ -153,9 +151,7 @@ def gdal_create_dataset(
     metadata = driver.GetMetadata()
 
     if not metadata.get("DCAP_CREATE", False):
-        raise TypeError(
-            "WRADLIB: Driver {} doesn't support " "Create() method.".format(drv)
-        )
+        raise TypeError(f"WRADLIB: Driver {drv} doesn't support Create() method.")
 
     if remove:
         if os.path.exists(name):
@@ -201,8 +197,7 @@ def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
     # check driver capability
     if not ("DCAP_CREATECOPY" in metadata and metadata["DCAP_CREATECOPY"] == "YES"):
         raise TypeError(
-            "WRADLIB: Raster Driver {} doesn't support "
-            "CreateCopy() method.".format(rformat)
+            f"WRADLIB: Raster Driver {rformat} doesn't support CreateCopy() method."
         )
 
     if remove:
