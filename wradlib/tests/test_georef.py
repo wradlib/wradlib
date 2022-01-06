@@ -996,8 +996,8 @@ class TestGetGrids:
         assert pytest.approx(y) == -3971.7689758313813
         # Also test with trigonometric approach
         x, y = georef.get_radolan_coords(7.0, 53.0, trig=True)
-        assert x == -208.15159184860175
-        assert y == -3971.7689758313832
+        assert pytest.approx(x) == -208.15159184860175
+        assert pytest.approx(y) == -3971.7689758313832
 
     def test_xyz_to_spherical(self):
         xyz = np.array([[1000, 1000, 1000]])
