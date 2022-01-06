@@ -83,12 +83,12 @@ import datetime as dt
 import glob
 import os
 import warnings
-from distutils.version import LooseVersion
 
 import dateutil
 import deprecation
 import numpy as np
 import xarray as xr
+from packaging.version import Version
 from xarray.backends.api import combine_by_coords
 
 from wradlib import version
@@ -650,7 +650,7 @@ def _open_mfmoments(
         opener_kwargs = {}
         store = xr.backends.NetCDF4DataStore
     else:
-        if LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0"):
+        if Version(h5netcdf.__version__) < Version("0.8.0"):
             warnings.warn(
                 f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
                 f"operation. 'h5netcdf={h5netcdf.__version__} "
@@ -658,7 +658,7 @@ def _open_mfmoments(
                 UserWarning,
             )
             return None
-        if LooseVersion(xr.__version__) < LooseVersion("0.15.0"):
+        if Version(xr.__version__) < Version("0.15.0"):
             warnings.warn(
                 f"WRADLIB: 'xarray>=0.15.0' needed to perform this "
                 f"operation. 'xarray={xr.__version__} "
@@ -706,7 +706,7 @@ def _open_mfmoments(
             open_(store(f, group=p.ncpath), **open_kwargs)
             for f, p in zip(fileid, moments)
         ]
-    if LooseVersion(xr.__version__) <= LooseVersion("0.16.2"):
+    if Version(xr.__version__) <= Version("0.16.2"):
         closers = [getattr_(ds, "_file_obj") for ds in datasets]
     else:
         closers = [getattr_(ds, "_close") for ds in datasets]
@@ -1504,7 +1504,7 @@ class XRadSweepGamic(XRadSweep):
 
     def _merge_moments(self):
         if "h5" in self.engine:
-            if LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0"):
+            if Version(h5netcdf.__version__) < Version("0.8.0"):
                 warnings.warn(
                     f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "
                     f"operation. 'h5netcdf={h5netcdf.__version__} "
@@ -1512,7 +1512,7 @@ class XRadSweepGamic(XRadSweep):
                     UserWarning,
                 )
                 return None
-            if LooseVersion(xr.__version__) < LooseVersion("0.15.0"):
+            if Version(xr.__version__) < Version("0.15.0"):
                 warnings.warn(
                     f"WRADLIB: 'xarray>=0.15.0' needed to perform this "
                     f"operation. 'xarray={xr.__version__} "
@@ -1614,7 +1614,7 @@ class XRadSweepGamic(XRadSweep):
                 start = ncid["how"].getncattr("timestamp")
             else:
                 start = ncid["how"].attrs["timestamp"]
-                if LooseVersion(h5py.__version__) < LooseVersion("3.0.0"):
+                if Version(h5py.__version__) < Version("3.0.0"):
                     start = start.decode()
         except (IndexError, KeyError):
             return None
@@ -2049,8 +2049,7 @@ def open_odim(paths, loader="netcdf4", **kwargs):
         Additional arguments passed on to :class:`wradlib.io.xarray.XRadSweep`.
     """
     if (loader == "h5netcdf") and (
-        has_import(h5netcdf)
-        and (LooseVersion(h5netcdf.__version__) < LooseVersion("0.8.0"))
+        has_import(h5netcdf) and (Version(h5netcdf.__version__) < Version("0.8.0"))
     ):
         warnings.warn(
             f"WRADLIB: 'h5netcdf>=0.8.0' needed to perform this "

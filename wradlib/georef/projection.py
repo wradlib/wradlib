@@ -27,9 +27,8 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-from distutils.version import LooseVersion
-
 import numpy as np
+from packaging.version import Version
 
 from wradlib.util import import_optional
 
@@ -152,7 +151,7 @@ Georeferencing-and-Projection`.
 
     if projname == "aeqd":
         # Azimuthal Equidistant
-        if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
+        if Version(gdal.VersionInfo("RELEASE_NAME")) >= Version("3"):
             aeqd_wkt = aeqd_wkt3
 
         if "x_0" in kwargs:
@@ -169,7 +168,7 @@ Georeferencing-and-Projection`.
     elif projname == "dwd-radolan":
         # DWD-RADOLAN polar stereographic projection
         scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
-        if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
+        if Version(gdal.VersionInfo("RELEASE_NAME")) >= Version("3"):
             radolan_wkt = radolan_wkt3.format(scale)
         else:
             radolan_wkt = radolan_wkt.format(scale)
@@ -203,7 +202,7 @@ def proj4_to_osr(proj4str):
     proj.ImportFromProj4(proj4str)
     proj.AutoIdentifyEPSG()
 
-    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) < LooseVersion("3"):
+    if Version(gdal.VersionInfo("RELEASE_NAME")) < Version("3"):
         proj.Fixup()
         proj.FixupOrdering()
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
@@ -301,7 +300,7 @@ def reproject(*args, **kwargs):
     projection_target = kwargs.get("projection_target", get_default_projection())
     area_of_interest = kwargs.get("area_of_interest", None)
 
-    if LooseVersion(gdal.VersionInfo("RELEASE_NAME")) >= LooseVersion("3"):
+    if Version(gdal.VersionInfo("RELEASE_NAME")) >= Version("3"):
         axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
         projection_source.SetAxisMappingStrategy(axis_order)
         projection_target.SetAxisMappingStrategy(axis_order)
