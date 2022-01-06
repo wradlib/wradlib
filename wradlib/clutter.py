@@ -463,7 +463,7 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
             dat[key] = dummy
 
     # membership in meteorological class for each variable
-    qres = dict()
+    qres = {}
     for key in dat.keys():
         if key not in tkeys:
             continue
@@ -477,7 +477,7 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
     # create weight arrays which are zero where the data is NaN
     # This way, each pixel "adapts" to the local data availability
-    wres = dict()
+    wres = {}
     for key in dat.keys():
         if key not in wkeys:
             continue

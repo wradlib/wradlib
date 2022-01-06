@@ -863,30 +863,36 @@ class _OdimH5NetCDFMetadata:
         range_attrs["meters_to_center_of_first_gate"] = cent_first
         range_attrs["meters_between_gates"] = bin_range
 
-        lon_attrs = dict(
-            long_name="longitude", units="degrees_east", standard_name="longitude"
-        )
-        lat_attrs = dict(
-            long_name="latitude",
-            units="degrees_north",
-            positive="up",
-            standard_name="latitude",
-        )
-        alt_attrs = dict(long_name="altitude", units="meters", standard_name="altitude")
+        lon_attrs = {
+            "long_name": "longitude",
+            "units": "degrees_east",
+            "standard_name": "longitude",
+        }
+        lat_attrs = {
+            "long_name": "latitude",
+            "units": "degrees_north",
+            "positive": "up",
+            "standard_name": "latitude",
+        }
+        alt_attrs = {
+            "long_name": "altitude",
+            "units": "meters",
+            "standard_name": "altitude",
+        }
 
         lon, lat, alt = self.site_coords
 
-        coordinates = dict(
-            azimuth=Variable((dims[0],), azimuth, az_attrs),
-            elevation=Variable((dims[0],), elevation, el_attrs),
-            rtime=Variable((dims[0],), rtime, rtime_attrs),
-            range=Variable(("range",), range_data, range_attrs),
-            time=Variable((), self.time, time_attrs),
-            sweep_mode=Variable((), sweep_mode),
-            longitude=Variable((), lon, lon_attrs),
-            latitude=Variable((), lat, lat_attrs),
-            altitude=Variable((), alt, alt_attrs),
-        )
+        coordinates = {
+            "azimuth": Variable((dims[0],), azimuth, az_attrs),
+            "elevation": Variable((dims[0],), elevation, el_attrs),
+            "rtime": Variable((dims[0],), rtime, rtime_attrs),
+            "range": Variable(("range",), range_data, range_attrs),
+            "time": Variable((), self.time, time_attrs),
+            "sweep_mode": Variable((), sweep_mode),
+            "longitude": Variable((), lon, lon_attrs),
+            "latitude": Variable((), lat, lat_attrs),
+            "altitude": Variable((), alt, alt_attrs),
+        }
         return coordinates
 
     @property
@@ -1148,30 +1154,36 @@ class _GamicH5NetCDFMetadata:
         range_attrs["meters_to_center_of_first_gate"] = cent_first
         range_attrs["meters_between_gates"] = bin_range
 
-        lon_attrs = dict(
-            long_name="longitude", units="degrees_east", standard_name="longitude"
-        )
-        lat_attrs = dict(
-            long_name="latitude",
-            units="degrees_north",
-            positive="up",
-            standard_name="latitude",
-        )
-        alt_attrs = dict(long_name="altitude", units="meters", standard_name="altitude")
+        lon_attrs = {
+            "long_name": "longitude",
+            "units": "degrees_east",
+            "standard_name": "longitude",
+        }
+        lat_attrs = {
+            "long_name": "latitude",
+            "units": "degrees_north",
+            "positive": "up",
+            "standard_name": "latitude",
+        }
+        alt_attrs = {
+            "long_name": "altitude",
+            "units": "meters",
+            "standard_name": "altitude",
+        }
 
         lon, lat, alt = self.site_coords
 
-        coordinates = dict(
-            azimuth=Variable((dims[0],), ray_header["azimuth"], az_attrs),
-            elevation=Variable((dims[0],), ray_header["elevation"], el_attrs),
-            rtime=Variable((dims[0],), ray_header["rtime"], rtime_attrs),
-            range=Variable(("range",), range_data, range_attrs),
-            time=Variable((), self.time, time_attrs),
-            sweep_mode=Variable((), sweep_mode),
-            longitude=Variable((), lon, lon_attrs),
-            latitude=Variable((), lat, lat_attrs),
-            altitude=Variable((), alt, alt_attrs),
-        )
+        coordinates = {
+            "azimuth": Variable((dims[0],), ray_header["azimuth"], az_attrs),
+            "elevation": Variable((dims[0],), ray_header["elevation"], el_attrs),
+            "rtime": Variable((dims[0],), ray_header["rtime"], rtime_attrs),
+            "range": Variable(("range",), range_data, range_attrs),
+            "time": Variable((), self.time, time_attrs),
+            "sweep_mode": Variable((), sweep_mode),
+            "longitude": Variable((), lon, lon_attrs),
+            "latitude": Variable((), lat, lat_attrs),
+            "altitude": Variable((), alt, alt_attrs),
+        }
 
         return coordinates
 
@@ -1267,7 +1279,7 @@ def _reindex_angle(ds, store=None, force=False, tol=None):
     if tol is True or tol is None:
         tol = 0.4
     # disentangle different functionality
-    full_range = dict(azimuth=360, elevation=90)
+    full_range = {"azimuth": 360, "elevation": 90}
     dimname = list(ds.dims)[0]
     # sort in any case, to prevent unsorted errors
     ds = ds.sortby(dimname)
@@ -1276,7 +1288,7 @@ def _reindex_angle(ds, store=None, force=False, tol=None):
         ul = np.rint(ds.elevation_upper_limit)
         full_range["elevation"] = ul
 
-    secname = dict(azimuth="elevation", elevation="azimuth").get(dimname)
+    secname = {"azimuth": "elevation", "elevation": "azimuth"}.get(dimname)
     dim = ds[dimname]
     diff = dim.diff(dimname)
     # this captures different angle spacing
@@ -1447,7 +1459,7 @@ def _get_ray_header_data(dimensions, data, encoding):
 
     rtime = ray_header.values["timestamp"] / 1e6
 
-    return dict(azimuth=azimuth, elevation=elevation, rtime=rtime)
+    return {"azimuth": azimuth, "elevation": elevation, "rtime": rtime}
 
 
 def _unpack_netcdf_delta_units_ref_date(units):
@@ -1839,7 +1851,7 @@ class RadarVolume(XRadBase):
         super().__init__()
         self._data = None
         self._root = None
-        self._dims = dict(azimuth="elevation", elevation="azimuth")
+        self._dims = {"azimuth": "elevation", "elevation": "azimuth"}
 
     def __repr__(self):
         summary = [f"<wradlib.{type(self).__name__}>"]
