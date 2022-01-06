@@ -2497,7 +2497,7 @@ PRODUCT_DATA_TYPE_CODES = OrderedDict(
 RECORD_BYTES = 6144
 
 
-class IrisRecord(object):
+class IrisRecord:
     """Class holding a single record from a Sigmet IRIS file."""
 
     def __init__(self, record, recnum):
@@ -2552,7 +2552,7 @@ class IrisRecord(object):
         return ret
 
 
-class IrisHeaderBase(object):
+class IrisHeaderBase:
     """Base Class for Iris Headers."""
 
     def __init__(self, **kwargs):
@@ -2789,7 +2789,7 @@ class IrisIngestDataHeader(IrisHeaderBase):
         return self.ingest_data_header["data_type"]
 
 
-class IrisFileBase(object):
+class IrisFileBase:
     """Base class for Iris Files."""
 
     def __init__(self, **kwargs):
