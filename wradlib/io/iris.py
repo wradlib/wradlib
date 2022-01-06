@@ -2773,9 +2773,7 @@ class IrisIngestDataHeader(IrisHeaderBase):
         """Returns list of data type dictionaries."""
         i = self._data_types_numbers
 
-        return SIGMET_DATA_TYPES.get(
-            i, {"name": f"DB_UNKNOWN_{i}", "func": None}
-        )
+        return SIGMET_DATA_TYPES.get(i, {"name": f"DB_UNKNOWN_{i}", "func": None})
 
     @property
     def data_types(self):
@@ -3265,9 +3263,7 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
             pass
         chk = self._rh.record.shape[0] == RECORD_BYTES
         if not chk:
-            raise EOFError(
-                f"Unexpected file end detected at record {self.rh.recnum}"
-            )
+            raise EOFError(f"Unexpected file end detected at record {self.rh.recnum}")
         return chk
 
     def read_from_record(self, words, dtype):
@@ -3843,8 +3839,7 @@ class IrisProductFile(IrisRecordFile):
                 self.get_results(result, num_elements, self.product_type_dict["result"])
             else:
                 warnings.warn(
-                    f"{self.product_type} - No product result "
-                    "array(s) available",
+                    f"{self.product_type} - No product result array(s) available",
                     RuntimeWarning,
                     stacklevel=3,
                 )

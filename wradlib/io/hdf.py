@@ -723,9 +723,7 @@ def read_gpm(filename, bbox=None):
     # Determine the dimensions
     ndim = refl.ndim
     if ndim != 3:
-        raise ValueError(
-            f"GPM Dimensions do not match! Needed 3, given {ndim}"
-        )
+        raise ValueError(f"GPM Dimensions do not match! Needed 3, given {ndim}")
 
     tmp = refl.shape
     nscan = tmp[0]
@@ -881,9 +879,7 @@ def read_trmm(filename1, filename2, bbox=None):
     # Determine the dimensions
     ndim = refl.ndim
     if ndim != 3:
-        raise ValueError(
-            f"TRMM Dimensions do not match! Needed 3, given {ndim}"
-        )
+        raise ValueError(f"TRMM Dimensions do not match! Needed 3, given {ndim}")
 
     tmp = refl.shape
     nscan = tmp[0]

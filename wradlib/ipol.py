@@ -117,7 +117,8 @@ class IpolBase:
         """
         assert len(vals) == self.numsources, (
             f"Length of value array {len(vals)} does not correspond to number "
-            f"of source points {self.numsources}")
+            f"of source points {self.numsources}"
+        )
         self.valsshape = vals.shape
         self.valsndim = vals.ndim
 

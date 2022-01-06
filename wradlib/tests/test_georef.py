@@ -1044,8 +1044,8 @@ def sat_data():
         a = wgs84.GetSemiMajor()
         b = wgs84.GetSemiMinor()
         rad = georef.proj4_to_osr(
-                f"+proj=aeqd +lon_0={pr_lon[68, 0]:f} +lat_0={pr_lat[68, 0]:f} "
-                f"+a={a:f} +b={b:f}"
+            f"+proj=aeqd +lon_0={pr_lon[68, 0]:f} +lat_0={pr_lat[68, 0]:f} "
+            f"+a={a:f} +b={b:f}"
         )
         pr_x, pr_y = georef.reproject(
             pr_lon, pr_lat, projection_source=wgs84, projection_target=rad

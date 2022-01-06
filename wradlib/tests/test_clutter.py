@@ -97,7 +97,7 @@ def cloudtype_data():
     pvol = io.read_opera_hdf5(filename)
     nrays = int(pvol["dataset1/where"]["nrays"])
     nbins = int(pvol["dataset1/where"]["nbins"])
-    val = pvol[f"dataset1/data1/data"]
+    val = pvol["dataset1/data1/data"]
     gain = float(pvol["dataset1/data1/what"]["gain"])
     offset = float(pvol["dataset1/data1/what"]["offset"])
     val = val * gain + offset
