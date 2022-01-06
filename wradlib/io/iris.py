@@ -4134,7 +4134,7 @@ def read_iris(
                 continue
             for key, mom in swp_data.items():
                 if "DB_" in key:
-                    d = dict(data=mom)
+                    d = {"data": mom}
                     for m in meta:
                         d[m] = swp_data[m]
                     swp_data[key] = d

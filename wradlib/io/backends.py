@@ -111,7 +111,7 @@ class RadolanDataStore(AbstractDataStore):
                 _radolan_file,
                 filename_or_obj,
                 lock=lock,
-                kwargs=dict(fillmissing=fillmissing, copy=copy),
+                kwargs={"fillmissing": fillmissing, "copy": copy},
             )
         else:
             if isinstance(filename_or_obj, bytes):
@@ -131,7 +131,7 @@ class RadolanDataStore(AbstractDataStore):
         return self._acquire()
 
     def open_store_variable(self, name, var):
-        encoding = dict(source=self._filename)
+        encoding = {"source": self._filename}
         if isinstance(var.data, np.ndarray):
             data = var.data
         else:
@@ -927,7 +927,7 @@ class IrisStore(AbstractDataStore):
         dim = self.root.first_dimension
 
         data = indexing.LazilyOuterIndexedArray(IrisArrayWrapper(self, name, var))
-        encoding = dict(group=self._group)
+        encoding = {"group": self._group}
 
         mname = iris_mapping.get(name, name)
         mapping = moments_mapping.get(mname, {})
@@ -956,7 +956,7 @@ class IrisStore(AbstractDataStore):
         time = (
             var["sweep_start_time"] - dt.datetime(1970, 1, 1, tzinfo=dt.timezone.utc)
         ).total_seconds()
-        encoding = dict(group=self._group)
+        encoding = {"group": self._group}
         rtime_attrs = {
             "units": f"{time_prefix}seconds since {var['sweep_start_time'].replace(tzinfo=None).isoformat()}Z",
             "standard_name": "time",
@@ -965,16 +965,22 @@ class IrisStore(AbstractDataStore):
 
         # get coordinates from IrisFile
         sweep_mode = "azimuth_surveillance" if dim == "azimuth" else "rhi"
-        lon_attrs = dict(
-            long_name="longitude", units="degrees_east", standard_name="longitude"
-        )
-        lat_attrs = dict(
-            long_name="latitude",
-            units="degrees_north",
-            positive="up",
-            standard_name="latitude",
-        )
-        alt_attrs = dict(long_name="altitude", units="meters", standard_name="altitude")
+        lon_attrs = {
+            "long_name": "longitude",
+            "units": "degrees_east",
+            "standard_name": "longitude",
+        }
+        lat_attrs = {
+            "long_name": "latitude",
+            "units": "degrees_north",
+            "positive": "up",
+            "standard_name": "latitude",
+        }
+        alt_attrs = {
+            "long_name": "altitude",
+            "units": "meters",
+            "standard_name": "altitude",
+        }
         lon, lat, alt = self.root.site_coords
 
         task = self.root.ingest_header["task_configuration"]["task_range_info"]
@@ -997,17 +1003,17 @@ class IrisStore(AbstractDataStore):
 
         rtime = Variable((dim,), rtime, rtime_attrs, encoding)
 
-        coords = dict(
-            azimuth=Variable((dim,), azimuth, az_attrs, encoding),
-            elevation=Variable((dim,), elevation, el_attrs, encoding),
-            rtime=rtime,
-            time=Variable((), time, time_attrs, encoding),
-            range=Variable(("range",), range, range_attrs),
-            longitude=Variable((), lon, lon_attrs),
-            latitude=Variable((), lat, lat_attrs),
-            altitude=Variable((), alt, alt_attrs),
-            sweep_mode=Variable((), sweep_mode),
-        )
+        coords = {
+            "azimuth": Variable((dim,), azimuth, az_attrs, encoding),
+            "elevation": Variable((dim,), elevation, el_attrs, encoding),
+            "rtime": rtime,
+            "time": Variable((), time, time_attrs, encoding),
+            "range": Variable(("range",), range, range_attrs),
+            "longitude": Variable((), lon, lon_attrs),
+            "latitude": Variable((), lat, lat_attrs),
+            "altitude": Variable((), alt, alt_attrs),
+            "sweep_mode": Variable((), sweep_mode),
+        }
 
         # a1gate
         a1gate = np.where(rtime.values == rtime.values.min())[0][0]
@@ -1038,9 +1044,7 @@ class IrisStore(AbstractDataStore):
         ing_head = self.ds["ingest_data_hdrs"]
         data = ing_head[list(ing_head.keys())[0]]
 
-        attributes = dict(
-            fixed_angle=np.round(data["fixed_angle"], 1),
-        )
+        attributes = {"fixed_angle": np.round(data["fixed_angle"], 1)}
         # RHI limits
         if self.root.scan_mode == 2:
             tsi = self.root.ingest_header["task_configuration"]["task_scan_info"][
@@ -1049,10 +1053,7 @@ class IrisStore(AbstractDataStore):
             ll = tsi["lower_elevation_limit"]
             ul = tsi["upper_elevation_limit"]
             attributes.update(
-                dict(
-                    elevation_lower_limit=ll,
-                    elevation_upper_limit=ul,
-                )
+                {"elevation_lower_limit": ll, "elevation_upper_limit": ul}
             )
         return FrozenDict(attributes)
 
@@ -1185,7 +1186,7 @@ class RainbowStore(AbstractDataStore):
         name = raw["@type"]
 
         data = indexing.LazilyOuterIndexedArray(RainbowArrayWrapper(self, name, raw))
-        encoding = dict(group=self._group)
+        encoding = {"group": self._group}
 
         vmin = float(raw.get("@min"))
         vmax = float(raw.get("@max"))
@@ -1220,7 +1221,7 @@ class RainbowStore(AbstractDataStore):
             var, "antdirection", default=0, dtype=bool
         )
 
-        encoding = dict(group=self._group)
+        encoding = {"group": self._group}
         startangle = indexing.LazilyOuterIndexedArray(
             RainbowArrayWrapper(self, start_idx, start)
         )
@@ -1317,29 +1318,35 @@ class RainbowStore(AbstractDataStore):
 
         # get coordinates from RainbowFile
         sweep_mode = "azimuth_surveillance" if dim == "azimuth" else "rhi"
-        lon_attrs = dict(
-            long_name="longitude", units="degrees_east", standard_name="longitude"
-        )
-        lat_attrs = dict(
-            long_name="latitude",
-            units="degrees_north",
-            positive="up",
-            standard_name="latitude",
-        )
-        alt_attrs = dict(long_name="altitude", units="meters", standard_name="altitude")
+        lon_attrs = {
+            "long_name": "longitude",
+            "units": "degrees_east",
+            "standard_name": "longitude",
+        }
+        lat_attrs = {
+            "long_name": "latitude",
+            "units": "degrees_north",
+            "positive": "up",
+            "standard_name": "latitude",
+        }
+        alt_attrs = {
+            "long_name": "altitude",
+            "units": "meters",
+            "standard_name": "altitude",
+        }
         lon, lat, alt = self.root.site_coords
 
-        coords = dict(
-            azimuth=azimuth,
-            elevation=elevation,
-            range=rng,
-            time=time,
-            rtime=rtime,
-            longitude=Variable((), lon, lon_attrs),
-            latitude=Variable((), lat, lat_attrs),
-            altitude=Variable((), alt, alt_attrs),
-            sweep_mode=Variable((), sweep_mode),
-        )
+        coords = {
+            "azimuth": azimuth,
+            "elevation": elevation,
+            "range": rng,
+            "time": time,
+            "rtime": rtime,
+            "longitude": Variable((), lon, lon_attrs),
+            "latitude": Variable((), lat, lat_attrs),
+            "altitude": Variable((), alt, alt_attrs),
+            "sweep_mode": Variable((), sweep_mode),
+        }
 
         # a1gate, this might be off by 1 if reindexing is applied
         if dim == "azimuth":
@@ -1361,7 +1368,7 @@ class RainbowStore(AbstractDataStore):
         )
 
     def get_attrs(self):
-        attributes = dict(fixed_angle=float(self.ds["posangle"]))
+        attributes = {"fixed_angle": float(self.ds["posangle"])}
         return FrozenDict(attributes)
 
 

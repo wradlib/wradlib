@@ -667,7 +667,7 @@ def _open_mfmoments(
             )
             return None
         opener = h5netcdf.File
-        opener_kwargs = dict(phony_dims="access")
+        opener_kwargs = {"phony_dims": "access"}
         store = xr.backends.H5NetCDFStore
 
     # do not use parallel if all moments in one file
@@ -1199,7 +1199,7 @@ class XRadSweep(OdimH5GroupAttributeMixin, OdimH5SweepMetaDataMixin, XRadBase):
             # if self._data is not None:
             # if metadata declared in XRadTimeseries, load and assign
             if self.parent._meta is not None:
-                vars = dict()
+                vars = {}
                 for k, v in self.parent._meta.items():
                     attr = self._get_attribute(v, attr=k)
                     if hasattr(attr, "ndim"):
@@ -1521,11 +1521,11 @@ class XRadSweepGamic(XRadSweep):
                 )
                 return None
             opener = h5netcdf.File
-            opener_kwargs = dict(phony_dims="access")
+            opener_kwargs = {"phony_dims": "access"}
             store = xr.backends.H5NetCDFStore
         else:
             opener = netCDF4.Dataset
-            opener_kwargs = dict()
+            opener_kwargs = {}
             store = xr.backends.NetCDF4DataStore
 
         if os.path.isfile(self.filename):
@@ -2215,11 +2215,11 @@ class XRadVol(collections.abc.MutableMapping):
     """
 
     def __init__(self, init_root=False):
-        self._sweeps = dict()
-        self._nch = list()
+        self._sweeps = {}
+        self._nch = []
         self.root = None
-        self._sweep_angles = list()
-        self._sweep_names = list()
+        self._sweep_angles = []
+        self._sweep_names = []
         if init_root:
             self._init_root()
 

@@ -1059,7 +1059,7 @@ class _radolan_file:
         # handle truncated data
         binarr_kwargs = {}
         if self._fill and self.product not in ["PG", "PC"]:
-            binarr_kwargs.update(dict(raise_on_error=False))
+            binarr_kwargs.update({"raise_on_error": False})
         # read data
         size = self.attrs["datasize"]
         indat = read_radolan_binary_array(self.fp, size, **binarr_kwargs)
@@ -1069,7 +1069,7 @@ class _radolan_file:
 
         if self.product in ["PC", "PG"]:
             self._data = decode_radolan_runlength_array(
-                indat, dict(ncol=self.attrs["ncol"], nodataflag=255)
+                indat, {"ncol": self.attrs["ncol"], "nodataflag": 255}
             )
         else:
             self._data = np.frombuffer(indat, dtype=self.dtype)
@@ -1089,12 +1089,7 @@ class _radolan_file:
         self.dimensions["y"] = self.attrs["nrow"]
         self.dimensions["x"] = self.attrs["ncol"]
 
-        pattrs.update(
-            dict(
-                long_name=self.product,
-                coordinates="time y x",
-            )
-        )
+        pattrs.update({"long_name": self.product, "coordinates": "time y x"})
 
         data_var = WradlibVariable(self.dimensions, data=self, attrs=pattrs)
 
@@ -1184,10 +1179,10 @@ def open_radolan_dataset(filename_or_obj, **kwargs):
     dataset : :py:class:`xarray:xarray.Dataset`
     """
     raise_on_missing_xarray_backend()
-    backend_kwargs = dict(
-        fillmissing=kwargs.pop("fillmissing", False),
-        copy=kwargs.pop("copy", False),
-    )
+    backend_kwargs = {
+        "fillmissing": kwargs.pop("fillmissing", False),
+        "copy": kwargs.pop("copy", False),
+    }
     kwargs["backend_kwargs"] = backend_kwargs
     return xr.open_dataset(filename_or_obj, engine="radolan", **kwargs)
 
@@ -1221,10 +1216,10 @@ def open_radolan_mfdataset(paths, **kwargs):
     .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
-    backend_kwargs = dict(
-        fillmissing=kwargs.pop("fillmissing", False),
-        copy=kwargs.pop("copy", False),
-    )
+    backend_kwargs = {
+        "fillmissing": kwargs.pop("fillmissing", False),
+        "copy": kwargs.pop("copy", False),
+    }
     kwargs["backend_kwargs"] = backend_kwargs
     if kwargs.get("concat_dim", False):
         kwargs["combine"] = "nested"
