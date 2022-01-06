@@ -103,7 +103,7 @@ def import_optional(module):
     Trying to import a module that exists makes the module available as normal.
     You can even use an alias. You cannot use the '*' notation, or import only
     select functions, but you can simulate most of the standard import syntax
-    behavior
+    behavior.
     >>> m = import_optional('math')
     >>> m.log10(100)
     2.0
@@ -114,10 +114,10 @@ def import_optional(module):
     >>> m.log10(100)  #doctest: +ELLIPSIS
     Traceback (most recent call last):
     ...
-    AttributeError: Module "nonexistentmodule" is not installed.
+    AttributeError: Module 'nonexistentmodule' is not installed.
     <BLANKLINE>
-    You tried to access function/module/attribute "log10"
-    from module "nonexistentmodule".
+    You tried to access function/module/attribute 'log10'
+    from module 'nonexistentmodule'.
     This module is optional right now in wradlib.
     You need to separately install this dependency.
     Please refer to https://docs.wradlib.org/en/stable/installation.html#optional-dependencies
