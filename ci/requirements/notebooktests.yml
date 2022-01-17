@@ -1,0 +1,36 @@
+name: wradlib-notebooktests
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.7
+  - bottleneck
+  - cartopy
+  - codecov
+  - coverage
+  - dask
+  - deprecation
+  - gdal
+  - h5py
+  - h5netcdf
+  - nbconvert
+  - netCDF4
+  - notebook
+  - numpy
+  - matplotlib-base
+  - pint
+  - pint-xarray
+  - pip
+  - psutil
+  - pytest
+  - pytest-cov
+  - pytest-doctestplus
+  - pytest-sugar
+  - pytest-xdist
+  - requests
+  - scipy
+  - semver
+  - setuptools
+  - tqdm
+  - wetterdienst
+  - xarray
+  - xmltodict
