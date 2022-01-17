@@ -1,0 +1,29 @@
+name: wradlib-unittests
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.7
+  - bottleneck
+  - cartopy
+  - codecov
+  - coverage
+  - dask
+  - deprecation
+  - gdal
+  - h5py
+  - h5netcdf
+  - netCDF4
+  - numpy
+  - matplotlib-base
+  - pip
+  - pytest
+  - pytest-cov
+  - pytest-doctestplus
+  - pytest-sugar
+  - pytest-xdist
+  - requests
+  - scipy
+  - semver
+  - setuptools
+  - xarray
+  - xmltodict
