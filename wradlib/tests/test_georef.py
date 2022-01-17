@@ -881,11 +881,11 @@ class TestGdal:
     @requires_data
     @requires_secrets
     @requires_gdal
-    def test_get_raster_elevation(self, gdal_data):
+    def test_get_raster_elevation(self):
+        filename = "geo/bonn_new.tif"
+        geofile = util.get_wradlib_data_file(filename)
         # crop file using translate to keep download sizes minimal
-        gdal.Translate(
-            "/vsimem/clip.tif", gdal_data.geofile1, projWin=[5.5, 49.5, 5.6, 49.4]
-        )
+        gdal.Translate("/vsimem/clip.tif", geofile, projWin=[5.5, 49.5, 5.6, 49.4])
         ds = wradlib.io.open_raster("/vsimem/clip.tif")
         georef.get_raster_elevation(ds)
 
