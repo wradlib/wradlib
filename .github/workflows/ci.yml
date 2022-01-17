@@ -148,7 +148,7 @@ jobs:
     needs: [lint]
     defaults:
       run:
-        shell: bash
+        shell: powershell
     env:
       WRADLIB_DATA: ./wradlib-data
     strategy:
