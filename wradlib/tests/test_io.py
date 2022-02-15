@@ -1279,7 +1279,11 @@ class TestRainbow:
         np.testing.assert_allclose(io.rainbow.map_rb_data(indata, 32), outdata32)
         flagdata = b"1"
         np.testing.assert_allclose(
-            io.rainbow.map_rb_data(flagdata, 1), [0, 0, 1, 1, 0, 0, 0, 1]
+            io.rainbow.map_rb_data(flagdata, 1, 8), [0, 0, 1, 1, 0, 0, 0, 1]
+        )
+        # added test for truncation
+        np.testing.assert_allclose(
+            io.rainbow.map_rb_data(flagdata, 1, 6), [0, 0, 1, 1, 0, 0]
         )
 
     def test_get_rb_blob_data(self):
