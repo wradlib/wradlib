@@ -1026,7 +1026,7 @@ class TestGetGrids:
     @requires_gdal
     def test_grid_reference_points(self, grid, origin, wgs):
         arr = list(georef.get_radolan_grid(grid[0], grid[1], wgs84=wgs)[0, 0])
-        assert pytest.approx(arr, origin[0])
+        assert pytest.approx(arr) == origin
 
 
 @pytest.fixture
