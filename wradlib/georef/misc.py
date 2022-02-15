@@ -55,7 +55,7 @@ def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
     """
     reff = ke * re
     sr = reff + sitealt
-    return np.sqrt(r ** 2 + sr ** 2 + 2 * r * sr * np.sin(np.radians(theta))) - reff
+    return np.sqrt(r**2 + sr**2 + 2 * r * sr * np.sin(np.radians(theta))) - reff
 
 
 def bin_distance(r, theta, sitealt, re, ke=4.0 / 3.0):

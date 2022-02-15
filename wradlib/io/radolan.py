@@ -251,8 +251,8 @@ def read_dx(filename):
 
     azimuthbitmask = 2 ** (14 - 1)
     databitmask = 2 ** (13 - 1) - 1
-    clutterflag = 2 ** 15
-    dataflag = 2 ** 13 - 1
+    clutterflag = 2**15
+    dataflag = 2**13 - 1
 
     with get_radolan_filehandle(filename) as f:
 

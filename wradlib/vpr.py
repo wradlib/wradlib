@@ -352,7 +352,7 @@ def out_of_range(center, gridcoords, maxrange):
         1-D Boolean array of length len(gridcoords)
 
     """
-    return ((gridcoords - center) ** 2).sum(axis=-1) > maxrange ** 2
+    return ((gridcoords - center) ** 2).sum(axis=-1) > maxrange**2
 
 
 def blindspots(center, gridcoords, minelev, maxelev, maxrange):

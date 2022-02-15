@@ -65,7 +65,7 @@ def pulse_volume(ranges, h, theta):
     See :ref:`/notebooks/workflow/recipe1.ipynb`.
 
     """
-    return np.pi * h * (ranges ** 2) * (np.tan(np.radians(theta / 2.0))) ** 2
+    return np.pi * h * (ranges**2) * (np.tan(np.radians(theta / 2.0))) ** 2
 
 
 def beam_block_frac(th, bh, a):
@@ -124,7 +124,7 @@ def beam_block_frac(th, bh, a):
     clear = ya < -1.0
     block = ya > 1.0
 
-    numer = (ya * np.sqrt(a ** 2 - y ** 2)) + (a * np.arcsin(ya)) + (np.pi * a / 2.0)
+    numer = (ya * np.sqrt(a**2 - y**2)) + (a * np.arcsin(ya)) + (np.pi * a / 2.0)
 
     denom = np.pi * a
 
