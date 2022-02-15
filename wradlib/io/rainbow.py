@@ -220,7 +220,7 @@ def get_rb_blob_data(datastring, blobid):
     return data
 
 
-def map_rb_data(data, datadepth):
+def map_rb_data(data, datadepth, datashape=0):
     """Map BLOB data to correct DataWidth and Type and convert it
     to numpy array
 
@@ -230,6 +230,8 @@ def map_rb_data(data, datadepth):
         Blob Data
     datadepth : int
         bit depth of Blob data
+    datashape : tuple
+        expected data shape, only used for the flags to truncate
 
     Returns
     -------
@@ -247,7 +249,7 @@ def map_rb_data(data, datadepth):
     data = np.ndarray(shape=(int(len(data) / datawidth),), dtype=datatype, buffer=data)
 
     if flagdepth:
-        data = np.unpackbits(data)
+        data = np.unpackbits(data)[0 : np.prod(datashape)]
 
     return data
 
@@ -316,10 +318,11 @@ def get_rb_blob_from_string(datastring, blobdict):
     data = get_rb_blob_data(datastring, blobid)
     # map data to correct datatype and width
     datadepth = get_rb_data_attribute(blobdict, "depth")
-    data = map_rb_data(data, datadepth)
+    datashape = get_rb_data_shape(blobdict)
+    data = map_rb_data(data, datadepth, datashape)
 
     # reshape data
-    data.shape = get_rb_data_shape(blobdict)
+    data.shape = datashape
 
     return data
 
