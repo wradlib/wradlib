@@ -587,7 +587,7 @@ def depolarization(zdr, rho):
         numpy broadcasting rules apply
     """
     zdr = trafo.idecibel(np.asanyarray(zdr))
-    m = 2 * np.asanyarray(rho) * zdr ** 0.5
+    m = 2 * np.asanyarray(rho) * zdr**0.5
 
     return trafo.decibel((1 + zdr - m) / (1 + zdr + m))
 

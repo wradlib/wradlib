@@ -213,7 +213,7 @@ class ErrorMetrics:
 
     def sse(self):
         """Sum of Squared Errors"""
-        return np.round(np.sum(self.resids ** 2), 2)
+        return np.round(np.sum(self.resids**2), 2)
 
     def mse(self):
         """Mean Squared Error"""

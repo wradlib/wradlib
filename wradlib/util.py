@@ -373,7 +373,7 @@ def prob_round(x, prec=0):
     prec : int
         precision
     """
-    fixup = np.sign(x) * 10 ** prec
+    fixup = np.sign(x) * 10**prec
     x *= fixup
     intx = x.astype(int)
     round_func = intx + np.random.binomial(1, x - intx)
@@ -626,7 +626,7 @@ def calculate_polynomial(data, w):
     """
     poly = np.zeros_like(data)
     for i, c in enumerate(w):
-        poly += c * data ** i
+        poly += c * data**i
     return poly
 
 

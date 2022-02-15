@@ -394,7 +394,7 @@ class Idw(IpolBase):
         """
         self._check_shape(vals)
 
-        weights = 1.0 / self.dists ** self.p
+        weights = 1.0 / self.dists**self.p
 
         # if maxdist isn't given, take the maximum distance
         if maxdist is not None:
@@ -892,14 +892,14 @@ def cov_sph(h, sill=1.0, rng=1.0):
     """spherical type covariance function"""
     h = np.asanyarray(h)
     return np.where(
-        h < rng, sill * (1.0 - 1.5 * h / rng + h ** 3 / (2 * rng ** 3)), 0.0
+        h < rng, sill * (1.0 - 1.5 * h / rng + h**3 / (2 * rng**3)), 0.0
     )
 
 
 def cov_gau(h, sill=1.0, rng=1.0):
     """gaussian type covariance function"""
     h = np.asanyarray(h)
-    return sill * np.exp(-(h ** 2) / rng ** 2)
+    return sill * np.exp(-(h**2) / rng**2)
 
 
 def cov_lin(h, sill=1.0, rng=1.0):
@@ -928,7 +928,7 @@ def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
         fac1 = h / rng * 2.0 * np.sqrt(shp)
         fac2 = tau(shp) * 2.0 ** (shp - 1.0)
 
-        c = np.where(h != 0, sill * 1.0 / fac2 * fac1 ** shp * kv(shp, fac1), sill)
+        c = np.where(h != 0, sill * 1.0 / fac2 * fac1**shp * kv(shp, fac1), sill)
 
     return c
 
@@ -936,7 +936,7 @@ def cov_mat(h, sill=1.0, rng=1.0, shp=0.5):
 def cov_pow(h, sill=1.0, rng=1.0):
     """power law covariance function"""
     h = np.asanyarray(h)
-    return sill - h ** rng
+    return sill - h**rng
 
 
 def cov_cau(h, sill=1.0, rng=1.0, alpha=1.0, beta=1.0):

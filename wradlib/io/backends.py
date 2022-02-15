@@ -1191,7 +1191,7 @@ class RainbowStore(AbstractDataStore):
         vmin = float(raw.get("@min"))
         vmax = float(raw.get("@max"))
         depth = int(raw.get("@depth"))
-        scale_factor = (vmax - vmin) / (2 ** depth - 2)
+        scale_factor = (vmax - vmin) / (2**depth - 2)
         mname = rainbow_mapping.get(name, name)
         mapping = moments_mapping.get(mname, {})
         attrs = {key: mapping[key] for key in moment_attrs if key in mapping}

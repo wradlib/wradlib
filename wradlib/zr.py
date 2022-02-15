@@ -83,7 +83,7 @@ def r_to_z(r, a=200.0, b=1.6):
         reflectivity in mm**6/m**3
 
     """
-    return a * r ** b
+    return a * r**b
 
 
 def z_to_r_enhanced(z, polar=True, shower=True):
