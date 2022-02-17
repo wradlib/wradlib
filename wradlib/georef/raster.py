@@ -30,6 +30,8 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import warnings
+
 import numpy as np
 
 import wradlib
@@ -464,6 +466,8 @@ def reproject_raster_dataset(src_ds, **kwargs):
         GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2,
         GRA_CubicSpline = 3, GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6,
         GRA_Max = 8, GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
+    projection_source : :py:class:`gdal:osgeo.osr.SpatialReference`
+        source dataset projection, defaults to None (get projection from src_ds)
     projection_target : :py:class:`gdal:osgeo.osr.SpatialReference`
         destination dataset projection, defaults to None
     align : bool or tuple
@@ -486,6 +490,15 @@ def reproject_raster_dataset(src_ds, **kwargs):
     dst_srs = kwargs.pop("projection_target", None)
     align = kwargs.pop("align", False)
 
+    if spacing is None and size is None:
+        raise NameError("Whether keyword 'spacing' or 'size' must be given")
+
+    if spacing is not None and size is not None:
+        warnings.warn(
+            "both ``spacing`` and ``size`` kwargs given, ``size`` will be ignored.",
+            UserWarning,
+        )
+
     # Get the GeoTransform vector
     src_geo = src_ds.GetGeoTransform()
     x_size = src_ds.RasterXSize
@@ -500,11 +513,17 @@ def reproject_raster_dataset(src_ds, **kwargs):
     extent = np.array([[[ulx, uly], [lrx, uly]], [[ulx, lry], [lrx, lry]]])
 
     if dst_srs:
-        src_srs = osr.SpatialReference()
-        src_srs.ImportFromWkt(src_ds.GetProjection())
+        # try to load projection from source dataset if None is given
+        if src_srs is None:
+            src_proj = src_ds.GetProjection()
+            if not src_proj:
+                raise ValueError(
+                    "src_ds is missing projection information, please use ``projection_source`` kwarg and provide a fitting OSR SRS object."
+                )
+            src_srs = osr.SpatialReference()
+            src_srs.ImportFromWkt(src_ds.GetProjection())
 
         # Transformation
-
         extent = georef.reproject(
             extent, projection_source=src_srs, projection_target=dst_srs
         )
@@ -541,8 +560,6 @@ def reproject_raster_dataset(src_ds, **kwargs):
         cols, rows = size
         x_ps = x_size * src_geo[1] / cols
         y_ps = y_size * abs(src_geo[5]) / rows
-    else:
-        raise NameError("Whether keyword 'spacing' or 'size' must be given")
 
     # create destination in-memory raster
     mem_drv = gdal.GetDriverByName("MEM")
