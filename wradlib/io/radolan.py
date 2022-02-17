@@ -810,8 +810,11 @@ def _get_radolan_product_attributes(attrs):
         interval = attrs["intervalseconds"]
         precision = attrs["precision"]
 
-    if product in ["RX", "EX", "WX", "WN"]:
+    if product in ["RX", "EX", "WX"]:
         pattrs.update(radolan["dBZ"])
+    elif product in ["WN"]:
+        pattrs.update(radolan["dBZ2"])
+        pattrs["scale_factor"] *= np.float32(precision)
     elif product in [
         "RY",
         "RZ",
@@ -904,6 +907,16 @@ radolan = {
         "valid_min": np.int32(0),
         "valid_max": np.int32(255),
         "_FillValue": np.array([249, 250, 255], dtype=np.int32),
+        "standard_name": "equivalent_reflectivity_factor",
+        "long_name": "equivalent_reflectivity_factor",
+        "unit": "dBZ",
+    },
+    "dBZ2": {
+        "scale_factor": np.float32(0.5),
+        "add_offset": np.float32(-32.5),
+        "valid_min": np.int32(0),
+        "valid_max": np.int32(4095),
+        "_FillValue": np.array([2490, 2500, 65535], dtype=np.int32),
         "standard_name": "equivalent_reflectivity_factor",
         "long_name": "equivalent_reflectivity_factor",
         "unit": "dBZ",
