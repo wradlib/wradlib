@@ -1543,7 +1543,6 @@ def _assign_data_radial(root, sweep="sweep_1"):
 
         # check and extract for variable number of gates
         if ray_n_gates is not False:
-            n_rays = end_idx[i] - start_idx[i] + 1
             current_ray_n_gates = ray_n_gates.isel(time=tslice)
             current_rays_sum = current_ray_n_gates.sum().values
             nslice = slice(
