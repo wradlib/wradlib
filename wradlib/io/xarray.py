@@ -1519,7 +1519,16 @@ def _assign_data_radial(root, sweep="sweep_1"):
     data.attrs = {}
     start_idx = data.sweep_start_ray_index.values
     end_idx = data.sweep_end_ray_index.values
-    data = data.drop_vars({"sweep_start_ray_index", "sweep_end_ray_index"})
+    ray_n_gates = data.get("ray_n_gates", False)
+    ray_start_index = data.get("ray_start_index", False)
+    data = data.drop_vars(
+        {
+            "sweep_start_ray_index",
+            "sweep_end_ray_index",
+            "ray_n_gates",
+            "ray_start_index",
+        }
+    )
     sweeps = []
     for i, sw in enumerate(sweep_group_name):
         if sweep is not None and sweep != sw:
@@ -1531,6 +1540,22 @@ def _assign_data_radial(root, sweep="sweep_1"):
         dim0 = "elevation" if sweep_mode == "rhi" else "azimuth"
         ds = ds.swap_dims({"time": dim0})
         ds = ds.rename({"time": "rtime"})
+
+        # check and extract for variable number of gates
+        if ray_n_gates is not False:
+            n_rays = end_idx[i] - start_idx[i] + 1
+            current_ray_n_gates = ray_n_gates.isel(time=tslice)
+            current_rays_sum = current_ray_n_gates.sum().values
+            nslice = slice(
+                ray_start_index[start_idx[i]].values,
+                ray_start_index[start_idx[i]].values + current_rays_sum,
+            )
+            rslice = slice(0, current_ray_n_gates[0].values.item())
+            ds = ds.isel(range=rslice)
+            ds = ds.isel(n_points=nslice).stack(n_points=["azimuth", "range"])
+            ds = ds.unstack()
+            # fix elevation/time additional range dimension in coordinate
+            ds = ds.assign_coords({"elevation": ds.elevation.isel(range=0, drop=True)})
 
         ds.attrs["fixed_angle"] = np.round(ds.fixed_angle.item(), decimals=1)
         time = ds.rtime[0].reset_coords(drop=True)
