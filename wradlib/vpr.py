@@ -382,15 +382,16 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
         tuple of three boolean arrays (below, above, out_of_range) each of length
         (num grid points)
     """
+    site_altitude = center[:, 2]
     # distances of 3-D grid nodes from radar site (center)
     dist_from_rad = np.sqrt(((gridcoords - center) ** 2).sum(axis=-1))
     # below the radar
     below = gridcoords[:, 2] < (
-        georef.bin_altitude(dist_from_rad, minelev, 0, re=6371000) + center[:, 2]
+        georef.bin_altitude(dist_from_rad, minelev, site_altitude, re=6371000)
     )
     # above the radar
     above = gridcoords[:, 2] > (
-        georef.bin_altitude(dist_from_rad, maxelev, 0, re=6371000) + center[:, 2]
+        georef.bin_altitude(dist_from_rad, maxelev, site_altitude, re=6371000)
     )
     # out of range
     out_of_range = dist_from_rad > maxrange
