@@ -618,9 +618,12 @@ def to_netcdf(volume, filename, timestep=None, keys=None, engine=None):
     filename : str
         output filename
     timestep : int, slice
-        timestep/slice of wanted volume
+        timestep/slice of wanted volume, defaults to full slice
     keys : list
         list of sweep_group_names which should be written to the file
+    engine : str
+        engine to save data, defaults to 'netcdf4' or 'h5netcdf' if
+        found (in this order)
     """
     if engine is None:
         if has_import(netCDF4):
@@ -646,6 +649,8 @@ def to_netcdf(volume, filename, timestep=None, keys=None, engine=None):
                 ds = volume[idx]
                 if "time" not in ds.dims:
                     ds = ds.expand_dims("time")
+                if timestep is None:
+                    timestep = slice(None, None, None)
                 swp = ds.isel(time=timestep)
             swp.to_netcdf(filename, mode="a", group=key, engine=engine)
 
