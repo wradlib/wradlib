@@ -784,19 +784,52 @@ class TestGdal:
     @requires_gdal
     def test_reproject_raster_dataset(self, gdal_data):
         georef.reproject_raster_dataset(
-            gdal_data.ds, spacing=0.005, resample=gdal.GRA_Bilinear, align=True
+            gdal_data.ds, spacing=0.05, resample=gdal.GRA_Bilinear, align=True
         )
         georef.reproject_raster_dataset(
-            gdal_data.ds, size=(1000, 1000), resample=gdal.GRA_Bilinear, align=True
+            gdal_data.ds, size=(100, 100), resample=gdal.GRA_Bilinear, align=True
         )
-        with pytest.raises(NameError):
+        with pytest.raises(
+            NameError, match="Whether keyword 'spacing' or 'size' must be given"
+        ):
             georef.reproject_raster_dataset(gdal_data.ds)
         dst = georef.epsg_to_osr(25832)
         georef.reproject_raster_dataset(
             gdal_data.ds,
-            spacing=100.0,
+            spacing=1000.0,
             resample=gdal.GRA_Bilinear,
             align=True,
+            projection_target=dst,
+        )
+        with pytest.warns(
+            UserWarning, match="both ``spacing`` and ``size`` kwargs given"
+        ):
+            georef.reproject_raster_dataset(
+                gdal_data.ds,
+                spacing=1000.0,
+                size=200,
+                resample=gdal.GRA_Bilinear,
+                align=True,
+                projection_target=dst,
+            )
+        ds = gdal.GetDriverByName("MEM").CreateCopy("out", gdal_data.ds, 0)
+        ds.SetProjection("")
+        with pytest.raises(
+            ValueError, match="src_ds is missing projection information"
+        ):
+            georef.reproject_raster_dataset(
+                ds,
+                spacing=1000.0,
+                resample=gdal.GRA_Bilinear,
+                align=True,
+                projection_target=dst,
+            )
+        georef.reproject_raster_dataset(
+            ds,
+            spacing=1000.0,
+            resample=gdal.GRA_Bilinear,
+            align=True,
+            projection_source=gdal_data.proj,
             projection_target=dst,
         )
 
