@@ -1527,7 +1527,8 @@ def _assign_data_radial(root, sweep="sweep_1"):
             "sweep_end_ray_index",
             "ray_n_gates",
             "ray_start_index",
-        }
+        },
+        errors="ignore",
     )
     sweeps = []
     for i, sw in enumerate(sweep_group_name):
