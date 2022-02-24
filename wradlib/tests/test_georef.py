@@ -1304,14 +1304,18 @@ class TestVector:
     @requires_data
     @requires_gdal
     def test_get_vector_coordinates(self, vec_data):
-        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+        filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
+        proj_gk2 = osr.SpatialReference()
+        proj_gk2.ImportFromEPSG(31466)
         ds, layer = wradlib.io.open_vector(filename)
 
         # this also tests equality with `ogr_to_numpy`
-        x, attrs = georef.get_vector_coordinates(layer, key="FID")
+        x, attrs = georef.get_vector_coordinates(
+            layer, key="FID", source_srs=vec_data.proj
+        )
         assert attrs == list(range(13))
 
-        x, attrs = georef.get_vector_coordinates(layer)
+        x, attrs = georef.get_vector_coordinates(layer, source_srs=vec_data.proj)
         y = []
         layer.ResetReading()
         for i in range(layer.GetFeatureCount()):
@@ -1327,9 +1331,6 @@ class TestVector:
         x, attrs = georef.get_vector_coordinates(
             layer, source_srs=vec_data.proj, dest_srs=vec_data.wgs84
         )
-
-        layer.ResetReading()
-        x, attrs = georef.get_vector_coordinates(layer, dest_srs=vec_data.wgs84)
 
     @requires_gdal
     def test_transform_geometry(self, vec_data):
