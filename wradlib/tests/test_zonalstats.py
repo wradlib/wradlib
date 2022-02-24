@@ -8,9 +8,9 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from wradlib import georef, util, zonalstats
+from wradlib import georef, io, zonalstats
 
-from . import osr, requires_data, requires_gdal, requires_geos
+from . import osr, requires_gdal, requires_geos
 
 np.set_printoptions(
     edgeitems=3,
@@ -22,144 +22,6 @@ np.set_printoptions(
     threshold=1000,
     formatter=None,
 )
-
-
-@pytest.fixture
-def data_source():
-    @dataclass(init=False, repr=False, eq=False)
-    class Data:
-        # create synthetic box
-        box0 = np.array(
-            [
-                [2600000.0, 5630000.0],
-                [2600000.0, 5640000.0],
-                [2610000.0, 5640000.0],
-                [2610000.0, 5630000.0],
-                [2600000.0, 5630000.0],
-            ]
-        )
-
-        box1 = np.array(
-            [
-                [2700000.0, 5630000.0],
-                [2700000.0, 5640000.0],
-                [2710000.0, 5640000.0],
-                [2710000.0, 5630000.0],
-                [2700000.0, 5630000.0],
-            ]
-        )
-
-        data = np.array([box0, box1], dtype=object)
-
-        ds = zonalstats.DataSource(data)
-
-        values1 = np.array([47.11, 47.11])
-        values2 = np.array([47.11, 15.08])
-
-    yield Data
-
-
-@requires_geos
-class TestDataSource:
-    @requires_data
-    @requires_gdal
-    def test__check_src(self):
-        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
-        assert len(zonalstats.DataSource(filename).data) == 13
-
-    @requires_gdal
-    def test_error(self):
-        with pytest.raises(RuntimeError):
-            zonalstats.DataSource("test_zonalstats.py")
-
-    @requires_gdal
-    def test_data(self, data_source):
-        np.testing.assert_almost_equal(data_source.ds.data, data_source.data)
-
-    @requires_gdal
-    def test__get_data(self, data_source):
-        ds = zonalstats.DataSource(data_source.data)
-        np.testing.assert_almost_equal(ds._get_data(), data_source.data)
-
-    @requires_gdal
-    def test_get_data_by_idx(self, data_source):
-        ds = zonalstats.DataSource(data_source.data)
-        np.testing.assert_almost_equal(ds.get_data_by_idx([0]), data_source.data[0:1])
-        np.testing.assert_almost_equal(ds.get_data_by_idx([1]), data_source.data[1:2])
-        np.testing.assert_almost_equal(ds.get_data_by_idx([0, 1]), data_source.data)
-
-    @requires_gdal
-    def test_get_data_by_att(self, data_source):
-        ds = zonalstats.DataSource(data_source.data)
-        np.testing.assert_almost_equal(
-            ds.get_data_by_att("index", 0), data_source.data[0:1]
-        )
-        np.testing.assert_almost_equal(
-            ds.get_data_by_att("index", 1), data_source.data[1:2]
-        )
-
-    @requires_gdal
-    def test_get_data_by_geom(self, data_source):
-        ds = zonalstats.DataSource(data_source.data)
-        lyr = ds.ds.GetLayer()
-        lyr.ResetReading()
-        lyr.SetSpatialFilter(None)
-        lyr.SetAttributeFilter(None)
-        for i, feature in enumerate(lyr):
-            geom = feature.GetGeometryRef()
-            np.testing.assert_almost_equal(
-                ds.get_data_by_geom(geom), data_source.data[i : i + 1]
-            )
-
-    @requires_gdal
-    def test_set_attribute(self, data_source):
-        ds = zonalstats.DataSource(data_source.data)
-        ds.set_attribute("test", data_source.values1)
-        assert np.allclose(ds.get_attributes(["test"]), data_source.values1)
-        ds.set_attribute("test", data_source.values2)
-        assert np.allclose(ds.get_attributes(["test"]), data_source.values2)
-
-    @requires_gdal
-    def test_get_attributes(self, data_source):
-        ds = zonalstats.DataSource(data_source.data)
-        ds.set_attribute("test", data_source.values2)
-        assert ds.get_attributes(["test"], filt=("index", 0)) == data_source.values2[0]
-        assert ds.get_attributes(["test"], filt=("index", 1)) == data_source.values2[1]
-
-    @requires_data
-    @requires_gdal
-    def test_get_geom_properties(self):
-        proj = osr.SpatialReference()
-        proj.ImportFromEPSG(31466)
-        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
-        test = zonalstats.DataSource(filename, proj)
-        np.testing.assert_array_equal(
-            [[76722499.98474795]], test.get_geom_properties(["Area"], filt=("FID", 1))
-        )
-
-    @requires_gdal
-    def test_dump_vector(self, data_source):
-        ds = zonalstats.DataSource(data_source.data)
-        ds.dump_vector(tempfile.NamedTemporaryFile(mode="w+b").name)
-
-    @requires_data
-    @requires_gdal
-    def test_dump_raster(self):
-        proj = osr.SpatialReference()
-        proj.ImportFromEPSG(31466)
-        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
-        test = zonalstats.DataSource(filename, srs=proj)
-        test.dump_raster(
-            tempfile.NamedTemporaryFile(mode="w+b").name,
-            driver="netCDF",
-            pixel_size=100.0,
-        )
-        test.dump_raster(
-            tempfile.NamedTemporaryFile(mode="w+b").name,
-            driver="netCDF",
-            pixel_size=100.0,
-            attr="FID",
-        )
 
 
 @pytest.fixture
@@ -258,22 +120,22 @@ class TestZonalDataBase:
     @requires_gdal
     def test___init__(self, data_base):
         zdb = zonalstats.ZonalDataBase(data_base.src, data_base.trg, srs=data_base.proj)
-        assert isinstance(zdb.src, zonalstats.DataSource)
-        assert isinstance(zdb.trg, zonalstats.DataSource)
-        assert isinstance(zdb.dst, zonalstats.DataSource)
+        assert isinstance(zdb.src, io.VectorSource)
+        assert isinstance(zdb.trg, io.VectorSource)
+        assert isinstance(zdb.dst, io.VectorSource)
         assert zdb._count_intersections == 2
-        zd = zonalstats.DataSource(data_base.src, name="src", srs=data_base.proj)
+        zd = io.VectorSource(data_base.src, name="src", srs=data_base.proj)
         zdb = zonalstats.ZonalDataBase(zd, data_base.trg, srs=data_base.proj)
-        assert isinstance(zdb.src, zonalstats.DataSource)
-        assert isinstance(zdb.trg, zonalstats.DataSource)
-        assert isinstance(zdb.dst, zonalstats.DataSource)
+        assert isinstance(zdb.src, io.VectorSource)
+        assert isinstance(zdb.trg, io.VectorSource)
+        assert isinstance(zdb.dst, io.VectorSource)
         assert zdb._count_intersections == 2
-        zd1 = zonalstats.DataSource(data_base.src, name="src", srs=data_base.proj)
-        zd2 = zonalstats.DataSource(data_base.trg, name="trg", srs=data_base.proj)
+        zd1 = io.VectorSource(data_base.src, name="src", srs=data_base.proj)
+        zd2 = io.VectorSource(data_base.trg, name="trg", srs=data_base.proj)
         zdb = zonalstats.ZonalDataBase(zd1, zd2, srs=data_base.proj)
-        assert isinstance(zdb.src, zonalstats.DataSource)
-        assert isinstance(zdb.trg, zonalstats.DataSource)
-        assert isinstance(zdb.dst, zonalstats.DataSource)
+        assert isinstance(zdb.src, io.VectorSource)
+        assert isinstance(zdb.trg, io.VectorSource)
+        assert isinstance(zdb.dst, io.VectorSource)
         assert zdb._count_intersections == 2
 
     @requires_gdal

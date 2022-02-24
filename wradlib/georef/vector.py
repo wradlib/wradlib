@@ -20,6 +20,7 @@ __all__ = [
     "ogr_create_layer",
     "ogr_copy_layer",
     "ogr_copy_layer_by_name",
+    "ogr_reproject_layer",
     "ogr_add_feature",
     "ogr_add_geometry",
     "numpy_to_ogr",
@@ -152,7 +153,13 @@ def get_vector_coordinates(layer, **kwargs):
 
     shp = []
 
-    source_srs = kwargs.get("source_srs", None)
+    source_srs = kwargs.get("source_srs", layer.GetSpatialRef())
+    if source_srs is None:
+        raise ValueError(
+            "Spatial reference missing from source layer. "
+            "Please provide a fitting spatial reference object"
+        )
+
     dest_srs = kwargs.get("dest_srs", None)
     key = kwargs.get("key", None)
     if key:
@@ -175,6 +182,64 @@ def get_vector_coordinates(layer, **kwargs):
     shp = np.squeeze(np.array(shp, dtype=object))
 
     return shp, attrs
+
+
+def ogr_reproject_layer(src_lyr, dst_lyr, dst_srs, src_srs=None):
+    """Reproject src_lyr to dst_lyr.
+
+    Creates one OGR.Layer with given name in given gdal.Dataset object
+    using given OGR.GeometryType and FieldDefinitions
+
+    Parameters
+    ----------
+    src_lyr : :py:class:`gdal:osgeo.ogr.Layer`
+        OGRLayer source layer
+    dst_lyr : :py:class:`gdal:osgeo.ogr.Layer`
+        OGRLayer destination layer
+    dst_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        Projection Target SRS
+    src_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        Projection Source SRS
+
+    Returns
+    -------
+    dst_lyr : :py:class:`gdal:osgeo.ogr.Layer`
+        OGRLayer destination layer
+    """
+    if src_srs is None:
+        src_srs = src_lyr.GetSpatialRef()
+        if src_srs is None:
+            raise ValueError(
+                "Spatial reference missing from source layer. "
+                "Please provide a fitting spatial reference object"
+            )
+
+    # add fields
+    dst_lyr.CreateField(ogr.FieldDefn("index", ogr.OFTInteger))
+
+    # get the output layer's feature definition
+    dst_lyr_defn = dst_lyr.GetLayerDefn()
+    # loop through the input features
+    src_feature = src_lyr.GetNextFeature()
+    i = 0
+    while src_feature:
+        # get the input geometry
+        geom = src_feature.GetGeometryRef()
+        # reproject the geometry
+        geom = transform_geometry(geom, source_srs=src_srs, dest_srs=dst_srs)
+        # create a new feature
+        dst_feature = ogr.Feature(dst_lyr_defn)
+        # set the geometry and attribute
+        dst_feature.SetGeometry(geom)
+        dst_feature.SetField("index", i)
+        i += 1
+        # add the feature to the shapefile
+        dst_lyr.CreateFeature(dst_feature)
+        # dereference the features and get the next input feature
+        dst_feature = None
+        src_feature = src_lyr.GetNextFeature()
+
+    return dst_lyr
 
 
 def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):

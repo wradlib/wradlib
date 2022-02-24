@@ -42,7 +42,7 @@ Calling the objects with actual data, however, will be very fast.
    {}
 """
 __all__ = [
-    "DataSource",
+    # "DataSource",
     "ZonalDataBase",
     "ZonalDataPoint",
     "ZonalDataPoly",
@@ -67,6 +67,7 @@ from wradlib import georef, io
 from wradlib.util import has_import, import_optional
 
 ogr = import_optional("osgeo.ogr")
+osr = import_optional("osgeo.osr")
 gdal = import_optional("osgeo.gdal")
 mpl_patches = import_optional("matplotlib.patches")
 mpl_path = import_optional("matplotlib.path")
@@ -79,385 +80,11 @@ if has_import(gdal):
 isWindows = os.name == "nt"
 
 
-class DataSource:
-    """ DataSource class for handling ogr/gdal vector data
+class DataSource(io.VectorSource):
+    """DataSource class for handling ogr/gdal vector data
 
-    DataSource handles creates in-memory (vector) ogr DataSource object with
-    one layer for point or polygon geometries.
-
-    Parameters
-    ----------
-    data : sequence or str
-        sequence of source points (shape Nx2) or polygons (shape NxMx2) or
-        ESRI Shapefile filename containing source points/polygons
-
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        SRS describing projection of given data
-
-    Warning
-    -------
-    Writing shapefiles with the wrong locale settings can have impact on the
-    type of the decimal. If problem arise use ``LC_NUMERIC=C`` in your environment.
-
-    Examples
-    --------
-    See \
-    :ref:`/notebooks/zonalstats/wradlib_zonalstats_classes.ipynb#DataSource`.
+    Minimal wrapper around wradlib.io.VectorSource for backwards compatibility.
     """
-
-    def __init__(self, data=None, srs=None, name="layer", source=0, **kwargs):
-        self._srs = srs
-        self._name = name
-        if data is not None:
-            try:
-                self._ds = self._check_src(data)
-            except TypeError:
-                self.load_vector(data, source=source)
-            self._create_spatial_index()
-        else:
-            self._ds = None
-
-    @property
-    def ds(self):
-        """Returns DataSource"""
-        self._check_ds()
-        return self._ds
-
-    @ds.setter
-    def ds(self, value):
-        self._ds = value
-
-    def _check_ds(self):
-        """Raise ValueError if empty DataSource"""
-        if self._ds is None:
-            raise ValueError("Trying to access empty Datasource.")
-
-    @property
-    def data(self):
-        """Returns DataSource geometries as numpy ndarrays
-
-        Note
-        ----
-        This may be slow, because it extracts all source polygons
-        """
-        lyr = self.ds.GetLayer()
-        lyr.ResetReading()
-        lyr.SetSpatialFilter(None)
-        lyr.SetAttributeFilter(None)
-        return self._get_data()
-
-    def _get_data(self):
-        """Returns DataSource geometries as numpy ndarrays"""
-        lyr = self.ds.GetLayer()
-        sources = []
-        for feature in lyr:
-            geom = feature.GetGeometryRef()
-            poly = georef.vector.ogr_to_numpy(geom)
-            sources.append(poly)
-        return np.array(sources, dtype=object)
-
-    def get_data_by_idx(self, idx):
-        """Returns DataSource geometries as numpy ndarrays from given index
-
-        Parameters
-        ----------
-        idx : sequence
-            sequence of int indices
-        """
-        lyr = self.ds.GetLayer()
-        lyr.ResetReading()
-        lyr.SetSpatialFilter(None)
-        lyr.SetAttributeFilter(None)
-        sources = []
-        for i in idx:
-            feature = lyr.GetFeature(i)
-            geom = feature.GetGeometryRef()
-            poly = georef.vector.ogr_to_numpy(geom)
-            sources.append(poly)
-        return np.array(sources, dtype=object)
-
-    def get_data_by_att(self, attr=None, value=None):
-        """Returns DataSource geometries filtered by given attribute/value
-
-        Parameters
-        ----------
-        attr : str
-            attribute name
-        value : str
-            attribute value
-        """
-        lyr = self.ds.GetLayer()
-        lyr.ResetReading()
-        lyr.SetSpatialFilter(None)
-        lyr.SetAttributeFilter(f"{attr}={value}")
-        return self._get_data()
-
-    def get_data_by_geom(self, geom=None):
-        """Returns DataSource geometries filtered by given OGR geometry
-
-        Parameters
-        ----------
-        geom : :py:class:`gdal:osgeo.ogr.Geometry`
-            OGR.Geometry object
-        """
-        lyr = self.ds.GetLayer()
-        lyr.ResetReading()
-        lyr.SetAttributeFilter(None)
-        lyr.SetSpatialFilter(geom)
-        return self._get_data()
-
-    def _create_spatial_index(self):
-        """Creates spatial index file .qix"""
-        sql1 = f"DROP SPATIAL INDEX ON {self._name}"
-        sql2 = f"CREATE SPATIAL INDEX ON {self._name}"
-        self.ds.ExecuteSQL(sql1)
-        self.ds.ExecuteSQL(sql2)
-
-    def _create_table_index(self, col):
-        """Creates attribute index files"""
-        sql1 = f"DROP INDEX ON {self._name}"
-        sql2 = f"CREATE INDEX ON {self._name} USING {col}"
-        self.ds.ExecuteSQL(sql1)
-        self.ds.ExecuteSQL(sql2)
-
-    def _check_src(self, src):
-        """Basic check of source elements (sequence of points or polygons).
-
-        - array cast of source elements
-        - create ogr_src datasource/layer holding src points/polygons
-        - transforming source grid points/polygons to ogr.geometries
-          on ogr.layer
-        """
-        tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
-        ogr_src = io.gdal.gdal_create_dataset(
-            "ESRI Shapefile", os.path.join("/vsimem", tmpfile), gdal_type=gdal.OF_VECTOR
-        )
-
-        src = np.array(src)
-        # create memory datasource, layer and create features
-        if src.ndim == 2:
-            geom_type = ogr.wkbPoint
-        # no Polygons, just Points
-        else:
-            geom_type = ogr.wkbPolygon
-        fields = [("index", ogr.OFTInteger)]
-        georef.vector.ogr_create_layer(
-            ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields
-        )
-        georef.vector.ogr_add_feature(ogr_src, src, name=self._name)
-
-        return ogr_src
-
-    def dump_vector(self, filename, driver="ESRI Shapefile", remove=True):
-        """Output layer to OGR Vector File
-
-        Parameters
-        ----------
-        filename : str
-            path to shape-filename
-        driver : str
-            driver string
-        remove : bool
-            if True removes existing output file
-
-        """
-        ds_out = io.gdal.gdal_create_dataset(
-            driver, filename, gdal_type=gdal.OF_VECTOR, remove=remove
-        )
-        georef.vector.ogr_copy_layer(self.ds, 0, ds_out)
-
-        # flush everything
-        del ds_out
-
-    def load_vector(self, filename, source=0, driver="ESRI Shapefile"):
-        """Read Layer from OGR Vector File
-
-        Parameters
-        ----------
-        filename : str
-            path to shape-filename
-        source : int or str
-            number or name of wanted layer, defaults to 0
-        driver : str
-            driver string
-        """
-        tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
-        self.ds = io.gdal.gdal_create_dataset(
-            "ESRI Shapefile", os.path.join("/vsimem", tmpfile), gdal_type=gdal.OF_VECTOR
-        )
-        # get input file handles
-        ds_in, tmp_lyr = io.gdal.open_vector(filename, driver=driver, layer=source)
-
-        # copy layer
-        ogr_src_lyr = self.ds.CopyLayer(tmp_lyr, self._name)
-
-        # get spatial reference object
-        srs = ogr_src_lyr.GetSpatialRef()
-        if srs is not None:
-            self._srs = ogr_src_lyr.GetSpatialRef()
-
-        # flush everything
-        del ds_in
-
-    def dump_raster(
-        self, filename, driver="GTiff", attr=None, pixel_size=1.0, remove=True, **kwargs
-    ):
-        """Output layer to GDAL Rasterfile
-
-        Parameters
-        ----------
-        filename : str
-            path to shape-filename
-        driver : str
-            GDAL Raster Driver
-        attr : str
-            attribute to burn into raster
-        pixel_size : float
-            pixel Size in source units
-        remove : bool
-            if True removes existing output file
-
-        Keyword Arguments
-        -----------------
-        silent : bool
-            If True no ProgressBar is shown. Defaults to False.
-        """
-        silent = kwargs.pop("silent", False)
-        progress = None if (silent or isWindows) else gdal.TermProgress
-
-        layer = self.ds.GetLayer()
-        layer.ResetReading()
-
-        x_min, x_max, y_min, y_max = layer.GetExtent()
-
-        cols = int((x_max - x_min) / pixel_size)
-        rows = int((y_max - y_min) / pixel_size)
-
-        # Todo: at the moment, always writing floats
-        ds_out = io.gdal.gdal_create_dataset(
-            "MEM", "", cols, rows, 1, gdal_type=gdal.GDT_Float32
-        )
-
-        ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
-        proj = layer.GetSpatialRef()
-        if proj is None:
-            proj = self._srs
-        ds_out.SetProjection(proj.ExportToWkt())
-
-        band = ds_out.GetRasterBand(1)
-        band.FlushCache()
-        if attr is not None:
-            gdal.RasterizeLayer(
-                ds_out,
-                [1],
-                layer,
-                burn_values=[0],
-                options=[f"ATTRIBUTE={attr}", "ALL_TOUCHED=TRUE"],
-                callback=progress,
-            )
-        else:
-            gdal.RasterizeLayer(
-                ds_out,
-                [1],
-                layer,
-                burn_values=[1],
-                options=["ALL_TOUCHED=TRUE"],
-                callback=progress,
-            )
-
-        io.gdal.write_raster_dataset(filename, ds_out, driver, remove=remove)
-
-        del ds_out
-
-    def set_attribute(self, name, values):
-        """Add/Set given Attribute with given values
-
-        Parameters
-        ----------
-        name : str
-            Attribute Name
-        values : :class:`numpy:numpy.ndarray`
-            Values to fill in attributes
-        """
-        lyr = self.ds.GetLayerByIndex(0)
-        lyr.ResetReading()
-        # todo: automatically check for value type
-        defn = lyr.GetLayerDefn()
-
-        if defn.GetFieldIndex(name) == -1:
-            lyr.CreateField(ogr.FieldDefn(name, ogr.OFTReal))
-
-        for i, item in enumerate(lyr):
-            item.SetField(name, values[i])
-            lyr.SetFeature(item)
-
-    def get_attributes(self, attrs, filt=None):
-        """Read attributes
-
-        Parameters
-        ----------
-        attrs : list
-            Attribute Names to retrieve
-        filt : tuple
-            (attname, value) for Attribute Filter
-        """
-        lyr = self.ds.GetLayer()
-        lyr.ResetReading()
-        if filt is not None:
-            lyr.SetAttributeFilter(f"{filt[0]}={filt[1]}")
-        ret = [[] for _ in attrs]
-        for ogr_src in lyr:
-            for i, att in enumerate(attrs):
-                ret[i].append(ogr_src.GetField(att))
-        return ret
-
-    def get_geom_properties(self, props, filt=None):
-        """Read properties
-
-        Parameters
-        ----------
-        props : list
-            Property Names to retrieve
-        filt : tuple
-            (attname, value) for Attribute Filter
-
-        """
-        lyr = self.ds.GetLayer()
-        lyr.ResetReading()
-        if filt is not None:
-            lyr.SetAttributeFilter(f"{filt[0]}={filt[1]}")
-        ret = [[] for _ in props]
-        for ogr_src in lyr:
-            for i, prop in enumerate(props):
-                ret[i].append(getattr(ogr_src.GetGeometryRef(), prop)())
-        return ret
-
-    def get_attrs_and_props(self, attrs=None, props=None, filt=None):
-        """Read properties and attributes
-
-        Parameters
-        ----------
-        attrs : list
-           Attribute Names to retrieve
-        props : list
-           Property Names to retrieve
-        filt : tuple
-           (attname, value) for Attribute Filter
-
-        """
-        lyr = self.ds.GetLayer()
-        lyr.ResetReading()
-        if filt is not None:
-            lyr.SetAttributeFilter(f"{filt[0]}={filt[1]}")
-        ret_props = [[] for _ in props]
-        ret_attrs = [[] for _ in attrs]
-        for ogr_src in lyr:
-            for i, att in enumerate(attrs):
-                ret_attrs[i].append(ogr_src.GetField(att))
-            for i, prop in enumerate(props):
-                ret_props[i].append(getattr(ogr_src.GetGeometryRef(), prop)())
-
-        return ret_attrs, ret_props
 
 
 class ZonalDataBase:
@@ -524,17 +151,17 @@ class ZonalDataBase:
             # try to read complete dump (src, trg, dst)
             self.load_vector(src)
         else:
-            if isinstance(src, DataSource):
+            if isinstance(src, io.VectorSource):
                 self.src = src
             else:
-                self.src = DataSource(src, name="src", srs=srs, **kwargs)
+                self.src = io.VectorSource(src, name="src", srs=srs, **kwargs)
 
-            if isinstance(trg, DataSource):
+            if isinstance(trg, io.VectorSource):
                 self.trg = trg
             else:
-                self.trg = DataSource(trg, name="trg", srs=srs, **kwargs)
+                self.trg = io.VectorSource(trg, name="trg", srs=srs, **kwargs)
 
-            self.dst = DataSource(name="dst")
+            self.dst = io.VectorSource(name="dst")
             self.dst.ds = self._create_dst_datasource(silent)
             self.dst._create_spatial_index()
 
@@ -564,7 +191,8 @@ class ZonalDataBase:
             [
                 self._get_intersection(idx=idx)
                 for idx in range(self.trg.ds.GetLayerByName("trg").GetFeatureCount())
-            ]
+            ],
+            dtype=object,
         )
 
     def get_isec(self, idx):
@@ -691,9 +319,9 @@ class ZonalDataBase:
         filename : str
             path to vector file
         """
-        self.src = DataSource(filename, name="src", source="src")
-        self.trg = DataSource(filename, name="trg", source="trg")
-        self.dst = DataSource(filename, name="dst", source="dst")
+        self.src = io.VectorSource(filename, name="src", source="src")
+        self.trg = io.VectorSource(filename, name="trg", source="trg")
+        self.dst = io.VectorSource(filename, name="dst", source="dst")
 
         # get spatial reference object
         self._srs = self.src.ds.GetLayer().GetSpatialRef()
@@ -970,7 +598,6 @@ class ZonalStatsBase:
                 for i in np.arange(len(self.ix))[~self.isempty]
             ]
         )
-
         if self.zdata is not None:
             self.zdata.trg.set_attribute("mean", out)
 
