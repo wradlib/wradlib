@@ -3551,9 +3551,13 @@ class IrisRawFile(IrisRecordFile, IrisIngestHeader):
         if sweep_data.get("azimuth", False) is False:
             dec_data = self.decode_data(raw_data[:, :4], BIN2)
             azi_start = dec_data[:, 0]
-            ele_start = dec_data[:, 1]
             azi_stop = dec_data[:, 2]
+            # correct elevation for negative angles
+            # see https://github.com/wradlib/wradlib/issues/560
+            ele_start = dec_data[:, 1]
+            ele_start[ele_start > 180] -= 360
             ele_stop = dec_data[:, 3]
+            ele_stop[ele_stop > 180] -= 360
 
             # calculate beam center values
             # find locations with reasonable difference
