@@ -1,5 +1,6 @@
 deprecation
 matplotlib
 numpy
+packaging
 scipy
 xarray>=0.17.0
