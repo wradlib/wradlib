@@ -1,6 +1,7 @@
 cartopy
 dask
 gdal
+geopandas
 h5netcdf
 h5py
 netCDF4

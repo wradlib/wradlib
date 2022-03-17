@@ -10,6 +10,7 @@ dependencies:
   - dask
   - deprecation
   - gdal
+  - geopandas
   - h5py
   - h5netcdf
   - nbconvert
@@ -27,6 +28,7 @@ dependencies:
   - pytest-sugar
   - pytest-xdist
   - requests
+  - rioxarray
   - scipy
   - semver
   - setuptools
