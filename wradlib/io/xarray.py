@@ -998,8 +998,10 @@ class _OdimH5NetCDFMetadata:
         what = self._root[grp]["what"].attrs
         startdate = _maybe_decode(what["startdate"])
         starttime = _maybe_decode(what["starttime"])
-        enddate = _maybe_decode(what["enddate"])
-        endtime = _maybe_decode(what["endtime"])
+        # take care for missing enddate/endtime
+        # see https://github.com/wradlib/wradlib/issues/563
+        enddate = _maybe_decode(what.get("enddate", what["startdate"]))
+        endtime = _maybe_decode(what.get("endtime", what["starttime"]))
         start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
         end = dt.datetime.strptime(enddate + endtime, "%Y%m%d%H%M%S")
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
