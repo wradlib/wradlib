@@ -63,7 +63,6 @@ jobs:
           python=${{ matrix.python-version }}
     - name: Install wradlib
       run: |
-        python setup.py sdist
         python -m pip install . --no-deps
     - name: Clone wradlib-data
       run: |
@@ -116,7 +115,6 @@ jobs:
     - name: Install wradlib
       run: |
         cat "$HOME/.bash_profile"
-        python setup.py sdist
         python -m pip install . --no-deps
     - name: Clone wradlib-data
       run: |
@@ -168,7 +166,6 @@ jobs:
             python=${{ matrix.python-version }}
       - name: Install wradlib
         run: |
-          python setup.py sdist
           python -m pip install . --no-deps
       - name: Clone wradlib-data
         run: |
@@ -219,7 +216,6 @@ jobs:
             python=${{ matrix.python-version }}
       - name: Install wradlib
         run: |
-          python setup.py sdist
           python -m pip install . --no-deps
       - name: Clone wradlib-data
         run: |
@@ -229,7 +225,7 @@ jobs:
           git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
       - name: Version Info
         run: |
-          python -c "import wradlib; print(wradlib.version.full_version)"
+          python -c "import wradlib; print(wradlib.version.version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
         env:
@@ -283,13 +279,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install semver setuptools wheel twine
+          pip install build setuptools wheel twine
       - name: Package and Upload
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
-          python setup.py sdist
+          python -m build .
           twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
   upload_pypi:
@@ -311,11 +307,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install semver setuptools wheel twine
+          pip install build setuptools wheel twine
       - name: Package and Upload
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          python setup.py sdist
+          python -m build .
           twine upload dist/*

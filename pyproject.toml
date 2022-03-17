@@ -1,2 +1,14 @@
 [build-system]
-requires = ["setuptools", "wheel", "semver"]
+requires = [
+    "wheel",
+    "setuptools>=42",
+    "setuptools_scm[toml]>=6.2",
+    "setuptools_scm_git_archive",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "wradlib/version.py"
+write_to_template = '__version__ = "{version}"'
+version_scheme = "release-branch-semver"
+fallback_version = "999"

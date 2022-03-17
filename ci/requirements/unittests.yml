@@ -23,7 +23,6 @@ dependencies:
   - pytest-xdist
   - requests
   - scipy
-  - semver
   - setuptools
   - xarray
   - xmltodict
