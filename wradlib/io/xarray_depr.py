@@ -97,6 +97,7 @@ from wradlib.io.xarray import (
     GAMIC_NAMES,
     XRadBase,
     _fix_angle,
+    _maybe_decode,
     _reindex_angle,
     _write_odim,
     _write_odim_dataspace,
@@ -1415,8 +1416,8 @@ class XRadSweepOdim(XRadSweep):
                 startdate = ncid["what"].getncattr("startdate")
                 starttime = ncid["what"].getncattr("starttime")
             else:
-                startdate = ncid["what"].attrs["startdate"].item().decode()
-                starttime = ncid["what"].attrs["starttime"].item().decode()
+                startdate = _maybe_decode(ncid["what"].attrs["startdate"])
+                starttime = _maybe_decode(ncid["what"].attrs["starttime"])
         except (IndexError, KeyError):
             return None
         start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
