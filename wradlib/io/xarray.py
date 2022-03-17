@@ -803,6 +803,13 @@ def _calculate_angle_res(dim):
     return np.round(np.nanmean(angle_diff_wanted), decimals=2)
 
 
+def _maybe_decode(attr):
+    try:
+        return attr.item().decode()
+    except AttributeError:
+        return attr
+
+
 class _OdimH5NetCDFMetadata:
     """Wrapper around OdimH5 data fileobj for easy access of metadata.
 
@@ -989,10 +996,10 @@ class _OdimH5NetCDFMetadata:
     def _get_time_what(self, nrays=None):
         grp = self._group.split("/")[0]
         what = self._root[grp]["what"].attrs
-        startdate = what["startdate"].item().decode()
-        starttime = what["starttime"].item().decode()
-        enddate = what["enddate"].item().decode()
-        endtime = what["endtime"].item().decode()
+        startdate = _maybe_decode(what["startdate"])
+        starttime = _maybe_decode(what["starttime"])
+        enddate = _maybe_decode(what["enddate"])
+        endtime = _maybe_decode(what["endtime"])
         start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
         end = dt.datetime.strptime(enddate + endtime, "%Y%m%d%H%M%S")
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
@@ -1040,8 +1047,8 @@ class _OdimH5NetCDFMetadata:
     def _get_time(self, point="start"):
         grp = self._group.split("/")[0]
         what = self._root[grp]["what"].attrs
-        startdate = what[f"{point}date"].item().decode()
-        starttime = what[f"{point}time"].item().decode()
+        startdate = _maybe_decode(what[f"{point}date"])
+        starttime = _maybe_decode(what[f"{point}time"])
         start = dt.datetime.strptime(startdate + starttime, "%Y%m%d%H%M%S")
         start = start.replace(tzinfo=dt.timezone.utc).timestamp()
         return start
@@ -1064,7 +1071,7 @@ class _OdimH5NetCDFMetadata:
         attrs["add_offset"] = what.get("offset", 0)
         attrs["_FillValue"] = what.get("nodata", None)
         attrs["_Undetect"] = what.get("undetect", 0)
-        attrs["quantity"] = what["quantity"].item().decode()
+        attrs["quantity"] = _maybe_decode(what["quantity"])
         return attrs
 
     @property
@@ -1537,7 +1544,7 @@ def _assign_data_radial(root, sweep="sweep_1"):
         tslice = slice(start_idx[i], end_idx[i] + 1)
         ds = data.isel(time=tslice, sweep=slice(i, i + 1)).squeeze("sweep")
         ds.sweep_mode.load()
-        sweep_mode = ds.sweep_mode.item().decode()
+        sweep_mode = _maybe_decode(ds.sweep_mode)
         dim0 = "elevation" if sweep_mode == "rhi" else "azimuth"
         ds = ds.swap_dims({"time": dim0})
         ds = ds.rename({"time": "rtime"})
