@@ -950,6 +950,7 @@ class TestGdal:
         georef.merge_raster_datasets(datasets)
 
     @requires_gdal
+    @pytest.mark.xfail(strict=False)
     def test_raster_to_polyvert(self, gdal_data):
         ds = gdal_data.ds
         polyvert = georef.raster_to_polyvert(ds)
