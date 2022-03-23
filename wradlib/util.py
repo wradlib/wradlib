@@ -967,7 +967,7 @@ def show_versions(file=None):
         file = sys.stdout
     xr.show_versions(file)
     print("", file=file)
-    print(f"wradlib: {version.full_version}")
+    print(f"wradlib: {version.version}")
 
 
 @contextlib.contextmanager

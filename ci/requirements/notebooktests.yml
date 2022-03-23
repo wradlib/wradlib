@@ -30,7 +30,6 @@ dependencies:
   - requests
   - rioxarray
   - scipy
-  - semver
   - setuptools
   - tqdm
   - wetterdienst
