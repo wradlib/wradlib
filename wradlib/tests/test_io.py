@@ -1827,7 +1827,7 @@ class TestIris:
         assert io.iris.decode_string(b"EEST\x00\x00\x00\x00") == "EEST"
 
     def test__get_fmt_string(self):
-        fmt = "12sHHi12s12s12s6s12s12sHiiiiiiiiii2sH12sHB1shhiihh80s16s12s48s"
+        fmt = "<12sHHi12s12s12s6s12s12sHiiiiiiiiii2sH12sHB1shhiihh80s16s12s48s"
         assert io.iris._get_fmt_string(io.iris.PRODUCT_CONFIGURATION) == fmt
 
 

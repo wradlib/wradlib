@@ -273,7 +273,7 @@ MESSAGE = {"fmt": "I"}
 UINT16_T = {"fmt": "H"}
 
 
-def _get_fmt_string(dictionary, retsub=False):
+def _get_fmt_string(dictionary, retsub=False, byte_order="<"):
     """Get Format String from given dictionary.
 
     Parameters
@@ -290,7 +290,7 @@ def _get_fmt_string(dictionary, retsub=False):
     sub : dict
         Dictionary containing substructure
     """
-    fmt = ""
+    fmt = f"{byte_order}"
     if retsub:
         sub = OrderedDict()
     for k, v in dictionary.items():
