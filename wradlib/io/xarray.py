@@ -418,6 +418,13 @@ moments_mapping = {
         "units": "unitless",
         "gamic": ["cmap"],
     },
+    "RATE": {
+        "standard_name": "rainfall_rate",
+        "long_name": "rainfall_rate",
+        "short_name": "RATE",
+        "units": "mm h-1",
+        "gamic": None,
+    },
 }
 
 ODIM_NAMES = {value["short_name"]: key for (key, value) in moments_mapping.items()}
@@ -1637,7 +1644,7 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     filename_or_obj : str, Path, file-like or Datastore
         Strings and Path objects are interpreted as a path to a local or remote
         radar file and opened with an appropriate engine.
-    engine : {"odim", "gamic", "cfradial1", "cfradial2", "iris", "rainbow"}
+    engine : {"odim", "furuno", "gamic", "cfradial1", "cfradial2", "iris", "rainbow"}
         Engine to use when reading files.
 
     Keyword Arguments
@@ -1656,7 +1663,15 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     --------
     :func:`~wradlib.io.xarray.open_radar_mfdataset`
     """
-    if engine not in ["cfradial1", "cfradial2", "gamic", "odim", "iris", "rainbow"]:
+    if engine not in [
+        "cfradial1",
+        "cfradial2",
+        "furuno",
+        "gamic",
+        "odim",
+        "iris",
+        "rainbow",
+    ]:
         raise TypeError(f"Missing or unknown `engine` keyword argument '{engine}'.")
 
     group = kwargs.pop("group", None)
@@ -1678,6 +1693,8 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
             groups = _get_iris_group_names(filename_or_obj)
         elif engine in ["rainbow"]:
             groups = _get_rainbow_group_names(filename_or_obj)
+        elif engine in ["furuno"]:
+            groups = [group]
         elif isinstance(group, str):
             groups = [group]
         elif isinstance(group, int):

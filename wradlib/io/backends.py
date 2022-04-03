@@ -17,6 +17,7 @@ and ``xarray.open_mfdataset``.
 __all__ = [
     "CfRadial1BackendEntrypoint",
     "CfRadial2BackendEntrypoint",
+    "FurunoBackendEntrypoint",
     "GamicBackendEntrypoint",
     "IrisBackendEntrypoint",
     "OdimBackendEntrypoint",
@@ -46,6 +47,7 @@ from xarray.core import indexing
 from xarray.core.utils import Frozen, FrozenDict, close_on_error, is_remote_uri
 from xarray.core.variable import Variable
 
+from wradlib.io.furuno import FurunoFile
 from wradlib.io.iris import IrisRawFile
 from wradlib.io.radolan import _radolan_file
 from wradlib.io.rainbow import RainbowFile
@@ -1409,6 +1411,257 @@ class RainbowBackendEntrypoint(BackendEntrypoint):
             use_cftime=use_cftime,
             decode_timedelta=decode_timedelta,
         )
+
+        if decode_coords and reindex_angle is not False:
+            ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)
+
+        return ds
+
+
+class FurunoArrayWrapper(BackendArray):
+    def __init__(
+        self,
+        data,
+    ):
+        self.data = data
+        self.shape = data.shape
+        self.dtype = np.dtype("uint16")
+
+    def __getitem__(self, key: tuple):
+        return indexing.explicit_indexing_adapter(
+            key,
+            self.shape,
+            indexing.IndexingSupport.OUTER_1VECTOR,
+            self._raw_indexing_method,
+        )
+
+    def _raw_indexing_method(self, key: tuple):
+        return self.data[key]
+
+
+class FurunoStore(AbstractDataStore):
+    """Store for reading Furuno sweeps via wradlib."""
+
+    def __init__(self, manager, group=None):
+
+        self._manager = manager
+        self._group = group
+        self._filename = self.filename
+        self._need_time_recalc = False
+
+    @classmethod
+    def open(cls, filename, mode="r", group=None, **kwargs):
+        manager = CachingFileManager(FurunoFile, filename, mode=mode, kwargs=kwargs)
+        return cls(manager, group=group)
+
+    @property
+    def filename(self):
+        with self._manager.acquire_context(False) as root:
+            return root.filename
+
+    @property
+    def root(self):
+        with self._manager.acquire_context(False) as root:
+            return root
+
+    def _acquire(self, needs_lock=True):
+        with self._manager.acquire_context(needs_lock) as root:
+            return root
+
+    @property
+    def ds(self):
+        return self._acquire()
+
+    def open_store_variable(self, name, var):
+        dim = self.root.first_dimension
+
+        data = indexing.LazilyOuterIndexedArray(FurunoArrayWrapper(var))
+        encoding = {"group": self._group}
+        if name == "PHIDP":
+            add_offset = 360 * -32768 / 65535
+            scale_factor = 360 / 65535
+        elif name == "RHOHV":
+            add_offset = 2 * -1 / 65534
+            scale_factor = 2 / 65534
+        elif name == "WRADH":
+            add_offset = -1e-2
+            scale_factor = 1e-2
+        elif name in ["azimuth", "elevation"]:
+            add_offset = 0
+            scale_factor = 1e-2
+        else:
+            add_offset = -327.68
+            scale_factor = 1e-2
+
+        mapping = moments_mapping.get(name, {})
+        attrs = {key: mapping[key] for key in moment_attrs if key in mapping}
+        if name in ["azimuth", "elevation"]:
+            attrs = (
+                az_attrs_template.copy()
+                if name == "azimuth"
+                else el_attrs_template.copy()
+            )
+            attrs["add_offset"] = add_offset
+            attrs["scale_factor"] = scale_factor
+            dims = (dim,)
+            if name == self.ds.first_dimension:
+                attrs["a1gate"] = self.ds.a1gate
+                attrs["angle_res"] = self.ds.angle_resolution
+        else:
+            if name != "QUAL":
+                attrs["add_offset"] = add_offset
+                attrs["scale_factor"] = scale_factor
+                attrs["_FillValue"] = 0
+            dims = (dim, "range")
+        attrs[
+            "coordinates"
+        ] = "elevation azimuth range latitude longitude altitude time rtime sweep_mode"
+        return Variable(dims, data, attrs, encoding)
+
+    def open_store_coordinates(self):
+
+        dim = self.ds.first_dimension
+
+        # range
+        start_range = 0
+        if self.ds.version == 3:
+            range_step = self.ds.header["resolution_range_direction"] / 100
+        else:
+            range_step = self.ds.header["resolution_range_direction"]
+        stop_range = range_step * self.ds.header["number_range_direction_data"]
+        rng = np.arange(
+            start_range + range_step / 2,
+            stop_range + range_step / 2,
+            range_step,
+            dtype="float32",
+        )
+
+        range_attrs["meters_to_center_of_first_gate"] = start_range + range_step / 2
+        range_attrs["meters_between_gates"] = range_step
+        rng = Variable(("range",), rng, range_attrs)
+
+        # making-up ray times
+        time = self.ds.header["scan_start_time"]
+        stop_time = self.ds.header.get("scan_stop_time", time)
+        num_rays = self.ds.header["number_sweep_direction_data"]
+        total_seconds = (time - dt.datetime(1970, 1, 1)).total_seconds()
+
+        # if no stop_time is available, get time from rotation speed
+        if time == stop_time:
+            raytime = self.ds.angle_resolution / (
+                self.ds.header["antenna_rotation_speed"] * 1e-1 * 6
+            )
+            raytime = dt.timedelta(seconds=raytime)
+        # otherwise, calculate from time difference
+        else:
+            raytime = (stop_time - time) / num_rays
+
+        raytimes = np.array(
+            [(x * raytime).total_seconds() for x in range(num_rays + 1)]
+        )
+
+        diff = np.diff(raytimes) / 2.0
+        rtime = raytimes[:-1] + diff
+
+        rtime_attrs = {
+            "units": f"seconds since {time.isoformat()}Z",
+            "standard_name": "time",
+        }
+
+        encoding = {}
+        rng = Variable(("range",), rng, range_attrs)
+        rtime = Variable((dim,), rtime, rtime_attrs, encoding)
+        time = Variable((), total_seconds, time_attrs, encoding)
+
+        # get coordinates from Furuno File
+        sweep_mode = "azimuth_surveillance" if dim == "azimuth" else "rhi"
+        lon_attrs = {
+            "long_name": "longitude",
+            "units": "degrees_east",
+            "standard_name": "longitude",
+        }
+        lat_attrs = {
+            "long_name": "latitude",
+            "units": "degrees_north",
+            "positive": "up",
+            "standard_name": "latitude",
+        }
+        alt_attrs = {
+            "long_name": "altitude",
+            "units": "meters",
+            "standard_name": "altitude",
+        }
+        lon, lat, alt = self.ds.site_coords
+
+        coords = {
+            "range": rng,
+            "time": time,
+            "rtime": rtime,
+            "longitude": Variable((), lon, lon_attrs),
+            "latitude": Variable((), lat, lat_attrs),
+            "altitude": Variable((), alt, alt_attrs),
+            "sweep_mode": Variable((), sweep_mode),
+        }
+
+        return coords
+
+    def get_variables(self):
+        return FrozenDict(
+            (k1, v1)
+            for k1, v1 in {
+                **dict(
+                    (k, self.open_store_variable(k, v)) for k, v in self.ds.data.items()
+                ),
+                **self.open_store_coordinates(),
+            }.items()
+        )
+
+    def get_attrs(self):
+        attributes = {"fixed_angle": float(self.ds.fixed_angle)}
+        return FrozenDict(attributes)
+
+
+class FurunoBackendEntrypoint(BackendEntrypoint):
+    """Xarray BackendEntrypoint for Furuno data."""
+
+    def open_dataset(
+        self,
+        filename_or_obj,
+        *,
+        mask_and_scale=True,
+        decode_times=True,
+        concat_characters=True,
+        decode_coords=True,
+        drop_variables=None,
+        use_cftime=None,
+        decode_timedelta=None,
+        group=None,
+        reindex_angle=None,
+        obsmode=None,
+    ):
+        store = FurunoStore.open(
+            filename_or_obj,
+            group=group,
+            loaddata=True,
+            obsmode=obsmode,
+        )
+
+        store_entrypoint = StoreBackendEntrypoint()
+
+        ds = store_entrypoint.open_dataset(
+            store,
+            mask_and_scale=mask_and_scale,
+            decode_times=decode_times,
+            concat_characters=concat_characters,
+            decode_coords=decode_coords,
+            drop_variables=drop_variables,
+            use_cftime=use_cftime,
+            decode_timedelta=decode_timedelta,
+        )
+
+        ds.encoding["engine"] = "furuno"
+
+        ds = ds.sortby(list(ds.dims.keys())[0])
 
         if decode_coords and reindex_angle is not False:
             ds = ds.pipe(_reindex_angle, store=store, tol=reindex_angle)

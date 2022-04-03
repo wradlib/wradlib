@@ -13,6 +13,7 @@ for an introduction on how to deal with different file formats.
 
 .. automodule:: wradlib.io.backends
 .. automodule:: wradlib.io.dem
+.. automodule:: wradlib.io.furuno
 .. automodule:: wradlib.io.gdal
 .. automodule:: wradlib.io.hdf
 .. automodule:: wradlib.io.iris
@@ -26,6 +27,7 @@ for an introduction on how to deal with different file formats.
 
 from .backends import *
 from .dem import *
+from .furuno import *
 from .gdal import *
 from .hdf import *
 from .iris import *

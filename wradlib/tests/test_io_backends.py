@@ -499,6 +499,8 @@ def get_measured_volume(file, format, fileobj, **kwargs):
         if engine == "rainbow":
             pytest.importorskip("xmltodict")
             open_ = io.open_rainbow_dataset
+        if engine == "furuno":
+            open_ = io.open_furuno_dataset
         yield open_(radfile, **kwargs)
 
 
@@ -837,6 +839,64 @@ class TestRainbowVolume01(MeasuredDataVolume):
     mdesc = "moment_{}"
 
     backend_kwargs = dict(reindex_angle=1.0)
+
+
+@requires_data
+@requires_xarray_backend_api
+class TestFurunoVolume01(MeasuredDataVolume):
+    name = "furuno/2006_20220324_000000_000.scnx.gz"
+    format = "furuno"
+    volumes = 1
+    sweeps = 1
+    moments = [
+        "RR",
+        "DBZH",
+        "VRADH",
+        "ZDR",
+        "KDP",
+        "PHIDP",
+        "RHOHV",
+        "SQIH",
+        "WRADH",
+        "QUAL",
+    ]
+    elevations = [0.5]
+    azimuths = [720]
+    ranges = [936]
+
+    dsdesc = "sweep{}"
+    mdesc = "moment_{}"
+
+    backend_kwargs = dict(reindex_angle=1.0, obsmode=1)
+
+
+@requires_data
+@requires_xarray_backend_api
+class TestFurunoVolume02(MeasuredDataVolume):
+    name = "furuno/0080_20210730_160000_01_02.scn.gz"
+    format = "furuno"
+    volumes = 1
+    sweeps = 1
+    moments = [
+        "RR",
+        "DBZH",
+        "VRADH",
+        "ZDR",
+        "KDP",
+        "PHIDP",
+        "RHOHV",
+        "SQIH",
+        "WRADH",
+        "QUAL",
+    ]
+    elevations = [7.8]
+    azimuths = [1385]
+    ranges = [602]
+
+    dsdesc = "sweep{}"
+    mdesc = "moment_{}"
+
+    backend_kwargs = dict(reindex_angle=1.0, obsmode=1)
 
 
 @requires_xarray_backend_api

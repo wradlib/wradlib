@@ -81,6 +81,7 @@ def setup_package():
             "xarray.backends": [
                 "cfradial1 = wradlib.io.backends:CfRadial1BackendEntrypoint",
                 "cfradial2 = wradlib.io.backends:CfRadial2BackendEntrypoint",
+                "furuno = wradlib.io.backends:FurunoBackendEntrypoint",
                 "gamic = wradlib.io.backends:GamicBackendEntrypoint",
                 "odim = wradlib.io.backends:OdimBackendEntrypoint",
                 "radolan = wradlib.io.backends:RadolanBackendEntrypoint",
