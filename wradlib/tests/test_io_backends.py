@@ -95,7 +95,9 @@ def create_azimuth(decode=False, nrays=360):
     zero_index = np.where(stopaz < startaz)
     stopaz[zero_index[0]] += 360
     azimuth_data = (startaz + stopaz) / 2.0
-    da = xr.DataArray(azimuth_data, dims=["azimuth"], attrs=io.xarray.az_attrs)
+    da = xr.DataArray(
+        azimuth_data, dims=["azimuth"], attrs=io.xarray.az_attrs_template.copy()
+    )
     if decode:
         da = xr.decode_cf(xr.Dataset({"arr": da})).arr
     return da
@@ -105,7 +107,9 @@ def create_elevation(i, decode=False, nrays=360):
     startel = create_startelA(i, nrays=nrays)
     stopel = create_stopelA(i, nrays=nrays)
     elevation_data = (startel + stopel) / 2.0
-    da = xr.DataArray(elevation_data, dims=["azimuth"], attrs=io.xarray.el_attrs)
+    da = xr.DataArray(
+        elevation_data, dims=["azimuth"], attrs=io.xarray.el_attrs_template.copy()
+    )
     if decode:
         da = xr.decode_cf(xr.Dataset({"arr": da})).arr
     return da

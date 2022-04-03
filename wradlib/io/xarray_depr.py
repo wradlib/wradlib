@@ -101,9 +101,9 @@ from wradlib.io.xarray import (
     _reindex_angle,
     _write_odim,
     _write_odim_dataspace,
-    az_attrs,
+    az_attrs_template,
     cf_full_vars,
-    el_attrs,
+    el_attrs_template,
     global_attrs,
     global_variables,
     h5netcdf,
@@ -185,7 +185,7 @@ class GamicAccessor:
             zero_index = np.where(azstop < azstart)
             azstop[zero_index[0]] += 360
             azimuth = (azstart + azstop) / 2.0
-            azimuth = azimuth.assign_attrs(az_attrs)
+            azimuth = azimuth.assign_attrs(az_attrs_template.copy())
             self._azimuth_range = azimuth
         return self._azimuth_range
 
@@ -196,7 +196,7 @@ class GamicAccessor:
             elstart = self._obj["elevation_start"]
             elstop = self._obj["elevation_stop"]
             elevation = (elstart + elstop) / 2.0
-            elevation = elevation.assign_attrs(el_attrs)
+            elevation = elevation.assign_attrs(el_attrs_template.copy())
             self._elevation_range = elevation
         return self._elevation_range
 
@@ -254,7 +254,9 @@ class OdimAccessor:
             res = 360.0 / nrays
             azimuth_data = np.arange(res / 2.0, 360.0, res, dtype="float32")
 
-            da = xr.DataArray(azimuth_data, dims=["dim_0"], attrs=az_attrs)
+            da = xr.DataArray(
+                azimuth_data, dims=["dim_0"], attrs=az_attrs_template.copy()
+            )
             self._azimuth_range = da
         return self._azimuth_range
 
@@ -267,7 +269,7 @@ class OdimAccessor:
             zero_index = np.where(stopaz < startaz)
             stopaz[zero_index[0]] += 360
             azimuth_data = (startaz + stopaz) / 2.0
-            da = xr.DataArray(azimuth_data, attrs=az_attrs)
+            da = xr.DataArray(azimuth_data, attrs=az_attrs_template.copy())
             self._azimuth_range = da
         return self._azimuth_range
 
@@ -278,7 +280,9 @@ class OdimAccessor:
             nrays = self._obj.attrs["nrays"]
             elangle = self._obj.attrs["elangle"]
             elevation_data = np.ones(nrays, dtype="float32") * elangle
-            da = xr.DataArray(elevation_data, dims=["dim_0"], attrs=el_attrs)
+            da = xr.DataArray(
+                elevation_data, dims=["dim_0"], attrs=el_attrs_template.copy()
+            )
             self._elevation_range = da
         return self._elevation_range
 
@@ -289,7 +293,9 @@ class OdimAccessor:
             startel = self._obj.attrs["startelA"]
             stopel = self._obj.attrs["stopelA"]
             elevation_data = (startel + stopel) / 2.0
-            da = xr.DataArray(elevation_data, dims=["dim_0"], attrs=el_attrs)
+            da = xr.DataArray(
+                elevation_data, dims=["dim_0"], attrs=el_attrs_template.copy()
+            )
             self._elevation_range = da
         return self._elevation_range
 
@@ -1350,7 +1356,9 @@ class XRadSweepOdim(XRadSweep):
             azimuth_data = self._get_azimuth_how()
         except (AttributeError, KeyError, TypeError):
             azimuth_data = self._get_azimuth_where()
-        da = xr.DataArray(azimuth_data, dims=[self._dim0[0]], attrs=az_attrs)
+        da = xr.DataArray(
+            azimuth_data, dims=[self._dim0[0]], attrs=az_attrs_template.copy()
+        )
         if not self._misc_kwargs["keep_azimuth"] and self._dim0[0] == "elevation":
             da = da.pipe(_fix_angle)
         return da
@@ -1360,7 +1368,9 @@ class XRadSweepOdim(XRadSweep):
             elevation_data = self._get_elevation_how()
         except (AttributeError, KeyError, TypeError):
             elevation_data = self._get_elevation_where()
-        da = xr.DataArray(elevation_data, dims=[self._dim0[0]], attrs=el_attrs)
+        da = xr.DataArray(
+            elevation_data, dims=[self._dim0[0]], attrs=el_attrs_template.copy()
+        )
         if not self._misc_kwargs["keep_elevation"] and self._dim0[0] == "azimuth":
             da = da.pipe(_fix_angle)
         return da
@@ -1460,7 +1470,7 @@ class XRadSweepGamic(XRadSweep):
             zero_index = np.where(azstop < azstart)
             azstop[zero_index[0]] += 360
         azimuth = (azstart + azstop) / 2.0
-        da = xr.DataArray(azimuth, dims=[self._dim0[0]], attrs=az_attrs)
+        da = xr.DataArray(azimuth, dims=[self._dim0[0]], attrs=az_attrs_template.copy())
         if not self._misc_kwargs["keep_azimuth"] and self._dim0[0] == "elevation":
             da = da.pipe(_fix_angle)
         return da
@@ -1469,7 +1479,9 @@ class XRadSweepGamic(XRadSweep):
         elstart = self.ray_header["elevation_start"]
         elstop = self.ray_header["elevation_stop"]
         elevation = (elstart + elstop) / 2.0
-        da = xr.DataArray(elevation, dims=[self._dim0[0]], attrs=el_attrs)
+        da = xr.DataArray(
+            elevation, dims=[self._dim0[0]], attrs=el_attrs_template.copy()
+        )
         if not self._misc_kwargs["keep_elevation"] and self._dim0[0] == "azimuth":
             da = da.pipe(_fix_angle)
         return da

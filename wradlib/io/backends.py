@@ -58,8 +58,8 @@ from wradlib.io.xarray import (
     _get_odim_variable_name_and_attrs,
     _OdimH5NetCDFMetadata,
     _reindex_angle,
-    az_attrs,
-    el_attrs,
+    az_attrs_template,
+    el_attrs_template,
     iris_mapping,
     moment_attrs,
     moments_mapping,
@@ -1004,8 +1004,10 @@ class IrisStore(AbstractDataStore):
         rtime = Variable((dim,), rtime, rtime_attrs, encoding)
 
         coords = {
-            "azimuth": Variable((dim,), azimuth, az_attrs, encoding),
-            "elevation": Variable((dim,), elevation, el_attrs, encoding),
+            "azimuth": Variable((dim,), azimuth, az_attrs_template.copy(), encoding),
+            "elevation": Variable(
+                (dim,), elevation, el_attrs_template.copy(), encoding
+            ),
             "rtime": rtime,
             "time": Variable((), time, time_attrs, encoding),
             "range": Variable(("range",), range, range_attrs),
@@ -1233,14 +1235,14 @@ class RainbowStore(AbstractDataStore):
             step = -anglestep
 
         if dim == "azimuth":
-            startaz = Variable((dim,), startangle, az_attrs, encoding)
+            startaz = Variable((dim,), startangle, az_attrs_template.copy(), encoding)
 
             if stop:
                 stop_idx = ray.index(stop)
                 stopangle = indexing.LazilyOuterIndexedArray(
                     RainbowArrayWrapper(self, stop_idx, stop)
                 )
-                stopaz = Variable((dim,), stopangle, az_attrs, encoding)
+                stopaz = Variable((dim,), stopangle, az_attrs_template.copy(), encoding)
                 zero_index = np.where(startaz - stopaz > 5)
                 stopazv = stopaz.values
                 stopazv[zero_index[0]] += 360
@@ -1251,14 +1253,14 @@ class RainbowStore(AbstractDataStore):
 
             elevation = np.ones_like(azimuth) * float(var["posangle"])
         else:
-            startel = Variable((dim,), startangle, el_attrs, encoding)
+            startel = Variable((dim,), startangle, el_attrs_template.copy(), encoding)
 
             if stop:
                 stop_idx = ray.index(stop)
                 stopangle = indexing.LazilyOuterIndexedArray(
                     RainbowArrayWrapper(self, stop_idx, stop)
                 )
-                stopel = Variable((dim,), stopangle, el_attrs, encoding)
+                stopel = Variable((dim,), stopangle, el_attrs_template.copy(), encoding)
                 elevation = (startel + stopel) / 2.0
             else:
                 elevation = startel + step / 2.0
@@ -1311,8 +1313,8 @@ class RainbowStore(AbstractDataStore):
         }
 
         rng = Variable(("range",), rng, range_attrs)
-        azimuth = Variable((dim,), azimuth, az_attrs, encoding)
-        elevation = Variable((dim,), elevation, el_attrs, encoding)
+        azimuth = Variable((dim,), azimuth, az_attrs_template.copy(), encoding)
+        elevation = Variable((dim,), elevation, el_attrs_template.copy(), encoding)
         rtime = Variable((dim,), rtime, rtime_attrs, encoding)
         time = Variable((), total_seconds, time_attrs, encoding)
 
