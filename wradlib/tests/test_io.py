@@ -2168,3 +2168,77 @@ class TestDem:
         ulcy = 1 + resolution / 2
         geo_ref = [ulcx, resolution, 0, ulcy, 0, -resolution]
         np.testing.assert_array_almost_equal(geo, geo_ref)
+
+
+class TestFuruno:
+    @requires_data
+    def test_open_scn(self, file_or_filelike):
+        filename = "furuno/0080_20210730_160000_01_02.scn.gz"
+        with get_wradlib_data_file(filename, file_or_filelike) as furunofile:
+            data = io.furuno.FurunoFile(furunofile, loaddata=False, obsmode=1)
+        assert isinstance(data, io.furuno.FurunoFile)
+        assert isinstance(data.fh, (np.memmap, np.ndarray))
+        with get_wradlib_data_file(filename, file_or_filelike) as furunofile:
+            data = io.furuno.FurunoFile(furunofile, loaddata=True, obsmode=1)
+        assert len(data.data) == 11
+        assert data.filename == furunofile
+        assert data.version == 3
+        assert data.a1gate == 796
+        assert data.angle_resolution == 0.26
+        assert data.first_dimension == "azimuth"
+        assert data.fixed_angle == 7.8
+        assert data.site_coords == (15.44729, 47.07734000000001, 407.9)
+        assert data.header["scan_start_time"] == datetime.datetime(2021, 7, 30, 16, 0)
+        assert list(data.data.keys()) == [
+            "RATE",
+            "DBZH",
+            "VRADH",
+            "ZDR",
+            "KDP",
+            "PHIDP",
+            "RHOHV",
+            "WRADH",
+            "QUAL",
+            "azimuth",
+            "elevation",
+        ]
+
+    def test_open_scn_filelike(self):
+        filename = "furuno/0080_20210730_160000_01_02.scn.gz"
+        with pytest.raises(
+            ValueError, match="Furuno `observation mode` can't be extracted"
+        ):
+            with get_wradlib_data_file(filename, "filelike") as furunofile:
+                data = io.furuno.FurunoFile(furunofile, loaddata=False)
+                print(data.first_dimension)
+
+    def test_open_scnx(self, file_or_filelike):
+        filename = "furuno/2006_20220324_000000_000.scnx.gz"
+        with get_wradlib_data_file(filename, file_or_filelike) as furunofile:
+            data = io.furuno.FurunoFile(furunofile, loaddata=False)
+        assert isinstance(data, io.furuno.FurunoFile)
+        assert isinstance(data.fh, (np.memmap, np.ndarray))
+        with get_wradlib_data_file(filename, file_or_filelike) as furunofile:
+            data = io.furuno.FurunoFile(furunofile, loaddata=True)
+        assert data.filename == furunofile
+        assert data.version == 10
+        assert data.a1gate == 292
+        assert data.angle_resolution == 0.5
+        assert data.first_dimension == "azimuth"
+        assert data.fixed_angle == 0.5
+        assert data.site_coords == (13.243970000000001, 53.55478, 38.0)
+        assert data.header["scan_start_time"] == datetime.datetime(2022, 3, 24, 0, 0, 1)
+        assert len(data.data) == 11
+        assert list(data.data.keys()) == [
+            "RATE",
+            "DBZH",
+            "VRADH",
+            "ZDR",
+            "KDP",
+            "PHIDP",
+            "RHOHV",
+            "WRADH",
+            "QUAL",
+            "azimuth",
+            "elevation",
+        ]

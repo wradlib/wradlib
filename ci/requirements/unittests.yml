@@ -12,6 +12,7 @@ dependencies:
   - gdal
   - h5py
   - h5netcdf
+  - lat_lon_parser
   - netCDF4
   - numpy
   - matplotlib-base
