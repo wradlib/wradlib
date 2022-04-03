@@ -438,14 +438,14 @@ range_attrs = {
     "meters_to_center_of_first_gate": None,
 }
 
-az_attrs = {
+az_attrs_template = {
     "standard_name": "ray_azimuth_angle",
     "long_name": "azimuth_angle_from_true_north",
     "units": "degrees",
     "axis": "radial_azimuth_coordinate",
 }
 
-el_attrs = {
+el_attrs_template = {
     "standard_name": "ray_elevation_angle",
     "long_name": "elevation_angle_from_horizontal_plane",
     "units": "degrees",
@@ -857,6 +857,8 @@ class _OdimH5NetCDFMetadata:
         if dim == dims[1]:
             dims = (dims[1], dims[0])
 
+        az_attrs = az_attrs_template.copy()
+        el_attrs = el_attrs_template.copy()
         az_attrs["a1gate"] = a1gate
 
         if dim == "azimuth":
@@ -1150,6 +1152,8 @@ class _GamicH5NetCDFMetadata:
         sort_idx = np.argsort(angles)
         a1gate = np.argsort(ray_header["rtime"][sort_idx])[0]
 
+        az_attrs = az_attrs_template.copy()
+        el_attrs = el_attrs_template.copy()
         az_attrs["a1gate"] = a1gate
 
         if dim == "azimuth":
