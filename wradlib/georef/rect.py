@@ -421,8 +421,8 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4.0 / 3.0):
     # r = np.sqrt(f1**2 + f2**2  - 2 * f1 * f2 * np.cos(gamma))
 
     # calculate azimuth angle phi
-    phi = 90 - np.rad2deg(np.arctan2(xyz[..., 1], xyz[..., 0]))
-    phi[phi <= 0] += 360
+    phi = np.degrees(np.arctan2(xyz[..., 0], xyz[..., 1]))
+    phi = np.fmod(phi + 360, 360)
 
     return r, phi, np.degrees(theta)
 

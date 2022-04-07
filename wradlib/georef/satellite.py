@@ -20,7 +20,7 @@ import numpy as np
 
 
 def correct_parallax(sr_xy, nbin, drt, alpha):
-    """Adjust the geo-locations of the SR pixels
+    """Adjust the geo-locations of the SR pixels.
 
     With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
@@ -61,27 +61,27 @@ def correct_parallax(sr_xy, nbin, drt, alpha):
     r_sr_inv = np.arange(nbin) * drt
 
     # calculate height of bin
-    z_sr = r_sr_inv * np.cos(np.deg2rad(alpha))[..., np.newaxis]
+    z_sr = r_sr_inv * np.expand_dims(np.cos(np.deg2rad(alpha)), axis=-1)
     # calculate bin ground xy-displacement length
-    ds = r_sr_inv * np.sin(np.deg2rad(alpha))[..., np.newaxis]
+    ds = r_sr_inv * np.expand_dims(np.sin(np.deg2rad(alpha)), axis=-1)
 
     # calculate x,y-differences between ground coordinate
     # and center ground coordinate [25th element]
     center = int(np.floor(len(sr_x[-1]) / 2.0))
-    xdiff = sr_x - sr_x[:, center][:, np.newaxis]
-    ydiff = sr_y - sr_y[:, center][:, np.newaxis]
+    xdiff = sr_x - np.expand_dims(sr_x[:, center], axis=-1)
+    ydiff = sr_y - np.expand_dims(sr_y[:, center], axis=-1)
 
     # assuming ydiff and xdiff being a triangles adjacent and
     # opposite this calculates the xy-angle of the SR scan
     ang = np.arctan2(ydiff, xdiff)
 
     # calculate displacement dx, dy from displacement length
-    dx = ds * np.cos(ang)[..., np.newaxis]
-    dy = ds * np.sin(ang)[..., np.newaxis]
+    dx = ds * np.expand_dims(np.cos(ang), axis=-1)
+    dy = ds * np.expand_dims(np.sin(ang), axis=-1)
 
     # subtract displacement from SR ground coordinates
-    sr_xp = sr_x[..., np.newaxis] - dx
-    sr_yp = sr_y[..., np.newaxis] - dy
+    sr_xp = np.expand_dims(sr_x, axis=-1) - dx
+    sr_yp = np.expand_dims(sr_y, axis=-1) - dy
 
     return np.stack((sr_xp, sr_yp), axis=3), r_sr_inv, z_sr
 
@@ -113,6 +113,6 @@ def dist_from_orbit(sr_alt, alpha, beta, r_sr_inv, re):
         SR platform in orbit.
     """
     ro = (
-        (re + sr_alt) * np.cos(np.radians(alpha - beta[np.newaxis, :])) - re
+        (re + sr_alt) * np.cos(np.radians(alpha - np.expand_dims(beta, axis=0))) - re
     ) / np.cos(np.radians(alpha))
-    return ro[..., np.newaxis] - r_sr_inv
+    return np.expand_dims(ro, axis=-1) - r_sr_inv
