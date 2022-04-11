@@ -286,6 +286,7 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
           echo 'local_scheme =  "no-local-version"' >> pyproject.toml
+          git update-index --assume-unchanged pyproject.toml
           python -m build
           twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
@@ -314,6 +315,5 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          echo 'local_scheme =  "no-local-version"' >> pyproject.toml
           python -m build
           twine upload dist/*
