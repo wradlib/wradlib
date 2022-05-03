@@ -28,7 +28,6 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
-from packaging.version import Version
 
 from wradlib.util import import_optional
 
@@ -39,19 +38,19 @@ osr = import_optional("osgeo.osr")
 # Taken from document "Radarkomposits - Projektionen und Gitter", Version 1.01
 # 5th of April 2022
 _radolan_ref = dict(
-        sphere=dict(
-            default=dict(x_0=0.0, y_0=0.0),
-            rx=dict(x_0=522962.16692185635, y_0=3759144.724265574),
-            de1200=dict(x_0=542962.166921856585, y_0=3609144.7242655745),
-            de4800=dict(x_0=543337.16692185646, y_0=3608769.7242655735),
-        ),
-        wgs84=dict(
-            default=dict(x_0=0.0, y_0=0.0),
-            rx=dict(x_0=523196.83521777776, y_0=3772588.861931134),
-            de1200=dict(x_0=543196.83521776402, y_0=3622588.8619310018),
-            de4800=dict(x_0=543571.83521776402, y_0=3622213.8619310018),
-        ),
-    )
+    sphere=dict(
+        default=dict(x_0=0.0, y_0=0.0),
+        rx=dict(x_0=522962.16692185635, y_0=3759144.724265574),
+        de1200=dict(x_0=542962.166921856585, y_0=3609144.7242655745),
+        de4800=dict(x_0=543337.16692185646, y_0=3608769.7242655735),
+    ),
+    wgs84=dict(
+        default=dict(x_0=0.0, y_0=0.0),
+        rx=dict(x_0=523196.83521777776, y_0=3772588.861931134),
+        de1200=dict(x_0=543196.83521776402, y_0=3622588.8619310018),
+        de4800=dict(x_0=543571.83521776402, y_0=3622213.8619310018),
+    ),
+)
 
 
 def create_osr(projname, **kwargs):

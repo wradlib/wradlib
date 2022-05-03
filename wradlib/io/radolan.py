@@ -37,7 +37,7 @@ import numpy as np
 import xarray as xr
 
 from wradlib import util, version
-from wradlib.georef import rect, projection
+from wradlib.georef import projection, rect
 from wradlib.io.xarray import WradlibVariable, raise_on_missing_xarray_backend
 
 # current DWD file naming pattern (2008) for example:
@@ -443,7 +443,7 @@ def parse_dwd_composite_header(header):
             if k == "BY":
                 out["datasize"] = int(header[v[0] : v[1]]) - len(header) - 1
             if k == "VS":
-                vs = int(header[v[0]: v[1]])
+                vs = int(header[v[0] : v[1]])
                 out["formatversion"] = vs
                 out["maxrange"] = {
                     0: "100 km and 128 km (mixed)",

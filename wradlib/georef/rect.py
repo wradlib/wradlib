@@ -184,7 +184,7 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
         nrows += 1
 
     # get from km to meter for meter-base projections
-    if proj is not None and proj is not "trig":
+    if proj is not None and proj != "trig":
         lin = proj.GetLinearUnits()
         if lin == 1.0:
             res *= 1000
