@@ -15,6 +15,7 @@ dependencies:
   - h5netcdf
   - lat_lon_parser
   - nbconvert
+  - nc-time-axis
   - netCDF4
   - notebook
   - numpy
