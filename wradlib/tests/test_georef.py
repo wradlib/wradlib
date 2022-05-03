@@ -455,17 +455,7 @@ class TestCoordinateHelper:
 
 @pytest.fixture
 def wgs84():
-    wgs84_gdal2 = (
-        'GEOGCS["WGS 84",DATUM["WGS_1984",'
-        'SPHEROID["WGS 84",6378137,298.257223563,'
-        'AUTHORITY["EPSG","7030"]],'
-        'AUTHORITY["EPSG","6326"]],'
-        'PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],'
-        'UNIT["degree",0.0174532925199433,'
-        'AUTHORITY["EPSG","9122"]],'
-        'AUTHORITY["EPSG","4326"]]'
-    )
-    wgs84_gdal3 = (
+    wgs84_gdal = (
         'GEOGCS["WGS 84",DATUM["WGS_1984",'
         'SPHEROID["WGS 84",6378137,298.257223563,'
         'AUTHORITY["EPSG","7030"]],'
@@ -478,37 +468,23 @@ def wgs84():
         'AUTHORITY["EPSG","4326"]]'
     )
 
-    if gdal.VersionInfo()[0] >= "3":
-        wgs84 = wgs84_gdal3
-    else:
-        wgs84 = wgs84_gdal2
-    yield wgs84
+    yield wgs84_gdal
+
+
+@pytest.fixture(params=["sphere", "wgs84"])
+def ellipse(request):
+    return request.param
+
+
+@pytest.fixture(params=["default", "rx", "de1200", "de4800"])
+def grid(request):
+    return request.param
 
 
 class TestProjections:
     @requires_gdal
     def test_create_osr(self):
         radolan_wkt = (
-            'PROJCS["Radolan projection",'
-            'GEOGCS["Radolan Coordinate System",'
-            'DATUM["Radolan Kugel",'
-            'SPHEROID["Erdkugel",6370040.0,0.0]],'
-            'PRIMEM["Greenwich",0.0,AUTHORITY["EPSG","8901"]],'
-            'UNIT["degree",0.017453292519943295],'
-            'AXIS["Longitude",EAST],'
-            'AXIS["Latitude",NORTH]],'
-            'PROJECTION["polar_stereographic"],'
-            'PARAMETER["central_meridian",10.0],'
-            'PARAMETER["latitude_of_origin",90.0],'
-            'PARAMETER["scale_factor",{0:8.10f}],'
-            'PARAMETER["false_easting",0.0],'
-            'PARAMETER["false_northing",0.0],'
-            'UNIT["m*1000.0",1000.0],'
-            'AXIS["X",EAST],'
-            'AXIS["Y",NORTH]]'
-        )
-
-        radolan_wkt3 = (
             'PROJCS["Radolan Projection",'
             'GEOGCS["Radolan Coordinate System",'
             'DATUM["Radolan_Kugel",'
@@ -518,9 +494,8 @@ class TestProjections:
             'UNIT["degree",0.0174532925199433,'
             'AUTHORITY["EPSG","9122"]]],'
             'PROJECTION["Polar_Stereographic"],'
-            'PARAMETER["latitude_of_origin",90],'
+            'PARAMETER["latitude_of_origin",60],'
             'PARAMETER["central_meridian",10],'
-            'PARAMETER["scale_factor",{0:8.12f}],'
             'PARAMETER["false_easting",0],'
             'PARAMETER["false_northing",0],'
             'UNIT["kilometre",1000,'
@@ -529,23 +504,7 @@ class TestProjections:
             'AXIS["Northing",SOUTH]]'
         )
 
-        scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
-
         aeqd_wkt = (
-            'PROJCS["unnamed",'
-            'GEOGCS["WGS 84",'
-            'DATUM["unknown",'
-            'SPHEROID["WGS84",6378137,298.257223563]],'
-            'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],'
-            'PROJECTION["Azimuthal_Equidistant"],'
-            'PARAMETER["latitude_of_center",{0:-f}],'
-            'PARAMETER["longitude_of_center",{1:-f}],'
-            'PARAMETER["false_easting",{2:-f}],'
-            'PARAMETER["false_northing",{3:-f}],'
-            'UNIT["Meter",1]]'
-        )
-
-        aeqd_wkt3 = (
             'PROJCS["unnamed",'
             'GEOGCS["WGS 84",'
             'DATUM["unknown",'
@@ -562,22 +521,34 @@ class TestProjections:
             'AXIS["Northing",NORTH]]'
         )
 
-        if gdal.VersionInfo()[0] >= "3":
-            radolan_wkt = radolan_wkt3.format(scale)
-            aeqd_wkt = aeqd_wkt3.format(49, 5, 0, 0)
-        else:
-            radolan_wkt = radolan_wkt.format(scale)
-            aeqd_wkt = aeqd_wkt.format(49, 5, 0, 0)
-
-        assert georef.create_osr("dwd-radolan").ExportToWkt() == radolan_wkt
+        aeqd_wkt = aeqd_wkt.format(49, 5, 0, 0)
 
         assert georef.create_osr("aeqd", lon_0=5, lat_0=49).ExportToWkt() == aeqd_wkt
         assert (
             georef.create_osr("aeqd", lon_0=5, lat_0=49, x_0=0, y_0=0).ExportToWkt()
             == aeqd_wkt
         )
+
+        assert georef.create_osr("dwd-radolan").ExportToWkt() == radolan_wkt
+
         with pytest.raises(ValueError):
             georef.create_osr("lambert")
+
+    @requires_gdal
+    def test_create_osr_dwd(self, ellipse, grid):
+        proj = georef.create_osr(f"dwd-radolan-{ellipse}-{grid}")
+        assert proj.GetAttrValue("PROJCS") == "Radolan Projection"
+        assert proj.GetAttrValue("GEOGCS") == "Radolan Coordinate System"
+        if ellipse == "sphere":
+            assert proj.GetAttrValue("DATUM") == "Radolan_Kugel"
+        else:
+            assert proj.GetAttrValue("DATUM") == "unknown based on WGS 84"
+        assert proj.GetAttrValue("PROJECTION") == "Polar_Stereographic"
+        assert proj.GetProjParm("latitude_of_origin") == 60
+        assert proj.GetProjParm("central_meridian") == 10
+        ref = georef.projection._radolan_ref[ellipse][grid]
+        assert proj.GetProjParm("false_easting") == np.round(ref["x_0"], decimals=9)
+        assert proj.GetProjParm("false_northing") == np.round(ref["y_0"], decimals=8)
 
     @requires_gdal
     def test_proj4_to_osr(self):
@@ -658,8 +629,7 @@ class TestProjections:
     def test_get_radar_projection(self):
         sitecoords = [5, 52, 90]
         p0 = georef.get_radar_projection(sitecoords)
-        if gdal.VersionInfo()[0] >= "3":
-            assert p0.GetName() == "Unknown Azimuthal Equidistant"
+        assert p0.GetName() == "Unknown Azimuthal Equidistant"
         assert p0.IsProjected()
         assert p0.IsSameGeogCS(georef.get_default_projection())
         assert p0.GetNormProjParm("latitude_of_center") == sitecoords[1]
@@ -963,8 +933,8 @@ class TestGdal:
 def grid_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
-        radolan_grid_xy = georef.get_radolan_grid(900, 900, trig=True)
-        radolan_grid_ll = georef.get_radolan_grid(900, 900, trig=True, wgs84=True)
+        radolan_grid_xy = georef.get_radolan_grid(900, 900, proj="trig")
+        radolan_grid_ll = georef.get_radolan_grid(900, 900, proj="trig", wgs84=True)
 
     yield Data
 
@@ -1029,9 +999,74 @@ class TestGetGrids:
         assert pytest.approx(x) == -208.15159184860158
         assert pytest.approx(y) == -3971.7689758313813
         # Also test with trigonometric approach
-        x, y = georef.get_radolan_coords(7.0, 53.0, trig=True)
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj="trig")
         assert pytest.approx(x) == -208.15159184860175
         assert pytest.approx(y) == -3971.7689758313832
+
+        # test new dwd projections
+        proj = georef.create_osr("dwd-radolan-sphere")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == -208151.59184860175
+        assert pytest.approx(y) == -3971768.9758313832
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == -73462.16692185594
+        assert pytest.approx(y) == -4208644.724265573
+
+        proj = georef.create_osr("dwd-radolan-sphere-rx")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == 314810.5750732543
+        assert pytest.approx(y) == -212624.25156581355
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == 449500
+        assert pytest.approx(y) == -449500
+
+        proj = georef.create_osr("dwd-radolan-sphere-de1200")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == 334810.57507325534
+        assert pytest.approx(y) == -362624.25156581355
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == 469500
+        assert pytest.approx(y) == -599500
+
+        proj = georef.create_osr("dwd-radolan-sphere-de4800")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == 335185.5750732543
+        assert pytest.approx(y) == -362999.25156581355
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == 469875
+        assert pytest.approx(y) == -599875
+
+        proj = georef.create_osr("dwd-radolan-wgs84")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == -208846.68114091048
+        assert pytest.approx(y) == -3985032.0696281027
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == -73696.83521770278
+        assert pytest.approx(y) == -4222088.861930594
+
+        proj = georef.create_osr("dwd-radolan-wgs84-rx")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == 314350.1540768675
+        assert pytest.approx(y) == -212443.20769697288
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == 449500
+        assert pytest.approx(y) == -449500
+
+        proj = georef.create_osr("dwd-radolan-wgs84-de1200")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == 334350.15407685353
+        assert pytest.approx(y) == -362443.2076971028
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == 469500
+        assert pytest.approx(y) == -599500
+
+        proj = georef.create_osr("dwd-radolan-wgs84-de4800")
+        x, y = georef.get_radolan_coords(7.0, 53.0, proj=proj)
+        assert pytest.approx(x) == 334725.15407685353
+        assert pytest.approx(y) == -362818.2076971028
+        x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
+        assert pytest.approx(x) == 469875
+        assert pytest.approx(y) == -599875
 
     def test_xyz_to_spherical(self):
         xyz = np.array([[1000, 1000, 1000]])

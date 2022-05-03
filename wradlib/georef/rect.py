@@ -23,13 +23,15 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 __doctest_requires__ = {"get_radolan_grid": ["osgeo"]}
 
+from warnings import warn
+
 import numpy as np
 
 from wradlib.georef import projection
 from wradlib.util import has_import, import_optional
 
 
-def get_radolan_coords(lon, lat, trig=None):
+def get_radolan_coords(lon, lat, **kwargs):
     """
     Calculates x,y coordinates of radolan grid from lon, lat
 
@@ -40,20 +42,29 @@ def get_radolan_coords(lon, lat, trig=None):
         longitude
     lat : float, :class:`numpy:numpy.ndarray`
         latitude
-    trig : bool
-        if True, uses trigonometric formulas for calculation,
-        otherwise osr transformations
-        if False, uses osr spatial reference system to transform
-        between projections
-        `trig` is recommended to be False, however, the two ways of
-        computation are expected to be equivalent.
+
+    Keyword Arguments
+    -----------------
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference` | str
+        projection of the DWD grid with spheroid model or string `trig` to use
+        trigonometric formulas for calculation (only for earth model - `sphere`).
+        Defaults to None (earth model - sphere).
     """
     osr = import_optional("osgeo.osr")
     # use trig if osgeo.osr is not available
-    if trig is None:
-        trig = not has_import(osr)
-    if trig:
-
+    proj = kwargs.get("proj", None)
+    trig = kwargs.get("trig", None)
+    if trig is not None:
+        if trig is True:
+            warn(
+                "Keyword Argument ``trig`` will be removed in wradlib version 2.0. "
+                "Please use ``proj='trig'`` if you want to use trigonometric formulas.",
+                DeprecationWarning,
+            )
+            proj = "trig"
+    if proj is None and not has_import(osr):
+        proj = "trig"
+    if proj == "trig":
         # calculation of x_0 and y_0 coordinates of radolan grid
         # as described in the format description
         phi_0 = np.radians(60)
@@ -67,7 +78,10 @@ def get_radolan_coords(lon, lat, trig=None):
         y = -er * m_phi * np.cos(phi_m) * np.cos(lam)
     else:
         # create radolan projection osr object
-        proj_stereo = projection.create_osr("dwd-radolan")
+        if proj is None:
+            proj_stereo = projection.create_osr("dwd-radolan")
+        else:
+            proj_stereo = proj
 
         # create wgs84 projection osr object
         proj_wgs = projection.get_default_projection()
@@ -79,7 +93,7 @@ def get_radolan_coords(lon, lat, trig=None):
     return x, y
 
 
-def get_radolan_coordinates(nrows=None, ncols=None, trig=False, mode="radolan"):
+def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     """Calculates x/y coordinates of radolan  projection of the German Weather Service
 
     Returns the 1D x,y coordinates of the radolan projection for the given grid
@@ -91,18 +105,19 @@ def get_radolan_coordinates(nrows=None, ncols=None, trig=False, mode="radolan"):
         number of rows (460, 900 by default, 1100, 1500)
     ncols : int
         number of columns (460, 900 by default, 1400)
-    trig : bool
-        if True, uses trigonometric formulas for calculation
-        if False, uses osr spatial reference system to transform between
-        projections
-        `trig` is recommended to be False, however, the two ways of computation
-        are expected to be equivalent.
+
+    Keyword Arguments
+    -----------------
     wgs84 : bool
         if True, output coordinates are in wgs84 lonlat format (default: False)
     mode : str
         'radolan' - lower left pixel coordinates
         'center' - pixel center coordinates
         'edge' - pixel edge coordinates
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference` | str
+        projection of the DWD grid with spheroid model or string `trig` to use
+        trigonometric formulas for calculation (only for earth model - `sphere`).
+        Defaults to None (earth model - sphere).
 
     Returns
     -------
@@ -115,20 +130,33 @@ def get_radolan_coordinates(nrows=None, ncols=None, trig=False, mode="radolan"):
     # setup default parameters in dicts
     tiny = {"j_0": 450, "i_0": 450, "res": 2}
     small = {"j_0": 460, "i_0": 460, "res": 2}
-    normal = {"j_0": 450, "i_0": 450, "res": 1}
+    rx = {"j_0": 450, "i_0": 450, "res": 1}
     normal_wx = {"j_0": 370, "i_0": 550, "res": 1}
-    normal_wn = {"j_0": 470, "i_0": 600, "res": 1}
+    de1200 = {"j_0": 470, "i_0": 600, "res": 1}
     extended = {"j_0": 600, "i_0": 800, "res": 1}
+    de4800 = {"j_0": 470, "i_0": 600, "res": 0.25}
     griddefs = {
         (450, 450): tiny,
         (460, 460): small,
-        (900, 900): normal,
+        (900, 900): rx,
         (1100, 900): normal_wx,
-        (1200, 1100): normal_wn,
+        (1200, 1100): de1200,
         (1500, 1400): extended,
+        (4800, 4400): de4800,
     }
 
-    # type and value checking
+    mode = kwargs.get("mode", "radolan")
+    proj = kwargs.get("proj", None)
+    trig = kwargs.get("trig", None)
+    if trig is not None:
+        if trig is True:
+            warn(
+                "Keyword Argument ``trig`` will be removed in wradlib version 2.0. "
+                "Please use ``proj='trig'`` if you want to use trigonometric formulas.",
+                DeprecationWarning,
+            )
+            proj = "trig"
+
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
             raise TypeError(
@@ -149,11 +177,19 @@ def get_radolan_coordinates(nrows=None, ncols=None, trig=False, mode="radolan"):
     i_0 = griddefs[(nrows, ncols)]["i_0"]
     res = griddefs[(nrows, ncols)]["res"]
 
-    x_0, y_0 = get_radolan_coords(9.0, 51.0, trig=trig)
+    x_0, y_0 = get_radolan_coords(9.0, 51.0, proj=proj)
 
     if mode == "edge":
         ncols += 1
         nrows += 1
+
+    # get from km to meter for meter-base projections
+    if proj is not None and proj is not "trig":
+        lin = proj.GetLinearUnits()
+        if lin == 1.0:
+            res *= 1000
+            j_0 *= 1000
+            i_0 *= 1000
 
     x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols * res, res)
     y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows * res, res)
@@ -165,7 +201,7 @@ def get_radolan_coordinates(nrows=None, ncols=None, trig=False, mode="radolan"):
     return x_arr, y_arr
 
 
-def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False, mode="radolan"):
+def get_radolan_grid(nrows=None, ncols=None, **kwargs):
     """Calculates x/y coordinates of radolan grid of the German Weather Service
 
     Returns the x,y coordinates of the radolan grid positions
@@ -215,18 +251,19 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False, mode="rado
         number of rows (460, 900 by default, 1100, 1500)
     ncols : int
         number of columns (460, 900 by default, 1400)
-    trig : bool
-        if True, uses trigonometric formulas for calculation
-        if False, uses osr spatial reference system to transform between
-        projections
-        `trig` is recommended to be False, however, the two ways of computation
-        are expected to be equivalent.
+
+    Keyword Arguments
+    -----------------
     wgs84 : bool
         if True, output coordinates are in wgs84 lonlat format (default: False)
     mode :  str
         'radolan' - lower left pixel coordinates
         'center' - pixel center coordinates
         'edge' - pixel edge coordinates
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference` | str
+        projection of the DWD grid with spheroid model or string `trig` to use
+        trigonometric formulas for calculation (only for earth model - `sphere`).
+        Defaults to None (earth model - sphere).
 
     Returns
     -------
@@ -235,7 +272,6 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False, mode="rado
         shape is (nrows, ncols, 2) if `mode='radolan'`
         shape is (nrows, ncols, 2) if `mode='center'`
         shape is (nrows+1, ncols+1, 2) if `mode='edge'`
-
 
     Examples
     --------
@@ -248,7 +284,7 @@ def get_radolan_grid(nrows=None, ncols=None, trig=False, wgs84=False, mode="rado
 
     >>> # using pure trigonometric transformations
     >>> import wradlib.georef as georef
-    >>> radolan_grid = georef.get_radolan_grid(trig=True)
+    >>> radolan_grid = georef.get_radolan_grid(proj="trig")
     >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
     (900, 900, 2), (-523.4622, -4658.6447)
 
@@ -272,8 +308,21 @@ Polar-Stereographic-Projection`.
         TypeError, ValueError
     """
 
+    wgs84 = kwargs.get("wgs84", False)
+    mode = kwargs.get("mode", "radolan")
+    proj = kwargs.get("proj", None)
+    trig = kwargs.get("trig", None)
+    if trig is not None:
+        if trig is True:
+            warn(
+                "Keyword Argument ``trig`` will be removed in wradlib version 2.0. "
+                "Please use ``proj='trig'`` if you want to use trigonometric formulas.",
+                DeprecationWarning,
+            )
+            proj = "trig"
+
     x_arr, y_arr = get_radolan_coordinates(
-        nrows=nrows, ncols=ncols, trig=trig, mode=mode
+        nrows=nrows, ncols=ncols, mode=mode, proj=proj
     )
 
     x, y = np.meshgrid(x_arr, y_arr)
@@ -282,7 +331,7 @@ Polar-Stereographic-Projection`.
 
     if wgs84:
 
-        if trig:
+        if proj == "trig":
             # inverse projection
             lon0 = 10.0  # central meridian of projection
             lat0 = 60.0  # standard parallel of projection
@@ -297,7 +346,10 @@ Polar-Stereographic-Projection`.
             radolan_grid = np.dstack((lon, lat))
         else:
             # create radolan projection osr object
-            proj_stereo = projection.create_osr("dwd-radolan")
+            if proj is None:
+                proj_stereo = projection.create_osr("dwd-radolan")
+            else:
+                proj_stereo = proj
 
             # create wgs84 projection osr object
             proj_wgs = projection.get_default_projection()
@@ -321,7 +373,7 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4.0 / 3.0):
     alt : float
         Altitude (in meters)
         defaults to 0.
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`)
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
         projection of the source coordinates (aeqd) with spheroid model
         defaults to None.
     ke : float

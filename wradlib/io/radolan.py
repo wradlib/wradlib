@@ -37,7 +37,7 @@ import numpy as np
 import xarray as xr
 
 from wradlib import util, version
-from wradlib.georef import rect
+from wradlib.georef import rect, projection
 from wradlib.io.xarray import WradlibVariable, raise_on_missing_xarray_backend
 
 # current DWD file naming pattern (2008) for example:
@@ -443,12 +443,14 @@ def parse_dwd_composite_header(header):
             if k == "BY":
                 out["datasize"] = int(header[v[0] : v[1]]) - len(header) - 1
             if k == "VS":
+                vs = int(header[v[0]: v[1]])
+                out["formatversion"] = vs
                 out["maxrange"] = {
                     0: "100 km and 128 km (mixed)",
                     1: "100 km",
                     2: "128 km",
                     3: "150 km",
-                }.get(int(header[v[0] : v[1]]), "100 km")
+                }.get(vs, "100 km")
             if k == "SW":
                 out["radolanversion"] = header[v[0] : v[1]].strip()
             if k == "PR":
@@ -1116,18 +1118,23 @@ class _radolan_file:
         )
         time_var = WradlibVariable("time", data=time, attrs=time_attrs)
 
+        if attrs.get("formatversion", 3) >= 5:
+            proj = projection.create_osr("dwd-radolan-wgs84")
+        else:
+            proj = projection.create_osr("dwd-radolan-sphere")
+
         xlocs, ylocs = rect.get_radolan_coordinates(
-            self.dimensions["y"], self.dimensions["x"], trig=True
+            self.dimensions["y"], self.dimensions["x"], proj=proj, mode="center"
         )
         xattrs = {
-            "units": "km",
+            "units": "m",
             "long_name": "x coordinate of projection",
             "standard_name": "projection_x_coordinate",
         }
         x_var = WradlibVariable(("x",), xlocs, xattrs)
 
         yattrs = {
-            "units": "km",
+            "units": "m",
             "long_name": "y coordinate of projection",
             "standard_name": "projection_y_coordinate",
         }
