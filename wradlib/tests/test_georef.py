@@ -594,9 +594,6 @@ class TestProjections:
         assert pytest.approx(lonlat[0]) == 7.0
         assert pytest.approx(lonlat[1]) == 53.0
 
-        with pytest.raises(TypeError):
-            georef.reproject(np.stack((x, y, x, y), axis=-1))
-
         lon, lat, alt = georef.reproject(
             x, y, z, projection_source=proj_gk, projection_target=proj_wgs84
         )
@@ -604,6 +601,49 @@ class TestProjections:
         assert pytest.approx(lat, abs=1e-3) == 53.0
         assert pytest.approx(alt, abs=1e-3) == 0.0
 
+    @requires_gdal
+    def test_reproject_area_of_interest(self):
+        lon = np.array([7.0, 8.0, 9.0])
+        lat = np.array([53.0, 54.0, 55.0])
+        coords = np.stack([lon, lat], axis=-1)
+        proj_utm = osr.SpatialReference()
+        proj_utm.ImportFromEPSG(32632)
+        proj_gk = osr.SpatialReference()
+        proj_gk.ImportFromEPSG(31466)
+        proj_wgs84 = osr.SpatialReference()
+        proj_wgs84.ImportFromEPSG(4326)
+        pcoords0 = georef.reproject(
+            coords, projection_source=proj_wgs84, projection_target=proj_utm,
+        )
+        pcoords1 = georef.reproject(
+            pcoords0, projection_source=proj_utm, projection_target=proj_gk,
+            area_of_interest=(2600000, 5900000, 2650000, 6000000),
+        )
+        pcoords2 = georef.reproject(
+            pcoords1, projection_source=proj_gk, projection_target=proj_wgs84,
+            area_of_interest=(6.0, 50.0, 10.0, 60.0)
+        )
+
+        pcoords3 = georef.reproject(
+            pcoords1, projection_source=proj_gk, projection_target=proj_wgs84,
+            area_of_interest=(86.0, -50.0, 90.0, -40.0)
+        )
+
+        assert pytest.approx(pcoords0[0, 0]) == 365786.7509261378
+        assert pytest.approx(pcoords0[0, 1]) == 5874141.630656594
+        assert pytest.approx(pcoords1[0, 0]) == 2567176.32987622
+        assert pytest.approx(pcoords1[0, 1]) == 5874649.661898718
+        assert pytest.approx(pcoords2[0, 0]) == 7.
+        assert pytest.approx(pcoords2[0, 1]) == 53.
+        assert pytest.approx(pcoords3[0, 0]) == 7.000755561448517
+        assert pytest.approx(pcoords3[0, 1]) == 53.0014816583828
+
+    @requires_gdal
+    def test_reproject_errors(self):
+        x = 10
+        y = 20
+        with pytest.raises(TypeError):
+            georef.reproject(np.stack((x, y, x, y), axis=-1))
         with pytest.raises(TypeError):
             georef.reproject(x, y, x, y)
         with pytest.raises(TypeError):
@@ -1067,6 +1107,11 @@ class TestGetGrids:
         x, y = georef.get_radolan_coords(9.0, 51.0, proj=proj)
         assert pytest.approx(x) == 469875
         assert pytest.approx(y) == -599875
+
+    @requires_gdal
+    def test_get_radolan_coords_warnings(self):
+        with pytest.warns(DeprecationWarning):
+            x, y = georef.get_radolan_coords(7.0, 53.0, trig=True)
 
     def test_xyz_to_spherical(self):
         xyz = np.array([[1000, 1000, 1000]])
