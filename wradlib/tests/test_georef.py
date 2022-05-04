@@ -613,28 +613,36 @@ class TestProjections:
         proj_wgs84 = osr.SpatialReference()
         proj_wgs84.ImportFromEPSG(4326)
         pcoords0 = georef.reproject(
-            coords, projection_source=proj_wgs84, projection_target=proj_utm,
+            coords,
+            projection_source=proj_wgs84,
+            projection_target=proj_utm,
         )
         pcoords1 = georef.reproject(
-            pcoords0, projection_source=proj_utm, projection_target=proj_gk,
+            pcoords0,
+            projection_source=proj_utm,
+            projection_target=proj_gk,
             area_of_interest=(2600000, 5900000, 2650000, 6000000),
         )
         pcoords2 = georef.reproject(
-            pcoords1, projection_source=proj_gk, projection_target=proj_wgs84,
-            area_of_interest=(6.0, 50.0, 10.0, 60.0)
+            pcoords1,
+            projection_source=proj_gk,
+            projection_target=proj_wgs84,
+            area_of_interest=(6.0, 50.0, 10.0, 60.0),
         )
 
         pcoords3 = georef.reproject(
-            pcoords1, projection_source=proj_gk, projection_target=proj_wgs84,
-            area_of_interest=(86.0, -50.0, 90.0, -40.0)
+            pcoords1,
+            projection_source=proj_gk,
+            projection_target=proj_wgs84,
+            area_of_interest=(86.0, -50.0, 90.0, -40.0),
         )
 
         assert pytest.approx(pcoords0[0, 0]) == 365786.7509261378
         assert pytest.approx(pcoords0[0, 1]) == 5874141.630656594
         assert pytest.approx(pcoords1[0, 0]) == 2567176.32987622
         assert pytest.approx(pcoords1[0, 1]) == 5874649.661898718
-        assert pytest.approx(pcoords2[0, 0]) == 7.
-        assert pytest.approx(pcoords2[0, 1]) == 53.
+        assert pytest.approx(pcoords2[0, 0]) == 7.0
+        assert pytest.approx(pcoords2[0, 1]) == 53.0
         assert pytest.approx(pcoords3[0, 0]) == 7.000755561448517
         assert pytest.approx(pcoords3[0, 1]) == 53.0014816583828
 
