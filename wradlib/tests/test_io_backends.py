@@ -458,6 +458,7 @@ def test_radolan_backend(file_or_filelike):
             "mem",
         ],
         "radolanversion": "2.13.1",
+        "formatversion": 3,
         "radarid": "10000",
     }
     with get_wradlib_data_file(filename, file_or_filelike) as rwfile:

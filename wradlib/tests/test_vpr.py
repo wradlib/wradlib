@@ -165,14 +165,7 @@ class TestCartesianVolume:
         )
         out = gridder(cart_data.data)
         assert out.shape == (6084,)
-        # Todo: find out where this discrepancy comes from
-        from osgeo import gdal
-
-        if gdal.VersionInfo()[0] >= "3":
-            size = 3528
-        else:
-            size = 3512
-        assert len(np.where(np.isnan(out))[0]) == size
+        assert len(np.where(np.isnan(out))[0]) == 3528
 
     @requires_gdal
     def test_PseudoCAPPI(self, cart_data):

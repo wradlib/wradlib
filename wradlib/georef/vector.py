@@ -114,9 +114,8 @@ def transform_geometry(geom, dest_srs, **kwargs):
         if gsrs is None:
             geom.AssignSpatialReference(srs)
             gsrs = geom.GetSpatialReference()
-        if gdal.VersionInfo()[0] >= "3":
-            dest_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
-            gsrs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        dest_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        gsrs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         geom.TransformTo(dest_srs)
 
     return geom

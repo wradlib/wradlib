@@ -28,13 +28,29 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
-from packaging.version import Version
 
 from wradlib.util import import_optional
 
 gdal = import_optional("osgeo.gdal")
 ogr = import_optional("osgeo.ogr")
 osr = import_optional("osgeo.osr")
+
+# Taken from document "Radarkomposits - Projektionen und Gitter", Version 1.01
+# 5th of April 2022
+_radolan_ref = dict(
+    sphere=dict(
+        default=dict(x_0=0.0, y_0=0.0),
+        rx=dict(x_0=522962.16692185635, y_0=3759144.724265574),
+        de1200=dict(x_0=542962.166921856585, y_0=3609144.7242655745),
+        de4800=dict(x_0=543337.16692185646, y_0=3608769.7242655735),
+    ),
+    wgs84=dict(
+        default=dict(x_0=0.0, y_0=0.0),
+        rx=dict(x_0=523196.83521777776, y_0=3772588.861931134),
+        de1200=dict(x_0=543196.83521776402, y_0=3622588.8619310018),
+        de4800=dict(x_0=543571.83521776402, y_0=3622213.8619310018),
+    ),
+)
 
 
 def create_osr(projname, **kwargs):
@@ -77,21 +93,7 @@ def create_osr(projname, **kwargs):
     See :ref:`/notebooks/basics/wradlib_workflow.ipynb#\
 Georeferencing-and-Projection`.
     """
-
     aeqd_wkt = (
-        'PROJCS["unnamed",'
-        'GEOGCS["WGS 84",'
-        'DATUM["unknown",'
-        'SPHEROID["WGS84",6378137,298.257223563]],'
-        'PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],'
-        'PROJECTION["Azimuthal_Equidistant"],'
-        'PARAMETER["latitude_of_center", {0:-f}],'
-        'PARAMETER["longitude_of_center", {1:-f}],'
-        'PARAMETER["false_easting", {2:-f}],'
-        'PARAMETER["false_northing", {3:-f}],'
-        'UNIT["Meter",1]]'
-    )
-    aeqd_wkt3 = (
         'PROJCS["unnamed",'
         'GEOGCS["WGS 84",'
         'DATUM["unknown",'
@@ -106,7 +108,18 @@ Georeferencing-and-Projection`.
         'UNIT["Meter",1]]'
     )
 
-    radolan_wkt3 = (
+    wgs84_wkt = (
+        'PROJCS["Radolan Projection",'
+        'GEOGCS["Radolan Coordinate System",'
+        'DATUM["unknown based on WGS 84",'
+        'SPHEROID["WGS 84", 6378137, 298.25722356301]],'
+        'PRIMEM["Greenwich", 0,'
+        'AUTHORITY["EPSG", "8901"]],'
+        'UNIT["degree", 0.0174532925199433,'
+        'AUTHORITY["EPSG", "9122"]]],'
+    )
+
+    sphere_wkt = (
         'PROJCS["Radolan Projection",'
         'GEOGCS["Radolan Coordinate System",'
         'DATUM["Radolan_Kugel",'
@@ -115,64 +128,54 @@ Georeferencing-and-Projection`.
         'AUTHORITY["EPSG","8901"]],'
         'UNIT["degree", 0.017453292519943295,'
         'AUTHORITY["EPSG","9122"]]],'
-        'PROJECTION["Polar_Stereographic"],'
-        'PARAMETER["latitude_of_origin", 90],'
-        'PARAMETER["central_meridian", 10],'
-        'PARAMETER["scale_factor", {0:8.12f}],'
-        'PARAMETER["false_easting", 0],'
-        'PARAMETER["false_northing", 0],'
-        'UNIT["kilometre", 1000,'
-        'AUTHORITY["EPSG","9036"]],'
-        'AXIS["Easting",SOUTH],'
-        'AXIS["Northing",SOUTH]]'
     )
 
-    radolan_wkt = (
-        'PROJCS["Radolan projection",'
-        'GEOGCS["Radolan Coordinate System",'
-        'DATUM["Radolan Kugel",'
-        'SPHEROID["Erdkugel", 6370040.0, 0.0]],'
-        'PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]],'
-        'UNIT["degree", 0.017453292519943295],'
-        'AXIS["Longitude", EAST],'
-        'AXIS["Latitude", NORTH]],'
-        'PROJECTION["polar_stereographic"],'
-        'PARAMETER["central_meridian", 10.0],'
-        'PARAMETER["latitude_of_origin", 90.0],'
-        'PARAMETER["scale_factor", {0:8.10f}],'
-        'PARAMETER["false_easting", 0.0],'
-        'PARAMETER["false_northing", 0.0],'
-        'UNIT["m*1000.0", 1000.0],'
-        'AXIS["X", EAST],'
-        'AXIS["Y", NORTH]]'
+    radolan_ellps = dict(sphere=sphere_wkt, wgs84=wgs84_wkt)
+    meter = 'UNIT["metre", 1,' 'AUTHORITY["EPSG", "9001"]],'
+    kmeter = 'UNIT["kilometre", 1000,' 'AUTHORITY["EPSG","9036"]],'
+
+    polar_stereo_wkt = (
+        'PROJECTION["Polar_Stereographic"],'
+        'PARAMETER["latitude_of_origin", 60],'
+        'PARAMETER["central_meridian", 10],'
+        'PARAMETER["false_easting", {0:-.16f}],'
+        'PARAMETER["false_northing", {1:-.16f}],'
+        "{2}"
+        'AXIS["Easting", SOUTH],'
+        'AXIS["Northing", SOUTH]]'
     )
 
     proj = osr.SpatialReference()
 
     if projname == "aeqd":
         # Azimuthal Equidistant
-        if Version(gdal.VersionInfo("RELEASE_NAME")) >= Version("3"):
-            aeqd_wkt = aeqd_wkt3
-
+        x_0 = kwargs.get("x_0", 0.0)
+        y_0 = kwargs.get("y_0", 0.0)
         if "x_0" in kwargs:
             proj.ImportFromWkt(
-                aeqd_wkt.format(
-                    kwargs["lat_0"], kwargs["lon_0"], kwargs["x_0"], kwargs["y_0"]
-                )
+                aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], x_0, y_0)
             )
         else:
             proj.ImportFromWkt(
                 aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0.0, 0.0)
             )
-
-    elif projname == "dwd-radolan":
-        # DWD-RADOLAN polar stereographic projection
-        scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
-        if Version(gdal.VersionInfo("RELEASE_NAME")) >= Version("3"):
-            radolan_wkt = radolan_wkt3.format(scale)
+    elif "dwd-radolan" in projname:
+        projname = projname.split("-")
+        if len(projname) > 2:
+            ellps = projname[2]
+            unit = meter
         else:
-            radolan_wkt = radolan_wkt.format(scale)
-
+            ellps = "sphere"
+            unit = kmeter
+        if len(projname) > 3:
+            grid = projname[3]
+        else:
+            grid = "default"
+        ref = _radolan_ref[ellps][grid]
+        # override false easting/northing
+        x_0 = kwargs.get("x_0", ref["x_0"])
+        y_0 = kwargs.get("y_0", ref["y_0"])
+        radolan_wkt = radolan_ellps[ellps] + polar_stereo_wkt.format(x_0, y_0, unit)
         proj.ImportFromWkt(radolan_wkt)
     else:
         raise ValueError(
@@ -202,9 +205,6 @@ def proj4_to_osr(proj4str):
     proj.ImportFromProj4(proj4str)
     proj.AutoIdentifyEPSG()
 
-    if Version(gdal.VersionInfo("RELEASE_NAME")) < Version("3"):
-        proj.Fixup()
-        proj.FixupOrdering()
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
         raise ValueError(
             "proj4str validates to 'ogr.OGRERR_CORRUPT_DATA'"
@@ -300,18 +300,15 @@ def reproject(*args, **kwargs):
     projection_target = kwargs.get("projection_target", get_default_projection())
     area_of_interest = kwargs.get("area_of_interest", None)
 
-    if Version(gdal.VersionInfo("RELEASE_NAME")) >= Version("3"):
-        axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
-        projection_source.SetAxisMappingStrategy(axis_order)
-        projection_target.SetAxisMappingStrategy(axis_order)
-        options = osr.CoordinateTransformationOptions()
-        if area_of_interest is not None:
-            options.SetAreaOfInterest(*area_of_interest)
-        ct = osr.CreateCoordinateTransformation(
-            projection_source, projection_target, options
-        )
-    else:
-        ct = osr.CoordinateTransformation(projection_source, projection_target)
+    axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
+    projection_source.SetAxisMappingStrategy(axis_order)
+    projection_target.SetAxisMappingStrategy(axis_order)
+    options = osr.CoordinateTransformationOptions()
+    if area_of_interest is not None:
+        options.SetAreaOfInterest(*area_of_interest)
+    ct = osr.CreateCoordinateTransformation(
+        projection_source, projection_target, options
+    )
     trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:

@@ -1,6 +1,6 @@
 cartopy
 dask
-gdal
+gdal>=3
 geopandas
 h5netcdf
 h5py

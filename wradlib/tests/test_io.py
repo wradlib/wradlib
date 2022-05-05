@@ -698,6 +698,7 @@ class TestRadolan:
         )
         test_rx = {
             "maxrange": "150 km",
+            "formatversion": 3,
             "radarlocations": [
                 "boo",
                 "ros",
@@ -773,6 +774,7 @@ class TestRadolan:
             "radarid": "10000",
             "datasize": 1620008,
             "maxrange": "128 km",
+            "formatversion": 2,
             "radolanversion": "1.7.2",
             "precision": 0.1,
             "intervalseconds": 3600,
@@ -815,6 +817,7 @@ class TestRadolan:
             "radarid": "10000",
             "datasize": 1620001,
             "maxrange": "150 km",
+            "formatversion": 3,
             "radolanversion": "2.13.1",
             "precision": 0.1,
             "intervalseconds": 21600,
@@ -869,6 +872,7 @@ class TestRadolan:
             "radarid": "10000",
             "datasize": 1980000,
             "maxrange": "150 km",
+            "formatversion": 3,
             "radolanversion": "2.18.3",
             "precision": 0.01,
             "intervalseconds": 300,
@@ -931,6 +935,7 @@ class TestRadolan:
         rw_file = util.get_wradlib_data_file(filename)
         test_attrs = {
             "maxrange": "150 km",
+            "formatversion": 3,
             "radarlocations": [
                 "boo",
                 "ros",
@@ -1070,6 +1075,7 @@ class TestRadolan:
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         test_attrs = {
             "maxrange": "150 km",
+            "formatversion": 3,
             "radarlocations": [
                 "boo",
                 "ros",
