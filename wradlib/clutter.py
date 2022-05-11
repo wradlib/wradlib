@@ -349,11 +349,27 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
         to be identical or be broadcastable.
     weights : dict
         dictionary of floats.
-        Defines the weights of the decision variables.
+        Defines the weights of the decision variables. Default is:
+        zdr: 0.4,
+        rho: 0.4,
+        phi: 0.1,
+        dop: 0.1,
+        map: 0.5,
+        rho2: 0.4,
+        dr: 0.4,
+        cpa: 0.4.
     trpz : dict
         dictionary of lists of floats.
         Contains the arguments of the trapezoidal membership functions for each
-        decision variable
+        decision variable. Default is:
+        zdr: [0.7, 1.0, 9999, 9999],
+        rho: [0.1, 0.15, 9999, 9999],
+        phi: [15, 20, 10000, 10000],
+        dop: [-0.2, -0.1, 0.1, 0.2],
+        map: [1, 1, 9999, 9999],
+        rho2: [-9999, -9999, 0.95, 0.98],
+        dr: [-20, -12, 9999, 9999],
+        cpa: [0.6, 0.9, 9999, 9999].
     thresh : float
        Threshold below which membership in non-meteorological membership class
        is assumed.
