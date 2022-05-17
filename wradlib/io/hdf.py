@@ -14,6 +14,7 @@ HDF Data I/O
 __all__ = [
     "open_gamic_dataset",
     "open_gamic_mfdataset",
+    "open_gpm_dataset",
     "open_odim_dataset",
     "open_odim_mfdataset",
     "read_generic_hdf5",
@@ -29,6 +30,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import datetime as dt
 
 import numpy as np
+import xarray as xr
 from packaging.version import Version
 
 from wradlib.io.xarray import (
@@ -39,6 +41,7 @@ from wradlib.io.xarray import (
 from wradlib.util import import_optional
 
 h5py = import_optional("h5py")
+h5netcdf = import_optional("h5netcdf")
 nc = import_optional("netCDF4")
 
 
@@ -776,6 +779,97 @@ def read_gpm(filename, bbox=None):
     )
 
     return gpm_data
+
+
+def _get_gpm_group(filename, group, variables=None):
+    """Return group as xarrax.Dataset from GPM file."""
+    ds = xr.open_dataset(
+        filename,
+        group=group,
+        decode_cf=False,
+        engine="h5netcdf",
+        backend_kwargs=dict(phony_dims="sort"),
+    )
+    for n, v in ds.items():
+        dimnames = v.attrs.get("DimensionNames", False)
+        if dimnames:
+            vdims = v.attrs["DimensionNames"].split(",")
+            dims = {dim: vdims[i] for i, dim in enumerate(v.dims)}
+            ds[n] = v.swap_dims(dims)
+    if variables is not None:
+        keep = set(variables)
+        ds = ds.drop_vars(set(ds.variables) ^ keep)
+        if isinstance(variables, dict):
+            ds = ds.rename(variables)
+    return ds
+
+
+def _get_gpm_time_group(filename, group):
+    """Return time subgroup as xarrax.Dataset from GPM file."""
+    variables = [
+        "Year",
+        "Month",
+        "DayOfMonth",
+        "Hour",
+        "Minute",
+        "Second",
+        "MilliSecond",
+    ]
+    ds = _get_gpm_group(filename, group=group, variables=variables)
+    date_array = zip(
+        ds.Year.values,
+        ds.Month.values,
+        ds.DayOfMonth.values,
+        ds.Hour.values,
+        ds.Minute.values,
+        ds.Second.values,
+        ds.MilliSecond.values,
+    )
+    pr_time = np.array(
+        [dt.datetime(d[0], d[1], d[2], d[3], d[4], d[5], d[6]) for d in date_array]
+    )
+    ds = ds.assign_coords({"date": (["nscan"], pr_time)})
+    ds = ds.drop_vars(set(ds.variables) ^ set(["date"]))
+    return ds
+
+
+def open_gpm_dataset(filename, group):
+    """Reads GPM files version `V07A`.
+
+    Parameters
+    ----------
+    filename : str
+        path of the GPM file
+    group : str
+        name of group
+
+    Returns
+    -------
+    ds : xarray.Dataset
+        xarray.Dataset representation of GPM file with requested `group`.
+    """
+    parents = group.split("/")[:-1]
+
+    with h5netcdf.File(filename, mode="r", decode_vlen_strings=True) as f:
+        grps = list(f[group].groups)
+
+    root = _get_gpm_group(filename, group="/")
+    root = root.rename_dims({list(root.dims)[0]: "nswath"})
+    groups = {"root": root}
+    if parents:
+        for p in parents:
+            pds = _get_gpm_group(filename, group=f"/{p}")
+            groups[p] = pds
+    subroot = _get_gpm_group(filename, group=f"/{group}")
+    groups["subroot"] = subroot
+    for grp in grps:
+        gname = "/".join(["/" + group, grp])
+        if grp == "ScanTime":
+            groups[grp] = _get_gpm_time_group(filename, group=gname)
+        else:
+            groups[grp] = _get_gpm_group(filename, group=gname)
+    ds = xr.merge(groups.values())
+    return ds
 
 
 def read_trmm(filename1, filename2, bbox=None):
