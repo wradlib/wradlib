@@ -760,7 +760,9 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
     NODATA = missing
 
     # get _radolan_file class
-    with _radolan_file(f, fillmissing=fillmissing, copy=True) as radfile:
+    with _radolan_file(
+        f, fillmissing=fillmissing, copy=True, ancillary=False
+    ) as radfile:
 
         attrs = radfile.attrs
 
@@ -777,7 +779,7 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
                 + "This might work...but please check the validity "
                 + "of the results"
             )
-        arr = radfile.data
+        arr = radfile.data[attrs["producttype"]]
 
     if loaddata == "xarray":
         arr = radolan_to_xarray(arr, attrs)
@@ -973,6 +975,10 @@ class _radolan_file:
     copy : bool
         If False tries to get a view into the data. If True copies data in any case.
         Defaults to False.
+    ancillary : bool, tuple of str
+        If True, resturns ancillary masks ("secondary", "nodatamask", "cluttermask")
+        as additional data variables. Can be specified as tuple of strings.
+        Defaults to False.
 
     Returns
     -------
@@ -981,7 +987,7 @@ class _radolan_file:
 
     """
 
-    def __init__(self, filename, fillmissing=False, copy=False):
+    def __init__(self, filename, fillmissing=False, copy=False, ancillary=False):
 
         if hasattr(filename, "seek"):
             self.filename = "None"
@@ -996,16 +1002,18 @@ class _radolan_file:
             mode = "r"
             self.fp = open(filename, f"{mode}b")
 
-        self._fill = fillmissing
-        self._copy = copy
-        self._data = None
-        self._dtype = None
-        self._shape = None
         self._attrs = None
         self._product = None
+        self._data = {}
+        self._dtype = None
+        self._shape = None
         self.dimensions = {}
         self._variables = None
         self.attributes = {}
+
+        self._fill = fillmissing
+        self._copy = copy
+        self._ancillary = self._get_ancillary(requested=ancillary)
 
     @property
     def attrs(self):
@@ -1023,7 +1031,7 @@ class _radolan_file:
 
     @property
     def data(self):
-        if self._data is None:
+        if not self._data or self.product not in self._data:
             self._read_data()
         return self._data
 
@@ -1055,20 +1063,30 @@ class _radolan_file:
         return parse_dwd_composite_header(header)
 
     def _process_data(self):
+        data = self._data[self.product]
         if self.product in ["PG", "PC"]:
             self.attrs["nodataflag"] = 255
-            self.attrs["nodatamask"] = np.where(self.data == 255)[0]
+            self.attrs["nodatamask"] = np.where(data == 255)[0]
         elif self.product in ["RX", "EX", "WX"]:
-            self.attrs["nodatamask"] = np.where(self.data == 250)[0]
-            self.attrs["cluttermask"] = np.where(self.data == 249)[0]
+            self.attrs["nodatamask"] = np.where(data == 250)[0]
+            self.attrs["cluttermask"] = np.where(data == 249)[0]
         else:
-            self.attrs["secondary"] = np.where(self.data & 0x1000)[0]
-            self.attrs["nodatamask"] = np.where(self.data & 0x2000)[0]
-            negative = np.where(self.data & 0x4000)[0]
-            self.attrs["cluttermask"] = np.where(self.data & 0x8000)[0]
-            self._data &= 0xFFF
+            self.attrs["secondary"] = np.where(data & 0x1000)[0]
+            self.attrs["nodatamask"] = np.where(data & 0x2000)[0]
+            negative = np.where(data & 0x4000)[0]
+            self.attrs["cluttermask"] = np.where(data & 0x8000)[0]
+            data &= 0xFFF
             if self.product == "RD":
-                self._data[negative] = -self.data[negative]
+                data[negative] = -data[negative]
+
+        # masks
+        if self._ancillary:
+            for a in self._ancillary:
+                vals = self.attrs.get(a, None)
+                if vals is not None:
+                    ancdata = np.zeros_like(data, dtype=bool)
+                    ancdata[vals] = True
+                    self._data[a] = ancdata
 
     def _read_data(self):
         # handle truncated data
@@ -1083,18 +1101,21 @@ class _radolan_file:
             indat = _fix_radolan_truncated_buffer(indat, size, self.dtype)
 
         if self.product in ["PC", "PG"]:
-            self._data = decode_radolan_runlength_array(
+            self._data[self.product] = decode_radolan_runlength_array(
                 indat, {"ncol": self.attrs["ncol"], "nodataflag": 255}
             )
         else:
-            self._data = np.frombuffer(indat, dtype=self.dtype)
+            self._data[self.product] = np.frombuffer(indat, dtype=self.dtype)
             if not self._copy and self.dtype == np.uint8:
-                self._data = self._data.view(dtype=self.dtype)
+                self._data[self.product] = self._data[self.product].view(
+                    dtype=self.dtype
+                )
             else:
                 # use astype here since we change the data later
-                self._data = self._data.astype(self.dtype)
+                self._data[self.product] = self._data[self.product].astype(self.dtype)
         self._process_data()
-        self._data.shape = (self.attrs["nrow"], self.attrs["ncol"])
+        for k, v in self._data.items():
+            v.shape = (self.attrs["nrow"], self.attrs["ncol"])
 
     def _read(self):
 
@@ -1131,14 +1152,14 @@ class _radolan_file:
             "long_name": "x coordinate of projection",
             "standard_name": "projection_x_coordinate",
         }
-        x_var = WradlibVariable(("x",), xlocs, xattrs)
+        x_var = WradlibVariable("x", xlocs, xattrs)
 
         yattrs = {
             "units": "m",
             "long_name": "y coordinate of projection",
             "standard_name": "projection_y_coordinate",
         }
-        y_var = WradlibVariable(("y",), ylocs, yattrs)
+        y_var = WradlibVariable("y", ylocs, yattrs)
 
         self._variables = {
             self.product: data_var,
@@ -1146,6 +1167,10 @@ class _radolan_file:
             "y": y_var,
             "x": x_var,
         }
+
+        for a in self._ancillary:
+            ancvar = WradlibVariable(self.dimensions, data=self, attrs={})
+            self._variables[a] = ancvar
 
         # remove unneeded global attributes
         remove = [
@@ -1160,6 +1185,27 @@ class _radolan_file:
         ]
         [attrs.pop(key, None) for key in remove]
         self.attributes.update(attrs)
+
+    def _get_ancillary(self, requested=True):
+        if self.product in ["PG", "PC"]:
+            anc = ("nodatamask",)
+        elif self.product in ["RX", "EX", "WX"]:
+            anc = ("nodatamask", "cluttermask")
+        else:
+            anc = ("nodatamask", "cluttermask", "secondary")
+        if requested is False:
+            return tuple([])
+        elif requested is True:
+            requested = anc
+
+        anc = set(anc) & set(requested)
+        reject = set(anc) ^ set(requested)
+        if reject:
+            warnings.warn(
+                f"ancillary data `{tuple(reject)}` requested but not available for product `{self.product}`."
+            )
+
+        return tuple(anc)
 
     def close(self):
         """Closes the Radolan file."""
@@ -1191,6 +1237,11 @@ def open_radolan_dataset(filename_or_obj, **kwargs):
         Fill truncated data, defaults to False.
     copy : bool
         Create copies instead of views into the data, defaults to False.
+    ancillary : bool, tuple of str
+        If True, resturns ancillary masks ("secondary", "nodatamask", "cluttermask")
+        as additional data variables. Can be specified as tuple of strings.
+        Defaults to False.
+
     **kwargs : dict, optional
         Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
 
@@ -1224,6 +1275,10 @@ def open_radolan_mfdataset(paths, **kwargs):
         Fill truncated data, defaults to False.
     copy : bool
         Create copies instead of views into the data, defaults to False.
+    ancillary : bool, tuple of str
+        If True, resturns ancillary masks ("secondary", "nodatamask", "cluttermask")
+        as additional data variables. Can be specified as tuple of strings.
+        Defaults to False.
     **kwargs : dict, optional
         Additional arguments passed on to :py:func:`xarray:xarray.open_mfdataset`.
 

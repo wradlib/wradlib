@@ -83,13 +83,14 @@ HDF5_LOCK = SerializableLock()
 class RadolanArrayWrapper(BackendArray):
     """Wraps array of RADOLAN data."""
 
-    def __init__(self, datastore, array):
+    def __init__(self, datastore, name, array):
         self.datastore = datastore
+        self.name = name
         self.shape = array.shape
         self.dtype = array.dtype
 
     def _getitem(self, key):
-        return self.datastore.ds.data[key]
+        return self.datastore.ds.data[self.name][key]
 
     def __getitem__(self, key):
         return indexing.explicit_indexing_adapter(
@@ -103,7 +104,9 @@ class RadolanArrayWrapper(BackendArray):
 class RadolanDataStore(AbstractDataStore):
     """Implements ``xarray.AbstractDataStore`` read-only API for a RADOLAN files."""
 
-    def __init__(self, filename_or_obj, lock=None, fillmissing=False, copy=False):
+    def __init__(
+        self, filename_or_obj, lock=None, fillmissing=False, copy=False, ancillary=False
+    ):
         if lock is None:
             lock = RADOLAN_LOCK
         self.lock = ensure_lock(lock)
@@ -113,12 +116,18 @@ class RadolanDataStore(AbstractDataStore):
                 _radolan_file,
                 filename_or_obj,
                 lock=lock,
-                kwargs={"fillmissing": fillmissing, "copy": copy},
+                kwargs={
+                    "fillmissing": fillmissing,
+                    "copy": copy,
+                    "ancillary": ancillary,
+                },
             )
         else:
             if isinstance(filename_or_obj, bytes):
                 filename_or_obj = io.BytesIO(filename_or_obj)
-            dataset = _radolan_file(filename_or_obj, fillmissing=fillmissing, copy=copy)
+            dataset = _radolan_file(
+                filename_or_obj, fillmissing=fillmissing, copy=copy, ancillary=ancillary
+            )
             manager = DummyFileManager(dataset)
 
         self._manager = manager
@@ -134,10 +143,13 @@ class RadolanDataStore(AbstractDataStore):
 
     def open_store_variable(self, name, var):
         encoding = {"source": self._filename}
-        if isinstance(var.data, np.ndarray):
-            data = var.data
+        vdata = var.data
+        if isinstance(vdata, np.ndarray):
+            data = vdata
         else:
-            data = indexing.LazilyOuterIndexedArray(RadolanArrayWrapper(self, var.data))
+            data = indexing.LazilyOuterIndexedArray(
+                RadolanArrayWrapper(self, name, vdata)
+            )
         return Variable(var.dimensions, data, var.attributes, encoding)
 
     def get_variables(self):
@@ -176,12 +188,13 @@ class RadolanBackendEntrypoint(BackendEntrypoint):
         decode_timedelta=None,
         fillmissing=False,
         copy=False,
+        ancillary=False,
     ):
-
         store = RadolanDataStore(
             filename_or_obj,
             fillmissing=fillmissing,
             copy=copy,
+            ancillary=ancillary,
         )
         store_entrypoint = StoreBackendEntrypoint()
         with close_on_error(store):
