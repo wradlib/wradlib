@@ -1107,7 +1107,7 @@ class TestRadolan:
             assert radfile.dtype == np.uint16
             assert radfile.product == "RW"
             assert radfile.attrs == test_attrs
-            assert radfile.data.shape == (900, 900)
+            assert radfile.data["RW"].shape == (900, 900)
 
     @requires_data
     def test_open_radolan_dataset(self):
