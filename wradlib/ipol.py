@@ -1579,7 +1579,7 @@ def interpolate_polar(data, mask=None, ipclass=Nearest):
     ranges = np.tile(np.arange(0.5, data.shape[1] + 0.5), data.shape[0])
     # construct the angles for every bin
     angles = np.repeat(
-        np.radians(np.linspace(0,360,endpoint=False, num = data.shape[0])), data.shape[1]
+        np.radians(np.linspace(0, 360, endpoint = False, num = data.shape[0])), data.shape[1]
         )
     # calculate cartesian coordinates for every bin
     binx = np.cos(angles) * ranges
