@@ -17,7 +17,7 @@ Cf2py intent(in,out,overwrite) phidp
 
 C   iterate over all beams
       DO beam=1, beams
-         
+
          IF ( ALL(phidp(beam,1:(rs-w_))==0) ) THEN
             PRINT *, "empty beam at:", beam
             EXIT
@@ -69,4 +69,3 @@ C       Now start to check for phase folding
          ENDDO
       ENDDO
       END
-

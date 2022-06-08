@@ -34,5 +34,3 @@ For this purpose, you need to have a [GitHub Account](https://github.com/signup/
 ## Development
 
 To keep the code as clean as much all code contributions should be in line with [PEP 8](https://www.python.org/dev/peps/pep-0008/) conventions.
-
-

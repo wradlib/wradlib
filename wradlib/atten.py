@@ -40,8 +40,6 @@ class AttenuationOverflowError(Exception):
     Exception, if attenuation exceeds ``thrs`` and no handling ``mode`` is set.
     """
 
-    pass
-
 
 def correct_attenuation_hb(
     gateset,
