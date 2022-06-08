@@ -308,14 +308,12 @@ class AdjustBase(ipol.IpolBase):
             (defaults to None)
 
         """
-        pass
 
     def _check_shape(self, obs, raw):
         """INTERNAL: Check consistency of the input data obs and raw with
         the shapes of the coordinates
         """
         # TODO
-        pass
 
     def _get_valid_pairs(self, obs, raw):
         """INTERNAL: Helper method to identify valid obs-raw pairs"""

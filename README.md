@@ -36,7 +36,7 @@ You can cite wradlib using the DOI below, or select the fitting zenodo DOI if yo
 
 ### User forum ###
 
-In order to stay tuned, we recommend that you register to the [wradlib user forum and mailing list](https://groups.google.com/forum/?fromgroups#!forum/wradlib-users). 
+In order to stay tuned, we recommend that you register to the [wradlib user forum and mailing list](https://groups.google.com/forum/?fromgroups#!forum/wradlib-users).
 
 ### Found any bugs or want to add wishes ###
 

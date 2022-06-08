@@ -55,13 +55,9 @@ from wradlib import georef, util, zonalstats
 class MissingSourcesError(Exception):
     """Is raised in case no source coordinates are available for interpolation."""
 
-    pass
-
 
 class MissingTargetsError(Exception):
     """Is raised in case no interpolation targets are available."""
-
-    pass
 
 
 class IpolBase:
