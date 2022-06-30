@@ -1537,8 +1537,9 @@ def _assign_data_radial(root, sweep="sweep_1"):
     remove_vars = {}
     data = root.drop_vars(remove_vars)
     data.attrs = {}
-    start_idx = data.sweep_start_ray_index.values
-    end_idx = data.sweep_end_ray_index.values
+    # explicitely cast to int, as there are floats out in the wild
+    start_idx = data.sweep_start_ray_index.values.astype(int)
+    end_idx = data.sweep_end_ray_index.values.astype(int)
     ray_n_gates = data.get("ray_n_gates", False)
     ray_start_index = data.get("ray_start_index", False)
     data = data.drop_vars(
