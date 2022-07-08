@@ -68,7 +68,7 @@ from wradlib.georef import xarray
 from wradlib.util import has_import, import_optional
 
 try:
-    from tqdm import tqdm
+    from tqdm.auto import tqdm
 except ImportError:
 
     def tqdm(val, **kwargs):
