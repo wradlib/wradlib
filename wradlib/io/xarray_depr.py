@@ -122,7 +122,7 @@ from wradlib.io.xarray import (
 from wradlib.util import has_import
 
 try:
-    from tqdm import tqdm
+    from tqdm.auto import tqdm
 except ImportError:
 
     def tqdm(val, **kwargs):
