@@ -1159,7 +1159,7 @@ def plot_scan_strategy(
         )
 
     # legend 1
-    handles, labels = ax.get_legend_handles_labels()
+    handles, labels = paax.get_legend_handles_labels()
     leg1 = ax.legend(
         handles,
         labels,
