@@ -1706,7 +1706,7 @@ Preprocessing-the-digitial-elevation-model`.
         yi = ny - (ny - 1) * (yi - cymin) / (cymax - cymin)
 
     # interpolation by map_coordinates
-    interp = ndimage.interpolation.map_coordinates(values, [yi, xi], **kwargs)
+    interp = ndimage.map_coordinates(values, [yi, xi], **kwargs)
     interp = interp.reshape(newshape)
 
     return interp
