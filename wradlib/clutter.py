@@ -203,7 +203,7 @@ def filter_gabella(
         img[bad] = np.Inf
     ntr1 = filter_gabella_a(img, wsize, tr1, cartesian, radial)
     if not rm_nans:
-        f_good = ndimage.filters.uniform_filter((~bad).astype(float), size=wsize)
+        f_good = ndimage.uniform_filter((~bad).astype(float), size=wsize)
         f_good[f_good == 0] = 1e-10
         ntr1 = ntr1 / f_good
         ntr1[bad] = n_p
