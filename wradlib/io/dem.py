@@ -87,7 +87,7 @@ def download_srtm(filename, destination, resolution=3):
         )
 
     session = init_header_redirect_session(user, pwd)
-
+    status_code = 0
     try:
         r = session.get(url, stream=True)
         r.raise_for_status()
@@ -100,6 +100,7 @@ def download_srtm(filename, destination, resolution=3):
         status_code = err.response.status_code
         if status_code != 404:
             raise err
+        return status_code
 
 
 def get_srtm(extent, resolution=3, merge=True):
@@ -148,9 +149,11 @@ def get_srtm(extent, resolution=3, merge=True):
     demlist = []
     for filename in filelist:
         path = os.path.join(srtm_path, filename)
+        status_code = 0
         if not os.path.exists(path):
-            download_srtm(filename, path, resolution)
-        demlist.append(path)
+            status_code = download_srtm(filename, path, resolution)
+        if status_code == 0:
+            demlist.append(path)
 
     demlist = [gdal.Open(d) for d in demlist]
     if not merge:
