@@ -1070,9 +1070,9 @@ class _OdimH5NetCDFMetadata:
         return a1gate
 
     def _get_site_coords(self):
-        lon = self._root["where"].attrs["lon"].item()
-        lat = self._root["where"].attrs["lat"].item()
-        alt = self._root["where"].attrs["height"].item()
+        lon = self._root["where"].attrs["lon"]
+        lat = self._root["where"].attrs["lat"]
+        alt = self._root["where"].attrs["height"]
         return lon, lat, alt
 
     def _get_dset_what(self):
@@ -1266,9 +1266,9 @@ class _GamicH5NetCDFMetadata:
         return start
 
     def _get_site_coords(self):
-        lon = self._root["where"].attrs["lon"].item()
-        lat = self._root["where"].attrs["lat"].item()
-        alt = self._root["where"].attrs["height"].item()
+        lon = self._root["where"].attrs["lon"]
+        lat = self._root["where"].attrs["lat"]
+        alt = self._root["where"].attrs["height"]
         return lon, lat, alt
 
 
