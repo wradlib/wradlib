@@ -100,6 +100,7 @@ def download_srtm(filename, destination, resolution=3):
         status_code = err.response.status_code
         if status_code != 404:
             raise err
+    finally:
         return status_code
 
 
