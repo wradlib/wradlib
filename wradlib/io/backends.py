@@ -942,7 +942,7 @@ class IrisStore(AbstractDataStore):
         dim = self.root.first_dimension
 
         data = indexing.LazilyOuterIndexedArray(IrisArrayWrapper(self, name, var))
-        encoding = {"group": self._group}
+        encoding = {"group": self._group, "source": self._filename}
 
         mname = iris_mapping.get(name, name)
         mapping = moments_mapping.get(mname, {})
@@ -1203,7 +1203,7 @@ class RainbowStore(AbstractDataStore):
         name = raw["@type"]
 
         data = indexing.LazilyOuterIndexedArray(RainbowArrayWrapper(self, name, raw))
-        encoding = {"group": self._group}
+        encoding = {"group": self._group, "source": self._filename}
 
         vmin = float(raw.get("@min"))
         vmax = float(raw.get("@max"))
@@ -1489,7 +1489,7 @@ class FurunoStore(AbstractDataStore):
         dim = self.root.first_dimension
 
         data = indexing.LazilyOuterIndexedArray(FurunoArrayWrapper(var))
-        encoding = {"group": self._group}
+        encoding = {"group": self._group, "source": self._filename}
         if name == "PHIDP":
             add_offset = 360 * -32768 / 65535
             scale_factor = 360 / 65535

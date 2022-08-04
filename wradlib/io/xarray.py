@@ -1718,7 +1718,7 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
         ds = _assign_data_radial(ds[0], sweep=group)
 
     if group is None:
-        vol = RadarVolume()
+        vol = RadarVolume(engine=engine)
         vol.extend(ds)
         vol.sort(key=lambda x: x.time.min().values)
         ds = vol
@@ -1857,7 +1857,7 @@ def open_radar_mfdataset(paths, **kwargs):
     ]
 
     if len(ds) > 1:
-        vol = RadarVolume()
+        vol = RadarVolume(engine=engine)
         vol.extend(ds)
         vol.sort(key=lambda x: x.time.min().values)
         ds = vol
@@ -1912,6 +1912,7 @@ class RadarVolume(XRadBase):
         super().__init__()
         self._data = None
         self._root = None
+        self._engine = kwargs.pop("engine", "netcdf4")
         self._dims = {"azimuth": "elevation", "elevation": "azimuth"}
 
     def __repr__(self):
@@ -1939,14 +1940,14 @@ class RadarVolume(XRadBase):
             if "source" in v.encoding:
                 src = v.encoding["source"]
                 break
-        return xr.open_dataset(src, group=group).attrs
+        return xr.open_dataset(src, engine=self._engine, group=group).attrs
 
     def get_attr(self, sweep, group, attr):
         for v in self[sweep].variables.values():
             if "source" in v.encoding:
                 src = v.encoding["source"]
                 break
-        return xr.open_dataset(src, group=group).attrs[attr]
+        return xr.open_dataset(src, engine=self._engine, group=group).attrs[attr]
 
     def assign_root(self):
         """(Re-)Create root object according CfRadial2 standard"""
