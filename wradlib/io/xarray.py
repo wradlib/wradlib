@@ -802,11 +802,14 @@ def to_odim(volume, filename, timestep=0):
 
 
 def _calculate_angle_res(dim):
-    angle_diff = np.diff(dim)
+    # need to sort dim first
+    angle_diff = np.diff(sorted(dim))
     angle_diff2 = np.abs(np.diff(angle_diff))
 
     # only select angle_diff, where angle_diff2 is less than 0.1 deg
-    angle_diff_wanted = angle_diff[:-1][angle_diff2 < 0.1]
+    # Todo: currently 0.05 is working in most cases
+    #  make this robust or parameterisable
+    angle_diff_wanted = angle_diff[:-1][angle_diff2 < 0.05]
     return np.round(np.nanmean(angle_diff_wanted), decimals=2)
 
 
