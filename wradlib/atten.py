@@ -326,10 +326,10 @@ def _sector_filter(mask, min_sector_size):
     forward_large_sectors = np.zeros_like(mask)
     backward_large_sectors = np.zeros_like(mask)
     for iii in range(mask.shape[0]):
-        forward_large_sectors[iii] = ndimage.morphology.binary_dilation(
+        forward_large_sectors[iii] = ndimage.binary_dilation(
             forward_corners[iii], kernela[0], origin=forward_origin
         ).astype(int)
-        backward_large_sectors[iii] = ndimage.morphology.binary_dilation(
+        backward_large_sectors[iii] = ndimage.binary_dilation(
             backward_corners[iii], kernela[0], origin=backward_origin
         ).astype(int)
 

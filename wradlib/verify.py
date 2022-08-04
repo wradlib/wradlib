@@ -203,9 +203,7 @@ class ErrorMetrics:
 
     def spearman(self):
         """Spearman rank correlation coefficient"""
-        return np.round(
-            stats.stats.spearmanr(self.obs[self.ix], self.est[self.ix])[0], 2
-        )
+        return np.round(stats.spearmanr(self.obs[self.ix], self.est[self.ix])[0], 2)
 
     def nash(self):
         """Nash-Sutcliffe Efficiency"""
