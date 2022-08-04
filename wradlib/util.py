@@ -335,7 +335,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
     """
     ascale = 2 * np.pi / img.shape[0]
     data_filtered = np.empty(img.shape, dtype=img.dtype)
-    fun = getattr(ndimage.filters, f"{fun}_filter1d")
+    fun = getattr(ndimage, f"{fun}_filter1d")
     nbins = img.shape[-1]
     ranges = np.arange(nbins) * rscale + rscale / 2
     asize = ranges * ascale
@@ -402,7 +402,7 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
         Array with the same shape as `img`, containing the filter's results.
 
     """
-    fun = getattr(ndimage.filters, f"{fun}_filter")
+    fun = getattr(ndimage, f"{fun}_filter")
     size = np.fix(wsize / scale + 0.5).astype(int)
     data_filtered = fun(img, size, **kwargs)
     return data_filtered
