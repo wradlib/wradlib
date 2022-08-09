@@ -1574,14 +1574,14 @@ def _assign_data_radial(root, sweep="sweep_1"):
                 ray_start_index[start_idx[i]].values,
                 ray_start_index[start_idx[i]].values + current_rays_sum,
             )
-            rslice = slice(0, current_ray_n_gates[0].values.item())
+            rslice = slice(0, current_ray_n_gates[0].values)
             ds = ds.isel(range=rslice)
             ds = ds.isel(n_points=nslice).stack(n_points=["azimuth", "range"])
             ds = ds.unstack()
             # fix elevation/time additional range dimension in coordinate
             ds = ds.assign_coords({"elevation": ds.elevation.isel(range=0, drop=True)})
 
-        ds.attrs["fixed_angle"] = np.round(ds.fixed_angle.item(), decimals=1)
+        ds.attrs["fixed_angle"] = np.round(ds.fixed_angle.values, decimals=1)
         time = ds.rtime[0].reset_coords(drop=True)
         # get and delete "comment" attribute for time variable
         key = [key for key in time.attrs.keys() if "comment" in key]
@@ -1682,14 +1682,14 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     groups = []
     backend_kwargs = kwargs.pop("backend_kwargs", {})
 
-    if engine == "cfradial1":
-        groups = [None]
-    elif isinstance(group, (str, int)):
+    if isinstance(group, (str, int)):
         groups = [group]
     elif isinstance(group, list):
         pass
     else:
-        if engine == "cfradial2":
+        if engine == "cfradial1":
+            groups = ["/"]
+        elif engine == "cfradial2":
             groups = _get_nc4group_names(filename_or_obj, engine)
         elif engine in ["gamic", "odim"]:
             groups = _get_h5group_names(filename_or_obj, engine)
@@ -1717,7 +1717,9 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
         for grp in groups
     ]
 
-    if engine == "cfradial1":
+    # cfradial1 backend always returns single group or root-object,
+    # from above we get back root-object in any case
+    if engine == "cfradial1" and not isinstance(group, str):
         ds = _assign_data_radial(ds[0], sweep=group)
 
     if group is None:

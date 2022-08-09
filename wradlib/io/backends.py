@@ -750,7 +750,7 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
         use_cftime=None,
         decode_timedelta=None,
         format=None,
-        group=None,
+        group="/",
     ):
 
         store = NetCDF4DataStore.open(
@@ -772,7 +772,7 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
             decode_timedelta=decode_timedelta,
         )
 
-        if group is not None:
+        if group != "/":
             ds = _assign_data_radial(ds, sweep=group)[0]
 
         return ds
