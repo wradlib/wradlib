@@ -28,13 +28,13 @@ gdal = util.import_optional("osgeo.gdal")
 requests = util.import_optional("requests")
 
 
-def init_header_redirect_session(user, pwd):
+def init_header_redirect_session(token):
     class HeaderRedirection(requests.Session):
         AUTH_HOST = "urs.earthdata.nasa.gov"
 
-        def __init__(self, username, password):
+        def __init__(self, token):
             super().__init__()
-            self.auth = (username, password)
+            self.headers.update({"Authorization": f"Bearer {token}"})
 
         def rebuild_auth(self, request, response):
             headers = request.headers
@@ -50,7 +50,7 @@ def init_header_redirect_session(user, pwd):
                     del headers["Authorization"]
             return
 
-    return HeaderRedirection(user, pwd)
+    return HeaderRedirection(token)
 
 
 def download_srtm(filename, destination, resolution=3):
@@ -75,18 +75,16 @@ def download_srtm(filename, destination, resolution=3):
     resolution = f"SRTMGL{resolution}.00{subres}"
     source = "/".join([website, resolution, "2000.02.11"])
     url = "/".join([source, filename])
-    user = os.environ.get("WRADLIB_EARTHDATA_USER", None)
-    pwd = os.environ.get("WRADLIB_EARTHDATA_PASS", None)
+    token = os.environ.get("WRADLIB_EARTHDATA_BEARER_TOKEN", None)
 
-    if user is None or pwd is None:
+    if token is None:
         raise ValueError(
-            "WRADLIB_EARTHDATA_USER and/or WRADLIB_EARTHDATA_PASS environment "
-            "variable missing. Downloading SRTM data requires a NASA Earthdata "
-            "Login username and password. To obtain a NASA Earthdata Login account, "
+            "WRADLIB_EARTHDATA_BEARER_TOKEN environment variable missing. "
+            "Downloading SRTM data requires a NASA Earthdata Account and Bearer Token. "
+            "To obtain a NASA Earthdata Login account, "
             "please visit https://urs.earthdata.nasa.gov/users/new/."
         )
-
-    session = init_header_redirect_session(user, pwd)
+    session = init_header_redirect_session(token)
     status_code = 0
     try:
         r = session.get(url, stream=True)
