@@ -22,10 +22,10 @@ requires_data = pytest.mark.skipif(
     reason="requires 'WRADLIB_DATA' environment variable set to wradlib-data repository location.",
 )
 
-has_secrets = os.environ.get("WRADLIB_EARTHDATA_USER", False)
+has_secrets = os.environ.get("WRADLIB_EARTHDATA_BEARER_TOKEN", False)
 requires_secrets = pytest.mark.skipif(
     not has_secrets,
-    reason="requires 'WRADLIB_EARTHDATA_USER' and 'WRADLIB_EARTHDATA_PASS' environment variable set.",
+    reason="requires 'WRADLIB_EARTHDATA_BEARER_TOKEN' environment variable set.",
 )
 
 requires_xarray_backend_api = pytest.mark.skipif(
