@@ -933,12 +933,25 @@ class TestGdal:
     @requires_secrets
     @requires_gdal
     def test_get_raster_elevation(self):
-        filename = "geo/bonn_new.tif"
+        filename = "geo/N39W028.SRTMGL3.hgt.zip"
         geofile = util.get_wradlib_data_file(filename)
         # crop file using translate to keep download sizes minimal
-        gdal.Translate("/vsimem/clip.tif", geofile, projWin=[5.5, 49.5, 5.6, 49.4])
+        gdal.Translate(
+            "/vsimem/clip.tif", geofile, projWin=[-28.5, 38.5, -28.495, 38.495]
+        )
         ds = wradlib.io.open_raster("/vsimem/clip.tif")
-        georef.get_raster_elevation(ds)
+        elev = georef.get_raster_elevation(ds)
+        wanted = np.array(
+            [
+                [267, 270, 269, 269, 273, 276],
+                [271, 270, 273, 279, 282, 283],
+                [273, 276, 277, 281, 287, 289],
+                [276, 280, 284, 287, 293, 296],
+                [278, 284, 289, 293, 302, 305],
+                [283, 291, 297, 301, 303, 309],
+            ]
+        )
+        np.testing.assert_array_equal(wanted, elev)
 
     @requires_gdal
     def test_get_raster_extent(self, gdal_data):
