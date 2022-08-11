@@ -15,7 +15,7 @@ Provide surface/terrain elevation information from SRTM data
 
    {}
 """
-__all__ = ["download_srtm", "get_srtm"]
+__all__ = ["download_srtm", "get_srtm", "get_srtm_tile_names"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
@@ -87,7 +87,7 @@ def download_srtm(filename, destination, resolution=3):
     session = init_header_redirect_session(token)
     status_code = 0
     try:
-        r = session.get(url, stream=True)
+        r = session.get(url, stream=True, timeout=5)
         r.raise_for_status()
         if destination is None:
             destination = filename
@@ -98,8 +98,44 @@ def download_srtm(filename, destination, resolution=3):
         status_code = err.response.status_code
         if status_code != 404:
             raise err
-    finally:
-        return status_code
+    except requests.exceptions.Timeout as err:
+        raise err
+    return status_code
+
+
+def get_srtm_tile_names(extent):
+    """
+    Get NASA SRTM elevation data tile names
+
+    Parameters
+    ----------
+    extent : list
+        list containing lonmin, lonmax, latmin, latmax
+
+    Returns
+    -------
+    out : list
+        list of tile names
+    """
+    extent = [int(np.floor(x)) for x in extent]
+    lonmin, lonmax, latmin, latmax = extent
+
+    filelist = []
+    for latitude in range(latmin, min(latmax, 0)):
+        for longitude in range(lonmin, min(lonmax, 0)):
+            tilename = f"S{-latitude:02g}W{-longitude:03g}"
+            filelist.append(tilename)
+        for longitude in range(max(lonmin, 0), lonmax + 1):
+            tilename = f"S{-latitude:02g}E{longitude:03g}"
+            filelist.append(tilename)
+    for latitude in range(max(0, latmin), latmax + 1):
+        for longitude in range(lonmin, min(lonmax + 1, 0)):
+            tilename = f"N{latitude:02g}W{-longitude:03g}"
+            filelist.append(tilename)
+        for longitude in range(max(lonmin, 0), lonmax + 1):
+            tilename = f"N{latitude:02g}E{longitude:03g}"
+            filelist.append(tilename)
+    return filelist
 
 
 def get_srtm(extent, resolution=3, merge=True):
@@ -120,27 +156,8 @@ def get_srtm(extent, resolution=3, merge=True):
     dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         gdal.Dataset Raster dataset containing elevation information
     """
-
-    extent = [int(np.floor(x)) for x in extent]
-    lonmin, lonmax, latmin, latmax = extent
-
-    filelist = []
-    for latitude in range(latmin, min(latmax, 0)):
-        for longitude in range(lonmin, min(lonmax, 0)):
-            georef = f"S{-latitude:02g}W{-longitude:03g}"
-            filelist.append(georef)
-        for longitude in range(max(lonmin, 0), lonmax + 1):
-            georef = f"S{-latitude:02g}E{longitude:03g}"
-            filelist.append(georef)
-    for latitude in range(max(0, latmin), latmax + 1):
-        for longitude in range(lonmin, min(lonmax, 0)):
-            georef = f"N{latitude:02g}W{-longitude:03g}"
-            filelist.append(georef)
-        for longitude in range(max(lonmin, 0), lonmax + 1):
-            georef = f"N{latitude:02g}E{longitude:03g}"
-            filelist.append(georef)
+    filelist = get_srtm_tile_names(extent)
     filelist = [f"{f}.SRTMGL{resolution}.hgt.zip" for f in filelist]
-
     wrl_data_path = util.get_wradlib_data_path()
     srtm_path = os.path.join(wrl_data_path, "geo")
     if not os.path.exists(srtm_path):

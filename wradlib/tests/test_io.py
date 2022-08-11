@@ -2140,23 +2140,31 @@ class TestXarray:
 
 
 class TestDem:
+    def test_get_srtm_tile_names(self):
+        t0 = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
+        t1 = ["N38W029", "N38W028", "N39W029", "N39W028"]
+        t2 = ["N38W029"]
+        t3 = ["S02E015", "S02E016", "S01E015", "S01E016", "N00E015", "N00E016"]
+        targets = [t0, t1, t2, t3]
+
+        e0 = [-0.3, 1.5, 51.4, 52.5]
+        e1 = [-28.5, -27.5, 38.5, 39.5]
+        e2 = [-28.5, -28.2, 38.2, 38.5]
+        e3 = [15.3, 16.6, -1.4, 0.4]
+        extent = [e0, e1, e2, e3]
+        for t, e in zip(targets, extent):
+            filelist = io.dem.get_srtm_tile_names(e)
+            assert t == filelist
+
     @requires_data
     @requires_secrets
     @requires_gdal
     @pytest.mark.xfail(strict=False)
-    def test_get_srtm(self):
-        targets = ["N51W001", "N51E000", "N51E001", "N52W001", "N52E000", "N52E001"]
+    def test_get_srtm(self, mock_wradlib_data_env):
+        targets = ["N38W029", "N38W028", "N39W029", "N39W028"]
         targets = [f"{f}.SRTMGL3.hgt.zip" for f in targets]
 
-        extent = [-0.3, 1.5, 51.4, 52.5]
-        datasets = io.dem.get_srtm(extent, merge=False)
-        filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
-        assert targets == filelist
-
-        targets = ["S02E015", "S02E016", "S01E015", "S01E016", "N00E015", "N00E016"]
-        targets = [f"{f}.SRTMGL3.hgt.zip" for f in targets]
-
-        extent = [15.3, 16.6, -1.4, 0.4]
+        extent = [-28.5, -27.5, 38.5, 39.5]
         datasets = io.dem.get_srtm(extent, merge=False)
         filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
         assert targets == filelist
@@ -2164,14 +2172,39 @@ class TestDem:
         merged = io.dem.get_srtm(extent)
 
         xsize = (datasets[0].RasterXSize - 1) * 2 + 1
-        ysize = (datasets[0].RasterXSize - 1) * 3 + 1
+        ysize = (datasets[0].RasterXSize - 1) * 2 + 1
         assert merged.RasterXSize == xsize
         assert merged.RasterYSize == ysize
 
         geo = merged.GetGeoTransform()
         resolution = 3 / 3600
-        ulcx = 15 - resolution / 2
-        ulcy = 1 + resolution / 2
+        ulcx = -29 - resolution / 2
+        ulcy = 40 + resolution / 2
+        geo_ref = [ulcx, resolution, 0, ulcy, 0, -resolution]
+        np.testing.assert_array_almost_equal(geo, geo_ref)
+
+    @requires_data
+    @requires_gdal
+    def test_get_srtm_offline(self):
+        targets = ["N38W029", "N38W028", "N39W029", "N39W028"]
+        targets = [f"{f}.SRTMGL3.hgt.zip" for f in targets]
+
+        extent = [-28.5, -27.5, 38.5, 39.5]
+        datasets = io.dem.get_srtm(extent, merge=False)
+        filelist = [os.path.basename(d.GetFileList()[0]) for d in datasets]
+        assert targets == filelist
+
+        merged = io.dem.get_srtm(extent)
+
+        xsize = (datasets[0].RasterXSize - 1) * 2 + 1
+        ysize = (datasets[0].RasterXSize - 1) * 2 + 1
+        assert merged.RasterXSize == xsize
+        assert merged.RasterYSize == ysize
+
+        geo = merged.GetGeoTransform()
+        resolution = 3 / 3600
+        ulcx = -29 - resolution / 2
+        ulcy = 40 + resolution / 2
         geo_ref = [ulcx, resolution, 0, ulcy, 0, -resolution]
         np.testing.assert_array_almost_equal(geo, geo_ref)
 
