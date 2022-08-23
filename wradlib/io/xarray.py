@@ -1085,7 +1085,10 @@ class _OdimH5NetCDFMetadata:
         attrs["add_offset"] = what.get("offset", 0)
         attrs["_FillValue"] = what.get("nodata", None)
         attrs["_Undetect"] = what.get("undetect", 0)
-        attrs["quantity"] = _maybe_decode(what["quantity"])
+        # if no quantity is given, use the group-name
+        attrs["quantity"] = _maybe_decode(
+            what.get("quantity", self._group.split("/")[-1])
+        )
         return attrs
 
     @property

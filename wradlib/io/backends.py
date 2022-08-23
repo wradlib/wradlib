@@ -441,7 +441,8 @@ class OdimStore(AbstractDataStore):
                 subgroups = [
                     "/".join([self._group, k])
                     for k in root[self._group].groups
-                    if "data" in k
+                    # get data and quality groups
+                    if "data" or "quality" in k
                 ]
                 substore = []
                 substore.extend(
