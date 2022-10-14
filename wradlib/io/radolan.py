@@ -833,6 +833,8 @@ def _get_radolan_product_attributes(attrs):
         "EY",
         "EZ",
         "YW",
+        "RV",
+        "RQ"
     ]:
         pattrs.update(radolan["RR"])
         scale_factor = np.float32(precision * 3600 / interval)
