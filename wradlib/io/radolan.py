@@ -868,6 +868,9 @@ def _get_radolan_product_attributes(attrs):
         "EY",
         "EZ",
         "YW",
+        "RV",
+        "RE",
+        "RQ",
     ]:
         pattrs.update(radolan["RR"])
         scale_factor = np.float32(precision * 3600 / interval)
@@ -1196,10 +1199,17 @@ class _radolan_file:
             "standard_name": "time",
             "units": "seconds since 1970-01-01T00:00:00Z",
         }
-        time = np.array(
-            [attrs.get("datetime").replace(tzinfo=dt.timezone.utc).timestamp()]
-        )
+        raw_time = attrs.get("datetime").replace(tzinfo=dt.timezone.utc)
+        time = np.array([raw_time.timestamp()])
         time_var = WradlibVariable("time", data=time, attrs=time_attrs)
+
+        pred_time = attrs.get("predictiontime", False)
+        raw_time + dt.timedelta(minutes=pred_time)
+        if pred_time:
+            pred_time = np.array([(raw_time + dt.timedelta(pred_time)).timestamp()])
+            pred_time_var = WradlibVariable(
+                "prediction_time", data=pred_time, attrs=time_attrs
+            )
 
         if attrs.get("formatversion", 3) >= 5:
             proj = projection.create_osr("dwd-radolan-wgs84")
@@ -1229,6 +1239,9 @@ class _radolan_file:
             "y": y_var,
             "x": x_var,
         }
+
+        if pred_time:
+            self._variables.update({"prediction_time": pred_time_var})
 
         if self._ancillary:
             for a in self._ancillary:
