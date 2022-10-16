@@ -7,6 +7,13 @@ RADOLAN and DX Data I/O
 ^^^^^^^^^^^^^^^^^^^^^^^
 Reading DX and RADOLAN data from German Weather Service
 
+Warning
+-------
+Additionally to the binary composite formats DWD also provides data in ASCII
+format, which have a very limited header and need to extract product and
+datetime from the filename. Use on your own risk.
+
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -43,13 +50,19 @@ from wradlib.io.xarray import WradlibVariable, raise_on_missing_xarray_backend
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
 dwdpattern = re.compile("raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin")
+# RW_20221015-0050.asc
+dwdascii = re.compile("(..)_([0-9]*)-([0-9]*).asc")
 
 
-def _get_timestamp_from_filename(filename):
+def _get_timestamp_from_filename(filename, pattern=dwdpattern):
     """Helper function doing the actual work of get_dx_timestamp"""
-    time = dwdpattern.search(filename).group(3)
-    if len(time) == 10:
-        time = "20" + time
+    if pattern is dwdpattern:
+        time = pattern.search(filename).group(3)
+        if len(time) == 10:
+            time = "20" + time
+    else:
+        pat = pattern.search(filename)
+        time = pat.group(2) + pat.group(3)
     return dt.datetime.strptime(time, "%Y%m%d%H%M")
 
 
@@ -423,6 +436,10 @@ def parse_dwd_composite_header(header):
     output : dict
         of metadata retrieved from file header
     """
+    # do not parse ascii header
+    if isinstance(header, dict) and header["producttype"] == "ascii":
+        return header
+
     # empty container
     out = {}
 
@@ -688,6 +705,14 @@ def read_radolan_header(fid):
         mychar = fid.read(1)
         if not mychar:
             raise EOFError("Unexpected EOF detected while reading " "RADOLAN header")
+        # if the first char is "n", then most likely this is ascii radolan data
+        if header == "" and mychar == b"n":
+            fid.seek(0)
+            # read the header
+            header = [fid.readline().decode().split() for i in range(6)]
+            header = {h[0]: int(h[1]) for h in header}
+            header["producttype"] = "ascii"
+            return header
         if mychar == b"\x03":
             break
         header += str(mychar.decode())
@@ -709,13 +734,19 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
-    established in the course of the
-    RADOLAN project and includes several file
+    established in the course of the RADOLAN project and includes several file
     types, e.g. RX, RO, RK, RZ, RP, RT, RC, RI, RG, PC, PG and many, many more.
     (see format description on the RADOLAN project homepage :cite:`DWD2009`).
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
     resolution and in polar-stereographic projection. There are other grid
     resolutions for different composites (eg. PC, PG)
+
+    Note
+    ----
+    DWD also provides data in ASCII format, which have a very limited header and need
+    to extract product and datetime from the filename. Use on your own risk.
+
+        .. versionadded:: 1.17
 
     Warning
     -------
@@ -769,17 +800,21 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
         if not loaddata:
             return None, attrs
 
-        attrs["nodataflag"] = NODATA
+        if radfile.attrs["producttype"] == "ascii":
+            NODATA = attrs["nodataflag"]
+        else:
+            attrs["nodataflag"] = NODATA
 
         if not attrs["radarid"] == "10000":
             warnings.warn(
-                "WARNING: You are using function e"
+                "WARNING: You are using function"
                 + "wradlib.io.read_RADOLAN_composit for a non "
                 + "composite file.\n "
                 + "This might work...but please check the validity "
                 + "of the results"
             )
-        arr = radfile.data[attrs["producttype"]]
+
+        arr = radfile.data[radfile.product]
 
     if loaddata == "xarray":
         arr = radolan_to_xarray(arr, attrs)
@@ -810,7 +845,7 @@ def _get_radolan_product_attributes(attrs):
     product = attrs["producttype"]
     pattrs = {}
 
-    if product not in ["PG", "PC"]:
+    if product not in ["PG", "PC", "ascii"]:
         interval = attrs["intervalseconds"]
         precision = attrs["precision"]
 
@@ -852,6 +887,9 @@ def _get_radolan_product_attributes(attrs):
         pattrs.update(radolan["PG"])
     elif product in ["%M", "%J", "%Y"]:
         pattrs.update(radolan["%"])
+    elif product in ["ascii"]:
+        pattrs["scale_factor"] = attrs["precision"]
+        pattrs["_FillValue"] = np.array([attrs["nodataflag"]], dtype=np.int32)
     else:
         raise ValueError("WRADLIB: unkown RADOLAN product!")
 
@@ -990,7 +1028,10 @@ class _radolan_file:
     def __init__(self, filename, fillmissing=False, copy=False, ancillary=False):
 
         if hasattr(filename, "seek"):
-            self.filename = "None"
+            if hasattr(filename, "name"):
+                self.filename = filename.name
+            else:
+                self.filename = "None"
         else:
             self.filename = filename
 
@@ -1013,6 +1054,8 @@ class _radolan_file:
 
         self._fill = fillmissing
         self._copy = copy
+        if self.attrs["producttype"] == "ascii":
+            self._product = self.filename[0:2].upper()
         self._ancillary = self._get_ancillary(requested=ancillary)
 
     @property
@@ -1060,11 +1103,23 @@ class _radolan_file:
 
     def _read_attrs(self):
         header = read_radolan_header(self.fp)
+        if isinstance(header, dict) and header["producttype"] == "ascii":
+            header["ncol"] = header.pop("ncols")
+            header["nrow"] = header.pop("nrows")
+            header["radarid"] = "10000"
+            header["nodataflag"] = header.pop("NODATA_value")
+            if header["nodataflag"] == -1:
+                header["precision"] = 0.1
+            header["datetime"] = _get_timestamp_from_filename(
+                self.filename, pattern=dwdascii
+            ).replace(tzinfo=util.UTC())
         return parse_dwd_composite_header(header)
 
     def _process_data(self):
         data = self._data[self.product]
-        if self.product in ["PG", "PC"]:
+        if self.attrs["producttype"] == "ascii":
+            self.attrs["nodatamask"] = np.where(data == self.attrs["nodataflag"])[0]
+        elif self.product in ["PG", "PC"]:
             self.attrs["nodataflag"] = 255
             self.attrs["nodatamask"] = np.where(data == 255)[0]
         elif self.product in ["RX", "EX", "WX"]:
@@ -1089,6 +1144,13 @@ class _radolan_file:
                     self._data[a] = ancdata
 
     def _read_data(self):
+        # handle ascii data
+        if self.attrs["producttype"] == "ascii":
+            # todo: check if flip is needed
+            self._data[self.product] = np.flip(np.genfromtxt(self.fp), axis=0)
+            self._process_data()
+            return
+
         # handle truncated data
         binarr_kwargs = {}
         if self._fill and self.product not in ["PG", "PC"]:
@@ -1168,9 +1230,10 @@ class _radolan_file:
             "x": x_var,
         }
 
-        for a in self._ancillary:
-            ancvar = WradlibVariable(self.dimensions, data=self, attrs={})
-            self._variables[a] = ancvar
+        if self._ancillary:
+            for a in self._ancillary:
+                ancvar = WradlibVariable(self.dimensions, data=self, attrs={})
+                self._variables[a] = ancvar
 
         # remove unneeded global attributes
         remove = [
@@ -1182,12 +1245,16 @@ class _radolan_file:
             "ncol",
             "maxrange",
             "intervalseconds",
+            "xllcorner",
+            "yllcorner",
+            "cellsize",
+            "nodataflag",
         ]
         [attrs.pop(key, None) for key in remove]
         self.attributes.update(attrs)
 
     def _get_ancillary(self, requested=True):
-        if self.product in ["PG", "PC"]:
+        if self.product in ["PG", "PC"] or self.attrs["producttype"] == "ascii":
             anc = ("nodatamask",)
         elif self.product in ["RX", "EX", "WX"]:
             anc = ("nodatamask", "cluttermask")
