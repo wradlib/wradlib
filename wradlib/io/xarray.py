@@ -2155,7 +2155,7 @@ def _write_odim_dataspace(src, dest):
         val = value.sortby("azimuth").values
         fillval = _fillvalue * scale_factor
         fillval += add_offset
-        val[np.isnan(val)] = fillval
+        val = np.where(np.isnan(val), fillval, val)
         val = (val - add_offset) / scale_factor
         if np.issubdtype(dtype, np.integer):
             val = np.rint(val).astype(dtype)
