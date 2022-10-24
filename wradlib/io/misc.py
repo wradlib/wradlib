@@ -194,11 +194,11 @@ def get_radiosonde(wmoid, date, cols=None):
         k, v = row.split(":")
         k = k.strip()
         v = v.strip()
-        if i == 2:
+        if k == 'Station number':
             v = int(v)
-        elif i == 3:
+        elif k == 'Observation time':
             v = dt.datetime.strptime(v, "%y%m%d/%H%M")
-        elif i > 3:
+        elif i > 2:
             v = float(v)
         meta[k] = v
 
