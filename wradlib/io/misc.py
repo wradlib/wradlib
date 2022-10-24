@@ -194,9 +194,9 @@ def get_radiosonde(wmoid, date, cols=None):
         k, v = row.split(":")
         k = k.strip()
         v = v.strip()
-        if k == 'Station number':
+        if k == "Station number":
             v = int(v)
-        elif k == 'Observation time':
+        elif k == "Observation time":
             v = dt.datetime.strptime(v, "%y%m%d/%H%M")
         elif i > 2:
             v = float(v)
