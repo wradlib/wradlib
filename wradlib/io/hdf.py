@@ -84,8 +84,10 @@ def open_odim_dataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.hdf.open_odim_mfdataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import OdimBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="odim", **kwargs)
+    return open_radar_dataset(filename_or_obj, engine=OdimBackendEntrypoint, **kwargs)
 
 
 def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
@@ -127,8 +129,10 @@ def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.hdf.open_gamic_mfdataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import GamicBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="gamic", **kwargs)
+    return open_radar_dataset(filename_or_obj, engine=GamicBackendEntrypoint, **kwargs)
 
 
 def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
@@ -175,8 +179,10 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
     .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import OdimBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="odim", **kwargs)
+    return open_radar_mfdataset(filename_or_obj, engine=OdimBackendEntrypoint, **kwargs)
 
 
 def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
@@ -223,8 +229,12 @@ def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
     .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import GamicBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="gamic", **kwargs)
+    return open_radar_mfdataset(
+        filename_or_obj, engine=GamicBackendEntrypoint, **kwargs
+    )
 
 
 def read_generic_hdf5(fname):

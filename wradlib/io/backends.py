@@ -488,6 +488,7 @@ class OdimBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for ODIM data."""
 
     available = has_import(h5netcdf)
+    name = "wradlib-odim"
 
     def open_dataset(
         self,
@@ -670,6 +671,7 @@ class GamicBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for GAMIC data."""
 
     available = has_import(h5netcdf)
+    name = "wradlib-gamic"
 
     def open_dataset(
         self,
@@ -738,6 +740,7 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for CfRadial1 data."""
 
     available = has_import(netCDF4)
+    name = "wradlib-cfradial1"
 
     def open_dataset(
         self,
@@ -783,6 +786,7 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for CfRadial2 data."""
 
     available = has_import(netCDF4)
+    name = "wradlib-cfradial2"
 
     def open_dataset(
         self,
@@ -1078,6 +1082,8 @@ class IrisStore(AbstractDataStore):
 
 class IrisBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for IRIS/Sigmet data."""
+
+    name = "wradlib-iris"
 
     def open_dataset(
         self,
@@ -1393,6 +1399,8 @@ class RainbowStore(AbstractDataStore):
 class RainbowBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for Rainbow5 data."""
 
+    name = "wradlib-rainbow"
+
     def open_dataset(
         self,
         filename_or_obj,
@@ -1637,6 +1645,8 @@ class FurunoStore(AbstractDataStore):
 
 class FurunoBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for Furuno data."""
+
+    name = "wradlib-furuno"
 
     def open_dataset(
         self,
