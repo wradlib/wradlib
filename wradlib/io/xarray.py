@@ -1633,6 +1633,9 @@ def _assign_data_radial2(ds):
     coords = {
         "azimuth": ds.azimuth,
         "elevation": ds.elevation,
+        "latitude": ds.latitude,
+        "longitude": ds.longitude,
+        "altitude": ds.altitude,
         "sweep_mode": sweep_mode,
         "time": time,
     }
