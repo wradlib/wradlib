@@ -32,7 +32,6 @@ import io
 
 import numpy as np
 from packaging.version import Version
-from xarray import Dataset
 from xarray.backends import NetCDF4DataStore
 from xarray.backends.common import (
     AbstractDataStore,
@@ -802,61 +801,31 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
         format=None,
         group=None,
     ):
-
-        # 1. first open store with group=None
-        # to get the root group and select wanted sweep/group
-        # 2. open store with wanted sweep/group and merge with root
-
         if isinstance(filename_or_obj, io.IOBase):
             filename_or_obj.seek(0)
 
         store = NetCDF4DataStore.open(
             filename_or_obj,
             format=format,
-            group=None,
-            lock=False,
+            group=group,
+            lock=None,
         )
-
-        if group is not None:
-            variables = store.get_variables()
-            var = Dataset(variables)
-            site = {
-                key: loc
-                for key, loc in var.items()
-                if key in ["longitude", "latitude", "altitude"]
-            }
-            sweep_names = var.sweep_group_name.values
-            idx = np.where(sweep_names == group)
-            fixed_angle = var.sweep_fixed_angle.values[idx].item()
-
-            store.close()
-
-            if isinstance(filename_or_obj, io.IOBase):
-                filename_or_obj.seek(0)
-
-            store = NetCDF4DataStore.open(
-                filename_or_obj,
-                format=format,
-                group=group,
-                lock=False,
-            )
 
         store_entrypoint = StoreBackendEntrypoint()
 
-        ds = store_entrypoint.open_dataset(
-            store,
-            mask_and_scale=mask_and_scale,
-            decode_times=decode_times,
-            concat_characters=concat_characters,
-            decode_coords=decode_coords,
-            drop_variables=drop_variables,
-            use_cftime=use_cftime,
-            decode_timedelta=decode_timedelta,
-        )
+        with close_on_error(store):
+            ds = store_entrypoint.open_dataset(
+                store,
+                mask_and_scale=mask_and_scale,
+                decode_times=decode_times,
+                concat_characters=concat_characters,
+                decode_coords=decode_coords,
+                drop_variables=drop_variables,
+                use_cftime=use_cftime,
+                decode_timedelta=decode_timedelta,
+            )
 
         if group is not None:
-            ds = ds.assign_coords(site)
-            ds.attrs["fixed_angle"] = fixed_angle
             ds = _assign_data_radial2(ds)
             dim0 = list(set(ds.dims) & {"azimuth", "elevation"})[0]
             ds = ds.sortby(dim0)
