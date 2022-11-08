@@ -75,8 +75,12 @@ def open_cfradial1_dataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.netcdf.open_cfradial1_mfdataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import CfRadial1BackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="cfradial1", **kwargs)
+    return open_radar_dataset(
+        filename_or_obj, engine=CfRadial1BackendEntrypoint, **kwargs
+    )
 
 
 def open_cfradial2_dataset(filename_or_obj, group=None, **kwargs):
@@ -108,8 +112,12 @@ def open_cfradial2_dataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.netcdf.open_cfradial2_mfdataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import CfRadial2BackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="cfradial2", **kwargs)
+    return open_radar_dataset(
+        filename_or_obj, engine=CfRadial2BackendEntrypoint, **kwargs
+    )
 
 
 def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
@@ -146,8 +154,12 @@ def open_cfradial1_mfdataset(filename_or_obj, group=None, **kwargs):
     .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import CfRadial1BackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="cfradial1", **kwargs)
+    return open_radar_mfdataset(
+        filename_or_obj, engine=CfRadial1BackendEntrypoint, **kwargs
+    )
 
 
 def open_cfradial2_mfdataset(filename_or_obj, group=None, **kwargs):
@@ -184,8 +196,12 @@ def open_cfradial2_mfdataset(filename_or_obj, group=None, **kwargs):
     .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import CfRadial2BackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="cfradial2", **kwargs)
+    return open_radar_mfdataset(
+        filename_or_obj, engine=CfRadial2BackendEntrypoint, **kwargs
+    )
 
 
 def read_edge_netcdf(filename, enforce_equidist=False):

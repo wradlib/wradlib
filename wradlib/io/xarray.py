@@ -61,6 +61,7 @@ import deprecation
 import numpy as np
 import xarray as xr
 from packaging.version import Version
+from xarray.backends import BackendEntrypoint
 from xarray.core.variable import Variable
 
 from wradlib import version
@@ -1651,8 +1652,9 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     filename_or_obj : str, Path, file-like or Datastore
         Strings and Path objects are interpreted as a path to a local or remote
         radar file and opened with an appropriate engine.
-    engine : {"odim", "furuno", "gamic", "cfradial1", "cfradial2", "iris", "rainbow"}
-        Engine to use when reading files.
+    engine : str or xarray.backends.BackendEntrypoint
+        Engine to use when reading files, eg. ``wradlib-odim`` or
+        ``wradlib.io.backends.OdimBackendEntryPoint``.
 
     Keyword Arguments
     -----------------
@@ -1670,14 +1672,14 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     --------
     :func:`~wradlib.io.xarray.open_radar_mfdataset`
     """
-    if engine not in [
-        "cfradial1",
-        "cfradial2",
-        "furuno",
-        "gamic",
-        "odim",
-        "iris",
-        "rainbow",
+    if not issubclass(engine, BackendEntrypoint) and engine not in [
+        "wradlib-cfradial1",
+        "wradlib-cfradial2",
+        "wradlib-furuno",
+        "wradlib-gamic",
+        "wradlib-odim",
+        "wradlib-iris",
+        "wradlib-rainbow",
     ]:
         raise TypeError(f"Missing or unknown `engine` keyword argument '{engine}'.")
 
@@ -1685,22 +1687,26 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
     groups = []
     backend_kwargs = kwargs.pop("backend_kwargs", {})
 
+    # get engine name
+    engine_name = engine.name if issubclass(engine, BackendEntrypoint) else engine
+    engine_name = engine_name.split("-")[1]
+
     if isinstance(group, (str, int)):
         groups = [group]
     elif isinstance(group, list):
         pass
     else:
-        if engine == "cfradial1":
+        if engine_name == "cfradial1":
             groups = ["/"]
-        elif engine == "cfradial2":
-            groups = _get_nc4group_names(filename_or_obj, engine)
-        elif engine in ["gamic", "odim"]:
-            groups = _get_h5group_names(filename_or_obj, engine)
-        elif engine == "iris":
+        elif engine_name == "cfradial2":
+            groups = _get_nc4group_names(filename_or_obj, engine_name)
+        elif engine_name in ["gamic", "odim"]:
+            groups = _get_h5group_names(filename_or_obj, engine_name)
+        elif engine_name == "iris":
             groups = _get_iris_group_names(filename_or_obj)
-        elif engine in ["rainbow"]:
+        elif engine_name in ["rainbow"]:
             groups = _get_rainbow_group_names(filename_or_obj)
-        elif engine in ["furuno"]:
+        elif engine_name in ["furuno"]:
             groups = [group]
         elif isinstance(group, str):
             groups = [group]
@@ -1709,7 +1715,7 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
         else:
             pass
 
-    if engine in ["gamic", "odim"]:
+    if engine_name in ["gamic", "odim"]:
         keep_azimuth = kwargs.pop("keep_azimuth", False)
         backend_kwargs["keep_azimuth"] = keep_azimuth
 
@@ -1722,11 +1728,11 @@ def open_radar_dataset(filename_or_obj, engine=None, **kwargs):
 
     # cfradial1 backend always returns single group or root-object,
     # from above we get back root-object in any case
-    if engine == "cfradial1" and not isinstance(group, str):
+    if engine_name == "cfradial1" and not isinstance(group, str):
         ds = _assign_data_radial(ds[0], sweep=group)
 
     if group is None:
-        vol = RadarVolume(engine=engine)
+        vol = RadarVolume(engine=engine_name)
         vol.extend(ds)
         vol.sort(key=lambda x: x.time.min().values)
         ds = vol
@@ -1769,8 +1775,9 @@ def open_radar_mfdataset(paths, **kwargs):
     combine : {"by_coords", "nested"}, optional
         Whether :py:func:`xarray:xarray.combine_by_coords` or :py:func:`xarray:xarray.combine_nested`
         is used to combine all the data. Default is to use :py:func:`xarray:xarray.combine_by_coords`.
-    engine : {"odim", "gamic", "cfradial1", "cfradial2"}
-        Engine to use when reading files.
+    engine : str or xarray.backends.BackendEntrypoint
+        Engine to use when reading files, eg. ``wradlib-odim`` or
+        ``wradlib.io.backends.OdimBackendEntryPoint``.
     **kwargs : optional
         Additional arguments passed on to :py:func:`xarray:xarray.open_mfdataset`.
 
@@ -1835,15 +1842,30 @@ def open_radar_mfdataset(paths, **kwargs):
     concat_dim, combine = _concat_combine(kwargs, patharr)
     engine = kwargs.pop("engine")
 
+    if not issubclass(engine, BackendEntrypoint) and engine not in [
+        "wradlib-cfradial1",
+        "wradlib-cfradial2",
+        "wradlib-furuno",
+        "wradlib-gamic",
+        "wradlib-odim",
+        "wradlib-iris",
+        "wradlib-rainbow",
+    ]:
+        raise TypeError(f"Missing or unknown `engine` keyword argument '{engine}'.")
+
+    # get engine name
+    engine_name = engine.name if issubclass(engine, BackendEntrypoint) else engine
+    engine_name = engine_name.split("-")[1]
+
     group = kwargs.pop("group", None)
     if group is None:
-        if engine == "cfradial2":
-            group = _get_nc4group_names(patharr.flat[0], engine)
-        elif engine in ["gamic", "odim"]:
-            group = _get_h5group_names(patharr.flat[0], engine)
-        elif engine == "iris":
+        if engine_name == "cfradial2":
+            group = _get_nc4group_names(patharr.flat[0], engine_name)
+        elif engine_name in ["gamic", "odim"]:
+            group = _get_h5group_names(patharr.flat[0], engine_name)
+        elif engine_name == "iris":
             group = _get_iris_group_names(patharr.flat[0])
-        elif engine in ["rainbow"]:
+        elif engine_name in ["rainbow"]:
             group = _get_rainbow_group_names(patharr.flat[0])
     elif isinstance(group, str):
         group = [group]
@@ -1865,7 +1887,7 @@ def open_radar_mfdataset(paths, **kwargs):
     ]
 
     if len(ds) > 1:
-        vol = RadarVolume(engine=engine)
+        vol = RadarVolume(engine=engine_name)
         vol.extend(ds)
         vol.sort(key=lambda x: x.time.min().values)
         ds = vol

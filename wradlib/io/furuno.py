@@ -511,8 +511,10 @@ def open_furuno_dataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.furuno.open_furuno_mfdataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import FurunoBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="furuno", **kwargs)
+    return open_radar_dataset(filename_or_obj, engine=FurunoBackendEntrypoint, **kwargs)
 
 
 def open_furuno_mfdataset(filename_or_obj, group=None, **kwargs):
@@ -548,5 +550,9 @@ def open_furuno_mfdataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.furuno.open_furuno_dataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import FurunoBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="furuno", **kwargs)
+    return open_radar_mfdataset(
+        filename_or_obj, engine=FurunoBackendEntrypoint, **kwargs
+    )

@@ -651,8 +651,12 @@ def open_rainbow_dataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.rainbow.open_rainbow_dataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import RainbowBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="rainbow", **kwargs)
+    return open_radar_dataset(
+        filename_or_obj, engine=RainbowBackendEntrypoint, **kwargs
+    )
 
 
 def open_rainbow_mfdataset(filename_or_obj, group=None, **kwargs):
@@ -688,5 +692,9 @@ def open_rainbow_mfdataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.rainbow.open_rainbow_dataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io.backends import RainbowBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="rainbow", **kwargs)
+    return open_radar_mfdataset(
+        filename_or_obj, engine=RainbowBackendEntrypoint, **kwargs
+    )

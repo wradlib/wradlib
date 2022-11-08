@@ -79,14 +79,14 @@ def setup_package():
         packages=find_packages(),
         entry_points={
             "xarray.backends": [
-                "cfradial1 = wradlib.io.backends:CfRadial1BackendEntrypoint",
-                "cfradial2 = wradlib.io.backends:CfRadial2BackendEntrypoint",
-                "furuno = wradlib.io.backends:FurunoBackendEntrypoint",
-                "gamic = wradlib.io.backends:GamicBackendEntrypoint",
-                "odim = wradlib.io.backends:OdimBackendEntrypoint",
+                "wradlib-cfradial1 = wradlib.io.backends:CfRadial1BackendEntrypoint",
+                "wradlib-cfradial2 = wradlib.io.backends:CfRadial2BackendEntrypoint",
+                "wradlib-furuno = wradlib.io.backends:FurunoBackendEntrypoint",
+                "wradlib-gamic = wradlib.io.backends:GamicBackendEntrypoint",
+                "wradlib-odim = wradlib.io.backends:OdimBackendEntrypoint",
                 "radolan = wradlib.io.backends:RadolanBackendEntrypoint",
-                "iris = wradlib.io.backends:IrisBackendEntrypoint",
-                "rainbow = wradlib.io.backends:RainbowBackendEntrypoint",
+                "wradlib-iris = wradlib.io.backends:IrisBackendEntrypoint",
+                "wradlib-rainbow = wradlib.io.backends:RainbowBackendEntrypoint",
             ]
         },
     )

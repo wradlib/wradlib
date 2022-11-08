@@ -4181,8 +4181,10 @@ def open_iris_dataset(filename_or_obj, group=None, **kwargs):
     :func:`~wradlib.io.iris.open_iris_mfdataset`
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io import IrisBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine="iris", **kwargs)
+    return open_radar_dataset(filename_or_obj, engine=IrisBackendEntrypoint, **kwargs)
 
 
 def open_iris_mfdataset(filename_or_obj, group=None, **kwargs):
@@ -4223,5 +4225,7 @@ def open_iris_mfdataset(filename_or_obj, group=None, **kwargs):
     .. [1] https://docs.dask.org/en/latest/
     """
     raise_on_missing_xarray_backend()
+    from wradlib.io import IrisBackendEntrypoint
+
     kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine="iris", **kwargs)
+    return open_radar_mfdataset(filename_or_obj, engine=IrisBackendEntrypoint, **kwargs)
