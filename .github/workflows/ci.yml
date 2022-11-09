@@ -1,6 +1,6 @@
 name: CI
 env:
-  micromamba_version: 0.22.0
+  micromamba_version: 1.0
 
 on:
   push:
@@ -18,11 +18,13 @@ jobs:
     name: lint and style checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
         with:
-          python-version: "3.9"
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -49,43 +51,43 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Install micromamba environment
-      uses: mamba-org/provision-with-micromamba@main
-      with:
-        environment-name: wradlib-tests
-        environment-file: ci/requirements/unittests.yml
-        extra-specs: |
-          python=${{ matrix.python-version }}
-    - name: Install wradlib
-      run: |
-        python -m pip install . --no-deps
-    - name: Clone wradlib-data
-      run: |
-        git clone https://github.com/wradlib/wradlib-data.git
-    - name: Version Info
-      run: |
-        python -c "import wradlib; print(wradlib.version.version)"
-        python -c "import wradlib; print(wradlib.show_versions())"
-    - name: Test with pytest
-      env:
-        WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
-      run: |
-        echo $WRADLIB_DATA
-        export WRADLIB_DATA=`realpath $WRADLIB_DATA`
-        pytest -n auto --dist loadfile --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1.2.1
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        env_vars: RUNNER_OS,PYTHON_VERSION
-        name: codecov-gha
-        fail_ci_if_error: false
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install micromamba environment
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-name: wradlib-tests
+          environment-file: ci/requirements/unittests.yml
+          extra-specs: |
+            python=${{ matrix.python-version }}
+      - name: Install wradlib
+        run: |
+          python -m pip install . --no-deps
+      - name: Clone wradlib-data
+        run: |
+          git clone https://github.com/wradlib/wradlib-data.git
+      - name: Version Info
+        run: |
+          python -c "import wradlib; print(wradlib.version.version)"
+          python -c "import wradlib; print(wradlib.show_versions())"
+      - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
+        run: |
+          echo $WRADLIB_DATA
+          export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+          pytest -n auto --dist loadfile --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: RUNNER_OS,PYTHON_VERSION
+          name: codecov-gha
+          fail_ci_if_error: false
 
   build_1:
     name: wradlib unit tests - macosx
@@ -99,44 +101,44 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Install micromamba environment
-      uses: mamba-org/provision-with-micromamba@main
-      with:
-        environment-name: wradlib-tests
-        environment-file: ci/requirements/unittests.yml
-        extra-specs: |
-          python=${{ matrix.python-version }}
-    - name: Install wradlib
-      run: |
-        cat "$HOME/.bash_profile"
-        python -m pip install . --no-deps
-    - name: Clone wradlib-data
-      run: |
-        git clone https://github.com/wradlib/wradlib-data.git
-    - name: Version Info
-      run: |
-        python -c "import wradlib; print(wradlib.version.version)"
-        python -c "import wradlib; print(wradlib.show_versions())"
-    - name: Test with pytest
-      env:
-        WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
-      run: |
-        echo $WRADLIB_DATA
-        export WRADLIB_DATA=`python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" $WRADLIB_DATA`
-        pytest -n auto --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1.2.1
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        env_vars: RUNNER_OS,PYTHON_VERSION
-        name: codecov-gha
-        fail_ci_if_error: false
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install micromamba environment
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-name: wradlib-tests
+          environment-file: ci/requirements/unittests.yml
+          extra-specs: |
+            python=${{ matrix.python-version }}
+      - name: Install wradlib
+        run: |
+          cat "$HOME/.bash_profile"
+          python -m pip install . --no-deps
+      - name: Clone wradlib-data
+        run: |
+          git clone https://github.com/wradlib/wradlib-data.git
+      - name: Version Info
+        run: |
+          python -c "import wradlib; print(wradlib.version.version)"
+          python -c "import wradlib; print(wradlib.show_versions())"
+      - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
+        run: |
+          echo $WRADLIB_DATA
+          export WRADLIB_DATA=`python -c "import os, sys; print(os.path.realpath(sys.argv[1]))" $WRADLIB_DATA`
+          pytest -n auto --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: RUNNER_OS,PYTHON_VERSION
+          name: codecov-gha
+          fail_ci_if_error: false
 
   build_2:
     name: wradlib unit tests - windows
@@ -150,9 +152,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -178,7 +180,7 @@ jobs:
         run: |
           pytest -n auto --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.2.1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           flags: unittests
@@ -199,9 +201,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -232,7 +234,7 @@ jobs:
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.2.1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           flags: notebooktests
@@ -265,13 +267,13 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -295,13 +297,13 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
