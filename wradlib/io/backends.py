@@ -174,6 +174,9 @@ class RadolanDataStore(AbstractDataStore):
 class RadolanBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for RADOLAN data."""
 
+    description = "Open RADOLAN in Xarray"
+    url = "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_radolan_backend.html"
+
     def open_dataset(
         self,
         filename_or_obj,
@@ -487,6 +490,10 @@ class OdimBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for ODIM data."""
 
     available = has_import(h5netcdf)
+    description = "Open ODIM_H5 (.h5, .hdf5) using h5netcdf in Xarray"
+    url = (
+        "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_odim_backend.html"
+    )
     name = "wradlib-odim"
 
     def open_dataset(
@@ -670,6 +677,10 @@ class GamicBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for GAMIC data."""
 
     available = has_import(h5netcdf)
+    description = "Open GAMIC HDF5 (.h5, .hdf5, .mvol) using h5netcdf in Xarray"
+    url = (
+        "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_gamic_backend.html"
+    )
     name = "wradlib-gamic"
 
     def open_dataset(
@@ -739,6 +750,8 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for CfRadial1 data."""
 
     available = has_import(netCDF4)
+    description = "Open CfRadial1 (.nc, .nc4) using netCDF4 in Xarray"
+    url = "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_cfradial1_backend.html"
     name = "wradlib-cfradial1"
 
     def open_dataset(
@@ -785,6 +798,8 @@ class CfRadial2BackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for CfRadial2 data."""
 
     available = has_import(netCDF4)
+    description = "Open CfRadial2 (.nc, .nc4) using netCDF4 in Xarray"
+    url = "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_cfradial2_backend.html"
     name = "wradlib-cfradial2"
 
     def open_dataset(
@@ -1052,6 +1067,10 @@ class IrisStore(AbstractDataStore):
 class IrisBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for IRIS/Sigmet data."""
 
+    description = "Open IRIS/Sigmet files in Xarray"
+    url = (
+        "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_iris_backend.html"
+    )
     name = "wradlib-iris"
 
     def open_dataset(
@@ -1368,6 +1387,8 @@ class RainbowStore(AbstractDataStore):
 class RainbowBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for Rainbow5 data."""
 
+    description = "Open Rainbow5 files in Xarray"
+    url = "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_rainbow_backend.html"
     name = "wradlib-rainbow"
 
     def open_dataset(
@@ -1615,6 +1636,8 @@ class FurunoStore(AbstractDataStore):
 class FurunoBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for Furuno data."""
 
+    description = "Open FURUNO (.scn, .scnx) in Xarray"
+    url = "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_furuno_backend.html"
     name = "wradlib-furuno"
 
     def open_dataset(
