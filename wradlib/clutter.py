@@ -213,7 +213,7 @@ def filter_gabella(
     return clutter1 | clutter2
 
 
-def histo_cut(prec_accum):
+def histo_cut(prec_accum, upper_frequency=0.01, lower_frequency=0.01):
     """Histogram based clutter identification.
 
     This identification algorithm uses the histogram of temporal accumulated
@@ -221,25 +221,36 @@ def histo_cut(prec_accum):
     specified percentage (1% by default) of the frequency of the class with the
     biggest frequency and remove the values from the dataset until the changes
     from iteration to iteration falls below a threshold. This algorithm is able
-    to detect static clutter as well as shadings. It is suggested to choose a
-    representative time periode for the input precipitation accumulation. The
-    recommended time period should cover one year.
+    to detect static clutter as well as shadings.
+
+    The tresholds for the upper frequency (clutter) and the lower frequency (shading)
+    can be parameterized by the respective kwargs, `upper_frequency`/`lower_frequency`.
+
+    It is suggested to choose a representative time periode for the input precipitation
+    accumulation. The recommended time period should cover one year.
 
     Parameters
     ----------
     prec_accum : :py:class:`numpy:numpy.ndarray`
         spatial array containing rain accumulation
 
+    Keyword Arguments
+    -----------------
+    upper_frequency : float
+        Upper frequency percentage for clutter detection, defaults to 0.01.
+    lower_frequency : float
+        Lower frequency percentage for shading detection, defaults to 0.01.
+
     Returns
     -------
     output : :py:class:`numpy:numpy.ndarray`
-        boolean array with pixels identified as clutter/shadings set to True.
+        uint8 array with pixels identified as clutter set to 1 and shadings set 2.
+        Remaining pixels set to 0.
 
     Examples
     --------
 
     See :ref:`/notebooks/classify/wradlib_histo_cut_example.ipynb`.
-
     """
 
     prec_accum = np.array(prec_accum)
@@ -277,17 +288,17 @@ def histo_cut(prec_accum):
         # is already robust
         if abs(lower_bound - lower_bound_before) > 1:
             # get the index of the class which underscores the occurence of
-            # the biggest class by 1%, beginning from the class with the
-            # biggest occurence to the first class
+            # the biggest class by lower_frequency (1%, default), beginning from
+            # the class with the biggest occurence to the first class
             for i in range(index, -1, -1):
-                if n[i] < (n[index] * 0.01):
+                if n[i] < (n[index] * lower_frequency):
                     break
         if abs(upper_bound - upper_bound_before) > 1:
             # get the index of the class which underscores the occurence of
-            # the biggest class by 1%, beginning from the class with the
-            # biggest occurence to the last class
+            # the biggest class by upper_frequency (1%, default), beginning from
+            # the class with the biggest occurence to the last class
             for j in range(index, len(n)):
-                if n[j] < (n[index] * 0.01):
+                if n[j] < (n[index] * upper_frequency):
                     break
 
         lower_bound_before = lower_bound
@@ -296,7 +307,12 @@ def histo_cut(prec_accum):
         lower_bound = bins[i]
         upper_bound = bins[j + 1]
 
-    return np.isnan(prec_accum_masked)
+    # create zero array and set clutter as 1 and shading as 2
+    mask = np.zeros(prec_accum.shape, dtype=np.uint8)
+    mask[prec_accum > upper_bound] = 1
+    mask[prec_accum < lower_bound] = 2
+
+    return mask
 
 
 def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
