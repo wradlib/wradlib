@@ -244,8 +244,9 @@ def histo_cut(prec_accum, upper_frequency=0.01, lower_frequency=0.01):
     Returns
     -------
     output : :py:class:`numpy:numpy.ndarray`
-        uint8 array with pixels identified as clutter set to 1 and shadings set 2.
-        Remaining pixels set to 0.
+        uint8 array with pixels identified as clutter set to 1 and shadings set to 2.
+        Remaining pixels set to 0. Users strictly relying on a boolean mask might have
+        to explicitely cast to boolean (adding `.astype(np.bool)` on the return).
 
     Examples
     --------
