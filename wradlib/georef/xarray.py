@@ -210,6 +210,10 @@ def georeference_dataset(obj, **kwargs):
         dimlist = list(obj["elevation"].dims)
     else:
         dimlist = list(obj["azimuth"].dims)
+
+    if xyz.ndim > 3:
+        dimlist += ["azimuth"]
+
     dimlist += ["range"]
 
     # add xyz, ground range coordinates
