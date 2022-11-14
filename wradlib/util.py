@@ -1098,7 +1098,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
         
         # Generate fake rays array
         all_fake_elevs = np.sort(np.concatenate((nan_fake_elevs, data_fake_elevs)))
-        obj_fake = vertical_interpolation(obj, numelev=all_fake_elevs)
+        obj_fake = vertical_interpolation(obj, elevs=all_fake_elevs)
         obj_fake = obj_fake.where(~obj_fake.elevation.isin(nan_fake_elevs)) # fill with nan on corresponding elevations
         
     
@@ -1107,7 +1107,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
 
         
     # We do not use this for interpolation here, but for stacking the elevations
-    ds = vertical_interpolation(obj, numelev=None)
+    ds = vertical_interpolation(obj, elevs=None)
         
     if real_beams:
         ds = xr.concat([ds, obj_fake], dim="elevation")
