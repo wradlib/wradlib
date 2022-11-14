@@ -987,3 +987,133 @@ def has_import(module):
 
 if __name__ == "__main__":
     print("wradlib: Calling module <util> as main...")
+
+      
+def vertical_interpolation(vol, elevs=None, method="nearest"):
+    """
+    Vertically interpolate volume data
+    
+    elevs: iterable of elevations to which interpolate the data. Defaults to None, which does no interpolation and returns a stacked array of the data.
+    method: method for interpolation, defaults to "nearest"
+    """
+    time = vol[0].time
+    dsx = xr.concat([v.drop(["time","rtime"]).assign_coords({"elevation": v.attrs.get("fixed_angle")}) for v in vol], dim="elevation")
+    dsx = dsx.transpose("time", "elevation", "azimuth", "range")
+    if elevs is not None:
+        new_elev=elevs
+        dsx = dsx.interp(elevation=new_elev, method=method)
+    dsx = dsx.assign_coords({"time": time})
+    return dsx
+
+def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=False, bw = 1, proj=None):
+    """Cut a cross section from PPI volume scans
+
+        .. versionadded:: 1.18
+
+    This function extracts cross sections from a PPI volume scan along one or more azimuth angles.
+    Similar to PyArt's cross_section_ppi function.
+
+    Parameters
+    ----------
+    obj : :py:class:`wradlib:wradlib.io.xarray.RadarVolume` - Radar volume containing PPI sweeps 
+        from which azimuthal cross sections will be extracted.
+    azimuths : float, slice or list
+        Value of azimuth to extract the cross section. Can be multiple values 
+        in the form of a slice or a list of float values.
+
+    #######################
+    Keyword Arguments
+    -----------------
+    method : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
+        Method for inexact matches from :py:class:`xarray:xarray.Dataset.sel`.
+    tolerance : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
+        Maximum distance between original and new labels for inexact matches
+        from :py:class:`xarray:xarray.Dataset.sel`.
+    real_beams : bool
+        Option meant for plotting beams with their true beamwidth instead of filling the empty space by
+        stretching the beams (because of how matplotlib pcolormesh works).
+        Defaults to False, which returns a Dataset of cross sections in the specified azimuth(s).
+        If set to True, it will return the same Dataset with additional "fake" beams so that when plotting
+        with matplotlib pcolormesh the beamwidths are well represented.
+    bw : float, optional
+        beam width in degrees (defaults to 1 degree). This is only used if "real_beams=True".
+    proj : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
+        Projection to use with :py:class:`wradlib.georef.xarray.georeference_dataset`.
+        If GDAL OSR SRS, output is in this projection, else AEQD.
+    Returns
+    ----------
+    obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
+        Dataset of cross sections in the specified azimuth(s). 
+    """
+    if real_beams:
+        ## Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
+        ## up until halfway to the nearest gridpoints.
+        ## Then, we need to create fake rays of nan and/or duplicated data so the filling
+        ## only extends the coloring to cover the beamwidth and no more.
+
+        # Sort array of elevation angles
+        sorted_elevs = np.sort(obj.root.sweep_fixed_angle.data)
+        
+        # Calculate midpoints between elevation angles
+        sorted_elevs_midpoints = ( sorted_elevs[1:] + sorted_elevs[:-1] )/2
+        
+        # Identify spaces in between beams > bw
+        spaces = sorted_elevs[1:] - sorted_elevs[:-1]
+        separation_needed = spaces > bw
+        
+        # Beams separated by exactly 2*bw need only a nan ray at the midpoint
+        two_bw = np.delete( sorted_elevs_midpoints, ~ (separation_needed * spaces == (2*bw)) )
+        
+        # Beams separated by more than 2*bw need two fake nan rays in between
+        over_two_bw = np.concatenate( (
+                                    np.delete( sorted_elevs[:-1]+bw, ~ (separation_needed * spaces > (2*bw) ) ),
+                                    np.delete( sorted_elevs[1:]-bw, ~ (separation_needed * spaces > (2*bw) ) )
+                                ) )
+        
+        # Beams separated between bw and 2*bw need a fake nan ray at midpoint and two duplicated data rays over and below
+        condition = separation_needed * ( spaces < (2*bw) )
+        under_two_bw_nan = np.delete( sorted_elevs_midpoints, ~ condition )
+        
+        
+        nan_space = np.delete( spaces - bw, ~ condition )
+        under_two_bw_dup_data = np.concatenate( (
+                                        under_two_bw_nan - nan_space, 
+                                        under_two_bw_nan + nan_space, 
+                                        ) )
+        
+        # If the first (lowest) real ray falls in this last case, we also need to add an
+        # additional nan ray below:
+        if condition[0]:
+            under_two_bw_nan = np.concatenate(( np.array(sorted_elevs[0]-bw, ndmin=1), 
+                                               under_two_bw_nan ))
+        
+        
+        # Join all fake ray elevations for nan or duplicated data
+        nan_fake_elevs = np.sort(np.concatenate((two_bw, over_two_bw, under_two_bw_nan)))
+        
+        data_fake_elevs = np.sort(under_two_bw_dup_data)
+        
+        # Sort volume in ascending order of elevation    
+        obj = sorted(obj, key=lambda ds: ds.attrs["fixed_angle"])
+        
+        # Generate fake rays array
+        all_fake_elevs = np.sort(np.concatenate((nan_fake_elevs, data_fake_elevs)))
+        obj_fake = vertical_interpolation(obj, numelev=all_fake_elevs)
+        obj_fake = obj_fake.where(~obj_fake.elevation.isin(nan_fake_elevs)) # fill with nan on corresponding elevations
+        
+    
+    # Sort volume in ascending order of elevation    
+    obj = sorted(obj, key=lambda ds: ds.attrs["fixed_angle"])
+
+        
+    # We do not use this for interpolation here, but for stacking the elevations
+    ds = vertical_interpolation(obj, numelev=None)
+        
+    if real_beams:
+        ds = xr.concat([ds, obj_fake], dim="elevation")
+        ds = ds.sortby("elevation")
+                
+    # Georeference the data
+    ds = ds.pipe(georeference_dataset, proj=proj) 
+    
+    return ds.sel(azimuth = azimuth, method = method, tolerance = tolerance)
