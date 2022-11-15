@@ -219,7 +219,7 @@ def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
 
 
 class VectorSource:
-    """ DataSource class for handling ogr/gdal vector data
+    """DataSource class for handling ogr/gdal vector data
 
     DataSource handles creates in-memory (vector) ogr DataSource object with
     one layer for point or polygon geometries.
@@ -251,8 +251,7 @@ class VectorSource:
 
     Examples
     --------
-    See \
-    :ref:`/notebooks/fileio/wradlib_vector_source.ipynb`.
+    See :ref:`/notebooks/fileio/wradlib_vector_data.ipynb`.
     """
 
     def __init__(self, data=None, srs=None, name="layer", source=0, **kwargs):

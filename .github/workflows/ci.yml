@@ -223,8 +223,12 @@ jobs:
       - name: Clone wradlib-notebooks
         run: |
           git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks
+          cd notebooks
+          echo "NOTEBOOKS_COMMIT=`git rev-parse HEAD`" >> $GITHUB_ENV
       - name: Version Info
         run: |
+          echo "WRADLIB_TAG=`git name-rev --name-only --tags HEAD`" >> $GITHUB_ENV
+          echo "WRADLIB_VERSION=`python -c "import wradlib; print(wradlib.version.version)"`"
           python -c "import wradlib; print(wradlib.version.version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
@@ -234,6 +238,25 @@ jobs:
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
+      - name: Commit files
+        if: github.event_name == 'push'
+        run: |
+          cd notebooks
+          git config --global user.email "wradlib-docs@wradlib.org"
+          git config --global user.name "wradlib-docs-bot"
+          git checkout --orphan render
+          git add --all .
+          git commit -m "Rendering at wradlib-notebooks commit $NOTEBOOKS_COMMIT for wradlib version $WRADLIB_VERSION"
+      - name: Push changes
+        if: github.event_name == 'push'
+        run: |
+          if [ $WRADLIB_TAG == 'undefined' ]; then
+              BRANCH=devel
+          else
+              BRANCH=$WRADLIB_TAG
+          fi
+          cd notebooks
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/wradlib/wradlib-notebooks.git render:$BRANCH -fq
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -245,20 +268,21 @@ jobs:
 
   trigger_rtd:
     if: github.event_name == 'push' || github.event_name == 'release'
-    needs: [lint, build_0, build_1, build_2]
+    needs: [lint, build_0, build_3]
     name: trigger readthedocs
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
     env:
-      RTD_TOKEN: ${{ secrets.RTD_TOKEN }}
-      RTD_URL: ${{ secrets.RTD_URL }}
+      RTD_TOKEN: ${{ secrets.RTD_TOKEN_NEW }}
+      RTD_URL: ${{ secrets.RTD_URL_NEW }}
     steps:
     - name: trigger readthedocs
       run: |
         echo "not triggering"
         # curl -X POST -d "token=$RTD_TOKEN" "$RTD_URL"
+
 
   upload_testpypi:
     if: github.event_name == 'push' || github.event_name == 'release'

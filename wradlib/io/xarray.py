@@ -33,7 +33,7 @@ volume data into shallow :class:`wradlib.io.xarray.RadarVolume`-wrapper.
 Warning
 -------
     This implementation is considered experimental. It will be based on CfRadial2, ODIM_H5
-    and the new standard enforced by WMO JET-OWR `FM301 <https://community.wmo.int/wmo-jet-owr-seminar-series-weather-radar-data-exchange>.
+    and the new standard enforced by WMO JET-OWR `FM301 <https://community.wmo.int/wmo-jet-owr-seminar-series-weather-radar-data-exchange>`_.
     Changes in the API should be expected. The development is continued at xradar-package.
 
 .. autosummary::
