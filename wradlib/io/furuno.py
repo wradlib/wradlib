@@ -293,7 +293,7 @@ class FurunoFile:
         head = _unpack_dictionary(self.read_from_file(len), HEADER_HEAD)
         if head["format_version"] == 10:
             header = SCNX_HEADER
-        elif head["format_version"] == 3:
+        elif head["format_version"] in [3, 103]:
             header = SCN_HEADER
         self._filepos = 0
         self.get_header(header)
@@ -334,14 +334,14 @@ class FurunoFile:
             raw_data = self._fh[start:].view(dtype="uint16").reshape(rays, -1)
             data = raw_data[:, 4:].reshape(rays, cnt, rng)
             self._data = dict()
-            for i in range(cnt):
-                self._data[items[i]] = data[:, i, :]
+            for i, item in enumerate(items.values()):
+                self._data[item] = data[:, i, :]
             # get angles
             angles = raw_data[:, :4].reshape(rays, 4)
             self._data["azimuth"] = np.fmod(
                 angles[:, 1] + self.header["azimuth_offset"], 36000
             )
-            if self.version == 3:
+            if self.version in [3, 103]:
                 dtype = "int16"
             else:
                 dtype = "uint16"
@@ -371,7 +371,7 @@ class FurunoFile:
 
     @property
     def site_coords(self):
-        if self.version == 3:
+        if self.version in [3, 103]:
             lon = self.header["longitude"]
             lat = self.header["latitude"]
             alt = self.header["altitude"]
@@ -406,7 +406,7 @@ class FurunoFile:
     @property
     def first_dimension(self):
         obs_mode = None
-        if self.version == 3:
+        if self.version in [3, 103]:
             # extract mode from filename
             if ".scn" in self.filename:
                 obs_mode = 1
