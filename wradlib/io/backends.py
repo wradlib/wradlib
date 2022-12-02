@@ -1536,7 +1536,7 @@ class FurunoStore(AbstractDataStore):
 
         # range
         start_range = 0
-        if self.ds.version == 3:
+        if self.ds.version in [3, 103]:
             range_step = self.ds.header["resolution_range_direction"] / 100
         else:
             range_step = self.ds.header["resolution_range_direction"]
