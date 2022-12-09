@@ -1569,6 +1569,14 @@ class TestVectorSource:
         ds = io.VectorSource(data_source.data)
         ds.dump_vector(tempfile.NamedTemporaryFile(mode="w+b").name)
 
+    @requires_gdal
+    def test_clean_up_temporary_files(self, data_source):
+        ds = io.VectorSource(data_source.data)
+        tempdir = ds.ds.GetDescription()
+        assert os.path.exists(tempdir)
+        ds.close()
+        assert not os.path.exists(tempdir)
+
     @requires_data
     @requires_gdal
     def test_dump_raster(self):

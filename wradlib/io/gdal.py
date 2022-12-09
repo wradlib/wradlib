@@ -274,7 +274,10 @@ class VectorSource:
         if self._geo is not None:
             self._geo = None
         if self.ds is not None:
+            fname = self.ds.GetDescription()
+            driver = self.ds.GetDriver()
             self.ds = None
+            driver.Delete(fname)
 
     __del__ = close
 
