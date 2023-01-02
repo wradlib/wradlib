@@ -1097,8 +1097,8 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
 
         nan_space = np.delete(spaces - bw, ~ condition)
         under_two_bw_dup_data = np.concatenate((
-           under_two_bw_nan - nan_space,
-           under_two_bw_nan + nan_space,
+            under_two_bw_nan - nan_space,
+            under_two_bw_nan + nan_space,
         ))
 
         # If the first (lowest) real ray falls in this last case, we also need to add an
@@ -1150,9 +1150,9 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
             # if some of the points is outside the radar volume area raise an exception
             test = np.array(
                 [~(ds.x.min() < x1 < ds.x.max()),
-                ~(ds.x.min() < x2 < ds.x.max()),
-                ~(ds.y.min() < y1 < ds.y.max()),
-                ~(ds.y.min() < y2 < ds.y.max())]
+                 ~(ds.x.min() < x2 < ds.x.max()),
+                 ~(ds.y.min() < y1 < ds.y.max()),
+                 ~(ds.y.min() < y2 < ds.y.max())]
             )
 
             if test.any():
