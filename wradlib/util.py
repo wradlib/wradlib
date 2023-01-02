@@ -1064,6 +1064,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
     """
     import xarray as xr
     from scipy.spatial import KDTree
+    from wradlib import georef
 
     if real_beams:
         # Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
@@ -1086,8 +1087,8 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
 
         # Beams separated by more than 2*bw need two fake nan rays in between
         over_two_bw = np.concatenate((
-           np.delete(sorted_elevs[:-1] + bw, ~ (separation_needed * spaces > (2 * bw))),
-           np.delete(sorted_elevs[1:] - bw, ~ (separation_needed * spaces > (2 * bw)))
+            np.delete(sorted_elevs[:-1] + bw, ~ (separation_needed * spaces > (2 * bw))),
+            np.delete(sorted_elevs[1:] - bw, ~ (separation_needed * spaces > (2 * bw)))
         ))
 
         # Beams separated between bw and 2*bw need a fake nan ray at midpoint and two duplicated data rays over and below
@@ -1128,10 +1129,10 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
     if real_beams:
         ds = xr.concat([ds, obj_fake], dim="elevation")
         ds = ds.sortby("elevation")
-                
+
     # Georeference the data
-    ds = ds.pipe(georef.georeference_dataset, proj=proj) 
-    
+    ds = ds.pipe(georef.georeference_dataset, proj=proj)
+
     try:
         return ds.sel(azimuth=azimuth, method=method, tolerance=tolerance)
 
@@ -1148,7 +1149,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
 
             # if some of the points is outside the radar volume area raise an exception
             test = np.array(
-               [~(ds.x.min() < x1 < ds.x.max()),
+                [~(ds.x.min() < x1 < ds.x.max()),
                 ~(ds.x.min() < x2 < ds.x.max()),
                 ~(ds.y.min() < y1 < ds.y.max()),
                 ~(ds.y.min() < y2 < ds.y.max())]
@@ -1189,7 +1190,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
             ii = np.unique(ii)
 
             # Stack the azimuth and range coordinates and select the points
-            sel = ds.sel(elevation=(el.data.tolist())).stack(xyi=("azimuth", "range")).isel({"xyi":ii})
+            sel = ds.sel(elevation=(el.data.tolist())).stack(xyi=("azimuth", "range")).isel({"xyi": ii})
 
             # create values for a new coordinate xy that is the distance to p1 along the line
             xy = np.sqrt((sel.x - p1[0])**2 + (sel.y - p1[1])**2)
@@ -1212,7 +1213,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
             selection_reindexed.append(selection[ll].reindex({"xyi": np.arange(xyi_maxlen)}))
 
         # Combine into a single dataset
-        merged  = xr.concat(selection_reindexed, dim="elevation").transpose("time", "elevation", ...)
+        merged = xr.concat(selection_reindexed, dim="elevation").transpose("time", "elevation", ...)
         # We cannot have coordinates with NaN for plotting, so we fill any NaN by propagating values
         merged["xy"] = merged["xy"].ffill("xyi")
         merged["z"] = merged["z"].ffill("xyi")
