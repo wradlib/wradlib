@@ -1060,6 +1060,10 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
         Dataset of cross section(s) in the specified azimuth(s) or along the line
         connecting the given points.
     """
+    import xarray as xr
+    from scipy.spatial import KDTree
+    import 
+      
     if real_beams:
         ## Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
         ## up until halfway to the nearest gridpoints.
@@ -1169,7 +1173,6 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
         # List to collect dataset for every elevation
         selection = list()
         
-        from scipy.spatial import KDTree
         for el in ds.elevation:
             # For every elevation, select the array of x and y coordinates
             x = ds.sel(elevation=el.data.tolist()).x.to_numpy()
