@@ -1064,7 +1064,6 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
     """
     import xarray as xr
     from scipy.spatial import KDTree
-    import 
       
     if real_beams:
         ## Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
