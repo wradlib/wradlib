@@ -26,6 +26,8 @@ __all__ = [
     "derivate",
     "despeckle",
     "import_optional",
+    "vertical_interpolation",
+    "cross_section_ppi",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
