@@ -998,6 +998,8 @@ def vertical_interpolation(vol, elevs=None, method="nearest"):
     elevs: iterable of elevations to which interpolate the data. Defaults to None, which does no interpolation and returns a stacked array of the data.
     method: method for interpolation, defaults to "nearest"
     """
+    import xarray as xr
+   
     time = vol[0].time
     dsx = xr.concat([v.drop(["time","rtime"]).assign_coords({"elevation": v.attrs.get("fixed_angle")}) for v in vol], dim="elevation")
     dsx = dsx.transpose("time", "elevation", "azimuth", "range")
