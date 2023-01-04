@@ -6,11 +6,14 @@
 """
 Utility functions
 ^^^^^^^^^^^^^^^^^
+
 Module util provides a set of useful helpers which are currently not
 attributable to the other modules
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
+
    {}
 """
 __all__ = [
@@ -57,6 +60,7 @@ def maximum_intensity_projection(*args, **kwargs):
 
 class OptionalModuleStub:
     """Stub class for optional imports.
+
     Objects of this class are instantiated when optional modules are not
     present on the user's machine.
     This allows global imports of optional modules with the code only breaking
@@ -83,18 +87,22 @@ class OptionalModuleStub:
 
 def import_optional(module):
     """Allowing for lazy loading of optional wradlib modules or dependencies.
+
     This function removes the need to satisfy all dependencies of wradlib
     before being able to work with it.
+
     Parameters
     ----------
     module : str
              name of the module
+
     Returns
     -------
     mod : object
           if module is present, returns the module object, on ImportError
           returns an instance of `OptionalModuleStub` which will raise an
           AttributeError as soon as any attribute is accessed.
+
     Examples
     --------
     Trying to import a module that exists makes the module available as normal.
@@ -104,6 +112,7 @@ def import_optional(module):
     >>> m = import_optional('math')
     >>> m.log10(100)
     2.0
+
     Trying to import a module that does not exists, does not produce
     any errors. Only when some function is used, the code triggers an error
     >>> m = import_optional('nonexistentmodule')  # noqa
@@ -139,6 +148,7 @@ def _shape_to_size(shape):
 
 def from_to(tstart, tend, tdelta):
     """Return a list of timesteps from <tstart> to <tend> of length <tdelta>
+
     Parameters
     ----------
     tstart : str or :py:class:`datetime.datetime`
@@ -147,10 +157,12 @@ def from_to(tstart, tend, tdelta):
         datetime isostring (%Y%m%d %H:%M:%S), e.g. 2000-01-01 15:34:12 or datetime object
     tdelta : int
         representing time interval in SECONDS
+
     Returns
     -------
     output : list
         list of datetime.datetime objects
+
     """
     if not type(tstart) == dt.datetime:
         tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
@@ -173,13 +185,16 @@ def from_to(tstart, tend, tdelta):
 def _idvalid(data, isinvalid=None, minval=None, maxval=None):
     """Identifies valid entries in an array and returns the corresponding
     indices
+
     Invalid values are NaN and Inf. Other invalid values can be passed using
     the isinvalid keyword argument.
+
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
     isinvalid : list
         list of what is considered an invalid value
+
     """
     if isinvalid is None:
         isinvalid = [-99.0, 99, -9999.0, -9999]
@@ -196,7 +211,9 @@ def _idvalid(data, isinvalid=None, minval=None, maxval=None):
 
 def meshgrid_n(*arrs):
     """N-dimensional meshgrid
+
     Just pass sequences of coordinates arrays
+
     """
     arrs = tuple(arrs)
     lens = list(map(len, arrs))
@@ -238,10 +255,12 @@ def gridaspoints(*arrs):
 
 def issequence(x):
     """Test whether x is a sequence of numbers
+
     Parameters
     ----------
     x : sequence
         sequence to test
+
     """
     out = True
     try:
@@ -259,6 +278,7 @@ def trapezoid(data, x1, x2, x3, x4):
     Applied the trapezoidal function described in :cite:`Vulpiani`
     to determine the degree of membership in the non-meteorological
     target class.
+
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
@@ -271,11 +291,13 @@ def trapezoid(data, x1, x2, x3, x4):
         x-value of the third vertex of the trapezoid
     x4 : float
         x-value of the fourth vertex of the trapezoid
+
     Returns
     -------
     d : :class:`numpy:numpy.ndarray`
         Array of values describing degree of membership in
         nonmeteorological target class.
+
     """
 
     d = np.ones(np.shape(data))
@@ -296,6 +318,7 @@ def trapezoid(data, x1, x2, x3, x4):
 def filter_window_polar(img, wsize, fun, rscale, random=False):
     """Apply a filter of an approximated square window of half size `fsize` \
     on a given polar image `img`.
+
     Parameters
     ----------
     img : :class:`numpy:numpy.ndarray`
@@ -308,10 +331,12 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
         range [m] scale of the polar grid
     random: bool
         True to use random azimuthal size to avoid long-term biases.
+
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
         Array with the same shape as `img`, containing the filter's results.
+
     """
     ascale = 2 * np.pi / img.shape[0]
     data_filtered = np.empty(img.shape, dtype=img.dtype)
@@ -346,6 +371,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
 def prob_round(x, prec=0):
     """Round the float number `x` to the lower or higher integer randomly
     following a binomial distribution
+
     Parameters
     ----------
     x : float
@@ -362,6 +388,7 @@ def prob_round(x, prec=0):
 def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
     """Apply a filter of square window size `fsize` on a given \
     cartesian image `img`.
+
     Parameters
     ----------
     img : :class:`numpy:numpy.ndarray`
@@ -373,10 +400,12 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
     scale : tuple
         tuple of 2 floats
         x and y scale of the cartesian grid [m]
+
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
         Array with the same shape as `img`, containing the filter's results.
+
     """
     fun = getattr(ndimage, f"{fun}_filter")
     size = np.fix(wsize / scale + 0.5).astype(int)
@@ -387,6 +416,7 @@ def filter_window_cartesian(img, wsize, fun, scale, **kwargs):
 def roll2d_polar(img, shift=1, axis=0):
     """Roll a 2D polar array [azimuth,range] by a given `shift` for \
     the given `axis`
+
     Parameters
     ----------
     img : :class:`numpy:numpy.ndarray`
@@ -424,7 +454,9 @@ def roll2d_polar(img, shift=1, axis=0):
 
 class UTC(dt.tzinfo):
     """UTC implementation for tzinfo.
+
     See e.g. http://python.active-venture.com/lib/datetime-tzinfo.html
+
     Replaces pytz.utc
     """
 
@@ -444,18 +476,23 @@ class UTC(dt.tzinfo):
 def half_power_radius(r, bwhalf):
     """
     Half-power radius.
+
     ported from PyRadarMet
+
     Battan (1973),
+
     Parameters
     ----------
     r : float | :class:`numpy:numpy.ndarray`
         Range from radar [m]
     bwhalf : float
         Half-power beam width [degrees]
+
     Returns
     -------
     Rhalf : float | :class:`numpy:numpy.ndarray`
         Half-power radius [m]
+
     Examples
     --------
     rhalf = half_power_radius(r,bwhalf)
@@ -468,29 +505,35 @@ def half_power_radius(r, bwhalf):
 
 def get_raster_origin(coords):
     """Return raster origin
+
     Parameters
     ----------
     coords : :class:`numpy:numpy.ndarray`
         3 dimensional array (rows, cols, 2) of xy-coordinates
+
     Returns
     -------
     out : str
         'lower' or 'upper'
+
     """
     return "lower" if (coords[1, 1] - coords[0, 0])[1] > 0 else "upper"
 
 
 def find_bbox_indices(coords, bbox):
     """Find min/max-indices for NxMx2 array coords using bbox-values.
+
     The bounding box is defined by two points (llx,lly and urx,ury)
     It finds the first indices before llx,lly and the first indices
     after urx,ury. If no index is found 0 and N/M is returned.
+
     Parameters
     ----------
     coords : :class:`numpy:numpy.ndarray`
         3 dimensional array (ny, nx, lon/lat) of floats
     bbox : :class:`numpy:numpy.ndarray` | list | tuple
          4-element (llx,lly,urx,ury)
+
     Returns
     -------
     bbind : tuple
@@ -567,15 +610,20 @@ def get_wradlib_data_file(relfile):
 
 def calculate_polynomial(data, w):
     """Calculate Polynomial
+
     The functions calculates the following polynomial:
+
     .. math::
+
        P = \\sum_{n=0}^{N} w(n) \\cdot data^{n}
+
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
         Flat array of data values.
     w : :class:`numpy:numpy.ndarray`
         Array of shape (N) containing weights.
+
     Returns
     -------
     poly : :class:`numpy:numpy.ndarray`
@@ -637,6 +685,7 @@ def _rolling_dim(data, window):
 
 def _linregress_1d(rhs, method="lstsq"):
     """Calculates slope by means of linear regression on last dimension of rhs.
+
     Calculates lhs from size of last dimension of rhs.
     Methods 'lstsq', 'cov', 'matrix_inv'  and 'cov_nan' are multidimensional.
     The other two nan-methods only work on a single system. Hence the
@@ -742,25 +791,32 @@ def _lanczos_differentiator(winlen):
 
 def derivate(data, winlen=7, method="lanczos_conv", skipna=False, **kwargs):
     """Calculates derivative of data using window of length winlen.
+
     In normal operation the method ('lanczos_conv') uses convolution
     to estimate the derivative using Low-noise Lanczos differentiators.
     The equivalent method ('lanczos_dot') uses dot-vector sum product.
+
     For further reading please see `Differentiation by integration using \
     orthogonal polynomials, a survey <https://arxiv.org/pdf/1102.5219>`_ \
     and `Low-noise Lanczos differentiators \
     <http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/\
 lanczos-low-noise-differentiators/>`_.
+
     The results are very similar to the moving window linear
     regression methods (`cov`, `matrix_inv` and `lstsq`), which are slower than
     the former (in order of appearance).
+
     All methods will return NaNs in case at least one value in the moving
     window is NaN.
+
     If `skipna=True` the locations of NaN results are treated by using local
     linear regression by method2 (default to `cov_nan`) where enough valid
     neighbouring data is available.
+
     Before applying the actual derivation calculation the data is padded with
     `mode='reflect'` by default along the derivation dimension. Padding can be
     parametrized using kwargs.
+
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
@@ -773,6 +829,7 @@ lanczos-low-noise-differentiators/>`_.
         'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
         Defaults to False. If True, treat NaN results by applying method2.
+
     Keyword Arguments
     -----------------
     method2 : str
@@ -784,6 +841,7 @@ lanczos-low-noise-differentiators/>`_.
         Defaults to `reflect`. See :func:`numpy:numpy.pad`.
     pad_kwargs : dict
         Keyword arguments for padding, see :func:`numpy:numpy.pad`
+
     Returns
     -------
     out : :class:`numpy:numpy.ndarray`
@@ -869,10 +927,12 @@ lanczos-low-noise-differentiators/>`_.
 
 def despeckle(data, n=3, copy=False):
     """Remove floating pixels in between NaNs in a multi-dimensional array.
+
     Warning
     -------
     This function changes the original input array if argument copy is set to
     False (default).
+
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
@@ -883,6 +943,7 @@ def despeckle(data, n=3, copy=False):
         Width of the window in which we check for speckle
     copy : bool
         If True, the input array will remain unchanged.
+
     """
     assert n in (3, 5), "Window size n for function despeckle must be 3 or 5."
     if copy:
@@ -936,16 +997,20 @@ if __name__ == "__main__":
 def vertical_interpolate_volume(vol, elevs=None, method="nearest"):
     """
     Vertically interpolate volume data
+
     Parameters
     ----------
     vol : :py:class:`wradlib:wradlib.io.xarray.RadarVolume`
+
     Keyword Arguments
     -----------------
     elevs : iterable of elevations to which interpolate the data. Defaults to None, which does no interpolation and returns a stacked array of the data.
     method : method for interpolation, defaults to "nearest"
+
     Returns
     ----------
     ds : :py:class:`xarray:xarray.Dataset`
+
     """
     import xarray as xr
 
@@ -961,10 +1026,13 @@ def vertical_interpolate_volume(vol, elevs=None, method="nearest"):
 
 def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=False, bw=1, proj=None, npl=1000):
     """Cut a cross section from PPI volume scans
+
         .. versionadded:: 1.18
+
     This function extracts cross sections from a PPI volume scan along one or more azimuth angles,
     or along a line connecting two given points.
     Similar to PyArt's cross_section_ppi function.
+
     Parameters
     ----------
     obj : :py:class:`wradlib:wradlib.io.xarray.RadarVolume` - Radar volume containing PPI sweeps
@@ -981,6 +1049,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
         an index along the line connecting the points) and elevation, and
         coordinates xy (distance along the line from p1) and z. The xy and z coordinates
         should be used for plotting.
+
     Keyword Arguments
     -----------------
     method : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
@@ -1005,6 +1074,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
         instead of an azimuth value. npl should be high enough to accomodate more points along the line that
         points of data available (i.e., higher that the resolution of the data). The default value should be
         enough for most cases, but in case the result looks low resolution try increasing npl.
+
     Returns
     ----------
     obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
