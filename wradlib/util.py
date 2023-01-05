@@ -1011,7 +1011,6 @@ def vertical_interpolate_volume(vol, elevs=None, method="nearest"):
     ds : :py:class:`xarray:xarray.Dataset`
 
     """
-    import xarray as xr
 
     time = vol[0].time
     dsx = xr.concat(
