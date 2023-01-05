@@ -1217,7 +1217,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
 
             # Add new coordinates
             z_coord = sel.z.to_numpy()
-            sel2 = sel.assign_coords({"xyi": np.arange(len(xy))})
+            sel2 = sel.drop_vars({'xyi', 'range', 'azimuth'}).assign_coords({"xyi": np.arange(len(xy))})
             sel2.coords["xy"] = ("xyi", xy.data)
             sel2.coords["z"] = ("xyi", z_coord)
 
