@@ -26,7 +26,7 @@ __all__ = [
     "derivate",
     "despeckle",
     "import_optional",
-    "vertical_interpolation",
+    "vertical_interpolate_volume",
     "cross_section_ppi",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -39,8 +39,12 @@ import os
 import deprecation
 import numpy as np
 from scipy import ndimage, signal
+from scipy.spatial import KDTree
 
 from wradlib import version
+from wradlib import georef
+
+import xarray as xr
 
 
 @deprecation.deprecated(
@@ -952,7 +956,7 @@ def despeckle(data, n=3, copy=False):
     data0 = _pad_array(data, pad, mode="constant")
     # append n count last dimension
     data0 = _rolling_dim(data0, data.shape[-1])
-    # count NaŃ's and find speckle
+    # count NaN's and find speckle
     nans = np.count_nonzero(np.isnan(data0), axis=-2) == (n - 1)
     # set speckle to NaN
     data[nans] = np.nan
@@ -991,17 +995,36 @@ if __name__ == "__main__":
     print("wradlib: Calling module <util> as main...")
 
 
-def vertical_interpolation(vol, elevs=None, method="nearest"):
+def vertical_interpolate_volume(vol, elevs=None, method="nearest"):
     """
     Vertically interpolate volume data
 
-    elevs: iterable of elevations to which interpolate the data. Defaults to None, which does no interpolation and returns a stacked array of the data.
-    method: method for interpolation, defaults to "nearest"
+    Parameters
+    ----------
+    vol : :py:class:`wradlib:wradlib.io.xarray.RadarVolume`
+
+    Keyword Arguments
+    -----------------
+    elevs : iterable of elevations to which interpolate the data. Defaults to None, which does no interpolation and returns a stacked array of the data.
+    method : method for interpolation, defaults to "nearest"
+
+    Returns
+    ----------
+    ds : :py:class:`xarray:xarray.Dataset`
+
     """
     import xarray as xr
 
     time = vol[0].time
-    dsx = xr.concat([v.drop(["time", "rtime"]).assign_coords({"elevation": v.attrs.get("fixed_angle")}) for v in vol], dim="elevation")
+    dsx = xr.concat(
+        [
+            v.drop(["time", "rtime"]).assign_coords(
+                {"elevation": v.attrs.get("fixed_angle")}
+            )
+            for v in vol
+        ],
+        dim="elevation",
+    )
     dsx = dsx.transpose("time", "elevation", "azimuth", "range")
     if elevs is not None:
         new_elev = elevs
@@ -1010,7 +1033,16 @@ def vertical_interpolation(vol, elevs=None, method="nearest"):
     return dsx
 
 
-def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=False, bw=1, proj=None):
+def cross_section_ppi(
+    obj,
+    azimuth,
+    method=None,
+    tolerance=None,
+    real_beams=False,
+    bw=1,
+    proj=None,
+    npl=1000,
+):
     """Cut a cross section from PPI volume scans
 
         .. versionadded:: 1.18
@@ -1036,7 +1068,6 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
         coordinates xy (distance along the line from p1) and z. The xy and z coordinates
         should be used for plotting.
 
-    #######################
     Keyword Arguments
     -----------------
     method : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
@@ -1056,15 +1087,18 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
     proj : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
         Projection to use with :py:class:`wradlib.georef.xarray.georeference_dataset`.
         If GDAL OSR SRS, output is in this projection, else AEQD.
+    npl : int
+        Number of points to make up the line between p1 and p2, in case the user gives two arbitrary points
+        instead of an azimuth value. npl should be high enough to accomodate more points along the line that
+        points of data available (i.e., higher that the resolution of the data). The default value should be
+        enough for most cases, but in case the result looks low resolution try increasing npl.
+
     Returns
     ----------
     obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
         Dataset of cross section(s) in the specified azimuth(s) or along the line
         connecting the given points.
     """
-    import xarray as xr
-    from scipy.spatial import KDTree
-    from wradlib import georef
 
     if real_beams:
         # Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
@@ -1083,32 +1117,45 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
         separation_needed = spaces > bw
 
         # Beams separated by exactly 2*bw need only a nan ray at the midpoint
-        two_bw = np.delete(sorted_elevs_midpoints, ~ (separation_needed * spaces == (2 * bw)))
+        two_bw = np.delete(
+            sorted_elevs_midpoints, ~(separation_needed * spaces == (2 * bw))
+        )
 
         # Beams separated by more than 2*bw need two fake nan rays in between
-        over_two_bw = np.concatenate((
-            np.delete(sorted_elevs[:-1] + bw, ~ (separation_needed * spaces > (2 * bw))),
-            np.delete(sorted_elevs[1:] - bw, ~ (separation_needed * spaces > (2 * bw)))
-        ))
+        over_two_bw = np.concatenate(
+            (
+                np.delete(
+                    sorted_elevs[:-1] + bw, ~(separation_needed * spaces > (2 * bw))
+                ),
+                np.delete(
+                    sorted_elevs[1:] - bw, ~(separation_needed * spaces > (2 * bw))
+                ),
+            )
+        )
 
         # Beams separated between bw and 2*bw need a fake nan ray at midpoint and two duplicated data rays over and below
         condition = separation_needed * (spaces < (2 * bw))
-        under_two_bw_nan = np.delete(sorted_elevs_midpoints, ~ condition)
+        under_two_bw_nan = np.delete(sorted_elevs_midpoints, ~condition)
 
-        nan_space = np.delete(spaces - bw, ~ condition)
-        under_two_bw_dup_data = np.concatenate((
-            under_two_bw_nan - nan_space,
-            under_two_bw_nan + nan_space,
-        ))
+        nan_space = np.delete(spaces - bw, ~condition)
+        under_two_bw_dup_data = np.concatenate(
+            (
+                under_two_bw_nan - nan_space,
+                under_two_bw_nan + nan_space,
+            )
+        )
 
         # If the first (lowest) real ray falls in this last case, we also need to add an
         # additional nan ray below:
         if condition[0]:
-            under_two_bw_nan = np.concatenate((np.array(sorted_elevs[0] - bw, ndmin=1),
-                                               under_two_bw_nan))
+            under_two_bw_nan = np.concatenate(
+                (np.array(sorted_elevs[0] - bw, ndmin=1), under_two_bw_nan)
+            )
 
         # Join all fake ray elevations for nan or duplicated data
-        nan_fake_elevs = np.sort(np.concatenate((two_bw, over_two_bw, under_two_bw_nan)))
+        nan_fake_elevs = np.sort(
+            np.concatenate((two_bw, over_two_bw, under_two_bw_nan))
+        )
 
         data_fake_elevs = np.sort(under_two_bw_dup_data)
 
@@ -1117,14 +1164,16 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
 
         # Generate fake rays array
         all_fake_elevs = np.sort(np.concatenate((nan_fake_elevs, data_fake_elevs)))
-        obj_fake = vertical_interpolation(obj, elevs=all_fake_elevs)
-        obj_fake = obj_fake.where(~obj_fake.elevation.isin(nan_fake_elevs))  # fill with nan on corresponding elevations
+        obj_fake = vertical_interpolate_volume(obj, elevs=all_fake_elevs)
+        obj_fake = obj_fake.where(
+            ~obj_fake.elevation.isin(nan_fake_elevs)
+        )  # fill with nan on corresponding elevations
 
     # Sort volume in ascending order of elevation
     obj = sorted(obj, key=lambda ds: ds.attrs["fixed_angle"])
 
     # We do not use this for interpolation here, but for stacking the elevations
-    ds = vertical_interpolation(obj, elevs=None)
+    ds = vertical_interpolate_volume(obj, elevs=None)
 
     if real_beams:
         ds = xr.concat([ds, obj_fake], dim="elevation")
@@ -1136,7 +1185,7 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
     try:
         return ds.sel(azimuth=azimuth, method=method, tolerance=tolerance)
 
-    except KeyError:
+    except (TypeError, ValueError, KeyError):
         # Is the user providing two points for arbitrary cut?
         try:
             p1 = azimuth[0]
@@ -1149,26 +1198,38 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
 
             # if some of the points is outside the radar volume area raise an exception
             test = np.array(
-                [~(ds.x.min() < x1 < ds.x.max()),
-                 ~(ds.x.min() < x2 < ds.x.max()),
-                 ~(ds.y.min() < y1 < ds.y.max()),
-                 ~(ds.y.min() < y2 < ds.y.max())]
+                [
+                    ~(ds.x.min() < x1 < ds.x.max()),
+                    ~(ds.x.min() < x2 < ds.x.max()),
+                    ~(ds.y.min() < y1 < ds.y.max()),
+                    ~(ds.y.min() < y2 < ds.y.max()),
+                ]
             )
 
             if test.any():
-                raise Exception("At least one of the points given is outside of the radar volume area")
+                raise ValueError(
+                    "At least one of the points given is outside of the radar volume area"
+                )
 
         except TypeError:
             # `azimuth` is not a list of azimuths nor a couple of points
-            raise Exception("Not azimuth values nor points was provided to `azimuth`")
+            raise TypeError("Not azimuth values nor points was provided to `azimuth`")
 
         # Check that the two points given are not the same
-        if (p1 == p2).all():
-            raise Exception("p1=p2. The two points given are the same. Please give different points.")
+        try:
+            if (p1 == p2).all():
+                raise ValueError(
+                    "p1=p2. The two points given are the same. Please give different points."
+                )
+        except AttributeError:
+            if p1 == p2:
+                raise ValueError(
+                    "p1=p2. The two points given are the same. Please give different points."
+                )
 
         # number of points to make the line between p1 and p2 (should be greater
         # than the resolution of the volume)
-        nn = 1000
+        nn = npl
         # List to collect dataset for every elevation
         selection = list()
 
@@ -1190,14 +1251,20 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
             ii = np.unique(ii)
 
             # Stack the azimuth and range coordinates and select the points
-            sel = ds.sel(elevation=(el.data.tolist())).stack(xyi=("azimuth", "range")).isel({"xyi": ii})
+            sel = (
+                ds.sel(elevation=(el.data.tolist()))
+                .stack(xyi=("azimuth", "range"))
+                .isel({"xyi": ii})
+            )
 
             # create values for a new coordinate xy that is the distance to p1 along the line
-            xy = np.sqrt((sel.x - p1[0])**2 + (sel.y - p1[1])**2)
+            xy = np.sqrt((sel.x - p1[0]) ** 2 + (sel.y - p1[1]) ** 2)
 
             # Add new coordinates
             z_coord = sel.z.to_numpy()
-            sel2 = sel.assign_coords({"xyi": np.arange(len(xy))})
+            sel2 = sel.drop_vars({"xyi", "range", "azimuth"}).assign_coords(
+                {"xyi": np.arange(len(xy))}
+            )
             sel2.coords["xy"] = ("xyi", xy.data)
             sel2.coords["z"] = ("xyi", z_coord)
 
@@ -1210,10 +1277,14 @@ def cross_section_ppi(obj, azimuth, method=None, tolerance=None, real_beams=Fals
             # same amount of xyi points, we reindex the xyi dimension expanding to its
             # max length to accomodate all data
             xyi_maxlen = np.array([len(ss.xyi) for ss in selection]).max()
-            selection_reindexed.append(selection[ll].reindex({"xyi": np.arange(xyi_maxlen)}))
+            selection_reindexed.append(
+                selection[ll].reindex({"xyi": np.arange(xyi_maxlen)})
+            )
 
         # Combine into a single dataset
-        merged = xr.concat(selection_reindexed, dim="elevation").transpose("time", "elevation", ...)
+        merged = xr.concat(selection_reindexed, dim="elevation").transpose(
+            "time", "elevation", ...
+        )
         # We cannot have coordinates with NaN for plotting, so we fill any NaN by propagating values
         merged["xy"] = merged["xy"].ffill("xyi")
         merged["z"] = merged["z"].ffill("xyi")
