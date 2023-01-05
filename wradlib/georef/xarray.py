@@ -211,11 +211,11 @@ def georeference_dataset(obj, **kwargs):
     else:
         dimlist = list(obj["azimuth"].dims)
 
-    # xyz is an array of cartesian coordinates for every spherical coordinate, 
-    # so the possible dimensions are: elevation, azimuth, range, 3. 
-    # For 2d, it either has (elevation, range, 3) or (azimuth, range, 3) dimensions. 
-    # For 3d, the only option is the full (elevation, azimuth, range, 3) dimensions. 
-    # Thus, adding the following two lines for the 3d case should not break other functionalities, 
+    # xyz is an array of cartesian coordinates for every spherical coordinate,
+    # so the possible dimensions are: elevation, azimuth, range, 3.
+    # For 2d, it either has (elevation, range, 3) or (azimuth, range, 3) dimensions.
+    # For 3d, the only option is the full (elevation, azimuth, range, 3) dimensions.
+    # Thus, adding the following two lines for the 3d case should not break other functionalities,
     # and there should not be a case with more than 3 dimensions
     if xyz.ndim > 3:
         dimlist += ["azimuth"]
