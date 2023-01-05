@@ -38,13 +38,11 @@ import os
 
 import deprecation
 import numpy as np
+import xarray as xr
 from scipy import ndimage, signal
 from scipy.spatial import KDTree
 
-from wradlib import version
-from wradlib import georef
-
-import xarray as xr
+from wradlib import georef, version
 
 
 @deprecation.deprecated(
