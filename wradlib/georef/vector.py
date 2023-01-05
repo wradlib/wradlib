@@ -176,7 +176,7 @@ def get_vector_coordinates(layer, **kwargs):
                 transform_geometry(geom, dest_srs, source_srs=source_srs)
             # get list of xy-coordinates
             reslist = list(get_vector_points(geom))
-            shp.append(np.squeeze(np.array(reslist)))
+            shp.append(np.squeeze(np.array(reslist, dtype=object)))
 
     shp = np.squeeze(np.array(shp, dtype=object))
 
