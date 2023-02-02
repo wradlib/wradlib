@@ -1,3 +1,6 @@
+# adapt to new black/ruff
+e6d2ba930effb75f11a7b3a8e6bc0c804f264348
+
 # fix docstrings (links, types, etc) 2021-09-01
 20ade37ebbd8dadcd8a11676304c34218a89eca2
 

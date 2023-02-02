@@ -60,6 +60,9 @@ readme = { file = ["README.md"], content_type = "text/markdown" }
 dev = { file = "requirements_devel.txt" }
 opt = { file = "requirements_optional.txt" }
 
+[tool.setuptools]
+packages = ["wradlib"]
+
 [tool.setuptools_scm]
 write_to = "wradlib/version.py"
 version_scheme = "release-branch-semver"
