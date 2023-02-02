@@ -10,16 +10,16 @@ clutter or attenuation) and visualising the data.
 
 **To anyone who wants to use a bleeding edge version of wradlib from this repository:**
 
-wradlib uses Github Actions for Continuous Integration. This means that once new code is pushed to the wradlib repository, a suite of tests and checks are run. In case the tests run without failure, a new documentation will be built on readthedocs and is available at the [wradlib documentation website](https://docs.wradlib.org).
+wradlib uses GitHub Actions for Continuous Integration. This means that once new code is pushed to the wradlib repository, a suite of tests and checks are run. In case the tests run without failure, a new documentation will be built on readthedocs and is available at the [wradlib documentation website](https://docs.wradlib.org).
 
-Below you see the status of wradlib. A green status indicates that the current revision of wradlib did pass the tests successfully. You should be aware of that a green status is not a guarantee that the latest revision is bug free. It just means that our tests did not find any bugs. Also the status of code coverage, of ReadTheDocs documentation builds and of availability of wradlib conda package is displayed.
+Below you see the status of wradlib. A green status indicates that the current revision of wradlib did pass the tests successfully. You should be aware of that a green status is not a guarantee that the latest revision is bug free. It just means that our tests did not find any bugs. Also, the status of code coverage, of ReadTheDocs documentation builds and of availability of wradlib conda package is displayed.
 
 ## Package Status ##
 
-| Item  | Status  |
-|:---:|:---:|
+| Item | Status |
+| --- | --- |
 | Github Latest | [![Build Status](https://github.com/wradlib/wradlib/workflows/CI/badge.svg)](https://github.com/wradlib/wradlib/actions) |
-| Github Release | [![Build Status](https://github.com/wradlib/wradlib/workflows/main.yml/badge.svg?event=pull_request)](https://github.com/wradlib/wradlib/actions/workflows/main.yml)
+| Github Release | [![Build Status](https://github.com/wradlib/wradlib/workflows/main.yml/badge.svg?event=pull_request)](https://github.com/wradlib/wradlib/actions/workflows/ci.yml) |
 | Codecov | [![codecov](https://codecov.io/gh/wradlib/wradlib/branch/main/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib) |
 | RTD Latest | [![ReadTheDocs Latest](https://readthedocs.org/projects/wradlib-docs/badge/?version=latest)](https://docs.wradlib.org/en/latest/) |
 | RTD Stable | [![ReadTheDocs Stable](https://readthedocs.org/projects/wradlib-docs/badge/?version=stable)](https://docs.wradlib.org/en/stable/) |
