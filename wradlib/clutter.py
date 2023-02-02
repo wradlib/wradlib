@@ -269,7 +269,6 @@ def histo_cut(prec_accum, upper_frequency=0.01, lower_frequency=0.01):
     while (abs(lower_bound - lower_bound_before) > 1) or (
         abs(upper_bound - upper_bound_before) > 1
     ):
-
         # masks for bins with sums over/under the data bounds
         upper_mask = (prec_accum <= upper_bound).astype(int)
         lower_mask = (prec_accum >= lower_bound).astype(int)
@@ -467,7 +466,7 @@ def classify_echo_fuzzy(dat, weights=None, trpz=None, thresh=0.5):
 
     shape = None
     for key in dkeys:
-        if not dat[key] is None:
+        if dat[key] is not None:
             if shape is None:
                 shape = dat[key].shape
             else:

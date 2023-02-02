@@ -955,7 +955,6 @@ class TestGdal:
 
     @requires_gdal
     def test_get_raster_extent(self, gdal_data):
-
         extent = georef.get_raster_extent(gdal_data.ds2)
         window_map = np.array([3e5, 1e6, 3e5, 1e6])
         np.testing.assert_array_almost_equal(extent, window_map, decimal=3)

@@ -316,7 +316,6 @@ class Idw(IpolBase):
     """
 
     def __init__(self, src, trg, nnearest=4, p=2.0, remove_missing=False, **kwargs):
-
         if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:

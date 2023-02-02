@@ -518,7 +518,6 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
 
     # read the data from file
     with h5py.File(filename, "r") as f:
-
         # placeholder for attributes and data
         attrs = {}
         vattrs = {}

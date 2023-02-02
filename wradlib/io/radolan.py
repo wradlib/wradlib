@@ -268,7 +268,6 @@ def read_dx(filename):
     dataflag = 2**13 - 1
 
     with get_radolan_filehandle(filename) as f:
-
         # header string for later processing
         header = ""
         atend = False
@@ -658,7 +657,7 @@ def read_radolan_binary_array(fid, size, raise_on_error=True):
             desc = fid.name
         except AttributeError:
             desc = repr(fid)
-        raise IOError(
+        raise OSError(
             f"{__name__}: File corruption while reading {desc}! \nCould not "
             "read enough data!"
         )
@@ -794,7 +793,6 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
     with _radolan_file(
         f, fillmissing=fillmissing, copy=True, ancillary=False
     ) as radfile:
-
         attrs = radfile.attrs
 
         if not loaddata:
@@ -1029,7 +1027,6 @@ class _radolan_file:
     """
 
     def __init__(self, filename, fillmissing=False, copy=False, ancillary=False):
-
         if hasattr(filename, "seek"):
             if hasattr(filename, "name"):
                 self.filename = filename.name
@@ -1183,7 +1180,6 @@ class _radolan_file:
             v.shape = (self.attrs["nrow"], self.attrs["ncol"])
 
     def _read(self):
-
         attrs = self.attrs.copy()
         pattrs = _get_radolan_product_attributes(attrs)
 

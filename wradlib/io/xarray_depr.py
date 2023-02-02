@@ -542,7 +542,6 @@ def to_odim(volume, filename, timestep=0):
 
 
 def _preprocess_moment(ds, mom, non_uniform_shape):
-
     attrs = mom._decode(ds.data.attrs)
     quantity = mom.quantity
 
@@ -1806,7 +1805,7 @@ class XRadVolume(OdimH5GroupAttributeMixin, XRadBase):
         root = root.assign(
             {
                 "volume_number": 0,
-                "platform_type": str("fixed"),
+                "platform_type": "fixed",
                 "instrument_type": "radar",
                 "primary_axis": "axis_z",
                 "time_coverage_start": time_coverage_start_str,
@@ -2796,7 +2795,7 @@ class OdimH5(XRadVol):
         root = root.assign(
             {
                 "volume_number": 0,
-                "platform_type": str("fixed"),
+                "platform_type": "fixed",
                 "instrument_type": "radar",
                 "primary_axis": "axis_z",
                 "time_coverage_start": time_coverage_start_str,

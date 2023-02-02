@@ -2838,7 +2838,7 @@ class IrisFile(IrisFileBase, IrisStructureHeader):
         if self.structure_identifier in self.identifier:
             return self.structure_identifier
         else:
-            raise IOError(
+            raise OSError(
                 f"Cannot read {self.structure_identifier} with "
                 f"{self.__class__.__name__} class"
             )
@@ -3105,7 +3105,7 @@ class IrisRecordFile(IrisFile, IrisProductHeader):
         if self.product_type in self.product_identifier:
             return self.product_type
         else:
-            raise IOError(
+            raise OSError(
                 f"Cannot read {self.product_type} with {self.__class__.__name__} class"
             )
 

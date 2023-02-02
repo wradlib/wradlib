@@ -308,7 +308,6 @@ class OdimSubStore(AbstractDataStore):
         group=None,
         lock=False,
     ):
-
         if not isinstance(store, OdimStore):
             raise TypeError(
                 f"Wrong type {type(store)} for parameter store, "
@@ -336,7 +335,6 @@ class OdimSubStore(AbstractDataStore):
         return self._acquire()
 
     def open_store_variable(self, name, var):
-
         dimensions = self.root.get_variable_dimensions(var.dimensions)
         data = indexing.LazilyOuterIndexedArray(H5NetCDFArrayWrapper(name, self))
         encoding = _get_h5netcdf_encoding(self, var)
@@ -366,7 +364,6 @@ class OdimStore(AbstractDataStore):
     """Store for reading ODIM dataset groups via h5netcdf."""
 
     def __init__(self, manager, group=None, lock=False):
-
         if isinstance(manager, (h5netcdf.File, h5netcdf.Group)):
             if group is None:
                 root, group = find_root_and_group(manager)
@@ -516,7 +513,6 @@ class OdimBackendEntrypoint(BackendEntrypoint):
         keep_azimuth=False,
         reindex_angle=None,
     ):
-
         if isinstance(filename_or_obj, io.IOBase):
             filename_or_obj.seek(0)
 
@@ -561,7 +557,6 @@ class GamicStore(AbstractDataStore):
     """Store for reading ODIM dataset groups via h5netcdf."""
 
     def __init__(self, manager, group=None, lock=False):
-
         if isinstance(manager, (h5netcdf.File, h5netcdf.Group)):
             if group is None:
                 root, group = find_root_and_group(manager)
@@ -703,7 +698,6 @@ class GamicBackendEntrypoint(BackendEntrypoint):
         keep_azimuth=False,
         reindex_angle=None,
     ):
-
         if isinstance(filename_or_obj, io.IOBase):
             filename_or_obj.seek(0)
 
@@ -768,7 +762,6 @@ class CfRadial1BackendEntrypoint(BackendEntrypoint):
         format=None,
         group="/",
     ):
-
         store = NetCDF4DataStore.open(
             filename_or_obj,
             format=format,
@@ -897,7 +890,6 @@ class IrisStore(AbstractDataStore):
     """Store for reading IRIS sweeps via wradlib."""
 
     def __init__(self, manager, group=None):
-
         self._manager = manager
         self._group = group
         self._filename = self.filename
@@ -1159,7 +1151,6 @@ class RainbowStore(AbstractDataStore):
     """Store for reading RAINBOW5 sweeps via wradlib."""
 
     def __init__(self, manager, group=None):
-
         self._manager = manager
         self._group = group
         self._filename = self.filename
@@ -1216,7 +1207,6 @@ class RainbowStore(AbstractDataStore):
         return {mname: Variable((dim, "range"), data, attrs, encoding)}
 
     def open_store_coordinates(self, var):
-
         dim = self.root.first_dimension
         ray = var["slicedata"]["rayinfo"]
 
@@ -1455,7 +1445,6 @@ class FurunoStore(AbstractDataStore):
     """Store for reading Furuno sweeps via wradlib."""
 
     def __init__(self, manager, group=None):
-
         self._manager = manager
         self._group = group
         self._filename = self.filename
@@ -1531,7 +1520,6 @@ class FurunoStore(AbstractDataStore):
         return Variable(dims, data, attrs, encoding)
 
     def open_store_coordinates(self):
-
         dim = self.ds.first_dimension
 
         # range

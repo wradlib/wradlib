@@ -1153,7 +1153,6 @@ class _GamicH5NetCDFMetadata:
         return tuple(dimensions)
 
     def coordinates(self, dimensions, data, encoding):
-
         ray_header = _get_ray_header_data(dimensions, data, encoding)
         dim, angle = self.fixed_dim_and_angle
         angles = ray_header[dim]
@@ -1819,7 +1818,6 @@ def open_radar_mfdataset(paths, **kwargs):
         return out
 
     def _align_paths(paths):
-
         if isinstance(paths, str):
             paths = sorted(glob.glob(paths))
         else:
@@ -2010,7 +2008,7 @@ class RadarVolume(XRadBase):
         root = root.assign(
             {
                 "volume_number": 0,
-                "platform_type": str("fixed"),
+                "platform_type": "fixed",
                 "instrument_type": "radar",
                 "primary_axis": "axis_z",
                 "time_coverage_start": time_coverage_start_str,

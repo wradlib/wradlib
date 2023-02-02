@@ -304,10 +304,10 @@ def trapezoid(data, x1, x2, x3, x4):
     d[np.logical_and(data >= x2, data <= x3)] = 1
     d[np.logical_and(data > x1, data < x2)] = (
         data[np.logical_and(data > x1, data < x2)] - x1
-    ) / float((x2 - x1))
+    ) / float(x2 - x1)
     d[np.logical_and(data > x3, data < x4)] = (
         x4 - data[np.logical_and(data > x3, data < x4)]
-    ) / float((x4 - x3))
+    ) / float(x4 - x3)
 
     d[np.isnan(data)] = np.nan
 
@@ -594,16 +594,16 @@ def has_geos():
 def get_wradlib_data_path():
     wrl_data_path = os.environ.get("WRADLIB_DATA", None)
     if wrl_data_path is None:
-        raise EnvironmentError("'WRADLIB_DATA' environment variable not set")
+        raise OSError("'WRADLIB_DATA' environment variable not set")
     if not os.path.isdir(wrl_data_path):
-        raise EnvironmentError(f"'WRADLIB_DATA' path '{wrl_data_path}' does not exist")
+        raise OSError(f"'WRADLIB_DATA' path '{wrl_data_path}' does not exist")
     return wrl_data_path
 
 
 def get_wradlib_data_file(relfile):
     data_file = os.path.abspath(os.path.join(get_wradlib_data_path(), relfile))
     if not os.path.exists(data_file):
-        raise EnvironmentError(f"WRADLIB_DATA file '{data_file}' does not exist")
+        raise OSError(f"WRADLIB_DATA file '{data_file}' does not exist")
     return data_file
 
 
