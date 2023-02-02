@@ -197,7 +197,6 @@ class AdjustBase(ipol.IpolBase):
         ipclass=ipol.Idw,
         **ipargs,
     ):
-
         # Check arguments
         if mfb_args is None:
             mfb_args = dict(method="linregr", minslope=0.1, minr=0.5, maxp=0.01)

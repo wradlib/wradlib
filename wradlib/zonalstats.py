@@ -415,8 +415,8 @@ class ZonalDataPoly(ZonalDataBase):
                 attrs=["src_index"], props=["Area"], filt=("trg_index", index)
             )
             arr.append(w[0])
-            for i, l in enumerate(arr):
-                ret[i].append(np.array(l))
+            for i, k in enumerate(arr):
+                ret[i].append(np.array(k))
         return tuple(ret)
 
 
@@ -465,8 +465,8 @@ class ZonalDataPoint(ZonalDataBase):
         for index in range(cnt):
             arr = self.dst.get_attributes(["src_index"], filt=("trg_index", index))
             arr.append([1.0 / len(arr[0])] * len(arr[0]))
-            for i, l in enumerate(arr):
-                ret[i].append(np.array(l))
+            for i, k in enumerate(arr):
+                ret[i].append(np.array(k))
         return tuple(ret)
 
 
@@ -494,7 +494,6 @@ class ZonalStatsBase:
     """
 
     def __init__(self, src=None, ix=None, w=None):
-
         self._ix = None
         self._w = None
 
@@ -791,7 +790,6 @@ def mask_from_bbox(x, y, bbox, polar=False):
             shape = (int(ar[maxind]), jmax - jmin)
 
     else:
-
         if iur > ill:
             mask[ill:iur, jll:jur] = True
             shape = (iur - ill, jur - jll)

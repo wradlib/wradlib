@@ -368,7 +368,7 @@ def get_rb_file_as_string(fid):
     try:
         data_string = fid.read()
     except Exception:
-        raise IOError("Could not read from file handle")
+        raise OSError("Could not read from file handle")
 
     return data_string
 
@@ -423,7 +423,7 @@ def get_rb_header(fid):
         header += line[:-1]
         line = fid.readline()
         if len(line) == 0:
-            raise IOError("WRADLIB: Rainbow Fileheader Corrupt")
+            raise OSError("WRADLIB: Rainbow Fileheader Corrupt")
 
     xmltodict = util.import_optional("xmltodict")
 

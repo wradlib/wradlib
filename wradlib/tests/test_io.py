@@ -144,7 +144,7 @@ class TestMisc:
         name = tmp.name
         tmp.close()
         io.misc.write_polygon_to_text(name, polygons)
-        assert open(name, "r").readlines() == res
+        assert open(name).readlines() == res
 
     def test_pickle(self):
         arr = np.zeros((124, 248), dtype=np.int16)
@@ -1220,14 +1220,12 @@ class TestRainbow:
     @requires_xmltodict
     def test_get_rb_data_attribute(self):
         data = xmltodict.parse(
-            (
-                '<slicedata time="13:30:05" date="2013-04-26">'
-                '#<rayinfo refid="startangle" blobid="0" '
-                'rays="361" depth="16"/> '
-                '#<rawdata blobid="1" rays="361" type="dBuZ" '
-                'bins="400" min="-31.5" max="95.5" '
-                'depth="8"/> #</slicedata>'
-            )
+            '<slicedata time="13:30:05" date="2013-04-26">'
+            '#<rayinfo refid="startangle" blobid="0" '
+            'rays="361" depth="16"/> '
+            '#<rawdata blobid="1" rays="361" type="dBuZ" '
+            'bins="400" min="-31.5" max="95.5" '
+            'depth="8"/> #</slicedata>'
         )
         data = list(io.rainbow.find_key("@blobid", data))
         assert io.rainbow.get_rb_data_attribute(data[0], "blobid") == 0
@@ -1253,21 +1251,19 @@ class TestRainbow:
     @requires_xmltodict
     def test_get_rb_data_shape(self):
         data = xmltodict.parse(
-            (
-                '<slicedata time="13:30:05" date="2013-04-26">'
-                '#<rayinfo refid="startangle" blobid="0" '
-                'rays="361" depth="16"/> #<rawdata blobid="1" '
-                'rays="361" type="dBuZ" bins="400" '
-                'min="-31.5" max="95.5" depth="8"/> #<flagmap '
-                'blobid="2" rows="800" type="dBuZ" '
-                'columns="400" min="-31.5" max="95.5" '
-                'depth="6"/> #<defect blobid="3" type="dBuZ" '
-                'columns="400" min="-31.5" max="95.5" '
-                'depth="6"/> #<rawdata2 '
-                'blobid="4" rows="800" type="dBuZ" '
-                'columns="400" min="-31.5" max="95.5" '
-                'depth="8"/> #</slicedata>'
-            )
+            '<slicedata time="13:30:05" date="2013-04-26">'
+            '#<rayinfo refid="startangle" blobid="0" '
+            'rays="361" depth="16"/> #<rawdata blobid="1" '
+            'rays="361" type="dBuZ" bins="400" '
+            'min="-31.5" max="95.5" depth="8"/> #<flagmap '
+            'blobid="2" rows="800" type="dBuZ" '
+            'columns="400" min="-31.5" max="95.5" '
+            'depth="6"/> #<defect blobid="3" type="dBuZ" '
+            'columns="400" min="-31.5" max="95.5" '
+            'depth="6"/> #<rawdata2 '
+            'blobid="4" rows="800" type="dBuZ" '
+            'columns="400" min="-31.5" max="95.5" '
+            'depth="8"/> #</slicedata>'
         )
         data = list(io.rainbow.find_key("@blobid", data))
         assert io.rainbow.get_rb_data_shape(data[0]) == 361

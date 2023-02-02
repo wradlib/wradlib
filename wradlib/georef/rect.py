@@ -330,7 +330,6 @@ Polar-Stereographic-Projection`.
     radolan_grid = np.dstack((x, y))
 
     if wgs84:
-
         if proj == "trig":
             # inverse projection
             lon0 = 10.0  # central meridian of projection
@@ -339,7 +338,7 @@ Polar-Stereographic-Projection`.
             sinlat0 = np.sin(np.radians(lat0))
 
             fac = (6370.040**2.0) * ((1.0 + sinlat0) ** 2.0)
-            lon = np.degrees(np.arctan((-x / y))) + lon0
+            lon = np.degrees(np.arctan(-x / y)) + lon0
             lat = np.degrees(
                 np.arcsin((fac - (x**2.0 + y**2.0)) / (fac + (x**2.0 + y**2.0)))
             )
