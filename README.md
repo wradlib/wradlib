@@ -1,5 +1,11 @@
 # README #
 
+wradlib is designed to assist you in the most important steps of
+processing weather radar data. These may include: reading common data
+formats, georeferencing, converting reflectivity to rainfall
+intensity, identifying and correcting typical error sources (such as
+clutter or attenuation) and visualising the data.
+
 [![Join the chat at https://gitter.im/wradlib/wradlib](https://badges.gitter.im/wradlib/wradlib.svg)](https://gitter.im/wradlib/wradlib?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **To anyone who wants to use a bleeding edge version of wradlib from this repository:**
@@ -36,7 +42,7 @@ You can cite wradlib using the DOI below, or select the fitting zenodo DOI if yo
 
 ### User forum ###
 
-In order to stay tuned, we recommend that you register to the [wradlib user forum and mailing list](https://groups.google.com/forum/?fromgroups#!forum/wradlib-users).
+In order to stay tuned, we recommend that you register to the [openradar discourse](https://groups.google.com/forum/?fromgroups#!forum/wradlib-users).
 
 ### Found any bugs or want to add wishes ###
 
