@@ -488,7 +488,7 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     deprecated_in="1.7",
     removed_in="2.0",
     current_version=version.version,
-    details="Use `wradlib.util.despeckle` " "instead.",
+    details="Use `wradlib.util.despeckle` instead.",
 )
 def linear_despeckle(data, ndespeckle=3, copy=False):
     """Remove floating pixels in between NaNs in a multi-dimensional array.
