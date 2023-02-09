@@ -63,9 +63,10 @@ jobs:
       - name: Install wradlib
         run: |
           python -m pip install . --no-deps
-      - name: Clone wradlib-data
+      - name: Install wradlib-data
         run: |
-          git clone https://github.com/wradlib/wradlib-data.git
+          python -m pip install git+https://github.com/wradlib/wradlib-data@pooch
+          mkdir ./wradlib-data
       - name: Version Info
         run: |
           python -c "import wradlib; print(wradlib.version.version)"
@@ -114,9 +115,10 @@ jobs:
         run: |
           cat "$HOME/.bash_profile"
           python -m pip install . --no-deps
-      - name: Clone wradlib-data
+      - name: Install wradlib-data
         run: |
-          git clone https://github.com/wradlib/wradlib-data.git
+          python -m pip install git+https://github.com/wradlib/wradlib-data@pooch
+          mkdir ./wradlib-data
       - name: Version Info
         run: |
           python -c "import wradlib; print(wradlib.version.version)"
@@ -164,9 +166,10 @@ jobs:
       - name: Install wradlib
         run: |
           python -m pip install . --no-deps
-      - name: Clone wradlib-data
+      - name: Install wradlib-data
         run: |
-          git clone https://github.com/wradlib/wradlib-data.git
+          python -m pip install git+https://github.com/wradlib/wradlib-data@pooch
+          mkdir ./wradlib-data
       - name: Version Info
         run: |
           python -c "import wradlib; print(wradlib.version.version)"
@@ -175,7 +178,7 @@ jobs:
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
-          pytest -n auto --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          pytest --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -213,9 +216,10 @@ jobs:
       - name: Install wradlib
         run: |
           python -m pip install . --no-deps
-      - name: Clone wradlib-data
+      - name: Install wradlib-data
         run: |
-          git clone https://github.com/wradlib/wradlib-data.git
+          python -m pip install git+https://github.com/wradlib/wradlib-data@pooch
+          mkdir ./wradlib-data
       - name: Clone wradlib-notebooks
         run: |
           git clone --depth 1 https://github.com/wradlib/wradlib-notebooks.git notebooks

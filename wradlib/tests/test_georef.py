@@ -1405,6 +1405,8 @@ class TestVector:
     @requires_data
     @requires_gdal
     def test_get_vector_coordinates(self, vec_data):
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
         filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
         proj_gk2 = osr.SpatialReference()
         proj_gk2.ImportFromEPSG(31466)

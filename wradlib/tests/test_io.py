@@ -1145,7 +1145,8 @@ class TestRadolan:
 
         data = io.radolan.open_radolan_mfdataset(rw_file)
         assert data.RW.shape == (900, 900)
-
+        filename2 = "radolan/misc/raa01-rw_10000-1408102050-dwd---bin.gz"
+        util.get_wradlib_data_file(filename2)
         data = io.radolan.open_radolan_mfdataset(
             rw_file[:-23] + "*.gz", concat_dim="time"
         )
@@ -1432,6 +1433,8 @@ class TestVector:
     @requires_data
     @requires_gdal
     def test_open_vector(self):
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
         filename = "shapefiles/agger/agger_merge.shp"
         geofile = util.get_wradlib_data_file(filename)
         io.gdal.open_vector(geofile)
@@ -1478,6 +1481,8 @@ class TestVectorSource:
     @requires_data
     @requires_gdal
     def test__check_src(self):
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
         from osgeo import osr
 
         proj_gk2 = osr.SpatialReference()
@@ -1487,6 +1492,8 @@ class TestVectorSource:
 
     @requires_gdal
     def test_error(self):
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
         with pytest.raises(ValueError):
             filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
             io.VectorSource(filename)
@@ -1550,11 +1557,13 @@ class TestVectorSource:
     @requires_data
     @requires_gdal
     def test_get_geom_properties(self):
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
         from osgeo import osr
 
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
-        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+        filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
         test = io.VectorSource(filename, proj)
         np.testing.assert_array_equal(
             [[76722499.98474795]], test.get_geom_properties(["Area"], filt=("FID", 1))
@@ -1576,11 +1585,13 @@ class TestVectorSource:
     @requires_data
     @requires_gdal
     def test_dump_raster(self):
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
         from osgeo import osr
 
         proj = osr.SpatialReference()
         proj.ImportFromEPSG(31466)
-        filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+        filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
         test = io.VectorSource(filename, srs=proj)
         test.dump_raster(
             tempfile.NamedTemporaryFile(mode="w+b").name,
@@ -2192,6 +2203,11 @@ class TestDem:
     def test_get_srtm_offline(self):
         targets = ["N38W029", "N38W028", "N39W029", "N39W028"]
         targets = [f"{f}.SRTMGL3.hgt.zip" for f in targets]
+
+        # retrieve need files for offline test
+        util.get_wradlib_data_path()
+        for f in targets:
+            util.get_wradlib_data_file("geo/" + f)
 
         extent = [-28.5, -27.5, 38.5, 39.5]
         datasets = io.dem.get_srtm(extent, merge=False)

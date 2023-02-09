@@ -603,7 +603,12 @@ def get_wradlib_data_path():
 def get_wradlib_data_file(relfile):
     data_file = os.path.abspath(os.path.join(get_wradlib_data_path(), relfile))
     if not os.path.exists(data_file):
-        raise OSError(f"WRADLIB_DATA file '{data_file}' does not exist")
+        try:
+            from wradlib_data import DATASETS
+
+            data_file = DATASETS.fetch(relfile)
+        except ImportError:
+            raise OSError(f"WRADLIB_DATA file '{data_file}' does not exist.")
     return data_file
 
 
