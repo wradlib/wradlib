@@ -3,10 +3,17 @@
 
 import contextlib
 import gc
+import tempfile
 
 import numpy as np
 import pytest
 import xarray as xr
+from xradar.model import (
+    get_azimuth_attrs,
+    get_elevation_attrs,
+    get_range_attrs,
+    get_time_attrs,
+)
 
 from wradlib import io, util
 
@@ -15,29 +22,420 @@ from . import (
     h5py,
     has_data,
     requires_data,
+    requires_gdal,
     requires_h5netcdf,
     requires_h5py,
     requires_netcdf,
 )
-from .test_io_backends import (  # noqa: F401
-    base_gamic_data,
-    base_odim_data_00,
-    base_odim_data_01,
-    base_odim_data_02,
-    base_odim_data_03,
-    create_azimuth,
-    create_coords,
-    create_data,
-    create_dataset,
-    create_dbz_what,
-    create_elevation,
-    create_range,
-    create_ray_time,
-    create_site,
-    create_time,
-    get_group_attrs,
-    write_group,
-)
+
+
+def create_a1gate(i):
+    return i + 20
+
+
+def create_time():
+    return xr.DataArray(1307700610.0, attrs=get_time_attrs("1970-01-01T00:00:00Z"))
+
+
+def create_startazT(i, nrays=361):
+    start = 1307700610.0
+    arr = np.linspace(start, start + 360, 360, endpoint=False, dtype=np.float64)
+    arr = np.roll(arr, shift=create_a1gate(i))
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
+    return arr
+
+
+def create_stopazT(i, nrays=360):
+    start = 1307700611.0
+    arr = np.linspace(start, start + 360, 360, endpoint=False, dtype=np.float64)
+    arr = np.roll(arr, shift=create_a1gate(i))
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
+    return arr
+
+
+def create_startazA(nrays=360):
+    arr = np.linspace(0, 360, 360, endpoint=False, dtype=np.float32)
+    if nrays == 361:
+        arr = np.insert(arr, 10, (arr[10] + arr[9]) / 2, axis=0)
+    return arr
+
+
+def create_stopazA(nrays=360):
+    arr = np.linspace(1, 361, 360, endpoint=False, dtype=np.float32)
+    # arr = np.arange(1, 361, 1, dtype=np.float32)
+    arr[arr >= 360] -= 360
+    if nrays == 361:
+        arr = np.insert(arr, 10, (arr[10] + arr[9]) / 2, axis=0)
+    return arr
+
+
+def create_startelA(i, nrays=360):
+    arr = np.ones(360, dtype=np.float32) * (i + 0.5)
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
+    return arr
+
+
+def create_stopelA(i, nrays=360):
+    arr = np.ones(360, dtype=np.float32) * (i + 0.5)
+    if nrays == 361:
+        arr = np.insert(arr, 10, arr[-1], axis=0)
+    return arr
+
+
+def create_ray_time(i, decode=False, nrays=360):
+    time_data = (create_startazT(i, nrays=nrays) + create_stopazT(i, nrays=nrays)) / 2.0
+    da = xr.DataArray(
+        time_data, dims=["azimuth"], attrs=get_time_attrs("1970-01-01T00:00:00Z")
+    )
+    if decode:
+        da = xr.decode_cf(xr.Dataset({"arr": da})).arr
+    return da
+
+
+def create_azimuth(decode=False, nrays=360):
+    startaz = create_startazA(nrays=nrays)
+    stopaz = create_stopazA(nrays=nrays)
+    zero_index = np.where(stopaz < startaz)
+    stopaz[zero_index[0]] += 360
+    azimuth_data = (startaz + stopaz) / 2.0
+    da = xr.DataArray(
+        azimuth_data, dims=["azimuth"], attrs=get_azimuth_attrs(azimuth_data)
+    )
+    if decode:
+        da = xr.decode_cf(xr.Dataset({"arr": da})).arr
+    return da
+
+
+def create_elevation(i, decode=False, nrays=360):
+    startel = create_startelA(i, nrays=nrays)
+    stopel = create_stopelA(i, nrays=nrays)
+    elevation_data = (startel + stopel) / 2.0
+    da = xr.DataArray(elevation_data, dims=["azimuth"], attrs=get_elevation_attrs())
+    if decode:
+        da = xr.decode_cf(xr.Dataset({"arr": da})).arr
+    return da
+
+
+def create_range(i, decode=False):
+    where = create_dset_where(i)
+    ngates = where["nbins"]
+    range_start = where["rstart"] * 1000.0
+    bin_range = where["rscale"]
+    cent_first = range_start + bin_range / 2.0
+    range_data = np.arange(
+        cent_first, range_start + bin_range * ngates, bin_range, dtype="float32"
+    )
+    range_attrs = get_range_attrs(range_data)
+    da = xr.DataArray(range_data, dims=["range"], attrs=range_attrs)
+    if decode:
+        da = xr.decode_cf(xr.Dataset({"arr": da})).arr
+    return da
+
+
+def create_root_where():
+    return {"height": 99.5, "lon": 7.071624, "lat": 50.730599}
+
+
+def create_root_what():
+    return {"version": "9"}
+
+
+def get_group_attrs(data, dsdesc, grp=None):
+    if grp is not None:
+        try:
+            grp = data[dsdesc].get(grp, None)
+        except KeyError:
+            grp = data.get(dsdesc + "/" + grp, None)
+    else:
+        try:
+            grp = data[dsdesc]
+        except KeyError:
+            pass
+    if grp == {}:
+        grp = None
+    if grp:
+        try:
+            grp = grp["attrs"]
+        except KeyError:
+            pass
+        for k, v in grp.items():
+            try:
+                v = v.item()
+            except (ValueError, AttributeError):
+                pass
+            try:
+                v = v.decode()
+            except (UnicodeDecodeError, AttributeError):
+                pass
+            grp[k] = v
+    return grp
+
+
+def create_site(data):
+    for k, v in data.items():
+        try:
+            data[k] = v.item()
+        except AttributeError:
+            pass
+    site = xr.Dataset(coords=data)
+    site = site.rename({"height": "altitude", "lon": "longitude", "lat": "latitude"})
+    return site
+
+
+def create_dset_how(i, nrays=360):
+    return {
+        "startazA": create_startazA(nrays=nrays),
+        "stopazA": create_stopazA(nrays=nrays),
+        "startelA": create_startelA(i, nrays=nrays),
+        "stopelA": create_stopelA(i, nrays=nrays),
+        "startazT": create_startazT(i, nrays=nrays),
+        "stopazT": create_stopazT(i, nrays=nrays),
+    }
+
+
+def create_dset_where(i, nrays=360):
+    return {
+        "a1gate": np.array([create_a1gate(i)], dtype=np.int_),
+        "elangle": np.array([i + 0.5], dtype=np.float32),
+        "nrays": np.array([nrays], dtype=np.int_),
+        "nbins": np.array([100], dtype=np.int_),
+        "rstart": np.array([0], dtype=np.float32),
+        "rscale": np.array([1000], dtype=np.float32),
+    }
+
+
+def create_dset_what():
+    return {
+        "startdate": np.array([b"20110610"], dtype="|S9"),
+        "starttime": np.array([b"101010"], dtype="|S7"),
+        "enddate": np.array([b"20110610"], dtype="|S9"),
+        "endtime": np.array([b"101610"], dtype="|S7"),
+    }
+
+
+def create_dbz_what():
+    return {
+        "gain": np.array([0.5], dtype=np.float32),
+        "nodata": np.array([255.0], dtype=np.float32),
+        "offset": np.array([-31.5], dtype=np.float32),
+        "quantity": np.array([b"DBZH"], dtype="|S5"),
+        "undetect": np.array([0.0], dtype=np.float32),
+    }
+
+
+def create_data(nrays=360):
+    np.random.seed(42)
+    data = np.random.randint(0, 255, (360, 100), dtype=np.uint8)
+    if nrays == 361:
+        data = np.insert(data, 10, data[-1], axis=0)
+    return data
+
+
+def create_dataset(i, type=None, nrays=360):
+    what = create_dbz_what()
+    attrs = {}
+    attrs["scale_factor"] = what["gain"]
+    attrs["add_offset"] = what["offset"]
+    attrs["_FillValue"] = what["nodata"]
+    attrs["_Undetect"] = what["undetect"]
+
+    if type == "GAMIC":
+        attrs["add_offset"] -= 0.5 + 127.5 / 254
+        attrs["scale_factor"] = 127.5 / 254
+        attrs["_FillValue"] = what["undetect"]
+        attrs["_Undetect"] = what["undetect"]
+
+    attrs["coordinates"] = b"elevation azimuth range"
+    ds = xr.Dataset({"DBZH": (["azimuth", "range"], create_data(nrays=nrays), attrs)})
+    return ds
+
+
+def create_coords(i, nrays=360):
+    ds = xr.Dataset(
+        coords={
+            "time": create_time(),
+            "rtime": create_ray_time(i, nrays=nrays),
+            "azimuth": create_azimuth(nrays=nrays),
+            "elevation": create_elevation(i, nrays=nrays),
+            "range": create_range(i),
+        }
+    )
+    return ds
+
+
+def base_odim_data_00(nrays=360):
+    data = {}
+    root_attrs = [("Conventions", np.array([b"ODIM_H5/V2_0"], dtype="|S13"))]
+    data["attrs"] = root_attrs
+    foo_data = create_data(nrays=nrays)
+
+    dataset = ["dataset1", "dataset2"]
+    datas = ["data1"]
+
+    data["where"] = {}
+    data["where"]["attrs"] = create_root_where()
+    data["what"] = {}
+    data["what"]["attrs"] = create_root_what()
+    for i, grp in enumerate(dataset):
+        sub = {}
+        sub["how"] = {}
+        sub["where"] = {}
+        sub["where"]["attrs"] = create_dset_where(i, nrays=nrays)
+        sub["what"] = {}
+        sub["what"]["attrs"] = create_dset_what()
+        for j, mom in enumerate(datas):
+            sub2 = {}
+            sub2["data"] = foo_data
+            sub2["what"] = {}
+            sub2["what"]["attrs"] = create_dbz_what()
+            sub[mom] = sub2
+        data[grp] = sub
+    return data
+
+
+def base_odim_data_01():
+    data = base_odim_data_00()
+    dataset = ["dataset1", "dataset2"]
+    for i, grp in enumerate(dataset):
+        sub = data[grp]
+        sub["how"] = {}
+        sub["how"]["attrs"] = create_dset_how(i)
+    return data
+
+
+def base_odim_data_02():
+    data = base_odim_data_00(nrays=361)
+    dataset = ["dataset1", "dataset2"]
+    for i, grp in enumerate(dataset):
+        sub = data[grp]
+        sub["how"] = {}
+        sub["how"]["attrs"] = create_dset_how(i, nrays=361)
+    return data
+
+
+def base_odim_data_03():
+    data = base_odim_data_00()
+    dataset = ["dataset1", "dataset2"]
+    for i, grp in enumerate(dataset):
+        sub = data[grp]
+        sub["how"] = {}
+        sub["how"]["attrs"] = create_dset_how(i)
+        sub["how"]["attrs"]["startelA"][0] = 10.0
+    return data
+
+
+def base_gamic_data():
+    data = {}
+    foo_data = create_data()
+    dataset = ["scan0", "scan1"]
+    datas = ["moment_0"]
+
+    dt_type = np.dtype(
+        {
+            "names": [
+                "azimuth_start",
+                "azimuth_stop",
+                "elevation_start",
+                "elevation_stop",
+                "timestamp",
+            ],
+            "formats": ["<f8", "<f8", "<f8", "<f8", "<i8"],
+            "offsets": [0, 8, 16, 24, 32],
+            "itemsize": 40,
+        }
+    )
+
+    data["where"] = {}
+    data["where"]["attrs"] = create_root_where()
+    data["what"] = {}
+    data["what"]["attrs"] = create_root_what()
+
+    for i, grp in enumerate(dataset):
+        sub = {}
+        sub["how"] = {}
+        sub["how"]["attrs"] = {
+            "range_samples": 1.0,
+            "range_step": 1000.0,
+            "ray_count": 360,
+            "bin_count": 100,
+            "timestamp": b"2011-06-10T10:10:10.000Z",
+            "elevation": i + 0.5,
+        }
+        for j, mom in enumerate(datas):
+            sub2 = {}
+            sub2["data"] = np.roll(foo_data, shift=-create_a1gate(i), axis=0)
+            sub2["attrs"] = {
+                "dyn_range_min": -32.0,
+                "dyn_range_max": 95.5,
+                "format": b"UV8",
+                "moment": b"Zh",
+                "unit": b"dBZ",
+            }
+
+            rh = np.zeros((360,), dtype=dt_type)
+            rh["azimuth_start"] = np.roll(
+                create_startazA(), shift=(360 - create_a1gate(i))
+            )
+            rh["azimuth_stop"] = np.roll(
+                create_stopazA(), shift=(360 - create_a1gate(i))
+            )
+            rh["elevation_start"] = create_startelA(i)
+            rh["elevation_stop"] = create_stopelA(i)
+            rh["timestamp"] = np.roll(
+                create_ray_time(i).values * 1e6, shift=-create_a1gate(i)
+            )
+            sub[mom] = sub2
+            sub["ray_header"] = rh
+
+        data[grp] = sub
+    return data
+
+
+def write_odim_dataset(grp, data):
+    grp.create_dataset("data", data=data)
+
+
+def write_gamic_dataset(grp, name, data):
+    da = grp.create_dataset(name, data=data["data"])
+    da.attrs.update(data["attrs"])
+
+
+def write_gamic_ray_header(grp, data):
+    dt_type = np.dtype(
+        {
+            "names": [
+                "azimuth_start",
+                "azimuth_stop",
+                "elevation_start",
+                "elevation_stop",
+                "timestamp",
+            ],
+            "formats": ["<f8", "<f8", "<f8", "<f8", "<i8"],
+            "offsets": [0, 8, 16, 24, 32],
+            "itemsize": 40,
+        }
+    )
+    rh = grp.create_dataset("ray_header", (360,), dtype=dt_type)
+    rh[...] = data
+
+
+def write_group(grp, data):
+    for k, v in data.items():
+        if k == "attrs":
+            grp.attrs.update(v)
+        elif k == "data":
+            write_odim_dataset(grp, v)
+        elif "moment" in k:
+            write_gamic_dataset(grp, k, v)
+        elif "ray_header" in k:
+            write_gamic_ray_header(grp, v)
+        else:
+            if v:
+                subgrp = grp.create_group(k)
+                write_group(subgrp, v)
 
 
 @pytest.fixture(params=["file", "filelike"])
@@ -768,3 +1166,238 @@ class TestSyntheticGamicVolume01(SyntheticDataVolume):
 
     dsdesc = "scan{}"
     mdesc = "moment_{}"
+
+
+class TestXarray:
+    @requires_data
+    @requires_netcdf
+    def test_iter(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        assert len(cf) == cf.sweep
+        assert len(cf) == 9
+
+    @requires_data
+    @requires_netcdf
+    def test_del(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        for k in list(cf):
+            del cf[k]
+        assert cf == {}
+
+    @requires_data
+    @requires_netcdf
+    def test_read_cfradial(self):
+        sweep_names = [
+            "sweep_1",
+            "sweep_2",
+            "sweep_3",
+            "sweep_4",
+            "sweep_5",
+            "sweep_6",
+            "sweep_7",
+            "sweep_8",
+            "sweep_9",
+        ]
+        fixed_angles = np.array(
+            [0.4999, 1.0986, 1.8018, 2.5983, 3.598, 4.7021, 6.4984, 9.1022, 12.7991]
+        )
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        np.testing.assert_array_almost_equal(
+            cf.root.sweep_fixed_angle.values, fixed_angles
+        )
+        cfnames, cfangles = zip(*cf.sweeps)
+        assert sweep_names == list(cfnames)
+        np.testing.assert_array_almost_equal(fixed_angles, np.array(cfangles))
+        assert cf.sweep == 9
+        assert cf.location == (120.43350219726562, 22.52669906616211, 45.00000178813934)
+        assert cf.version == "1.2"
+        assert cf.Conventions == (
+            "CF/Radial instrument_parameters "
+            "radar_parameters radar_calibration "
+            "geometry_correction"
+        )
+
+        assert repr(cf) == repr(cf._sweeps)
+
+    @requires_data
+    @requires_netcdf
+    def test_read_odim(self):
+        fixed_angles = np.array([0.3, 0.9, 1.8, 3.3, 6.0])
+        filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
+        h5file = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.OdimH5(h5file)
+        np.testing.assert_array_almost_equal(
+            cf.root.sweep_fixed_angle.values, fixed_angles
+        )
+        filename = "hdf5/knmi_polar_volume.h5"
+        h5file = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.OdimH5(h5file)
+        with pytest.raises(AttributeError):
+            cf = io.xarray_depr.OdimH5(h5file, flavour="None")
+
+    @requires_data
+    @requires_netcdf
+    @requires_h5py
+    def test_read_gamic(self):
+        time_cov = ("2014-08-10T18:23:35Z", "2014-08-10T18:24:05Z")
+        filename = "hdf5/2014-08-10--182000.ppi.mvol"
+        h5file = util.get_wradlib_data_file(filename)
+        with pytest.raises(AttributeError):
+            io.xarray_depr.OdimH5(h5file)
+        cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC")
+        assert str(cf.root.time_coverage_start.values) == time_cov[0]
+        assert str(cf.root.time_coverage_end.values) == time_cov[1]
+
+        filename = "hdf5/2014-06-09--185000.rhi.mvol"
+        h5file = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC")
+        cf = io.xarray_depr.OdimH5(h5file, flavour="GAMIC", strict=False)
+
+    @requires_data
+    @requires_netcdf
+    @requires_h5py
+    def test_odim_roundtrip(self):
+        filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
+        odimfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.OdimH5(odimfile)
+        tmp = tempfile.NamedTemporaryFile(mode="w+b").name
+        cf.to_odim(tmp)
+        cf2 = io.xarray_depr.OdimH5(tmp)
+        xr.testing.assert_equal(cf.root, cf2.root)
+        for i in range(1, 6):
+            key = f"sweep_{i}"
+            xr.testing.assert_equal(cf[key], cf2[key])
+        # test write after del, file lockage
+        del cf2
+        # this currently breaks on CI, maybe the above `del` does not work correctly
+        # cf.to_odim(tmp)
+
+    @requires_data
+    @requires_netcdf
+    def test_cfradial_roundtrip(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        tmp = tempfile.NamedTemporaryFile(mode="w+b").name
+        cf.to_cfradial2(tmp)
+        cf2 = io.xarray_depr.CfRadial(tmp)
+        xr.testing.assert_equal(cf.root, cf2.root)
+        for i in range(1, 10):
+            key = f"sweep_{i}"
+            xr.testing.assert_equal(cf[key], cf2[key])
+        # test write after del, file lockage
+        del cf2
+        cf.to_cfradial2(tmp)
+
+    @requires_data
+    @requires_netcdf
+    @requires_h5py
+    def test_cfradial_odim_roundtrip(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        tmp = tempfile.NamedTemporaryFile(mode="w+b").name
+        cf.to_odim(tmp)
+        cf2 = io.xarray_depr.OdimH5(tmp)
+        xr.testing.assert_allclose(
+            cf.root.sweep_fixed_angle, cf2.root.sweep_fixed_angle
+        )
+        xr.testing.assert_allclose(
+            cf.root.time_coverage_start, cf2.root.time_coverage_start
+        )
+        drop = ["longitude", "latitude", "altitude", "sweep_mode"]
+        xr.testing.assert_allclose(
+            cf["sweep_1"].drop_vars(drop).sweep_number,
+            cf2["sweep_1"].drop_vars(drop).sweep_number,
+        )
+
+        tmp1 = tempfile.NamedTemporaryFile(mode="w+b").name
+        cf2.to_cfradial2(tmp1)
+        cf3 = io.xarray_depr.CfRadial(tmp1)
+        xr.testing.assert_allclose(
+            cf.root.time_coverage_start, cf3.root.time_coverage_start
+        )
+
+    @requires_data
+    @requires_netcdf
+    @requires_gdal
+    def test_georeference(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile, georef=True)
+        tmp = tempfile.NamedTemporaryFile(mode="w+b").name
+        cf.to_cfradial2(tmp)
+        cf2 = io.xarray_depr.CfRadial(tmp, georef=True)
+        swp1 = cf["sweep_1"].copy()
+        cf["sweep_1"] = cf["sweep_1"].drop_vars(["x", "y", "z", "gr", "rays", "bins"])
+        cf.georeference()
+        xr.testing.assert_equal(swp1, cf["sweep_1"])
+        xr.testing.assert_equal(swp1, cf2["sweep_1"])
+
+    @requires_data
+    @requires_netcdf
+    def test_root_key_warnings(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        with pytest.warns(DeprecationWarning):
+            cf["root"]
+
+    @requires_data
+    @requires_netcdf
+    @requires_h5py
+    def test_to_odim_warning(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        cf.root = None
+        with pytest.warns(UserWarning):
+            cf.to_odim("test.h5")
+
+    @requires_data
+    @requires_netcdf
+    def test_to_cfradial2_warning(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        cf.root = None
+        with pytest.warns(UserWarning):
+            cf.to_cfradial2("test.nc")
+
+    @requires_data
+    @requires_netcdf
+    def test_setitem_warning(self):
+        filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        cf = io.xarray_depr.CfRadial(ncfile)
+        with pytest.warns(UserWarning):
+            cf["test"] = None
+
+    @requires_data
+    @requires_netcdf
+    def test_odim_errors(self):
+        filename = "netcdf/edge_netcdf.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        with pytest.raises(TypeError):
+            io.xarray_depr.OdimH5(ncfile)
+
+        filename = "netcdf/example_cfradial_ppi.nc"
+        ncfile = util.get_wradlib_data_file(filename)
+        with pytest.raises(AttributeError):
+            io.xarray_depr.OdimH5(ncfile)
+
+    @requires_data
+    @requires_netcdf
+    def test_netcdf4_errors(self):
+        filename = "hdf5/2014-08-10--182000.ppi.mvol"
+        h5file = util.get_wradlib_data_file(filename)
+        with pytest.raises(AttributeError):
+            io.xarray_depr.CfRadial(h5file, flavour="Cf/Radial3")
+        with pytest.raises(AttributeError):
+            io.xarray_depr.CfRadial(h5file)

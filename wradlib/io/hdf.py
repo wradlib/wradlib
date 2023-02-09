@@ -86,6 +86,8 @@ def open_odim_dataset(filename_or_obj, group=None, **kwargs):
     raise_on_missing_xarray_backend()
     from wradlib.io.backends import OdimBackendEntrypoint
 
+    if isinstance(group, str):
+        group = f"sweep_{int(group[7:]) - 1}"
     kwargs["group"] = group
     return open_radar_dataset(filename_or_obj, engine=OdimBackendEntrypoint, **kwargs)
 
@@ -131,6 +133,8 @@ def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
     raise_on_missing_xarray_backend()
     from wradlib.io.backends import GamicBackendEntrypoint
 
+    if isinstance(group, str):
+        group = f"sweep_{group[4:]}"
     kwargs["group"] = group
     return open_radar_dataset(filename_or_obj, engine=GamicBackendEntrypoint, **kwargs)
 
@@ -181,6 +185,8 @@ def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
     raise_on_missing_xarray_backend()
     from wradlib.io.backends import OdimBackendEntrypoint
 
+    if isinstance(group, str):
+        group = f"sweep_{int(group[7:]) - 1}"
     kwargs["group"] = group
     return open_radar_mfdataset(filename_or_obj, engine=OdimBackendEntrypoint, **kwargs)
 
@@ -231,6 +237,8 @@ def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
     raise_on_missing_xarray_backend()
     from wradlib.io.backends import GamicBackendEntrypoint
 
+    if isinstance(group, str):
+        group = f"sweep_{group[4:]}"
     kwargs["group"] = group
     return open_radar_mfdataset(
         filename_or_obj, engine=GamicBackendEntrypoint, **kwargs
