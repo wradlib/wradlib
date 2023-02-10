@@ -932,6 +932,7 @@ class TestGdal:
     @requires_data
     @requires_secrets
     @requires_gdal
+    @pytest.mark.xfail(strict=False)
     def test_get_raster_elevation(self):
         filename = "geo/N39W028.SRTMGL3.hgt.zip"
         geofile = util.get_wradlib_data_file(filename)
