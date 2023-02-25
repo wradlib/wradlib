@@ -785,7 +785,7 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
 
     Examples
     --------
-    See :ref:`/notebooks/radolan/radolan_format.ipynb`.
+    See :ref:`/notebooks/fileio/radolan/radolan_format.ipynb`.
     """
     NODATA = missing
 

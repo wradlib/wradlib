@@ -18,6 +18,7 @@ xradar-package and is imported from there.
 __all__ = [
     "open_furuno_dataset",
     "open_furuno_mfdataset",
+    "FurunoFile",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 

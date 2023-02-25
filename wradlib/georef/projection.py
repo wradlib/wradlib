@@ -198,7 +198,7 @@ def proj4_to_osr(proj4str):
     Examples
     --------
 
-    See :ref:`/notebooks/radolan/radolan_grid.ipynb#PROJ.4`.
+    See :ref:`/notebooks/fileio/radolan/radolan_grid.ipynb#PROJ`.
 
     """
     proj = osr.SpatialReference()

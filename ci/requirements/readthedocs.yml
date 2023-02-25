@@ -1,0 +1,24 @@
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - sphinx
+  - pandoc
+  - myst-parser
+  - nbconvert
+  - ipykernel
+  - sphinx_rtd_theme
+  - sphinx-copybutton
+  - accessible-pygments
+  - sphinxcontrib-bibtex
+  - numpy
+  - deprecation
+  - git
+  - nbsphinx
+  - semver
+  - xarray
+  - xradar
+  - pip:
+     - git+https://github.com/executablebooks/sphinx-book-theme.git@v1.0.0rc2
+     - git+https://github.com/pydata/pydata-sphinx-theme.git@v0.13.0rc6
