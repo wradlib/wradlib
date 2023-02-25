@@ -9,11 +9,15 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 ## Development Version
 
-This version brings doc-folder back into wradlib repo. The wradlib-docs repo will be archived. wradlib-notebooks repo has been restructured as well, with a single point of access. 
+This version brings doc-folder back into wradlib repo. The wradlib-docs repo will be archived. wradlib-notebooks repo has been restructured as well, with a single point of access.
 
 **New features**
 
 * DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer` 
+
+* **Maintenance - CI**
+
+* fixing wradlib version for ReadTheDocs ({pull}`620`) by {at}`kmuehlbauer`
 
 ## Version 1.19.0
 

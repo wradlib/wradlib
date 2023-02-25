@@ -116,6 +116,9 @@ if on_rtd:
         wradlib_notebooks_branch = rtd_version
         wradlib_branch_or_tag = rtd_version
 
+    # install checked out wradlib
+    subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "../."])
+
     # clone wradlib-notebooks target branch
     repourl = "{0}/wradlib-notebooks.git".format(url)
     reponame = "wradlib-notebooks"
@@ -149,9 +152,6 @@ if on_rtd:
             ],
             shell=True,
         )
-
-    # install checked out wradlib
-    subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "../."])
 
 # get wradlib modules and create automodule rst-files
 import types
