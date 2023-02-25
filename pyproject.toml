@@ -54,7 +54,7 @@ wradlib-rainbow = "wradlib.io.backends:RainbowBackendEntrypoint"
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
-readme = { file = ["README.md"], content_type = "text/markdown" }
+readme = { file = ["README.md"], content-type = "text/markdown" }
 
 [tool.setuptools.dynamic.optional-dependencies]
 dev = { file = "requirements_devel.txt" }
