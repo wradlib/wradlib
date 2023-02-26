@@ -17,6 +17,7 @@ dependencies:
   - git
   - nbsphinx
   - semver
+  - setuptools_scm
   - xarray
   - xradar
   - pip:
