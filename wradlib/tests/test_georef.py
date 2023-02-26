@@ -703,6 +703,7 @@ class TestProjections:
         newcoords = georef.reproject(
             newcoords, projection_source=ellipsoid, projection_target=geoid
         )
+
         np.testing.assert_allclose(coords, newcoords)
 
     def test_get_extent(self):

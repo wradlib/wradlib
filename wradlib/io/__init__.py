@@ -13,7 +13,6 @@ for an introduction on how to deal with different file formats.
 
 .. automodule:: wradlib.io.backends
 .. automodule:: wradlib.io.dem
-.. automodule:: wradlib.io.furuno
 .. automodule:: wradlib.io.gdal
 .. automodule:: wradlib.io.hdf
 .. automodule:: wradlib.io.iris
@@ -22,12 +21,10 @@ for an introduction on how to deal with different file formats.
 .. automodule:: wradlib.io.radolan
 .. automodule:: wradlib.io.rainbow
 .. automodule:: wradlib.io.xarray
-.. automodule:: wradlib.io.xarray_depr
 """
 
 from .backends import *
 from .dem import *
-from .furuno import *
 from .gdal import *
 from .hdf import *
 from .iris import *
@@ -36,6 +33,5 @@ from .netcdf import *
 from .radolan import *
 from .rainbow import *
 from .xarray import *
-from .xarray_depr import *
 
 __all__ = [s for s in dir() if not s.startswith("_")]

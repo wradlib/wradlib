@@ -8,7 +8,7 @@ IRIS/Sigmet Data I/O
 ^^^^^^^^^^^^^^^^^^^^
 
 Reads data from Vaisala's IRIS data formats. Former available code was ported to
-xradar-package and is imported from there.
+xradar-package `[1]`_ and is imported from there.
 
 IRIS (Vaisala Sigmet Interactive Radar Information System)
 
@@ -17,6 +17,8 @@ See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
 Reading sweep data can be skipped by setting `loaddata=False`. By default the data
 is decoded on the fly. Using `rawdata=True` the data will be kept undecoded.
 
+.. _[1]: https://xradar.rtfd.io
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -24,8 +26,6 @@ is decoded on the fly. Using `rawdata=True` the data will be kept undecoded.
    {}
 """
 __all__ = [
-    "open_iris_dataset",
-    "open_iris_mfdataset",
     "read_iris",
     "IrisRecordFile",
     "IrisRawFile",
@@ -40,12 +40,6 @@ from collections import OrderedDict
 
 import numpy as np
 from xradar.io.backends import iris as xiris
-
-from wradlib.io.xarray import (
-    open_radar_dataset,
-    open_radar_mfdataset,
-    raise_on_missing_xarray_backend,
-)
 
 
 def IrisRawFile(*args, **kwargs):
@@ -486,86 +480,3 @@ def read_iris(
                 swp_data.pop(m)
 
     return data
-
-
-def open_iris_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an IRIS radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_dataset` and
-    :py:func:`xarray.open_dataset` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    reindex_angle : bool or float
-        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
-        number, it is used as tolerance. If False, no reindexing is performed.
-        Only invoked if `decode_coord=True`.
-    **kwargs : dict, optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.iris.open_iris_mfdataset`
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io import IrisBackendEntrypoint
-
-    kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine=IrisBackendEntrypoint, **kwargs)
-
-
-def open_iris_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an Iris radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` and
-    :py:func:`xarray:xarray.open_mfdataset` under the hood.
-    Needs ``dask`` package to be installed [1]_.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    reindex_angle : bool or float
-        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
-        number, it is used as tolerance. If False, no reindexing is performed.
-        Only invoked if `decode_coord=True`.
-    **kwargs : dict, optional
-        Additional arguments passed on to :py:func:`xarray:xarray.open_mfdataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.iris.open_iris_dataset`
-
-    References
-    ----------
-    .. [1] https://docs.dask.org/en/latest/
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io import IrisBackendEntrypoint
-
-    kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine=IrisBackendEntrypoint, **kwargs)

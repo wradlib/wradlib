@@ -36,25 +36,12 @@ import datetime as dt
 import importlib
 import os
 
-import deprecation
 import numpy as np
 import xarray as xr
 from scipy import ndimage, signal
 from scipy.spatial import KDTree
 
 from wradlib import georef, version
-
-
-@deprecation.deprecated(
-    deprecated_in="1.6",
-    removed_in="2.0",
-    current_version=version.version,
-    details="Use `wradlib.georef.maximum_intensity_projection` instead.",
-)
-def maximum_intensity_projection(*args, **kwargs):
-    from wradlib.georef import polar
-
-    return polar.maximum_intensity_projection(*args, **kwargs)
 
 
 class OptionalModuleStub:

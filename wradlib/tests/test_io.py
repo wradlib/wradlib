@@ -10,7 +10,6 @@ import sys
 import tempfile
 from dataclasses import dataclass
 
-import deprecation
 import numpy as np
 import pytest
 import xarray as xr
@@ -23,12 +22,10 @@ from . import (
     requires_data,
     requires_gdal,
     requires_geos,
-    requires_h5netcdf,
     requires_h5py,
     requires_netcdf,
     requires_requests,
     requires_secrets,
-    requires_xarray_backend_api,
     requires_xmltodict,
 )
 
@@ -399,66 +396,6 @@ class TestHDF5:
         bbox = zonalstats.get_bbox(lon, lat)
 
         io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox)
-
-    @requires_data
-    @requires_h5netcdf
-    @requires_xarray_backend_api
-    @pytest.mark.parametrize(
-        "opener", [io.hdf.open_odim_dataset, io.hdf.open_odim_mfdataset]
-    )
-    def test_open_odim_functions(self, opener):
-        if opener == io.hdf.open_odim_mfdataset:
-            pytest.importorskip("dask")
-        filename = "hdf5/knmi_polar_volume.h5"
-        with get_wradlib_data_file(filename, "file") as odim_file:
-            ds = opener(odim_file)
-            assert isinstance(ds, io.xarray.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
-            ds = opener(odim_file, group="dataset1")
-            assert isinstance(ds, xr.Dataset)
-            ds = opener(odim_file, reindex_angle=False)
-            assert isinstance(ds, io.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
-            ds = opener(odim_file, reindex_angle=True)
-            assert isinstance(ds, io.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
-            ds = opener(odim_file, reindex_angle=0.4)
-            assert isinstance(ds, io.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
-
-    @requires_data
-    @requires_h5netcdf
-    @requires_xarray_backend_api
-    @pytest.mark.parametrize(
-        "opener", [io.hdf.open_gamic_dataset, io.hdf.open_gamic_mfdataset]
-    )
-    def test_open_gamic_functions(self, opener):
-        if opener == io.hdf.open_gamic_mfdataset:
-            pytest.importorskip("dask")
-        filename = "hdf5/DWD-Vol-2_99999_20180601054047_00.h5"
-        with get_wradlib_data_file(filename, "file") as gamic_file:
-            ds = opener(gamic_file)
-            assert isinstance(ds, io.xarray.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
-            ds = opener(gamic_file, group="scan0")
-            assert isinstance(ds, xr.Dataset)
-            ds = opener(gamic_file, reindex_angle=False)
-            assert isinstance(ds, io.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
-            ds = opener(gamic_file, reindex_angle=True)
-            assert isinstance(ds, io.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
-            ds = opener(gamic_file, reindex_angle=0.4)
-            assert isinstance(ds, io.RadarVolume)
-            for d in ds:
-                assert isinstance(d, xr.Dataset)
 
 
 def radolan_files():
@@ -1004,17 +941,6 @@ class TestRadolan:
         data, attrs = io.radolan.read_radolan_composite(pc_file)
 
     @requires_data
-    @requires_gdal
-    def test_radolan_copmposit_xarray(self):
-        filename = "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz"
-        rx_file = util.get_wradlib_data_file(filename)
-        data, attrs = io.radolan.read_radolan_composite(rx_file, loaddata="xarray")
-        assert data.RX.shape == (900, 900)
-        assert data.dims == {"x": 900, "y": 900}
-        assert data.RX.dims == ("y", "x")
-        assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
-
-    @requires_data
     def test_read_radolan_composit_corrupted(self):
         filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
         rw_file = util.get_wradlib_data_file(filename)
@@ -1533,21 +1459,6 @@ class TestNetcdf:
         filename = "netcdf/example_cfradial_ppi.nc"
         with get_wradlib_data_file(filename, file_or_filelike) as f:
             io.netcdf.read_generic_netcdf(f)
-
-
-class TestXarray:
-    @deprecation.fail_if_not_removed
-    @requires_gdal
-    def test_create_xarray_dataarray(self):
-        img = np.zeros((360, 10), dtype=np.float32)
-        r = np.arange(0, 100000, 10000)
-        az = np.arange(0, 360)
-        th = np.zeros_like(az)
-        proj = georef.projection.epsg_to_osr(4326)
-        with pytest.raises(TypeError):
-            io.xarray.create_xarray_dataarray(img)
-        with pytest.warns(DeprecationWarning):
-            io.xarray.create_xarray_dataarray(img, r, az, th, proj=proj)
 
 
 class TestDem:

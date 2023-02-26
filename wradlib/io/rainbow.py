@@ -7,14 +7,12 @@ Rainbow Data I/O
 ^^^^^^^^^^^^^^^^
 
 Reads data from Leonardo's Rainbow5 data formats. Former available code was ported to
-xradar-package and is imported from there.
+xradar-package `[1]`_ and is imported from there.
 
 :func:`~wradlib.io.rainbow.read_rainbow` reads all data and metadata into a dictionary.
 Reading sweep data can be skipped by setting `loaddata=False`.
 
-:func:`~wradlib.io.rainbow.open_rainbow_dataset` and :func:`~wradlib.io.rainbow.open_rainbow_mfdataset`
-read Rainbow5 data into xarray Datasets with a CfRadial2-like structure.
-For this `mmap.mmap` is utilized.
+.. _[1]: https://xradar.rtfd.io
 
 
 .. autosummary::
@@ -23,18 +21,13 @@ For this `mmap.mmap` is utilized.
 
    {}
 """
-__all__ = ["read_rainbow", "open_rainbow_dataset", "open_rainbow_mfdataset"]
+__all__ = ["read_rainbow"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 
 from xradar.io.backends import rainbow as xrainbow
 
 from wradlib import util
-from wradlib.io.xarray import (
-    open_radar_dataset,
-    open_radar_mfdataset,
-    raise_on_missing_xarray_backend,
-)
 
 
 def get_rb_blob_from_file(name, blobdict):
@@ -145,80 +138,3 @@ def read_rainbow(filename, loaddata=True):
             rbdict = get_rb_blobs_from_file(f, rbdict)
 
     return rbdict
-
-
-def open_rainbow_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an RAINBOW5 radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.open_radar_dataset`` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    **kwargs : dict, optional
-        Additional arguments passed on to :py:func:`xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.rainbow.open_rainbow_dataset`
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io.backends import RainbowBackendEntrypoint
-
-    kwargs["group"] = group
-    return open_radar_dataset(
-        filename_or_obj, engine=RainbowBackendEntrypoint, **kwargs
-    )
-
-
-def open_rainbow_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an RAINBOW5 radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` under the hood.
-    Needs `dask` package to be installed.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    reindex_angle : bool or float
-        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
-        number, it is used as tolerance. If False, no reindexing is performed.
-        Only invoked if `decode_coord=True`.
-    **kwargs : dict, optional
-        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.rainbow.open_rainbow_dataset`
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io.backends import RainbowBackendEntrypoint
-
-    kwargs["group"] = group
-    return open_radar_mfdataset(
-        filename_or_obj, engine=RainbowBackendEntrypoint, **kwargs
-    )

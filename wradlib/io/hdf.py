@@ -1,10 +1,14 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
 HDF Data I/O
 ^^^^^^^^^^^^
+Former available xarray based code has been ported to xradar-package `[1]`_.
+
+.. _[1]: https://xradar.rtfd.io
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -12,11 +16,7 @@ HDF Data I/O
    {}
 """
 __all__ = [
-    "open_gamic_dataset",
-    "open_gamic_mfdataset",
     "open_gpm_dataset",
-    "open_odim_dataset",
-    "open_odim_mfdataset",
     "read_generic_hdf5",
     "read_opera_hdf5",
     "read_gamic_hdf5",
@@ -33,216 +33,11 @@ import numpy as np
 import xarray as xr
 from packaging.version import Version
 
-from wradlib.io.xarray import (
-    open_radar_dataset,
-    open_radar_mfdataset,
-    raise_on_missing_xarray_backend,
-)
 from wradlib.util import import_optional
 
 h5py = import_optional("h5py")
 h5netcdf = import_optional("h5netcdf")
 nc = import_optional("netCDF4")
-
-
-def open_odim_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an ODIM radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` and
-    :py:func:`xarray.open_dataset` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    keep_elevation : bool
-        For PPI only. Keep original elevation data if True. Defaults to False,
-        which fixes erroneous elevation data.
-    keep_azimuth : bool
-        For RHI only. Keep original azimuth data if True. Defaults to False,
-        which fixes erroneous azimuth data.
-    reindex_angle : bool or float
-        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
-        number, it is used as tolerance. If False, no reindexing is performed.
-        Only invoked if `decode_coord=True`.
-    **kwargs : dict, optional
-        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.hdf.open_odim_mfdataset`
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io.backends import OdimBackendEntrypoint
-
-    if isinstance(group, str):
-        group = f"sweep_{int(group[7:]) - 1}"
-    kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine=OdimBackendEntrypoint, **kwargs)
-
-
-def open_gamic_dataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.xarray.open_radar_dataset` and
-    :py:func:`xarray.open_dataset` under the hood.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    keep_elevation : bool
-        For PPI only. Keep original elevation data if True. Defaults to False,
-        which fixes erroneous elevation data.
-    keep_azimuth : bool
-        For RHI only. Keep original azimuth data if True. Defaults to False,
-        which fixes erroneous azimuth data.
-    reindex_angle : bool or float
-        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
-        number, it is used as tolerance. If False, no reindexing is performed.
-        Only invoked if `decode_coord=True`.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.hdf.open_gamic_mfdataset`
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io.backends import GamicBackendEntrypoint
-
-    if isinstance(group, str):
-        group = f"sweep_{group[4:]}"
-    kwargs["group"] = group
-    return open_radar_dataset(filename_or_obj, engine=GamicBackendEntrypoint, **kwargs)
-
-
-def open_odim_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an ODIM radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` and
-    :py:func:`xarray:xarray.open_mfdataset` under the hood.
-    Needs ``dask`` package to be installed [1]_.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    keep_elevation : bool
-        For PPI only. Keep original elevation data if True. Defaults to False,
-        which fixes erroneous elevation data.
-    keep_azimuth : bool
-        For RHI only. Keep original azimuth data if True. Defaults to False,
-        which fixes erroneous azimuth data.
-    reindex_angle : bool or float
-        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
-        number, it is used as tolerance. If False, no reindexing is performed.
-        Only invoked if `decode_coord=True`.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.hdf.open_odim_dataset`
-
-    References
-    ----------
-    .. [1] https://docs.dask.org/en/latest/
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io.backends import OdimBackendEntrypoint
-
-    if isinstance(group, str):
-        group = f"sweep_{int(group[7:]) - 1}"
-    kwargs["group"] = group
-    return open_radar_mfdataset(filename_or_obj, engine=OdimBackendEntrypoint, **kwargs)
-
-
-def open_gamic_mfdataset(filename_or_obj, group=None, **kwargs):
-    """Open and decode an GAMIC radar sweep or volume from a file or file-like object.
-
-    This function uses :func:`~wradlib.io.xarray.open_radar_mfdataset` and
-    :py:func:`xarray:xarray.open_mfdataset` under the hood.
-    Needs ``dask`` package to be installed [1]_.
-
-    Parameters
-    ----------
-    filename_or_obj : str, Path, file-like or DataStore
-        Strings and Path objects are interpreted as a path to a local or remote
-        radar file and opened with an appropriate engine.
-    group : str, optional
-        Path to a sweep group in the given file to open.
-
-    Keyword Arguments
-    -----------------
-    keep_elevation : bool
-        For PPI only. Keep original elevation data if True. Defaults to False,
-        which fixes erroneous elevation data.
-    keep_azimuth : bool
-        For RHI only. Keep original azimuth data if True. Defaults to False,
-        which fixes erroneous azimuth data.
-    reindex_angle : bool or float
-        Defaults to None (reindex angle with tol=0.4deg). If given a floating point
-        number, it is used as tolerance. If False, no reindexing is performed.
-        Only invoked if `decode_coord=True`.
-    **kwargs : optional
-        Additional arguments passed on to :py:func:`xarray:xarray.open_dataset`.
-
-    Returns
-    -------
-    dataset : :py:class:`xarray:xarray.Dataset` or :class:`wradlib.io.xarray.RadarVolume`
-        The newly created radar dataset or radar volume.
-
-    See Also
-    --------
-    :func:`~wradlib.io.hdf.open_gamic_dataset`
-
-    References
-    ----------
-    .. [1] https://docs.dask.org/en/latest/
-    """
-    raise_on_missing_xarray_backend()
-    from wradlib.io.backends import GamicBackendEntrypoint
-
-    if isinstance(group, str):
-        group = f"sweep_{group[4:]}"
-    kwargs["group"] = group
-    return open_radar_mfdataset(
-        filename_or_obj, engine=GamicBackendEntrypoint, **kwargs
-    )
 
 
 def read_generic_hdf5(fname):

@@ -30,7 +30,6 @@ __all__ = [
     "parse_dwd_composite_header",
     "read_radolan_binary_array",
     "decode_radolan_runlength_array",
-    "radolan_to_xarray",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
@@ -39,13 +38,12 @@ import io
 import re
 import warnings
 
-import deprecation
 import numpy as np
 import xarray as xr
 
-from wradlib import util, version
+from wradlib import util
 from wradlib.georef import projection, rect
-from wradlib.io.xarray import WradlibVariable, raise_on_missing_xarray_backend
+from wradlib.io.xarray import WradlibVariable
 
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
@@ -758,9 +756,8 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
 
     Note
     ----
-    Using `loaddata='xarray'` the data is wrapped in an xarray Dataset.
-    x,y, dimension as well as x,y and time coordinates
-    (polar stereographic projection) are supplied.
+    You might also use :func:`wradlib.io.radolan.open_radolan_dataset` or :func:`xarray:xarray.open_dataset`
+    with keyword engine='radolan' to import into xarray Dataset.
 
     Parameters
     ----------
@@ -768,9 +765,8 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
         path to the composite file or file-like object
     missing : int
         value assigned to no-data cells
-    loaddata : bool or str
-        True | False | 'xarray', If False function returns (None, attrs)
-        If 'xarray' returns (xarray Dataset, attrs)
+    loaddata : bool
+        True | False, If False function returns (None, attrs)
     fillmissing : bool
         If True fills truncated values with "missing". Defaults to False.
         Does not work for run-length encoded files ("PC" and "PG).
@@ -806,24 +802,21 @@ def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
         if not attrs["radarid"] == "10000":
             warnings.warn(
                 "WARNING: You are using function"
-                + "wradlib.io.read_RADOLAN_composit for a non "
+                + "wradlib.io.read_radolan_composit for a non "
                 + "composite file.\n "
                 + "This might work...but please check the validity "
-                + "of the results"
+                + "of the results!"
             )
 
         arr = radfile.data[radfile.product]
 
-    if loaddata == "xarray":
-        arr = radolan_to_xarray(arr, attrs)
-    else:
-        # apply precision factor
-        # this promotes arr to float if precision is float
-        if "precision" in attrs:
-            arr = arr * attrs["precision"]
-        # set nodata value
-        if "nodatamask" in attrs:
-            arr.flat[attrs["nodatamask"]] = NODATA
+    # apply precision factor
+    # this promotes arr to float if precision is float
+    if "precision" in attrs:
+        arr = arr * attrs["precision"]
+    # set nodata value
+    if "nodatamask" in attrs:
+        arr.flat[attrs["nodatamask"]] = NODATA
     return arr, attrs
 
 
@@ -895,52 +888,6 @@ def _get_radolan_product_attributes(attrs):
         raise ValueError("WRADLIB: unkown RADOLAN product!")
 
     return pattrs
-
-
-@deprecation.deprecated(
-    deprecated_in="1.10",
-    removed_in="2.0",
-    current_version=version.version,
-    details=(
-        "Use `wrl.io.open_radolan_dataset(fname) or "
-        "`xr.open_dataset(fname, engine='radolan')` instead."
-    ),
-)
-def radolan_to_xarray(data, attrs):
-    """Converts RADOLAN data to xarray Dataset
-
-    Parameters
-    ----------
-    data : :py:class:`numpy:numpy.ndarray`
-        array of shape (number of rows, number of columns)
-    attrs : dict
-        dictionary of metadata information from the file header
-
-    Returns
-    -------
-    dset : :py:class:`xarray:xarray.Dataset`
-        RADOLAN data and coordinates
-    """
-    product = attrs["producttype"]
-    pattrs = _get_radolan_product_attributes(attrs)
-    radolan_grid_xy = rect.get_radolan_grid(attrs["nrow"], attrs["ncol"])
-    x0 = radolan_grid_xy[0, :, 0]
-    y0 = radolan_grid_xy[:, 0, 1]
-    if pattrs:
-        if "nodatamask" in attrs:
-            data.flat[attrs["nodatamask"]] = pattrs["_FillValue"]
-        if "cluttermask" in attrs:
-            data.flat[attrs["cluttermask"]] = pattrs["_FillValue"]
-    darr = xr.DataArray(
-        data,
-        attrs=pattrs,
-        dims=["y", "x"],
-        coords={"time": attrs["datetime"], "x": x0, "y": y0},
-    )
-    dset = xr.Dataset({product: darr})
-    dset = dset.pipe(xr.decode_cf)
-
-    return dset
 
 
 radolan = {
@@ -1324,7 +1271,6 @@ def open_radolan_dataset(filename_or_obj, **kwargs):
     -------
     dataset : :py:class:`xarray:xarray.Dataset`
     """
-    raise_on_missing_xarray_backend()
     backend_kwargs = {
         "fillmissing": kwargs.pop("fillmissing", False),
         "copy": kwargs.pop("copy", False),
@@ -1336,7 +1282,9 @@ def open_radolan_dataset(filename_or_obj, **kwargs):
 def open_radolan_mfdataset(paths, **kwargs):
     """Open multiple RADOLAN files as a single dataset.
 
-    Needs ``dask`` package to be installed [1]_.
+    Needs ``dask`` package to be installed `[1]`_.
+
+    .. _[1]: https://docs.dask.org/en/latest/
 
     Parameters
     ----------
@@ -1360,12 +1308,7 @@ def open_radolan_mfdataset(paths, **kwargs):
     Returns
     -------
     dataset : :py:class:`xarray:xarray.Dataset`
-
-    References
-    ----------
-    .. [1] https://docs.dask.org/en/latest/
     """
-    raise_on_missing_xarray_backend()
     backend_kwargs = {
         "fillmissing": kwargs.pop("fillmissing", False),
         "copy": kwargs.pop("copy", False),
