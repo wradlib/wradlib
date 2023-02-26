@@ -5,7 +5,6 @@
 import datetime as dt
 import os
 
-import deprecation
 import numpy as np
 import pytest
 
@@ -81,23 +80,6 @@ class TestHelperFunctions:
         mod = util.import_optional("h8x")
         with pytest.raises(AttributeError):
             mod.test()
-
-    @requires_data
-    @deprecation.fail_if_not_removed
-    def test_maximum_intensity_projection(self):
-        angle = 0.0
-        elev = 0.0
-
-        filename = util.get_wradlib_data_file("misc/polar_dBZ_tur.gz")
-        data = np.loadtxt(filename)
-        # we need to have meter here for the georef function inside mip
-        d1 = np.arange(data.shape[1], dtype=np.float_) * 1000
-        d2 = np.arange(data.shape[0], dtype=np.float_)
-        data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
-
-        # calculate max intensity proj
-        util.maximum_intensity_projection(data, r=d1, az=d2, angle=angle, elev=elev)
-        util.maximum_intensity_projection(data, autoext=False)
 
     @requires_data
     def test_roll2d_polar(self):

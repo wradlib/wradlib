@@ -61,7 +61,7 @@ dev = { file = "requirements_devel.txt" }
 opt = { file = "requirements_optional.txt" }
 
 [tool.setuptools]
-packages = ["wradlib"]
+packages = ["wradlib", "wradlib.georef", "wradlib.io", "wradlib.tests"]
 
 [tool.setuptools_scm]
 write_to = "wradlib/version.py"

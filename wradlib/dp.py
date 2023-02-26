@@ -50,17 +50,15 @@ __all__ = [
     "kdp_from_phidp",
     "unfold_phi_vulpiani",
     "unfold_phi",
-    "linear_despeckle",
     "texture",
     "depolarization",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import deprecation
 import numpy as np
 from scipy import integrate, interpolate
 
-from wradlib import trafo, util, version
+from wradlib import trafo, util
 
 
 def process_raw_phidp_vulpiani(
@@ -482,35 +480,6 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
                 if phidp[beam, k] < 0:
                     phidp[beam, k] += 360
     return phidp
-
-
-@deprecation.deprecated(
-    deprecated_in="1.7",
-    removed_in="2.0",
-    current_version=version.version,
-    details="Use `wradlib.util.despeckle` instead.",
-)
-def linear_despeckle(data, ndespeckle=3, copy=False):
-    """Remove floating pixels in between NaNs in a multi-dimensional array.
-
-    Warning
-    -------
-    This function changes the original input array if argument copy is set to
-    default (False).
-
-    Parameters
-    ----------
-    data : :class:`numpy:numpy.ndarray`
-        Note that the range dimension must be the last dimension of the
-        input array.
-    ndespeckle : int
-        (must be either 3 or 5, 3 by default),
-        Width of the window in which we check for speckle
-    copy : bool
-        If True, the input array will remain unchanged.
-
-    """
-    return util.despeckle(data, n=ndespeckle, copy=copy)
 
 
 def texture(data):

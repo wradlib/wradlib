@@ -13,11 +13,16 @@ This version brings doc-folder back into wradlib repo. The wradlib-docs repo wil
 
 **New features**
 
-* DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer` 
+* DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer`
 
-* **Maintenance - CI**
+**Maintenance - CI**
 
-* fixing wradlib version for ReadTheDocs ({pull}`620`) by {at}`kmuehlbauer`
+* Fixing wradlib version for ReadTheDocs ({pull}`620`) by {at}`kmuehlbauer`
+
+**Maintenance - Code**
+
+* Remove deprecated code ({pull}`621`) by {at}`kmuehlbauer`
+
 
 ## Version 1.19.0
 

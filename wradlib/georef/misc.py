@@ -29,7 +29,6 @@ def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
 
         h = \\sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \\sin\\theta} - k_e r_e
 
-
     Parameters
     ----------
     r : :class:`numpy:numpy.ndarray`
@@ -44,7 +43,7 @@ def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
+        dependend. The default of 4/3 is a good approximation for most
         weather radar wavelengths
 
     Returns

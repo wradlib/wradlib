@@ -211,10 +211,6 @@ class TestKDPFromPHIDP:
         )
         np.testing.assert_array_almost_equal(out, out0, decimal=4)
 
-    def test_linear_despeckle_deprecated(self, ndespeckle):
-        with pytest.warns(DeprecationWarning):
-            dp.linear_despeckle(self.phidp_raw0, ndespeckle=ndespeckle, copy=True)
-
     def test_linear_despeckle(self, ndespeckle):
         util.despeckle(self.phidp_raw0, n=ndespeckle, copy=True)
 
