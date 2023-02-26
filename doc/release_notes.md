@@ -7,6 +7,12 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development Version
+
+**Maintenance - CI**
+
+* fixing wradlib version for ReadTheDocs ({pull}`620`) by {at}`kmuehlbauer`
+
 ## Version 1.19.1
 
 This version brings doc-folder back into wradlib repo. The wradlib-docs repo will be archived. wradlib-notebooks repo has been restructured as well, with a single point of access. 
