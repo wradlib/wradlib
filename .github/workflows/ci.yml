@@ -287,7 +287,7 @@ jobs:
           toml set --toml-path pyproject.toml tool.setuptools_scm.local_scheme "no-local-version"
           git update-index --assume-unchanged pyproject.toml
           python -m build
-          twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+          # twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
   upload_pypi:
     if: github.event_name == 'release'
