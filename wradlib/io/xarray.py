@@ -612,9 +612,9 @@ class RadarVolume(XRadBase):
         angle = f"{self._dims[dim0].capitalize()}(s):"
         # Todo: remove if fixed in xradar
         try:
-            angle_summary = [f"{v['sweep_fixed_angle']:.1f}" for v in self]
+            angle_summary = [f"{v['sweep_fixed_angle'].min():.1f}" for v in self]
         except KeyError:
-            angle_summary = [f"{v.attrs['fixed_angle']:.1f}" for v in self]
+            angle_summary = [f"{v.attrs['fixed_angle'].min():.1f}" for v in self]
         angle_summary = ", ".join(angle_summary)
         summary.append(f"{angle} ({angle_summary})")
 
@@ -647,9 +647,9 @@ class RadarVolume(XRadBase):
         sweep_group_names = [f"sweep_{i}" for i in range(len(self))]
         # todo: remove if fixed in xradar
         try:
-            sweep_fixed_angles = [ts["sweep_fixed_angle"] for ts in self]
+            sweep_fixed_angles = [ts["sweep_fixed_angle"].min() for ts in self]
         except KeyError:
-            sweep_fixed_angles = [ts.attrs["fixed_angle"] for ts in self]
+            sweep_fixed_angles = [ts.attrs["fixed_angle"].min() for ts in self]
 
         # extract time coverage
         times = np.array(
