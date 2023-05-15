@@ -973,7 +973,9 @@ class _radolan_file:
 
     """
 
-    def __init__(self, filename, *, fillmissing=False, copy=False, ancillary=False):
+    def __init__(
+        self, filename, *, fillmissing=False, copy=False, ancillary=False, **kwargs
+    ):
         if hasattr(filename, "seek"):
             if hasattr(filename, "name"):
                 self.filename = filename.name
