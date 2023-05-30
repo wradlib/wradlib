@@ -46,7 +46,6 @@ jobs:
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/unittests.yml
-      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
@@ -102,7 +101,6 @@ jobs:
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/unittests.yml
-      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
@@ -159,7 +157,6 @@ jobs:
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/unittests.yml
-      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
@@ -214,7 +211,6 @@ jobs:
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/notebooktests.yml
-      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
