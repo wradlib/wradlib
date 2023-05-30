@@ -45,6 +45,8 @@ jobs:
         shell: bash -l {0}
     env:
       WRADLIB_DATA: ./wradlib-data
+      CONDA_ENV_FILE: ci/requirements/unittests.yml
+      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
@@ -54,12 +56,15 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: wradlib-tests
-          environment-file: ci/requirements/unittests.yml
-          extra-specs: |
-            python=${{ matrix.python-version }}
+          environment-file: ${{env.CONDA_ENV_FILE}}
+          cache-environment: true
+          cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
+          create-args: >-
+            python=${{matrix.python-version}}
+            conda
       - name: Install wradlib
         run: |
           python -m pip install . --no-deps
@@ -96,6 +101,8 @@ jobs:
         shell: bash -l {0}
     env:
       WRADLIB_DATA: ./wradlib-data
+      CONDA_ENV_FILE: ci/requirements/unittests.yml
+      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
@@ -105,12 +112,15 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: wradlib-tests
-          environment-file: ci/requirements/unittests.yml
-          extra-specs: |
-            python=${{ matrix.python-version }}
+          environment-file: ${{env.CONDA_ENV_FILE}}
+          cache-environment: true
+          cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
+          create-args: >-
+            python=${{matrix.python-version}}
+            conda
       - name: Install wradlib
         run: |
           cat "$HOME/.bash_profile"
@@ -148,6 +158,8 @@ jobs:
         shell: powershell
     env:
       WRADLIB_DATA: ./wradlib-data
+      CONDA_ENV_FILE: ci/requirements/unittests.yml
+      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
@@ -157,12 +169,15 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: wradlib-tests
-          environment-file: ci/requirements/unittests.yml
-          extra-specs: |
-            python=${{ matrix.python-version }}
+          environment-file: ${{env.CONDA_ENV_FILE}}
+          cache-environment: true
+          cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
+          create-args: >-
+            python=${{matrix.python-version}}
+            conda
       - name: Install wradlib
         run: |
           python -m pip install . --no-deps
@@ -198,6 +213,8 @@ jobs:
         shell: bash -l {0}
     env:
       WRADLIB_DATA: ./wradlib-data
+      CONDA_ENV_FILE: ci/requirements/notebooktests.yml
+      PROJ_NETWORK: ON
     strategy:
       fail-fast: false
       matrix:
@@ -207,12 +224,14 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-name: wradlib-tests
-          environment-file: ci/requirements/notebooktests.yml
-          extra-specs: |
-            python=${{ matrix.python-version }}
+          environment-file: ${{env.CONDA_ENV_FILE}}
+          cache-environment: true
+          cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
+          create-args: >-
+            python=${{matrix.python-version}}
       - name: Install wradlib
         run: |
           echo "WRADLIB_TAG=`git name-rev --name-only --tags HEAD`" >> $GITHUB_ENV
