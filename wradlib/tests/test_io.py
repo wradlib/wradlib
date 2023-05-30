@@ -241,7 +241,7 @@ class TestMisc:
 
         try:
             with pytest.raises(ValueError):
-                data, meta = io.misc.get_radiosonde(10411, date)
+                data, meta = io.misc.get_radiosonde(10412, date)
             data, meta = io.misc.get_radiosonde(10410, date)
         except urllib.error.HTTPError:
             print("HTTPError while retrieving radiosonde data, test skipped!")
