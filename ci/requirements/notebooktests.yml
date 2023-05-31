@@ -9,7 +9,7 @@ dependencies:
   - coverage
   - dask
   - deprecation
-  - gdal
+  - gdal<=3.6
   - geopandas
   - h5py
   - h5netcdf
