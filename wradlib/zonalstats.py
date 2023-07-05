@@ -42,7 +42,6 @@ Calling the objects with actual data, however, will be very fast.
    {}
 """
 __all__ = [
-    # "DataSource",
     "ZonalDataBase",
     "ZonalDataPoint",
     "ZonalDataPoly",
@@ -78,13 +77,6 @@ if has_import(gdal):
 
 # check windows
 isWindows = os.name == "nt"
-
-
-class DataSource(io.VectorSource):
-    """DataSource class for handling ogr/gdal vector data
-
-    Minimal wrapper around wradlib.io.VectorSource for backwards compatibility.
-    """
 
 
 class ZonalDataBase:
@@ -126,14 +118,11 @@ class ZonalDataBase:
         (same unit as coordinates)
         Points/Polygons  will be considered inside the target if they are
         contained in the buffer.
-
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         OGR.SpatialReference will be used for DataSource object.
-        src and trg data have to be in the same srs-format
-
+        src and trg data have to be in the same crs-format
     silent : bool
         If True no ProgressBar is shown. Defaults to False.
-
 
     Examples
     --------
@@ -141,9 +130,9 @@ class ZonalDataBase:
 
     """
 
-    def __init__(self, src, trg=None, buf=0.0, srs=None, **kwargs):
+    def __init__(self, src, *, trg=None, buf=0.0, crs=None, **kwargs):
         self._buffer = buf
-        self._srs = srs
+        self._crs = crs
         silent = kwargs.pop("silent", False)
 
         if trg is None:
@@ -153,12 +142,12 @@ class ZonalDataBase:
             if isinstance(src, io.VectorSource):
                 self.src = src
             else:
-                self.src = io.VectorSource(src, name="src", srs=srs, **kwargs)
+                self.src = io.VectorSource(src, name="src", trg_crs=crs, **kwargs)
 
             if isinstance(trg, io.VectorSource):
                 self.trg = trg
             else:
-                self.trg = io.VectorSource(trg, name="trg", srs=srs, **kwargs)
+                self.trg = io.VectorSource(trg, name="trg", trg_crs=crs, **kwargs)
 
             self.dst = io.VectorSource(name="dst")
             self.dst.ds = self._create_dst_datasource(silent)
@@ -173,9 +162,9 @@ class ZonalDataBase:
         return self._count_intersections
 
     @property
-    def srs(self):
+    def crs(self):
         """Returns SpatialReferenceSystem object"""
-        return self._srs
+        return self._crs
 
     @property
     def isecs(self):
@@ -271,7 +260,7 @@ class ZonalDataBase:
 
         # create tmp dest layer
         self.tmp_lyr = georef.vector.ogr_create_layer(
-            ds_mem, "dst", srs=self._srs, geom_type=geom_type
+            ds_mem, "dst", crs=self._crs, geom_type=geom_type
         )
 
         trg_lyr.Intersection(
@@ -292,7 +281,7 @@ class ZonalDataBase:
 
         return ds_out
 
-    def dump_vector(self, filename, driver="ESRI Shapefile", remove=True):
+    def dump_vector(self, filename, *, driver="ESRI Shapefile", remove=True):
         """Output source/target grid points/polygons to ESRI_Shapefile
 
         target layer features are attributed with source index and weight
@@ -306,9 +295,9 @@ class ZonalDataBase:
         remove : bool
             if True, existing file will be removed before creation
         """
-        self.src.dump_vector(filename, driver, remove=remove)
-        self.trg.dump_vector(filename, driver, remove=False)
-        self.dst.dump_vector(filename, driver, remove=False)
+        self.src.dump_vector(filename, driver=driver, remove=remove)
+        self.trg.dump_vector(filename, driver=driver, remove=False)
+        self.dst.dump_vector(filename, driver=driver, remove=False)
 
     def load_vector(self, filename):
         """Load source/target grid points/polygons into in-memory Shapefile
@@ -323,13 +312,13 @@ class ZonalDataBase:
         self.dst = io.VectorSource(filename, name="dst", source="dst")
 
         # get spatial reference object
-        self._srs = self.src.ds.GetLayer().GetSpatialRef()
+        self._crs = self.src.ds.GetLayer().GetSpatialRef()
 
     def _get_idx_weights(self):
         """Retrieve index and weight from dst DataSource"""
         raise NotImplementedError
 
-    def _get_intersection(self, trg=None, idx=None, buf=0.0):
+    def _get_intersection(self, *, trg=None, idx=None, buf=0.0):
         """Just a toy function if you want to inspect the intersection
         points/polygons of an arbitrary target or an target by index.
         """
@@ -386,9 +375,9 @@ class ZonalDataPoly(ZonalDataBase):
         Polygons will be considered inside the target if they are contained
         in the buffer.
 
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         OGR.SpatialReference will be used for DataSource object.
-        src and trg data have to be in the same srs-format
+        src and trg data have to be in the same crs-format
 
     Examples
     --------
@@ -437,9 +426,9 @@ class ZonalDataPoint(ZonalDataBase):
         Points will be considered inside the target if they are contained
         in the buffer.
 
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         OGR.SpatialReference will be used for DataSource object.
-        src and trg data have to be in the same srs-format
+        src and trg data have to be in the same crs-format
 
     Examples
     --------
@@ -705,7 +694,7 @@ def numpy_to_pathpatch(arr):
     return np.array(paths)
 
 
-def mask_from_bbox(x, y, bbox, polar=False):
+def mask_from_bbox(x, y, bbox, *, polar=False):
     """Return 2-d index array based on spatial selection from a bounding box.
 
     Use this function to create a 2-d boolean mask from 2-d arrays of grids
@@ -864,7 +853,7 @@ def grid_centers_to_vertices(x, y, dx, dy):
     return verts
 
 
-def get_clip_mask(coords, clippoly, srs=None):
+def get_clip_mask(coords, clippoly, *, crs=None):
     """Returns boolean mask of points ``coords`` inside polygon ``clippoly``
 
     Parameters
@@ -874,7 +863,7 @@ def get_clip_mask(coords, clippoly, srs=None):
     clippoly : :class:`numpy:numpy.ndarray`
         array of xy coords with shape (N,2) representing closed
         polygon coordinates
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         osr.SpatialReference
 
     Returns
@@ -885,7 +874,7 @@ def get_clip_mask(coords, clippoly, srs=None):
     """
     clip = [clippoly]
 
-    zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]), clip, srs=srs)
+    zd = ZonalDataPoint(coords.reshape(-1, coords.shape[-1]), trg=clip, crs=crs)
 
     # Subsetting in order to use only precipitating profiles
     src_mask = np.zeros(coords.shape[0:-1], dtype=np.bool_)
