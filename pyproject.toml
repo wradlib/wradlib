@@ -43,14 +43,7 @@ repository = "https://github.com/wradlib/wradlib"
 changelog = "https://docs.wradlib.org/en/stable/release_notes.html"
 
 [project.entry-points."xarray.backends"]
-wradlib-cfradial1 = "wradlib.io.backends:CfRadial1BackendEntrypoint"
-wradlib-cfradial2 = "wradlib.io.backends:CfRadial2BackendEntrypoint"
-wradlib-furuno = "wradlib.io.backends:FurunoBackendEntrypoint"
-wradlib-gamic = "wradlib.io.backends:GamicBackendEntrypoint"
-wradlib-odim = "wradlib.io.backends:OdimBackendEntrypoint"
 radolan = "wradlib.io.backends:RadolanBackendEntrypoint"
-wradlib-iris = "wradlib.io.backends:IrisBackendEntrypoint"
-wradlib-rainbow = "wradlib.io.backends:RainbowBackendEntrypoint"
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
