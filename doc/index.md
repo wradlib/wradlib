@@ -9,6 +9,7 @@
 :caption: Getting Started
 
 installation
+migration
 docker
 ide
 jupyter

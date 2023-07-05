@@ -9,7 +9,6 @@ documented separately.
 adjust
 atten
 classify
-clutter
 comp
 dp
 georef
@@ -21,6 +20,7 @@ util
 verify
 vis
 vpr
+xarray
 zonalstats
 zr
 ```
