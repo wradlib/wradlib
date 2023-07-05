@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -25,7 +25,6 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 __doctest_requires__ = {"get_radolan_grid": ["osgeo"]}
 
 from functools import singledispatch
-from warnings import warn
 
 import numpy as np
 from xarray import DataArray, Dataset, concat
@@ -54,17 +53,8 @@ def get_radolan_coords(lon, lat, **kwargs):
         Defaults to None (earth model - sphere).
     """
     osr = import_optional("osgeo.osr")
-    # use trig if osgeo.osr is not available
     crs = kwargs.get("crs", None)
-    trig = kwargs.get("trig", None)
-    if trig is not None:
-        if trig is True:
-            warn(
-                "Keyword Argument ``trig`` will be removed in wradlib version 2.0. "
-                "Please use ``crs='trig'`` if you want to use trigonometric formulas.",
-                DeprecationWarning,
-            )
-            crs = "trig"
+    # use trig if osgeo.osr is not available
     if crs is None and not has_import(osr):
         crs = "trig"
     if crs == "trig":
@@ -146,16 +136,6 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
 
     mode = kwargs.get("mode", "radolan")
     crs = kwargs.get("crs", None)
-    trig = kwargs.get("trig", None)
-    if trig is not None:
-        if trig is True:
-            warn(
-                "Keyword Argument ``trig`` will be removed in wradlib version 2.0. "
-                "Please use ``crs='trig'`` if you want to use trigonometric formulas.",
-                DeprecationWarning,
-            )
-            crs = "trig"
-
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
             raise TypeError(
@@ -309,15 +289,6 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
     wgs84 = kwargs.get("wgs84", False)
     mode = kwargs.get("mode", "radolan")
     crs = kwargs.get("crs", None)
-    trig = kwargs.get("trig", None)
-    if trig is not None:
-        if trig is True:
-            warn(
-                "Keyword Argument ``trig`` will be removed in wradlib version 2.0. "
-                "Please use ``crs='trig'`` if you want to use trigonometric formulas.",
-                DeprecationWarning,
-            )
-            crs = "trig"
 
     x_arr, y_arr = get_radolan_coordinates(nrows=nrows, ncols=ncols, mode=mode, crs=crs)
 

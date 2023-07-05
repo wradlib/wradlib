@@ -1149,12 +1149,6 @@ def test_radolan_coords():
     assert pytest.approx(y) == -599875
 
 
-@requires_gdal
-def test_get_radolan_coords_warnings():
-    with pytest.warns(DeprecationWarning):
-        x, y = georef.get_radolan_coords(7.0, 53.0, trig=True)
-
-
 def test_xyz_to_spherical():
     xyz = np.array([[1000, 1000, 1000]])
     r, phi, theta = georef.xyz_to_spherical(xyz)
