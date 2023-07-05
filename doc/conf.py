@@ -51,6 +51,29 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
 ]
 
+# def autodoc_signature(app, what, name, obj, options, signature, return_annotation):
+#     if name is None:
+#         print(app)
+#         print(what)
+#         print(obj)
+#         print(options)
+#         print(signature)
+#         print(return_annotation)
+#         #raise ValueError("name must not be None")
+#
+# def autodoc_before_process_signature(app, obj, bound_method):
+#     print("before-Signature")
+#     print("app:", app)
+#     print("obj:", obj, dir(obj))
+#     print("obj:", obj.__name__, obj.__qualname__, obj.__code__, obj.__signature__)
+#     print("bound:", bound_method)
+# #        raise ValueError("name must not be None")
+
+
+# def setup(app):
+#    app.connect('autodoc-process-signature', autodoc_signature)
+#    app.connect('autodoc-before-process-signature', autodoc_before_process_signature)
+
 myst_enable_extensions = [
     "substitution",
     "dollarmath",
@@ -202,6 +225,9 @@ myst_substitutions = {
     "today": dt.datetime.utcnow().strftime("%Y-%m-%d"),
     "release": release,
     "wradlib": "$\\omega radlib$",
+    "xradar": "[xradar](https://xradar.rtfd.io)",
+    "xarray": "[xarray](https://docs.xarray.dev)",
+    "dask": "[Dask](https://docs.dask.org)",
 }
 
 # There are two options for replacing |today|: either, you set today to some
@@ -239,6 +265,23 @@ linkcheck_ignore = ["https://data.apps.fao.org/map/catalog/srv/eng/catalog.searc
 
 # Tell the theme where the code lives
 # adapted from https://github.com/vispy/vispy
+
+
+def get_docpath_filename(filename, modpath):
+    docpath = None
+    rel_modpath = os.path.join("..", modpath)
+    if os.path.isdir(rel_modpath):
+        docpath = modpath + "/"
+        filename = "__init__.py"
+    elif os.path.isfile(rel_modpath + ".py"):
+        docpath = os.path.dirname(modpath)
+        filename = os.path.basename(modpath) + ".py"
+    else:
+        modpath, _ = os.path.split(modpath)
+        docpath, filename = get_docpath_filename(filename, modpath)
+    return docpath, filename
+
+
 def _custom_edit_url(
     github_user,
     github_repo,
@@ -259,14 +302,8 @@ def _custom_edit_url(
         if modpath == "modules":
             # main package listing
             modpath = "wradlib"
-        rel_modpath = os.path.join("..", modpath)
-        if os.path.isdir(rel_modpath):
-            docpath = modpath + "/"
-            filename = "__init__.py"
-        elif os.path.isfile(rel_modpath + ".py"):
-            docpath = os.path.dirname(modpath)
-            filename = os.path.basename(modpath) + ".py"
-        else:
+        docpath, filename = get_docpath_filename(filename, modpath)
+        if docpath is None:
             warnings.warn(f"Not sure how to generate the API URL for: {filename}")
     return default_edit_page_url_template.format(
         github_user=github_user,
@@ -353,6 +390,8 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "xradar": ("https://docs.openradarscience.org/projects/xradar/en/stable/", None),
+    "datatree": ("https://xarray-datatree.readthedocs.io/en/stable/", None),
     "cartopy": ("https://scitools.org.uk/cartopy/docs/latest/", None),
     "gdal": ("https://gdal.org/", None),
 }
