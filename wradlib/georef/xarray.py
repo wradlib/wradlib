@@ -13,7 +13,7 @@ Xarray Functions
 
    {}
 """
-__all__ = ["as_xarray_dataarray", "create_xarray_dataarray", "georeference_dataset"]
+__all__ = ["as_xarray_dataarray", "create_xarray_dataarray"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
@@ -21,8 +21,7 @@ import collections
 import numpy as np
 import xarray as xr
 
-from wradlib.georef import polar
-from wradlib.util import has_import, import_optional
+from wradlib.util import import_optional
 
 osr = import_optional("osgeo.osr")
 
@@ -53,6 +52,7 @@ def as_xarray_dataarray(data, dims, coords):
 
 def create_xarray_dataarray(
     data,
+    *,
     r=None,
     phi=None,
     theta=None,
@@ -76,8 +76,6 @@ def create_xarray_dataarray(
         The azimuth angles in degrees.
     theta : :class:`numpy:numpy.ndarray`
         The elevation angles in degrees.
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (Projection).
     site : tuple
         Tuple of coordinates of the radar site.
     sweep_mode : str
@@ -102,11 +100,37 @@ def create_xarray_dataarray(
     dataset : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    if (r is None) or (phi is None) or (theta is None):
-        raise TypeError(
-            "wradlib: function `create_xarray_dataarray` requires "
-            "r, phi and theta keyword-arguments."
+    # sweep_mode = kwargs.pop("sweep_mode", "azimuth_surveillance")
+    # check coordinate tuple
+    if site and len(site) < 3:
+        raise ValueError(
+            "WRADLIB: `site` need to be a tuple of coordinates "
+            "(longitude, latitude, altitude)."
         )
+
+    if phi is None:
+        if sweep_mode == "azimuth_surveillance":
+            phi = np.arange(data.shape[0], dtype=np.float_)
+            phi += (phi[1] - phi[0]) / 2.0
+        else:
+            phi = 0.0
+
+    if r is None:
+        r = np.arange(data.shape[1], dtype=np.float_)
+        r += (r[1] - r[0]) / 2.0
+
+    if theta is None:
+        if sweep_mode == "rhi":
+            theta = np.arange(data.shape[0], dtype=np.float_)
+            theta += (theta[1] - theta[0]) / 2.0
+        else:
+            theta = 0.0
+
+    if np.isscalar(theta):
+        theta = np.ones_like(phi) * theta
+
+    if np.isscalar(phi):
+        phi = np.ones_like(theta) * phi
 
     r = r.copy()
     phi = phi.copy()
@@ -118,7 +142,8 @@ def create_xarray_dataarray(
     dims = collections.OrderedDict()
     dim0 = kwargs.pop("dim0", "azimuth")
     dim1 = kwargs.pop("dim1", "range")
-    dims[dim0] = np.arange(phi.shape[0])
+    ang = theta if sweep_mode == "rhi" else phi
+    dims[dim0] = np.arange(ang.shape[0])
     dims[dim1] = r / rf
     coords = {
         "azimuth": ([dim0], phi),
@@ -133,107 +158,3 @@ def create_xarray_dataarray(
     da = as_xarray_dataarray(data, dims=dims, coords=coords)
 
     return da
-
-
-def georeference_dataset(obj, **kwargs):
-    """Georeference Dataset.
-
-        .. versionadded:: 1.5
-
-    This function adds georeference data to xarray Dataset/DataArray `obj`.
-
-    Parameters
-    ----------
-    obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
-
-    Keyword Arguments
-    -----------------
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
-        If GDAL OSR SRS, output is in this projection, else AEQD.
-    re : float
-        earth's radius [m]
-    ke : float
-        adjustment factor to account for the refractivity gradient that
-        affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
-        weather radar wavelengths.
-
-    Returns
-    ----------
-    obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
-    """
-    proj = kwargs.pop("proj", "None")
-    re = kwargs.pop("re", None)
-    ke = kwargs.pop("ke", 4.0 / 3.0)
-
-    # adding xyz aeqd-coordinates
-    site = (
-        obj.coords["longitude"].values,
-        obj.coords["latitude"].values,
-        obj.coords["altitude"].values,
-    )
-
-    if site == (0.0, 0.0, 0.0):
-        re = 6378137.0
-
-    # create meshgrid to overcome dimension problem with spherical_to_xyz
-    r, az = np.meshgrid(obj["range"], obj["azimuth"])
-
-    # GDAL OSR, convert to this proj
-    if has_import(osr) and isinstance(proj, osr.SpatialReference):
-        xyz = polar.spherical_to_proj(
-            r, az, obj["elevation"], site, proj=proj, re=re, ke=ke
-        )
-    # other proj, convert to aeqd
-    elif proj:
-        xyz, dst_proj = polar.spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
-        )
-    # proj, convert to aeqd and add offset
-    else:
-        xyz, dst_proj = polar.spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
-        )
-        xyz += np.array(site).T
-
-    # calculate center point
-    # use first range bins
-    ax = tuple(range(xyz.ndim - 2))
-    center = np.mean(xyz[..., 0, :], axis=ax)
-
-    # calculate ground range
-    gr = np.sqrt((xyz[..., 0] - center[0]) ** 2 + (xyz[..., 1] - center[1]) ** 2)
-
-    # dimension handling
-    dim0 = obj["azimuth"].dims[-1]
-    if obj["elevation"].dims:
-        dimlist = list(obj["elevation"].dims)
-    else:
-        dimlist = list(obj["azimuth"].dims)
-
-    # xyz is an array of cartesian coordinates for every spherical coordinate,
-    # so the possible dimensions are: elevation, azimuth, range, 3.
-    # For 2d, it either has (elevation, range, 3) or (azimuth, range, 3) dimensions.
-    # For 3d, the only option is the full (elevation, azimuth, range, 3) dimensions.
-    # Thus, adding the following two lines for the 3d case should not break other functionalities,
-    # and there should not be a case with more than 3 dimensions
-    if xyz.ndim > 3:
-        dimlist += ["azimuth"]
-
-    dimlist += ["range"]
-
-    # add xyz, ground range coordinates
-    obj.coords["x"] = (dimlist, xyz[..., 0])
-    obj.coords["y"] = (dimlist, xyz[..., 1])
-    obj.coords["z"] = (dimlist, xyz[..., 2])
-    obj.coords["gr"] = (dimlist, gr)
-
-    # adding rays, bins coordinates
-    if obj.sweep_mode == "azimuth_surveillance":
-        bins, rays = np.meshgrid(obj["range"], obj["azimuth"], indexing="xy")
-    else:
-        bins, rays = np.meshgrid(obj["range"], obj["elevation"], indexing="xy")
-    obj.coords["rays"] = ([dim0, "range"], rays)
-    obj.coords["bins"] = ([dim0, "range"], bins)
-
-    return obj

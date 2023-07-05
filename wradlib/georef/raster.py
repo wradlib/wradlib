@@ -114,7 +114,7 @@ def _pixel_to_map(coordinates, geotransform):
     return coordinates_map
 
 
-def read_gdal_coordinates(dataset, mode="center"):
+def read_gdal_coordinates(dataset, *, mode="center"):
     """Get the projected coordinates from a GDAL dataset.
 
     Parameters
@@ -158,7 +158,7 @@ def read_gdal_projection(dataset):
 
     Returns
     -------
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         dataset projection object
 
     Examples
@@ -168,13 +168,13 @@ def read_gdal_projection(dataset):
 
     """
     wkt = dataset.GetProjection()
-    srs = osr.SpatialReference()
-    srs.ImportFromWkt(wkt)
+    crs = osr.SpatialReference()
+    crs.ImportFromWkt(wkt)
     # src = None
-    return srs
+    return crs
 
 
-def read_gdal_values(dataset=None, nodata=None):
+def read_gdal_values(dataset, *, nodata=None):
     """Read values from a gdal object.
 
     Parameters
@@ -211,7 +211,7 @@ def read_gdal_values(dataset=None, nodata=None):
     return np.squeeze(np.array(bands))
 
 
-def extract_raster_dataset(dataset, mode="center", nodata=None):
+def extract_raster_dataset(dataset, *, mode="center", nodata=None):
     """Extract data, coordinates and projection information
 
     Parameters
@@ -246,7 +246,7 @@ def extract_raster_dataset(dataset, mode="center", nodata=None):
     return values, coords, projection
 
 
-def get_raster_extent(dataset, geo=False, window=True):
+def get_raster_extent(dataset, *, geo=False, window=True):
     """Get the coordinates of the 4 corners of the raster dataset
 
     Parameters
@@ -276,8 +276,8 @@ def get_raster_extent(dataset, geo=False, window=True):
     extent = np.array([[xmin, ymax], [xmin, ymin], [xmax, ymin], [xmax, ymax]])
 
     if geo:
-        projection = read_gdal_projection(dataset)
-        extent = georef.reproject(extent, projection_source=projection)
+        crs = read_gdal_projection(dataset)
+        extent = georef.reproject(extent, src_crs=crs)
 
     if window:
         x = extent[:, 0]
@@ -287,7 +287,7 @@ def get_raster_extent(dataset, geo=False, window=True):
     return extent
 
 
-def get_raster_elevation(dataset, resample=None, **kwargs):
+def get_raster_elevation(dataset, *, resample=None, **kwargs):
     """Return surface elevation corresponding to raster dataset
        The resampling algorithm is chosen based on scale ratio
 
@@ -370,7 +370,7 @@ def set_raster_origin(data, coords, direction):
     return data, coords
 
 
-def set_raster_indexing(data, coords, indexing="xy"):
+def set_raster_indexing(data, coords, *, indexing="xy"):
     """Sets Data and Coordinates Indexing Scheme
 
     This converts data and coordinate layout from row-major to column major indexing.
@@ -409,7 +409,7 @@ def set_raster_indexing(data, coords, indexing="xy"):
     return data, coords
 
 
-def set_coordinate_indexing(coords, indexing="xy"):
+def set_coordinate_indexing(coords, *, indexing="xy"):
     """Sets Coordinates Indexing Scheme
 
     This converts coordinate layout from row-major to column major indexing.
@@ -486,8 +486,8 @@ def reproject_raster_dataset(src_ds, **kwargs):
     spacing = kwargs.pop("spacing", None)
     size = kwargs.pop("size", None)
     resample = kwargs.pop("resample", gdal.GRA_Bilinear)
-    src_srs = kwargs.pop("projection_source", None)
-    dst_srs = kwargs.pop("projection_target", None)
+    src_crs = kwargs.pop("src_crs", None)
+    trg_crs = kwargs.pop("trg_crs", None)
     align = kwargs.pop("align", False)
 
     if spacing is None and size is None:
@@ -512,25 +512,23 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
     extent = np.array([[[ulx, uly], [lrx, uly]], [[ulx, lry], [lrx, lry]]])
 
-    if dst_srs:
+    if trg_crs:
         # try to load projection from source dataset if None is given
-        if src_srs is None:
+        if src_crs is None:
             src_proj = src_ds.GetProjection()
             if not src_proj:
                 raise ValueError(
-                    "src_ds is missing projection information, please use ``projection_source`` kwarg and provide a fitting OSR SRS object."
+                    "src_ds is missing projection information, please use ``src_crs`` kwarg and provide a fitting GDAL OSR SRS object."
                 )
-            src_srs = osr.SpatialReference()
-            src_srs.ImportFromWkt(src_ds.GetProjection())
+            src_crs = osr.SpatialReference()
+            src_crs.ImportFromWkt(src_proj)
 
         # Transformation
-        extent = georef.reproject(
-            extent, projection_source=src_srs, projection_target=dst_srs
-        )
+        extent = georef.reproject(extent, src_crs=src_crs, trg_crs=trg_crs)
 
         # wkt needed
-        src_srs = src_srs.ExportToWkt()
-        dst_srs = dst_srs.ExportToWkt()
+        src_crs = src_crs.ExportToWkt()
+        trg_crs = trg_crs.ExportToWkt()
 
     (ulx, uly, urx, ury, llx, lly, lrx, lry) = tuple(list(extent.flatten().tolist()))
 
@@ -574,8 +572,8 @@ def reproject_raster_dataset(src_ds, **kwargs):
     dst_ds.SetGeoTransform(dst_geo)
 
     # apply Projection to destination dataset
-    if dst_srs is not None:
-        dst_ds.SetProjection(dst_srs)
+    if trg_crs is not None:
+        dst_ds.SetProjection(trg_crs)
 
     # nodata handling, need to initialize dst_ds with nodata
     src_band = src_ds.GetRasterBand(1)
@@ -587,12 +585,12 @@ def reproject_raster_dataset(src_ds, **kwargs):
     dst_band.FlushCache()
 
     # resample and reproject dataset
-    gdal.ReprojectImage(src_ds, dst_ds, src_srs, dst_srs, resample)
+    gdal.ReprojectImage(src_ds, dst_ds, src_crs, trg_crs, resample)
 
     return dst_ds
 
 
-def create_raster_dataset(data, coords, projection=None, nodata=-9999):
+def create_raster_dataset(data, coords, *, crs=None, nodata=-9999):
     """Create In-Memory Raster Dataset
 
     Parameters
@@ -604,7 +602,7 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
         Array of shape (nrows, ncols, 2) containing pixel center coordinates
         or
         Array of shape (nrows+1, ncols+1, 2) containing pixel edge coordinates
-    projection : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         Spatial reference system of the used coordinates, defaults to None.
     nodata : int
         Value of NODATA
@@ -641,8 +639,8 @@ def create_raster_dataset(data, coords, projection=None, nodata=-9999):
     geotran = [upper_corner_x, x_ps, 0, upper_corner_y, 0, y_ps]
     dataset.SetGeoTransform(geotran)
 
-    if projection:
-        dataset.SetProjection(projection.ExportToWkt())
+    if crs:
+        dataset.SetProjection(crs.ExportToWkt())
 
     # set np.nan to nodata
     dataset.GetRasterBand(1).SetNoDataValue(nodata)
