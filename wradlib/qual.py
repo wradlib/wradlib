@@ -25,13 +25,30 @@ fields except that they exhibit the numpy ndarray interface.
 
    {}
 """
-__all__ = ["pulse_volume", "beam_block_frac", "cum_beam_block_frac", "get_bb_ratio"]
+__all__ = [
+    "pulse_volume",
+    "beam_block_frac",
+    "cum_beam_block_frac",
+    "get_bb_ratio",
+    "QualMethods",
+]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+from functools import singledispatch
+
 import numpy as np
+import xarray as xr
+
+from wradlib.util import XarrayMethods, docstring
 
 
-def pulse_volume(ranges, h, theta):
+@singledispatch
+def pulse_volume(*args, **kwargs):
+    pass
+
+
+@pulse_volume.register(np.ndarray)
+def _pulse_volume_numpy(ranges, h, theta):
     """Calculates the sampling volume of the radar beam per bin depending on \
     range and aperture.
 
@@ -66,6 +83,47 @@ def pulse_volume(ranges, h, theta):
 
     """
     return np.pi * h * (ranges**2) * (np.tan(np.radians(theta / 2.0))) ** 2
+
+
+@pulse_volume.register(xr.DataArray)
+def _pulse_volume_xarray(obj, h, theta, **kwargs):
+    """Calculates the sampling volume of the radar beam per bin depending on \
+    range and aperture.
+
+    We assume a cone frustum which has the volume
+    :math:`V=(\\pi/3) \\cdot h \\cdot (R^2 + R \\cdot r + r^2)`.
+    R and r are the radii of the two frustum surface circles. Assuming that the
+    pulse width is small compared to the range, we get
+    :math:`R=r= \\tan ( 0.5 \\cdot \\theta \\cdot \\pi/180 ) \\cdot range`
+    with theta being the aperture angle (beam width).
+    Thus, the pulse volume simply becomes the volume of a cylinder with
+    :math:`V=\\pi \\cdot h \\cdot range^2 \\cdot \\tan(
+    0.5 \\cdot \\theta \\cdot \\pi/180)^2`
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray` | :py:class:`xarray:xarray.Dataset`
+
+    Keyword Arguments
+    -----------------
+    h : float
+        pulse width (which corresponds to the range resolution [m])
+    theta : float
+        the aperture angle (beam width) of the radar beam [degree]
+
+    Returns
+    -------
+    obj : :py:class:`xarray:xarray.Dataset`
+        obj with volumes of radar bins at each range in `ranges` [:math:`m^3`].
+
+    Examples
+    --------
+
+    See :ref:`/notebooks/workflow/recipe1.ipynb`.
+
+    """
+    # vol = _pulse_volume_numpy(obj, h, theta)
+    return _pulse_volume_numpy(obj, h, theta)
 
 
 def beam_block_frac(th, bh, a):
@@ -188,7 +246,13 @@ def cum_beam_block_frac(pbb):
     return cbb
 
 
-def get_bb_ratio(bb_height, bb_width, quality, zp_r):
+@singledispatch
+def get_bb_ratio(*args, **kwargs):
+    pass
+
+
+@get_bb_ratio.register(np.ndarray)
+def _get_bb_ratio_numpy(bb_height, bb_width, quality, zp_r):
     """Returns the Bright Band ratio of each PR bin
 
     With *SR*, we refer to precipitation radars based on space-born platforms
@@ -246,6 +310,81 @@ def get_bb_ratio(bb_height, bb_width, quality, zp_r):
     ratio = (zp_r - zmlb) / (zmlt - zmlb)
 
     return ratio, ibb
+
+
+@get_bb_ratio.register(xr.Dataset)
+def _get_bb_ratio_xarray(obj):
+    """Returns the Bright Band ratio of each PR bin
+
+    With *SR*, we refer to precipitation radars based on space-born platforms
+    such as TRMM or GPM.
+
+    This function basically applies the Bright Band (BB) information as
+    provided by the corresponding SR datasets per beam, namely BB height and
+    width, as well as quality flags of the SR beams. A BB ratio of <= 0
+    indicates that a bin is located below the melting layer (ML), >=1
+    above the ML, and in between 0 and 1 inside the ML.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray` | :py:class:`xarray:xarray.Dataset`
+
+    Returns
+    -------
+    obj : :py:class:`xarray:xarray.Dataset`
+        obj with bb ratio and boolean array containing the indices of SR bins connected
+        to the BB.
+    """
+    quality = obj["qualityBB"]
+    qtype = obj.get("qualityTypePrecip")
+    zp_r = obj["zp"]
+    bb_height = obj["heightBB"]
+    bb_width = obj["widthBB"]
+
+    if qtype is not None:
+        quality = xr.where(((quality == 0) | (quality == 1)) & (qtype == 1), 1, quality)
+        quality = xr.where(((quality > 1) | (quality > 2)), 2, quality)
+        quality = xr.where(((quality == 1) | (quality == 2)), quality, 0)
+
+    # parameters for bb detection
+    ibb = (bb_height > 0) & (bb_width > 0) & (quality == 1)
+
+    # set non-bb-pixels to np.nan
+    bb_height_m = bb_height.where(ibb)
+    bb_width_m = bb_width.where(ibb)
+    # get median of bb-pixels
+    bb_height_m = bb_height_m.median(skipna=True)
+    bb_width_m = bb_width_m.median(skipna=True)
+    # approximation of melting layer top and bottom
+    zmlt = bb_height_m + bb_width_m / 2.0
+    zmlb = bb_height_m - bb_width_m / 2.0
+
+    # get ratio connected to brightband height
+    ratio = (zp_r - zmlb) / (zmlt - zmlb)
+
+    if qtype is not None:
+        ibb0 = (bb_height == 0) & (bb_width == 0) & (quality == 1)
+        ratio = xr.where(ibb0, 0, ratio)
+
+    return obj.assign(bb_ratio=ratio, bb_mask=ibb)
+
+
+class QualMethods(XarrayMethods):
+    """wradlib xarray SubAccessor methods for Qual Methods."""
+
+    @docstring(_pulse_volume_xarray)
+    def pulse_volume(self, *args, **kwargs):
+        if not isinstance(self, QualMethods):
+            return pulse_volume(self, *args, **kwargs)
+        else:
+            return pulse_volume(self._obj, *args, **kwargs)
+
+    @docstring(_get_bb_ratio_xarray)
+    def get_bb_ratio(self, *args, **kwargs):
+        if not isinstance(self, QualMethods):
+            return get_bb_ratio(self, *args, **kwargs)
+        else:
+            return get_bb_ratio(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

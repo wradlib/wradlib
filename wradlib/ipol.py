@@ -199,7 +199,7 @@ class Nearest(IpolBase):
     Uses :class:`scipy:scipy.spatial.cKDTree`
     """
 
-    def __init__(self, src, trg, remove_missing=0, **kwargs):
+    def __init__(self, src, trg, *, remove_missing=0, **kwargs):
         if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
@@ -226,7 +226,7 @@ class Nearest(IpolBase):
             self.dists = self.dists[:, np.newaxis]
             self.ix = self.ix[:, np.newaxis]
 
-    def __call__(self, vals, maxdist=None):
+    def __call__(self, vals, *, maxdist=None):
         """
         Evaluate interpolator for values given at the source points.
 
@@ -315,7 +315,7 @@ class Idw(IpolBase):
 
     """
 
-    def __init__(self, src, trg, nnearest=4, p=2.0, remove_missing=False, **kwargs):
+    def __init__(self, src, trg, *, nnearest=4, p=2.0, remove_missing=False, **kwargs):
         if isinstance(src, spatial.cKDTree):
             self.tree = src
         else:
@@ -359,7 +359,7 @@ class Idw(IpolBase):
             self.dists = self.dists[:, np.newaxis]
             self.ix = self.ix[:, np.newaxis]
 
-    def __call__(self, vals, maxdist=None):
+    def __call__(self, vals, *, maxdist=None):
         """
         Evaluate interpolator for values given at the source points.
 
@@ -443,7 +443,7 @@ class Linear(IpolBase):
     See :ref:`/notebooks/interpolation/wradlib_ipol_example.ipynb`.
     """
 
-    def __init__(self, src, trg, remove_missing=False):
+    def __init__(self, src, trg, *, remove_missing=False):
         self.src = self._make_coord_arrays(src)
         self.trg = self._make_coord_arrays(trg)
         self.remove_missing = remove_missing
@@ -455,7 +455,7 @@ class Linear(IpolBase):
         if self.numsources == 0:
             raise MissingSourcesError
 
-    def __call__(self, vals, fill_value=np.nan):
+    def __call__(self, vals, *, fill_value=np.nan):
         """
         Evaluate interpolator for values given at the source points.
 
@@ -620,7 +620,7 @@ class RectGrid(RectGridBase):
 
     """
 
-    def __init__(self, src, trg, method="linear"):
+    def __init__(self, src, trg, *, method="linear"):
         super().__init__(src, trg)
         self.method = method
 
@@ -739,7 +739,7 @@ class PolyArea:
         src = src.reshape((-1, 5, 2))
         trg = trg.reshape((-1, 5, 2))
 
-        zd = zonalstats.ZonalDataPoly(src, trg, **kwargs)
+        zd = zonalstats.ZonalDataPoly(src, trg=trg, **kwargs)
         self.obj = zonalstats.ZonalStatsPoly(zd)
 
     def __call__(self, values):
@@ -1017,6 +1017,7 @@ class OrdinaryKriging(IpolBase):
         src,
         trg,
         cov="1.0 Exp(10000.)",
+        *,
         nnearest=12,
         remove_missing=False,
         **kwargs,
@@ -1204,6 +1205,7 @@ class ExternalDriftKriging(IpolBase):
         src,
         trg,
         cov="1.0 Exp(10000.)",
+        *,
         nnearest=12,
         src_drift=None,
         trg_drift=None,
@@ -1302,7 +1304,7 @@ class ExternalDriftKriging(IpolBase):
 
         return all_weights, estimation_variances
 
-    def __call__(self, vals, src_drift=None, trg_drift=None):
+    def __call__(self, vals, *, src_drift=None, trg_drift=None):
         """
         Evaluate interpolator for values given at the source points.
 
@@ -1519,7 +1521,7 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     return result
 
 
-def interpolate_polar(data, mask=None, ipclass=Nearest):
+def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     """
     Convenience function to interpolate polar data
 
@@ -1529,9 +1531,11 @@ def interpolate_polar(data, mask=None, ipclass=Nearest):
         2 dimensional array (azimuth, ranges) of floats;
 
         if no mask is assigned explicitly polar data should be a masked array
+
+    Keyword Arguments
+    -----------------
     mask : :class:`numpy:numpy.ndarray`
         boolean array with pixels to be interpolated set to True;
-
         must have the same shape as data
     ipclass : :class:`wradlib.ipol.IpolBase`
         A class which inherits from IpolBase.
@@ -1550,11 +1554,15 @@ def interpolate_polar(data, mask=None, ipclass=Nearest):
     >>> masked_values = (data==2) | (data==9)
     >>> # interpolate the masked data based on ''masked_values''
     >>> filled_a = wrl.ipol.interpolate_polar(data, mask = masked_values, ipclass = wrl.ipol.Linear)  # noqa
-    >>> ax, pm = wrl.vis.plot_ppi(filled_a)
+    >>> da = wrl.georef.create_xarray_dataarray(filled_a)
+    >>> da = da.wrl.georef.georeference()
+    >>> pm = wrl.vis.plot(da)
     >>> # the same result can be achieved by using an masked array instead of an explicit mask  # noqa
     >>> mdata = np.ma.array(data, mask = masked_values)
     >>> filled_b = wrl.ipol.interpolate_polar(mdata, ipclass = wrl.ipol.Linear)  # noqa
-    >>> ax, pm = wrl.vis.plot_ppi(filled_b)
+    >>> da = wrl.georef.create_xarray_dataarray(filled_b)
+    >>> da = da.wrl.georef.georeference()
+    >>> pm = wrl.vis.plot(da)
 
 
     """

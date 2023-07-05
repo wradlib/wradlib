@@ -26,22 +26,28 @@ __all__ = [
     "kdp_to_r",
     "si_to_kmh",
     "si_to_mph",
-    "si_2_kts",
+    "si_to_kts",
     "kmh_to_si",
     "mph_to_si",
     "kts_to_si",
     "KuBandToS",
     "SBandToKu",
+    "TrafoMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+from dataclasses import dataclass
+
 import numpy as np
+
+from wradlib import util
 
 # CONSTANTS
 meters_per_mile = 1609.344
 meters_per_nautical_mile = 1852.0
 
 
+@dataclass(init=False, repr=False, eq=False)
 class SBandToKu:
     """Class to hold coefficients for Radar Reflectivity Conversion
 
@@ -54,6 +60,7 @@ class SBandToKu:
     rain = np.array([-1.50393, 1.07274, 0.000165393])
 
 
+@dataclass(init=False, repr=False, eq=False)
 class KuBandToS:
     """Class to hold coefficients for Radar Reflectivity Conversion
 
@@ -370,7 +377,7 @@ def si_to_mph(vals):
     return vals * 3600.0 / meters_per_mile
 
 
-def si_2_kts(vals):
+def si_to_kts(vals):
     """Conversion from SI wind speed units to knots
 
     Note
@@ -389,8 +396,8 @@ def si_2_kts(vals):
 
     Examples
     --------
-    >>> from wradlib.trafo import si_2_kts
-    >>> print(np.round(si_2_kts(1.), 3))
+    >>> from wradlib.trafo import si_to_kts
+    >>> print(np.round(si_to_kts(1.), 3))
     1.944
 
     """
@@ -476,6 +483,24 @@ def kts_to_si(vals):
 
     """
     return vals * meters_per_nautical_mile / 3600.0
+
+
+class TrafoMethods(util.XarrayMethods):
+    """wradlib xarray SubAccessor methods for DualPol."""
+
+    @util.docstring(decibel)
+    def decibel(self):
+        if not isinstance(self, TrafoMethods):
+            return self.pipe(decibel)
+        else:
+            return self._obj.pipe(decibel)
+
+    @util.docstring(idecibel)
+    def idecibel(self):
+        if not isinstance(self, TrafoMethods):
+            return self.pipe(idecibel)
+        else:
+            return self._obj.pipe(idecibel)
 
 
 if __name__ == "__main__":
