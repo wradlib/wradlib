@@ -43,6 +43,7 @@ class AttenuationOverflowError(Exception):
 
 def correct_attenuation_hb(
     gateset,
+    *,
     coefficients={"a": 1.67e-4, "b": 0.7, "gate_length": 1.0},
     mode="except",
     thrs=59.0,
@@ -151,7 +152,7 @@ def constraint_pia(gateset, pia, thrs_pia):
     return np.max(pia, axis=-1) > thrs_pia
 
 
-def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, gate_length=1.0):
+def calc_attenuation_forward(gateset, *, a=1.67e-4, b=0.7, gate_length=1.0):
     """Gate-by-Gate forward correction as described in :cite:`Kraemer2008`
 
     Parameters
@@ -192,6 +193,7 @@ def calc_attenuation_forward(gateset, a=1.67e-4, b=0.7, gate_length=1.0):
 def bisect_reference_attenuation(
     gateset,
     pia_ref,
+    *,
     a_max=1.67e-4,
     a_min=2.33e-5,
     b_start=0.7,
@@ -279,7 +281,7 @@ def bisect_reference_attenuation(
     # for pia calculation are the same.
     while not np.all(a_hi == a_lo):
         a_mid = (a_hi + a_lo) / 2
-        pia = calc_attenuation_forward(gateset, a_mid, b, gate_length)
+        pia = calc_attenuation_forward(gateset, a=a_mid, b=b, gate_length=gate_length)
         # Find indices where calculated and reference pia sufficiently match
         if mode == "difference":
             overshoot = (pia[..., -1] - pia_ref) > thrs
@@ -362,6 +364,7 @@ def _interp_atten(pia, invalidbeams):
 
 def correct_attenuation_constrained(
     gateset,
+    *,
     a_max=1.67e-4,
     a_min=2.33e-5,
     n_a=4,
@@ -517,7 +520,9 @@ def correct_attenuation_constrained(
             a = a_max - delta_a * i
             # Generate subset of beams that have to be corrected
             sub_gateset = tmp_gateset[beams2correct]
-            sub_pia = calc_attenuation_forward(sub_gateset, a, b, gate_length)
+            sub_pia = calc_attenuation_forward(
+                sub_gateset, a=a, b=b, gate_length=gate_length
+            )
             pia[beams2correct] = sub_pia
             a_used[beams2correct] = a
             b_used[beams2correct] = b
@@ -563,7 +568,7 @@ def correct_attenuation_constrained(
 
 
 def correct_radome_attenuation_empirical(
-    gateset, frequency=5.64, hydrophobicity=0.165, n_r=2, stat=np.mean
+    gateset, *, frequency=5.64, hydrophobicity=0.165, n_r=2, stat=np.mean
 ):
     """Estimate two-way wet radome losses.
 
@@ -636,7 +641,7 @@ def correct_radome_attenuation_empirical(
     return k.filled(fill_value=np.nan)
 
 
-def pia_from_kdp(kdp, dr, gamma=0.08):
+def pia_from_kdp(kdp, dr, *, gamma=0.08):
     """Retrieving path integrated attenuation from specific differential \
     phase (Kdp).
 
