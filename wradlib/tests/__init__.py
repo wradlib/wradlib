@@ -12,9 +12,8 @@ import os
 
 import pytest
 from packaging.version import Version
-from xarray import __version__ as xr_version
-
 from wradlib import util
+from xarray import __version__ as xr_version
 
 has_data = os.environ.get("WRADLIB_DATA", False)
 requires_data = pytest.mark.skipif(
