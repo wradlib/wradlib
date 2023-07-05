@@ -47,18 +47,18 @@ class PolarNeighbours:
         (see :mod:`wradlib.georef` for documentation)
     az : :class:`numpy:numpy.ndarray`
         (see :mod:`wradlib.georef` for documentation)
-    sitecoords : sequence
+    site : sequence
         sequence of floats
         (see :mod:`wradlib.georef` for documentation)
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
         (see :mod:`wradlib.georef` for documentation)
     x : :class:`numpy:numpy.ndarray`
         array of x coordinates of the points in map projection
-        corresponding to proj
+        corresponding to crs
     y : :class:`numpy:numpy.ndarray`
         array of y coordinates of the points in map projection
-        corresponding to proj
+        corresponding to crs
     nnear : int
         number of neighbouring radar bins you would like to find
 
@@ -68,14 +68,14 @@ class PolarNeighbours:
     See :ref:`/notebooks/verification/wradlib_verify_example.ipynb`.
     """
 
-    def __init__(self, r, az, sitecoords, proj, x, y, nnear=9):
+    def __init__(self, r, az, site, crs, x, y, *, nnear=9):
         self.nnear = nnear
         self.az = az
         self.r = r
         self.x = x
         self.y = y
-        # compute the centroid coordinates in proj
-        bin_coords = polar.spherical_to_centroids(r, az, 0, sitecoords, proj=proj)
+        # compute the centroid coordinates in crs
+        bin_coords = polar.spherical_to_centroids(r, az, 0, site, crs=crs)
         self.binx = bin_coords[..., 0].ravel()
         self.biny = bin_coords[..., 1].ravel()
         # compute the KDTree
@@ -169,7 +169,7 @@ class ErrorMetrics:
 
     """
 
-    def __init__(self, obs, est, minval=None):
+    def __init__(self, obs, est, *, minval=None):
         # Check input
         if len(obs) != len(est):
             raise ValueError(

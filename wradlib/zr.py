@@ -17,16 +17,21 @@ into rainfall rates and vice versa
 
    {}
 """
-__all__ = ["z_to_r", "r_to_z", "z_to_r_enhanced"]
+__all__ = ["z_to_r", "r_to_z", "z_to_r_enhanced", "ZRMethods"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+from functools import singledispatch
+
 import numpy as np
+import xarray as xr
 from scipy import signal
+from xradar.model import sweep_vars_mapping
 
-from wradlib import trafo
+from wradlib import trafo, util
 
 
-def z_to_r(z, a=200.0, b=1.6):
+@singledispatch
+def z_to_r(z, *, a=200.0, b=1.6):
     """Conversion from reflectivities to rain rates.
 
     Calculates rain rates from radar reflectivities using
@@ -57,7 +62,54 @@ def z_to_r(z, a=200.0, b=1.6):
     return (z / a) ** (1.0 / b)
 
 
-def r_to_z(r, a=200.0, b=1.6):
+@z_to_r.register(xr.DataArray)
+def _z_to_r_xarray(obj, **kwargs):
+    """Conversion from reflectivities to rain rates.
+
+    Calculates rain rates from radar reflectivities using
+    a power law Z/R relationship Z = a*R**b
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        Corresponds to reflectivity Z in mm**6/m**3
+
+    Keyword Arguments
+    -----------------
+    a : float
+        Parameter a of the Z/R relationship
+        Standard value according to Marshall-Palmer is a=200., b=1.6
+    b : float
+        Parameter b of the Z/R relationship
+        Standard value according to Marshall-Palmer is b=1.6
+
+    Note
+    ----
+    The German Weather Service uses a=256 and b=1.42 instead of
+    the Marshall-Palmer defaults.
+
+    Returns
+    -------
+    output : :py:class:`xarray:xarray.DataArray`
+        rainfall intensity in mm/h
+    """
+    dim0 = obj.wrl.util.dim0()
+    out = xr.apply_ufunc(
+        z_to_r,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        kwargs=kwargs,
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = sweep_vars_mapping["RATE"]
+    out.name = "RATE"
+    return out
+
+
+@singledispatch
+def r_to_z(r, *, a=200.0, b=1.6):
     """Calculates reflectivity from rain rates using
     a power law Z/R relationship Z = a*R**b
 
@@ -86,7 +138,50 @@ def r_to_z(r, a=200.0, b=1.6):
     return a * r**b
 
 
-def z_to_r_enhanced(z, polar=True, shower=True):
+@r_to_z.register(xr.DataArray)
+def _r_to_z_xarray(obj, **kwargs):
+    """Calculates reflectivity from rain rates using
+    a power law Z/R relationship Z = a*R**b
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        Corresponds to rainfall intensity in mm/h
+    a : float
+        Parameter a of the Z/R relationship
+        Standard value according to Marshall-Palmer is a=200., b=1.6
+    b : float
+        Parameter b of the Z/R relationship
+        Standard value according to Marshall-Palmer is b=1.6
+
+    Note
+    ----
+    The German Weather Service uses a=256 and b=1.42 instead of
+    the Marshall-Palmer defaults.
+
+    Returns
+    -------
+    output : :py:class:`xarray:xarray.DataArray`
+        reflectivity in mm**6/m**3
+
+    """
+    dim0 = obj.wrl.util.dim0()
+    out = xr.apply_ufunc(
+        r_to_z,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        kwargs=kwargs,
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = sweep_vars_mapping["ZH"]
+    out.name = "ZH"
+    return out
+
+
+@singledispatch
+def z_to_r_enhanced(z, *, polar=True, shower=True):
     """Calculates rainrates from radar reflectivities using the enhanced \
     three-part Z-R-relationship used by the DWD (as of 2009)
 
@@ -211,6 +306,109 @@ def z_to_r_enhanced(z, polar=True, shower=True):
         return rr, si
     else:
         return rr
+
+
+@z_to_r_enhanced.register(xr.DataArray)
+def _z_to_r_enhanced_xarray(obj, **kwargs):
+    """Calculates rainrates from radar reflectivities using the enhanced \
+    three-part Z-R-relationship used by the DWD (as of 2009)
+
+    To be used with polar representations so that one dimension is cyclical.
+    i.e. z should be of shape (nazimuths, nbins) --> the first dimension
+    is the cyclical one. For DWD DX-Data z's shape is (360,128).
+
+    Neighborhood-means are taken only for available data via fast convolution
+    sums.
+    Refer to the RADOLAN final report or the RADOLAN System handbook for
+    details on the calculations.
+    Basically, for low reflectivities an index called the shower index is
+    calculated as the mean of the differences along both axis in a neighborhood
+    of 3x3 pixels.
+    This means:
+
+                        +------+-----------------+
+                        |      | x-direction --> |
+                        +------+-----+-----+-----+
+                        | | y  |  1  |  2  |  3  |
+                        | | l  +-----+-----+-----+
+                        | | d  |  4  |  5  |  6  |
+                        | | i  +-----+-----+-----+
+                        | | r  |  7  |  8  |  9  |
+                        +------+-----+-----+-----+
+
+    If 5 is the pixel in question, it's shower index is calculated as:
+
+    .. math::
+
+        ( &|1-2| + |2-3| + |4-5| + |5-6| + |7-8| + |8-9| + \\\\
+          &|1-4| + |4-7| + |2-5| + |5-8| + |3-6| + |6-9| ) / 12.
+
+    then, the upper line of the sum would be diffx (DIFFerences in
+    X-direction), the lower line would be diffy
+    (DIFFerences in Y-direction) in the code below.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        Corresponds to reflectivity Z in mm**6/m**3
+        ND-array, at least 2D
+
+    Keyword Arguments
+    -----------------
+    shower : bool
+        output shower index, defaults to True
+
+    Returns
+    -------
+    out : :py:class:`xarray:xarray.DataArray`
+        calculated rain rates
+    si : :py:class:`xarray:xarray.DataArray`
+        calculated shower index
+    """
+    dim0 = obj.wrl.util.dim0()
+    shower = kwargs.setdefault("shower", True)
+    output_core_dims = [[dim0, "range"]]
+    if shower is True:
+        output_core_dims *= 2
+    out = xr.apply_ufunc(
+        z_to_r_enhanced,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"], [dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    if shower is True:
+        out, si = out
+    out.attrs = sweep_vars_mapping["RATE"]
+    out.name = "RATE"
+    return out, si
+
+
+class ZRMethods(util.XarrayMethods):
+    """wradlib xarray SubAccessor methods for zr."""
+
+    @util.docstring(_z_to_r_xarray)
+    def z_to_r(self, *args, **kwargs):
+        if not isinstance(self, ZRMethods):
+            return z_to_r(self, *args, **kwargs)
+        else:
+            return z_to_r(self._obj, *args, **kwargs)
+
+    @util.docstring(_r_to_z_xarray)
+    def r_to_z(self, *args, **kwargs):
+        if not isinstance(self, ZRMethods):
+            return r_to_z(self, *args, **kwargs)
+        else:
+            return r_to_z(self._obj, *args, **kwargs)
+
+    @util.docstring(_z_to_r_enhanced_xarray)
+    def z_to_r_enhanced(self, *args, **kwargs):
+        if not isinstance(self, ZRMethods):
+            return z_to_r_enhanced(self, *args, **kwargs)
+        else:
+            return z_to_r_enhanced(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

@@ -92,6 +92,7 @@ class CartesianVolume:
         self,
         polcoords,
         gridcoords,
+        *,
         gridshape=None,
         maxrange=None,
         minelev=None,
@@ -116,7 +117,9 @@ class CartesianVolume:
             ]
         ).reshape((-1, 3))
         # Set the mask which masks the blind voxels of the 3-D volume grid
-        self.mask = self._get_mask(gridcoords, polcoords, maxrange, minelev, maxelev)
+        self.mask = self._get_mask(
+            gridcoords, polcoords, maxrange=maxrange, minelev=minelev, maxelev=maxelev
+        )
         # create an instance of the Interpolation class
         self.trgix = np.where(np.logical_not(self.mask))
         self.ip = ipclass(src=polcoords, trg=gridcoords[self.trgix], **ipargs)
@@ -146,6 +149,7 @@ class CartesianVolume:
         self,
         gridcoords,
         polcoords=None,
+        *,
         maxrange=None,
         minelev=None,
         maxelev=None,
@@ -233,13 +237,13 @@ class CAPPI(CartesianVolume):
         >>> elevs  = np.array([0.5,1.5,2.4,3.4,4.3,5.3,6.2,7.5,8.7,10,12,14,16.7,19.5])
         >>> azims  = np.arange(0., 360., 1.)
         >>> ranges = np.arange(0., 120000., 1000.)
-        >>> sitecoords = (120.255547,14.924218,500.)
-        >>> proj = osr.SpatialReference()
-        >>> _ = proj.ImportFromEPSG(32651)
+        >>> site = (120.255547,14.924218,500.)
+        >>> crs = osr.SpatialReference()
+        >>> _ = crs.ImportFromEPSG(32651)
         >>> # create Cartesian coordinates corresponding the location of the
         >>> # polar volume bins
-        >>> polxyz  = wradlib.vpr.volcoords_from_polar(sitecoords, elevs,
-        ...                                            azims, ranges, proj)  # noqa
+        >>> polxyz  = wradlib.vpr.volcoords_from_polar(site, elevs,
+        ...                                            azims, ranges, crs=crs)  # noqa
         >>> poldata = wradlib.vpr.synthetic_polar_volume(polxyz)
         >>> # this is the shape of our polar volume
         >>> polshape = (len(elevs),len(azims),len(ranges))
@@ -398,12 +402,12 @@ def blindspots(center, gridcoords, minelev, maxelev, maxrange):
     return below, above, out_of_range
 
 
-def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
+def volcoords_from_polar(site, elevs, azimuths, ranges, *, crs=None):
     """Create Cartesian coordinates for regular polar volumes
 
     Parameters
     ----------
-    sitecoords : tuple
+    site : tuple
         sequence of three floats indicating the radar position
         (longitude in decimal degrees, latitude in decimal degrees,
         height a.s.l. in meters)
@@ -413,7 +417,7 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
         sequence of azimuth angles
     ranges : sequence
         sequence of ranges
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
 
     Returns
@@ -431,19 +435,19 @@ def volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj=None):
     el, az, r = util.meshgrid_n(elevs, azimuths, ranges)
 
     # get projected coordinates
-    coords = georef.spherical_to_proj(r, az, el, sitecoords, proj=proj)
+    coords = georef.spherical_to_proj(r, az, el, site, crs=crs)
     coords = coords.reshape(-1, 3)
 
     return coords
 
 
-def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=None):
+def volcoords_from_polar_irregular(site, elevs, azimuths, ranges, *, crs=None):
     """Create Cartesian coordinates for polar volumes with irregular \
     sweep specifications
 
     Parameters
     ----------
-    sitecoords : tuple
+    site : tuple
         sequence of three floats indicating the radar position
         (longitude in decimal degrees, latitude in decimal degrees,
         height a.s.l. in meters)
@@ -453,7 +457,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         sequence of azimuth angles
     ranges : sequence
         sequence of ranges
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
 
     Returns
@@ -511,7 +515,7 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
             onerange4all = False
     if oneaz4all and onerange4all:
         # this is the simple way
-        return volcoords_from_polar(sitecoords, elevs, azimuths, ranges, proj)
+        return volcoords_from_polar(site, elevs, azimuths, ranges, crs=crs)
     # No simply way, so we need to construct the coordinates arrays for
     # each elevation angle
     # but first adapt input arrays to this task
@@ -529,37 +533,37 @@ def volcoords_from_polar_irregular(sitecoords, elevs, azimuths, ranges, proj=Non
         az = np.append(az, az_tmp.ravel())
         r = np.append(r, r_tmp.ravel())
     # get projected coordinates
-    coords = georef.spherical_to_proj(r, az, el, sitecoords, proj=proj)
+    coords = georef.spherical_to_proj(r, az, el, site, crs=crs)
     coords = coords.reshape(-1, 3)
 
     return coords
 
 
-def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res, minalt=0.0):
+def make_3d_grid(site, crs, maxrange, maxalt, horiz_res, vert_res, *, minalt=0.0):
     """Generate Cartesian coordinates for a regular 3-D grid based on \
     radar specs.
 
     Parameters
     ----------
-    sitecoords : tuple
+    site : tuple
         Radar location coordinates in lon, lat
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR Spatial Reference Object describing projection
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        GDAL OSR SRS describing projection
     maxrange : float
-        maximum radar range (same unit as SRS defined by ``proj``,
+        maximum radar range (same unit as CRS defined by ``crs``,
         typically meters)
     maxalt : float
-        maximum altitude to which the 3-d grid should extent (meters)
+        maximum altitude to which the 3-d grid should extend (meters)
     horiz_res : float
         horizontal resolution of the 3-d grid (same unit as
-        SRS defined by ``proj``, typically meters)
+        CRS defined by ``crs``, typically meters)
     vert_res : float
         vertical resolution of the 3-d grid (meters)
 
     Keyword Arguments
     -----------------
     minalt : float
-        minimum altitude to which the 3-d grid should extent (meters)
+        minimum altitude to which the 3-d grid should extend (meters)
 
     Returns
     -------
@@ -567,8 +571,8 @@ def make_3d_grid(sitecoords, proj, maxrange, maxalt, horiz_res, vert_res, minalt
         float array of shape (num grid points, 3), a tuple of
         3 representing the grid shape
     """
-    center = georef.reproject(sitecoords[0], sitecoords[1], projection_target=proj)
-    # minz = sitecoords[2]
+    center = georef.reproject(site[0], site[1], trg_crs=crs)
+    # minz = site[2]
     llx = center[0] - maxrange
     lly = center[1] - maxrange
     x = np.arange(llx, llx + 2 * maxrange + horiz_res, horiz_res)
@@ -600,7 +604,7 @@ def synthetic_polar_volume(coords):
     return out
 
 
-def norm_vpr_stats(volume, reference_layer, stat=None, **kwargs):
+def norm_vpr_stats(volume, reference_layer, *, stat=None, **kwargs):
     """Returns the average normalised vertical profile of a volume or \
     any other desired statistics
 
