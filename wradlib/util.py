@@ -28,13 +28,16 @@ __all__ = [
     "import_optional",
     "vertical_interpolate_volume",
     "cross_section_ppi",
+    "UtilMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import contextlib
 import datetime as dt
 import importlib
+import inspect
 import os
+from functools import singledispatch
 
 import numpy as np
 import xarray as xr
@@ -168,7 +171,7 @@ def from_to(tstart, tend, tdelta):
     return tsteps
 
 
-def _idvalid(data, isinvalid=None, minval=None, maxval=None):
+def _idvalid(data, *, isinvalid=None, minval=None, maxval=None):
     """Identifies valid entries in an array and returns the corresponding
     indices
 
@@ -301,7 +304,7 @@ def trapezoid(data, x1, x2, x3, x4):
     return d
 
 
-def filter_window_polar(img, wsize, fun, rscale, random=False):
+def filter_window_polar(img, wsize, fun, rscale, *, random=False):
     """Apply a filter of an approximated square window of half size `fsize` \
     on a given polar image `img`.
 
@@ -354,7 +357,7 @@ def filter_window_polar(img, wsize, fun, rscale, random=False):
     return data_filtered
 
 
-def prob_round(x, prec=0):
+def prob_round(x, *, prec=0):
     """Round the float number `x` to the lower or higher integer randomly
     following a binomial distribution
 
@@ -626,7 +629,7 @@ def calculate_polynomial(data, w):
     return poly
 
 
-def medfilt_along_axis(x, n, axis=-1):
+def medfilt_along_axis(x, n, *, axis=-1):
     """Applies median filter smoothing on one axis of an N-dimensional array."""
     kernel_size = np.array(x.shape)
     kernel_size[:] = 1
@@ -634,9 +637,8 @@ def medfilt_along_axis(x, n, axis=-1):
     return signal.medfilt(x, kernel_size)
 
 
-def gradient_along_axis(x):
+def gradient_along_axis(x, *, axis=-1):
     """Computes gradient along last axis of an N-dimensional array"""
-    axis = -1
     newshape = np.array(x.shape)
     newshape[axis] = 1
     diff_begin = (x[..., 1] - x[..., 0]).reshape(newshape)
@@ -646,9 +648,9 @@ def gradient_along_axis(x):
     return np.insert(diffs, [0], diff_begin, axis=axis)
 
 
-def gradient_from_smoothed(x, n=5):
+def gradient_from_smoothed(x, *, n=5, axis=-1):
     """Computes gradient of smoothed data along final axis of an array"""
-    return gradient_along_axis(medfilt_along_axis(x, n)).astype("f4")
+    return gradient_along_axis(medfilt_along_axis(x, n=5, axis=axis)).astype("f4")
 
 
 def center_to_edge(centers):
@@ -658,7 +660,7 @@ def center_to_edge(centers):
     return edges
 
 
-def _pad_array(data, pad, mode="reflect", **kwargs):
+def _pad_array(data, pad, *, mode="reflect", **kwargs):
     """Returns array with padding added along last dimension."""
     pad_width = [(0,)] * (data.ndim - 1) + [(pad,)]
     if mode in ["maximum", "mean", "median", "minimum"]:
@@ -674,7 +676,7 @@ def _rolling_dim(data, window):
     return np.lib.stride_tricks.as_strided(data, shape=shape, strides=strides)
 
 
-def _linregress_1d(rhs, method="lstsq"):
+def _linregress_1d(rhs, *, method="lstsq"):
     """Calculates slope by means of linear regression on last dimension of rhs.
 
     Calculates lhs from size of last dimension of rhs.
@@ -780,7 +782,8 @@ def _lanczos_differentiator(winlen):
     return np.r_[f[::-1], [0], -f]
 
 
-def derivate(data, winlen=7, method="lanczos_conv", skipna=False, **kwargs):
+@singledispatch
+def derivate(data, *, winlen=7, method="lanczos_conv", skipna=False, **kwargs):
     """Calculates derivative of data using window of length winlen.
 
     In normal operation the method ('lanczos_conv') uses convolution
@@ -916,7 +919,79 @@ lanczos-low-noise-differentiators/>`_.
     return out.reshape(shape)
 
 
-def despeckle(data, n=3, copy=False):
+@derivate.register(xr.DataArray)
+def _derivate_xarray(obj, **kwargs):
+    """Calculates derivative of data using window of length winlen.
+
+    In normal operation the method ('lanczos_conv') uses convolution
+    to estimate the derivative using Low-noise Lanczos differentiators.
+    The equivalent method ('lanczos_dot') uses dot-vector sum product.
+
+    For further reading please see `Differentiation by integration using \
+    orthogonal polynomials, a survey <https://arxiv.org/pdf/1102.5219>`_ \
+    and `Low-noise Lanczos differentiators \
+    <http://www.holoborodko.com/pavel/numerical-methods/numerical-derivative/\
+lanczos-low-noise-differentiators/>`_.
+
+    The results are very similar to the moving window linear
+    regression methods (`cov`, `matrix_inv` and `lstsq`), which are slower than
+    the former (in order of appearance).
+
+    All methods will return NaNs in case at least one value in the moving
+    window is NaN.
+
+    If `skipna=True` the locations of NaN results are treated by using local
+    linear regression by method2 (default to `cov_nan`) where enough valid
+    neighbouring data is available.
+
+    Before applying the actual derivation calculation the data is padded with
+    `mode='reflect'` by default along the derivation dimension. Padding can be
+    parametrized using kwargs.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        input array
+
+    Keyword Arguments
+    -----------------
+    winlen : int
+        Width of the derivation window .
+    method : str
+        Defaults to 'lanczos_conv'. Can take one of 'lanczos_dot', 'lstsq',
+        'cov', 'cov_nan', 'matrix_inv'.
+    skipna : bool
+        Defaults to False. If True, treat NaN results by applying method2.
+    method2 : str
+        Defaults to '_nan' methods.
+    min_periods : int
+        Minimum number of valid values in moving window for linear regression.
+        Defaults to winlen // 2 + 1.
+    pad_mode : str
+        Defaults to `reflect`. See :func:`numpy:numpy.pad`.
+    pad_kwargs : dict
+        Keyword arguments for padding, see :func:`numpy:numpy.pad`
+
+    Returns
+    -------
+    out : :py:class:`xarray:xarray.DataArray`
+        array of derivates
+    """
+    dim0 = obj.wrl.util.dim0()
+    out = xr.apply_ufunc(
+        derivate,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = obj.attrs
+    return out
+
+
+@singledispatch
+def despeckle(data, *, n=3, copy=False):
     """Remove floating pixels in between NaNs in a multi-dimensional array.
 
     Warning
@@ -954,6 +1029,40 @@ def despeckle(data, n=3, copy=False):
     return data
 
 
+@despeckle.register(xr.DataArray)
+def _despeckle_xarray(obj, **kwargs):
+    """Remove floating pixels in between NaNs in a multi-dimensional array.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        input array
+
+    Keyword Arguments
+    -----------------
+    n : int
+        (must be either 3 or 5, 3 by default),
+        Width of the window in which we check for speckle
+
+    Returns
+    -------
+    out : :py:class:`xarray:xarray.DataArray`
+        output array
+    """
+    dim0 = obj.wrl.util.dim0()
+    out = xr.apply_ufunc(
+        despeckle,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        kwargs=kwargs,
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = obj.attrs
+    return out
+
+
 def show_versions(file=None):
     import sys
 
@@ -981,11 +1090,7 @@ def has_import(module):
     return not isinstance(module, OptionalModuleStub)
 
 
-if __name__ == "__main__":
-    print("wradlib: Calling module <util> as main...")
-
-
-def vertical_interpolate_volume(vol, elevs=None, method="nearest"):
+def vertical_interpolate_volume(vol, *, elevs=None, method="nearest"):
     """
     Vertically interpolate volume data
 
@@ -1025,11 +1130,12 @@ def vertical_interpolate_volume(vol, elevs=None, method="nearest"):
 def cross_section_ppi(
     obj,
     azimuth,
+    *,
     method=None,
     tolerance=None,
     real_beams=False,
     bw=1,
-    proj=None,
+    crs=None,
     npl=1000,
 ):
     """Cut a cross section from PPI volume scans
@@ -1073,7 +1179,7 @@ def cross_section_ppi(
         according to their width.
     bw : float, optional
         beam width in degrees (defaults to 1 degree). This is only used if "real_beams=True".
-    proj : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
         Projection to use with :py:class:`wradlib.georef.xarray.georeference_dataset`.
         If GDAL OSR SRS, output is in this projection, else AEQD.
     npl : int
@@ -1169,7 +1275,7 @@ def cross_section_ppi(
         ds = ds.sortby("elevation")
 
     # Georeference the data
-    ds = ds.pipe(georef.georeference_dataset, proj=proj)
+    ds = ds.pipe(georef.georeference, crs=crs)
 
     try:
         return ds.sel(azimuth=azimuth, method=method, tolerance=tolerance)
@@ -1279,3 +1385,98 @@ def cross_section_ppi(
         merged["z"] = merged["z"].ffill("xyi")
 
         return merged
+
+
+def docstring(func):
+    """Apply docstring and signature to decorated function"""
+
+    def wrapper(decorated):
+        decorated.__doc__ = func.__doc__
+        decorated.__signature__ = inspect.signature(func)
+        return decorated
+
+    return wrapper
+
+
+def dim0(obj):
+    return list(set(obj.dims) & {"azimuth", "elevation"})[-1]
+
+
+class XarrayMethods:
+    """BaseClass to bind xarray methods to wradlib SubAccessor
+
+    This wraps xarray.DataArray or xarray.Dataset objects and overrides
+    `__repr__`, `_repr_html_`, `__getitem__` and `__getattr__` of those.
+
+    Parameter
+    ---------
+    obj : xarray.Dataset | xarray.DataArray
+    """
+
+    def __init__(self, obj):
+        self._obj = obj
+
+    def __repr__(self):
+        name = self._obj.__class__.__name__
+        cname = self.__class__.__module__
+        search = f"xarray.{name}"
+        replace = f"{cname}(xarray.{name})"
+        out = self._obj.__repr__()
+        out = out.replace(search, replace)
+        return out
+
+    def _repr_html_(self):
+        name = self._obj.__class__.__name__
+        cname = self.__class__.__module__
+        search = f"xarray.{name}"
+        replace = f"{cname}(xarray.{name})"
+        out = self._obj._repr_html_()
+        out = out.replace(search, replace)
+        return out
+
+    def __getitem__(self, item):
+        if (
+            isinstance(self._obj, xr.DataArray)
+            or item not in self._obj.data_vars
+            or not self._obj[item].dims
+        ):
+            return self._obj[item]
+        return self.__class__(self._obj[item])
+
+    def __getattr__(self, item):
+        if (
+            isinstance(self._obj, xr.DataArray)
+            or item not in self._obj.data_vars
+            or not self._obj[item].dims
+        ):
+            return getattr(self._obj, item)
+        return self.__class__(getattr(self._obj, item))
+
+
+class UtilMethods(XarrayMethods):
+    """wradlib xarray SubAccessor methods for Util."""
+
+    @docstring(_despeckle_xarray)
+    def despeckle(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return despeckle(self, *args, **kwargs)
+        else:
+            return despeckle(self._obj, *args, **kwargs)
+
+    @docstring(_derivate_xarray)
+    def derivate(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return derivate(self, *args, **kwargs)
+        else:
+            return derivate(self._obj, *args, **kwargs)
+
+    @docstring(dim0)
+    def dim0(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return dim0(self, *args, **kwargs)
+        else:
+            return dim0(self._obj, *args, **kwargs)
+
+
+if __name__ == "__main__":
+    print("wradlib: Calling module <util> as main...")
