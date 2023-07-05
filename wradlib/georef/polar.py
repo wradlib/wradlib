@@ -201,9 +201,8 @@ def _spherical_to_xyz_xarray(obj, **kwargs):
         Destination Spatial Reference System (AEQD-Projection).
     """
     dim0 = obj.wrl.util.dim0()
-    # Todo: check if this works for elevation too
-    r = obj.range.expand_dims(dim={"azimuth": len(obj.azimuth)}).assign_coords(
-        azimuth=obj.azimuth
+    r = obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
+        {dim0: obj[dim0]}
     )
     phi = obj.azimuth.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
         range=obj.range
@@ -343,9 +342,8 @@ def _spherical_to_proj_xarray(obj, **kwargs):
         Array of shape (..., 3). Contains projected map coordinates.
     """
     dim0 = obj.wrl.util.dim0()
-    # Todo: check if this works for elevation too
-    r = obj.range.expand_dims(dim={"azimuth": len(obj.azimuth)}).assign_coords(
-        azimuth=obj.azimuth
+    r = obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
+        {dim0: obj[dim0]}
     )
     phi = obj.azimuth.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
         range=obj.range
@@ -369,7 +367,6 @@ def _spherical_to_proj_xarray(obj, **kwargs):
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
-    # out.attrs = get_range_attrs()
     out.name = "spherical_to_proj"
     return out
 
@@ -549,6 +546,8 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
     only unique values. For further information refer to the documentation of
     :func:`~wradlib.georef.polar.spherical_to_xyz`.
 
+    Currently only works for PPI.
+
     Parameters
     ----------
     obj : :py:class:`xarray:xarray.DataArray` | :py:class:`xarray:xarray.Dataset`
@@ -564,7 +563,6 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
         dependend. The default of 4/3 is a good approximation for most
         weather radar wavelengths.
 
-
     Returns
     -------
     xyz : :py:class:`xarray:xarray.DataArray`
@@ -574,6 +572,7 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
         Defaults to wgs84 (epsg 4326).
     """
     # Todo: check if this works for elevation too
+    obj.wrl.util.dim0()
     rdiff = obj.range.diff("range").median() / 2.0
     r = obj.range + rdiff
     phi = obj.azimuth
@@ -691,9 +690,10 @@ def _spherical_to_centroids_xarray(obj, **kwargs):
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
+        dependend. The default of 4/3 is a good approximation for most
         weather radar wavelengths.
 
+    Currently only works for PPI.
 
     Returns
     -------
@@ -803,7 +803,7 @@ def _is_sorted(x):
     """
     Returns True when array x is sorted
     """
-    return np.all(x == np.sort(x))
+    return np.all(x[:-1] <= x[1:])
 
 
 def _get_range_resolution(x):
@@ -829,7 +829,7 @@ def _get_azimuth_resolution(x):
     """
     res = np.unique(np.sort(x)[1:] - np.sort(x)[:-1])
     if len(res) > 1:
-        raise ValueError("The resolution of the azimuth angle array " "is ambiguous.")
+        raise ValueError("The resolution of the azimuth angle array is ambiguous.")
     return res[0]
 
 
