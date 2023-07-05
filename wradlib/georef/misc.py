@@ -70,7 +70,14 @@ def bin_altitude(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
 @bin_altitude.register(Dataset)
 @bin_altitude.register(DataArray)
 def _bin_altitude_xarray(obj, **kwargs):
-    """Compute the bin altitude.
+    """Calculates the height of a radar bin taking the refractivity of the \
+    atmosphere into account.
+
+    Based on :cite:`Doviak1993` the bin altitude is calculated as
+
+    .. math::
+
+        h = \\sqrt{r^2 + (k_e r_e)^2 + 2 r k_e r_e \\sin\\theta} - k_e r_e
 
     Parameters
     ----------
@@ -82,12 +89,11 @@ def _bin_altitude_xarray(obj, **kwargs):
     z : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    # Todo: check if this works for elevation too
     dim0 = obj.wrl.util.dim0()
     out = apply_ufunc(
         bin_altitude,
-        obj.range.expand_dims(dim={"azimuth": len(obj.azimuth)}).assign_coords(
-            azimuth=obj.azimuth
+        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
+            {dim0: obj[dim0]}
         ),
         obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
             range=obj.range
@@ -130,7 +136,7 @@ def bin_distance(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
+        dependend. The default of 4/3 is a good approximation for most
         weather radar wavelengths
 
     Returns
@@ -147,7 +153,15 @@ def bin_distance(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
 @bin_distance.register(Dataset)
 @bin_distance.register(DataArray)
 def _bin_distance_xarray(obj, **kwargs):
-    """Compute the bin distance.
+    """Calculates great circle distance from radar site to radar bin over \
+    spherical earth, taking the refractivity of the atmosphere into account.
+
+    .. math::
+
+        s = k_e r_e \\arctan\\left(
+        \\frac{r \\cos\\theta}{r \\cos\\theta + k_e r_e + h}\\right)
+
+    where :math:`h` would be the radar site altitude amsl.
 
     Parameters
     ----------
@@ -159,18 +173,17 @@ def _bin_distance_xarray(obj, **kwargs):
     bin_distance : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    # Todo: check if this works for elevation too
     dim0 = obj.wrl.util.dim0()
     out = apply_ufunc(
         bin_distance,
-        obj.range.expand_dims(dim={"azimuth": len(obj.azimuth)}).assign_coords(
-            azimuth=obj.azimuth
+        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
+            {dim0: obj[dim0]}
         ),
         obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
             range=obj.range
         ),
         obj.altitude.values,
-        input_core_dims=[[dim0, "range"], [dim0, "range"], [None], [None]],
+        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
         output_core_dims=[[dim0, "range"]],
         dask="parallelized",
         kwargs=kwargs,
@@ -229,7 +242,19 @@ def site_distance(r, theta, binalt, *, re=6371000, ke=4.0 / 3.0):
 @site_distance.register(Dataset)
 @site_distance.register(DataArray)
 def _site_distance_xarray(obj, **kwargs):
-    """Compute the bin site distance.
+    """Calculates great circle distance from bin at certain altitude to the \
+    radar site over spherical earth, taking the refractivity of the \
+    atmosphere into account.
+
+    Based on :cite:`Doviak1993` the site distance may be calculated as
+
+    .. math::
+
+        s = k_e r_e \\arcsin\\left(
+        \\frac{r \\cos\\theta}{k_e r_e + h_n(r, \\theta, r_e, k_e)}\\right)
+
+    where :math:`h_n` would be provided by
+    :func:`~wradlib.georef.misc.bin_altitude`.
 
     Parameters
     ----------
@@ -242,12 +267,11 @@ def _site_distance_xarray(obj, **kwargs):
         DataArray
     """
     dim0 = obj.wrl.util.dim0()
-    # Todo: check if this works for elevation too
     binalt = bin_altitude(obj)
     out = apply_ufunc(
         site_distance,
-        binalt.range.expand_dims(dim={"azimuth": len(binalt.azimuth)}).assign_coords(
-            azimuth=binalt.azimuth
+        binalt.range.expand_dims(dim={dim0: len(binalt.azimuth)}).assign_coords(
+            {dim0: binalt[dim0]}
         ),
         binalt.elevation.expand_dims(
             dim={"range": len(binalt.range)}, axis=-1
