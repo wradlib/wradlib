@@ -41,7 +41,7 @@ def _open_netcdf(filename):
         yield nc.Dataset("name", mode="r", memory=filename.read())
 
 
-def read_edge_netcdf(filename, enforce_equidist=False):
+def read_edge_netcdf(filename, *, enforce_equidist=False):
     """Data reader for netCDF files exported by the EDGE radar software
 
     The corresponding NetCDF files from the EDGE software typically contain
@@ -100,7 +100,7 @@ def read_edge_netcdf(filename, enforce_equidist=False):
         # Set additional metadata attributes
         attrs["az"] = az
         attrs["r"] = r
-        attrs["sitecoords"] = (attrs["Longitude"], attrs["Latitude"], attrs["Height"])
+        attrs["site"] = (attrs["Longitude"], attrs["Latitude"], attrs["Height"])
         attrs["time"] = dt.datetime.utcfromtimestamp(attrs.pop("Time"))
         attrs["max_range"] = data.shape[1] * binwidth
 

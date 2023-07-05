@@ -103,7 +103,7 @@ def get_rb_blobs_from_file(fid, rbdict):
     return rbdict
 
 
-def read_rainbow(filename, loaddata=True):
+def read_rainbow(filename, *, loaddata=True):
     """Reads Rainbow files according to their structure
 
     In contrast to other file readers under :mod:`wradlib.io`, this function

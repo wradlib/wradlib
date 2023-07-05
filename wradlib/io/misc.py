@@ -108,7 +108,7 @@ def from_pickle(fpath):
     return obj
 
 
-def get_radiosonde(wmoid, date, cols=None):
+def get_radiosonde(wmoid, date, *, cols=None):
     """Download radiosonde data from internet.
 
     Based on http://weather.uwyo.edu/upperair/sounding.html.

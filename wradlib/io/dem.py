@@ -53,7 +53,7 @@ def init_header_redirect_session(token):
     return HeaderRedirection(token)
 
 
-def download_srtm(filename, destination, resolution=3):
+def download_srtm(filename, destination, *, resolution=3):
     """
     Download NASA SRTM elevation data
     Only available with login/password
@@ -138,7 +138,7 @@ def get_srtm_tile_names(extent):
     return filelist
 
 
-def get_srtm(extent, resolution=3, merge=True):
+def get_srtm(extent, *, resolution=3, merge=True):
     """
     Get NASA SRTM elevation data
 

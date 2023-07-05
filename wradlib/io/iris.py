@@ -373,10 +373,10 @@ class IrisCartesianProductFile(xiris.IrisRecordFile):
 
 def read_iris(
     filename,
+    *,
     loaddata=True,
     rawdata=False,
     debug=False,
-    keep_old_sweep_data=None,
     **kwargs,
 ):
     """Read Iris file and return dictionary.
@@ -397,26 +397,12 @@ def read_iris(
         If true, returns raw unconverted/undecoded data.
     debug : bool
         If true, print debug messages.
-    keep_old_sweep_data : bool
-        If true, keeps old ``sweep_data`` structure. Defaults to False. This will
-        change to True in a future version.
 
     Returns
     -------
     data : dict
         Ordered Dictionary with data and metadata retrieved from file.
     """
-    if keep_old_sweep_data is None:
-        keep_old_sweep_data = True
-        warnings.warn(
-            "WRADLIB: Iris ``sweep_data`` sub-dict structure has changed and will "
-            "default to new structure in a future version. Currently backwards "
-            "compatibility is preserved."
-            "To silence this warning set ``keep_old_sweep_data=False`` for new "
-            "structure or ``keep_old_sweep_data=True`` to keep old behaviour.",
-            DeprecationWarning,
-        )
-
     if not isinstance(filename, str):
         filename = filename.read()
 
@@ -452,31 +438,5 @@ def read_iris(
         item = getattr(irisfile, k, None)
         if item:
             data.update({k: item})
-
-    # backwards compatibility
-    if opener == xiris.IrisRawFile and keep_old_sweep_data:
-        meta = {
-            "azi_start",
-            "azi_stop",
-            "azimuth",
-            "ele_start",
-            "ele_stop",
-            "elevation",
-            "rbins",
-            "dtime",
-        }
-        for _, swp in data["data"].items():
-            try:
-                swp_data = swp["sweep_data"]
-            except KeyError:
-                continue
-            for key, mom in swp_data.items():
-                if "DB_" in key:
-                    d = {"data": mom}
-                    for m in meta:
-                        d[m] = swp_data[m]
-                    swp_data[key] = d
-            for m in meta:
-                swp_data.pop(m)
 
     return data

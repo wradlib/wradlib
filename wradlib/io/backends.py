@@ -27,11 +27,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import io
 
 import numpy as np
-from xarray.backends.common import (
-    AbstractDataStore,
-    BackendArray,
-    BackendEntrypoint,
-)
+from xarray.backends.common import AbstractDataStore, BackendArray, BackendEntrypoint
 from xarray.backends.file_manager import CachingFileManager, DummyFileManager
 from xarray.backends.locks import SerializableLock, ensure_lock
 from xarray.backends.store import StoreBackendEntrypoint

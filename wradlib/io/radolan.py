@@ -52,7 +52,7 @@ dwdpattern = re.compile("raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin")
 dwdascii = re.compile("(..)_([0-9]*)-([0-9]*).asc")
 
 
-def _get_timestamp_from_filename(filename, pattern=dwdpattern):
+def _get_timestamp_from_filename(filename, *, pattern=dwdpattern):
     """Helper function doing the actual work of get_dx_timestamp"""
     if pattern is dwdpattern:
         time = pattern.search(filename).group(3)
@@ -369,7 +369,7 @@ def get_radolan_header_token():
     return head
 
 
-def get_radolan_header_token_pos(header, mode="composite"):
+def get_radolan_header_token_pos(header, *, mode="composite"):
     """Get Token and positions from DWD radolan header
 
     Parameters
@@ -632,7 +632,7 @@ def decode_radolan_runlength_array(binarr, attrs):
     return np.flipud(arr)
 
 
-def read_radolan_binary_array(fid, size, raise_on_error=True):
+def read_radolan_binary_array(fid, size, *, raise_on_error=True):
     """Read binary data from file given by filehandle
 
     Parameters
@@ -727,7 +727,7 @@ def _fix_radolan_truncated_buffer(data, size, dtype):
     return data
 
 
-def read_radolan_composite(f, missing=-9999, loaddata=True, fillmissing=False):
+def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False):
     """Read quantitative radar composite format of the German Weather Service
 
     The quantitative composite format of the DWD (German Weather Service) was
@@ -973,7 +973,7 @@ class _radolan_file:
 
     """
 
-    def __init__(self, filename, fillmissing=False, copy=False, ancillary=False):
+    def __init__(self, filename, *, fillmissing=False, copy=False, ancillary=False):
         if hasattr(filename, "seek"):
             if hasattr(filename, "name"):
                 self.filename = filename.name
@@ -1154,12 +1154,12 @@ class _radolan_file:
             )
 
         if attrs.get("formatversion", 3) >= 5:
-            proj = projection.create_osr("dwd-radolan-wgs84")
+            crs = projection.create_osr("dwd-radolan-wgs84")
         else:
-            proj = projection.create_osr("dwd-radolan-sphere")
+            crs = projection.create_osr("dwd-radolan-sphere")
 
         xlocs, ylocs = rect.get_radolan_coordinates(
-            self.dimensions["y"], self.dimensions["x"], proj=proj, mode="center"
+            self.dimensions["y"], self.dimensions["x"], crs=crs, mode="center"
         )
         xattrs = {
             "units": "m",
