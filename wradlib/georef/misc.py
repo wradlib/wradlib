@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -13,13 +13,20 @@ Miscellaneous
 
    {}
 """
-__all__ = ["bin_altitude", "bin_distance", "site_distance"]
+__all__ = ["bin_altitude", "bin_distance", "site_distance", "GeorefMiscMethods"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+from functools import singledispatch
+
 import numpy as np
+from xarray import DataArray, Dataset, apply_ufunc
+from xradar.model import get_altitude_attrs, get_range_attrs
+
+from wradlib import util
 
 
-def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
+@singledispatch
+def bin_altitude(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
     """Calculates the height of a radar bin taking the refractivity of the \
     atmosphere into account.
 
@@ -38,6 +45,9 @@ def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
         at horizontal and +90° pointing vertically upwards from the radar
     sitealt : float
         Altitude in [m] a.s.l. of the referencing radar site
+
+    Keyword Arguments
+    -----------------
     re : float
         earth's radius [m]
     ke : float
@@ -57,7 +67,45 @@ def bin_altitude(r, theta, sitealt, re, ke=4.0 / 3.0):
     return np.sqrt(r**2 + sr**2 + 2 * r * sr * np.sin(np.radians(theta))) - reff
 
 
-def bin_distance(r, theta, sitealt, re, ke=4.0 / 3.0):
+@bin_altitude.register(Dataset)
+@bin_altitude.register(DataArray)
+def _bin_altitude_xarray(obj, **kwargs):
+    """Compute the bin altitude.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray` | :py:class:`xarray:xarray.Dataset`
+        DataArray
+
+    Returns
+    ------
+    z : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    # Todo: check if this works for elevation too
+    dim0 = obj.wrl.util.dim0()
+    out = apply_ufunc(
+        bin_altitude,
+        obj.range.expand_dims(dim={"azimuth": len(obj.azimuth)}).assign_coords(
+            azimuth=obj.azimuth
+        ),
+        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
+            range=obj.range
+        ),
+        obj.altitude.values,
+        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = get_altitude_attrs()
+    out.name = "bin_altitude"
+    return out
+
+
+@singledispatch
+def bin_distance(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
     """Calculates great circle distance from radar site to radar bin over \
     spherical earth, taking the refractivity of the atmosphere into account.
 
@@ -96,7 +144,45 @@ def bin_distance(r, theta, sitealt, re, ke=4.0 / 3.0):
     return reff * np.arctan(r * np.cos(theta) / (r * np.sin(theta) + sr))
 
 
-def site_distance(r, theta, binalt, re=None, ke=4.0 / 3.0):
+@bin_distance.register(Dataset)
+@bin_distance.register(DataArray)
+def _bin_distance_xarray(obj, **kwargs):
+    """Compute the bin distance.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray` | :py:class:`xarray:xarray.Dataset`
+        DataArray or Dataset
+
+    Returns
+    ------
+    bin_distance : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    # Todo: check if this works for elevation too
+    dim0 = obj.wrl.util.dim0()
+    out = apply_ufunc(
+        bin_distance,
+        obj.range.expand_dims(dim={"azimuth": len(obj.azimuth)}).assign_coords(
+            azimuth=obj.azimuth
+        ),
+        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
+            range=obj.range
+        ),
+        obj.altitude.values,
+        input_core_dims=[[dim0, "range"], [dim0, "range"], [None], [None]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = get_range_attrs()
+    out.name = "bin_distance"
+    return out
+
+
+@singledispatch
+def site_distance(r, theta, binalt, *, re=6371000, ke=4.0 / 3.0):
     """Calculates great circle distance from bin at certain altitude to the \
     radar site over spherical earth, taking the refractivity of the \
     atmosphere into account.
@@ -120,12 +206,15 @@ def site_distance(r, theta, binalt, re=None, ke=4.0 / 3.0):
         at horizontal and +90° pointing vertically upwards from the radar
     binalt : :class:`numpy:numpy.ndarray`
         site altitude [m] amsl. same shape as r.
+
+    Keyword Arguments
+    -----------------
     re : float
         earth's radius [m]
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
+        dependend. The default of 4/3 is a good approximation for most
         weather radar wavelengths
 
     Returns
@@ -135,3 +224,70 @@ def site_distance(r, theta, binalt, re=None, ke=4.0 / 3.0):
     """
     reff = ke * re
     return reff * np.arcsin(r * np.cos(np.radians(theta)) / (reff + binalt))
+
+
+@site_distance.register(Dataset)
+@site_distance.register(DataArray)
+def _site_distance_xarray(obj, **kwargs):
+    """Compute the bin site distance.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray` | :py:class:`xarray:xarray.Dataset`
+        DataArray or Dataset
+
+    Returns
+    ------
+    z : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    # Todo: check if this works for elevation too
+    binalt = bin_altitude(obj)
+    out = apply_ufunc(
+        site_distance,
+        binalt.range.expand_dims(dim={"azimuth": len(binalt.azimuth)}).assign_coords(
+            azimuth=binalt.azimuth
+        ),
+        binalt.elevation.expand_dims(
+            dim={"range": len(binalt.range)}, axis=-1
+        ).assign_coords(range=binalt.range),
+        binalt,
+        input_core_dims=[
+            [dim0, "range"],
+            [dim0, "range"],
+            [dim0, "range"],
+        ],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = get_range_attrs()
+    out.name = "site_distance"
+    return out
+
+
+class GeorefMiscMethods:
+    """wradlib xarray SubAccessor methods for Georef Misc Methods."""
+
+    @util.docstring(_bin_altitude_xarray)
+    def bin_altitude(self, *args, **kwargs):
+        if not isinstance(self, GeorefMiscMethods):
+            return bin_altitude(self, *args, **kwargs)
+        else:
+            return bin_altitude(self._obj, *args, **kwargs)
+
+    @util.docstring(_bin_distance_xarray)
+    def bin_distance(self, *args, **kwargs):
+        if not isinstance(self, GeorefMiscMethods):
+            return bin_distance(self, *args, **kwargs)
+        else:
+            return bin_distance(self._obj, *args, **kwargs)
+
+    @util.docstring(_site_distance_xarray)
+    def site_distance(self, *args, **kwargs):
+        if not isinstance(self, GeorefMiscMethods):
+            return site_distance(self, *args, **kwargs)
+        else:
+            return site_distance(self._obj, *args, **kwargs)

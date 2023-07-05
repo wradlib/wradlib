@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2021, wradlib developers.
+# Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -79,7 +79,7 @@ def get_vector_points(geom):
         )
 
 
-def transform_geometry(geom, dest_srs, **kwargs):
+def transform_geometry(geom, trg_crs, **kwargs):
     """Perform geotransformation to given destination SpatialReferenceSystem
 
     It transforms coordinates to a given destination osr spatial reference
@@ -88,12 +88,12 @@ def transform_geometry(geom, dest_srs, **kwargs):
     Parameters
     ----------
     geom : :py:class:`gdal:osgeo.ogr.Geometry`
-    dest_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Projection
 
     Keyword Arguments
     -----------------
-    source_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         Source Projection
 
     Returns
@@ -102,21 +102,21 @@ def transform_geometry(geom, dest_srs, **kwargs):
         Transformed Geometry
     """
     gsrs = geom.GetSpatialReference()
-    srs = kwargs.get("source_srs", gsrs)
+    crs = kwargs.get("src_crs", gsrs)
 
-    # srs is None assume wgs84 lonlat, but warn too
-    if srs is None:
-        srs = projection.get_default_projection()
+    # crs is None assume wgs84 lonlat, but warn too
+    if crs is None:
+        crs = projection.get_default_projection()
         warnings.warn("geometry without spatial reference - assuming wgs84")
 
     # transform if not the same spatial reference system
-    if not srs.IsSame(dest_srs):
+    if not crs.IsSame(trg_crs):
         if gsrs is None:
-            geom.AssignSpatialReference(srs)
+            geom.AssignSpatialReference(crs)
             gsrs = geom.GetSpatialReference()
-        dest_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+        trg_crs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         gsrs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
-        geom.TransformTo(dest_srs)
+        geom.TransformTo(trg_crs)
 
     return geom
 
@@ -126,7 +126,7 @@ def get_vector_coordinates(layer, **kwargs):
     vector coordinate points into nested ndarray
 
     It transforms coordinates to a given destination osr spatial reference if
-    dest_srs is given and a geotransform is necessary.
+    trg_crs is given and a geotransform is necessary.
 
     Parameters
     ----------
@@ -134,9 +134,9 @@ def get_vector_coordinates(layer, **kwargs):
 
     Keyword Arguments
     -----------------
-    source_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         Source Projection
-    dest_srs: :py:class:`gdal:osgeo.osr.SpatialReference`
+    trg_crs: :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Projection
     key : str
         attribute key to extract from layer feature
@@ -152,14 +152,14 @@ def get_vector_coordinates(layer, **kwargs):
 
     shp = []
 
-    source_srs = kwargs.get("source_srs", layer.GetSpatialRef())
-    if source_srs is None:
+    src_crs = kwargs.get("src_crs", layer.GetSpatialRef())
+    if src_crs is None:
         raise ValueError(
             "Spatial reference missing from source layer. "
             "Please provide a fitting spatial reference object"
         )
 
-    dest_srs = kwargs.get("dest_srs", None)
+    trg_crs = kwargs.get("trg_crs", None)
     key = kwargs.get("key", None)
     if key:
         attrs = []
@@ -172,8 +172,8 @@ def get_vector_coordinates(layer, **kwargs):
             if key:
                 attrs.append(feature[key])
             geom = feature.GetGeometryRef()
-            if dest_srs:
-                transform_geometry(geom, dest_srs, source_srs=source_srs)
+            if trg_crs:
+                transform_geometry(geom, trg_crs, src_crs=src_crs)
             # get list of xy-coordinates
             reslist = list(get_vector_points(geom))
             shp.append(np.squeeze(np.array(reslist, dtype=object)))
@@ -183,7 +183,7 @@ def get_vector_coordinates(layer, **kwargs):
     return shp, attrs
 
 
-def ogr_reproject_layer(src_lyr, dst_lyr, dst_srs, src_srs=None):
+def ogr_reproject_layer(src_lyr, dst_lyr, trg_crs, *, src_crs=None):
     """Reproject src_lyr to dst_lyr.
 
     Creates one OGR.Layer with given name in given gdal.Dataset object
@@ -195,19 +195,19 @@ def ogr_reproject_layer(src_lyr, dst_lyr, dst_srs, src_srs=None):
         OGRLayer source layer
     dst_lyr : :py:class:`gdal:osgeo.ogr.Layer`
         OGRLayer destination layer
-    dst_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Projection Target SRS
-    src_srs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Projection Source SRS
+    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        Projection Target crs
+    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        Projection Source crs
 
     Returns
     -------
     dst_lyr : :py:class:`gdal:osgeo.ogr.Layer`
         OGRLayer destination layer
     """
-    if src_srs is None:
-        src_srs = src_lyr.GetSpatialRef()
-        if src_srs is None:
+    if src_crs is None:
+        src_crs = src_lyr.GetSpatialRef()
+        if src_crs is None:
             raise ValueError(
                 "Spatial reference missing from source layer. "
                 "Please provide a fitting spatial reference object"
@@ -225,7 +225,7 @@ def ogr_reproject_layer(src_lyr, dst_lyr, dst_srs, src_srs=None):
         # get the input geometry
         geom = src_feature.GetGeometryRef()
         # reproject the geometry
-        geom = transform_geometry(geom, source_srs=src_srs, dest_srs=dst_srs)
+        geom = transform_geometry(geom, src_crs=src_crs, trg_crs=trg_crs)
         # create a new feature
         dst_feature = ogr.Feature(dst_lyr_defn)
         # set the geometry and attribute
@@ -241,7 +241,7 @@ def ogr_reproject_layer(src_lyr, dst_lyr, dst_srs, src_srs=None):
     return dst_lyr
 
 
-def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
+def ogr_create_layer(ds, name, *, crs=None, geom_type=None, fields=None):
     """Creates OGR.Layer objects in gdal.Dataset object.
 
     Creates one OGR.Layer with given name in given gdal.Dataset object
@@ -253,7 +253,7 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
         object
     name : str
         OGRLayer name
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         object
     geom_type : :py:class:`gdal:osgeo.ogr.GeometryType`
         (eg. ogr.wkbPolygon)
@@ -269,7 +269,7 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
     if geom_type is None:
         raise TypeError("geometry_type needed")
 
-    lyr = ds.CreateLayer(name, srs=srs, geom_type=geom_type)
+    lyr = ds.CreateLayer(name, srs=crs, geom_type=geom_type)
     if fields is not None:
         for fname, fvalue in fields:
             lyr.CreateField(ogr.FieldDefn(fname, fvalue))
@@ -277,7 +277,7 @@ def ogr_create_layer(ds, name, srs=None, geom_type=None, fields=None):
     return lyr
 
 
-def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
+def ogr_copy_layer(src_ds, index, dst_ds, *, reset=True):
     """Copy OGR.Layer object.
 
     Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
@@ -303,7 +303,7 @@ def ogr_copy_layer(src_ds, index, dst_ds, reset=True):
     dst_ds.CopyLayer(src_lyr, src_lyr.GetName())
 
 
-def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
+def ogr_copy_layer_by_name(src_ds, name, dst_ds, *, reset=True):
     """Copy OGR.Layer object.
 
     Copy OGR.Layer object from src_ds gdal.Dataset to dst_ds gdal.Dataset
@@ -331,7 +331,7 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, reset=True):
     dst_ds.CopyLayer(src_lyr, src_lyr.GetName())
 
 
-def ogr_add_feature(ds, src, name=None):
+def ogr_add_feature(ds, src, *, name=None):
     """Creates OGR.Feature objects in OGR.Layer object.
 
     OGR.Features are built from numpy src points or polygons.
