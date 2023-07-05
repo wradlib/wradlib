@@ -189,6 +189,7 @@ class AdjustBase(ipol.IpolBase):
         self,
         obs_coords,
         raw_coords,
+        *,
         nnear_raws=9,
         stat="median",
         mingages=5,
@@ -276,7 +277,7 @@ class AdjustBase(ipol.IpolBase):
         else:
             return self.ip
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+    def __call__(self, obs, raw, *, targets=None, rawatobs=None, ix=None):
         """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Parameters
@@ -473,7 +474,7 @@ class AdjustMultiply(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+    def __call__(self, obs, raw, *, targets=None, rawatobs=None, ix=None):
         """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
@@ -558,7 +559,7 @@ class AdjustMixed(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+    def __call__(self, obs, raw, *, targets=None, rawatobs=None, ix=None):
         """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
@@ -609,7 +610,7 @@ class AdjustMFB(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+    def __call__(self, obs, raw, *, targets=None, rawatobs=None, ix=None):
         """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
@@ -688,7 +689,7 @@ class AdjustNone(AdjustBase):
 
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+    def __call__(self, obs, raw, *, targets=None, rawatobs=None, ix=None):
         """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
@@ -738,7 +739,7 @@ class GageOnly(AdjustBase):
         array of adjusted radar values
     """
 
-    def __call__(self, obs, raw, targets=None, rawatobs=None, ix=None):
+    def __call__(self, obs, raw, *, targets=None, rawatobs=None, ix=None):
         """Returns an array of ``raw`` values that are adjusted by ``obs``.
 
         Calling an adjustment object works the same for all adjustment classes.
@@ -781,7 +782,7 @@ class RawAtObs:
 
     """
 
-    def __init__(self, obs_coords, raw_coords, nnear=9, stat="median"):
+    def __init__(self, obs_coords, raw_coords, *, nnear=9, stat="median"):
         self.statfunc = _get_statfunc(stat)
         self.raw_ix = _get_neighbours_ix(obs_coords, raw_coords, nnear)
 
@@ -857,7 +858,7 @@ def _get_statfunc(funcname):
     return newfunc
 
 
-def best(x, y):
+def best(x, y, /):
     """Find the values of y which corresponds best to x
 
     If x is an array, the comparison is carried out for each element of x
