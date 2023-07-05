@@ -284,7 +284,7 @@ def read_gamic_scan(scan, scan_type, wanted_moments):
     return data, sattrs
 
 
-def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
+def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
     """Data reader for hdf5 files produced by the commercial \
     GAMIC Enigma V3 MURAN software
 
@@ -382,14 +382,16 @@ def read_gamic_hdf5(filename, wanted_elevations=None, wanted_moments=None):
             vattrs["Longitude"] = f["where"].attrs.get("lon")
             vattrs["Height"] = f["where"].attrs.get("height")
             # check whether its useful to implement that feature
-            # vattrs['sitecoords'] = (vattrs['Longitude'], vattrs['Latitude'],
+            # vattrs['site'] = (vattrs['Longitude'], vattrs['Latitude'],
             #                         vattrs['Height'])
             attrs["VOL"] = vattrs
 
     return data, attrs
 
 
-def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="gzip"):
+def to_hdf5(
+    fpath, data, *, mode="w", metadata=None, dataset="data", compression="gzip"
+):
     """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
 
     This is more efficient than pickle, cPickle or numpy.save. The data is
@@ -419,7 +421,7 @@ def to_hdf5(fpath, data, mode="w", metadata=None, dataset="data", compression="g
                 dset.attrs[key] = metadata[key]
 
 
-def from_hdf5(fpath, dataset="data"):
+def from_hdf5(fpath, *, dataset="data"):
     """Loading data from hdf5 files that was stored by \
     :func:`~wradlib.io.hdf.to_hdf5`
 
@@ -445,7 +447,7 @@ def from_hdf5(fpath, dataset="data"):
     return data, metadata
 
 
-def read_gpm(filename, bbox=None):
+def read_gpm(filename, *, bbox=None):
     """Reads GPM files for matching with GR
 
     Parameters
@@ -593,7 +595,7 @@ def read_gpm(filename, bbox=None):
     return gpm_data
 
 
-def _get_gpm_group(filename, group, variables=None):
+def _get_gpm_group(filename, group, *, variables=None):
     """Return group as xarrax.Dataset from GPM file."""
     ds = xr.open_dataset(
         filename,
@@ -684,7 +686,7 @@ def open_gpm_dataset(filename, group):
     return ds
 
 
-def read_trmm(filename1, filename2, bbox=None):
+def read_trmm(filename1, filename2, *, bbox=None):
     """Reads TRMM files for matching with GR
 
     Parameters

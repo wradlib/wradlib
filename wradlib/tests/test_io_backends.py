@@ -8,11 +8,7 @@ import xarray as xr
 
 from wradlib import io
 
-from . import (
-    get_wradlib_data_file,
-    requires_data,
-    requires_xarray_backend_api,
-)
+from . import get_wradlib_data_file, requires_data, requires_xarray_backend_api
 
 
 @requires_data

@@ -38,7 +38,7 @@ gdal = import_optional("osgeo.gdal")
 isWindows = os.name == "nt"
 
 
-def open_vector(filename, driver=None, layer=0):
+def open_vector(filename, *, driver=None, layer=0):
     """Open vector file, return gdal.Dataset and OGR.Layer
 
         .. warning:: dataset and layer have to live in the same context,
@@ -69,7 +69,7 @@ def open_vector(filename, driver=None, layer=0):
     return dataset, layer
 
 
-def open_raster(filename, driver=None):
+def open_raster(filename, *, driver=None):
     """Open raster file, return gdal.Dataset
 
     Parameters
@@ -112,22 +112,22 @@ def read_safnwc(filename):
     ds = gdal.GetDriverByName("MEM").CreateCopy("out", ds1, 0)
 
     try:
-        proj = osr.SpatialReference()
-        proj.ImportFromProj4(ds.GetMetadata()["PROJECTION"])
+        crs = osr.SpatialReference()
+        crs.ImportFromProj4(ds.GetMetadata()["PROJECTION"])
     except KeyError:
         raise KeyError("WRADLIB: Projection is missing for satellite file {filename}")
 
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]
     geotransform[3] = root.GetMetadata()["YGEO_UP_LEFT"]
-    ds.SetProjection(proj.ExportToWkt())
+    ds.SetProjection(crs.ExportToWkt())
     ds.SetGeoTransform([float(x) for x in geotransform])
 
     return ds
 
 
 def gdal_create_dataset(
-    drv, name, cols=0, rows=0, bands=0, gdal_type=None, remove=False
+    drv, name, cols=0, rows=0, bands=0, *, gdal_type=None, remove=False
 ):
     """Creates GDAL.DataSet object.
 
@@ -171,7 +171,7 @@ def gdal_create_dataset(
     return ds
 
 
-def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
+def write_raster_dataset(fpath, dataset, *, driver="GTiff", options=None, remove=False):
     """Write raster dataset to file format
 
     Parameters
@@ -180,8 +180,11 @@ def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
         A file path - should have file extension corresponding to format.
     dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         gdal.Dataset  gdal raster dataset
-    rformat : str
-        gdal raster format string
+
+    Keyword Arguments
+    -----------------
+    driver : str
+        gdal raster format driver string
     options : list
         List of option strings for the corresponding format.
     remove : bool
@@ -201,13 +204,13 @@ def write_raster_dataset(fpath, dataset, rformat, options=None, remove=False):
     if options is None:
         options = []
 
-    driver = gdal.GetDriverByName(rformat)
+    driver = gdal.GetDriverByName(driver)
     metadata = driver.GetMetadata()
 
     # check driver capability
     if not ("DCAP_CREATECOPY" in metadata and metadata["DCAP_CREATECOPY"] == "YES"):
         raise TypeError(
-            f"WRADLIB: Raster Driver {rformat} doesn't support CreateCopy() method."
+            f"WRADLIB: Raster Driver {driver} doesn't support CreateCopy() method."
         )
 
     if remove:
@@ -229,8 +232,8 @@ class VectorSource:
     data : sequence or str
         sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         Vector File (GDAL/OGR)  filename containing source points/polygons
-    srs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        SRS describing projection source data should be projected to
+    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        GDAL OSR SRS describing target CRS the source data should be projected to
 
     Keyword Arguments
     -----------------
@@ -241,8 +244,8 @@ class VectorSource:
     mode : str
         Return type of class access functions/properties.
         Can be either of "numpy", "geo" and "ogr", defaults to "numpy".
-    projection_source : :py:class:`gdal:osgeo.osr.SpatialReference`
-        SRS describing projection source in which data is provided in.
+    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        GDAL OGR SRS describing projection source in which data is provided in.
 
     Warning
     -------
@@ -254,12 +257,12 @@ class VectorSource:
     See :ref:`/notebooks/fileio/wradlib_vector_data.ipynb`.
     """
 
-    def __init__(self, data=None, srs=None, name="layer", source=0, **kwargs):
-        self._srs = srs
+    def __init__(self, data=None, trg_crs=None, name="layer", source=0, **kwargs):
+        self._trg_crs = trg_crs
         self._name = name
         self._geo = None
         self._mode = kwargs.get("mode", "numpy")
-        self._src_srs = kwargs.get("projection_source", None)
+        self._src_crs = kwargs.get("src_crs", None)
         if data is not None:
             if isinstance(data, (np.ndarray, list)):
                 self._ds = self._check_src(data)
@@ -368,7 +371,7 @@ class VectorSource:
             self._geo = geopandas.read_file(self.ds.GetDescription())
         return self._geo
 
-    def _get_data(self, mode=None):
+    def _get_data(self, *, mode=None):
         """Returns DataSource geometries
 
         Keyword Arguments
@@ -390,7 +393,7 @@ class VectorSource:
                 sources.append(poly)
         return np.array(sources, dtype=object)
 
-    def get_data_by_idx(self, idx, mode=None):
+    def get_data_by_idx(self, idx, *, mode=None):
         """Returns DataSource geometries from given index
 
         Parameters
@@ -503,10 +506,8 @@ class VectorSource:
             "ESRI Shapefile", os.path.join("/vsimem", tmpfile), gdal_type=gdal.OF_VECTOR
         )
         src = np.array(src)
-        if self._src_srs is not None:
-            src = georef.reproject(
-                src, projection_source=self._src_srs, projection_target=self._srs
-            )
+        if self._src_crs and self._src_crs:
+            src = georef.reproject(src, src_crs=self._src_crs, trg_crs=self._trg_crs)
         # create memory datasource, layer and create features
         if src.ndim == 2:
             geom_type = ogr.wkbPoint
@@ -515,13 +516,13 @@ class VectorSource:
             geom_type = ogr.wkbPolygon
         fields = [("index", ogr.OFTInteger)]
         georef.vector.ogr_create_layer(
-            ogr_src, self._name, srs=self._srs, geom_type=geom_type, fields=fields
+            ogr_src, self._name, crs=self._trg_crs, geom_type=geom_type, fields=fields
         )
         georef.vector.ogr_add_feature(ogr_src, src, name=self._name)
 
         return ogr_src
 
-    def dump_vector(self, filename, driver="ESRI Shapefile", remove=True):
+    def dump_vector(self, filename, *, driver="ESRI Shapefile", remove=True):
         """Output layer to OGR Vector File
 
         Parameters
@@ -544,7 +545,7 @@ class VectorSource:
         # flush everything
         del ds_out
 
-    def load_vector(self, filename, source=0, driver="ESRI Shapefile"):
+    def load_vector(self, filename, *, source=0, driver="ESRI Shapefile"):
         """Read Layer from OGR Vector File
 
         Parameters
@@ -567,20 +568,20 @@ class VectorSource:
         ds_in, tmp_lyr = open_vector(filename, driver=driver, layer=source)
 
         # get spatial reference object
-        srs = tmp_lyr.GetSpatialRef()
+        crs = tmp_lyr.GetSpatialRef()
         # fall back to given projection
-        if srs is None:
-            srs = self._src_srs
+        if crs is None:
+            crs = self._src_crs
 
         # raise error as we can't do anything about it
-        if self._srs is None and srs is None:
+        if self._trg_crs is None and crs is None:
             raise ValueError(
                 f"Spatial reference missing from source file {filename}. "
                 f"Please provide a fitting spatial reference object"
             )
 
         # this will be combined with the above the future to raise unconditionally
-        if srs is None:
+        if crs is None:
             warnings.warn(
                 f"Spatial reference missing from source file {filename}. "
                 f"This will raise an error from wradlib version 2.0",
@@ -588,24 +589,31 @@ class VectorSource:
             )
 
         # reproject layer if necessary
-        if self._srs is not None and srs is not None and srs != self._srs:
+        if self._trg_crs is not None and crs is not None and crs != self._trg_crs:
             ogr_src_lyr = self.ds.CreateLayer(
-                self._name, self._srs, geom_type=ogr.wkbPolygon
+                self._name, self._trg_crs, geom_type=ogr.wkbPolygon
             )
             georef.vector.ogr_reproject_layer(
-                tmp_lyr, ogr_src_lyr, self._srs, src_srs=srs
+                tmp_lyr, ogr_src_lyr, self._trg_crs, src_crs=crs
             )
         else:
             # copy layer
             ogr_src_lyr = self.ds.CopyLayer(tmp_lyr, self._name)
-            if self._srs is None:
-                self._srs = srs
+            if self._trg_crs is None:
+                self._trg_crs = crs
 
         # flush everything
         del ds_in
 
     def dump_raster(
-        self, filename, driver="GTiff", attr=None, pixel_size=1.0, remove=True, **kwargs
+        self,
+        filename,
+        *,
+        driver="GTiff",
+        attr=None,
+        pixel_size=1.0,
+        remove=True,
+        **kwargs,
     ):
         """Output layer to GDAL Rasterfile
 
@@ -644,10 +652,10 @@ class VectorSource:
         )
 
         ds_out.SetGeoTransform((x_min, pixel_size, 0, y_max, 0, -pixel_size))
-        proj = layer.GetSpatialRef()
-        if proj is None:
-            proj = self._srs
-        ds_out.SetProjection(proj.ExportToWkt())
+        crs = layer.GetSpatialRef()
+        if crs is None:
+            crs = self._trg_crs
+        ds_out.SetProjection(crs.ExportToWkt())
 
         band = ds_out.GetRasterBand(1)
         band.FlushCache()
@@ -670,11 +678,11 @@ class VectorSource:
                 callback=progress,
             )
 
-        write_raster_dataset(filename, ds_out, driver, remove=remove)
+        write_raster_dataset(filename, ds_out, driver=driver, remove=remove)
 
         del ds_out
 
-    def set_attribute(self, name, values, reset_filter=False):
+    def set_attribute(self, name, values, *, reset_filter=False):
         """Add/Set given Attribute with given values
 
         Parameters
@@ -707,7 +715,7 @@ class VectorSource:
         lyr.SyncToDisk()
         self._geo = None
 
-    def get_attributes(self, attrs, filt=None):
+    def get_attributes(self, attrs, *, filt=None):
         """Return attributes
 
         Parameters
@@ -733,7 +741,7 @@ class VectorSource:
                 ret[i].append(ogr_src.GetField(att))
         return ret
 
-    def get_geom_properties(self, props, filt=None):
+    def get_geom_properties(self, props, *, filt=None):
         """Return geometry properties
 
         Parameters
@@ -756,7 +764,7 @@ class VectorSource:
                 ret[i].append(getattr(ogr_src.GetGeometryRef(), prop)())
         return ret
 
-    def get_attrs_and_props(self, attrs=None, props=None, filt=None):
+    def get_attrs_and_props(self, *, attrs=None, props=None, filt=None):
         """Return properties and attributes
 
         Keyword Arguments
