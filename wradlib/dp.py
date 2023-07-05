@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2020, wradlib developers.
+# Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -18,12 +18,12 @@ Please note that the actual application of polarimetric moments is implemented
 in the corresponding wradlib modules, e.g.:
 
     - fuzzy echo classification from polarimetric moments
-      (:func:`wradlib.clutter.classify_echo_fuzzy`)
+      (:func:`wradlib.classify.classify_echo_fuzzy`)
     - attenuation correction (:func:`wradlib.atten.pia_from_kdp`)
     - direct precipitation retrieval from Kdp (:func:`wradlib.trafo.kdp_to_r`)
 
 Establishing a valid :math:`Phi_{{DP}}` profile for :math:`K_{{DP}}` retrieval
-involves despeckling (linear_despeckle), phase unfolding, and iterative
+involves despeckling (:func:`wradlib.util.despeckle`), phase unfolding, and iterative
 retrieval of :math:`Phi_{{DP}}` form :math:`K_{{DP}}`.
 The main workflow and its single steps is based on a publication by
 :cite:`Vulpiani2012`. For convenience, the entire workflow has been
@@ -46,23 +46,30 @@ all input arrays.
    {}
 """
 __all__ = [
-    "process_raw_phidp_vulpiani",
-    "kdp_from_phidp",
-    "unfold_phi_vulpiani",
-    "unfold_phi",
-    "texture",
     "depolarization",
+    "kdp_from_phidp",
+    "process_raw_phidp_vulpiani",
+    "texture",
+    "unfold_phi",
+    "unfold_phi_naive",
+    "unfold_phi_vulpiani",
+    "DpMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+from functools import singledispatch
+
 import numpy as np
+import xarray as xr
 from scipy import integrate, interpolate
+from xradar.model import sweep_vars_mapping
 
 from wradlib import trafo, util
 
 
+@singledispatch
 def process_raw_phidp_vulpiani(
-    phidp, dr, ndespeckle=5, winlen=7, niter=2, copy=False, **kwargs
+    obj, dr, *, ndespeckle=5, winlen=7, niter=2, copy=False, **kwargs
 ):
     """Establish consistent :math:`Phi_{DP}` profiles from raw data.
 
@@ -80,10 +87,13 @@ def process_raw_phidp_vulpiani(
 
     Parameters
     ----------
-    phidp : :class:`numpy:numpy.ndarray`
+    obj : :class:`numpy:numpy.ndarray`
         array of shape (n azimuth angles, n range gates)
     dr : float
         gate length in km
+
+    Keyword Arguments
+    -----------------
     ndespeckle : int
         ``ndespeckle`` parameter of :func:`~wradlib.util.despeckle`
     winlen : int
@@ -93,9 +103,6 @@ def process_raw_phidp_vulpiani(
         :math:`K_{DP}` and vice versa
     copy : bool
         if True, the original :math:`Phi_{DP}` array will remain unchanged
-
-    Keyword Arguments
-    -----------------
     th1 : float
         Threshold th1 from above cited paper.
     th2 : float
@@ -119,7 +126,7 @@ def process_raw_phidp_vulpiani(
 
     """
     if copy:
-        phidp = phidp.copy()
+        obj = obj.copy()
 
     # get thresholds
     th1 = kwargs.pop("th1", -2)
@@ -129,7 +136,7 @@ def process_raw_phidp_vulpiani(
     method = kwargs.pop("method", None)
 
     # despeckle
-    phidp = util.despeckle(phidp, ndespeckle)
+    phidp = util.despeckle(obj, n=ndespeckle)
 
     # kdp retrieval first guess
     # use finite difference scheme as written in the cited paper
@@ -173,7 +180,57 @@ def process_raw_phidp_vulpiani(
     return phidp, kdp
 
 
-def unfold_phi_vulpiani(phidp, kdp, th=-20, winlen=7):
+@process_raw_phidp_vulpiani.register(xr.DataArray)
+def _process_raw_phidp_vulpiani_xarray(obj, *, winlen=7, **kwargs):
+    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
+
+    Parameter
+    ---------
+    obj : :py:class:`xarray:xarray.DataArray`
+        DataArray containing differential phase
+    winlen : int
+        window length
+
+    Keyword Arguments
+    -----------------
+    method : str
+        Defaults to 'lanczos_conv'. Can also take one of 'lanczos_dot', 'lstsq',
+        'cov', 'cov_nan', 'matrix_inv'.
+    skipna : bool
+        Defaults to True. Local Linear regression removing NaN values using
+        valid neighbors > min_periods
+    min_periods : int
+        Minimum number of valid values in moving window for linear regression.
+        Defaults to winlen // 2 + 1.
+
+    Returns
+    -------
+    phidp : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    kdp : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    dr = obj.range.diff("range").median("range").values / 1000.0
+    phidp, kdp = xr.apply_ufunc(
+        process_raw_phidp_vulpiani,
+        obj,
+        dr,
+        input_core_dims=[[dim0, "range"], [None]],
+        output_core_dims=[[dim0, "range"], [dim0, "range"]],
+        dask="parallelized",
+        kwargs=dict(winlen=winlen, **kwargs),
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    phidp.attrs = sweep_vars_mapping["PHIDP"]
+    phidp.name = phidp.attrs["short_name"]
+    kdp.attrs = sweep_vars_mapping["KDP"]
+    kdp.name = kdp.attrs["short_name"]
+    return phidp, kdp
+
+
+@singledispatch
+def unfold_phi_vulpiani(phidp, kdp, *, th=-20, winlen=7):
     """Alternative phase unfolding which completely relies on :math:`K_{DP}`.
 
     This unfolding should be used in oder to iteratively reconstruct
@@ -191,12 +248,20 @@ def unfold_phi_vulpiani(phidp, kdp, th=-20, winlen=7):
         array of floats
     kdp : :class:`numpy:numpy.ndarray`
         array of floats
+
+    Keyword Arguments
+    -----------------
     th : float
         Threshold th3 in the above citation.
     winlen : int
         Length of window to fix possible phase over-correction. Normally
         should take the value of the length of the processing window in
         the above citation.
+
+    Returns
+    -------
+    phidp : :class:`numpy:numpy.ndarray`
+        array of floats
     """
     # unfold phidp
     shape = phidp.shape
@@ -225,18 +290,80 @@ def unfold_phi_vulpiani(phidp, kdp, th=-20, winlen=7):
     return phidp.reshape(shape)
 
 
-def _fill_sweep(dat, kind="nan_to_num", fill_value=0.0):
+@unfold_phi_vulpiani.register(xr.Dataset)
+def _unfold_phi_vulpiani_xarray(obj, **kwargs):
+    """Alternative phase unfolding which completely relies on :math:`K_{DP}`.
+
+    This unfolding should be used in oder to iteratively reconstruct
+    :math:`Phi_{DP}` and :math:`K_{DP}` (see :cite:`Vulpiani2012`).
+
+    Note
+    ----
+    :math:`Phi_{DP}` is assumed to be in the interval [-180, 180] degree.
+    From experience the window for calculation of :math:`K_{DP}` should not
+    be too large to catch possible phase wraps.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.Dataset`
+        Dataset
+
+    Keyword Arguments
+    -----------------
+    phidp : str
+        name of PhiDP
+    kdp : str
+        name of KDP
+    th : float
+        Threshold th3 in the above citation.
+    winlen : int
+        Length of window to fix possible phase over-correction. Normally
+        should take the value of the length of the processing window in
+        the above citation.
+
+    Returns
+    -------
+    out : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    phidp = kwargs.pop("phidp", None)
+    kdp = kwargs.pop("kdp", None)
+    if phidp is None or kdp is None:
+        raise (TypeError, "Both `phidp` and `kdp` kwargs need to be given.")
+    if isinstance(phidp, str):
+        phidp = obj[phidp]
+    if isinstance(kdp, str):
+        kdp = obj[kdp]
+    assert isinstance(phidp, xr.DataArray)
+    assert isinstance(kdp, xr.DataArray)
+    out = xr.apply_ufunc(
+        unfold_phi_vulpiani,
+        phidp,
+        kdp,
+        input_core_dims=[[dim0, "range"], [dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = sweep_vars_mapping["PHIDP"]
+    out.name = "PHIDP"
+
+
+def _fill_sweep(dat, *, kind="nan_to_num", fill_value=0.0):
     """Fills missing data in a 1D profile.
 
     Parameters
     ----------
     dat : :class:`numpy:numpy.ndarray`
         array of shape (n azimuth angles, n range gates)
+
+    Keyword Arguments
+    -----------------
     kind : str
         Defines how the filling is done.
     fill_value : float
         Fill value in areas of extrapolation.
-
     """
     if kind == "nan_to_num":
         return np.nan_to_num(dat)
@@ -265,8 +392,9 @@ def _fill_sweep(dat, kind="nan_to_num", fill_value=0.0):
     return dat.reshape(shape)
 
 
+@singledispatch
 def kdp_from_phidp(
-    phidp, winlen=7, dr=1.0, method="lanczos_conv", skipna=True, **kwargs
+    phidp, *, winlen=7, dr=1.0, method="lanczos_conv", skipna=True, **kwargs
 ):
     """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
 
@@ -299,6 +427,9 @@ def kdp_from_phidp(
     phidp : :class:`numpy:numpy.ndarray`
         multi-dimensional array, note that the range dimension must be the
         last dimension of the input array.
+
+    Keyword Arguments
+    -----------------
     winlen : int
         Width of the window (as number of range gates)
     dr : float
@@ -309,9 +440,6 @@ def kdp_from_phidp(
     skipna : bool
         Defaults to True. Local Linear regression removing NaN values using
         valid neighbors > min_periods
-
-    Keyword Arguments
-    -----------------
     min_periods : int
         Minimum number of valid values in moving window for linear regression.
         Defaults to winlen // 2 + 1.
@@ -360,7 +488,52 @@ def kdp_from_phidp(
     )
 
 
-def unfold_phi(phidp, rho, width=5, copy=False):
+@kdp_from_phidp.register(xr.DataArray)
+def _kdp_from_phidp_xarray(obj, *, winlen=7, **kwargs):
+    """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
+
+    Parameter
+    ---------
+    obj : :py:class:`xarray:xarray.DataArray`
+        DataArray containing differential phase
+
+    Keyword Arguments
+    -----------------
+    winlen : int
+        window length
+    method : str
+        Defaults to 'lanczos_conv'. Can also take one of 'lanczos_dot', 'lstsq',
+        'cov', 'cov_nan', 'matrix_inv'.
+    skipna : bool
+        Defaults to True. Local Linear regression removing NaN values using
+        valid neighbors > min_periods
+    min_periods : int
+        Minimum number of valid values in moving window for linear regression.
+        Defaults to winlen // 2 + 1.
+
+    Returns
+    -------
+    out : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    dr = obj.range.diff("range").median("range").values / 1000.0
+    out = xr.apply_ufunc(
+        kdp_from_phidp,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=dict(winlen=winlen, dr=dr, **kwargs),
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = sweep_vars_mapping["KDP"]
+    out.name = out.attrs["short_name"]
+    return out
+
+
+@singledispatch
+def unfold_phi(phidp, rho, *, width=5, copy=False):
     """Unfolds differential phase by adjusting values that exceeded maximum \
     ambiguous range.
 
@@ -377,11 +550,20 @@ def unfold_phi(phidp, rho, width=5, copy=False):
         array of shape (...,nr) with nr being the number of range bins
     rho : :class:`numpy:numpy.ndarray`
         array of same shape as ``phidp``
+
+    Keyword Arguments
+    -----------------
     width : int
        Width of the analysis window
     copy : bool
        Leaves original ``phidp`` array unchanged if set to True
        (default: False)
+
+    Returns
+    -------
+    phidp : :class:`numpy:numpy.ndarray`
+        array of shape (..., , n azimuth angles, n range gates) reconstructed
+        :math:`Phi_{DP}`
     """
     # Check whether fast Fortran implementation is available
     speedup = util.import_optional("wradlib.speedup")
@@ -415,7 +597,64 @@ def unfold_phi(phidp, rho, width=5, copy=False):
     return phidp.reshape(shape)
 
 
-def unfold_phi_naive(phidp, rho, width=5, copy=False):
+@unfold_phi.register(xr.Dataset)
+def _unfold_phi_xarray(obj, **kwargs):
+    """Unfolds differential phase by adjusting values that exceeded maximum \
+    ambiguous range.
+
+    Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
+    THE RANGE.
+
+    This is the fast Fortran-based implementation (RECOMMENDED).
+
+    The algorithm is based on the paper of :cite:`Wang2009`.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.Dataset`
+
+    Keyword Arguments
+    -----------------
+    phidp : str
+        name of PhiDP data variable
+    rho : str
+        name of RhoHV data variable
+    width : int
+       Width of the analysis window
+
+    Returns
+    -------
+    out : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    phidp = kwargs.pop("phidp", None)
+    rho = kwargs.pop("rho", None)
+    if phidp is None or rho is None:
+        raise (TypeError, "Both `phidp` and `rho` kwargs need to be given.")
+    if isinstance(phidp, str):
+        phidp = obj[phidp]
+    if isinstance(rho, str):
+        rho = obj[rho]
+    assert isinstance(phidp, xr.DataArray)
+    assert isinstance(rho, xr.DataArray)
+    out = xr.apply_ufunc(
+        unfold_phi,
+        phidp,
+        rho,
+        input_core_dims=[[dim0, "range"], [dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = phidp.attrs
+    out.name = phidp.name
+    return out
+
+
+@singledispatch
+def unfold_phi_naive(phidp, rho, *, width=5, copy=False):
     """Unfolds differential phase by adjusting values that exceeded maximum \
     ambiguous range.
 
@@ -432,12 +671,20 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
         array of shape (...,nr) with nr being the number of range bins
     rho : :class:`numpy:numpy.ndarray`
         array of same shape as ``phidp``
+
+    Keyword Arguments
+    -----------------
     width : int
        Width of the analysis window
     copy : bool
         Leaves original ``phidp`` array unchanged if set to True
         (default: False)
 
+    Returns
+    -------
+    phidp : :class:`numpy:numpy.ndarray`
+        array of shape (..., , n azimuth angles, n range gates) reconstructed
+        :math:`Phi_{DP}`
     """
     shape = phidp.shape
     assert rho.shape == shape, "rho and phidp must have the same shape."
@@ -482,6 +729,62 @@ def unfold_phi_naive(phidp, rho, width=5, copy=False):
     return phidp
 
 
+@unfold_phi_naive.register(xr.Dataset)
+def _unfold_phi_naive_xarray(obj, **kwargs):
+    """Unfolds differential phase by adjusting values that exceeded maximum ambiguous range.
+
+    Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
+    THE RANGE.
+
+    This is the slow Python-based implementation (NOT RECOMMENDED).
+
+    The algorithm is based on the paper of :cite:`Wang2009`.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.Dataset`
+
+    Keyword Arguments
+    -----------------
+    phidp : str
+        name of PhiDP data variable
+    rho : str
+        name of RhoHV data variable
+    width : int
+       Width of the analysis window
+
+    Returns
+    -------
+    out : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    phidp = kwargs.pop("phidp", None)
+    rho = kwargs.pop("rho", None)
+    if phidp is None or rho is None:
+        raise (TypeError, "Both `phidp` and `rho` kwargs need to be given.")
+    if isinstance(phidp, str):
+        phidp = obj[phidp]
+    if isinstance(rho, str):
+        rho = obj[rho]
+    assert isinstance(phidp, xr.DataArray)
+    assert isinstance(rho, xr.DataArray)
+    out = xr.apply_ufunc(
+        unfold_phi_naive,
+        phidp,
+        rho,
+        input_core_dims=[[dim0, "range"], [dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.attrs = phidp.attrs
+    out.name = phidp.name
+    return out
+
+
+@singledispatch
 def texture(data):
     """Compute the texture of data.
 
@@ -496,7 +799,7 @@ def texture(data):
         of range bins)
 
     Returns
-    ------
+    -------
     texture : :class:`numpy:numpy.ndarray`
         array of textures with the same shape as data
 
@@ -533,7 +836,58 @@ def texture(data):
     return rmsd
 
 
-def depolarization(zdr, rho):
+@texture.register(xr.Dataset)
+@texture.register(xr.DataArray)
+def _texture_xarray(obj):
+    """Compute the texture of data.
+
+    Compute the texture of the data by comparing values with a 3x3 neighborhood
+    (based on :cite:`Gourley2007`). NaN values in the original array have
+    NaN textures.
+
+    Parameters
+    ----------
+    obj : :py:class:`xarray:xarray.DataArray`
+        DataArray
+
+    Returns
+    ------
+    texture : :py:class:`xarray:xarray.DataArray`
+        DataArray
+    """
+    dim0 = obj.wrl.util.dim0()
+    if isinstance(obj, xr.Dataset):
+        dims = {dim0, "range"}
+        keep = xr.Dataset(
+            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
+        )
+        obj = xr.Dataset(
+            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims == dims}
+        )
+    out = xr.apply_ufunc(
+        texture,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    if isinstance(obj, xr.DataArray):
+        attrs = obj.attrs
+        standard_name = attrs["standard_name"].split("_")
+        standard_name.append("texture")
+        attrs["standard_name"] = "_".join(standard_name)
+        attrs["long_name"] = "Texture of " + attrs["long_name"]
+        attrs["units"] = "unitless"
+        out.attrs = attrs
+        out.name = obj.name + "_TEXTURE"
+    else:
+        out = xr.merge([out, keep])
+    return out
+
+
+@singledispatch
+def depolarization(zdr: float | np.ndarray, rho):
     """Compute the depolarization ration.
 
     Compute the depolarization ration using differential
@@ -558,6 +912,115 @@ def depolarization(zdr, rho):
     m = 2 * np.asanyarray(rho) * zdr**0.5
 
     return trafo.decibel((1 + zdr - m) / (1 + zdr + m))
+
+
+@depolarization.register(xr.Dataset)
+def _depolarization_xarray(obj: xr.Dataset, **kwargs):
+    """Compute the depolarization ration.
+
+    Compute the depolarization ration using differential
+    reflectivity :math:`Z_{DR}` and crosscorrelation coefficient
+    :math:`Rho_{HV}` of a radar sweep (:cite:`Kilambi2018`,
+    :cite:`Melnikov2013`, :cite:`Ryzhkov2017`).
+
+    Parameter
+    ----------
+    obj : :py:class:`xarray:xarray.Dataset`
+
+    Keyword Arguments
+    -----------------
+    zdr : str
+        name of differential reflectivity
+    rho : str
+        name crosscorrelation coefficient
+
+    Returns
+    ------
+    depolarization : :py:class:`xarray:xarray.DataArray`
+        array of depolarization ratios with the same shape as input data,
+        numpy broadcasting rules apply
+    """
+    dim0 = obj.wrl.util.dim0()
+    zdr = kwargs.pop("zdr", None)
+    rho = kwargs.pop("rho", None)
+    if zdr is None or rho is None:
+        raise (TypeError, "Both `zdr` and `rhp` kwargs need to be given.")
+    if isinstance(zdr, str):
+        zdr = obj[zdr]
+    if isinstance(rho, str):
+        rho = obj[rho]
+    assert isinstance(zdr, xr.DataArray)
+    assert isinstance(rho, xr.DataArray)
+    out = xr.apply_ufunc(
+        depolarization,
+        zdr,
+        rho,
+        input_core_dims=[[dim0, "range"], [dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    attrs = {
+        "standard_name": "depolarization_ratio",
+        "long_name": "Depolarization Ratio",
+        "units": "unitless",
+    }
+    out.attrs = attrs
+    out.name = "DP"
+    return out
+
+
+class DpMethods(util.XarrayMethods):
+    """wradlib xarray SubAccessor methods for DualPol."""
+
+    @util.docstring(_depolarization_xarray)
+    def depolarization(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return depolarization(self, *args, **kwargs)
+        else:
+            return depolarization(self._obj, *args, **kwargs)
+
+    @util.docstring(_kdp_from_phidp_xarray)
+    def kdp_from_phidp(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return kdp_from_phidp(self, *args, **kwargs)
+        else:
+            return kdp_from_phidp(self._obj, *args, **kwargs)
+
+    @util.docstring(_process_raw_phidp_vulpiani_xarray)
+    def process_raw_phidp_vulpiani(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return process_raw_phidp_vulpiani(self, *args, **kwargs)
+        else:
+            return process_raw_phidp_vulpiani(self._obj, *args, **kwargs)
+
+    @util.docstring(_texture_xarray)
+    def texture(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return texture(self, *args, **kwargs)
+        else:
+            return texture(self._obj, *args, **kwargs)
+
+    @util.docstring(_unfold_phi_naive_xarray)
+    def unfold_phi_naive(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return unfold_phi_naive(self, *args, **kwargs)
+        else:
+            return unfold_phi_naive(self._obj, *args, **kwargs)
+
+    @util.docstring(_unfold_phi_xarray)
+    def unfold_phi(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return unfold_phi(self, *args, **kwargs)
+        else:
+            return unfold_phi(self._obj, *args, **kwargs)
+
+    @util.docstring(_unfold_phi_vulpiani_xarray)
+    def unfold_phi_vulpiani(self, *args, **kwargs):
+        if not isinstance(self, DpMethods):
+            return unfold_phi_vulpiani(self, *args, **kwargs)
+        else:
+            return unfold_phi_vulpiani(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
