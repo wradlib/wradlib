@@ -203,7 +203,11 @@ def proj4_to_osr(proj4str):
     """
     proj = osr.SpatialReference()
     proj.ImportFromProj4(proj4str)
-    proj.AutoIdentifyEPSG()
+    # just pass on RuntimeError, covers for GDAL >= 3.7.0
+    try:
+        proj.AutoIdentifyEPSG()
+    except RuntimeError:
+        pass
 
     if proj.Validate() == ogr.OGRERR_CORRUPT_DATA:
         raise ValueError(
