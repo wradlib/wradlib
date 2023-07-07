@@ -38,6 +38,7 @@ class WradlibXarrayAccessor:
         "_obj",
         "_atten",
         "_classify",
+        "_comp",
         "_dp",
         "_georef",
         "_qual",
@@ -71,6 +72,13 @@ class WradlibXarrayAccessor:
         if self._classify is None:
             self._classify = wradlib.classify.ClassifyMethods(self._obj)
         return self._classify
+
+    @property
+    def comp(self):
+        """SubAccessor for :class:`wradlib.comp.CompMethods`."""
+        if self._comp is None:
+            self._comp = wradlib.comp.CompMethods(self._obj)
+        return self._comp
 
     @property
     def dp(self):

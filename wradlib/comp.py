@@ -14,10 +14,15 @@ Combine data from different radar locations on one common set of locations
 
    {}
 """
-__all__ = ["extract_circle", "togrid", "compose_ko", "compose_weighted"]
+__all__ = ["extract_circle", "togrid", "compose_ko", "compose_weighted", "CompMethods"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+from functools import singledispatch
+
 import numpy as np
+from xarray import DataArray, apply_ufunc, broadcast, concat
+
+from wradlib.util import XarrayMethods, docstring
 
 
 def extract_circle(center, radius, coords):
@@ -40,6 +45,7 @@ def extract_circle(center, radius, coords):
     return np.where(((coords - center) ** 2).sum(axis=-1) < radius**2)[0]
 
 
+@singledispatch
 def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     """Interpolate data from a radar location to the composite grid or set of \
     locations
@@ -104,6 +110,49 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     # push subgrid results into the large grid
     compose_grid[ix] = data_on_subgrid
     return compose_grid
+
+
+@togrid.register(DataArray)
+def _togrid_xarray(obj, trg, *args, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+    grid_xy = (
+        concat(broadcast(trg.y, trg.x), "xy")
+        .stack(npoints_cart=("y", "x"))
+        .transpose(..., "xy")
+    )
+    xy = (
+        concat([obj.y, obj.x], "xy")
+        .stack(npoints_pol=(dim0, "range"))
+        .transpose(..., "xy")
+        .reset_coords(drop=True)
+    )
+    obj = obj.stack(npoints_pol=(dim0, "range")).reset_coords(drop=True)
+
+    def wrapper(obj, xy, grid_xy, **kwargs):
+        radius = kwargs.get("radius")
+        center = kwargs.get("center")
+        ipol = kwargs.get("interpol")
+        out = togrid(xy, grid_xy, radius, center, obj, ipol)
+        return out
+
+    out = apply_ufunc(
+        wrapper,
+        obj,
+        xy,
+        grid_xy,
+        input_core_dims=[
+            ["npoints_pol"],
+            ["npoints_pol", "xy"],
+            ["npoints_cart", "xy"],
+        ],
+        output_core_dims=[["npoints_cart"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out = out.unstack("npoints_cart")
+    out.name = "togrid"
+    return out
 
 
 def compose_ko(radargrids, qualitygrids):
@@ -194,6 +243,17 @@ def compose_weighted(radargrids, qualitygrids):
     composite[nanmask] = np.nan
 
     return composite
+
+
+class CompMethods(XarrayMethods):
+    """wradlib xarray SubAccessor methods for Ipol Methods."""
+
+    @docstring(togrid)
+    def togrid(self, *args, **kwargs):
+        if not isinstance(self, CompMethods):
+            return togrid(self, *args, **kwargs)
+        else:
+            return togrid(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
