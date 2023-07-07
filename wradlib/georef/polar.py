@@ -31,7 +31,9 @@ import warnings
 from functools import singledispatch
 
 import numpy as np
+from pyproj import CRS
 from xarray import DataArray, Dataset, apply_ufunc
+from xradar.georeference import add_crs
 
 from wradlib.georef import misc, projection
 from wradlib.util import docstring, has_import, import_optional
@@ -1034,7 +1036,7 @@ def georeference(obj, **kwargs):
     ----------
     obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
     """
-    crs = kwargs.pop("crs", "None")
+    trg_crs = kwargs.pop("crs", "None")
     re = kwargs.pop("re", None)
     ke = kwargs.pop("ke", 4.0 / 3.0)
 
@@ -1052,16 +1054,18 @@ def georeference(obj, **kwargs):
     r, az = np.meshgrid(obj["range"], obj["azimuth"])
 
     # GDAL OSR, convert to this crs
-    if has_import(osr) and isinstance(crs, osr.SpatialReference):
-        xyz = spherical_to_proj(r, az, obj["elevation"], site, crs=crs, re=re, ke=ke)
+    if has_import(osr) and isinstance(trg_crs, osr.SpatialReference):
+        xyz = spherical_to_proj(
+            r, az, obj["elevation"], site, crs=trg_crs, re=re, ke=ke
+        )
     # other crs, convert to aeqd
-    elif crs:
-        xyz, dst_proj = spherical_to_xyz(
+    elif trg_crs:
+        xyz, trg_crs = spherical_to_xyz(
             r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
         )
     # crs, convert to aeqd and add offset
     else:
-        xyz, dst_proj = spherical_to_xyz(
+        xyz, trg_crs = spherical_to_xyz(
             r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
         )
         xyz += np.array(site).T
@@ -1105,6 +1109,9 @@ def georeference(obj, **kwargs):
         bins, rays = np.meshgrid(obj["range"], obj["elevation"], indexing="xy")
     obj.coords["rays"] = ([dim0, "range"], rays)
     obj.coords["bins"] = ([dim0, "range"], bins)
+
+    proj_crs = CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
+    obj = add_crs(obj, crs=proj_crs)
 
     return obj
 
