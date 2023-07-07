@@ -21,15 +21,19 @@ __all__ = [
     "correct_attenuation_constrained",
     "correct_radome_attenuation_empirical",
     "pia_from_kdp",
+    "AttenMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import logging
+from functools import singledispatch
 
 import numpy as np
 from scipy import interpolate, ndimage
+from xarray import DataArray, apply_ufunc
 
 from wradlib import trafo, zr
+from wradlib.util import XarrayMethods, docstring
 
 logger = logging.getLogger("attcorr")
 
@@ -362,6 +366,7 @@ def _interp_atten(pia, invalidbeams):
         pia[i, sub_invalid, -1] = intp(x[pia.shape[1] : 2 * pia.shape[1]][sub_invalid])
 
 
+@singledispatch
 def correct_attenuation_constrained(
     gateset,
     *,
@@ -567,6 +572,22 @@ def correct_attenuation_constrained(
     return pia.reshape(gateset.shape)
 
 
+@correct_attenuation_constrained.register(DataArray)
+def _correct_attenuation_constrained_xarray(obj, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+    out = apply_ufunc(
+        correct_attenuation_constrained,
+        obj,
+        input_core_dims=[[dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.name = "correct_attenuation_constrained"
+    return out
+
+
 def correct_radome_attenuation_empirical(
     gateset, *, frequency=5.64, hydrophobicity=0.165, n_r=2, stat=np.mean
 ):
@@ -665,6 +686,17 @@ def pia_from_kdp(kdp, dr, *, gamma=0.08):
     """
     alpha = gamma * kdp
     return 2 * np.cumsum(alpha, axis=-1) * dr
+
+
+class AttenMethods(XarrayMethods):
+    """wradlib xarray SubAccessor methods for Atten Methods."""
+
+    @docstring(correct_attenuation_constrained)
+    def correct_attenuation_constrained(self, *args, **kwargs):
+        if not isinstance(self, AttenMethods):
+            return correct_attenuation_constrained(self, *args, **kwargs)
+        else:
+            return correct_attenuation_constrained(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
