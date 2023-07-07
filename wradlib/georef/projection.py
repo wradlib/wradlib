@@ -375,22 +375,35 @@ def _reproject_xarray(obj, **kwargs):
     args = []
     if coords is None:
         coords = dict(x="x", y="y", z="z")
-    args.append(obj[coords.get("x")])
-    args.append(obj[coords.get("y")])
+    args.append(obj[coords.get("x")].reset_coords(drop=True))
+    args.append(obj[coords.get("y")].reset_coords(drop=True))
     if "z" in coords:
-        args.append(obj[coords["z"]])
+        args.append(obj[coords["z"]].reset_coords(drop=True))
     input_core_dims = [list(arg.dims) for arg in args]
     output_core_dims = input_core_dims
 
-    if kwargs.get("src_crs", None) is not None:
-        warnings.warn("src_crs kwarg ignored for xarray accessor")
-    if "spatial_ref" in obj:
+    # extract crs from obj
+    if "spatial_ref" in obj.coords:
         proj_crs = xd.georeference.get_crs(obj)
-        osr_crs = wkt_to_osr(proj_crs.to_wkt())
+        obj_crs = wkt_to_osr(proj_crs.to_wkt())
     else:
-        osr_crs = get_default_projection()
-    kwargs.setdefault("src_crs", osr_crs)
-    osr_trg_crs = kwargs.setdefault("trg_crs", get_default_projection())
+        obj_crs = None
+
+    # user overrides?
+    src_crs = kwargs.get("src_crs")
+    if src_crs is None:
+        if obj_crs is None:
+            src_crs = get_default_projection()
+        else:
+            src_crs = obj_crs
+    else:
+        if obj_crs is not None:
+            warnings.warn(
+                "src_crs kwarg is overriding 'spatial_ref'-coordinate'", stacklevel=4
+            )
+
+    kwargs.setdefault("src_crs", src_crs)
+    trg_crs = kwargs.setdefault("trg_crs", get_default_projection())
 
     out = apply_ufunc(
         reproject,
@@ -405,8 +418,9 @@ def _reproject_xarray(obj, **kwargs):
     for c, v in zip(coords, out):
         obj = obj.assign_coords({c: v})
 
-    if "spatial_ref" in obj:
-        proj_crs = pyproj.CRS.from_wkt(osr_trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
+    # set new crs to obj
+    if "spatial_ref" in obj.coords:
+        proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
         obj = xd.georeference.add_crs(obj, crs=proj_crs)
 
     return obj
