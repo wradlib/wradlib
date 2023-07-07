@@ -41,6 +41,7 @@ class WradlibXarrayAccessor:
         "_comp",
         "_dp",
         "_georef",
+        "_ipol",
         "_qual",
         "_trafo",
         "_util",
@@ -93,6 +94,13 @@ class WradlibXarrayAccessor:
         if self._georef is None:
             self._georef = wradlib.georef.GeorefMethods(self._obj)
         return self._georef
+
+    @property
+    def ipol(self):
+        """SubAccessor for :class:`wradlib.ipol.IpolMethods`."""
+        if self._ipol is None:
+            self._ipol = wradlib.ipol.IpolMethods(self._obj)
+        return self._ipol
 
     @property
     def qual(self):
