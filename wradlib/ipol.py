@@ -36,20 +36,23 @@ __all__ = [
     "interpolate_polar",
     "cart_to_irregular_interp",
     "cart_to_irregular_spline",
+    "IpolMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import functools
 import re
 import warnings
+from functools import reduce, singledispatch
 
 import numpy as np
 import scipy
 from packaging.version import Version
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
+from xarray import DataArray, apply_ufunc
 
 from wradlib import georef, util, zonalstats
+from wradlib.util import XarrayMethods, docstring
 
 
 class MissingSourcesError(Exception):
@@ -861,7 +864,7 @@ def parse_covariogram(cov_model):
 
     # return complete covariance function, which adds
     # individual subparts
-    return lambda h: functools.reduce(np.add, [f(h) for f in funcs])
+    return lambda h: reduce(np.add, [f(h) for f in funcs])
 
 
 def _make_cov(func, params):
@@ -1521,6 +1524,7 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     return result
 
 
+@singledispatch
 def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     """
     Convenience function to interpolate polar data
@@ -1613,6 +1617,28 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
         filling = interpolate(src_coord, trg_coord, values_list, ipclass=Nearest)
         filled_data[np.where(np.isnan(filled_data))] = filling
     return filled_data.reshape(data.shape[0], data.shape[1])
+
+
+@interpolate_polar.register(DataArray)
+def _interpolate_polar_xarray(obj, mask, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+
+    def wrapper(obj, mask, **kwargs):
+        kwargs.setdefault("mask", mask)
+        return interpolate_polar(obj, **kwargs)
+
+    out = apply_ufunc(
+        wrapper,
+        obj,
+        mask,
+        input_core_dims=[[dim0, "range"], [dim0, "range"]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    out.name = "interpolate_polar"
+    return out
 
 
 def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
@@ -1717,6 +1743,17 @@ Preprocessing-the-digitial-elevation-model`.
     interp = interp.reshape(newshape)
 
     return interp
+
+
+class IpolMethods(XarrayMethods):
+    """wradlib xarray SubAccessor methods for Ipol Methods."""
+
+    @docstring(interpolate_polar)
+    def interpolate_polar(self, *args, **kwargs):
+        if not isinstance(self, IpolMethods):
+            return interpolate_polar(self, *args, **kwargs)
+        else:
+            return interpolate_polar(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
