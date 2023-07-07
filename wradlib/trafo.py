@@ -502,6 +502,13 @@ class TrafoMethods(util.XarrayMethods):
         else:
             return self._obj.pipe(idecibel)
 
+    @util.docstring(r_to_depth)
+    def r_to_depth(self, *args, **kwargs):
+        if not isinstance(self, TrafoMethods):
+            return self.pipe(r_to_depth, *args, **kwargs)
+        else:
+            return self._obj.pipe(r_to_depth, *args, **kwargs)
+
 
 if __name__ == "__main__":
     print("wradlib: Calling module <trafo> as main...")
