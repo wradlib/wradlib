@@ -36,6 +36,7 @@ class WradlibXarrayAccessor:
 
     __slots__ = [
         "_obj",
+        "_atten",
         "_classify",
         "_dp",
         "_georef",
@@ -56,6 +57,13 @@ class WradlibXarrayAccessor:
 
     def __repr__(self):
         return re.sub(r"<.+>", f"<{self.__class__.__name__}>", str(self._obj))
+
+    @property
+    def atten(self):
+        """SubAccessor for :class:`wradlib.atten.AttenMethods`."""
+        if self._atten is None:
+            self._atten = wradlib.atten.AttenMethods(self._obj)
+        return self._atten
 
     @property
     def classify(self):
