@@ -103,7 +103,7 @@ def filter_gabella_a(obj, wsize, tr1, *, cartesian=False, radial=False):
         refa = np.roll(obj, sa, axis=0)
         for sr in range_shift:
             refr = np.roll(refa, sr, axis=1)
-            count += obj - refr < tr1
+            count += (obj - refr) < tr1
     count[:, 0:nn] = wsize**2
     count[:, -nn:] = wsize**2
     if cartesian:
