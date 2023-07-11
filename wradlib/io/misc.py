@@ -228,7 +228,9 @@ def get_membership_functions(filename):
         nobs = int(f.readline().decode().split(":")[1].strip())
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            data = np.genfromtxt(f, skip_header=10, autostrip=True, invalid_raise=False)
+            data = np.genfromtxt(
+                f, skip_header=10, autostrip=True, invalid_raise=False, defaultfmt="f4"
+            )
 
     data = np.reshape(data, (nobs, int(data.shape[0] / nobs), data.shape[1]))
     msf = np.reshape(
