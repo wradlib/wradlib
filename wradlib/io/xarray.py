@@ -722,7 +722,7 @@ class RadarVolume(XRadBase):
             conv = None
         return conv
 
-    def to_odim(self, filename, timestep=0):
+    def to_odim(self, filename, timestep=0, **kwargs):
         """Save volume to ODIM_H5/V2_2 compliant file.
 
         Parameters
@@ -733,7 +733,7 @@ class RadarVolume(XRadBase):
             timestep of wanted volume
         """
         if self.root:
-            to_odim(self.tree(timestep), filename)
+            to_odim(self.tree(timestep), filename, **kwargs)
         else:
             warnings.warn(
                 "WRADLIB: No OdimH5-compliant data structure " "available. Not saving.",

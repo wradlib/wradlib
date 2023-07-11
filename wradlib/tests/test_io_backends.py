@@ -129,7 +129,7 @@ class DataVolume:
                 for i in range(len(vol)):
                     ds = io.xarray._rewrite_time_reference_units(vol[i])
                     vol[i] = xr.decode_cf(ds)
-            vol.to_odim(tmp_local)
+            vol.to_odim(tmp_local, source="WMO:12345")
         del vol
         gc.collect()
 
