@@ -378,17 +378,17 @@ def xyz_to_spherical(xyz, alt=0, proj=None, ke=4.0 / 3.0):
     ke : float
         Adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
-        dependent. The default of 4/3 is a good approximation for most
+        dependend. The default of 4/3 is a good approximation for most
         weather radar wavelengths
 
     Returns
     -------
     r : :class:`numpy:numpy.ndarray`
         Array of xyz.shape. Contains the radial distances.
-    theta: :class:`numpy:numpy.ndarray`
-        Array of xyz.shape. Contains the elevation angles.
     phi : :class:`numpy:numpy.ndarray`
         Array of xyz.shape. Contains the azimuthal angles.
+    theta: :class:`numpy:numpy.ndarray`
+        Array of xyz.shape. Contains the elevation angles.
     """
 
     # get the approximate radius of the projection's ellipsoid
