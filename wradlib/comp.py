@@ -151,7 +151,8 @@ def _togrid_xarray(obj, trg, *args, **kwargs):
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
     out = out.unstack("npoints_cart")
-    out.name = "togrid"
+    out.attrs = obj.attrs
+    out.name = f"{obj.name}.togrid"
     return out
 
 
@@ -203,6 +204,7 @@ def compose_ko(radargrids, qualitygrids):
     return composite
 
 
+@singledispatch
 def compose_weighted(radargrids, qualitygrids):
     """Composes grids according to quality information using a weighted \
     averaging approach.
@@ -245,6 +247,16 @@ def compose_weighted(radargrids, qualitygrids):
     return composite
 
 
+@compose_weighted.register(DataArray)
+def _compose_weighted_xarray(radargrids, qualitygrids):
+    qualityinfo = qualitygrids.where(radargrids)
+    qualityinfo /= qualityinfo.sum("radar", skipna=True)
+    composite = (radargrids * qualityinfo).sum("radar", skipna=True)
+    composite.name = radargrids.name
+    composite.attrs = radargrids.attrs
+    return composite.where(radargrids.sum("radar"))
+
+
 class CompMethods(XarrayMethods):
     """wradlib xarray SubAccessor methods for Ipol Methods."""
 
@@ -254,6 +266,13 @@ class CompMethods(XarrayMethods):
             return togrid(self, *args, **kwargs)
         else:
             return togrid(self._obj, *args, **kwargs)
+
+    @docstring(compose_weighted)
+    def compose_weighted(self, *args, **kwargs):
+        if not isinstance(self, CompMethods):
+            return compose_weighted(self, *args, **kwargs)
+        else:
+            return compose_weighted(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
