@@ -1623,9 +1623,9 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
 def _interpolate_polar_xarray(obj, mask, **kwargs):
     dim0 = obj.wrl.util.dim0()
 
-    def wrapper(obj, mask, **kwargs):
+    def wrapper(obj, mask, *args, **kwargs):
         kwargs.setdefault("mask", mask)
-        return interpolate_polar(obj, **kwargs)
+        return interpolate_polar(obj, *args, **kwargs)
 
     out = apply_ufunc(
         wrapper,
@@ -1634,6 +1634,7 @@ def _interpolate_polar_xarray(obj, mask, **kwargs):
         input_core_dims=[[dim0, "range"], [dim0, "range"]],
         output_core_dims=[[dim0, "range"]],
         dask="parallelized",
+        vectorize=True,
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
