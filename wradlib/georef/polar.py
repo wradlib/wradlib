@@ -583,6 +583,7 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
     output_core_dims = [["bins", "vert", "xy"]]
     if kwargs.get("crs", None) is None:
         output_core_dims.append([])
+    keep_attrs = kwargs.pop("keep_attrs", None)
     out = apply_ufunc(
         spherical_to_polyvert,
         r,
@@ -593,6 +594,7 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
         output_core_dims=output_core_dims,
         dask="parallelized",
         kwargs=kwargs,
+        keep_attrs=keep_attrs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
     if kwargs.get("crs", None) is None:
@@ -718,6 +720,7 @@ def _spherical_to_centroids_xarray(obj, **kwargs):
     output_core_dims = [["azimuth", "range", "xyz"]]
     if kwargs.get("crs", None) is None:
         output_core_dims.append([])
+    keep_attrs = kwargs.pop("keep_attrs", None)
     out = apply_ufunc(
         spherical_to_centroids,
         r,
@@ -728,6 +731,7 @@ def _spherical_to_centroids_xarray(obj, **kwargs):
         output_core_dims=output_core_dims,
         dask="parallelized",
         kwargs=kwargs,
+        keep_attrs=keep_attrs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
     if kwargs.get("crs", None) is None:
