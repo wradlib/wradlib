@@ -564,7 +564,7 @@ class TestProjections:
         srs2 = osr.SpatialReference()
         srs2.ImportFromProj4(p4)
         assert srs.IsSame(srs2)
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError, match=r"proj_create: Error 1027"):
             georef.proj4_to_osr("+proj=lcc1")
 
     @requires_gdal

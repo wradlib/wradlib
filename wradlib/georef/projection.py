@@ -309,7 +309,13 @@ def reproject(*args, **kwargs):
     projection_target.SetAxisMappingStrategy(axis_order)
     options = osr.CoordinateTransformationOptions()
     if area_of_interest is not None:
-        options.SetAreaOfInterest(*area_of_interest)
+        # convert area_of_interest to wgs84 to work with SetAreaOfInterest
+        aoi = reproject(
+            np.array(area_of_interest).reshape((-1, 2)),
+            projection_source=projection_target,
+            projection_target=get_default_projection(),
+        )
+        options.SetAreaOfInterest(*aoi.ravel())
     ct = osr.CreateCoordinateTransformation(
         projection_source, projection_target, options
     )
