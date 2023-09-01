@@ -574,6 +574,8 @@ def reproject_raster_dataset(src_ds, **kwargs):
     # apply Projection to destination dataset
     if trg_crs is not None:
         dst_ds.SetProjection(trg_crs)
+    else:
+        dst_ds.SetProjection(src_ds.GetProjection())
 
     # nodata handling, need to initialize dst_ds with nodata
     src_band = src_ds.GetRasterBand(1)

@@ -177,7 +177,7 @@ The same way different metadata groups can be retrieved. Just require the wanted
 vol = xradar.io.open_cfradial1_datatree(filename)
 ```
 
-Here, as well as above, each backend has it's own loading function:
+Here, as well as above, each backend has its own loading function:
 
 - {py:func}`xradar:xradar.io.backends.cfradial1.open_cfradial1_datatree`
 - {py:func}`xradar:xradar.io.backends.odim.open_odim_datatree`
