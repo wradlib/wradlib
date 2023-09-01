@@ -638,7 +638,7 @@ class AdjustMFB(AdjustBase):
         if self.mfb_args["method"] == "mean":
             corrfact = np.mean(ratios)
         elif self.mfb_args["method"] == "median":
-            corrfact = np.median(ratios)
+            corrfact = np.ma.median(ratios)
         elif self.mfb_args["method"] == "linregr":
             corrfact = 1.0
             ix_ = np.where(np.logical_not(ratios.mask))[0]
@@ -656,7 +656,7 @@ class AdjustMFB(AdjustBase):
             ):
                 x = x[:, np.newaxis]
                 try:
-                    slope, _, _, _ = np.linalg.lstsq(x, y)
+                    slope, _, _, _ = np.linalg.lstsq(x, y, rcond=None)
                     if not slope[0] == 0:
                         corrfact = 1.0 / slope[0]
                 except Exception:
