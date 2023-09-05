@@ -259,5 +259,5 @@ def test_classify(class_data):
 
     hmc_idx, hmc_vals = classify.classify(class_data.prob, threshold=0.0)
 
-    np.testing.assert_array_almost_equal(hmc_idx, res_idx)
     np.testing.assert_array_almost_equal(hmc_vals, res_vals)
+    np.testing.assert_array_almost_equal(hmc_idx, res_idx)
