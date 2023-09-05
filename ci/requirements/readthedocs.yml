@@ -3,22 +3,21 @@ channels:
 dependencies:
   - python=3.11
   - pip
-  - sphinx
-  - pandoc
-  - myst-parser
-  - nbconvert
-  - ipykernel
-  - sphinx_rtd_theme
-  - sphinx-copybutton
   - accessible-pygments
-  - sphinxcontrib-bibtex
-  - numpy
   - deprecation
   - git
+  - ipykernel
+  - myst-parser
+  - nbconvert
   - nbsphinx
+  - numpy
+  - pandoc
+  - pydata-sphinx-theme
   - setuptools_scm
+  - sphinx
+  - sphinx_rtd_theme
+  - sphinx-copybutton
+  - sphinxcontrib-bibtex
+  - sphinx-book-theme
   - xarray
   - xradar
-  - pip:
-     - git+https://github.com/executablebooks/sphinx-book-theme.git@v1.0.0rc2
-     - git+https://github.com/pydata/pydata-sphinx-theme.git@v0.13.0rc6

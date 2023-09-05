@@ -36,5 +36,5 @@ dependencies:
   - tqdm
   - wetterdienst
   - xarray
-  - xradar>=0.0.13
+  - xradar
   - xmltodict
