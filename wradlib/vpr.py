@@ -50,7 +50,6 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 __doctest_requires__ = {"CAPPI": ["osgeo"]}
 
-import warnings
 
 import numpy as np
 
@@ -93,19 +92,12 @@ class CartesianVolume:
         polcoords,
         gridcoords,
         *,
-        gridshape=None,
         maxrange=None,
         minelev=None,
         maxelev=None,
         ipclass=ipol.Idw,
         **ipargs,
     ):
-        if gridshape is not None:
-            warnings.warn(
-                f"``gridshape`` is not used in {self.__class__}. "
-                "It will be removed in wradlib version 2.0.",
-                DeprecationWarning,
-            )
         # radar location in Cartesian coordinates
         # TODO: pass projected radar location as argument
         # (allows processing of incomplete polar volumes)
