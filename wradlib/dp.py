@@ -887,7 +887,7 @@ def _texture_xarray(obj):
 
 
 @singledispatch
-def depolarization(zdr: float | np.ndarray, rho):
+def depolarization(zdr, rho):
     """Compute the depolarization ration.
 
     Compute the depolarization ration using differential
