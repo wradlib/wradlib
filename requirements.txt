@@ -3,5 +3,5 @@ matplotlib
 numpy
 packaging
 scipy
-xarray>=0.17.0
-xradar>=0.1.0
+xarray
+xradar
