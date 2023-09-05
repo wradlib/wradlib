@@ -23,7 +23,6 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
 import tempfile
-import warnings
 
 import numpy as np
 
@@ -569,23 +568,11 @@ class VectorSource:
 
         # get spatial reference object
         crs = tmp_lyr.GetSpatialRef()
-        # fall back to given projection
-        if crs is None:
-            crs = self._src_crs
 
-        # raise error as we can't do anything about it
-        if self._trg_crs is None and crs is None:
+        if crs is None:
             raise ValueError(
                 f"Spatial reference missing from source file {filename}. "
-                f"Please provide a fitting spatial reference object"
-            )
-
-        # this will be combined with the above the future to raise unconditionally
-        if crs is None:
-            warnings.warn(
-                f"Spatial reference missing from source file {filename}. "
-                f"This will raise an error from wradlib version 2.0",
-                FutureWarning,
+                f"Please provide a file with spatial reference."
             )
 
         # reproject layer if necessary
