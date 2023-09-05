@@ -140,7 +140,6 @@ def test_CartesianVolume(cart_data):
     gridder = vpr.CartesianVolume(
         cart_data.xyz,
         cart_data.trgxyz,
-        gridshape=cart_data.trgshape,
         maxrange=cart_data.maxrange,
         minelev=cart_data.minelev,
         maxelev=cart_data.maxelev,
@@ -155,7 +154,6 @@ def test_CAPPI(cart_data):
     gridder = vpr.CAPPI(
         cart_data.xyz,
         cart_data.trgxyz,
-        gridshape=cart_data.trgshape,
         maxrange=cart_data.maxrange,
         minelev=cart_data.minelev,
         maxelev=cart_data.maxelev,
@@ -171,7 +169,6 @@ def test_PseudoCAPPI(cart_data):
     gridder = vpr.PseudoCAPPI(
         cart_data.xyz,
         cart_data.trgxyz,
-        gridshape=cart_data.trgshape,
         maxrange=cart_data.maxrange,
         minelev=cart_data.minelev,
         maxelev=cart_data.maxelev,
