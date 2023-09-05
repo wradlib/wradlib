@@ -955,7 +955,7 @@ def test_read_radolan_composite():
 
     filename = "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz"
     pc_file = util.get_wradlib_data_file(filename)
-    data, attrs = io.radolan.read_radolan_composite(pc_file)
+    data, attrs = io.radolan.read_radolan_composite(pc_file, missing=255)
 
 
 @requires_data
@@ -1244,14 +1244,17 @@ def data_source():
 @requires_data
 @requires_gdal
 def test__check_src():
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shx")
     from osgeo import osr
 
     proj_gk2 = osr.SpatialReference()
     proj_gk2.ImportFromEPSG(31466)
-    filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
-    assert len(io.VectorSource(filename, trg_crs=proj_gk2).data) == 13
+    filename = util.get_wradlib_data_file(
+        "shapefiles/freiberger_mulde/freiberger_mulde.shp"
+    )
+
+    assert len(io.VectorSource(filename, trg_crs=proj_gk2).data) == 430
 
 
 @requires_geos
@@ -1338,16 +1341,15 @@ def test_get_attributes(data_source):
 @requires_data
 @requires_gdal
 def test_get_geom_properties():
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
-    from osgeo import osr
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shx")
 
-    crs = osr.SpatialReference()
-    crs.ImportFromEPSG(31466)
-    filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
-    test = io.VectorSource(filename, crs)
+    filename = util.get_wradlib_data_file(
+        "shapefiles/freiberger_mulde/freiberger_mulde.shp"
+    )
+    test = io.VectorSource(filename)
     np.testing.assert_array_equal(
-        [[76722499.98474795]], test.get_geom_properties(["Area"], filt=("FID", 1))
+        [[4636921.625003308]], test.get_geom_properties(["Area"], filt=("FID", 1))
     )
 
 
@@ -1372,14 +1374,13 @@ def test_clean_up_temporary_files(data_source):
 @requires_data
 @requires_gdal
 def test_dump_raster():
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
-    from osgeo import osr
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shx")
 
-    crs = osr.SpatialReference()
-    crs.ImportFromEPSG(31466)
-    filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
-    test = io.VectorSource(filename, trg_crs=crs)
+    filename = util.get_wradlib_data_file(
+        "shapefiles/freiberger_mulde/freiberger_mulde.shp"
+    )
+    test = io.VectorSource(filename)
     test.dump_raster(
         tempfile.NamedTemporaryFile(mode="w+b").name,
         driver="netCDF",
