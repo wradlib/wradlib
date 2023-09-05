@@ -1246,6 +1246,7 @@ def data_source():
 def test__check_src():
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shx")
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.prj")
     from osgeo import osr
 
     proj_gk2 = osr.SpatialReference()
@@ -1343,6 +1344,7 @@ def test_get_attributes(data_source):
 def test_get_geom_properties():
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shx")
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.prj")
 
     filename = util.get_wradlib_data_file(
         "shapefiles/freiberger_mulde/freiberger_mulde.shp"
@@ -1376,6 +1378,7 @@ def test_clean_up_temporary_files(data_source):
 def test_dump_raster():
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shx")
+    util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.prj")
 
     filename = util.get_wradlib_data_file(
         "shapefiles/freiberger_mulde/freiberger_mulde.shp"
