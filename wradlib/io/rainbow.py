@@ -7,13 +7,10 @@ Rainbow Data I/O
 ^^^^^^^^^^^^^^^^
 
 Reads data from Leonardo's Rainbow5 data formats. Former available code was ported to
-xradar-package `[1]`_ and is imported from there.
+`xradar <https://xradar.rtfd.io>`__-package and is imported from there.
 
 :func:`~wradlib.io.rainbow.read_rainbow` reads all data and metadata into a dictionary.
 Reading sweep data can be skipped by setting `loaddata=False`.
-
-.. _[1]: https://xradar.rtfd.io
-
 
 .. autosummary::
    :nosignatures:

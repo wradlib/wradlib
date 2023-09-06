@@ -5,9 +5,7 @@
 """
 HDF Data I/O
 ^^^^^^^^^^^^
-Former available xarray based code has been ported to xradar-package `[1]`_.
-
-.. _[1]: https://xradar.rtfd.io
+Former available xarray based code has been ported to `xradar <https://xradar.rtfd.io>`__-package.
 
 .. autosummary::
    :nosignatures:
@@ -28,6 +26,7 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import datetime as dt
+import warnings
 
 import numpy as np
 import xarray as xr
@@ -74,7 +73,13 @@ def read_generic_hdf5(fname):
             tmp["attrs"] = dict(y.attrs)
         # add data if it is a dataset
         if isinstance(y, h5py.Dataset):
-            tmp["data"] = np.array(y)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    category=DeprecationWarning,
+                    message="`product` is deprecated",
+                )
+                tmp["data"] = np.array(y)
         # only add to the dictionary, if we have something meaningful to add
         if tmp != {}:
             fcontent[x] = tmp
@@ -124,7 +129,13 @@ def read_opera_hdf5(fname):
             if len(y.attrs) > 0:
                 fcontent[x] = dict(y.attrs)
         elif isinstance(y, h5py.Dataset):
-            fcontent[x] = np.array(y)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore",
+                    category=DeprecationWarning,
+                    message="`product` is deprecated",
+                )
+                fcontent[x] = np.array(y)
 
     with h5py.File(fname, "r") as f:
         f.visititems(filldict)

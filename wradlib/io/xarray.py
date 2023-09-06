@@ -8,9 +8,7 @@ Xarray based Data I/O
 
 Note
 ----
-    The Xarray backend code has been moved to xradar-package `[1]`_.
-
-.. _[1]: https://xradar.rtfd.io
+    The Xarray backend code has been moved to `xradar <https://xradar.rtfd.io>`__-package.
 
 .. autosummary::
    :nosignatures:

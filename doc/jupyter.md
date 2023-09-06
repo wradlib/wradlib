@@ -90,7 +90,7 @@ As already pointed out above, you can just look at the rendered notebooks [onlin
 
 If you are not sure which conda environments you have, you can check via ``conda info --envs``.
 
-If you did not install {{wradlib}} via conda, you should first check whether ``jupyter`` might already be available on your system (use e.g. ``jupyter --version``). If ``jupyter`` is not available, you should check out the [jupyter docs](https://jupyter.readthedocs.io/en/latest/install.html) for alternative installation options.
+If you did not install {{wradlib}} via conda, you should first check whether ``jupyter`` might already be available on your system (use e.g. ``jupyter --version``). If ``jupyter`` is not available, you should check out the [jupyter docs](https://docs.jupyter.org/en/latest/install.html) for alternative installation options.
 
 ## I prefer simple Python scripts instead of notebooks
 

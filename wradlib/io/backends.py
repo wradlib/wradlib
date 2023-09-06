@@ -8,9 +8,7 @@ Xarray backends
 Reading radar data into xarray Datasets using ``xarray.open_dataset``
 and ``xarray.open_mfdataset``.
 
-Former available backends have been ported to xradar-package `[1]`_.
-
-.. _[1]: https://xradar.rtfd.io
+Former available backends have been ported to `xradar <https://xradar.rtfd.io>`__-package.
 
 .. autosummary::
    :nosignatures:

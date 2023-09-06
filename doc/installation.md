@@ -2,9 +2,9 @@
 
 ## Anaconda/Conda
 
-In order to run {{wradlib}}, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages ([](#dependencies)). We recommend installing [Anaconda](https://www.anaconda.com/products/individual) as it includes Python, numerous required packages, and other useful tools (e.g. [Spyder](https://www.spyder-ide.org/)).
+In order to run {{wradlib}}, you need to have a Python interpreter installed on your local computer, as well as a number of Python packages ([](#dependencies)). We recommend installing [Anaconda](https://www.anaconda.com/download) as it includes Python, numerous required packages, and other useful tools (e.g. [Spyder](https://www.spyder-ide.org/)).
 
-Using Anaconda the installation process is harmonised across platforms. Download and install the latest [Anaconda distribution](https://www.anaconda.com/products/individual) for your specific OS. We recommend using the minimal distributions [Miniconda](https://conda.io/miniconda.html) or [Miniforge/Mambaforge](https://github.com/conda-forge/miniforge)  if you do not want to install a full scientific python stack.
+Using Anaconda the installation process is harmonised across platforms. Download and install the latest [Anaconda distribution](https://www.anaconda.com/download) for your specific OS. We recommend using the minimal distributions [Miniconda](https://conda.io/miniconda.html) or [Miniforge/Mambaforge](https://github.com/conda-forge/miniforge)  if you do not want to install a full scientific python stack.
 
 We are constantly performing tests with [conda-forge](https://conda-forge.org/) community channel (for the most recent 3 python versions).
 
@@ -15,7 +15,7 @@ $ python --version
 Python 3.11.0
 ```
 
-Now you can use the ``conda``/``mamba`` package and environment manager ([conda documentation](https://conda.io/docs/)) to setup your {{wradlib}} installation.
+Now you can use the ``conda``/``mamba`` package and environment manager ([conda documentation](https://conda.io/docs/) / [mamba documenation](https://mamba.readthedocs.io/en/latest/)) to setup your {{wradlib}} installation.
 
 #. Add the conda-forge channel, where {{wradlib}} and its dependencies are located. Read more about the community effort [conda-forge](https://conda-forge.org):
 
@@ -62,7 +62,7 @@ The Python prompt should appear. Then type:
 ```ipython
 >>> import wradlib
 >>> wradlib.__version__
-'1.18.0'
+'2.0.0'
 ```
 
 If everything is ok, this will show the running {{wradlib}} version. If the {{wradlib}} package is not found by the interpreter, you will get::

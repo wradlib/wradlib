@@ -27,7 +27,7 @@ Finally, you are welcome to **contribute examples of your own** {{wradlib}} **ap
 
 ## Building documentation
 
-In order to build the documentation you need to satisfy a few more dependencies which are mainly related to ``Sphinx``. These are specified in the [readthedocs_environment.yml](https://github.com/wradlib/wradlib/blob/main/readthedocs_environment.yml).
+In order to build the documentation you need to satisfy a few more dependencies which are mainly related to ``Sphinx``. These are specified in the [readthedocs_environment.yml](https://github.com/wradlib/wradlib/blob/main/ci/requirements/readthedocs.yml).
 
 Once these requirements are met, you can open a console window within the ``wradlib``-repository and execute ``sphinx-build -v -b html doc/ doc-build``. This will give you the latest documentation under the ``wradlib/doc-build`` directory. Simply open the index.html file to view the documentation.
 

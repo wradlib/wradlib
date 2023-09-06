@@ -5,9 +5,7 @@
 """
 NetCDF Data I/O
 ^^^^^^^^^^^^^^^
-Former available xarray based code has been ported to xradar-package `[1]`_.
-
-.. _[1]: https://xradar.rtfd.io
+Former available xarray based code has been ported to `xradar <https://xradar.rtfd.io>`__-package.
 
 .. autosummary::
    :nosignatures:

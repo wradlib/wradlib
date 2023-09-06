@@ -8,7 +8,7 @@ IRIS/Sigmet Data I/O
 ^^^^^^^^^^^^^^^^^^^^
 
 Reads data from Vaisala's IRIS data formats. Former available code was ported to
-xradar-package `[1]`_ and is imported from there.
+`xradar <https://xradar.rtfd.io>`__-package and is imported from there.
 
 IRIS (Vaisala Sigmet Interactive Radar Information System)
 
@@ -16,8 +16,6 @@ See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
 
 Reading sweep data can be skipped by setting `loaddata=False`. By default the data
 is decoded on the fly. Using `rawdata=True` the data will be kept undecoded.
-
-.. _[1]: https://xradar.rtfd.io
 
 .. autosummary::
    :nosignatures:

@@ -54,7 +54,7 @@ This version is most likely the last version before wradlib 2.0. We've switched 
 
 **Maintenance code**
 
-* xradar compatibility preparations ({pull}`599`) and ({pull}`600`) by {at}`kmuehlbauer`
+* xradar compatibility preparations ({pull}`599`) and ({pull}`604`) by {at}`kmuehlbauer`
 
 **Maintenance - CI**
 
@@ -63,7 +63,7 @@ This version is most likely the last version before wradlib 2.0. We've switched 
 **Bugfixes**
 
 * Changes in # read metadata under get_radiosonde() ({issue}`596`) and ({pull}`597`) by {at}`JulianGiles`
-* FIX: cfradial2 coordinates ({issue}`600`) by {at}`kmuehlbauer`
+* FIX: cfradial2 coordinates ({pull}`600`) by {at}`kmuehlbauer`
 
 ## Version 1.17.0
 
