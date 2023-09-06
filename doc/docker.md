@@ -24,7 +24,7 @@ Especially for easy integration with servers we setup the [wradlib-docker](https
 
 ## Installation
 
-In order to run these docker images as containers, you need to have *docker* installed on your local computer or server. Please refer to the [docker documentation](https://docs.docker.com/install) for installation guidance. Once you have docker installed and running you can use the provided *wradlib-docker* images. You can either pull them directly from docker hub or create them locally from the [wradlib-docker](https://github.com/wradlib/wradlib-docker) repository.
+In order to run these docker images as containers, you need to have *docker* installed on your local computer or server. Please refer to the [docker documentation](https://docs.docker.com/get-docker) for installation guidance. Once you have docker installed and running you can use the provided *wradlib-docker* images. You can either pull them directly from docker hub or create them locally from the [wradlib-docker](https://github.com/wradlib/wradlib-docker) repository.
 
 1. Pull from docker hub using the wanted tag:
 

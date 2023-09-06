@@ -51,28 +51,15 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
 ]
 
-# def autodoc_signature(app, what, name, obj, options, signature, return_annotation):
-#     if name is None:
-#         print(app)
-#         print(what)
-#         print(obj)
-#         print(options)
-#         print(signature)
-#         print(return_annotation)
-#         #raise ValueError("name must not be None")
-#
-# def autodoc_before_process_signature(app, obj, bound_method):
-#     print("before-Signature")
-#     print("app:", app)
-#     print("obj:", obj, dir(obj))
-#     print("obj:", obj.__name__, obj.__qualname__, obj.__code__, obj.__signature__)
-#     print("bound:", bound_method)
-# #        raise ValueError("name must not be None")
-
-
-# def setup(app):
-#    app.connect('autodoc-process-signature', autodoc_signature)
-#    app.connect('autodoc-before-process-signature', autodoc_before_process_signature)
+autodoc_default_options = {
+    "members": True,
+    "member-order": "bysource",
+    "special-members": False,
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
+    "class-doc-from": "class",
+    "show-inheritance": True,
+}
 
 myst_enable_extensions = [
     "substitution",
@@ -211,7 +198,6 @@ file.close()
 # get all rst files, do it manually
 rst_files = glob.glob("*.rst")
 autosummary_generate = rst_files
-autoclass_content = "both"
 
 # get version from metadata
 from importlib.metadata import version
