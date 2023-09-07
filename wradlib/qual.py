@@ -162,7 +162,7 @@ def beam_block_frac(th, bh, a):
     more thoroughly.  However, this is accurate in most cases other than
     the super-refractive case.
 
-    See the the half_power_radius function to calculate variable `a`.
+    See the half_power_radius function to calculate variable `a`.
 
     The heights must be the same units!
     """

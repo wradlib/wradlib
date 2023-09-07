@@ -23,11 +23,18 @@ No deprecations or additions.
 
 ## atten - Submodule
 
-No deprecations or additions.
+### Additions
+
+Implemented Xarray Accessor wrl.atten ({py:class}wradlib.atten.AttenMethods) with:
+
+- {py:func}`~wradlib.atten.correct_attenuation_constrained`
+
 
 ## classify - Submodule
 
 Merged with code from `clutter`-module.
+
+### Additions
 
 Implemented Xarray Accessor `wrl.classify` ({py:class}`wradlib.classify.ClassifyMethods`) with:
 
@@ -46,7 +53,12 @@ Functions have been merged with {py:mod}`wradlib.classify`-submodule (see above)
 
 ## comp - Submodule
 
-No deprecations or additions.
+### Additions
+
+Implemented Xarray Accessor `wrl.comp` ({py:class}`wradlib.comp.CompMethods`) with:
+
+- {py:func}`~wradlib.comp.togrid`
+- {py:func}`~wradlib.comp.compose_weighted`
 
 ## dp - Submodule
 
@@ -71,21 +83,29 @@ Implemented Xarray Accessor `wrl.dp` ({py:class}`wradlib.dp.DpMethods`) with:
 
 Implemented Xarray Accessor `wrl.georef` ({py:class}`wradlib.georef.GeorefMethods`) with:
 
-- MiscMethods
+- GeorefMiscMethods
   - {py:func}`~wradlib.georef.misc.bin_altitude`
   - {py:func}`~wradlib.georef.misc.bin_distance`
   - {py:func}`~wradlib.georef.misc.site_distance`
 
-- PolarMethods
+- GeorefPolarMethods
   - {py:func}`~wradlib.georef.polar.georeference`
   - {py:func}`~wradlib.georef.polar.spherical_to_xyz`
   - {py:func}`~wradlib.georef.polar.spherical_to_proj`
   - {py:func}`~wradlib.georef.polar.spherical_to_polyvert`
   - {py:func}`~wradlib.georef.polar.spherical_to_centroids`
 
-- ProjectionMethods
+- GeorefProjectionMethods
   - {py:func}`~wradlib.georef.projection.get_earth_radius`
   - {py:func}`~wradlib.georef.projection.reproject`
+
+- GeorefRectMethods
+  - {py:func}`~wradlib.georef.rect.xyz_to_spherical`
+
+- GeorefSatelliteMethods
+  - {py:func}`~wradlib.georef.satellite.correct_parallax`
+  - {py:func}`~wradlib.georef.satellite.dist_from_orbit`
+
 
 ### Deprecations
 
@@ -167,7 +187,7 @@ Please also refer to {py:func}`xarray:xarray.open_mfdataset` documentation.
 
 #### Single metadata group
 
-The same way different metadata groups can be retrieved. Just require the wanted group with `group`-kwarg..
+The same way different metadata groups can be retrieved. Just require the wanted group with `group`-kwarg.
 
 #### Single Volume
 
@@ -193,7 +213,11 @@ This is not yet available out of the box as dedicated functions (like {py:func}`
 
 ## ipol - Submodule
 
-No deprecations or additions.
+### Additions
+
+Implemented Xarray Accessor `wrl.ipol` ({py:class}`wradlib.ipol.IpolMethods`) with:
+
+- {py:func}`~wradlib.ipol.interpolate_polar`
 
 ## qual - Submodule
 ### Additions
@@ -201,8 +225,7 @@ No deprecations or additions.
 Implemented Xarray Accessor `wrl.qual` ({py:class}`wradlib.qual.QualMethods`) with:
 
 - {py:func}`~wradlib.qual.pulse_volume`
-- {py:func}`~wradlib.qual.beam_block_frac`
-- {py:func}`~wradlib.qual.cum_beam_block_frac`
+- {py:func}`~wradlib.qual.get_bb_ratio`
 
 ## trafo - Submodule
 ### Additions
@@ -211,6 +234,7 @@ Implemented Xarray Accessor `wrl.trafo` ({py:class}`wradlib.trafo.TrafoMethods`)
 
 - {py:func}`~wradlib.trafo.decibel`
 - {py:func}`~wradlib.trafo.idecibel`
+- {py:func}`~wradlib.trafo.r_to_depth`
 
 ## util - Submodule
 ### Additions
@@ -219,6 +243,7 @@ Implemented Xarray Accessor `wrl.util` ({py:class}`wradlib.util.UtilMethods`) wi
 
 - {py:func}`~wradlib.util.despeckle`
 - {py:func}`~wradlib.util.derivate`
+- {py:func}`~wradlib.util.dim0`
 
 ## verify - Submodule
 
@@ -230,9 +255,9 @@ No deprecations or additions.
 Implemented Xarray Accessor `wrl.vis` ({py:class}`wradlib.vis.VisMethods`) with:
 
 - {py:func}`~wradlib.vis.plot`
-- `pcolormesh`
-- `contour`
-- `contourf`
+- {py:func}`~wradlib.vis.pcolormesh`
+- {py:func}`~wradlib.vis.contour`
+- {py:func}`~wradlib.vis.contourf`
 
 ### Deprecations
 
@@ -252,3 +277,13 @@ New module containing {py:class}`~wradlib.xarray.WradlibXarrayAccessor` implemen
 ### Deprecations
 
 - `wradlib.zonalstats.DataSource` -> (py:class}`wradlib.io.vector.VectorSource`
+
+## zr - Submodule
+
+### Additions
+
+Implemented Xarray Accessor `wrl.zr` ({py:class}`wradlib.zr.ZRMethods`) with:
+
+- {py:func}`~wradlib.zr.z_to_r`
+- {py:func}`~wradlib.zr.r_to_z`
+- {py:func}`~wradlib.zr.z_to_r_enhanced`

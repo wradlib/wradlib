@@ -60,7 +60,7 @@ The notebooks are available in the [wradlib-notebooks](https://github.com/wradli
 Most notebooks use example data. These data are provided in a separate repository and can be fetched using ``pooch``. All you need to do is install this via pip manually:
 
 ```bash
-  $ python -m pip install wradlib-data
+  $ python -m pip install git+https://github.com/wradlib/wradlib-data@pooch
 ```
 
 Now you need to set an environment variable pointing to a folder where the data should be saved when requested:

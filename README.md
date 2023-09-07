@@ -21,8 +21,8 @@ Below you see the status of wradlib. A green status indicates that the current r
 | Github Latest | [![Build Status](https://github.com/wradlib/wradlib/workflows/CI/badge.svg)](https://github.com/wradlib/wradlib/actions) |
 | Github Release | [![Build Status](https://github.com/wradlib/wradlib/actions/workflows/ci.yml/badge.svg?event=release)](https://github.com/wradlib/wradlib/actions/workflows/ci.yml) |
 | Codecov | [![codecov](https://codecov.io/gh/wradlib/wradlib/branch/main/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib) |
-| RTD Latest | [![ReadTheDocs Latest](https://readthedocs.org/projects/wradlib-docs/badge/?version=latest)](https://docs.wradlib.org/en/latest/) |
-| RTD Stable | [![ReadTheDocs Stable](https://readthedocs.org/projects/wradlib-docs/badge/?version=stable)](https://docs.wradlib.org/en/stable/) |
+| RTD Latest | [![ReadTheDocs Latest](https://readthedocs.org/projects/wradlib/badge/?version=latest)](https://docs.wradlib.org/en/latest/) |
+| RTD Stable | [![ReadTheDocs Stable](https://readthedocs.org/projects/wradlib/badge/?version=stable)](https://docs.wradlib.org/en/stable/) |
 | Anaconda Latest | [![Anaconda Latest](https://anaconda.org/conda-forge/wradlib/badges/latest_release_date.svg)](https://anaconda.org/conda-forge/wradlib/) |
 | Anaconda Version | [![Anaconda Status](https://anaconda.org/conda-forge/wradlib/badges/version.svg)](https://anaconda.org/conda-forge/wradlib/) |
 
@@ -42,7 +42,7 @@ You can cite wradlib using the DOI below, or select the fitting zenodo DOI if yo
 
 ### User forum ###
 
-In order to stay tuned, we recommend that you register to the [openradar discourse](https://groups.google.com/forum/?fromgroups#!forum/wradlib-users).
+In order to stay tuned, we recommend that you register to the [openradar discourse](https://openradar.discourse.group).
 
 ### Found any bugs or want to add wishes ###
 
