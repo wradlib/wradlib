@@ -9,7 +9,7 @@ dependencies:
   - coverage
   - dask
   - deprecation
-  - gdal<=3.6
+  - gdal
   - h5py
   - h5netcdf
   - lat_lon_parser
@@ -26,5 +26,5 @@ dependencies:
   - scipy
   - setuptools
   - xarray
-  - xradar>=0.0.13
+  - xradar
   - xmltodict

@@ -1,6 +1,6 @@
 name: CI
 env:
-  micromamba_version: 1.2
+  micromamba_version: 1.5
 
 on:
   push:
@@ -253,8 +253,6 @@ jobs:
           python -c "import wradlib; print(wradlib.version.version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
-        env:
-          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
@@ -301,8 +299,8 @@ jobs:
     steps:
     - name: trigger readthedocs
       run: |
-        echo "not triggering"
-        # curl -X POST -d "token=$RTD_TOKEN" "$RTD_URL"
+        echo "triggering"
+        curl -X POST -d "token=$RTD_TOKEN" "$RTD_URL"
 
   upload_testpypi:
     if: github.event_name == 'push' || github.event_name == 'release'
