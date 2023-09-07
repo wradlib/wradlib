@@ -7,12 +7,13 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
-## Development Version
+## Version 2.0.0
 
 This version brings doc-folder back into wradlib repo. The wradlib-docs repo will be archived. wradlib-notebooks repo has been restructured as well, with a single point of access.
 
 **New features**
 
+* final wradlib 2.0.0-rc.1 preparations ({pull}`636`) by {at}`kmuehlbauer`
 * wradlib 2.0 preparations ({pull}`635`) by {at}`kmuehlbauer`
 * DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer`
 * ENH: introduce wradlib xarray accessor for easy access of wradlib functions from xarray.DataArray (with dp and zr modules prefilled), adapt tests ({pull}`621`) by {at}`kmuehlbauer`
