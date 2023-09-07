@@ -207,7 +207,7 @@ jobs:
 
   build_3:
     name: wradlib notebook tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [lint]
     continue-on-error: true
     defaults:
