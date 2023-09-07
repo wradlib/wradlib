@@ -13,12 +13,14 @@ This version brings doc-folder back into wradlib repo. The wradlib-docs repo wil
 
 **New features**
 
+* wradlib 2.0 preparations ({pull}`635`) by {at}`kmuehlbauer`
 * DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer`
 * ENH: introduce wradlib xarray accessor for easy access of wradlib functions from xarray.DataArray (with dp and zr modules prefilled), adapt tests ({pull}`621`) by {at}`kmuehlbauer`
 
 **Maintenance - CI**
 
 * Fixing wradlib version for ReadTheDocs ({pull}`620`) by {at}`kmuehlbauer`
+* use setup-micromamba action ({pull}`627`) by {at}`kmuehlbauer`
 
 **Maintenance - Code**
 

@@ -356,10 +356,10 @@ def _xyz_to_spherical_numpy(xyz, *, altitude=0, crs=None, ke=4.0 / 3.0):
     -------
     r : :class:`numpy:numpy.ndarray`
         Array of xyz.shape. Contains the radial distances.
-    theta: :class:`numpy:numpy.ndarray`
-        Array of xyz.shape. Contains the elevation angles.
     phi : :class:`numpy:numpy.ndarray`
         Array of xyz.shape. Contains the azimuthal angles.
+    theta: :class:`numpy:numpy.ndarray`
+        Array of xyz.shape. Contains the elevation angles.
     """
 
     # get the approximate radius of the projection's ellipsoid
