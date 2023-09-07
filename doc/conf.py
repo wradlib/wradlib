@@ -96,7 +96,7 @@ author = "Wradlib Community"
 url = "https://github.com/wradlib"
 
 # get version from metadata
-from importlib.metadata import metadata_version
+from importlib.metadata import version as metadata_version
 
 # check readthedocs
 on_rtd = os.environ.get("READTHEDOCS") == "True"
