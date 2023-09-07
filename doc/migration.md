@@ -45,6 +45,8 @@ Implemented Xarray Accessor `wrl.classify` ({py:class}`wradlib.classify.Classify
 - {py:func}`~wradlib.classify.classify_echo_fuzzy`
 - {py:func}`~wradlib.classify.filter_window_distance`
 
+{py:func}`~wradlib.classify.classify_echo_fuzzy` returns probability of meteorological echo instead of boolean clutter mask, use `np.where(prob < thresh, True, False)` to retrieve boolean clutter mask.
+
 ## clutter - Submodule
 
 ### Deprecations

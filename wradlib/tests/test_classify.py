@@ -81,7 +81,18 @@ def test_classify_echo_fuzzy(fuzzy_data):
         "dop": 0.1,
         "map": 0.5,
     }
-    classify.classify_echo_fuzzy(fuzzy_data, weights=weights, thresh=0.5)
+    prob, mask = classify.classify_echo_fuzzy(fuzzy_data, weights=weights)
+    np.testing.assert_array_equal(
+        prob[0, :4],
+        np.array(
+            [
+                0.052631578947368425,
+                0.1803048097462205,
+                0.052631578947368425,
+                0.052631578947368425,
+            ]
+        ),
+    )
 
 
 @pytest.fixture()
