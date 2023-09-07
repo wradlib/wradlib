@@ -2,14 +2,14 @@ name: wradlib-notebooktests
 channels:
   - conda-forge
 dependencies:
-  - python>=3.7
+  - python>=3.9
   - bottleneck
   - cartopy
   - codecov
   - coverage
   - dask
   - deprecation
-  - gdal<=3.6
+  - gdal
   - geopandas
   - h5py
   - h5netcdf
