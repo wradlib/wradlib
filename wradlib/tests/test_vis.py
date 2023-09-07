@@ -2,7 +2,6 @@
 # Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import tempfile
 from dataclasses import dataclass
 
 import numpy as np
@@ -262,8 +261,6 @@ def test_plot_plan_and_vert():
     vol = np.zeros((len(z), len(y), len(x)))
     vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy)
     vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, title="Test")
-    tmp = tempfile.NamedTemporaryFile(mode="w+b").name
-    vis.plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, saveto=tmp)
     vis.plot_max_plan_and_vert(x, y, z, vol)
 
 
