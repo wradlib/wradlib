@@ -3,6 +3,9 @@ build:
   os: 'ubuntu-22.04'
   tools:
     python: 'mambaforge-22.9'
+  jobs:
+    pre_install:
+      - git update-index --assume-unchanged ci/requirements/readthedocs.yml doc/conf.py
 conda:
   environment: ci/requirements/readthedocs.yml
 sphinx:
