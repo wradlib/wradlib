@@ -130,7 +130,7 @@ if on_rtd:
         wradlib_branch_or_tag = rtd_version
 
     # install checked out wradlib
-    subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "."])
+    subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "../."])
 
     wradlib_version = version("wradlib")
     release = wradlib_version
