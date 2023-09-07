@@ -95,6 +95,9 @@ copyright = "2011-2023, wradlib developers"
 author = "Wradlib Community"
 url = "https://github.com/wradlib"
 
+# get version from metadata
+from importlib.metadata import version
+
 # check readthedocs
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 
@@ -121,13 +124,15 @@ if on_rtd:
         ).strip()
         wradlib_notebooks_branch = tag
         wradlib_branch_or_tag = tag
-    # rely on rtd_version (wradlib-docs tag)
+    # rely on rtd_version (wradlib tag)
     else:
         wradlib_notebooks_branch = rtd_version
         wradlib_branch_or_tag = rtd_version
 
-    # install checked out wradlib
-    subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "../."])
+    version = version("wradlib")
+    release = version
+
+    print("RTD - RELEASE, VERSION", release, version)
 
     # clone wradlib-notebooks target branch
     repourl = "{0}/wradlib-notebooks.git".format(url)
@@ -162,6 +167,11 @@ if on_rtd:
             ],
             shell=True,
         )
+else:
+    version = version("wradlib")
+    release = version
+
+    print("Local - RELEASE, VERSION", release, version)
 
 # get wradlib modules and create automodule rst-files
 import types
@@ -198,14 +208,6 @@ file.close()
 # get all rst files, do it manually
 rst_files = glob.glob("*.rst")
 autosummary_generate = rst_files
-
-# get version from metadata
-from importlib.metadata import version
-
-version = version("wradlib")
-release = version
-
-print("RELEASE, VERSION", release, version)
 
 myst_substitutions = {
     "today": dt.datetime.utcnow().strftime("%Y-%m-%d"),
