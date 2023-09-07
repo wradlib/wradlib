@@ -572,7 +572,7 @@ def _histo_cut_xarray(obj, **kwargs):
 
 
 @singledispatch
-def classify_echo_fuzzy(dat, *, weights=None, trpz=None, thresh=0.5):
+def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
     """Fuzzy echo classification and clutter identification based on \
     polarimetric moments.
 
@@ -583,6 +583,9 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None, thresh=0.5):
     .. versionchanged:: 1.4.0
        The implementation was extended using depolarization ratio (dr)
        and clutter phase alignment (cpa).
+
+    .. versionchanged:: 2.0.0
+       Returns probability of meteorological echos instead of clutter mask
 
     For Clutter Phase Alignment (CPA) see :cite:`Hubbert2009a` and
     :cite:`Hubbert2009b`
@@ -643,19 +646,21 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None, thresh=0.5):
         rho2: [-9999, -9999, 0.95, 0.98],
         dr: [-20, -12, 9999, 9999],
         cpa: [0.6, 0.9, 9999, 9999].
-    thresh : float
-       Threshold below which membership in non-meteorological membership class
-       is assumed.
 
     Returns
     -------
-    output : tuple
-        a tuple of two boolean arrays of same shape as the input arrays
-        The first array boolean array indicates non-meteorological echos based
-        on the fuzzy classification.
-        The second boolean array indicates where all the polarimetric moments
+    prob : :py:class:`numpy:numpy.ndarray`
+        Array indicates probability of meteorological echos based on the fuzzy
+        classification.
+    mask : :py:class:`numpy:numpy.ndarray`
+        Boolean array indicating where all the polarimetric moments
         had missing values which could be used as an additional information
         criterion.
+
+    Note
+    ----
+    The boolean clutter mask (versions prior 2.0) can be calculated with the following
+    code: `np.where(prob < thresh, True, False)`.
 
     See Also
     --------
@@ -784,8 +789,7 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None, thresh=0.5):
 
     q = np.array(qsum).sum(axis=0) / np.array(wsum).sum(axis=0)
 
-    # flag low quality
-    return np.where(q < thresh, True, False), nan_mask
+    return q, nan_mask
 
 
 @classify_echo_fuzzy.register(xr.Dataset)
@@ -819,7 +823,7 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
 
     Parameters
     ----------
-    obj : xarray.dataset
+    obj : :py:class:`xarray:xarray.Dataset`
     dat : dict
         Mapping of moment names.
 
@@ -848,15 +852,12 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
         rho2: [-9999, -9999, 0.95, 0.98],
         dr: [-20, -12, 9999, 9999],
         cpa: [0.6, 0.9, 9999, 9999].
-    thresh : float
-       Threshold below which membership in non-meteorological membership class
-       is assumed.
 
     Returns
     -------
-    cmap : DataArray
-        DataArray indicating non-meteorological echos based on the fuzzy classification.
-    mask : DataArray
+    prob : :py:class:`xarray:xarray.DataArray`
+        DataArray indicating probability of meteorological echos based on the fuzzy classification.
+    mask : :py:class:`xarray:xarray.DataArray`
         DataArray indicating where all the polarimetric moments had missing values which
         could be used as an additional information criterion.
 
@@ -865,20 +866,19 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
     :func:`~wradlib.dp.texture` - texture
 
     :func:`~wradlib.dp.depolarization` - depolarization ratio
-
     """
 
     def _classify_echo_fuzzy_wrapper(*args, **kwargs):
         mom = ["rho", "phi", "ref", "dop", "zdr", "map"][: len(args)]
         dat = {name: value for name, value in zip(mom, args)}
-        out, mask = classify_echo_fuzzy(dat, **kwargs)
-        return out, mask
+        prob, mask = classify_echo_fuzzy(dat, **kwargs)
+        return prob, mask
 
     mom = ["rho", "phi", "ref", "dop", "zdr", "map", "rho2", "dpr", "cpa"]
     args = [obj[dat[m]] for m in mom if m in dat]
     dim0 = args[0].wrl.util.dim0()
     input_core_dims = [[dim0, "range"]] * len(dat)
-    out, mask = xr.apply_ufunc(
+    prob, mask = xr.apply_ufunc(
         _classify_echo_fuzzy_wrapper,
         *args,
         input_core_dims=input_core_dims,
@@ -887,8 +887,9 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
-    out.name = "classify_echo_fuzzy"
-    return out, mask
+    prob.name = "probability_classify_echo_fuzzy"
+    mask.name = "mask_classify_echo_fuzzy"
+    return prob, mask
 
 
 def _weight_array(data, weight):

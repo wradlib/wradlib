@@ -16,9 +16,7 @@ Standard plotting and mapping procedures.
 """
 __all__ = [
     "plot",
-    # "plot_ppi",
     "plot_ppi_crosshair",
-    # "plot_rhi",
     "create_cg",
     "plot_scan_strategy",
     "plot_plan_and_vert",
