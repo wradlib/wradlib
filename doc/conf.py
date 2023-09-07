@@ -96,7 +96,7 @@ author = "Wradlib Community"
 url = "https://github.com/wradlib"
 
 # get version from metadata
-from importlib.metadata import version
+from importlib.metadata import metadata_version
 
 # check readthedocs
 on_rtd = os.environ.get("READTHEDOCS") == "True"
@@ -132,10 +132,10 @@ if on_rtd:
     # install checked out wradlib
     subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "../."])
 
-    wradlib_version = version("wradlib")
-    release = wradlib_version
+    version = metadata_version("wradlib")
+    release = version
 
-    print("RTD - RELEASE, VERSION", release, wradlib_version)
+    print("RTD - RELEASE, VERSION", release, version)
 
     # clone wradlib-notebooks target branch
     repourl = "{0}/wradlib-notebooks.git".format(url)
@@ -171,10 +171,10 @@ if on_rtd:
             shell=True,
         )
 else:
-    wradlib_version = version("wradlib")
-    release = wradlib_version
+    version = metadata_version("wradlib")
+    release = version
 
-    print("Local - RELEASE, VERSION", release, wradlib_version)
+    print("Local - RELEASE, VERSION", release, version)
 
 # get wradlib modules and create automodule rst-files
 import types
