@@ -264,6 +264,7 @@ Implemented Xarray Accessor `wrl.vis` ({py:class}`wradlib.vis.VisMethods`) with:
 ### Deprecations
 
 - `plot_ppi`/`plot_rhi` ->  {py:func}`wradlib.georef.xarray.create_xarray_dataarray` and  {py:func}`wradlib.vis.plot` or xarray accessor `da.wrl.vis.plot()`
+- removed `saveto`-kwarg from signature of {py:func}`wradlib.vis.plot_plan_and_vert` and {py:func}`wradlib.vis.plot_max_plan_and_vert`
 
 ## vpr - Submodule
 

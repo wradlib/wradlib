@@ -28,7 +28,6 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
-import os.path
 import warnings
 
 import numpy as np
@@ -580,9 +579,7 @@ def plot_scan_strategy(
     return ax
 
 
-def plot_plan_and_vert(
-    x, y, z, dataxy, datazx, datazy, *, unit="", title="", saveto="", **kwargs
-):
+def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, *, unit="", title="", **kwargs):
     """Plot 2-D plan view of ``dataxy`` together with vertical sections \
     ``dataxz`` and ``datazy``
 
@@ -604,8 +601,6 @@ def plot_plan_and_vert(
         unit of data arrays
     title: str
         figure title
-    saveto : str
-        file path if figure should be saved
 
     Keyword Arguments
     -----------------
@@ -678,20 +673,9 @@ def plot_plan_and_vert(
         tax.get_xaxis().set_visible(False)
         tax.get_yaxis().set_visible(False)
         pl.title(title)
-    if saveto == "":
-        # show plot
-        pl.show()
-        if not pl.isinteractive():
-            # close figure explicitely if pyplot is not in interactive mode
-            pl.close()
-    else:
-        # save plot to file
-        if (os.path.exists(os.path.dirname(saveto))) or (os.path.dirname(saveto) == ""):
-            pl.savefig(saveto)
-            pl.close()
 
 
-def plot_max_plan_and_vert(x, y, z, data, *, unit="", title="", saveto="", **kwargs):
+def plot_max_plan_and_vert(x, y, z, data, *, unit="", title="", **kwargs):
     """Plot according to <plot_plan_and_vert> with the maximum values
     along the three axes of ``data``
 
@@ -708,7 +692,6 @@ def plot_max_plan_and_vert(x, y, z, data, *, unit="", title="", saveto="", **kwa
         np.max(data, axis=-1),
         unit=unit,
         title=title,
-        saveto=saveto,
         **kwargs,
     )
 
