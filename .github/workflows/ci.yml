@@ -258,7 +258,7 @@ jobs:
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
       - name: Commit files
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'release'
         run: |
           cd notebooks
           git config --global user.email "wradlib-docs@wradlib.org"
@@ -267,7 +267,7 @@ jobs:
           git add --all .
           git commit -m "Rendering at wradlib-notebooks commit $NOTEBOOKS_COMMIT for wradlib version $WRADLIB_VERSION"
       - name: Push changes
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'release'
         run: |
           if [ $WRADLIB_TAG == 'undefined' ]; then
               BRANCH=devel
