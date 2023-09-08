@@ -110,7 +110,7 @@ def plot_ppi_crosshair(
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`.
+    See :ref:`/notebooks/visualisation/plot_ppi.ipynb`.
 
     """
     # check coordinate tuple
@@ -711,7 +711,7 @@ def add_lines(ax, lines, **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/wradlib_overlay.ipynb`.
+    See :ref:`/notebooks/visualisation/gis_overlay.ipynb`.
     """
     try:
         ax.add_collection(coll.LineCollection([lines], **kwargs))
@@ -738,7 +738,7 @@ def add_patches(ax, patch_array, **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/wradlib_overlay.ipynb`.
+    See :ref:`/notebooks/visualisation/gis_overlay.ipynb`.
     """
 
     try:
@@ -867,7 +867,7 @@ def plot(data, **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+    See :ref:`/notebooks/visualisation/plot_curvelinear_grids.ipynb`.
     """
     sweep_mode = kwargs.get("sweep_mode", None)
     if sweep_mode is None:
@@ -984,9 +984,9 @@ def _plot_xarray(
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/wradlib_plot_ppi_example.ipynb`,
+    See :ref:`/notebooks/visualisation/plot_ppi.ipynb`,
     and
-    :ref:`/notebooks/visualisation/wradlib_plot_curvelinear_grids.ipynb`.
+    :ref:`/notebooks/visualisation/plot_curvelinear_grids.ipynb`.
     """
     cg = False
     caax = None

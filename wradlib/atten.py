@@ -100,8 +100,7 @@ def correct_attenuation_hb(
 
     Examples
     --------
-    See :ref:`/notebooks/attenuation/wradlib_attenuation.ipynb#\
-Hitschfeld-and-Bordan`.
+    See :ref:`/notebooks/attenuation/attenuation.ipynb#Hitschfeld-and-Bordan`.
     """
     a = coefficients["a"]
     b = coefficients["b"]

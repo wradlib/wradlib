@@ -90,7 +90,7 @@ def filter_gabella_a(obj, wsize, tr1, *, cartesian=False, radial=False):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
     nn = wsize // 2
@@ -150,7 +150,7 @@ def _filter_gabella_a_xarray(obj, **kwargs):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
     dim0 = obj.wrl.util.dim0()
@@ -198,7 +198,7 @@ def filter_gabella_b(obj, *, thrs=0.0):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
     conn = np.ones((3, 3))
@@ -261,7 +261,7 @@ def _filter_gabella_b_xarray(obj, **kwargs):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
     dim0 = obj.wrl.util.dim0()
@@ -332,7 +332,7 @@ def filter_gabella(
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
     bad = np.isnan(obj)
@@ -396,7 +396,7 @@ def _filter_gabella_xarray(obj, **kwargs):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_gabella_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
     dim0 = obj.wrl.util.dim0()
@@ -452,7 +452,7 @@ def histo_cut(obj, *, upper_frequency=0.01, lower_frequency=0.01):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_histo_cut_example.ipynb`.
+    See :ref:`/notebooks/classify/histo_cut.ipynb`.
     """
 
     prec_accum = np.array(obj)
@@ -555,7 +555,7 @@ def _histo_cut_xarray(obj, **kwargs):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_histo_cut_example.ipynb`.
+    See :ref:`/notebooks/classify/histo_cut.ipynb`.
     """
     dim0 = obj.wrl.util.dim0()
     out = xr.apply_ufunc(

@@ -37,6 +37,7 @@ from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum  # noqa
 extensions = [
     "nbsphinx",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
     "sphinx.ext.coverage",
     "sphinx.ext.extlinks",

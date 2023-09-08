@@ -276,7 +276,7 @@ def reproject(*args, **kwargs):
     Examples
     --------
 
-    See :ref:`/notebooks/georeferencing/wradlib_georef_example.ipynb`.
+    See :ref:`/notebooks/georeferencing/georef.ipynb`.
 
     """
     if len(args) == 1:
@@ -367,7 +367,7 @@ def _reproject_xarray(obj, **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/georeferencing/wradlib_georef_example.ipynb`.
+    See :ref:`/notebooks/georeferencing/georef.ipynb`.
     """
     obj = obj.copy()
     coords = kwargs.pop("coords", None)

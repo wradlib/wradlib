@@ -257,7 +257,7 @@ def read_dx(filename):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/wradlib_reading_dx.ipynb`.
+    See :ref:`/notebooks/fileio/legacy/read_dx.ipynb`.
     """
 
     azimuthbitmask = 2 ** (14 - 1)

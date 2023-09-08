@@ -134,7 +134,7 @@ class RadolanBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for RADOLAN data."""
 
     description = "Open RADOLAN in Xarray"
-    url = "https://docs.wradlib.org/en/stable/notebooks/fileio/wradlib_radolan_backend.html"
+    url = "https://docs.wradlib.org/en/stable/notebooks/fileio/backends/radolan_backend.html"
 
     def open_dataset(
         self,

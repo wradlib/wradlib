@@ -400,6 +400,10 @@ def read_iris(
     -------
     data : dict
         Ordered Dictionary with data and metadata retrieved from file.
+
+    Examples
+    --------
+    See :ref:`/notebooks/fileio/legacy/read_iris.ipynb`.
     """
     if not isinstance(filename, str):
         filename = filename.read()

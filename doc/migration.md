@@ -25,7 +25,7 @@ No deprecations or additions.
 
 ### Additions
 
-Implemented Xarray Accessor wrl.atten ({py:class}wradlib.atten.AttenMethods) with:
+Implemented Xarray Accessor `wrl.atten` ({py:class}`wradlib.atten.AttenMethods) with:
 
 - {py:func}`~wradlib.atten.correct_attenuation_constrained`
 

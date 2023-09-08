@@ -117,11 +117,11 @@ Installing via ``pip`` tries to install all dependencies, but be sure to have al
 
 | Package    | min     | recommended |
 |------------|---------| ----------- |
-| numpy      | >= 1.9  | >= 1.21.0   |
-| scipy      | >= 1.0  | >= 1.7.0    |
-| matplotlib | >= 3    | >= 3.3.0    |
-| xarray     | >= 0.17 | >= 0.20.2   |
-| xradar     | >= 0.1  | >= 0.1      |
+| numpy      | >= 1.9  | >= latest   |
+| scipy      | >= 1.0  | >= latest   |
+| matplotlib | >= 3    | >= latest   |
+| xarray     | >= 0.17 | >= latest   |
+| xradar     | >= 0.3  | >= latest   |
 
 You can check whether the required [](#dependencies) are available on your computer by opening a Python console and enter:
 
@@ -152,23 +152,23 @@ As for now, the following dependencies are defined as optional:
 
 | Package    |    min    | recommended |
 |------------|-----------|-------------|
- | cartopy    | >= 0.21   | >= latest   |
+| cartopy    | >= 0.22   | >= latest   |
 | dask       | >= 2.20   | >= latest   |
-| gdal       | >= 2.4    | >= 3.1.0    |
-| h5py       | >= 2.0.1  | >= 3.1.0    |
-| h5netcdf   | >= 0.8.0  | >= 0.10.0   |
-| netCDF4    | >= 1.0    | >= 1.5.0    |
-| requests   | >= 2.23.0 | >= 2.26.0   |
-| xmltodict  | >= 0.11   | >= 0.12.0   |
+| gdal       | >= 3.0    | >= latest   |
+| h5py       | >= 3.0.0  | >= latest   |
+| h5netcdf   | >= 0.8.0  | >= latest   |
+| netCDF4    | >= 1.0    | >= latest   |
+| requests   | >= 2.23.0 | >= latest   |
+| xmltodict  | >= 0.12   | >= latest   |
 
 The following libraries are used by `netCDF4`, `h5py`/`h5netcdf` and `gdal` packages and should apply to these requirements:
 
 | Library    |    min    | recommended | used by |
 |------------|-----------|-------------|---------|
-| geos       | >= 3.7.0  | >= 3.10.0   | gdal    |
-| hdf5       | >= 1.9.0  | >= 1.12.1   | h5py    |
-| libnetcdf  | >= 4.7.3  | >= 4.8.1    | netCDF4 |
-| proj       | >= 5.2.0  | >= 8.0.0    | gdal    |
+| geos       | >= 3.7.0  | >= latest   | gdal    |
+| hdf5       | >= 1.9.0  | >= latest   | h5py    |
+| libnetcdf  | >= 4.7.3  | >= latest   | netCDF4 |
+| proj       | >= 5.2.0  | >= latest   | gdal    |
 
 **The speedup module**
 

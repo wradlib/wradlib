@@ -65,7 +65,7 @@ class PolarNeighbours:
     Examples
     --------
 
-    See :ref:`/notebooks/verification/wradlib_verify_example.ipynb`.
+    See :ref:`/notebooks/verification/verification.ipynb`.
     """
 
     def __init__(self, r, az, site, crs, x, y, *, nnear=9):
@@ -164,8 +164,8 @@ class ErrorMetrics:
     >>> metrics.pprint() #doctest: +SKIP
     >>> metrics.ix #doctest: +SKIP
 
-    See :ref:`/notebooks/verification/wradlib_verify_example.ipynb` and
-    :ref:`/notebooks/multisensor/wradlib_adjust_example.ipynb`.
+    See :ref:`/notebooks/verification/verification.ipynb` and
+    :ref:`/notebooks/multisensor/gauge_adjustment.ipynb`.
 
     """
 
