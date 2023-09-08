@@ -5,7 +5,7 @@
 """
 Raw Data I/O
 ============
-Please have a look at the tutorial :ref:`/notebooks/fileio/wradlib_radar_formats.ipynb`
+Please have a look at the tutorial :ref:`/notebooks/fileio.ipynb`
 for an introduction on how to deal with different file formats.
 
 .. toctree::

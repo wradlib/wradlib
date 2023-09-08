@@ -122,7 +122,7 @@ def process_raw_phidp_vulpiani(
     Examples
     --------
 
-    See :ref:`/notebooks/verification/wradlib_verify_example.ipynb`.
+    See :ref:`/notebooks/verification/verification.ipynb`.
 
     """
     if copy:

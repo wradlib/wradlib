@@ -135,7 +135,7 @@ def read_gdal_coordinates(dataset, *, mode="center"):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_cloud.ipynb`.
 
     """
     coordinates_pixel = _pixel_coordinates(
@@ -164,7 +164,7 @@ def read_gdal_projection(dataset):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_cloud.ipynb`.
 
     """
     wkt = dataset.GetProjection()
@@ -193,7 +193,7 @@ def read_gdal_values(dataset, *, nodata=None):
     Examples
     --------
 
-    See :ref:`/notebooks/classify/wradlib_clutter_cloud_example.ipynb`.
+    See :ref:`/notebooks/classify/clutter_cloud.ipynb`.
 
     """
     nbands = dataset.RasterCount

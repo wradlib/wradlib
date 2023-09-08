@@ -197,7 +197,7 @@ def write_raster_dataset(fpath, dataset, *, driver="GTiff", options=None, remove
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/wradlib_gis_export_example.ipynb`.
+    See :ref:`/notebooks/fileio/gis/raster_data.ipynb`.
     """
     # check for option list
     if options is None:
@@ -253,7 +253,7 @@ class VectorSource:
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/wradlib_vector_data.ipynb`.
+    See :ref:`/notebooks/fileio/gis/vector_data.ipynb`.
     """
 
     def __init__(self, data=None, trg_crs=None, name="layer", source=0, **kwargs):

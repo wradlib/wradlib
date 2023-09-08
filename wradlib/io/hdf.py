@@ -61,7 +61,7 @@ def read_generic_hdf5(fname):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/wradlib_radar_formats.ipynb#Generic-HDF5`.
+    See :ref:`/notebooks/fileio/legacy/read_hdf5.ipynb`.
     """
     fcontent = {}
 
@@ -319,7 +319,7 @@ def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/wradlib_radar_formats.ipynb#GAMIC-HDF5`.
+    See :ref:`/notebooks/fileio/legacy/read_gamic.ipynb`.
     """
 
     # check elevations
@@ -476,7 +476,7 @@ def read_gpm(filename, *, bbox=None):
 
     Examples
     --------
-    See :ref:`/notebooks/match3d/wradlib_match_workflow.ipynb`.
+    See :ref:`/notebooks/workflow/recipe3.ipynb`.
     """
     pr_data = nc.Dataset(filename, mode="r")
     lon = pr_data["NS"].variables["Longitude"]
@@ -717,7 +717,7 @@ def read_trmm(filename1, filename2, *, bbox=None):
 
     Examples
     --------
-    See :ref:`/notebooks/match3d/wradlib_match_workflow.ipynb`.
+    See :ref:`/notebooks/workflow/recipe3.ipynb`.
     """
     # trmm 2A23 and 2A25 data is hdf4
     pr_data1 = nc.Dataset(filename1, mode="r")

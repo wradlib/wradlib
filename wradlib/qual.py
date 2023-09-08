@@ -153,7 +153,7 @@ def beam_block_frac(th, bh, a):
     --------
     >>> pbb = beam_block_frac(th,bh,a) #doctest: +SKIP
 
-    See :ref:`/notebooks/beamblockage/wradlib_beamblock.ipynb`.
+    See :ref:`/notebooks/beamblockage/beamblockage.ipynb`.
 
     Note
     ----
@@ -222,7 +222,7 @@ def cum_beam_block_frac(pbb):
     >>> pbb = beam_block_frac(th, bh, a) #doctest: +SKIP
     >>> cbb = cum_beam_block_frac(pbb) #doctest: +SKIP
 
-    See :ref:`/notebooks/beamblockage/wradlib_beamblock.ipynb`.
+    See :ref:`/notebooks/beamblockage/beamblockage.ipynb`.
 
     """
 

@@ -1399,6 +1399,7 @@ def docstring(func):
 
 
 def dim0(obj):
+    """Return major dimension (azimuth/elevation) of xarray object."""
     return list(set(obj.dims) & {"azimuth", "elevation"})[-1]
 
 
