@@ -1150,7 +1150,9 @@ class _radolan_file:
 
         pred_time = attrs.get("predictiontime", None)
         if pred_time is not None:
-            pred_time = np.array([(raw_time + dt.timedelta(pred_time)).timestamp()])
+            pred_time = np.array(
+                [(raw_time + dt.timedelta(minutes=pred_time)).timestamp()]
+            )
             pred_time_var = WradlibVariable(
                 "prediction_time", data=pred_time, attrs=time_attrs
             )
