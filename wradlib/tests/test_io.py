@@ -247,8 +247,9 @@ def test_get_radiosonde():
         with pytest.raises(ValueError):
             data, meta = io.misc.get_radiosonde(10412, date)
         data, meta = io.misc.get_radiosonde(10410, date)
-    except urllib.error.HTTPError:
-        print("HTTPError while retrieving radiosonde data, test skipped!")
+    except (urllib.error.HTTPError, urllib.error.URLError) as e:
+        print(e)
+        print("Test skipped!")
     else:
         assert data[0] == res1[0]
         quant = meta.pop("quantity")
