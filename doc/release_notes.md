@@ -27,6 +27,10 @@ This version brings doc-folder back into wradlib repo. The wradlib-docs repo wil
 
 * Remove deprecated code ({pull}`621`) by {at}`kmuehlbauer`
 
+**Bugfixes**
+
+* fix RADOLAN xarray 'prediction_time' for RADVOR datasets ({pull}`639`) by {at}`Hoffmann77`
+
 
 ## Version 1.19.0
 
