@@ -28,10 +28,8 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import collections
-import warnings
 
 import numpy as np
-import xarray
 
 from wradlib import georef, io, ipol, util
 
@@ -750,159 +748,7 @@ def add_patches(ax, patch_array, **kwargs):
             add_patches(ax, patch, **kwargs)
 
 
-from functools import singledispatch
-
-
-@singledispatch
-def plot(data, **kwargs):
-    """Plots a Plan Position Indicator (PPI) or Range Height Indicator (RHI).
-
-    This is a small wrapper around xarray.DataArray.
-
-    The radar data, coordinates and metadata is transformed into an
-    xarray.DataArray. Using the wradlib DataArray accessor the DataArray is
-    enabled to plot polar data.
-
-    Using ``cg=True`` the plotting is done in a curvelinear grid axes.
-    Additional data can be plotted in polar coordinates or cartesian
-    coordinates depending which axes object is used.
-
-    ``**kwargs`` may be used to try to influence the
-    :func:`matplotlib.pyplot.pcolormesh`, :func:`matplotlib.pyplot.contour`
-    and :func:`matplotlib.pyplot.contourf` and
-    :func:`wradlib.georef.polar.georeference` routines under the hood.
-
-    Concerning the values of ``r``, ``az``, ``elev``, ``r`` should
-    give the location of the center of each range bin, ``az`` and
-    ``elev`` should give the angle at the center of the beam.
-
-    Parameters
-    ----------
-    data : :class:`numpy:numpy.ndarray`
-        The data to be plotted. It is assumed that the first dimension is over
-        the elevation angles, while the second dimension is over the range bins
-    r : :class:`numpy:numpy.ndarray`
-        The ranges. Units may be chosen arbitrarily, unless crs is set. In
-        that case the units must be meters.If None, a default is
-        calculated from the dimensions of ``data``.
-    rf: float
-        If present, factor for scaling range axis, defaults to 1.
-    az : float or :class:`numpy:numpy.ndarray`
-        `PPI` - The azimuth angles in degrees in increasing order. If None, a default is
-        calculated from the dimensions of ``data``. Only for ``PPI``.
-        `RHI` - float or array of same shape as ``th`` (below).
-    th : :class:`numpy:numpy.ndarray`
-        The elevation angles in degrees in increasing order. If None, a default is
-        calculated from the dimensions of ``data``. Only for `RHI`.
-    th_res : float or :class:`numpy:numpy.ndarray`
-        float or array of same shape as ``th``.
-        In RHI's it happens that the elevation angles are spaced wider than
-        the beam width. If this beam width (in degrees) is given in ``th_res``,
-        plot_rhi will plot the beams accordingly. Otherwise the behavior of
-        :func:`matplotlib:matplotlib.pyplot.pcolormesh` assumes all beams to be adjacent
-        to each other, which might lead to unexpected results. Only for ``RHI``.
-    elev : float or :class:`numpy:numpy.ndarray`
-        float or array of same shape as ``az``
-        Elevation angle of the scan or individual azimuths.
-        May improve georeferencing coordinates for larger elevation angles.
-        Only for `PPI`.
-    site : tuple
-        Tuple of coordinates of the radar site.
-        If ``crs`` is not used, this simply becomes the offset for the origin
-        of the coordinate system.
-        If ``crs`` is used, values must be given as (longitude, latitude,
-        altitude) tuple of geographical coordinates.
-        Defailts to None (0, 0, 0),
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR Spatial Reference Object describing projection
-        If this parameter is not None, ``site`` must be set. Then the function
-        will attempt to georeference the radar bins in the
-        coordinate system defined by the projection string.
-    fig : :class:`matplotlib:matplotlib.figure.Figure`
-        If given, the RHI will be plotted into this figure object. Axes are
-        created as needed. If None, a new figure object will be created or
-        current figure will be used, depending on ``ax``.
-    ax : :class:`matplotlib:matplotlib.axes.Axes` or :class:`matplotlib:matplotlib.gridspec.SubplotSpec`
-        If matplotlib Axes object is given, the RHI will be plotted into this
-        axes object.
-        If matplotlib grid definition is given (nrows/ncols/plotnumber),
-        axis are created in the specified place.
-        Defaults to '111', only one subplot/axis.
-    func : str
-        Name of plotting function to be used under the hood.
-        Defaults to 'pcolormesh'. 'contour' and 'contourf' can be selected too.
-    sweep_mode : str
-        RHI - "rhi"
-        PPI - "azimuth_surveillance", default
-
-    See also
-    --------
-    :func:`wradlib.vis.create_cg` : creation of curvelinear grid axes objects
-    :func:`wradlib.georef.projection.reproject`
-    :func:`wradlib.georef.projection.create_osr`
-
-    Returns
-    -------
-    ax : :class:`matplotlib:matplotlib.axes.Axes`
-        The axes object into which the RHI was plotted.
-    pm : :class:`matplotlib:matplotlib.collections.QuadMesh` or \
-        :class:`matplotlib:matplotlib.contour.QuadContourSet`
-        The result of the plotting function. Necessary, if you want to
-        add a colorbar to the plot.
-
-    Note
-    ----
-    If crs=``cg``, the ``cgax`` - curvelinear Axes (r-theta-grid)
-    is returned. ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
-    parasite axes object for plotting polar data can be derived like this::
-
-        caax = cgax.parasites[0]
-        paax = cgax.parasites[1]
-
-    The function :func:`~wradlib.vis.create_cg` uses the Matplotlib
-    `AXISARTIST <https://matplotlib.org/stable/api/toolkits/axisartist.html>`_ namespace.
-
-    Here are some limitations to normal Matplotlib Axes (see
-    `AXES_GRID1 <https://matplotlib.org/stable/api/toolkits/axes_grid1.html>`_).
-
-    Examples
-    --------
-    See :ref:`/notebooks/visualisation/plot_curvelinear_grids.ipynb`.
-    """
-    sweep_mode = kwargs.get("sweep_mode", None)
-    if sweep_mode is None:
-        warnings.warn(
-            "`sweep_mode`-kwarg not set, assuming `azimuth_surveillance` (PPI)",
-            category=UserWarning,
-            stacklevel=3,
-        )
-        sweep_mode = "azimuth_surveillance"
-    [
-        kwargs.setdefault(k, kwargs.get(k, v))
-        for k, v in dict(
-            r=None,
-            site=None,
-            crs=None,
-            fig=None,
-            ax=111,
-            func="pcolormesh",
-            rf=1.0,
-            sweep_mode=sweep_mode,
-        ).items()
-    ]
-    if sweep_mode == "azimuth_surveillance":
-        kwargs.setdefault("az", None)
-        kwargs.setdefault("elev", 0.0)
-        return plot(data, **kwargs)
-    else:
-        kwargs.setdefault("th", None)
-        kwargs.setdefault("th_res", None)
-        kwargs.setdefault("az", 0.0)
-        return plot(data, **kwargs)
-
-
-@plot.register(xarray.DataArray)
-def _plot_xarray(
+def plot(
     da,
     *,
     ax=111,
@@ -926,7 +772,7 @@ def _plot_xarray(
     Using ``crs='cg'`` the plotting is done in a curvelinear grid axes.
 
     Additional data can be plotted in polar coordinates or cartesian
-    coordinates depending which axes object is used.
+    coordinates depending on which axes object is used.
 
     ``**kwargs`` may be used to try to influence the
     :func:`matplotlib.pyplot.pcolormesh`,
@@ -1111,24 +957,24 @@ def _plot_xarray(
 class VisMethods(util.XarrayMethods):
     """wradlib xarray SubAccessor methods for visualization."""
 
-    @util.docstring(_plot_xarray)
+    @util.docstring(plot)
     def plot(self, *args, **kwargs):
         if not isinstance(self, VisMethods):
             return plot(self, *args, **kwargs)
         else:
             return plot(self._obj, *args, **kwargs)
 
-    @util.docstring(_plot_xarray)
+    @util.docstring(plot)
     def pcolormesh(self, *args, **kwargs):
         kwargs.setdefault("func", "pcolormesh")
         return self.plot(*args, **kwargs)
 
-    @util.docstring(_plot_xarray)
+    @util.docstring(plot)
     def contour(self, *args, **kwargs):
         kwargs.setdefault("func", "contour")
         return self.plot(*args, **kwargs)
 
-    @util.docstring(_plot_xarray)
+    @util.docstring(plot)
     def contourf(self, *args, **kwargs):
         kwargs.setdefault("func", "contourf")
         return self.plot(*args, **kwargs)
