@@ -1101,18 +1101,22 @@ def georeference(obj, **kwargs):
     dimlist += ["range"]
 
     # add xyz, ground range coordinates
-    obj.coords["x"] = (dimlist, xyz[..., 0])
-    obj.coords["y"] = (dimlist, xyz[..., 1])
-    obj.coords["z"] = (dimlist, xyz[..., 2])
-    obj.coords["gr"] = (dimlist, gr)
+    x_attrs = {"standard_name": "east_west_distance_from_radar", "units": "meters"}
+    y_attrs = {"standard_name": "north_south_distance_from_radar", "units": "meters"}
+    z_attrs = {"standard_name": "height_above_ground", "units": "meters"}
+    gr_attrs = {"standard_name": "distance_from_radar", "units": "meters"}
+    obj.coords["x"] = (dimlist, xyz[..., 0], x_attrs)
+    obj.coords["y"] = (dimlist, xyz[..., 1], y_attrs)
+    obj.coords["z"] = (dimlist, xyz[..., 2], z_attrs)
+    obj.coords["gr"] = (dimlist, gr, gr_attrs)
 
     # adding rays, bins coordinates
     if obj.sweep_mode == "azimuth_surveillance":
         bins, rays = np.meshgrid(obj["range"], obj["azimuth"], indexing="xy")
     else:
         bins, rays = np.meshgrid(obj["range"], obj["elevation"], indexing="xy")
-    obj.coords["rays"] = ([dim0, "range"], rays)
-    obj.coords["bins"] = ([dim0, "range"], bins)
+    obj.coords["rays"] = ([dim0, "range"], rays, obj[dim0].attrs)
+    obj.coords["bins"] = ([dim0, "range"], bins, obj["range"].attrs)
 
     proj_crs = CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
     obj = add_crs(obj, crs=proj_crs)
