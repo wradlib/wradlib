@@ -382,25 +382,13 @@ def _reproject_xarray(obj, **kwargs):
     input_core_dims = [list(arg.dims) for arg in args]
     output_core_dims = input_core_dims
 
-    # extract crs from obj
-    if "spatial_ref" in obj.coords:
-        proj_crs = xd.georeference.get_crs(obj)
-        obj_crs = wkt_to_osr(proj_crs.to_wkt())
-    else:
-        obj_crs = None
-
     # user overrides?
-    src_crs = kwargs.get("src_crs")
-    if src_crs is None:
-        if obj_crs is None:
-            src_crs = get_default_projection()
-        else:
-            src_crs = obj_crs
+    if src_crs := kwargs.get("src_crs") is None:
+        # extract crs from obj
+        proj_crs = xd.georeference.get_crs(obj)
+        src_crs = wkt_to_osr(proj_crs.to_wkt())
     else:
-        if obj_crs is not None:
-            warnings.warn(
-                "src_crs kwarg is overriding 'spatial_ref'-coordinate'", stacklevel=4
-            )
+        warnings.warn("src_crs kwarg is overriding 'crs_wkt'-coordinate'", stacklevel=4)
 
     kwargs.setdefault("src_crs", src_crs)
     trg_crs = kwargs.setdefault("trg_crs", get_default_projection())
@@ -419,9 +407,8 @@ def _reproject_xarray(obj, **kwargs):
         obj = obj.assign_coords({c: v})
 
     # set new crs to obj
-    if "spatial_ref" in obj.coords:
-        proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
-        obj = xd.georeference.add_crs(obj, crs=proj_crs)
+    proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
+    obj = xd.georeference.add_crs(obj, crs=proj_crs)
 
     return obj
 
