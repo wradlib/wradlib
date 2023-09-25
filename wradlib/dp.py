@@ -27,7 +27,7 @@ involves despeckling (:func:`wradlib.util.despeckle`), phase unfolding, and iter
 retrieval of :math:`Phi_{{DP}}` form :math:`K_{{DP}}`.
 The main workflow and its single steps is based on a publication by
 :cite:`Vulpiani2012`. For convenience, the entire workflow has been
-put together in the function :func:`wradlib.dp.process_raw_phidp_vulpiani`.
+put together in the function :func:`wradlib.dp._phidp_vulpiani`.
 
 Once a valid :math:`Phi_{{DP}}` profile has been established, the
 `kdp_from_phidp` functions can be used to retrieve :math:`K_{{DP}}`.
@@ -48,7 +48,7 @@ all input arrays.
 __all__ = [
     "depolarization",
     "kdp_from_phidp",
-    "process_raw_phidp_vulpiani",
+    "phidp_kdp_vulpiani",
     "texture",
     "unfold_phi",
     "unfold_phi_naive",
@@ -68,7 +68,7 @@ from wradlib import trafo, util
 
 
 @singledispatch
-def process_raw_phidp_vulpiani(
+def phidp_kdp_vulpiani(
     obj, dr, *, ndespeckle=5, winlen=7, niter=2, copy=False, **kwargs
 ):
     """Establish consistent :math:`Phi_{DP}` profiles from raw data.
@@ -180,8 +180,8 @@ def process_raw_phidp_vulpiani(
     return phidp, kdp
 
 
-@process_raw_phidp_vulpiani.register(xr.DataArray)
-def _process_raw_phidp_vulpiani_xarray(obj, *, winlen=7, **kwargs):
+@phidp_kdp_vulpiani.register(xr.DataArray)
+def _phidp_kdp_vulpiani_xarray(obj, *, winlen=7, **kwargs):
     """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
 
     Parameter
@@ -213,7 +213,7 @@ def _process_raw_phidp_vulpiani_xarray(obj, *, winlen=7, **kwargs):
     dim0 = obj.wrl.util.dim0()
     dr = obj.range.diff("range").median("range").values / 1000.0
     phidp, kdp = xr.apply_ufunc(
-        process_raw_phidp_vulpiani,
+        phidp_kdp_vulpiani,
         obj,
         dr,
         input_core_dims=[[dim0, "range"], [None]],
@@ -987,12 +987,12 @@ class DpMethods(util.XarrayMethods):
         else:
             return kdp_from_phidp(self._obj, *args, **kwargs)
 
-    @util.docstring(_process_raw_phidp_vulpiani_xarray)
-    def process_raw_phidp_vulpiani(self, *args, **kwargs):
+    @util.docstring(_phidp_kdp_vulpiani_xarray)
+    def phidp_kdp_vulpiani(self, *args, **kwargs):
         if not isinstance(self, DpMethods):
-            return process_raw_phidp_vulpiani(self, *args, **kwargs)
+            return phidp_kdp_vulpiani(self, *args, **kwargs)
         else:
-            return process_raw_phidp_vulpiani(self._obj, *args, **kwargs)
+            return phidp_kdp_vulpiani(self._obj, *args, **kwargs)
 
     @util.docstring(_texture_xarray)
     def texture(self, *args, **kwargs):

@@ -70,7 +70,7 @@ Implemented Xarray Accessor `wrl.dp` ({py:class}`wradlib.dp.DpMethods`) with:
 
 - {py:func}`~wradlib.dp.depolarization`
 - {py:func}`~wradlib.dp.kdp_from_phidp`
-- {py:func}`~wradlib.dp.process_raw_phidp_vulpiani`
+- {py:func}`~wradlib.dp.phidp_kdp_vulpiani`
 - {py:func}`~wradlib.dp.texture`
 - {py:func}`~wradlib.dp.unfold_phi_naive`
 - {py:func}`~wradlib.dp.unfold_phi`
@@ -79,6 +79,7 @@ Implemented Xarray Accessor `wrl.dp` ({py:class}`wradlib.dp.DpMethods`) with:
 ### Deprecations
 
 - `wrl.dp.linear_despeckle` -> {py:func}`wradlib.util.despeckle`
+- `wrl.dp.process_raw_phidp_vulpiani` -> {py:func}`wradlib.dp.phidp_kdp_vulpiani`
 
 ## georef-submodule
 ### Additions
