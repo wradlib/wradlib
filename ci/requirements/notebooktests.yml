@@ -5,6 +5,7 @@ dependencies:
   - python>=3.9
   - bottleneck
   - cartopy
+  - cmweather
   - codecov
   - coverage
   - dask

@@ -45,6 +45,12 @@ axisartist = util.import_optional("mpl_toolkits.axisartist")
 angle_helper = util.import_optional("mpl_toolkits.axisartist.angle_helper")
 osr = util.import_optional("osgeo.osr")
 cartopy = util.import_optional("cartopy")
+cmweather = util.import_optional("cmweather")
+
+if util.has_import(cmweather):
+    wrl_cmap = "HomeyerRainbow"
+else:
+    wrl_cmap = "turbo"
 
 
 def plot_ppi_crosshair(
@@ -755,7 +761,7 @@ def plot(
     fig=None,
     crs=None,
     func="pcolormesh",
-    cmap="viridis",
+    cmap=wrl_cmap,
     center=False,
     add_colorbar=False,
     add_labels=False,
