@@ -51,7 +51,6 @@ __all__ = [
     "phidp_kdp_vulpiani",
     "texture",
     "unfold_phi",
-    "unfold_phi_naive",
     "unfold_phi_vulpiani",
     "DpMethods",
 ]
@@ -331,12 +330,8 @@ def _unfold_phi_vulpiani_xarray(obj, **kwargs):
     kdp = kwargs.pop("kdp", None)
     if phidp is None or kdp is None:
         raise (TypeError, "Both `phidp` and `kdp` kwargs need to be given.")
-    if isinstance(phidp, str):
-        phidp = obj[phidp]
-    if isinstance(kdp, str):
-        kdp = obj[kdp]
-    assert isinstance(phidp, xr.DataArray)
-    assert isinstance(kdp, xr.DataArray)
+    phidp = util.get_dataarray(obj, phidp)
+    kdp = util.get_dataarray(obj, kdp)
     out = xr.apply_ufunc(
         unfold_phi_vulpiani,
         phidp,
@@ -532,6 +527,37 @@ def _kdp_from_phidp_xarray(obj, *, winlen=7, **kwargs):
     return out
 
 
+def _unfold_phi_naive(phidp, rho, gradphi, stdarr, beams, rs, w):
+    """This is the slow Python-based implementation (NOT RECOMMENDED).
+
+    The algorithm is based on the paper of :cite:`Wang2009`.
+    """
+    for beam in range(beams):
+        if np.all(phidp[beam] == 0):
+            continue
+
+        # step 1: determine location where meaningful PhiDP profile begins
+        for j in range(0, rs - w):
+            if (np.sum(stdarr[beam, j : j + w] < 5) == w) and (
+                np.sum(rho[beam, j : j + 5] > 0.9) == w
+            ):
+                break
+
+        ref = np.mean(phidp[beam, j : j + w])
+        for k in range(j + w, rs):
+            if np.sum(stdarr[beam, k - w : k] < 5) and np.logical_and(
+                gradphi[beam, k] > -5, gradphi[beam, k] < 20
+            ):
+                ref += gradphi[beam, k] * 0.5
+                if phidp[beam, k] - ref < -80:
+                    if phidp[beam, k] < 0:
+                        phidp[beam, k] += 360
+            elif phidp[beam, k] - ref < -80:
+                if phidp[beam, k] < 0:
+                    phidp[beam, k] += 360
+    return phidp
+
+
 @singledispatch
 def unfold_phi(phidp, rho, *, width=5, copy=False):
     """Unfolds differential phase by adjusting values that exceeded maximum \
@@ -540,7 +566,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
     Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
     THE RANGE.
 
-    This is the fast Fortran-based implementation (RECOMMENDED).
+    Uses the fast Fortran-based implementation if the speedup module is compiled.
 
     The algorithm is based on the paper of :cite:`Wang2009`.
 
@@ -568,6 +594,13 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
     # Check whether fast Fortran implementation is available
     speedup = util.import_optional("wradlib.speedup")
 
+    if util.has_import(speedup):
+        func = speedup.f_unfold_phi
+        dtype = "f4"
+    else:
+        func = _unfold_phi_naive
+        dtype = "f8"
+
     shape = phidp.shape
     assert rho.shape == shape, "rho and phidp must have the same shape."
 
@@ -584,11 +617,11 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
     for r in range(rs - 9):
         stdarr[..., r] = np.std(phidp[..., r : r + 9], -1)
 
-    phidp = speedup.f_unfold_phi(
-        phidp=phidp.astype("f4"),
-        rho=rho.astype("f4"),
-        gradphi=gradphi.astype("f4"),
-        stdarr=stdarr.astype("f4"),
+    phidp = func(
+        phidp=phidp.astype(dtype),
+        rho=rho.astype(dtype),
+        gradphi=gradphi.astype(dtype),
+        stdarr=stdarr.astype(dtype),
         beams=beams,
         rs=rs,
         w=width,
@@ -640,136 +673,6 @@ def _unfold_phi_xarray(obj, **kwargs):
     assert isinstance(rho, xr.DataArray)
     out = xr.apply_ufunc(
         unfold_phi,
-        phidp,
-        rho,
-        input_core_dims=[[dim0, "range"], [dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
-        dask="parallelized",
-        kwargs=kwargs,
-        dask_gufunc_kwargs=dict(allow_rechunk=True),
-    )
-    out.attrs = phidp.attrs
-    out.name = phidp.name
-    return out
-
-
-@singledispatch
-def unfold_phi_naive(phidp, rho, *, width=5, copy=False):
-    """Unfolds differential phase by adjusting values that exceeded maximum \
-    ambiguous range.
-
-    Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
-    THE RANGE.
-
-    This is the slow Python-based implementation (NOT RECOMMENDED).
-
-    The algorithm is based on the paper of :cite:`Wang2009`.
-
-    Parameters
-    ----------
-    phidp : :class:`numpy:numpy.ndarray`
-        array of shape (...,nr) with nr being the number of range bins
-    rho : :class:`numpy:numpy.ndarray`
-        array of same shape as ``phidp``
-
-    Keyword Arguments
-    -----------------
-    width : int
-       Width of the analysis window
-    copy : bool
-        Leaves original ``phidp`` array unchanged if set to True
-        (default: False)
-
-    Returns
-    -------
-    phidp : :class:`numpy:numpy.ndarray`
-        array of shape (..., n azimuth angles, n range gates) reconstructed
-        :math:`Phi_{DP}`
-    """
-    shape = phidp.shape
-    assert rho.shape == shape, "rho and phidp must have the same shape."
-
-    phidp = phidp.reshape((-1, shape[-1]))
-    if copy:
-        phidp = phidp.copy()
-    rho = rho.reshape((-1, shape[-1]))
-    gradphi = util.gradient_from_smoothed(phidp)
-
-    beams, rs = phidp.shape
-
-    # Compute the standard deviation within windows of 9 range bins
-    stdarr = np.zeros(phidp.shape, dtype=np.float32)
-    for r in range(rs - 9):
-        stdarr[..., r] = np.std(phidp[..., r : r + 9], -1)
-
-    for beam in range(beams):
-        if np.all(phidp[beam] == 0):
-            continue
-
-        # step 1: determine location where meaningful PhiDP profile begins
-        for j in range(0, rs - width):
-            if (np.sum(stdarr[beam, j : j + width] < 5) == width) and (
-                np.sum(rho[beam, j : j + 5] > 0.9) == width
-            ):
-                break
-
-        ref = np.mean(phidp[beam, j : j + width])
-        for k in range(j + width, rs):
-            if np.sum(stdarr[beam, k - width : k] < 5) and np.logical_and(
-                gradphi[beam, k] > -5, gradphi[beam, k] < 20
-            ):
-                ref += gradphi[beam, k] * 0.5
-                if phidp[beam, k] - ref < -80:
-                    if phidp[beam, k] < 0:
-                        phidp[beam, k] += 360
-            elif phidp[beam, k] - ref < -80:
-                if phidp[beam, k] < 0:
-                    phidp[beam, k] += 360
-    return phidp
-
-
-@unfold_phi_naive.register(xr.Dataset)
-def _unfold_phi_naive_xarray(obj, **kwargs):
-    """Unfolds differential phase by adjusting values that exceeded maximum ambiguous range.
-
-    Accepts arbitrarily dimensioned arrays, but THE LAST DIMENSION MUST BE
-    THE RANGE.
-
-    This is the slow Python-based implementation (NOT RECOMMENDED).
-
-    The algorithm is based on the paper of :cite:`Wang2009`.
-
-    Parameters
-    ----------
-    obj : :py:class:`xarray:xarray.Dataset`
-
-    Keyword Arguments
-    -----------------
-    phidp : str
-        name of PhiDP data variable
-    rho : str
-        name of RhoHV data variable
-    width : int
-       Width of the analysis window
-
-    Returns
-    -------
-    out : :py:class:`xarray:xarray.DataArray`
-        DataArray
-    """
-    dim0 = obj.wrl.util.dim0()
-    phidp = kwargs.pop("phidp", None)
-    rho = kwargs.pop("rho", None)
-    if phidp is None or rho is None:
-        raise (TypeError, "Both `phidp` and `rho` kwargs need to be given.")
-    if isinstance(phidp, str):
-        phidp = obj[phidp]
-    if isinstance(rho, str):
-        rho = obj[rho]
-    assert isinstance(phidp, xr.DataArray)
-    assert isinstance(rho, xr.DataArray)
-    out = xr.apply_ufunc(
-        unfold_phi_naive,
         phidp,
         rho,
         input_core_dims=[[dim0, "range"], [dim0, "range"]],
@@ -856,13 +759,7 @@ def _texture_xarray(obj):
     """
     dim0 = obj.wrl.util.dim0()
     if isinstance(obj, xr.Dataset):
-        dims = {dim0, "range"}
-        keep = xr.Dataset(
-            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
-        )
-        obj = xr.Dataset(
-            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims == dims}
-        )
+        obj, keep = util.get_apply_ufunc_variables(obj, dim0)
     out = xr.apply_ufunc(
         texture,
         obj,
@@ -999,13 +896,6 @@ class DpMethods(util.XarrayMethods):
             return texture(self, *args, **kwargs)
         else:
             return texture(self._obj, *args, **kwargs)
-
-    @util.docstring(_unfold_phi_naive_xarray)
-    def unfold_phi_naive(self, *args, **kwargs):
-        if not isinstance(self, DpMethods):
-            return unfold_phi_naive(self, *args, **kwargs)
-        else:
-            return unfold_phi_naive(self._obj, *args, **kwargs)
 
     @util.docstring(_unfold_phi_xarray)
     def unfold_phi(self, *args, **kwargs):

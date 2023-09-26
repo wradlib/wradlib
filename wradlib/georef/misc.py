@@ -67,6 +67,27 @@ def bin_altitude(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
     return np.sqrt(r**2 + sr**2 + 2 * r * sr * np.sin(np.radians(theta))) - reff
 
 
+def _apply_ufunc_wrapper(obj, func, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+    out = apply_ufunc(
+        func,
+        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
+            {dim0: obj[dim0]}
+        ),
+        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
+            range=obj.range
+        ),
+        obj.altitude.values,
+        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+
+    return out
+
+
 @bin_altitude.register(Dataset)
 @bin_altitude.register(DataArray)
 def _bin_altitude_xarray(obj, **kwargs):
@@ -89,22 +110,7 @@ def _bin_altitude_xarray(obj, **kwargs):
     z : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    dim0 = obj.wrl.util.dim0()
-    out = apply_ufunc(
-        bin_altitude,
-        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
-            {dim0: obj[dim0]}
-        ),
-        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
-            range=obj.range
-        ),
-        obj.altitude.values,
-        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
-        output_core_dims=[[dim0, "range"]],
-        dask="parallelized",
-        kwargs=kwargs,
-        dask_gufunc_kwargs=dict(allow_rechunk=True),
-    )
+    out = _apply_ufunc_wrapper(obj, bin_altitude, **kwargs)
     out.attrs = get_altitude_attrs()
     out.name = "bin_altitude"
     return out
@@ -173,22 +179,7 @@ def _bin_distance_xarray(obj, **kwargs):
     bin_distance : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    dim0 = obj.wrl.util.dim0()
-    out = apply_ufunc(
-        bin_distance,
-        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
-            {dim0: obj[dim0]}
-        ),
-        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
-            range=obj.range
-        ),
-        obj.altitude.values,
-        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
-        output_core_dims=[[dim0, "range"]],
-        dask="parallelized",
-        kwargs=kwargs,
-        dask_gufunc_kwargs=dict(allow_rechunk=True),
-    )
+    out = _apply_ufunc_wrapper(obj, bin_altitude)
     out.attrs = get_range_attrs()
     out.name = "bin_distance"
     return out

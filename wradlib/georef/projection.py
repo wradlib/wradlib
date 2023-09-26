@@ -531,23 +531,7 @@ def _get_earth_radius_xarray(obj, *, sr=None):
     radius : float
         earth radius in meter
     """
-    latitude = obj.latitude.values
-    if sr is None:
-        sr = get_default_projection()
-    radius_e = sr.GetSemiMajor()
-    radius_p = sr.GetSemiMinor()
-    latitude = np.radians(latitude)
-    radius = np.sqrt(
-        (
-            np.power(radius_e, 4) * np.power(np.cos(latitude), 2)
-            + np.power(radius_p, 4) * np.power(np.sin(latitude), 2)
-        )
-        / (
-            np.power(radius_e, 2) * np.power(np.cos(latitude), 2)
-            + np.power(radius_p, 2) * np.power(np.sin(latitude), 2)
-        )
-    )
-    return radius
+    return get_earth_radius(obj.latitude.values, sr=sr)
 
 
 def get_earth_projection(model="ellipsoid"):

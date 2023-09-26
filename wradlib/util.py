@@ -1400,6 +1400,24 @@ def dim0(obj):
     return list(set(obj.dims) & {"azimuth", "elevation"})[-1]
 
 
+def get_apply_ufunc_variables(obj, dim):
+    dims = {dim, "range"}
+    keep = xr.Dataset(
+        {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
+    )
+    obj = xr.Dataset(
+        {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims == dims}
+    )
+    return obj, keep
+
+
+def get_dataarray(obj, arr):
+    if isinstance(arr, str):
+        arr = obj[arr]
+    assert isinstance(arr, xr.DataArray)
+    return arr
+
+
 class XarrayMethods:
     """BaseClass to bind xarray methods to wradlib SubAccessor
 

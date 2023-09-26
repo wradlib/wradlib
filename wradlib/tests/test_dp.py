@@ -228,9 +228,9 @@ def test_linear_despeckle(dp_data, ndespeckle):
     util.despeckle(dp_data.phidp_raw0, n=ndespeckle, copy=True)
 
 
-def test_unfold_phi_naive(dp_data):
-    dp.unfold_phi_naive(dp_data.phidp_raw0, dp_data.rho)
-    dp.unfold_phi_naive(dp_data.phidp_raw0, dp_data.rho, copy=True)
+def test_unfold_phi(dp_data):
+    dp.unfold_phi(dp_data.phidp_raw0, dp_data.rho)
+    dp.unfold_phi(dp_data.phidp_raw0, dp_data.rho, copy=True)
 
 
 def test_unfold_phi_vulpiani():

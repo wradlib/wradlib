@@ -1070,13 +1070,7 @@ def _filter_window_distance_xarray(obj, **kwargs):
     dim0 = obj.wrl.util.dim0()
     rscale = obj.range.diff("range").median()
     if isinstance(obj, xr.Dataset):
-        dims = {dim0, "range"}
-        keep = xr.Dataset(
-            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
-        )
-        obj = xr.Dataset(
-            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims == dims}
-        )
+        obj, keep = util.get_apply_ufunc_variables(obj, dim0)
     out = xr.apply_ufunc(
         filter_window_distance,
         obj,
@@ -1087,10 +1081,11 @@ def _filter_window_distance_xarray(obj, **kwargs):
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
-    if isinstance(obj, xr.DataArray):
-        out.name = "filter_window_distance"
-    else:
+    if isinstance(obj, xr.Dataset):
         out = xr.merge([out, keep])
+    else:
+        out.name = "filter_window_distance"
+
     return out
 
 
