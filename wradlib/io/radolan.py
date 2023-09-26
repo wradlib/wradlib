@@ -211,7 +211,7 @@ def read_dx(filename):
 
     Notes
     -----
-    While the format appears to be well defined, there have been reports on DX-
+    While the format appears to be well-defined, there have been reports on DX-
     files that seem to produce errors. e.g. while one file usually contains a
     360 degree by 128 1km range bins, there are files, that contain 361 beams.
     Also, while usually azimuths are stored monotonously in ascending order,
@@ -238,8 +238,8 @@ def read_dx(filename):
     attributes : dict
         dictionary of attributes - currently implemented keys:
 
-        - 'azim' - azimuths np.array of shape (360,)
-        - 'elev' - elevations (1 per azimuth); np.array of shape (360,)
+        - 'azim' - azimuths array of shape (360, )
+        - 'elev' - elevations (1 per azimuth); array of shape (360, )
         - 'clutter' - clutter mask; boolean array of same shape as `data`;
           corresponds to bit 15 set in each dataset.
         - 'bytes'- the total product length (including header).
@@ -736,7 +736,7 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
     (see format description on the RADOLAN project homepage :cite:`DWD2009`).
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
     resolution and in polar-stereographic projection. There are other grid
-    resolutions for different composites (eg. PC, PG)
+    resolutions for different composites (e.g. PC, PG)
 
     Note
     ----
@@ -750,7 +750,7 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
     This function already evaluates and applies the so-called
     PR factor which is specified in the header section of the RADOLAN files.
     The raw values in an RY file are in the unit 0.01 mm/5min, while
-    read_radolan_composite returns values in mm/5min (i. e. factor 100 higher).
+    read_radolan_composite returns values in mm/5min (e.g. factor 100 higher).
     The factor is also returned as part of attrs dictionary under
     keyword "precision".
 

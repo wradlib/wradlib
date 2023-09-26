@@ -42,10 +42,10 @@ def z_to_r(z, *, a=200.0, b=1.6):
     z : float or :class:`numpy:numpy.ndarray`
         Corresponds to reflectivity Z in mm**6/m**3
     a : float
-        Parameter a of the Z/R relationship
+        Parameter ``a`` of the Z/R-relationship
         Standard value according to Marshall-Palmer is a=200., b=1.6
     b : float
-        Parameter b of the Z/R relationship
+        Parameter ``b`` of the Z/R-relationship
         Standard value according to Marshall-Palmer is b=1.6
 
     Note
@@ -77,10 +77,10 @@ def _z_to_r_xarray(obj, **kwargs):
     Keyword Arguments
     -----------------
     a : float
-        Parameter a of the Z/R relationship
+        Parameter a of the Z/R-relationship
         Standard value according to Marshall-Palmer is a=200., b=1.6
     b : float
-        Parameter b of the Z/R relationship
+        Parameter b of the Z/R-relationship
         Standard value according to Marshall-Palmer is b=1.6
 
     Note
@@ -118,10 +118,10 @@ def r_to_z(r, *, a=200.0, b=1.6):
     r : float or :class:`numpy:numpy.ndarray`
         Corresponds to rainfall intensity in mm/h
     a : float
-        Parameter a of the Z/R relationship
+        Parameter ``a`` of the Z/R-relationship
         Standard value according to Marshall-Palmer is a=200., b=1.6
     b : float
-        Parameter b of the Z/R relationship
+        Parameter ``b`` of the Z/R-relationship
         Standard value according to Marshall-Palmer is b=1.6
 
     Note
@@ -148,10 +148,10 @@ def _r_to_z_xarray(obj, **kwargs):
     obj : :py:class:`xarray:xarray.DataArray`
         Corresponds to rainfall intensity in mm/h
     a : float
-        Parameter a of the Z/R relationship
+        Parameter ``a`` of the Z/R-relationship
         Standard value according to Marshall-Palmer is a=200., b=1.6
     b : float
-        Parameter b of the Z/R relationship
+        Parameter ``b`` of the Z/R-relationship
         Standard value according to Marshall-Palmer is b=1.6
 
     Note
@@ -225,7 +225,7 @@ def z_to_r_enhanced(z, *, polar=True, shower=True):
         Corresponds to reflectivity Z in mm**6/m**3
         ND-array, at least 2D
     polar : bool
-        defaults to to True (polar data), False for cartesian data.
+        defaults to True for polar data, False for cartesian data.
     shower : bool
         output shower index, defaults to True
 

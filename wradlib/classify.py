@@ -991,7 +991,7 @@ def filter_window_distance(img, rscale, *, fsize=1500, tr1=7):
     --------
     :func:`~wradlib.classify.filter_gabella_a` - Original version of the filter
 
-    :func:`~wradlib.classify.filter_gabella_b` - filter using a echo area
+    :func:`~wradlib.classify.filter_gabella_b` - filter using an echo area
     """
     ascale = 2 * np.pi / img.shape[0]
     count = np.ones(img.shape, dtype=int)
@@ -1065,7 +1065,7 @@ def _filter_window_distance_xarray(obj, **kwargs):
     --------
     :func:`~wradlib.classify.filter_gabella_a` - Original version of the filter
 
-    :func:`~wradlib.classify.filter_gabella_b` - filter using a echo area
+    :func:`~wradlib.classify.filter_gabella_b` - filter using an echo area
     """
     dim0 = obj.wrl.util.dim0()
     rscale = obj.range.diff("range").median()
@@ -1109,7 +1109,7 @@ def msf_index_indep(msf, idp, obs):
         of the independent observable.
     obs : :class:`numpy:numpy.ndarray`
         Array of arbitrary shape containing the data of the independent
-        observable (eg. (rays, bins) or (scan, rays, bins)).
+        observable (e.g. (rays, bins) or (scan, rays, bins)).
 
     Returns
     -------
@@ -1340,7 +1340,7 @@ def _classify_xarray(data, threshold=0.0):
 
     Parameters
     ----------
-    data : np.ndarray
+    data : :class:`numpy:numpy.ndarray`
         Array which is of size (hmc-class, data.shape), containing the
         weighted hmc-membership probability values.
 
@@ -1352,7 +1352,7 @@ def _classify_xarray(data, threshold=0.0):
 
     Returns
     -------
-    out : xr.DataArray
+    out : xarray.DataArray
         DataArray containing probability scores.
         No precip is added on the top.
     """

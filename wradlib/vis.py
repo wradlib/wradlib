@@ -146,7 +146,7 @@ def plot_ppi_crosshair(
         # projected
         # reproject the site coordinates
         psite = georef.reproject(*site, trg_crs=crs)
-        # these lines might not be straigt so we approximate them with 10
+        # these lines might not be straight, so we approximate them with 10
         # segments. Produce polar coordinates
         rr, az = np.meshgrid(np.linspace(0, ranges[-1], 10), angles)
         # convert from spherical to projection
@@ -893,7 +893,7 @@ def plot(
             ax.axis["lon"].major_ticklabels.set_visible(False)
             # and also set tickmarklength to zero for better presentation
             ax.axis["lon"].major_ticks.set_ticksize(0)
-            # set clip-box, needed if user adapts x/y-limits (eg. RHI)
+            # set clip-box, needed if user adapts x/y-limits (e.g. RHI)
             ax.axis["lon"].set_clip_box(
                 trans.TransformedBbox(trans.Bbox([[0, 0], [1, 1]]), ax.transAxes)
             )

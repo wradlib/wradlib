@@ -17,7 +17,7 @@ The general usage is similar to the :mod:`wradlib.ipol` and
 You have to create an instance of a class (derived from
 :class:`~wradlib.zonalstats.ZonalDataBase`) by using
 the spatial information of your source and target objects (e.g. radar bins and
-catchment polygons). The Zonal Data within this object can be saved eg. as an
+catchment polygons). The Zonal Data within this object can be saved e.g. as an
 ESRI Shapefile.
 
 This object is then called with another class to compute zonal statistics for
@@ -320,7 +320,7 @@ class ZonalDataBase:
 
     def _get_intersection(self, *, trg=None, idx=None, buf=0.0):
         """Just a toy function if you want to inspect the intersection
-        points/polygons of an arbitrary target or an target by index.
+        points/polygons of an arbitrary target or a target by index.
         """
         # TODO: kwargs necessary?
 

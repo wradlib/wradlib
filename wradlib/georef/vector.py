@@ -255,7 +255,7 @@ def ogr_create_layer(ds, name, *, crs=None, geom_type=None, fields=None):
     crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         object
     geom_type : :py:class:`gdal:osgeo.ogr.GeometryType`
-        (eg. ogr.wkbPolygon)
+        (e.g. ogr.wkbPolygon)
     fields : list
         list of 2 element tuples
         (str, :py:class:`gdal:osgeo.ogr.DataType`) field name, field type

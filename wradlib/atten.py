@@ -206,7 +206,7 @@ def bisect_reference_attenuation(
     max_iterations=10,
 ):
     """Find the optimal attenuation coefficients for a gateset to achieve a \
-    given reference attenuation using a the forward correction algorithm in \
+    given reference attenuation using the forward correction algorithm in \
     combination with the bisection method.
 
     Parameters
@@ -222,12 +222,12 @@ def bisect_reference_attenuation(
         the last dimension is 1, as it constitutes the reference pia [dB] of
         the last range gate of every beam.
     a_max : float
-        Upper bound of the bisection interval within the linear coefficient a
+        Upper bound of the bisection interval within the linear coefficient ``a``
         of the k-Z relation has to be. ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 1.67e-4.
     a_min : float
-        Lower bound of the bisection interval within the linear coefficient a
+        Lower bound of the bisection interval within the linear coefficient ``a``
         of the k-Z relation has to be. ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 2.33e-5.
@@ -438,7 +438,7 @@ def correct_attenuation_constrained(
     constraints : list
         List of constraint functions. The signature of these functions has to
         be constraint_function(`gateset`, `k`, `*constr_args`). Their return
-        value must be a boolean array of shape gateset.shape[:-1] set to True
+        value must be a boolean array of shape `gateset.shape[:-1]` set to True
         for beams, which do not fulfill the constraint.
     constraint_args : list
         List of lists, which are to be passed to the individual constraint
@@ -634,7 +634,8 @@ def correct_radome_attenuation_empirical(
         A numpy function for statistical aggregation of the
         central rangebins defined by n_r.
 
-        Potential options: np.mean, np.median, np.max, np.min.
+        Potential options: :func:`numpy:numpy.mean`, :func:`numpy:numpy.median`,
+        :func:`numpy:numpy.max`, :func:`numpy:numpy.min`.
 
     Returns
     -------

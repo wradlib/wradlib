@@ -885,7 +885,7 @@ def maximum_intensity_projection(
     elev : float
         elevation angle of scan, Defaults to 0.
     autoext : bool
-        This routine uses numpy.digitize to bin the data.
+        This routine uses :func:`numpy.numpy.digitize` to bin the data.
         As this function needs bounds, we create one set of coordinates more
         than would usually be provided by `r` and `az`.
 
@@ -970,7 +970,7 @@ def maximum_intensity_projection(
 
     # fill mip array,
     # in some cases there are no values found in the specified range and height
-    # then we fill in nans and interpolate afterwards
+    # then we fill in nans and interpolate
     for i in range(0, len(range_mask)):
         mask1 = range_mask[i]
         found = False

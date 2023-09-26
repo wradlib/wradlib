@@ -50,8 +50,8 @@ arrays containing the actual data::
     adjuster = AdjustAdd(obs_coords, raw_coords)
     adjusted = adjuster(obs, raw)
 
-Both ``obs`` and ``raw`` need to be flat (1-dimensional) arrays of shape (n,)
-that have the same length as the the ``obs_coords`` and ``raw_coords`` arrays,
+Both ``obs`` and ``raw`` need to be flat (1-dimensional) arrays of shape (n, )
+that have the same length as the ``obs_coords`` and ``raw_coords`` arrays,
 respectively.
 
 The user can specify the approach that should be used to interpolate the error
@@ -72,8 +72,8 @@ Warning
     influence the behaviour of the adjustment (which gauges are considered,
     how is an error interpolation carried out, ...). Read the docs carefully
     and try to experiment with the effects of the different control parameters.
-    There might be situations in which the algorithms decides - based on the
-    control parameter -  not to do an adjustment and just return the unadjusted
+    There might be situations in which the algorithms decide - based on the
+    control parameter - not to do an adjustment and just return the unadjusted
     values.
 
 Cross validation
@@ -158,7 +158,7 @@ class AdjustBase(ipol.IpolBase):
 
             - *method*: string
               defaults to 'linregr' which fits a regression line through observed
-              and estimated values and than gets the bias from the inverse of
+              and estimated values and then gets the bias from the inverse of
               the slope.
               Other values: 'mean' or 'median' compute the mean or the median of
               the ratios between gauge and radar observations.
@@ -242,7 +242,7 @@ class AdjustBase(ipol.IpolBase):
         When an instance of an Adjust... class is created, an instance of the
         desired
         Interpolation class (argument ipclass) is created as attribute
-        *self.ip*). However, this instance is only valid in case all
+        *self.ip*. However, this instance is only valid in case all
         observation points (attribute *self.obs_coords*) have valid
         observation-radar pairs. In case points are missing (or in case the
         instance is called in the sourse of cross validation), a new instance
@@ -283,12 +283,12 @@ class AdjustBase(ipol.IpolBase):
         Parameters
         ----------
         obs : :py:class:`numpy:numpy.ndarray`
-            flat (1-D) array of floats with shape (num gauges,)
+            flat (1-D) array of floats with shape (num gauges, )
             These are the gage observations used for adjustment. This array
             needs to be of the same length as the array "obs_coords" used to
             initialize the adjustment object.
         raw : :py:class:`numpy:numpy.ndarray`
-            flat (1-D) array of floats with shape (num radar cells,)
+            flat (1-D) array of floats with shape (num radar cells, )
             These are the raw (unadjusted) radar rainfall values. This array
             needs to be of the same length as the array "raw_coords" used to
             initialize the adjustment object.
@@ -517,7 +517,7 @@ class AdjustMixed(AdjustBase):
        R_{gage} = R_{radar} \\cdot (1 + \\delta) +0 \\epsilon
 
     :math:`\\delta` and :math:`\\epsilon` have to be assumed to be independent
-    and normally distributed. The present implementation is based on a Least
+    and normally distributed. The present implementation is based on teh Least
     Squares estimation of :math:`\\delta` and :math:`\\epsilon` for each rain
     gage location. :math:`\\delta` and :math:`\\epsilon` are then interpolated
     and used to correct the radar rainfall field.
@@ -579,7 +579,7 @@ class AdjustMixed(AdjustBase):
         ip = self._checkip(ix, targets)
 
         # -----------------THIS IS THE ACTUAL ADJUSTMENT APPROACH--------------
-        # computing epsilon and delta from least squares
+        # computing epsilon and delta from the least squares
         epsilon = (obs[ix] - rawatobs[ix]) / (rawatobs[ix] ** 2 + 1.0)
         delta = ((obs[ix] - epsilon) / rawatobs[ix]) - 1.0
         # interpolate error fields
@@ -821,8 +821,7 @@ def _get_neighbours_ix(obs_coords, raw_coords, nnear):
         array of float of shape (num_points,ndim)
         from these coordinate pairs the neighbours are selected
     nnear : int
-        number of neighbours to be selected per coordinate pair of
-        ``obs_coords``
+        number of neighbours to be selected per coordinate ``obs_coords``
 
     """
     # plant a tree

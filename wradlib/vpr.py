@@ -16,7 +16,7 @@ in defined heights. This module is intended to provide a set of tools to
 account for these effects.
 
 The first step will normally be to reference the polar volume data in a
-3-dimensional Cartesian coordinate system. The three dimensional Cartesian
+3-dimensional Cartesian coordinate system. The three-dimensional Cartesian
 coordinates of the original polar volume data can be computed using
 :func:`wradlib.vpr.volcoords_from_polar`.
 
@@ -26,7 +26,7 @@ to create so-called `Constant Altitude Plan Position Indicators (CAPPI)
 <https://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_
 in order to make radar observations at different distances from the radar more
 comparable. Basically, a CAPPI is simply one slice out of a 3-D volume grid.
-Analoguous, we will refer to the elements in a three dimensional Cartesian grid
+Analoguous, we will refer to the elements in a three-dimensional Cartesian grid
 as *voxels*. In wradlib, you can create
 CAPPIS (:class:`~wradlib.vpr.CAPPI`) and Pseudo CAPPIs
 (:class:`~wradlib.vpr.PseudoCAPPI`) for different altitudes at once.
@@ -80,7 +80,7 @@ class CartesianVolume:
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels, )
 
     Examples
     --------
@@ -122,13 +122,13 @@ class CartesianVolume:
         Parameters
         ----------
         data : :class:`numpy:numpy.ndarray`
-            1-d array of length (num radar bins in volume,)
+            1-d array of length (num radar bins in volume, )
             The length of this array must be the same as len(polcoords)
 
         Returns
         -------
         output : :class:`numpy:numpy.ndarray`
-            1-d array of length (num voxels,)
+            1-d array of length (num voxels, )
 
         """
         # Interpolate data in 3-D
@@ -171,7 +171,7 @@ class CartesianVolume:
         Returns
         -------
         output : :class:`numpy:numpy.ndarray`
-            Boolean array of length (num voxels,)
+            Boolean array of length (num voxels, )
         """
         return np.repeat(False, len(gridcoords))
 
@@ -205,7 +205,7 @@ class CAPPI(CartesianVolume):
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels, )
 
     See Also
     --------
@@ -308,7 +308,7 @@ class PseudoCAPPI(CartesianVolume):
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels, )
 
     See Also
     --------
@@ -621,7 +621,7 @@ def norm_vpr_stats(volume, reference_layer, *, stat=None, **kwargs):
     Returns
     -------
     output : :py:class:`numpy:numpy.ndarray` or :py:class:`numpy:numpy.ma.MaskedArray`
-        Array of shape (num vertical layers,) which provides the statistic from
+        Array of shape (num vertical layers, ) which provides the statistic from
         ``stat`` applied over all normalised vertical profiles (e.g. the
         mean normalised vertical profile if :py:func:`numpy:numpy.mean` is used)
 

@@ -74,7 +74,7 @@ def phidp_kdp_vulpiani(
     """Establish consistent :math:`Phi_{DP}` profiles from raw data.
 
     This approach is based on :cite:`Vulpiani2012` and involves a
-    two step procedure of :math:`Phi_{DP}` reconstruction.
+    two-step procedure of :math:`Phi_{DP}` reconstruction.
 
     Processing of raw :math:`Phi_{DP}` data contains the following steps:
 
@@ -113,10 +113,10 @@ def phidp_kdp_vulpiani(
     Returns
     -------
     phidp : :class:`numpy:numpy.ndarray`
-        array of shape (..., , n azimuth angles, n range gates) reconstructed
+        array of shape (..., n azimuth angles, n range gates) reconstructed
         :math:`Phi_{DP}`
     kdp : :class:`numpy:numpy.ndarray`
-        array of shape (..., , n azimuth angles, n range gates)
+        array of shape (..., n azimuth angles, n range gates)
         ``kdp`` estimate corresponding to ``phidp`` output
 
     Examples
@@ -425,7 +425,7 @@ def kdp_from_phidp(
     Parameters
     ----------
     phidp : :class:`numpy:numpy.ndarray`
-        multi-dimensional array, note that the range dimension must be the
+        multidimensional array, note that the range dimension must be the
         last dimension of the input array.
 
     Keyword Arguments
@@ -562,7 +562,7 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
     Returns
     -------
     phidp : :class:`numpy:numpy.ndarray`
-        array of shape (..., , n azimuth angles, n range gates) reconstructed
+        array of shape (..., n azimuth angles, n range gates) reconstructed
         :math:`Phi_{DP}`
     """
     # Check whether fast Fortran implementation is available
@@ -683,7 +683,7 @@ def unfold_phi_naive(phidp, rho, *, width=5, copy=False):
     Returns
     -------
     phidp : :class:`numpy:numpy.ndarray`
-        array of shape (..., , n azimuth angles, n range gates) reconstructed
+        array of shape (..., n azimuth angles, n range gates) reconstructed
         :math:`Phi_{DP}`
     """
     shape = phidp.shape
@@ -794,7 +794,7 @@ def texture(data):
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
-        multi-dimensional array with shape (..., number of beams, number
+        multidimensional array with shape (..., number of beams, number
         of range bins)
 
     Returns

@@ -237,7 +237,7 @@ class Nearest(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -370,7 +370,7 @@ class Idw(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -466,7 +466,7 @@ class Linear(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -965,8 +965,8 @@ class OrdinaryKriging(IpolBase):
 
     Most (co-)variograms are characterized by a sill parameter (which is
     the (co-)variance at separation distance 0) a range parameter (which
-    indicates a separation distance after which the the covariance drops
-    close to zero) an sometimes additional parameters governing the shape
+    indicates a separation distance after which the covariance drops
+    close to zero) a sometimes additional parameters governing the shape
     of the function. In the following range is given by the variable `r` and
     the sill by the variable `s`.
     Currently implemented are:
@@ -1003,7 +1003,7 @@ class OrdinaryKriging(IpolBase):
     these only depend on the configuration of the points.
 
     The call method is then only used to calculate estimated values at the
-    target points based on those at the source points. Therefore the main
+    target points based on those at the source points. Therefore, the main
     computational load is experienced during initialization. This behavior is
     different from that of the Idw or Nearest Interpolators.
 
@@ -1110,7 +1110,7 @@ class OrdinaryKriging(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -1176,10 +1176,10 @@ class ExternalDriftKriging(IpolBase):
     nnearest : int
         max. number of neighbours to be considered
     src_drift : :class:`numpy:numpy.ndarray`
-        ndarray of floats, shape (nsrcpoints,)
+        ndarray of floats, shape (nsrcpoints, )
         values of the external drift at each source point
     trg_drift : :class:`numpy:numpy.ndarray`
-        ndarray of floats, shape (ntrgpoints,)
+        ndarray of floats, shape (ntrgpoints, )
         values of the external drift at each target point
 
     See Also
@@ -1315,7 +1315,7 @@ class ExternalDriftKriging(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -1383,7 +1383,7 @@ class ExternalDriftKriging(IpolBase):
                 ip = np.nansum(masked_weights * trgvals, axis=1)
             else:
                 ip = np.nansum(weights[:, :-2][..., np.newaxis] * trgvals, axis=1)
-        # otherwise we need to setup and solve the kriging system for each
+        # otherwise we need to set up and solve the kriging system for each
         # field individually
         else:
             ip = np.empty((self.trg.shape[0], v.shape[1]))
@@ -1421,7 +1421,7 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     Convenience function to use the interpolation classes in an efficient way
 
     The interpolation classes in :mod:`wradlib.ipol` are computationally very
-    efficient if they are applied on large multi-dimensional arrays of which
+    efficient if they are applied on large multidimensional arrays of which
     the first dimension must be the locations' dimension (1d or 2d coordinates)
     and the following dimensions can be anything (e.g. time or ensembles). This
     way, the weights need to be computed only once. However, this can only be
@@ -1532,7 +1532,7 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
-        2 dimensional array (azimuth, ranges) of floats;
+        2-dimensional array (azimuth, ranges) of floats;
 
         if no mask is assigned explicitly polar data should be a masked array
 
@@ -1561,7 +1561,7 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     >>> da = wrl.georef.create_xarray_dataarray(filled_a)
     >>> da = da.wrl.georef.georeference()
     >>> pm = wrl.vis.plot(da)
-    >>> # the same result can be achieved by using an masked array instead of an explicit mask  # noqa
+    >>> # the same result can be achieved by using a masked array instead of an explicit mask  # noqa
     >>> mdata = np.ma.array(data, mask = masked_values)
     >>> filled_b = wrl.ipol.interpolate_polar(mdata, ipclass = wrl.ipol.Linear)  # noqa
     >>> da = wrl.georef.create_xarray_dataarray(filled_b)
@@ -1655,11 +1655,11 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     Parameters
     ----------
     cartgrid : :class:`numpy:numpy.ndarray`
-        3 dimensional array (nx, ny, lon/lat) of floats;
+        3-dimensional array (nx, ny, lon/lat) of floats;
     values : :class:`numpy:numpy.ndarray`
-        2 dimensional array (nx, ny) of data values
+        2-dimensional array (nx, ny) of data values
     newgrid : :class:`numpy:numpy.ndarray`
-        Nx2 dimensional array (..., lon/lat) of floats
+        Nx2-dimensional array (..., lon/lat) of floats
     kwargs : :func:`scipy:scipy.interpolate.griddata`
 
     Returns
@@ -1695,11 +1695,11 @@ def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
     Parameters
     ----------
     cartgrid : :class:`numpy:numpy.ndarray`
-        3 dimensional array (nx, ny, lon/lat) of floats
+        3-dimensional array (nx, ny, lon/lat) of floats
     values : :class:`numpy:numpy.ndarray`
-        2 dimensional array (nx, ny) of data values
+        2-dimensional array (nx, ny) of data values
     newgrid : :class:`numpy:numpy.ndarray`
-        Nx2 dimensional array (..., lon/lat) of floats
+        Nx2-dimensional array (..., lon/lat) of floats
     kwargs : :func:`scipy:scipy.ndimage.map_coordinates`
 
     Returns

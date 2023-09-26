@@ -14,7 +14,7 @@ IRIS (Vaisala Sigmet Interactive Radar Information System)
 
 See M211318EN-F Programming Guide ftp://ftp.sigmet.com/outgoing/manuals/
 
-Reading sweep data can be skipped by setting `loaddata=False`. By default the data
+Reading sweep data can be skipped by setting `loaddata=False`. By default, the data
 is decoded on the fly. Using `rawdata=True` the data will be kept undecoded.
 
 .. autosummary::

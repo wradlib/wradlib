@@ -99,7 +99,7 @@ def _correct_parallax_numpy(sr_xy, nbin, drt, alpha):
 
 @correct_parallax.register(Dataset)
 def _correct_parallax_xarray(obj, drt, **kwargs):
-    """Adjust the geo-locations of the SR pixels
+    """Adjust the geolocations of the SR pixels
 
     With *SR*, we refer to precipitation radars based on space-born platforms
     such as TRMM or GPM.
