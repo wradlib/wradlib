@@ -109,7 +109,7 @@ def spherical_to_xyz(
         )
     else:
         # Set up aeqd-projection sitecoord-centered, assuming spherical earth
-        # use Sphere azimuthal equidistant projection
+        # use sphere azimuthal equidistant projection
         projstr = (
             f"+proj=aeqd +lon_0={site[0]:f} +lat_0={site[1]:f} "
             f"+a={re:f} +b={re:f} +units=m +no_defs"
@@ -486,11 +486,8 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
     >>> import numpy as np
     >>> from matplotlib import collections
     >>> import matplotlib.pyplot as pl
-    >>> #pl.interactive(True)
     >>> # define the polar coordinates and the site coordinates in lat/lon
     >>> r = np.array([50., 100., 150., 200.]) * 1000
-    >>> # _check_polar_coords fails in next line
-    >>> # az = np.array([0., 45., 90., 135., 180., 225., 270., 315., 360.])
     >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
     >>> el = 1.0
     >>> site = (9.0, 48.0, 0)
@@ -498,14 +495,13 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
     >>> # plot the resulting mesh
     >>> fig = pl.figure()
     >>> ax = fig.add_subplot(111)
-    >>> #polycoll = mpl.collections.PolyCollection(vertices,closed=True, facecolors=None)  # noqa
     >>> polycoll = collections.PolyCollection(polygons[...,:2], closed=True, facecolors='None')  # noqa
     >>> ret = ax.add_collection(polycoll, autolim=True)
     >>> pl.autoscale()
     >>> pl.show()
 
     """
-    # prepare the range and azimuth array so they describe the boundaries of
+    # prepare the range and azimuth array, so they describe the boundaries of
     # a bin, not the centroid
     r, phi = _check_polar_coords(r, phi)
     r = np.insert(r, 0, r[0] - _get_range_resolution(r))
@@ -799,9 +795,6 @@ def _check_polar_coords(r, az, /):
             "The azimuth angles of the current " "dataset are not equidistant.",
             UserWarning,
         )
-        # print('Invalid polar coordinates: Azimuth angles '
-        #       'are not equidistant.')
-        # exit()
     return r, az
 
 
@@ -905,16 +898,11 @@ def maximum_intensity_projection(
     mip : :class:`numpy:numpy.ndarray`
         Array containing the maximum intensity projection (range, range*2)
     """
-    # this may seem odd at first, but d1 and d2 are also used in several
-    # plotting functions and thus it may be easier to compare the functions
-    d1 = r
-    d2 = az
-
     # providing 'reasonable defaults', based on the data's shape
-    if d1 is None:
-        d1 = np.arange(data.shape[1], dtype=np.float_)
-    if d2 is None:
-        d2 = np.arange(data.shape[0], dtype=np.float_)
+    if r is None:
+        r = np.arange(data.shape[1], dtype=np.float_)
+    if az is None:
+        az = np.arange(data.shape[0], dtype=np.float_)
 
     if angle is None:
         angle = 0.0
@@ -925,23 +913,23 @@ def maximum_intensity_projection(
     if autoext:
         # the ranges need to go 'one bin further', assuming some regularity
         # we extend by the distance between the preceding bins.
-        x = np.append(d1, d1[-1] + (d1[-1] - d1[-2]))
+        x = np.append(r, r[-1] + (r[-1] - r[-2]))
         # the angular dimension is supposed to be cyclic, so we just add the
         # first element
-        y = np.append(d2, d2[0])
+        y = np.append(az, az[0])
     else:
         # no autoext basically is only useful, if the user supplied the correct
         # dimensions himself.
-        x = d1
-        y = d2
+        x = r
+        y = az
 
     # roll data array to specified azimuth, assuming equidistant azimuth angles
-    ind = (d2 >= angle).nonzero()[0][0]
+    ind = (az >= angle).nonzero()[0][0]
     data = np.roll(data, ind, axis=0)
 
     # build cartesian range array, add delta to last element to compensate for
     # open bound (np.digitize)
-    dc = np.linspace(-np.max(d1), np.max(d1) + 0.0001, num=d1.shape[0] * 2 + 1)
+    dc = np.linspace(-np.max(r), np.max(r) + 0.0001, num=r.shape[0] * 2 + 1)
 
     # get height values from polar data and build cartesian height array
     # add delta to last element to compensate for open bound (np.digitize)
@@ -955,11 +943,9 @@ def maximum_intensity_projection(
 
     # create meshgrid for cartesian slices
     xs, ys = np.meshgrid(dc, hc)
-    # xs, ys = np.meshgrid(dc,x)
 
     # convert polar coordinates to cartesian
     xxx = xx * np.cos(np.radians(90.0 - yy))
-    # yyy = xx * np.sin(np.radians(90.-yy))
 
     # digitize coordinates according to cartesian range array
     range_dig1 = np.digitize(xxx.ravel(), dc)
@@ -979,7 +965,7 @@ def maximum_intensity_projection(
     range_mask = [(range_dig1 == i).ravel().nonzero()[0] for i in range(1, len(dc))]
 
     # create mip output array, set outval to inf
-    mip = np.zeros((d1.shape[0], 2 * d1.shape[0]))
+    mip = np.zeros((r.shape[0], 2 * r.shape[0]))
     mip[:] = np.inf
 
     # fill mip array,

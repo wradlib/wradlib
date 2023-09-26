@@ -34,7 +34,6 @@ import warnings
 
 import numpy as np
 
-from wradlib.georef import projection
 from wradlib.util import has_import, import_optional
 
 gdal = import_optional("osgeo.gdal")
@@ -104,10 +103,10 @@ def transform_geometry(geom, trg_crs, **kwargs):
     gsrs = geom.GetSpatialReference()
     crs = kwargs.get("src_crs", gsrs)
 
-    # crs is None assume wgs84 lonlat, but warn too
     if crs is None:
-        crs = projection.get_default_projection()
-        warnings.warn("geometry without spatial reference - assuming wgs84")
+        raise ValueError(
+            "geometry without spatial reference, please provide fitting spatial reference object in `src_crs`-kwarg."
+        )
 
     # transform if not the same spatial reference system
     if not crs.IsSame(trg_crs):

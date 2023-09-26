@@ -136,7 +136,6 @@ def udata():
         img[5, 6:8] = 1  # line
         img[20, :] = 1  # spike
         img[9:12, 4:7] = 1  # precip field
-        # img[15:17,5:7] = np.nan # nodata as nans
 
     yield TestUtil
 
@@ -144,8 +143,6 @@ def udata():
 def test_filter_window_polar(udata):
     np.random.seed(42)
     rscale = 250
-    # nrays, nbins = .img.shape
-    # ascale = 2 * np.pi / .img.shape[0]
     mean = util.filter_window_polar(udata.img.copy(), 300, "maximum", rscale)
     mean2 = util.filter_window_polar(
         udata.img.copy(), 300, "maximum", rscale, random=True

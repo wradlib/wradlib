@@ -461,7 +461,7 @@ def volcoords_from_polar_irregular(site, elevs, azimuths, ranges, *, crs=None):
     # elevation angle?
     oneaz4all = True
     onerange4all = True
-    #   check elevs array, first: must be one-dimensional
+    # check elevs array, first: must be one-dimensional
     try:
         elevs = np.array(elevs)
     except Exception:

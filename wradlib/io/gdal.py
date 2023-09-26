@@ -137,13 +137,13 @@ def gdal_create_dataset(
     name : str
         path to filename
     cols : int
-        # of columns
+        number of columns
     rows : int
-        # of rows
+        number of rows
     bands : int
-        # of raster bands
+        number of raster bands
     gdal_type : :py:class:`gdal:osgeo.ogr.DataType`
-        raster data type  eg. gdal.GDT_Float32
+        raster data type, e.g. gdal.GDT_Float32
     remove : bool
         if True, existing gdal.Dataset will be
         removed before creation
@@ -185,7 +185,7 @@ def write_raster_dataset(fpath, dataset, *, driver="GTiff", options=None, remove
     driver : str
         gdal raster format driver string
     options : list
-        List of option strings for the corresponding format.
+        Option strings for the corresponding format.
     remove : bool
         if True, existing gdal.Dataset will be
         removed before creation
@@ -423,7 +423,8 @@ class VectorSource:
             feature = lyr.GetFeature(i)
             geom = feature.GetGeometryRef()
             poly = georef.vector.ogr_to_numpy(geom)
-            # need to recreate the geometry because access is lost if layer gets out of scope
+            # need to recreate the geometry because access
+            # is lost if layer gets out of scope
             if mode == "ogr":
                 poly = georef.vector.numpy_to_ogr(
                     poly, geom.GetGeometryName().capitalize()

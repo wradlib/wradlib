@@ -1381,8 +1381,12 @@ def vec_data():
         projobj = georef.numpy_to_ogr(npobj, "Polygon")
         projobj.AssignSpatialReference(crs)
 
-        # filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
-        # ds, layer = wradlib.io.open_vector(filename)
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
+        filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
+        proj_gk2 = osr.SpatialReference()
+        proj_gk2.ImportFromEPSG(31466)
+        ds, layer = wradlib.io.open_vector(filename)
 
     yield Data
 
@@ -1422,12 +1426,7 @@ def test_get_vector_points_warning():
 @requires_data
 @requires_gdal
 def test_get_vector_coordinates(vec_data):
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
-    util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
-    filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
-    proj_gk2 = osr.SpatialReference()
-    proj_gk2.ImportFromEPSG(31466)
-    ds, layer = wradlib.io.open_vector(filename)
+    layer = vec_data.layer
 
     # this also tests equality with `ogr_to_numpy`
     x, attrs = georef.get_vector_coordinates(layer, key="FID", src_crs=vec_data.crs)
@@ -1460,7 +1459,7 @@ def test_transform_geometry(vec_data):
 
 @requires_gdal
 def test_transform_geometry_warning(vec_data):
-    with pytest.warns(UserWarning):
+    with pytest.raises(ValueError, match="geometry without spatial reference"):
         georef.transform_geometry(vec_data.ogrobj, trg_crs=vec_data.wgs84)
 
 

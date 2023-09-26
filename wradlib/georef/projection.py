@@ -326,11 +326,7 @@ def reproject(*args, **kwargs):
     trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
-        # here we could do this one
-        # return(np.array(ct.TransformPoints(C))[...,0:numCols]))
-        # or this one
-        trans = trans[:, 0:numCols].reshape(cshape)
-        return trans
+        return trans[:, 0:numCols].reshape(cshape)
     else:
         X = trans[:, 0].reshape(xshape)
         Y = trans[:, 1].reshape(yshape)

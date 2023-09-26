@@ -345,7 +345,7 @@ def _interp_atten(pia, invalidbeams):
     """Interpolate reference pia of most distant rangebin of small invalid
     sectors as a prerequisite for the backward calculation of attenuation.
     """
-    # Build an spatial equidistant array for interpolation of the ahead and
+    # Build a spatial equidistant array for interpolation of the ahead and
     # behind extended temporary pia-array for handling invalid sectors
     # overlapping the seam of the radarcircle.
     x = np.arange(3 * pia.shape[1])

@@ -111,10 +111,10 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     Returns
     -------
     radolan_ccords : tuple
-        tuple x and y 1D coordinate :class:`numpy:numpy.ndarray`
-        shape is (nrows,) and  (ncols,) if `mode='radolan'`
-        shape is (nrows,) and (ncols,) if `mode='center'`
-        shape is (nrows+1,) and (ncols+1,) if `mode='edge'`
+        x and y 1D coordinate :class:`numpy:numpy.ndarray`
+        shape is (nrows, ) and  (ncols, ) if `mode='radolan'`
+        shape is (nrows, ) and (ncols, ) if `mode='center'`
+        shape is (nrows+1, ) and (ncols+1, ) if `mode='edge'`
     """
     # setup default parameters in dicts
     tiny = {"j_0": 450, "i_0": 450, "res": 2}
@@ -384,11 +384,6 @@ def _xyz_to_spherical_numpy(xyz, *, altitude=0, crs=None, ke=4.0 / 3.0):
 
     # calculate radial distance r
     r = (re * ke + xyz[..., 2]) * denom / np.cos(theta)
-    # another method using gamma only, but slower
-    # keep it here for reference
-    # f1 = (re * ke + xyz[..., 2])
-    # f2 = (re * ke + altitude)
-    # r = np.sqrt(f1**2 + f2**2  - 2 * f1 * f2 * np.cos(gamma))
 
     # calculate azimuth angle phi
     phi = np.degrees(np.arctan2(xyz[..., 0], xyz[..., 1]))

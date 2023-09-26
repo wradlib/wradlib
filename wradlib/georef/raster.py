@@ -170,7 +170,6 @@ def read_gdal_projection(dataset):
     wkt = dataset.GetProjection()
     crs = osr.SpatialReference()
     crs.ImportFromWkt(wkt)
-    # src = None
     return crs
 
 
@@ -362,10 +361,6 @@ def set_raster_origin(data, coords, direction):
     if not same:
         data = np.flip(data, axis=-2)
         coords = np.flip(coords, axis=-3)
-        # we need to shift y-coordinate if data and coordinates have the same
-        # number of rows and cols (only the ll or ul raster coords are given)
-    #        if data.shape[-2:] == coords.shape[:2]:
-    #            coords += [0, y_sp]
 
     return data, coords
 

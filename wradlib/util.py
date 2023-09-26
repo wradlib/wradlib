@@ -221,7 +221,6 @@ def meshgrid_n(*arrs):
             if j != i:
                 arr2 = arr2.repeat(sz, axis=j)
         ans.append(arr2)
-    # return tuple(ans[::-1])
     return tuple(ans)
 
 

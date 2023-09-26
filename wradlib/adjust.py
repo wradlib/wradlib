@@ -266,7 +266,7 @@ class AdjustBase(ipol.IpolBase):
             an instance of a class that inherited from :class:`wradlib.ipol.IpolBase`
 
         """
-        #    first, set interpolation targets (default: the radar coordinates)
+        # first, set interpolation targets (default: the radar coordinates)
         targets_default = False
         if targets is None:
             targets = self.raw_coords

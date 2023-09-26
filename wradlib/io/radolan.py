@@ -533,7 +533,7 @@ def decode_radolan_runlength_line(line, attrs):
         of decoded values
     """
     # byte '0' is line number, we don't need it
-    # so we start with offset byte,
+    # so, we start with offset byte
     lo = 1
     byte = line[lo]
     # line empty condition, lf directly behind line number
@@ -559,7 +559,7 @@ def decode_radolan_runlength_line(line, attrs):
         width = (byte & 0xF0) >> 4
         val = byte & 0x0F
         # the "offset pixel" are "not measured" values
-        # so we set them to 'nodata'
+        # so, we set them to 'nodata'
         if lo == 0:
             arr = np.ones(offset, dtype=np.uint8) * attrs["nodataflag"]
         arr = np.append(arr, np.ones(width, dtype=np.uint8) * val)
@@ -811,7 +811,6 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
         arr = radfile.data[radfile.product]
 
     # apply precision factor
-    # this promotes arr to float if precision is float
     if "precision" in attrs:
         arr = arr * attrs["precision"]
     # set nodata value

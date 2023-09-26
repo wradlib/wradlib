@@ -702,7 +702,6 @@ def unfold_phi_naive(phidp, rho, *, width=5, copy=False):
     for r in range(rs - 9):
         stdarr[..., r] = np.std(phidp[..., r : r + 9], -1)
 
-    # phi_corr = np.zeros(phidp.shape)
     for beam in range(beams):
         if np.all(phidp[beam] == 0):
             continue

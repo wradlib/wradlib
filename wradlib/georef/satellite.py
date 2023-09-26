@@ -125,7 +125,6 @@ def _correct_parallax_xarray(obj, drt, **kwargs):
     alpha = obj["localZenithAngle"].isel(nfreq=freq, missing_dims="ignore")
 
     # get x,y-grids
-    # get x,y-grids
     sr_x = obj.x
     sr_y = obj.y
 

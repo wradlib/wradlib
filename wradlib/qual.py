@@ -122,7 +122,6 @@ def _pulse_volume_xarray(obj, h, theta, **kwargs):
     See :ref:`/notebooks/workflow/recipe1.ipynb`.
 
     """
-    # vol = _pulse_volume_numpy(obj, h, theta)
     return _pulse_volume_numpy(obj, h, theta)
 
 

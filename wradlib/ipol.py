@@ -164,7 +164,7 @@ class IpolBase:
             if vals.ndim > 1 vals will be returned as is
         """
         if vals.ndim < 2:
-            # ndmin might be 0 so we get it to 1-d first
+            # ndmin might be 0, so we get it to 1-d first
             # then we add an axis as we assume that
             return np.atleast_1d(vals)[:, np.newaxis]
         else:

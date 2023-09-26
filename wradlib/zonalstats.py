@@ -724,7 +724,7 @@ def mask_from_bbox(x, y, bbox, *, polar=False):
     ix = np.arange(x.size).reshape(x.shape)
 
     # Find bbox corners
-    #    Plant a tree
+    # Plant a tree
     tree = spatial.cKDTree(np.vstack((x.ravel(), y.ravel())).transpose())
     # find lower left corner index
     dists, ixll = tree.query([bbox["left"], bbox["bottom"]], k=1)

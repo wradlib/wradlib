@@ -69,27 +69,22 @@ def test_calc_attenuation_forward(att_data):
     assert np.allclose(result, att_data.gateset_result)
 
 
-# def test__sector_filter_1(self):
-#     # """test sector filter with odd sector size"""
-#     mask = np.array([1,1,0,1,0,1,1,0,1,1,1,0,1], dtype=np.int)
-#     ref =  np.array([1,1,0,0,0,0,0,0,1,1,1,0,1], dtype=np.int)
-#     min_sector_size = 3
-#     result = atten._sector_filter(mask, min_sector_size)
-#     print(result)
-#     print(ref)
-#     self.assertTrue(np.all(result == ref))
-#     #pass
+def test__sector_filter_1():
+    """test sector filter with odd sector size"""
+    mask = np.array([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1], dtype=int)
+    ref = np.array([0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1], dtype=int)
+    min_sector_size = 3
+    result = atten._sector_filter(mask, min_sector_size)
+    np.testing.assert_equal(result, ref)
 
-# def test__sector_filter_2(self):
-#     """test sector filter with even sector size"""
-#     mask = np.array([1,1,1,0,1,0,1,1,0,1,1,1,1,0,1], dtype=np.int)
-#     ref =  np.array([1,1,1,0,0,0,0,0,0,1,1,1,1,0,1], dtype=np.int)
-#     min_sector_size = 4
-#     result = atten._sector_filter(mask, min_sector_size)
-#     print(result)
-#     print(ref)
-#     self.assertTrue(np.all(result == ref))
-#     #pass
+
+def test__sector_filter_2():
+    """test sector filter with even sector size"""
+    mask = np.array([1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1], dtype=int)
+    ref = np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1], dtype=int)
+    min_sector_size = 4
+    result = atten._sector_filter(mask, min_sector_size)
+    np.testing.assert_equal(result, ref)
 
 
 @requires_data
