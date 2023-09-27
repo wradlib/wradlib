@@ -103,8 +103,8 @@ def create_xarray_dataarray(
     # check coordinate tuple
     if site and len(site) < 3:
         raise ValueError(
-            "WRADLIB: `site` need to be a tuple of coordinates "
-            "(longitude, latitude, altitude)."
+            "`site` need to be a sequence of coordinates "
+            "`longitude`, `latitude`, `altitude`."
         )
 
     if phi is None:

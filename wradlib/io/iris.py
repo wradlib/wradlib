@@ -25,8 +25,6 @@ is decoded on the fly. Using `rawdata=True` the data will be kept undecoded.
 """
 __all__ = [
     "read_iris",
-    "IrisRecordFile",
-    "IrisRawFile",
     "IrisProductFile",
     "IrisCartesianProductFile",
 ]
@@ -38,24 +36,6 @@ from collections import OrderedDict
 
 import numpy as np
 from xradar.io.backends import iris as xiris
-
-
-def IrisRawFile(*args, **kwargs):
-    warnings.warn(
-        "IrisRawFile class has been moved to xradar-package. "
-        "Importing from wradlib will be removed in v2.0.",
-        category=FutureWarning,
-        stacklevel=2,
-    )
-    return xiris.IrisRawFile(*args, **kwargs)
-
-
-def IrisRecordFile(*args, **kwargs):
-    warnings.warn(
-        "IrisRecordFile class has been moved to xradar-package. "
-        "Importing from wradlib will be removed in v2.0."
-    )
-    return xiris.IrisRecordFile(*args, **kwargs)
 
 
 class IrisProductFile(xiris.IrisRecordFile):
@@ -217,26 +197,11 @@ class IrisCartesianProductFile(xiris.IrisRecordFile):
         irisfile : str
             filename
         """
-        origin = kwargs.get("origin", None)
-        if origin is None:
-            self._origin = "upper"
-        else:
-            self._origin = origin
-
+        self._origin = kwargs.get("origin", "lower")
         super().__init__(irisfile, **kwargs)
-
         self.check_product_identifier()
-
         self._data = OrderedDict()
         if self.loaddata:
-            if origin is None:
-                warnings.warn(
-                    "IRIS Cartesian Product is currently returned with ``origin='upper'``.\n"
-                    "From wradlib version 2.0 the images will be returned with ``origin='lower'``.\n"
-                    "To silence this warning set kwarg ``origin='upper'`` or ``origin='lower'``.",
-                    FutureWarning,
-                    stacklevel=2,
-                )
             self.get_data()
 
     @property
@@ -313,8 +278,7 @@ class IrisCartesianProductFile(xiris.IrisRecordFile):
         if product_hdr["product_end"]["number_elements"]:
             warnings.warn(
                 f"{self.product_type} Not Implemented - Product results "
-                "array available \nnot loading "
-                "dataset",
+                "array available \nnot loading dataset",
                 RuntimeWarning,
                 stacklevel=3,
             )
@@ -411,7 +375,7 @@ def read_iris(
     sid, opener = xiris._check_iris_file(filename)
 
     if not opener:
-        raise TypeError(f"Unknown File or Product Type {sid}")
+        raise TypeError(f"Unknown Iris File or Iris Product Type {sid}")
 
     irisfile = opener(
         filename, loaddata=loaddata, rawdata=rawdata, debug=debug, **kwargs

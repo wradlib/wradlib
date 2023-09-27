@@ -72,6 +72,9 @@ class CartesianVolume:
         The minimum elevation angle of the volume (degree)
     maxelev : float
         The maximum elevation angle of the volume (degree)
+    site : sequence
+        the lon / lat / alt coordinates of the radar location and its altitude
+        a.m.s.l. (in meters)
     ipclass : :class:`wradlib.ipol.IpolBase`
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : dict
@@ -95,19 +98,19 @@ class CartesianVolume:
         maxrange=None,
         minelev=None,
         maxelev=None,
+        site=None,
         ipclass=ipol.Idw,
         **ipargs,
     ):
         # radar location in Cartesian coordinates
-        # TODO: pass projected radar location as argument
-        # (allows processing of incomplete polar volumes)
-        self.radloc = np.array(
-            [
+        if site is None:
+            site = [
                 np.mean(polcoords[:, 0]),
                 np.mean(polcoords[:, 1]),
                 np.min(polcoords[:, 2]),
             ]
-        ).reshape((-1, 3))
+        self.radloc = np.array(site).reshape((-1, 3))
+
         # Set the mask which masks the blind voxels of the 3-D volume grid
         self.mask = self._get_mask(
             gridcoords, polcoords, maxrange=maxrange, minelev=minelev, maxelev=maxelev
@@ -222,8 +225,8 @@ class CAPPI(CartesianVolume):
         >>> import wradlib
         >>> import numpy as np
         >>> from osgeo import osr
-        >>> import matplotlib.pyplot as pl
-        >>> pl.interactive(True)
+        >>> import matplotlib.pyplot as plt
+        >>> plt.interactive(True)
         >>> # define elevation and azimuth angles, ranges, radar site coordinates,
         >>> # projection
         >>> elevs  = np.array([0.5,1.5,2.4,3.4,4.3,5.3,6.2,7.5,8.7,10,12,14,16.7,19.5])
@@ -255,7 +258,7 @@ class CAPPI(CartesianVolume):
         >>> # plot results
         >>> levels = np.linspace(0,100,25)
         >>> wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels)
-        >>> pl.show()
+        >>> plt.show()
     """
 
     def _get_mask(self, gridcoords, polcoords, maxrange, minelev, maxelev):
@@ -457,50 +460,34 @@ def volcoords_from_polar_irregular(site, elevs, azimuths, ranges, *, crs=None):
         Array of shape (num volume bins, 3)
 
     """
-    # check structure: Are azimuth angles and range bins the same for each
-    # elevation angle?
+    # Are azimuth angles and range bins the same for each elevation angle?
     oneaz4all = True
     onerange4all = True
-    # check elevs array, first: must be one-dimensional
-    try:
-        elevs = np.array(elevs)
-    except Exception:
-        print("Could not create an array from argument <elevs>.")
-        print("The following exception was raised:")
-        raise
-    assert (elevs.ndim == 1) and (
-        elevs.dtype != np.dtype("object")
-    ), "Argument <elevs> in wradlib.volcoords_from_polar must be a 1-D array."
-    # now: is there one azimuths array for all elevation angles
-    # or one for each?
-    try:
-        azimuths = np.array(azimuths)
-    except Exception:
-        print("Could not create an array from argument <azimuths>.")
-        print("The following exception was raised:")
-        raise
+    # check elevs array, must be one-dimensional
+    elevs = np.array(elevs)
+    if not ((elevs.ndim == 1) and (elevs.dtype != np.dtype("object"))):
+        raise ValueError("Argument `elevs` must be a 1-D array.")
+    # is there one azimuths array for all elevation angles or one for each?
+    azimuths = np.array(azimuths)
     if len(azimuths) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in azimuths]
-        assert not ((False in isseq) and (True in isseq)), (
-            "Argument <azimuths> contains both iterable " "and non-iterable items."
-        )
+        if (False in isseq) and (True in isseq):
+            raise ValueError(
+                "Argument `azimuths` contains both iterable and non-iterable items."
+            )
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             oneaz4all = False
-    # now: is there one ranges array for all elevation angles or one for each?
-    try:
-        ranges = np.array(ranges)
-    except Exception:
-        print("Could not create an array from argument <ranges>.")
-        print("The following exception was raised:")
-        raise
+    # is there one ranges array for all elevation angles or one for each?
+    ranges = np.array(ranges)
     if len(ranges) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in ranges]
-        assert not ((False in isseq) and (True in isseq)), (
-            "Argument <azimuths> contains both iterable " "and non-iterable items."
-        )
+        if (False in isseq) and (True in isseq):
+            raise ValueError(
+                "Argument `ranges` contains both iterable and non-iterable items."
+            )
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             onerange4all = False

@@ -581,9 +581,12 @@ def has_geos():
 def get_wradlib_data_path():
     wrl_data_path = os.environ.get("WRADLIB_DATA", None)
     if wrl_data_path is None:
-        raise OSError("'WRADLIB_DATA' environment variable not set")
+        raise OSError(
+            "`WRADLIB_DATA` environment variable not set. Please set `WRADLIB_DATA` "
+            "pointing to the location of `wradlib_data` repository on the filesystem."
+        )
     if not os.path.isdir(wrl_data_path):
-        raise OSError(f"'WRADLIB_DATA' path '{wrl_data_path}' does not exist")
+        raise OSError(f"`WRADLIB_DATA` path {wrl_data_path!r} does not exist.")
     return wrl_data_path
 
 
@@ -595,7 +598,7 @@ def get_wradlib_data_file(relfile):
 
             data_file = DATASETS.fetch(relfile)
         except ImportError:
-            raise OSError(f"WRADLIB_DATA file '{data_file}' does not exist.")
+            raise OSError(f"WRADLIB_DATA file {data_file!r} does not exist.")
     return data_file
 
 
@@ -677,7 +680,7 @@ def _linregress_1d(rhs, *, method="lstsq"):
     """Calculates slope by means of linear regression on last dimension of rhs.
 
     Calculates lhs from size of last dimension of rhs.
-    Methods 'lstsq', 'cov', 'matrix_inv'  and 'cov_nan' are multidimensional.
+    Methods 'lstsq', 'cov', 'matrix_inv' and 'cov_nan' are multidimensional.
     The other two nan-methods only work on a single system. Hence, the
     apply_along_axis.
     """
@@ -721,7 +724,7 @@ def _linregress_1d(rhs, *, method="lstsq"):
     elif method == "matrix_inv_nan":
         out = np.apply_along_axis(_nan_matrix_inv, 0, rhs, lhs)
     else:
-        raise ValueError(f"wradlib: unknown method value {method}")
+        raise ValueError(f"Unknown method {method!r}.")
 
     return out.reshape(shape[:-1])
 
@@ -838,9 +841,8 @@ lanczos-low-noise-differentiators/>`_.
     out : :class:`numpy:numpy.ndarray`
         array of derivates with the same shape as data
     """
-    assert (
-        winlen % 2
-    ) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+    if (winlen % 2) != 1:
+        raise ValueError(f"`winlen` must be an odd number, but {winlen} given.")
     # Make really sure winlen is an integer
     winlen = int(winlen)
 
@@ -872,7 +874,7 @@ lanczos-low-noise-differentiators/>`_.
         elif method in ["lstsq", "cov", "cov_nan", "matrix_inv"]:
             out = _linregress_1d(data_roll, method=method)
         else:
-            raise ValueError(f"wradlib: unknown method value {method}")
+            raise ValueError(f"Unknown method {method!r}")
 
     # NaN treatment
     if skipna:
@@ -880,8 +882,8 @@ lanczos-low-noise-differentiators/>`_.
         invalid = np.isnan(out)
         if np.any(invalid):
             min_periods = kwargs.pop("min_periods", winlen // 2 + 1)
-            assert min_periods >= 2, "min_periods need to be >= 2."
-
+            if min_periods < 2:
+                raise ValueError("`min_periods` need to be >= 2.")
             # automatically select method2 if not given
             if method in ["lstsq", "matrix_inv"]:
                 m2 = method + "_nan"
@@ -1008,7 +1010,8 @@ def despeckle(data, *, n=3, copy=False):
         If True, the input array will remain unchanged.
 
     """
-    assert n in (3, 5), "Window size n for function despeckle must be 3 or 5."
+    if n not in (3, 5):
+        raise ValueError("Window size n for function despeckle must be 3 or 5.")
     if copy:
         data = data.copy()
 

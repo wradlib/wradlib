@@ -295,7 +295,7 @@ def bisect_reference_attenuation(
             undershoot = ((pia[..., -1] - pia_ref) / pia_ref) < -thrs
             hit = (np.abs(pia[..., -1] - pia_ref) / pia_ref) < thrs
         else:
-            raise Exception("Unknown mode type " + mode + ".")
+            raise Exception(f"Unknown mode type {mode}.")
         # Define new bounds of linear k-Z relation coefficient for over- and
         # undershooting pia calculations.
         a_hi[overshoot] = a_mid[overshoot]

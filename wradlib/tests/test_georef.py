@@ -829,7 +829,7 @@ def test_reproject_raster_dataset(gdal_data):
         gdal_data.ds, size=(100, 100), resample=gdal.GRA_Bilinear, align=True
     )
     with pytest.raises(
-        NameError, match="Whether keyword 'spacing' or 'size' must be given"
+        NameError, match="Either keyword `spacing` or `size` must be given"
     ):
         georef.reproject_raster_dataset(gdal_data.ds)
     dst = georef.epsg_to_osr(25832)
@@ -840,7 +840,7 @@ def test_reproject_raster_dataset(gdal_data):
         align=True,
         trg_crs=dst,
     )
-    with pytest.warns(UserWarning, match="both ``spacing`` and ``size`` kwargs given"):
+    with pytest.warns(UserWarning, match="Both `spacing` and `size` kwargs given"):
         georef.reproject_raster_dataset(
             gdal_data.ds,
             spacing=1000.0,
@@ -851,7 +851,7 @@ def test_reproject_raster_dataset(gdal_data):
         )
     ds = gdal.GetDriverByName("MEM").CreateCopy("out", gdal_data.ds, 0)
     ds.SetProjection("")
-    with pytest.raises(ValueError, match="src_ds is missing projection information"):
+    with pytest.raises(ValueError, match="`src_ds` is missing projection information"):
         georef.reproject_raster_dataset(
             ds,
             spacing=1000.0,
@@ -1459,7 +1459,7 @@ def test_transform_geometry(vec_data):
 
 @requires_gdal
 def test_transform_geometry_warning(vec_data):
-    with pytest.raises(ValueError, match="geometry without spatial reference"):
+    with pytest.raises(ValueError, match="Geometry without spatial reference"):
         georef.transform_geometry(vec_data.ogrobj, trg_crs=vec_data.wgs84)
 
 

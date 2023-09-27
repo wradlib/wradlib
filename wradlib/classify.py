@@ -29,6 +29,7 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import warnings
 from functools import singledispatch
 
 import numpy as np
@@ -710,18 +711,18 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
         trpz = dict(list(trpz_default.items()) + list(trpz.items()))
 
     # check data conformity
-    assert np.all(np.in1d(dkeys, list(dat.keys()))), (
-        "Argument dat of classify_echo_fuzzy must be a dictionary "
-        f"with mandatory keywords {*dkeys,}."
-    )
-    assert np.all(np.in1d(wkeys, list(weights.keys()))), (
-        "Argument weights of classify_echo_fuzzy must be a dictionary "
-        f"with keywords {*wkeys,}."
-    )
-    assert np.all(np.in1d(tkeys, list(trpz.keys()))), (
-        "Argument trpz of classify_echo_fuzzy must be a dictionary "
-        "with keywords {*tkeys,}."
-    )
+    if not np.all(np.in1d(dkeys, list(dat.keys()))):
+        raise ValueError(
+            "Argument `dat` must be a dictionary " f"with mandatory keywords {*dkeys,}."
+        )
+    if not np.all(np.in1d(wkeys, list(weights.keys()))):
+        raise ValueError(
+            "Argument `weights` must be a dictionary " f"with keywords {*wkeys,}."
+        )
+    if not np.all(np.in1d(tkeys, list(trpz.keys()))):
+        raise ValueError(
+            "Argument `trpz` must be a dictionary " f"with keywords {*tkeys,}."
+        )
 
     # copy rho to rho2
     dat["rho2"] = dat["rho"].copy()
@@ -732,12 +733,13 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
             if shape is None:
                 shape = dat[key].shape
             else:
-                assert dat[key].shape[-2:] == shape[-2:], (
-                    "Arrays of the decision variables have inconsistent "
-                    f"shapes: {dat[key].shape} vs. {shape}"
-                )
+                if dat[key].shape[-2:] != shape[-2:]:
+                    raise ValueError(
+                        "Arrays of the decision variables have inconsistent "
+                        f"shapes: {dat[key].shape} vs. {shape}"
+                    )
         else:
-            print(f"WARNING: Missing decision variable: {key}")
+            warnings.warn(f"Missing decision variable: {key}", UserWarning)
 
     # If all dual-pol moments are NaN, can we assume that and echo is
     # non-meteorological?

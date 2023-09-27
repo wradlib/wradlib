@@ -186,9 +186,8 @@ Georeferencing-and-Projection`.
         crs.ImportFromWkt(radolan_wkt)
     else:
         raise ValueError(
-            f"No convenience support for projection {projname}, "
-            "yet.\nYou need to create projection by using "
-            "other means..."
+            f"No convenience support for projection {projname!r} yet. "
+            f"Please create projection by using other means."
         )
 
     return crs
@@ -222,8 +221,8 @@ def projstr_to_osr(projstr):
 
     if crs.Validate() == ogr.OGRERR_CORRUPT_DATA:
         raise ValueError(
-            "projstr validates to 'ogr.OGRERR_CORRUPT_DATA'"
-            "and can't be imported as OSR object"
+            "`projstr` validates to 'ogr.OGRERR_CORRUPT_DATA'"
+            "and can't be imported as OSR object."
         )
     return crs
 
@@ -285,7 +284,7 @@ def reproject(*args, **kwargs):
         numCols = C.shape[-1]
         C = C.reshape(-1, numCols)
         if numCols < 2 or numCols > 3:
-            raise TypeError("Input Array column mismatch to 'reproject'")
+            raise TypeError("Input Array column mismatch to `reproject`.")
     else:
         if len(args) == 2:
             X, Y = (np.asanyarray(arg) for arg in args)
@@ -295,17 +294,25 @@ def reproject(*args, **kwargs):
             zshape = Z.shape
             numCols = 3
         else:
-            raise TypeError("Illegal arguments to 'reproject'")
+            raise TypeError(
+                f"Illegal number arguments ({len(args)}) to "
+                f"`reproject`. Should be 3 or less."
+            )
 
         xshape = X.shape
         yshape = Y.shape
 
         if xshape != yshape:
-            raise TypeError("Incompatible X, Y inputs to 'reproject'")
+            raise TypeError(
+                f"Shape mismatch `X` ({xshape}), `Y` ({yshape}) inputs to `reproject`."
+            )
 
         if "Z" in locals():
             if xshape != zshape:
-                raise TypeError("Incompatible Z input to 'reproject'")
+                raise TypeError(
+                    f"Shape mismatch `Z` ({zshape}) input to `reproject`. "
+                    f"Shape of ({xshape}) needed."
+                )
             C = np.concatenate(
                 [X.ravel()[:, None], Y.ravel()[:, None], Z.ravel()[:, None]], axis=1
             )
@@ -384,7 +391,9 @@ def _reproject_xarray(obj, **kwargs):
         proj_crs = xd.georeference.get_crs(obj)
         src_crs = wkt_to_osr(proj_crs.to_wkt())
     else:
-        warnings.warn("src_crs kwarg is overriding 'crs_wkt'-coordinate'", stacklevel=4)
+        warnings.warn(
+            "`src_crs`-kwarg is overriding `crs_wkt`-coordinate'", stacklevel=4
+        )
 
     kwargs.setdefault("src_crs", src_crs)
     trg_crs = kwargs.setdefault("trg_crs", get_default_projection())
@@ -566,7 +575,7 @@ def get_earth_projection(model="ellipsoid"):
         crs = osr.SpatialReference()
         crs.SetCompoundCS("WGS84 Horizontal + EGM96 Vertical", wgs84, egm96)
     else:
-        raise ValueError(f"wradlib: Unknown model='{model}'.")
+        raise ValueError(f"Unknown model {model!r}.")
 
     return crs
 

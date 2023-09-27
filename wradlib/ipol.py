@@ -114,10 +114,11 @@ class IpolBase:
             ndarray of float
 
         """
-        assert len(vals) == self.numsources, (
-            f"Length of value array {len(vals)} does not correspond to number "
-            f"of source points {self.numsources}"
-        )
+        if len(vals) != self.numsources:
+            raise ValueError(
+                f"Length of value array {len(vals)} does not correspond to number "
+                f"of source points {self.numsources}"
+            )
         self.valsshape = vals.shape
         self.valsndim = vals.ndim
 
@@ -338,7 +339,7 @@ class Idw(IpolBase):
 
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.Idw: <nnearest> is larger than number of "
+                "wradlib.ipol.Idw: `nnearest` is larger than number of "
                 f"source points and is set to {self.numsources} corresponding to the "
                 "number of source points.",
                 UserWarning,
@@ -517,19 +518,17 @@ class RectGridBase:
         self._is_grid = None
         self._ipol_grid = None
         self._ipol_points = None
-        self._grid = grid
-        self._points = points
-
-        assert self.is_grid
+        self._grid = np.array(grid)
+        self._points = np.array(points)
 
     @property
     def is_grid(self):
         if self._is_grid is None:
-            self._is_grid = (
-                hasattr(self.grid, "shape")
-                and self.grid.ndim == 3
-                and self.grid.shape[2] == 2
-            )
+            self._is_grid = self.grid.ndim == 3 and self.grid.shape[2] == 2
+            if not self._is_grid:
+                raise ValueError(
+                    f"Grid Shape mismatch, expected (N, M, 2), but got {self.grid.shape}."
+                )
         return self._is_grid
 
     @property
@@ -1048,7 +1047,7 @@ class OrdinaryKriging(IpolBase):
             raise MissingTargetsError
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.OrdinaryKriging: <nnearest> is "
+                "wradlib.ipol.OrdinaryKriging: `nnearest` is "
                 "larger than number of source points and is "
                 f"set to {self.numsources} corresponding to the "
                 "number of source points.",
@@ -1241,7 +1240,7 @@ class ExternalDriftKriging(IpolBase):
             raise MissingSourcesError
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.ExternalDriftKriging: <nnearest> is larger "
+                "wradlib.ipol.ExternalDriftKriging: `nnearest` is larger "
                 f"than number of source points and is set to {self.numsources} "
                 "corresponding to the number of source points.",
                 UserWarning,
@@ -1335,7 +1334,10 @@ class ExternalDriftKriging(IpolBase):
             ndarray of float with shape (numtargetpoints, numfields)
 
         """
-        assert vals.ndim <= 2
+        if vals.ndim > 2:
+            raise ValueError(
+                f"`vals` nedd to be a 2D-array, but is of shape {vals.shape}."
+            )
         v = self._make_2d(vals)
         self._check_shape(v)
 
@@ -1343,18 +1345,16 @@ class ExternalDriftKriging(IpolBase):
             # check if we have data from __init__
             if self.src_drift is None:
                 raise ValueError(
-                    "src_drift must be specified either on "
-                    "initialization or when calling "
-                    "the interpolator."
+                    "`src_drift`-kwarg must be specified either on "
+                    "initialization or when calling the interpolator."
                 )
             src_drift = self.src_drift
         if trg_drift is None:
             # check if we have data from __init__
             if self.trg_drift is None:
                 raise ValueError(
-                    "trg_drift must be specified either on "
-                    "initialization or when calling the "
-                    "interpolator."
+                    "`trg_drift`-kwarg must be specified either on "
+                    "initialization or when calling the interpolator."
                 )
             trg_drift = self.trg_drift
 
@@ -1387,7 +1387,11 @@ class ExternalDriftKriging(IpolBase):
         # field individually
         else:
             ip = np.empty((self.trg.shape[0], v.shape[1]))
-            assert (v.shape[1] == src_d.shape[1]) and (v.shape[1] == trg_d.shape[1])
+            if (v.shape[1] != src_d.shape[1]) or (v.shape[1] != trg_d.shape[1]):
+                raise ValueError(
+                    f"`vals` shape[1] ({v.shape[1]}) does not match `src` "
+                    f"({src_d.shape[1]}) and `trg` ({trg_d.shape[1]})."
+                )
             for i in range(v.shape[1]):
                 wght, variances = self._krige(
                     src_d[:, i].squeeze(), trg_d[:, i].squeeze()

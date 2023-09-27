@@ -306,7 +306,7 @@ def test_read_gamic_hdf5(file_or_filelike):
         io.hdf.read_gamic_hdf5(f)
     with get_wradlib_data_file(rhi, file_or_filelike) as f:
         io.hdf.read_gamic_hdf5(f)
-    with pytest.raises(KeyError):
+    with pytest.raises(IOError):
         with get_wradlib_data_file(filename, file_or_filelike) as f:
             io.hdf.read_gamic_hdf5(f)
 
@@ -1401,14 +1401,6 @@ def test_open_iris_cartesian_product():
         )
     assert isinstance(data.rh, io.iris.xiris.IrisRecord)
     assert isinstance(data.fh, (np.memmap, np.ndarray))
-
-
-@requires_data
-def test_iris_cartesian_product_origin_future_warning():
-    filename = "sigmet/SUR160703220000.MAX71NP.gz"
-    with get_wradlib_data_file(filename, "filelike") as sigmetfile:
-        with pytest.warns(FutureWarning):
-            io.iris.IrisCartesianProductFile(sigmetfile, loaddata=True, origin=None)
 
 
 @requires_data

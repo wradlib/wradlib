@@ -107,7 +107,10 @@ def unpack_dx(raw):
 
     # if there is no zero in the whole data, we can return raw as it is
     if flagged.size == 0:
-        assert raw.size == 128
+        if raw.size != 128:
+            raise OSError(
+                f"DX decoding data size mismatch. Expected size of 128, but got {raw.size}."
+            )
         return raw
 
     # everything until the first flag is normal data
@@ -394,7 +397,7 @@ def get_radolan_header_token_pos(header, *, mode="composite"):
         head_dict = get_dx_header_token()
     else:
         raise ValueError(
-            f"unknown mode {mode}, use either 'composite' or 'dx' depending on data source"
+            f"Unknown mode {mode}, use either `composite` or `dx` depending on data source"
         )
 
     for token in head_dict.keys():
@@ -656,8 +659,7 @@ def read_radolan_binary_array(fid, size, *, raise_on_error=True):
         except AttributeError:
             desc = repr(fid)
         raise OSError(
-            f"{__name__}: File corruption while reading {desc}! \nCould not "
-            "read enough data!"
+            f"File corruption while reading {desc}! Could not read enough data!"
         )
     return binarr
 
@@ -701,7 +703,7 @@ def read_radolan_header(fid):
     while True:
         mychar = fid.read(1)
         if not mychar:
-            raise EOFError("Unexpected EOF detected while reading " "RADOLAN header")
+            raise EOFError("Unexpected EOF detected while reading RADOLAN header.")
         # if the first char is "n", then most likely this is ascii radolan data
         if header == "" and mychar == b"n":
             fid.seek(0)
@@ -801,11 +803,9 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
 
         if not attrs["radarid"] == "10000":
             warnings.warn(
-                "WARNING: You are using function"
-                + "wradlib.io.read_radolan_composit for a non "
-                + "composite file.\n "
-                + "This might work...but please check the validity "
-                + "of the results!"
+                "WARNING: You are using function "
+                "wradlib.io.read_radolan_composit for a non composite file.\n "
+                "This might work, but please check the validity of the results!"
             )
 
         arr = radfile.data[radfile.product]
@@ -884,7 +884,7 @@ def _get_radolan_product_attributes(attrs):
         pattrs["scale_factor"] = attrs["precision"]
         pattrs["_FillValue"] = np.array([attrs["nodataflag"]], dtype=np.int32)
     else:
-        raise ValueError("WRADLIB: unkown RADOLAN product!")
+        raise ValueError(f"Unkown RADOLAN product {product!r}!")
 
     return pattrs
 
@@ -1227,7 +1227,7 @@ class _radolan_file:
         reject = set(anc) ^ set(requested)
         if reject:
             warnings.warn(
-                f"ancillary data `{tuple(reject)}` requested but not available for product `{self.product}`."
+                f"Ancillary data `{tuple(reject)}` requested but not available for product `{self.product}`."
             )
 
         return tuple(anc)

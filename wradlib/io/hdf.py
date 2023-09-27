@@ -73,6 +73,7 @@ def read_generic_hdf5(fname):
             tmp["attrs"] = dict(y.attrs)
         # add data if it is a dataset
         if isinstance(y, h5py.Dataset):
+            # silence h5py/numpy warning
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore",
@@ -129,6 +130,7 @@ def read_opera_hdf5(fname):
             if len(y.attrs) > 0:
                 fcontent[x] = dict(y.attrs)
         elif isinstance(y, h5py.Dataset):
+            # silence h5py/numpy warning
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore",
@@ -338,8 +340,7 @@ def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
         try:
             f["how"].attrs.get("software")
         except KeyError:
-            print("WRADLIB: File is no GAMIC hdf5!")
-            raise
+            raise OSError("File is not of GAMIC hdf5 type!")
 
         # get scan_type (PVOL or RHI)
         scan_type = f["what"].attrs.get("object")
@@ -440,9 +441,7 @@ def from_hdf5(fpath, *, dataset="data"):
     with h5py.File(fpath, mode="r") as f:
         # Check whether Dataset exists
         if dataset not in f.keys():
-            raise KeyError(
-                f"WRADLIB: Cannot read Dataset <{dataset}> from hdf5 file <{f}>"
-            )
+            raise KeyError(f"Cannot read Dataset {dataset!r} from hdf5 file {f!r}")
         data = np.array(f[dataset][:])
         # get metadata
         metadata = {}

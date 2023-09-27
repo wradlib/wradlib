@@ -201,10 +201,11 @@ class AdjustBase(ipol.IpolBase):
         # Check arguments
         if mfb_args is None:
             mfb_args = dict(method="linregr", minslope=0.1, minr=0.5, maxp=0.01)
-        assert mfb_args["method"] in ["mean", "median", "linregr"], (
-            "Argument mfb_args['method'] has to be one "
-            "out of 'mean', 'median' or 'linregr'."
-        )
+        if mfb_args["method"] not in ["mean", "median", "linregr"]:
+            raise ValueError(
+                "Argument mfb_args['method'] has to be one "
+                "out of `mean`, `median` or `linregr`."
+            )
 
         # These are the coordinates of the rain gage locations and
         # the radar bin locations
@@ -853,7 +854,7 @@ def _get_statfunc(funcname):
             newfunc = best
         else:
             # if no function can be found, raise an Exception
-            raise NameError("Unknown function name option: " + funcname)
+            raise NameError(f"Unknown function name option: {funcname!r}")
     return newfunc
 
 
@@ -876,12 +877,17 @@ def best(x, y, /):
 
     """
     if type(x) == np.ndarray:
-        assert x.ndim == 1, "x must be a 1-d array of floats or a float."
-        assert len(x) == len(y), "Length of x and y must be equal."
+        if x.ndim != 1:
+            raise ValueError("`x` must be a 1-d array of floats or a float.")
+        if len(x) != len(y):
+            raise ValueError(
+                f"Length of `x` ({len(x)}) and `y` ({len(y)}) must be equal."
+            )
     if type(y) == np.ndarray:
-        assert y.ndim <= 2, "y must be 1-d or 2-d array of floats."
+        if y.ndim > 2:
+            raise ValueError("'y' must be 1-d or 2-d array of floats.")
     else:
-        raise ValueError("y must be 1-d or 2-d array of floats.")
+        raise ValueError("`y` must be 1-d or 2-d array of floats.")
     x = np.array(x).reshape((-1, 1))
     if y.ndim == 1:
         y = np.array(y).reshape((1, -1))

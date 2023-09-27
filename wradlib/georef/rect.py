@@ -138,12 +138,11 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     crs = kwargs.get("crs", None)
     if nrows and ncols:
         if not (isinstance(nrows, int) and isinstance(ncols, int)):
-            raise TypeError(
-                "wradlib.georef: Parameter *nrows* " "and *ncols* not integer"
-            )
+            raise TypeError("Parameter `nrows` and `ncols` need to be of integer type.")
         if (nrows, ncols) not in griddefs.keys():
             raise ValueError(
-                "wradlib.georef: Parameter *nrows* " "and *ncols* mismatch."
+                f"Parameter `nrows` ({nrows}) and `ncols` ({ncols}) are no "
+                f"valid RADOLAN grid size numbers."
             )
     else:
         # fallback for call without parameters

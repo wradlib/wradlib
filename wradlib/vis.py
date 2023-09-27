@@ -33,7 +33,7 @@ import numpy as np
 
 from wradlib import georef, io, ipol, util
 
-pl = util.import_optional("matplotlib.pyplot")
+plt = util.import_optional("matplotlib.pyplot")
 axes = util.import_optional("matplotlib.axes")
 lines = util.import_optional("matplotlib.lines")
 patches = util.import_optional("matplotlib.patches")
@@ -120,13 +120,13 @@ def plot_ppi_crosshair(
     # check coordinate tuple
     if site and len(site) < 3:
         raise ValueError(
-            "WRADLIB: `site` need to be a tuple of coordinates "
-            "(longitude, latitude, altitude)."
+            "`site` need to be a sequence of coordinates "
+            "`longitude`, `latitude`, `altitude`."
         )
 
     # if we didn't get an axes object, find the current one
     if ax is None:
-        ax = pl.gca()
+        ax = plt.gca()
 
     if angles is None:
         angles = [0, 90, 180, 270]
@@ -291,10 +291,10 @@ def create_cg(
     if fig is None:
         # create new figure if there is only one subplot
         if subplot == 111:
-            fig = pl.figure()
+            fig = plt.figure()
         # otherwise get current figure or create new figure
         else:
-            fig = pl.gcf()
+            fig = plt.gcf()
 
     # generate Axis
     cgax = fig.add_subplot(
@@ -350,7 +350,7 @@ def _plot_beam(r, alt, beamradius, *, ax=None, label=None):
     if label is None:
         label = ""
     if ax is None:
-        raise TypeError("wradlib: keyword argument `ax` not specified.")
+        ax = plt.gca()
     center = ax.plot(r, alt, "-k", linewidth=0.5, alpha=1.0, label="_Center", zorder=1)
     edge = ax.plot(
         r, (alt + beamradius), ":k", linewidth=0.5, alpha=1.0, label="_Edge", zorder=1
@@ -428,7 +428,7 @@ def plot_scan_strategy(
     elif units == "km":
         scale = 1000.0
     else:
-        raise ValueError(f"wradlib: unknown value for keyword argument units={units}")
+        raise ValueError(f"Unknown value for `units`.kwarg {units!r}")
 
     az = np.array([az])
 
@@ -453,9 +453,9 @@ def plot_scan_strategy(
             rastercoords, rastervalues, ll[-1, ..., :2], order=3, prefilter=False
         )
     if ax == 111:
-        fig = pl.figure(figsize=(16, 8))
+        fig = plt.figure(figsize=(16, 8))
     else:
-        fig = pl.gcf()
+        fig = plt.gcf()
 
     legend2 = {}
 
@@ -520,7 +520,7 @@ def plot_scan_strategy(
     from cycler import cycler
 
     NUM_COLORS = len(elevs)
-    cmap = pl.get_cmap(cmap)
+    cmap = plt.get_cmap(cmap)
     if cmap.N >= 256:
         colors = [cmap(1.0 * i / NUM_COLORS) for i in range(NUM_COLORS)]
     else:
@@ -613,26 +613,26 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, *, unit="", title="", **
 
     """
 
-    pl.figure(figsize=(10, 10))
+    plt.figure(figsize=(10, 10))
 
     # define axes
     left, bottom, width, height = 0.1, 0.1, 0.6, 0.2
-    ax_xy = pl.axes((left, bottom, width, width))
-    ax_x = pl.axes((left, bottom + width, width, height))
-    ax_y = pl.axes((left + width, bottom, height, width))
-    ax_cb = pl.axes((left + width + height + 0.02, bottom, 0.02, width))
+    ax_xy = plt.axes((left, bottom, width, width))
+    ax_x = plt.axes((left, bottom + width, width, height))
+    ax_y = plt.axes((left + width, bottom, height, width))
+    ax_cb = plt.axes((left + width + height + 0.02, bottom, 0.02, width))
 
     # set axis label formatters
     ax_x.xaxis.set_major_formatter(tick.NullFormatter())
     ax_y.yaxis.set_major_formatter(tick.NullFormatter())
 
     # draw CAPPI
-    pl.sca(ax_xy)
-    xy = pl.contourf(x, y, dataxy, **kwargs)
-    pl.grid(color="grey", lw=1.5)
+    plt.sca(ax_xy)
+    xy = plt.contourf(x, y, dataxy, **kwargs)
+    plt.grid(color="grey", lw=1.5)
 
     # draw colorbar
-    cb = pl.colorbar(xy, cax=ax_cb)
+    cb = plt.colorbar(xy, cax=ax_cb)
     cb.set_label(f"({unit})")
 
     # draw upper vertical profil
@@ -669,14 +669,14 @@ def plot_plan_and_vert(x, y, z, dataxy, datazx, datazy, *, unit="", title="", **
     if not title == "":
         # add a title - here, we have to create a new axes object which will
         # be invisible then the invisible axes will get a title
-        tax = pl.axes(
+        tax = plt.axes(
             (left, bottom + width + height + 0.01, width + height, 0.01),
             frameon=False,
             facecolor="none",
         )
         tax.get_xaxis().set_visible(False)
         tax.get_yaxis().set_visible(False)
-        pl.title(title)
+        plt.title(title)
 
 
 def plot_max_plan_and_vert(x, y, z, data, *, unit="", title="", **kwargs):
@@ -861,7 +861,7 @@ def plot(
 
     if util.has_import(osr):
         if isinstance(crs, osr.SpatialReference):
-            raise TypeError("WRADLIB: Currently GDAL OSR SRS are not supported")
+            raise TypeError("Currently GDAL OSR SRS are not supported.")
 
     if isinstance(ax, axes.Axes):
         if cg:
@@ -870,18 +870,18 @@ def plot(
                 paax = ax.parasites[1]
             except AttributeError:
                 raise TypeError(
-                    "WRADLIB: If `crs='cg'` `ax` need to be of type"
-                    " `mpl_toolkits.axisartist.SubplotHost`"
+                    "If `crs='cg'` `ax` need to be of type "
+                    "`mpl_toolkits.axisartist.SubplotHost`."
                 )
     else:
         # axes object is given
         if fig is None:
             if ax == 111:
                 # create new figure if there is only one subplot
-                fig = pl.figure()
+                fig = plt.figure()
             else:
                 # assume current figure
-                fig = pl.gcf()
+                fig = plt.gcf()
         if cg:
             # create curvelinear axes
             ax, caax, paax = create_cg(fig=fig, subplot=ax, **cg)
@@ -955,7 +955,7 @@ def plot(
             paax.set_box_aspect(1)
 
     # set ax as current
-    pl.sca(ax)
+    plt.sca(ax)
 
     return pm
 

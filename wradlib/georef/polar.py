@@ -426,7 +426,7 @@ def centroid_to_polyvert(centroid, delta, /):
     """
     cent = np.asanyarray(centroid)
     if cent.shape[-1] != 2:
-        raise ValueError("Parameter 'centroid' dimensions need " "to be (..., 2)")
+        raise ValueError("Parameter `centroid` dimensions need to be (..., 2).")
     dshape = [1] * cent.ndim
     dshape.insert(-1, 5)
     dshape[-1] = 2
@@ -485,7 +485,7 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
     >>> import wradlib.georef as georef  # noqa
     >>> import numpy as np
     >>> from matplotlib import collections
-    >>> import matplotlib.pyplot as pl
+    >>> import matplotlib.pyplot as plt
     >>> # define the polar coordinates and the site coordinates in lat/lon
     >>> r = np.array([50., 100., 150., 200.]) * 1000
     >>> az = np.array([0., 45., 90., 135., 180., 225., 270., 315.])
@@ -493,12 +493,12 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
     >>> site = (9.0, 48.0, 0)
     >>> polygons, aeqd = georef.spherical_to_polyvert(r, az, el, site)
     >>> # plot the resulting mesh
-    >>> fig = pl.figure()
+    >>> fig = plt.figure()
     >>> ax = fig.add_subplot(111)
     >>> polycoll = collections.PolyCollection(polygons[...,:2], closed=True, facecolors='None')  # noqa
     >>> ret = ax.add_collection(polycoll, autolim=True)
-    >>> pl.autoscale()
-    >>> pl.show()
+    >>> plt.autoscale()
+    >>> plt.show()
 
     """
     # prepare the range and azimuth array, so they describe the boundaries of
@@ -770,11 +770,9 @@ def _check_polar_coords(r, az, /):
             "Azimuth specification contains duplicate entries."
         )
     if not _is_sorted(r):
-        raise ValueError("Invalid polar coordinates: " "Range array must be sorted.")
+        raise ValueError("Invalid polar coordinates: Range array must be sorted.")
     if len(np.unique(r[1:] - r[:-1])) > 1:
-        raise ValueError(
-            "Invalid polar coordinates: " "Range gates are not equidistant."
-        )
+        raise ValueError("Invalid polar coordinates: Range gates are not equidistant.")
     if len(np.where(az >= 360.0)[0]) > 0:
         raise ValueError(
             "Invalid polar coordinates: "
@@ -788,11 +786,11 @@ def _check_polar_coords(r, az, /):
         az_left = az[np.where(az < az[0])]
         if (not _is_sorted(az_right)) or (not _is_sorted(az_left)):
             raise ValueError(
-                "Invalid polar coordinates: " "Azimuth array is not sorted clockwise."
+                "Invalid polar coordinates: Azimuth array is not sorted clockwise."
             )
     if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1])) > 1:
         warnings.warn(
-            "The azimuth angles of the current " "dataset are not equidistant.",
+            "The azimuth angles of the current dataset are not equidistant.",
             UserWarning,
         )
     return r, az

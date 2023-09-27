@@ -73,7 +73,7 @@ def get_vector_points(geom):
                     yield result
     else:
         warnings.warn(
-            "unsupported geometry type detected in "
+            "Unsupported geometry type detected in "
             "wradlib.georef.get_vector_points - skipping"
         )
 
@@ -105,7 +105,8 @@ def transform_geometry(geom, trg_crs, **kwargs):
 
     if crs is None:
         raise ValueError(
-            "geometry without spatial reference, please provide fitting spatial reference object in `src_crs`-kwarg."
+            "Geometry without spatial reference, please provide fitting "
+            "spatial reference object in `src_crs`-kwarg."
         )
 
     # transform if not the same spatial reference system
@@ -322,7 +323,7 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, *, reset=True):
 
     src_lyr = src_ds.GetLayerByName(name)
     if src_lyr is None:
-        raise ValueError("OGR layer 'name' not found in dataset")
+        raise ValueError(f"OGR layer {name!r} not found in dataset.")
     if reset:
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)

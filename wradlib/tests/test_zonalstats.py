@@ -494,7 +494,7 @@ def test_ZonalStatsBase_w(stats_base):
 @requires_gdal
 def test_ZonalStatsBase__check_vals(stats_base):
     zdp = zonalstats.ZonalStatsBase(stats_base.zdp)
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="Argument `vals` must be of length"):
         zdp._check_vals(np.arange(3))
 
 

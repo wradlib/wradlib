@@ -329,7 +329,7 @@ def _unfold_phi_vulpiani_xarray(obj, **kwargs):
     phidp = kwargs.pop("phidp", None)
     kdp = kwargs.pop("kdp", None)
     if phidp is None or kdp is None:
-        raise (TypeError, "Both `phidp` and `kdp` kwargs need to be given.")
+        raise TypeError("Both `phidp` and `kdp` kwargs need to be given.")
     phidp = util.get_dataarray(obj, phidp)
     kdp = util.get_dataarray(obj, kdp)
     out = xr.apply_ufunc(
@@ -449,20 +449,20 @@ def kdp_from_phidp(
 
     >>> import wradlib
     >>> import numpy as np
-    >>> import matplotlib.pyplot as pl
-    >>> pl.interactive(True)
+    >>> import matplotlib.pyplot as plt
+    >>> plt.interactive(True)
     >>> kdp_true = np.sin(3 * np.arange(0, 10, 0.1))
     >>> phidp_true = np.cumsum(kdp_true)
     >>> phidp_raw = phidp_true + np.random.uniform(-1, 1, len(phidp_true))
     >>> gaps = np.concatenate([range(10, 20), range(30, 40), range(60, 80)])
     >>> phidp_raw[gaps] = np.nan
     >>> kdp_re = wradlib.dp.kdp_from_phidp(phidp_raw)
-    >>> line1 = pl.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
-    >>> line2 = pl.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
-    >>> line3 = pl.plot(kdp_true, "g-", label="kdp_true")
-    >>> line4 = pl.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
-    >>> lgnd = pl.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
-    >>> pl.show()
+    >>> line1 = plt.plot(np.ma.masked_invalid(phidp_true), "b--", label="phidp_true")  # noqa
+    >>> line2 = plt.plot(np.ma.masked_invalid(phidp_raw), "b-", label="phidp_raw")  # noqa
+    >>> line3 = plt.plot(kdp_true, "g-", label="kdp_true")
+    >>> line4 = plt.plot(np.ma.masked_invalid(kdp_re), "r-", label="kdp_reconstructed")  # noqa
+    >>> lgnd = plt.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
+    >>> plt.show()
     """
     pad_mode = kwargs.pop("pad_mode", None)
     if pad_mode is None:
@@ -602,7 +602,10 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
         dtype = "f8"
 
     shape = phidp.shape
-    assert rho.shape == shape, "rho and phidp must have the same shape."
+    if rho.shape != shape:
+        raise ValueError(
+            f"`rho` ({rho.shape}) and `phidp` ({shape}) must have the same shape."
+        )
 
     phidp = phidp.reshape((-1, shape[-1]))
     if copy:
@@ -664,13 +667,15 @@ def _unfold_phi_xarray(obj, **kwargs):
     phidp = kwargs.pop("phidp", None)
     rho = kwargs.pop("rho", None)
     if phidp is None or rho is None:
-        raise (TypeError, "Both `phidp` and `rho` kwargs need to be given.")
+        raise TypeError("Both `phidp` and `rho` kwargs need to be given.")
     if isinstance(phidp, str):
         phidp = obj[phidp]
     if isinstance(rho, str):
         rho = obj[rho]
-    assert isinstance(phidp, xr.DataArray)
-    assert isinstance(rho, xr.DataArray)
+    if not isinstance(phidp, xr.DataArray):
+        raise TypeError("`phidp` need to be xarray.DataArray.")
+    if not isinstance(rho, xr.DataArray):
+        raise TypeError("`rho` need to be xarray.DataArray.")
     out = xr.apply_ufunc(
         unfold_phi,
         phidp,
@@ -840,13 +845,15 @@ def _depolarization_xarray(obj: xr.Dataset, **kwargs):
     zdr = kwargs.pop("zdr", None)
     rho = kwargs.pop("rho", None)
     if zdr is None or rho is None:
-        raise (TypeError, "Both `zdr` and `rhp` kwargs need to be given.")
+        raise TypeError("Both `zdr` and `rhp` kwargs need to be given.")
     if isinstance(zdr, str):
         zdr = obj[zdr]
     if isinstance(rho, str):
         rho = obj[rho]
-    assert isinstance(zdr, xr.DataArray)
-    assert isinstance(rho, xr.DataArray)
+    if not isinstance(zdr, xr.DataArray):
+        raise TypeError("`zdr` need to be xarray.DataArray.")
+    if not isinstance(rho, xr.DataArray):
+        raise TypeError("`rho` need to be xarray.DataArray.")
     out = xr.apply_ufunc(
         depolarization,
         zdr,
