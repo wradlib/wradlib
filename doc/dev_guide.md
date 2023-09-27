@@ -12,7 +12,7 @@ $ git clone https://github.com/wradlib/wradlib.git
 
 ## Contributing
 
-Everyone can contribute to the developement of {{wradlib}} by using the Fork and Pull model. For this purpose, you need to set up ``Git`` (see section [](#setup)). Then start a [Pull Request](https://help.github.com/articles/creating-a-pull-request)!
+Everyone can contribute to the developement of {{wradlib}} by using the Fork and Pull model. For this purpose, you need to set up ``Git`` (see section [Setup](#setup)). Then start a [Pull Request](https://help.github.com/articles/creating-a-pull-request)!
 
 * **Step 1:** [Fork](https://github.com/wradlib/wradlib) your own {{wradlib}} repository from the {{wradlib}} [main repo](https://github.com/wradlib/wradlib).
 * **Step 2:** Implement your changes into the forked repository. Test your code.
