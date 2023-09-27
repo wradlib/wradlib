@@ -90,18 +90,21 @@ def phidp_kdp_vulpiani(
         array of shape (n azimuth angles, n range gates)
     dr : float
         gate length in km
+    ndespeckle : int, optional
+        ``ndespeckle`` parameter of :func:`~wradlib.util.despeckle`,
+        defaults to 5
+    winlen : int, optional
+        ``winlen`` parameter of :func:`~wradlib.dp.kdp_from_phidp`,
+        defaults to 7
+    niter : int, optional
+        Number of iterations in which :math:`Phi_{DP}` is retrieved from
+        :math:`K_{DP}` and vice versa, defaults to 2.
+    copy : bool, optional
+        if True, the original :math:`Phi_{DP}` array will remain unchanged,
+        defaults to False
 
     Keyword Arguments
     -----------------
-    ndespeckle : int
-        ``ndespeckle`` parameter of :func:`~wradlib.util.despeckle`
-    winlen : int
-        ``winlen`` parameter of :func:`~wradlib.dp.kdp_from_phidp`
-    niter : int
-        Number of iterations in which :math:`Phi_{DP}` is retrieved from
-        :math:`K_{DP}` and vice versa
-    copy : bool
-        if True, the original :math:`Phi_{DP}` array will remain unchanged
     th1 : float
         Threshold th1 from above cited paper.
     th2 : float
@@ -247,15 +250,12 @@ def unfold_phi_vulpiani(phidp, kdp, *, th=-20, winlen=7):
         array of floats
     kdp : :class:`numpy:numpy.ndarray`
         array of floats
-
-    Keyword Arguments
-    -----------------
-    th : float
-        Threshold th3 in the above citation.
-    winlen : int
+    th : float, optional
+        Threshold th3 in the above citation, defaults to -20.
+    winlen : int, optional
         Length of window to fix possible phase over-correction. Normally
         should take the value of the length of the processing window in
-        the above citation.
+        the above citation, defaults to 7.
 
     Returns
     -------
@@ -388,9 +388,7 @@ def _fill_sweep(dat, *, kind="nan_to_num", fill_value=0.0):
 
 
 @singledispatch
-def kdp_from_phidp(
-    phidp, *, winlen=7, dr=1.0, method="lanczos_conv", skipna=True, **kwargs
-):
+def kdp_from_phidp(phidp, *, winlen=7, dr=1.0, method="lanczos_conv", **kwargs):
     """Retrieves :math:`K_{DP}` from :math:`Phi_{DP}`.
 
     In normal operation the method uses convolution to estimate :math:`K_{DP}`
@@ -422,16 +420,16 @@ def kdp_from_phidp(
     phidp : :class:`numpy:numpy.ndarray`
         multidimensional array, note that the range dimension must be the
         last dimension of the input array.
+    winlen : int, optional
+        Width of the window (as number of range gates), defaults to 7
+    dr : float, optional
+        gate length in km, defaults to 1
+    method : str, optional
+        Defaults to 'lanczos_conv'. Can also take one of 'lanczos_dot', 'lstsq',
+        'cov', 'cov_nan', 'matrix_inv'.
 
     Keyword Arguments
     -----------------
-    winlen : int
-        Width of the window (as number of range gates)
-    dr : float
-        gate length in km
-    method : str
-        Defaults to 'lanczos_conv'. Can also take one of 'lanczos_dot', 'lstsq',
-        'cov', 'cov_nan', 'matrix_inv'.
     skipna : bool
         Defaults to True. Local Linear regression removing NaN values using
         valid neighbors > min_periods
@@ -464,6 +462,7 @@ def kdp_from_phidp(
     >>> lgnd = plt.legend(("phidp_true", "phidp_raw", "kdp_true", "kdp_reconstructed"))  # noqa
     >>> plt.show()
     """
+    skipna = kwargs.pop("skipna", True)
     pad_mode = kwargs.pop("pad_mode", None)
     if pad_mode is None:
         pad_mode = "reflect"
@@ -576,13 +575,10 @@ def unfold_phi(phidp, rho, *, width=5, copy=False):
         array of shape (...,nr) with nr being the number of range bins
     rho : :class:`numpy:numpy.ndarray`
         array of same shape as ``phidp``
-
-    Keyword Arguments
-    -----------------
-    width : int
-       Width of the analysis window
-    copy : bool
-       Leaves original ``phidp`` array unchanged if set to True
+    width : int, optional
+       Width of the analysis window, defaults to 5.
+    copy : bool, optional
+       Leaves original `phidp` array unchanged if set to True
        (default: False)
 
     Returns

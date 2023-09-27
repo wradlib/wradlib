@@ -379,11 +379,8 @@ def get_radolan_header_token_pos(header, *, mode="composite"):
     ----------
     header : str
         (ASCII header)
-
-    Keyword Arguments
-    -----------------
-    mode : str
-        'composite' or 'dx', defaults to 'composite'
+    mode : str, optional
+        'composite' or 'dx', defaults to 'composite'.
 
     Returns
     -------

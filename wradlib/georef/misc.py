@@ -45,12 +45,9 @@ def bin_altitude(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
         at horizontal and +90° pointing vertically upwards from the radar
     sitealt : float
         Altitude in [m] a.s.l. of the referencing radar site
-
-    Keyword Arguments
-    -----------------
-    re : float
-        earth's radius [m]
-    ke : float
+    re : float, optional
+        earth's radius [m], defaults to 6371000.
+    ke : float, optional
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependend. The default of 4/3 is a good approximation for most
@@ -210,12 +207,9 @@ def site_distance(r, theta, binalt, *, re=6371000, ke=4.0 / 3.0):
         at horizontal and +90° pointing vertically upwards from the radar
     binalt : :class:`numpy:numpy.ndarray`
         site altitude [m] amsl. same shape as r.
-
-    Keyword Arguments
-    -----------------
-    re : float
-        earth's radius [m]
-    ke : float
+    re : float, optional
+        earth's radius [m], defaults to 6371000.
+    ke : float, optional
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependend. The default of 4/3 is a good approximation for most

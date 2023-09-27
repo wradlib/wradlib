@@ -50,8 +50,7 @@ def spherical_to_xyz(
     *,
     re=None,
     ke=4.0 / 3.0,
-    squeeze=False,
-    strict_dims=False,
+    **kwargs,
 ):
     """Transforms spherical coordinates (r, phi, theta) to cartesian
     coordinates (x, y, z) centered at site (aeqd).
@@ -71,21 +70,22 @@ def spherical_to_xyz(
     site : sequence
         the lon / lat / alt coordinates of the radar location and its altitude
         a.m.s.l. (in meters)
-
-    Keyword Arguments
-    -----------------
-    re : float
-        earth's radius [m], defaults to None (calculating from given latitude)
-    ke : float
+    re : float, optional
+        earth's radius [m], defaults to None (calculating from given latitude).
+    ke : float, optional
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependend. The default of 4/3 is a good approximation for most
         weather radar wavelengths.
-    squeeze : bool
+
+    Keyword Arguments
+    -----------------
+    squeeze : bool, optional
         If True, returns squeezed array. Defaults to False.
-    strict_dims : bool
+    strict_dims : bool, optional
         If True, generates output of (theta, phi, r, 3) in any case.
         If False, dimensions with same length are "merged".
+        Defaults to False.
 
     Returns
     -------
@@ -94,6 +94,9 @@ def spherical_to_xyz(
     aeqd : :py:class:`gdal:osgeo.osr.SpatialReference`
         Destination Spatial Reference System (AEQD-Projection).
     """
+    squeeze = kwargs.get("squeeze", False)
+    strict_dims = kwargs.get("strict_dims", False)
+
     centalt = site[2]
 
     # if no radius is given, get the approximate radius of the WGS84
@@ -254,15 +257,12 @@ def spherical_to_proj(r, phi, theta, site, *, crs=None, re=None, ke=4.0 / 3.0):
         the lon / lat coordinates of the radar location and its altitude
         a.m.s.l. (in meters)
         if site is of length two, altitude is assumed to be zero
-
-    Keyword Arguments
-    -----------------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, optional
         Destination Spatial Reference System (Projection).
         Defaults to wgs84 (epsg 4326).
-    re : float
-        earth's radius [m]
-    ke : float
+    re : float, optional
+        earth's radius [m], defaults to None (calculating from given latitude).
+    ke : float, optional
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependend. The default of 4/3 is a good approximation for most
@@ -870,22 +870,19 @@ def maximum_intensity_projection(
     ----------
     data : :class:`numpy:numpy.ndarray`
         Array containing polar data (azimuth, range)
-
-    Keyword Arguments
-    -----------------
-    r : :class:`numpy:numpy.ndarray`
+    r : :class:`numpy:numpy.ndarray`, optional
         Array containing range data
-    az : :class:`numpy:numpy.ndarray`
+    az : :class:`numpy:numpy.ndarray`, optional
         Array containing azimuth data
-    angle : float
+    angle : float, optional
         angle of slice, Defaults to 0. Should be between 0 and 180.
         0. means horizontal slice, 90. means vertical slice
-    elev : float
+    elev : float, optional
         elevation angle of scan, Defaults to 0.
-    autoext : bool
+    autoext : bool, optional
         This routine uses :func:`numpy.numpy.digitize` to bin the data.
         As this function needs bounds, we create one set of coordinates more
-        than would usually be provided by `r` and `az`.
+        than would usually be provided by `r` and `az`. Defaults to True.
 
     Returns
     -------

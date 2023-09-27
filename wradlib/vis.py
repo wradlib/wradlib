@@ -69,12 +69,12 @@ def plot_ppi_crosshair(
     ranges : list
         List of ranges, for which range circles should be drawn.
         If ``crs`` is None arbitrary units may be used (such that they fit
-        with the underlying PPI plot.
+        with the underlying PPI plot).
         Otherwise the ranges must be given in meters.
-    angles : list
+    angles : list, optional
         List of angles (in degrees) for which straight lines should be drawn.
         These lines will be drawn starting from the center and until the
-        largest range.
+        largest range. Defaults to [0, 90, 180, 270].
     crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL OSR Spatial Reference Object describing projection
         The function will calculate lines and circles according to
@@ -87,6 +87,7 @@ def plot_ppi_crosshair(
         float or array of same shape as az
         Elevation angle of the scan or individual azimuths.
         May improve georeferencing coordinates for larger elevation angles.
+        Defaults to 0.
     ax : :class:`matplotlib:matplotlib.axes.Axes`
         If given, the crosshair will be plotted into this axes object. If None
         matplotlib's current axes (function gca()) concept will be used to
@@ -761,10 +762,6 @@ def plot(
     fig=None,
     crs=None,
     func="pcolormesh",
-    cmap=wrl_cmap,
-    center=False,
-    add_colorbar=False,
-    add_labels=False,
     **kwargs,
 ):
     """Plot Plan Position Indicator (PPI) or Range Height Indicator (RHI).
@@ -788,6 +785,8 @@ def plot(
 
     Parameters
     ----------
+    da : xarray.DataArray
+        DataArray to plot
     crs : :py:class:`cartopy.crs.CRS`, dict or None
         cartopy CRS Coordinate Reference System describing projection
         If this parameter is not None, ``site`` must be set properly.
@@ -808,8 +807,16 @@ def plot(
         Name of plotting function to be used under the hood.
         Defaults to 'pcolormesh'. 'contour' and 'contourf' can be
         selected too.
-    cmap : str
-        matplotlib colormap string
+
+    Keyword Arguments
+    -----------------
+    cmap : str, optional
+        matplotlib colormap string. Defaults to wradlib default colormap, which
+        is either `Homeyer_Rainbow` if `cmweather` is installed or `turbo`.
+    zorder : int, optional
+        Lower zorder values are drawn first. Defaults to 0.
+    kwargs : dict, optional
+        Further kwargs, which are propagated to xarray plotting functions.
 
     Returns
     -------
@@ -846,6 +853,8 @@ def plot(
 
     # fix for correct zorder of data and grid
     kwargs["zorder"] = kwargs.pop("zorder", 0)
+
+    kwargs.get("cmap", wrl_cmap)
 
     sproj = crs
 
@@ -927,10 +936,6 @@ def plot(
         x=xp,
         y=yp,
         ax=plax,
-        cmap=cmap,
-        center=center,
-        add_colorbar=add_colorbar,
-        add_labels=add_labels,
         infer_intervals=infer_intervals,
         **kwargs,
     )

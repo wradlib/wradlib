@@ -160,8 +160,8 @@ class IpolBase:
         Returns
         -------
         output : :class:`numpy:numpy.ndarray`
-            if vals.shape==() [a scalar] output.shape will be (1,1)
-            if vals.shape==(npt,) output.shape will be (npt,1)
+            if vals.shape==() [a scalar] output.shape will be (1, 1)
+            if vals.shape==(npt, ) output.shape will be (npt, 1)
             if vals.ndim > 1 vals will be returned as is
         """
         if vals.ndim < 2:
@@ -1539,14 +1539,11 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
         2-dimensional array (azimuth, ranges) of floats;
 
         if no mask is assigned explicitly polar data should be a masked array
-
-    Keyword Arguments
-    -----------------
-    mask : :class:`numpy:numpy.ndarray`
-        boolean array with pixels to be interpolated set to True;
-        must have the same shape as data
+    mask : :class:`numpy:numpy.ndarray`, optional
+        boolean array with pixels to be interpolated set to True,
+        must have the same shape as data, defaults to None.
     ipclass : :class:`wradlib.ipol.IpolBase`
-        A class which inherits from IpolBase.
+        A class which inherits from IpolBase, defaults to :class:`wradlib.ipol.Nearest`.
 
     Returns
     -------

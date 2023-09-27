@@ -259,8 +259,8 @@ def reproject(*args, **kwargs):
     trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         defaults to EPSG(4326)
     area_of_interest : tuple
-        tuple of floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
-        NorthLatitudeDeg), only gdal>=3
+        floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
+        NorthLatitudeDeg), only gdal>=3, defaults to None (no area of interest)
 
     Returns
     -------
@@ -356,12 +356,11 @@ def _reproject_xarray(obj, **kwargs):
     Keyword Arguments
     -----------------
     trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-    coords : dict
-        Mapping of coordinates.
-
+    coords : dict, optional
+        Mapping of coordinates. Defaults to None
     area_of_interest : tuple
-        tuple of floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
-        NorthLatitudeDeg)
+        floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
+        NorthLatitudeDeg), defaults to None (no area of interest).
 
     Returns
     -------

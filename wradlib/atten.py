@@ -64,14 +64,15 @@ def correct_attenuation_hb(
         polar form with `m` azimuths and `n` range-bins the input array's
         shape can be either (l,m,n) or (m,l,n)
         data has to be provided in decibel representation of reflectivity [dBZ]
-    a : float
-        proportionality factor of the k-Z relation (:math:`k=a \\cdot Z^{b}`).
-        Per default set to 1.67e-4.
-    b : float
-        exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
-        set to 0.7.
-    gate_length : float
-        length of a range gate [km]. Per default set to 1.0.
+    coefficients : dict
+        - a : float
+          proportionality factor of the k-Z relation (:math:`k=a \\cdot Z^{b}`).
+          Per default set to 1.67e-4.
+        - b : float
+          exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
+          set to 0.7.
+        - gate_length : float
+          length of a range gate [km]. Per default set to 1.0.
     mode : str
         controls how the function reacts, if the sum of signal and attenuation
         exceeds the threshold ``thrs``
@@ -395,29 +396,24 @@ def correct_attenuation_constrained(
         to be performed) are supposed to vary along the last array-dimension
         and the azimuths are supposed to vary along the next to last
         array-dimension.
-
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
     a_max : float
         Initial value for linear coefficient of the k-Z relation
         ( :math:`k=a \\cdot Z^{b}` ).
-
         Per default set to 1.67e-4.
     a_min : float
         Minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a \\cdot Z^{b}` ) in the downwards iteration of 'a' in case
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints``.
-
         Per default set to 2.33e-5.
     n_a : int
         Number of iterations from ``a_max`` to ``a_min``.
-
         Per default set to 4.
     b_max : float
         Initial value for exponential coefficient of the k-Z relation
         ( :math:`k=a \\cdot Z^{b}` ).
-
         Per default set to 0.7.
     b_min : float
         Minimal allowed exponential coefficient of the k-Z relation
@@ -425,15 +421,12 @@ def correct_attenuation_constrained(
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints`` and the linear coefficient 'a' has already
         reached the lower limit ``a_min``.
-
         Per default set to 0.65.
     n_b : int
         Number of iterations from ``b_max`` to ``b_min``.
-
         Per default set to 6.
     gate_length : float
         Radial length of a range gate [km].
-
         Per default set to 1.0.
     constraints : list
         List of constraint functions. The signature of these functions has to

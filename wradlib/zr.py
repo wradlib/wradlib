@@ -77,10 +77,10 @@ def _z_to_r_xarray(obj, **kwargs):
     Keyword Arguments
     -----------------
     a : float
-        Parameter a of the Z/R-relationship
+        Parameter `a` of the Z/R-relationship
         Standard value according to Marshall-Palmer is a=200., b=1.6
     b : float
-        Parameter b of the Z/R-relationship
+        Parameter `b` of the Z/R-relationship
         Standard value according to Marshall-Palmer is b=1.6
 
     Note

@@ -1097,11 +1097,11 @@ def vertical_interpolate_volume(vol, *, elevs=None, method="nearest"):
     Parameters
     ----------
     vol : :py:class:`wradlib:wradlib.io.xarray.RadarVolume`
-
-    Keyword Arguments
-    -----------------
-    elevs : iterable of elevations to which interpolate the data. Defaults to None, which does no interpolation and returns a stacked array of the data.
-    method : method for interpolation, defaults to "nearest"
+    elevs : iterable, optional
+        Elevations to which interpolate the data. Defaults to None,
+        which does no interpolation and returns a stacked array of the data.
+    method : str, optional
+        method for interpolation, defaults to "nearest".
 
     Returns
     ----------
@@ -1130,13 +1130,7 @@ def vertical_interpolate_volume(vol, *, elevs=None, method="nearest"):
 def cross_section_ppi(
     obj,
     azimuth,
-    *,
-    method=None,
-    tolerance=None,
-    real_beams=False,
-    bw=1,
-    crs=None,
-    npl=1000,
+    **kwargs,
 ):
     """Cut a cross-section from PPI volume scans
 
@@ -1150,7 +1144,7 @@ def cross_section_ppi(
     ----------
     obj : :py:class:`wradlib:wradlib.io.xarray.RadarVolume` - Radar volume containing PPI sweeps
         from which azimuthal cross-sections will be extracted.
-    azimuths : int, float, slice, tuple or list
+    azimuth : int, float, slice, tuple or list
         Value of azimuth to extract the cross-section. It can be multiple values
         in the form of a slice, or a tuple or list of values.
         Alternatively, it can be given a tuple or list containing coordinates of two
@@ -1167,26 +1161,26 @@ def cross_section_ppi(
     -----------------
     method : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
         Method for inexact matches from :py:class:`xarray:xarray.Dataset.sel`.
-    tolerance : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
+        Defaults to None (only exact matches).
+    tolerance : float, optional
         Maximum distance between original and new labels for inexact matches
         from :py:class:`xarray:xarray.Dataset.sel`.
-    real_beams : bool
-        Option meant for plotting beams with their true beamwidth instead of filling the empty space by
-        stretching the beams (because of how matplotlib pcolormesh works).
-        Defaults to False, which returns a Dataset of cross-sections in the specified azimuth(s).
-        If set to True, it will return the same Dataset with additional "fake" beams (extra elevations)
-        so that when plotting with matplotlib pcolormesh the beamwidths are correctly represented
-        according to their width.
     bw : float, optional
-        beam width in degrees (defaults to 1 degree). This is only used if "real_beams=True".
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
+        Beam width in degrees (defaults to None).
+        Option meant for plotting beams with their true beamwidth instead of filling the
+        empty space by stretching the beams (because of how matplotlib pcolormesh works).
+        Defaults to None, which returns a Dataset of cross-sections in the specified azimuth(s).
+        If set to a certain beamwidth, it will return the same Dataset with additional
+        "fake" beams (extra elevations) so that when plotting with matplotlib pcolormesh
+        the beamwidths are correctly represented according to their width.
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS`, optional
         Projection to use with :py:class:`wradlib.georef.xarray.georeference_dataset`.
-        If GDAL OSR SRS, output is in this projection, else AEQD.
-    npl : int
+        If GDAL OSR SRS, output is in this projection, defaults to AEQD.
+    npl : int, optional
         Number of points to make up the line between p1 and p2, in case the user gives two arbitrary points
         instead of an azimuth value. npl should be high enough to accomodate more points along the line that
-        points of data available (i.e., higher that the resolution of the data). The default value should be
-        enough for most cases, but in case the result looks low resolution try increasing npl.
+        points of data available (i.e., higher that the resolution of the data). The default value 1000
+        should be enough for most cases, but in case the result looks low resolution try increasing npl.
 
     Returns
     ----------
@@ -1194,8 +1188,13 @@ def cross_section_ppi(
         Dataset of cross-section(s) in the specified azimuth(s) or along the line
         connecting the given points.
     """
+    bw = kwargs.get("bw", None)
+    npl = kwargs.get("npl", 1000)
+    crs = kwargs.get("crs")
+    method = kwargs.get("method", None)
+    tolerance = kwargs.get("tolerance", None)
 
-    if real_beams:
+    if bw is not None:
         # Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
         # up until halfway to the nearest gridpoints.
         # Then, we need to create fake rays of nan and/or duplicated data so the filling
@@ -1270,7 +1269,7 @@ def cross_section_ppi(
     # We do not use this for interpolation here, but for stacking the elevations
     ds = vertical_interpolate_volume(obj, elevs=None)
 
-    if real_beams:
+    if bw is not None:
         ds = xr.concat([ds, obj_fake], dim="elevation")
         ds = ds.sortby("elevation")
 

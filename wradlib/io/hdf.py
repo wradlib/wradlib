@@ -401,7 +401,7 @@ def to_hdf5(
     """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
 
     This is more efficient than pickle, cPickle or numpy.save. The data is
-    stored in a subgroup named ``data`` (i.e. hdf5file["data").
+    stored in a subgroup named `data` (i.e. file["data"]).
     See :func:`~wradlib.io.hdf.from_hdf5` for retrieving stored data.
 
     Parameters
@@ -416,7 +416,7 @@ def to_hdf5(
     dataset : str
         describing dataset
     compression : str
-        h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation
+        h5py-compression type {"gzip"|"szip"|"lzf"}, see h5py-documentation
         for details
     """
     with h5py.File(fpath, mode=mode) as f:

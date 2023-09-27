@@ -537,11 +537,9 @@ def make_3d_grid(site, crs, maxrange, maxalt, horiz_res, vert_res, *, minalt=0.0
         CRS defined by ``crs``, typically meters)
     vert_res : float
         vertical resolution of the 3-d grid (meters)
-
-    Keyword Arguments
-    -----------------
-    minalt : float
-        minimum altitude to which the 3-d grid should extend (meters)
+    minalt : float, optional
+        minimum altitude to which the 3-d grid should extend (meters),
+        defaults to 0.
 
     Returns
     -------

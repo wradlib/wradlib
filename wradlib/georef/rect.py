@@ -441,11 +441,8 @@ def grid_to_polyvert(grid, *, ravel=False):
     ----------
     grid : :class:`numpy:numpy.ndarray`
         grid edge coordinates
-
-    Keyword Arguments
-    -----------------
-    ravel : bool
-        option to flatten the grid
+    ravel : bool, optional
+        option to flatten the grid, defaults to False.
 
     Returns
     -------

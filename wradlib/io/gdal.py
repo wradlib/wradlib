@@ -170,7 +170,7 @@ def gdal_create_dataset(
     return ds
 
 
-def write_raster_dataset(fpath, dataset, *, driver="GTiff", options=None, remove=False):
+def write_raster_dataset(fpath, dataset, *, driver="GTiff", **kwargs):
     """Write raster dataset to file format
 
     Parameters
@@ -179,16 +179,16 @@ def write_raster_dataset(fpath, dataset, *, driver="GTiff", options=None, remove
         A file path - should have file extension corresponding to format.
     dataset : :py:class:`gdal:osgeo.gdal.Dataset`
         gdal.Dataset  gdal raster dataset
+    driver : str, optional
+        gdal raster format driver string, defaults to "GTiff"
 
     Keyword Arguments
     -----------------
-    driver : str
-        gdal raster format driver string
-    options : list
-        Option strings for the corresponding format.
-    remove : bool
+    options : list, optional
+        Option strings for the corresponding format. Defaults to
+    remove : bool, optional
         if True, existing gdal.Dataset will be
-        removed before creation
+        removed before creation, defaults to False
 
     Note
     ----
@@ -199,9 +199,9 @@ def write_raster_dataset(fpath, dataset, *, driver="GTiff", options=None, remove
     --------
     See :ref:`/notebooks/fileio/gis/raster_data.ipynb`.
     """
-    # check for option list
-    if options is None:
-        options = []
+    # get option list
+    options = kwargs.get("options", [])
+    remove = kwargs.get("remove", False)
 
     driver = gdal.GetDriverByName(driver)
     metadata = driver.GetMetadata()
@@ -397,10 +397,7 @@ class VectorSource:
         ----------
         idx : sequence
             sequence of int indices
-
-        Keyword Arguments
-        -----------------
-        mode : str
+        mode : str, optional
             return type ("numpy", "geo", "ogr"), defaults to "numpy"
         """
         if mode is None:
@@ -527,13 +524,10 @@ class VectorSource:
         ----------
         filename : str
             path to shape-filename
-
-        Keyword Arguments
-        -----------------
-        driver : str
-            driver string
-        remove : bool
-            if True removes existing output file
+        driver : str, optional
+            driver string, defaults to "ESRI SHapefile"
+        remove : bool, optional
+            if True removes existing output file, defaults to True
         """
         ds_out = gdal_create_dataset(
             driver, filename, gdal_type=gdal.OF_VECTOR, remove=remove
@@ -550,13 +544,10 @@ class VectorSource:
         ----------
         filename : str
             path to shape-filename
-
-        Keyword Arguments
-        -----------------
-        source : int or str
+        source : int or str, optional
             number or name of wanted layer, defaults to 0
-        driver : str
-            driver string
+        driver : str, optional
+            driver string, defaults to "ESRI Shapefile"
         """
         tmpfile = tempfile.NamedTemporaryFile(mode="w+b").name
         self.ds = gdal_create_dataset(
@@ -598,7 +589,6 @@ class VectorSource:
         driver="GTiff",
         attr=None,
         pixel_size=1.0,
-        remove=True,
         **kwargs,
     ):
         """Output layer to GDAL Rasterfile
@@ -607,22 +597,23 @@ class VectorSource:
         ----------
         filename : str
             path to shape-filename
+        driver : str, optional
+            GDAL Raster Driver, defaults to "GTiff".
+        attr : str, optional
+            attribute to burn into raster, defaults to None.
+        pixel_size : float, optional
+            pixel Size in source units
 
         Keyword Arguments
         -----------------
-        driver : str
-            GDAL Raster Driver
-        attr : str
-            attribute to burn into raster
-        pixel_size : float
-            pixel Size in source units
-        remove : bool
-            if True removes existing output file
-        silent : bool
+        remove : bool, optional
+            if True removes existing output file. Defaults to True.
+        silent : bool, optional
             If True no ProgressBar is shown. Defaults to False.
         """
-        silent = kwargs.pop("silent", False)
+        silent = kwargs.get("silent", False)
         progress = None if (silent or isWindows) else gdal.TermProgress
+        remove = kwargs.get("remove", True)
 
         layer = self.ds.GetLayer()
         layer.ResetReading()
@@ -676,12 +667,9 @@ class VectorSource:
         name : str
             Attribute Name
         values : :class:`numpy:numpy.ndarray`
-            Values to fill in attributes
-
-        Keyword Arguments
-        -----------------
-        reset_filter : bool
-            reset any layer filter (spatial/attribute), defaults to False
+            Values to fill in attributes.
+        reset_filter : bool, optional
+            reset any layer filter (spatial/attribute), defaults to False.
         """
         lyr = self.ds.GetLayerByIndex(0)
         if reset_filter:
@@ -708,11 +696,8 @@ class VectorSource:
         ----------
         attrs : list
             Attribute Names to retrieve
-
-        Keyword Arguments
-        -----------------
-        filt : tuple
-            (attname, value) for Attribute Filter
+        filt : tuple, optional
+            (attname, value) for Attribute Filter, defaults to None
         """
 
         lyr = self.ds.GetLayer()
@@ -734,11 +719,8 @@ class VectorSource:
         ----------
         props : list
             Property Names to retrieve
-
-        Keyword Arguments
-        -----------------
-        filt : tuple
-            (attname, value) for Attribute Filter
+        filt : tuple, optional
+            (attname, value) for Attribute Filter, defaults to None.
         """
         lyr = self.ds.GetLayer()
         lyr.ResetReading()

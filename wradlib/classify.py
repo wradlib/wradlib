@@ -284,13 +284,7 @@ def filter_gabella(
     obj,
     *,
     wsize=5,
-    thrsnorain=0.0,
-    tr1=6.0,
-    n_p=6,
-    tr2=1.3,
-    rm_nans=True,
-    radial=False,
-    cartesian=False,
+    **kwargs,
 ):
     """Clutter identification filter developed by :cite:`Gabella2002`.
 
@@ -301,11 +295,11 @@ def filter_gabella(
     Parameters
     ----------
     obj : :py:class:`numpy:numpy.ndarray`
+    wsize : int, optional
+        Size of the window surrounding the central pixel, defaults to 5.
 
     Keyword Arguments
     -----------------
-    wsize : int
-        Size of the window surrounding the central pixel
     thrsnorain : float
     tr1 : float
     n_p : int
@@ -336,6 +330,14 @@ def filter_gabella(
     See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
+    thrsnorain = kwargs.get("thrsnorain", 0.0)
+    tr1 = kwargs.get("tr1", 6.0)
+    n_p = kwargs.get("n_p", 6)
+    tr2 = kwargs.get("tr2", 1.3)
+    rm_nans = kwargs.get("rm_nans", True)
+    radial = kwargs.get("radial", False)
+    cartesian = kwargs.get("cartesian", False)
+
     bad = np.isnan(obj)
     if rm_nans:
         obj = obj.copy()
@@ -435,12 +437,9 @@ def histo_cut(obj, *, upper_frequency=0.01, lower_frequency=0.01):
     ----------
     obj : :py:class:`numpy:numpy.ndarray`
         spatial array containing rain accumulation
-
-    Keyword Arguments
-    -----------------
-    upper_frequency : float
+    upper_frequency : float, optional
         Upper frequency percentage for clutter detection, defaults to 0.01.
-    lower_frequency : float
+    lower_frequency : float, optional
         Lower frequency percentage for shading detection, defaults to 0.01.
 
     Returns
@@ -1294,12 +1293,9 @@ def classify(data, *, threshold=0.0):
     data : :py:class:`numpy:numpy.ndarray`
         Array which is of size (hmc-class, data.shape), containing the
         weighted hmc-membership probability values.
-
-    Keyword Arguments
-    -----------------
-    threshold : float
+    threshold : float, optional
         Threshold value where probability is considered no precip,
-        defaults to 0
+        defaults to 0.
 
     Returns
     -------

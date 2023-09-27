@@ -470,7 +470,7 @@ class ZonalStatsBase:
     ----------
     src : :class:`wradlib.zonalstats.ZonalDataPoly` or str
         ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI
-        shapefile containing necessary ZonalData
+        shapefile containing necessary ZonalData.
         ZonalData is available as ``zdata``-property inside class instance.
 
     Examples
