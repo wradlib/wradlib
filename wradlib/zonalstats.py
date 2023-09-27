@@ -17,7 +17,7 @@ The general usage is similar to the :mod:`wradlib.ipol` and
 You have to create an instance of a class (derived from
 :class:`~wradlib.zonalstats.ZonalDataBase`) by using
 the spatial information of your source and target objects (e.g. radar bins and
-catchment polygons). The Zonal Data within this object can be saved eg. as an
+catchment polygons). The Zonal Data within this object can be saved e.g. as an
 ESRI Shapefile.
 
 This object is then called with another class to compute zonal statistics for
@@ -320,7 +320,7 @@ class ZonalDataBase:
 
     def _get_intersection(self, *, trg=None, idx=None, buf=0.0):
         """Just a toy function if you want to inspect the intersection
-        points/polygons of an arbitrary target or an target by index.
+        points/polygons of an arbitrary target or a target by index.
         """
         # TODO: kwargs necessary?
 
@@ -338,7 +338,7 @@ class ZonalDataBase:
 
         # check for trg
         if trg is None:
-            raise TypeError("Either *trg* or *idx* keywords must be given!")
+            raise TypeError("Either `trg` or `idx` kwargs must be given!")
 
         # check for geometry
         if not type(trg) == ogr.Geometry:
@@ -470,7 +470,7 @@ class ZonalStatsBase:
     ----------
     src : :class:`wradlib.zonalstats.ZonalDataPoly` or str
         ZonalDataPoly object or filename pointing to ZonalDataPoly ESRI
-        shapefile containing necessary ZonalData
+        shapefile containing necessary ZonalData.
         ZonalData is available as ``zdata``-property inside class instance.
 
     Examples
@@ -491,7 +491,7 @@ class ZonalStatsBase:
                     )
                 self._zdata = src
             else:
-                raise TypeError("Parameter mismatch in calling ZonalDataBase")
+                raise TypeError("Parameter mismatch in calling ZonalDataBase.")
             self.ix, self.w = self._check_ix_w(*self.zdata._get_idx_weights())
         else:
             self._zdata = None
@@ -534,12 +534,13 @@ class ZonalStatsBase:
         """TODO Basic check of target attributes (sequence of values)."""
         if ix is not None and w is not None:
             if len(ix) != len(w):
-                raise TypeError("parameters ix and w must be of equal length")
+                raise TypeError(
+                    f"Parameters `ix` ({len(ix)}) and `w` ({len(w)}) must be of equal length."
+                )
             return np.array(ix, dtype=object), np.array(w, dtype=object)
-
         else:
             raise TypeError(
-                "ix and w are complementary parameters and " "must both be given"
+                "Parameters `ix` and `w` are complementary parameters and must both be given."
             )
 
     def _check_vals(self, vals):
@@ -549,16 +550,18 @@ class ZonalStatsBase:
             lyr.ResetReading()
             lyr.SetSpatialFilter(None)
             src_len = lyr.GetFeatureCount()
-            assert len(vals) == src_len, f"Argument vals must be of length {src_len}"
+            if len(vals) != src_len:
+                raise ValueError(f"Argument `vals` must be of length {src_len}.")
         else:
             imax = 0
             for i in self.ix:
                 mx = np.nanmax(i)
                 if imax < mx:
                     imax = mx
-            assert (
-                len(vals) > imax
-            ), "Argument vals cannot be subscripted by given index values"
+            if len(vals) <= imax:
+                raise ValueError(
+                    "Argument `vals` cannot be subscripted with current index values."
+                )
 
         return vals
 
@@ -724,7 +727,7 @@ def mask_from_bbox(x, y, bbox, *, polar=False):
     ix = np.arange(x.size).reshape(x.shape)
 
     # Find bbox corners
-    #    Plant a tree
+    # Plant a tree
     tree = spatial.cKDTree(np.vstack((x.ravel(), y.ravel())).transpose())
     # find lower left corner index
     dists, ixll = tree.query([bbox["left"], bbox["bottom"]], k=1)

@@ -186,9 +186,8 @@ Georeferencing-and-Projection`.
         crs.ImportFromWkt(radolan_wkt)
     else:
         raise ValueError(
-            f"No convenience support for projection {projname}, "
-            "yet.\nYou need to create projection by using "
-            "other means..."
+            f"No convenience support for projection {projname!r} yet. "
+            f"Please create projection by using other means."
         )
 
     return crs
@@ -222,8 +221,8 @@ def projstr_to_osr(projstr):
 
     if crs.Validate() == ogr.OGRERR_CORRUPT_DATA:
         raise ValueError(
-            "projstr validates to 'ogr.OGRERR_CORRUPT_DATA'"
-            "and can't be imported as OSR object"
+            "`projstr` validates to 'ogr.OGRERR_CORRUPT_DATA'"
+            "and can't be imported as OSR object."
         )
     return crs
 
@@ -260,8 +259,8 @@ def reproject(*args, **kwargs):
     trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         defaults to EPSG(4326)
     area_of_interest : tuple
-        tuple of floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
-        NorthLatitudeDeg), only gdal>=3
+        floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
+        NorthLatitudeDeg), only gdal>=3, defaults to None (no area of interest)
 
     Returns
     -------
@@ -285,7 +284,7 @@ def reproject(*args, **kwargs):
         numCols = C.shape[-1]
         C = C.reshape(-1, numCols)
         if numCols < 2 or numCols > 3:
-            raise TypeError("Input Array column mismatch to 'reproject'")
+            raise TypeError("Input Array column mismatch to `reproject`.")
     else:
         if len(args) == 2:
             X, Y = (np.asanyarray(arg) for arg in args)
@@ -295,17 +294,25 @@ def reproject(*args, **kwargs):
             zshape = Z.shape
             numCols = 3
         else:
-            raise TypeError("Illegal arguments to 'reproject'")
+            raise TypeError(
+                f"Illegal number arguments ({len(args)}) to "
+                f"`reproject`. Should be 3 or less."
+            )
 
         xshape = X.shape
         yshape = Y.shape
 
         if xshape != yshape:
-            raise TypeError("Incompatible X, Y inputs to 'reproject'")
+            raise TypeError(
+                f"Shape mismatch `X` ({xshape}), `Y` ({yshape}) inputs to `reproject`."
+            )
 
         if "Z" in locals():
             if xshape != zshape:
-                raise TypeError("Incompatible Z input to 'reproject'")
+                raise TypeError(
+                    f"Shape mismatch `Z` ({zshape}) input to `reproject`. "
+                    f"Shape of ({xshape}) needed."
+                )
             C = np.concatenate(
                 [X.ravel()[:, None], Y.ravel()[:, None], Z.ravel()[:, None]], axis=1
             )
@@ -326,11 +333,7 @@ def reproject(*args, **kwargs):
     trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
-        # here we could do this one
-        # return(np.array(ct.TransformPoints(C))[...,0:numCols]))
-        # or this one
-        trans = trans[:, 0:numCols].reshape(cshape)
-        return trans
+        return trans[:, 0:numCols].reshape(cshape)
     else:
         X = trans[:, 0].reshape(xshape)
         Y = trans[:, 1].reshape(yshape)
@@ -353,12 +356,11 @@ def _reproject_xarray(obj, **kwargs):
     Keyword Arguments
     -----------------
     trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-    coords : dict
-        Mapping of coordinates.
-
+    coords : dict, optional
+        Mapping of coordinates. Defaults to None
     area_of_interest : tuple
-        tuple of floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
-        NorthLatitudeDeg)
+        floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
+        NorthLatitudeDeg), defaults to None (no area of interest).
 
     Returns
     -------
@@ -382,25 +384,15 @@ def _reproject_xarray(obj, **kwargs):
     input_core_dims = [list(arg.dims) for arg in args]
     output_core_dims = input_core_dims
 
-    # extract crs from obj
-    if "spatial_ref" in obj.coords:
-        proj_crs = xd.georeference.get_crs(obj)
-        obj_crs = wkt_to_osr(proj_crs.to_wkt())
-    else:
-        obj_crs = None
-
     # user overrides?
-    src_crs = kwargs.get("src_crs")
-    if src_crs is None:
-        if obj_crs is None:
-            src_crs = get_default_projection()
-        else:
-            src_crs = obj_crs
+    if src_crs := kwargs.get("src_crs") is None:
+        # extract crs from obj
+        proj_crs = xd.georeference.get_crs(obj)
+        src_crs = wkt_to_osr(proj_crs.to_wkt())
     else:
-        if obj_crs is not None:
-            warnings.warn(
-                "src_crs kwarg is overriding 'spatial_ref'-coordinate'", stacklevel=4
-            )
+        warnings.warn(
+            "`src_crs`-kwarg is overriding `crs_wkt`-coordinate'", stacklevel=4
+        )
 
     kwargs.setdefault("src_crs", src_crs)
     trg_crs = kwargs.setdefault("trg_crs", get_default_projection())
@@ -419,9 +411,8 @@ def _reproject_xarray(obj, **kwargs):
         obj = obj.assign_coords({c: v})
 
     # set new crs to obj
-    if "spatial_ref" in obj.coords:
-        proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
-        obj = xd.georeference.add_crs(obj, crs=proj_crs)
+    proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
+    obj = xd.georeference.add_crs(obj, crs=proj_crs)
 
     return obj
 
@@ -548,23 +539,7 @@ def _get_earth_radius_xarray(obj, *, sr=None):
     radius : float
         earth radius in meter
     """
-    latitude = obj.latitude.values
-    if sr is None:
-        sr = get_default_projection()
-    radius_e = sr.GetSemiMajor()
-    radius_p = sr.GetSemiMinor()
-    latitude = np.radians(latitude)
-    radius = np.sqrt(
-        (
-            np.power(radius_e, 4) * np.power(np.cos(latitude), 2)
-            + np.power(radius_p, 4) * np.power(np.sin(latitude), 2)
-        )
-        / (
-            np.power(radius_e, 2) * np.power(np.cos(latitude), 2)
-            + np.power(radius_p, 2) * np.power(np.sin(latitude), 2)
-        )
-    )
-    return radius
+    return get_earth_radius(obj.latitude.values, sr=sr)
 
 
 def get_earth_projection(model="ellipsoid"):
@@ -599,7 +574,7 @@ def get_earth_projection(model="ellipsoid"):
         crs = osr.SpatialReference()
         crs.SetCompoundCS("WGS84 Horizontal + EGM96 Vertical", wgs84, egm96)
     else:
-        raise ValueError(f"wradlib: Unknown model='{model}'.")
+        raise ValueError(f"Unknown model {model!r}.")
 
     return crs
 

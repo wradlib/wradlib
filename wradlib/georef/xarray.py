@@ -77,7 +77,7 @@ def create_xarray_dataarray(
     theta : :class:`numpy:numpy.ndarray`
         The elevation angles in degrees.
     site : tuple
-        Tuple of coordinates of the radar site.
+        Coordinates of the radar site.
     sweep_mode : str
         Defaults to 'azimuth_surveillance'.
     rf : float
@@ -100,12 +100,11 @@ def create_xarray_dataarray(
     dataset : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    # sweep_mode = kwargs.pop("sweep_mode", "azimuth_surveillance")
     # check coordinate tuple
     if site and len(site) < 3:
         raise ValueError(
-            "WRADLIB: `site` need to be a tuple of coordinates "
-            "(longitude, latitude, altitude)."
+            "`site` need to be a sequence of coordinates "
+            "`longitude`, `latitude`, `altitude`."
         )
 
     if phi is None:

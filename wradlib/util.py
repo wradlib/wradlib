@@ -102,7 +102,7 @@ def import_optional(module):
     >>> m.log10(100)
     2.0
 
-    Trying to import a module that does not exists, does not produce
+    Trying to import a module that does not exist, does not produce
     any errors. Only when some function is used, the code triggers an error
     >>> m = import_optional('nonexistentmodule')  # noqa
     >>> m.log10(100)  #doctest: +ELLIPSIS
@@ -221,7 +221,6 @@ def meshgrid_n(*arrs):
             if j != i:
                 arr2 = arr2.repeat(sz, axis=j)
         ans.append(arr2)
-    # return tuple(ans[::-1])
     return tuple(ans)
 
 
@@ -235,7 +234,7 @@ def gridaspoints(*arrs):
     # convention that polar data should be (...,time,scan,azimuth,range)
     #
     # Still coordinate tuples are given in the order (x,y,z) [and hopefully not
-    # more dimensions]. Therefore np.meshgrid must be fed the axis coordinates
+    # more dimensions]. Therefore, np.meshgrid must be fed the axis coordinates
     # in shape order (z,y,x) and the result needs to be reversed in order
     # for everything to work out.
     grid = tuple([dim.ravel() for dim in reversed(np.meshgrid(*arrs, indexing="ij"))])
@@ -444,8 +443,6 @@ def roll2d_polar(img, shift=1, axis=0):
 class UTC(dt.tzinfo):
     """UTC implementation for tzinfo.
 
-    See e.g. http://python.active-venture.com/lib/datetime-tzinfo.html
-
     Replaces pytz.utc
     """
 
@@ -498,7 +495,7 @@ def get_raster_origin(coords):
     Parameters
     ----------
     coords : :class:`numpy:numpy.ndarray`
-        3 dimensional array (rows, cols, 2) of xy-coordinates
+        3-dimensional array (rows, cols, 2) of xy-coordinates
 
     Returns
     -------
@@ -519,7 +516,7 @@ def find_bbox_indices(coords, bbox):
     Parameters
     ----------
     coords : :class:`numpy:numpy.ndarray`
-        3 dimensional array (ny, nx, lon/lat) of floats
+        3-dimensional array (ny, nx, lon/lat) of floats
     bbox : :class:`numpy:numpy.ndarray` | list | tuple
          4-element (llx,lly,urx,ury)
 
@@ -584,9 +581,12 @@ def has_geos():
 def get_wradlib_data_path():
     wrl_data_path = os.environ.get("WRADLIB_DATA", None)
     if wrl_data_path is None:
-        raise OSError("'WRADLIB_DATA' environment variable not set")
+        raise OSError(
+            "`WRADLIB_DATA` environment variable not set. Please set `WRADLIB_DATA` "
+            "pointing to the location of `wradlib_data` repository on the filesystem."
+        )
     if not os.path.isdir(wrl_data_path):
-        raise OSError(f"'WRADLIB_DATA' path '{wrl_data_path}' does not exist")
+        raise OSError(f"`WRADLIB_DATA` path {wrl_data_path!r} does not exist.")
     return wrl_data_path
 
 
@@ -598,14 +598,14 @@ def get_wradlib_data_file(relfile):
 
             data_file = DATASETS.fetch(relfile)
         except ImportError:
-            raise OSError(f"WRADLIB_DATA file '{data_file}' does not exist.")
+            raise OSError(f"WRADLIB_DATA file {data_file!r} does not exist.")
     return data_file
 
 
 def calculate_polynomial(data, w):
     """Calculate Polynomial
 
-    The functions calculates the following polynomial:
+    The function calculate the following polynomial:
 
     .. math::
 
@@ -680,8 +680,8 @@ def _linregress_1d(rhs, *, method="lstsq"):
     """Calculates slope by means of linear regression on last dimension of rhs.
 
     Calculates lhs from size of last dimension of rhs.
-    Methods 'lstsq', 'cov', 'matrix_inv'  and 'cov_nan' are multidimensional.
-    The other two nan-methods only work on a single system. Hence the
+    Methods 'lstsq', 'cov', 'matrix_inv' and 'cov_nan' are multidimensional.
+    The other two nan-methods only work on a single system. Hence, the
     apply_along_axis.
     """
     shape = rhs.shape
@@ -724,7 +724,7 @@ def _linregress_1d(rhs, *, method="lstsq"):
     elif method == "matrix_inv_nan":
         out = np.apply_along_axis(_nan_matrix_inv, 0, rhs, lhs)
     else:
-        raise ValueError(f"wradlib: unknown method value {method}")
+        raise ValueError(f"Unknown method {method!r}.")
 
     return out.reshape(shape[:-1])
 
@@ -814,7 +814,7 @@ lanczos-low-noise-differentiators/>`_.
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
-        multi-dimensional array, note that the derivation dimension must be the
+        multidimensional array, note that the derivation dimension must be the
         last dimension of the input array.
     winlen : int
         Width of the derivation window .
@@ -841,9 +841,8 @@ lanczos-low-noise-differentiators/>`_.
     out : :class:`numpy:numpy.ndarray`
         array of derivates with the same shape as data
     """
-    assert (
-        winlen % 2
-    ) == 1, "Window size N for function kdp_from_phidp must be an odd number."
+    if (winlen % 2) != 1:
+        raise ValueError(f"`winlen` must be an odd number, but {winlen} given.")
     # Make really sure winlen is an integer
     winlen = int(winlen)
 
@@ -875,7 +874,7 @@ lanczos-low-noise-differentiators/>`_.
         elif method in ["lstsq", "cov", "cov_nan", "matrix_inv"]:
             out = _linregress_1d(data_roll, method=method)
         else:
-            raise ValueError(f"wradlib: unknown method value {method}")
+            raise ValueError(f"Unknown method {method!r}")
 
     # NaN treatment
     if skipna:
@@ -883,8 +882,8 @@ lanczos-low-noise-differentiators/>`_.
         invalid = np.isnan(out)
         if np.any(invalid):
             min_periods = kwargs.pop("min_periods", winlen // 2 + 1)
-            assert min_periods >= 2, "min_periods need to be >= 2."
-
+            if min_periods < 2:
+                raise ValueError("`min_periods` need to be >= 2.")
             # automatically select method2 if not given
             if method in ["lstsq", "matrix_inv"]:
                 m2 = method + "_nan"
@@ -992,7 +991,7 @@ lanczos-low-noise-differentiators/>`_.
 
 @singledispatch
 def despeckle(data, *, n=3, copy=False):
-    """Remove floating pixels in between NaNs in a multi-dimensional array.
+    """Remove floating pixels in between NaNs in a multidimensional array.
 
     Warning
     -------
@@ -1011,7 +1010,8 @@ def despeckle(data, *, n=3, copy=False):
         If True, the input array will remain unchanged.
 
     """
-    assert n in (3, 5), "Window size n for function despeckle must be 3 or 5."
+    if n not in (3, 5):
+        raise ValueError("Window size n for function despeckle must be 3 or 5.")
     if copy:
         data = data.copy()
 
@@ -1031,7 +1031,7 @@ def despeckle(data, *, n=3, copy=False):
 
 @despeckle.register(xr.DataArray)
 def _despeckle_xarray(obj, **kwargs):
-    """Remove floating pixels in between NaNs in a multi-dimensional array.
+    """Remove floating pixels in between NaNs in a multidimensional array.
 
     Parameters
     ----------
@@ -1097,11 +1097,11 @@ def vertical_interpolate_volume(vol, *, elevs=None, method="nearest"):
     Parameters
     ----------
     vol : :py:class:`wradlib:wradlib.io.xarray.RadarVolume`
-
-    Keyword Arguments
-    -----------------
-    elevs : iterable of elevations to which interpolate the data. Defaults to None, which does no interpolation and returns a stacked array of the data.
-    method : method for interpolation, defaults to "nearest"
+    elevs : iterable, optional
+        Elevations to which interpolate the data. Defaults to None,
+        which does no interpolation and returns a stacked array of the data.
+    method : str, optional
+        method for interpolation, defaults to "nearest".
 
     Returns
     ----------
@@ -1130,32 +1130,26 @@ def vertical_interpolate_volume(vol, *, elevs=None, method="nearest"):
 def cross_section_ppi(
     obj,
     azimuth,
-    *,
-    method=None,
-    tolerance=None,
-    real_beams=False,
-    bw=1,
-    crs=None,
-    npl=1000,
+    **kwargs,
 ):
-    """Cut a cross section from PPI volume scans
+    """Cut a cross-section from PPI volume scans
 
         .. versionadded:: 1.18
 
-    This function extracts cross sections from a PPI volume scan along one or more azimuth angles,
+    This function extracts cross-sections from a PPI volume scan along one or more azimuth angles,
     or along a line connecting two given points.
     Similar to PyArt's cross_section_ppi function.
 
     Parameters
     ----------
     obj : :py:class:`wradlib:wradlib.io.xarray.RadarVolume` - Radar volume containing PPI sweeps
-        from which azimuthal cross sections will be extracted.
-    azimuths : int, float, slice, tuple or list
-        Value of azimuth to extract the cross section. It can be multiple values
+        from which azimuthal cross-sections will be extracted.
+    azimuth : int, float, slice, tuple or list
+        Value of azimuth to extract the cross-section. It can be multiple values
         in the form of a slice, or a tuple or list of values.
         Alternatively, it can be given a tuple or list containing coordinates of two
         arbitrary points in the x,y space of the georeferenced object: [ (x1, y1), (x2,y2) ].
-        In case two points are given, a cross section along the line connecting
+        In case two points are given, a cross-section along the line connecting
         the points will be generated by selecting the nearest-neighbor values of data.
         No interpolation of data is performed. If more than two points are given, only
         the first two are used. The resulting dataset has dimensions xyi (which is just
@@ -1167,35 +1161,40 @@ def cross_section_ppi(
     -----------------
     method : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
         Method for inexact matches from :py:class:`xarray:xarray.Dataset.sel`.
-    tolerance : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
+        Defaults to None (only exact matches).
+    tolerance : float, optional
         Maximum distance between original and new labels for inexact matches
         from :py:class:`xarray:xarray.Dataset.sel`.
-    real_beams : bool
-        Option meant for plotting beams with their true beamwidth instead of filling the empty space by
-        stretching the beams (because of how matplotlib pcolormesh works).
-        Defaults to False, which returns a Dataset of cross sections in the specified azimuth(s).
-        If set to True, it will return the same Dataset with additional "fake" beams (extra elevations)
-        so that when plotting with matplotlib pcolormesh the beamwidths are correctly represented
-        according to their width.
     bw : float, optional
-        beam width in degrees (defaults to 1 degree). This is only used if "real_beams=True".
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
+        Beam width in degrees (defaults to None).
+        Option meant for plotting beams with their true beamwidth instead of filling the
+        empty space by stretching the beams (because of how matplotlib pcolormesh works).
+        Defaults to None, which returns a Dataset of cross-sections in the specified azimuth(s).
+        If set to a certain beamwidth, it will return the same Dataset with additional
+        "fake" beams (extra elevations) so that when plotting with matplotlib pcolormesh
+        the beamwidths are correctly represented according to their width.
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS`, optional
         Projection to use with :py:class:`wradlib.georef.xarray.georeference_dataset`.
-        If GDAL OSR SRS, output is in this projection, else AEQD.
-    npl : int
+        If GDAL OSR SRS, output is in this projection, defaults to AEQD.
+    npl : int, optional
         Number of points to make up the line between p1 and p2, in case the user gives two arbitrary points
         instead of an azimuth value. npl should be high enough to accomodate more points along the line that
-        points of data available (i.e., higher that the resolution of the data). The default value should be
-        enough for most cases, but in case the result looks low resolution try increasing npl.
+        points of data available (i.e., higher that the resolution of the data). The default value 1000
+        should be enough for most cases, but in case the result looks low resolution try increasing npl.
 
     Returns
     ----------
     obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
-        Dataset of cross section(s) in the specified azimuth(s) or along the line
+        Dataset of cross-section(s) in the specified azimuth(s) or along the line
         connecting the given points.
     """
+    bw = kwargs.get("bw", None)
+    npl = kwargs.get("npl", 1000)
+    crs = kwargs.get("crs")
+    method = kwargs.get("method", None)
+    tolerance = kwargs.get("tolerance", None)
 
-    if real_beams:
+    if bw is not None:
         # Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
         # up until halfway to the nearest gridpoints.
         # Then, we need to create fake rays of nan and/or duplicated data so the filling
@@ -1240,8 +1239,8 @@ def cross_section_ppi(
             )
         )
 
-        # If the first (lowest) real ray falls in this last case, we also need to add an
-        # additional nan ray below:
+        # If the first (lowest) real ray falls in this last case
+        # we also need to add a nan ray below
         if condition[0]:
             under_two_bw_nan = np.concatenate(
                 (np.array(sorted_elevs[0] - bw, ndmin=1), under_two_bw_nan)
@@ -1270,7 +1269,7 @@ def cross_section_ppi(
     # We do not use this for interpolation here, but for stacking the elevations
     ds = vertical_interpolate_volume(obj, elevs=None)
 
-    if real_beams:
+    if bw is not None:
         ds = xr.concat([ds, obj_fake], dim="elevation")
         ds = ds.sortby("elevation")
 
@@ -1368,7 +1367,7 @@ def cross_section_ppi(
         # Reindex the datasets along the "xyi" dimension
         selection_reindexed = list()
         for ll in range(len(selection)):
-            # Since the selection of data for each elevation does not necessarily has the
+            # Since the selection of data for each elevation does not necessarily have the
             # same amount of xyi points, we reindex the xyi dimension expanding to its
             # max length to accomodate all data
             xyi_maxlen = np.array([len(ss.xyi) for ss in selection]).max()
@@ -1401,6 +1400,24 @@ def docstring(func):
 def dim0(obj):
     """Return major dimension (azimuth/elevation) of xarray object."""
     return list(set(obj.dims) & {"azimuth", "elevation"})[-1]
+
+
+def get_apply_ufunc_variables(obj, dim):
+    dims = {dim, "range"}
+    keep = xr.Dataset(
+        {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
+    )
+    obj = xr.Dataset(
+        {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims == dims}
+    )
+    return obj, keep
+
+
+def get_dataarray(obj, arr):
+    if isinstance(arr, str):
+        arr = obj[arr]
+    assert isinstance(arr, xr.DataArray)
+    return arr
 
 
 class XarrayMethods:

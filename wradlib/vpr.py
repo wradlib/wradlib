@@ -16,7 +16,7 @@ in defined heights. This module is intended to provide a set of tools to
 account for these effects.
 
 The first step will normally be to reference the polar volume data in a
-3-dimensional Cartesian coordinate system. The three dimensional Cartesian
+3-dimensional Cartesian coordinate system. The three-dimensional Cartesian
 coordinates of the original polar volume data can be computed using
 :func:`wradlib.vpr.volcoords_from_polar`.
 
@@ -26,7 +26,7 @@ to create so-called `Constant Altitude Plan Position Indicators (CAPPI)
 <https://en.wikipedia.org/wiki/Constant_altitude_plan_position_indicator>`_
 in order to make radar observations at different distances from the radar more
 comparable. Basically, a CAPPI is simply one slice out of a 3-D volume grid.
-Analoguous, we will refer to the elements in a three dimensional Cartesian grid
+Analoguous, we will refer to the elements in a three-dimensional Cartesian grid
 as *voxels*. In wradlib, you can create
 CAPPIS (:class:`~wradlib.vpr.CAPPI`) and Pseudo CAPPIs
 (:class:`~wradlib.vpr.PseudoCAPPI`) for different altitudes at once.
@@ -72,6 +72,9 @@ class CartesianVolume:
         The minimum elevation angle of the volume (degree)
     maxelev : float
         The maximum elevation angle of the volume (degree)
+    site : sequence
+        the lon / lat / alt coordinates of the radar location and its altitude
+        a.m.s.l. (in meters)
     ipclass : :class:`wradlib.ipol.IpolBase`
         an interpolation class from :mod:`wradlib.ipol`
     ipargs : dict
@@ -80,7 +83,7 @@ class CartesianVolume:
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels, )
 
     Examples
     --------
@@ -95,19 +98,19 @@ class CartesianVolume:
         maxrange=None,
         minelev=None,
         maxelev=None,
+        site=None,
         ipclass=ipol.Idw,
         **ipargs,
     ):
         # radar location in Cartesian coordinates
-        # TODO: pass projected radar location as argument
-        # (allows processing of incomplete polar volumes)
-        self.radloc = np.array(
-            [
+        if site is None:
+            site = [
                 np.mean(polcoords[:, 0]),
                 np.mean(polcoords[:, 1]),
                 np.min(polcoords[:, 2]),
             ]
-        ).reshape((-1, 3))
+        self.radloc = np.array(site).reshape((-1, 3))
+
         # Set the mask which masks the blind voxels of the 3-D volume grid
         self.mask = self._get_mask(
             gridcoords, polcoords, maxrange=maxrange, minelev=minelev, maxelev=maxelev
@@ -122,13 +125,13 @@ class CartesianVolume:
         Parameters
         ----------
         data : :class:`numpy:numpy.ndarray`
-            1-d array of length (num radar bins in volume,)
+            1-d array of length (num radar bins in volume, )
             The length of this array must be the same as len(polcoords)
 
         Returns
         -------
         output : :class:`numpy:numpy.ndarray`
-            1-d array of length (num voxels,)
+            1-d array of length (num voxels, )
 
         """
         # Interpolate data in 3-D
@@ -171,7 +174,7 @@ class CartesianVolume:
         Returns
         -------
         output : :class:`numpy:numpy.ndarray`
-            Boolean array of length (num voxels,)
+            Boolean array of length (num voxels, )
         """
         return np.repeat(False, len(gridcoords))
 
@@ -205,7 +208,7 @@ class CAPPI(CartesianVolume):
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels, )
 
     See Also
     --------
@@ -222,8 +225,8 @@ class CAPPI(CartesianVolume):
         >>> import wradlib
         >>> import numpy as np
         >>> from osgeo import osr
-        >>> import matplotlib.pyplot as pl
-        >>> pl.interactive(True)
+        >>> import matplotlib.pyplot as plt
+        >>> plt.interactive(True)
         >>> # define elevation and azimuth angles, ranges, radar site coordinates,
         >>> # projection
         >>> elevs  = np.array([0.5,1.5,2.4,3.4,4.3,5.3,6.2,7.5,8.7,10,12,14,16.7,19.5])
@@ -254,9 +257,8 @@ class CAPPI(CartesianVolume):
         >>>
         >>> # plot results
         >>> levels = np.linspace(0,100,25)
-        >>> wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels,
-        ...                                    cmap=pl.cm.viridis)
-        >>> pl.show()
+        >>> wradlib.vis.plot_max_plan_and_vert(x, y, z, gridded, levels=levels)
+        >>> plt.show()
     """
 
     def _get_mask(self, gridcoords, polcoords, maxrange, minelev, maxelev):
@@ -309,7 +311,7 @@ class PseudoCAPPI(CartesianVolume):
     Returns
     -------
     output : :class:`numpy:numpy.ndarray`
-        float 1-d ndarray of the same length as ``gridcoords`` (num voxels,)
+        float 1-d ndarray of the same length as ``gridcoords`` (num voxels, )
 
     See Also
     --------
@@ -458,50 +460,34 @@ def volcoords_from_polar_irregular(site, elevs, azimuths, ranges, *, crs=None):
         Array of shape (num volume bins, 3)
 
     """
-    # check structure: Are azimuth angles and range bins the same for each
-    # elevation angle?
+    # Are azimuth angles and range bins the same for each elevation angle?
     oneaz4all = True
     onerange4all = True
-    #   check elevs array, first: must be one-dimensional
-    try:
-        elevs = np.array(elevs)
-    except Exception:
-        print("Could not create an array from argument <elevs>.")
-        print("The following exception was raised:")
-        raise
-    assert (elevs.ndim == 1) and (
-        elevs.dtype != np.dtype("object")
-    ), "Argument <elevs> in wradlib.volcoords_from_polar must be a 1-D array."
-    # now: is there one azimuths array for all elevation angles
-    # or one for each?
-    try:
-        azimuths = np.array(azimuths)
-    except Exception:
-        print("Could not create an array from argument <azimuths>.")
-        print("The following exception was raised:")
-        raise
+    # check elevs array, must be one-dimensional
+    elevs = np.array(elevs)
+    if not ((elevs.ndim == 1) and (elevs.dtype != np.dtype("object"))):
+        raise ValueError("Argument `elevs` must be a 1-D array.")
+    # is there one azimuths array for all elevation angles or one for each?
+    azimuths = np.array(azimuths)
     if len(azimuths) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in azimuths]
-        assert not ((False in isseq) and (True in isseq)), (
-            "Argument <azimuths> contains both iterable " "and non-iterable items."
-        )
+        if (False in isseq) and (True in isseq):
+            raise ValueError(
+                "Argument `azimuths` contains both iterable and non-iterable items."
+            )
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             oneaz4all = False
-    # now: is there one ranges array for all elevation angles or one for each?
-    try:
-        ranges = np.array(ranges)
-    except Exception:
-        print("Could not create an array from argument <ranges>.")
-        print("The following exception was raised:")
-        raise
+    # is there one ranges array for all elevation angles or one for each?
+    ranges = np.array(ranges)
     if len(ranges) == len(elevs):
         # are the items of <azimuths> arrays themselves?
         isseq = [util.issequence(elem) for elem in ranges]
-        assert not ((False in isseq) and (True in isseq)), (
-            "Argument <azimuths> contains both iterable " "and non-iterable items."
-        )
+        if (False in isseq) and (True in isseq):
+            raise ValueError(
+                "Argument `ranges` contains both iterable and non-iterable items."
+            )
         if True in isseq:
             # we expect one azimuth array for each elevation angle
             onerange4all = False
@@ -551,11 +537,9 @@ def make_3d_grid(site, crs, maxrange, maxalt, horiz_res, vert_res, *, minalt=0.0
         CRS defined by ``crs``, typically meters)
     vert_res : float
         vertical resolution of the 3-d grid (meters)
-
-    Keyword Arguments
-    -----------------
-    minalt : float
-        minimum altitude to which the 3-d grid should extend (meters)
+    minalt : float, optional
+        minimum altitude to which the 3-d grid should extend (meters),
+        defaults to 0.
 
     Returns
     -------
@@ -622,7 +606,7 @@ def norm_vpr_stats(volume, reference_layer, *, stat=None, **kwargs):
     Returns
     -------
     output : :py:class:`numpy:numpy.ndarray` or :py:class:`numpy:numpy.ma.MaskedArray`
-        Array of shape (num vertical layers,) which provides the statistic from
+        Array of shape (num vertical layers, ) which provides the statistic from
         ``stat`` applied over all normalised vertical profiles (e.g. the
         mean normalised vertical profile if :py:func:`numpy:numpy.mean` is used)
 

@@ -1,4 +1,5 @@
 cartopy
+cmweather
 dask
 gdal>=3
 geopandas

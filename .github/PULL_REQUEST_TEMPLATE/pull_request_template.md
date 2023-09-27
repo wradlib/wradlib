@@ -3,4 +3,4 @@
  - [ ] Closes #xxxx
  - [ ] Tests added
  - [ ] Passes `isort -rc . && black . && flake8`
- - [ ] Fully documented (eg. docstrings)
+ - [ ] Fully documented (e.g. docstrings)

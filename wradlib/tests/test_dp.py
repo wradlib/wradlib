@@ -64,7 +64,7 @@ def dp_data():
     yield TestKDPFromPHIDP
 
 
-def test_process_raw_phidp_vulpiani(derivation_method, window, copy):
+def test_phidp_kdp_vulpiani(derivation_method, window, copy):
     if derivation_method == "lstsq" and sys.platform.startswith("win"):
         pytest.skip("fails on windows due to MKL issue")
     # Todo: move data setup into fixture
@@ -103,7 +103,7 @@ def test_process_raw_phidp_vulpiani(derivation_method, window, copy):
     phidp_raw4[:, gaps] = np.nan
 
     in0 = phidp_raw0.copy()
-    out0 = dp.process_raw_phidp_vulpiani(
+    out0 = dp.phidp_kdp_vulpiani(
         in0,
         dr=dr,
         copy=copy,
@@ -116,7 +116,7 @@ def test_process_raw_phidp_vulpiani(derivation_method, window, copy):
     np.testing.assert_array_equal(in0, phidp_raw0)
     np.testing.assert_allclose(out0[0], phidp_true0, atol=0.6, rtol=0.02)
 
-    out1 = dp.process_raw_phidp_vulpiani(
+    out1 = dp.phidp_kdp_vulpiani(
         phidp_raw1.copy(),
         dr=dr,
         copy=copy,
@@ -128,7 +128,7 @@ def test_process_raw_phidp_vulpiani(derivation_method, window, copy):
     )
     np.testing.assert_allclose(out1[0], phidp_true0, atol=0.8, rtol=0.02)
 
-    out2 = dp.process_raw_phidp_vulpiani(
+    out2 = dp.phidp_kdp_vulpiani(
         phidp_raw1.copy(),
         dr=dr,
         copy=copy,
@@ -140,7 +140,7 @@ def test_process_raw_phidp_vulpiani(derivation_method, window, copy):
     )
     np.testing.assert_allclose(out2[0], phidp_true0, atol=0.8, rtol=0.02)
 
-    out3 = dp.process_raw_phidp_vulpiani(
+    out3 = dp.phidp_kdp_vulpiani(
         phidp_raw1.copy(),
         dr=dr,
         copy=copy,
@@ -153,7 +153,7 @@ def test_process_raw_phidp_vulpiani(derivation_method, window, copy):
     np.testing.assert_allclose(out3[0], phidp_true0, atol=0.8, rtol=0.02)
 
     in4 = phidp_raw4.copy()
-    out4 = dp.process_raw_phidp_vulpiani(
+    out4 = dp.phidp_kdp_vulpiani(
         in4,
         dr=dr,
         copy=copy,
@@ -228,9 +228,9 @@ def test_linear_despeckle(dp_data, ndespeckle):
     util.despeckle(dp_data.phidp_raw0, n=ndespeckle, copy=True)
 
 
-def test_unfold_phi_naive(dp_data):
-    dp.unfold_phi_naive(dp_data.phidp_raw0, dp_data.rho)
-    dp.unfold_phi_naive(dp_data.phidp_raw0, dp_data.rho, copy=True)
+def test_unfold_phi(dp_data):
+    dp.unfold_phi(dp_data.phidp_raw0, dp_data.rho)
+    dp.unfold_phi(dp_data.phidp_raw0, dp_data.rho, copy=True)
 
 
 def test_unfold_phi_vulpiani():

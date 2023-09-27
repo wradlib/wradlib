@@ -64,14 +64,15 @@ def correct_attenuation_hb(
         polar form with `m` azimuths and `n` range-bins the input array's
         shape can be either (l,m,n) or (m,l,n)
         data has to be provided in decibel representation of reflectivity [dBZ]
-    a : float
-        proportionality factor of the k-Z relation (:math:`k=a \\cdot Z^{b}`).
-        Per default set to 1.67e-4.
-    b : float
-        exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
-        set to 0.7.
-    gate_length : float
-        length of a range gate [km]. Per default set to 1.0.
+    coefficients : dict
+        - a : float
+          proportionality factor of the k-Z relation (:math:`k=a \\cdot Z^{b}`).
+          Per default set to 1.67e-4.
+        - b : float
+          exponent of the k-Z relation ( :math:`k=a \\cdot Z^{b}` ). Per default
+          set to 0.7.
+        - gate_length : float
+          length of a range gate [km]. Per default set to 1.0.
     mode : str
         controls how the function reacts, if the sum of signal and attenuation
         exceeds the threshold ``thrs``
@@ -206,7 +207,7 @@ def bisect_reference_attenuation(
     max_iterations=10,
 ):
     """Find the optimal attenuation coefficients for a gateset to achieve a \
-    given reference attenuation using a the forward correction algorithm in \
+    given reference attenuation using the forward correction algorithm in \
     combination with the bisection method.
 
     Parameters
@@ -222,12 +223,12 @@ def bisect_reference_attenuation(
         the last dimension is 1, as it constitutes the reference pia [dB] of
         the last range gate of every beam.
     a_max : float
-        Upper bound of the bisection interval within the linear coefficient a
+        Upper bound of the bisection interval within the linear coefficient ``a``
         of the k-Z relation has to be. ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 1.67e-4.
     a_min : float
-        Lower bound of the bisection interval within the linear coefficient a
+        Lower bound of the bisection interval within the linear coefficient ``a``
         of the k-Z relation has to be. ( :math:`k=a \\cdot Z^{b}` ).
 
         Per default set to 2.33e-5.
@@ -295,7 +296,7 @@ def bisect_reference_attenuation(
             undershoot = ((pia[..., -1] - pia_ref) / pia_ref) < -thrs
             hit = (np.abs(pia[..., -1] - pia_ref) / pia_ref) < thrs
         else:
-            raise Exception("Unknown mode type " + mode + ".")
+            raise Exception(f"Unknown mode type {mode}.")
         # Define new bounds of linear k-Z relation coefficient for over- and
         # undershooting pia calculations.
         a_hi[overshoot] = a_mid[overshoot]
@@ -345,7 +346,7 @@ def _interp_atten(pia, invalidbeams):
     """Interpolate reference pia of most distant rangebin of small invalid
     sectors as a prerequisite for the backward calculation of attenuation.
     """
-    # Build an spatial equidistant array for interpolation of the ahead and
+    # Build a spatial equidistant array for interpolation of the ahead and
     # behind extended temporary pia-array for handling invalid sectors
     # overlapping the seam of the radarcircle.
     x = np.arange(3 * pia.shape[1])
@@ -395,29 +396,24 @@ def correct_attenuation_constrained(
         to be performed) are supposed to vary along the last array-dimension
         and the azimuths are supposed to vary along the next to last
         array-dimension.
-
         Data has to be provided in decibel representation of reflectivity
         [dBZ].
     a_max : float
         Initial value for linear coefficient of the k-Z relation
         ( :math:`k=a \\cdot Z^{b}` ).
-
         Per default set to 1.67e-4.
     a_min : float
         Minimal allowed linear coefficient of the k-Z relation
         ( :math:`k=a \\cdot Z^{b}` ) in the downwards iteration of 'a' in case
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints``.
-
         Per default set to 2.33e-5.
     n_a : int
         Number of iterations from ``a_max`` to ``a_min``.
-
         Per default set to 4.
     b_max : float
         Initial value for exponential coefficient of the k-Z relation
         ( :math:`k=a \\cdot Z^{b}` ).
-
         Per default set to 0.7.
     b_min : float
         Minimal allowed exponential coefficient of the k-Z relation
@@ -425,20 +421,17 @@ def correct_attenuation_constrained(
         of breaching one of thresholds ``constr_args`` of the optional
         conditions ``constraints`` and the linear coefficient 'a' has already
         reached the lower limit ``a_min``.
-
         Per default set to 0.65.
     n_b : int
         Number of iterations from ``b_max`` to ``b_min``.
-
         Per default set to 6.
     gate_length : float
         Radial length of a range gate [km].
-
         Per default set to 1.0.
     constraints : list
         List of constraint functions. The signature of these functions has to
         be constraint_function(`gateset`, `k`, `*constr_args`). Their return
-        value must be a boolean array of shape gateset.shape[:-1] set to True
+        value must be a boolean array of shape `gateset.shape[:-1]` set to True
         for beams, which do not fulfill the constraint.
     constraint_args : list
         List of lists, which are to be passed to the individual constraint
@@ -634,7 +627,8 @@ def correct_radome_attenuation_empirical(
         A numpy function for statistical aggregation of the
         central rangebins defined by n_r.
 
-        Potential options: np.mean, np.median, np.max, np.min.
+        Potential options: :func:`numpy:numpy.mean`, :func:`numpy:numpy.median`,
+        :func:`numpy:numpy.max`, :func:`numpy:numpy.min`.
 
     Returns
     -------

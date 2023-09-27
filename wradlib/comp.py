@@ -87,7 +87,7 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
     Note
     ----
     Keyword arguments to be used while calling the interpolator can be issued as
-    `call_kwargs`, eg. togrid(..., call_kwargs=dict(maxdist=10))
+    `call_kwargs`, e.g. togrid(..., call_kwargs=dict(maxdist=10))
 
     Examples
     --------

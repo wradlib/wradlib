@@ -14,3 +14,7 @@ Thomas Pfaff - Blue Yonder
 Irene Crisologo - University of Potsdam
 Stephan Jacobi - University of Potsdam
 Christian Chwala - Karlsruhe Institute of Technology
+Julián Alberto Giles - University of Bonn
+
+See a full list of contributors at
+https://github.com/wradlib/wradlib/graphs/contributors.

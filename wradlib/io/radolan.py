@@ -107,7 +107,10 @@ def unpack_dx(raw):
 
     # if there is no zero in the whole data, we can return raw as it is
     if flagged.size == 0:
-        assert raw.size == 128
+        if raw.size != 128:
+            raise OSError(
+                f"DX decoding data size mismatch. Expected size of 128, but got {raw.size}."
+            )
         return raw
 
     # everything until the first flag is normal data
@@ -211,7 +214,7 @@ def read_dx(filename):
 
     Notes
     -----
-    While the format appears to be well defined, there have been reports on DX-
+    While the format appears to be well-defined, there have been reports on DX-
     files that seem to produce errors. e.g. while one file usually contains a
     360 degree by 128 1km range bins, there are files, that contain 361 beams.
     Also, while usually azimuths are stored monotonously in ascending order,
@@ -238,8 +241,8 @@ def read_dx(filename):
     attributes : dict
         dictionary of attributes - currently implemented keys:
 
-        - 'azim' - azimuths np.array of shape (360,)
-        - 'elev' - elevations (1 per azimuth); np.array of shape (360,)
+        - 'azim' - azimuths array of shape (360, )
+        - 'elev' - elevations (1 per azimuth); array of shape (360, )
         - 'clutter' - clutter mask; boolean array of same shape as `data`;
           corresponds to bit 15 set in each dataset.
         - 'bytes'- the total product length (including header).
@@ -376,11 +379,8 @@ def get_radolan_header_token_pos(header, *, mode="composite"):
     ----------
     header : str
         (ASCII header)
-
-    Keyword Arguments
-    -----------------
-    mode : str
-        'composite' or 'dx', defaults to 'composite'
+    mode : str, optional
+        'composite' or 'dx', defaults to 'composite'.
 
     Returns
     -------
@@ -394,7 +394,7 @@ def get_radolan_header_token_pos(header, *, mode="composite"):
         head_dict = get_dx_header_token()
     else:
         raise ValueError(
-            f"unknown mode {mode}, use either 'composite' or 'dx' depending on data source"
+            f"Unknown mode {mode}, use either `composite` or `dx` depending on data source"
         )
 
     for token in head_dict.keys():
@@ -533,7 +533,7 @@ def decode_radolan_runlength_line(line, attrs):
         of decoded values
     """
     # byte '0' is line number, we don't need it
-    # so we start with offset byte,
+    # so, we start with offset byte
     lo = 1
     byte = line[lo]
     # line empty condition, lf directly behind line number
@@ -559,7 +559,7 @@ def decode_radolan_runlength_line(line, attrs):
         width = (byte & 0xF0) >> 4
         val = byte & 0x0F
         # the "offset pixel" are "not measured" values
-        # so we set them to 'nodata'
+        # so, we set them to 'nodata'
         if lo == 0:
             arr = np.ones(offset, dtype=np.uint8) * attrs["nodataflag"]
         arr = np.append(arr, np.ones(width, dtype=np.uint8) * val)
@@ -656,8 +656,7 @@ def read_radolan_binary_array(fid, size, *, raise_on_error=True):
         except AttributeError:
             desc = repr(fid)
         raise OSError(
-            f"{__name__}: File corruption while reading {desc}! \nCould not "
-            "read enough data!"
+            f"File corruption while reading {desc}! Could not read enough data!"
         )
     return binarr
 
@@ -701,7 +700,7 @@ def read_radolan_header(fid):
     while True:
         mychar = fid.read(1)
         if not mychar:
-            raise EOFError("Unexpected EOF detected while reading " "RADOLAN header")
+            raise EOFError("Unexpected EOF detected while reading RADOLAN header.")
         # if the first char is "n", then most likely this is ascii radolan data
         if header == "" and mychar == b"n":
             fid.seek(0)
@@ -736,7 +735,7 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
     (see format description on the RADOLAN project homepage :cite:`DWD2009`).
     At the moment, the national RADOLAN composite is a 900 x 900 grid with 1 km
     resolution and in polar-stereographic projection. There are other grid
-    resolutions for different composites (eg. PC, PG)
+    resolutions for different composites (e.g. PC, PG)
 
     Note
     ----
@@ -750,7 +749,7 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
     This function already evaluates and applies the so-called
     PR factor which is specified in the header section of the RADOLAN files.
     The raw values in an RY file are in the unit 0.01 mm/5min, while
-    read_radolan_composite returns values in mm/5min (i. e. factor 100 higher).
+    read_radolan_composite returns values in mm/5min (e.g. factor 100 higher).
     The factor is also returned as part of attrs dictionary under
     keyword "precision".
 
@@ -801,17 +800,14 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
 
         if not attrs["radarid"] == "10000":
             warnings.warn(
-                "WARNING: You are using function"
-                + "wradlib.io.read_radolan_composit for a non "
-                + "composite file.\n "
-                + "This might work...but please check the validity "
-                + "of the results!"
+                "WARNING: You are using function "
+                "wradlib.io.read_radolan_composit for a non composite file.\n "
+                "This might work, but please check the validity of the results!"
             )
 
         arr = radfile.data[radfile.product]
 
     # apply precision factor
-    # this promotes arr to float if precision is float
     if "precision" in attrs:
         arr = arr * attrs["precision"]
     # set nodata value
@@ -885,7 +881,7 @@ def _get_radolan_product_attributes(attrs):
         pattrs["scale_factor"] = attrs["precision"]
         pattrs["_FillValue"] = np.array([attrs["nodataflag"]], dtype=np.int32)
     else:
-        raise ValueError("WRADLIB: unkown RADOLAN product!")
+        raise ValueError(f"Unkown RADOLAN product {product!r}!")
 
     return pattrs
 
@@ -1228,7 +1224,7 @@ class _radolan_file:
         reject = set(anc) ^ set(requested)
         if reject:
             warnings.warn(
-                f"ancillary data `{tuple(reject)}` requested but not available for product `{self.product}`."
+                f"Ancillary data `{tuple(reject)}` requested but not available for product `{self.product}`."
             )
 
         return tuple(anc)

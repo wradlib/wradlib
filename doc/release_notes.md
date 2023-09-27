@@ -9,14 +9,23 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 ## Version 2.0.0
 
-This version brings doc-folder back into wradlib repo. The wradlib-docs repo will be archived. wradlib-notebooks repo has been restructured as well, with a single point of access.
+For {{wradlib}} 2.0 there have been quite some deprecations and additions. Most of the changes have been announced over the latest  {{wradlib}} 1 versions. Nevertheless, to make a clean cut it was neccessary to change and remove code and functionality which was not yet being officially deprecated.
+
+Please follow up at <project:#migration>.
+
+The major new feature is the smooth integration into `xradar`-based reading into `xarray`-based data structures and the convenient use of `xarray`-accessors. The tutorials and examples got a major overhaul to show the capabilities of {{wradlib}} in the light of these new developments.
+
+This version also brings doc-folder back into wradlib repo. The wradlib-docs repo will be archived. wradlib-notebooks repo has been restructured as well, with a single point of access.
 
 **New features**
 
-* final wradlib 2.0.0-rc.1 preparations ({pull}`636`) by {at}`kmuehlbauer`
-* wradlib 2.0 preparations ({pull}`635`) by {at}`kmuehlbauer`
-* DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer`
 * ENH: introduce wradlib xarray accessor for easy access of wradlib functions from xarray.DataArray (with dp and zr modules prefilled), adapt tests ({pull}`621`) by {at}`kmuehlbauer`
+* DOC: reintroduce doc into wradlib repository ({pull}`619`) by {at}`kmuehlbauer`
+* FIX: wrong prediction_time variable in radolan xarray.Dataset ({pull}`639`) by {at}`Hoffmann77`
+* wradlib 2.0 preparations ({pull}`635`) by {at}`kmuehlbauer`
+* final wradlib 2.0.0-rc.1 preparations ({pull}`636`) by {at}`kmuehlbauer`
+* wradlib docstring updates ({pull}`638`) by {at}`kmuehlbauer`
+* wradlib 2.0 RC ({pull}`640`) by {at}`kmuehlbauer`
 
 **Maintenance - CI**
 

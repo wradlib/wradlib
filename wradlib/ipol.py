@@ -114,10 +114,11 @@ class IpolBase:
             ndarray of float
 
         """
-        assert len(vals) == self.numsources, (
-            f"Length of value array {len(vals)} does not correspond to number "
-            f"of source points {self.numsources}"
-        )
+        if len(vals) != self.numsources:
+            raise ValueError(
+                f"Length of value array {len(vals)} does not correspond to number "
+                f"of source points {self.numsources}"
+            )
         self.valsshape = vals.shape
         self.valsndim = vals.ndim
 
@@ -159,12 +160,12 @@ class IpolBase:
         Returns
         -------
         output : :class:`numpy:numpy.ndarray`
-            if vals.shape==() [a scalar] output.shape will be (1,1)
-            if vals.shape==(npt,) output.shape will be (npt,1)
+            if vals.shape==() [a scalar] output.shape will be (1, 1)
+            if vals.shape==(npt, ) output.shape will be (npt, 1)
             if vals.ndim > 1 vals will be returned as is
         """
         if vals.ndim < 2:
-            # ndmin might be 0 so we get it to 1-d first
+            # ndmin might be 0, so we get it to 1-d first
             # then we add an axis as we assume that
             return np.atleast_1d(vals)[:, np.newaxis]
         else:
@@ -237,7 +238,7 @@ class Nearest(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -338,7 +339,7 @@ class Idw(IpolBase):
 
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.Idw: <nnearest> is larger than number of "
+                "wradlib.ipol.Idw: `nnearest` is larger than number of "
                 f"source points and is set to {self.numsources} corresponding to the "
                 "number of source points.",
                 UserWarning,
@@ -370,7 +371,7 @@ class Idw(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -466,7 +467,7 @@ class Linear(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -517,19 +518,17 @@ class RectGridBase:
         self._is_grid = None
         self._ipol_grid = None
         self._ipol_points = None
-        self._grid = grid
-        self._points = points
-
-        assert self.is_grid
+        self._grid = np.array(grid)
+        self._points = np.array(points)
 
     @property
     def is_grid(self):
         if self._is_grid is None:
-            self._is_grid = (
-                hasattr(self.grid, "shape")
-                and self.grid.ndim == 3
-                and self.grid.shape[2] == 2
-            )
+            self._is_grid = self.grid.ndim == 3 and self.grid.shape[2] == 2
+            if not self._is_grid:
+                raise ValueError(
+                    f"Grid Shape mismatch, expected (N, M, 2), but got {self.grid.shape}."
+                )
         return self._is_grid
 
     @property
@@ -965,8 +964,8 @@ class OrdinaryKriging(IpolBase):
 
     Most (co-)variograms are characterized by a sill parameter (which is
     the (co-)variance at separation distance 0) a range parameter (which
-    indicates a separation distance after which the the covariance drops
-    close to zero) an sometimes additional parameters governing the shape
+    indicates a separation distance after which the covariance drops
+    close to zero) a sometimes additional parameters governing the shape
     of the function. In the following range is given by the variable `r` and
     the sill by the variable `s`.
     Currently implemented are:
@@ -1003,7 +1002,7 @@ class OrdinaryKriging(IpolBase):
     these only depend on the configuration of the points.
 
     The call method is then only used to calculate estimated values at the
-    target points based on those at the source points. Therefore the main
+    target points based on those at the source points. Therefore, the main
     computational load is experienced during initialization. This behavior is
     different from that of the Idw or Nearest Interpolators.
 
@@ -1048,7 +1047,7 @@ class OrdinaryKriging(IpolBase):
             raise MissingTargetsError
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.OrdinaryKriging: <nnearest> is "
+                "wradlib.ipol.OrdinaryKriging: `nnearest` is "
                 "larger than number of source points and is "
                 f"set to {self.numsources} corresponding to the "
                 "number of source points.",
@@ -1110,7 +1109,7 @@ class OrdinaryKriging(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -1176,10 +1175,10 @@ class ExternalDriftKriging(IpolBase):
     nnearest : int
         max. number of neighbours to be considered
     src_drift : :class:`numpy:numpy.ndarray`
-        ndarray of floats, shape (nsrcpoints,)
+        ndarray of floats, shape (nsrcpoints, )
         values of the external drift at each source point
     trg_drift : :class:`numpy:numpy.ndarray`
-        ndarray of floats, shape (ntrgpoints,)
+        ndarray of floats, shape (ntrgpoints, )
         values of the external drift at each target point
 
     See Also
@@ -1241,7 +1240,7 @@ class ExternalDriftKriging(IpolBase):
             raise MissingSourcesError
         if nnearest > self.numsources:
             warnings.warn(
-                "wradlib.ipol.ExternalDriftKriging: <nnearest> is larger "
+                "wradlib.ipol.ExternalDriftKriging: `nnearest` is larger "
                 f"than number of source points and is set to {self.numsources} "
                 "corresponding to the number of source points.",
                 UserWarning,
@@ -1315,7 +1314,7 @@ class ExternalDriftKriging(IpolBase):
         once: the ``vals`` array should have the shape (number of source
         points, number of source datasets). If you want to interpolate only one
         set of source values, ``vals`` can have the shape (number of source
-        points, 1) or just (number of source points,) - which is a flat/1-D
+        points, 1) or just (number of source points, ) - which is a flat/1-D
         array. The output will have the same number of dimensions as ``vals``,
         i.e. it will be a flat 1-D array in case ``vals`` is a 1-D array.
 
@@ -1335,7 +1334,10 @@ class ExternalDriftKriging(IpolBase):
             ndarray of float with shape (numtargetpoints, numfields)
 
         """
-        assert vals.ndim <= 2
+        if vals.ndim > 2:
+            raise ValueError(
+                f"`vals` nedd to be a 2D-array, but is of shape {vals.shape}."
+            )
         v = self._make_2d(vals)
         self._check_shape(v)
 
@@ -1343,18 +1345,16 @@ class ExternalDriftKriging(IpolBase):
             # check if we have data from __init__
             if self.src_drift is None:
                 raise ValueError(
-                    "src_drift must be specified either on "
-                    "initialization or when calling "
-                    "the interpolator."
+                    "`src_drift`-kwarg must be specified either on "
+                    "initialization or when calling the interpolator."
                 )
             src_drift = self.src_drift
         if trg_drift is None:
             # check if we have data from __init__
             if self.trg_drift is None:
                 raise ValueError(
-                    "trg_drift must be specified either on "
-                    "initialization or when calling the "
-                    "interpolator."
+                    "`trg_drift`-kwarg must be specified either on "
+                    "initialization or when calling the interpolator."
                 )
             trg_drift = self.trg_drift
 
@@ -1383,11 +1383,15 @@ class ExternalDriftKriging(IpolBase):
                 ip = np.nansum(masked_weights * trgvals, axis=1)
             else:
                 ip = np.nansum(weights[:, :-2][..., np.newaxis] * trgvals, axis=1)
-        # otherwise we need to setup and solve the kriging system for each
+        # otherwise we need to set up and solve the kriging system for each
         # field individually
         else:
             ip = np.empty((self.trg.shape[0], v.shape[1]))
-            assert (v.shape[1] == src_d.shape[1]) and (v.shape[1] == trg_d.shape[1])
+            if (v.shape[1] != src_d.shape[1]) or (v.shape[1] != trg_d.shape[1]):
+                raise ValueError(
+                    f"`vals` shape[1] ({v.shape[1]}) does not match `src` "
+                    f"({src_d.shape[1]}) and `trg` ({trg_d.shape[1]})."
+                )
             for i in range(v.shape[1]):
                 wght, variances = self._krige(
                     src_d[:, i].squeeze(), trg_d[:, i].squeeze()
@@ -1421,7 +1425,7 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     Convenience function to use the interpolation classes in an efficient way
 
     The interpolation classes in :mod:`wradlib.ipol` are computationally very
-    efficient if they are applied on large multi-dimensional arrays of which
+    efficient if they are applied on large multidimensional arrays of which
     the first dimension must be the locations' dimension (1d or 2d coordinates)
     and the following dimensions can be anything (e.g. time or ensembles). This
     way, the weights need to be computed only once. However, this can only be
@@ -1532,17 +1536,14 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     Parameters
     ----------
     data : :class:`numpy:numpy.ndarray`
-        2 dimensional array (azimuth, ranges) of floats;
+        2-dimensional array (azimuth, ranges) of floats;
 
         if no mask is assigned explicitly polar data should be a masked array
-
-    Keyword Arguments
-    -----------------
-    mask : :class:`numpy:numpy.ndarray`
-        boolean array with pixels to be interpolated set to True;
-        must have the same shape as data
+    mask : :class:`numpy:numpy.ndarray`, optional
+        boolean array with pixels to be interpolated set to True,
+        must have the same shape as data, defaults to None.
     ipclass : :class:`wradlib.ipol.IpolBase`
-        A class which inherits from IpolBase.
+        A class which inherits from IpolBase, defaults to :class:`wradlib.ipol.Nearest`.
 
     Returns
     -------
@@ -1561,7 +1562,7 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     >>> da = wrl.georef.create_xarray_dataarray(filled_a)
     >>> da = da.wrl.georef.georeference()
     >>> pm = wrl.vis.plot(da)
-    >>> # the same result can be achieved by using an masked array instead of an explicit mask  # noqa
+    >>> # the same result can be achieved by using a masked array instead of an explicit mask  # noqa
     >>> mdata = np.ma.array(data, mask = masked_values)
     >>> filled_b = wrl.ipol.interpolate_polar(mdata, ipclass = wrl.ipol.Linear)  # noqa
     >>> da = wrl.georef.create_xarray_dataarray(filled_b)
@@ -1655,11 +1656,11 @@ def cart_to_irregular_interp(cartgrid, values, newgrid, **kwargs):
     Parameters
     ----------
     cartgrid : :class:`numpy:numpy.ndarray`
-        3 dimensional array (nx, ny, lon/lat) of floats;
+        3-dimensional array (nx, ny, lon/lat) of floats;
     values : :class:`numpy:numpy.ndarray`
-        2 dimensional array (nx, ny) of data values
+        2-dimensional array (nx, ny) of data values
     newgrid : :class:`numpy:numpy.ndarray`
-        Nx2 dimensional array (..., lon/lat) of floats
+        Nx2-dimensional array (..., lon/lat) of floats
     kwargs : :func:`scipy:scipy.interpolate.griddata`
 
     Returns
@@ -1695,11 +1696,11 @@ def cart_to_irregular_spline(cartgrid, values, newgrid, **kwargs):
     Parameters
     ----------
     cartgrid : :class:`numpy:numpy.ndarray`
-        3 dimensional array (nx, ny, lon/lat) of floats
+        3-dimensional array (nx, ny, lon/lat) of floats
     values : :class:`numpy:numpy.ndarray`
-        2 dimensional array (nx, ny) of data values
+        2-dimensional array (nx, ny) of data values
     newgrid : :class:`numpy:numpy.ndarray`
-        Nx2 dimensional array (..., lon/lat) of floats
+        Nx2-dimensional array (..., lon/lat) of floats
     kwargs : :func:`scipy:scipy.ndimage.map_coordinates`
 
     Returns

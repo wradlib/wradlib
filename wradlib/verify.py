@@ -99,14 +99,16 @@ class PolarNeighbours:
             array of shape (..., number of points, nnear)
 
         """
-        assert vals.ndim >= 2, (
-            "Your <vals> array should at least contain an "
-            "azimuth and a range dimension."
-        )
-        assert tuple(vals.shape[-2:]) == (len(self.az), len(self.r)), (
-            "The shape of your vals array does not correspond with "
-            "the range and azimuths you provided for your polar data set"
-        )
+        if vals.ndim < 2:
+            raise ValueError(
+                "`vals` array should at least contain an "
+                "azimuth and a range dimension."
+            )
+        if tuple(vals.shape[-2:]) != (len(self.az), len(self.r)):
+            raise ValueError(
+                "The shape of `vals` array does not correspond with "
+                "the range and azimuths provided."
+            )
         vals = vals.reshape(vals.shape[:-2] + (len(self.az) * len(self.r),))
         return vals[..., self.ix]
 
@@ -173,9 +175,7 @@ class ErrorMetrics:
         # Check input
         if len(obs) != len(est):
             raise ValueError(
-                "WRADLIB: obs and est need to have the "
-                f"same length. len(obs)={len(obs)}, "
-                f"len(est)={len(est)}"
+                f"`obs` ({len(obs)}) and `est` ({len(est)}) need to have the same length."
             )
         self.est = est
         self.obs = obs
@@ -186,8 +186,7 @@ class ErrorMetrics:
         self.n = len(self.ix)
         if self.n == 0:
             warnings.warn(
-                "WRADLIB: No valid pairs of observed and "
-                "estimated available for ErrorMetrics!"
+                "No valid pairs of `obs` and `est` available for ErrorMetrics!"
             )
         self.resids = self.est[self.ix] - self.obs[self.ix]
 

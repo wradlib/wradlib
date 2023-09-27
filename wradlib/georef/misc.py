@@ -45,12 +45,9 @@ def bin_altitude(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
         at horizontal and +90° pointing vertically upwards from the radar
     sitealt : float
         Altitude in [m] a.s.l. of the referencing radar site
-
-    Keyword Arguments
-    -----------------
-    re : float
-        earth's radius [m]
-    ke : float
+    re : float, optional
+        earth's radius [m], defaults to 6371000.
+    ke : float, optional
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependend. The default of 4/3 is a good approximation for most
@@ -65,6 +62,27 @@ def bin_altitude(r, theta, sitealt, *, re=6371000, ke=4.0 / 3.0):
     reff = ke * re
     sr = reff + sitealt
     return np.sqrt(r**2 + sr**2 + 2 * r * sr * np.sin(np.radians(theta))) - reff
+
+
+def _apply_ufunc_wrapper(obj, func, **kwargs):
+    dim0 = obj.wrl.util.dim0()
+    out = apply_ufunc(
+        func,
+        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
+            {dim0: obj[dim0]}
+        ),
+        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
+            range=obj.range
+        ),
+        obj.altitude.values,
+        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
+        output_core_dims=[[dim0, "range"]],
+        dask="parallelized",
+        kwargs=kwargs,
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+
+    return out
 
 
 @bin_altitude.register(Dataset)
@@ -89,22 +107,7 @@ def _bin_altitude_xarray(obj, **kwargs):
     z : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    dim0 = obj.wrl.util.dim0()
-    out = apply_ufunc(
-        bin_altitude,
-        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
-            {dim0: obj[dim0]}
-        ),
-        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
-            range=obj.range
-        ),
-        obj.altitude.values,
-        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
-        output_core_dims=[[dim0, "range"]],
-        dask="parallelized",
-        kwargs=kwargs,
-        dask_gufunc_kwargs=dict(allow_rechunk=True),
-    )
+    out = _apply_ufunc_wrapper(obj, bin_altitude, **kwargs)
     out.attrs = get_altitude_attrs()
     out.name = "bin_altitude"
     return out
@@ -173,22 +176,7 @@ def _bin_distance_xarray(obj, **kwargs):
     bin_distance : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    dim0 = obj.wrl.util.dim0()
-    out = apply_ufunc(
-        bin_distance,
-        obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
-            {dim0: obj[dim0]}
-        ),
-        obj.elevation.expand_dims(dim={"range": len(obj.range)}, axis=-1).assign_coords(
-            range=obj.range
-        ),
-        obj.altitude.values,
-        input_core_dims=[[dim0, "range"], [dim0, "range"], [None]],
-        output_core_dims=[[dim0, "range"]],
-        dask="parallelized",
-        kwargs=kwargs,
-        dask_gufunc_kwargs=dict(allow_rechunk=True),
-    )
+    out = _apply_ufunc_wrapper(obj, bin_altitude)
     out.attrs = get_range_attrs()
     out.name = "bin_distance"
     return out
@@ -219,12 +207,9 @@ def site_distance(r, theta, binalt, *, re=6371000, ke=4.0 / 3.0):
         at horizontal and +90° pointing vertically upwards from the radar
     binalt : :class:`numpy:numpy.ndarray`
         site altitude [m] amsl. same shape as r.
-
-    Keyword Arguments
-    -----------------
-    re : float
-        earth's radius [m]
-    ke : float
+    re : float, optional
+        earth's radius [m], defaults to 6371000.
+    ke : float, optional
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
         dependend. The default of 4/3 is a good approximation for most

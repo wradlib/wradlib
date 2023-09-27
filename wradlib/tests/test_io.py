@@ -306,7 +306,7 @@ def test_read_gamic_hdf5(file_or_filelike):
         io.hdf.read_gamic_hdf5(f)
     with get_wradlib_data_file(rhi, file_or_filelike) as f:
         io.hdf.read_gamic_hdf5(f)
-    with pytest.raises(KeyError):
+    with pytest.raises(IOError):
         with get_wradlib_data_file(filename, file_or_filelike) as f:
             io.hdf.read_gamic_hdf5(f)
 
@@ -861,26 +861,19 @@ def test_parse_dwd_composite_header():
 
     for key, value in rx.items():
         assert value == test_rx[key]
-    for key, value in pg.items():
-        if type(value) == np.ndarray:
-            np.testing.assert_allclose(value, test_pg[key])
-        else:
-            assert value == test_pg[key]
-    for key, value in rq.items():
-        if type(value) == np.ndarray:
-            np.testing.assert_allclose(value, test_rq[key])
-        else:
-            assert value == test_rq[key]
-    for key, value in sq.items():
-        if type(value) == np.ndarray:
-            np.testing.assert_allclose(value, test_sq[key])
-        else:
-            assert value == test_sq[key]
-    for key, value in yw.items():
-        if type(value) == np.ndarray:
-            np.testing.assert_allclose(value, test_yw[key])
-        else:
-            assert value == test_yw[key]
+
+    def _check_product(data, test):
+        for key, value in data.items():
+            if type(value) == np.ndarray:
+                np.testing.assert_allclose(value, test[key])
+            else:
+                assert value == test[key]
+
+    _check_product(rx, test_rx)
+    _check_product(pg, test_pg)
+    _check_product(rq, test_rq)
+    _check_product(sq, test_sq)
+    _check_product(yw, test_yw)
 
 
 @requires_data
@@ -1408,14 +1401,6 @@ def test_open_iris_cartesian_product():
         )
     assert isinstance(data.rh, io.iris.xiris.IrisRecord)
     assert isinstance(data.fh, (np.memmap, np.ndarray))
-
-
-@requires_data
-def test_iris_cartesian_product_origin_future_warning():
-    filename = "sigmet/SUR160703220000.MAX71NP.gz"
-    with get_wradlib_data_file(filename, "filelike") as sigmetfile:
-        with pytest.warns(FutureWarning):
-            io.iris.IrisCartesianProductFile(sigmetfile, loaddata=True, origin=None)
 
 
 @requires_data

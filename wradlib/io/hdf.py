@@ -73,6 +73,7 @@ def read_generic_hdf5(fname):
             tmp["attrs"] = dict(y.attrs)
         # add data if it is a dataset
         if isinstance(y, h5py.Dataset):
+            # silence h5py/numpy warning
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore",
@@ -120,8 +121,8 @@ def read_opera_hdf5(fname):
         a dictionary that contains both data and metadata according to the
         original hdf5 file structure
     """
-    # now we browse through all Groups and Datasets and store the info in one
-    # dictionary
+    # now we browse through all Groups and Datasets
+    # and store the info in one dictionary
     fcontent = {}
 
     def filldict(x, y):
@@ -129,6 +130,7 @@ def read_opera_hdf5(fname):
             if len(y.attrs) > 0:
                 fcontent[x] = dict(y.attrs)
         elif isinstance(y, h5py.Dataset):
+            # silence h5py/numpy warning
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     "ignore",
@@ -158,9 +160,6 @@ def read_gamic_scan_attributes(scan, scan_type):
     sattrs : dict
         dictionary of scan attributes
     """
-
-    # global zero_index, el, az
-
     # placeholder for attributes
     sattrs = {}
 
@@ -341,8 +340,7 @@ def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
         try:
             f["how"].attrs.get("software")
         except KeyError:
-            print("WRADLIB: File is no GAMIC hdf5!")
-            raise
+            raise OSError("File is not of GAMIC hdf5 type!")
 
         # get scan_type (PVOL or RHI)
         scan_type = f["what"].attrs.get("object")
@@ -392,9 +390,6 @@ def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
             vattrs["Latitude"] = f["where"].attrs.get("lat")
             vattrs["Longitude"] = f["where"].attrs.get("lon")
             vattrs["Height"] = f["where"].attrs.get("height")
-            # check whether its useful to implement that feature
-            # vattrs['site'] = (vattrs['Longitude'], vattrs['Latitude'],
-            #                         vattrs['Height'])
             attrs["VOL"] = vattrs
 
     return data, attrs
@@ -406,7 +401,7 @@ def to_hdf5(
     """Quick storage of one <data> array and a <metadata> dict in an hdf5 file
 
     This is more efficient than pickle, cPickle or numpy.save. The data is
-    stored in a subgroup named ``data`` (i.e. hdf5file["data").
+    stored in a subgroup named `data` (i.e. file["data"]).
     See :func:`~wradlib.io.hdf.from_hdf5` for retrieving stored data.
 
     Parameters
@@ -421,7 +416,7 @@ def to_hdf5(
     dataset : str
         describing dataset
     compression : str
-        h5py compression type {"gzip"|"szip"|"lzf"}, see h5py documentation
+        h5py-compression type {"gzip"|"szip"|"lzf"}, see h5py-documentation
         for details
     """
     with h5py.File(fpath, mode=mode) as f:
@@ -446,9 +441,7 @@ def from_hdf5(fpath, *, dataset="data"):
     with h5py.File(fpath, mode="r") as f:
         # Check whether Dataset exists
         if dataset not in f.keys():
-            raise KeyError(
-                f"WRADLIB: Cannot read Dataset <{dataset}> from hdf5 file <{f}>"
-            )
+            raise KeyError(f"Cannot read Dataset {dataset!r} from hdf5 file {f!r}")
         data = np.array(f[dataset][:])
         # get metadata
         metadata = {}
@@ -504,11 +497,9 @@ def read_gpm(filename, *, bbox=None):
     year = pr_data["NS"]["ScanTime"].variables["Year"][mask]
     month = pr_data["NS"]["ScanTime"].variables["Month"][mask]
     dayofmonth = pr_data["NS"]["ScanTime"].variables["DayOfMonth"][mask]
-    # dayofyear = pr_data['NS']['ScanTime'].variables['DayOfYear'][mask]
     hour = pr_data["NS"]["ScanTime"].variables["Hour"][mask]
     minute = pr_data["NS"]["ScanTime"].variables["Minute"][mask]
     second = pr_data["NS"]["ScanTime"].variables["Second"][mask]
-    # secondofday = pr_data['NS']['ScanTime'].variables['SecondOfDay'][mask]
     millisecond = pr_data["NS"]["ScanTime"].variables["MilliSecond"][mask]
     date_array = zip(
         year,
@@ -526,9 +517,7 @@ def read_gpm(filename, *, bbox=None):
     sfc = pr_data["NS"]["PRE"].variables["landSurfaceType"][mask]
     pflag = pr_data["NS"]["PRE"].variables["flagPrecip"][mask]
 
-    # bbflag = pr_data['NS']['CSF'].variables['flagBB'][mask]
     zbb = pr_data["NS"]["CSF"].variables["heightBB"][mask]
-    # print(zbb.dtype)
     bbwidth = pr_data["NS"]["CSF"].variables["widthBB"][mask]
     qbb = pr_data["NS"]["CSF"].variables["qualityBB"][mask]
     qtype = pr_data["NS"]["CSF"].variables["qualityTypePrecip"][mask]
@@ -536,7 +525,6 @@ def read_gpm(filename, *, bbox=None):
 
     quality = pr_data["NS"]["scanStatus"].variables["dataQuality"][mask]
     refl = pr_data["NS"]["SLV"].variables["zFactorCorrected"][mask]
-    # print(pr_data['NS']['SLV'].variables['zFactorCorrected'])
 
     zenith = pr_data["NS"]["PRE"].variables["localZenithAngle"][mask]
 
@@ -574,7 +562,6 @@ def read_gpm(filename, *, bbox=None):
 
     # Set a quality indicator for the BB and precip type data
     # TODO: Why is the `quality` variable overwritten?
-
     quality = np.zeros((nscan, nray), dtype=np.uint8)
 
     i1 = ((qbb == 0) | (qbb == 1)) & (qtype == 1)
@@ -748,11 +735,9 @@ def read_trmm(filename1, filename2, *, bbox=None):
     year = pr_data1.variables["Year"][mask]
     month = pr_data1.variables["Month"][mask]
     dayofmonth = pr_data1.variables["DayOfMonth"][mask]
-    # dayofyear = pr_data1.variables['DayOfYear'][mask]
     hour = pr_data1.variables["Hour"][mask]
     minute = pr_data1.variables["Minute"][mask]
     second = pr_data1.variables["Second"][mask]
-    # secondofday = pr_data1.variables['scanTime_sec'][mask]
     millisecond = pr_data1.variables["MilliSecond"][mask]
     date_array = zip(
         year,

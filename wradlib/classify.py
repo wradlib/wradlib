@@ -29,6 +29,7 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import warnings
 from functools import singledispatch
 
 import numpy as np
@@ -283,13 +284,7 @@ def filter_gabella(
     obj,
     *,
     wsize=5,
-    thrsnorain=0.0,
-    tr1=6.0,
-    n_p=6,
-    tr2=1.3,
-    rm_nans=True,
-    radial=False,
-    cartesian=False,
+    **kwargs,
 ):
     """Clutter identification filter developed by :cite:`Gabella2002`.
 
@@ -300,11 +295,11 @@ def filter_gabella(
     Parameters
     ----------
     obj : :py:class:`numpy:numpy.ndarray`
+    wsize : int, optional
+        Size of the window surrounding the central pixel, defaults to 5.
 
     Keyword Arguments
     -----------------
-    wsize : int
-        Size of the window surrounding the central pixel
     thrsnorain : float
     tr1 : float
     n_p : int
@@ -335,6 +330,14 @@ def filter_gabella(
     See :ref:`/notebooks/classify/clutter_gabella.ipynb`.
 
     """
+    thrsnorain = kwargs.get("thrsnorain", 0.0)
+    tr1 = kwargs.get("tr1", 6.0)
+    n_p = kwargs.get("n_p", 6)
+    tr2 = kwargs.get("tr2", 1.3)
+    rm_nans = kwargs.get("rm_nans", True)
+    radial = kwargs.get("radial", False)
+    cartesian = kwargs.get("cartesian", False)
+
     bad = np.isnan(obj)
     if rm_nans:
         obj = obj.copy()
@@ -434,12 +437,9 @@ def histo_cut(obj, *, upper_frequency=0.01, lower_frequency=0.01):
     ----------
     obj : :py:class:`numpy:numpy.ndarray`
         spatial array containing rain accumulation
-
-    Keyword Arguments
-    -----------------
-    upper_frequency : float
+    upper_frequency : float, optional
         Upper frequency percentage for clutter detection, defaults to 0.01.
-    lower_frequency : float
+    lower_frequency : float, optional
         Lower frequency percentage for shading detection, defaults to 0.01.
 
     Returns
@@ -710,18 +710,18 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
         trpz = dict(list(trpz_default.items()) + list(trpz.items()))
 
     # check data conformity
-    assert np.all(np.in1d(dkeys, list(dat.keys()))), (
-        "Argument dat of classify_echo_fuzzy must be a dictionary "
-        f"with mandatory keywords {*dkeys,}."
-    )
-    assert np.all(np.in1d(wkeys, list(weights.keys()))), (
-        "Argument weights of classify_echo_fuzzy must be a dictionary "
-        f"with keywords {*wkeys,}."
-    )
-    assert np.all(np.in1d(tkeys, list(trpz.keys()))), (
-        "Argument trpz of classify_echo_fuzzy must be a dictionary "
-        "with keywords {*tkeys,}."
-    )
+    if not np.all(np.in1d(dkeys, list(dat.keys()))):
+        raise ValueError(
+            "Argument `dat` must be a dictionary " f"with mandatory keywords {*dkeys,}."
+        )
+    if not np.all(np.in1d(wkeys, list(weights.keys()))):
+        raise ValueError(
+            "Argument `weights` must be a dictionary " f"with keywords {*wkeys,}."
+        )
+    if not np.all(np.in1d(tkeys, list(trpz.keys()))):
+        raise ValueError(
+            "Argument `trpz` must be a dictionary " f"with keywords {*tkeys,}."
+        )
 
     # copy rho to rho2
     dat["rho2"] = dat["rho"].copy()
@@ -732,12 +732,13 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
             if shape is None:
                 shape = dat[key].shape
             else:
-                assert dat[key].shape[-2:] == shape[-2:], (
-                    "Arrays of the decision variables have inconsistent "
-                    f"shapes: {dat[key].shape} vs. {shape}"
-                )
+                if dat[key].shape[-2:] != shape[-2:]:
+                    raise ValueError(
+                        "Arrays of the decision variables have inconsistent "
+                        f"shapes: {dat[key].shape} vs. {shape}"
+                    )
         else:
-            print(f"WARNING: Missing decision variable: {key}")
+            warnings.warn(f"Missing decision variable: {key}", UserWarning)
 
     # If all dual-pol moments are NaN, can we assume that and echo is
     # non-meteorological?
@@ -991,7 +992,7 @@ def filter_window_distance(img, rscale, *, fsize=1500, tr1=7):
     --------
     :func:`~wradlib.classify.filter_gabella_a` - Original version of the filter
 
-    :func:`~wradlib.classify.filter_gabella_b` - filter using a echo area
+    :func:`~wradlib.classify.filter_gabella_b` - filter using an echo area
     """
     ascale = 2 * np.pi / img.shape[0]
     count = np.ones(img.shape, dtype=int)
@@ -1065,18 +1066,12 @@ def _filter_window_distance_xarray(obj, **kwargs):
     --------
     :func:`~wradlib.classify.filter_gabella_a` - Original version of the filter
 
-    :func:`~wradlib.classify.filter_gabella_b` - filter using a echo area
+    :func:`~wradlib.classify.filter_gabella_b` - filter using an echo area
     """
     dim0 = obj.wrl.util.dim0()
     rscale = obj.range.diff("range").median()
     if isinstance(obj, xr.Dataset):
-        dims = {dim0, "range"}
-        keep = xr.Dataset(
-            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims != dims}
-        )
-        obj = xr.Dataset(
-            {k: v for k, v in obj.data_vars.items() if set(v.dims) & dims == dims}
-        )
+        obj, keep = util.get_apply_ufunc_variables(obj, dim0)
     out = xr.apply_ufunc(
         filter_window_distance,
         obj,
@@ -1087,10 +1082,11 @@ def _filter_window_distance_xarray(obj, **kwargs):
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
     )
-    if isinstance(obj, xr.DataArray):
-        out.name = "filter_window_distance"
-    else:
+    if isinstance(obj, xr.Dataset):
         out = xr.merge([out, keep])
+    else:
+        out.name = "filter_window_distance"
+
     return out
 
 
@@ -1109,7 +1105,7 @@ def msf_index_indep(msf, idp, obs):
         of the independent observable.
     obs : :class:`numpy:numpy.ndarray`
         Array of arbitrary shape containing the data of the independent
-        observable (eg. (rays, bins) or (scan, rays, bins)).
+        observable (e.g. (rays, bins) or (scan, rays, bins)).
 
     Returns
     -------
@@ -1297,12 +1293,9 @@ def classify(data, *, threshold=0.0):
     data : :py:class:`numpy:numpy.ndarray`
         Array which is of size (hmc-class, data.shape), containing the
         weighted hmc-membership probability values.
-
-    Keyword Arguments
-    -----------------
-    threshold : float
+    threshold : float, optional
         Threshold value where probability is considered no precip,
-        defaults to 0
+        defaults to 0.
 
     Returns
     -------
@@ -1340,7 +1333,7 @@ def _classify_xarray(data, threshold=0.0):
 
     Parameters
     ----------
-    data : np.ndarray
+    data : :class:`numpy:numpy.ndarray`
         Array which is of size (hmc-class, data.shape), containing the
         weighted hmc-membership probability values.
 
@@ -1352,7 +1345,7 @@ def _classify_xarray(data, threshold=0.0):
 
     Returns
     -------
-    out : xr.DataArray
+    out : xarray.DataArray
         DataArray containing probability scores.
         No precip is added on the top.
     """

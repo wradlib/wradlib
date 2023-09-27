@@ -31,6 +31,7 @@ __all__ = [
     "mph_to_si",
     "kts_to_si",
     "KuBandToS",
+    "KuBandToX",
     "SBandToKu",
     "TrafoMethods",
 ]
@@ -207,6 +208,76 @@ class KuBandToS:
                 6.33e-7,
                 9.52e-7,
                 0.00e0,
+            ],
+        ]
+    )
+
+
+@dataclass(init=False, repr=False, eq=False)
+class KuBandToX:
+    """Class to hold coefficients for Radar Reflectivity Conversion
+
+    From Ku-band (13.8 GHz) to X-band (9.4 GHz)
+
+    See :cite:`Pejcic2022` for reference.
+    """
+
+    # Rain Snow
+    snow = np.array(
+        [
+            [
+                1.91e-1,
+                -1.2e-1,
+            ],
+            [
+                -7.83e-2,
+                6.8e-2,
+            ],
+            [
+                1.12e-2,
+                -4.55e-3,
+            ],
+            [
+                -6.17e-4,
+                1.18e-4,
+            ],
+            [
+                1.25e-5,
+                -6.6e-7,
+            ],
+            [
+                -8.43e-8,
+                0.0,
+            ],
+        ]
+    )
+
+    # Rain Hail
+    hail = np.array(
+        [
+            [
+                1.91e-1,
+                5.57e-2,
+            ],
+            [
+                -7.83e-2,
+                1.8e-2,
+            ],
+            [
+                1.12e-2,
+                1.91e-3,
+            ],
+            [
+                -6.17e-4,
+                -6.64e-5,
+            ],
+            [
+                1.25e-5,
+                8.18e-7,
+            ],
+            [
+                -8.43e-8,
+                0.0,
             ],
         ]
     )

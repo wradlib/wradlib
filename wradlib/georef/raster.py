@@ -170,7 +170,6 @@ def read_gdal_projection(dataset):
     wkt = dataset.GetProjection()
     crs = osr.SpatialReference()
     crs.ImportFromWkt(wkt)
-    # src = None
     return crs
 
 
@@ -362,10 +361,6 @@ def set_raster_origin(data, coords, direction):
     if not same:
         data = np.flip(data, axis=-2)
         coords = np.flip(coords, axis=-3)
-        # we need to shift y-coordinate if data and coordinates have the same
-        # number of rows and cols (only the ll or ul raster coords are given)
-    #        if data.shape[-2:] == coords.shape[:2]:
-    #            coords += [0, y_sp]
 
     return data, coords
 
@@ -395,8 +390,7 @@ def set_raster_indexing(data, coords, *, indexing="xy"):
 
     if shape != data.shape:
         raise ValueError(
-            f"wradlib: coordinate shape {coords.shape} and data shape "
-            f"{data.shape} mismatch."
+            f"coordinate shape {coords.shape} and data shape " f"{data.shape} mismatch."
         )
 
     coords = set_coordinate_indexing(coords, indexing=indexing)
@@ -429,11 +423,10 @@ def set_coordinate_indexing(coords, *, indexing="xy"):
     is_grid = hasattr(coords, "shape") and coords.ndim >= 3 and coords.shape[-1] == 2
     if not is_grid:
         raise ValueError(
-            f"wradlib: wrong coordinate shape {coords.shape}, "
-            f"(..., M, N, 2) expected."
+            f"wrong coordinate shape {coords.shape}, " f"(..., M, N, 2) expected."
         )
     if indexing not in ["xy", "ij"]:
-        raise ValueError(f"wradlib: unknown indexing value {indexing}.")
+        raise ValueError(f"Unknown indexing value {indexing}. Use either `xy` or `ij`.")
 
     rowcol = coords[0, 0, 1] == coords[0, 1, 1]
     convert = (rowcol and indexing == "ij") or (not rowcol and indexing == "xy")
@@ -491,11 +484,11 @@ def reproject_raster_dataset(src_ds, **kwargs):
     align = kwargs.pop("align", False)
 
     if spacing is None and size is None:
-        raise NameError("Whether keyword 'spacing' or 'size' must be given")
+        raise NameError("Either keyword `spacing` or `size` must be given.")
 
     if spacing is not None and size is not None:
         warnings.warn(
-            "both ``spacing`` and ``size`` kwargs given, ``size`` will be ignored.",
+            "Both `spacing` and `size` kwargs given, `size` will be ignored.",
             UserWarning,
         )
 
@@ -518,7 +511,8 @@ def reproject_raster_dataset(src_ds, **kwargs):
             src_proj = src_ds.GetProjection()
             if not src_proj:
                 raise ValueError(
-                    "src_ds is missing projection information, please use ``src_crs`` kwarg and provide a fitting GDAL OSR SRS object."
+                    "`src_ds` is missing projection information, please use `src_crs`-kwarg "
+                    "and provide a fitting GDAL OSR SRS object."
                 )
             src_crs = osr.SpatialReference()
             src_crs.ImportFromWkt(src_proj)

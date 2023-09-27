@@ -119,10 +119,7 @@ def get_radiosonde(wmoid, date, *, cols=None):
         WMO radiosonde ID
     date : :py:class:`datetime.datetime`
         Date and Time
-
-    Keyword Arguments
-    -----------------
-    cols : tuple
+    cols : tuple, optional
         tuple of int or strings describing the columns to consider,
         defaults to None (all columns)
 

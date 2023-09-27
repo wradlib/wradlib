@@ -16,7 +16,7 @@ Data is supposed to be stored in 'aligned' arrays. Aligned here means that
 all fields are structured such that in each field the data for a certain index
 is representative for the same physical target.
 
-Therefore no assumptions are made on the dimensions or shape of the input
+Therefore, no assumptions are made on the dimensions or shape of the input
 fields except that they exhibit the numpy ndarray interface.
 
 .. autosummary::
@@ -122,7 +122,6 @@ def _pulse_volume_xarray(obj, h, theta, **kwargs):
     See :ref:`/notebooks/workflow/recipe1.ipynb`.
 
     """
-    # vol = _pulse_volume_numpy(obj, h, theta)
     return _pulse_volume_numpy(obj, h, theta)
 
 

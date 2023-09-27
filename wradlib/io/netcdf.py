@@ -91,10 +91,6 @@ def read_edge_netcdf(filename, *, enforce_equidist=False):
         attrs = {}
         for attrname in dset.ncattrs():
             attrs[attrname] = dset.getncattr(attrname)
-        # # Limiting the returned range
-        # if range_lim and range_lim / binwidth <= data.shape[1]:
-        #     data = data[:,:range_lim / binwidth]
-        #     r = r[:range_lim / binwidth]
         # Set additional metadata attributes
         attrs["az"] = az
         attrs["r"] = r
@@ -156,7 +152,7 @@ def read_netcdf_group(ncid):
             tmp["isunlimited"] = v.isunlimited()
             dim[k] = tmp
         # Usually, the dimensions should be ordered by dimid automatically
-        # in case netcdf used OrderedDict. However, we should double check
+        # in case netcdf used OrderedDict. However, we should doublecheck
         if np.array_equal(dimids, np.sort(dimids)):
             # is already sorted
             out["dimensions"] = dim

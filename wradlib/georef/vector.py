@@ -34,7 +34,6 @@ import warnings
 
 import numpy as np
 
-from wradlib.georef import projection
 from wradlib.util import has_import, import_optional
 
 gdal = import_optional("osgeo.gdal")
@@ -74,7 +73,7 @@ def get_vector_points(geom):
                     yield result
     else:
         warnings.warn(
-            "unsupported geometry type detected in "
+            "Unsupported geometry type detected in "
             "wradlib.georef.get_vector_points - skipping"
         )
 
@@ -104,10 +103,11 @@ def transform_geometry(geom, trg_crs, **kwargs):
     gsrs = geom.GetSpatialReference()
     crs = kwargs.get("src_crs", gsrs)
 
-    # crs is None assume wgs84 lonlat, but warn too
     if crs is None:
-        crs = projection.get_default_projection()
-        warnings.warn("geometry without spatial reference - assuming wgs84")
+        raise ValueError(
+            "Geometry without spatial reference, please provide fitting "
+            "spatial reference object in `src_crs`-kwarg."
+        )
 
     # transform if not the same spatial reference system
     if not crs.IsSame(trg_crs):
@@ -256,7 +256,7 @@ def ogr_create_layer(ds, name, *, crs=None, geom_type=None, fields=None):
     crs : :py:class:`gdal:osgeo.osr.SpatialReference`
         object
     geom_type : :py:class:`gdal:osgeo.ogr.GeometryType`
-        (eg. ogr.wkbPolygon)
+        (e.g. ogr.wkbPolygon)
     fields : list
         list of 2 element tuples
         (str, :py:class:`gdal:osgeo.ogr.DataType`) field name, field type
@@ -323,7 +323,7 @@ def ogr_copy_layer_by_name(src_ds, name, dst_ds, *, reset=True):
 
     src_lyr = src_ds.GetLayerByName(name)
     if src_lyr is None:
-        raise ValueError("OGR layer 'name' not found in dataset")
+        raise ValueError(f"OGR layer {name!r} not found in dataset.")
     if reset:
         src_lyr.ResetReading()
         src_lyr.SetSpatialFilter(None)
