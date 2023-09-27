@@ -854,7 +854,7 @@ def plot(
     # fix for correct zorder of data and grid
     kwargs["zorder"] = kwargs.pop("zorder", 0)
 
-    kwargs.get("cmap", wrl_cmap)
+    kwargs["cmap"] = kwargs.get("cmap", wrl_cmap)
 
     sproj = crs
 
