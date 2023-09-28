@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # wradlib documentation build configuration file, created by
 # sphinx-quickstart on Wed Oct 26 13:48:08 2011.
@@ -110,9 +109,9 @@ if on_rtd:
     rtd_version_name = os.environ.get("READTHEDOCS_VERSION_NAME", "latest")
     rtd_version_type = os.environ.get("READTHEDOCS_VERSION_TYPE", "latest")
 
-    print("RTD Version: {}".format(rtd_version))
-    print("RTD Version Name: {}".format(rtd_version_name))
-    print("RTD Version Type: {}".format(rtd_version_type))
+    print(f"RTD Version: {rtd_version}")
+    print(f"RTD Version Name: {rtd_version_name}")
+    print(f"RTD Version Type: {rtd_version_type}")
 
     # latest wradlib commit
     if rtd_version == "latest" or rtd_version_type == "external":
@@ -139,7 +138,7 @@ if on_rtd:
     print("RTD - RELEASE, VERSION", release, version)
 
     # clone wradlib-notebooks target branch
-    repourl = "{0}/wradlib-notebooks.git".format(url)
+    repourl = f"{url}/wradlib-notebooks.git"
     reponame = "wradlib-notebooks"
     # first remove any possible left overs
     subprocess.check_call(["rm", "-rf", "wradlib-notebooks"])
@@ -147,7 +146,7 @@ if on_rtd:
     subprocess.check_call(
         ["git", "clone", "-b", wradlib_notebooks_branch, repourl, reponame]
     )
-    branch = "origin/{}".format(wradlib_branch_or_tag)
+    branch = f"origin/{wradlib_branch_or_tag}"
     nb = (
         subprocess.check_output(
             ["git", "--git-dir=wradlib-notebooks/.git", "rev-parse", branch]
@@ -188,8 +187,8 @@ for k, v in wradlib.__dict__.items():
     if isinstance(v, types.ModuleType):
         if k not in ["_warnings", "version"]:
             modules.append(k)
-            file = open("{0}.rst".format(k), mode="w")
-            file.write(".. automodule:: wradlib.{}\n".format(k))
+            file = open(f"{k}.rst", mode="w")
+            file.write(f".. automodule:: wradlib.{k}\n")
             file.close()
 
 # create API/Library reference md-file
@@ -203,9 +202,9 @@ documented separately.
 """
 
 file = open("reference.md", mode="w")
-file.write("{}\n".format(reference))
+file.write(f"{reference}\n")
 for mod in sorted(modules):
-    file.write("{}\n".format(mod))
+    file.write(f"{mod}\n")
 file.write("```")
 file.close()
 
@@ -420,7 +419,7 @@ class WradlibLabelStyle(LabelStyle):
             label = self.author_key_label(entry)
         # add full year comma separated
         if "year" in entry.fields:
-            return "{0}, {1}".format(label, entry.fields["year"])
+            return "{}, {}".format(label, entry.fields["year"])
         else:
             return label
 
