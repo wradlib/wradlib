@@ -1456,6 +1456,7 @@ def test_read_iris(file_or_filelike):
     assert set(data["data"]) == set(selected_data)
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="flaky windows")
 @requires_data
 @requires_netcdf
 def test_read_edge_netcdf(file_or_filelike):

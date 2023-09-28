@@ -10,4 +10,4 @@ conda:
   environment: ci/requirements/readthedocs.yml
 sphinx:
   builder: html
-  configuration: doc/conf.py
+  configuration: docs/conf.py
