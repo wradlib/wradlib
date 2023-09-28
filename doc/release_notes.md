@@ -11,7 +11,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 For {{wradlib}} 2.0 there have been quite some deprecations and additions. Most of the changes have been announced over the latest  {{wradlib}} 1 versions. Nevertheless, to make a clean cut it was neccessary to change and remove code and functionality which was not yet being officially deprecated.
 
-Please follow up at <project:#migration>.
+Please follow up at [](./migration.md).
 
 The major new feature is the smooth integration into `xradar`-based reading into `xarray`-based data structures and the convenient use of `xarray`-accessors. The tutorials and examples got a major overhaul to show the capabilities of {{wradlib}} in the light of these new developments.
 
