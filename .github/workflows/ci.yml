@@ -303,7 +303,7 @@ jobs:
         curl -X POST -H "Authorization: Token $RTD_TOKEN" "$RTD_URL"
 
   upload_testpypi:
-    if: github.event_name == 'push' || github.event_name == 'release'
+    if: github.event_name == 'push'
     needs: [lint, build_0, build_1, build_2]
     name: deploy to testpypi
     runs-on: ubuntu-latest
@@ -334,7 +334,7 @@ jobs:
 
   upload_pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_0, build_1, build_2, upload_testpypi]
+    needs: [lint, build_0, build_1, build_2]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:
