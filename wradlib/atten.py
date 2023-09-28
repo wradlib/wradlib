@@ -48,7 +48,7 @@ class AttenuationOverflowError(Exception):
 def correct_attenuation_hb(
     gateset,
     *,
-    coefficients={"a": 1.67e-4, "b": 0.7, "gate_length": 1.0},
+    coefficients=None,
     mode="except",
     thrs=59.0,
 ):
@@ -103,6 +103,8 @@ def correct_attenuation_hb(
     --------
     See :ref:`/notebooks/attenuation/attenuation.ipynb#Hitschfeld-and-Bordan`.
     """
+    if coefficients is None:
+        coefficients = {"a": 0.000167, "b": 0.7, "gate_length": 1.0}
     a = coefficients["a"]
     b = coefficients["b"]
     gate_length = coefficients["gate_length"]

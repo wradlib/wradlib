@@ -173,7 +173,7 @@ def phidp_kdp_vulpiani(
     kdp = np.nan_to_num(kdp)
 
     # start the actual phidp/kdp iteration
-    for i in range(niter):
+    for _i in range(niter):
         # phidp from kdp through integration
         phidp = 2 * integrate.cumtrapz(kdp, dx=dr, initial=0.0, axis=-1)
         # kdp from phidp by convolution

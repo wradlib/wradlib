@@ -299,7 +299,7 @@ def test_IpolBase(ipol_data):
 
     # Check behaviour if dimension is > 2
     ip = ipol.IpolBase(ipol_data.src, ipol_data.trg)
-    with pytest.raises(Exception):
+    with pytest.raises(TypeError):
         ipol.IpolBase(
             np.arange(12).reshape((2, 3, 2)), np.arange(20).reshape((2, 2, 5))
         )
@@ -359,7 +359,7 @@ def test_rect_grid(rect_ipol, get_rect_method):
         pbad = np.sum(bad) / bad.size
         assert pbad == 0
 
-    for indexing, trg in rect_ipol.grids.items():
+    for trg in rect_ipol.grids.values():
         ip = ipol.RectGrid(rect_ipol.grid2, trg, method=get_rect_method)
         valip = ip(rect_ipol.valgrid2)
         assert valip.shape == trg.shape[:-1]

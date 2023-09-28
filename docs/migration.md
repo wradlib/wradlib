@@ -182,7 +182,9 @@ Please also refer to {py:func}`xarray:xarray.open_dataset` documentation.
 #### Timeseries of sweeps
 
 ```python
-ts = xarray.open_mfdataset(filelist, concat_dim=time2, engine=engine, group=group, preprocess=preprocess)
+ts = xarray.open_mfdataset(
+    filelist, concat_dim=time2, engine=engine, group=group, preprocess=preprocess
+)
 ```
 
 `preprocess` is here a function which is applied to each of the retrieved datasets to align them for stacking along the new dimension (`time2`). One use-case would be <inv:xradar:std:doc#notebooks/angle_reindexing>.

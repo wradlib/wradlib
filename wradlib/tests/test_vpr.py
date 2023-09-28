@@ -79,7 +79,7 @@ def test_synthetic_polar_volume(help_data):
     elev = [0.3, 0.4, 3.0, 4.5]
 
     xyz = np.array([]).reshape((-1, 3))
-    for i, vals in enumerate(zip(nbins, rscale, elev)):
+    for _i, vals in enumerate(zip(nbins, rscale, elev)):
         az = np.arange(0.0, 360.0, 2.0)
         r = np.arange(0, vals[0] * vals[1], vals[1])
         xyz_ = vpr.volcoords_from_polar(

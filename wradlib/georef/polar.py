@@ -27,7 +27,6 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 __doctest_requires__ = {"spherical*": ["osgeo"]}
 
-import warnings
 from functools import singledispatch
 
 import numpy as np
@@ -36,7 +35,7 @@ from xarray import DataArray, Dataset, apply_ufunc
 from xradar.georeference import add_crs
 
 from wradlib.georef import misc, projection
-from wradlib.util import docstring, has_import, import_optional
+from wradlib.util import docstring, has_import, import_optional, warn
 
 osr = import_optional("osgeo.osr")
 
@@ -789,10 +788,7 @@ def _check_polar_coords(r, az, /):
                 "Invalid polar coordinates: Azimuth array is not sorted clockwise."
             )
     if len(np.unique(np.sort(az)[1:] - np.sort(az)[:-1])) > 1:
-        warnings.warn(
-            "The azimuth angles of the current dataset are not equidistant.",
-            UserWarning,
-        )
+        warn("The azimuth angles of the current dataset are not equidistant.")
     return r, az
 
 

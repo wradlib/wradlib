@@ -18,7 +18,6 @@ estimates to ground truth.
 __all__ = ["ErrorMetrics", "PolarNeighbours"]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import warnings
 from pprint import pprint
 
 import numpy as np
@@ -185,9 +184,7 @@ class ErrorMetrics:
         )
         self.n = len(self.ix)
         if self.n == 0:
-            warnings.warn(
-                "No valid pairs of `obs` and `est` available for ErrorMetrics!"
-            )
+            util.warn("No valid pairs of `obs` and `est` available for ErrorMetrics!")
         self.resids = self.est[self.ix] - self.obs[self.ix]
 
     def corr(self):

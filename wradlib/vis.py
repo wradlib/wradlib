@@ -877,11 +877,11 @@ def plot(
             try:
                 caax = ax.parasites[0]
                 paax = ax.parasites[1]
-            except AttributeError:
+            except AttributeError as err:
                 raise TypeError(
                     "If `crs='cg'` `ax` need to be of type "
                     "`mpl_toolkits.axisartist.SubplotHost`."
-                )
+                ) from err
     else:
         # axes object is given
         if fig is None:

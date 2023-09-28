@@ -113,8 +113,8 @@ def read_safnwc(filename):
     try:
         crs = osr.SpatialReference()
         crs.ImportFromProj4(ds.GetMetadata()["PROJECTION"])
-    except KeyError:
-        raise KeyError(f"Projection is missing for satellite file {filename}")
+    except KeyError as err:
+        raise OSError(f"Projection is missing for satellite file {filename}") from err
 
     geotransform = root.GetMetadata()["GEOTRANSFORM_GDAL_TABLE"].split(",")
     geotransform[0] = root.GetMetadata()["XGEO_UP_LEFT"]

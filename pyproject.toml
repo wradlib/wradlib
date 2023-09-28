@@ -103,6 +103,8 @@ ignore = [
     "E731",
 ]
 select = [
+    # Flake8 Bugbear
+    "B",
     # Pyflakes
     "F",
     # Pycodestyle
@@ -118,4 +120,8 @@ select = [
 known-first-party = ["wradlib"]
 
 [tool.pytest.ini_options]
+minversion = "7"
 testpaths = "wradlib/tests"
+log_cli_level = "INFO"
+xfail_strict = true
+addopts = ["-ra", "--strict-config", "--strict-markers"]

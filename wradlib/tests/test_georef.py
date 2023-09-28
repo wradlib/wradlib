@@ -1435,7 +1435,7 @@ def test_get_vector_coordinates(vec_data):
     x, attrs = georef.get_vector_coordinates(layer, src_crs=vec_data.crs)
     y = []
     layer.ResetReading()
-    for i in range(layer.GetFeatureCount()):
+    for _i in range(layer.GetFeatureCount()):
         feature = layer.GetNextFeature()
         if feature:
             geom = feature.GetGeometryRef()

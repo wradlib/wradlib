@@ -41,7 +41,6 @@ __all__ = [
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 import re
-import warnings
 from functools import reduce, singledispatch
 
 import numpy as np
@@ -49,10 +48,12 @@ import scipy
 from packaging.version import Version
 from scipy import interpolate as sinterp
 from scipy import ndimage, spatial, special, stats
-from xarray import DataArray, apply_ufunc
 
+# from xarray import DataArray, apply_ufunc
 from wradlib import georef, util, zonalstats
 from wradlib.util import XarrayMethods, docstring
+
+xr = util.import_optional("xarray")
 
 
 class MissingSourcesError(Exception):
@@ -144,7 +145,7 @@ class IpolBase:
             elif x.ndim == 2:
                 pass
             else:
-                raise Exception("Cannot deal wih 3-d arrays, yet.")
+                raise TypeError("Cannot deal wih 3-d arrays, yet.")
         return x
 
     def _make_2d(self, vals):
@@ -338,7 +339,7 @@ class Idw(IpolBase):
             raise MissingTargetsError
 
         if nnearest > self.numsources:
-            warnings.warn(
+            util.warn(
                 "wradlib.ipol.Idw: `nnearest` is larger than number of "
                 f"source points and is set to {self.numsources} corresponding to the "
                 "number of source points.",
@@ -853,7 +854,7 @@ def parse_covariogram(cov_model):
     # first split along '+'
     subparts = cov_model.split("+")
     # then analyse subparts
-    for i, subpart in enumerate(subparts):
+    for _i, subpart in enumerate(subparts):
         # iterate over all available patterns
         for j, pattern in enumerate(patterns):
             m = pattern.search(subpart)
@@ -1046,12 +1047,11 @@ class OrdinaryKriging(IpolBase):
         if self.numtargets == 0:
             raise MissingTargetsError
         if nnearest > self.numsources:
-            warnings.warn(
+            util.warn(
                 "wradlib.ipol.OrdinaryKriging: `nnearest` is "
                 "larger than number of source points and is "
                 f"set to {self.numsources} corresponding to the "
                 "number of source points.",
-                UserWarning,
             )
             self.nnearest = self.numsources
         else:
@@ -1239,11 +1239,10 @@ class ExternalDriftKriging(IpolBase):
         if self.numsources == 0:
             raise MissingSourcesError
         if nnearest > self.numsources:
-            warnings.warn(
+            util.warn(
                 "wradlib.ipol.ExternalDriftKriging: `nnearest` is larger "
                 f"than number of source points and is set to {self.numsources} "
                 "corresponding to the number of source points.",
-                UserWarning,
             )
             self.nnearest = self.numsources
         else:
@@ -1516,9 +1515,8 @@ def interpolate(src, trg, vals, ipclass, *args, **kwargs):
     else:
         if np.any(np.isnan(vals.ravel())):
             raise NotImplementedError(
-                "WRADLIB: At the moment, <interpolate> "
-                "can only deal with NaN values in <vals>"
-                " if <vals> has less than 3 dimension."
+                "At the moment, `interpolate` can only deal with NaN values in `vals` "
+                "if `vals` has less than 3 dimension."
             )
         else:
             # if no NaN value are in <vals> we can safely apply the
@@ -1574,9 +1572,8 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     if mask is None:
         # no mask assigned: try to get it from masked array
         if type(data) != np.ma.core.MaskedArray:
-            print(
-                "Warning! Neither an explicit mask is assigned nor the "
-                "data-array is masked."
+            util.warn(
+                "Neither an explicit mask is assigned nor the data-array is masked."
             )
         mask = np.ma.getmaskarray(data)
     elif not np.any(mask):
@@ -1620,7 +1617,7 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     return filled_data.reshape(data.shape[0], data.shape[1])
 
 
-@interpolate_polar.register(DataArray)
+@interpolate_polar.register(xr.DataArray)
 def _interpolate_polar_xarray(obj, mask, **kwargs):
     dim0 = obj.wrl.util.dim0()
 
@@ -1628,7 +1625,7 @@ def _interpolate_polar_xarray(obj, mask, **kwargs):
         kwargs.setdefault("mask", mask)
         return interpolate_polar(obj, *args, **kwargs)
 
-    out = apply_ufunc(
+    out = xr.apply_ufunc(
         wrapper,
         obj,
         mask,

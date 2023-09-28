@@ -30,11 +30,10 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import warnings
 
 import numpy as np
 
-from wradlib.util import has_import, import_optional
+from wradlib.util import has_import, import_optional, warn
 
 gdal = import_optional("osgeo.gdal")
 ogr = import_optional("osgeo.ogr")
@@ -72,7 +71,7 @@ def get_vector_points(geom):
                 for result in get_vector_points(item):
                     yield result
     else:
-        warnings.warn(
+        warn(
             "Unsupported geometry type detected in "
             "wradlib.georef.get_vector_points - skipping"
         )
@@ -166,7 +165,7 @@ def get_vector_coordinates(layer, **kwargs):
     else:
         attrs = None
 
-    for i in range(layer.GetFeatureCount()):
+    for _i in range(layer.GetFeatureCount()):
         feature = layer.GetNextFeature()
         if feature:
             if key:

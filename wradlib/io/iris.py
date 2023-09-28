@@ -121,11 +121,11 @@ class IrisProductFile(xiris.IrisRecordFile):
                 xiris._get_fmt_string(self.product_type_dict["result"])
             )
             z = []
-            for zi in range(z_size):
+            for _zi in range(z_size):
                 y = []
-                for yi in range(y_size):
+                for _yi in range(y_size):
                     x = []
-                    for xi in range(x_size):
+                    for _xi in range(x_size):
                         dta = self.read_from_record(cnt, "uint8")
                         res = xiris._unpack_dictionary(
                             dta, self.product_type_dict["result"], self._rawdata

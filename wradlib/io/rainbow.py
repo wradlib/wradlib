@@ -67,8 +67,8 @@ def get_rb_file_as_string(fid):
 
     try:
         data_string = fid.read()
-    except Exception:
-        raise OSError("Could not read from file handle.")
+    except Exception as err:
+        raise OSError("Could not read from file handle.") from err
 
     return data_string
 
