@@ -327,7 +327,7 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
         run: |
-          toml set --toml-path pyproject.toml tool.hatch.version.raw-options "no-local-version"
+          toml set --toml-path pyproject.toml tool.hatch.version.raw-options.local_scheme "no-local-version"
           git update-index --assume-unchanged pyproject.toml
           python -m build
           twine upload --repository-url https://test.pypi.org/legacy/ dist/*
