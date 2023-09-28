@@ -37,6 +37,7 @@ import datetime as dt
 import importlib
 import inspect
 import os
+import warnings
 from functools import singledispatch
 
 import numpy as np
@@ -123,6 +124,11 @@ def import_optional(module):
         mod = OptionalModuleStub(module)
 
     return mod
+
+
+def warn(message, category=None, stacklevel=3):
+    """Emit user level warning"""
+    warnings.warn(message, category, stacklevel=stacklevel)
 
 
 def _shape_to_size(shape):
@@ -597,8 +603,8 @@ def get_wradlib_data_file(relfile):
             from wradlib_data import DATASETS
 
             data_file = DATASETS.fetch(relfile)
-        except ImportError:
-            raise OSError(f"WRADLIB_DATA file {data_file!r} does not exist.")
+        except ImportError as err:
+            raise OSError(f"WRADLIB_DATA file {data_file!r} does not exist.") from err
     return data_file
 
 
@@ -1305,9 +1311,11 @@ def cross_section_ppi(
                     "At least one of the points given is outside of the radar volume area"
                 )
 
-        except TypeError:
+        except TypeError as err:
             # `azimuth` is not a list of azimuths nor a couple of points
-            raise TypeError("Not azimuth values nor points was provided to `azimuth`")
+            raise TypeError(
+                "Not azimuth values nor points was provided to `azimuth`"
+            ) from err
 
         # Check that the two points given are not the same
         try:
@@ -1315,11 +1323,11 @@ def cross_section_ppi(
                 raise ValueError(
                     "p1=p2. The two points given are the same. Please give different points."
                 )
-        except AttributeError:
+        except AttributeError as err:
             if p1 == p2:
                 raise ValueError(
                     "p1=p2. The two points given are the same. Please give different points."
-                )
+                ) from err
 
         # number of points to make the line between p1 and p2 (should be greater
         # than the resolution of the volume)

@@ -1,10 +1,6 @@
 [build-system]
-requires = [
-    "setuptools>=45",
-    "wheel",
-    "setuptools_scm[toml]>=7.0",
-]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs", "hatch-fancy-pypi-readme", "hatch-requirements-txt"]
+build-backend = "hatchling.build"
 
 [project]
 name = "wradlib"
@@ -45,21 +41,46 @@ changelog = "https://docs.wradlib.org/en/stable/release_notes.html"
 [project.entry-points."xarray.backends"]
 radolan = "wradlib.io.backends:RadolanBackendEntrypoint"
 
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
-readme = { file = ["README.md"], content-type = "text/markdown" }
+[tool.hatch.version]
+source = "vcs"
+fallback_version = "999"
 
-[tool.setuptools.dynamic.optional-dependencies]
-dev = { file = "requirements_devel.txt" }
-opt = { file = "requirements_optional.txt" }
-
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
 packages = ["wradlib", "wradlib.georef", "wradlib.io", "wradlib.tests"]
 
-[tool.setuptools_scm]
-write_to = "wradlib/version.py"
+[tool.hatch.build.targets.sdist]
+include = [
+    "/wradlib",
+    "/wradlib/tests",
+    "/docs",
+    "/scripts",
+    "/CITATION.cff",
+    "/CONTRIBUTING.md",
+    "/CONTRIBUTORS.txt",
+    "/README.md",
+    "/requirements.txt",
+    "/requirements_devel.txt",
+    "/requirements_optional.txt",
+]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+    {path = "README.md"},
+]
+
+[tool.hatch.version.raw-options]
 version_scheme = "release-branch-semver"
-fallback_version = "999"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "wradlib/version.py"
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
+dev = ["requirements_devel.txt"]
+opt = ["requirements_optional.txt"]
 
 [tool.black]
 target-version = ["py39"]
@@ -70,7 +91,7 @@ target-version = "py39"
 builtins = ["ellipsis"]
 exclude = [
     ".eggs",
-    "doc",
+    "docs",
 ]
 
 # E402: module level import not at top of file
@@ -82,6 +103,8 @@ ignore = [
     "E731",
 ]
 select = [
+    # Flake8 Bugbear
+    "B",
     # Pyflakes
     "F",
     # Pycodestyle
@@ -95,3 +118,10 @@ select = [
 
 [tool.ruff.isort]
 known-first-party = ["wradlib"]
+
+[tool.pytest.ini_options]
+minversion = "7"
+testpaths = "wradlib/tests"
+log_cli_level = "INFO"
+xfail_strict = true
+addopts = ["-ra", "--strict-config", "--strict-markers"]

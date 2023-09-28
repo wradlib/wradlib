@@ -29,7 +29,6 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import warnings
 from functools import singledispatch
 
 import numpy as np
@@ -738,7 +737,7 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
                         f"shapes: {dat[key].shape} vs. {shape}"
                     )
         else:
-            warnings.warn(f"Missing decision variable: {key}", UserWarning)
+            util.warn(f"Missing decision variable: {key}", UserWarning)
 
     # If all dual-pol moments are NaN, can we assume that and echo is
     # non-meteorological?

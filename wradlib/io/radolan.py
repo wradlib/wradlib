@@ -36,7 +36,6 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import datetime as dt
 import io
 import re
-import warnings
 
 import numpy as np
 import xarray as xr
@@ -799,9 +798,9 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
             attrs["nodataflag"] = NODATA
 
         if not attrs["radarid"] == "10000":
-            warnings.warn(
-                "WARNING: You are using function "
-                "wradlib.io.read_radolan_composit for a non composite file.\n "
+            util.warn(
+                "You are using function "
+                "wradlib.io.read_radolan_composit for a non composite file. "
                 "This might work, but please check the validity of the results!"
             )
 
@@ -1121,7 +1120,7 @@ class _radolan_file:
                 # use astype here since we change the data later
                 self._data[self.product] = self._data[self.product].astype(self.dtype)
         self._process_data()
-        for k, v in self._data.items():
+        for _k, v in self._data.items():
             v.shape = (self.attrs["nrow"], self.attrs["ncol"])
 
     def _read(self):
@@ -1223,7 +1222,7 @@ class _radolan_file:
         anc = set(anc) & set(requested)
         reject = set(anc) ^ set(requested)
         if reject:
-            warnings.warn(
+            util.warn(
                 f"Ancillary data `{tuple(reject)}` requested but not available for product `{self.product}`."
             )
 

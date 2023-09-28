@@ -338,7 +338,7 @@ def test_read_safnwc():
     subprocess.check_call(command, shell=True)
     command = f"h5copy -i {safnwcfile} -o test1.h5 -s CT -d CT"
     subprocess.check_call(command, shell=True)
-    with pytest.raises(KeyError):
+    with pytest.raises(IOError):
         io.gdal.read_safnwc("test1.h5")
 
 
@@ -1456,6 +1456,7 @@ def test_read_iris(file_or_filelike):
     assert set(data["data"]) == set(selected_data)
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="flaky windows")
 @requires_data
 @requires_netcdf
 def test_read_edge_netcdf(file_or_filelike):
@@ -1467,9 +1468,9 @@ def test_read_edge_netcdf(file_or_filelike):
 
     filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
     with get_wradlib_data_file(filename, file_or_filelike) as f:
-        with pytest.raises(Exception):
+        with pytest.raises(AttributeError):
             io.netcdf.read_edge_netcdf(f)
-    with pytest.raises(Exception):
+    with pytest.raises(FileNotFoundError):
         io.netcdf.read_edge_netcdf("test")
 
 

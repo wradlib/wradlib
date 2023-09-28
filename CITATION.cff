@@ -1,0 +1,21 @@
+# YAML 1.2
+# Metadata for citation of this software according to the CFF format (https://citation-file-format.github.io/)
+cff-version: 1.0.3
+message: If you use this software, please cite it using these metadata.
+# FIXME title as repository name might not be the best name, please make human readable
+title: 'wradlib/wradlib: wradlib v2.0.0'
+doi: 10.5281/zenodo.1209843
+# FIXME splitting of full names is error prone, please check if given/family name are correct
+authors:
+- given-names: Kai
+  family-names: Mühlbauer
+  affiliation: University Bonn
+  orcid: https://orcid.org/0000-0001-6599-1034
+- given-names: Maik
+  family-names: Heistermann
+  affiliation: University of Potsdam
+  orcid: https://orcid.org/0000-0001-9354-1532
+version: 2.0.0
+date-released: 2023-09-28
+repository-code: https://github.com/wradlib/wradlib
+license: MIT

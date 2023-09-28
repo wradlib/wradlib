@@ -57,13 +57,12 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
 import tempfile
-import warnings
 
 import numpy as np
 from scipy import spatial
 
 from wradlib import georef, io
-from wradlib.util import has_import, import_optional
+from wradlib.util import has_import, import_optional, warn
 
 ogr = import_optional("osgeo.ogr")
 osr = import_optional("osgeo.osr")
@@ -331,8 +330,8 @@ class ZonalDataBase:
                     lyr = self.trg.ds.GetLayerByName("trg")
                     feat = lyr.GetFeature(idx)
                     trg = feat.GetGeometryRef()
-                except Exception:
-                    raise TypeError(f"No target polygon found at index {idx}")
+                except RuntimeError as err:
+                    raise TypeError(f"No target polygon found at index {idx}") from err
             else:
                 raise TypeError("No target polygons found in object!")
 
@@ -892,7 +891,7 @@ def get_clip_mask(coords, clippoly, *, crs=None):
         src_mask[mask] = True
 
     except ValueError as err:
-        warnings.warn(err)
+        warn(err)
 
     return src_mask
 

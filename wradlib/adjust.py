@@ -841,20 +841,18 @@ def _get_statfunc(funcname):
         Potential options: 'mean', 'median', 'best'
 
     """
-    try:
-        # first try to find a numpy function which corresponds to <funcname>
-        func = getattr(np, funcname)
+    if funcname == "best":
+        newfunc = best
+    else:
+        try:
+            # try to find a numpy function which corresponds to <funcname>
+            func = getattr(np, funcname)
 
-        def newfunc(x, y):
-            return func(y, axis=1)
+            def newfunc(x, y):
+                return func(y, axis=1)
 
-    except Exception:
-        # then try to find a function in this module with name funcname
-        if funcname == "best":
-            newfunc = best
-        else:
-            # if no function can be found, raise an Exception
-            raise NameError(f"Unknown function name option: {funcname!r}")
+        except Exception as err:
+            raise NameError(f"Unknown function name option: {funcname!r}") from err
     return newfunc
 
 

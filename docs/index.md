@@ -36,10 +36,6 @@ dev_guide
 release_notes
 ```
 
-:::{important}
-{{wradlib}}'s documentation is currently being restructured. The old documentation for versions <1.19.1 are available from [here](https://docs.wradlib.org/projects/old-docs/en/1.19.0/).
-:::
-
 The {{wradlib}} project has been initiated in order facilitate the use of weather radar data as well as to provide a common platform for research on new algorithms. {{wradlib}} is an open source library which is well documented and easy to use. It is written in the free programming language [Python](https://www.python.org).
 
 :::{note}
@@ -57,6 +53,10 @@ with high spatio-temporal resolution over large areas makes it an invaluable too
 {{wradlib}} is designed to assist you in the most important steps of processing weather radar data. These may include: reading common data formats, georeferencing, converting reflectivity to rainfall intensity, identifying and correcting typical error sources (such as clutter or attenuation) and visualising the data.
 
 This documentation is under steady development. It provides a complete library reference as well as a set of tutorials which will get you started in working with {{wradlib}}.
+
+:::{important}
+{{wradlib}}'s documentation has been restructured. The old documentation for versions <1.19.1 are available from [here](https://docs.wradlib.org/projects/old-docs/en/1.19.0/).
+:::
 
 # License
 

@@ -30,13 +30,12 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import warnings
 
 import numpy as np
 
 import wradlib
 from wradlib import georef
-from wradlib.util import import_optional
+from wradlib.util import import_optional, warn
 
 gdal = import_optional("osgeo.gdal")
 gdal_array = import_optional("osgeo.gdal_array")
@@ -487,10 +486,7 @@ def reproject_raster_dataset(src_ds, **kwargs):
         raise NameError("Either keyword `spacing` or `size` must be given.")
 
     if spacing is not None and size is not None:
-        warnings.warn(
-            "Both `spacing` and `size` kwargs given, `size` will be ignored.",
-            UserWarning,
-        )
+        warn("Both `spacing` and `size` kwargs given, `size` will be ignored.")
 
     # Get the GeoTransform vector
     src_geo = src_ds.GetGeoTransform()
