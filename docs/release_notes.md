@@ -19,6 +19,9 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Bugfixes**
 
+* FIX: make pyproj import lazy in georef.polar ({pull}`646`) by {at}`kmuehlbauer`
+
+
 ## Version 2.0.0
 
 For {{wradlib}} 2.0.0 there have been quite some deprecations and additions. Most of the changes have been announced over the latest  {{wradlib}} 1 versions. Nevertheless, to make a clean cut it was neccessary to change and remove code and functionality which was not yet being officially deprecated.
