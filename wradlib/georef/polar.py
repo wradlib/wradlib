@@ -30,7 +30,6 @@ __doctest_requires__ = {"spherical*": ["osgeo"]}
 from functools import singledispatch
 
 import numpy as np
-from pyproj import CRS
 from xarray import DataArray, Dataset, apply_ufunc
 from xradar.georeference import add_crs
 
@@ -38,6 +37,7 @@ from wradlib.georef import misc, projection
 from wradlib.util import docstring, has_import, import_optional, warn
 
 osr = import_optional("osgeo.osr")
+pyproj = import_optional("pyproj")
 
 
 @singledispatch
@@ -1095,7 +1095,7 @@ def georeference(obj, **kwargs):
     obj.coords["rays"] = ([dim0, "range"], rays, obj[dim0].attrs)
     obj.coords["bins"] = ([dim0, "range"], bins, obj["range"].attrs)
 
-    proj_crs = CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
+    proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
     obj = add_crs(obj, crs=proj_crs)
 
     return obj
