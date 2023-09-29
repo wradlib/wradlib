@@ -18,7 +18,7 @@ Below you see the status of wradlib. A green status indicates that the current r
 
 | Item | Status |
 | --- | --- |
-| Github Latest | [![Build Status](https://github.com/wradlib/wradlib/workflows/CI/badge.svg)](https://github.com/wradlib/wradlib/actions) |
+| Github Latest | [![Build Status](https://github.com/wradlib/wradlib/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wradlib/wradlib/actions/workflows/ci.yml) |
 | Github Release | [![Build Status](https://github.com/wradlib/wradlib/actions/workflows/ci.yml/badge.svg?event=release)](https://github.com/wradlib/wradlib/actions/workflows/ci.yml) |
 | Codecov | [![codecov](https://codecov.io/gh/wradlib/wradlib/branch/main/graph/badge.svg)](https://codecov.io/gh/wradlib/wradlib) |
 | RTD Latest | [![ReadTheDocs Latest](https://readthedocs.org/projects/wradlib/badge/?version=latest)](https://docs.wradlib.org/en/latest/) |
