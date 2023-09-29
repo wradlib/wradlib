@@ -11,9 +11,11 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **New features**
 
+**Maintenance - Code**
+
 **Maintenance - CI**
 
-**Maintenance - Code**
+* MNT: add codecov.yml to configure coverage status checks ({pull}`647`) by {at}`kmuehlbauer
 
 **Documentation**
 
