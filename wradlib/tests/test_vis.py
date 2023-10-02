@@ -40,11 +40,12 @@ def pol_data():
         el = np.arange(0, 90)
         th = np.zeros_like(az)
         az1 = np.ones_like(el) * 225
-        img = img
         da_ppi = georef.create_xarray_dataarray(img, r=r, phi=az, theta=th)
         da_ppi = georef.georeference(da_ppi)
-        da_rhi = georef.create_xarray_dataarray(img[0:90], r=r, phi=az1, theta=el)
-        da_ppi = georef.georeference(da_rhi)
+        da_rhi = georef.create_xarray_dataarray(
+            img[0:90], r=r, phi=az1, theta=el, sweep_mode="rhi"
+        )
+        da_rhi = georef.georeference(da_rhi)
 
     yield Data
 

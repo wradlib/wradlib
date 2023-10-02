@@ -117,7 +117,6 @@ def spherical_to_xyz(
             f"+a={re:f} +b={re:f} +units=m +no_defs"
         )
 
-    osr = import_optional("osgeo.osr")
     if has_import(osr):
         aeqd = projection.projstr_to_osr(projstr)
     else:
@@ -1095,7 +1094,12 @@ def georeference(obj, **kwargs):
     obj.coords["rays"] = ([dim0, "range"], rays, obj[dim0].attrs)
     obj.coords["bins"] = ([dim0, "range"], bins, obj["range"].attrs)
 
-    proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
+    # convert GDAL OSR to WKT
+    if has_import(osr):
+        trg_crs = trg_crs.ExportToWkt(["FORMAT=WKT2_2018"])
+
+    # import into pyproj CRS
+    proj_crs = pyproj.CRS.from_user_input(trg_crs)
     obj = add_crs(obj, crs=proj_crs)
 
     return obj
