@@ -44,6 +44,8 @@ from wradlib import util
 from wradlib.georef import projection, rect
 from wradlib.io.xarray import WradlibVariable
 
+osr = util.import_optional("osgeo.osr")
+
 # current DWD file naming pattern (2008) for example:
 # raa00-dx_10488-200608050000-drs---bin
 dwdpattern = re.compile("raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin")
@@ -1152,10 +1154,16 @@ class _radolan_file:
                 "prediction_time", data=pred_time, attrs=time_attrs
             )
 
-        if attrs.get("formatversion", 3) >= 5:
-            crs = projection.create_osr("dwd-radolan-wgs84")
+        # if GDAL is not installed, fall back to trigonometric calculation
+        if util.has_import(osr):
+            print("CRS")
+            if attrs.get("formatversion", 3) >= 5:
+                crs = projection.create_osr("dwd-radolan-wgs84")
+            else:
+                crs = projection.create_osr("dwd-radolan-sphere")
         else:
-            crs = projection.create_osr("dwd-radolan-sphere")
+            print("TRIG")
+            crs = "trig"
 
         xlocs, ylocs = rect.get_radolan_coordinates(
             self.dimensions["y"], self.dimensions["x"], crs=crs, mode="center"

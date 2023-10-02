@@ -1012,8 +1012,9 @@ def test_raster_to_polyvert(gdal_data):
 def grid_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
-        radolan_grid_xy = georef.get_radolan_grid(900, 900, crs="trig")
-        radolan_grid_ll = georef.get_radolan_grid(900, 900, crs="trig", wgs84=True)
+        crs = georef.create_osr("dwd-radolan-sphere")
+        radolan_grid_xy = georef.get_radolan_grid(900, 900, crs=crs)
+        radolan_grid_ll = georef.get_radolan_grid(900, 900, crs=crs, wgs84=True)
 
     yield Data
 
@@ -1021,13 +1022,7 @@ def grid_data():
 @requires_gdal
 def test_get_radolan_grid_equality(grid_data):
     # create radolan projection osr object
-    scale = (1.0 + np.sin(np.radians(60.0))) / (1.0 + np.sin(np.radians(90.0)))
-    dwd_string = (
-        "+proj=stere +lat_0=90 +lat_ts=90 +lon_0=10 "
-        f"+k={scale:10.8f} +x_0=0 +y_0=0 +a=6370040 +b=6370040 "
-        "+to_meter=1000 +no_defs"
-    )
-    proj_stereo = georef.projstr_to_osr(dwd_string)
+    proj_stereo = georef.create_osr("dwd-radolan-sphere")
 
     # create wgs84 projection osr object
     proj_wgs = osr.SpatialReference()
@@ -1051,8 +1046,8 @@ def test_get_radolan_grid_equality(grid_data):
     np.testing.assert_allclose(radolan_grid_ll, grid_data.radolan_grid_ll)
     np.testing.assert_allclose(radolan_grid_xy, grid_data.radolan_grid_xy)
 
-    radolan_grid_xy = georef.get_radolan_grid(900, 900)
-    radolan_grid_ll = georef.get_radolan_grid(900, 900, wgs84=True)
+    radolan_grid_xy = georef.get_radolan_grid(900, 900, crs=proj_stereo)
+    radolan_grid_ll = georef.get_radolan_grid(900, 900, crs=proj_stereo, wgs84=True)
 
     # check source and target arrays for equality
     np.testing.assert_allclose(radolan_grid_ll, grid_data.radolan_grid_ll)
@@ -1175,9 +1170,8 @@ def test_xyz_to_spherical():
         ((1500, 1400), [-673.46216692, -5008.64472426], False),
     ],
 )
-@requires_gdal
 def test_grid_reference_points(grid, origin, wgs):
-    arr = list(georef.get_radolan_grid(grid[0], grid[1], wgs84=wgs)[0, 0])
+    arr = list(georef.get_radolan_grid(grid[0], grid[1], crs="trig", wgs84=wgs)[0, 0])
     assert pytest.approx(arr) == origin
 
 

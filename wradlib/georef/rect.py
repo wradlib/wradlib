@@ -32,6 +32,8 @@ from xarray import DataArray, Dataset, concat
 from wradlib.georef import projection
 from wradlib.util import docstring, has_import, import_optional
 
+osr = import_optional("osgeo.osr")
+
 
 def get_radolan_coords(lon, lat, **kwargs):
     """
@@ -52,7 +54,6 @@ def get_radolan_coords(lon, lat, **kwargs):
         trigonometric formulas for calculation (only for earth model - `sphere`).
         Defaults to None (earth model - sphere).
     """
-    osr = import_optional("osgeo.osr")
     crs = kwargs.get("crs", None)
     # use trig if osgeo.osr is not available
     if crs is None and not has_import(osr):
@@ -165,9 +166,9 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     if crs is not None and crs != "trig":
         lin = crs.GetLinearUnits()
         if lin == 1.0:
-            res *= 1000
-            j_0 *= 1000
-            i_0 *= 1000
+            res *= 1000.0
+            j_0 *= 1000.0
+            i_0 *= 1000.0
 
     x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols * res, res)
     y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows * res, res)
@@ -288,6 +289,10 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
     wgs84 = kwargs.get("wgs84", False)
     mode = kwargs.get("mode", "radolan")
     crs = kwargs.get("crs", None)
+
+    # fallback to simple trignometry, if GDAL is not installed
+    if crs is None and not has_import(osr):
+        crs = "trig"
 
     x_arr, y_arr = get_radolan_coordinates(nrows=nrows, ncols=ncols, mode=mode, crs=crs)
 
