@@ -1111,7 +1111,7 @@ def cross_section_ppi(
     Parameters
     ----------
     obj : :py:class:`xarray:xarray.Dataset` - Dataset containing PPI sweeps
-        from which azimuthal cross-sections will be extracted. 
+        from which azimuthal cross-sections will be extracted.
     azimuth : int, float, slice, tuple or list
         Value of azimuth to extract the cross-section. It can be multiple values
         in the form of a slice, or a tuple or list of values.
@@ -1161,12 +1161,15 @@ def cross_section_ppi(
     crs = kwargs.get("crs")
     method = kwargs.get("method", None)
     tolerance = kwargs.get("tolerance", None)
-    
+
     # Deprecation warning
     real_beams = kwargs.get("real_beams")
     if real_beams is not None:
-        warnings.warn("Keyword argument 'real_beams' has no effect, it was deprecated in wradlib 2.0. "\
-                      "The behavior of real_beams is now assumed from 'bw'.", DeprecationWarning)
+        warnings.warn(
+            "Keyword argument 'real_beams' has no effect, it was deprecated in wradlib 2.0. "
+            "The behavior of real_beams is now assumed from 'bw'.", 
+            DeprecationWarning,
+            )
 
     if bw is not None:
         # Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
@@ -1236,9 +1239,9 @@ def cross_section_ppi(
         obj_fake = obj_fake.where(
             ~obj_fake.sweep_fixed_angle.isin(nan_fake_elevs)
         )  # fill with nan on corresponding elevations
-        
+
         # set elevation coord correctly because georeferencing is based on this coord
-        obj_fake.coords["elevation"]=obj_fake["sweep_fixed_angle"]
+        obj_fake.coords["elevation"] = obj_fake["sweep_fixed_angle"]
 
     ds = obj.copy()
     if bw is not None:
@@ -1247,7 +1250,7 @@ def cross_section_ppi(
 
     # Reduce "sweep_mode" to 1D to be able to georeference
     ds["sweep_mode"] = ds["sweep_mode"].min()
-    
+
     # Georeference the data
     ds = ds.pipe(georef.georeference, crs=crs)
 
