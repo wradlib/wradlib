@@ -1167,9 +1167,9 @@ def cross_section_ppi(
     if real_beams is not None:
         warnings.warn(
             "Keyword argument 'real_beams' has no effect, it was deprecated in wradlib 2.0. "
-            "The behavior of real_beams is now assumed from 'bw'.", 
+            "The behavior of real_beams is now assumed from 'bw'.",
             DeprecationWarning,
-            )
+        )
 
     if bw is not None:
         # Matplotlib's pcolormesh fills the grid by coloring around each of the gridpoints
