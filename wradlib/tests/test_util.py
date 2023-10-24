@@ -13,6 +13,7 @@ import xarray as xr
 from wradlib import util
 
 from . import requires_data
+from . import requires_gdal
 
 
 def test__shape_to_size():
@@ -329,6 +330,7 @@ def test_find_bbox_indices(bb_data):
     assert np.array_equal(bbind, [1, 1, 4, 7])
 
 
+@requires_gdal
 @requires_data
 def test_cross_section_ppi():
     file = util.get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
