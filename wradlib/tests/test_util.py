@@ -12,8 +12,7 @@ import xarray as xr
 
 from wradlib import util
 
-from . import requires_data
-from . import requires_gdal
+from . import requires_data, requires_gdal
 
 
 def test__shape_to_size():
