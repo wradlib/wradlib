@@ -378,4 +378,4 @@ def test_cross_section_ppi():
     rec_rhi = util.cross_section_ppi(vol, azimuth, **custom_kwargs)
 
     assert "azimuth" not in rec_rhi.dims
-    assert rec_rhi.DBZH.all(("range")).any()
+    assert rec_rhi.DBZH.all("range").any()
