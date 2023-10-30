@@ -7,6 +7,17 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.0.2
+
+**Maintenance - CI**
+
+* MNT: enable EARTHDATA bearer token for notebook CI runs. By {at}`kmuehlbauer
+
+**Bugfixes**
+
+* FIX: update util.cross_section_ppi to work with wradlib 2.0 (RadarVolume no longer available) ({pull}`650`) by {at}`JulianGiles`
+
+
 ## Version 2.0.1
 
 **Maintenance - CI**
@@ -17,6 +28,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * FIX: make pyproj import lazy in georef.polar ({pull}`646`) by {at}`kmuehlbauer`
 * FIX: enable radolan backend to work without GDAL/pyproj, by falling back to trigonometric calculations ({issue}`648`, {pull}`649`) by {at}`kmuehlbauer`
+* FIX: update util.cross_section_ppi to work with wradlib 2.0 (RadarVolume no longer available) ({pull}`650`) by {at}`JulianGiles`
 
 
 ## Version 2.0.0

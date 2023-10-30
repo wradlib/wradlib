@@ -26,7 +26,6 @@ __all__ = [
     "derivate",
     "despeckle",
     "import_optional",
-    "vertical_interpolate_volume",
     "cross_section_ppi",
     "UtilMethods",
 ]
@@ -1096,43 +1095,6 @@ def has_import(module):
     return not isinstance(module, OptionalModuleStub)
 
 
-def vertical_interpolate_volume(vol, *, elevs=None, method="nearest"):
-    """
-    Vertically interpolate volume data
-
-    Parameters
-    ----------
-    vol : :py:class:`wradlib:wradlib.io.xarray.RadarVolume`
-    elevs : iterable, optional
-        Elevations to which interpolate the data. Defaults to None,
-        which does no interpolation and returns a stacked array of the data.
-    method : str, optional
-        method for interpolation, defaults to "nearest".
-
-    Returns
-    ----------
-    ds : :py:class:`xarray:xarray.Dataset`
-
-    """
-
-    time = vol[0].time
-    dsx = xr.concat(
-        [
-            v.drop(["time", "rtime"]).assign_coords(
-                {"elevation": v.attrs.get("fixed_angle")}
-            )
-            for v in vol
-        ],
-        dim="elevation",
-    )
-    dsx = dsx.transpose("time", "elevation", "azimuth", "range")
-    if elevs is not None:
-        new_elev = elevs
-        dsx = dsx.interp(elevation=new_elev, method=method)
-    dsx = dsx.assign_coords({"time": time})
-    return dsx
-
-
 def cross_section_ppi(
     obj,
     azimuth,
@@ -1148,7 +1110,7 @@ def cross_section_ppi(
 
     Parameters
     ----------
-    obj : :py:class:`wradlib:wradlib.io.xarray.RadarVolume` - Radar volume containing PPI sweeps
+    obj : :py:class:`xarray:xarray.Dataset` - Dataset containing PPI sweeps
         from which azimuthal cross-sections will be extracted.
     azimuth : int, float, slice, tuple or list
         Value of azimuth to extract the cross-section. It can be multiple values
@@ -1166,7 +1128,7 @@ def cross_section_ppi(
     Keyword Arguments
     -----------------
     method : {None, "nearest", "pad", "ffill", "backfill", "bfill"}, optional
-        Method for inexact matches from :py:class:`xarray:xarray.Dataset.sel`.
+        Method for inexact matches for selecting azimuth values, from :py:class:`xarray:xarray.Dataset.sel`.
         Defaults to None (only exact matches).
     tolerance : float, optional
         Maximum distance between original and new labels for inexact matches
@@ -1177,10 +1139,10 @@ def cross_section_ppi(
         empty space by stretching the beams (because of how matplotlib pcolormesh works).
         Defaults to None, which returns a Dataset of cross-sections in the specified azimuth(s).
         If set to a certain beamwidth, it will return the same Dataset with additional
-        "fake" beams (extra elevations) so that when plotting with matplotlib pcolormesh
+        "fake" empty beams (extra elevations) so that when plotting with matplotlib pcolormesh
         the beamwidths are correctly represented according to their width.
     crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS`, optional
-        Projection to use with :py:class:`wradlib.georef.xarray.georeference_dataset`.
+        Projection to use with :py:class:`wradlib.georef.xarray.georeference`.
         If GDAL OSR SRS, output is in this projection, defaults to AEQD.
     npl : int, optional
         Number of points to make up the line between p1 and p2, in case the user gives two arbitrary points
@@ -1207,7 +1169,7 @@ def cross_section_ppi(
         # only extends the shading to cover the beamwidth and no more.
 
         # Sort array of elevation angles
-        sorted_elevs = np.sort(obj.root.sweep_fixed_angle.data)
+        sorted_elevs = np.sort(obj.sweep_fixed_angle.data)
 
         # Calculate midpoints between elevation angles
         sorted_elevs_midpoints = (sorted_elevs[1:] + sorted_elevs[:-1]) / 2
@@ -1260,24 +1222,25 @@ def cross_section_ppi(
         data_fake_elevs = np.sort(under_two_bw_dup_data)
 
         # Sort volume in ascending order of elevation
-        obj = sorted(obj, key=lambda ds: ds.attrs["fixed_angle"])
+        obj = obj.sortby("sweep_fixed_angle")
 
         # Generate fake rays array
         all_fake_elevs = np.sort(np.concatenate((nan_fake_elevs, data_fake_elevs)))
-        obj_fake = vertical_interpolate_volume(obj, elevs=all_fake_elevs)
+        obj_fake = obj.interp(sweep_fixed_angle=all_fake_elevs, method="nearest")
         obj_fake = obj_fake.where(
-            ~obj_fake.elevation.isin(nan_fake_elevs)
+            ~obj_fake.sweep_fixed_angle.isin(nan_fake_elevs)
         )  # fill with nan on corresponding elevations
 
-    # Sort volume in ascending order of elevation
-    obj = sorted(obj, key=lambda ds: ds.attrs["fixed_angle"])
+        # set elevation coord correctly because georeferencing is based on this coord
+        obj_fake.coords["elevation"] = obj_fake["sweep_fixed_angle"]
 
-    # We do not use this for interpolation here, but for stacking the elevations
-    ds = vertical_interpolate_volume(obj, elevs=None)
-
+    ds = obj.copy()
     if bw is not None:
-        ds = xr.concat([ds, obj_fake], dim="elevation")
-        ds = ds.sortby("elevation")
+        ds = xr.concat([ds, obj_fake], dim="sweep_fixed_angle")
+        ds = ds.sortby("sweep_fixed_angle")
+
+    # Reduce "sweep_mode" to 1D to be able to georeference
+    ds["sweep_mode"] = ds["sweep_mode"].min()
 
     # Georeference the data
     ds = ds.pipe(georef.georeference, crs=crs)
@@ -1335,10 +1298,10 @@ def cross_section_ppi(
         # List to collect dataset for every elevation
         selection = list()
 
-        for el in ds.elevation:
+        for el in ds.sweep_fixed_angle:
             # For every elevation, select the array of x and y coordinates
-            x = ds.sel(elevation=el.data.tolist()).x.to_numpy()
-            y = ds.sel(elevation=el.data.tolist()).y.to_numpy()
+            x = ds.sel(sweep_fixed_angle=el.data.tolist()).x.to_numpy()
+            y = ds.sel(sweep_fixed_angle=el.data.tolist()).y.to_numpy()
 
             # Create a KDTree class to look for the nearest neighbors
             tree = KDTree(np.c_[x.ravel(), y.ravel()])
@@ -1354,7 +1317,7 @@ def cross_section_ppi(
 
             # Stack the azimuth and range coordinates and select the points
             sel = (
-                ds.sel(elevation=(el.data.tolist()))
+                ds.sel(sweep_fixed_angle=(el.data.tolist()))
                 .stack(xyi=("azimuth", "range"))
                 .isel({"xyi": ii})
             )
@@ -1370,7 +1333,7 @@ def cross_section_ppi(
             sel2.coords["xy"] = ("xyi", xy.data)
             sel2.coords["z"] = ("xyi", z_coord)
 
-            selection.append(sel2.expand_dims("elevation"))
+            selection.append(sel2.expand_dims("sweep_fixed_angle"))
 
         # Reindex the datasets along the "xyi" dimension
         selection_reindexed = list()
@@ -1384,8 +1347,8 @@ def cross_section_ppi(
             )
 
         # Combine into a single dataset
-        merged = xr.concat(selection_reindexed, dim="elevation").transpose(
-            "time", "elevation", ...
+        merged = xr.concat(selection_reindexed, dim="sweep_fixed_angle").transpose(
+            "sweep_fixed_angle", ...
         )
         # We cannot have coordinates with NaN for plotting, so we fill any NaN by propagating values
         merged["xy"] = merged["xy"].ffill("xyi")
