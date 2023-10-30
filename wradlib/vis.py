@@ -30,6 +30,8 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import collections
 
 import numpy as np
+from pyproj.crs import CRS
+from xradar.georeference import get_crs
 
 from wradlib import georef, io, ipol, util
 
@@ -755,6 +757,122 @@ def add_patches(ax, patch_array, **kwargs):
             add_patches(ax, patch, **kwargs)
 
 
+def _plot_cg(
+    da,
+    *,
+    ax=111,
+    fig=None,
+    crs=None,
+    func="pcolormesh",
+    **kwargs,
+):
+    if da.sweep_mode == "azimuth_surveillance":
+        cg = {"rot": -450, "scale": -1}
+    else:
+        cg = {"rot": 0, "scale": 1}
+    if isinstance(crs, collections.abc.Mapping):
+        cg.update(crs)
+
+    if isinstance(ax, axes.Axes):
+        try:
+            caax = ax.parasites[0]
+            paax = ax.parasites[1]
+        except AttributeError as err:
+            raise TypeError(
+                "If `crs='cg'` `ax` need to be of type "
+                "`mpl_toolkits.axisartist.SubplotHost`."
+            ) from err
+    else:
+        # axes object is given
+        if fig is None:
+            if ax == 111:
+                # create new figure if there is only one subplot
+                fig = plt.figure()
+            else:
+                # assume current figure
+                fig = plt.gcf()
+        # create curvelinear axes
+        ax, caax, paax = create_cg(fig=fig, subplot=ax, **cg)
+        # this is in fact the outermost thick "ring"
+        rdiff = da.range[1] - da.range[0]
+        ax.axis["lon"] = ax.new_floating_axis(
+            1, (np.max(da.bins.values) + rdiff.values / 2.0)
+        )
+        ax.axis["lon"].major_ticklabels.set_visible(False)
+        # and also set tickmarklength to zero for better presentation
+        ax.axis["lon"].major_ticks.set_ticksize(0)
+        # set clip-box, needed if user adapts x/y-limits (e.g. RHI)
+        ax.axis["lon"].set_clip_box(
+            trans.TransformedBbox(trans.Bbox([[0, 0], [1, 1]]), ax.transAxes)
+        )
+
+    infer_intervals = kwargs.pop("infer_intervals", False)
+    if func == "pcolormesh":
+        kwargs.update(dict(shading="auto"))
+
+    # strip colorbar kwargs from kwargs
+    # we do not let create xarray the colorbar
+    add_colorbar = kwargs.pop("add_colorbar", None)
+    cbar_kwargs = kwargs.pop("cbar_kwargs", {})
+    kwargs["add_colorbar"] = False
+
+    # claim xarray plot function and create plot
+    plotfunc = getattr(da.plot, func)
+    pm = plotfunc(
+        x="rays",
+        y="bins",
+        ax=paax,
+        infer_intervals=infer_intervals,
+        **kwargs,
+    )
+
+    # set cg grids and limits, colorbar
+    if da.sweep_mode == "azimuth_surveillance":
+        xlims = np.min(da.x), np.max(da.x)
+        ylims = np.min(da.y), np.max(da.y)
+    else:
+        xlims = np.min(da.gr), np.max(da.gr)
+        ylims = np.min(da.z), np.max(da.z)
+    # handle extents and activate grids
+    ax.set_ylim(ylims)
+    ax.set_xlim(xlims)
+    ax.grid(True)
+    caax.set_ylim(ylims)
+    caax.set_xlim(xlims)
+    caax.grid(True)
+
+    # create our own colorbar for curvelinear grids
+    if add_colorbar is not False:
+        cbar = plt.colorbar(pm, ax=[ax, caax, paax], **cbar_kwargs)
+
+        def _get_label(da):
+            attrs = da.attrs
+            name = attrs.get("long_name", da.name)
+            units = attrs.get("units", False)
+            label = f"{name}"
+            if units:
+                label += f" [{units}]"
+            return label
+
+        xl = da["gr"] if da.sweep_mode == "rhi" else da["x"]
+        yl = da["z"] if da.sweep_mode == "rhi" else da["y"]
+
+        caax.set_xlabel(_get_label(xl))
+        caax.set_ylabel(_get_label(yl))
+        cbar.set_label(_get_label(da))
+
+    # apply box aspect for PPI
+    if da.sweep_mode == "azimuth_surveillance":
+        ax.set_box_aspect(1)
+        caax.set_box_aspect(1)
+        paax.set_box_aspect(1)
+
+    # set ax as current
+    plt.sca(ax)
+
+    return pm
+
+
 def plot(
     da,
     *,
@@ -832,6 +950,7 @@ def plot(
     ``caax`` - Cartesian Axes (x-y-grid) and ``paax`` -
     parasite axes object for plotting polar data can be derived like this::
 
+        cgax = plt.gca()
         caax = cgax.parasites[0]
         paax = cgax.parasites[1]
 
@@ -847,120 +966,71 @@ def plot(
     and
     :ref:`/notebooks/visualisation/plot_curvelinear_grids.ipynb`.
     """
-    cg = False
-    caax = None
-    paax = None
-
     # fix for correct zorder of data and grid
     kwargs["zorder"] = kwargs.pop("zorder", 0)
-
     kwargs["cmap"] = kwargs.get("cmap", wrl_cmap)
-
-    sproj = crs
 
     # handle curvelinear grid properties
     if crs == "cg" or isinstance(crs, collections.abc.Mapping):
-        sproj = None
-        if da.sweep_mode == "azimuth_surveillance":
-            cg = {"rot": -450, "scale": -1}
-        else:
-            cg = {"rot": 0, "scale": 1}
-        if isinstance(crs, collections.abc.Mapping):
-            cg.update(crs)
+        return _plot_cg(da, ax=ax, fig=fig, crs=crs, func=func, **kwargs)
 
-    if util.has_import(osr):
+    # convert OSR crs to cartopy crs via pyproj
+    if util.has_import(osr) and util.has_import(cartopy):
         if isinstance(crs, osr.SpatialReference):
-            raise TypeError("Currently GDAL OSR SRS are not supported.")
+            proj_crs = CRS.from_wkt(crs.ExportToWkt(["FORMAT=WKT2_2018"]))
+            crs = cartopy.crs.CRS(proj_crs)
 
-    if isinstance(ax, axes.Axes):
-        if cg:
-            try:
-                caax = ax.parasites[0]
-                paax = ax.parasites[1]
-            except AttributeError as err:
-                raise TypeError(
-                    "If `crs='cg'` `ax` need to be of type "
-                    "`mpl_toolkits.axisartist.SubplotHost`."
-                ) from err
-    else:
-        # axes object is given
+    # no axes object given
+    if not isinstance(ax, axes.Axes):
+        # no figure object given
         if fig is None:
-            if ax == 111:
-                # create new figure if there is only one subplot
+            if not plt.get_fignums():
+                # create new figure if there is None
                 fig = plt.figure()
             else:
-                # assume current figure
+                # otherwise assume current figure
                 fig = plt.gcf()
-        if cg:
-            # create curvelinear axes
-            ax, caax, paax = create_cg(fig=fig, subplot=ax, **cg)
-            # this is in fact the outermost thick "ring"
-            rdiff = da.range[1] - da.range[0]
-            ax.axis["lon"] = ax.new_floating_axis(
-                1, (np.max(da.bins.values) + rdiff.values / 2.0)
-            )
-            ax.axis["lon"].major_ticklabels.set_visible(False)
-            # and also set tickmarklength to zero for better presentation
-            ax.axis["lon"].major_ticks.set_ticksize(0)
-            # set clip-box, needed if user adapts x/y-limits (e.g. RHI)
-            ax.axis["lon"].set_clip_box(
-                trans.TransformedBbox(trans.Bbox([[0, 0], [1, 1]]), ax.transAxes)
-            )
-        else:
-            ax = fig.add_subplot(ax, projection=sproj)
+        # create axes object from given
+        ax = fig.add_subplot(ax, projection=crs)
 
-    if cg:
-        plax = paax
-        infer_intervals = kwargs.pop("infer_intervals", False)
-        if func == "pcolormesh":
-            kwargs.update(dict(shading="auto"))
-        xp, yp = "rays", "bins"
-    else:
-        plax = ax
-        infer_intervals = kwargs.pop("infer_intervals", True)
-        if da.sweep_mode == "azimuth_surveillance":
-            xp, yp = "x", "y"
-        else:
-            xp, yp = "gr", "z"
+    infer_intervals = kwargs.pop("infer_intervals", True)
+    xp, yp = ("x", "y") if da.sweep_mode == "azimuth_surveillance" else ("gr", "z")
 
     # use cartopy, if available
-    if hasattr(plax, "projection") and util.has_import(cartopy):
-        map_trans = cartopy.crs.AzimuthalEquidistant(
-            central_longitude=da.longitude.values, central_latitude=da.latitude.values
-        )
+    if hasattr(ax, "projection") and util.has_import(cartopy):
+        data_crs = get_crs(da.to_dataset(name="array-projection"))
+        if data_crs.is_projected:
+            map_trans = cartopy.crs.Projection(data_crs)
+        elif data_crs.is_geographic:
+            map_trans = cartopy.crs.PlateCarree()
+        else:
+            util.warn(
+                "No valid CRS object found. Given CRS object is not projected. "
+                "Falling back to cartopy.crs.PlateCarree()."
+            )
+            map_trans = cartopy.crs.PlateCarree()
         kwargs.update({"transform": map_trans})
+
+    # handle aspect for PPI
+    if da.sweep_mode == "azimuth_surveillance":
+        ax.set_box_aspect(1)
+
+    # handle colorbar sizes
+    if kwargs.get("add_colorbar", None) is not False:
+        cbar_kwargs = kwargs.pop("cbar_kwargs", {})
+        if not cbar_kwargs:
+            cbar_kwargs.setdefault("fraction", 0.045)
+        kwargs["cbar_kwargs"] = cbar_kwargs
 
     # claim xarray plot function and create plot
     plotfunc = getattr(da.plot, func)
     pm = plotfunc(
         x=xp,
         y=yp,
-        ax=plax,
+        ax=ax,
         infer_intervals=infer_intervals,
         **kwargs,
     )
-
-    # set cg grids and limits
-    if cg:
-        if da.sweep_mode == "azimuth_surveillance":
-            xlims = np.min(da.x), np.max(da.x)
-            ylims = np.min(da.y), np.max(da.y)
-        else:
-            xlims = np.min(da.gr), np.max(da.gr)
-            ylims = np.min(da.z), np.max(da.z)
-        ax.set_ylim(ylims)
-        ax.set_xlim(xlims)
-        ax.grid(True)
-        caax.grid(True)
-
-    if da.sweep_mode == "azimuth_surveillance":
-        ax.set_box_aspect(1)
-        if cg:
-            caax.set_box_aspect(1)
-            paax.set_box_aspect(1)
-
-    # set ax as current
-    plt.sca(ax)
 
     return pm
 
