@@ -23,6 +23,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * FIX: make pyproj import lazy in georef.polar ({pull}`646`) by {at}`kmuehlbauer`
 * FIX: enable radolan backend to work without GDAL/pyproj, by falling back to trigonometric calculations ({issue}`648`, {pull}`649`) by {at}`kmuehlbauer`
+* FIX: update util.cross_section_ppi to work with wradlib 2.0 (RadarVolume no longer available) ({pull}`650`) by {at}`JulianGiles`
 
 
 ## Version 2.0.0

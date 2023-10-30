@@ -8,10 +8,11 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from wradlib import util
 
-from . import requires_data
+from . import requires_data, requires_gdal
 
 
 def test__shape_to_size():
@@ -326,3 +327,56 @@ def test_find_bbox_indices(bb_data):
 
     bbind = util.find_bbox_indices(bb_data.grid, bb_data.inside2)
     assert np.array_equal(bbind, [1, 1, 4, 7])
+
+
+@requires_gdal
+@requires_data
+def test_cross_section_ppi():
+    file = util.get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
+    # load all sweeps manually and merge them
+    sweeps = []
+    for sn in np.arange(14):
+        sweeps.append(xr.open_dataset(file, engine="odim", group="sweep_" + str(sn)))
+        sweeps[-1].coords["azimuth"] = (
+            sweeps[-1].coords["azimuth"].round(1)
+        )  # round the azimuths to avoid slight differences
+    vol = xr.concat(sweeps, dim="sweep_fixed_angle")
+
+    # Pass meta variables to coords to avoid some issues
+    vol = vol.set_coords(("sweep_mode", "sweep_number", "prt_mode", "follow_mode"))
+
+    # Reduce coordinates so the georeferencing works
+    vol["elevation"] = vol["elevation"].median("azimuth")
+    vol["time"] = vol["time"].min("azimuth")
+    vol["sweep_mode"] = vol["sweep_mode"].min()
+
+    # Test extract single azimuth
+    azimuth = 120.5
+    rec_rhi = util.cross_section_ppi(vol, azimuth, method="nearest")
+
+    assert "azimuth" not in rec_rhi.dims
+
+    # Test extract multiple azimuths
+    azimuth = [90.5, 120.5, 175.5]
+    rec_rhi = util.cross_section_ppi(vol, azimuth, method="nearest")
+
+    assert rec_rhi.dims["azimuth"] == 3
+
+    # Test extract along line
+    p1 = (10000, -40000)
+    p2 = (20000, 30000)
+    rec_rhi = util.cross_section_ppi(vol, (p1, p2), method="nearest")
+
+    assert "xy" in rec_rhi.coords
+
+    # Test custom parameters
+    azimuth = 90  # Example azimuth angle
+    custom_kwargs = {
+        "method": "nearest",
+        "bw": 0.9,
+        "npl": 2000,
+    }
+    rec_rhi = util.cross_section_ppi(vol, azimuth, **custom_kwargs)
+
+    assert "azimuth" not in rec_rhi.dims
+    assert rec_rhi.DBZH.all("range").any()
