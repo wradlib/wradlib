@@ -1016,7 +1016,8 @@ def plot(
         ax.set_box_aspect(1)
 
     # handle colorbar sizes
-    if kwargs.get("add_colorbar", None) is not False:
+    # special case contour to align with xarray
+    if kwargs.get("add_colorbar", None) is not False and func != "contour":
         cbar_kwargs = kwargs.pop("cbar_kwargs", {})
         if not cbar_kwargs:
             cbar_kwargs.setdefault("fraction", 0.045)
