@@ -1461,6 +1461,7 @@ def test_transform_geometry_warning(vec_data):
 @requires_gdal
 def test_ogr_copy_layer():
     filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+    gdal.SetConfigOption("SHAPE_RESTORE_SHX", "YES")
     src_ds, layer = wradlib.io.open_vector(filename)
     ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
     georef.ogr_copy_layer(src_ds, 0, ds)
@@ -1471,6 +1472,7 @@ def test_ogr_copy_layer():
 @requires_gdal
 def test_ogr_copy_layer_by_name():
     filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+    gdal.SetConfigOption("SHAPE_RESTORE_SHX", "YES")
     src_ds, layer = wradlib.io.open_vector(filename)
     ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
     georef.ogr_copy_layer_by_name(src_ds, "agger_merge", ds)
