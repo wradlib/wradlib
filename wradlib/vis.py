@@ -443,7 +443,7 @@ def plot_scan_strategy(
     add_title = ""
     if terrain is True:
         add_title += f" - Azimuth {az[0]}°"
-        ll = georef.reproject(xyz, projection_source=rad)
+        ll = georef.reproject(xyz, src_crs=rad)
         # (down-)load srtm data
         ds = io.get_srtm(
             [ll[..., 0].min(), ll[..., 0].max(), ll[..., 1].min(), ll[..., 1].max()],
