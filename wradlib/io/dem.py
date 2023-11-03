@@ -28,7 +28,16 @@ gdal = util.import_optional("osgeo.gdal")
 requests = util.import_optional("requests")
 
 
-def init_header_redirect_session(token):
+def init_header_redirect_session(token=None):
+    token = os.environ.get("WRADLIB_EARTHDATA_BEARER_TOKEN", token)
+    if token is None:
+        raise ValueError(
+            "WRADLIB_EARTHDATA_BEARER_TOKEN environment variable missing. "
+            "Downloading SRTM data requires a NASA Earthdata Account and Bearer Token. "
+            "To obtain a NASA Earthdata Login account, "
+            "please visit https://urs.earthdata.nasa.gov/users/new/."
+        )
+
     class HeaderRedirection(requests.Session):
         AUTH_HOST = "urs.earthdata.nasa.gov"
 
@@ -53,7 +62,7 @@ def init_header_redirect_session(token):
     return HeaderRedirection(token)
 
 
-def download_srtm(filename, destination, *, resolution=3):
+def download_srtm(filename, destination, *, resolution=3, session=None):
     """
     Download NASA SRTM elevation data
     Only available with login/password
@@ -64,8 +73,13 @@ def download_srtm(filename, destination, *, resolution=3):
         srtm file to download
     destination : str
         output filename
+
+    Keyword Arguments
+    -----------------
     resolution : int
         resolution of SRTM data (1, 3 or 30)
+    session : object
+        session object to use
     """
 
     website = "https://e4ftl01.cr.usgs.gov/MEASURES"
@@ -75,16 +89,10 @@ def download_srtm(filename, destination, *, resolution=3):
     resolution = f"SRTMGL{resolution}.00{subres}"
     source = "/".join([website, resolution, "2000.02.11"])
     url = "/".join([source, filename])
-    token = os.environ.get("WRADLIB_EARTHDATA_BEARER_TOKEN", None)
 
-    if token is None:
-        raise ValueError(
-            "WRADLIB_EARTHDATA_BEARER_TOKEN environment variable missing. "
-            "Downloading SRTM data requires a NASA Earthdata Account and Bearer Token. "
-            "To obtain a NASA Earthdata Login account, "
-            "please visit https://urs.earthdata.nasa.gov/users/new/."
-        )
-    session = init_header_redirect_session(token)
+    if session is None:
+        session = init_header_redirect_session()
+
     status_code = 0
     try:
         r = session.get(url, stream=True, timeout=5)
@@ -94,6 +102,7 @@ def download_srtm(filename, destination, *, resolution=3):
         with open(destination, "wb") as fd:
             for chunk in r.iter_content(chunk_size=1024 * 1014):
                 fd.write(chunk)
+        del r
     except requests.exceptions.HTTPError as err:
         status_code = err.response.status_code
         if status_code != 404:
@@ -138,7 +147,7 @@ def get_srtm_tile_names(extent):
     return filelist
 
 
-def get_srtm(extent, *, resolution=3, merge=True):
+def get_srtm(extent, *, resolution=3, merge=True, session=None):
     """
     Get NASA SRTM elevation data
 
@@ -150,6 +159,8 @@ def get_srtm(extent, *, resolution=3, merge=True):
         resolution of SRTM data (1, 3 or 30)
     merge : bool
         True to merge the tiles in one dataset
+    session : object
+        session object to use
 
     Returns
     -------
@@ -163,11 +174,14 @@ def get_srtm(extent, *, resolution=3, merge=True):
     if not os.path.exists(srtm_path):
         os.makedirs(srtm_path)
     demlist = []
+    session = init_header_redirect_session()
     for filename in filelist:
         path = os.path.join(srtm_path, filename)
         status_code = 0
         if not os.path.exists(path):
-            status_code = download_srtm(filename, path, resolution)
+            status_code = download_srtm(
+                filename, path, resolution=resolution, session=session
+            )
         if status_code == 0:
             demlist.append(path)
 
