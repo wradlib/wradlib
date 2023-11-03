@@ -311,6 +311,8 @@ jobs:
           python -c "import wradlib; print(wradlib.version.version)"
           python -c "import wradlib; print(wradlib.show_versions())"
       - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
