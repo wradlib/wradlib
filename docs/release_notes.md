@@ -26,6 +26,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 * FIX: update util.cross_section_ppi to work with wradlib 2.0 (RadarVolume no longer available) ({pull}`650`) by {at}`JulianGiles`
 * FIX: disentangle cg/normal plotting for better maintainability and apply explicit colorbar handling for cg plotting ({pull}`652`) by {at}`kmuehlbauer`
 * FIX: properly implement bearer token authentication adn function calling convention for plot_scan_strategy with terrain=True ({issue}`651`) by {at}`JulianGiles`, ({pull}`652`) by {at}`kmuehlbauer`
+* FIX: align earth radius in plot_scan_strategy for CG plots ({pull}`655`) by {at}`kmuehlbauer`
 
 
 

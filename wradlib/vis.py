@@ -464,11 +464,13 @@ def plot_scan_strategy(
 
     if cg is True:
         ax, caax, paax = create_cg(fig=fig, subplot=ax, rot=0, scale=1)
-        # for nice plotting we assume earth_radius = 6370000 m
-        er = 6370000
+        # for nice plotting we assume earth_radius = 6371000 m
+        # this is the default value
+        # todo: make this default in whole codebase
+        er = 6371000
         # calculate beam_height and arc_distance for ke=1
         # means line of sight
-        ade = georef.bin_distance(ranges, 0, site[2], re=er, ke=1.0)
+        ade = georef.bin_distance(ranges, 0, site[2], ke=1.0)
         nn0 = np.zeros_like(ranges)
         ecp = nn0 + er
         # theta (arc_distance sector angle)
