@@ -369,6 +369,13 @@ def get_radolan_header_token():
         "QN": None,
         "VR": None,
         "U": None,
+        "CO": None,
+        "CD": None,
+        "MH": None,
+        "HI": None,
+        "CI": None,
+        "CL": None,
+        "FL": None,
     }
     return head
 
@@ -493,8 +500,15 @@ def parse_dwd_composite_header(header):
                 out["nlevel"] = int(lv[0])
                 out["level"] = np.array(lv[1:]).astype("float")
             if k == "MS":
-                locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
-                out["radarlocations"] = locationstring.split(",")
+                try:
+                    locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
+                    out["radarlocations"] = locationstring.split(",")
+                except IndexError:
+                    try:
+                        cnt = int(header[v[0] : v[0] + 3])
+                        out["message"] = header[v[0] + 3 : v[0] + 3 + cnt]
+                    except ValueError:
+                        pass
             if k == "ST":
                 locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
                 out["radardays"] = locationstring.split(",")
@@ -514,6 +528,22 @@ def parse_dwd_composite_header(header):
                 out["quantification"] = int(header[v[0] : v[1]])
             if k == "VR":
                 out["reanalysisversion"] = header[v[0] : v[1]].strip()
+            if k == "CO":
+                out["CO"] = header[v[0]: v[1]].strip()
+            if k == "CD":
+                out["CD"] = header[v[0]: v[1]].strip()
+            if k == "MH":
+                out["MH"] = header[v[0]: v[1]].strip()
+            if k == "HI":
+                out["HI"] = header[v[0]: v[1]].strip()
+            if k == "CI":
+                out["CI"] = header[v[0]: v[1]].strip()
+            if k == "CL":
+                out["CL"] = header[v[0]: v[1]].strip()
+            if k == "FL":
+                out["FL"] = header[v[0]: v[1]].strip()
+                out["nrow"] = 120
+                out["ncol"] = 120
     return out
 
 
@@ -833,7 +863,7 @@ def _get_radolan_product_attributes(attrs):
     product = attrs["producttype"]
     pattrs = {}
 
-    if product not in ["PG", "PC", "ascii"]:
+    if product not in ["PG", "PC", "PZ", "ascii"]:
         interval = attrs["intervalseconds"]
         precision = attrs["precision"]
 
@@ -874,7 +904,7 @@ def _get_radolan_product_attributes(attrs):
     ]:
         pattrs.update(radolan["RA"])
         pattrs.update({"scale_factor": np.float32(precision)})
-    elif product in ["PG", "PC"]:
+    elif product in ["PG", "PC", "PZ"]:
         pattrs.update(radolan["PG"])
     elif product in ["%M", "%J", "%Y"]:
         pattrs.update(radolan["%"])
@@ -1065,7 +1095,7 @@ class _radolan_file:
         data = self._data[self.product]
         if self.attrs["producttype"] == "ascii":
             self.attrs["nodatamask"] = np.where(data == self.attrs["nodataflag"])[0]
-        elif self.product in ["PG", "PC"]:
+        elif self.product in ["PG", "PC", "PZ"]:
             self.attrs["nodataflag"] = 255
             self.attrs["nodatamask"] = np.where(data == 255)[0]
         elif self.product in ["RX", "EX", "WX"]:
@@ -1099,16 +1129,16 @@ class _radolan_file:
 
         # handle truncated data
         binarr_kwargs = {}
-        if self._fill and self.product not in ["PG", "PC"]:
+        if self._fill and self.product not in ["PG", "PC", "PZ"]:
             binarr_kwargs.update({"raise_on_error": False})
         # read data
         size = self.attrs["datasize"]
         indat = read_radolan_binary_array(self.fp, size, **binarr_kwargs)
 
-        if self._fill and len(indat) < size and self.product not in ["PG", "PC"]:
+        if self._fill and len(indat) < size and self.product not in ["PG", "PC", "PZ"]:
             indat = _fix_radolan_truncated_buffer(indat, size, self.dtype)
 
-        if self.product in ["PC", "PG"]:
+        if self.product in ["PC", "PG", "PZ"]:
             self._data[self.product] = decode_radolan_runlength_array(
                 indat, {"ncol": self.attrs["ncol"], "nodataflag": 255}
             )
@@ -1216,7 +1246,7 @@ class _radolan_file:
         self.attributes.update(attrs)
 
     def _get_ancillary(self, requested=True):
-        if self.product in ["PG", "PC"] or self.attrs["producttype"] == "ascii":
+        if self.product in ["PG", "PC", "PZ"] or self.attrs["producttype"] == "ascii":
             anc = ("nodatamask",)
         elif self.product in ["RX", "EX", "WX"]:
             anc = ("nodatamask", "cluttermask")
