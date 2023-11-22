@@ -1162,7 +1162,7 @@ class _radolan_file:
             self.attrs["nodatamask"] = np.where(data == self.attrs["nodataflag"])[0]
         elif self.product in ["PG", "PC", "PZ"]:
             self.attrs["nodataflag"] = 255
-            self.attrs["nodatamask"] = np.where(data == 255)[0]
+            self.attrs["nodatamask"] = data == 255
         elif self.product in ["RX", "EX", "WX"]:
             self.attrs["nodatamask"] = np.where(data == 250)[0]
             self.attrs["cluttermask"] = np.where(data == 249)[0]
