@@ -719,7 +719,8 @@ def decode_radolan_runlength_array(binarr, attrs):
         line = read_radolan_runlength_line(buf)
 
     # reshape early for PZ station product
-    arr = arr.reshape(attrs.get("maxheight"), attrs["nrow"], attrs["ncol"])
+    if mh := attrs.get("maxheight", False):
+        arr = arr.reshape(mh, attrs["nrow"], attrs["ncol"])
     # return upside down because first line read is top line
     return np.flip(arr, axis=-2)
 
