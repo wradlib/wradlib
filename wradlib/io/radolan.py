@@ -507,6 +507,9 @@ def parse_dwd_composite_header(header):
     # get dict of header token with positions
     if out["producttype"] == "PZ":
         kwargs = dict(mode="site")
+        # assume site product with 200 rows/cols
+        out["nrow"] = 200
+        out["ncol"] = 200
     else:
         kwargs = dict(mode="composite")
     head = get_radolan_header_token_pos(header, **kwargs)
@@ -564,11 +567,14 @@ def parse_dwd_composite_header(header):
                 locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
                 out["radardays"] = locationstring.split(",")
             if k == "CS":
-                out["indicator"] = {
-                    0: "near ground level",
-                    1: "maximum",
-                    2: "tops",
-                }.get(int(header[v[0] : v[1]]))
+                if out["producttype"] == "PZ":
+                    out["statisticfilter"] = header[v[0] : v[1]].strip()
+                else:
+                    out["indicator"] = {
+                        0: "near ground level",
+                        1: "maximum",
+                        2: "tops",
+                    }.get(int(header[v[0] : v[1]]))
             if k == "MX":
                 out["imagecount"] = int(header[v[0] : v[1]])
             if k == "VV":
@@ -583,13 +589,8 @@ def parse_dwd_composite_header(header):
                 out["cluttermap"] = header[v[0] : v[1]].strip()
             if k == "CD":
                 out["dopplerfilter"] = header[v[0] : v[1]].strip()
-            if k == "CS":
-                out["statisticfilter"] = header[v[0] : v[1]].strip()
             if k == "MH":
                 out["maxheight"] = int(header[v[0] : v[1]])
-                # assume site product with 200 rows/cols
-                out["nrow"] = 200
-                out["ncol"] = 200
             if k == "HI":
                 out["hailwarning"] = header[v[0] : v[1]].strip()
             if k == "CI":
@@ -601,7 +602,6 @@ def parse_dwd_composite_header(header):
                 out["severeconvectionheights"] = [int(cl[0:2]), int(cl[2:4])]
             if k == "FL":
                 out["freezing_level"] = header[v[0] : v[1]].strip()
-
     return out
 
 
