@@ -52,6 +52,45 @@ dwdpattern = re.compile("raa..-(..)[_-]([0-9]{5})-([0-9]*)-(.*?)---bin")
 # RW_20221015-0050.asc
 dwdascii = re.compile("(..)_([0-9]*)-([0-9]*).asc")
 
+dwdradarmapping = {
+    10103: "asb",
+    10132: "boo",
+    10488: "drs",
+    10780: "eis",
+    10410: "ess",
+    10908: "fbg",
+    10440: "fld",
+    10339: "hnr",
+    10873: "isn",
+    10950: "mem",
+    10557: "neu",
+    10605: "nhb",
+    10629: "oft",
+    10392: "pro",
+    10169: "ros",
+    10832: "tur",
+    10356: "umd",
+}
+dwdlocs = {
+    "asb": {"height": 36.22, "lat": 53.564129, "lon": 6.748317},
+    "boo": {"height": 124.56, "lat": 54.004381, "lon": 10.046899},
+    "drs": {"height": 263.36, "lat": 51.124639, "lon": 13.768639},
+    "eis": {"height": 799.08, "lat": 49.540667, "lon": 12.402788},
+    "ess": {"height": 185.11, "lat": 51.405649, "lon": 6.967111},
+    "fbg": {"height": 1516.1, "lat": 47.873611, "lon": 8.003611},
+    "fld": {"height": 627.88, "lat": 51.311197, "lon": 8.801998},
+    "hnr": {"height": 97.78, "lat": 52.460083, "lon": 9.694533},
+    "isn": {"height": 677.77, "lat": 48.174705, "lon": 12.101779},
+    "mem": {"height": 724.4, "lat": 48.042145, "lon": 10.219222},
+    "neu": {"height": 879.65, "lat": 50.500114, "lon": 11.135034},
+    "nhb": {"height": 585.85, "lat": 50.109656, "lon": 6.548328},
+    "oft": {"height": 245.8, "lat": 49.984745, "lon": 8.712933},
+    "pro": {"height": 193.92, "lat": 52.648667, "lon": 13.858212},
+    "ros": {"height": 37.05, "lat": 54.17566, "lon": 12.058076},
+    "tur": {"height": 767.62, "lat": 48.585379, "lon": 9.782675},
+    "umd": {"height": 185.2, "lat": 52.160096, "lon": 11.176091},
+}
+
 
 def _get_timestamp_from_filename(filename, *, pattern=dwdpattern):
     """Helper function doing the actual work of get_dx_timestamp"""
@@ -369,6 +408,12 @@ def get_radolan_header_token():
         "QN": None,
         "VR": None,
         "U": None,
+    }
+    return head
+
+
+def get_radolan_site_token():
+    head = {
         "CO": None,
         "CD": None,
         "MH": None,
@@ -396,13 +441,15 @@ def get_radolan_header_token_pos(header, *, mode="composite"):
         with found header tokens and positions
     """
 
-    if mode == "composite":
+    if mode in ["composite", "site"]:
         head_dict = get_radolan_header_token()
+        if mode == "site":
+            head_dict.update(get_radolan_site_token())
     elif mode == "dx":
         head_dict = get_dx_header_token()
     else:
         raise ValueError(
-            f"Unknown mode {mode}, use either `composite` or `dx` depending on data source"
+            f"Unknown mode {mode}, use either `composite`, `dx` or `site` depending on data source"
         )
 
     for token in head_dict.keys():
@@ -458,7 +505,11 @@ def parse_dwd_composite_header(header):
     out["radarid"] = header[8:13]
 
     # get dict of header token with positions
-    head = get_radolan_header_token_pos(header)
+    if out["producttype"] == "PZ":
+        kwargs = dict(mode="site")
+    else:
+        kwargs = dict(mode="composite")
+    head = get_radolan_header_token_pos(header, **kwargs)
     # iterate over token and fill output dict accordingly
     for k, v in head.items():
         if v:
@@ -529,21 +580,28 @@ def parse_dwd_composite_header(header):
             if k == "VR":
                 out["reanalysisversion"] = header[v[0] : v[1]].strip()
             if k == "CO":
-                out["CO"] = header[v[0]: v[1]].strip()
+                out["cluttermap"] = header[v[0] : v[1]].strip()
             if k == "CD":
-                out["CD"] = header[v[0]: v[1]].strip()
+                out["dopplerfilter"] = header[v[0] : v[1]].strip()
+            if k == "CS":
+                out["statisticfilter"] = header[v[0] : v[1]].strip()
             if k == "MH":
-                out["MH"] = header[v[0]: v[1]].strip()
+                out["maxheight"] = int(header[v[0] : v[1]])
+                # assume site product with 200 rows/cols
+                out["nrow"] = 200
+                out["ncol"] = 200
             if k == "HI":
-                out["HI"] = header[v[0]: v[1]].strip()
+                out["hailwarning"] = header[v[0] : v[1]].strip()
             if k == "CI":
-                out["CI"] = header[v[0]: v[1]].strip()
+                ci = header[v[0] : v[1]]
+                lci = len(ci) // 2
+                out["severeconvection"] = [float(ci[:lci]), float(ci[lci:])]
             if k == "CL":
-                out["CL"] = header[v[0]: v[1]].strip()
+                cl = header[v[0] : v[1]]
+                out["severeconvectionheights"] = [int(cl[0:2]), int(cl[2:4])]
             if k == "FL":
-                out["FL"] = header[v[0]: v[1]].strip()
-                out["nrow"] = 120
-                out["ncol"] = 120
+                out["freezing_level"] = header[v[0] : v[1]].strip()
+
     return out
 
 
@@ -659,8 +717,11 @@ def decode_radolan_runlength_array(binarr, attrs):
         dline = decode_radolan_runlength_line(line, attrs)
         arr = np.vstack((arr, dline))
         line = read_radolan_runlength_line(buf)
+
+    # reshape early for PZ station product
+    arr = arr.reshape(attrs.get("maxheight"), attrs["nrow"], attrs["ncol"])
     # return upside down because first line read is top line
-    return np.flipud(arr)
+    return np.flip(arr, axis=-2)
 
 
 def read_radolan_binary_array(fid, size, *, raise_on_error=True):
@@ -1057,7 +1118,10 @@ class _radolan_file:
     @property
     def shape(self):
         if self._shape is None:
-            self._shape = (self.attrs["nrow"], self.attrs["ncol"])
+            shape = (self.attrs["nrow"], self.attrs["ncol"])
+            if mh := self.attrs.get("maxheight", False):
+                shape = (mh,) + shape
+            self._shape = shape
         return self._shape
 
     @property
@@ -1140,7 +1204,13 @@ class _radolan_file:
 
         if self.product in ["PC", "PG", "PZ"]:
             self._data[self.product] = decode_radolan_runlength_array(
-                indat, {"ncol": self.attrs["ncol"], "nodataflag": 255}
+                indat,
+                {
+                    "ncol": self.attrs["ncol"],
+                    "nrow": self.attrs["nrow"],
+                    "maxheight": self.attrs.get("maxheight", False),
+                    "nodataflag": 255,
+                },
             )
         else:
             self._data[self.product] = np.frombuffer(indat, dtype=self.dtype)
@@ -1153,16 +1223,19 @@ class _radolan_file:
                 self._data[self.product] = self._data[self.product].astype(self.dtype)
         self._process_data()
         for _k, v in self._data.items():
-            v.shape = (self.attrs["nrow"], self.attrs["ncol"])
+            v.shape = self.shape
+            self._data[_k] = v
 
     def _read(self):
         attrs = self.attrs.copy()
         pattrs = _get_radolan_product_attributes(attrs)
 
+        if self.attrs.get("maxheight", False):
+            self.dimensions["z"] = self.attrs["maxheight"]
         self.dimensions["y"] = self.attrs["nrow"]
         self.dimensions["x"] = self.attrs["ncol"]
-
-        pattrs.update({"long_name": self.product, "coordinates": "time y x"})
+        dims = " ".join(list(self.dimensions.keys()))
+        pattrs.update({"long_name": self.product, "coordinates": f"time {dims}"})
 
         data_var = WradlibVariable(self.dimensions, data=self, attrs=pattrs)
 
@@ -1186,17 +1259,25 @@ class _radolan_file:
 
         # if GDAL is not installed, fall back to trigonometric calculation
         if util.has_import(osr):
-            print("CRS")
             if attrs.get("formatversion", 3) >= 5:
                 crs = projection.create_osr("dwd-radolan-wgs84")
             else:
                 crs = projection.create_osr("dwd-radolan-sphere")
         else:
-            print("TRIG")
             crs = "trig"
 
+        coords_kwargs = {}
+        if self.attrs.get("maxheight", False):
+            radar = dwdradarmapping[int(self.attrs["radarid"])]
+            site = dwdlocs[radar]
+            coords_kwargs.update(dict(lon=site["lon"], lat=site["lat"]))
+
         xlocs, ylocs = rect.get_radolan_coordinates(
-            self.dimensions["y"], self.dimensions["x"], crs=crs, mode="center"
+            self.dimensions["y"],
+            self.dimensions["x"],
+            crs=crs,
+            mode="center",
+            **coords_kwargs,
         )
         xattrs = {
             "units": "m",
@@ -1212,12 +1293,31 @@ class _radolan_file:
         }
         y_var = WradlibVariable("y", ylocs, yattrs)
 
+        if self.attrs.get("maxheight", False):
+            zattrs = {
+                "units": "m",
+                "long_name": "z coordinate of projection",
+                "standard_name": "projection_z_coordinate",
+            }
+            zlocs = np.arange(
+                1000, self.attrs["maxheight"] * 1000 + 1, 1000, dtype=float
+            )
+            z_var = WradlibVariable("z", zlocs, zattrs)
+
         self._variables = {
             self.product: data_var,
             "time": time_var,
-            "y": y_var,
-            "x": x_var,
         }
+
+        if self.attrs.get("maxheight", False):
+            self._variables.update({"z": z_var})
+
+        self._variables.update(
+            {
+                "y": y_var,
+                "x": x_var,
+            }
+        )
 
         if pred_time is not None:
             self._variables.update({"prediction_time": pred_time_var})
