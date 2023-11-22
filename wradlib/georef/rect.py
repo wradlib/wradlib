@@ -118,6 +118,7 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
         shape is (nrows+1, ) and (ncols+1, ) if `mode='edge'`
     """
     # setup default parameters in dicts
+    station = {"j_0": 200, "i_0": 200, "res": 2}
     tiny = {"j_0": 450, "i_0": 450, "res": 2}
     small = {"j_0": 460, "i_0": 460, "res": 2}
     rx = {"j_0": 450, "i_0": 450, "res": 1}
@@ -126,6 +127,7 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     extended = {"j_0": 600, "i_0": 800, "res": 1}
     de4800 = {"j_0": 470, "i_0": 600, "res": 0.25}
     griddefs = {
+        (200, 200): station,
         (450, 450): tiny,
         (460, 460): small,
         (900, 900): rx,
@@ -156,7 +158,9 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     i_0 = griddefs[(nrows, ncols)]["i_0"]
     res = griddefs[(nrows, ncols)]["res"]
 
-    x_0, y_0 = get_radolan_coords(9.0, 51.0, crs=crs)
+    lon = kwargs.get("lon", 9.0)
+    lat = kwargs.get("lat", 51.0)
+    x_0, y_0 = get_radolan_coords(lon, lat, crs=crs)
 
     if mode == "edge":
         ncols += 1
