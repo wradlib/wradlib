@@ -905,7 +905,7 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
         arr = arr * attrs["precision"]
     # set nodata value
     if "nodatamask" in attrs:
-        arr.flat[attrs["nodatamask"]] = NODATA
+        arr.flat[attrs["nodatamask"].flatten()] = NODATA
     return arr, attrs
 
 
