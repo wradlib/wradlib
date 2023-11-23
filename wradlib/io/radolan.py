@@ -413,15 +413,18 @@ def get_radolan_header_token():
 
 
 def get_radolan_site_token():
-    head = {
-        "CO": None,
-        "CD": None,
-        "MH": None,
-        "HI": None,
-        "CI": None,
-        "CL": None,
-        "FL": None,
-    }
+    head = get_radolan_header_token()
+    head.update(
+        {
+            "CO": None,
+            "CD": None,
+            "MH": None,
+            "HI": None,
+            "CI": None,
+            "CL": None,
+            "FL": None,
+        }
+    )
     return head
 
 
@@ -433,23 +436,22 @@ def get_radolan_header_token_pos(header, *, mode="composite"):
     header : str
         (ASCII header)
     mode : str, optional
-        'composite' or 'dx', defaults to 'composite'.
+        'composite', 'station' or 'dx', defaults to 'composite'.
 
     Returns
     -------
     head : dict
         with found header tokens and positions
     """
-
-    if mode in ["composite", "site"]:
+    if mode == "composite":
         head_dict = get_radolan_header_token()
-        if mode == "site":
-            head_dict.update(get_radolan_site_token())
+    elif mode == "station":
+        head_dict = get_radolan_site_token()
     elif mode == "dx":
         head_dict = get_dx_header_token()
     else:
         raise ValueError(
-            f"Unknown mode {mode}, use either `composite`, `dx` or `site` depending on data source"
+            f"Unknown mode {mode}, use either `composite`, `stations or `dx` depending on data source"
         )
 
     for token in head_dict.keys():
@@ -504,21 +506,23 @@ def parse_dwd_composite_header(header):
     # radar location ID (always 10000 for composites)
     out["radarid"] = header[8:13]
 
-    # get dict of header token with positions
-    if out["producttype"] == "PZ":
-        kwargs = dict(mode="site")
+    # if station product
+    if out["radarid"] == 10000:
+        kwargs = dict(mode="composite")
+    else:
+        kwargs = dict(mode="station")
         # assume site product with 200 rows/cols
         out["nrow"] = 200
         out["ncol"] = 200
-    else:
-        kwargs = dict(mode="composite")
+
+    # get dict of header token with positions
     head = get_radolan_header_token_pos(header, **kwargs)
     # iterate over token and fill output dict accordingly
     for k, v in head.items():
         if v:
             if k == "BY":
                 out["datasize"] = int(header[v[0] : v[1]]) - len(header) - 1
-            if k == "VS":
+            elif k == "VS":
                 vs = int(header[v[0] : v[1]])
                 out["formatversion"] = vs
                 out["maxrange"] = {
@@ -527,21 +531,21 @@ def parse_dwd_composite_header(header):
                     2: "128 km",
                     3: "150 km",
                 }.get(vs, "100 km")
-            if k == "SW":
+            elif k == "SW":
                 out["radolanversion"] = header[v[0] : v[1]].strip()
-            if k == "PR":
+            elif k == "PR":
                 out["precision"] = float("1" + header[v[0] : v[1]].strip())
-            if k == "INT":
+            elif k == "INT":
                 out["intervalseconds"] = int(header[v[0] : v[1]]) * 60
-            if k == "U":
+            elif k == "U":
                 out["intervalunit"] = int(header[v[0] : v[1]])
                 if out["intervalunit"] == 1:
                     out["intervalseconds"] *= 1440
-            if k == "GP":
+            elif k == "GP":
                 dimstrings = header[v[0] : v[1]].strip().split("x")
                 out["nrow"] = int(dimstrings[0])
                 out["ncol"] = int(dimstrings[1])
-            if k == "BG":
+            elif k == "BG":
                 dimstrings = header[v[0] : v[1]]
                 dimstrings = (
                     dimstrings[: int(len(dimstrings) / 2)],
@@ -549,11 +553,11 @@ def parse_dwd_composite_header(header):
                 )
                 out["nrow"] = int(dimstrings[0])
                 out["ncol"] = int(dimstrings[1])
-            if k == "LV":
+            elif k == "LV":
                 lv = header[v[0] : v[1]].split()
                 out["nlevel"] = int(lv[0])
                 out["level"] = np.array(lv[1:]).astype("float")
-            if k == "MS":
+            elif k == "MS":
                 try:
                     locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
                     out["radarlocations"] = locationstring.split(",")
@@ -563,10 +567,10 @@ def parse_dwd_composite_header(header):
                         out["message"] = header[v[0] + 3 : v[0] + 3 + cnt]
                     except ValueError:
                         pass
-            if k == "ST":
+            elif k == "ST":
                 locationstring = header[v[0] :].strip().split("<")[1].split(">")[0]
                 out["radardays"] = locationstring.split(",")
-            if k == "CS":
+            elif k == "CS":
                 if out["producttype"] == "PZ":
                     out["statisticfilter"] = header[v[0] : v[1]].strip()
                 else:
@@ -575,32 +579,32 @@ def parse_dwd_composite_header(header):
                         1: "maximum",
                         2: "tops",
                     }.get(int(header[v[0] : v[1]]))
-            if k == "MX":
+            elif k == "MX":
                 out["imagecount"] = int(header[v[0] : v[1]])
-            if k == "VV":
+            elif k == "VV":
                 out["predictiontime"] = int(header[v[0] : v[1]])
-            if k == "MF":
+            elif k == "MF":
                 out["moduleflag"] = int(header[v[0] : v[1]])
-            if k == "QN":
+            elif k == "QN":
                 out["quantification"] = int(header[v[0] : v[1]])
-            if k == "VR":
+            elif k == "VR":
                 out["reanalysisversion"] = header[v[0] : v[1]].strip()
-            if k == "CO":
+            elif k == "CO":
                 out["cluttermap"] = header[v[0] : v[1]].strip()
-            if k == "CD":
+            elif k == "CD":
                 out["dopplerfilter"] = header[v[0] : v[1]].strip()
-            if k == "MH":
+            elif k == "MH":
                 out["maxheight"] = int(header[v[0] : v[1]])
-            if k == "HI":
+            elif k == "HI":
                 out["hailwarning"] = header[v[0] : v[1]].strip()
-            if k == "CI":
+            elif k == "CI":
                 ci = header[v[0] : v[1]]
                 lci = len(ci) // 2
                 out["severeconvection"] = [float(ci[:lci]), float(ci[lci:])]
-            if k == "CL":
+            elif k == "CL":
                 cl = header[v[0] : v[1]]
                 out["severeconvectionheights"] = [int(cl[0:2]), int(cl[2:4])]
-            if k == "FL":
+            elif k == "FL":
                 out["freezing_level"] = header[v[0] : v[1]].strip()
     return out
 
@@ -928,7 +932,6 @@ def _get_radolan_product_attributes(attrs):
     if product not in ["PG", "PC", "PZ", "ascii"]:
         interval = attrs["intervalseconds"]
         precision = attrs["precision"]
-
     if product in ["RX", "EX", "WX"]:
         pattrs.update(radolan["dBZ"])
     elif product in ["WN"]:
