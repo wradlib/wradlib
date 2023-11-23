@@ -11,6 +11,8 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **New features**
 
+* ENH: add PZ-product (DWD station product) to RADOLAN reader ({pull}`656`) by {at}`kmuehlbauer
+
 **Maintenance - Code**
 
 **Maintenance - CI**
@@ -27,7 +29,6 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 * FIX: disentangle cg/normal plotting for better maintainability and apply explicit colorbar handling for cg plotting ({pull}`652`) by {at}`kmuehlbauer`
 * FIX: properly implement bearer token authentication adn function calling convention for plot_scan_strategy with terrain=True ({issue}`651`) by {at}`JulianGiles`, ({pull}`652`) by {at}`kmuehlbauer`
 * FIX: align earth radius in plot_scan_strategy for CG plots ({pull}`655`) by {at}`kmuehlbauer`
-
 
 
 ## Version 2.0.0

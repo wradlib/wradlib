@@ -853,11 +853,39 @@ def test_parse_dwd_composite_header():
         ],
     }
 
+    pz_header = (
+        "PZ220704104101123BY 4923VS 1LV 6  1.0 19.0 28.0 37.0 46.0 55.0"
+        "CO0CD0CS0MH12HI-32.0CI-32.0-32.0CL 0 0FL9999MS  0"
+    )
+
+    test_pz = {
+        "producttype": "PZ",
+        "datetime": datetime.datetime(2023, 11, 22, 7, 4),
+        "radarid": "10410",
+        "nrow": 200,
+        "ncol": 200,
+        "datasize": 4811,
+        "formatversion": 1,
+        "maxrange": "100 km",
+        "message": "",
+        "nlevel": 6,
+        "level": np.array([1.0, 19.0, 28.0, 37.0, 46.0, 55.0]),
+        "statisticfilter": "0",
+        "cluttermap": "0",
+        "dopplerfilter": "0",
+        "maxheight": 12,
+        "hailwarning": "-32.0",
+        "severeconvection": [-32.0, -32.0],
+        "severeconvectionheights": [0, 0],
+        "freezing_level": "9999",
+    }
+
     rx = io.radolan.parse_dwd_composite_header(rx_header)
     pg = io.radolan.parse_dwd_composite_header(pg_header)
     rq = io.radolan.parse_dwd_composite_header(rq_header)
     sq = io.radolan.parse_dwd_composite_header(sq_header)
     yw = io.radolan.parse_dwd_composite_header(yw_header)
+    pz = io.radolan.parse_dwd_composite_header(pz_header)
 
     for key, value in rx.items():
         assert value == test_rx[key]
@@ -874,6 +902,7 @@ def test_parse_dwd_composite_header():
     _check_product(rq, test_rq)
     _check_product(sq, test_sq)
     _check_product(yw, test_yw)
+    _check_product(pz, test_pz)
 
 
 @requires_data
