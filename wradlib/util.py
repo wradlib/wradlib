@@ -1158,7 +1158,7 @@ def cross_section_ppi(
     """
     bw = kwargs.get("bw", None)
     npl = kwargs.get("npl", 1000)
-    crs = kwargs.get("crs")
+    crs = kwargs.get("crs", "None")
     method = kwargs.get("method", None)
     tolerance = kwargs.get("tolerance", None)
 
