@@ -18,6 +18,6 @@ dependencies:
   - sphinx_rtd_theme
   - sphinx-copybutton
   - sphinxcontrib-bibtex
-  - sphinx-book-theme
+  - sphinx-book-theme>=1.0
   - xarray
   - xradar
