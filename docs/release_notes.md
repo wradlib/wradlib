@@ -18,6 +18,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **Maintenance - CI**
 
 * MNT: add codecov.yml to configure coverage status checks ({pull}`647`) by {at}`kmuehlbauer
+* FIX: pin sphinx-book-theme to fix rtd buildss ({pull}`658`) by {at}`kmuehlbauer
 
 **Documentation**
 
