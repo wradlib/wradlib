@@ -889,9 +889,7 @@ def cov_exp(h, sill=1.0, rng=1.0):
 def cov_sph(h, sill=1.0, rng=1.0):
     """spherical type covariance function"""
     h = np.asanyarray(h)
-    return np.where(
-        h < rng, sill * (1.0 - 1.5 * h / rng + h**3 / (2 * rng**3)), 0.0
-    )
+    return np.where(h < rng, sill * (1.0 - 1.5 * h / rng + h**3 / (2 * rng**3)), 0.0)
 
 
 def cov_gau(h, sill=1.0, rng=1.0):
