@@ -1,0 +1,138 @@
+{% extends 'beam/base.html' %}
+
+
+{% block release %}
+<h4 class="btn btn-dark" ><a href="{% url 'pdf-site' obj.name %}" style="color: #fff;">Download Report for this site</a></h4>
+
+<h4 class="btn btn-danger" ><a href="{% url 'pdf-path-2' %}" style="color: #fff;">Download Global Report</a></h4>
+<h4 class="btn btn-success" ><a href="{% url 'my_view-path' %}" style="color: #fff;">Start New  Simulation</a></h4>
+
+{% endblock  %}
+
+{% load static %}
+{% block content %}
+
+    <!-- ======= Clients Section ======= -->
+    <section id="clients" class="clients section-bg">
+      <div class="container">
+        
+        
+<div class="card" style="margin: 38px;">
+  <div class="card-body" >   
+
+    <div class="col-md-4 mb-3">
+
+      <div class="media" style ="
+      padding: 5px;
+    }">
+        <img src="{% static 'img/wradar.svg' %}" class="mr-3" alt="...">
+        <div class="media-body" style="margin-top: 35px;">
+          <h1 class="mt-0">{{obj.name}}</h1>
+        </div>
+  
+      </div>
+  
+ 
+  
+  </div>
+ <hr >
+    
+    {% for location  in locations  %}
+
+    <div class="row">  
+ <h3> Senario With  Vertical angle = {{location.vertical_angle}} ° </h3>
+      <div class="col-md-12">
+        <table class="table table-hover"> 
+          <thead>
+            <tr style="background:#CF275E ; color: white">
+              <th scope="col" >Radar specifications</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Latitude</th>
+              <td>{{location.latitude}}</td>
+            
+            </tr>
+            <tr>
+              <th scope="row">Longitude</th>
+              <td>{{location.longitude}}</td>
+           
+            </tr>
+
+            <tr>
+              <th scope="row"> Height tower </th>
+              <td colspan="2">{{location.height_tower}} m</td>
+           
+            </tr>
+            <tr>
+              <th scope="row"> Vertical angle</th>
+              <td colspan="2">{{location.vertical_angle}} °</td>
+             
+            </tr>
+
+          </tbody>
+        </table>
+
+      </div>
+
+    </div>
+
+          <div class="row">
+         
+            <h4> Beam-Blockage Simulation</h4>
+            <div class="col-md-12"> 
+          <img src="{{location.image_beam.url}}"  style="width:100% ;max-width: 100%;">
+        </div>
+        <hr>
+        <h4>  Beam Propagation with earth curvature</h4>
+
+        <div class="col-md-12"> 
+          <img src="{{location.image_couverture.url}}"  style="width:100% ;max-width: 100%;">
+        </div>
+
+        </div> 
+
+        <a href="{% url 'update' location.pk %}">
+        <button type="submit" class="btn btn-primary m-3">Replay this Simulation</button> 
+      </a>
+
+      <a href="{% url 'delete' location.pk %}">
+        <button type="submit" class="btn btn-danger m-3">Delete this Simulation</button> 
+      </a>
+
+    
+
+        {% endfor %}
+
+ 
+        <a href="{% url 'my_view-path' %}">
+          <button type="submit" class="btn btn-success m-3">Simulate other location</button> 
+        </a>
+        <a href="{% url 'list_site' %}">
+            <button type="submit" class="btn btn-secondary m-3">Availlable sites</button> 
+          </a>
+
+
+      </div>
+    </div>
+
+
+  </div>
+
+
+
+
+      </div>
+    </section><!-- End Cliens Section -->
+
+  
+
+
+   
+
+   
+
+
+      {% endblock  %}

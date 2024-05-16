@@ -1,0 +1,66 @@
+{% extends 'beam/base.html' %}
+
+{% load static %}
+{% block release %}
+<h4 class="btn btn-danger" ><a href="{% url 'pdf-path-2' %}" style="color: #fff;">Download Global Report</a></h4>
+<h4 class="btn btn-dark" ><a href="{% url 'my_view-path' %}" style="color: #fff;">Start New  Simulation</a></h4>
+
+{% endblock  %}
+
+{% block content %}
+
+    <!-- ======= Clients Section ======= -->
+    <section id="clients" class="clients section-bg">
+      <div class="container">
+        
+        <div class="container mt-5 mb-3">
+            <div class="row">    
+    
+    {% for location  in locations  %}
+
+    <div class="col-md-4 mb-3">
+
+    <div class="media" style ="  border-radius: 10px;
+    border: 2px solid #37517e;
+    padding: 5px;
+  }">
+      <img src="{% static 'img/wradar.svg' %}" class="mr-3" alt="...">
+      <div class="media-body">
+        <h5 class="mt-0">{{location.name}}</h5>
+        <a href="{% url 'detail_site' location.name %}"> 
+          <button type="submit" class="btn btn-primary m-3" style="background:#09f;">Released Senarios</button> 
+        </a>
+      </div>
+
+    </div>
+
+ </div>
+
+
+  
+
+
+        {% endfor %}
+    </div>
+    </div>
+
+
+
+
+  </div>
+
+
+
+
+      </div>
+    </section><!-- End Cliens Section -->
+
+  
+
+
+   
+
+   
+
+
+      {% endblock  %}

@@ -1,7 +1,0 @@
-deprecation
-matplotlib
-numpy
-packaging
-scipy
-xarray
-xradar
