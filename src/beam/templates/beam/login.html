@@ -1,0 +1,38 @@
+
+{% extends 'beam/base.html' %}
+{% load crispy_forms_tags %}
+
+    {% block content %}
+
+    <section id="pricing" class="pricing">
+        <div class="container" data-aos="fade-up">
+          <div class="row">
+            <div class="col mt-2 p-5">
+
+{% load crispy_forms_tags %}
+
+
+{% for message in messages  %}
+
+<div class="alert alert-{{message.tags}}" >
+{{message}}
+
+</div>
+{% endfor %}
+
+
+<form method="post">
+    {% csrf_token %}
+    {{form | crispy }}
+
+
+    <input type="submit" value="login" class="btn btn-outline-success" >
+
+
+</form>
+
+</div>
+          </div>
+        </div>
+    </section>
+    {% endblock  %}

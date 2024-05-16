@@ -1,0 +1,90 @@
+{% extends 'beam/base.html' %}
+
+
+{% block release %}
+<h4 class="btn btn-danger" ><a href="{% url 'all-senarios' %}" style="color: #fff;">Released Senarios</a></h4>
+
+{% endblock  %}
+
+
+{% block content %}
+
+    <!-- ======= Clients Section ======= -->
+    <section id="clients" class="clients section-bg">
+      <div class="container">
+        
+        <div class="card" style=" margin: 38px;">
+          <div class="card-body" >
+            <h2>     You Can Simulate Your Radar             </h2>
+        {% load crispy_forms_tags %}
+
+        <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+
+        {{form|crispy }} 
+
+        
+        {% if form %}
+        <input type="submit" value="Simulate your location" class="btn btn-danger">
+
+        {% endif %}
+          
+
+
+        </form>
+
+      </div>
+    </div>
+
+      </div>
+    </div>
+
+      </div>
+    </section><!-- End Cliens Section -->
+
+  
+    {% if plot_image %}
+    <div class="container"> 
+      
+
+        <div class="card" style="text-align: center; margin: 38px;">
+  <div class="card-body" >
+    <h2>     This is The Simulation For Your Location.
+    </h2>
+    
+  </div>
+</div>
+
+   
+<div class="card" style="text-align: center; margin: 38px;">
+  <div class="card-body" >     
+          <div class="row">
+            <h4> Beam-Blockage Simulation</h4>
+            <div class="col-md-12"> 
+          <img src="data:image/png;base64,{{ plot_image|safe }}" alt="Your simulation" style="width:100%">
+        </div>
+        <hr>
+        <h4>  Beam Propagation with earth curvature</h4>
+
+        <div class="col-md-12"> 
+          <img src="data:image/png;base64,{{ plot_image2|safe }}" alt="Your simulation" style="width:100%">
+        </div>
+    
+        <div class="row">
+        <a href="" style="text-align: center; margin-bottom: 38px;"> 
+          <input type="submit" value="Simulate other location" class="btn btn-danger" ></a>
+        </div>
+        </div> 
+      </div>
+    </div>
+  </div>
+      {% endif %}
+
+
+     
+
+
+  </main><!-- End #main -->
+
+
+      {% endblock  %}

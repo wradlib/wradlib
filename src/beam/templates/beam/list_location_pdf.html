@@ -1,0 +1,106 @@
+{% extends 'beam/base.html' %}
+
+
+
+{% block content %}
+
+    <!-- ======= Clients Section ======= -->
+    <section id="clients" class="clients section-bg">
+      <div class="container">
+        
+
+        
+<div class="card" style="margin: 38px;">
+  <div class="card-body" >   
+
+    
+    {% for location  in locations  %}
+
+    <div class="row">  
+ <h3>{{location.name}} | Senario With  Vertical angle = {{location.vertical_angle}} </h3>
+      <div class="col-md-12">
+        <table class="table table-hover"> 
+          <thead>
+            <tr style="background:#CF275E ; color: white">
+              <th scope="col" >Radar specifications</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Latitude</th>
+              <td>{{location.latitude}}</td>
+            
+            </tr>
+            <tr>
+              <th scope="row">Longitude</th>
+              <td>{{location.longitude}}</td>
+           
+            </tr>
+
+            <tr>
+              <th scope="row">Altitude</th>
+              <td colspan="2">{{location.altitude}}</td>
+           
+            </tr>
+            <tr>
+              <th scope="row"> Vertical angle</th>
+              <td colspan="2">{{location.vertical_angle}}</td>
+             
+            </tr>
+
+          </tbody>
+        </table>
+
+      </div>
+
+    </div>
+
+          <div class="row">
+         
+            <h4> Beam-Blockage Simulation</h4>
+            <div class="col-md-12"> 
+          <img src="{{location.image_beam.path}}"  style="width:100% ;max-width: 100%;">
+        </div>
+        <hr>
+        <h4>  Beam Propagation with earth curvature</h4>
+
+        <div class="col-md-12"> 
+          <img src="{{location.image_couverture.path}}"  style="width:100% ;max-width: 100%;">
+        </div>
+
+        </div> 
+        <div class="row">
+          <a href="{% url 'update' location.pk %}" style="text-align: center; margin-bottom: 38px;"> 
+            <input type="submit" value="Replay this Simulation" class="btn btn-danger" ></a>
+          </div>
+
+        {% endfor %}
+
+ 
+        <div class="row">
+          <a href="{% url 'my_view-path' %}" style="text-align: center; margin-bottom: 38px;"> 
+            <input type="submit" value="Simulate other location" class="btn btn-danger" ></a>
+          </div>
+
+      </div>
+    </div>
+
+
+  </div>
+
+
+
+
+      </div>
+    </section><!-- End Cliens Section -->
+
+  
+
+
+   
+
+   
+
+
+      {% endblock  %}

@@ -1,0 +1,157 @@
+{% extends 'beam/base.html' %}
+
+
+{% block release %}
+<h4 class="btn btn-danger" ><a href="{% url 'all-senarios' %}" style="color: #fff;">Released Senarios</a></h4>
+<h4 class="btn btn-success" ><a href="{% url 'list_site' %}" style="color: #fff;">Availlable Sites</a></h4>
+<h4 class="btn btn-dark" ><a href="{% url 'pdf-path-2' %}" style="color: #fff;">Download Global Report</a></h4>
+
+{% endblock  %}
+
+
+{% block content %}
+
+    <!-- ======= Clients Section ======= -->
+    <section id="clients" class="clients section-bg">
+      <div class="container">
+        {% if form %}
+        <div class="card" style=" margin: 38px;">
+          <div class="card-body" >
+            <h2>     You Can Simulate Your Radar             </h2>
+
+            
+        {% load crispy_forms_tags %}
+
+        <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+
+        {{form|crispy }} 
+
+        
+     <input type="submit" value="Simulate your location" class="btn btn-danger"> 
+
+        {% comment %} <button type="submit" class="btn btn-danger">Simulate your location</button> {% endcomment %}
+
+          
+
+
+        </form>
+
+      </div>
+    </div>
+
+    {% endif  %}
+
+      </div>
+    </div>
+
+      </div>
+    </section><!-- End Cliens Section -->
+
+  
+    {% if plot_image %}
+
+    <div class="container"> 
+      
+
+  <div class="card" style="text-align: center; margin: 38px;">
+  <div class="card-body" >
+    <h2>     This is The Simulation For Your radar based on {{location.name}}.
+    </h2>
+    
+  </div>
+</div>
+
+
+<div class="card" style="text-align: center; margin: 38px;">
+  <div class="card-body" >     
+          <div class="row">
+            <h4> Beam-Blockage Simulation</h4>
+            <div class="col-md-12"> 
+          <img src="data:image/png;base64,{{ plot_image|safe }}" alt="Your simulation" style="width:100%">
+        </div>
+        <hr>
+        <h4>  Beam Propagation with earth curvature</h4>
+
+        <div class="col-md-12"> 
+          <img src="data:image/png;base64,{{ plot_image2|safe }}" alt="Your simulation" style="width:100%">
+        </div>
+    
+      </div> 
+
+ 
+        <a href="{% url 'update' location.pk %}">
+          <button type="submit" class="btn btn-primary m-3">Replay this Simulation</button> 
+        </a>
+
+        <a href="{% url 'delete' location.pk %}">
+          <button type="submit" class="btn btn-danger m-3">Delete this Simulation</button> 
+        </a>
+    
+        <a href="{% url 'my_view-path' %}">
+          <button type="submit" class="btn btn-success m-3">Simulate other location</button> 
+        </a>
+
+      </div>
+      
+  
+
+   
+  </div>
+
+      {% endif %}
+
+
+      
+    <!-- ======= Services Section ======= -->
+    <section id="services" class="services section-bg">
+      <div class="container" data-aos="fade-up">
+
+        <div class="section-title">
+          <h2>Other Projects</h2>
+        </div>
+
+        <div class="row">
+          <div class="col-xl-3 col-md-6 d-flex align-items-stretch" data-aos="zoom-in" data-aos-delay="100">
+            <div class="icon-box">
+              <div class="icon"><i class="bx bxl-dribbble"></i></div>
+              <h4><a href="">Visualisation</a></h4>
+              <p>This section provides a collection of example code snippets to make users familiar with ωradlib’s plotting capabilities.</p>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-md-6 d-flex align-items-stretch mt-4 mt-md-0" data-aos="zoom-in" data-aos-delay="200">
+            <div class="icon-box">
+              <div class="icon"><i class="bx bx-file"></i></div>
+              <h4><a href="">Beam blockage</a></h4>
+              <p>Beam Blockage Calculation using a DEM</p>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-md-6 d-flex align-items-stretch mt-4 mt-xl-0" data-aos="zoom-in" data-aos-delay="300">
+            <div class="icon-box">
+              <div class="icon"><i class="bx bx-tachometer"></i></div>
+              <h4><a href="">Attenuation correction</a></h4>
+              <p>we will compare different approaches to constrain the gate-by-gate retrieval of path-integrated attenuation.</p>
+            </div>
+          </div>
+
+          <div class="col-xl-3 col-md-6 d-flex align-items-stretch mt-4 mt-xl-0" data-aos="zoom-in" data-aos-delay="400">
+            <div class="icon-box">
+              <div class="icon"><i class="bx bx-layer"></i></div>
+              <h4><a href="">Georeferencing</a></h4>
+              <p>At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section><!-- End Services Section -->
+
+
+  </main><!-- End #main -->
+
+
+
+      {% endblock  %}
