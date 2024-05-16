@@ -1,5 +1,5 @@
 
-## DjangoRadlib: A Web Application for Radar Beam Blockage Simulation
+## Djangoradlib: A Web Application for Radar Beam Blockage Simulation
 
 ### Overview
 
