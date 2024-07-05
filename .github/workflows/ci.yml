@@ -54,6 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9", "3.12"]
+        numpy-version: ["1", "2"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,7 +65,7 @@ jobs:
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
-          cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
+          cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-np${{matrix.numpy_version}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
           create-args: >-
             python=${{matrix.python-version}}
             conda
