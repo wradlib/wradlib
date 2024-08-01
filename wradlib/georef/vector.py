@@ -479,6 +479,6 @@ def get_centroid(polyg):
         x and y coordinate of the centroid
 
     """
-    if type(polyg) is not ogr.Geometry:
+    if not isinstance(polyg, ogr.Geometry):
         polyg = numpy_to_ogr(polyg, "Polygon")
     return polyg.Centroid().GetPoint()[0:2]
