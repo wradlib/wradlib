@@ -266,8 +266,8 @@ def test_maximum_intensity_projection():
     filename = util.get_wradlib_data_file("misc/polar_dBZ_tur.gz")
     data = np.loadtxt(filename)
     # we need to have meter here for the georef function inside mip
-    d1 = np.arange(data.shape[1], dtype=np.float_) * 1000
-    d2 = np.arange(data.shape[0], dtype=np.float_)
+    d1 = np.arange(data.shape[1], dtype=np.float64) * 1000
+    d2 = np.arange(data.shape[0], dtype=np.float64)
     data = np.roll(data, (d2 >= angle).nonzero()[0][0], axis=0)
 
     # calculate max intensity projection

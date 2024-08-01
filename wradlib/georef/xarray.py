@@ -109,18 +109,18 @@ def create_xarray_dataarray(
 
     if phi is None:
         if sweep_mode == "azimuth_surveillance":
-            phi = np.arange(data.shape[0], dtype=np.float_)
+            phi = np.arange(data.shape[0], dtype=np.float64)
             phi += (phi[1] - phi[0]) / 2.0
         else:
             phi = 0.0
 
     if r is None:
-        r = np.arange(data.shape[1], dtype=np.float_)
+        r = np.arange(data.shape[1], dtype=np.float64)
         r += (r[1] - r[0]) / 2.0
 
     if theta is None:
         if sweep_mode == "rhi":
-            theta = np.arange(data.shape[0], dtype=np.float_)
+            theta = np.arange(data.shape[0], dtype=np.float64)
             theta += (theta[1] - theta[0]) / 2.0
         else:
             theta = 0.0
