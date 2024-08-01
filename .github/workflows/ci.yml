@@ -38,7 +38,7 @@ jobs:
           black --check .
       - name: Lint with ruff
         run: |
-          ruff .
+          ruff check .
 
   build_0:
     name: wradlib unit tests - linux
