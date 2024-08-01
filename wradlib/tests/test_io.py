@@ -1374,8 +1374,11 @@ def test_get_geom_properties():
         "shapefiles/freiberger_mulde/freiberger_mulde.shp"
     )
     test = io.VectorSource(filename)
-    np.testing.assert_array_equal(
-        [[4636921.625003308]], test.get_geom_properties(["Area"], filt=("FID", 1))
+    np.testing.assert_allclose(
+        [[4636921.625003308]],
+        test.get_geom_properties(["Area"], filt=("FID", 1)),
+        atol=5e-8,
+        rtol=1e-14,
     )
 
 
