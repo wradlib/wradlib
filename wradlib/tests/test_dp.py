@@ -54,7 +54,7 @@ def dp_data():
         az = 360
         rng = 1000
         pad = window // 2
-        kdp_true = np.arange(az * rng, dtype=np.float_).reshape(az, rng)
+        kdp_true = np.arange(az * rng, dtype=np.float64).reshape(az, rng)
         phidp_true = np.power(kdp_true, 2)
         dr = 0.1
         kdp_true /= dr

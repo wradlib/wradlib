@@ -892,7 +892,7 @@ def test_parse_dwd_composite_header():
 
     def _check_product(data, test):
         for key, value in data.items():
-            if type(value) == np.ndarray:
+            if isinstance(value, np.ndarray):
                 np.testing.assert_allclose(value, test[key])
             else:
                 assert value == test[key]
@@ -945,7 +945,7 @@ def test_read_radolan_composite():
     assert data.shape == (900, 900)
 
     for key, value in attrs.items():
-        if type(value) == np.ndarray:
+        if isinstance(value, np.ndarray):
             assert value.dtype in [np.int32, np.int64]
         else:
             assert value == test_attrs[key]
@@ -957,7 +957,7 @@ def test_read_radolan_composite():
         assert data.shape == (900, 900)
 
     for key, value in attrs.items():
-        if type(value) == np.ndarray:
+        if isinstance(value, np.ndarray):
             assert value.dtype in [np.int32, np.int64]
         else:
             assert value == test_attrs[key]
@@ -966,7 +966,7 @@ def test_read_radolan_composite():
     data, attrs = io.radolan.read_radolan_composite(rw_file, loaddata=False)
     assert data is None
     for key, value in attrs.items():
-        if type(value) == np.ndarray:
+        if isinstance(value, np.ndarray):
             assert value.dtype == np.int64
         else:
             assert value == test_attrs[key]

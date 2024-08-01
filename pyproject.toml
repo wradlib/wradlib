@@ -95,6 +95,7 @@ exclude = [
     "docs",
 ]
 
+[tool.ruff.lint]
 # E402: module level import not at top of file
 # E501: line too long - let black worry about that
 # E731: do not assign a lambda expression, use a def
@@ -115,6 +116,7 @@ lint.select = [
     "I",
     # Pyupgrade
     "UP",
+    "NPY201",
 ]
 
 [tool.ruff.lint.isort]
