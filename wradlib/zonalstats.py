@@ -342,7 +342,7 @@ class ZonalDataBase:
             raise TypeError("Either `trg` or `idx` kwargs must be given!")
 
         # check for geometry
-        if type(trg) is not ogr.Geometry:
+        if not isinstance(trg, ogr.Geometry):
             trg = georef.vector.numpy_to_ogr(trg, "Polygon")
 
         # apply Buffer value
