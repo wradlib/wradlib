@@ -412,7 +412,7 @@ def test_read_trmm():
 def radolan_files():
     from pathlib import Path
 
-    path = os.path.join(util.get_wradlib_data_path(), "radolan")
+    path = os.path.join(util.get_wradlib_data_path(), "radolan/misc")
     return [p for p in Path(path).rglob("raa*.gz")]
 
 
