@@ -99,12 +99,12 @@ exclude = [
 # E402: module level import not at top of file
 # E501: line too long - let black worry about that
 # E731: do not assign a lambda expression, use a def
-lint.ignore = [
+ignore = [
     "E402",
     "E501",
     "E731",
 ]
-lint.select = [
+select = [
     # Flake8 Bugbear
     "B",
     # Pyflakes
@@ -119,7 +119,7 @@ lint.select = [
     "NPY201",
 ]
 
-[tool.ruff.lint.isort]
+[isort]
 known-first-party = ["wradlib"]
 
 [tool.pytest.ini_options]
