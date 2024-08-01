@@ -94,6 +94,7 @@ jobs:
           flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-gha
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
   build_0a:
@@ -152,6 +153,7 @@ jobs:
           flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-gha
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
   build_1:
@@ -208,6 +210,7 @@ jobs:
           flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-gha
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
   build_2:
@@ -262,6 +265,7 @@ jobs:
           flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-gha
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
   build_3:
@@ -344,6 +348,7 @@ jobs:
           flags: notebooktests
           env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-gha
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
   trigger_rtd:
