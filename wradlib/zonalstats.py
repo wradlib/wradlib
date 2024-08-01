@@ -261,7 +261,9 @@ class ZonalDataBase:
         self.tmp_lyr = georef.vector.ogr_create_layer(
             ds_mem, "dst", crs=self._crs, geom_type=geom_type
         )
-
+        # do not promote for points
+        ispoint = src_lyr.GetGeomType() == 1
+        promote = {False: "YES", True: "NO"}[ispoint]
         trg_lyr.Intersection(
             src_lyr,
             self.tmp_lyr,
@@ -269,7 +271,7 @@ class ZonalDataBase:
                 "SKIP_FAILURES=YES",
                 "INPUT_PREFIX=trg_",
                 "METHOD_PREFIX=src_",
-                "PROMOTE_TO_MULTI=YES",
+                f"PROMOTE_TO_MULTI={promote}",
                 "USE_PREPARED_GEOMETRIES=YES",
                 "PRETEST_CONTAINMENT=YES",
             ],
@@ -340,7 +342,7 @@ class ZonalDataBase:
             raise TypeError("Either `trg` or `idx` kwargs must be given!")
 
         # check for geometry
-        if not type(trg) == ogr.Geometry:
+        if not isinstance(trg, ogr.Geometry):
             trg = georef.vector.numpy_to_ogr(trg, "Polygon")
 
         # apply Buffer value

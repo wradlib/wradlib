@@ -54,7 +54,7 @@ def dp_data():
         az = 360
         rng = 1000
         pad = window // 2
-        kdp_true = np.arange(az * rng, dtype=np.float_).reshape(az, rng)
+        kdp_true = np.arange(az * rng, dtype=np.float64).reshape(az, rng)
         phidp_true = np.power(kdp_true, 2)
         dr = 0.1
         kdp_true /= dr
@@ -75,7 +75,9 @@ def test_phidp_kdp_vulpiani(derivation_method, window, copy):
 
     kdp_true0 = np.sin(0.3 * r)
     kdp_true0[kdp_true0 < 0] = 0.0
-    phidp_true0 = 2 * integrate.cumtrapz(kdp_true0, axis=-1, initial=0, dx=dr)
+    phidp_true0 = 2 * integrate.cumulative_trapezoid(
+        kdp_true0, axis=-1, initial=0, dx=dr
+    )
     fillval = phidp_true0[200]
     phidp_true0 = np.concatenate(
         (phidp_true0[:200], np.ones(20) * fillval, phidp_true0[200:])

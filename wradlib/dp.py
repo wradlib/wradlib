@@ -175,7 +175,7 @@ def phidp_kdp_vulpiani(
     # start the actual phidp/kdp iteration
     for _i in range(niter):
         # phidp from kdp through integration
-        phidp = 2 * integrate.cumtrapz(kdp, dx=dr, initial=0.0, axis=-1)
+        phidp = 2 * integrate.cumulative_trapezoid(kdp, dx=dr, initial=0.0, axis=-1)
         # kdp from phidp by convolution
         kdp = kdp_from_phidp(phidp, dr=dr, winlen=winlen, **kwargs)
 

@@ -340,7 +340,7 @@ def filter_gabella(
     bad = np.isnan(obj)
     if rm_nans:
         obj = obj.copy()
-        obj[bad] = np.Inf
+        obj[bad] = np.inf
     ntr1 = filter_gabella_a(
         obj, wsize=wsize, tr1=tr1, cartesian=cartesian, radial=radial
     )
@@ -709,15 +709,15 @@ def classify_echo_fuzzy(dat, *, weights=None, trpz=None):
         trpz = dict(list(trpz_default.items()) + list(trpz.items()))
 
     # check data conformity
-    if not np.all(np.in1d(dkeys, list(dat.keys()))):
+    if not np.all(np.isin(dkeys, list(dat.keys()))):
         raise ValueError(
             "Argument `dat` must be a dictionary " f"with mandatory keywords {*dkeys,}."
         )
-    if not np.all(np.in1d(wkeys, list(weights.keys()))):
+    if not np.all(np.isin(wkeys, list(weights.keys()))):
         raise ValueError(
             "Argument `weights` must be a dictionary " f"with keywords {*wkeys,}."
         )
-    if not np.all(np.in1d(tkeys, list(trpz.keys()))):
+    if not np.all(np.isin(tkeys, list(trpz.keys()))):
         raise ValueError(
             "Argument `trpz` must be a dictionary " f"with keywords {*tkeys,}."
         )

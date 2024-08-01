@@ -663,7 +663,7 @@ class AdjustMFB(AdjustBase):
                 except Exception:
                     # no correction if linear regression fails
                     pass
-        if type(corrfact) == np.ma.core.MaskedConstant:
+        if isinstance(corrfact, np.ma.core.MaskedConstant):
             corrfact = 1.0
         return corrfact * raw
 
@@ -874,14 +874,14 @@ def best(x, y, /):
         1-d array of float with length len(y)
 
     """
-    if type(x) == np.ndarray:
+    if isinstance(x, np.ndarray):
         if x.ndim != 1:
             raise ValueError("`x` must be a 1-d array of floats or a float.")
         if len(x) != len(y):
             raise ValueError(
                 f"Length of `x` ({len(x)}) and `y` ({len(y)}) must be equal."
             )
-    if type(y) == np.ndarray:
+    if isinstance(y, np.ndarray):
         if y.ndim > 2:
             raise ValueError("'y' must be 1-d or 2-d array of floats.")
     else:

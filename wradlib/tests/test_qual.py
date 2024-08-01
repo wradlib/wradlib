@@ -13,10 +13,10 @@ from wradlib import qual
 
 def test_get_bb_ratio():
     heights = np.array(
-        [[1100, 1100], [1100, 1100], [1100, 1100], [1100, 1100]], dtype=np.float_
+        [[1100, 1100], [1100, 1100], [1100, 1100], [1100, 1100]], dtype=np.float64
     )
-    widths = np.array([[50, 50], [50, 50], [50, 50], [50, 50]], dtype=np.float_)
-    quality = np.array([[1, 1], [1, 1], [1, 0], [0, 1]], dtype=np.float_)
+    widths = np.array([[50, 50], [50, 50], [50, 50], [50, 50]], dtype=np.float64)
+    quality = np.array([[1, 1], [1, 1], [1, 0], [0, 1]], dtype=np.float64)
     z = np.array(
         [
             [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
@@ -24,7 +24,7 @@ def test_get_bb_ratio():
             [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
             [[1075, 1100, 1125, 900], [1000, 1090, 1110, 1300]],
         ],
-        dtype=np.float_,
+        dtype=np.float64,
     )
     ratio_out = np.array(
         [

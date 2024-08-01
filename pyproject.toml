@@ -24,6 +24,7 @@ classifiers=[
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Atmospheric Science",
     "Operating System :: POSIX :: Linux",
@@ -94,6 +95,7 @@ exclude = [
     "docs",
 ]
 
+[tool.ruff.lint]
 # E402: module level import not at top of file
 # E501: line too long - let black worry about that
 # E731: do not assign a lambda expression, use a def
@@ -114,9 +116,10 @@ select = [
     "I",
     # Pyupgrade
     "UP",
+    "NPY201",
 ]
 
-[tool.ruff.isort]
+[isort]
 known-first-party = ["wradlib"]
 
 [tool.pytest.ini_options]

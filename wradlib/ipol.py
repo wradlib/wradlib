@@ -139,7 +139,7 @@ class IpolBase:
         if type(x) in [list, tuple]:
             x = [item.ravel() for item in x]
             x = np.array(x).transpose()
-        elif type(x) == np.ndarray:
+        elif isinstance(x, np.ndarray):
             if x.ndim == 1:
                 x = x.reshape(-1, 1)
             elif x.ndim == 2:
@@ -1569,7 +1569,7 @@ def interpolate_polar(data, *, mask=None, ipclass=Nearest):
     """
     if mask is None:
         # no mask assigned: try to get it from masked array
-        if type(data) != np.ma.core.MaskedArray:
+        if not isinstance(data, np.ma.core.MaskedArray):
             util.warn(
                 "Neither an explicit mask is assigned nor the data-array is masked."
             )

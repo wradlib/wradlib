@@ -158,9 +158,9 @@ def from_to(tstart, tend, tdelta):
         list of datetime.datetime objects
 
     """
-    if not type(tstart) == dt.datetime:
+    if not isinstance(tstart, dt.datetime):
         tstart = dt.datetime.strptime(tstart, "%Y-%m-%d %H:%M:%S")
-    if not type(tend) == dt.datetime:
+    if not isinstance(tend, dt.datetime):
         tend = dt.datetime.strptime(tend, "%Y-%m-%d %H:%M:%S")
     tdelta = dt.timedelta(seconds=tdelta)
     tsteps = [

@@ -8,3 +8,4 @@ pytest-cov
 pytest-doctestplus
 pytest-sugar
 pytest-xdist
+ruff

@@ -890,9 +890,9 @@ def maximum_intensity_projection(
     """
     # providing 'reasonable defaults', based on the data's shape
     if r is None:
-        r = np.arange(data.shape[1], dtype=np.float_)
+        r = np.arange(data.shape[1], dtype=np.float64)
     if az is None:
-        az = np.arange(data.shape[0], dtype=np.float_)
+        az = np.arange(data.shape[0], dtype=np.float64)
 
     if angle is None:
         angle = 0.0
