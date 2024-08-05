@@ -1096,7 +1096,7 @@ def test_open_radolan_dataset():
     rx_file = util.get_wradlib_data_file(filename)
     data = io.radolan.open_radolan_dataset(rx_file)
     assert data.RX.shape == (900, 900)
-    assert data.dims == {"x": 900, "y": 900, "time": 1}
+    assert data.sizes == {"x": 900, "y": 900, "time": 1}
     assert data.RX.dims == ("y", "x")
     assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
 
@@ -1118,7 +1118,7 @@ def test_open_radolan_mfdataset():
     util.get_wradlib_data_file(filename2)
     data = io.radolan.open_radolan_mfdataset(rw_file[:-23] + "*.gz", concat_dim="time")
     assert data.RW.shape == (2, 900, 900)
-    assert data.dims == {"x": 900, "y": 900, "time": 2}
+    assert data.sizes == {"x": 900, "y": 900, "time": 2}
     assert data.RW.dims == ("time", "y", "x")
     assert data.time[0].values == np.datetime64("2014-08-03T09:50:00.000000000")
     assert data.time[1].values == np.datetime64("2014-08-10T20:50:00.000000000")
@@ -1503,7 +1503,7 @@ def test_read_edge_netcdf(file_or_filelike):
         with pytest.raises(AttributeError):
             io.netcdf.read_edge_netcdf(f)
     with pytest.raises(FileNotFoundError):
-        io.netcdf.read_edge_netcdf("test")
+        io.netcdf.read_edge_netcdf("test_read_edge_netcdf.nc")
 
 
 @requires_data

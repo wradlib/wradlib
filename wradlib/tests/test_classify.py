@@ -161,7 +161,6 @@ def test_filter_cloudtype(cloudtype_data):
     assert nclutter == 17856
 
 
-@requires_data
 @pytest.fixture
 def class_data():
     @dataclass(init=False, repr=False, eq=False)
@@ -189,6 +188,7 @@ def class_data():
     yield TestHydrometeorClassification
 
 
+@requires_data
 def test_msf_index_indep(class_data):
     tst = np.array([-20, 10, 110])
     res = np.array(
@@ -200,6 +200,7 @@ def test_msf_index_indep(class_data):
     np.testing.assert_array_equal(msf_val, res)
 
 
+@requires_data
 def test_fuzzify(class_data):
     res = np.array(
         [
@@ -214,6 +215,7 @@ def test_fuzzify(class_data):
     np.testing.assert_array_equal(fu[0], res)
 
 
+@requires_data
 def test_probability(class_data):
     res = np.array(
         [
@@ -234,6 +236,7 @@ def test_probability(class_data):
     np.testing.assert_array_almost_equal(prob, res, decimal=8)
 
 
+@requires_data
 @pytest.mark.xfail(strict=False)
 def test_classify(class_data):
     res_idx = np.array(

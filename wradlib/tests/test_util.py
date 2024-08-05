@@ -360,7 +360,7 @@ def test_cross_section_ppi():
     azimuth = [90.5, 120.5, 175.5]
     rec_rhi = util.cross_section_ppi(vol, azimuth, method="nearest")
 
-    assert rec_rhi.dims["azimuth"] == 3
+    assert rec_rhi.sizes["azimuth"] == 3
 
     # Test extract along line
     p1 = (10000, -40000)
