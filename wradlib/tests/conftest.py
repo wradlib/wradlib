@@ -14,11 +14,3 @@ def file_or_filelike(request):
 def mock_wradlib_data_env(monkeypatch, tmpdir):
     wradlib_path = tmpdir.mkdir("wradlib-data")
     monkeypatch.setenv("WRADLIB_DATA", wradlib_path)
-
-
-def pytest_collection_modifyitems(items):
-    for item in items:
-        if "interface" in item.nodeid:
-            item.add_marker(pytest.mark.interface)
-        elif "event" in item.nodeid:
-            item.add_marker(pytest.mark.event)
