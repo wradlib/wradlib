@@ -23,7 +23,6 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import os
 import tempfile
-import time
 
 import numpy as np
 
@@ -278,8 +277,8 @@ class VectorSource:
             driver = self._ds.GetDriver()
             ret = driver.Delete(fname)
             while os.path.exists(fname):
-                time.sleep(0.05)
-            print("RET:", ret, fname)
+                ret = driver.Delete(fname)
+                print("RET:", ret, fname)
             self._ds = None
 
     __del__ = close

@@ -3,7 +3,6 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import datetime
-import fnmatch
 import gzip
 import io as sio
 import os
@@ -411,16 +410,20 @@ def test_read_trmm():
 
 
 def radolan_files():
-    from pathlib import Path
-
-    path = os.path.join(util.get_wradlib_data_path(), "radolan/misc")
-    if os.path.exists(path):
-        return sorted([p for p in Path(path).rglob("raa*.gz")])
-    else:
-        from wradlib_data import DATASETS
-
-        rfiles = fnmatch.filter(DATASETS.registry.keys(), "radolan/misc/raa*.gz")
-        return sorted([DATASETS.fetch(p) for p in rfiles])
+    return [
+        "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz",
+        "radolan/misc/raa01-%j_10000-2108010550-dwd---bin.gz",
+        "radolan/misc/raa01-%m_10000-2108010550-dwd---bin.gz",
+        "radolan/misc/raa01-%y_10000-2108010550-dwd---bin.gz",
+        "radolan/misc/raa01-ex_10000-1408102050-dwd---bin.gz",
+        "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz",
+        "radolan/misc/raa01-rw_10000-1408102050-dwd---bin.gz",
+        "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1305270050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1305280050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1406100050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1408102050-dwd---bin.gz",
+    ]
 
 
 def test_get_radolan_header_token():
@@ -1134,7 +1137,8 @@ def test_open_radolan_mfdataset():
 @requires_data
 @pytest.mark.parametrize("radfile", radolan_files())
 def test_read_radolan_data_files(radfile):
-    data = io.radolan.open_radolan_dataset(str(radfile))
+    rfile = util.get_wradlib_data_file(radfile)
+    data = io.radolan.open_radolan_dataset(rfile)
     assert isinstance(data, xr.Dataset)
     name = list(data.variables.keys())[0]
     var = data[name]
