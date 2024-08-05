@@ -182,6 +182,7 @@ def test_AdjustMFB_1(adjust_data):
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
         mfb_args=mfb_args,
+        nnearest=2,
     )
     res = adj(obs, raw)
     shouldbe = np.array([4.0, 4.0])

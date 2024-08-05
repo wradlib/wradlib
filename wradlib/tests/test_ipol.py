@@ -482,7 +482,10 @@ def test_interpolate_polar():
     masked_values = (data == 2) | (data == 9)
     filled_a = ipol.interpolate_polar(data, mask=masked_values, ipclass=ipol.Linear)
     testfunc = ipol.interpolate_polar
-    with pytest.raises(ipol.MissingTargetsError):
+    with (
+        pytest.raises(ipol.MissingTargetsError),
+        pytest.warns(UserWarning, match="Neither an explicit mask"),
+    ):
         testfunc(data, mask=None, ipclass=ipol.Linear)
     mdata = np.ma.array(data, mask=masked_values)
     filled_b = ipol.interpolate_polar(mdata, ipclass=ipol.Linear)
