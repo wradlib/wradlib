@@ -194,6 +194,7 @@ def test_AdjustMFB_1(adjust_data):
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
         mfb_args=dict(method="median"),
+        nnearest=2,
     )
     adj(obs, raw)
     adj = adjust.AdjustMFB(
@@ -202,6 +203,7 @@ def test_AdjustMFB_1(adjust_data):
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
         mfb_args=dict(method="linregr", minslope=1.0, minr="0.7", maxp=0.5),
+        nnearest=2,
     )
     adj(obs, raw)
 

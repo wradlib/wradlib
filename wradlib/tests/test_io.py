@@ -1399,7 +1399,7 @@ def test_dump_vector(data_source):
 @requires_geos
 @requires_gdal
 def test_clean_up_temporary_files(data_source):
-    ds = io.VectorSource(data_source.data)
+    ds = io.VectorSource(data_source.data.copy())
     tempdir = ds.ds.GetDescription()
     assert os.path.exists(tempdir)
     ds.close()
