@@ -272,11 +272,10 @@ class VectorSource:
     def close(self):
         if self._geo is not None:
             self._geo = None
-        if self.ds is not None:
-            fname = self.ds.GetDescription()
-            driver = self.ds.GetDriver()
+        if self._ds is not None:
+            fname = self._ds.GetDescription()
+            driver = self._ds.GetDriver()
             driver.Delete(fname)
-            del self
 
     __del__ = close
 
