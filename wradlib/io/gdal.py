@@ -276,6 +276,7 @@ class VectorSource:
             fname = self._ds.GetDescription()
             driver = self._ds.GetDriver()
             driver.Delete(fname)
+            self._ds = None
 
     __del__ = close
 
