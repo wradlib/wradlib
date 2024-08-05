@@ -3,6 +3,7 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import datetime
+import fnmatch
 import gzip
 import io as sio
 import os
@@ -413,7 +414,13 @@ def radolan_files():
     from pathlib import Path
 
     path = os.path.join(util.get_wradlib_data_path(), "radolan/misc")
-    return [p for p in Path(path).rglob("raa*.gz")]
+    if os.path.exists(path):
+        return [p for p in Path(path).rglob("raa*.gz")]
+    else:
+        from wradlib_data import DATASETS
+
+        rfiles = fnmatch.filter(DATASETS.registry.keys(), "radolan/misc/raa*.gz")
+        return [DATASETS.fetch(p) for p in rfiles]
 
 
 def test_get_radolan_header_token():
