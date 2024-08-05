@@ -275,7 +275,8 @@ class VectorSource:
         if self._ds is not None:
             fname = self._ds.GetDescription()
             driver = self._ds.GetDriver()
-            driver.Delete(fname)
+            ret = driver.Delete(fname)
+            print("RET:", ret)
             self._ds = None
 
     __del__ = close
