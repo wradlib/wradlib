@@ -143,7 +143,7 @@ def test_Nearest_1(ipol_data):
 
 def test_Idw_1(ipol_data):
     """testing the basic behaviour of the Idw class"""
-    ip = ipol.Idw(ipol_data.src, ipol_data.trg)
+    ip = ipol.Idw(ipol_data.src, ipol_data.trg, nnearest=2)
     # input more than one dataset
     res = ip(ipol_data.vals)
     assert np.allclose(
@@ -172,7 +172,7 @@ def test_Linear_1(ipol_data):
 def test_OrdinaryKriging_1(ipol_data):
     """testing the basic behaviour of the OrdinaryKriging class"""
 
-    ip = ipol.OrdinaryKriging(ipol_data.src, ipol_data.trg, "1.0 Lin(2.0)")
+    ip = ipol.OrdinaryKriging(ipol_data.src, ipol_data.trg, "1.0 Lin(2.0)", nnearest=2)
     # input more than one dataset
     res = ip(ipol_data.vals)
     assert np.all(
@@ -194,6 +194,7 @@ def test_ExternalDriftKriging_1(ipol_data):
         ipol_data.src,
         ipol_data.trg,
         "1.0 Lin(2.0)",
+        nnearest=2,
         src_drift=ipol_data.src_d,
         trg_drift=ipol_data.trg_d,
     )
@@ -220,7 +221,12 @@ def test_ExternalDriftKriging_2(ipol_data):
     )
 
     ip = ipol.ExternalDriftKriging(
-        ipol_data.src, ipol_data.trg, "1.0 Lin(2.0)", src_drift=src_d, trg_drift=trg_d
+        ipol_data.src,
+        ipol_data.trg,
+        "1.0 Lin(2.0)",
+        nnearest=2,
+        src_drift=src_d,
+        trg_drift=trg_d,
     )
 
     res = ip(ipol_data.vals)
@@ -239,7 +245,12 @@ def test_ExternalDriftKriging_3(ipol_data):
     """testing the basic behaviour of the ExternalDriftKriging class
     with missing drift terms"""
     ip = ipol.ExternalDriftKriging(
-        ipol_data.src, ipol_data.trg, "1.0 Lin(2.0)", src_drift=None, trg_drift=None
+        ipol_data.src,
+        ipol_data.trg,
+        "1.0 Lin(2.0)",
+        nnearest=2,
+        src_drift=None,
+        trg_drift=None,
     )
 
     with pytest.raises(ValueError):

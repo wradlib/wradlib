@@ -218,6 +218,7 @@ def test_AdjustNone_1(adjust_data):
         raw_coords,
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
+        nnearest=2,
     )
     res = adj(obs, raw)
     shouldbe = np.array([2.0, 2.0])
