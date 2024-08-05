@@ -1403,13 +1403,11 @@ def test_dump_vector(data_source):
 @requires_geos
 @requires_gdal
 def test_clean_up_temporary_files(data_source):
-    with io.VectorSource(data_source.data) as ds:
-        tempdir = ds.ds.GetDescription()
-        assert os.path.exists(tempdir)
-        print("exists:", os.path.exists(tempdir), tempdir)
-        ds.close()
-        print("exists:", os.path.exists(tempdir), tempdir)
-        assert not os.path.exists(tempdir)
+    ds = io.VectorSource(data_source.data)
+    tempdir = ds.ds.GetDescription()
+    assert os.path.exists(tempdir)
+    ds.close()
+    assert not os.path.exists(tempdir)
 
 
 @requires_geos
