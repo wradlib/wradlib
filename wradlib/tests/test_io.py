@@ -415,12 +415,12 @@ def radolan_files():
 
     path = os.path.join(util.get_wradlib_data_path(), "radolan/misc")
     if os.path.exists(path):
-        return [p for p in Path(path).rglob("raa*.gz")]
+        return sorted([p for p in Path(path).rglob("raa*.gz")])
     else:
         from wradlib_data import DATASETS
 
         rfiles = fnmatch.filter(DATASETS.registry.keys(), "radolan/misc/raa*.gz")
-        return [DATASETS.fetch(p) for p in rfiles]
+        return sorted([DATASETS.fetch(p) for p in rfiles])
 
 
 def test_get_radolan_header_token():
