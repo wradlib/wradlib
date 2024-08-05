@@ -237,6 +237,7 @@ def test_GageOnly_1(adjust_data):
         raw_coords,
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
+        nnearest=2,
     )
     res = adj(obs, raw)
     shouldbe = np.array([4.0, 4.0])
