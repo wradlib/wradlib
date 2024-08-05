@@ -275,10 +275,10 @@ class VectorSource:
         if self._ds is not None:
             fname = self._ds.GetDescription()
             driver = self._ds.GetDriver()
-            ret = driver.Delete(fname)
-            while os.path.exists(fname):
-                ret = driver.Delete(fname)
-                print("RET:", ret, fname)
+            if isWindows:
+                os.unlink(fname)
+            else:
+                driver.Delete(fname)
             self._ds = None
 
     __del__ = close
