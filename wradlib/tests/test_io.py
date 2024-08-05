@@ -1402,7 +1402,8 @@ def test_clean_up_temporary_files(data_source):
     with io.VectorSource(data_source.data) as ds:
         tempdir = ds.ds.GetDescription()
         assert os.path.exists(tempdir)
-    assert not os.path.exists(tempdir)
+        ds.close()
+        assert not os.path.exists(tempdir)
 
 
 @requires_geos
