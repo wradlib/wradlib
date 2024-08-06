@@ -16,12 +16,14 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **Maintenance - Code**
 
 * MNT: update CI, numpy2 ({pull}`670`) by {at}`mats-knmi` and {at}`kmuehlbauer`
+* MNT: code changes according DeprecationWarnings etc ({pull}`673`) by {at}`kmuehlbauer`
 
 **Maintenance - CI**
 
-* MNT: update CI, numpy2 ({pull}`670`) by {at}`mats-knmi` and {at}`kmuehlbauer`
 * MNT: add codecov.yml to configure coverage status checks ({pull}`647`) by {at}`kmuehlbauer`
 * FIX: pin sphinx-book-theme to fix rtd buildss ({pull}`658`) by {at}`kmuehlbauer`
+* MNT: update CI, numpy2 ({pull}`670`) by {at}`mats-knmi` and {at}`kmuehlbauer`
+* MNT: add codecov-token to CI ({pull}`672`) by {at}`kmuehlbauer`
 
 **Documentation**
 

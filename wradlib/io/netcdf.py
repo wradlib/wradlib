@@ -95,7 +95,9 @@ def read_edge_netcdf(filename, *, enforce_equidist=False):
         attrs["az"] = az
         attrs["r"] = r
         attrs["site"] = (attrs["Longitude"], attrs["Latitude"], attrs["Height"])
-        attrs["time"] = dt.datetime.utcfromtimestamp(attrs.pop("Time"))
+        attrs["time"] = dt.datetime.fromtimestamp(
+            attrs.pop("Time"), dt.timezone.utc
+        ).replace(tzinfo=None)
         attrs["max_range"] = data.shape[1] * binwidth
 
     return data, attrs

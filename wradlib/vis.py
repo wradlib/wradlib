@@ -259,7 +259,7 @@ def create_cg(
     # scale
     tr_scale = trans.Affine2D().scale(scale * np.pi / 180, 1)
     # polar
-    tr_polar = mpl_proj.PolarAxes.PolarTransform()
+    tr_polar = mpl_proj.PolarAxes.PolarTransform(apply_theta_transforms=False)
 
     tr = tr_rotate + tr_scale + tr_polar
 

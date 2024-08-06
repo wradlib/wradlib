@@ -336,7 +336,11 @@ def test_cross_section_ppi():
     # load all sweeps manually and merge them
     sweeps = []
     for sn in np.arange(14):
-        sweeps.append(xr.open_dataset(file, engine="odim", group="sweep_" + str(sn)))
+        sweeps.append(
+            xr.open_dataset(file, engine="odim", group="sweep_" + str(sn)).set_coords(
+                "sweep_fixed_angle"
+            )
+        )
         sweeps[-1].coords["azimuth"] = (
             sweeps[-1].coords["azimuth"].round(1)
         )  # round the azimuths to avoid slight differences
@@ -360,7 +364,7 @@ def test_cross_section_ppi():
     azimuth = [90.5, 120.5, 175.5]
     rec_rhi = util.cross_section_ppi(vol, azimuth, method="nearest")
 
-    assert rec_rhi.dims["azimuth"] == 3
+    assert rec_rhi.sizes["azimuth"] == 3
 
     # Test extract along line
     p1 = (10000, -40000)

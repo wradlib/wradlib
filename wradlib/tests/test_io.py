@@ -410,10 +410,20 @@ def test_read_trmm():
 
 
 def radolan_files():
-    from pathlib import Path
-
-    path = os.path.join(util.get_wradlib_data_path(), "radolan/misc")
-    return [p for p in Path(path).rglob("raa*.gz")]
+    return [
+        "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz",
+        "radolan/misc/raa01-%j_10000-2108010550-dwd---bin.gz",
+        "radolan/misc/raa01-%m_10000-2108010550-dwd---bin.gz",
+        "radolan/misc/raa01-%y_10000-2108010550-dwd---bin.gz",
+        "radolan/misc/raa01-ex_10000-1408102050-dwd---bin.gz",
+        "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz",
+        "radolan/misc/raa01-rw_10000-1408102050-dwd---bin.gz",
+        "radolan/misc/raa01-rx_10000-1408102050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1305270050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1305280050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1406100050-dwd---bin.gz",
+        "radolan/misc/raa01-sf_10000-1408102050-dwd---bin.gz",
+    ]
 
 
 def test_get_radolan_header_token():
@@ -1096,7 +1106,7 @@ def test_open_radolan_dataset():
     rx_file = util.get_wradlib_data_file(filename)
     data = io.radolan.open_radolan_dataset(rx_file)
     assert data.RX.shape == (900, 900)
-    assert data.dims == {"x": 900, "y": 900, "time": 1}
+    assert data.sizes == {"x": 900, "y": 900, "time": 1}
     assert data.RX.dims == ("y", "x")
     assert data.time.values == np.datetime64("2014-08-10T20:50:00.000000000")
 
@@ -1118,7 +1128,7 @@ def test_open_radolan_mfdataset():
     util.get_wradlib_data_file(filename2)
     data = io.radolan.open_radolan_mfdataset(rw_file[:-23] + "*.gz", concat_dim="time")
     assert data.RW.shape == (2, 900, 900)
-    assert data.dims == {"x": 900, "y": 900, "time": 2}
+    assert data.sizes == {"x": 900, "y": 900, "time": 2}
     assert data.RW.dims == ("time", "y", "x")
     assert data.time[0].values == np.datetime64("2014-08-03T09:50:00.000000000")
     assert data.time[1].values == np.datetime64("2014-08-10T20:50:00.000000000")
@@ -1127,7 +1137,8 @@ def test_open_radolan_mfdataset():
 @requires_data
 @pytest.mark.parametrize("radfile", radolan_files())
 def test_read_radolan_data_files(radfile):
-    data = io.radolan.open_radolan_dataset(str(radfile))
+    rfile = util.get_wradlib_data_file(radfile)
+    data = io.radolan.open_radolan_dataset(rfile)
     assert isinstance(data, xr.Dataset)
     name = list(data.variables.keys())[0]
     var = data[name]
@@ -1503,7 +1514,7 @@ def test_read_edge_netcdf(file_or_filelike):
         with pytest.raises(AttributeError):
             io.netcdf.read_edge_netcdf(f)
     with pytest.raises(FileNotFoundError):
-        io.netcdf.read_edge_netcdf("test")
+        io.netcdf.read_edge_netcdf("test_read_edge_netcdf.nc")
 
 
 @requires_data

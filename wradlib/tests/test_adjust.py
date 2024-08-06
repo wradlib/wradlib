@@ -182,6 +182,7 @@ def test_AdjustMFB_1(adjust_data):
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
         mfb_args=mfb_args,
+        nnearest=2,
     )
     res = adj(obs, raw)
     shouldbe = np.array([4.0, 4.0])
@@ -193,6 +194,7 @@ def test_AdjustMFB_1(adjust_data):
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
         mfb_args=dict(method="median"),
+        nnearest=2,
     )
     adj(obs, raw)
     adj = adjust.AdjustMFB(
@@ -201,6 +203,7 @@ def test_AdjustMFB_1(adjust_data):
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
         mfb_args=dict(method="linregr", minslope=1.0, minr="0.7", maxp=0.5),
+        nnearest=2,
     )
     adj(obs, raw)
 
@@ -218,6 +221,7 @@ def test_AdjustNone_1(adjust_data):
         raw_coords,
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
+        nnearest=2,
     )
     res = adj(obs, raw)
     shouldbe = np.array([2.0, 2.0])
@@ -237,6 +241,7 @@ def test_GageOnly_1(adjust_data):
         raw_coords,
         nnear_raws=adjust_data.nnear_raws,
         mingages=mingages,
+        nnearest=2,
     )
     res = adj(obs, raw)
     shouldbe = np.array([4.0, 4.0])

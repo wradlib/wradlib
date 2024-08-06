@@ -24,7 +24,6 @@ np.set_printoptions(
 )
 
 
-@requires_geos
 @pytest.fixture
 def data_base():
     @dataclass(init=False, repr=False, eq=False)
@@ -114,6 +113,7 @@ def data_base():
     yield Data
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase__init__(data_base):
     zdb = zonalstats.ZonalDataBase(data_base.src, trg=data_base.trg, crs=data_base.crs)
@@ -136,18 +136,21 @@ def test_ZonalDataBase__init__(data_base):
     assert zdb._count_intersections == 2
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase_count_intersections(data_base):
     zdb = zonalstats.ZonalDataBase(data_base.src, trg=data_base.trg, crs=data_base.crs)
     assert zdb.count_intersections == 2
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase_srs(data_base):
     zdb = zonalstats.ZonalDataBase(data_base.src, trg=data_base.trg, crs=data_base.crs)
     assert zdb.crs == data_base.crs
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase_isecs(data_base):
     # todo: Normalize Polygons before comparison.
@@ -155,6 +158,7 @@ def test_ZonalDataBase_isecs(data_base):
     np.testing.assert_equal(zdb.isecs, data_base.dst)
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase_get_isec(data_base):
     zdb = zonalstats.ZonalDataBase(data_base.src, trg=data_base.trg, crs=data_base.crs)
@@ -162,6 +166,7 @@ def test_ZonalDataBase_get_isec(data_base):
     np.testing.assert_equal(zdb.get_isec(1), [data_base.box6])
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase_get_source_index(data_base):
     zdb = zonalstats.ZonalDataBase(data_base.src, trg=data_base.trg, crs=data_base.crs)
@@ -169,6 +174,7 @@ def test_ZonalDataBase_get_source_index(data_base):
     assert zdb.get_source_index(1) == 1
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase_dump_vector(data_base):
     zdb = zonalstats.ZonalDataBase(data_base.src, trg=data_base.trg, crs=data_base.crs)
@@ -176,11 +182,13 @@ def test_ZonalDataBase_dump_vector(data_base):
     zdb.dump_vector(f)
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase_load_vector(data_base):
     zonalstats.ZonalDataBase(data_base.f, src_crs=data_base.crs)
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataBase__get_intersection(data_base):
     zdb = zonalstats.ZonalDataBase(data_base.src, trg=data_base.trg, crs=data_base.crs)
@@ -198,7 +206,6 @@ def test_ZonalDataBase__get_intersection(data_base):
         zdb._get_intersection(idx=0)
 
 
-@requires_geos
 @pytest.fixture
 def data_poly():
     @dataclass(init=False, repr=False, eq=False)
@@ -288,6 +295,7 @@ def data_poly():
     yield Data
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataPoly__get_idx_weights(data_poly):
     zdp = zonalstats.ZonalDataPoly(data_poly.src, trg=data_poly.trg, crs=data_poly.crs)
@@ -297,7 +305,6 @@ def test_ZonalDataPoly__get_idx_weights(data_poly):
     )
 
 
-@requires_geos
 @pytest.fixture
 def data_point():
     @dataclass(init=False, repr=False, eq=False)
@@ -371,6 +378,7 @@ def data_point():
     yield Data
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalDataPoint__get_idx_weights(data_point):
     zdp = zonalstats.ZonalDataPoint(
@@ -382,7 +390,6 @@ def test_ZonalDataPoint__get_idx_weights(data_point):
     )
 
 
-@requires_geos
 @pytest.fixture
 def stats_base():
     @dataclass(init=False, repr=False, eq=False)
@@ -471,6 +478,7 @@ def stats_base():
     yield Data
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalStatsBase__init__(stats_base):
     with pytest.raises(NotImplementedError):
@@ -484,6 +492,7 @@ def test_ZonalStatsBase__init__(stats_base):
         zonalstats.ZonalStatsBase(ix=np.arange(10), w=np.arange(11))
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalStatsBase_w(stats_base):
     zdp = zonalstats.ZonalStatsBase(stats_base.zdp)
@@ -491,6 +500,7 @@ def test_ZonalStatsBase_w(stats_base):
     np.testing.assert_equal(zdp.ix, np.array([[0], [1]]))
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalStatsBase__check_vals(stats_base):
     zdp = zonalstats.ZonalStatsBase(stats_base.zdp)
@@ -498,19 +508,20 @@ def test_ZonalStatsBase__check_vals(stats_base):
         zdp._check_vals(np.arange(3))
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalStatsBase_mean(stats_base):
     zdp = zonalstats.ZonalStatsBase(stats_base.zdp)
     np.testing.assert_equal(zdp.mean(np.arange(10, 21, 10)), np.array([10, 20]))
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalStatsBase_var(stats_base):
     zdp = zonalstats.ZonalStatsBase(stats_base.zdp)
     np.testing.assert_equal(zdp.var(np.arange(10, 21, 10)), np.array([0, 0]))
 
 
-@requires_geos
 @pytest.fixture
 def zonal_data():
     @dataclass(init=False, repr=False, eq=False)
@@ -659,12 +670,14 @@ def zonal_data():
     yield Data
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalData_srs(zonal_data):
     assert zonal_data.zdpoly.crs == zonal_data.proj_gk
     assert zonal_data.zdpoint.crs == zonal_data.proj_gk
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalData_isecs(zonal_data):
     # need to iterate over nested array for correct testing
@@ -679,6 +692,7 @@ def test_ZonalData_isecs(zonal_data):
     )
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalData_get_isec(zonal_data):
     for i in [0, 1]:
@@ -693,6 +707,7 @@ def test_ZonalData_get_isec(zonal_data):
         )
 
 
+@requires_geos
 @requires_gdal
 def test_ZonalData_get_source_index(zonal_data):
     np.testing.assert_array_equal(
