@@ -176,7 +176,7 @@ def _bin_distance_xarray(obj, **kwargs):
     bin_distance : :py:class:`xarray:xarray.DataArray`
         DataArray
     """
-    out = _apply_ufunc_wrapper(obj, bin_altitude)
+    out = _apply_ufunc_wrapper(obj, bin_distance, **kwargs)
     out.attrs = get_range_attrs()
     out.name = "bin_distance"
     return out
