@@ -7,6 +7,13 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Version 2.1.1
+
+**Bugfixes**
+
+* FIX: use bin_distance-function to calculate xarray-based bin_distance ({issue}`675`) by {at}`katelbach`  and ({pull}`676`) by {at}`kmuehlbauer`
+
+
 ## Version 2.1.0
 
 **New features**
