@@ -130,7 +130,7 @@ jobs:
             python=${{matrix.python-version}}
       - name: Remove GDAL
         run: |
-          mamba uninstall --force --offline gdal
+          micromamba remove --force --offline gdal
       - name: Install wradlib
         run: |
           python -m pip install . --no-deps
