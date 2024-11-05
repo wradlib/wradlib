@@ -1,6 +1,7 @@
 name: wradlib-notebooktests
 channels:
   - conda-forge
+  - nodefaults
 dependencies:
   - python>=3.9
   - bottleneck
@@ -37,6 +38,6 @@ dependencies:
   - scipy
   - setuptools
   - tqdm
-  - xarray
+  - xarray <=2024.9.0
   - xradar <=0.7.0
   - xmltodict
