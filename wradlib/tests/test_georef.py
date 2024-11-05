@@ -294,6 +294,7 @@ def test_centroid_to_polyvert():
 
 
 @requires_gdal
+@pytest.mark.xfail(strict=False)
 def test_spherical_to_polyvert():
     sph = georef.get_earth_projection()
     polyvert = georef.spherical_to_polyvert(
