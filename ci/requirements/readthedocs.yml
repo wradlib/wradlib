@@ -1,5 +1,6 @@
 channels:
   - conda-forge
+  - nodefaults
 dependencies:
   - python=3.11
   - pip
@@ -19,5 +20,5 @@ dependencies:
   - sphinx-copybutton
   - sphinxcontrib-bibtex
   - sphinx-book-theme>=1.0
-  - xarray
-  - xradar
+  - xarray <=2024.9.0
+  - xradar <=0.7.0

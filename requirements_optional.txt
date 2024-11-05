@@ -6,6 +6,8 @@ gdal>=3
 geopandas
 h5netcdf
 h5py
+libgdal-hdf5
+libgdal-netcdf
 netCDF4
 requests
 xmltodict
