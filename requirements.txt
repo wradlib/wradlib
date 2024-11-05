@@ -4,4 +4,4 @@ numpy
 packaging
 scipy
 xarray
-xradar
+xradar<=0.7.0

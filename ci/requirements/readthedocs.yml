@@ -20,4 +20,4 @@ dependencies:
   - sphinxcontrib-bibtex
   - sphinx-book-theme>=1.0
   - xarray
-  - xradar
+  - xradar <=0.7.0

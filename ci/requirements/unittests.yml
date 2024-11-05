@@ -28,5 +28,5 @@ dependencies:
   - scipy
   - setuptools
   - xarray
-  - xradar
+  - xradar <=0.7.0
   - xmltodict
