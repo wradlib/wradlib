@@ -10,7 +10,8 @@ on:
   release:
     types:
       - created
-
+  schedule:
+    - cron: "0 0 * * *" # Daily “At 00:00” UTC
   workflow_dispatch:
 
 concurrency:
@@ -28,7 +29,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -53,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.10", "3.13"]
         numpy-version: ["1", "2"]
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +69,7 @@ jobs:
           cache-environment-key: "${{runner.os}}-${{runner.arch}}-py${{env.PYTHON_VERSION}}-np${{matrix.numpy_version}}-${{env.TODAY}}-${{hashFiles(env.CONDA_ENV_FILE)}}"
           create-args: >-
             python=${{matrix.python-version}}
+            numpy=${{matrix.numpy-version}}
             conda
       - name: Install wradlib
         run: |
@@ -110,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.12" ]
+        python-version: [ "3.13" ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -169,7 +171,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -226,7 +228,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -282,7 +284,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
     steps:
       - uses: actions/checkout@v4
         with:
