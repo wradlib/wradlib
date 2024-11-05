@@ -1,6 +1,6 @@
 name: CI
 env:
-  micromamba_version: 1.5
+  micromamba_version: 2
 
 on:
   push:
@@ -60,7 +60,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
@@ -116,7 +116,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
@@ -175,7 +175,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
@@ -232,7 +232,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           init-shell: powershell
           environment-name: wradlib-tests
@@ -288,7 +288,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install micromamba environment
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
