@@ -371,7 +371,7 @@ jobs:
 
   upload_testpypi:
     if: github.event_name == 'push'
-    needs: [lint, build_0, build_1, build_2]
+    needs: [lint, build_0, build_1]
     name: deploy to testpypi
     runs-on: ubuntu-latest
     defaults:
@@ -401,7 +401,7 @@ jobs:
 
   upload_pypi:
     if: github.event_name == 'release'
-    needs: [lint, build_0, build_1, build_2]
+    needs: [lint, build_0, build_1]
     name: deploy to pypi
     runs-on: ubuntu-latest
     defaults:
