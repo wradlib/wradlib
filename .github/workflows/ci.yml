@@ -221,7 +221,7 @@ jobs:
     needs: [lint]
     defaults:
       run:
-        shell: powershell
+        shell: bash -l {0}
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/unittests.yml
@@ -236,7 +236,6 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
-          init-shell: pwsh
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
