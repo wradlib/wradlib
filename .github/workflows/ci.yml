@@ -236,7 +236,7 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
-          shell-init: powershell
+          init-shell: powershell
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
