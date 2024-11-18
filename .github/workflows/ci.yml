@@ -221,7 +221,7 @@ jobs:
     needs: [lint]
     defaults:
       run:
-        shell: pwsh
+        shell: powershell
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/unittests.yml
