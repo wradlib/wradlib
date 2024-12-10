@@ -7,6 +7,10 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development version
+
+* FIX: manual garbage collector is needed before each test
+
 ## Version 2.3
 
 This is a pure maintenance release, following the merge of datatree into xarray codebase. This release will pin xradar >= 0.8.0 and xarray >= 2024.10.0 and
