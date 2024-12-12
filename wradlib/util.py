@@ -1370,7 +1370,7 @@ def docstring(func):
 
 def dim0(obj):
     """Return major dimension (azimuth/elevation) of xarray object."""
-    return list(set(obj.dims) & {"azimuth", "elevation"})[-1]
+    return list(set(obj.dims) & {"time", "azimuth", "elevation"})[-1]
 
 
 def get_apply_ufunc_variables(obj, dim):
