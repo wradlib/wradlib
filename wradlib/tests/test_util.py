@@ -333,14 +333,16 @@ def test_find_bbox_indices(bb_data):
 @requires_data
 def test_cross_section_ppi():
     file = util.get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
+    # only load DBZH for testing
+    keep_vars = ["DBZH", "sweep_mode", "sweep_number", "prt_mode", "follow_mode"]
     # load all sweeps manually and merge them
     sweeps = []
     for sn in np.arange(14):
-        sweeps.append(
-            xr.open_dataset(file, engine="odim", group="sweep_" + str(sn)).set_coords(
-                "sweep_fixed_angle"
-            )
-        )
+        sweep = xr.open_dataset(
+            file, engine="odim", group="sweep_" + str(sn)
+        ).set_coords("sweep_fixed_angle")
+        sweep = sweep[keep_vars]
+        sweeps.append(sweep)
         sweeps[-1].coords["azimuth"] = (
             sweeps[-1].coords["azimuth"].round(1)
         )  # round the azimuths to avoid slight differences
