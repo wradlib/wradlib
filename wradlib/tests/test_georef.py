@@ -2,6 +2,7 @@
 # Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import gc
 import sys
 from dataclasses import dataclass
 
@@ -33,6 +34,12 @@ np.set_printoptions(
     threshold=1000,
     formatter=None,
 )
+
+
+# this ensures objects from previous tests are cleaned
+@pytest.fixture(autouse=True)
+def ensure_gc():
+    gc.collect()
 
 
 @pytest.fixture
