@@ -9,6 +9,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 ## Development version
 
+* ENH: use only one data variable for testing ({pull}`685`) by {at}`egouden`
 * FIX: manual garbage collector is needed before each test ({pull}`684`) by {at}`egouden`
 
 ## Version 2.3
