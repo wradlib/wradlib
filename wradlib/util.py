@@ -1370,7 +1370,15 @@ def docstring(func):
 
 def dim0(obj):
     """Return major dimension (azimuth/elevation) of xarray object."""
-    return list(set(obj.dims) & {"azimuth", "elevation"})[-1]
+    if dim0 := set(obj.dims) & {"azimuth", "elevation"}:
+        return dim0.pop()
+    elif "time" in obj.dims:
+        return "time"
+    else:
+        raise ValueError(
+            f"No CfRadial2/FM301 compliant dimension found in {obj.dims!r}. "
+            "Expected one of 'azimuth', 'elevation' or 'time'."
+        )
 
 
 def get_apply_ufunc_variables(obj, dim):
