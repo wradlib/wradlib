@@ -11,6 +11,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * ENH: use only one data variable for testing ({pull}`685`) by {at}`egouden`
 * FIX: manual garbage collector is needed before each test ({pull}`684`) by {at}`egouden`
+* MNT: Use gdal.Warp instead of deprecated gdal.ReprojectImage ({pull}`687`) by {at}`kmuehlbauer`
 
 ## Version 2.3
 
