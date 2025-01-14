@@ -325,8 +325,12 @@ def get_raster_elevation(dataset, *, resample=None, **kwargs):
         if ratio < 0.5:
             resample = gdal.GRA_NearestNeighbour
 
-    gdal.ReprojectImage(
-        src_ds, dst_ds, src_ds.GetProjection(), dst_ds.GetProjection(), resample
+    gdal.Warp(
+        dst_ds,
+        src_ds,
+        dstSRS=dst_ds.GetProjection(),
+        srcSRS=src_ds.GetProjection(),
+        resampleAlg=resample,
     )
     elevation = read_gdal_values(dst_ds)
 
@@ -577,8 +581,13 @@ def reproject_raster_dataset(src_ds, **kwargs):
     dst_band.FlushCache()
 
     # resample and reproject dataset
-    gdal.ReprojectImage(src_ds, dst_ds, src_crs, trg_crs, resample)
-
+    gdal.Warp(
+        dst_ds,
+        src_ds,
+        dstSRS=trg_crs,
+        srcSRS=src_crs,
+        resampleAlg=resample,
+    )
     return dst_ds
 
 
