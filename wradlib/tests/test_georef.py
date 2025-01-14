@@ -969,24 +969,58 @@ def test_extract_raster_dataset(gdal_data):
 @requires_data
 @requires_secrets
 @requires_gdal
+@pytest.mark.parametrize(
+    "ratio, wanted",
+    [
+        (
+            100,
+            np.array(
+                [
+                    [267, 270, 269, 269, 273, 276],
+                    [271, 270, 273, 279, 282, 283],
+                    [273, 276, 277, 281, 287, 289],
+                    [276, 280, 284, 287, 293, 296],
+                    [278, 284, 289, 293, 302, 305],
+                    [283, 291, 297, 301, 303, 309],
+                ]
+            ),
+        ),
+        (50, np.array([[269, 272, 278], [276, 283, 291], [285, 295, 304]])),
+        (
+            200,
+            np.array(
+                [
+                    [265, 266, 267, 268, 267, 267, 267, 268, 270, 272, 274, 276],
+                    [267, 269, 270, 270, 270, 270, 271, 272, 274, 276, 277, 279],
+                    [270, 270, 270, 271, 272, 273, 275, 277, 279, 280, 281, 282],
+                    [271, 272, 272, 272, 273, 275, 278, 280, 282, 284, 284, 285],
+                    [272, 273, 274, 275, 276, 277, 279, 282, 284, 286, 287, 288],
+                    [273, 275, 276, 277, 278, 280, 282, 284, 287, 289, 290, 291],
+                    [274, 276, 278, 280, 281, 283, 285, 287, 290, 292, 294, 295],
+                    [275, 278, 280, 282, 284, 286, 288, 290, 294, 296, 298, 299],
+                    [276, 279, 282, 284, 287, 289, 291, 294, 298, 301, 302, 303],
+                    [278, 281, 284, 287, 290, 292, 294, 297, 300, 303, 305, 307],
+                    [280, 284, 287, 291, 294, 296, 298, 300, 302, 304, 307, 309],
+                    [284, 287, 291, 294, 297, 299, 301, 303, 304, 306, 309, 312],
+                ]
+            ),
+        ),
+    ],
+)
 @pytest.mark.xfail(strict=False)
-def test_get_raster_elevation():
+def test_get_raster_elevation(ratio, wanted):
     filename = "geo/N39W028.SRTMGL3.hgt.zip"
     geofile = util.get_wradlib_data_file(filename)
     # crop file using translate to keep download sizes minimal
-    gdal.Translate("/vsimem/clip.tif", geofile, projWin=[-28.5, 38.5, -28.495, 38.495])
+    gdal.Translate(
+        "/vsimem/clip.tif",
+        geofile,
+        projWin=[-28.5, 38.5, -28.495, 38.495],
+        widthPct=ratio,
+        heightPct=ratio,
+    )
     ds = wradlib.io.open_raster("/vsimem/clip.tif")
     elev = georef.get_raster_elevation(ds)
-    wanted = np.array(
-        [
-            [267, 270, 269, 269, 273, 276],
-            [271, 270, 273, 279, 282, 283],
-            [273, 276, 277, 281, 287, 289],
-            [276, 280, 284, 287, 293, 296],
-            [278, 284, 289, 293, 302, 305],
-            [283, 291, 297, 301, 303, 309],
-        ]
-    )
     np.testing.assert_array_equal(wanted, elev)
 
 
