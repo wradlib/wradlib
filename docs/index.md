@@ -45,6 +45,12 @@ Please cite {{wradlib}} as
 If you refer to a specific {{wradlib}} version please cite using {{wradlib}}'s zenodo [doi:10.5281/zenodo.1209843](https://doi.org/10.5281/zenodo.1209843) for this version.
 :::
 
+:::{seealso}
+{{wradlib}} has been committed to ‘keeping the magic to a minimum’ from the very beginning. This motto continues to form the basis of our development philosophy.
+
+Since version 2.0, {{wradlib}} relies on the {{xradar}} package for most radar data read/write routines. In conjunction with {{xarray}} we use an in-memory representation of the FM301/CfRadial2 WMO based standard. Information about that please refer to xradar's <inv:xradar:std:doc#model>.
+:::
+
 ![old-radarpic](images/old_radarpic.png)
 
 Weather radar data is potentially useful in meteorology, hydrology and risk management. Its ability to provide information on precipitation
