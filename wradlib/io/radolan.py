@@ -773,10 +773,12 @@ def get_radolan_filehandle(fname):
     """
     if isinstance(fname, str):
         if fname.endswith(".gz"):
-            gzip = util.import_optional("gzip")
-            fname = gzip.open(fname)
+            _open = util.import_optional("gzip").open
+        elif fname.endswith(".bz2"):
+            _open = util.import_optional("bz2").open
         else:
-            fname = open(fname, "rb")
+            _open = open
+        fname = _open(fname, mode="rb")
     return fname
 
 
