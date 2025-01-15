@@ -7,13 +7,25 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
-## Development version
+## Version 2.4
+
+**New features**
+
+* ENH: open .bz2 files with RADOLAN reader ({issue}`659`, {pull}`688`) by {at}`kmuehlbauer`
+
+**Maintenance - Code**
 
 * ENH: use only one data variable for testing ({pull}`685`) by {at}`egouden`
-* FIX: manual garbage collector is needed before each test ({pull}`684`) by {at}`egouden`
 * MNT: Use gdal.Warp instead of deprecated gdal.ReprojectImage ({pull}`687`) by {at}`kmuehlbauer`
-* ENH: open .bz2 files with RADOLAN reader ({issue}`659`, {pull}`688`) by {at}`kmuehlbauer`
+
+**Documentation**
+
 * ENH: add note on data model on index page ({pull}`689`) by {at}`kmuehlbauer`
+
+**Bugfixes**
+
+* FIX: manual garbage collector is needed before each test ({pull}`684`) by {at}`egouden`
+
 
 ## Version 2.3
 
