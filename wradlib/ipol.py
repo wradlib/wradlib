@@ -666,11 +666,18 @@ class RectBin(RectGridBase):
         data point coordinates of the source points with shape (..., ndims).
     trg : :class:`numpy:numpy.ndarray`
         rectangular grid coordinates (center) with shape (..., 2)
+    fill : boolean
+        Mask where to fill nan with nearest neighbour
     """
 
-    def __init__(self, src, trg):
+    def __init__(self, src, trg, fill=None):
         super().__init__(trg, src)
         self._binned_stats = False
+        src = src.reshape(-1, 2)
+        trg = trg.reshape(-1, 2)
+        self.fill = fill
+        if self.fill is not None:
+            self.nearest = Nearest(src, trg)
 
     @property
     def binned_stats(self):
@@ -704,7 +711,10 @@ class RectBin(RectGridBase):
 
         if not self.binned_stats or Version(scipy.__version__) < Version("1.4"):
             result = stats.binned_statistic_dd(
-                self.ipol_points, values, bins=self.ipol_grid, **kwargs
+                self.ipol_points,
+                values,
+                bins=self.ipol_grid,
+                **kwargs,
             )
             self.binned_stats = result
         else:
@@ -719,6 +729,15 @@ class RectBin(RectGridBase):
         # need to flip ydim if grid origin is 'upper'
         if self.upper:
             stat = np.flip(stat, self.ydim)
+
+        # fill gaps with nearest values
+        if self.fill is not None:
+            values = values.reshape(-1)
+            nearest = self.nearest(values)
+            nearest = nearest.reshape(stat.shape)
+            nearest[~self.fill] = np.nan
+            gaps = np.isnan(stat)
+            stat[gaps] = nearest[gaps]
 
         return stat
 
