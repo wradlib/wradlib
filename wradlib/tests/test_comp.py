@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+from xradar.io.backends import open_odim_datatree
 
 from wradlib import comp, georef, io, ipol, util
 
@@ -248,3 +249,31 @@ def test_compose():
     )
     np.testing.assert_allclose(composite, res)
     np.testing.assert_allclose(composite1, res1)
+
+
+@requires_gdal
+def test_sweep_to_raster():
+
+    filename = "hdf5/IDR66_20141206_094829.vol.h5"
+    filename = util.get_wradlib_data_file(filename)
+    sweep = open_odim_datatree(filename)
+    sweep = sweep["sweep_0"].ds
+
+    lon = float(sweep.longitude.values)
+    lat = float(sweep.latitude.values)
+    lon_min = lon - 1
+    lat_min = lat - 1
+    lon_max = lon + 1
+    lat_max = lat + 1
+    bounds = [lon_min, lat_min, lon_max, lat_max]
+    size = 0.01
+    raster = comp.create_grid(bounds, size, lonlat=True, raster=True, georef=True)
+    composite = comp.sweep_to_raster(sweep, raster)
+
+    bounds = [-10e3, -10e3, 10e3, 10e3]
+    size = 500
+    crs = georef.get_radar_projection((lon, lat))
+    raster = comp.create_grid(bounds, size, crs=crs, raster=True, georef=True)
+    composite, transform = comp.sweep_to_raster(sweep, raster, reuse=True)
+    composite = comp.sweep_to_raster(sweep, raster, transform=transform)
+    composite.to_netcdf("comp.nc")
