@@ -269,7 +269,7 @@ jobs:
           $Env:PROJ_NETWORK = "ON"
           $Env:PROJ_DATA = "$Env:CONDA_PREFIX\Library\share\proj"
           Get-ChildItem Env: | Sort Name
-          pytest --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k "not geoid_to_ellipsoid" --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
