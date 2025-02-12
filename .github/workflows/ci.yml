@@ -66,6 +66,8 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
+          init-shell: >-
+            bash
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
@@ -90,6 +92,7 @@ jobs:
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+          env
           pytest -n auto --dist loadfile --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -122,6 +125,8 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
+          init-shell: >-
+            bash
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
@@ -180,6 +185,8 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
+          init-shell: >-
+            bash
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
@@ -221,7 +228,7 @@ jobs:
     needs: [lint]
     defaults:
       run:
-        shell: powershell
+        shell: bash -l {0}
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/unittests.yml
@@ -236,7 +243,7 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
-          init-shell: powershell
+          init-shell: bash
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
@@ -258,7 +265,26 @@ jobs:
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
-          pytest --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          env
+          python -m pytest -k test_ErrorMetrics___init__warn --verbose
+      - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
+        run: |
+          env
+          python -m pytest -k test_all_metrics --verbose
+      - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
+        run: |
+          env
+          python -m pytest -k test_verify --verbose
+      - name: Test with pytest
+        env:
+          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
+        run: |
+          env
+          python -m pytest -k test_ErrorMetrics___init__warn --verbose
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:

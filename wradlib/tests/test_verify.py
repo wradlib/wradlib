@@ -26,12 +26,12 @@ def pol_data():
         np.random.seed(42)
         data = np.random.random((len(az), len(r)))
 
-    yield Data
+    return Data
 
 
 @requires_gdal
 def test_PolarNeighbours__init__(pol_data):
-    verify.PolarNeighbours(
+    pn = verify.PolarNeighbours(
         pol_data.r,
         pol_data.az,
         pol_data.site,
@@ -40,6 +40,7 @@ def test_PolarNeighbours__init__(pol_data):
         pol_data.y,
         nnear=9,
     )
+    assert isinstance(pn, verify.PolarNeighbours)
 
 
 @requires_gdal
