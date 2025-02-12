@@ -106,7 +106,9 @@ requires_gdal = pytest.mark.skipif(
     reason="requires gdal.",
 )
 
-if not util.has_import(gdal):
+has_gdal = util.has_import("gdal")
+
+if not has_gdal:
     has_geos = False
 else:
     has_geos = util.has_geos()
