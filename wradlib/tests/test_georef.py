@@ -2,7 +2,6 @@
 # Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import gc
 from dataclasses import dataclass
 
 import numpy as np
@@ -36,9 +35,9 @@ np.set_printoptions(
 
 
 # this ensures objects from previous tests are cleaned
-@pytest.fixture(autouse=True)
-def ensure_gc():
-    gc.collect()
+# @pytest.fixture(autouse=True)
+# def ensure_gc():
+#    gc.collect()
 
 
 @pytest.fixture
