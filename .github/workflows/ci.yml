@@ -266,30 +266,6 @@ jobs:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_PolarNeighbours__init__
-      - name: Test with pytest
-        env:
-          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
-        run: |
-          env
-          python -m pytest -k test_extract --verbose
-      - name: Test with pytest
-        env:
-          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
-        run: |
-          env
-          python -m pytest -k test_get_bincoords --verbose
-      - name: Test with pytest
-        env:
-          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
-        run: |
-          env
-          python -m pytest -k test_get_bincoords_at_points --verbose
-      - name: Test with pytest
-        env:
-          WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
-        run: |
-          env
           python -m pytest -k test_ErrorMetrics___init__warn --verbose
       - name: Test with pytest
         env:
