@@ -272,43 +272,43 @@ jobs:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_extract --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_extract --verbose
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_get_bincoords --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_get_bincoords --verbose
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_get_bincoords_at_points --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_get_bincoords_at_points --verbose
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_ErrorMetrics___init__warn --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_ErrorMetrics___init__warn --verbose
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_all_metrics --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_all_metrics --verbose
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_pprint --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_pprint --verbose
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_ErrorMetrics___init__warn --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_ErrorMetrics___init__warn --verbose
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
