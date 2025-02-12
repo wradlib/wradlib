@@ -322,35 +322,16 @@ def reproject(*args, **kwargs):
     src_crs = kwargs.get("src_crs", get_default_projection())
     trg_crs = kwargs.get("trg_crs", get_default_projection())
 
-    print("YY1:", src_crs)
-    print("YY2:", trg_crs)
-
-    from pyproj.transformer import TransformerGroup
-
-    print(dir(src_crs))
-    print("has_to_wgs84:", src_crs.HasTOWGS84())
-    tg = TransformerGroup(src_crs.ExportToWkt(), trg_crs.ExportToWkt())
-    print("tg:", tg)
-    print("tg-descr:", tg.transformers[0].description)
-    if tg.unavailable_operations:
-        print("tg-unavail:", tg.unavailable_operations[0].name)
-        print("url:", tg.unavailable_operations[0].grids[0].url)
-
     area_of_interest = kwargs.get("area_of_interest", None)
 
     axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
-    # src_crs.SetAxisMappingStrategy(axis_order)
-    # trg_crs.SetAxisMappingStrategy(axis_order)
+    src_crs.SetAxisMappingStrategy(axis_order)
+    trg_crs.SetAxisMappingStrategy(axis_order)
     options = osr.CoordinateTransformationOptions()
     if area_of_interest is not None:
         options.SetAreaOfInterest(*area_of_interest)
     ct = osr.CreateCoordinateTransformation(src_crs, trg_crs, options)
-    print(gdal.GetLastErrorMsg())  # .find("Unable to load PROJ.4") != -1:
-    print("XX0:", dir(ct))
-    # print(ct.TransformPointWithErrorCode(C[0, 0], C[0, 1], C[0, 2]))
-    print("XX1:", ct.GetInverse())
-    with osr.ExceptionMgr(useExceptions=True):
-        trans = np.array(ct.TransformPoints(C))
+    trans = np.array(ct.TransformPoints(C))
 
     if len(args) == 1:
         return trans[:, 0:numCols].reshape(cshape)
@@ -587,14 +568,8 @@ def get_earth_projection(model="ellipsoid"):
     elif model == "ellipsoid":
         crs.ImportFromEPSG(4979)
     elif model == "geoid":
-        # wgs84 = osr.SpatialReference()
-        # wgs84.ImportFromEPSG(4326)
-        # egm96 = osr.SpatialReference()
-        # egm96.ImportFromEPSG(5773)
         crs = osr.SpatialReference()
-        x = crs.SetFromUserInput("epsg:4326+5773")
-        print("geoid:", x)
-        # crs.SetCompoundCS("WGS84 Horizontal + EGM96 Vertical", wgs84, egm96)
+        crs.SetFromUserInput("epsg:4326+5773")
     else:
         raise ValueError(f"Unknown model {model!r}.")
 
