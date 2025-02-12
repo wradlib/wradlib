@@ -243,7 +243,7 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
-          init-shell: powershell
+          init-shell: bash powershell
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
@@ -265,8 +265,9 @@ jobs:
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
-          Get-ChildItem Env: | Sort Name
+          env
           pytest --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+        shell: bash -l {0}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
