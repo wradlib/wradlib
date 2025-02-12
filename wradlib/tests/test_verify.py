@@ -26,7 +26,7 @@ def pol_data():
         np.random.seed(42)
         data = np.random.random((len(az), len(r)))
 
-    yield Data
+    return Data
 
 
 @requires_gdal

@@ -278,7 +278,7 @@ jobs:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_pprint --verbose
+          python -m pytest -k test_verify --verbose
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
