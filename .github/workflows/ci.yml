@@ -267,7 +267,7 @@ jobs:
         run: |
           $Env:CONDA_PREFIX
           $Env:PROJ_NETWORK = "ON"
-          $Env:PROJ_DATA = "$Env:CONDA_PREFIX\share\proj"
+          $Env:PROJ_DATA = "$Env:CONDA_PREFIX\Library\share\proj"
           Get-ChildItem Env: | Sort Name
           pytest --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
