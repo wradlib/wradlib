@@ -228,7 +228,7 @@ jobs:
     needs: [lint]
     defaults:
       run:
-        shell: powershell
+        shell: bash -l {0}
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/unittests.yml
@@ -243,7 +243,7 @@ jobs:
       - name: Install micromamba environment
         uses: mamba-org/setup-micromamba@v2
         with:
-          init-shell: powershell
+          init-shell: bash
           environment-name: wradlib-tests
           environment-file: ${{env.CONDA_ENV_FILE}}
           cache-environment: true
@@ -265,10 +265,7 @@ jobs:
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
-          $Env:CONDA_PREFIX
-          $Env:PROJ_NETWORK = "ON"
-          $Env:PROJ_DATA = "$Env:CONDA_PREFIX\Library\share\proj"
-          Get-ChildItem Env: | Sort Name
+          env
           python -m pytest -k "not geoid_to_ellipsoid" --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
