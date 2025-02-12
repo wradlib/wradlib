@@ -266,7 +266,7 @@ jobs:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
         run: |
           env
-          python -m pytest -k test_PolarNeighbours__init__ --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k test_PolarNeighbours__init__
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
