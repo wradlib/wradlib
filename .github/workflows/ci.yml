@@ -236,6 +236,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.13"]
+        test-module: ["adjust", "atten", "comp", "dp", "georef", "io", "io_backends", "ipol", "qual", "trafo", "util", "verify", "vis", "vpr", "xarray", "zonalstats", "zr"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -264,9 +265,10 @@ jobs:
       - name: Test with pytest
         env:
           WRADLIB_EARTHDATA_BEARER_TOKEN: ${{ secrets.WRADLIB_EARTHDATA_BEARER_TOKEN }}
+          TEST_MODULE: ${{matrix.test-module}}
         run: |
           env
-          python -m pytest -k "not geoid_to_ellipsoid" --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
+          python -m pytest -k "test_$TEST_MODULE" --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs wradlib
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
