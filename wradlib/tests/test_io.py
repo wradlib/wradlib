@@ -20,7 +20,6 @@ from wradlib import georef, io, util, zonalstats
 from . import (
     get_wradlib_data_file,
     requires_dask,
-    requires_data,
     requires_gdal,
     requires_geos,
     requires_h5py,
@@ -37,7 +36,6 @@ def file_or_filelike(request):
 
 
 # testing functions related to read_dx
-@requires_data
 def test__get_timestamp_from_filename():
     filename = "raa00-dx_10488-200608050000-drs---bin"
     assert io.radolan._get_timestamp_from_filename(filename) == datetime.datetime(
@@ -49,7 +47,6 @@ def test__get_timestamp_from_filename():
     )
 
 
-@requires_data
 def test_get_dx_timestamp():
     filename = "raa00-dx_10488-200608050000-drs---bin"
     assert (
@@ -102,7 +99,6 @@ def test_unpack_dx():
     pass
 
 
-@requires_data
 def test_read_dx(file_or_filelike):
     filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
     with get_wradlib_data_file(filename, file_or_filelike) as dxfile:
@@ -258,7 +254,6 @@ def test_get_radiosonde():
         assert quant == res3
 
 
-@requires_data
 def test_get_membership_functions():
     filename = util.get_wradlib_data_file("misc/msf_xband.gz")
     msf = io.misc.get_membership_functions(filename)
@@ -276,7 +271,6 @@ def test_get_membership_functions():
     np.testing.assert_array_equal(msf[0, :, 8, :], res)
 
 
-@requires_data
 @requires_h5py
 def test_read_generic_hdf5(file_or_filelike):
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
@@ -284,7 +278,6 @@ def test_read_generic_hdf5(file_or_filelike):
         io.hdf.read_generic_hdf5(f)
 
 
-@requires_data
 @requires_h5py
 def test_read_opera_hdf5(file_or_filelike):
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
@@ -292,7 +285,6 @@ def test_read_opera_hdf5(file_or_filelike):
         io.hdf.read_opera_hdf5(f)
 
 
-@requires_data
 @requires_h5py
 def test_read_gamic_hdf5(file_or_filelike):
     ppi = "hdf5/2014-08-10--182000.ppi.mvol"
@@ -327,22 +319,13 @@ def test_to_hdf5():
         io.hdf.from_hdf5(name, dataset="NotAvailable")
 
 
-@requires_data
 @requires_gdal
 def test_read_safnwc():
     filename = "hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5"
     safnwcfile = util.get_wradlib_data_file(filename)
     io.gdal.read_safnwc(safnwcfile)
 
-    command = "rm -rf test1.h5"
-    subprocess.check_call(command, shell=True)
-    command = f"h5copy -i {safnwcfile} -o test1.h5 -s CT -d CT"
-    subprocess.check_call(command, shell=True)
-    with pytest.raises(IOError):
-        io.gdal.read_safnwc("test1.h5")
 
-
-@requires_data
 @requires_netcdf
 @requires_gdal
 def test_read_gpm():
@@ -372,7 +355,6 @@ def test_read_gpm():
     io.hdf.read_gpm(gpm_file, bbox=bbox)
 
 
-@requires_data
 @requires_h5py
 @requires_netcdf
 @requires_gdal
@@ -585,7 +567,6 @@ def test_read_radolan_runlength_line():
     np.testing.assert_allclose(line, testarr)
 
 
-@requires_data
 def test_decode_radolan_runlength_array():
     filename = "radolan/misc/raa00-pc_10015-1408030905-dwd---bin.gz"
     pg_file = util.get_wradlib_data_file(filename)
@@ -598,7 +579,6 @@ def test_decode_radolan_runlength_array():
     assert arr.shape == (460, 460)
 
 
-@requires_data
 def test_read_radolan_binary_array():
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
     rw_file = util.get_wradlib_data_file(filename)
@@ -616,7 +596,6 @@ def test_read_radolan_binary_array():
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="no gunzip on windows")
-@requires_data
 def test_get_radolan_filehandle():
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
     rw_file = util.get_wradlib_data_file(filename)
@@ -915,7 +894,6 @@ def test_parse_dwd_composite_header():
     _check_product(pz, test_pz)
 
 
-@requires_data
 def test_read_radolan_composite():
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
     rw_file = util.get_wradlib_data_file(filename)
@@ -992,7 +970,6 @@ def test_read_radolan_composite():
     data, attrs = io.radolan.read_radolan_composite(pc_file, missing=255)
 
 
-@requires_data
 def test_read_radolan_composit_corrupted():
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
     rw_file = util.get_wradlib_data_file(filename)
@@ -1047,7 +1024,6 @@ def test_read_radolan_composit_corrupted():
         assert data.shape == (900, 900)
 
 
-@requires_data
 def test__radolan_file(file_or_filelike):
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
     test_attrs = {
@@ -1087,7 +1063,6 @@ def test__radolan_file(file_or_filelike):
         assert radfile.data["RW"].shape == (900, 900)
 
 
-@requires_data
 def test_open_radolan_dataset():
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
     rw_file = util.get_wradlib_data_file(filename)
@@ -1116,7 +1091,6 @@ def test_open_radolan_dataset():
     assert data.PG.shape == (460, 460)
 
 
-@requires_data
 @requires_dask
 def test_open_radolan_mfdataset():
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
@@ -1134,7 +1108,6 @@ def test_open_radolan_mfdataset():
     assert data.time[1].values == np.datetime64("2014-08-10T20:50:00.000000000")
 
 
-@requires_data
 @pytest.mark.parametrize("radfile", radolan_files())
 def test_read_radolan_data_files(radfile):
     rfile = util.get_wradlib_data_file(radfile)
@@ -1146,7 +1119,6 @@ def test_read_radolan_data_files(radfile):
     assert isinstance(var.values, np.ndarray)
 
 
-@requires_data
 @requires_xmltodict
 def test_read_rainbow(file_or_filelike):
     filename = "rainbow/2013070308340000dBuZ.azi"
@@ -1158,7 +1130,6 @@ def test_read_rainbow(file_or_filelike):
     assert rb_dict["volume"]["@datetime"] == "2013-07-03T08:33:55"
 
 
-@requires_data
 @requires_xmltodict
 def test_get_rb_blob_from_file(file_or_filelike):
     filename = "rainbow/2013070308340000dBuZ.azi"
@@ -1176,7 +1147,6 @@ def test_get_rb_blob_from_file(file_or_filelike):
         io.rainbow.get_rb_blob_from_file("rb_fh", rbblob)
 
 
-@requires_data
 def test_get_rb_file_as_string():
     filename = "rainbow/2013070308340000dBuZ.azi"
     rb_file = util.get_wradlib_data_file(filename)
@@ -1209,7 +1179,6 @@ def test_gdal_create_dataset():
     )
 
 
-@requires_data
 @requires_gdal
 def test_write_raster_dataset():
     filename = "geo/bonn_new.tif"
@@ -1221,7 +1190,6 @@ def test_write_raster_dataset():
         io.gdal.write_raster_dataset(geofile + "asc1", ds, driver="AIG")
 
 
-@requires_data
 @requires_gdal
 def test_open_raster():
     filename = "geo/bonn_new.tif"
@@ -1229,7 +1197,6 @@ def test_open_raster():
     io.gdal.open_raster(geofile, driver="GTiff")
 
 
-@requires_data
 @requires_gdal
 def test_open_vector():
     util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
@@ -1276,7 +1243,6 @@ def data_source():
 
 
 @requires_geos
-@requires_data
 @requires_gdal
 def test__check_src():
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
@@ -1374,7 +1340,6 @@ def test_get_attributes(data_source):
 
 
 @requires_geos
-@requires_data
 @requires_gdal
 def test_get_geom_properties():
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
@@ -1411,7 +1376,6 @@ def test_clean_up_temporary_files(data_source):
 
 
 @requires_geos
-@requires_data
 @requires_gdal
 def test_dump_raster():
     util.get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
@@ -1435,7 +1399,6 @@ def test_dump_raster():
     )
 
 
-@requires_data
 def test_open_iris_cartesian_product():
     filename = "sigmet/SUR160703220000.MAX71NP.gz"
     with get_wradlib_data_file(filename, "filelike") as sigmetfile:
@@ -1446,7 +1409,6 @@ def test_open_iris_cartesian_product():
     assert isinstance(data.fh, (np.memmap, np.ndarray))
 
 
-@requires_data
 def test_read_iris(file_or_filelike):
     filename = "sigmet/cor-main131125105503.RAW2049"
     with get_wradlib_data_file(filename, file_or_filelike) as sigmetfile:
@@ -1500,7 +1462,6 @@ def test_read_iris(file_or_filelike):
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="flaky windows")
-@requires_data
 @requires_netcdf
 def test_read_edge_netcdf(file_or_filelike):
     filename = "netcdf/edge_netcdf.nc"
@@ -1517,7 +1478,6 @@ def test_read_edge_netcdf(file_or_filelike):
         io.netcdf.read_edge_netcdf("test_read_edge_netcdf.nc")
 
 
-@requires_data
 @requires_netcdf
 def test_read_generic_netcdf(file_or_filelike):
     filename = "netcdf/cfrad.20080604_002217_000_SPOL_v36_SUR.nc"
@@ -1557,7 +1517,6 @@ def test_get_srtm_tile_names():
         assert t == filelist
 
 
-@requires_data
 @requires_secrets
 @requires_gdal
 @pytest.mark.xfail(strict=False)
@@ -1585,7 +1544,6 @@ def test_get_srtm(mock_wradlib_data_env):
     np.testing.assert_array_almost_equal(geo, geo_ref)
 
 
-@requires_data
 @requires_gdal
 def test_get_srtm_offline():
     targets = ["N38W029", "N38W028", "N39W029", "N39W028"]

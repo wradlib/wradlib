@@ -4,6 +4,7 @@
 
 import datetime as dt
 import os
+import tempfile
 from dataclasses import dataclass
 
 import numpy as np
@@ -12,7 +13,7 @@ import xarray as xr
 
 from wradlib import util
 
-from . import requires_data, requires_gdal
+from . import requires_gdal
 
 
 def test__shape_to_size():
@@ -55,19 +56,15 @@ def test_prob_round():
 
 
 def test_get_wradlib_data_path():
-    wrl_data_path = os.environ.get("WRADLIB_DATA", None)
-    del os.environ["WRADLIB_DATA"]
-    with pytest.raises(EnvironmentError):
-        util.get_wradlib_data_path()
-    if wrl_data_path is not None:
-        os.environ["WRADLIB_DATA"] = wrl_data_path
+    util.get_wradlib_data_path()
+    with tempfile.TemporaryDirectory() as temp_dir:
+        os.environ["WRADLIB_DATA"] = temp_dir
+        assert temp_dir == util.get_wradlib_data_path()
 
 
-@requires_data
-def test_get_wradlib_data_path_requires():
-    filename = os.path.join(util.get_wradlib_data_path(), "test.dat")
-    with pytest.raises((EnvironmentError, ValueError)):
-        util.get_wradlib_data_file(filename)
+def test_get_wradlib_data_file():
+    filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
+    filename = util.get_wradlib_data_file(filename)
 
 
 def test_from_to():
@@ -92,7 +89,6 @@ def test_import_optional():
         mod.test()
 
 
-@requires_data
 def test_roll2d_polar():
     filename = util.get_wradlib_data_file("misc/polar_dBZ_tur.gz")
     data = np.loadtxt(filename)
@@ -330,7 +326,6 @@ def test_find_bbox_indices(bb_data):
 
 
 @requires_gdal
-@requires_data
 def test_cross_section_ppi():
     file = util.get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
     # only load DBZH for testing

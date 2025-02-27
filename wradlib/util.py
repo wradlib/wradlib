@@ -43,6 +43,7 @@ import numpy as np
 import xarray as xr
 from scipy import ndimage, signal
 from scipy.spatial import KDTree
+from wradlib_data import DATASETS
 
 from wradlib import georef, version
 
@@ -584,26 +585,25 @@ def has_geos():
 
 
 def get_wradlib_data_path():
-    wrl_data_path = os.environ.get("WRADLIB_DATA", None)
-    if wrl_data_path is None:
-        raise OSError(
-            "`WRADLIB_DATA` environment variable not set. Please set `WRADLIB_DATA` "
-            "pointing to the location of `wradlib_data` repository on the filesystem."
+
+    if "WRADLIB_DATA" in os.environ:
+        wrl_data_path = os.environ["WRADLIB_DATA"]
+        warn(
+            "usage of the WRADLIB_DATA environment variable will be deprecated in the future in favor of the wradlid_data package",
+            FutureWarning,
         )
-    if not os.path.isdir(wrl_data_path):
-        raise OSError(f"`WRADLIB_DATA` path {wrl_data_path!r} does not exist.")
+    else:
+        wrl_data_path = DATASETS.abspath
+
+    if not os.path.exists(wrl_data_path):
+        os.makedirs(wrl_data_path)
+
     return wrl_data_path
 
 
 def get_wradlib_data_file(relfile):
     data_file = os.path.abspath(os.path.join(get_wradlib_data_path(), relfile))
-    if not os.path.exists(data_file):
-        try:
-            from wradlib_data import DATASETS
 
-            data_file = DATASETS.fetch(relfile)
-        except ImportError as err:
-            raise OSError(f"WRADLIB_DATA file {data_file!r} does not exist.") from err
     return data_file
 
 

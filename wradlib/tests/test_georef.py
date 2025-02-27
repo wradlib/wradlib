@@ -18,7 +18,6 @@ from . import (
     gdal,
     ogr,
     osr,
-    requires_data,
     requires_gdal,
     requires_h5py,
     requires_secrets,
@@ -265,7 +264,6 @@ def test_spherical_to_proj(coord_transform_data):
     np.testing.assert_allclose(coords[..., 2], data.result_n[2])
 
 
-@requires_data
 def test_maximum_intensity_projection():
     angle = 0.0
     elev = 0.0
@@ -817,7 +815,6 @@ def gdal_data():
     yield Data
 
 
-@requires_data
 @requires_gdal
 def test_read_gdal_coordinates(gdal_data):
     center_coords = georef.read_gdal_coordinates(gdal_data.ds)
@@ -966,7 +963,6 @@ def test_extract_raster_dataset(gdal_data):
     assert coords.shape[-1] == 2
 
 
-@requires_data
 @requires_secrets
 @requires_gdal
 @pytest.mark.parametrize(
@@ -1041,7 +1037,6 @@ def test_get_raster_extent(gdal_data):
     np.testing.assert_array_almost_equal(extent, gdal_data.corner_geo_gdalinfo)
 
 
-@requires_data
 @requires_secrets
 @requires_gdal
 @pytest.mark.xfail(strict=False)
@@ -1300,7 +1295,6 @@ def sat_data():
     yield Data
 
 
-@requires_data
 @requires_gdal
 @requires_h5py
 def test_correct_parallax(sat_data):
@@ -1354,7 +1348,6 @@ def test_correct_parallax(sat_data):
     np.testing.assert_allclose(z[0, 0, 0:10], z_out, rtol=1e-10)
 
 
-@requires_data
 @requires_gdal
 @requires_h5py
 def test_dist_from_orbit(sat_data):
@@ -1469,7 +1462,6 @@ def test_get_vector_points_warning():
         list(georef.get_vector_points(point))
 
 
-@requires_data
 @requires_gdal
 def test_get_vector_coordinates(vec_data):
     layer = vec_data.layer
@@ -1509,7 +1501,6 @@ def test_transform_geometry_warning(vec_data):
         georef.transform_geometry(vec_data.ogrobj, trg_crs=vec_data.wgs84)
 
 
-@requires_data
 @requires_gdal
 def test_ogr_copy_layer():
     filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
@@ -1520,7 +1511,6 @@ def test_ogr_copy_layer():
     assert isinstance(ds.GetLayer(), ogr.Layer)
 
 
-@requires_data
 @requires_gdal
 def test_ogr_copy_layer_by_name():
     filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
