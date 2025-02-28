@@ -27,6 +27,7 @@ dependencies:
   - pint
   - pint-xarray
   - pip
+  - pooch
   - psutil
   - pytest
   - pytest-cov
