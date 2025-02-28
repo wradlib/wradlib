@@ -9,7 +9,9 @@ import pytest
 
 from wradlib import comp, georef, io, ipol, util
 
-from . import requires_data, requires_gdal
+from . import (
+    requires_gdal,
+)
 
 
 @pytest.fixture
@@ -33,7 +35,6 @@ def comp_data():
     yield Data
 
 
-@requires_data
 @requires_gdal
 def test_extract_circle(comp_data):
     x = comp_data.x
@@ -45,7 +46,6 @@ def test_extract_circle(comp_data):
     comp.extract_circle(np.array([x.mean(), y.mean()]), 128000.0, grid_xy)
 
 
-@requires_data
 @requires_gdal
 def test_togrid(comp_data):
     x = comp_data.x
