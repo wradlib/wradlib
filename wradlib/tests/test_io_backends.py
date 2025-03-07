@@ -9,10 +9,9 @@ import xarray as xr
 
 from wradlib import io
 
-from . import get_wradlib_data_file, requires_data, requires_xarray_backend_api
+from . import get_wradlib_data_file, requires_xarray_backend_api
 
 
-@requires_data
 @requires_xarray_backend_api
 def test_radolan_backend(file_or_filelike):
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"

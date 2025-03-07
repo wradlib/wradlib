@@ -10,7 +10,7 @@ import pytest
 
 from wradlib import classify, georef, io, ipol, util
 
-from . import requires_data, requires_gdal, requires_h5py, requires_netcdf
+from . import requires_gdal, requires_h5py, requires_netcdf
 
 
 def test_filter_gabella_a():
@@ -36,14 +36,12 @@ def test_filter_window_distance():
     assert (result == cl).all()
 
 
-@requires_data
 def test_filter_gabella():
     filename = util.get_wradlib_data_file("misc/polar_dBZ_fbg.gz")
     data = np.loadtxt(filename)
     classify.filter_gabella(data, wsize=5, thrsnorain=0.0, tr1=6.0, n_p=8, tr2=1.3)
 
 
-@requires_data
 def test_histo_cut():
     filename = util.get_wradlib_data_file("misc/annual_rainfall_fbg.gz")
     yearsum = np.loadtxt(filename)
@@ -69,7 +67,6 @@ def fuzzy_data():
     yield dat
 
 
-@requires_data
 @requires_netcdf
 @requires_h5py
 def test_classify_echo_fuzzy(fuzzy_data):
@@ -143,7 +140,6 @@ def cloudtype_data():
     yield dat
 
 
-@requires_data
 @requires_gdal
 @requires_h5py
 def test_filter_cloudtype(cloudtype_data):
@@ -188,7 +184,6 @@ def class_data():
     yield TestHydrometeorClassification
 
 
-@requires_data
 def test_msf_index_indep(class_data):
     tst = np.array([-20, 10, 110])
     res = np.array(
@@ -200,7 +195,6 @@ def test_msf_index_indep(class_data):
     np.testing.assert_array_equal(msf_val, res)
 
 
-@requires_data
 def test_fuzzify(class_data):
     res = np.array(
         [
@@ -215,7 +209,6 @@ def test_fuzzify(class_data):
     np.testing.assert_array_equal(fu[0], res)
 
 
-@requires_data
 def test_probability(class_data):
     res = np.array(
         [
@@ -236,7 +229,6 @@ def test_probability(class_data):
     np.testing.assert_array_almost_equal(prob, res, decimal=8)
 
 
-@requires_data
 @pytest.mark.xfail(strict=False)
 def test_classify(class_data):
     res_idx = np.array(

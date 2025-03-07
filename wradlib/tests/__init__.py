@@ -8,6 +8,7 @@ wradlib_tests
 
 """
 import contextlib
+import importlib.util
 import io
 import os
 
@@ -15,12 +16,6 @@ import pytest
 from packaging.version import Version
 from wradlib import util
 from xarray import __version__ as xr_version
-
-has_data = os.environ.get("WRADLIB_DATA", False)
-requires_data = pytest.mark.skipif(
-    not has_data,
-    reason="requires 'WRADLIB_DATA' environment variable set to wradlib-data repository location.",
-)
 
 has_secrets = os.environ.get("WRADLIB_EARTHDATA_BEARER_TOKEN", False)
 requires_secrets = pytest.mark.skipif(

@@ -10,8 +10,6 @@ import pytest
 
 from wradlib import atten, io, util
 
-from . import requires_data
-
 
 @pytest.fixture
 def att_data():
@@ -87,7 +85,6 @@ def test__sector_filter_2():
     np.testing.assert_equal(result, ref)
 
 
-@requires_data
 def test_correct_attenuation_hb():
     filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
     filename = util.get_wradlib_data_file(filestr)
@@ -99,7 +96,6 @@ def test_correct_attenuation_hb():
         atten.correct_attenuation_hb(gateset, mode="except")
 
 
-@requires_data
 def test_correct_attenuation_constrained():
     filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
     filename = util.get_wradlib_data_file(filestr)
