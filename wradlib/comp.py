@@ -14,14 +14,25 @@ Combine data from different radar locations on one common set of locations
 
    {}
 """
-__all__ = ["extract_circle", "togrid", "compose_ko", "compose_weighted", "CompMethods"]
+__all__ = [
+    "extract_circle",
+    "togrid",
+    "compose_ko",
+    "compose_weighted",
+    "CompMethods",
+    "transform_binned",
+    "sweep_to_raster",
+]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import warnings
 from functools import singledispatch
 
 import numpy as np
 from xarray import DataArray, apply_ufunc, broadcast, concat
 
+from wradlib.georef import wkt_to_osr
+from wradlib.ipol import RectBin
 from wradlib.util import XarrayMethods, docstring
 
 
@@ -273,6 +284,74 @@ class CompMethods(XarrayMethods):
             return compose_weighted(self, *args, **kwargs)
         else:
             return compose_weighted(self._obj, *args, **kwargs)
+
+
+def transform_binned(sweep, raster):
+    """Create a binned transform from radar sweep to raster image.
+
+    Parameters
+    ----------
+    sweep : :class:`xarray:xarray.dataset`
+        radar sweep dataset following WMO conventions
+    raster : :class:`xarray:xarray.dataset`
+        raster image dataset
+
+    Returns
+    -------
+
+    transform : :class:`wradlib.ipol.RectBin`
+        the transformation object
+
+    """
+    wkt = raster.spatial_ref.attrs["crs_wkt"]
+    crs = wkt_to_osr(wkt)
+    sweep = sweep.wrl.georef.georeference(crs=crs)
+    coord_sweep = np.dstack((sweep.x, sweep.y))
+    x, y = np.meshgrid(raster.x, raster.y)
+    coord_raster = np.dstack((x, y))
+
+    radius = sweep.range.values[-1]
+    lon = float(sweep.longitude.values)
+    lat = float(sweep.latitude.values)
+    fill = extract_circle((lon, lat), radius, coord_raster)
+    transform = RectBin(coord_sweep, coord_raster, fill=fill)
+
+    return transform
+
+
+def sweep_to_raster(sweep, raster, transform=None, **transform_kwargs):
+    """Transform a radar sweep into a raster image.
+
+    Parameters
+    ----------
+    sweep : :class:`xarray:xarray.dataset`
+        radar sweep dataset following WMO conventions
+    raster : :class:`xarray:xarray.dataset`
+        raster image dataset
+    transform : :class:`wradlib.ipol`
+        a transformation object (if None `transform_binned` will be called)
+
+    Returns
+    -------
+    raster : :class:`xarray:dataset`
+        raster dataset with transformed sweep values
+
+    """
+    if transform is None:
+        transform = transform_binned(sweep, raster)
+
+    raster = raster.copy()
+    for varname in sweep.data_vars:
+        if sweep[varname].ndim == 0:
+            continue
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            val = transform(sweep[varname].values, **transform_kwargs)
+        raster[varname] = (("y", "x"), val)
+        raster[varname].attrs = sweep[varname].attrs
+        raster[varname].attrs["grid_mapping"] = "spatial_ref"
+
+    return raster
 
 
 if __name__ == "__main__":
