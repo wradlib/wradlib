@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from wradlib import classify, georef, io, ipol, util
 
@@ -276,3 +277,19 @@ def test_classify(class_data):
 
     np.testing.assert_array_almost_equal(hmc_vals, res_vals)
     np.testing.assert_array_almost_equal(hmc_idx, res_idx)
+
+
+@requires_data
+@pytest.mark.parametrize("radar_type", ["df", "dp"])
+def test_calculate_hmpr(radar_type):
+    weights_file = util.get_wradlib_data_file("misc/hmcp_weights.nc")
+    cent_file = util.get_wradlib_data_file(f"misc/hmcp_centroids_{radar_type}.nc")
+    weights = xr.open_dataset(weights_file)
+    cent = xr.open_dataset(cent_file)
+
+    for htype in cent.hmc:
+        cent_ave = cent.sel(hmc=htype).ave
+        da = xr.DataArray([20], name="test", coords={"obs": ["TEMP"]})
+        cent_ave = xr.concat([cent_ave, da], dim="obs").drop("hmc")
+        out = classify.calculate_hmpr(cent_ave, weights.weights, cent)
+        np.testing.assert_allclose(out.sum("hmc").values, np.array(1.0))
