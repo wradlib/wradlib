@@ -154,108 +154,137 @@ def test_pickle():
     np.testing.assert_allclose(arr, res)
 
 
+@pytest.fixture
+def radiosonde():
+    @dataclass(init=False, repr=False, eq=False)
+    class TestRadiosonde:
+        date = datetime.datetime(2013, 7, 1, 15, 30)
+        res1 = np.array(
+            [
+                (
+                    1000.0,
+                    147.0,
+                    17.4,
+                    13.5,
+                    13.5,
+                    78.0,
+                    78.0,
+                    9.81,
+                    200.0,
+                    6.0,
+                    290.6,
+                    318.5,
+                    292.3,
+                )
+            ],
+            dtype=[
+                ("PRES", "<f8"),
+                ("HGHT", "<f8"),
+                ("TEMP", "<f8"),
+                ("DWPT", "<f8"),
+                ("FRPT", "<f8"),
+                ("RELH", "<f8"),
+                ("RELI", "<f8"),
+                ("MIXR", "<f8"),
+                ("DRCT", "<f8"),
+                ("SKNT", "<f8"),
+                ("THTA", "<f8"),
+                ("THTE", "<f8"),
+                ("THTV", "<f8"),
+            ],
+        )
+
+        res2 = {
+            "Station identifier": "EDZE",
+            "Station number": 10410,
+            "Observation time": datetime.datetime(2013, 7, 1, 12, 0),
+            "Station latitude": 51.4,
+            "Station longitude": 6.97,
+            "Station elevation": 147.0,
+            "Showalter index": 6.1,
+            "Lifted index": 0.57,
+            "LIFT computed using virtual temperature": 0.51,
+            "SWEAT index": 77.7,
+            "K index": 11.7,
+            "Cross totals index": 13.7,
+            "Vertical totals index": 28.7,
+            "Totals totals index": 42.4,
+            "Convective Available Potential Energy": 7.03,
+            "CAPE using virtual temperature": 18.0,
+            "Convective Inhibition": 0.0,
+            "CINS using virtual temperature": 0.0,
+            "Equilibrum Level": 597.47,
+            "Equilibrum Level using virtual temperature": 589.23,
+            "Equivalent potential temp [K] of the LCL": 315.07,
+            "Level of Free Convection": 931.56,
+            "LFCT using virtual temperature": 934.17,
+            "Bulk Richardson Number": 0.24,
+            "Bulk Richardson Number using CAPV": 0.62,
+            "Temp [K] of the Lifted Condensation Level": 284.17,
+            "Pres [hPa] of the Lifted Condensation Level": 934.17,
+            "Mean mixed layer potential temperature": 289.76,
+            "Mean mixed layer mixing ratio": 8.92,
+            "1000 hPa to 500 hPa thickness": 5543.0,
+            "Precipitable water [mm] for entire sounding": 19.02,
+        }
+
+        res3 = {
+            "PRES": "hPa",
+            "HGHT": "m",
+            "TEMP": "C",
+            "DWPT": "C",
+            "FRPT": "C",
+            "RELH": "%",
+            "RELI": "%",
+            "MIXR": "g/kg",
+            "DRCT": "deg",
+            "SKNT": "knot",
+            "THTA": "K",
+            "THTE": "K",
+            "THTV": "K",
+        }
+
+    yield TestRadiosonde
+
+
 @requires_requests
-def test_get_radiosonde():
-    date = datetime.datetime(2013, 7, 1, 15, 30)
-    res1 = np.array(
-        [
-            (
-                1000.0,
-                147.0,
-                17.4,
-                13.5,
-                13.5,
-                78.0,
-                78.0,
-                9.81,
-                200.0,
-                6.0,
-                290.6,
-                318.5,
-                292.3,
-            )
-        ],
-        dtype=[
-            ("PRES", "<f8"),
-            ("HGHT", "<f8"),
-            ("TEMP", "<f8"),
-            ("DWPT", "<f8"),
-            ("FRPT", "<f8"),
-            ("RELH", "<f8"),
-            ("RELI", "<f8"),
-            ("MIXR", "<f8"),
-            ("DRCT", "<f8"),
-            ("SKNT", "<f8"),
-            ("THTA", "<f8"),
-            ("THTE", "<f8"),
-            ("THTV", "<f8"),
-        ],
-    )
-
-    res2 = {
-        "Station identifier": "EDZE",
-        "Station number": 10410,
-        "Observation time": datetime.datetime(2013, 7, 1, 12, 0),
-        "Station latitude": 51.4,
-        "Station longitude": 6.97,
-        "Station elevation": 147.0,
-        "Showalter index": 6.1,
-        "Lifted index": 0.57,
-        "LIFT computed using virtual temperature": 0.51,
-        "SWEAT index": 77.7,
-        "K index": 11.7,
-        "Cross totals index": 13.7,
-        "Vertical totals index": 28.7,
-        "Totals totals index": 42.4,
-        "Convective Available Potential Energy": 7.03,
-        "CAPE using virtual temperature": 18.0,
-        "Convective Inhibition": 0.0,
-        "CINS using virtual temperature": 0.0,
-        "Equilibrum Level": 597.47,
-        "Equilibrum Level using virtual temperature": 589.23,
-        "Equivalent potential temp [K] of the LCL": 315.07,
-        "Level of Free Convection": 931.56,
-        "LFCT using virtual temperature": 934.17,
-        "Bulk Richardson Number": 0.24,
-        "Bulk Richardson Number using CAPV": 0.62,
-        "Temp [K] of the Lifted Condensation Level": 284.17,
-        "Pres [hPa] of the Lifted Condensation Level": 934.17,
-        "Mean mixed layer potential temperature": 289.76,
-        "Mean mixed layer mixing ratio": 8.92,
-        "1000 hPa to 500 hPa thickness": 5543.0,
-        "Precipitable water [mm] for entire sounding": 19.02,
-    }
-
-    res3 = {
-        "PRES": "hPa",
-        "HGHT": "m",
-        "TEMP": "C",
-        "DWPT": "C",
-        "FRPT": "C",
-        "RELH": "%",
-        "RELI": "%",
-        "MIXR": "g/kg",
-        "DRCT": "deg",
-        "SKNT": "knot",
-        "THTA": "K",
-        "THTE": "K",
-        "THTV": "K",
-    }
+def test_get_radiosonde(radiosonde):
     import urllib
 
     try:
         with pytest.raises(ValueError):
-            data, meta = io.misc.get_radiosonde(10412, date)
-        data, meta = io.misc.get_radiosonde(10410, date)
+            data, meta = io.misc.get_radiosonde(10412, radiosonde.date)
+        data, meta = io.misc.get_radiosonde(10410, radiosonde.date)
     except (urllib.error.HTTPError, urllib.error.URLError) as e:
         print(e)
         print("Test skipped!")
     else:
-        assert data[0] == res1[0]
+        assert data[0] == radiosonde.res1[0]
         quant = meta.pop("quantity")
-        assert meta == res2
-        assert meta == res2
-        assert quant == res3
+        assert meta == radiosonde.res2
+        assert quant == radiosonde.res3
+
+
+@requires_data
+@pytest.mark.parametrize("xarray", [True, False])
+def test_radiosonde_to_xarray(radiosonde, xarray):
+    import urllib
+
+    try:
+        ds = io.misc.get_radiosonde(10410, radiosonde.date, xarray=xarray)
+        if not xarray:
+            data, meta = ds
+    except (urllib.error.HTTPError, urllib.error.URLError) as e:
+        print(e)
+        print("Test skipped!")
+    else:
+        if not xarray:
+            ds = io.misc.radiosonde_to_xarray(data, meta=meta)
+        for v in ds.data_vars.values():
+            assert v[0], radiosonde.res1[0]
+        quant = ds.attrs.pop("quantity")
+        assert ds.attrs == radiosonde.res2
+        assert quant == radiosonde.res3
 
 
 @requires_data
