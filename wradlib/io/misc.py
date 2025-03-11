@@ -16,6 +16,7 @@ __all__ = [
     "to_pickle",
     "from_pickle",
     "get_radiosonde",
+    "radiosonde_to_xarray",
     "get_membership_functions",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -27,6 +28,7 @@ import urllib
 import warnings
 
 import numpy as np
+import xarray as xr
 
 from wradlib import util
 
@@ -202,6 +204,54 @@ def get_radiosonde(wmoid, date, *, cols=None):
     meta["quantity"] = {item: unitdict[item] for item in data.dtype.names}
 
     return data, meta
+
+
+def radiosonde_to_xarray(data, max_height=30000.0, res=1.0):
+    """Convert Radiosonde Data to :class:`xarray:xarray.DataArray.
+
+    This converts dictionary returned by :func:`~wradlib.io.misc.get_radiosonde` into
+    a :class:`xarray:xarray.DataArray`.
+
+    Parameters
+    ----------
+    data : dict
+        Dictionary returned from :func:`~wradlib.io.misc.get_radiosonde`.
+
+    Keyword Arguments
+    -----------------
+    max_height : float
+        Maximum height of output DataArray in m. Defaults to 30.000.0 m.
+    res : float
+        Resolution to which output DataArray is linearly interpolated in m.
+        Defaults to 1.0 m.
+
+    Returns
+    -------
+    itemp_da : :class:`xarray:xarray.DataArray`
+        DataArray with vertical radiosonde profile.
+
+    """
+    stemp = data["TEMP"]
+    sheight = data["HGHT"]
+    # remove nans
+    idx = np.isfinite(stemp)
+    stemp = stemp[idx]
+    sheight = sheight[idx]
+    stemp_da = xr.DataArray(
+        data=stemp,
+        dims=["height"],
+        coords=dict(
+            height=(["height"], sheight),
+        ),
+        attrs=dict(
+            description="Temperature.",
+            units="degC",
+        ),
+    )
+    ht = np.arange(0.0, max_height, res)
+    itemp_da = stemp_da.interp({"height": ht})
+    itemp_da = itemp_da.bfill(dim="height")
+    return itemp_da
 
 
 def get_membership_functions(filename):
