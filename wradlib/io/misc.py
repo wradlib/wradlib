@@ -267,7 +267,7 @@ def radiosonde_to_xarray(data, *, max_height=None, res=None, meta=None):
     if res is None:
         ds = ds.where(ds.HGHT <= max_height).dropna(dim="HGHT", how="any")
     else:
-        ht = np.arange(0.0, max_height, res)
+        ht = np.arange(0.0, max_height + res, res)
         ds = ds.interp({"HGHT": ht})
         ds = ds.bfill(dim="HGHT")
 

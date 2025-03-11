@@ -5,6 +5,7 @@
 import datetime
 import gzip
 import io as sio
+import json
 import os
 import subprocess
 import sys
@@ -266,25 +267,23 @@ def test_get_radiosonde(radiosonde):
 
 
 @requires_data
-@pytest.mark.parametrize("xarray", [True, False])
-def test_radiosonde_to_xarray(radiosonde, xarray):
-    import urllib
+@pytest.mark.parametrize("res", [None, 1.0])
+def test_radiosonde_to_xarray(res):
+    filename1 = util.get_wradlib_data_file("misc/radiosonde_10410_20140610_1200.h5")
+    filename2 = util.get_wradlib_data_file("misc/radiosonde_10410_20140610_1200.json")
+    rs_data, _ = io.from_hdf5(filename1)
+    with open(filename2) as infile:
+        rs_meta = json.load(infile)
 
-    try:
-        ds = io.misc.get_radiosonde(10410, radiosonde.date, xarray=xarray)
-        if not xarray:
-            data, meta = ds
-    except (urllib.error.HTTPError, urllib.error.URLError) as e:
-        print(e)
-        print("Test skipped!")
-    else:
-        if not xarray:
-            ds = io.misc.radiosonde_to_xarray(data, meta=meta)
-        for v in ds.data_vars.values():
-            assert v[0], radiosonde.res1[0]
-        quant = ds.attrs.pop("quantity")
-        assert ds.attrs == radiosonde.res2
-        assert quant == radiosonde.res3
+    ds = io.misc.radiosonde_to_xarray(
+        rs_data, meta=rs_meta, max_height=30000.0, res=res
+    )
+    assert ds.HGHT.max() == 29743.0 if res is None else 30000.0
+    assert ds.sizes["HGHT"] == 92 if res is None else 30000
+    for k, v in ds.data_vars.items():
+        idx = 0 if res is None else 153
+        assert v[idx] == rs_data[0][k]
+    assert ds.attrs == rs_meta
 
 
 @requires_data
