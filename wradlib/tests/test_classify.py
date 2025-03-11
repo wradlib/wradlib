@@ -293,3 +293,30 @@ def test_calculate_hmpr(radar_type):
         cent_ave = xr.concat([cent_ave, da], dim="obs").drop("hmc")
         out = classify.calculate_hmpr(cent_ave, weights.weights, cent)
         np.testing.assert_allclose(out.sum("hmc").values, np.array(1.0))
+
+
+@requires_data
+def test_create_gpm_observations():
+    input_file = util.get_wradlib_data_file(
+        "gpm/2A-CS-VP-24.GPM.DPR.V9-20211125.20180625-S050710-E051028.024557.V07A.HDF5"
+    )
+    ds = io.open_gpm_dataset(input_file, group="FS").chunk(nray=1)
+    ds = ds.set_coords(["Longitude", "Latitude"])
+    ds = xr.decode_cf(ds)
+    ds = ds.set_coords("height")
+    ds = ds.assign_coords(nbin=ds.nbin.data, nscan=ds.nscan.data, nray=ds.nray.data)
+
+    out = classify.create_gpm_observations(ds)
+
+    assert out.sizes == {"obs": 4, "nscan": 284, "nray": 49, "nbin": 176}
+
+
+@requires_data
+def test_create_gr_observations():
+    input_file = util.get_wradlib_data_file("netcdf/KDDC_2018_0625_051138_min.cf")
+    ds = xr.open_dataset(input_file, engine="cfradial1", group="sweep_2")
+    mapping = {"ZH": "CZ", "ZDR": "DR", "KDP": "KD", "RHO": "RH"}
+
+    out = classify.create_gr_observations(ds, mapping)
+
+    assert out.sizes == {"obs": 4, "azimuth": 720, "range": 1832}
