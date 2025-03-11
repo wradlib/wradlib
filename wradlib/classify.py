@@ -25,6 +25,9 @@ __all__ = [
     "fuzzyfi",
     "probability",
     "classify",
+    "create_gpm_observations",
+    "create_gr_observations",
+    "calculate_hmpr",
     "ClassifyMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
