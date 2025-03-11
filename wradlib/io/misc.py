@@ -256,7 +256,7 @@ def radiosonde_to_xarray(data, *, max_height=None, res=None, meta=None):
     """
     data_dict = {name: (["dim"], data[name]) for name in data.dtype.names}
     height = data_dict.pop("HGHT")
-    ds = xr.Dataset(data_dict, coords={"HGHT": height}).rename(dim="HGHT")
+    ds = xr.Dataset(data_dict, coords={"HGHT": height}).swap_dims(dim="HGHT")
     # remove nans
     ds = ds.dropna(dim="HGHT", how="any")
 
