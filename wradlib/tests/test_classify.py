@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from wradlib import classify, georef, io, ipol, util
 
@@ -268,3 +269,46 @@ def test_classify(class_data):
 
     np.testing.assert_array_almost_equal(hmc_vals, res_vals)
     np.testing.assert_array_almost_equal(hmc_idx, res_idx)
+
+
+@requires_data
+@pytest.mark.parametrize("radar_type", ["df", "dp"])
+def test_calculate_hmpr(radar_type):
+    weights_file = util.get_wradlib_data_file("misc/hmcp_weights.nc")
+    cent_file = util.get_wradlib_data_file(f"misc/hmcp_centroids_{radar_type}.nc")
+    weights = xr.open_dataset(weights_file)
+    cent = xr.open_dataset(cent_file)
+
+    for htype in cent.hmc:
+        cent_ave = cent.sel(hmc=htype).ave
+        da = xr.DataArray([20], name="test", coords={"obs": ["TEMP"]})
+        cent_ave = xr.concat([cent_ave, da], dim="obs").drop_vars("hmc")
+        out = classify.calculate_hmpr(cent_ave, weights.weights, cent)
+        np.testing.assert_allclose(out.sum("hmc").values, np.array(1.0))
+
+
+@requires_data
+def test_create_gpm_observations():
+    input_file = util.get_wradlib_data_file(
+        "gpm/2A-CS-VP-24.GPM.DPR.V9-20211125.20180625-S050710-E051028.024557.V07A.HDF5"
+    )
+    ds = io.open_gpm_dataset(input_file, group="FS").chunk(nray=1)
+    ds = ds.set_coords(["Longitude", "Latitude"])
+    ds = xr.decode_cf(ds)
+    ds = ds.set_coords("height")
+    ds = ds.assign_coords(nbin=ds.nbin.data, nscan=ds.nscan.data, nray=ds.nray.data)
+
+    out = classify.create_gpm_observations(ds)
+
+    assert out.sizes == {"obs": 4, "nscan": 284, "nray": 49, "nbin": 176}
+
+
+@requires_data
+def test_create_gr_observations():
+    input_file = util.get_wradlib_data_file("netcdf/KDDC_2018_0625_051138_min.cf")
+    ds = xr.open_dataset(input_file, engine="cfradial1", group="sweep_2")
+    mapping = {"ZH": "CZ", "ZDR": "DR", "KDP": "KD", "RHO": "RH"}
+
+    out = classify.create_gr_observations(ds, mapping)
+
+    assert out.sizes == {"obs": 4, "azimuth": 720, "range": 1832}

@@ -16,6 +16,7 @@ __all__ = [
     "to_pickle",
     "from_pickle",
     "get_radiosonde",
+    "radiosonde_to_xarray",
     "get_membership_functions",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -27,6 +28,7 @@ import urllib
 import warnings
 
 import numpy as np
+import xarray as xr
 
 from wradlib import util
 
@@ -108,7 +110,7 @@ def from_pickle(fpath):
     return obj
 
 
-def get_radiosonde(wmoid, date, *, cols=None):
+def get_radiosonde(wmoid, date, *, cols=None, xarray=False, **kwargs):
     """Download radiosonde data from internet.
 
     Based on http://weather.uwyo.edu/upperair/sounding.html.
@@ -119,9 +121,21 @@ def get_radiosonde(wmoid, date, *, cols=None):
         WMO radiosonde ID
     date : :py:class:`datetime.datetime`
         Date and Time
+
+    Keyword Arguments
+    -----------------
     cols : tuple, optional
         tuple of int or strings describing the columns to consider,
         defaults to None (all columns)
+    xarray : bool
+        Defaults to False. If True return :class:`xarray:xarray.Dataset`.
+    max_height : float
+        Passed to :func:`~wradlib.io.misc.radiosonde_to_xarray` if xarray=True.
+        Maximum height of output DataArray in m. Defaults to 30.000.0 m.
+    res : float
+        Passed to :func:`~wradlib.io.misc.radiosonde_to_xarray` if xarray=True.
+        Resolution to which output DataArray is linearly interpolated in m.
+        Defaults to 1.0 m.
 
     Returns
     -------
@@ -129,6 +143,11 @@ def get_radiosonde(wmoid, date, *, cols=None):
         Structured array of radiosonde data
     meta : dict
         radiosonde metadata
+    ds : :class:`xarray:xarray.Dataset`
+        Only if xarray=True.
+        Dataset with vertical radiosonde profile.
+
+
     """
     year = date.strftime("%Y")
     month = date.strftime("%m")
@@ -201,7 +220,60 @@ def get_radiosonde(wmoid, date, *, cols=None):
 
     meta["quantity"] = {item: unitdict[item] for item in data.dtype.names}
 
+    if xarray:
+        return radiosonde_to_xarray(data, meta=meta, **kwargs)
+
     return data, meta
+
+
+def radiosonde_to_xarray(data, *, max_height=None, res=None, meta=None):
+    """Convert Radiosonde Data to :class:`xarray:xarray.Dataset.
+
+    This converts dictionary returned by :func:`~wradlib.io.misc.get_radiosonde` into
+    a :class:`xarray:xarray.Dataset`.
+
+    Parameters
+    ----------
+    data : dict
+        Dictionary returned from :func:`~wradlib.io.misc.get_radiosonde`.
+
+    Keyword Arguments
+    -----------------
+    max_height : float
+        Maximum height of output DataArray in m.
+        Defaults to None (no height restriction).
+    res : float
+        Resolution to which output DataArray is linearly interpolated in m.
+        Defaults to None (no interpolation).
+    meta : dict, optional
+        Dictionay of meta attributes :func:`~wradlib.io.misc.get_radiosonde`.
+
+    Returns
+    -------
+    ds : :class:`xarray:xarray.Dataset`
+        Dataset with vertical radiosonde profile.
+
+    """
+    data_dict = {name: (["dim"], data[name]) for name in data.dtype.names}
+    height = data_dict.pop("HGHT")
+    ds = xr.Dataset(data_dict, coords={"HGHT": height}).swap_dims(dim="HGHT")
+    # remove nans
+    ds = ds.dropna(dim="HGHT", how="any")
+
+    # default to max height of data
+    if max_height is None:
+        max_height = ds.HGHT.max()
+
+    if res is None:
+        ds = ds.where(ds.HGHT <= max_height).dropna(dim="HGHT", how="any")
+    else:
+        ht = np.arange(0.0, max_height + res, res)
+        ds = ds.interp({"HGHT": ht})
+        ds = ds.bfill(dim="HGHT")
+
+    if meta is not None:
+        ds.attrs = meta
+    return ds
 
 
 def get_membership_functions(filename):
