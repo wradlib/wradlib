@@ -25,6 +25,9 @@ __all__ = [
     "fuzzyfi",
     "probability",
     "classify",
+    "create_gpm_observations",
+    "create_gr_observations",
+    "calculate_hmpr",
     "ClassifyMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -33,7 +36,7 @@ from functools import singledispatch
 
 import numpy as np
 import xarray as xr
-from scipy import ndimage
+from scipy import ndimage, stats
 
 from wradlib import dp, util
 
@@ -52,6 +55,12 @@ pr_types = {
     10: ("VC", "V Crystals"),
     11: ("NP", "No Precip"),
 }
+
+#: Observation Attributes
+obs_attrs = {"standard_name": "observations"}
+
+#: Hydrometeor Partitioning Ratio Attributes
+hmpr_attrs = {"standard_name": "hydrometeor_partitioning_ratio", "units": "%"}
 
 
 @singledispatch
@@ -1352,6 +1361,144 @@ def _classify_xarray(data, threshold=0.0):
     nop = xr.where(data.sum("hmc") / len(data.hmc) <= threshold, 1, 0)
     nop = nop.assign_coords({"hmc": "NP"}).expand_dims(dim="hmc", axis=-1)
     return xr.concat([data, nop], dim="hmc")
+
+
+def create_gpm_observations(ds):
+    """Create observations from GPM data for HMPR.
+
+    Parameters
+    ----------
+    ds : :class:`xarray:xarray.Dataset`
+        Dataset containing the GPM data.
+
+    Returns
+    -------
+    out : :class:`xarray:xarray.Dataset`
+        Dataset with GPM observations.
+    """
+
+    ds = ds.where(ds.binClutterFreeBottom >= ds.nbin)
+    ds = ds.where(ds.binStormTop <= ds.nbin)
+    ds = ds.where(ds.zFactorMeasured.sel(nfreq=1) > 18)
+    ds = ds.where(~np.isnan(ds.zFactorFinal.sel(nfreq=0)))
+
+    zkum = ds.zFactorMeasured.sel(nfreq=0)
+    zkum.name = "ZKUM"
+    dfrm = ds.zFactorMeasured.sel(nfreq=0) - ds.zFactorMeasured.sel(nfreq=1)
+    dfrm.name = "DFRM"
+    rt = ds.typePrecip // 1e7
+    rt = rt.where(rt != 3, 1)
+    rt.name = "RT"
+    tind = ds.airTemperature - 273.15
+    tind.name = "TEMP"
+
+    ds2 = xr.merge([zkum, dfrm, rt, tind])
+
+    # combine into one variable
+    obs = ["ZKUM", "DFRM", "RT", "TEMP"]
+    ds2 = (
+        ds2[obs]
+        .to_array("obs", name="data")
+        .assign_coords(obs=(["obs"], obs, obs_attrs))
+    )
+    # mask combined
+    ds2 = ds2.where(~np.isnan(ds2.sel(obs=slice(None))), other=np.nan)
+    return ds2
+
+
+def create_gr_observations(ds, obs_mapping):
+    """Create observations from GroundRadar data for HMPR.
+
+    Parameters
+    ----------
+    ds : :class:`xarray:xarray.Dataset`
+        Dataset containing the GR data.
+    obs_mapping : dict
+        Mapping of variable names to obs names.
+
+    Returns
+    -------
+    out : :class:`xarray:xarray.Dataset`
+        Dataset with GR observations.
+    """
+
+    # rename according mapping
+    ren = {v: k for k, v in obs_mapping.items()}
+    ds = ds.rename(ren)
+    # combine into one variable
+    obs = list(obs_mapping.keys())
+    ds = ds[obs].to_array("obs", name="data").assign_coords(obs=obs)
+    # mask combined
+    ds = ds.where(~np.isnan(ds.sel(obs=slice(None))), other=np.nan)
+    return ds
+
+
+def _calculate_norm_pdf(ave, cov, obs):
+    """Calculate normal probability density function."""
+
+    def _normal_pdf(ave, cov, obs, **kwargs):
+        norm = stats.multivariate_normal(ave, cov, **kwargs)
+        return norm.pdf(obs) / norm.pdf(ave)
+
+    obs = obs.transpose(..., "obs")
+    out = xr.apply_ufunc(
+        _normal_pdf,
+        ave,
+        cov,
+        obs,
+        vectorize=True,
+        dask="parallelized",
+        input_core_dims=[ave.dims[-1:], cov.dims[-2:], obs.dims],
+        output_core_dims=[obs.dims[:-1]],
+        output_dtypes=["float"],
+        kwargs=dict(allow_singular=True),
+        dask_gufunc_kwargs=dict(allow_rechunk=True),
+    )
+    return out
+
+
+def calculate_hmpr(obs, weights, centroids):
+    """Create Hydrometeor Partitioning Ratios from observations and weights/centroids.
+
+    The implementation is based on :cite:`Pejcic2025`.
+
+    Parameters
+    ----------
+    obs : :class:`xarray:xarray.Dataset`
+        Dataset containing the observations.
+    weights : :class:`xarray:xarray.DataArray`
+        Weights for specific hydrometeor classes in different temperature layers.
+    cdp : :class:`xarray:xarray.Dataset`
+        data based centroids and covariances for
+        specific hydrometeor classes.
+
+    Returns
+    -------
+    out : :class:`xarray:xarray.DataArray`
+        DataArray with HMPR.
+    """
+
+    # interpolate weights
+    cwx = weights.interp(temp=obs.sel(obs="TEMP", drop=True)).fillna(0)
+    if "ZKUM" in obs.obs:
+        # add RH and DH weights as well as IC and DP
+        # as DH and DP do not exist in GPM
+        cwx.loc["RH"] += cwx.loc["DH"]
+        cwx.loc["IC"] += cwx.loc["DP"]
+
+    # extract needed obs
+    obs2 = obs.sel(obs=centroids.obs)
+    # calculate norm pdf
+    norm_pdf = _calculate_norm_pdf(centroids.ave, centroids.cov, obs2)
+    # weights * norm
+    cwx_norm = cwx.sel(hmc=centroids.hmc) * norm_pdf.sel(hmc=centroids.hmc)
+    # summation
+    pn_c = cwx_norm.sum("hmc")
+    # hm partitioning ratio
+    hmpr = cwx_norm / pn_c
+    hmpr.name = "HPR"
+    hmpr.attrs = hmpr_attrs
+    return hmpr
 
 
 class ClassifyMethods(util.XarrayMethods):
