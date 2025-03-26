@@ -21,6 +21,7 @@ from wradlib import georef, io, util, zonalstats
 from . import (
     get_wradlib_data_file,
     requires_dask,
+    requires_data_folder,
     requires_gdal,
     requires_geos,
     requires_h5py,
@@ -29,6 +30,8 @@ from . import (
     requires_secrets,
     requires_xmltodict,
 )
+
+wradlib_data = util.import_optional("wradlib_data", dep="development")
 
 
 @pytest.fixture(params=["file", "filelike"])
@@ -1572,15 +1575,15 @@ def test_get_srtm(mock_wradlib_data_env):
     np.testing.assert_array_almost_equal(geo, geo_ref)
 
 
+@requires_data_folder
 @requires_gdal
 def test_get_srtm_offline():
     targets = ["N38W029", "N38W028", "N39W029", "N39W028"]
     targets = [f"{f}.SRTMGL3.hgt.zip" for f in targets]
 
     # retrieve need files for offline test
-    util.get_wradlib_data_path()
     for f in targets:
-        util.get_wradlib_data_file("geo/" + f)
+        wradlib_data.DATASETS.fetch("geo/" + f)
 
     extent = [-28.5, -27.5, 38.5, 39.5]
     datasets = io.dem.get_srtm(extent, merge=False)

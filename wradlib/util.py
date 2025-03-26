@@ -43,7 +43,6 @@ import numpy as np
 import xarray as xr
 from scipy import ndimage, signal
 from scipy.spatial import KDTree
-from wradlib_data import DATASETS
 
 from wradlib import georef, version
 
@@ -57,13 +56,14 @@ class OptionalModuleStub:
     when actual attributes from this module are called.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, dep=None):
         self.name = name
+        self.dep = "optional"
 
     def __getattr__(self, name):
         link = (
             "https://docs.wradlib.org/en/stable/"
-            "installation.html#optional-dependencies"
+            f"installation.html#{self.dep}-dependencies"
         )
         raise AttributeError(
             f"Module '{self.name}' is not installed.\n\n"
@@ -584,27 +584,47 @@ def has_geos():
     return hasgeos
 
 
-def get_wradlib_data_path():
-
-    if "WRADLIB_DATA" in os.environ:
-        wrl_data_path = os.environ["WRADLIB_DATA"]
-    else:
-        wrl_data_path = str(DATASETS.abspath)
-
-    if not os.path.exists(wrl_data_path):
-        os.makedirs(wrl_data_path)
-
+def _get_wradlib_data_path():
+    wradlib_data = import_optional("wradlib_data", dep="development")
+    has_pooch_data = has_import(wradlib_data)
+    wrl_data_path = os.environ.get("WRADLIB_DATA", None)
+    if wrl_data_path is None:
+        if not has_pooch_data:
+            raise OSError(
+                "`WRADLIB_DATA` environment variable not set.\n"
+                "Please set `WRADLIB_DATA` environment variable pointing to a writable "
+                "folder on the filesystem."
+            )
+        else:
+            wrl_data_path = wradlib_data.DATASETS.abspath
+    if not os.path.isdir(wrl_data_path):
+        raise OSError(f"`WRADLIB_DATA` path {wrl_data_path!r} does not exist.")
     return wrl_data_path
 
 
-def get_wradlib_data_file(relfile):
-    if "WRADLIB_DATA" in os.environ:
-        wrl_data_path = os.environ["WRADLIB_DATA"]
-        data_file = os.path.join(wrl_data_path, relfile)
-    else:
-        data_file = DATASETS.fetch(relfile)
+def get_wradlib_data_path():
+    warn(
+        "Function get_wradlib_data_path is not part of public API,\n"
+        "it's use is deprecated and it will be removed in a future version.\n"
+        "Please see wradlib-data package for more information.",
+        DeprecationWarning,
+    )
+    return _get_wradlib_data_path()
 
-    return data_file
+
+def _get_wradlib_data_file(relfile):
+    wradlib_data = import_optional("wradlib_data", dep="development")
+    return wradlib_data.DATASETS.fetch(relfile)
+
+
+def get_wradlib_data_file(relfile):
+    warn(
+        "Function get_wradlib_data_file is not part of public API,\n"
+        "it's use is deprecated and it will be removed in a future version.\n"
+        "Please see wradlib-data package for more information.",
+        DeprecationWarning,
+    )
+    return _get_wradlib_data_file(relfile)
 
 
 def calculate_polynomial(data, w):

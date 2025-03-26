@@ -56,12 +56,12 @@ def test_prob_round():
 
 def test_get_wradlib_data():
 
-    data_path = util.get_wradlib_data_path()
+    data_path = util._get_wradlib_data_path()
     filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-    util.get_wradlib_data_file(filename)
+    util._get_wradlib_data_file(filename)
     os.environ["WRADLIB_DATA"] = data_path
-    assert util.get_wradlib_data_path() == data_path
-    util.get_wradlib_data_file(filename)
+    assert util._get_wradlib_data_path() == data_path
+    util._get_wradlib_data_file(filename)
 
 
 def test_from_to():
