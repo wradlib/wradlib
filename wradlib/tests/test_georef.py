@@ -12,10 +12,11 @@ import xarray as xr
 from packaging.version import Version
 
 import wradlib
-from wradlib import georef, util
+from wradlib import georef
 
 from . import (
     gdal,
+    get_wradlib_data_file,
     ogr,
     osr,
     requires_gdal,
@@ -268,7 +269,7 @@ def test_maximum_intensity_projection():
     angle = 0.0
     elev = 0.0
 
-    filename = util.get_wradlib_data_file("misc/polar_dBZ_tur.gz")
+    filename = get_wradlib_data_file("misc/polar_dBZ_tur.gz")
     data = np.loadtxt(filename)
     # we need to have meter here for the georef function inside mip
     d1 = np.arange(data.shape[1], dtype=np.float64) * 1000
@@ -792,12 +793,12 @@ def gdal_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
         filename1 = "geo/bonn_new.tif"
-        geofile1 = util.get_wradlib_data_file(filename1)
+        geofile1 = get_wradlib_data_file(filename1)
         ds = wradlib.io.open_raster(geofile1)
         (data, coords, crs) = georef.extract_raster_dataset(ds)
 
         filename2 = "hdf5/belgium.comp.hdf"
-        geofile2 = util.get_wradlib_data_file(filename2)
+        geofile2 = get_wradlib_data_file(filename2)
         ds2 = wradlib.io.open_raster(geofile2)
         (data2, coords2, proj2) = georef.extract_raster_dataset(ds2, mode="edge")
 
@@ -1006,7 +1007,7 @@ def test_extract_raster_dataset(gdal_data):
 @pytest.mark.xfail(strict=False)
 def test_get_raster_elevation(ratio, wanted):
     filename = "geo/N39W028.SRTMGL3.hgt.zip"
-    geofile = util.get_wradlib_data_file(filename)
+    geofile = get_wradlib_data_file(filename)
     # crop file using translate to keep download sizes minimal
     gdal.Translate(
         "/vsimem/clip.tif",
@@ -1228,7 +1229,7 @@ def sat_data():
     class Data:
         # todo: make this test work without GDAL
         f = "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-S095002-E095137.004383.V05A.HDF5"  # noqa
-        gpm_file = util.get_wradlib_data_file(f)
+        gpm_file = get_wradlib_data_file(f)
         pr_data = wradlib.io.read_generic_hdf5(gpm_file)
         pr_lon = pr_data["NS/Longitude"]["data"]
         pr_lat = pr_data["NS/Latitude"]["data"]
@@ -1420,9 +1421,9 @@ def vec_data():
         projobj = georef.numpy_to_ogr(npobj, "Polygon")
         projobj.AssignSpatialReference(crs)
 
-        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
-        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
-        filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
+        get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
+        filename = get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
         proj_gk2 = osr.SpatialReference()
         proj_gk2.ImportFromEPSG(31466)
         ds, layer = wradlib.io.open_vector(filename)
@@ -1503,7 +1504,7 @@ def test_transform_geometry_warning(vec_data):
 
 @requires_gdal
 def test_ogr_copy_layer():
-    filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+    filename = get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
     gdal.SetConfigOption("SHAPE_RESTORE_SHX", "YES")
     src_ds, layer = wradlib.io.open_vector(filename)
     ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
@@ -1513,7 +1514,7 @@ def test_ogr_copy_layer():
 
 @requires_gdal
 def test_ogr_copy_layer_by_name():
-    filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+    filename = get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
     gdal.SetConfigOption("SHAPE_RESTORE_SHX", "YES")
     src_ds, layer = wradlib.io.open_vector(filename)
     ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)

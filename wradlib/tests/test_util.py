@@ -12,7 +12,7 @@ import xarray as xr
 
 from wradlib import util
 
-from . import requires_gdal
+from . import get_wradlib_data_file, requires_gdal
 
 
 def test__shape_to_size():
@@ -55,7 +55,6 @@ def test_prob_round():
 
 
 def test_get_wradlib_data():
-
     data_path = util._get_wradlib_data_path()
     filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
     util._get_wradlib_data_file(filename)
@@ -87,7 +86,7 @@ def test_import_optional():
 
 
 def test_roll2d_polar():
-    filename = util.get_wradlib_data_file("misc/polar_dBZ_tur.gz")
+    filename = get_wradlib_data_file("misc/polar_dBZ_tur.gz")
     data = np.loadtxt(filename)
     result1 = util.roll2d_polar(data, 1, axis=0)
     result2 = util.roll2d_polar(data, -1, axis=0)
@@ -324,7 +323,7 @@ def test_find_bbox_indices(bb_data):
 
 @requires_gdal
 def test_cross_section_ppi():
-    file = util.get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
+    file = get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
     # only load DBZH for testing
     keep_vars = ["DBZH", "sweep_mode", "sweep_number", "prt_mode", "follow_mode"]
     # load all sweeps manually and merge them

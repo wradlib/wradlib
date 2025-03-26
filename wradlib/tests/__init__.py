@@ -41,14 +41,14 @@ requires_xarray_backend_api = pytest.mark.skipif(
 
 
 @contextlib.contextmanager
-def get_wradlib_data_file(file, file_or_filelike):
+def get_wradlib_data_file_or_filelike(file, file_or_filelike):
     has_pooch_data = util.has_import(wradlib_data)
     if not has_pooch_data:
         pytest.skip(
             "'wradlib-data' package missing. "
             "Please see 'wradlib-data package' for more information."
         )
-    datafile = util.get_wradlib_data_file(file)
+    datafile = wradlib_data.DATASETS.fetch(file)
     if file_or_filelike == "filelike":
         _open = open
         if datafile[-3:] == ".gz":
@@ -58,6 +58,16 @@ def get_wradlib_data_file(file, file_or_filelike):
             yield io.BytesIO(f.read())
     else:
         yield datafile
+
+
+def get_wradlib_data_file(file):
+    has_pooch_data = util.has_import(wradlib_data)
+    if not has_pooch_data:
+        pytest.skip(
+            "'wradlib-data' package missing. "
+            "Please see 'wradlib-data package' for more information."
+        )
+    return wradlib_data.DATASETS.fetch(file)
 
 
 dask = util.import_optional("dask")

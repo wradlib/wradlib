@@ -75,7 +75,7 @@ class OptionalModuleStub:
         )
 
 
-def import_optional(module):
+def import_optional(module, dep=None):
     """Allowing for lazy loading of optional wradlib modules or dependencies.
 
     This function removes the need to satisfy all dependencies of wradlib
@@ -121,7 +121,7 @@ def import_optional(module):
     try:
         mod = importlib.import_module(module)
     except ImportError:
-        mod = OptionalModuleStub(module)
+        mod = OptionalModuleStub(module, dep=dep)
 
     return mod
 
