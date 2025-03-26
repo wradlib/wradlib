@@ -185,11 +185,10 @@ Now the speedup module should be available.
 
 For development additional packages to run the test suite are needed:
 
-```eval_rst
-.. csv-table:: Test Dependencies
-   :file: ../requirements_devel.txt
-   :widths: 30
-   :header-rows: 0
+```{csv-table} Test Dependencies
+ :file: ../requirements_devel.txt
+ :widths: 30
+ :header-rows: 0
 ```
 
 ## Known Issues
