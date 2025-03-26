@@ -9,10 +9,9 @@ import xarray as xr
 
 from wradlib import io
 
-from . import get_wradlib_data_file, requires_data, requires_xarray_backend_api
+from . import get_wradlib_data_file_or_filelike, requires_xarray_backend_api
 
 
-@requires_data
 @requires_xarray_backend_api
 def test_radolan_backend(file_or_filelike):
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
@@ -37,7 +36,7 @@ def test_radolan_backend(file_or_filelike):
         "formatversion": 3,
         "radarid": "10000",
     }
-    with get_wradlib_data_file(filename, file_or_filelike) as rwfile:
+    with get_wradlib_data_file_or_filelike(filename, file_or_filelike) as rwfile:
         data, meta = io.read_radolan_composite(rwfile)
         data[data == -9999.0] = np.nan
         with xr.open_dataset(rwfile, engine="radolan") as ds:

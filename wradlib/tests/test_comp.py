@@ -7,9 +7,12 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from wradlib import comp, georef, io, ipol, util
+from wradlib import comp, georef, io, ipol
 
-from . import requires_data, requires_gdal
+from . import (
+    get_wradlib_data_file,
+    requires_gdal,
+)
 
 
 @pytest.fixture
@@ -17,7 +20,7 @@ def comp_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
         filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-        dx_file = util.get_wradlib_data_file(filename)
+        dx_file = get_wradlib_data_file(filename)
         data, metadata = io.read_dx(dx_file)
         radar_location = (8.005, 47.8744, 1517)
         elevation = 0.5  # in degree
@@ -33,7 +36,6 @@ def comp_data():
     yield Data
 
 
-@requires_data
 @requires_gdal
 def test_extract_circle(comp_data):
     x = comp_data.x
@@ -45,7 +47,6 @@ def test_extract_circle(comp_data):
     comp.extract_circle(np.array([x.mean(), y.mean()]), 128000.0, grid_xy)
 
 
-@requires_data
 @requires_gdal
 def test_togrid(comp_data):
     x = comp_data.x

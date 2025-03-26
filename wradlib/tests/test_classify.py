@@ -9,9 +9,9 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from wradlib import classify, georef, io, ipol, util
+from wradlib import classify, georef, io, ipol
 
-from . import requires_data, requires_gdal, requires_h5py, requires_netcdf
+from . import get_wradlib_data_file, requires_gdal, requires_h5py, requires_netcdf
 
 
 def test_filter_gabella_a():
@@ -37,28 +37,26 @@ def test_filter_window_distance():
     assert (result == cl).all()
 
 
-@requires_data
 def test_filter_gabella():
-    filename = util.get_wradlib_data_file("misc/polar_dBZ_fbg.gz")
+    filename = get_wradlib_data_file("misc/polar_dBZ_fbg.gz")
     data = np.loadtxt(filename)
     classify.filter_gabella(data, wsize=5, thrsnorain=0.0, tr1=6.0, n_p=8, tr2=1.3)
 
 
-@requires_data
 def test_histo_cut():
-    filename = util.get_wradlib_data_file("misc/annual_rainfall_fbg.gz")
+    filename = get_wradlib_data_file("misc/annual_rainfall_fbg.gz")
     yearsum = np.loadtxt(filename)
     classify.histo_cut(yearsum)
 
 
 @pytest.fixture()
 def fuzzy_data():
-    rhofile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-R.nc")
-    phifile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-P.nc")
-    reffile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-Z.nc")
-    dopfile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-V.nc")
-    zdrfile = util.get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-D.nc")
-    mapfile = util.get_wradlib_data_file("hdf5/TAG_cmap_sweeps" "_0204050607.hdf5")
+    rhofile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-R.nc")
+    phifile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-P.nc")
+    reffile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-Z.nc")
+    dopfile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-V.nc")
+    zdrfile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-D.nc")
+    mapfile = get_wradlib_data_file("hdf5/TAG_cmap_sweeps" "_0204050607.hdf5")
     # We need to organize our data as a dictionary
     dat = {}
     dat["rho"], attrs_rho = io.read_edge_netcdf(rhofile)
@@ -70,7 +68,6 @@ def fuzzy_data():
     yield dat
 
 
-@requires_data
 @requires_netcdf
 @requires_h5py
 def test_classify_echo_fuzzy(fuzzy_data):
@@ -100,7 +97,7 @@ def test_classify_echo_fuzzy(fuzzy_data):
 def cloudtype_data():
     # read the radar volume scan
     filename = "hdf5/20130429043000.rad.bewid.pvol.dbzh.scan1.hdf"
-    filename = util.get_wradlib_data_file(filename)
+    filename = get_wradlib_data_file(filename)
     pvol = io.read_opera_hdf5(filename)
     nrays = int(pvol["dataset1/where"]["nrays"])
     nbins = int(pvol["dataset1/where"]["nbins"])
@@ -126,7 +123,7 @@ def cloudtype_data():
         ke=4.0 / 3.0,
     )
     filename = "hdf5/SAFNWC_MSG3_CT___201304290415_BEL_________.h5"
-    filename = util.get_wradlib_data_file(filename)
+    filename = get_wradlib_data_file(filename)
     sat_gdal = io.read_safnwc(filename)
     val_sat = georef.read_gdal_values(sat_gdal)
     coord_sat = georef.read_gdal_coordinates(sat_gdal)
@@ -144,7 +141,6 @@ def cloudtype_data():
     yield dat
 
 
-@requires_data
 @requires_gdal
 @requires_h5py
 def test_filter_cloudtype(cloudtype_data):
@@ -166,7 +162,7 @@ def test_filter_cloudtype(cloudtype_data):
 def class_data():
     @dataclass(init=False, repr=False, eq=False)
     class TestHydrometeorClassification:
-        filename = util.get_wradlib_data_file("misc/msf_xband.gz")
+        filename = get_wradlib_data_file("misc/msf_xband.gz")
         msf = io.get_membership_functions(filename)
         msf_idp = msf[0, 0, :, 0]
         msf_obs = msf[..., 1:]
@@ -189,7 +185,6 @@ def class_data():
     yield TestHydrometeorClassification
 
 
-@requires_data
 def test_msf_index_indep(class_data):
     tst = np.array([-20, 10, 110])
     res = np.array(
@@ -201,7 +196,6 @@ def test_msf_index_indep(class_data):
     np.testing.assert_array_equal(msf_val, res)
 
 
-@requires_data
 def test_fuzzify(class_data):
     res = np.array(
         [
@@ -216,7 +210,6 @@ def test_fuzzify(class_data):
     np.testing.assert_array_equal(fu[0], res)
 
 
-@requires_data
 def test_probability(class_data):
     res = np.array(
         [
@@ -237,7 +230,6 @@ def test_probability(class_data):
     np.testing.assert_array_almost_equal(prob, res, decimal=8)
 
 
-@requires_data
 @pytest.mark.xfail(strict=False)
 def test_classify(class_data):
     res_idx = np.array(
@@ -279,11 +271,10 @@ def test_classify(class_data):
     np.testing.assert_array_almost_equal(hmc_idx, res_idx)
 
 
-@requires_data
 @pytest.mark.parametrize("radar_type", ["df", "dp"])
 def test_calculate_hmpr(radar_type):
-    weights_file = util.get_wradlib_data_file("misc/hmcp_weights.nc")
-    cent_file = util.get_wradlib_data_file(f"misc/hmcp_centroids_{radar_type}.nc")
+    weights_file = get_wradlib_data_file("misc/hmcp_weights.nc")
+    cent_file = get_wradlib_data_file(f"misc/hmcp_centroids_{radar_type}.nc")
     weights = xr.open_dataset(weights_file)
     cent = xr.open_dataset(cent_file)
 
@@ -295,9 +286,8 @@ def test_calculate_hmpr(radar_type):
         np.testing.assert_allclose(out.sum("hmc").values, np.array(1.0))
 
 
-@requires_data
 def test_create_gpm_observations():
-    input_file = util.get_wradlib_data_file(
+    input_file = get_wradlib_data_file(
         "gpm/2A-CS-VP-24.GPM.DPR.V9-20211125.20180625-S050710-E051028.024557.V07A.HDF5"
     )
     ds = io.open_gpm_dataset(input_file, group="FS").chunk(nray=1)
@@ -311,9 +301,8 @@ def test_create_gpm_observations():
     assert out.sizes == {"obs": 4, "nscan": 284, "nray": 49, "nbin": 176}
 
 
-@requires_data
 def test_create_gr_observations():
-    input_file = util.get_wradlib_data_file("netcdf/KDDC_2018_0625_051138_min.cf")
+    input_file = get_wradlib_data_file("netcdf/KDDC_2018_0625_051138_min.cf")
     ds = xr.open_dataset(input_file, engine="cfradial1", group="sweep_2")
     mapping = {"ZH": "CZ", "ZDR": "DR", "KDP": "KD", "RHO": "RH"}
 

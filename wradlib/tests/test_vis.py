@@ -14,7 +14,6 @@ from . import (
     cartopy,
     mpl,
     requires_cartopy,
-    requires_data,
     requires_gdal,
     requires_matplotlib,
     requires_secrets,
@@ -224,7 +223,6 @@ def test_create_cg():
 
 
 @requires_matplotlib
-@requires_data
 @requires_gdal
 def test_plot_scan_strategy():
     ranges = np.arange(0, 10000, 100)
@@ -237,7 +235,6 @@ def test_plot_scan_strategy():
 
 
 @requires_matplotlib
-@requires_data
 @requires_secrets
 @requires_gdal
 @pytest.mark.xfail(strict=False)

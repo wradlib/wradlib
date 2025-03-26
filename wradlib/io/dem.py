@@ -169,16 +169,18 @@ def get_srtm(extent, *, resolution=3, merge=True, session=None):
     """
     filelist = get_srtm_tile_names(extent)
     filelist = [f"{f}.SRTMGL{resolution}.hgt.zip" for f in filelist]
-    wrl_data_path = util.get_wradlib_data_path()
+    wrl_data_path = util._get_wradlib_data_path()
     srtm_path = os.path.join(wrl_data_path, "geo")
     if not os.path.exists(srtm_path):
         os.makedirs(srtm_path)
     demlist = []
-    session = init_header_redirect_session()
+    session = None
     for filename in filelist:
         path = os.path.join(srtm_path, filename)
         status_code = 0
         if not os.path.exists(path):
+            if session is None:
+                session = init_header_redirect_session()
             status_code = download_srtm(
                 filename, path, resolution=resolution, session=session
             )

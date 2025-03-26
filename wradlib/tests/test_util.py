@@ -12,7 +12,7 @@ import xarray as xr
 
 from wradlib import util
 
-from . import requires_data, requires_gdal
+from . import get_wradlib_data_file, requires_gdal
 
 
 def test__shape_to_size():
@@ -54,20 +54,13 @@ def test_prob_round():
     np.testing.assert_equal(43.0, util.prob_round(42.4242))
 
 
-def test_get_wradlib_data_path():
-    wrl_data_path = os.environ.get("WRADLIB_DATA", None)
-    del os.environ["WRADLIB_DATA"]
-    with pytest.raises(EnvironmentError):
-        util.get_wradlib_data_path()
-    if wrl_data_path is not None:
-        os.environ["WRADLIB_DATA"] = wrl_data_path
-
-
-@requires_data
-def test_get_wradlib_data_path_requires():
-    filename = os.path.join(util.get_wradlib_data_path(), "test.dat")
-    with pytest.raises((EnvironmentError, ValueError)):
-        util.get_wradlib_data_file(filename)
+def test_get_wradlib_data():
+    data_path = util._get_wradlib_data_path()
+    filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
+    util._get_wradlib_data_file(filename)
+    os.environ["WRADLIB_DATA"] = data_path
+    assert util._get_wradlib_data_path() == data_path
+    util._get_wradlib_data_file(filename)
 
 
 def test_from_to():
@@ -92,9 +85,8 @@ def test_import_optional():
         mod.test()
 
 
-@requires_data
 def test_roll2d_polar():
-    filename = util.get_wradlib_data_file("misc/polar_dBZ_tur.gz")
+    filename = get_wradlib_data_file("misc/polar_dBZ_tur.gz")
     data = np.loadtxt(filename)
     result1 = util.roll2d_polar(data, 1, axis=0)
     result2 = util.roll2d_polar(data, -1, axis=0)
@@ -330,9 +322,8 @@ def test_find_bbox_indices(bb_data):
 
 
 @requires_gdal
-@requires_data
 def test_cross_section_ppi():
-    file = util.get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
+    file = get_wradlib_data_file("hdf5/71_20181220_061228.pvol.h5")
     # only load DBZH for testing
     keep_vars = ["DBZH", "sweep_mode", "sweep_number", "prt_mode", "follow_mode"]
     # load all sweeps manually and merge them

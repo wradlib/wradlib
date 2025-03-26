@@ -8,6 +8,7 @@ wradlib_tests
 
 """
 import contextlib
+import importlib.util
 import io
 import os
 
@@ -16,10 +17,15 @@ from packaging.version import Version
 from wradlib import util
 from xarray import __version__ as xr_version
 
-has_data = os.environ.get("WRADLIB_DATA", False)
-requires_data = pytest.mark.skipif(
-    not has_data,
-    reason="requires 'WRADLIB_DATA' environment variable set to wradlib-data repository location.",
+
+wradlib_data = util.import_optional("wradlib_data", dep="devel")
+has_pooch_data = util.has_import(wradlib_data)
+has_env_data = os.environ.get("WRADLIB_DATA", False)
+
+requires_data_folder = pytest.mark.skipif(
+    not (has_pooch_data or has_env_data),
+    reason="requires wradlib-data package to be installed or 'WRADLIB_DATA' "
+    "environment variable set to writable folder.",
 )
 
 has_secrets = os.environ.get("WRADLIB_EARTHDATA_BEARER_TOKEN", False)
@@ -35,8 +41,14 @@ requires_xarray_backend_api = pytest.mark.skipif(
 
 
 @contextlib.contextmanager
-def get_wradlib_data_file(file, file_or_filelike):
-    datafile = util.get_wradlib_data_file(file)
+def get_wradlib_data_file_or_filelike(file, file_or_filelike):
+    has_pooch_data = util.has_import(wradlib_data)
+    if not has_pooch_data:
+        pytest.skip(
+            "'wradlib-data' package missing. "
+            "Please see 'wradlib-data package' for more information."
+        )
+    datafile = wradlib_data.DATASETS.fetch(file)
     if file_or_filelike == "filelike":
         _open = open
         if datafile[-3:] == ".gz":
@@ -46,6 +58,16 @@ def get_wradlib_data_file(file, file_or_filelike):
             yield io.BytesIO(f.read())
     else:
         yield datafile
+
+
+def get_wradlib_data_file(file):
+    has_pooch_data = util.has_import(wradlib_data)
+    if not has_pooch_data:
+        pytest.skip(
+            "'wradlib-data' package missing. "
+            "Please see 'wradlib-data package' for more information."
+        )
+    return wradlib_data.DATASETS.fetch(file)
 
 
 dask = util.import_optional("dask")

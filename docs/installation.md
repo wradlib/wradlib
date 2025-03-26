@@ -181,6 +181,16 @@ $ f2py.py -c -m speedup speedup.f
 
 Now the speedup module should be available.
 
+## Development Dependencies
+
+For development additional packages to run the test suite are needed:
+
+```{csv-table} Test Dependencies
+ :file: ../requirements_devel.txt
+ :widths: 30
+ :header-rows: 0
+```
+
 ## Known Issues
 
 Depending on your OS and installation method you may encounter different problems. Here are some guidelines for attacking them.
