@@ -24,6 +24,8 @@ __all__ = [
     "get_radar_projection",
     "get_earth_projection",
     "get_extent",
+    "project_bounds",
+    "geographic_size",
     "GeorefProjectionMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
@@ -621,6 +623,62 @@ def get_extent(coords):
     ymax = coords[..., 1].max()
 
     return xmin, xmax, ymin, ymax
+
+
+def project_bounds(bounds, crs):
+    """Get geographic bounds in projected coordinate system
+
+    Parameters
+    ----------
+    bounds : (lon_min, lon_max, lat_min, lat_max)
+        geographic bounds
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        coordinate reference system used for the projection
+
+    Returns
+    -------
+    bounds : (xmin, xmax, ymin, ymax)
+        projected bounds
+
+    """
+
+    lon_min, lon_max, lat_min, lat_max = bounds
+    lon_mid = lon_min / 2 + lon_max / 2
+    lat_mid = lat_min / 2 + lat_max / 2
+    (xmin, temp) = reproject((lon_min, lat_mid), trg_crs=crs)
+    (temp, ymin) = reproject((lon_mid, lat_min), trg_crs=crs)
+    (xmax, temp) = reproject((lon_max, lat_mid), trg_crs=crs)
+    (temp, ymax) = reproject((lon_mid, lat_max), trg_crs=crs)
+    projected_bounds = (xmin, xmax, ymin, ymax)
+
+    return projected_bounds
+
+
+def geographic_size(bounds, size):
+    """Get geographic sizes corresponding approximately to given linear size for given bounds
+
+    Parameters
+    ----------
+    bounds : (lon_min, lon_max, lat_min, lat_max)
+        geographic bounds
+    size : int
+         linear distance in meters
+
+    Returns
+    -------
+    xsize, ysize : tuple
+         geographic size in degrees (lon, lat)
+    """
+    xsize, ysize = size, size
+    one_degree_latitude_meters = 111320
+    ysize = ysize / one_degree_latitude_meters
+    lon_min, lon_max, lat_min, lat_max = bounds
+    lat_mid = lat_min / 2 + lat_max / 2
+    one_degree_longitude_meters = one_degree_latitude_meters * np.cos(lat_mid)
+    xsize = xsize / one_degree_longitude_meters
+    xsize = np.abs(xsize)
+
+    return xsize, ysize
 
 
 class GeorefProjectionMethods:
