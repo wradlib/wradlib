@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import sys
 from dataclasses import dataclass
 
 import numpy as np
@@ -65,8 +64,6 @@ def dp_data():
 
 
 def test_phidp_kdp_vulpiani(derivation_method, window, copy):
-    if derivation_method == "lstsq" and sys.platform.startswith("win"):
-        pytest.skip("fails on windows due to MKL issue")
     # Todo: move data setup into fixture
     np.random.seed(42000)
     # Synthetic truth
@@ -175,11 +172,6 @@ def test_phidp_kdp_vulpiani(derivation_method, window, copy):
 
 
 def test_kdp_from_phidp_nan(dp_data, derivation_method):
-    if derivation_method == "lstsq" and sys.platform.startswith("win"):
-        pytest.skip("fails on windows due to MKL issue")
-    if derivation_method == "lstsq" and sys.platform.startswith("linux"):
-        pytest.skip("segfaults on linux for some unknow reason")
-
     window = 7
 
     # intercompare with lanczos method without NaN-handling
@@ -201,11 +193,6 @@ def test_kdp_from_phidp_nan(dp_data, derivation_method):
 
 
 def test_kdp_from_phidp(dp_data, derivation_method):
-    if derivation_method == "lstsq" and sys.platform.startswith("win"):
-        pytest.skip("fails on windows due to MKL issue")
-    if derivation_method == "lstsq" and sys.platform.startswith("linux"):
-        pytest.skip("segfaults on linux for some unknow reason")
-
     window = 7
 
     # compare with true kdp

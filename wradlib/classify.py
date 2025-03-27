@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -1326,8 +1326,8 @@ def classify(data, *, threshold=0.0):
     data = np.vstack((data, noprec[np.newaxis, ...]))
 
     # sort idx and vals
-    idx = np.argsort(data, axis=0)
-    vals = np.sort(data, axis=0)
+    idx = np.argsort(data, axis=0, stable=True)
+    vals = np.sort(data, axis=0, stable=True)
     # set no precip in every class
     idx[:, mask] = shape
     vals[:, mask] = 1.0

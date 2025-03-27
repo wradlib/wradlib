@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 from dataclasses import dataclass
@@ -26,12 +26,14 @@ def pol_data():
         np.random.seed(42)
         data = np.random.random((len(az), len(r)))
 
-    yield Data
+    data = Data()
+    yield data
+    del data
 
 
 @requires_gdal
 def test_PolarNeighbours__init__(pol_data):
-    verify.PolarNeighbours(
+    pn = verify.PolarNeighbours(
         pol_data.r,
         pol_data.az,
         pol_data.site,
@@ -40,6 +42,7 @@ def test_PolarNeighbours__init__(pol_data):
         pol_data.y,
         nnear=9,
     )
+    assert isinstance(pn, verify.PolarNeighbours)
 
 
 @requires_gdal

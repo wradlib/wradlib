@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 from dataclasses import dataclass
@@ -230,7 +230,6 @@ def test_probability(class_data):
     np.testing.assert_array_almost_equal(prob, res, decimal=8)
 
 
-@pytest.mark.xfail(strict=False)
 def test_classify(class_data):
     res_idx = np.array(
         [

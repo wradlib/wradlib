@@ -1,9 +1,7 @@
 # !/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import gc
-import sys
 from dataclasses import dataclass
 
 import numpy as np
@@ -37,9 +35,9 @@ np.set_printoptions(
 
 
 # this ensures objects from previous tests are cleaned
-@pytest.fixture(autouse=True)
-def ensure_gc():
-    gc.collect()
+# @pytest.fixture(autouse=True)
+# def ensure_gc():
+#    gc.collect()
 
 
 @pytest.fixture
@@ -300,7 +298,6 @@ def test_centroid_to_polyvert():
 
 
 @requires_gdal
-@pytest.mark.xfail(strict=False)
 def test_spherical_to_polyvert():
     sph = georef.get_earth_projection()
     polyvert = georef.spherical_to_polyvert(
@@ -382,7 +379,6 @@ def test_spherical_to_polyvert():
 
 
 @requires_gdal
-@pytest.mark.xfail(strict=False)
 def test_spherical_to_centroids():
     r = np.array([10000.0, 10100.0])
     az = np.array([45.0, 90.0])
@@ -735,7 +731,6 @@ def test_get_earth_projection():
     georef.get_earth_projection("sphere")
 
 
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
 @requires_gdal
 def test_geoid_to_ellipsoid():
     coords = np.array([[5.0, 50.0, 300.0], [2, 54, 300], [50, 5, 300]])
@@ -1047,7 +1042,6 @@ def test_merge_raster_datasets():
 
 
 @requires_gdal
-@pytest.mark.xfail(strict=False)
 def test_raster_to_polyvert(gdal_data):
     ds = gdal_data.ds
     polyvert = georef.raster_to_polyvert(ds)
