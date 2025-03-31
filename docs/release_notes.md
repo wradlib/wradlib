@@ -42,6 +42,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **Bugfixes**
 
 * FIX: manual garbage collector is needed before each test ({pull}`684`) by {at}`egouden`
+* FIX: make comp.togrid work for Datasets ({issue}`701`, {pull}`702`) by {at}`kmuehlbauer`
 
 
 ## Version 2.3
