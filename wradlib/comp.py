@@ -20,7 +20,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 from functools import singledispatch
 
 import numpy as np
-from xarray import DataArray, apply_ufunc, broadcast, concat
+from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat
 
 from wradlib.util import XarrayMethods, docstring
 
@@ -113,6 +113,7 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
 
 
 @togrid.register(DataArray)
+@togrid.register(Dataset)
 def _togrid_xarray(obj, trg, *args, **kwargs):
     dim0 = obj.wrl.util.dim0()
     grid_xy = (
@@ -149,10 +150,12 @@ def _togrid_xarray(obj, trg, *args, **kwargs):
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
+        on_missing_core_dim="drop",
     )
     out = out.unstack("npoints_cart")
     out.attrs = obj.attrs
-    out.name = f"{obj.name}.togrid"
+    if isinstance(obj, DataArray):
+        out.name = f"{obj.name}.togrid"
     return out
 
 
