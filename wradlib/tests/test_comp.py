@@ -256,7 +256,7 @@ def test_compose():
 def test_sweep_to_raster():
 
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
-    filename = util.get_wradlib_data_file(filename)
+    filename = get_wradlib_data_file(filename)
     sweep = open_odim_datatree(filename)
     sweep = sweep["sweep_0"].ds
 
