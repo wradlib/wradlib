@@ -712,7 +712,7 @@ def create_raster_xarray(crs, bounds, size):
 
     Returns
     -------
-    raster : :class:`xarray:Dataset`
+    raster : :class:`xarray:Dataarray`
         raster image dataset
 
     """
@@ -746,10 +746,10 @@ def create_raster_xarray(crs, bounds, size):
 
     y = np.flip(y)
 
-    raster = xr.Dataset(coords={"x": (["x"], x), "y": (["y"], y)})
+    raster = xr.DataArray(dims=["x", "y"], coords={"x": x, "y": y})
 
     wkt = crs.ExportToWkt()
-    raster = raster.assign({"spatial_ref": 0})
+    raster = raster.assign_coords({"spatial_ref": 0})
     raster.spatial_ref.attrs["crs_wkt"] = wkt
     raster.spatial_ref.attrs["GeoTransform"] = geotransform
 

@@ -25,11 +25,10 @@ __all__ = [
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
-import warnings
 from functools import singledispatch
 
 import numpy as np
-from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat
+from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat, set_options
 
 from wradlib.georef import wkt_to_osr
 from wradlib.ipol import RectBin
@@ -271,24 +270,6 @@ def _compose_weighted_xarray(radargrids, qualitygrids):
     return composite.where(radargrids.sum("radar"))
 
 
-class CompMethods(XarrayMethods):
-    """wradlib xarray SubAccessor methods for Ipol Methods."""
-
-    @docstring(togrid)
-    def togrid(self, *args, **kwargs):
-        if not isinstance(self, CompMethods):
-            return togrid(self, *args, **kwargs)
-        else:
-            return togrid(self._obj, *args, **kwargs)
-
-    @docstring(compose_weighted)
-    def compose_weighted(self, *args, **kwargs):
-        if not isinstance(self, CompMethods):
-            return compose_weighted(self, *args, **kwargs)
-        else:
-            return compose_weighted(self._obj, *args, **kwargs)
-
-
 def transform_binned(sweep, raster):
     """Create a binned transform from radar sweep to raster image.
 
@@ -322,39 +303,80 @@ def transform_binned(sweep, raster):
     return transform
 
 
-def sweep_to_raster(sweep, raster, transform=None, **transform_kwargs):
+def sweep_to_raster(sweep, raster, **kwargs):
     """Transform a radar sweep into a raster image.
 
     Parameters
     ----------
-    sweep : :class:`xarray:xarray.dataset`
-        radar sweep dataset following WMO conventions
-    raster : :class:`xarray:xarray.dataset`
+    sweep : :class:`xarray:xarray.Dataset` | :class:`xarray:xarray.DataArray`
+        radar sweep dataset/dataarray following WMO conventions
+    raster : :class:`xarray:xarray.Dataset`
         raster image dataset
+
+    Keyword Arguments
+    -----------------
     transform : :class:`wradlib.ipol`
-        a transformation object (if None `transform_binned` will be called)
+        a transformation object (if None, `transform_binned` will be called)
+    **kwargs : dict
+        keyword arguments of Interpolator (see class documentation)
 
     Returns
     -------
-    raster : :class:`xarray:dataset`
-        raster dataset with transformed sweep values
+    out : :class:`xarray:Dataset` | :class:`xarray:xarray.DataArray`
+        raster image with transformed sweep values
 
     """
-    if transform is None:
-        transform = transform_binned(sweep, raster)
+    dim0 = sweep.wrl.util.dim0()
 
-    raster = raster.copy()
-    for varname in sweep.data_vars:
-        if sweep[varname].ndim == 0:
-            continue
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            val = transform(sweep[varname].values, **transform_kwargs)
-        raster[varname] = (("y", "x"), val)
-        raster[varname].attrs = sweep[varname].attrs
-        raster[varname].attrs["grid_mapping"] = "spatial_ref"
+    if kwargs.get("transform", None) is None:
+        kwargs["transform"] = transform_binned(sweep, raster)
 
-    return raster
+    def wrapper(obj, **kwargs):
+        transform = kwargs.pop("transform")
+        return transform(obj, **kwargs)
+
+    with set_options(keep_attrs=True):
+        out = apply_ufunc(
+            wrapper,
+            sweep,
+            input_core_dims=[[dim0, "range"]],
+            output_core_dims=[["y", "x"]],
+            dask="parallelized",
+            kwargs=kwargs,
+            on_missing_core_dim="drop",
+        )
+
+    out = out.assign_coords(x=raster.x, y=raster.y)
+
+    if isinstance(sweep, DataArray):
+        out.name = f"{sweep.name}.to_raster"
+
+    return out
+
+
+class CompMethods(XarrayMethods):
+    """wradlib xarray SubAccessor methods for Ipol Methods."""
+
+    @docstring(togrid)
+    def togrid(self, *args, **kwargs):
+        if not isinstance(self, CompMethods):
+            return togrid(self, *args, **kwargs)
+        else:
+            return togrid(self._obj, *args, **kwargs)
+
+    @docstring(sweep_to_raster)
+    def sweep_to_raster(self, *args, **kwargs):
+        if not isinstance(self, CompMethods):
+            return sweep_to_raster(self, *args, **kwargs)
+        else:
+            return sweep_to_raster(self._obj, *args, **kwargs)
+
+    @docstring(compose_weighted)
+    def compose_weighted(self, *args, **kwargs):
+        if not isinstance(self, CompMethods):
+            return compose_weighted(self, *args, **kwargs)
+        else:
+            return compose_weighted(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
