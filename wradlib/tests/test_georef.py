@@ -34,12 +34,6 @@ np.set_printoptions(
 )
 
 
-# this ensures objects from previous tests are cleaned
-# @pytest.fixture(autouse=True)
-# def ensure_gc():
-#    gc.collect()
-
-
 @pytest.fixture
 def coord_transform_data():
     @dataclass(init=False, repr=False, eq=False)

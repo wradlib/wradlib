@@ -91,7 +91,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "wradlib"
-copyright = "2011-2023, wradlib developers"
+copyright = "2011-2025, wradlib developers"
 author = "Wradlib Community"
 url = "https://github.com/wradlib"
 
