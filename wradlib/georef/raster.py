@@ -27,11 +27,14 @@ __all__ = [
     "set_raster_indexing",
     "set_coordinate_indexing",
     "raster_to_polyvert",
+    "create_raster_geographic",
+    "create_raster_xarray",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
 
 import numpy as np
+import xarray as xr
 
 import wradlib
 from wradlib import georef
@@ -693,3 +696,98 @@ def raster_to_polyvert(dataset):
     polyvert = georef.grid_to_polyvert(rastercoords)
 
     return polyvert
+
+
+def create_raster_xarray(crs, bounds, size):
+    """Create a georeferenced raster image using xarray model and gdal conventions.
+
+    Parameters
+    ----------
+    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+        coordinate reference system mapping geographic coordinates to x,y coordinates
+    bounds : tuple of floats
+        image bounds (x_min, x_max, y_min, y_max)
+    size : float or tuple of floats
+        (x,y) pixel size in meters (or degrees if crs is geographic)
+
+    Returns
+    -------
+    raster : :class:`xarray:Dataarray`
+        raster image dataset
+
+    """
+
+    xmin, xmax, ymin, ymax = bounds
+
+    try:
+        xsize, ysize = size
+    except TypeError:
+        xsize, ysize = size, size
+
+    xmin = xmin - xmin % xsize
+    ymin = ymin - ymin % ysize
+    if xmax % xsize != 0:
+        xmax = xmax - xmax % xsize + xsize
+    if ymax % ysize != 0:
+        ymax = ymax - ymax % ysize + ysize
+
+    geotransform = [xmin, xsize, 0, ymax, 0, -ysize]
+    geotransform = [str(r) for r in geotransform]
+    geotransform = " ".join(geotransform)
+
+    num = (xmax - xmin) / xsize + 1
+    x = np.linspace(xmin, xmax, num=int(num), endpoint=True)
+    num = (ymax - ymin) / ysize + 1
+    y = np.linspace(ymin, ymax, num=int(num), endpoint=True)
+    if x[-1] != xmax:
+        x = np.append(x, xmax)
+    if y[-1] != ymax:
+        y = np.append(y, ymax)
+
+    y = np.flip(y)
+
+    raster = xr.DataArray(dims=["x", "y"], coords={"x": x, "y": y})
+
+    wkt = crs.ExportToWkt()
+    raster = raster.assign_coords({"spatial_ref": 0})
+    raster.spatial_ref.attrs["crs_wkt"] = wkt
+    raster.spatial_ref.attrs["GeoTransform"] = geotransform
+
+    return raster
+
+
+def create_raster_geographic(bounds, size, size_in_meters=False):
+    """Create a geographic raster.
+
+    Parameters
+    ----------
+
+    bounds : (lon_min, lon_max, lat_min, lat_max)
+        geographic bounds
+    size : int
+        pixel size in degrees
+    size_in_meters : bool
+        if True, size is in meters and geographic sizes are approximated to keep bounds fixed
+
+    Returns
+    -------
+    raster : :class:`xarray:Dataset`
+        raster image dataset
+
+    """
+    crs = georef.get_earth_projection()
+
+    if size_in_meters:
+        xsize, ysize = georef.geographic_size(bounds, size)
+        xmin, xmax, ymin, ymax = bounds
+        lx = xmax - xmin
+        n = round(lx / xsize)
+        xsize = lx / n
+        ly = ymax - ymin
+        m = round(ly / ysize)
+        ysize = ly / m
+        size = (xsize, ysize)
+
+    raster = georef.create_raster_xarray(crs, bounds, size)
+
+    return raster
