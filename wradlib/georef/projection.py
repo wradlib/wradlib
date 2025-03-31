@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 """
@@ -323,6 +323,7 @@ def reproject(*args, **kwargs):
 
     src_crs = kwargs.get("src_crs", get_default_projection())
     trg_crs = kwargs.get("trg_crs", get_default_projection())
+
     area_of_interest = kwargs.get("area_of_interest", None)
 
     axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
@@ -569,12 +570,8 @@ def get_earth_projection(model="ellipsoid"):
     elif model == "ellipsoid":
         crs.ImportFromEPSG(4979)
     elif model == "geoid":
-        wgs84 = osr.SpatialReference()
-        wgs84.ImportFromEPSG(4326)
-        egm96 = osr.SpatialReference()
-        egm96.ImportFromEPSG(5773)
         crs = osr.SpatialReference()
-        crs.SetCompoundCS("WGS84 Horizontal + EGM96 Vertical", wgs84, egm96)
+        crs.SetFromUserInput("epsg:4326+5773")
     else:
         raise ValueError(f"Unknown model {model!r}.")
 

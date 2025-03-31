@@ -9,3 +9,4 @@ pytest-doctestplus
 pytest-sugar
 pytest-xdist
 ruff
+wradlib-data

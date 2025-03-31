@@ -8,9 +8,9 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from wradlib import atten, io, util
+from wradlib import atten, io
 
-from . import requires_data
+from . import get_wradlib_data_file
 
 
 @pytest.fixture
@@ -87,10 +87,9 @@ def test__sector_filter_2():
     np.testing.assert_equal(result, ref)
 
 
-@requires_data
 def test_correct_attenuation_hb():
     filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-    filename = util.get_wradlib_data_file(filestr)
+    filename = get_wradlib_data_file(filestr)
     gateset, attrs = io.read_dx(filename)
     atten.correct_attenuation_hb(gateset, mode="warn")
     atten.correct_attenuation_hb(gateset, mode="nan")
@@ -99,10 +98,9 @@ def test_correct_attenuation_hb():
         atten.correct_attenuation_hb(gateset, mode="except")
 
 
-@requires_data
 def test_correct_attenuation_constrained():
     filestr = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
-    filename = util.get_wradlib_data_file(filestr)
+    filename = get_wradlib_data_file(filestr)
     gateset, attrs = io.read_dx(filename)
     atten.correct_attenuation_constrained(gateset)
 

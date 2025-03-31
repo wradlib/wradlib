@@ -1,9 +1,7 @@
 # !/usr/bin/env python
-# Copyright (c) 2011-2023, wradlib developers.
+# Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
-import gc
-import sys
 from dataclasses import dataclass
 
 import numpy as np
@@ -12,13 +10,13 @@ import xarray as xr
 from packaging.version import Version
 
 import wradlib
-from wradlib import georef, util
+from wradlib import georef
 
 from . import (
     gdal,
+    get_wradlib_data_file,
     ogr,
     osr,
-    requires_data,
     requires_gdal,
     requires_h5py,
     requires_secrets,
@@ -34,12 +32,6 @@ np.set_printoptions(
     threshold=1000,
     formatter=None,
 )
-
-
-# this ensures objects from previous tests are cleaned
-@pytest.fixture(autouse=True)
-def ensure_gc():
-    gc.collect()
 
 
 @pytest.fixture
@@ -265,12 +257,11 @@ def test_spherical_to_proj(coord_transform_data):
     np.testing.assert_allclose(coords[..., 2], data.result_n[2])
 
 
-@requires_data
 def test_maximum_intensity_projection():
     angle = 0.0
     elev = 0.0
 
-    filename = util.get_wradlib_data_file("misc/polar_dBZ_tur.gz")
+    filename = get_wradlib_data_file("misc/polar_dBZ_tur.gz")
     data = np.loadtxt(filename)
     # we need to have meter here for the georef function inside mip
     d1 = np.arange(data.shape[1], dtype=np.float64) * 1000
@@ -301,7 +292,6 @@ def test_centroid_to_polyvert():
 
 
 @requires_gdal
-@pytest.mark.xfail(strict=False)
 def test_spherical_to_polyvert():
     sph = georef.get_earth_projection()
     polyvert = georef.spherical_to_polyvert(
@@ -383,7 +373,6 @@ def test_spherical_to_polyvert():
 
 
 @requires_gdal
-@pytest.mark.xfail(strict=False)
 def test_spherical_to_centroids():
     r = np.array([10000.0, 10100.0])
     az = np.array([45.0, 90.0])
@@ -736,7 +725,6 @@ def test_get_earth_projection():
     georef.get_earth_projection("sphere")
 
 
-@pytest.mark.skipif(sys.platform.startswith("win"), reason="known break on windows")
 @requires_gdal
 def test_geoid_to_ellipsoid():
     coords = np.array([[5.0, 50.0, 300.0], [2, 54, 300], [50, 5, 300]])
@@ -794,12 +782,12 @@ def gdal_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
         filename1 = "geo/bonn_new.tif"
-        geofile1 = util.get_wradlib_data_file(filename1)
+        geofile1 = get_wradlib_data_file(filename1)
         ds = wradlib.io.open_raster(geofile1)
         (data, coords, crs) = georef.extract_raster_dataset(ds)
 
         filename2 = "hdf5/belgium.comp.hdf"
-        geofile2 = util.get_wradlib_data_file(filename2)
+        geofile2 = get_wradlib_data_file(filename2)
         ds2 = wradlib.io.open_raster(geofile2)
         (data2, coords2, proj2) = georef.extract_raster_dataset(ds2, mode="edge")
 
@@ -817,7 +805,6 @@ def gdal_data():
     yield Data
 
 
-@requires_data
 @requires_gdal
 def test_read_gdal_coordinates(gdal_data):
     center_coords = georef.read_gdal_coordinates(gdal_data.ds)
@@ -966,7 +953,6 @@ def test_extract_raster_dataset(gdal_data):
     assert coords.shape[-1] == 2
 
 
-@requires_data
 @requires_secrets
 @requires_gdal
 @pytest.mark.parametrize(
@@ -1010,7 +996,7 @@ def test_extract_raster_dataset(gdal_data):
 @pytest.mark.xfail(strict=False)
 def test_get_raster_elevation(ratio, wanted):
     filename = "geo/N39W028.SRTMGL3.hgt.zip"
-    geofile = util.get_wradlib_data_file(filename)
+    geofile = get_wradlib_data_file(filename)
     # crop file using translate to keep download sizes minimal
     gdal.Translate(
         "/vsimem/clip.tif",
@@ -1041,7 +1027,6 @@ def test_get_raster_extent(gdal_data):
     np.testing.assert_array_almost_equal(extent, gdal_data.corner_geo_gdalinfo)
 
 
-@requires_data
 @requires_secrets
 @requires_gdal
 @pytest.mark.xfail(strict=False)
@@ -1051,7 +1036,6 @@ def test_merge_raster_datasets():
 
 
 @requires_gdal
-@pytest.mark.xfail(strict=False)
 def test_raster_to_polyvert(gdal_data):
     ds = gdal_data.ds
     polyvert = georef.raster_to_polyvert(ds)
@@ -1233,7 +1217,7 @@ def sat_data():
     class Data:
         # todo: make this test work without GDAL
         f = "gpm/2A-CS-151E24S154E30S.GPM.Ku.V7-20170308.20141206-S095002-E095137.004383.V05A.HDF5"  # noqa
-        gpm_file = util.get_wradlib_data_file(f)
+        gpm_file = get_wradlib_data_file(f)
         pr_data = wradlib.io.read_generic_hdf5(gpm_file)
         pr_lon = pr_data["NS/Longitude"]["data"]
         pr_lat = pr_data["NS/Latitude"]["data"]
@@ -1300,7 +1284,6 @@ def sat_data():
     yield Data
 
 
-@requires_data
 @requires_gdal
 @requires_h5py
 def test_correct_parallax(sat_data):
@@ -1354,7 +1337,6 @@ def test_correct_parallax(sat_data):
     np.testing.assert_allclose(z[0, 0, 0:10], z_out, rtol=1e-10)
 
 
-@requires_data
 @requires_gdal
 @requires_h5py
 def test_dist_from_orbit(sat_data):
@@ -1427,9 +1409,9 @@ def vec_data():
         projobj = georef.numpy_to_ogr(npobj, "Polygon")
         projobj.AssignSpatialReference(crs)
 
-        util.get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
-        util.get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
-        filename = util.get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
+        get_wradlib_data_file("shapefiles/agger/agger_merge.dbf")
+        get_wradlib_data_file("shapefiles/agger/agger_merge.shx")
+        filename = get_wradlib_data_file("shapefiles/agger/agger_merge.shp")
         proj_gk2 = osr.SpatialReference()
         proj_gk2.ImportFromEPSG(31466)
         ds, layer = wradlib.io.open_vector(filename)
@@ -1469,7 +1451,6 @@ def test_get_vector_points_warning():
         list(georef.get_vector_points(point))
 
 
-@requires_data
 @requires_gdal
 def test_get_vector_coordinates(vec_data):
     layer = vec_data.layer
@@ -1509,10 +1490,9 @@ def test_transform_geometry_warning(vec_data):
         georef.transform_geometry(vec_data.ogrobj, trg_crs=vec_data.wgs84)
 
 
-@requires_data
 @requires_gdal
 def test_ogr_copy_layer():
-    filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+    filename = get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
     gdal.SetConfigOption("SHAPE_RESTORE_SHX", "YES")
     src_ds, layer = wradlib.io.open_vector(filename)
     ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
@@ -1520,10 +1500,9 @@ def test_ogr_copy_layer():
     assert isinstance(ds.GetLayer(), ogr.Layer)
 
 
-@requires_data
 @requires_gdal
 def test_ogr_copy_layer_by_name():
-    filename = util.get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
+    filename = get_wradlib_data_file("shapefiles/agger/" "agger_merge.shp")
     gdal.SetConfigOption("SHAPE_RESTORE_SHX", "YES")
     src_ds, layer = wradlib.io.open_vector(filename)
     ds = wradlib.io.gdal_create_dataset("Memory", "test", gdal_type=gdal.OF_VECTOR)
