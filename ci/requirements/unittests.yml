@@ -20,6 +20,7 @@ dependencies:
   - numpy
   - matplotlib-base
   - pip
+  - pooch
   - pytest
   - pytest-cov
   - pytest-doctestplus

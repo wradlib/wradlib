@@ -7,6 +7,23 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development Version
+
+**New features**
+
+* ENH: add hydrometeor partitioning ratio calculation from Pejcic et al. ({pull}`699`) by {at}`kmuehlbauer`
+
+**Maintenance**
+
+* ENH use wradlib-data package by default ({pull}`698`) by {at}`egouden`
+* MNT: move to pooch base wradlib-data ({pull}`694`) by {at}`kmuehlbauer`
+* remove conda packages from requirements_optional.txt ({issue}`695`, {pull}`696`) by {at}`kmuehlbauer`
+* Use proj network, update CI and code ({pull}`693`) by {at}`kmuehlbauer`
+
+**Documentation**
+
+**Bugfixes**
+
 ## Version 2.4
 
 **New features**
