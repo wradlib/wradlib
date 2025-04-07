@@ -1,3 +1,4 @@
+black
 codecov
 coverage
 nbconvert
