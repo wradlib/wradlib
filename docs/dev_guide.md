@@ -18,7 +18,7 @@ Source code, testing, bug tracking as well as docs and wiki are handled via GitH
 
 ## Documentation
 
-* wradlib's documentation source is contained in [wradlib-docs](https://github.com/wradlib/wradlib-docs) repository, and mainly written in reStructuredText.
+* wradlib's documentation source is contained in the [docs-folder](https://github.com/wradlib/wradlib/tree/main/docs) of the wradlib repository, and mainly written in reStructuredText.
 * Jupyter Notebooks in [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks) repository are utilized to extend the documentation with examples and tutorials.
 * wradlib uses [Sphinx](http://sphinx-doc.org/) and [nbsphinx](https://github.com/spatialaudio/nbsphinx) to compile docs on [readthedocs.org](https://readthedocs.org/projects/wradlib-docs/).
 
