@@ -1,8 +1,8 @@
 # Contributing Guide
 
-The wradlib project encourages everyone to contribute to the developement of wradlib. This paper describes the general guidelines for contributing to wradlib. There is more information on [wradlib's community effort](https://wradlib.org/community) at the project's main website [wradlib.org](https://wradlib.org).
+The wradlib project encourages everyone to contribute to the developement of wradlib. This paper describes the general guidelines for contributing to wradlib. There is more information on [wradlib's community effort](https://wradlib.org/pages/community) at the project's main website [wradlib.org](https://wradlib.org).
 
-In general wradlib uses GitHub Pull Requests for contribution. Second, the [wradlib developers](CONTRIBUTORS.txt) have GitHub Commit Access to the project's main repository.
+In general wradlib uses GitHub Pull Requests for contribution. Second, the [wradlib developers](https://github.com/wradlib/wradlib/blob/main/CONTRIBUTORS.txt) have GitHub Commit Access to the project's main repository.
 
 ## Code of Conduct
 
@@ -10,7 +10,7 @@ Contributors to wradlib are expected to act respectfully toward others in accord
 
 ## Contributions and Licensing
 
-All contributions shall comply to the project [license](LICENSE.txt).
+All contributions shall comply to the project [license](https://github.com/wradlib/wradlib/blob/main/LICENSE.txt).
 
 ## GitHub
 
