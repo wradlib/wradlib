@@ -657,6 +657,7 @@ class RectGrid(RectGridBase):
 
 class RectBin(RectGridBase):
     """Bin points values to regular grid cells
+       e.g. for transforming a radar sweep to a raster image
 
     Based on :py:func:`scipy:scipy.stats.binned_statistic_dd`
 
@@ -666,11 +667,19 @@ class RectBin(RectGridBase):
         data point coordinates of the source points with shape (..., ndims).
     trg : :class:`numpy:numpy.ndarray`
         rectangular grid coordinates (center) with shape (..., 2)
+    fill : array of boolean with same shape as src
+        used to fill nan with nearest neighbour value
+        e.g. the radar mask
     """
 
-    def __init__(self, src, trg):
+    def __init__(self, src, trg, fill=None):
         super().__init__(trg, src)
         self._binned_stats = False
+        src = src.reshape(-1, 2)
+        trg = trg.reshape(-1, 2)
+        self.fill = fill
+        if self.fill is not None:
+            self.nearest = Nearest(src, trg)
 
     @property
     def binned_stats(self):
@@ -699,12 +708,18 @@ class RectBin(RectGridBase):
         stat : :class:`numpy:numpy.ndarray`
             Target values with shape (num trg pts, ...)
         """
+
+        kwargs.setdefault("statistic", np.nanmean)
+
         # reshape into flat array
         values = values.reshape(-1)
 
         if not self.binned_stats or Version(scipy.__version__) < Version("1.4"):
             result = stats.binned_statistic_dd(
-                self.ipol_points, values, bins=self.ipol_grid, **kwargs
+                self.ipol_points,
+                values,
+                bins=self.ipol_grid,
+                **kwargs,
             )
             self.binned_stats = result
         else:
@@ -719,6 +734,15 @@ class RectBin(RectGridBase):
         # need to flip ydim if grid origin is 'upper'
         if self.upper:
             stat = np.flip(stat, self.ydim)
+
+        # fill gaps with nearest values
+        if self.fill is not None:
+            values = values.reshape(-1)
+            nearest = self.nearest(values)
+            nearest = nearest.reshape(stat.shape)
+            nearest[~self.fill] = np.nan
+            gaps = np.isnan(stat)
+            stat[gaps] = nearest[gaps]
 
         return stat
 
