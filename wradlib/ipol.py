@@ -740,7 +740,9 @@ class RectBin(RectGridBase):
             values = values.reshape(-1)
             nearest = self.nearest(values)
             nearest = nearest.reshape(stat.shape)
-            nearest[~self.fill] = np.nan
+            mask = np.ones(nearest.shape, dtype=bool)
+            mask.flat[self.fill] = False
+            nearest[mask] = np.nan
             gaps = np.isnan(stat)
             stat[gaps] = nearest[gaps]
 
