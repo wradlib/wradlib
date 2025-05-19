@@ -30,7 +30,7 @@ from functools import singledispatch
 import numpy as np
 from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat, set_options
 
-from wradlib.georef import wkt_to_osr
+from wradlib.georef import get_radar_projection, reproject, wkt_to_osr
 from wradlib.ipol import RectBin
 from wradlib.util import XarrayMethods, docstring
 
@@ -295,9 +295,22 @@ def transform_binned(sweep, raster):
     coord_raster = np.dstack((x, y))
 
     radius = sweep.range.values[-1]
+
     lon = float(sweep.longitude.values)
     lat = float(sweep.latitude.values)
-    fill = extract_circle((lon, lat), radius, coord_raster)
+    if crs.IsGeographic():
+        alt = float(sweep.altitude.values)
+        coord_raster2 = reproject(
+            coord_raster, src_crs=crs, trg_crs=get_radar_projection((lon, lat, alt))
+        )
+        center = (0, 0)
+    else:
+        coord_raster2 = coord_raster
+        center = reproject((lon, lat), trg_crs=crs)
+    fill_idx = extract_circle(center, radius, coord_raster2.reshape(-1, 2))
+    fill = np.zeros(x.shape, dtype=bool)
+    fill.flat[fill_idx] = True
+
     transform = RectBin(coord_sweep, coord_raster, fill=fill)
 
     return transform
