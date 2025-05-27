@@ -671,6 +671,7 @@ def geographic_size(bounds, size):
     ysize = ysize / one_degree_latitude_meters
     lon_min, lon_max, lat_min, lat_max = bounds
     lat_mid = lat_min / 2 + lat_max / 2
+    lat_mid = np.radians(lat_mid)
     one_degree_longitude_meters = one_degree_latitude_meters * np.cos(lat_mid)
     xsize = xsize / one_degree_longitude_meters
     xsize = np.abs(xsize)
