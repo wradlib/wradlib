@@ -726,9 +726,9 @@ def create_raster_xarray(crs, bounds, size):
 
     xmin = xmin - xmin % xsize
     ymin = ymin - ymin % ysize
-    if xmax % xsize != 0:
+    if xmax % xsize >= 1e-6:
         xmax = xmax - xmax % xsize + xsize
-    if ymax % ysize != 0:
+    if ymax % ysize >= 1e-6:
         ymax = ymax - ymax % ysize + ysize
 
     geotransform = [xmin, xsize, 0, ymax, 0, -ysize]
