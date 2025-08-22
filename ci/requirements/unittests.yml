@@ -4,6 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - python>=3.10
+  - affine
   - bottleneck
   - cartopy
   - codecov
@@ -27,6 +28,7 @@ dependencies:
   - pytest-sugar
   - pytest-xdist
   - requests
+  - rioxarray
   - scipy
   - setuptools
   - xarray >=2024.10.0

@@ -1621,3 +1621,102 @@ def test_georeference_dataset(xr_data):
     src_da.drop_vars(["x", "y", "z", "gr", "rays", "bins"])
     da = georef.georeference(src_da)
     xr.testing.assert_equal(xr_data, da)
+
+
+def test_create_raster_xarray():
+    bounds = (0, 0, 1000, 1000)
+    resolution = 100
+    ds = georef.create_raster_xarray(crs=3857, bounds=bounds, resolution=resolution)
+
+    # Expected x coordinates: center of each cell
+    expected_x = np.arange(50, 1000, 100)  # 50, 150, ..., 950
+    actual_x = ds.x.values
+
+    assert np.array_equal(
+        actual_x, expected_x
+    ), f"xarray: x coordinates mismatch\nExpected: {expected_x}\nActual: {actual_x}"
+
+
+def test_create_raster_xarray_snap_bounds():
+    bounds = (96, 597, 2104, 3603)
+    resolution = 100
+
+    expected_snapped_bounds = (100, 600, 2100, 3600)
+
+    raster = georef.create_raster_xarray(
+        crs=3857,
+        bounds=bounds,
+        resolution=resolution,
+        snap_bounds=True,
+    )
+
+    actual_bounds = raster.rio.bounds()
+
+    assert actual_bounds == expected_snapped_bounds
+
+
+def test_create_raster_xarray_snap_resolution():
+    bounds = (0, 0, 5000, 5000)
+    target_resolution = 37
+    expected_snapped_resolution = 40
+
+    raster = georef.create_raster_xarray(
+        crs=3857, bounds=bounds, resolution=target_resolution, snap_resolution=True
+    )
+
+    transform = raster.rio.transform()
+    actual_resolution = abs(transform.a)  # pixel width
+
+    assert actual_resolution == expected_snapped_resolution
+
+
+def test_create_raster_geographic():
+    bounds = (0, 0, 1, 1)  # degrees
+    resolution_arcsec = 360  # 0.1 degrees
+    ds = georef.create_raster_geographic(bounds, resolution_arcsec)
+
+    # Expected x coordinates in arcseconds: center of each cell
+    expected_x = np.arange(180, 3600, 360)  # 180, 540, ..., 3420
+    actual_x = ds.x.values
+
+    assert np.array_equal(
+        actual_x, expected_x
+    ), f"geographic: x coordinates mismatch\nExpected: {expected_x}\nActual: {actual_x}"
+
+
+def test_create_raster_geographic_resolution_in_meters():
+    bounds = (5, 50, 6, 51)  # degrees
+    resolution_m = 500
+
+    # Expected snapped resolution in arcseconds at latitude 50°
+    expected_xres = 25  # arcseconds
+    expected_yres = 16  # arcseconds
+
+    # Convert bounds to arcseconds
+    xmin = bounds[0] * 3600  # 5° → 18000 arcseconds
+    xmax = bounds[2] * 3600  # 6° → 21600 arcseconds
+    ymin = bounds[1] * 3600  # 50° → 180000 arcseconds
+    ymax = bounds[3] * 3600  # 51° → 183600 arcseconds
+
+    expected_x = np.arange(xmin + expected_xres // 2, xmax, expected_xres)
+    expected_y = np.arange(ymax - expected_yres // 2, ymin, -expected_yres)
+
+    ds = georef.create_raster_geographic(
+        bounds, resolution_m, resolution_in_meters=True
+    )
+
+    # ✅ Use transform to get resolution
+    transform = ds.rio.transform()
+    actual_xres = abs(transform.a)  # pixel width
+    actual_yres = abs(transform.e)  # pixel height
+
+    assert (
+        actual_xres == expected_xres
+    ), f"x resolution mismatch: expected {expected_xres}, got {actual_xres}"
+    assert (
+        actual_yres == expected_yres
+    ), f"y resolution mismatch: expected {expected_yres}, got {actual_yres}"
+
+    # Check x and y coordinates
+    assert np.array_equal(ds.x.values, expected_x), "x coordinates mismatch"
+    assert np.array_equal(ds.y.values, expected_y), "y coordinates mismatch"

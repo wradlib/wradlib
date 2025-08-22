@@ -25,8 +25,9 @@ __all__ = [
     "get_earth_projection",
     "get_extent",
     "project_bounds",
-    "geographic_size",
+    "meters_to_degrees",
     "GeorefProjectionMethods",
+    "wgs84_arcseconds_crs",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
@@ -651,32 +652,52 @@ def project_bounds(bounds, crs):
     return projected_bounds
 
 
-def geographic_size(bounds, size):
-    """Get geographic sizes corresponding approximately to given linear size for given bounds
+def meters_to_degrees(
+    resolution_m: tuple[float, float], latitude_deg: float
+) -> tuple[float, float]:
+    """
+    Convert resolution in meters to degrees in longitude and latitude directions.
 
     Parameters
     ----------
-    bounds : (lon_min, lon_max, lat_min, lat_max)
-        geographic bounds
-    size : int
-         linear distance in meters
+    resolution_m : tuple[int, int]
+        Resolution in meters (x, y)
+
+    latitude_deg : float
+        Latitude at which to compute longitudinal scaling
 
     Returns
     -------
-    xsize, ysize : tuple
-         geographic size in degrees (lon, lat)
+    tuple[float, float]
+        Resolution in degrees (x_deg, y_deg)
     """
-    xsize, ysize = size, size
-    one_degree_latitude_meters = 111320
-    ysize = ysize / one_degree_latitude_meters
-    lon_min, lon_max, lat_min, lat_max = bounds
-    lat_mid = lat_min / 2 + lat_max / 2
-    lat_mid = np.radians(lat_mid)
-    one_degree_longitude_meters = one_degree_latitude_meters * np.cos(lat_mid)
-    xsize = xsize / one_degree_longitude_meters
-    xsize = np.abs(xsize)
+    R = 6371000  # Earth radius in meters
+    deg_per_meter_lat = 1 / ((2 * np.pi * R) / 360)
+    deg_per_meter_lon = deg_per_meter_lat / np.cos(np.radians(latitude_deg))
 
-    return xsize, ysize
+    x_deg = resolution_m[0] * deg_per_meter_lon
+    y_deg = resolution_m[1] * deg_per_meter_lat
+
+    return x_deg, y_deg
+
+
+def wgs84_arcseconds_crs() -> pyproj.CRS:
+    """Return a WGS 84 Geographic CRS with arc-second angular units.
+
+    Datum and ellipsoid match EPSG:4326 exactly.
+    """
+    wkt_arcsec = (
+        'GEOGCRS["WGS 84 (arc-second)",'
+        'DATUM["World Geodetic System 1984",'
+        'ELLIPSOID["WGS 84",6378137,298.257223563,'
+        'LENGTHUNIT["metre",1.0]]],'
+        'PRIMEM["Greenwich",0.0],'
+        "CS[ellipsoidal,2],"
+        'AXIS["Geodetic longitude (λ)",east,ORDER[1]],'
+        'AXIS["Geodetic latitude (φ)",north,ORDER[2]],'
+        'ANGLEUNIT["arc-second",4.84813681109536E-06,ID["EPSG",9104]]]'
+    )
+    return pyproj.CRS.from_wkt(wkt_arcsec)
 
 
 class GeorefProjectionMethods:

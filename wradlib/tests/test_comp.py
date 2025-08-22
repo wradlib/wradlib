@@ -267,9 +267,9 @@ def test_sweep_to_raster():
     lat_min = round(lat) - 2
     lon_max = round(lon) + 2
     lat_max = round(lat) + 2
-    bounds = [lon_min, lon_max, lat_min, lat_max]
-    size = 1000
-    raster = georef.create_raster_geographic(bounds, size, size_in_meters=True)
+    bounds = [lon_min, lat_min, lon_max, lat_max]
+    resolution = 30
+    raster = georef.create_raster_geographic(bounds, resolution)
     transform = comp.transform_binned(sweep, raster)
 
     # check normal operation
@@ -284,11 +284,10 @@ def test_sweep_to_raster():
     xr.testing.assert_equal(composite.DBZH, composite2)
 
     crs = georef.get_radar_projection((lon, lat))
-    georef.project_bounds(bounds, crs)
-
-    bounds = [-10e3, 10e3, -10e3, 10e3]
-    size = 500
-    raster = georef.create_raster_xarray(crs, bounds, size)
+    crs = crs.ExportToWkt()
+    bounds = [-10e3, -10e3, 10e3, 10e3]
+    resolution = 500
+    raster = georef.create_raster_xarray(crs, bounds, resolution)
     transform = comp.transform_binned(sweep, raster)
     composite = comp.sweep_to_raster(sweep, raster, transform=transform)
     composite.to_netcdf("comp.nc")

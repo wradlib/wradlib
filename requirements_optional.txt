@@ -1,3 +1,4 @@
+affine
 bottleneck
 cartopy
 cmweather
@@ -8,4 +9,5 @@ h5netcdf
 h5py
 netCDF4
 requests
+rioxarray
 xmltodict
