@@ -140,7 +140,7 @@ python -m pytest -n auto
 
 - Configure automatic SSH on windows:
 ```powershell
-Start-Service ssh-agent  
+Start-Service ssh-agent
 Set-Service -Name ssh-agent -StartupType Automatic
 git config --global core.sshCommand "C:\\Windows\\System32\\OpenSSH\\ssh.exe"
 ```
