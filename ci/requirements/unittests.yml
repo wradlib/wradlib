@@ -19,6 +19,7 @@ dependencies:
   - netCDF4
   - numpy
   - matplotlib-base
+  - open-radar-data
   - pip
   - pooch
   - pytest

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 import xarray as xr
+import xradar as xd
+from open_radar_data import DATASETS
 from xradar.io.backends import open_odim_datatree
 
 from wradlib import comp, georef, io, ipol
@@ -253,8 +255,7 @@ def test_compose():
     np.testing.assert_allclose(composite1, res1)
 
 
-@requires_gdal
-def test_sweep_to_raster():
+def test_sweep_to_raster_geographic():
 
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
     filename = get_wradlib_data_file(filename)
@@ -267,9 +268,9 @@ def test_sweep_to_raster():
     lat_min = round(lat) - 2
     lon_max = round(lon) + 2
     lat_max = round(lat) + 2
-    bounds = [lon_min, lon_max, lat_min, lat_max]
-    size = 1000
-    raster = georef.create_raster_geographic(bounds, size, size_in_meters=True)
+    bounds = [lon_min, lat_min, lon_max, lat_max]
+    resolution = 30
+    raster = georef.create_raster_geographic(bounds, resolution)
     transform = comp.transform_binned(sweep, raster)
 
     # check normal operation
@@ -283,12 +284,17 @@ def test_sweep_to_raster():
     xr.testing.assert_equal(composite, composite1)
     xr.testing.assert_equal(composite.DBZH, composite2)
 
-    crs = georef.get_radar_projection((lon, lat))
-    georef.project_bounds(bounds, crs)
 
-    bounds = [-10e3, 10e3, -10e3, 10e3]
-    size = 500
-    raster = georef.create_raster_xarray(crs, bounds, size)
+def test_sweep_to_raster():
+
+    filename = DATASETS.fetch("DES_VOL_RAW_20240522_1600.nc")
+    datatree = xd.io.open_cfradial1_datatree(filename)
+    sweep = datatree["sweep_0"].ds
+
+    crs = georef.get_radar_crs(sweep)
+    bounds = [-10e3, -10e3, 10e3, 10e3]
+    resolution = 500
+    raster = georef.create_raster_xarray(crs, bounds, resolution)
     transform = comp.transform_binned(sweep, raster)
     composite = comp.sweep_to_raster(sweep, raster, transform=transform)
     composite.to_netcdf("comp.nc")
