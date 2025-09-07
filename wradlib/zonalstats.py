@@ -125,7 +125,7 @@ class ZonalDataBase:
 
     Examples
     --------
-    See :ref:`/notebooks/zonalstats/zonalstats.ipynb#ZonalData`.
+    See :ref:`zonalstats:zonaldata`.
 
     """
 
@@ -382,7 +382,7 @@ class ZonalDataPoly(ZonalDataBase):
 
     Examples
     --------
-    See :ref:`/notebooks/zonalstats/zonalstats.ipynb#ZonalData`.
+    See :ref:`zonalstats:zonaldata`.
     """
 
     def _get_idx_weights(self):
@@ -433,7 +433,7 @@ class ZonalDataPoint(ZonalDataBase):
 
     Examples
     --------
-    See :ref:`/notebooks/zonalstats/zonalstats.ipynb#ZonalData`.
+    See :ref:`zonalstats:zonaldata`.
     """
 
     def _get_idx_weights(self):
@@ -476,7 +476,7 @@ class ZonalStatsBase:
 
     Examples
     --------
-    See :ref:`/notebooks/zonalstats/zonalstats.ipynb#ZonalStats`.
+    See :ref:`zonalstats:zonalstats`.
     """
 
     def __init__(self, src=None, ix=None, w=None):
@@ -635,7 +635,7 @@ class ZonalStatsPoly(ZonalStatsBase):
 
     Examples
     --------
-    See :ref:`/notebooks/zonalstats/zonalstats.ipynb#ZonalStats`
+    See :ref:`zonalstats:zonalstats`.
     """
 
     def __init__(self, src=None, **kwargs):
@@ -659,7 +659,7 @@ class ZonalStatsPoint(ZonalStatsBase):
 
     Examples
     --------
-    See :ref:`/notebooks/zonalstats/zonalstats.ipynb#ZonalStats`
+    See :ref:`zonalstats:zonalstats`.
     """
 
     def __init__(self, src, **kwargs):

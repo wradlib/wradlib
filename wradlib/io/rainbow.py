@@ -127,7 +127,7 @@ def read_rainbow(filename, *, loaddata=True):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/legacy/read_rainbow.ipynb`.
+    See :doc:`notebooks/fileio/legacy/read_rainbow`.
     """
     with util._open_file(filename) as f:
         rbdict = xrainbow.get_rb_header(f)

@@ -117,7 +117,7 @@ def plot_ppi_crosshair(
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/plot_ppi.ipynb`.
+    See :doc:`notebooks/visualisation/plot_ppi`.
 
     """
     # check coordinate tuple
@@ -690,7 +690,7 @@ def plot_max_plan_and_vert(x, y, z, data, *, unit="", title="", **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/workflow/recipe2.ipynb`.
+    See :doc:`notebooks/workflow/recipe2`.
     """
     plot_plan_and_vert(
         x,
@@ -720,7 +720,7 @@ def add_lines(ax, lines, **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/gis_overlay.ipynb`.
+    See :doc:`notebooks/visualisation/gis_overlay`.
     """
     try:
         ax.add_collection(coll.LineCollection([lines], **kwargs))
@@ -747,7 +747,7 @@ def add_patches(ax, patch_array, **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/gis_overlay.ipynb`.
+    See :doc:`notebooks/visualisation/gis_overlay`.
     """
 
     try:
@@ -964,9 +964,9 @@ def plot(
 
     Examples
     --------
-    See :ref:`/notebooks/visualisation/plot_ppi.ipynb`,
+    See :doc:`notebooks/visualisation/plot_ppi`,
     and
-    :ref:`/notebooks/visualisation/plot_curvelinear_grids.ipynb`.
+    :doc:`notebooks/visualisation/plot_curvelinear_grids`.
     """
     # fix for correct zorder of data and grid
     kwargs["zorder"] = kwargs.pop("zorder", 0)
