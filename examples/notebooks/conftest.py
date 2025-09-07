@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import os
 from pathlib import Path
 
 import jupytext
@@ -29,7 +28,7 @@ class NotebookItem(pytest.Item):
         super().__init__(name, parent)
 
     def runtest(self):
-        cur_dir = os.path.dirname(self.parent.path)
+        # cur_dir = os.path.dirname(self.parent.path)
 
         # Load notebook (MyST .md or .ipynb)
         if self.parent.path.suffix == ".md":
@@ -65,7 +64,7 @@ class NotebookItem(pytest.Item):
         try:
             client.execute()
         except CellExecutionError as e:
-            raise NotebookException(e)
+            raise NotebookException(e) from e
 
         # write outputs to .ipynb in any case
         if self.parent.path.suffix == ".md":
