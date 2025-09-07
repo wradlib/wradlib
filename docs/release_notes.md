@@ -12,6 +12,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **New features**
 
 * ENH: add hydrometeor partitioning ratio calculation from Pejcic et al. ({pull}`699`) by {at}`kmuehlbauer`
+* DOC: port notebooks as myst markdown into examples/notebooks, adapt documentation pipeline ({pull}`714`) by {at}`kmuehlbauer`
 
 **Maintenance**
 
