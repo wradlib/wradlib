@@ -27,7 +27,7 @@ from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum  # noqa
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 # sys.path.insert(0, os.path.abspath('.'))
-#sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # -- General configuration ----------------------------------------------------
 
@@ -37,7 +37,7 @@ from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum  # noqa
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    #"nbsphinx",
+    # "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
@@ -49,7 +49,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinxcontrib.bibtex",
-    #"myst_parser",
+    # "myst_parser",
     "myst_nb",
     "sphinx_copybutton",
     "IPython.sphinxext.ipython_console_highlighting",
@@ -92,12 +92,12 @@ extlinks = {
 #                "config=TeX-AMS-MML_HTMLorMML")
 
 # The suffix of source filenames.
-#source_suffix = [".rst", ".md"]
+# source_suffix = [".rst", ".md"]
 
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.ipynb': 'myst-nb',
-    '.myst': 'myst-nb',
+    ".rst": "restructuredtext",
+    ".ipynb": "myst-nb",
+    ".myst": "myst-nb",
 }
 
 
@@ -253,9 +253,9 @@ exclude_patterns = [
     ".DS_Store",
     "links.rst",
     "**.ipynb_checkpoints",
-    #"examples/notebooks/**/*.md",
-    #"examples/notebooks/*.md",
-#    "generated/*",
+    # "examples/notebooks/**/*.md",
+    # "examples/notebooks/*.md",
+    #    "generated/*",
 ]
 
 # -- nbsphinx specifics --
@@ -469,5 +469,3 @@ def dump_docs(app, env):
 def setup(app):
     app.connect("env-updated", normalize_autosectionlabels)
     app.connect("env-updated", dump_docs)
-
-

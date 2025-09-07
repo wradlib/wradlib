@@ -56,7 +56,11 @@ class NotebookItem(pytest.Item):
 
         # execute notebook
         client = NotebookClient(
-            nb, kernel_name="python3", timeout=600, iopub_timeout=600, allow_errors=False
+            nb,
+            kernel_name="python3",
+            timeout=600,
+            iopub_timeout=600,
+            allow_errors=False,
         )
         try:
             client.execute()
@@ -73,7 +77,9 @@ class NotebookItem(pytest.Item):
             out_path = self.parent.path
 
         # output notebooks in render
-        out_path_parts = tuple("render" if part == "notebooks" else part for part in out_path.parts)
+        out_path_parts = tuple(
+            "render" if part == "notebooks" else part for part in out_path.parts
+        )
         out_path = Path(*out_path_parts)
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
