@@ -15,6 +15,7 @@ dependencies:
   - geopandas
   - h5py
   - h5netcdf
+  - jupytext
   - lat_lon_parser
   - libgdal-hdf5
   - libgdal-netcdf
