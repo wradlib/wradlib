@@ -329,7 +329,7 @@ jobs:
           rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
       - name: Commit files
-        if: github.event_name == 'push' || github.event_name == 'release'
+        if: github.event_name == 'push' || github.event_name == 'release' || github.event_name == 'pull_request'
         run: |
           cd examples/render
           git init
