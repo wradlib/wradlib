@@ -7,6 +7,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened]
   release:
     types:
       - created
@@ -286,6 +287,7 @@ jobs:
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/notebooktests.yml
+      PR_NUMBER: ${{ github.event.number }}
     strategy:
       fail-fast: false
       matrix:
@@ -337,9 +339,11 @@ jobs:
           git add --all .
           git commit -m "Rendering wradlib-notebooks at wradlib version $WRADLIB_VERSION"
       - name: Push changes
-        if: github.event_name == 'push' || github.event_name == 'release'
+        if: github.event_name == 'push' || github.event_name == 'release' || github.event_name == 'pull_request'
         run: |
-          if [ $WRADLIB_TAG == 'undefined' ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+              BRANCH="pr_${{ github.event.pull_request.number }}"
+          elif [ $WRADLIB_TAG == 'undefined' ]; then
               BRANCH=devel
           else
               BRANCH=$WRADLIB_TAG
