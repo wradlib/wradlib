@@ -322,8 +322,9 @@ jobs:
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
+          # create folderstruct with all needed files, but *.md
+          rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs examples/notebooks
-          mv examples/notebooks/files examples/render/files
       - name: Commit files
         if: github.event_name == 'push' || github.event_name == 'release'
         run: |

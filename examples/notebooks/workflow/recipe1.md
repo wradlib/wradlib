@@ -150,7 +150,7 @@ import datetime as dt
 start = dt.datetime.now()
 # unzip data
 filename = wradlib_data.DATASETS.fetch("dx/recipe1_data.zip")
-targetdir = wrl.util.get_wradlib_data_path() / "dx/recipe1_data"
+targetdir = wradlib_data.DATASETS.abspath / "dx/recipe1_data"
 with zipfile.ZipFile(filename, "r") as z:
     z.extractall(targetdir)
 

@@ -106,7 +106,7 @@ Unconstrained gate-by-gate retrieval (1954)
 First, we examine the behaviour of the "classical" unconstrained forward correction which is typically referred to [Hitschfeld et al., 1954](https://docs.wradlib.org/en/latest/bibliography.html#hitschfeld1954), although Hitschfeld and Bordan themselves rejected this approach. The Path Integrated Attenuation (PIA) according to this approach can be obtained as follows:
 
 ```{code-cell} python
-    pia_hibo = wrl.atten.correct_attenuation_hb(
+pia_hibo = wrl.atten.correct_attenuation_hb(
     data, coefficients=dict(a=8.0e-5, b=0.731, gate_length=1.0), mode="warn", thrs=59.0
 )
 ```

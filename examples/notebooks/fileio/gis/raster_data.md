@@ -47,10 +47,9 @@ except:
 
 ```{code-cell} python
 # We will export this RADOLAN dataset to a GIS compatible format
-wdir = wrl.util.get_wradlib_data_path() / "radolan/grid/"
-if not os.path.exists(wdir):
-    print("wdir:", wdir)
-    os.makedirs(wdir)
+wdir = wradlib_data.DATASETS.abspath / "radolan/grid/"
+# create output-folder if not exists
+wdir.mkdir(parents=True: exists_ok=True)
 
 filename = "radolan/misc/raa01-sf_10000-1408102050-dwd---bin.gz"
 filename = wradlib_data.DATASETS.fetch(filename)
