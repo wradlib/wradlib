@@ -1,0 +1,28 @@
+name: trigger_rtd.yml
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        required: true
+        type: string
+
+jobs:
+  trigger_rtd:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      RTD_TOKEN: ${{ secrets.RTD_TOKEN_NEW }}
+      RTD_URL: ${{ secrets.RTD_URL_NEW }}
+    steps:
+      - name: Get CI workflow ID
+        run: |
+          echo "Reading triggering workflow info..."
+          cat $GITHUB_EVENT_PATH
+          RUN_ID=$(jq '.workflow_run.id' $GITHUB_EVENT_PATH)
+          echo "TRIGGERING_RUN_ID=$RUN_ID" >> $GITHUB_ENV
+      - name: Show CI workflow ID
+        run: |
+          echo trigger-ID: $TRIGGERING_RUN_ID
