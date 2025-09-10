@@ -14,9 +14,9 @@ build:
     build:
       html:
         - echo "First run"
-        - sphinx-build -j auto -v -b html docs/ _build/html
+        - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
         - echo "Second run"
-        - sphinx-build -j auto -v -b html docs/ _build/html
+        - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
 conda:
   environment: ci/requirements/readthedocs.yml
 sphinx:
