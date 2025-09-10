@@ -283,7 +283,7 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
     >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
     (900, 900, 2), (3.5889, 46.9526)
 
-    See :ref:`/notebooks/fileio/radolan/radolan_grid.ipynb#Polar-Stereographic-Projection`.
+    See :ref:`radolan_grid:polar-stereographic-projection`.
 
     Raises
     ------

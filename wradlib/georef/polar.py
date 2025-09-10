@@ -297,8 +297,7 @@ def spherical_to_proj(r, phi, theta, site, *, crs=None, re=None, ke=4.0 / 3.0):
     the latitude of the site because the beam doesn't travel along the latitude
     circle but along a great circle.
 
-    See :ref:`/notebooks/basics/wradlib_workflow.ipynb#\
-Georeferencing-and-Projection`.
+    See :ref:`wradlib_workflow:georeferencing-and-projection`.
     """
     if crs is None:
         crs = projection.get_default_projection()

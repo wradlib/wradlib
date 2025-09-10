@@ -61,7 +61,7 @@ def read_generic_hdf5(fname):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/legacy/read_hdf5.ipynb`.
+    See :doc:`notebooks/fileio/legacy/read_hdf5`.
     """
     fcontent = {}
 
@@ -318,7 +318,7 @@ def read_gamic_hdf5(filename, *, wanted_elevations=None, wanted_moments=None):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/legacy/read_gamic.ipynb`.
+    See :doc:`notebooks/fileio/legacy/read_gamic`.
     """
 
     # check elevations
@@ -469,7 +469,7 @@ def read_gpm(filename, *, bbox=None):
 
     Examples
     --------
-    See :ref:`/notebooks/workflow/recipe3.ipynb`.
+    See :doc:`notebooks/workflow/recipe3`.
     """
     pr_data = nc.Dataset(filename, mode="r")
     lon = pr_data["NS"].variables["Longitude"]
@@ -704,7 +704,7 @@ def read_trmm(filename1, filename2, *, bbox=None):
 
     Examples
     --------
-    See :ref:`/notebooks/workflow/recipe3.ipynb`.
+    See :doc:`notebooks/workflow/recipe3`.
     """
     # trmm 2A23 and 2A25 data is hdf4
     pr_data1 = nc.Dataset(filename1, mode="r")

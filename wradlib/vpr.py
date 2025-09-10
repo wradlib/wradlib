@@ -87,7 +87,7 @@ class CartesianVolume:
 
     Examples
     --------
-    See :ref:`/notebooks/workflow/recipe2.ipynb`.
+    See :doc:`notebooks/workflow/recipe2`.
     """
 
     def __init__(
@@ -217,7 +217,7 @@ class CAPPI(CartesianVolume):
 
     Examples
     --------
-    See :ref:`/notebooks/workflow/recipe2.ipynb`.
+    See :doc:`notebooks/workflow/recipe2`.
 
     Here's an example how a set of CAPPIs can be created from synthetic polar volume data:
 
@@ -319,7 +319,7 @@ class PseudoCAPPI(CartesianVolume):
 
     Examples
     --------
-    See :ref:`/notebooks/workflow/recipe2.ipynb`.
+    See :doc:`notebooks/workflow/recipe2`.
     """
 
     def _get_mask(self, gridcoords, polcoords, maxrange, minelev, maxelev):
@@ -421,7 +421,7 @@ def volcoords_from_polar(site, elevs, azimuths, ranges, *, crs=None):
 
     Examples
     --------
-    See :ref:`/notebooks/workflow/recipe2.ipynb`.
+    See :doc:`notebooks/workflow/recipe2`.
     """
     # make sure that elevs is an array
     elevs = np.array([elevs]).ravel()

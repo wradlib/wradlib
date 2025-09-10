@@ -5,6 +5,7 @@
 """
 Miscellaneous Data I/O
 ^^^^^^^^^^^^^^^^^^^^^^
+
 .. autosummary::
    :nosignatures:
    :toctree: generated/
@@ -227,7 +228,7 @@ def get_radiosonde(wmoid, date, *, cols=None, xarray=False, **kwargs):
 
 
 def radiosonde_to_xarray(data, *, max_height=None, res=None, meta=None):
-    """Convert Radiosonde Data to :class:`xarray:xarray.Dataset.
+    """Convert Radiosonde Data to :class:`xarray:xarray.Dataset`.
 
     This converts dictionary returned by :func:`~wradlib.io.misc.get_radiosonde` into
     a :class:`xarray:xarray.Dataset`.
@@ -246,7 +247,7 @@ def radiosonde_to_xarray(data, *, max_height=None, res=None, meta=None):
         Resolution to which output DataArray is linearly interpolated in m.
         Defaults to None (no interpolation).
     meta : dict, optional
-        Dictionay of meta attributes :func:`~wradlib.io.misc.get_radiosonde`.
+        Dictionary of meta attributes :func:`~wradlib.io.misc.get_radiosonde`.
 
     Returns
     -------

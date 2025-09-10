@@ -78,9 +78,7 @@ def _pulse_volume_numpy(ranges, h, theta):
 
     Examples
     --------
-
-    See :ref:`/notebooks/workflow/recipe1.ipynb`.
-
+    See :doc:`notebooks/workflow/recipe1`.
     """
     return np.pi * h * (ranges**2) * (np.tan(np.radians(theta / 2.0))) ** 2
 
@@ -118,9 +116,7 @@ def _pulse_volume_xarray(obj, h, theta, **kwargs):
 
     Examples
     --------
-
-    See :ref:`/notebooks/workflow/recipe1.ipynb`.
-
+    See :doc:`notebooks/workflow/recipe1`.
     """
     return _pulse_volume_numpy(obj, h, theta)
 
@@ -152,7 +148,7 @@ def beam_block_frac(th, bh, a):
     --------
     >>> pbb = beam_block_frac(th,bh,a) #doctest: +SKIP
 
-    See :ref:`/notebooks/beamblockage/beamblockage.ipynb`.
+    See :doc:`notebooks/beamblockage/beamblockage`.
 
     Note
     ----
@@ -221,7 +217,7 @@ def cum_beam_block_frac(pbb):
     >>> pbb = beam_block_frac(th, bh, a) #doctest: +SKIP
     >>> cbb = cum_beam_block_frac(pbb) #doctest: +SKIP
 
-    See :ref:`/notebooks/beamblockage/beamblockage.ipynb`.
+    See :doc:`notebooks/beamblockage/beamblockage`.
 
     """
 

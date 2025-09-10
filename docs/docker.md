@@ -139,7 +139,7 @@ Here 4 different approaches for running containers are shown.
 
 ### Jupyter Notebook Server
 
-You can run a jupyter notebook server with `main-full` using the following setup. You would need to download [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks) and [wradlib-data](https://github.com/wradlib/wradlib-data). The docker run command mounts the host folders containing `wradlib-notebooks` and `wradlib-data` into the container:
+You can run a jupyter notebook server with `main-full` using the following setup. You would need to download [wradlib-data](https://github.com/wradlib/wradlib-data). The docker run command mounts the host folders containing `wradlib-notebooks` and `wradlib-data` into the container:
 
 ```bash
 $ docker run -ti --name wradlib_nb -p 8888:8888 -v /host/path/to/wradlib-notebooks:/home/notebooks -v /host/path/to/wradlib-data:/home/wradlib-data -e LOCAL_USER_ID=$UID -e WRADLIB_DATA=/home/wradlib-data wradlib/wradlib-docker:main-full /opt/conda/envs/wradlib/bin/jupyter notebook --notebook-dir=/home/notebooks --ip='*' --port=8888
@@ -161,4 +161,4 @@ $ docker run -ti --name wradlib_nb -p 8888:8888 -v /host/path/to/wradlib-noteboo
         http://localhost:8888/?token=6673cfb299fb93728c183be8a4590fc77608fb1312bce340
 ```
 
-Copy/paste the given url into your local web browser and you are ready to explore the [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks) together with [wradlib-data](https://github.com/wradlib/wradlib-data).
+Copy/paste the given url into your local web browser and you are ready to explore the [wradlib-notebooks](https://github.com/wradlib/wradlib/tree/main/examples/notebooks) together with [wradlib-data](https://github.com/wradlib/wradlib-data).

@@ -180,9 +180,7 @@ class AdjustBase(ipol.IpolBase):
 
     Examples
     --------
-
-    See :ref:`/notebooks/multisensor/gauge_adjustment.ipynb`.
-
+    See :doc:`notebooks/multisensor/gauge_adjustment`.
     """
 
     def __init__(

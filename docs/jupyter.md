@@ -2,15 +2,15 @@
 
 ## Examples: your entry point to wradlib
 
-The documentation of {{wradlib}} basically consists of two elements: the first element is the {doc}`library reference <reference>` which provides a systematic documentation of each function in wradlib's API. In order to use the library reference properly, you should have an idea what you're actually looking for. This is why new users mostly start with the second element, the [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks). Here you can look for application examples that are close to what you actually want to achieve, and then use these as a basis for further development. Once you understood an example, you also know what to look for in the {doc}`library reference <reference>`.
+The documentation of {{wradlib}} basically consists of two elements: the first element is the {doc}`library reference <reference>` which provides a systematic documentation of each function in wradlib's API. In order to use the library reference properly, you should have an idea what you're actually looking for. This is why new users mostly start with the second element, the [wradlib-notebooks](https://github.com/wradlib/wradlib/tree/main/examples/notebooks). Here you can look for application examples that are close to what you actually want to achieve, and then use these as a basis for further development. Once you understood an example, you also know what to look for in the {doc}`library reference <reference>`.
 
 
 ## Interactive examples with jupyter notebooks
 
-All {{wradlib}} examples are distributed as [jupyter notebooks](https://jupyter.org) in the [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks) repository. This way, you can interactively explore various topics. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from {{wradlib}}'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
+All {{wradlib}} examples are distributed as [jupyter notebooks](https://jupyter.org) in the [wradlib](https://github.com/wradlib/wradlib/tree/main/examples/notebooks) repository. This way, you can interactively explore various topics. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from {{wradlib}}'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
 
 :::{note}
-Are you using {{wradlib}} on the [Open Radar Science Shortcourse](https://openradarscience.org/erad2022/)? Then please follow-up there to get your openradar software stack running.
+Are you using {{wradlib}} on the [Open Radar Science Shortcourse](https://openradarscience.org/erad2024/)? Then please follow-up there to get your openradar software stack running.
 
 You might also fire-up a jupyter notebook server with a [wradlib docker container](docker.md#jupyter-notebook-server).
 :::
@@ -51,8 +51,7 @@ In both cases, a browser window will open (typically at [http://localhost:8888/t
 (ref_get_notebooks)=
 ## How can I get the example notebooks?
 
-The notebooks are available in the [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks) repository. Alternatively, you can [download](https://codeload.github.com/wradlib/wradlib-notebooks/zip/main) the latest ("bleeding edge") notebooks. In both cases, you find everything in the directory ``/notebooks`` (after extracting the downloaded archives).
-
+The notebooks are available in the [wradlib](https://github.com/wradlib/wradlib/tree/main/examples/notebooks) repository.
 
 (ref_get_data)=
 ## How can I get the example data?
@@ -81,7 +80,7 @@ After this procedure, the example notebooks will automagically pull the required
 (ref_get_jupyter)=
 ## How to install jupyter?
 
-As already pointed out above, you can just look at the rendered notebooks [online docs](notebooks/overview.ipynb). In order to use them interactively, you need to install ``jupyter``. ``jupyter`` can be installed conveniently into conda environments. If you installed {{wradlib}} in a separate *conda environment* (as recommended in {doc}`installation`), you need to install ``jupyter`` in that environment, too:
+As already pointed out above, you can just look at the rendered notebooks [online docs](notebooks/overview). In order to use them interactively, you need to install ``jupyter``. ``jupyter`` can be installed conveniently into conda environments. If you installed {{wradlib}} in a separate *conda environment* (as recommended in {doc}`installation`), you need to install ``jupyter`` in that environment, too:
 
 ```bash
 (base) $ conda activate wradlib

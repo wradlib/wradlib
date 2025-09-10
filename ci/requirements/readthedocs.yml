@@ -2,23 +2,58 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.11
+  - python=3.13
   - pip
+  - bottleneck
+  - cartopy
+  - cmweather
   - accessible-pygments
+  - dask
   - deprecation
   - git
+  - gdal
+  - geopandas
+  - h5py
+  - h5netcdf
   - ipykernel
-  - myst-parser
+  - jupytext
+  - lat_lon_parser
+  - libgdal-hdf5
+  - libgdal-netcdf
+  - linkify-it-py
+  - matplotlib-base
+  - myst-nb
   - nbconvert
   - nbsphinx
+  - nc-time-axis
+  - netCDF4
+  - notebook
   - numpy
   - pandoc
+  - pint
+  - pint-xarray
+  - pooch
+  - psutil
+  - pytest
+  - pytest-cov
+  - pytest-doctestplus
+  - pytest-sugar
+  - pytest-xdist
   - pydata-sphinx-theme
+  - requests
+  - rioxarray
+  - rsync
+  - scipy
+  - setuptools
   - setuptools_scm
   - sphinx
   - sphinx_rtd_theme
   - sphinx-copybutton
   - sphinxcontrib-bibtex
   - sphinx-book-theme>=1.0
+  - tqdm
   - xarray >=2024.10.0
   - xradar >=0.8.0
+  - xmltodict
+  - pip:
+    - wradlib_data

@@ -123,8 +123,7 @@ def phidp_kdp_vulpiani(
 
     Examples
     --------
-
-    See :ref:`/notebooks/verification/verification.ipynb`.
+    See :doc:`notebooks/verification/verification`.
 
     """
     if copy:

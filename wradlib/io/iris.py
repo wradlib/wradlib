@@ -367,7 +367,7 @@ def read_iris(
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/legacy/read_iris.ipynb`.
+    See :doc:`notebooks/fileio/legacy/read_iris`.
     """
     if not isinstance(filename, str):
         filename = filename.read()
