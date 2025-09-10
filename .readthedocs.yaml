@@ -17,8 +17,12 @@ build:
         - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
         - echo "Second run"
         - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
+  cache:
+    paths:
+      - $READTHEDOCS_OUTPUT/html
 conda:
   environment: ci/requirements/readthedocs.yml
+  cache: true
 sphinx:
   builder: html
   configuration: docs/conf.py
