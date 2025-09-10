@@ -98,6 +98,7 @@ source_suffix = {
     ".rst": "restructuredtext",
     ".ipynb": "myst-nb",
     ".myst": "myst-nb",
+    ".md": "myst-nb",
 }
 
 
@@ -119,80 +120,11 @@ from importlib.metadata import version as metadata_version
 # check readthedocs
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 
-# processing on readthedocs
-if on_rtd:
-    # rtd_version will be either 'latest', 'stable' or some tag name which
-    # should correspond to the wradlib and wradlib-docs tag
-    rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")
-    rtd_version_name = os.environ.get("READTHEDOCS_VERSION_NAME", "latest")
-    rtd_version_type = os.environ.get("READTHEDOCS_VERSION_TYPE", "latest")
 
-    print(f"RTD Version: {rtd_version}")
-    print(f"RTD Version Name: {rtd_version_name}")
-    print(f"RTD Version Type: {rtd_version_type}")
+version = metadata_version("wradlib")
+release = version
 
-    # latest wradlib commit
-    if rtd_version == "latest" or rtd_version_type == "external":
-        wradlib_notebooks_branch = "devel"
-        wradlib_branch_or_tag = "main"
-    # latest tagged commit
-    elif rtd_version == "stable":
-        tag = subprocess.check_output(
-            ["git", "describe", "--abbrev=0", "--tags"], universal_newlines=True
-        ).strip()
-        wradlib_notebooks_branch = tag
-        wradlib_branch_or_tag = tag
-    # rely on rtd_version (wradlib tag)
-    else:
-        wradlib_notebooks_branch = rtd_version
-        wradlib_branch_or_tag = rtd_version
-
-    # install checked out wradlib
-    subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "../."])
-
-    version = metadata_version("wradlib")
-    release = version
-
-    print("RTD - RELEASE, VERSION", release, version)
-
-    # clone wradlib-notebooks target branch
-    repourl = f"{url}/wradlib-notebooks.git"
-    reponame = "wradlib-notebooks"
-    # first remove any possible left overs
-    subprocess.check_call(["rm", "-rf", "wradlib-notebooks"])
-    subprocess.check_call(["rm", "-rf", "notebooks"])
-    subprocess.check_call(
-        ["git", "clone", "-b", wradlib_notebooks_branch, repourl, reponame]
-    )
-    branch = f"origin/{wradlib_branch_or_tag}"
-    nb = (
-        subprocess.check_output(
-            ["git", "--git-dir=wradlib-notebooks/.git", "rev-parse", branch]
-        )
-        .decode()
-        .strip()
-    )
-    subprocess.check_call(["mv", "wradlib-notebooks/notebooks", "."])
-    subprocess.check_call(["rm", "-rf", "wradlib-notebooks"])
-
-    # correct notebook doc-links
-    if rtd_version != "latest":
-        baseurl = "https://docs.wradlib.org/en/{}"
-        search = baseurl.format("latest")
-        replace = baseurl.format(rtd_version)
-        subprocess.check_call(
-            [
-                "find notebooks -type f -name '*.ipynb' -exec "
-                "sed -i 's%{search}%{replace}%g' {{}} +"
-                "".format(search=search, replace=replace)
-            ],
-            shell=True,
-        )
-else:
-    version = metadata_version("wradlib")
-    release = version
-
-    print("Local - RELEASE, VERSION", release, version)
+print("RELEASE, VERSION", release, version)
 
 # get wradlib modules and create automodule rst-files
 import types
@@ -258,10 +190,11 @@ exclude_patterns = [
     #    "generated/*",
 ]
 
-# -- nbsphinx specifics --
-# do not execute notebooks ever while building docs
-nbsphinx_execute = "never"
-nb_execution_mode = "off"
+# -- myst_nb specifics --
+nb_execution_mode = "auto"
+nb_execution_kernel_name = "python3"
+nb_execution_in_temp = True
+nb_execution_timeout = 300
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = False
