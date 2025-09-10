@@ -41,6 +41,7 @@ dependencies:
   - pydata-sphinx-theme
   - requests
   - rioxarray
+  - rsync
   - scipy
   - setuptools
   - setuptools_scm
