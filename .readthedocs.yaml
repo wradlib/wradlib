@@ -12,10 +12,11 @@ build:
       - find examples/render -name "*.md" --delete
       - rsync -av examples/render/ docs/notebooks/
     build:
-      - echo "First run"
-      - sphinx-build -j auto -v -b html docs/ _build/html
-      - echo "Second run"
-      - sphinx-build -j auto -v -b html docs/ _build/html
+      html:
+        - echo "First run"
+        - sphinx-build -j auto -v -b html docs/ _build/html
+        - echo "Second run"
+        - sphinx-build -j auto -v -b html docs/ _build/html
 conda:
   environment: ci/requirements/readthedocs.yml
 sphinx:
