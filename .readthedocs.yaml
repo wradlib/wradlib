@@ -22,3 +22,7 @@ conda:
 sphinx:
   builder: html
   configuration: docs/conf.py
+python:
+  install:
+    - method: pip
+      path: .
