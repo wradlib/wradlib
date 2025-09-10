@@ -9,7 +9,7 @@ build:
     pre_build:
       - rsync -av examples/notebooks/ examples/render/
       - find examples/render -name "*.md" -exec jupytext --to ipynb {} \;
-      - find examples/render -name "*.md" --delete
+      - find examples/render -name "*.md" -delete
       - rsync -av examples/render/ docs/notebooks/
     build:
       html:
