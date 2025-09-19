@@ -3,6 +3,7 @@ codecov
 coverage
 nbconvert
 nbformat
+open_radar_data
 pre-commit
 pytest
 pytest-cov
