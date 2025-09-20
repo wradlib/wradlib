@@ -55,6 +55,6 @@ display(swp)
 
 ```{code-cell} python
 swp = swp.wrl.georef.georeference()
-pm = swp.wrl.vis.plot()
+pm = swp.DBZH.wrl.vis.plot()
 txt = plt.title("Simple PPI")
 ```
