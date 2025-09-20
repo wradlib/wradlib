@@ -26,9 +26,4 @@ This section provides a collection of example code snippets to make users famili
 :hidden:
 :maxdepth: 2
 Plot PPI <plot_ppi>
-Plot RHI <plot_rhi>
-Plot Curvelinear Grids  <plot_curvelinear_grids>
-Plot geodata <gis_overlay>
-Plot geodata with cartopy <gis_overlay_cartopy>
-Plot radar scan strategy <plot_scan_strategy>
 ```

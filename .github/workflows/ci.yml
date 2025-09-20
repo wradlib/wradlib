@@ -324,7 +324,7 @@ jobs:
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
-          # create folderstruct with all needed files, but *.md
+          # create folder structure with all needed files, but *.md
           cd examples
           rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
           # debug

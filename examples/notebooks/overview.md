@@ -23,18 +23,5 @@ This section provides a collection of example code snippets to make users famili
 ```{toctree}
 :hidden:
 :maxdepth: 3   
-Python Intro <python/learnpython>
-wradlib Basics <basics/basics>
-Data Input/Output <fileio/fileio>
 Visualization <visualisation/plotting>
-Attenuation Correction <attenuation/attenuation>
-Beam Blockage <beamblockage/beamblockage>
-Echo Classification <classify/classify>
-Georeferencing <georeferencing/georeferencing>
-Interpolation <interpolation/interpolation>
-Compositing <compositing/compositing>
-Gauge Adjustment <multisensor/gauge_adjustment>
-Verification <verification/verification>
-Zonal Statistics <zonalstats/zonalstats>
-Recipes <workflow/recipes>
 ```
