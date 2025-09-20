@@ -6,8 +6,24 @@ build:
   jobs:
     pre_install:
       - git update-index --assume-unchanged ci/requirements/readthedocs.yml docs/conf.py
+    pre_build:
+      - rsync -av examples/notebooks/ examples/render/
+      - find examples/render -name "*.md" -exec jupytext --to ipynb {} \;
+      - find examples/render -name "*.md" -delete
+      - rsync -av examples/render/ docs/notebooks/
+    build:
+      html:
+        - echo "First run"
+        - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
+        - echo "Second run"
+        - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
+
 conda:
   environment: ci/requirements/readthedocs.yml
 sphinx:
   builder: html
   configuration: docs/conf.py
+python:
+  install:
+    - method: pip
+      path: .

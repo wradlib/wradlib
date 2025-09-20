@@ -219,7 +219,7 @@ def read_generic_netcdf(fname):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/legacy/read_netcdf.ipynb`.
+    See :doc:`notebooks/fileio/legacy/read_netcdf`.
     """
     with _open_netcdf(fname) as ncid:
         out = read_netcdf_group(ncid)

@@ -197,7 +197,7 @@ def write_raster_dataset(fpath, dataset, *, driver="GTiff", **kwargs):
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/gis/raster_data.ipynb`.
+    See :doc:`notebooks/fileio/gis/raster_data`.
     """
     # get option list
     options = kwargs.get("options", [])
@@ -251,7 +251,7 @@ class VectorSource:
 
     Examples
     --------
-    See :ref:`/notebooks/fileio/gis/vector_data.ipynb`.
+    See :doc:`notebooks/fileio/gis/vector_data`.
     """
 
     def __init__(self, data=None, trg_crs=None, name="layer", source=0, **kwargs):

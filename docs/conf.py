@@ -14,6 +14,8 @@
 import datetime as dt
 import glob
 import os
+import re
+import sys
 import subprocess
 import warnings
 
@@ -25,6 +27,7 @@ from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum  # noqa
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 # sys.path.insert(0, os.path.abspath('.'))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # -- General configuration ----------------------------------------------------
 
@@ -34,7 +37,7 @@ from pybtex.style.labels.alpha import LabelStyle, _strip_nonalnum  # noqa
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
-    "nbsphinx",
+    # "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.autosummary",
@@ -46,7 +49,8 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinxcontrib.bibtex",
-    "myst_parser",
+    # "myst_parser",
+    "myst_nb",
     "sphinx_copybutton",
     "IPython.sphinxext.ipython_console_highlighting",
 ]
@@ -61,14 +65,21 @@ autodoc_default_options = {
     "show-inheritance": True,
 }
 
+autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 3
+
 myst_enable_extensions = [
     "substitution",
     "dollarmath",
     "amsmath",
     "colon_fence",
+    "deflist",
+    "html_image",
+    "linkify",
+    "tasklist",
 ]
 
-myst_heading_anchors = 4
+myst_heading_anchors = 5
 
 
 extlinks = {
@@ -81,7 +92,15 @@ extlinks = {
 #                "config=TeX-AMS-MML_HTMLorMML")
 
 # The suffix of source filenames.
-source_suffix = [".rst", ".md"]
+# source_suffix = [".rst", ".md"]
+
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".ipynb": "myst-nb",
+    ".myst": "myst-nb",
+    ".md": "myst-nb",
+}
+
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -101,80 +120,11 @@ from importlib.metadata import version as metadata_version
 # check readthedocs
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 
-# processing on readthedocs
-if on_rtd:
-    # rtd_version will be either 'latest', 'stable' or some tag name which
-    # should correspond to the wradlib and wradlib-docs tag
-    rtd_version = os.environ.get("READTHEDOCS_VERSION", "latest")
-    rtd_version_name = os.environ.get("READTHEDOCS_VERSION_NAME", "latest")
-    rtd_version_type = os.environ.get("READTHEDOCS_VERSION_TYPE", "latest")
 
-    print(f"RTD Version: {rtd_version}")
-    print(f"RTD Version Name: {rtd_version_name}")
-    print(f"RTD Version Type: {rtd_version_type}")
+version = metadata_version("wradlib")
+release = version
 
-    # latest wradlib commit
-    if rtd_version == "latest" or rtd_version_type == "external":
-        wradlib_notebooks_branch = "devel"
-        wradlib_branch_or_tag = "main"
-    # latest tagged commit
-    elif rtd_version == "stable":
-        tag = subprocess.check_output(
-            ["git", "describe", "--abbrev=0", "--tags"], universal_newlines=True
-        ).strip()
-        wradlib_notebooks_branch = tag
-        wradlib_branch_or_tag = tag
-    # rely on rtd_version (wradlib tag)
-    else:
-        wradlib_notebooks_branch = rtd_version
-        wradlib_branch_or_tag = rtd_version
-
-    # install checked out wradlib
-    subprocess.check_call(["python", "-m", "pip", "install", "--no-deps", "../."])
-
-    version = metadata_version("wradlib")
-    release = version
-
-    print("RTD - RELEASE, VERSION", release, version)
-
-    # clone wradlib-notebooks target branch
-    repourl = f"{url}/wradlib-notebooks.git"
-    reponame = "wradlib-notebooks"
-    # first remove any possible left overs
-    subprocess.check_call(["rm", "-rf", "wradlib-notebooks"])
-    subprocess.check_call(["rm", "-rf", "notebooks"])
-    subprocess.check_call(
-        ["git", "clone", "-b", wradlib_notebooks_branch, repourl, reponame]
-    )
-    branch = f"origin/{wradlib_branch_or_tag}"
-    nb = (
-        subprocess.check_output(
-            ["git", "--git-dir=wradlib-notebooks/.git", "rev-parse", branch]
-        )
-        .decode()
-        .strip()
-    )
-    subprocess.check_call(["mv", "wradlib-notebooks/notebooks", "."])
-    subprocess.check_call(["rm", "-rf", "wradlib-notebooks"])
-
-    # correct notebook doc-links
-    if rtd_version != "latest":
-        baseurl = "https://docs.wradlib.org/en/{}"
-        search = baseurl.format("latest")
-        replace = baseurl.format(rtd_version)
-        subprocess.check_call(
-            [
-                "find notebooks -type f -name '*.ipynb' -exec "
-                "sed -i 's%{search}%{replace}%g' {{}} +"
-                "".format(search=search, replace=replace)
-            ],
-            shell=True,
-        )
-else:
-    version = metadata_version("wradlib")
-    release = version
-
-    print("Local - RELEASE, VERSION", release, version)
+print("RELEASE, VERSION", release, version)
 
 # get wradlib modules and create automodule rst-files
 import types
@@ -194,8 +144,7 @@ for k, v in wradlib.__dict__.items():
 # create API/Library reference md-file
 reference = """# Library Reference
 
-This page contains an auto-generated summary of {{wradlib}}'s API. Every submodule is
-documented separately.
+This page contains an auto-generated summary of {{wradlib}}'s API. Every submodule is documented separately.
 
 ```{toctree}
 :maxdepth: 2
@@ -236,11 +185,16 @@ exclude_patterns = [
     ".DS_Store",
     "links.rst",
     "**.ipynb_checkpoints",
+    # "examples/notebooks/**/*.md",
+    # "examples/notebooks/*.md",
+    #    "generated/*",
 ]
 
-# -- nbsphinx specifics --
-# do not execute notebooks ever while building docs
-nbsphinx_execute = "never"
+# -- myst_nb specifics --
+nb_execution_mode = "auto"
+nb_execution_kernel_name = "python3"
+nb_execution_in_temp = True
+nb_execution_timeout = 300
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = False
@@ -273,51 +227,19 @@ def get_docpath_filename(filename, modpath):
     return docpath, filename
 
 
-def _custom_edit_url(
-    github_user,
-    github_repo,
-    github_version,
-    docpath,
-    filename,
-    default_edit_page_url_template,
-):
-    """Create custom 'edit' URLs for API modules since they are dynamically generated."""
-    if ".rst" in filename:
-        if filename.startswith("generated/"):
-            # this is a dynamically generated API page, link to actual Python source
-            modpath = os.sep.join(
-                os.path.splitext(filename)[0].split("/")[-1].split(".")[:-1]
-            )
-        else:
-            modpath = os.path.join("wradlib", os.path.splitext(filename)[0])
-        if modpath == "modules":
-            # main package listing
-            modpath = "wradlib"
-        docpath, filename = get_docpath_filename(filename, modpath)
-        if docpath is None:
-            warnings.warn(f"Not sure how to generate the API URL for: {filename}")
-    return default_edit_page_url_template.format(
-        github_user=github_user,
-        github_repo=github_repo,
-        github_version=github_version,
-        docpath=docpath,
-        filename=filename,
-    )
-
-
 html_context = {
-    "github_url": "https://github.com",  # or your GitHub Enterprise site
     "github_user": "wradlib",
     "github_repo": "wradlib",
     "github_version": "main",
-    "doc_path": "doc",
-    "edit_page_url_template": "{{ wradlib_custom_edit_url(github_user, github_repo, github_version, doc_path, file_name, default_edit_page_url_template) }}",
-    "default_edit_page_url_template": "https://github.com/{github_user}/{github_repo}/edit/{github_version}/{docpath}/{filename}",
-    "wradlib_custom_edit_url": _custom_edit_url,
+    "doc_path": "docs",
+    "edit_page_url_template": (
+        "https://github.com/{{ github_user }}/{{ github_repo }}/edit/"
+        "{{ github_version }}/{{ doc_path }}/{{ file_name }}"
+    ),
 }
 
 # Theme options are theme-specific and customize the look and feel of a
-# theme further.  For a list of options available for each theme, see the
+# theme further. For a list of options available for each theme, see the
 # documentation.
 #
 html_theme_options = {
@@ -353,7 +275,7 @@ html_theme_options = {
     "use_issues_button": True,
     "use_repository_button": True,
     "repository_branch": "main",
-    "path_to_docs": "doc",
+    "path_to_docs": "docs",
 }
 
 html_theme = "sphinx_book_theme"
@@ -377,14 +299,14 @@ templates_path = ["_templates"]
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
-    "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "xradar": ("https://docs.openradarscience.org/projects/xradar/en/stable/", None),
     "datatree": ("https://xarray-datatree.readthedocs.io/en/stable/", None),
-    "cartopy": ("https://scitools.org.uk/cartopy/docs/latest/", None),
-    "gdal": ("https://gdal.org/", None),
+    "cartopy": ("https://cartopy.readthedocs.io/stable/", None),
+    "gdal": ("https://gdal.org/en/stable/", None),
 }
 
 # -- Napoleon settings for docstring processing -------------------------------
@@ -440,3 +362,43 @@ register_plugin("pybtex.style.labels", "wrl", WradlibLabelStyle)
 register_plugin("pybtex.style.formatting", "wrlstyle", WradlibStyle)
 
 rst_epilog = ""
+
+
+def normalize_autosectionlabels(app, env):
+    """
+    Normalize autosectionlabel labels:
+      - replace spaces with dashes in section titles
+      - shorten document prefix to just the name
+    """
+    std_labels = env.domaindata["std"]["labels"]
+    new_labels = {}
+
+    for key, (docname, labelid, sectname) in list(std_labels.items()):
+        # take only last part of the path
+        short_prefix = docname.split("/")[-1]
+
+        # replace spaces with dashes in section title
+        if ":" in key:
+            prefix, title = key.split(":", 1)
+            title_dash = re.sub(r"\s+", "-", title.strip())
+            new_key = f"{short_prefix}:{title_dash}"
+        else:
+            new_key = re.sub(r"\s+", "-", key.strip())
+
+        # do not overwrite
+        if new_key not in std_labels and new_key not in new_labels:
+            new_labels[new_key] = (docname, labelid, sectname)
+
+    std_labels.update(new_labels)
+
+
+def dump_docs(app, env):
+    print("\n=== DOCNAMES registered ===")
+    for d in sorted(env.found_docs):
+        print(d)
+    print("=== END DOCNAMES ===\n")
+
+
+def setup(app):
+    app.connect("env-updated", normalize_autosectionlabels)
+    app.connect("env-updated", dump_docs)
