@@ -130,9 +130,17 @@ class RadolanDataStore(AbstractDataStore):
         self._manager.close(**kwargs)
 
 
+def _normalize_filename_or_obj(filename_or_obj):
+    from xarray.backends.common import _normalize_path
+
+    if isinstance(filename_or_obj, bytes | memoryview):
+        return io.BytesIO(filename_or_obj)
+    else:
+        return _normalize_path(filename_or_obj)
+
+
 def _is_hdf5(filename_or_obj):
     from xarray.backends.h5netcdf_ import (
-        _normalize_filename_or_obj,
         try_read_magic_number_from_file_or_path,
     )
 
