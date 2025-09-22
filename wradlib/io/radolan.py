@@ -38,6 +38,7 @@ import io
 import re
 
 import numpy as np
+import pyproj
 import xarray as xr
 
 from wradlib import util
@@ -1037,6 +1038,11 @@ radolan = {
         "long_name": "relativ_rainfall_amount_to_30_year_average",
         "unit": "1",
     },
+    "ACRR": {
+        "standard_name": "rainfall_amount",
+        "long_name": "rainfall_amount",
+        "unit": "mm",
+    },
 }
 
 
@@ -1454,3 +1460,103 @@ def open_radolan_mfdataset(paths, **kwargs):
     if kwargs.get("concat_dim", False):
         kwargs["combine"] = "nested"
     return xr.open_mfdataset(paths, engine="radolan", **kwargs)
+
+
+def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
+    groups = xr.open_groups(
+        filename_or_obj, engine="h5netcdf", decode_cf=False, phony_dims="access"
+    )
+
+    # iterate over groups
+    for grp in groups:
+        # only look into first dataset for now
+        if grp == "/dataset1/data1":
+            data_group = grp
+            attrs = groups["/dataset1/data1/what"].attrs
+            quant = attrs["quantity"]
+            groups[grp] = groups[grp].rename(data=quant)
+            groups[grp][quant].attrs["add_offset"] = attrs["offset"]
+            groups[grp][quant].attrs["scale_factor"] = attrs["gain"]
+            groups[grp][quant].attrs["_FillValue"] = attrs["nodata"]
+            groups[grp][quant].attrs["_Undetect"] = attrs["undetect"]
+            groups[grp][quant].attrs.update(groups["/dataset1/what"].attrs)
+            groups[grp][quant].attrs.update(radolan[quant])
+
+    # attributes
+    groups["/"].attrs["camethod"] = groups["/dataset1/how"].attrs["camethod"]
+    groups["/"].attrs["radarlocations"] = groups["/how"].attrs["nodes"]
+    groups["/"].attrs["software"] = groups["/how"].attrs["software"]
+    groups["/"].attrs["sw_version"] = groups["/how"].attrs["sw_version"]
+    groups["/"].attrs["source"] = groups["/what"].attrs["source"]
+    groups["/"].attrs["version"] = groups["/what"].attrs["version"]
+
+    # dimension and coordinates
+    timestr = groups["/what"].attrs["date"] + groups["/what"].attrs["time"]
+    time = dt.datetime.strptime(timestr, "%Y%m%d%H%M%S")
+    time = int(time.replace(tzinfo=dt.timezone.utc).timestamp())
+    date_str = "1970-01-01T00:00:00Z"
+    date_unit = "seconds"
+    time_attrs = {
+        "standard_name": "time",
+        "units": f"{date_unit} since {date_str}",
+    }
+    time = np.array(
+        [
+            time,
+        ]
+    )
+    time = xr.DataArray(
+        time,
+        dims=[
+            "time",
+        ],
+        attrs=time_attrs,
+    )
+    groups[data_group] = groups[data_group].assign_coords(time=time)
+
+    # handle projection
+    projdef = groups["/where"].attrs["projdef"]
+    parts = projdef.split()
+    parts = [p for p in parts if not (p.startswith("+x_0=") or p.startswith("+y_0="))]
+    projdef = " ".join(parts)
+    proj_crs = pyproj.CRS.from_user_input(projdef)
+    crs = osr.SpatialReference()
+    crs.ImportFromWkt(proj_crs.to_wkt())
+    # use predefined WKT
+    crs2 = projection.create_osr("dwd-radolan-wgs84")
+    # but still check if this is the same projection
+    assert crs.IsSame(crs2)
+
+    groups[data_group] = groups[data_group].rename(phony_dim_0="y", phony_dim_1="x")
+
+    x = groups[data_group][quant].sizes["x"]
+    y = groups[data_group][quant].sizes["y"]
+    xlocs, ylocs = rect.get_radolan_coordinates(
+        y,
+        x,
+        crs=crs,
+        mode="center",
+    )
+    xattrs = {
+        "units": "m",
+        "long_name": "x coordinate of projection",
+        "standard_name": "projection_x_coordinate",
+    }
+
+    yattrs = {
+        "units": "m",
+        "long_name": "y coordinate of projection",
+        "standard_name": "projection_y_coordinate",
+    }
+
+    # flipping y-coordinate needed
+    groups[data_group] = groups[data_group].assign_coords(y=ylocs[::-1], x=xlocs)
+    groups[data_group]["x"].attrs = xattrs
+    groups[data_group]["y"].attrs = yattrs
+
+    ds = xr.decode_cf(xr.merge([groups["/"], groups[data_group]]), **kwargs)
+
+    # write projection to dataset
+    ds.rio.write_crs(proj_crs, inplace=True)
+
+    return ds
