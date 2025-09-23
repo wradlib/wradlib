@@ -30,6 +30,7 @@ dependencies:
   - pip
   - pooch
   - psutil
+  - pyproj
   - pytest
   - pytest-cov
   - pytest-doctestplus

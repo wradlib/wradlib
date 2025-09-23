@@ -1,7 +1,6 @@
 # !/usr/bin/env python
 # Copyright (c) 2011-2025, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
-
 from dataclasses import dataclass
 
 import numpy as np
@@ -17,6 +16,7 @@ from . import (
     get_wradlib_data_file,
     ogr,
     osr,
+    pyproj,
     requires_gdal,
     requires_h5py,
     requires_secrets,
@@ -119,7 +119,6 @@ def coord_transform_data():
     yield Data
 
 
-@requires_gdal
 def test_spherical_to_xyz(coord_transform_data):
     data = coord_transform_data
 
@@ -248,7 +247,6 @@ def test_site_distance():
     np.testing.assert_allclose(distref, distance)
 
 
-@requires_gdal
 def test_spherical_to_proj(coord_transform_data):
     data = coord_transform_data
     coords = georef.spherical_to_proj(data.r, data.az, data.th, data.csite)
@@ -291,7 +289,6 @@ def test_centroid_to_polyvert():
         georef.centroid_to_polyvert([[0.0], [1.0]], [0.5, 1.5])
 
 
-@requires_gdal
 def test_spherical_to_polyvert():
     sph = georef.get_earth_projection()
     polyvert = georef.spherical_to_polyvert(
@@ -372,7 +369,6 @@ def test_spherical_to_polyvert():
     np.testing.assert_array_almost_equal(polyvert, arr, decimal=3)
 
 
-@requires_gdal
 def test_spherical_to_centroids():
     r = np.array([10000.0, 10100.0])
     az = np.array([45.0, 90.0])
@@ -506,8 +502,7 @@ def test_create_osr():
         'SPHEROID["Erdkugel",6370040,0]],'
         'PRIMEM["Greenwich",0,'
         'AUTHORITY["EPSG","8901"]],'
-        'UNIT["degree",0.0174532925199433,'
-        'AUTHORITY["EPSG","9122"]]],'
+        'UNIT["degree",0.0174532925199433]],'
         'PROJECTION["Polar_Stereographic"],'
         'PARAMETER["latitude_of_origin",60],'
         'PARAMETER["central_meridian",10],'
@@ -568,7 +563,7 @@ def test_create_osr_dwd(ellipse, grid):
 
 
 @requires_gdal
-def test_proj4_to_osr():
+def test_proj_to_osr():
     projstr = (
         "+proj=tmerc +lat_0=0 +lon_0=9 +k=1 "
         "+x_0=3500000 +y_0=0 +ellps=bessel "
@@ -595,17 +590,13 @@ def test_proj4_to_osr():
         assert errmsg == str(err)
 
 
-@requires_gdal
 def test_get_earth_radius():
     assert georef.get_earth_radius(50.0), 6365631.51753728
 
 
-@requires_gdal
 def test_reproject():
-    proj_gk = osr.SpatialReference()
-    proj_gk.ImportFromEPSG(31466)
-    proj_wgs84 = osr.SpatialReference()
-    proj_wgs84.ImportFromEPSG(4326)
+    proj_gk = pyproj.CRS.from_epsg(31466)
+    proj_wgs84 = pyproj.CRS.from_epsg(4326)
     lon0, lat0, alt0 = 7.0, 53.0, 0.0
     x0, y0, z0 = georef.reproject(lon0, lat0, alt0, src_crs=proj_wgs84, trg_crs=proj_gk)
 
@@ -630,17 +621,13 @@ def test_reproject():
     assert pytest.approx(lat) == 53.0
 
 
-@requires_gdal
 def test_reproject_area_of_interest():
     lon = np.array([7.0, 8.0, 9.0])
     lat = np.array([53.0, 54.0, 55.0])
     coords = np.stack([lon, lat], axis=-1)
-    proj_utm = osr.SpatialReference()
-    proj_utm.ImportFromEPSG(32632)
-    proj_gk = osr.SpatialReference()
-    proj_gk.ImportFromEPSG(31466)
-    proj_wgs84 = osr.SpatialReference()
-    proj_wgs84.ImportFromEPSG(4326)
+    proj_utm = pyproj.CRS.from_epsg(32632)
+    proj_gk = pyproj.CRS.from_epsg(31466)
+    proj_wgs84 = pyproj.CRS.from_epsg(4326)
     pcoords0 = georef.reproject(
         coords,
         src_crs=proj_wgs84,
@@ -676,7 +663,6 @@ def test_reproject_area_of_interest():
     assert pytest.approx(pcoords3[0, 1]) == 53.0014816583828
 
 
-@requires_gdal
 def test_reproject_errors():
     x = 10
     y = 20
@@ -684,48 +670,48 @@ def test_reproject_errors():
         georef.reproject(np.stack((x, y, x, y), axis=-1))
     with pytest.raises(TypeError):
         georef.reproject(x, y, x, y)
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         georef.reproject([np.arange(10)], [np.arange(11)])
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         georef.reproject([np.arange(10)], [np.arange(10)], [np.arange(11)])
 
 
-@requires_gdal
 def test_get_default_projection(wgs84):
-    assert georef.get_default_projection().ExportToWkt() == wgs84
+    assert georef.get_default_projection() == pyproj.CRS.from_wkt(wgs84)
 
 
 @requires_gdal
 def test_epsg_to_osr(wgs84):
     assert georef.epsg_to_osr(4326).ExportToWkt() == wgs84
-    assert georef.epsg_to_osr().ExportToWkt() == wgs84
+    assert pyproj.CRS.from_wkt(
+        georef.epsg_to_osr().ExportToWkt()
+    ) == pyproj.CRS.from_wkt(wgs84)
 
 
 @requires_gdal
 def test_wkt_to_osr(wgs84):
-    assert georef.wkt_to_osr(wgs84).IsSame(georef.get_default_projection())
-    assert georef.wkt_to_osr().IsSame(georef.get_default_projection())
+    default = osr.SpatialReference()
+    default.ImportFromWkt(pyproj.CRS.from_wkt(wgs84).to_wkt())
+    assert georef.wkt_to_osr(wgs84).IsSame(default)
+    assert georef.wkt_to_osr().IsSame(default)
 
 
-@requires_gdal
 def test_get_radar_projection():
     site = [5, 52, 90]
     p0 = georef.get_radar_projection(site)
-    assert p0.GetName() == "Unknown Azimuthal Equidistant"
-    assert p0.IsProjected()
-    assert p0.IsSameGeogCS(georef.get_default_projection())
-    assert p0.GetNormProjParm("latitude_of_center") == site[1]
-    assert p0.GetNormProjParm("longitude_of_center") == site[0]
+    assert p0.name == "Unknown Azimuthal Equidistant"
+    assert p0.is_projected
+    assert p0.geodetic_crs == georef.get_default_projection()
+    assert p0.to_dict()["lat_0"] == site[1]
+    assert p0.to_dict()["lon_0"] == site[0]
 
 
-@requires_gdal
 def test_get_earth_projection():
     georef.get_earth_projection("ellipsoid")
     georef.get_earth_projection("geoid")
     georef.get_earth_projection("sphere")
 
 
-@requires_gdal
 def test_geoid_to_ellipsoid():
     coords = np.array([[5.0, 50.0, 300.0], [2, 54, 300], [50, 5, 300]])
     geoid = georef.get_earth_projection("geoid")
@@ -785,7 +771,6 @@ def gdal_data():
         geofile1 = get_wradlib_data_file(filename1)
         ds = wradlib.io.open_raster(geofile1)
         (data, coords, crs) = georef.extract_raster_dataset(ds)
-
         filename2 = "hdf5/belgium.comp.hdf"
         geofile2 = get_wradlib_data_file(filename2)
         ds2 = wradlib.io.open_raster(geofile2)
@@ -884,7 +869,7 @@ def test_create_raster_dataset(gdal_data):
     data, coords, crs = georef.extract_raster_dataset(ds)
     np.testing.assert_array_equal(data, gdal_data.data)
     np.testing.assert_array_almost_equal(coords, gdal_data.coords)
-    assert crs.ExportToWkt() == gdal_data.crs.ExportToWkt()
+    assert crs.is_exact_same(gdal_data.crs)
 
     data, coords = georef.set_raster_origin(
         gdal_data.data2.copy(), gdal_data.coords2.copy(), "upper"
@@ -894,7 +879,7 @@ def test_create_raster_dataset(gdal_data):
     data, coords, crs = georef.extract_raster_dataset(ds, mode="edge")
     np.testing.assert_array_equal(data, gdal_data.data2)
     np.testing.assert_array_almost_equal(coords, gdal_data.coords2)
-    assert crs.ExportToWkt() == gdal_data.crs.ExportToWkt()
+    assert crs.is_exact_same(gdal_data.crs)
 
 
 @requires_gdal
@@ -1048,21 +1033,19 @@ def test_raster_to_polyvert(gdal_data):
 def grid_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
-        crs = georef.create_osr("dwd-radolan-sphere")
+        crs = georef.create_crs("dwd-radolan-sphere")
         radolan_grid_xy = georef.get_radolan_grid(900, 900, crs=crs)
         radolan_grid_ll = georef.get_radolan_grid(900, 900, crs=crs, wgs84=True)
 
     yield Data
 
 
-@requires_gdal
 def test_get_radolan_grid_equality(grid_data):
     # create radolan projection osr object
-    proj_stereo = georef.create_osr("dwd-radolan-sphere")
+    proj_stereo = georef.create_crs("dwd-radolan-sphere")
 
     # create wgs84 projection osr object
-    proj_wgs = osr.SpatialReference()
-    proj_wgs.ImportFromEPSG(4326)
+    proj_wgs = pyproj.CRS.from_epsg(4326)
 
     # transform radolan polar stereographic projection to wgs84 and wgs84
     # to polar stereographic
@@ -1077,7 +1060,6 @@ def test_get_radolan_grid_equality(grid_data):
         src_crs=proj_wgs,
         trg_crs=proj_stereo,
     )
-
     # check source and target arrays for equality
     np.testing.assert_allclose(radolan_grid_ll, grid_data.radolan_grid_ll)
     np.testing.assert_allclose(radolan_grid_xy, grid_data.radolan_grid_xy)
@@ -1097,7 +1079,6 @@ def test_get_radolan_grid_raises():
         georef.get_radolan_grid(2000, 2000)
 
 
-@requires_gdal
 def test_get_radolan_grid_shape():
     radolan_grid_xy = georef.get_radolan_grid()
     assert radolan_grid_xy.shape == (900, 900, 2)
@@ -1105,7 +1086,6 @@ def test_get_radolan_grid_shape():
     assert radolan_grid_xy.shape == (901, 901, 2)
 
 
-@requires_gdal
 def test_radolan_coords():
     x, y = georef.get_radolan_coords(7.0, 53.0)
     assert pytest.approx(x) == -208.15159184860158
@@ -1116,7 +1096,7 @@ def test_radolan_coords():
     assert pytest.approx(y) == -3971.7689758313832
 
     # test new dwd projections
-    crs = georef.create_osr("dwd-radolan-sphere")
+    crs = georef.create_crs("dwd-radolan-sphere")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == -208151.59184860175
     assert pytest.approx(y) == -3971768.9758313832
@@ -1124,7 +1104,7 @@ def test_radolan_coords():
     assert pytest.approx(x) == -73462.16692185594
     assert pytest.approx(y) == -4208644.724265573
 
-    crs = georef.create_osr("dwd-radolan-sphere-rx")
+    crs = georef.create_crs("dwd-radolan-sphere-rx")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == 314810.5750732543
     assert pytest.approx(y) == -212624.25156581355
@@ -1132,7 +1112,7 @@ def test_radolan_coords():
     assert pytest.approx(x) == 449500
     assert pytest.approx(y) == -449500
 
-    crs = georef.create_osr("dwd-radolan-sphere-de1200")
+    crs = georef.create_crs("dwd-radolan-sphere-de1200")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == 334810.57507325534
     assert pytest.approx(y) == -362624.25156581355
@@ -1140,7 +1120,7 @@ def test_radolan_coords():
     assert pytest.approx(x) == 469500
     assert pytest.approx(y) == -599500
 
-    crs = georef.create_osr("dwd-radolan-sphere-de4800")
+    crs = georef.create_crs("dwd-radolan-sphere-de4800")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == 335185.5750732543
     assert pytest.approx(y) == -362999.25156581355
@@ -1148,7 +1128,7 @@ def test_radolan_coords():
     assert pytest.approx(x) == 469875
     assert pytest.approx(y) == -599875
 
-    crs = georef.create_osr("dwd-radolan-wgs84")
+    crs = georef.create_crs("dwd-radolan-wgs84")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == -208846.68114091048
     assert pytest.approx(y) == -3985032.0696281027
@@ -1156,7 +1136,7 @@ def test_radolan_coords():
     assert pytest.approx(x) == -73696.83521770278
     assert pytest.approx(y) == -4222088.861930594
 
-    crs = georef.create_osr("dwd-radolan-wgs84-rx")
+    crs = georef.create_crs("dwd-radolan-wgs84-rx")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == 314350.1540768675
     assert pytest.approx(y) == -212443.20769697288
@@ -1164,7 +1144,7 @@ def test_radolan_coords():
     assert pytest.approx(x) == 449500
     assert pytest.approx(y) == -449500
 
-    crs = georef.create_osr("dwd-radolan-wgs84-de1200")
+    crs = georef.create_crs("dwd-radolan-wgs84-de1200")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == 334350.15407685353
     assert pytest.approx(y) == -362443.2076971028
@@ -1172,7 +1152,7 @@ def test_radolan_coords():
     assert pytest.approx(x) == 469500
     assert pytest.approx(y) == -599500
 
-    crs = georef.create_osr("dwd-radolan-wgs84-de4800")
+    crs = georef.create_crs("dwd-radolan-wgs84-de4800")
     x, y = georef.get_radolan_coords(7.0, 53.0, crs=crs)
     assert pytest.approx(x) == 334725.15407685353
     assert pytest.approx(y) == -362818.2076971028
@@ -1222,15 +1202,17 @@ def sat_data():
         pr_lon = pr_data["NS/Longitude"]["data"]
         pr_lat = pr_data["NS/Latitude"]["data"]
         zenith = pr_data["NS/PRE/localZenithAngle"]["data"]
-        wgs84 = georef.get_default_projection()
-        a = wgs84.GetSemiMajor()
-        b = wgs84.GetSemiMinor()
-        rad = georef.projstr_to_osr(
+        proj_wgs84 = georef.get_default_projection()
+        osr_wgs84 = osr.SpatialReference()
+        osr_wgs84.ImportFromWkt(proj_wgs84.to_wkt())
+        a = osr_wgs84.GetSemiMajor()
+        b = osr_wgs84.GetSemiMinor()
+        rad = pyproj.CRS.from_string(
             f"+proj=aeqd +lon_0={pr_lon[68, 0]:f} +lat_0={pr_lat[68, 0]:f} "
             f"+a={a:f} +b={b:f}"
         )
-        pr_x, pr_y = georef.reproject(pr_lon, pr_lat, src_crs=wgs84, trg_crs=rad)
-        re = georef.get_earth_radius(pr_lat[68, 0], sr=wgs84) * 4.0 / 3.0
+        pr_x, pr_y = georef.reproject(pr_lon, pr_lat, src_crs=proj_wgs84, trg_crs=rad)
+        re = georef.get_earth_radius(pr_lat[68, 0], crs=proj_wgs84) * 4.0 / 3.0
         pr_xy = np.dstack((pr_x, pr_y))
         alpha = zenith
         zt = 407000.0
@@ -1383,7 +1365,8 @@ def vec_data():
     class Data:
         crs = osr.SpatialReference()
         crs.ImportFromEPSG(31466)
-        wgs84 = georef.get_default_projection()
+        proj_wgs84 = osr.SpatialReference()
+        proj_wgs84.ImportFromWkt(georef.get_default_projection().to_wkt())
 
         npobj = np.array(
             [
@@ -1473,13 +1456,14 @@ def test_get_vector_coordinates(vec_data):
 
     layer.ResetReading()
     x, attrs = georef.get_vector_coordinates(
-        layer, src_crs=vec_data.crs, trg_crs=vec_data.wgs84
+        layer, src_crs=vec_data.crs, trg_crs=vec_data.proj_wgs84
     )
 
 
 @requires_gdal
 def test_transform_geometry(vec_data):
-    geom = georef.transform_geometry(vec_data.projobj, trg_crs=vec_data.wgs84)
+    print(type(vec_data.proj_wgs84))
+    geom = georef.transform_geometry(vec_data.projobj, trg_crs=vec_data.proj_wgs84)
     x = list(georef.get_vector_points(geom))[0]
     np.testing.assert_allclose(x, vec_data.lonlat, rtol=1e-05)
 
@@ -1487,7 +1471,7 @@ def test_transform_geometry(vec_data):
 @requires_gdal
 def test_transform_geometry_warning(vec_data):
     with pytest.raises(ValueError, match="Geometry without spatial reference"):
-        georef.transform_geometry(vec_data.ogrobj, trg_crs=vec_data.wgs84)
+        georef.transform_geometry(vec_data.ogrobj, trg_crs=vec_data.proj_wgs84)
 
 
 @requires_gdal
@@ -1606,7 +1590,6 @@ def xr_data():
     yield georef.georeference(da)
 
 
-@requires_gdal
 def test_create_xarray_dataarray():
     img = np.zeros((360, 10), dtype=np.float32)
     r = np.arange(0, 100000, 10000)
@@ -1615,9 +1598,27 @@ def test_create_xarray_dataarray():
     georef.create_xarray_dataarray(img, r=r, phi=az, theta=th)
 
 
-@requires_gdal
 def test_georeference_dataset(xr_data):
     src_da = xr_data.copy()
     src_da.drop_vars(["x", "y", "z", "gr", "rays", "bins"])
     da = georef.georeference(src_da)
     xr.testing.assert_equal(xr_data, da)
+
+
+@requires_gdal
+def test_ensure_crs_pyproj():
+    crs_pyproj = pyproj.CRS.from_epsg(4326)
+    crs_gdal = georef.ensure_crs(crs_pyproj, "osr")
+    crs_cartopy = georef.ensure_crs(crs_pyproj, "cartopy")
+
+    assert crs_pyproj == georef.ensure_crs(crs_cartopy)
+    assert crs_pyproj == georef.ensure_crs(crs_gdal)
+    assert crs_pyproj == georef.ensure_crs(crs_pyproj)
+
+    assert crs_gdal.IsSame(georef.ensure_crs(crs_cartopy, "osr"))
+    assert crs_gdal.IsSame(georef.ensure_crs(crs_gdal, "osr"))
+    assert crs_gdal.IsSame(georef.ensure_crs(crs_pyproj, "osr"))
+
+    assert crs_cartopy == georef.ensure_crs(crs_cartopy, "cartopy")
+    assert crs_cartopy == georef.ensure_crs(crs_gdal, "cartopy")
+    assert crs_cartopy == georef.ensure_crs(crs_pyproj, "cartopy")

@@ -70,15 +70,16 @@ def get_wradlib_data_file(file):
     return wradlib_data.DATASETS.fetch(file)
 
 
+cartopy = util.import_optional("cartopy")
 dask = util.import_optional("dask")
-netCDF4 = util.import_optional("netCDF4")
+gdal = util.import_optional("osgeo.gdal")
 h5py = util.import_optional("h5py")
 h5netcdf = util.import_optional("h5netcdf")
-gdal = util.import_optional("osgeo.gdal")
+mpl = util.import_optional("matplotlib")
+netCDF4 = util.import_optional("netCDF4")
 ogr = util.import_optional("osgeo.ogr")
 osr = util.import_optional("osgeo.osr")
-mpl = util.import_optional("matplotlib")
-cartopy = util.import_optional("cartopy")
+pyproj = util.import_optional("pyproj")
 requests = util.import_optional("requests")
 xmltodict = util.import_optional("xmltodict")
 

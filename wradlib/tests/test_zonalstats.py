@@ -673,6 +673,7 @@ def zonal_data():
 @requires_geos
 @requires_gdal
 def test_ZonalData_srs(zonal_data):
+    print(type(zonal_data.zdpoly.crs), type(zonal_data.proj_gk))
     assert zonal_data.zdpoly.crs == zonal_data.proj_gk
     assert zonal_data.zdpoint.crs == zonal_data.proj_gk
 

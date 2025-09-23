@@ -30,7 +30,7 @@ import numpy as np
 from xarray import DataArray, Dataset, concat
 
 from wradlib.georef import projection
-from wradlib.util import docstring, has_import, import_optional
+from wradlib.util import docstring, import_optional
 
 osr = import_optional("osgeo.osr")
 
@@ -49,15 +49,20 @@ def get_radolan_coords(lon, lat, **kwargs):
 
     Keyword Arguments
     -----------------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference` | str
-        projection of the DWD grid with spheroid model or string `trig` to use
-        trigonometric formulas for calculation (only for earth model - `sphere`).
+    crs
+        Coordinate Reference System (CRS) of the DWD grid with spheroid model.
+        Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+        - string "trig" to use trigonometric formulas for calculation
+          (only for earth model - `sphere`).
         Defaults to None (earth model - sphere).
     """
     crs = kwargs.get("crs", None)
-    # use trig if osgeo.osr is not available
-    if crs is None and not has_import(osr):
-        crs = "trig"
     if crs == "trig":
         # calculation of x_0 and y_0 coordinates of radolan grid
         # as described in the format description
@@ -73,7 +78,7 @@ def get_radolan_coords(lon, lat, **kwargs):
     else:
         # create radolan projection osr object
         if crs is None:
-            crs = projection.create_osr("dwd-radolan")
+            crs = projection.create_crs("dwd-radolan")
 
         # create wgs84 projection osr object
         crs_wgs = projection.get_default_projection()
@@ -104,9 +109,17 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
         'radolan' - lower left pixel coordinates
         'center' - pixel center coordinates
         'edge' - pixel edge coordinates
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference` | str
-        projection of the DWD grid with spheroid model or string `trig` to use
-        trigonometric formulas for calculation (only for earth model - `sphere`).
+    crs
+        Coordinate Reference System (CRS) of the DWD grid with spheroid model.
+        Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+        - string "trig" to use trigonometric formulas for calculation
+          (only for earth model - `sphere`).
         Defaults to None (earth model - sphere).
 
     Returns
@@ -168,7 +181,8 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
 
     # get from km to meter for meter-base projections
     if crs is not None and crs != "trig":
-        lin = crs.GetLinearUnits()
+        crs = projection.ensure_crs(crs)
+        lin = crs.axis_info[0].unit_conversion_factor
         if lin == 1.0:
             res *= 1000.0
             j_0 *= 1000.0
@@ -243,9 +257,17 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
         'radolan' - lower left pixel coordinates
         'center' - pixel center coordinates
         'edge' - pixel edge coordinates
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference` | str
-        projection of the DWD grid with spheroid model or string `trig` to use
-        trigonometric formulas for calculation (only for earth model - `sphere`).
+    crs
+        Coordinate Reference System (CRS) of the DWD grid with spheroid model.
+        Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+        - string "trig" to use trigonometric formulas for calculation
+          (only for earth model - `sphere`).
         Defaults to None (earth model - sphere).
 
     Returns
@@ -293,10 +315,6 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
     wgs84 = kwargs.get("wgs84", False)
     mode = kwargs.get("mode", "radolan")
     crs = kwargs.get("crs", None)
-
-    # fallback to simple trignometry, if GDAL is not installed
-    if crs is None and not has_import(osr):
-        crs = "trig"
 
     x_arr, y_arr = get_radolan_coordinates(nrows=nrows, ncols=ncols, mode=mode, crs=crs)
 
@@ -348,12 +366,23 @@ def _xyz_to_spherical_numpy(xyz, *, altitude=0, crs=None, ke=4.0 / 3.0):
     ----------
     xyz : :class:`numpy:numpy.ndarray`
         Array of shape (..., 3). Contains cartesian coordinates.
+
+    Keyword Arguments
+    -----------------
     altitude : float
         Altitude (in meters)
         defaults to 0.
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        projection of the source coordinates (aeqd) with spheroid model
-        defaults to None.
+    crs
+        Coordinate Reference System (CRS) of the source coordinates.
+        Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to None.
     ke : float
         Adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
@@ -373,8 +402,9 @@ def _xyz_to_spherical_numpy(xyz, *, altitude=0, crs=None, ke=4.0 / 3.0):
     # get the approximate radius of the projection's ellipsoid
     # for the latitude_of_center, if no projection is given assume
     # spherical earth
+    crs = projection.ensure_crs(crs)
     try:
-        lat0 = crs.GetProjParm("latitude_of_center")
+        lat0 = crs.to_dict()["latitude_of_center"]
         re = projection.get_earth_radius(lat0, crs)
     except Exception:
         re = 6371000.0
@@ -413,9 +443,17 @@ def _xyz_to_spherical_xarray(obj, **kwargs):
 
     Keyword Arguments
     -----------------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        projection of the source coordinates (aeqd) with spheroid model
-        defaults to None.
+    crs
+        Coordinate Reference System (CRS) of the source coordinates.
+        Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to None.
     ke : float
         Adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-

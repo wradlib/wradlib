@@ -1263,14 +1263,10 @@ class _radolan_file:
                 "prediction_time", data=pred_time, attrs=time_attrs
             )
 
-        # if GDAL is not installed, fall back to trigonometric calculation
-        if util.has_import(osr):
-            if attrs.get("formatversion", 3) >= 5:
-                crs = projection.create_osr("dwd-radolan-wgs84")
-            else:
-                crs = projection.create_osr("dwd-radolan-sphere")
+        if attrs.get("formatversion", 3) >= 5:
+            crs = projection.create_crs("dwd-radolan-wgs84")
         else:
-            crs = "trig"
+            crs = projection.create_crs("dwd-radolan-sphere")
 
         coords_kwargs = {}
         if self.attrs.get("maxheight", False):

@@ -229,8 +229,16 @@ class VectorSource:
     data : sequence or str
         sequence of source points (shape Nx2) or polygons (shape NxMx2) or
         Vector File (GDAL/OGR)  filename containing source points/polygons
-    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR SRS describing target CRS the source data should be projected to
+    trg_crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        CRS the source data should be projected to.
 
     Keyword Arguments
     -----------------
@@ -241,8 +249,16 @@ class VectorSource:
     mode : str
         Return type of class access functions/properties.
         Can be either of "numpy", "geo" and "ogr", defaults to "numpy".
-    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OGR SRS describing projection source in which data is provided in.
+    src_crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        CRS in which source data is provided in.
 
     Warning
     -------
@@ -255,11 +271,11 @@ class VectorSource:
     """
 
     def __init__(self, data=None, trg_crs=None, name="layer", source=0, **kwargs):
-        self._trg_crs = trg_crs
+        self._trg_crs = georef.ensure_crs(trg_crs, trg="osr")
         self._name = name
         self._geo = None
         self._mode = kwargs.get("mode", "numpy")
-        self._src_crs = kwargs.get("src_crs", None)
+        self._src_crs = georef.ensure_crs(kwargs.get("src_crs", None), trg="osr")
         if data is not None:
             if isinstance(data, (np.ndarray, list)):
                 self._ds = self._check_src(data)

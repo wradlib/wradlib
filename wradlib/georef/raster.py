@@ -34,6 +34,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 
 import numpy as np
+import pyproj
 import xarray as xr
 
 import wradlib
@@ -158,17 +159,14 @@ def read_gdal_projection(dataset):
 
     Returns
     -------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        dataset projection object
+    crs : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS)
 
     Examples
     --------
     See :doc:`notebooks/classify/clutter_cloud`.
     """
-    wkt = dataset.GetProjection()
-    crs = osr.SpatialReference()
-    crs.ImportFromWkt(wkt)
-    return crs
+    return pyproj.CRS.from_wkt(dataset.GetProjection())
 
 
 def read_gdal_values(dataset, *, nodata=None):
@@ -228,8 +226,8 @@ def extract_raster_dataset(dataset, *, mode="center", nodata=None):
         The array indexing follows image convention with origin
         at the upper left pixel (northup).
         The shape is (nrows+1,ncols+1,2) if mode == edge.
-    projection : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Spatial reference system of the used coordinates.
+    crs : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS) of the used coordinates.
     """
 
     values = read_gdal_values(dataset, nodata=nodata)
@@ -459,10 +457,26 @@ def reproject_raster_dataset(src_ds, **kwargs):
         GRA_NearestNeighbour = 0, GRA_Bilinear = 1, GRA_Cubic = 2,
         GRA_CubicSpline = 3, GRA_Lanczos = 4, GRA_Average = 5, GRA_Mode = 6,
         GRA_Max = 8, GRA_Min = 9, GRA_Med = 10, GRA_Q1 = 11, GRA_Q3 = 12
-    projection_source : :py:class:`gdal:osgeo.osr.SpatialReference`
-        source dataset projection, defaults to None (get projection from src_ds)
-    projection_target : :py:class:`gdal:osgeo.osr.SpatialReference`
-        destination dataset projection, defaults to None
+    src_crs
+        Coordinate Reference System (CRS) of source dataset. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to None (get projection from source dataset)
+    trg_crs
+        Coordinate Reference System (CRS) of source dataset. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to None.
     align : bool or tuple
         If False, there is no destination grid aligment.
         If True, aligns the destination grid to the next integer multiple of
@@ -480,7 +494,9 @@ def reproject_raster_dataset(src_ds, **kwargs):
     size = kwargs.pop("size", None)
     resample = kwargs.pop("resample", gdal.GRA_Bilinear)
     src_crs = kwargs.pop("src_crs", None)
+    src_crs = georef.ensure_crs(src_crs, trg="osr")
     trg_crs = kwargs.pop("trg_crs", None)
+    trg_crs = georef.ensure_crs(trg_crs, trg="osr")
     align = kwargs.pop("align", False)
 
     if spacing is None and size is None:
@@ -502,7 +518,7 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
     extent = np.array([[[ulx, uly], [lrx, uly]], [[ulx, lry], [lrx, lry]]])
 
-    if trg_crs:
+    if trg_crs is not None:
         # try to load projection from source dataset if None is given
         if src_crs is None:
             src_proj = src_ds.GetProjection()
@@ -511,15 +527,9 @@ def reproject_raster_dataset(src_ds, **kwargs):
                     "`src_ds` is missing projection information, please use `src_crs`-kwarg "
                     "and provide a fitting GDAL OSR SRS object."
                 )
-            src_crs = osr.SpatialReference()
-            src_crs.ImportFromWkt(src_proj)
+            src_crs = georef.ensure_crs(src_proj, trg="osr")
 
-        # Transformation
         extent = georef.reproject(extent, src_crs=src_crs, trg_crs=trg_crs)
-
-        # wkt needed
-        src_crs = src_crs.ExportToWkt()
-        trg_crs = trg_crs.ExportToWkt()
 
     (ulx, uly, urx, ury, llx, lly, lrx, lry) = tuple(list(extent.flatten().tolist()))
 
@@ -564,7 +574,7 @@ def reproject_raster_dataset(src_ds, **kwargs):
 
     # apply Projection to destination dataset
     if trg_crs is not None:
-        dst_ds.SetProjection(trg_crs)
+        dst_ds.SetSpatialRef(trg_crs)
     else:
         dst_ds.SetProjection(src_ds.GetProjection())
 
@@ -600,8 +610,17 @@ def create_raster_dataset(data, coords, *, crs=None, nodata=-9999):
         Array of shape (nrows, ncols, 2) containing pixel center coordinates
         or
         Array of shape (nrows+1, ncols+1, 2) containing pixel edge coordinates
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Spatial reference system of the used coordinates, defaults to None.
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Must be provided
+        and can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to None.
     nodata : int
         Value of NODATA
 
@@ -637,8 +656,9 @@ def create_raster_dataset(data, coords, *, crs=None, nodata=-9999):
     geotran = [upper_corner_x, x_ps, 0, upper_corner_y, 0, y_ps]
     dataset.SetGeoTransform(geotran)
 
-    if crs:
-        dataset.SetProjection(crs.ExportToWkt())
+    if crs is not None:
+        crs = georef.ensure_crs(crs)
+        dataset.SetProjection(crs.to_wkt())
 
     # set np.nan to nodata
     dataset.GetRasterBand(1).SetNoDataValue(nodata)
@@ -697,8 +717,15 @@ def create_raster_xarray(crs, bounds, size):
 
     Parameters
     ----------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        coordinate reference system mapping geographic coordinates to x,y coordinates
+    crs
+        Coordinate Reference System (CRS) mapping geographic to x,y coordinates.
+        Must be provided and can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
     bounds : tuple of floats
         image bounds (x_min, x_max, y_min, y_max)
     size : float or tuple of floats
@@ -742,7 +769,7 @@ def create_raster_xarray(crs, bounds, size):
 
     raster = xr.DataArray(dims=["x", "y"], coords={"x": x, "y": y})
 
-    wkt = crs.ExportToWkt()
+    wkt = crs.to_wkt()
     raster = raster.assign_coords({"spatial_ref": 0})
     raster.spatial_ref.attrs["crs_wkt"] = wkt
     raster.spatial_ref.attrs["GeoTransform"] = geotransform

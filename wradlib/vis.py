@@ -30,7 +30,6 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import collections
 
 import numpy as np
-from pyproj.crs import CRS
 from xradar.georeference import get_crs
 
 from wradlib import georef, io, ipol, util
@@ -77,8 +76,15 @@ def plot_ppi_crosshair(
         List of angles (in degrees) for which straight lines should be drawn.
         These lines will be drawn starting from the center and until the
         largest range. Defaults to [0, 90, 180, 270].
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR Spatial Reference Object describing projection
+    crs
+        Coordinate Reference System (CRS). Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
         The function will calculate lines and circles according to
         georeferenced coordinates taking beam propagation, earth's curvature
         and scale effects due to projection into account.
@@ -145,7 +151,8 @@ def plot_ppi_crosshair(
     circkw.update(kwargs.get("circle", {}))
 
     # determine coordinates for 'straight' lines
-    if crs:
+    if crs is not None:
+        crs = georef.ensure_crs(crs)
         # projected
         # reproject the site coordinates
         psite = georef.reproject(*site, trg_crs=crs)
@@ -174,7 +181,7 @@ def plot_ppi_crosshair(
         ax.add_line(lines.Line2D(nsewx[i, :], nsewy[i, :], **linekw))
 
     # draw the range circles
-    if crs:
+    if crs is not None:
         # produce an approximation of the circle
         x, y = np.meshgrid(ranges, np.arange(360))
         poly = georef.spherical_to_proj(ranges, np.arange(360), elev, site, crs=crs)[
@@ -448,7 +455,7 @@ def plot_scan_strategy(
         ds = io.get_srtm(
             [ll[..., 0].min(), ll[..., 0].max(), ll[..., 1].min(), ll[..., 1].max()],
         )
-        rastervalues, rastercoords, crs = georef.extract_raster_dataset(
+        rastervalues, rastercoords, _ = georef.extract_raster_dataset(
             ds, nodata=-32768.0
         )
         # map rastervalues to polar grid points
@@ -975,12 +982,6 @@ def plot(
     # handle curvelinear grid properties
     if crs == "cg" or isinstance(crs, collections.abc.Mapping):
         return _plot_cg(da, ax=ax, fig=fig, crs=crs, func=func, **kwargs)
-
-    # convert OSR crs to cartopy crs via pyproj
-    if util.has_import(osr) and util.has_import(cartopy):
-        if isinstance(crs, osr.SpatialReference):
-            proj_crs = CRS.from_wkt(crs.ExportToWkt(["FORMAT=WKT2_2018"]))
-            crs = cartopy.crs.CRS(proj_crs)
 
     # no axes object given
     if not isinstance(ax, axes.Axes):

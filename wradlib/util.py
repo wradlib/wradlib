@@ -1161,9 +1161,15 @@ def cross_section_ppi(
         If set to a certain beamwidth, it will return the same Dataset with additional
         "fake" empty beams (extra elevations) so that when plotting with matplotlib pcolormesh
         the beamwidths are correctly represented according to their width.
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS`, optional
-        Projection to use with :py:class:`wradlib.georef.xarray.georeference`.
-        If GDAL OSR SRS, output is in this projection, defaults to AEQD.
+    crs
+        Coordinate Reference System (CRS) of src and trg data. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+        Projection to use with :py:class:`wradlib.georef.xarray.georeference`, defaults to AEQD.
     npl : int, optional
         Number of points to make up the line between p1 and p2, in case the user gives two arbitrary points
         instead of an azimuth value. npl should be high enough to accomodate more points along the line that
@@ -1178,7 +1184,7 @@ def cross_section_ppi(
     """
     bw = kwargs.get("bw", None)
     npl = kwargs.get("npl", 1000)
-    crs = kwargs.get("crs", "None")
+    crs = kwargs.get("crs", None)
     method = kwargs.get("method", None)
     tolerance = kwargs.get("tolerance", None)
 

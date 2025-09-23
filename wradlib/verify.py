@@ -47,10 +47,10 @@ class PolarNeighbours:
     az : :class:`numpy:numpy.ndarray`
         (see :mod:`wradlib.georef` for documentation)
     site : sequence
-        sequence of floats
+        A sequence of floats
         (see :mod:`wradlib.georef` for documentation)
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR Spatial Reference Object describing projection
+    crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, anything which can be consumed by pyproj.CRS.from_user_input or None
         (see :mod:`wradlib.georef` for documentation)
     x : :class:`numpy:numpy.ndarray`
         array of x coordinates of the points in map projection

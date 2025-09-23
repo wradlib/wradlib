@@ -5,9 +5,10 @@
 from dataclasses import dataclass
 
 import numpy as np
+import pyproj
 import pytest
 
-from wradlib import georef, verify
+from wradlib import verify
 
 from . import requires_gdal
 
@@ -19,7 +20,7 @@ def pol_data():
         r = np.arange(1, 100, 10)
         az = np.arange(0, 360, 90)
         site = (9.7839, 48.5861, 0.0)
-        crs = georef.epsg_to_osr(31467)
+        crs = pyproj.CRS.from_epsg(31467)
         # Coordinates of the rain gages in Gauss-Krueger 3 coordinates
         x, y = (np.array([3557880, 3557890]), np.array([5383379, 5383375]))
 
@@ -31,7 +32,6 @@ def pol_data():
     del data
 
 
-@requires_gdal
 def test_PolarNeighbours__init__(pol_data):
     pn = verify.PolarNeighbours(
         pol_data.r,
@@ -45,7 +45,6 @@ def test_PolarNeighbours__init__(pol_data):
     assert isinstance(pn, verify.PolarNeighbours)
 
 
-@requires_gdal
 def test_extract(pol_data):
     pn = verify.PolarNeighbours(
         pol_data.r,
@@ -63,7 +62,6 @@ def test_extract(pol_data):
     np.testing.assert_allclose(neighbours[1], res1)
 
 
-@requires_gdal
 def test_get_bincoords(pol_data):
     pn = verify.PolarNeighbours(
         pol_data.r,

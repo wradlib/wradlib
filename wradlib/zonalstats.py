@@ -117,8 +117,15 @@ class ZonalDataBase:
         (same unit as coordinates)
         Points/Polygons  will be considered inside the target if they are
         contained in the buffer.
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        OGR.SpatialReference will be used for DataSource object.
+    crs
+        Coordinate Reference System (CRS) of src and trg data. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
         src and trg data have to be in the same crs-format
     silent : bool
         If True no ProgressBar is shown. Defaults to False.
@@ -131,6 +138,7 @@ class ZonalDataBase:
 
     def __init__(self, src, *, trg=None, buf=0.0, crs=None, **kwargs):
         self._buffer = buf
+        crs = georef.ensure_crs(crs, trg="osr")
         self._crs = crs
         silent = kwargs.pop("silent", False)
 
@@ -376,8 +384,15 @@ class ZonalDataPoly(ZonalDataBase):
         Polygons will be considered inside the target if they are contained
         in the buffer.
 
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        OGR.SpatialReference will be used for DataSource object.
+    crs
+        Coordinate Reference System (CRS) of src and trg data. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
         src and trg data have to be in the same crs-format
 
     Examples
@@ -427,8 +442,15 @@ class ZonalDataPoint(ZonalDataBase):
         Points will be considered inside the target if they are contained
         in the buffer.
 
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        OGR.SpatialReference will be used for DataSource object.
+    crs
+        Coordinate Reference System (CRS) of src and trg data. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
         src and trg data have to be in the same crs-format
 
     Examples
@@ -867,8 +889,14 @@ def get_clip_mask(coords, clippoly, *, crs=None):
     clippoly : :class:`numpy:numpy.ndarray`
         array of xy coords with shape (N,2) representing closed
         polygon coordinates
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        osr.SpatialReference
+    crs
+        Coordinate Reference System (CRS) of coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
     Returns
     -------
