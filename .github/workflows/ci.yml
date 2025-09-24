@@ -7,7 +7,6 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-    types: [ opened, synchronize, reopened]
   release:
     types:
       - created
@@ -24,11 +23,11 @@ jobs:
     name: lint and style checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - name: Install dependencies
@@ -58,7 +57,7 @@ jobs:
         python-version: ["3.10", "3.13"]
         numpy-version: ["2"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -117,7 +116,7 @@ jobs:
       matrix:
         python-version: [ "3.13" ]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -177,7 +176,7 @@ jobs:
       matrix:
         python-version: ["3.13"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -235,7 +234,7 @@ jobs:
       matrix:
         python-version: ["3.13"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -287,13 +286,12 @@ jobs:
     env:
       WRADLIB_DATA: ./wradlib-data
       CONDA_ENV_FILE: ci/requirements/notebooktests.yml
-      PR_NUMBER: ${{ github.event.number }}
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -307,11 +305,17 @@ jobs:
             python=${{matrix.python-version}}
       - name: Install wradlib
         run: |
+          echo "WRADLIB_TAG=`git name-rev --name-only --tags HEAD`" >> $GITHUB_ENV
           python -m pip install . --no-deps
       - name: Install wradlib-data
         run: |
           python -m pip install wradlib-data
           mkdir ./wradlib-data
+      - name: Clone wradlib-notebooks
+        run: |
+          git clone --depth 1 --branch enh_raster_creation https://github.com/egouden/wradlib-notebooks.git notebooks
+          cd notebooks
+          echo "NOTEBOOKS_COMMIT=`git rev-parse HEAD`" >> $GITHUB_ENV
       - name: Version Info
         run: |
           echo "WRADLIB_TAG=`git name-rev --name-only --tags HEAD`" >> $GITHUB_ENV
@@ -324,20 +328,26 @@ jobs:
         run: |
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
-          # create folder structure with all needed files, but *.md
-          cd examples
-          rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
-          # debug
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
-      - name: Build output
+      - name: Commit files
+        if: github.event_name == 'push' || github.event_name == 'release'
         run: |
-          cd examples
-          echo "Rendered from $GITHUB_SHA with $GITHUB_RUN_ID and $GITHUB_RUN_NUMBER" > render/render-info.txt
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: render-output
-          path: examples/render/
+          cd notebooks
+          git config --global user.email "wradlib-docs@wradlib.org"
+          git config --global user.name "wradlib-docs-bot"
+          git checkout --orphan render
+          git add --all .
+          git commit -m "Rendering at wradlib-notebooks commit $NOTEBOOKS_COMMIT for wradlib version $WRADLIB_VERSION"
+      - name: Push changes
+        if: github.event_name == 'push' || github.event_name == 'release'
+        run: |
+          if [ $WRADLIB_TAG == 'undefined' ]; then
+              BRANCH=devel
+          else
+              BRANCH=$WRADLIB_TAG
+          fi
+          cd notebooks
+          git push https://${{ secrets.WRADLIB_DOCS_BOT_API_TOKEN }}@github.com/wradlib/wradlib-notebooks.git render:$BRANCH -fq
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -348,6 +358,23 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
 
+  trigger_rtd:
+    if: github.event_name == 'push' || github.event_name == 'release'
+    needs: [lint, build_0, build_3]
+    name: trigger readthedocs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      RTD_TOKEN: ${{ secrets.RTD_TOKEN_NEW }}
+      RTD_URL: ${{ secrets.RTD_URL_NEW }}
+    steps:
+    - name: trigger readthedocs
+      run: |
+        echo "triggering"
+        curl -X POST -H "Authorization: Token $RTD_TOKEN" "$RTD_URL"
+
   upload_testpypi:
     if: github.event_name == 'push'
     needs: [lint, build_0, build_1]
@@ -357,11 +384,11 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - name: Install dependencies
@@ -387,11 +414,11 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - name: Install dependencies

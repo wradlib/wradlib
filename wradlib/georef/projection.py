@@ -25,8 +25,12 @@ __all__ = [
     "get_earth_projection",
     "get_extent",
     "project_bounds",
-    "geographic_size",
+    "transform_coords",
+    "get_radar_crs",
+    "meters_to_degrees",
     "GeorefProjectionMethods",
+    "wgs",
+    "wgs_arcsecond",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
@@ -646,32 +650,149 @@ def project_bounds(bounds, crs):
     return projected_bounds
 
 
-def geographic_size(bounds, size):
-    """Get geographic sizes corresponding approximately to given linear size for given bounds
+def radar_crs(location):
+    """Return the radar native coordinate reference system (CRS)
 
     Parameters
     ----------
-    bounds : (lon_min, lon_max, lat_min, lat_max)
-        geographic bounds
-    size : int
-         linear distance in meters
+    location : tuple
+        Tuple of (longitude, latitude) of the radar location.
 
     Returns
     -------
-    xsize, ysize : tuple
-         geographic size in degrees (lon, lat)
+    crs : pyproj.CRS
+        Azimuthal equidistant projection centered on the radar location.
     """
-    xsize, ysize = size, size
-    one_degree_latitude_meters = 111320
-    ysize = ysize / one_degree_latitude_meters
-    lon_min, lon_max, lat_min, lat_max = bounds
-    lat_mid = lat_min / 2 + lat_max / 2
-    lat_mid = np.radians(lat_mid)
-    one_degree_longitude_meters = one_degree_latitude_meters * np.cos(lat_mid)
-    xsize = xsize / one_degree_longitude_meters
-    xsize = np.abs(xsize)
 
-    return xsize, ysize
+    lon, lat = location
+    crs = pyproj.CRS(
+        proj="aeqd",
+        lon_0=lon,
+        lat_0=lat,
+    )
+
+    return crs
+
+
+def get_radar_crs(ds):
+    """Return the radar native coordinate reference system (CRS)
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Dataset containing radar metadata.
+
+    Returns
+    -------
+    crs : pyproj.CRS
+        Azimuthal equidistant projection centered on the radar location.
+    """
+    lon = float(ds.longitude.values)
+    lat = float(ds.latitude.values)
+    crs = radar_crs(location=(lon, lat))
+
+    return crs
+
+
+def transform_coords(coords, source_crs, target_crs):
+    """
+    Transform coordinates from src_crs to trg_crs using pyproj.
+
+    Parameters
+    ----------
+    coords : array-like of shape (..., 2) or (..., 3)
+        Input coordinates.
+
+    src_crs : str or pyproj.CRS
+        Source coordinate reference system (e.g., 'EPSG:4326').
+
+    trg_crs : str or pyproj.CRS
+        Target coordinate reference system (e.g., 'EPSG:3857').
+
+    Returns
+    -------
+    np.ndarray
+        Transformed coordinates, same shape as input.
+    """
+    coords = np.asarray(coords)
+    if coords.shape[-1] not in [2, 3]:
+        raise ValueError("Last dimension of input must be 2 or 3")
+
+    src = pyproj.CRS.from_user_input(source_crs)
+    trg = pyproj.CRS.from_user_input(target_crs)
+    transformer = pyproj.Transformer.from_crs(src, trg, always_xy=True)
+
+    # Flatten to (n, 2) or (n, 3)
+    flat_coords = coords.reshape(-1, coords.shape[-1])
+
+    if flat_coords.shape[1] == 2:
+        x, y = flat_coords[:, 0], flat_coords[:, 1]
+        x_t, y_t = transformer.transform(x, y)
+        transformed = np.column_stack((x_t, y_t))
+    else:
+        x, y, z = flat_coords[:, 0], flat_coords[:, 1], flat_coords[:, 2]
+        x_t, y_t, z_t = transformer.transform(x, y, z)
+        transformed = np.column_stack((x_t, y_t, z_t))
+
+    # Reshape back to original shape
+    return transformed.reshape(coords.shape)
+
+
+def meters_to_degrees(
+    resolution_m: tuple[float, float], latitude_deg: float
+) -> tuple[float, float]:
+    """
+    Convert resolution in meters to degrees in longitude and latitude directions.
+
+    Parameters
+    ----------
+    resolution_m : tuple[int, int]
+        Resolution in meters (x, y)
+
+    latitude_deg : float
+        Latitude at which to compute longitudinal scaling
+
+    Returns
+    -------
+    tuple[float, float]
+        Resolution in degrees (x_deg, y_deg)
+    """
+    R = 6371000  # Earth radius in meters
+    deg_per_meter_lat = 1 / ((2 * np.pi * R) / 360)
+    deg_per_meter_lon = deg_per_meter_lat / np.cos(np.radians(latitude_deg))
+
+    x_deg = resolution_m[0] * deg_per_meter_lon
+    y_deg = resolution_m[1] * deg_per_meter_lat
+
+    return x_deg, y_deg
+
+
+def wgs() -> pyproj.CRS:
+
+    crs = pyproj.CRS.from_epsg(4326)
+
+    return crs
+
+
+def wgs_arcsecond() -> pyproj.CRS:
+    """Return a WGS 84 Geographic CRS with arc-second angular units.
+
+    Datum and ellipsoid match EPSG:4326 exactly.
+    """
+    wkt_arcsec = (
+        'GEOGCRS["WGS 84 (arc-second)",'
+        'DATUM["World Geodetic System 1984",'
+        'ELLIPSOID["WGS 84",6378137,298.257223563,'
+        'LENGTHUNIT["metre",1.0]]],'
+        'PRIMEM["Greenwich",0.0],'
+        "CS[ellipsoidal,2],"
+        'AXIS["Geodetic longitude (λ)",east,ORDER[1]],'
+        'AXIS["Geodetic latitude (φ)",north,ORDER[2]],'
+        'ANGLEUNIT["arc-second",4.84813681109536E-06,ID["EPSG",9104]]]'
+    )
+    crs = pyproj.CRS.from_wkt(wkt_arcsec)
+
+    return crs
 
 
 class GeorefProjectionMethods:
