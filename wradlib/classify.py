@@ -883,7 +883,8 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
 
     # all moments that are not derived automatically
     mom_all = ("zdr", "rho", "phi", "dop", "map", "dr", "cpa")
-    mom = [m for m in mom_all if m in dat] # available moments
+    # available moments
+    mom = [m for m in mom_all if m in dat]
     args = [obj[dat[m]] for m in mom]
     kwargs["mom"] = mom
     dim0 = args[0].wrl.util.dim0()
