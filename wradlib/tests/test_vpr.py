@@ -5,9 +5,10 @@
 from dataclasses import dataclass
 
 import numpy as np
+import pyproj
 import pytest
 
-from wradlib import georef, vpr
+from wradlib import vpr
 
 from . import requires_gdal
 
@@ -17,7 +18,7 @@ def help_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
         site = (7.0, 53.0, 100.0)
-        crs = georef.epsg_to_osr(31467)
+        crs = pyproj.CRS.from_epsg(31467)
         az = np.arange(0.0, 360.0, 2.0)
         r = np.arange(0, 50000, 1000)
         el = 2.5
@@ -25,7 +26,6 @@ def help_data():
     yield Data
 
 
-@requires_gdal
 def test_volcoords_from_polar(help_data):
     coords = vpr.volcoords_from_polar(
         help_data.site, help_data.el, help_data.az, help_data.r, crs=help_data.crs
@@ -115,7 +115,7 @@ def cart_data():
     @dataclass(init=False, repr=False, eq=False)
     class Data:
         site = (7.0, 53.0, 100.0)
-        crs = georef.epsg_to_osr(31467)
+        crs = pyproj.CRS.from_epsg(31467)
         az = np.arange(0.0, 360.0, 2.0) + 1.0
         r = np.arange(0.0, 50000.0, 1000.0)
         elev = np.array([1.0, 3.0, 5.0, 10.0])

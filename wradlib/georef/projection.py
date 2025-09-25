@@ -14,7 +14,9 @@ Projection Functions
    {}
 """
 __all__ = [
+    "ensure_crs",
     "reproject",
+    "create_crs",
     "create_osr",
     "projstr_to_osr",
     "epsg_to_osr",
@@ -33,16 +35,19 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 import warnings
 from functools import singledispatch
 
+import deprecation
 import numpy as np
+import pyproj
 import xradar as xd
 from xarray import DataArray, Dataset, apply_ufunc
 
-from wradlib.util import docstring, import_optional
+from wradlib import version
+from wradlib.util import docstring, has_import, import_optional
 
 gdal = import_optional("osgeo.gdal")
 ogr = import_optional("osgeo.ogr")
 osr = import_optional("osgeo.osr")
-pyproj = import_optional("pyproj")
+cartopy = import_optional("cartopy")
 
 # Taken from document "Radarkomposits - Projektionen und Gitter", Version 1.01
 # 5th of April 2022
@@ -62,6 +67,64 @@ _radolan_ref = dict(
 )
 
 
+def ensure_crs(crs, trg="pyproj"):
+    """Return CRS object from given entry. Default to pyproj CRS.
+
+    Parameters
+    ----------
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Must be given and
+        can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+        - None
+
+    Keyword Arguments
+    -----------------
+    trg : str, {"pyproj", "cartopy", "osr"}
+        Target Coordinate Reference System type
+
+    Returns
+    -------
+    crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference` or None
+    """
+    # first move everything into pyproj.CRS/WKT or return early
+    if crs is None:
+        return crs
+    if isinstance(crs, pyproj.CRS) and type(crs) is pyproj.CRS:
+        if trg == "pyproj":
+            return crs
+    elif has_import("cartopy") and isinstance(crs, cartopy.crs.CRS):
+        if trg == "cartopy":
+            return crs
+    elif has_import("osr") and isinstance(crs, osr.SpatialReference):
+        if trg == "osr":
+            return crs
+        crs = crs.ExportToWkt()
+
+    # now ingest into pyproj.CRS
+    crs = pyproj.CRS.from_user_input(crs)
+
+    if trg == "pyproj":
+        return crs
+    elif trg == "cartopy":
+        return cartopy.crs.CRS(crs)
+    elif trg == "osr":
+        out = osr.SpatialReference()
+        out.ImportFromWkt(crs.to_wkt())
+        return out
+
+
+@deprecation.deprecated(
+    deprecated_in="2.4",
+    removed_in="3.0",
+    current_version=version.version,
+    details="Use `wradlib.georef.projection.create_crs` instead.",
+)
 def create_osr(projname, **kwargs):
     """Conveniently supports the construction of osr spatial reference objects
 
@@ -96,6 +159,50 @@ def create_osr(projname, **kwargs):
     -------
     output : :py:class:`gdal:osgeo.osr.SpatialReference`
         GDAL/OSR object defining projection
+
+    Examples
+    --------
+    See :ref:`wradlib_workflow:georeferencing-and-projection`.
+    """
+    crs = osr.SpatialReference()
+    crs.ImportFromWkt(create_crs(projname, **kwargs).to_wkt())
+    return crs
+
+
+def create_crs(projname, **kwargs):
+    """Conveniently supports the construction of pyproj Coordinate Reference System (CRS)
+
+    Currently, the following projection names (argument *projname*)
+    are supported:
+
+    **"aeqd": Azimuthal Equidistant**
+
+    needs the following keyword arguments:
+
+        - *lat_0* (latitude at projection center),
+        - *lon_0* (longitude at projection center),
+        - *x_0* (false Easting, also known as x-offset),
+        - *y_0* (false Northing, also known as y-offset)
+
+    **"dwd-radolan" : RADOLAN Composite Coordinate System**
+
+        - no additional arguments needed.
+
+    Polar stereographic projection used by the German Weather Service (DWD)
+    for all Radar composite products. See the final report on the RADOLAN
+    project :cite:`DWD2004` for details.
+
+    Parameters
+    ----------
+    projname : str
+        "aeqd" or "dwd-radolan"
+    kwargs : dict
+        depends on projname - see above!
+
+    Returns
+    -------
+    output : :py:class:`pyproj:pyproj.CRS`
+        pyproj Coordinate Reference System (CRS)
 
     Examples
     --------
@@ -153,18 +260,16 @@ def create_osr(projname, **kwargs):
         'AXIS["Northing", SOUTH]]'
     )
 
-    crs = osr.SpatialReference()
-
     if projname == "aeqd":
         # Azimuthal Equidistant
         x_0 = kwargs.get("x_0", 0.0)
         y_0 = kwargs.get("y_0", 0.0)
         if "x_0" in kwargs:
-            crs.ImportFromWkt(
+            crs = pyproj.CRS.from_wkt(
                 aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], x_0, y_0)
             )
         else:
-            crs.ImportFromWkt(
+            crs = pyproj.CRS.from_wkt(
                 aeqd_wkt.format(kwargs["lat_0"], kwargs["lon_0"], 0.0, 0.0)
             )
     elif "dwd-radolan" in projname:
@@ -184,7 +289,7 @@ def create_osr(projname, **kwargs):
         x_0 = kwargs.get("x_0", ref["x_0"])
         y_0 = kwargs.get("y_0", ref["y_0"])
         radolan_wkt = radolan_ellps[ellps] + polar_stereo_wkt.format(x_0, y_0, unit)
-        crs.ImportFromWkt(radolan_wkt)
+        crs = pyproj.CRS.from_wkt(radolan_wkt)
     else:
         raise ValueError(
             f"No convenience support for projection {projname!r} yet. "
@@ -194,6 +299,12 @@ def create_osr(projname, **kwargs):
     return crs
 
 
+@deprecation.deprecated(
+    deprecated_in="2.4",
+    removed_in="3.0",
+    current_version=version.version,
+    details="Use `pyproj.CRS.from_proj4` instead.",
+)
 def projstr_to_osr(projstr):
     """Transform a PROJ string to an osr spatial reference object
 
@@ -253,13 +364,29 @@ def reproject(*args, **kwargs):
 
     Keyword Arguments
     -----------------
-    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        defaults to EPSG(4326)
-    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        defaults to EPSG(4326)
+    src_crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to EPSG(4326).
+    trg_crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to EPSG(4326).
     area_of_interest : tuple
         floats (WestLongitudeDeg, SouthLatitudeDeg, EastLongitudeDeg,
-        NorthLatitudeDeg), only gdal>=3, defaults to None (no area of interest)
+        NorthLatitudeDeg), defaults to None (no area of interest)
 
     Returns
     -------
@@ -285,10 +412,12 @@ def reproject(*args, **kwargs):
     else:
         if len(args) == 2:
             X, Y = (np.asanyarray(arg) for arg in args)
+            C = np.column_stack([X.ravel(), Y.ravel()])
             numCols = 2
         elif len(args) == 3:
             X, Y, Z = (np.asanyarray(arg) for arg in args)
             zshape = Z.shape
+            C = np.column_stack([X.ravel(), Y.ravel(), Z.ravel()])
             numCols = 3
         else:
             raise TypeError(
@@ -310,36 +439,40 @@ def reproject(*args, **kwargs):
                     f"Shape mismatch `Z` ({zshape}) input to `reproject`. "
                     f"Shape of ({xshape}) needed."
                 )
-            C = np.concatenate(
-                [X.ravel()[:, None], Y.ravel()[:, None], Z.ravel()[:, None]], axis=1
-            )
-        else:
-            C = np.concatenate([X.ravel()[:, None], Y.ravel()[:, None]], axis=1)
 
     src_crs = kwargs.get("src_crs", get_default_projection())
+    src_crs = ensure_crs(src_crs)
     trg_crs = kwargs.get("trg_crs", get_default_projection())
+    trg_crs = ensure_crs(trg_crs)
 
     area_of_interest = kwargs.get("area_of_interest", None)
+    if isinstance(area_of_interest, tuple):
+        area_of_interest = pyproj.transformer.AreaOfInterest(*area_of_interest)
 
-    axis_order = osr.OAMS_TRADITIONAL_GIS_ORDER
-    src_crs.SetAxisMappingStrategy(axis_order)
-    trg_crs.SetAxisMappingStrategy(axis_order)
-    options = osr.CoordinateTransformationOptions()
-    if area_of_interest is not None:
-        options.SetAreaOfInterest(*area_of_interest)
-    ct = osr.CreateCoordinateTransformation(src_crs, trg_crs, options)
-    trans = np.array(ct.TransformPoints(C))
+    # Transformer setup
+    transformer = pyproj.Transformer.from_crs(
+        src_crs,
+        trg_crs,
+        always_xy=True,  # like OAMS_TRADITIONAL_GIS_ORDER
+        area_of_interest=area_of_interest,
+    )
+
+    # --- Transform coordinates ---
+    if numCols == 2:
+        x, y = transformer.transform(C[:, 0], C[:, 1])
+        trans = np.column_stack([x, y])
+    else:
+        x, y, z = transformer.transform(C[:, 0], C[:, 1], C[:, 2])
+        trans = np.column_stack([x, y, z])
 
     if len(args) == 1:
-        return trans[:, 0:numCols].reshape(cshape)
+        return trans.reshape(cshape)
     else:
-        X = trans[:, 0].reshape(xshape)
-        Y = trans[:, 1].reshape(yshape)
-        if len(args) == 2:
-            return X, Y
-        if len(args) == 3:
-            Z = trans[:, 2].reshape(zshape)
-            return X, Y, Z
+        out = (x.reshape(xshape), y.reshape(yshape))
+        if numCols == 2:
+            return out
+        if numCols == 3:
+            return out + (z.reshape(zshape),)
 
 
 @reproject.register(DataArray)
@@ -353,7 +486,26 @@ def _reproject_xarray(obj, **kwargs):
 
     Keyword Arguments
     -----------------
-    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    src_crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to source data CRS.
+    trg_crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to WGS84.
     coords : dict, optional
         Mapping of coordinates. Defaults to None
     area_of_interest : tuple
@@ -385,15 +537,19 @@ def _reproject_xarray(obj, **kwargs):
     # user overrides?
     if src_crs := kwargs.get("src_crs") is None:
         # extract crs from obj
-        proj_crs = xd.georeference.get_crs(obj)
-        src_crs = wkt_to_osr(proj_crs.to_wkt())
+        src_crs = xd.georeference.get_crs(obj)
     else:
         warnings.warn(
             "`src_crs`-kwarg is overriding `crs_wkt`-coordinate'", stacklevel=4
         )
 
-    kwargs.setdefault("src_crs", src_crs)
-    trg_crs = kwargs.setdefault("trg_crs", get_default_projection())
+    src_crs = ensure_crs(src_crs)
+    kwargs["src_crs"] = src_crs
+
+    if trg_crs := kwargs.get("trg_crs") is None:
+        trg_crs = get_default_projection()
+    trg_crs = ensure_crs(trg_crs)
+    kwargs["trg_crs"] = trg_crs
 
     out = apply_ufunc(
         reproject,
@@ -408,20 +564,24 @@ def _reproject_xarray(obj, **kwargs):
     for c, v in zip(coords, out):
         obj = obj.assign_coords({c: v})
 
-    # set new crs to obj
-    proj_crs = pyproj.CRS.from_wkt(trg_crs.ExportToWkt(["FORMAT=WKT2_2018"]))
-    obj = xd.georeference.add_crs(obj, crs=proj_crs)
+    # set target crs to obj
+    obj = xd.georeference.add_crs(obj, crs=trg_crs)
 
     return obj
 
 
 def get_default_projection():
     """Create a default projection object (wgs84)"""
-    crs = osr.SpatialReference()
-    crs.ImportFromEPSG(4326)
+    crs = pyproj.CRS.from_epsg(4326)
     return crs
 
 
+@deprecation.deprecated(
+    deprecated_in="2.4",
+    removed_in="3.0",
+    current_version=version.version,
+    details="Use `pyproj.CRS.from_epsg` instead.",
+)
 def epsg_to_osr(epsg=None):
     """Create osr spatial reference object from EPSG number
 
@@ -440,10 +600,17 @@ def epsg_to_osr(epsg=None):
         crs = osr.SpatialReference()
         crs.ImportFromEPSG(epsg)
     else:
-        crs = get_default_projection()
+        crs = osr.SpatialReference()
+        crs.ImportFromWkt(get_default_projection().to_wkt())
     return crs
 
 
+@deprecation.deprecated(
+    deprecated_in="2.4",
+    removed_in="3.0",
+    current_version=version.version,
+    details="Use `pyproj.CRS.from_wkt` instead.",
+)
 def wkt_to_osr(wkt=None):
     """Create osr spatial reference object from WKT string
 
@@ -463,7 +630,8 @@ def wkt_to_osr(wkt=None):
         crs = osr.SpatialReference()
         crs.ImportFromWkt(wkt)
     else:
-        crs = get_default_projection()
+        crs = osr.SpatialReference()
+        crs.ImportFromWkt(get_default_projection().to_wkt())
 
     if crs.Validate() == ogr.OGRERR_CORRUPT_DATA:
         raise ValueError(
@@ -475,7 +643,7 @@ def wkt_to_osr(wkt=None):
 
 
 @singledispatch
-def get_earth_radius(latitude, *, sr=None):
+def get_earth_radius(latitude, *, crs=None):
     """Get the radius of the Earth (in km) for a given Spheroid model (sr) at \
     a given position.
 
@@ -486,10 +654,22 @@ def get_earth_radius(latitude, *, sr=None):
 
     Parameters
     ----------
-    sr : :py:class:`gdal:osgeo.osr.SpatialReference`
-        spatial reference
     latitude : float
         geodetic latitude in degrees
+
+    Keyword Arguments
+    -----------------
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Must be provided
+        and can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to EPSG(4326).
 
     Returns
     -------
@@ -497,10 +677,12 @@ def get_earth_radius(latitude, *, sr=None):
         earth radius in meter
 
     """
-    if sr is None:
-        sr = get_default_projection()
-    radius_e = sr.GetSemiMajor()
-    radius_p = sr.GetSemiMinor()
+    if crs is None:
+        crs = get_default_projection()
+    crs = ensure_crs(crs)
+
+    radius_e = crs.ellipsoid.semi_major_metre
+    radius_p = crs.ellipsoid.semi_minor_metre
     latitude = np.radians(latitude)
     radius = np.sqrt(
         (
@@ -517,7 +699,7 @@ def get_earth_radius(latitude, *, sr=None):
 
 @get_earth_radius.register(Dataset)
 @get_earth_radius.register(DataArray)
-def _get_earth_radius_xarray(obj, *, sr=None):
+def _get_earth_radius_xarray(obj, *, crs=None):
     """Get the radius of the Earth (in km) for a given Spheroid model (sr) at \
     a given position.
 
@@ -529,15 +711,26 @@ def _get_earth_radius_xarray(obj, *, sr=None):
     Parameters
     ----------
     obj : :py:class:`xarray:xarray.DataArray` | :py:class:`xarray:xarray.Dataset`
-    sr : :py:class:`gdal:osgeo.osr.SpatialReference`
-        spatial reference
+
+    Keyword Arguments
+    -----------------
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to EPSG(4326).
 
     Returns
     -------
     radius : float
         earth radius in meter
     """
-    return get_earth_radius(obj.latitude.values, sr=sr)
+    return get_earth_radius(obj.latitude.values, crs=crs)
 
 
 def get_earth_projection(model="ellipsoid"):
@@ -554,19 +747,16 @@ def get_earth_projection(model="ellipsoid"):
 
     Returns
     -------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        projection definition
+    crs : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS)
 
     """
-    crs = osr.SpatialReference()
-
     if model == "sphere":
-        crs.ImportFromEPSG(4047)
+        crs = pyproj.CRS.from_epsg(4047)
     elif model == "ellipsoid":
-        crs.ImportFromEPSG(4979)
+        crs = pyproj.CRS.from_epsg(4979)
     elif model == "geoid":
-        crs = osr.SpatialReference()
-        crs.SetFromUserInput("epsg:4326+5773")
+        crs = pyproj.CRS.from_user_input("EPSG:4326+5773")
     else:
         raise ValueError(f"Unknown model {model!r}.")
 
@@ -584,13 +774,18 @@ def get_radar_projection(site):
 
     Returns
     -------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        projection definition
+    crs : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS) - radar centric AEQD
 
     """
-    crs = osr.SpatialReference()
-    crs.SetProjCS("Unknown Azimuthal Equidistant")
-    crs.SetAE(site[1], site[0], 0, 0)
+    lon, lat = site[:2]
+    projstr = f"+proj=aeqd +lat_0={lat} +lon_0={lon} +x_0=0 +y_0=0 +datum=WGS84"
+    crs = pyproj.CRS.from_proj4(projstr)
+    wkt = crs.to_wkt(version="WKT2_2018")
+    wkt_named = wkt.replace(
+        'PROJCRS["unknown"', 'PROJCRS["Unknown Azimuthal Equidistant"'
+    )
+    crs = pyproj.CRS.from_wkt(wkt_named)
 
     return crs
 
@@ -624,8 +819,15 @@ def project_bounds(bounds, crs):
     ----------
     bounds : (lon_min, lon_max, lat_min, lat_max)
         geographic bounds
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        coordinate reference system used for the projection
+    crs
+        Coordinate Reference System (CRS) to be used for projection.
+        Must be provided and can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
     Returns
     -------
@@ -633,6 +835,7 @@ def project_bounds(bounds, crs):
         projected bounds
 
     """
+    crs = ensure_crs(crs)
 
     lon_min, lon_max, lat_min, lat_max = bounds
     lon_mid = lon_min / 2 + lon_max / 2

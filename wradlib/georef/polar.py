@@ -30,14 +30,14 @@ __doctest_requires__ = {"spherical*": ["osgeo"]}
 from functools import singledispatch
 
 import numpy as np
+import pyproj
 from xarray import DataArray, Dataset, apply_ufunc
 from xradar.georeference import add_crs
 
 from wradlib.georef import misc, projection
-from wradlib.util import docstring, has_import, import_optional, warn
+from wradlib.util import docstring, import_optional, warn
 
 osr = import_optional("osgeo.osr")
-pyproj = import_optional("pyproj")
 
 
 @singledispatch
@@ -90,8 +90,8 @@ def spherical_to_xyz(
     -------
     xyz : :class:`numpy:numpy.ndarray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    aeqd : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (AEQD-Projection).
+    aeqd : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS), AEQD.
     """
     squeeze = kwargs.get("squeeze", False)
     strict_dims = kwargs.get("strict_dims", False)
@@ -117,10 +117,7 @@ def spherical_to_xyz(
             f"+a={re:f} +b={re:f} +units=m +no_defs"
         )
 
-    if has_import(osr):
-        aeqd = projection.projstr_to_osr(projstr)
-    else:
-        aeqd = projstr
+    aeqd = pyproj.CRS.from_string(projstr)
 
     r = np.asanyarray(r)
     theta = np.asanyarray(theta)
@@ -200,8 +197,8 @@ def _spherical_to_xyz_xarray(obj, **kwargs):
     -------
     xyz : :py:class:`xarray:xarray.DataArray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    aeqd : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (AEQD-Projection).
+    aeqd : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS), AEQD.
     """
     dim0 = obj.wrl.util.dim0()
     r = obj.range.expand_dims(dim={dim0: len(obj[dim0])}).assign_coords(
@@ -255,9 +252,16 @@ def spherical_to_proj(r, phi, theta, site, *, crs=None, re=None, ke=4.0 / 3.0):
         the lon / lat coordinates of the radar location and its altitude
         a.m.s.l. (in meters)
         if site is of length two, altitude is assumed to be zero
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, optional
-        Destination Spatial Reference System (Projection).
-        Defaults to wgs84 (epsg 4326).
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to EPSG(4326).
     re : float, optional
         earth's radius [m], defaults to None (calculating from given latitude).
     ke : float, optional
@@ -301,6 +305,8 @@ def spherical_to_proj(r, phi, theta, site, *, crs=None, re=None, ke=4.0 / 3.0):
     """
     if crs is None:
         crs = projection.get_default_projection()
+    else:
+        crs = projection.ensure_crs(crs)
 
     xyz, aeqd = spherical_to_xyz(r, phi, theta, site, re=re, ke=ke, squeeze=True)
 
@@ -326,9 +332,16 @@ def _spherical_to_proj_xarray(obj, **kwargs):
 
     Keyword Arguments
     -----------------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (Projection).
-        Defaults to wgs84 (epsg 4326).
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to EPSG(4326).
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
@@ -465,8 +478,16 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
         Elevation angle of scan
     site : sequence
         the lon/lat/alt coordinates of the radar location
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Projection
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to AEQD.
 
     Returns
     -------
@@ -474,8 +495,8 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
         A 3-d array of polygon vertices with shape(num_vertices,
         num_vertex_nodes, 2). The last dimension carries the xyz-coordinates
         either in `aeqd` or given crs.
-    aeqd : :py:class:`gdal:osgeo.aeqosr.SpatialReference`
-        only returned if crs is None
+    aeqd : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS), AEQD, only returned if crs is None.
 
     Examples
     --------
@@ -511,6 +532,7 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
 
     coords, aeqd = spherical_to_xyz(r, phi, theta, site, squeeze=True, strict_dims=True)
     if crs is not None:
+        crs = projection.ensure_crs(crs)
         coords = projection.reproject(coords, src_crs=aeqd, trg_crs=crs)
 
     llc = coords[:-1, :-1]
@@ -549,9 +571,17 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
 
     Keyword Arguments
     -----------------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (Projection).
-        Defaults to wgs84 (epsg 4326).
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Must be provided
+        and can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to AEQD.
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
@@ -562,9 +592,8 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
     -------
     xyz : :py:class:`xarray:xarray.DataArray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (Projection).
-        Defaults to wgs84 (epsg 4326).
+    crs : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS), AEQD, only returned if crs is None.
     """
     # Todo: check if this works for elevation too
     obj.wrl.util.dim0()
@@ -627,8 +656,16 @@ def spherical_to_centroids(r, phi, theta, site, *, crs=None):
         Elevation angle of scan
     site : sequence
         the lon/lat/alt coordinates of the radar location
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Projection
+    crs
+        Coordinate Reference System (CRS). Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to AEQD.
 
     Returns
     -------
@@ -636,8 +673,8 @@ def spherical_to_centroids(r, phi, theta, site, *, crs=None):
         A 3-d array of bin centroids with shape(num_rays, num_bins, 3).
         The last dimension carries the xyz-coordinates
         either in `aeqd` or given crs.
-    aeqd : :py:class:`gdal:osgeo.osr.SpatialReference`
-        only returned if crs is None
+    aeqd : :py:class:`pyproj:pyproj.CRS`
+        Coordinate Reference System (CRS), AEQD, only returned if crs is None.
 
     Note
     ----
@@ -657,6 +694,7 @@ def spherical_to_centroids(r, phi, theta, site, *, crs=None):
     if crs is None:
         return coords, aeqd
     else:
+        crs = projection.ensure_crs(crs)
         return projection.reproject(coords, src_crs=aeqd, trg_crs=crs)
 
 
@@ -681,9 +719,17 @@ def _spherical_to_centroids_xarray(obj, **kwargs):
 
     Keyword Arguments
     -----------------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (Projection).
-        Defaults to wgs84 (epsg 4326).
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Must be provided
+        and can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to AEQD.
     ke : float
         adjustment factor to account for the refractivity gradient that
         affects radar beam propagation. In principle this is wavelength-
@@ -696,9 +742,8 @@ def _spherical_to_centroids_xarray(obj, **kwargs):
     -------
     xyz : :py:class:`xarray:xarray.DataArray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        Destination Spatial Reference System (Projection).
-        Defaults to wgs84 (epsg 4326).
+    crs : :py:class:`pyproj:pyproj.CRS`
+        Reference System (CRS), AEQD, only returned if crs is None.
 
     Note
     ----
@@ -1001,8 +1046,17 @@ def georeference(obj, **kwargs):
 
     Keyword Arguments
     -----------------
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`, :py:class:`cartopy.crs.CRS` or None
-        If GDAL OSR SRS, output is in this projection, else AEQD.
+    crs
+        Coordinate Reference System (CRS) of the coordinates. Must be provided
+        and can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
+        Defaults to AEQD.
     re : float
         earth's radius [m]
     ke : float
@@ -1015,7 +1069,7 @@ def georeference(obj, **kwargs):
     ----------
     obj : :py:class:`xarray:xarray.Dataset` or :py:class:`xarray:xarray.DataArray`
     """
-    trg_crs = kwargs.pop("crs", "None")
+    trg_crs = kwargs.pop("crs", None)
     re = kwargs.pop("re", None)
     ke = kwargs.pop("ke", 4.0 / 3.0)
 
@@ -1032,22 +1086,15 @@ def georeference(obj, **kwargs):
     # create meshgrid to overcome dimension problem with spherical_to_xyz
     r, az = np.meshgrid(obj["range"], obj["azimuth"])
 
-    # GDAL OSR, convert to this crs
-    if has_import(osr) and isinstance(trg_crs, osr.SpatialReference):
+    if trg_crs is None:
+        xyz, trg_crs = spherical_to_xyz(
+            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
+        )
+    else:
+        trg_crs = projection.ensure_crs(trg_crs)
         xyz = spherical_to_proj(
             r, az, obj["elevation"], site, crs=trg_crs, re=re, ke=ke
         )
-    # other crs, convert to aeqd
-    elif trg_crs:
-        xyz, trg_crs = spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
-        )
-    # crs, convert to aeqd and add offset
-    else:
-        xyz, trg_crs = spherical_to_xyz(
-            r, az, obj["elevation"], site, re=re, ke=ke, squeeze=True
-        )
-        xyz += np.array(site).T
 
     # calculate center point
     # use first range bins
@@ -1093,13 +1140,8 @@ def georeference(obj, **kwargs):
     obj.coords["rays"] = ([dim0, "range"], rays, obj[dim0].attrs)
     obj.coords["bins"] = ([dim0, "range"], bins, obj["range"].attrs)
 
-    # convert GDAL OSR to WKT
-    if has_import(osr):
-        trg_crs = trg_crs.ExportToWkt(["FORMAT=WKT2_2018"])
-
-    # import into pyproj CRS
-    proj_crs = pyproj.CRS.from_user_input(trg_crs)
-    obj = add_crs(obj, crs=proj_crs)
+    # add CRS
+    obj = add_crs(obj, crs=trg_crs)
 
     return obj
 

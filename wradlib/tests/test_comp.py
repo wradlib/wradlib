@@ -13,7 +13,6 @@ from wradlib import comp, georef, io, ipol
 
 from . import (
     get_wradlib_data_file,
-    requires_gdal,
 )
 
 
@@ -38,7 +37,6 @@ def comp_data():
     yield Data
 
 
-@requires_gdal
 def test_extract_circle(comp_data):
     x = comp_data.x
     y = comp_data.y
@@ -49,7 +47,6 @@ def test_extract_circle(comp_data):
     comp.extract_circle(np.array([x.mean(), y.mean()]), 128000.0, grid_xy)
 
 
-@requires_gdal
 def test_togrid(comp_data):
     x = comp_data.x
     y = comp_data.y
@@ -253,7 +250,6 @@ def test_compose():
     np.testing.assert_allclose(composite1, res1)
 
 
-@requires_gdal
 def test_sweep_to_raster():
 
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
@@ -267,7 +263,7 @@ def test_sweep_to_raster():
     lat_min = round(lat) - 2
     lon_max = round(lon) + 2
     lat_max = round(lat) + 2
-    bounds = [lon_min, lon_max, lat_min, lat_max]
+    bounds = (lon_min, lon_max, lat_min, lat_max)
     size = 1000
     raster = georef.create_raster_geographic(bounds, size, size_in_meters=True)
     transform = comp.transform_binned(sweep, raster)
