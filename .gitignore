@@ -7,6 +7,8 @@ __pycache__/
 *.so
 *.log
 *.swp
+*.nc
+version.py
 
 # Root directories
 /.benchmarks/
