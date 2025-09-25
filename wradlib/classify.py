@@ -877,14 +877,16 @@ def _classify_echo_fuzzy_xarray(obj, dat, **kwargs):
     :func:`~wradlib.dp.depolarization` - depolarization ratio
     """
 
-    def _classify_echo_fuzzy_wrapper(*args, **kwargs):
-        mom = ["rho", "phi", "ref", "dop", "zdr", "map"][: len(args)]
+    def _classify_echo_fuzzy_wrapper(*args, mom=None, **kwargs):
         dat = {name: value for name, value in zip(mom, args)}
         prob, mask = classify_echo_fuzzy(dat, **kwargs)
         return prob, mask
 
-    mom = ["rho", "phi", "ref", "dop", "zdr", "map", "rho2", "dpr", "cpa"]
-    args = [obj[dat[m]] for m in mom if m in dat]
+    # all moments that are not derived automatically
+    mom_all = ("zdr", "rho", "phi", "dop", "map", "dr", "cpa")
+    mom = [m for m in mom_all if m in dat] # available moments
+    args = [obj[dat[m]] for m in mom]
+    kwargs["mom"] = mom
     dim0 = args[0].wrl.util.dim0()
     input_core_dims = [[dim0, "range"]] * len(dat)
     prob, mask = xr.apply_ufunc(
