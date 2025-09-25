@@ -226,7 +226,7 @@ def create_crs(projname, **kwargs):
     wgs84_wkt = (
         'PROJCS["Radolan Projection",'
         'GEOGCS["Radolan Coordinate System",'
-        'DATUM["unknown based on WGS 84",'
+        'DATUM["Unknown based on WGS 84 ellipsoid",'
         'SPHEROID["WGS 84", 6378137, 298.25722356301]],'
         'PRIMEM["Greenwich", 0,'
         'AUTHORITY["EPSG", "8901"]],'
