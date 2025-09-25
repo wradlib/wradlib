@@ -21,6 +21,7 @@ dependencies:
   - matplotlib-base
   - pip
   - pooch
+  - pyproj
   - pytest
   - pytest-cov
   - pytest-doctestplus

@@ -411,8 +411,14 @@ def volcoords_from_polar(site, elevs, azimuths, ranges, *, crs=None):
         sequence of azimuth angles
     ranges : sequence
         sequence of ranges
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR Spatial Reference Object describing projection
+    crs
+        Coordinate Reference System (CRS). Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
     Returns
     -------
@@ -451,8 +457,14 @@ def volcoords_from_polar_irregular(site, elevs, azimuths, ranges, *, crs=None):
         sequence of azimuth angles
     ranges : sequence
         sequence of ranges
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR Spatial Reference Object describing projection
+    crs
+        Coordinate Reference System (CRS). Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
     Returns
     -------
@@ -525,8 +537,14 @@ def make_3d_grid(site, crs, maxrange, maxalt, horiz_res, vert_res, *, minalt=0.0
     ----------
     site : tuple
         Radar location coordinates in lon, lat
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
-        GDAL OSR SRS describing projection
+    crs
+        Coordinate Reference System (CRS). Can be one of:
+
+        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`cartopy:cartopy.crs.CRS` instance
+        - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
+        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+          PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
     maxrange : float
         maximum radar range (same unit as CRS defined by ``crs``,
         typically meters)

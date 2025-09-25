@@ -63,7 +63,7 @@ def prj_data():
         el = np.arange(0, 90)
         th = np.zeros_like(az)
         az1 = np.ones_like(el) * 225
-        crs = georef.create_osr("dwd-radolan")
+        crs = georef.create_crs("dwd-radolan")
         da_ppi = georef.create_xarray_dataarray(img, r=r, phi=az, theta=th)
         da_ppi = georef.georeference(da_ppi, crs=None)
         print(da_ppi)
@@ -93,7 +93,6 @@ def test_plot_ppi(pol_data):
 
 
 @requires_matplotlib
-@requires_gdal
 def test_plot_ppi_proj(prj_data):
     da = prj_data.da_rhi
     vis.plot(da)
@@ -107,7 +106,6 @@ def test_plot_ppi_proj(prj_data):
 
 
 @requires_matplotlib
-@requires_gdal
 def test_plot_ppi_xarray(prj_data):
     assert hasattr(prj_data.da_ppi.wrl, "rays")
     vis.plot(prj_data.da_ppi)
@@ -125,7 +123,6 @@ def test_plot_ppi_xarray(prj_data):
 
 
 @requires_matplotlib
-@requires_gdal
 def test_plot_ppi_xarray_accessor(prj_data):
     assert hasattr(prj_data.da_ppi.wrl, "rays")
     prj_data.da_ppi.wrl.vis.plot()
@@ -143,7 +140,6 @@ def test_plot_ppi_xarray_accessor(prj_data):
 
 
 @requires_matplotlib
-@requires_gdal
 def test_plot_ppi_xarray_proj(prj_data):
     with pytest.raises(TypeError):
         prj_data.da_ppi.wrl.vis.pcolormesh(crs=prj_data.crs)
@@ -151,7 +147,6 @@ def test_plot_ppi_xarray_proj(prj_data):
 
 @requires_matplotlib
 @requires_cartopy
-@requires_gdal
 def test_plot_ppi_cartopy(prj_data):
     if (Version(cartopy.__version__) < Version("0.18.0")) and (
         Version(mpl.__version__) >= Version("3.3.0")
@@ -168,7 +163,6 @@ def test_plot_ppi_cartopy(prj_data):
 
 
 @requires_matplotlib
-@requires_gdal
 def test_plot_rhi_xarray(prj_data):
     assert (
         repr(prj_data.da_rhi.wrl).split("\n", 1)[1]

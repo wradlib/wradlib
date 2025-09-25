@@ -28,9 +28,10 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 from functools import singledispatch
 
 import numpy as np
+import pyproj
 from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat, set_options
 
-from wradlib.georef import get_radar_projection, reproject, wkt_to_osr
+from wradlib.georef import get_radar_projection, reproject
 from wradlib.ipol import RectBin
 from wradlib.util import XarrayMethods, docstring
 
@@ -286,7 +287,7 @@ def transform_binned(sweep, raster):
 
     """
     wkt = raster.spatial_ref.attrs["crs_wkt"]
-    crs = wkt_to_osr(wkt)
+    crs = pyproj.CRS.from_wkt(wkt)
     sweep = sweep.wrl.georef.georeference(crs=crs)
     coord_sweep = np.dstack((sweep.x, sweep.y))
     x, y = np.meshgrid(raster.x, raster.y)
@@ -296,7 +297,7 @@ def transform_binned(sweep, raster):
 
     lon = float(sweep.longitude.values)
     lat = float(sweep.latitude.values)
-    if crs.IsGeographic():
+    if crs.is_geographic:
         alt = float(sweep.altitude.values)
         coord_raster2 = reproject(
             coord_raster, src_crs=crs, trg_crs=get_radar_projection((lon, lat, alt))

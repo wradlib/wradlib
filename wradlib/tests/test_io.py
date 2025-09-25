@@ -13,6 +13,7 @@ import tempfile
 from dataclasses import dataclass
 
 import numpy as np
+import pyproj
 import pytest
 import xarray as xr
 
@@ -1279,10 +1280,7 @@ def test__check_src():
     get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.dbf")
     get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shx")
     get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.prj")
-    from osgeo import osr
-
-    proj_gk2 = osr.SpatialReference()
-    proj_gk2.ImportFromEPSG(31466)
+    proj_gk2 = pyproj.CRS.from_epsg(31466)
     filename = get_wradlib_data_file("shapefiles/freiberger_mulde/freiberger_mulde.shp")
 
     assert len(io.VectorSource(filename, trg_crs=proj_gk2).data) == 430

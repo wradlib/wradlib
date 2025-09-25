@@ -33,6 +33,7 @@ __doc__ = __doc__.format("\n   ".join(__all__))
 
 import numpy as np
 
+from wradlib.georef import projection
 from wradlib.util import has_import, import_optional, warn
 
 gdal = import_optional("osgeo.gdal")
@@ -86,12 +87,14 @@ def transform_geometry(geom, trg_crs, **kwargs):
     Parameters
     ----------
     geom : :py:class:`gdal:osgeo.ogr.Geometry`
-    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    trg_crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, or anything which can be consumed by pyproj.CRS.from_user_input
         Destination Projection
 
     Keyword Arguments
     -----------------
-    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    src_crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, or anything which can be consumed by pyproj.CRS.from_user_input
         Source Projection
 
     Returns
@@ -101,6 +104,8 @@ def transform_geometry(geom, trg_crs, **kwargs):
     """
     gsrs = geom.GetSpatialReference()
     crs = kwargs.get("src_crs", gsrs)
+    crs = projection.ensure_crs(crs, trg="osr")
+    trg_crs = projection.ensure_crs(trg_crs, trg="osr")
 
     if crs is None:
         raise ValueError(
@@ -133,9 +138,11 @@ def get_vector_coordinates(layer, **kwargs):
 
     Keyword Arguments
     -----------------
-    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    src_crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, or anything which can be consumed by pyproj.CRS.from_user_input
         Source Projection
-    trg_crs: :py:class:`gdal:osgeo.osr.SpatialReference`
+    trg_crs: :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, or anything which can be consumed by pyproj.CRS.from_user_input
         Destination Projection
     key : str
         attribute key to extract from layer feature
@@ -152,6 +159,7 @@ def get_vector_coordinates(layer, **kwargs):
     shp = []
 
     src_crs = kwargs.get("src_crs", layer.GetSpatialRef())
+    src_crs = projection.ensure_crs(src_crs, trg="osr")
     if src_crs is None:
         raise ValueError(
             "Spatial reference missing from source layer. "
@@ -159,6 +167,8 @@ def get_vector_coordinates(layer, **kwargs):
         )
 
     trg_crs = kwargs.get("trg_crs", None)
+    trg_crs = projection.ensure_crs(trg_crs, trg="osr")
+
     key = kwargs.get("key", None)
     if key:
         attrs = []
@@ -194,9 +204,11 @@ def ogr_reproject_layer(src_lyr, dst_lyr, trg_crs, *, src_crs=None):
         OGRLayer source layer
     dst_lyr : :py:class:`gdal:osgeo.ogr.Layer`
         OGRLayer destination layer
-    trg_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    trg_crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, or anything which can be consumed by pyproj.CRS.from_user_input
         Projection Target crs
-    src_crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    src_crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, or anything which can be consumed by pyproj.CRS.from_user_input
         Projection Source crs
 
     Returns
@@ -211,6 +223,9 @@ def ogr_reproject_layer(src_lyr, dst_lyr, trg_crs, *, src_crs=None):
                 "Spatial reference missing from source layer. "
                 "Please provide a fitting spatial reference object"
             )
+
+    src_crs = projection.ensure_crs(src_crs, trg="osr")
+    trg_crs = projection.ensure_crs(trg_crs, trg="osr")
 
     # add fields
     dst_lyr.CreateField(ogr.FieldDefn("index", ogr.OFTInteger))
@@ -252,7 +267,8 @@ def ogr_create_layer(ds, name, *, crs=None, geom_type=None, fields=None):
         object
     name : str
         OGRLayer name
-    crs : :py:class:`gdal:osgeo.osr.SpatialReference`
+    crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+        Any of the given projection objects, or anything which can be consumed by pyproj.CRS.from_user_input
         object
     geom_type : :py:class:`gdal:osgeo.ogr.GeometryType`
         (e.g. ogr.wkbPolygon)
@@ -268,6 +284,7 @@ def ogr_create_layer(ds, name, *, crs=None, geom_type=None, fields=None):
     if geom_type is None:
         raise TypeError("geometry_type needed")
 
+    crs = projection.ensure_crs(crs, trg="osr")
     lyr = ds.CreateLayer(name, srs=crs, geom_type=geom_type)
     if fields is not None:
         for fname, fvalue in fields:
