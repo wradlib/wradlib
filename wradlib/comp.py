@@ -31,7 +31,12 @@ import numpy as np
 import pyproj
 from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat, set_options
 
-from wradlib.georef import get_radar_projection, reproject
+from wradlib.georef import (
+    add_raster_grid_mapping,
+    get_earth_projection,
+    get_raster_coordinates,
+    reproject,
+)
 from wradlib.ipol import RectBin
 from wradlib.util import XarrayMethods, docstring
 
@@ -275,7 +280,7 @@ def transform_binned(sweep, raster):
     Parameters
     ----------
     sweep : :class:`xarray:xarray.dataset`
-        radar sweep dataset following WMO conventions
+        radar sweep dataset
     raster : :class:`xarray:xarray.dataset`
         raster image dataset
 
@@ -286,28 +291,41 @@ def transform_binned(sweep, raster):
         the transformation object
 
     """
-    wkt = raster.spatial_ref.attrs["crs_wkt"]
-    crs = pyproj.CRS.from_wkt(wkt)
-    sweep = sweep.wrl.georef.georeference(crs=crs)
-    coord_sweep = np.dstack((sweep.x, sweep.y))
-    x, y = np.meshgrid(raster.x, raster.y)
-    coord_raster = np.dstack((x, y))
+
+    if "crs_wkt" not in sweep.coords:
+        sweep = sweep.xradar.georeference()
+    coord_sweep = np.dstack((sweep.x.values, sweep.y.values))
+    radar_crs = sweep.xradar.get_crs()
+    crs_wkt = raster.spatial_ref.attrs["crs_wkt"]
+    raster_crs = pyproj.CRS.from_wkt(crs_wkt)
+    coord_sweep = reproject(
+        coord_sweep,
+        src_crs=radar_crs,
+        trg_crs=raster_crs,
+    )
+
+    coord_raster = get_raster_coordinates(ds=raster)
 
     radius = sweep.range.values[-1]
 
-    lon = float(sweep.longitude.values)
-    lat = float(sweep.latitude.values)
-    if crs.is_geographic:
-        alt = float(sweep.altitude.values)
+    if raster_crs.is_geographic:
         coord_raster2 = reproject(
-            coord_raster, src_crs=crs, trg_crs=get_radar_projection((lon, lat, alt))
+            coord_raster,
+            src_crs=raster_crs,
+            trg_crs=radar_crs,
         )
         center = (0, 0)
     else:
+        radar_lon = sweep.longitude.values
+        radar_lat = sweep.latitude.values
+        center = reproject(
+            (radar_lon, radar_lat),
+            src_crs=get_earth_projection(),
+            trg_crs=raster_crs,
+        )
         coord_raster2 = coord_raster
-        center = reproject((lon, lat), trg_crs=crs)
     fill_idx = extract_circle(center, radius, coord_raster2.reshape(-1, 2))
-    fill = np.zeros(x.shape, dtype=bool)
+    fill = np.zeros(coord_raster.shape[:2], dtype=bool)
     fill.flat[fill_idx] = True
 
     transform = RectBin(coord_sweep, coord_raster, fill=fill)
@@ -323,7 +341,7 @@ def sweep_to_raster(sweep, raster, **kwargs):
     sweep : :class:`xarray:xarray.Dataset` | :class:`xarray:xarray.DataArray`
         radar sweep dataset/dataarray following WMO conventions
     raster : :class:`xarray:xarray.Dataset`
-        raster image dataset
+        raster image dataset following CF conventions
 
     Keyword Arguments
     -----------------
@@ -341,7 +359,7 @@ def sweep_to_raster(sweep, raster, **kwargs):
     dim0 = sweep.wrl.util.dim0()
 
     if kwargs.get("transform", None) is None:
-        kwargs["transform"] = transform_binned(sweep, raster)
+        kwargs["transform"] = transform_binned(sweep=sweep, raster=raster)
 
     def wrapper(obj, **kwargs):
         transform = kwargs.pop("transform")
@@ -358,10 +376,9 @@ def sweep_to_raster(sweep, raster, **kwargs):
             on_missing_core_dim="drop",
         )
 
-    out = out.assign_coords(x=raster.x, y=raster.y)
+    out = out.assign_coords(x=raster.x, y=raster.y, spatial_ref=raster.spatial_ref)
 
-    if isinstance(sweep, DataArray):
-        out.name = f"{sweep.name}.to_raster"
+    out = add_raster_grid_mapping(out)
 
     return out
 
@@ -379,9 +396,9 @@ class CompMethods(XarrayMethods):
     @docstring(sweep_to_raster)
     def sweep_to_raster(self, *args, **kwargs):
         if not isinstance(self, CompMethods):
-            return sweep_to_raster(self, *args, **kwargs)
+            return sweep_to_raster(sweep=self, **kwargs)
         else:
-            return sweep_to_raster(self._obj, *args, **kwargs)
+            return sweep_to_raster(sweep=self._obj, **kwargs)
 
     @docstring(compose_weighted)
     def compose_weighted(self, *args, **kwargs):
