@@ -83,7 +83,7 @@ for key in ["projected", "geographic"]:
     rasters_concat = xarray.concat(rasters[key], dim="sweep")
     comp = rasters_concat.max(dim="sweep", keep_attrs=True)
     with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
-        comp.to_netcdf(tmp)
+        comp.to_netcdf(tmp.name)
     comp = comp.drop_vars("spatial_ref")
     fig, ax = matplotlib.pyplot.subplots()
     comp["DBZH"].plot(ax=ax, vmin=0, vmax=50)
