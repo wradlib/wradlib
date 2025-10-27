@@ -334,7 +334,7 @@ jobs:
           cd examples
           echo "Rendered from $GITHUB_SHA with $GITHUB_RUN_ID and $GITHUB_RUN_NUMBER" > render/render-info.txt
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: render-output
           path: examples/render/
