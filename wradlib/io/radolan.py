@@ -1462,36 +1462,24 @@ def open_radolan_mfdataset(paths, **kwargs):
     return xr.open_mfdataset(paths, engine="radolan", **kwargs)
 
 
-def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
-    groups = xr.open_groups(
-        filename_or_obj, engine="h5netcdf", decode_cf=False, phony_dims="access"
-    )
+def _get_odim_dataset(groups, dataset, data):
+    attrs = groups[f"/{dataset}/{data}/what"].attrs
+    quant = attrs["quantity"]
+    ds = groups[f"/{dataset}/{data}"].rename(data=quant)
+    ds[quant].attrs["add_offset"] = attrs["offset"]
+    ds[quant].attrs["scale_factor"] = attrs["gain"]
+    ds[quant].attrs["_FillValue"] = attrs["nodata"]
+    ds[quant].attrs["_Undetect"] = attrs["undetect"]
+    ds[quant].attrs.update(groups[f"/{dataset}/what"].attrs)
+    ds[quant].attrs.update(radolan[quant])
+    ds = ds.rename(phony_dim_0="y", phony_dim_1="x")
 
-    # iterate over groups
-    for grp in groups:
-        # only look into first dataset for now
-        if grp == "/dataset1/data1":
-            data_group = grp
-            attrs = groups["/dataset1/data1/what"].attrs
-            quant = attrs["quantity"]
-            groups[grp] = groups[grp].rename(data=quant)
-            groups[grp][quant].attrs["add_offset"] = attrs["offset"]
-            groups[grp][quant].attrs["scale_factor"] = attrs["gain"]
-            groups[grp][quant].attrs["_FillValue"] = attrs["nodata"]
-            groups[grp][quant].attrs["_Undetect"] = attrs["undetect"]
-            groups[grp][quant].attrs.update(groups["/dataset1/what"].attrs)
-            groups[grp][quant].attrs.update(radolan[quant])
+    return ds
 
-    # attributes
-    groups["/"].attrs["camethod"] = groups["/dataset1/how"].attrs["camethod"]
-    groups["/"].attrs["radarlocations"] = groups["/how"].attrs["nodes"]
-    groups["/"].attrs["software"] = groups["/how"].attrs["software"]
-    groups["/"].attrs["sw_version"] = groups["/how"].attrs["sw_version"]
-    groups["/"].attrs["source"] = groups["/what"].attrs["source"]
-    groups["/"].attrs["version"] = groups["/what"].attrs["version"]
 
+def _get_odim_time(what):
     # dimension and coordinates
-    timestr = groups["/what"].attrs["date"] + groups["/what"].attrs["time"]
+    timestr = what["date"] + what["time"]
     time = dt.datetime.strptime(timestr, "%Y%m%d%H%M%S")
     time = int(time.replace(tzinfo=dt.timezone.utc).timestamp())
     date_str = "1970-01-01T00:00:00Z"
@@ -1512,10 +1500,11 @@ def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
         ],
         attrs=time_attrs,
     )
-    groups[data_group] = groups[data_group].assign_coords(time=time)
+    return time
 
-    # handle projection
-    projdef = groups["/where"].attrs["projdef"]
+
+def _get_odim_projection(where):
+    projdef = where["projdef"]
     parts = projdef.split()
     parts = [p for p in parts if not (p.startswith("+x_0=") or p.startswith("+y_0="))]
     projdef = " ".join(parts)
@@ -1526,11 +1515,50 @@ def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
     crs2 = projection.create_osr("dwd-radolan-wgs84")
     # but still check if this is the same projection
     assert crs.IsSame(crs2)
+    return proj_crs, crs
 
-    groups[data_group] = groups[data_group].rename(phony_dim_0="y", phony_dim_1="x")
 
-    x = groups[data_group][quant].sizes["x"]
-    y = groups[data_group][quant].sizes["y"]
+def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
+    groups = xr.open_groups(
+        filename_or_obj, engine="h5netcdf", decode_cf=False, phony_dims="access"
+    )
+
+    # iterate over groups
+    for grp in groups:
+        # only look into first dataset for now
+        if grp == "/dataset1/data1":
+            _, dataset, data = grp.split("/")
+            ds = _get_odim_dataset(groups, dataset, data)
+            break
+
+    # attributes
+    root = groups["/"]
+    root.attrs["camethod"] = groups["/dataset1/how"].attrs["camethod"]
+    root.attrs["radarlocations"] = groups["/how"].attrs["nodes"]
+    root.attrs["software"] = groups["/how"].attrs["software"]
+    root.attrs["sw_version"] = groups["/how"].attrs["sw_version"]
+    root.attrs["source"] = groups["/what"].attrs["source"]
+    root.attrs["version"] = groups["/what"].attrs["version"]
+
+    # dimension and coordinates
+    ds = ds.assign_coords(time=_get_odim_time(groups["/what"].attrs))
+
+    # handle projection
+    proj_crs, crs = _get_odim_projection(groups["/where"].attrs)
+    # projdef = groups["/where"].attrs["projdef"]
+    # parts = projdef.split()
+    # parts = [p for p in parts if not (p.startswith("+x_0=") or p.startswith("+y_0="))]
+    # projdef = " ".join(parts)
+    # proj_crs = pyproj.CRS.from_user_input(projdef)
+    # crs = osr.SpatialReference()
+    # crs.ImportFromWkt(proj_crs.to_wkt())
+    # # use predefined WKT
+    # crs2 = projection.create_osr("dwd-radolan-wgs84")
+    # # but still check if this is the same projection
+    # assert crs.IsSame(crs2)
+
+    x = ds.sizes["x"]
+    y = ds.sizes["y"]
     xlocs, ylocs = rect.get_radolan_coordinates(
         y,
         x,
@@ -1550,11 +1578,11 @@ def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
     }
 
     # flipping y-coordinate needed
-    groups[data_group] = groups[data_group].assign_coords(y=ylocs[::-1], x=xlocs)
-    groups[data_group]["x"].attrs = xattrs
-    groups[data_group]["y"].attrs = yattrs
+    ds = ds.assign_coords(y=ylocs[::-1], x=xlocs)
+    ds["x"].attrs = xattrs
+    ds["y"].attrs = yattrs
 
-    ds = xr.decode_cf(xr.merge([groups["/"], groups[data_group]]), **kwargs)
+    ds = xr.decode_cf(xr.merge([root, ds]), **kwargs)
 
     # write projection to dataset
     ds.rio.write_crs(proj_crs, inplace=True)
