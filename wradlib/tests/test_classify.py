@@ -53,7 +53,6 @@ def test_histo_cut():
 def fuzzy_data():
     rhofile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-R.nc")
     phifile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-P.nc")
-    reffile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-Z.nc")
     dopfile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-V.nc")
     zdrfile = get_wradlib_data_file("netcdf/TAG-20120801" "-140046-02-D.nc")
     mapfile = get_wradlib_data_file("hdf5/TAG_cmap_sweeps" "_0204050607.hdf5")
@@ -61,7 +60,6 @@ def fuzzy_data():
     dat = {}
     dat["rho"], attrs_rho = io.read_edge_netcdf(rhofile)
     dat["phi"], attrs_phi = io.read_edge_netcdf(phifile)
-    dat["ref"], attrs_ref = io.read_edge_netcdf(reffile)
     dat["dop"], attrs_dop = io.read_edge_netcdf(dopfile)
     dat["zdr"], attrs_zdr = io.read_edge_netcdf(zdrfile)
     dat["map"] = io.from_hdf5(mapfile)[0][0]
