@@ -1123,6 +1123,24 @@ def test_open_radolan_dataset():
     assert data.PG.shape == (460, 460)
 
 
+def test_open_radolan_as_groups():
+    filename = "radolan/hdf5/raa01-rw_10000-latest-dwd---bin.hdf5"
+    rw_file = get_wradlib_data_file(filename)
+    with xr.open_dataset(rw_file, engine="radolan") as ds:
+        assert ds.ACRR.shape == (1200, 1100)
+        assert ds.ACRR.dims == ("y", "x")
+        assert ds.sizes == {"x": 1100, "y": 1200, "time": 1}
+        assert ds.time.values == np.datetime64("2025-09-22T05:40:00")
+        assert ds.attrs["Conventions"] == "ODIM_H5/V2_3"
+        assert ds.attrs["sw_version"] == "2.42.0"
+        assert ds.rio.crs == georef.create_crs("dwd-radolan-wgs84")
+        print(ds.ACRR.values[800:801, 500:510])
+        np.testing.assert_allclose(
+            ds.ACRR.values[800:801, 500:510],
+            np.array([[2.6, 2.7, 2.8, 2.8, 2.8, 2.7, 3.0, 3.1, 3.3, 3.4]]),
+        )
+
+
 @requires_dask
 def test_open_radolan_mfdataset():
     filename = "radolan/misc/raa01-rw_10000-1408030950-dwd---bin.gz"
