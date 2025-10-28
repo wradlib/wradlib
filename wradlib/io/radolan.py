@@ -40,6 +40,7 @@ import re
 import numpy as np
 import pyproj
 import xarray as xr
+import xradar as xd
 
 from wradlib import util
 from wradlib.georef import projection, rect
@@ -1520,7 +1521,7 @@ def _get_odim_projection(where):
 
 
 def _get_radolan_coordinates(ds):
-    proj_crs = ds.rio.crs
+    proj_crs = ds.xradar.get_crs()
     x = ds.sizes["x"]
     y = ds.sizes["y"]
     xlocs, ylocs = rect.get_radolan_coordinates(
@@ -1564,7 +1565,8 @@ def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
     ds = ds.assign_coords(time=_get_odim_time(groups["/what"].attrs))
 
     # handle projection
-    ds.rio.write_crs(_get_odim_projection(groups["/where"].attrs), inplace=True)
+    crs = _get_odim_projection(groups["/where"].attrs)
+    ds = xd.georeference.add_crs(ds, crs=crs)
 
     # apply coordinates
     ds = ds.pipe(_get_radolan_coordinates)
