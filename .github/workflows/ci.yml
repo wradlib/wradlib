@@ -400,6 +400,7 @@ jobs:
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
       - name: Upload coverage to Codecov
+        if: always()
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
