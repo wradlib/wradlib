@@ -1474,11 +1474,18 @@ def _get_odim_dataset(groups, dataset, data):
     ds[quant].attrs.update(radolan[quant])
     ds = ds.rename(phony_dim_0="y", phony_dim_1="x")
 
+    ds = xr.merge([groups["/"], ds])
+    ds.attrs["camethod"] = groups[f"/{dataset}/how"].attrs["camethod"]
+    ds.attrs["radarlocations"] = groups["/how"].attrs["nodes"]
+    ds.attrs["software"] = groups["/how"].attrs["software"]
+    ds.attrs["sw_version"] = groups["/how"].attrs["sw_version"]
+    ds.attrs["source"] = groups["/what"].attrs["source"]
+    ds.attrs["version"] = groups["/what"].attrs["version"]
+
     return ds
 
 
 def _get_odim_time(what):
-    # dimension and coordinates
     timestr = what["date"] + what["time"]
     time = dt.datetime.strptime(timestr, "%Y%m%d%H%M%S")
     time = int(time.replace(tzinfo=dt.timezone.utc).timestamp())
@@ -1509,60 +1516,17 @@ def _get_odim_projection(where):
     parts = [p for p in parts if not (p.startswith("+x_0=") or p.startswith("+y_0="))]
     projdef = " ".join(parts)
     proj_crs = pyproj.CRS.from_user_input(projdef)
-    crs = osr.SpatialReference()
-    crs.ImportFromWkt(proj_crs.to_wkt())
-    # use predefined WKT
-    crs2 = projection.create_osr("dwd-radolan-wgs84")
-    # but still check if this is the same projection
-    assert crs.IsSame(crs2)
-    return proj_crs, crs
+    return proj_crs
 
 
-def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
-    groups = xr.open_groups(
-        filename_or_obj, engine="h5netcdf", decode_cf=False, phony_dims="access"
-    )
-
-    # iterate over groups
-    for grp in groups:
-        # only look into first dataset for now
-        if grp == "/dataset1/data1":
-            _, dataset, data = grp.split("/")
-            ds = _get_odim_dataset(groups, dataset, data)
-            break
-
-    # attributes
-    root = groups["/"]
-    root.attrs["camethod"] = groups["/dataset1/how"].attrs["camethod"]
-    root.attrs["radarlocations"] = groups["/how"].attrs["nodes"]
-    root.attrs["software"] = groups["/how"].attrs["software"]
-    root.attrs["sw_version"] = groups["/how"].attrs["sw_version"]
-    root.attrs["source"] = groups["/what"].attrs["source"]
-    root.attrs["version"] = groups["/what"].attrs["version"]
-
-    # dimension and coordinates
-    ds = ds.assign_coords(time=_get_odim_time(groups["/what"].attrs))
-
-    # handle projection
-    proj_crs, crs = _get_odim_projection(groups["/where"].attrs)
-    # projdef = groups["/where"].attrs["projdef"]
-    # parts = projdef.split()
-    # parts = [p for p in parts if not (p.startswith("+x_0=") or p.startswith("+y_0="))]
-    # projdef = " ".join(parts)
-    # proj_crs = pyproj.CRS.from_user_input(projdef)
-    # crs = osr.SpatialReference()
-    # crs.ImportFromWkt(proj_crs.to_wkt())
-    # # use predefined WKT
-    # crs2 = projection.create_osr("dwd-radolan-wgs84")
-    # # but still check if this is the same projection
-    # assert crs.IsSame(crs2)
-
+def _get_radolan_coordinates(ds):
+    proj_crs = ds.rio.crs
     x = ds.sizes["x"]
     y = ds.sizes["y"]
     xlocs, ylocs = rect.get_radolan_coordinates(
         y,
         x,
-        crs=crs,
+        crs=proj_crs,
         mode="center",
     )
     xattrs = {
@@ -1582,9 +1546,30 @@ def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
     ds["x"].attrs = xattrs
     ds["y"].attrs = yattrs
 
-    ds = xr.decode_cf(xr.merge([root, ds]), **kwargs)
+    return ds
 
-    # write projection to dataset
-    ds.rio.write_crs(proj_crs, inplace=True)
+
+def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
+    # use xarray h5netcdf to import groups
+    groups = xr.open_groups(
+        filename_or_obj, engine="h5netcdf", decode_cf=False, phony_dims="access"
+    )
+
+    # select group
+    grp = "/dataset1/data1"
+    _, dataset, data = grp.split("/")
+    ds = _get_odim_dataset(groups, dataset, data)
+
+    # dimension and coordinates
+    ds = ds.assign_coords(time=_get_odim_time(groups["/what"].attrs))
+
+    # handle projection
+    ds.rio.write_crs(_get_odim_projection(groups["/where"].attrs), inplace=True)
+
+    # apply coordinates
+    ds = ds.pipe(_get_radolan_coordinates)
+
+    # merge and decode
+    ds = xr.decode_cf(ds, **kwargs)
 
     return ds
