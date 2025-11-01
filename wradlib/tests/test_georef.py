@@ -1622,3 +1622,164 @@ def test_ensure_crs_pyproj():
     assert crs_cartopy == georef.ensure_crs(crs_cartopy, "cartopy")
     assert crs_cartopy == georef.ensure_crs(crs_gdal, "cartopy")
     assert crs_cartopy == georef.ensure_crs(crs_pyproj, "cartopy")
+
+
+def test_snap_resolution_float():
+    with pytest.raises(ValueError):
+        extent = 4000
+        resolution = 37.5
+        georef.snap_resolution(extent=extent, target=resolution)
+
+
+def test_snap_bounds_float():
+    with pytest.raises(ValueError):
+        bounds = (0.5, 0, 5000, 5000)
+        resolution = 37
+        georef.snap_bounds(bounds=bounds, resolution=resolution)
+
+
+def test_create_raster_xarray():
+    bounds = (0, 0, 1000, 1000)
+
+    resolution = 102
+    with pytest.raises(ValueError):
+        georef.create_raster_xarray(
+            crs=3857,
+            bounds=bounds,
+            resolution=resolution,
+        )
+
+    resolution = 100
+    ds = georef.create_raster_xarray(
+        crs=3857,
+        bounds=bounds,
+        resolution=resolution,
+    )
+
+    # Expected x coordinates: center of each cell
+    expected_x = np.arange(50, 1000, 100)  # 50, 150, ..., 950
+    actual_x = ds.x.values
+
+    assert np.array_equal(
+        actual_x, expected_x
+    ), f"xarray: x coordinates mismatch\nExpected: {expected_x}\nActual: {actual_x}"
+
+
+def test_create_raster_xarray_snap_bounds():
+    bounds = (96, 597, 2104, 3603)
+    resolution = 100
+
+    raster = georef.create_raster_xarray(
+        crs=3857,
+        bounds=bounds,
+        resolution=resolution,
+        snap_bounds=True,
+    )
+
+    x = raster.x.values
+    y = raster.y.values
+
+    assert x[0] == 150
+    assert x[-1] == 2050
+    assert y[0] == 3550
+    assert y[-1] == 650
+
+
+def test_create_raster_xarray_snap_resolution():
+    bounds = (0, 0, 5000, 5000)
+    target_resolution = 37
+    expected_snapped_resolution = 40
+
+    raster = georef.create_raster_xarray(
+        crs=3857,
+        bounds=bounds,
+        resolution=target_resolution,
+        snap_resolution=True,
+    )
+
+    x = raster.x.values
+    y = raster.y.values
+
+    # Check resolution from pixel centers
+    actual_x_res = x[1] - x[0]
+    actual_y_res = y[0] - y[1]  # y decreases top to bottom
+
+    assert actual_x_res == expected_snapped_resolution
+    assert actual_y_res == expected_snapped_resolution
+
+
+def test_create_raster_geographic():
+    bounds = (0, 0, 1, 1)  # degrees
+    resolution_arcsec = 360  # 0.1 degrees
+    ds = georef.create_raster_geographic(
+        bounds=bounds,
+        resolution=resolution_arcsec,
+    )
+
+    # Expected x coordinates in arcseconds: center of each cell
+    expected_x = np.arange(180, 3600, 360)  # 180, 540, ..., 3420
+    actual_x = ds.x.values
+
+    assert np.array_equal(
+        actual_x, expected_x
+    ), f"geographic: x coordinates mismatch\nExpected: {expected_x}\nActual: {actual_x}"
+
+
+def test_create_raster_geographic_resolution_in_meters():
+    bounds = (5, 50, 6, 51)  # degrees
+    resolution_m = 500
+
+    # Expected snapped resolution in arcseconds at latitude 50°
+    expected_xres = 25  # arcseconds
+    expected_yres = 16  # arcseconds
+
+    # Convert bounds to arcseconds
+    xmin = bounds[0] * 3600  # 5° → 18000 arcseconds
+    xmax = bounds[2] * 3600  # 6° → 21600 arcseconds
+    ymin = bounds[1] * 3600  # 50° → 180000 arcseconds
+    ymax = bounds[3] * 3600  # 51° → 183600 arcseconds
+
+    expected_x = np.arange(xmin + expected_xres // 2, xmax, expected_xres)
+    expected_y = np.arange(ymax - expected_yres // 2, ymin, -expected_yres)
+
+    ds = georef.create_raster_geographic(
+        bounds=bounds, resolution=resolution_m, resolution_in_meters=True
+    )
+
+    # Check x and y coordinates
+    assert np.array_equal(ds.x.values, expected_x), "x coordinates mismatch"
+    assert np.array_equal(ds.y.values, expected_y), "y coordinates mismatch"
+
+
+def test_get_coordinates_edges():
+    # Grid with centers at 0.5, 1.5 → edges should be at 0.0, 1.0, 2.0
+    x = np.array([0.5, 1.5])
+    y = np.array([0.5, 1.5])
+    ds = xr.Dataset(coords={"x": ("x", x), "y": ("y", y)})
+
+    coords = georef.get_raster_coordinates(ds=ds, mode="edge").values
+
+    expected_x = np.array([0.0, 1.0, 2.0])
+    expected_y = np.array([0.0, 1.0, 2.0])
+    expected_xx, expected_yy = np.meshgrid(expected_x, expected_y)
+    expected = np.stack([expected_xx, expected_yy], axis=-1)
+
+    assert coords.shape == expected.shape
+    assert np.allclose(coords, expected)
+
+
+def test_meters_to_degrees():
+    lon = 0.0
+    # Test conversion at equator
+    lat = 0.0
+    meters = 111320  # approx. 1 degree in meters at equator
+    deg_x, deg_y = georef.meters_to_degrees(meters, lon, lat)
+    assert pytest.approx(deg_x, rel=1e-2) == 1.0
+    assert pytest.approx(deg_y, rel=1e-2) == 1.0
+
+    # Test conversion at higher latitude
+    lat = 60.0
+    meters = 111320
+    deg_x, deg_y = georef.meters_to_degrees(meters, lon, lat)
+    assert pytest.approx(deg_x, rel=1e-2) == 2.0  # cos(60°) = 0.5
+    assert pytest.approx(deg_y, rel=1e-2) == 1.0

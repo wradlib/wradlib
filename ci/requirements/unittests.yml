@@ -19,6 +19,7 @@ dependencies:
   - netCDF4
   - numpy
   - matplotlib-base
+  - open-radar-data
   - pip
   - pooch
   - pyproj
@@ -28,6 +29,7 @@ dependencies:
   - pytest-sugar
   - pytest-xdist
   - requests
+  - rioxarray
   - scipy
   - setuptools
   - xarray >=2024.10.0
