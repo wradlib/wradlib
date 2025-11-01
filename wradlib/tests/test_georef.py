@@ -1640,6 +1640,15 @@ def test_snap_bounds_float():
 
 def test_create_raster_xarray():
     bounds = (0, 0, 1000, 1000)
+
+    resolution = 102
+    with pytest.raises(ValueError):
+        georef.create_raster_xarray(
+            crs=3857,
+            bounds=bounds,
+            resolution=resolution,
+        )
+
     resolution = 100
     ds = georef.create_raster_xarray(
         crs=3857,
@@ -1748,7 +1757,7 @@ def test_get_coordinates_edges():
     y = np.array([0.5, 1.5])
     ds = xr.Dataset(coords={"x": ("x", x), "y": ("y", y)})
 
-    coords = georef.get_raster_coordinates(ds=ds, mode="edge")
+    coords = georef.get_raster_coordinates(ds=ds, mode="edge").values
 
     expected_x = np.array([0.0, 1.0, 2.0])
     expected_y = np.array([0.0, 1.0, 2.0])
@@ -1757,3 +1766,20 @@ def test_get_coordinates_edges():
 
     assert coords.shape == expected.shape
     assert np.allclose(coords, expected)
+
+
+def test_meters_to_degrees():
+    lon = 0.0
+    # Test conversion at equator
+    lat = 0.0
+    meters = 111320  # approx. 1 degree in meters at equator
+    deg_x, deg_y = georef.meters_to_degrees(meters, lon, lat)
+    assert pytest.approx(deg_x, rel=1e-2) == 1.0
+    assert pytest.approx(deg_y, rel=1e-2) == 1.0
+
+    # Test conversion at higher latitude
+    lat = 60.0
+    meters = 111320
+    deg_x, deg_y = georef.meters_to_degrees(meters, lon, lat)
+    assert pytest.approx(deg_x, rel=1e-2) == 2.0  # cos(60°) = 0.5
+    assert pytest.approx(deg_y, rel=1e-2) == 1.0

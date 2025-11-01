@@ -292,9 +292,13 @@ def transform_binned(sweep, raster):
 
     """
 
-    if "crs_wkt" not in sweep.coords:
-        sweep = sweep.xradar.georeference()
-    coord_sweep = np.dstack((sweep.x.values, sweep.y.values))
+    try:
+        coord_sweep = np.dstack((sweep.x.values, sweep.y.values))
+    except AttributeError as err:
+        raise ValueError(
+            "Sweep has no x and y coordinates. Please georeference first."
+        ) from err
+
     radar_crs = sweep.xradar.get_crs()
     crs_wkt = raster.spatial_ref.attrs["crs_wkt"]
     raster_crs = pyproj.CRS.from_wkt(crs_wkt)
@@ -304,7 +308,7 @@ def transform_binned(sweep, raster):
         trg_crs=raster_crs,
     )
 
-    coord_raster = get_raster_coordinates(ds=raster)
+    coord_raster = get_raster_coordinates(ds=raster).values
 
     radius = sweep.range.values[-1]
 

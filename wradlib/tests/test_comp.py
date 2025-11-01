@@ -264,6 +264,7 @@ def test_sweep_to_raster_geographic():
     filename = get_wradlib_data_file(filename)
     sweep = open_odim_datatree(filename)
     sweep = sweep["sweep_0"].ds
+    sweep = xd.georeference.get_x_y_z(sweep)
 
     lon = float(sweep.longitude.values)
     lat = float(sweep.latitude.values)
@@ -305,7 +306,6 @@ def test_sweep_to_raster_geographic():
     ds.Close()
 
     ds = rioxarray.open_rasterio(tmp.name)
-    print(ds.x)
     ds2 = ds.rio.reproject("EPSG:4326")
     np.testing.assert_equal(
         ds2.rio.bounds(),
@@ -324,11 +324,17 @@ def test_sweep_to_raster():
     bounds = [-10e3, -10e3, 10e3, 10e3]
     resolution = 500
     raster = georef.create_raster_xarray(crs=crs, bounds=bounds, resolution=resolution)
-    transform = comp.transform_binned(sweep=sweep, raster=raster)
+
+    with pytest.raises(
+        ValueError,
+        match="Sweep has no x and y coordinates. Please georeference first.",
+    ):
+        comp.transform_binned(sweep=sweep, raster=raster)
+
+    sweep = xd.georeference.get_x_y_z(sweep)
     composite = comp.sweep_to_raster(
         sweep=sweep,
         raster=raster,
-        transform=transform,
     )
     with tempfile.NamedTemporaryFile(delete=False, suffix=".nc") as tmp:
         composite.to_netcdf(tmp.name)

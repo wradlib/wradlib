@@ -760,8 +760,6 @@ def get_earth_projection(model="ellipsoid", arcsecond=False):
         crs = pyproj.CRS.from_epsg(4979)
     elif model == "geoid":
         crs = pyproj.CRS.from_user_input("EPSG:4326+5773")
-    else:
-        raise ValueError(f"Unknown model {model!r}.")
 
     if arcsecond:
         wkt = crs.to_wkt()
@@ -861,33 +859,35 @@ def project_bounds(bounds, crs):
     return projected_bounds
 
 
-def meters_to_degrees(
-    resolution_m: tuple[float, float], latitude_deg: float
-) -> tuple[float, float]:
+def meters_to_degrees(meters, longitude=0.0, latitude=0.0):
     """
-    Convert resolution in meters to degrees in longitude and latitude directions.
+    Converts a distance in meters to degrees of latitude and longitude
+    using the WGS84 ellipsoid. If scalar, assumes equal east/north offset.
 
-    Parameters
-    ----------
-    resolution_m : tuple[int, int]
-        Resolution in meters (x, y)
+    Parameters:
+        meters (float or [float, float]): Distance in meters.
+            - If scalar: interpreted as [meters, meters] (diagonal NE).
+            - If 2D: interpreted as [east, north] in meters.
+        latitude (float): Reference latitude in degrees.
+        longitude (float): Reference longitude in degrees.
 
-    latitude_deg : float
-        Latitude at which to compute longitudinal scaling
-
-    Returns
-    -------
-    tuple[float, float]
-        Resolution in degrees (x_deg, y_deg)
+    Returns:
+        tuple: (delta_latitude, delta_longitude) in degrees
     """
-    R = 6371000  # Earth radius in meters
-    deg_per_meter_lat = 1 / ((2 * np.pi * R) / 360)
-    deg_per_meter_lon = deg_per_meter_lat / np.cos(np.radians(latitude_deg))
+    geod = pyproj.Geod(ellps="WGS84")
 
-    x_deg = resolution_m[0] * deg_per_meter_lon
-    y_deg = resolution_m[1] * deg_per_meter_lat
+    # Promote scalar to 2D vector: (east, north)
+    if np.isscalar(meters):
+        meters = (meters, meters)
 
-    return x_deg, y_deg
+    dx, dy = meters
+    _, lat1, _ = geod.fwd(longitude, latitude, 0, dy)  # North
+    lon1, _, _ = geod.fwd(longitude, latitude, 90, dx)  # East
+
+    delta_lat = lat1 - latitude
+    delta_lon = lon1 - longitude
+
+    return delta_lon, delta_lat
 
 
 class GeorefProjectionMethods:

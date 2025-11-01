@@ -64,6 +64,7 @@ for key in ["projected", "geographic"]:
         sweep = volume["sweep_0"].to_dataset()
         sweep = sweep[["DBZH"] + list(metadata)]
         sweep = sweep.sel(range=slice(0, 200e3))
+        sweep = xradar.georeference.get_x_y_z(sweep)
         raster_radar = wradlib.comp.sweep_to_raster(
             sweep=sweep,
             raster=raster[key],

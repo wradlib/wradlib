@@ -716,9 +716,7 @@ def raster_to_polyvert(dataset):
     return polyvert
 
 
-def snap_bounds(
-    bounds: tuple[int, int, int, int], resolution: int | tuple[int, int]
-) -> tuple[int, int, int, int]:
+def snap_bounds(bounds, resolution):
     """
     Adjusts integer bounds so they align with the resolution grid.
 
@@ -756,7 +754,7 @@ def snap_bounds(
     return (snapped_minx, snapped_miny, snapped_maxx, snapped_maxy)
 
 
-def snap_resolution(extent: int, target: int) -> int:
+def snap_resolution(extent, target):
     """
     Snap an integer resolution so it evenly divides the extent, staying close to the target.
 
@@ -792,12 +790,12 @@ def snap_resolution(extent: int, target: int) -> int:
 
 
 def create_raster_xarray(
-    crs: int | str,
-    bounds: tuple[int, int, int, int],
-    resolution: int | tuple[int, int],
-    snap_bounds: bool = False,
-    snap_resolution: bool = False,
-) -> xr.Dataset:
+    crs,
+    bounds,
+    resolution,
+    snap_bounds=False,
+    snap_resolution=False,
+):
     """
     Create empty raster as xarray dataset following CF conventions
 
@@ -848,7 +846,6 @@ def create_raster_xarray(
         minx, miny, maxx, maxy = bounds
         x_extent = maxx - minx
         y_extent = maxy - miny
-        print(minx)
 
     if x_extent % xres != 0 or y_extent % yres != 0:
         raise ValueError("Extent must be divisible by resolution.")
@@ -867,12 +864,13 @@ def create_raster_xarray(
 
 
 def create_raster_geographic(
-    bounds: tuple[int, int, int, int],
-    resolution: int | tuple[int, int],
-    resolution_in_meters: bool = False,
-) -> xr.Dataset:
+    bounds,
+    resolution,
+    resolution_in_meters=False,
+):
     """
     Create an empty geographic raster as xarray dataset following CF conventions.
+    The arc-second is used as unit to avoid precision issues.
 
     Parameters
     ----------
@@ -899,9 +897,11 @@ def create_raster_geographic(
 
     if resolution_in_meters:
         lat_mid = (bounds[1] + bounds[3]) / 2
+        lon_mid = (bounds[0] + bounds[2]) / 2
         res_deg = georef.meters_to_degrees(
-            resolution_m=resolution,
-            latitude_deg=lat_mid,
+            meters=resolution,
+            longitude=lon_mid,
+            latitude=lat_mid,
         )
         res_arc = (int(round(res_deg[0] * 3600)), int(round(res_deg[1] * 3600)))
 
@@ -930,7 +930,7 @@ def add_raster_grid_mapping(ds):
     return ds
 
 
-def _compute_edges(coords: np.ndarray) -> np.ndarray:
+def _compute_edges(coords):
     """Compute pixel edge coordinates from center coordinates."""
     diffs = np.diff(coords) / 2
     edges = np.empty(coords.size + 1)
@@ -940,15 +940,44 @@ def _compute_edges(coords: np.ndarray) -> np.ndarray:
     return edges
 
 
-def get_raster_coordinates(ds: xr.Dataset, mode: str = "center") -> np.ndarray:
-    """Compute 2d raster coordinates."""
+def get_raster_coordinates(ds, mode="center"):
+    """
+    Generate a 2D array of raster coordinates and return it as a DataArray.
 
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        A dataset containing 1D coordinates 'x' and 'y'.
+    mode : str, optional
+        Determines how coordinates are computed:
+        - "center": uses the center points of each grid cell (default).
+        - "edge"  : computes coordinates at the edges between cells.
+
+    Returns
+    -------
+    xarray.DataArray
+        A 3D DataArray of shape (y, x, 2), where the last dimension contains
+        the spatial coordinates [x, y] for each grid cell.
+    """
     x = ds.x.values
     y = ds.y.values
 
     if mode == "center":
         xx, yy = np.meshgrid(x, y)
-    if mode == "edge":
-        xx, yy = np.meshgrid(_compute_edges(x), _compute_edges(y))
+        x_coord = ds.x
+        y_coord = ds.y
+    elif mode == "edge":
+        x_edges = _compute_edges(x)
+        y_edges = _compute_edges(y)
+        xx, yy = np.meshgrid(x_edges, y_edges)
+        x_coord = x_edges
+        y_coord = y_edges
 
-    return np.stack([xx, yy], axis=-1)
+    coord_array = xr.DataArray(
+        np.stack([xx, yy], axis=-1),
+        dims=("y", "x", "coord"),
+        coords={"x": x_coord, "y": y_coord, "coord": ["x", "y"]},
+        name="raster_coordinates",
+    )
+
+    return coord_array
