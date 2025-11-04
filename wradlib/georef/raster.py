@@ -723,12 +723,17 @@ def snap_bounds(bounds, resolution):
     This ensures that the width and height of the bounds are evenly divisible
     by the resolution, centering the snapped bounds around the original center.
 
-    Parameters:
-        bounds (tuple[int, int, int, int]): (minx, miny, maxx, maxy) in integer units.
-        resolution (int or tuple[int, int]): Desired resolution per axis.
+    Parameters
+    ----------
+    bounds :  tuple(int, int, int, int)
+        (minx, miny, maxx, maxy) in integer units.
+    resolution :  int or tuple(int, int)
+        Desired resolution per axis.
 
-    Returns:
-        tuple[int, int, int, int]: Snapped bounds aligned to the resolution grid.
+    Returns
+    -------
+    tuple(int, int, int, int)
+        Snapped bounds aligned to the resolution grid.
     """
 
     if np.isscalar(resolution):
@@ -761,12 +766,17 @@ def snap_resolution(extent, target):
     This function finds the closest integer resolution that divides the given extent exactly,
     while minimizing the difference from the desired target resolution.
 
-    Parameters:
-        extent (int): Total extent along one axis (e.g., width or height in arcseconds or pixels).
-        target (int): Desired resolution (size of each cell), must be a positive integer.
+    Parameters
+    ----------
+    extent : int
+        Total extent along one axis (e.g., width or height in arcseconds or pixels).
+    target : int
+        Desired resolution (size of each cell), must be a positive integer.
 
-    Returns:
-        int: Snapped resolution that evenly divides the extent and is closest to the target.
+    Returns
+    -------
+    int
+        Snapped resolution that evenly divides the extent and is closest to the target.
     """
     if float(extent).is_integer() is False or float(target).is_integer() is False:
         raise ValueError("Both extent and target must be integers.")
@@ -811,22 +821,18 @@ def create_raster_xarray(
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
-
-    bounds : tuple[int, int, int, int]
+    bounds : tuple(int, int, int, int)
         Bounding box as (min_x, min_y, max_x, max_y), as integer.
-
-    resolution : int or tuple[int, int]
+    resolution : int or tuple(int, int)
         Grid resolution in x and y directions. If a single int is provided, it applies to both axes.
-
     snap_bounds : bool, optional
         If True, adjusts bounds to align with resolution grid.
-
     snap_resolution : bool, optional
         If True, adjusts resolution to evenly divide the extent.
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         An xarray Dataset with 'x' and 'y' pixel center coordinates, 'spatial_ref' coordinate with crs_wkt and GeoTransform attributes
     """
     minx, miny, maxx, maxy = bounds
@@ -885,7 +891,7 @@ def create_raster_geographic(
 
     Returns
     -------
-    xr.Dataset
+    xarray.Dataset
         xarray dataset with WGS84 CRS and coordinates using arcsecond unit, following CF conventions.
     """
     if isinstance(resolution, int):

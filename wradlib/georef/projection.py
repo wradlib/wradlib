@@ -746,7 +746,7 @@ def get_earth_projection(model="ellipsoid", arcsecond=False):
         - 'geoid' - WGS84 with egm96 geoid heights -> EPSG 4326 + 5773
         - 'sphere' - GRS 1980 authalic sphere -> EPSG 4047
     arcsecond : boolean
-        true to use arcsecond as unit instead of degree
+        true to use arcsecond as unit instead of degree, defaults to False
 
     Returns
     -------
@@ -864,15 +864,21 @@ def meters_to_degrees(meters, longitude=0.0, latitude=0.0):
     Converts a distance in meters to degrees of latitude and longitude
     using the WGS84 ellipsoid. If scalar, assumes equal east/north offset.
 
-    Parameters:
-        meters (float or [float, float]): Distance in meters.
+    Parameters
+    ----------
+    meters :  float or tuple(float, float)
+        Distance in meters.
             - If scalar: interpreted as [meters, meters] (diagonal NE).
             - If 2D: interpreted as [east, north] in meters.
-        latitude (float): Reference latitude in degrees.
-        longitude (float): Reference longitude in degrees.
+    latitude : float
+        Reference latitude in degrees.
+    longitude : float
+        Reference longitude in degrees.
 
-    Returns:
-        tuple: (delta_latitude, delta_longitude) in degrees
+    Returns
+    -------
+    tuple
+        (delta_latitude, delta_longitude) in degrees
     """
     geod = pyproj.Geod(ellps="WGS84")
 

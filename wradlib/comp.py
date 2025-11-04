@@ -363,7 +363,7 @@ def sweep_to_raster(sweep, raster, **kwargs):
     dim0 = sweep.wrl.util.dim0()
 
     if kwargs.get("transform", None) is None:
-        kwargs["transform"] = transform_binned(sweep=sweep, raster=raster)
+        kwargs["transform"] = transform_binned(sweep, raster)
 
     def wrapper(obj, **kwargs):
         transform = kwargs.pop("transform")
@@ -402,7 +402,7 @@ class CompMethods(XarrayMethods):
         if not isinstance(self, CompMethods):
             return sweep_to_raster(sweep=self, **kwargs)
         else:
-            return sweep_to_raster(sweep=self._obj, **kwargs)
+            return sweep_to_raster(self._obj, *args, **kwargs)
 
     @docstring(compose_weighted)
     def compose_weighted(self, *args, **kwargs):
