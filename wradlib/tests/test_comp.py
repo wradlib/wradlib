@@ -278,14 +278,14 @@ def test_sweep_to_raster_geographic():
         bounds=bounds,
         resolution=resolution,
     )
-    transform = comp.transform_binned(sweep=sweep, raster=raster)
+    transform = comp.transform_binned(sweep, raster)
 
     # check normal operation
-    composite = comp.sweep_to_raster(sweep=sweep, raster=raster, transform=transform)
+    composite = comp.sweep_to_raster(sweep, raster, transform=transform)
     # check accessor-based operation on Dataset
-    composite1 = sweep.wrl.comp.sweep_to_raster(raster=raster, transform=transform)
+    composite1 = sweep.wrl.comp.sweep_to_raster(raster, transform=transform)
     # check accessor-based operation on DataArray
-    composite2 = sweep.DBZH.wrl.comp.sweep_to_raster(raster=raster, transform=transform)
+    composite2 = sweep.DBZH.wrl.comp.sweep_to_raster(raster, transform=transform)
 
     # intercomparison
     xr.testing.assert_equal(composite, composite1)
@@ -329,12 +329,15 @@ def test_sweep_to_raster():
         ValueError,
         match="Sweep has no x and y coordinates. Please georeference first.",
     ):
-        comp.transform_binned(sweep=sweep, raster=raster)
+        comp.transform_binned(sweep, raster)
 
     sweep = xd.georeference.get_x_y_z(sweep)
-    composite = comp.sweep_to_raster(
-        sweep=sweep,
-        raster=raster,
-    )
+
+    # call by function
+    composite = comp.sweep_to_raster(sweep, raster)
+
+    # call by accessor
+    composite = sweep.wrl.comp.sweep_to_raster(raster)
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".nc") as tmp:
         composite.to_netcdf(tmp.name)

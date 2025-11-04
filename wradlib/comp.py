@@ -388,7 +388,7 @@ def sweep_to_raster(sweep, raster, **kwargs):
 
 
 class CompMethods(XarrayMethods):
-    """wradlib xarray SubAccessor methods for Ipol Methods."""
+    """wradlib xarray SubAccessor methods for Comp Methods."""
 
     @docstring(togrid)
     def togrid(self, *args, **kwargs):
@@ -400,7 +400,7 @@ class CompMethods(XarrayMethods):
     @docstring(sweep_to_raster)
     def sweep_to_raster(self, *args, **kwargs):
         if not isinstance(self, CompMethods):
-            return sweep_to_raster(sweep=self, **kwargs)
+            return sweep_to_raster(self, *args, **kwargs)
         else:
             return sweep_to_raster(self._obj, *args, **kwargs)
 
