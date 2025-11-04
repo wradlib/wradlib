@@ -49,7 +49,7 @@ class PolarNeighbours:
     site : sequence
         A sequence of floats
         (see :mod:`wradlib.georef` for documentation)
-    crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference`, str or int
         Any of the given projection objects, anything which can be consumed by pyproj.CRS.from_user_input or None
         (see :mod:`wradlib.georef` for documentation)
     x : :class:`numpy:numpy.ndarray`

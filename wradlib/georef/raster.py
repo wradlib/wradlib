@@ -163,7 +163,7 @@ def read_gdal_projection(dataset):
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS)
 
     Examples
@@ -230,7 +230,7 @@ def extract_raster_dataset(dataset, *, mode="center", nodata=None):
         The array indexing follows image convention with origin
         at the upper left pixel (northup).
         The shape is (nrows+1,ncols+1,2) if mode == edge.
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS) of the used coordinates.
     """
 
@@ -464,20 +464,20 @@ def reproject_raster_dataset(src_ds, **kwargs):
     src_crs
         Coordinate Reference System (CRS) of source dataset. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None (get projection from source dataset)
     trg_crs
         Coordinate Reference System (CRS) of source dataset. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None.
@@ -618,10 +618,10 @@ def create_raster_dataset(data, coords, *, crs=None, nodata=-9999):
         Coordinate Reference System (CRS) of the coordinates. Must be provided
         and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None.
@@ -725,14 +725,14 @@ def snap_bounds(bounds, resolution):
 
     Parameters
     ----------
-    bounds :  tuple(int, int, int, int)
+    bounds :  tuple of int
         (minx, miny, maxx, maxy) in integer units.
-    resolution :  int or tuple(int, int)
+    resolution :  int or tuple of int
         Desired resolution per axis.
 
     Returns
     -------
-    tuple(int, int, int, int)
+    tuple of int
         Snapped bounds aligned to the resolution grid.
     """
 
@@ -816,10 +816,10 @@ def create_raster_xarray(
         Coordinate Reference System (CRS) mapping geographic to x,y coordinates.
         Must be provided and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
     bounds : tuple of int
         Bounding box as (min_x, min_y, max_x, max_y), as integer.

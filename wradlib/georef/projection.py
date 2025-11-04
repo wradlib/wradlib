@@ -77,10 +77,10 @@ def ensure_crs(crs, trg="pyproj"):
         Coordinate Reference System (CRS) of the coordinates. Must be given and
         can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - None
 
@@ -91,7 +91,7 @@ def ensure_crs(crs, trg="pyproj"):
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference` or None
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference` or None
     """
     # first move everything into pyproj.CRS/WKT or return early
     if crs is None:
@@ -202,7 +202,7 @@ def create_crs(projname, **kwargs):
 
     Returns
     -------
-    output : :py:class:`pyproj:pyproj.CRS`
+    output : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         pyproj Coordinate Reference System (CRS)
 
     Examples
@@ -368,7 +368,7 @@ def reproject(*args, **kwargs):
     src_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -378,7 +378,7 @@ def reproject(*args, **kwargs):
     trg_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -490,7 +490,7 @@ def _reproject_xarray(obj, **kwargs):
     src_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -500,7 +500,7 @@ def _reproject_xarray(obj, **kwargs):
     trg_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -664,10 +664,10 @@ def get_earth_radius(latitude, *, crs=None):
         Coordinate Reference System (CRS) of the coordinates. Must be provided
         and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to EPSG(4326).
@@ -718,10 +718,10 @@ def _get_earth_radius_xarray(obj, *, crs=None):
     crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to EPSG(4326).
@@ -750,7 +750,7 @@ def get_earth_projection(model="ellipsoid", arcsecond=False):
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS)
 
     """
@@ -784,7 +784,7 @@ def get_radar_projection(site):
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS) - radar centric AEQD
 
     """
@@ -827,22 +827,22 @@ def project_bounds(bounds, crs):
 
     Parameters
     ----------
-    bounds : (lon_min, lon_max, lat_min, lat_max)
-        geographic bounds
+    bounds : tuple of float
+        (lon_min, lon_max, lat_min, lat_max) geographic bounds
     crs
         Coordinate Reference System (CRS) to be used for projection.
         Must be provided and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
     Returns
     -------
-    bounds : (xmin, xmax, ymin, ymax)
-        projected bounds
+    bounds : tuople of float
+        (xmin, xmax, ymin, ymax) projected bounds
 
     """
     crs = ensure_crs(crs)
