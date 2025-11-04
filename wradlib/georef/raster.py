@@ -821,9 +821,9 @@ def create_raster_xarray(
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
-    bounds : tuple(int, int, int, int)
+    bounds : tuple of int
         Bounding box as (min_x, min_y, max_x, max_y), as integer.
-    resolution : int or tuple(int, int)
+    resolution : int or tuple of int
         Grid resolution in x and y directions. If a single int is provided, it applies to both axes.
     snap_bounds : bool, optional
         If True, adjusts bounds to align with resolution grid.
@@ -882,10 +882,8 @@ def create_raster_geographic(
     ----------
     bounds : tuple of int
         Bounding box in degrees: (min_lon, min_lat, max_lon, max_lat).
-
     resolution : int or tuple of int
         Resolution value. Interpreted as meters if `resolution_in_meters=True`, otherwise as arcseconds.
-
     resolution_in_meters : bool, optional
         If True, converts resolution from meters to arcseconds and snaps it to evenly divide the bounds.
 

@@ -307,6 +307,7 @@ intersphinx_mapping = {
     "datatree": ("https://xarray-datatree.readthedocs.io/en/stable/", None),
     "cartopy": ("https://cartopy.readthedocs.io/stable/", None),
     "gdal": ("https://gdal.org/en/stable/", None),
+    "pyproj": ("https://pyproj4.github.io/pyproj/stable/", None),
 }
 
 # -- Napoleon settings for docstring processing -------------------------------

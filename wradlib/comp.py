@@ -279,9 +279,9 @@ def transform_binned(sweep, raster):
 
     Parameters
     ----------
-    sweep : :class:`xarray:xarray.dataset`
+    sweep : :class:`xarray:xarray.Dataset`
         radar sweep dataset
-    raster : :class:`xarray:xarray.dataset`
+    raster : :class:`xarray:xarray.Dataset`
         raster image dataset
 
     Returns
@@ -356,7 +356,7 @@ def sweep_to_raster(sweep, raster, **kwargs):
 
     Returns
     -------
-    out : :class:`xarray:Dataset` | :class:`xarray:xarray.DataArray`
+    out : :class:`xarray:xarray.Dataset` | :class:`xarray:xarray.DataArray`
         raster image with transformed sweep values
 
     """
