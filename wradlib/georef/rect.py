@@ -53,10 +53,10 @@ def get_radolan_coords(lon, lat, **kwargs):
         Coordinate Reference System (CRS) of the DWD grid with spheroid model.
         Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - string "trig" to use trigonometric formulas for calculation
           (only for earth model - `sphere`).
@@ -113,10 +113,10 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
         Coordinate Reference System (CRS) of the DWD grid with spheroid model.
         Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - string "trig" to use trigonometric formulas for calculation
           (only for earth model - `sphere`).
@@ -261,10 +261,10 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
         Coordinate Reference System (CRS) of the DWD grid with spheroid model.
         Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - string "trig" to use trigonometric formulas for calculation
           (only for earth model - `sphere`).
@@ -376,10 +376,10 @@ def _xyz_to_spherical_numpy(xyz, *, altitude=0, crs=None, ke=4.0 / 3.0):
         Coordinate Reference System (CRS) of the source coordinates.
         Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None.
@@ -447,10 +447,10 @@ def _xyz_to_spherical_xarray(obj, **kwargs):
         Coordinate Reference System (CRS) of the source coordinates.
         Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None.

@@ -2,17 +2,24 @@
 # Copyright (c) 2011-2023, wradlib developers.
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
+import tempfile
 from dataclasses import dataclass
 
 import numpy as np
 import pytest
 import xarray as xr
+import xradar as xd
+from open_radar_data import DATASETS
 from xradar.io.backends import open_odim_datatree
 
 from wradlib import comp, georef, io, ipol
 
 from . import (
+    gdal,
     get_wradlib_data_file,
+    osr,
+    requires_gdal,
+    rioxarray,
 )
 
 
@@ -250,12 +257,14 @@ def test_compose():
     np.testing.assert_allclose(composite1, res1)
 
 
-def test_sweep_to_raster():
+@requires_gdal
+def test_sweep_to_raster_geographic():
 
     filename = "hdf5/IDR66_20141206_094829.vol.h5"
     filename = get_wradlib_data_file(filename)
     sweep = open_odim_datatree(filename)
     sweep = sweep["sweep_0"].ds
+    sweep = xd.georeference.get_x_y_z(sweep)
 
     lon = float(sweep.longitude.values)
     lat = float(sweep.latitude.values)
@@ -263,9 +272,12 @@ def test_sweep_to_raster():
     lat_min = round(lat) - 2
     lon_max = round(lon) + 2
     lat_max = round(lat) + 2
-    bounds = (lon_min, lon_max, lat_min, lat_max)
-    size = 1000
-    raster = georef.create_raster_geographic(bounds, size, size_in_meters=True)
+    bounds = [lon_min, lat_min, lon_max, lat_max]
+    resolution = 30
+    raster = georef.create_raster_geographic(
+        bounds=bounds,
+        resolution=resolution,
+    )
     transform = comp.transform_binned(sweep, raster)
 
     # check normal operation
@@ -279,12 +291,53 @@ def test_sweep_to_raster():
     xr.testing.assert_equal(composite, composite1)
     xr.testing.assert_equal(composite.DBZH, composite2)
 
-    crs = georef.get_radar_projection((lon, lat))
-    georef.project_bounds(bounds, crs)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".nc") as tmp:
+        composite.to_netcdf(tmp.name)
 
-    bounds = [-10e3, 10e3, -10e3, 10e3]
-    size = 500
-    raster = georef.create_raster_xarray(crs, bounds, size)
-    transform = comp.transform_binned(sweep, raster)
-    composite = comp.sweep_to_raster(sweep, raster, transform=transform)
-    composite.to_netcdf("comp.nc")
+    ds = gdal.Open(tmp.name)
+    gt = ds.GetGeoTransform()
+    np.testing.assert_equal(
+        gt, [lon_min * 3600, resolution, 0.0, lat_max * 3600, 0.0, -resolution]
+    )
+
+    srs = osr.SpatialReference()
+    srs.ImportFromWkt(ds.GetProjection())
+    assert srs.GetAngularUnitsName() == "arc-second"
+    ds.Close()
+
+    ds = rioxarray.open_rasterio(tmp.name)
+    ds2 = ds.rio.reproject("EPSG:4326")
+    np.testing.assert_equal(
+        ds2.rio.bounds(),
+        bounds,
+    )
+
+
+def test_sweep_to_raster():
+
+    filename = DATASETS.fetch("DES_VOL_RAW_20240522_1600.nc")
+    datatree = xd.io.open_cfradial1_datatree(filename)
+    sweep = datatree["sweep_0"].ds
+
+    location = (sweep.longitude.values, sweep.latitude.values)
+    crs = georef.get_radar_projection(location)
+    bounds = [-10e3, -10e3, 10e3, 10e3]
+    resolution = 500
+    raster = georef.create_raster_xarray(crs=crs, bounds=bounds, resolution=resolution)
+
+    with pytest.raises(
+        ValueError,
+        match="Sweep has no x and y coordinates. Please georeference first.",
+    ):
+        comp.transform_binned(sweep, raster)
+
+    sweep = xd.georeference.get_x_y_z(sweep)
+
+    # call by function
+    composite = comp.sweep_to_raster(sweep, raster)
+
+    # call by accessor
+    composite = sweep.wrl.comp.sweep_to_raster(raster)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".nc") as tmp:
+        composite.to_netcdf(tmp.name)

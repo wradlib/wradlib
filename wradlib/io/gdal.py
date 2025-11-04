@@ -232,10 +232,10 @@ class VectorSource:
     trg_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         CRS the source data should be projected to.
@@ -252,10 +252,10 @@ class VectorSource:
     src_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         CRS in which source data is provided in.

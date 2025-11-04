@@ -90,7 +90,7 @@ def spherical_to_xyz(
     -------
     xyz : :class:`numpy:numpy.ndarray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    aeqd : :py:class:`pyproj:pyproj.CRS`
+    aeqd : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS), AEQD.
     """
     squeeze = kwargs.get("squeeze", False)
@@ -197,7 +197,7 @@ def _spherical_to_xyz_xarray(obj, **kwargs):
     -------
     xyz : :py:class:`xarray:xarray.DataArray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    aeqd : :py:class:`pyproj:pyproj.CRS`
+    aeqd : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS), AEQD.
     """
     dim0 = obj.wrl.util.dim0()
@@ -255,10 +255,10 @@ def spherical_to_proj(r, phi, theta, site, *, crs=None, re=None, ke=4.0 / 3.0):
     crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to EPSG(4326).
@@ -335,10 +335,10 @@ def _spherical_to_proj_xarray(obj, **kwargs):
     crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj:pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to EPSG(4326).
@@ -495,7 +495,7 @@ def spherical_to_polyvert(r, phi, theta, site, *, crs=None):
         A 3-d array of polygon vertices with shape(num_vertices,
         num_vertex_nodes, 2). The last dimension carries the xyz-coordinates
         either in `aeqd` or given crs.
-    aeqd : :py:class:`pyproj:pyproj.CRS`
+    aeqd : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS), AEQD, only returned if crs is None.
 
     Examples
@@ -575,10 +575,10 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
         Coordinate Reference System (CRS) of the coordinates. Must be provided
         and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to AEQD.
@@ -592,7 +592,7 @@ def _spherical_to_polyvert_xarray(obj, **kwargs):
     -------
     xyz : :py:class:`xarray:xarray.DataArray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS), AEQD, only returned if crs is None.
     """
     # Todo: check if this works for elevation too
@@ -659,10 +659,10 @@ def spherical_to_centroids(r, phi, theta, site, *, crs=None):
     crs
         Coordinate Reference System (CRS). Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to AEQD.
@@ -673,7 +673,7 @@ def spherical_to_centroids(r, phi, theta, site, *, crs=None):
         A 3-d array of bin centroids with shape(num_rays, num_bins, 3).
         The last dimension carries the xyz-coordinates
         either in `aeqd` or given crs.
-    aeqd : :py:class:`pyproj:pyproj.CRS`
+    aeqd : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS), AEQD, only returned if crs is None.
 
     Note
@@ -723,10 +723,10 @@ def _spherical_to_centroids_xarray(obj, **kwargs):
         Coordinate Reference System (CRS) of the coordinates. Must be provided
         and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to AEQD.
@@ -742,7 +742,7 @@ def _spherical_to_centroids_xarray(obj, **kwargs):
     -------
     xyz : :py:class:`xarray:xarray.DataArray`
         Array of shape (..., 3). Contains cartesian coordinates.
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Reference System (CRS), AEQD, only returned if crs is None.
 
     Note
@@ -1050,10 +1050,10 @@ def georeference(obj, **kwargs):
         Coordinate Reference System (CRS) of the coordinates. Must be provided
         and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to AEQD.

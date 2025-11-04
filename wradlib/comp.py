@@ -31,7 +31,12 @@ import numpy as np
 import pyproj
 from xarray import DataArray, Dataset, apply_ufunc, broadcast, concat, set_options
 
-from wradlib.georef import get_radar_projection, reproject
+from wradlib.georef import (
+    add_raster_grid_mapping,
+    get_earth_projection,
+    get_raster_coordinates,
+    reproject,
+)
 from wradlib.ipol import RectBin
 from wradlib.util import XarrayMethods, docstring
 
@@ -274,9 +279,9 @@ def transform_binned(sweep, raster):
 
     Parameters
     ----------
-    sweep : :class:`xarray:xarray.dataset`
-        radar sweep dataset following WMO conventions
-    raster : :class:`xarray:xarray.dataset`
+    sweep : :class:`xarray:xarray.Dataset`
+        radar sweep dataset
+    raster : :class:`xarray:xarray.Dataset`
         raster image dataset
 
     Returns
@@ -286,28 +291,45 @@ def transform_binned(sweep, raster):
         the transformation object
 
     """
-    wkt = raster.spatial_ref.attrs["crs_wkt"]
-    crs = pyproj.CRS.from_wkt(wkt)
-    sweep = sweep.wrl.georef.georeference(crs=crs)
-    coord_sweep = np.dstack((sweep.x, sweep.y))
-    x, y = np.meshgrid(raster.x, raster.y)
-    coord_raster = np.dstack((x, y))
+
+    try:
+        coord_sweep = np.dstack((sweep.x.values, sweep.y.values))
+    except AttributeError as err:
+        raise ValueError(
+            "Sweep has no x and y coordinates. Please georeference first."
+        ) from err
+
+    radar_crs = sweep.xradar.get_crs()
+    crs_wkt = raster.spatial_ref.attrs["crs_wkt"]
+    raster_crs = pyproj.CRS.from_wkt(crs_wkt)
+    coord_sweep = reproject(
+        coord_sweep,
+        src_crs=radar_crs,
+        trg_crs=raster_crs,
+    )
+
+    coord_raster = get_raster_coordinates(ds=raster).values
 
     radius = sweep.range.values[-1]
 
-    lon = float(sweep.longitude.values)
-    lat = float(sweep.latitude.values)
-    if crs.is_geographic:
-        alt = float(sweep.altitude.values)
+    if raster_crs.is_geographic:
         coord_raster2 = reproject(
-            coord_raster, src_crs=crs, trg_crs=get_radar_projection((lon, lat, alt))
+            coord_raster,
+            src_crs=raster_crs,
+            trg_crs=radar_crs,
         )
         center = (0, 0)
     else:
+        radar_lon = sweep.longitude.values
+        radar_lat = sweep.latitude.values
+        center = reproject(
+            (radar_lon, radar_lat),
+            src_crs=get_earth_projection(),
+            trg_crs=raster_crs,
+        )
         coord_raster2 = coord_raster
-        center = reproject((lon, lat), trg_crs=crs)
     fill_idx = extract_circle(center, radius, coord_raster2.reshape(-1, 2))
-    fill = np.zeros(x.shape, dtype=bool)
+    fill = np.zeros(coord_raster.shape[:2], dtype=bool)
     fill.flat[fill_idx] = True
 
     transform = RectBin(coord_sweep, coord_raster, fill=fill)
@@ -323,7 +345,7 @@ def sweep_to_raster(sweep, raster, **kwargs):
     sweep : :class:`xarray:xarray.Dataset` | :class:`xarray:xarray.DataArray`
         radar sweep dataset/dataarray following WMO conventions
     raster : :class:`xarray:xarray.Dataset`
-        raster image dataset
+        raster image dataset following CF conventions
 
     Keyword Arguments
     -----------------
@@ -334,7 +356,7 @@ def sweep_to_raster(sweep, raster, **kwargs):
 
     Returns
     -------
-    out : :class:`xarray:Dataset` | :class:`xarray:xarray.DataArray`
+    out : :class:`xarray:xarray.Dataset` | :class:`xarray:xarray.DataArray`
         raster image with transformed sweep values
 
     """
@@ -358,16 +380,15 @@ def sweep_to_raster(sweep, raster, **kwargs):
             on_missing_core_dim="drop",
         )
 
-    out = out.assign_coords(x=raster.x, y=raster.y)
+    out = out.assign_coords(x=raster.x, y=raster.y, spatial_ref=raster.spatial_ref)
 
-    if isinstance(sweep, DataArray):
-        out.name = f"{sweep.name}.to_raster"
+    out = add_raster_grid_mapping(out)
 
     return out
 
 
 class CompMethods(XarrayMethods):
-    """wradlib xarray SubAccessor methods for Ipol Methods."""
+    """wradlib xarray SubAccessor methods for Comp Methods."""
 
     @docstring(togrid)
     def togrid(self, *args, **kwargs):

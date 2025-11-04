@@ -27,8 +27,12 @@ __all__ = [
     "set_raster_indexing",
     "set_coordinate_indexing",
     "raster_to_polyvert",
-    "create_raster_geographic",
+    "snap_bounds",
+    "snap_resolution",
     "create_raster_xarray",
+    "create_raster_geographic",
+    "get_raster_coordinates",
+    "add_raster_grid_mapping",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
@@ -159,7 +163,7 @@ def read_gdal_projection(dataset):
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS)
 
     Examples
@@ -226,7 +230,7 @@ def extract_raster_dataset(dataset, *, mode="center", nodata=None):
         The array indexing follows image convention with origin
         at the upper left pixel (northup).
         The shape is (nrows+1,ncols+1,2) if mode == edge.
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS) of the used coordinates.
     """
 
@@ -460,20 +464,20 @@ def reproject_raster_dataset(src_ds, **kwargs):
     src_crs
         Coordinate Reference System (CRS) of source dataset. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None (get projection from source dataset)
     trg_crs
         Coordinate Reference System (CRS) of source dataset. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None.
@@ -614,10 +618,10 @@ def create_raster_dataset(data, coords, *, crs=None, nodata=-9999):
         Coordinate Reference System (CRS) of the coordinates. Must be provided
         and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to None.
@@ -712,103 +716,272 @@ def raster_to_polyvert(dataset):
     return polyvert
 
 
-def create_raster_xarray(crs, bounds, size):
-    """Create a georeferenced raster image using xarray model and gdal conventions.
+def snap_bounds(bounds, resolution):
+    """
+    Adjusts integer bounds so they align with the resolution grid.
+
+    This ensures that the width and height of the bounds are evenly divisible
+    by the resolution, centering the snapped bounds around the original center.
 
     Parameters
     ----------
-    crs
+    bounds :  tuple of int
+        (minx, miny, maxx, maxy) in integer units.
+    resolution :  int or tuple of int
+        Desired resolution per axis.
+
+    Returns
+    -------
+    tuple of int
+        Snapped bounds aligned to the resolution grid.
+    """
+
+    if np.isscalar(resolution):
+        resolution = (resolution, resolution)
+
+    if not np.all(np.mod(bounds, 1) == 0) or not np.all(np.mod(resolution, 1) == 0):
+        raise ValueError("Both bounds and resolution must be integers.")
+
+    minx, miny, maxx, maxy = bounds
+    xres, yres = resolution
+
+    cx = (minx + maxx) // 2
+    cy = (miny + maxy) // 2
+
+    width_px = round((maxx - minx) / xres)
+    height_px = round((maxy - miny) / yres)
+
+    snapped_minx = cx - (width_px * xres) // 2
+    snapped_maxx = cx + (width_px * xres) // 2
+    snapped_miny = cy - (height_px * yres) // 2
+    snapped_maxy = cy + (height_px * yres) // 2
+
+    return (snapped_minx, snapped_miny, snapped_maxx, snapped_maxy)
+
+
+def snap_resolution(extent, target):
+    """
+    Snap an integer resolution so it evenly divides the extent, staying close to the target.
+
+    This function finds the closest integer resolution that divides the given extent exactly,
+    while minimizing the difference from the desired target resolution.
+
+    Parameters
+    ----------
+    extent : int
+        Total extent along one axis (e.g., width or height in arcseconds or pixels).
+    target : int
+        Desired resolution (size of each cell), must be a positive integer.
+
+    Returns
+    -------
+    int
+        Snapped resolution that evenly divides the extent and is closest to the target.
+    """
+    if float(extent).is_integer() is False or float(target).is_integer() is False:
+        raise ValueError("Both extent and target must be integers.")
+
+    ideal_cells = round(extent / target)
+
+    lower_cells = ideal_cells
+    while lower_cells > 0 and extent % lower_cells != 0:
+        lower_cells -= 1
+
+    higher_cells = ideal_cells
+    while extent % higher_cells != 0:
+        higher_cells += 1
+
+    lower_res = extent // lower_cells
+    higher_res = extent // higher_cells
+
+    return (
+        lower_res if abs(lower_res - target) <= abs(higher_res - target) else higher_res
+    )
+
+
+def create_raster_xarray(
+    crs,
+    bounds,
+    resolution,
+    snap_bounds=False,
+    snap_resolution=False,
+):
+    """
+    Create empty raster as xarray dataset following CF conventions
+
+    Parameters
+    ----------
+
+    crs :
         Coordinate Reference System (CRS) mapping geographic to x,y coordinates.
         Must be provided and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
-    bounds : tuple of floats
-        image bounds (x_min, x_max, y_min, y_max)
-    size : float or tuple of floats
-        (x,y) pixel size in meters (or degrees if crs is geographic)
+    bounds : tuple of int
+        Bounding box as (min_x, min_y, max_x, max_y), as integer.
+    resolution : int or tuple of int
+        Grid resolution in x and y directions. If a single int is provided, it applies to both axes.
+    snap_bounds : bool, optional
+        If True, adjusts bounds to align with resolution grid.
+    snap_resolution : bool, optional
+        If True, adjusts resolution to evenly divide the extent.
 
     Returns
     -------
-    raster : :class:`xarray:Dataarray`
-        raster image dataset
-
+    xarray.Dataset
+        An xarray Dataset with 'x' and 'y' pixel center coordinates, 'spatial_ref' coordinate with crs_wkt and GeoTransform attributes
     """
+    minx, miny, maxx, maxy = bounds
+    xres, yres = (
+        resolution if isinstance(resolution, tuple) else (resolution, resolution)
+    )
 
-    xmin, xmax, ymin, ymax = bounds
+    x_extent = maxx - minx
+    y_extent = maxy - miny
 
-    try:
-        xsize, ysize = size
-    except TypeError:
-        xsize, ysize = size, size
+    if snap_resolution:
+        xres = georef.snap_resolution(extent=x_extent, target=xres)
+        yres = georef.snap_resolution(extent=y_extent, target=yres)
 
-    xmin = xmin - xmin % xsize
-    ymin = ymin - ymin % ysize
-    if xmax % xsize != 0:
-        xmax = xmax - xmax % xsize + xsize
-    if ymax % ysize != 0:
-        ymax = ymax - ymax % ysize + ysize
+    if snap_bounds:
+        bounds = georef.snap_bounds(bounds=bounds, resolution=(xres, yres))
+        minx, miny, maxx, maxy = bounds
+        x_extent = maxx - minx
+        y_extent = maxy - miny
 
-    geotransform = [xmin, xsize, 0, ymax, 0, -ysize]
-    geotransform = [str(r) for r in geotransform]
-    geotransform = " ".join(geotransform)
+    if x_extent % xres != 0 or y_extent % yres != 0:
+        raise ValueError("Extent must be divisible by resolution.")
 
-    num = (xmax - xmin) / xsize + 1
-    x = np.linspace(xmin, xmax, num=int(num), endpoint=True)
-    num = (ymax - ymin) / ysize + 1
-    y = np.linspace(ymin, ymax, num=int(num), endpoint=True)
-    if x[-1] != xmax:
-        x = np.append(x, xmax)
-    if y[-1] != ymax:
-        y = np.append(y, ymax)
+    ds = xr.Dataset()
 
-    y = np.flip(y)
+    x = np.arange(minx + xres // 2, maxx, xres)
+    y = np.arange(maxy - yres // 2, miny, -yres)
+    ds = ds.assign_coords(x=("x", x), y=("y", y))
+    crs = georef.ensure_crs(crs).to_wkt(version="WKT2_2019")
+    ds = ds.assign_coords({"spatial_ref": 0})
+    ds["spatial_ref"].attrs["GeoTransform"] = f"{minx} {xres} 0.0 {maxy} 0.0 {-yres}"
+    ds["spatial_ref"].attrs["crs_wkt"] = crs
 
-    raster = xr.DataArray(dims=["x", "y"], coords={"x": x, "y": y})
-
-    wkt = crs.to_wkt()
-    raster = raster.assign_coords({"spatial_ref": 0})
-    raster.spatial_ref.attrs["crs_wkt"] = wkt
-    raster.spatial_ref.attrs["GeoTransform"] = geotransform
-
-    return raster
+    return ds
 
 
-def create_raster_geographic(bounds, size, size_in_meters=False):
-    """Create a geographic raster.
+def create_raster_geographic(
+    bounds,
+    resolution,
+    resolution_in_meters=False,
+):
+    """
+    Create an empty geographic raster as xarray dataset following CF conventions.
+    The arc-second is used as unit to avoid precision issues.
 
     Parameters
     ----------
-
-    bounds : (lon_min, lon_max, lat_min, lat_max)
-        geographic bounds
-    size : int
-        pixel size in degrees
-    size_in_meters : bool
-        if True, size is in meters and geographic sizes are approximated to keep bounds fixed
+    bounds : tuple of int
+        Bounding box in degrees: (min_lon, min_lat, max_lon, max_lat).
+    resolution : int or tuple of int
+        Resolution value. Interpreted as meters if `resolution_in_meters=True`, otherwise as arcseconds.
+    resolution_in_meters : bool, optional
+        If True, converts resolution from meters to arcseconds and snaps it to evenly divide the bounds.
 
     Returns
     -------
-    raster : :class:`xarray:Dataset`
-        raster image dataset
-
+    xarray.Dataset
+        xarray dataset with WGS84 CRS and coordinates using arcsecond unit, following CF conventions.
     """
-    crs = georef.get_earth_projection()
+    if isinstance(resolution, int):
+        resolution = (resolution, resolution)
 
-    if size_in_meters:
-        xsize, ysize = georef.geographic_size(bounds, size)
-        xmin, xmax, ymin, ymax = bounds
-        lx = xmax - xmin
-        n = round(lx / xsize)
-        xsize = lx / n
-        ly = ymax - ymin
-        m = round(ly / ysize)
-        ysize = ly / m
-        size = (xsize, ysize)
+    bounds_arc = [b * 3600 for b in bounds]
+    extent_x_arc = bounds_arc[2] - bounds_arc[0]
+    extent_y_arc = bounds_arc[3] - bounds_arc[1]
 
-    raster = georef.create_raster_xarray(crs, bounds, size)
+    if resolution_in_meters:
+        lat_mid = (bounds[1] + bounds[3]) / 2
+        lon_mid = (bounds[0] + bounds[2]) / 2
+        res_deg = georef.meters_to_degrees(
+            meters=resolution,
+            longitude=lon_mid,
+            latitude=lat_mid,
+        )
+        res_arc = (int(round(res_deg[0] * 3600)), int(round(res_deg[1] * 3600)))
 
-    return raster
+        resolution = (
+            snap_resolution(extent=extent_x_arc, target=res_arc[0]),
+            snap_resolution(extent=extent_y_arc, target=res_arc[1]),
+        )
+
+    ds = create_raster_xarray(
+        crs=georef.get_earth_projection(arcsecond=True),
+        bounds=bounds_arc,
+        resolution=resolution,
+    )
+
+    return ds
+
+
+def add_raster_grid_mapping(ds):
+    if isinstance(ds, xr.DataArray):
+        ds.attrs["grid_mapping"] = "spatial_ref"
+
+    if isinstance(ds, xr.Dataset):
+        for var in ds.data_vars:
+            ds[var].attrs["grid_mapping"] = "spatial_ref"
+
+    return ds
+
+
+def _compute_edges(coords):
+    """Compute pixel edge coordinates from center coordinates."""
+    diffs = np.diff(coords) / 2
+    edges = np.empty(coords.size + 1)
+    edges[1:-1] = coords[:-1] + diffs
+    edges[0] = coords[0] - diffs[0]
+    edges[-1] = coords[-1] + diffs[-1]
+    return edges
+
+
+def get_raster_coordinates(ds, mode="center"):
+    """
+    Generate a 2D array of raster coordinates and return it as a DataArray.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        A dataset containing 1D coordinates 'x' and 'y'.
+    mode : str, optional
+        Determines how coordinates are computed:
+        - "center": uses the center points of each grid cell (default).
+        - "edge"  : computes coordinates at the edges between cells.
+
+    Returns
+    -------
+    xarray.DataArray
+        A 3D DataArray of shape (y, x, 2), where the last dimension contains
+        the spatial coordinates [x, y] for each grid cell.
+    """
+    x = ds.x.values
+    y = ds.y.values
+
+    if mode == "center":
+        xx, yy = np.meshgrid(x, y)
+        x_coord = ds.x
+        y_coord = ds.y
+    elif mode == "edge":
+        x_edges = _compute_edges(x)
+        y_edges = _compute_edges(y)
+        xx, yy = np.meshgrid(x_edges, y_edges)
+        x_coord = x_edges
+        y_coord = y_edges
+
+    coord_array = xr.DataArray(
+        np.stack([xx, yy], axis=-1),
+        dims=("y", "x", "coord"),
+        coords={"x": x_coord, "y": y_coord, "coord": ["x", "y"]},
+        name="raster_coordinates",
+    )
+
+    return coord_array

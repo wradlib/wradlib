@@ -1,13 +1,3 @@
----
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .md
-      format_name: myst
-      format_version: '1.3'
-      jupytext_version: 1.17.3
----
-
 ```{raw-cell}
 :tags: [hide-cell]
 This notebook is part of the wradlib documentation: https://docs.wradlib.org.
@@ -42,7 +32,7 @@ print(filename)
 ```
 
 ```{code-cell} python
-swp = xr.open_dataset(filename, engine="odim", group="sweep_0") 
+swp = xr.open_dataset(filename, engine="odim", group="sweep_0")
 ```
 
 Inspect the data set a little
