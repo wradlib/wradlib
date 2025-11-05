@@ -553,7 +553,7 @@ def test_create_osr_dwd(ellipse, grid):
     if ellipse == "sphere":
         assert crs.GetAttrValue("DATUM") == "Radolan_Kugel"
     else:
-        assert crs.GetAttrValue("DATUM") == "unknown based on WGS 84"
+        assert crs.GetAttrValue("DATUM") == "Unknown based on WGS 84 ellipsoid"
     assert crs.GetAttrValue("PROJECTION") == "Polar_Stereographic"
     assert crs.GetProjParm("latitude_of_origin") == 60
     assert crs.GetProjParm("central_meridian") == 10
