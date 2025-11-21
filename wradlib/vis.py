@@ -79,7 +79,7 @@ def plot_ppi_crosshair(
     crs
         Coordinate Reference System (CRS). Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,

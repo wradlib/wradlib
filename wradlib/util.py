@@ -36,6 +36,7 @@ import datetime as dt
 import importlib
 import inspect
 import os
+import pathlib
 import warnings
 from functools import singledispatch
 
@@ -599,7 +600,7 @@ def _get_wradlib_data_path():
             wrl_data_path = wradlib_data.DATASETS.abspath
     if not os.path.isdir(wrl_data_path):
         raise OSError(f"`WRADLIB_DATA` path {wrl_data_path!r} does not exist.")
-    return wrl_data_path
+    return pathlib.Path(wrl_data_path)
 
 
 def get_wradlib_data_path():
@@ -1164,7 +1165,7 @@ def cross_section_ppi(
     crs
         Coordinate Reference System (CRS) of src and trg data. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,

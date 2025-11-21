@@ -27,11 +27,12 @@ __all__ = [
     "get_earth_projection",
     "get_extent",
     "project_bounds",
-    "geographic_size",
+    "meters_to_degrees",
     "GeorefProjectionMethods",
 ]
 __doc__ = __doc__.format("\n   ".join(__all__))
 
+import re
 import warnings
 from functools import singledispatch
 
@@ -76,10 +77,10 @@ def ensure_crs(crs, trg="pyproj"):
         Coordinate Reference System (CRS) of the coordinates. Must be given and
         can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - None
 
@@ -90,7 +91,7 @@ def ensure_crs(crs, trg="pyproj"):
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference` or None
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`, :py:class:`cartopy:cartopy.crs.CRS`, :py:class:`gdal:osgeo.osr.SpatialReference` or None
     """
     # first move everything into pyproj.CRS/WKT or return early
     if crs is None:
@@ -98,10 +99,10 @@ def ensure_crs(crs, trg="pyproj"):
     if isinstance(crs, pyproj.CRS) and type(crs) is pyproj.CRS:
         if trg == "pyproj":
             return crs
-    elif has_import("cartopy") and isinstance(crs, cartopy.crs.CRS):
+    elif has_import(cartopy) and isinstance(crs, cartopy.crs.CRS):
         if trg == "cartopy":
             return crs
-    elif has_import("osr") and isinstance(crs, osr.SpatialReference):
+    elif has_import(osr) and isinstance(crs, osr.SpatialReference):
         if trg == "osr":
             return crs
         crs = crs.ExportToWkt()
@@ -201,7 +202,7 @@ def create_crs(projname, **kwargs):
 
     Returns
     -------
-    output : :py:class:`pyproj:pyproj.CRS`
+    output : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         pyproj Coordinate Reference System (CRS)
 
     Examples
@@ -367,7 +368,7 @@ def reproject(*args, **kwargs):
     src_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -377,7 +378,7 @@ def reproject(*args, **kwargs):
     trg_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -489,7 +490,7 @@ def _reproject_xarray(obj, **kwargs):
     src_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -499,7 +500,7 @@ def _reproject_xarray(obj, **kwargs):
     trg_crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
@@ -663,10 +664,10 @@ def get_earth_radius(latitude, *, crs=None):
         Coordinate Reference System (CRS) of the coordinates. Must be provided
         and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to EPSG(4326).
@@ -717,10 +718,10 @@ def _get_earth_radius_xarray(obj, *, crs=None):
     crs
         Coordinate Reference System (CRS) of the coordinates. Can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
         Defaults to EPSG(4326).
@@ -733,7 +734,7 @@ def _get_earth_radius_xarray(obj, *, crs=None):
     return get_earth_radius(obj.latitude.values, crs=crs)
 
 
-def get_earth_projection(model="ellipsoid"):
+def get_earth_projection(model="ellipsoid", arcsecond=False):
     """Get a default earth projection based on WGS
 
     Parameters
@@ -744,10 +745,12 @@ def get_earth_projection(model="ellipsoid"):
         - 'ellipsoid' - WGS84 with ellipsoid heights -> EPSG 4979
         - 'geoid' - WGS84 with egm96 geoid heights -> EPSG 4326 + 5773
         - 'sphere' - GRS 1980 authalic sphere -> EPSG 4047
+    arcsecond : boolean
+        true to use arcsecond as unit instead of degree, defaults to False
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS)
 
     """
@@ -757,8 +760,15 @@ def get_earth_projection(model="ellipsoid"):
         crs = pyproj.CRS.from_epsg(4979)
     elif model == "geoid":
         crs = pyproj.CRS.from_user_input("EPSG:4326+5773")
-    else:
-        raise ValueError(f"Unknown model {model!r}.")
+
+    if arcsecond:
+        wkt = crs.to_wkt()
+        wkt = re.sub(
+            r"ANGLEUNIT\[[^\]]*\]",
+            'ANGLEUNIT["arc-second",4.84813681109536E-06,ID["EPSG",9104]]',
+            wkt,
+        )
+        crs = pyproj.CRS.from_wkt(wkt)
 
     return crs
 
@@ -774,7 +784,7 @@ def get_radar_projection(site):
 
     Returns
     -------
-    crs : :py:class:`pyproj:pyproj.CRS`
+    crs : :py:class:`pyproj:pyproj.crs.CoordinateSystem`
         Coordinate Reference System (CRS) - radar centric AEQD
 
     """
@@ -817,22 +827,22 @@ def project_bounds(bounds, crs):
 
     Parameters
     ----------
-    bounds : (lon_min, lon_max, lat_min, lat_max)
-        geographic bounds
+    bounds : tuple of float
+        (lon_min, lon_max, lat_min, lat_max) geographic bounds
     crs
         Coordinate Reference System (CRS) to be used for projection.
         Must be provided and can be one of:
 
-        - A :py:class:`pyproj:pyproj.CRS` instance
+        - A :py:class:`pyproj:pyproj.crs.CoordinateSystem` instance
         - A :py:class:`cartopy:cartopy.crs.CRS` instance
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
-        - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
+        - A type accepted by :py:meth:`pyproj.crs.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
 
     Returns
     -------
-    bounds : (xmin, xmax, ymin, ymax)
-        projected bounds
+    bounds : tuople of float
+        (xmin, xmax, ymin, ymax) projected bounds
 
     """
     crs = ensure_crs(crs)
@@ -849,32 +859,41 @@ def project_bounds(bounds, crs):
     return projected_bounds
 
 
-def geographic_size(bounds, size):
-    """Get geographic sizes corresponding approximately to given linear size for given bounds
+def meters_to_degrees(meters, longitude=0.0, latitude=0.0):
+    """
+    Converts a distance in meters to degrees of latitude and longitude
+    using the WGS84 ellipsoid. If scalar, assumes equal east/north offset.
 
     Parameters
     ----------
-    bounds : (lon_min, lon_max, lat_min, lat_max)
-        geographic bounds
-    size : int
-         linear distance in meters
+    meters :  float or tuple(float, float)
+        Distance in meters.
+            - If scalar: interpreted as [meters, meters] (diagonal NE).
+            - If 2D: interpreted as [east, north] in meters.
+    latitude : float
+        Reference latitude in degrees.
+    longitude : float
+        Reference longitude in degrees.
 
     Returns
     -------
-    xsize, ysize : tuple
-         geographic size in degrees (lon, lat)
+    tuple
+        (delta_latitude, delta_longitude) in degrees
     """
-    xsize, ysize = size, size
-    one_degree_latitude_meters = 111320
-    ysize = ysize / one_degree_latitude_meters
-    lon_min, lon_max, lat_min, lat_max = bounds
-    lat_mid = lat_min / 2 + lat_max / 2
-    lat_mid = np.radians(lat_mid)
-    one_degree_longitude_meters = one_degree_latitude_meters * np.cos(lat_mid)
-    xsize = xsize / one_degree_longitude_meters
-    xsize = np.abs(xsize)
+    geod = pyproj.Geod(ellps="WGS84")
 
-    return xsize, ysize
+    # Promote scalar to 2D vector: (east, north)
+    if np.isscalar(meters):
+        meters = (meters, meters)
+
+    dx, dy = meters
+    _, lat1, _ = geod.fwd(longitude, latitude, 0, dy)  # North
+    lon1, _, _ = geod.fwd(longitude, latitude, 90, dx)  # East
+
+    delta_lat = lat1 - latitude
+    delta_lon = lon1 - longitude
+
+    return delta_lon, delta_lat
 
 
 class GeorefProjectionMethods:
