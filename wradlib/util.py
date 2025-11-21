@@ -36,6 +36,7 @@ import datetime as dt
 import importlib
 import inspect
 import os
+import pathlib
 import warnings
 from functools import singledispatch
 
@@ -599,7 +600,7 @@ def _get_wradlib_data_path():
             wrl_data_path = wradlib_data.DATASETS.abspath
     if not os.path.isdir(wrl_data_path):
         raise OSError(f"`WRADLIB_DATA` path {wrl_data_path!r} does not exist.")
-    return wrl_data_path
+    return pathlib.Path(wrl_data_path)
 
 
 def get_wradlib_data_path():
