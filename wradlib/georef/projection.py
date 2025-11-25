@@ -536,7 +536,7 @@ def _reproject_xarray(obj, **kwargs):
     output_core_dims = input_core_dims
 
     # user overrides?
-    if src_crs := kwargs.get("src_crs") is None:
+    if (src_crs := kwargs.get("src_crs")) is None:
         # extract crs from obj
         src_crs = xd.georeference.get_crs(obj)
     else:
@@ -547,7 +547,7 @@ def _reproject_xarray(obj, **kwargs):
     src_crs = ensure_crs(src_crs)
     kwargs["src_crs"] = src_crs
 
-    if trg_crs := kwargs.get("trg_crs") is None:
+    if (trg_crs := kwargs.get("trg_crs")) is None:
         trg_crs = get_default_projection()
     trg_crs = ensure_crs(trg_crs)
     kwargs["trg_crs"] = trg_crs
