@@ -58,7 +58,7 @@ def test_get_wradlib_data():
     data_path = util._get_wradlib_data_path()
     filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
     util._get_wradlib_data_file(filename)
-    os.environ["WRADLIB_DATA"] = data_path
+    os.environ["WRADLIB_DATA"] = str(data_path)
     assert util._get_wradlib_data_path() == data_path
     util._get_wradlib_data_file(filename)
 
