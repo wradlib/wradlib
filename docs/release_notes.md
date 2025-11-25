@@ -7,12 +7,13 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
-## Development Version
+## Version 2.5
 
 **New features**
 
-* ENH: add hydrometeor partitioning ratio calculation from Pejcic et al. ({pull}`699`) by {at}`kmuehlbauer`
-* DOC: port notebooks as myst markdown into examples/notebooks, adapt documentation pipeline ({pull}`714`) by {at}`kmuehlbauer`
+* Add hydrometeor partitioning ratio calculation from Pejcic et al. ({pull}`699`) by {at}`kmuehlbauer`
+* Use pyproj instead of osgeo.osr ({pull}`720`) by {at}`kmuehlbauer`
+* Add transform sweep and enhance sweep_to_raster ({pull}`691`, {pull}`704`, {pull}`713`) by {at}`egouden`
 
 **Maintenance**
 
@@ -23,7 +24,15 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Documentation**
 
+* Port notebooks as myst markdown into examples/notebooks, adapt documentation pipeline ({pull}`714`) by {at}`kmuehlbauer`
+* Add practical guide for contributing ({pull}`703`) by {at}`kmuehlbauer`
+
 **Bugfixes**
+
+* Fix argument handling in fuzzy classification wrapper ({pull}`722`) by {at}`juhi24`.
+* Fix usage of Path and str ({pull}`726`) by {at}`egouden`
+* Fix reproject function src_crs/trg_crs extraction from kwargs ({pull}`728`) by {at}`kmuehlbauer`
+
 
 ## Version 2.4
 
