@@ -331,13 +331,13 @@ jobs:
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
       - name: Build output
         run: |
-          cd examples
+          cd docs
           echo "Rendered from $GITHUB_SHA with $GITHUB_RUN_ID and $GITHUB_RUN_NUMBER" > render/render-info.txt
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
           name: render-output
-          path: examples/render/
+          path: docs/render/
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
