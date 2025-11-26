@@ -325,7 +325,7 @@ jobs:
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
           # create folder structure with all needed files, but *.md
-          cd examples
+          cd docs
           rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
           # debug
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks

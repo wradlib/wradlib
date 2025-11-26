@@ -60,6 +60,7 @@ def get_radolan_coords(lon, lat, **kwargs):
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - string "trig" to use trigonometric formulas for calculation
           (only for earth model - `sphere`).
+
         Defaults to None (earth model - sphere).
     """
     crs = kwargs.get("crs", None)
@@ -89,10 +90,9 @@ def get_radolan_coords(lon, lat, **kwargs):
 
 
 def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
-    """Calculates x/y coordinates of radolan  projection of the German Weather Service
+    """Calculates x/y coordinates of RADOLAN projection of the German Weather Service.
 
-    Returns the 1D x,y coordinates of the radolan projection for the given grid
-    layout.
+    Returns the 1D x,y coordinates of the RADOLAN projection for the given grid layout.
 
     Parameters
     ----------
@@ -104,7 +104,7 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     Keyword Arguments
     -----------------
     wgs84 : bool
-        if True, output coordinates are in wgs84 lonlat format (default: False)
+        if True, output coordinates are in WGS84 lon/lat format (default: False)
     mode : str
         'radolan' - lower left pixel coordinates
         'center' - pixel center coordinates
@@ -120,6 +120,7 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - string "trig" to use trigonometric formulas for calculation
           (only for earth model - `sphere`).
+
         Defaults to None (earth model - sphere).
 
     Returns
@@ -252,8 +253,8 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
     Keyword Arguments
     -----------------
     wgs84 : bool
-        if True, output coordinates are in wgs84 lonlat format (default: False)
-    mode :  str
+        if True, output coordinates are in wgs84 lon/lat format (default: False)
+    mode : str
         'radolan' - lower left pixel coordinates
         'center' - pixel center coordinates
         'edge' - pixel edge coordinates
@@ -268,6 +269,7 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
         - string "trig" to use trigonometric formulas for calculation
           (only for earth model - `sphere`).
+
         Defaults to None (earth model - sphere).
 
     Returns
@@ -305,7 +307,7 @@ def get_radolan_grid(nrows=None, ncols=None, **kwargs):
     >>> print("{0}, ({1:.4f}, {2:.4f})".format(radolan_grid.shape, *radolan_grid[0,0,:]))  # noqa
     (900, 900, 2), (3.5889, 46.9526)
 
-    See :ref:`radolan_grid:polar-stereographic-projection`.
+    See :ref:`radolan:grid-projection`.
 
     Raises
     ------

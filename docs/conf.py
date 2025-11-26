@@ -137,9 +137,16 @@ for k, v in wradlib.__dict__.items():
     if isinstance(v, types.ModuleType):
         if k not in ["_warnings", "version"]:
             modules.append(k)
-            file = open(f"{k}.rst", mode="w")
-            file.write(f".. automodule:: wradlib.{k}\n")
-            file.close()
+            with open(f"{k}.rst", mode="w") as f:
+                f.write(f".. automodule:: wradlib.{k}\n")
+                # f.write(f"   :members:\n")
+                # f.write(f"   :undoc-members:\n")
+                # f.write(f"   :show-inheritance:\n")
+                # f.write(f"\n")
+                # f.write(f".. autosummary::\n")
+                # f.write(f"   :nosignatures:\n")
+                # f.write(f"   :no-index:\n\n")
+
 
 # create API/Library reference md-file
 reference = """# Library Reference
@@ -150,16 +157,20 @@ This page contains an auto-generated summary of {{wradlib}}'s API. Every submodu
 :maxdepth: 2
 """
 
-file = open("reference.md", mode="w")
-file.write(f"{reference}\n")
-for mod in sorted(modules):
-    file.write(f"{mod}\n")
-file.write("```")
-file.close()
+with open("reference.md", mode="w") as f:
+    f.write(f"{reference}\n")
+    for mod in sorted(modules):
+        f.write(f"{mod}\n")
+    f.write("```")
 
 # get all rst files, do it manually
 rst_files = glob.glob("*.rst")
 autosummary_generate = rst_files
+autosummary_generate_overwrite = True
+autosummary_imported_members = False
+autodoc_default_options = {
+    "ignore-module-all": True,
+}
 
 myst_substitutions = {
     "today": dt.datetime.utcnow().strftime("%Y-%m-%d"),
@@ -308,6 +319,8 @@ intersphinx_mapping = {
     "cartopy": ("https://cartopy.readthedocs.io/stable/", None),
     "gdal": ("https://gdal.org/en/stable/", None),
     "pyproj": ("https://pyproj4.github.io/pyproj/stable/", None),
+    "notebooks": ("https://docs.wradlib.org/projects/notebooks/en/latest/", None),
+    "radolan": ("https://docs.wradlib.org/projects/radolan/en/latest/", None),
 }
 
 # -- Napoleon settings for docstring processing -------------------------------

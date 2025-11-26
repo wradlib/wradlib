@@ -63,7 +63,7 @@ class PolarNeighbours:
 
     Examples
     --------
-    See :doc:`notebooks/verification/verification`.
+    See :doc:`notebooks:notebooks/verification/verification`.
     """
 
     def __init__(self, r, az, site, crs, x, y, *, nnear=9):
@@ -164,8 +164,8 @@ class ErrorMetrics:
     >>> metrics.pprint() #doctest: +SKIP
     >>> metrics.ix #doctest: +SKIP
 
-    See :doc:`notebooks/verification/verification` and
-    :doc:`notebooks/multisensor/gauge_adjustment`.
+    See :doc:`notebooks:notebooks/verification/verification` and
+    :doc:`notebooks:notebooks/multisensor/gauge_adjustment`.
 
     """
 

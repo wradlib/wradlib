@@ -98,9 +98,7 @@ def filter_gabella_a(obj, wsize, tr1, *, cartesian=False, radial=False):
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/clutter_gabella`.
-
+    See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
     nn = wsize // 2
     count = -np.ones(obj.shape, dtype=int)
@@ -158,9 +156,7 @@ def _filter_gabella_a_xarray(obj, **kwargs):
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/clutter_gabella`.
-
+    See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
     dim0 = obj.wrl.util.dim0()
     wsize = kwargs.pop("wsize", 5)
@@ -206,9 +202,7 @@ def filter_gabella_b(obj, *, thrs=0.0):
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/clutter_gabella`.
-
+    See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
     conn = np.ones((3, 3))
     # create binary image of the rainfall field
@@ -269,9 +263,7 @@ def _filter_gabella_b_xarray(obj, **kwargs):
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/clutter_gabella`.
-
+    See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
     dim0 = obj.wrl.util.dim0()
     out = xr.apply_ufunc(
@@ -334,9 +326,7 @@ def filter_gabella(
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/clutter_gabella`.
-
+    See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
     thrsnorain = kwargs.get("thrsnorain", 0.0)
     tr1 = kwargs.get("tr1", 6.0)
@@ -406,9 +396,7 @@ def _filter_gabella_xarray(obj, **kwargs):
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/clutter_gabella`.
-
+    See :doc:`notebooks:notebooks/classify/clutter_gabella`.
     """
     dim0 = obj.wrl.util.dim0()
     out = xr.apply_ufunc(
@@ -459,8 +447,7 @@ def histo_cut(obj, *, upper_frequency=0.01, lower_frequency=0.01):
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/histo_cut`.
+    See :doc:`notebooks:notebooks/classify/histo_cut`.
     """
 
     prec_accum = np.array(obj)
@@ -562,8 +549,7 @@ def _histo_cut_xarray(obj, **kwargs):
 
     Examples
     --------
-
-    See :doc:`notebooks/classify/histo_cut`.
+    See :doc:`notebooks:notebooks/classify/histo_cut`.
     """
     dim0 = obj.wrl.util.dim0()
     out = xr.apply_ufunc(

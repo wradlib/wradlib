@@ -5,7 +5,7 @@
 """
 Raw Data I/O
 ============
-Please have a look at the tutorial :doc:`notebooks/fileio/fileio`
+Please have a look at the tutorial :doc:`notebooks:notebooks/fileio/fileio`
 for an introduction on how to deal with different file formats.
 
 .. toctree::

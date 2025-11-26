@@ -23,7 +23,7 @@ No deprecations or additions.
 
 ## atten - Submodule
 
-### Additions
+### Additions atten
 
 Implemented Xarray Accessor `wrl.atten` ({py:class}`wradlib.atten.AttenMethods) with:
 
@@ -34,7 +34,7 @@ Implemented Xarray Accessor `wrl.atten` ({py:class}`wradlib.atten.AttenMethods) 
 
 Merged with code from `clutter`-module.
 
-### Additions
+### Additions classify
 
 Implemented Xarray Accessor `wrl.classify` ({py:class}`wradlib.classify.ClassifyMethods`) with:
 
@@ -49,13 +49,13 @@ Implemented Xarray Accessor `wrl.classify` ({py:class}`wradlib.classify.Classify
 
 ## clutter - Submodule
 
-### Deprecations
+### Deprecations clutter
 
 Functions have been merged with {py:mod}`wradlib.classify`-submodule (see above). Module has been removed.
 
 ## comp - Submodule
 
-### Additions
+### Additions comp
 
 Implemented Xarray Accessor `wrl.comp` ({py:class}`wradlib.comp.CompMethods`) with:
 
@@ -64,7 +64,7 @@ Implemented Xarray Accessor `wrl.comp` ({py:class}`wradlib.comp.CompMethods`) wi
 
 ## dp - Submodule
 
-### Additions
+### Additions dp
 
 Implemented Xarray Accessor `wrl.dp` ({py:class}`wradlib.dp.DpMethods`) with:
 
@@ -75,15 +75,15 @@ Implemented Xarray Accessor `wrl.dp` ({py:class}`wradlib.dp.DpMethods`) with:
 - {py:func}`~wradlib.dp.unfold_phi`
 - {py:func}`~wradlib.dp.unfold_phi_vulpiani`
 
-### Deprecations
+### Deprecations dp
 
 - `wrl.dp.linear_despeckle` -> {py:func}`wradlib.util.despeckle`
 - `wrl.dp.process_raw_phidp_vulpiani` -> {py:func}`wradlib.dp.phidp_kdp_vulpiani`
 - `wrl.dp.unfold_phi_naive` -> {py:func}`~wradlib.dp.unfold_phi`
 
 
-## georef-submodule
-### Additions
+## georef - submodule
+### Additions georef
 
 Implemented Xarray Accessor `wrl.georef` ({py:class}`wradlib.georef.GeorefMethods`) with:
 
@@ -111,13 +111,13 @@ Implemented Xarray Accessor `wrl.georef` ({py:class}`wradlib.georef.GeorefMethod
   - {py:func}`~wradlib.georef.satellite.dist_from_orbit`
 
 
-### Deprecations
+### Deprecations georef
 
 - `wradlib.georef.xarray.georeference_dataset` -> {py:func}`wradlib.georef.polar.georeference`
 
 ## io - Submodule
 
-### Deprecations
+### Deprecations io
 
 The xarray based radar readers for polar data have been moved to {{xradar}}-package
 
@@ -219,14 +219,14 @@ This is not yet available out of the box as dedicated functions (like {py:func}`
 
 ## ipol - Submodule
 
-### Additions
+### Additions ipol
 
 Implemented Xarray Accessor `wrl.ipol` ({py:class}`wradlib.ipol.IpolMethods`) with:
 
 - {py:func}`~wradlib.ipol.interpolate_polar`
 
 ## qual - Submodule
-### Additions
+### Additions qual
 
 Implemented Xarray Accessor `wrl.qual` ({py:class}`wradlib.qual.QualMethods`) with:
 
@@ -234,7 +234,7 @@ Implemented Xarray Accessor `wrl.qual` ({py:class}`wradlib.qual.QualMethods`) wi
 - {py:func}`~wradlib.qual.get_bb_ratio`
 
 ## trafo - Submodule
-### Additions
+### Additions trafo
 
 Implemented Xarray Accessor `wrl.trafo` ({py:class}`wradlib.trafo.TrafoMethods`) with:
 
@@ -243,7 +243,7 @@ Implemented Xarray Accessor `wrl.trafo` ({py:class}`wradlib.trafo.TrafoMethods`)
 - {py:func}`~wradlib.trafo.r_to_depth`
 
 ## util - Submodule
-### Additions
+### Additions util
 
 Implemented Xarray Accessor `wrl.util` ({py:class}`wradlib.util.UtilMethods`) with:
 
@@ -256,7 +256,7 @@ Implemented Xarray Accessor `wrl.util` ({py:class}`wradlib.util.UtilMethods`) wi
 No deprecations or additions.
 
 ## vis - Submodule
-### Additions
+### Additions vis
 
 Implemented Xarray Accessor `wrl.vis` ({py:class}`wradlib.vis.VisMethods`) with:
 
@@ -265,7 +265,7 @@ Implemented Xarray Accessor `wrl.vis` ({py:class}`wradlib.vis.VisMethods`) with:
 - {py:func}`~wradlib.vis.contour`
 - {py:func}`~wradlib.vis.contourf`
 
-### Deprecations
+### Deprecations vis
 
 - `plot_ppi`/`plot_rhi` ->  {py:func}`wradlib.georef.xarray.create_xarray_dataarray` and  {py:func}`wradlib.vis.plot` or xarray accessor `da.wrl.vis.plot()`
 - removed `saveto`-kwarg from signature of {py:func}`wradlib.vis.plot_plan_and_vert` and {py:func}`wradlib.vis.plot_max_plan_and_vert`
@@ -275,19 +275,19 @@ Implemented Xarray Accessor `wrl.vis` ({py:class}`wradlib.vis.VisMethods`) with:
 No deprecations or additions.
 
 ## xarray - Submodule
-### Additions
+### Additions xarray
 
 New module containing {py:class}`~wradlib.xarray.WradlibXarrayAccessor` implementation.
 
 ## zonalstats - Submodule
 
-### Deprecations
+### Deprecations zonalstats
 
 - `wradlib.zonalstats.DataSource` -> (py:class}`wradlib.io.vector.VectorSource`
 
 ## zr - Submodule
 
-### Additions
+### Additions zr
 
 Implemented Xarray Accessor `wrl.zr` ({py:class}`wradlib.zr.ZRMethods`) with:
 
