@@ -161,4 +161,4 @@ $ docker run -ti --name wradlib_nb -p 8888:8888 -v /host/path/to/wradlib-noteboo
         http://localhost:8888/?token=6673cfb299fb93728c183be8a4590fc77608fb1312bce340
 ```
 
-Copy/paste the given url into your local web browser and you are ready to explore the [wradlib-notebooks](https://github.com/wradlib/wradlib/tree/main/examples/notebooks) together with [wradlib-data](https://github.com/wradlib/wradlib-data).
+Copy/paste the given url into your local web browser and you are ready to explore the [wradlib-notebooks](https://github.com/wradlib/wradlib/tree/main/docs/notebooks) together with [wradlib-data](https://github.com/wradlib/wradlib-data).

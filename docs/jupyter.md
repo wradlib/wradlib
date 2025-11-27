@@ -1,13 +1,13 @@
 # Jupyter Notebooks
 
-## Examples: your entry point to wradlib
+## Core Features: your entry point to wradlib
 
-The documentation of {{wradlib}} basically consists of two elements: the first element is the {doc}`library reference <reference>` which provides a systematic documentation of each function in wradlib's API. In order to use the library reference properly, you should have an idea what you're actually looking for. This is why new users mostly start with the second element, the [wradlib-notebooks](https://github.com/wradlib/wradlib/tree/main/examples/notebooks). Here you can look for application examples that are close to what you actually want to achieve, and then use these as a basis for further development. Once you understood an example, you also know what to look for in the {doc}`library reference <reference>`.
+The documentation of {{wradlib}} basically consists of three elements: the first element is the {doc}`library reference <reference>` which provides a systematic documentation of each function in wradlib's API. In order to use the library reference properly, you should have an idea what you're actually looking for. This is why new users mostly start with the second element, the {doc}`Core Features <notebooks/overview>`. Here {{wradlib}}'s core features are highlighted. The third part are compilations of notebooks like the well known [wradlib-notebooks](https://docs.wradlib.org/projects/notebooks) or the [RADOLAN Guide](https://docs.wradlib.org/projects/radolan). There you can look for application examples that are close to what you actually want to achieve, and then use these as a basis for further development. Once you understood an example, you also know what to look for in the {doc}`library reference <reference>`.
 
 
 ## Interactive examples with jupyter notebooks
 
-All {{wradlib}} examples are distributed as [jupyter notebooks](https://jupyter.org) in the [wradlib](https://github.com/wradlib/wradlib/tree/main/examples/notebooks) repository. This way, you can interactively explore various topics. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from {{wradlib}}'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
+All {{wradlib}} examples are distributed as [jupyter notebooks](https://jupyter.org) but completely written in [MyST Markdown](https://mystmd.org/). [jupytext](https://jupytext.readthedocs.io) is utilized to handle all needed transformations. Please check out their documentation how to work with myst markdown based notebooks. Each notebook is organized in documented code blocks. You can browse through a notebook block by block, inspect the results, and experiment with the code. However, you can also view the rendered notebooks including the example results on the web pages of this section: Each page was directly generated from {{wradlib}}'s example notebooks. This way, you can copy&paste code snippets directly into your applications.
 
 :::{note}
 Are you using {{wradlib}} on the [Open Radar Science Shortcourse](https://openradarscience.org/erad2024/)? Then please follow-up there to get your openradar software stack running.
@@ -51,7 +51,7 @@ In both cases, a browser window will open (typically at [http://localhost:8888/t
 (ref_get_notebooks)=
 ## How can I get the example notebooks?
 
-The notebooks are available in the [wradlib](https://github.com/wradlib/wradlib/tree/main/examples/notebooks) repository.
+The notebooks working along {{wradlib}}'s core features are available in the [wradlib](https://github.com/wradlib/wradlib/tree/main/docs/notebooks) repository. More extensive **Tutorials and Examples** notebooks can be found in the [wradlib-notebooks](https://github.com/wradlib/wradlib-notebooks/tree/main/notebooks) or the [RADOLAN Guide](https://github.com/wradlib/radolan-guide/tree/main/notebooks).
 
 (ref_get_data)=
 ## How can I get the example data?
@@ -59,7 +59,7 @@ The notebooks are available in the [wradlib](https://github.com/wradlib/wradlib/
 Most notebooks use example data. These data are provided in a separate repository and can be fetched using ``pooch``. All you need to do is install this via pip manually:
 
 ```bash
-  $ python -m pip install git+https://github.com/wradlib/wradlib-data@pooch
+  $ python -m pip install wradlib-data
 ```
 
 Now you need to set an environment variable pointing to a folder where the data should be saved when requested:
@@ -93,8 +93,8 @@ If you did not install {{wradlib}} via conda, you should first check whether ``j
 
 ## I prefer simple Python scripts instead of notebooks
 
-No problem. If you downloaded the notebooks directly from the wradlib repository, you can easily convert them to Python scripts yourself (but you need to {ref}`install jupyter <ref_get_jupyter>` to do the conversion):
+No problem. If you downloaded the markdown notebooks directly from the wradlib repository, you can easily convert them to Python scripts yourself (but you need to [install jupytext](https://jupytext.readthedocs.io/) to do the conversion):
 
 ```bash
-$ jupyter nbconvert --to script <name of the notebook>
+$ jupytext --to py:percent <name_of_the_notebook.md>
 ```
