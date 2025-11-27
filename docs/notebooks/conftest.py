@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 # Copyright (c) 2019-2025, wradlib developers.
-# Distributed under the MIT License. See LICENSE for more info.
+# Distributed under the MIT License. See LICENSE.txt for more info.
 
 
 from pathlib import Path
