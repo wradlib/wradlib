@@ -1,3 +1,0 @@
-img[src*="openradar_micro.svg"] {
-    filter: grayscale(100%) brightness(0) opacity(0.7);
-}

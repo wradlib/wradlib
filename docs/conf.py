@@ -139,14 +139,6 @@ for k, v in wradlib.__dict__.items():
             modules.append(k)
             with open(f"{k}.rst", mode="w") as f:
                 f.write(f".. automodule:: wradlib.{k}\n")
-                # f.write(f"   :members:\n")
-                # f.write(f"   :undoc-members:\n")
-                # f.write(f"   :show-inheritance:\n")
-                # f.write(f"\n")
-                # f.write(f".. autosummary::\n")
-                # f.write(f"   :nosignatures:\n")
-                # f.write(f"   :no-index:\n\n")
-
 
 # create API/Library reference md-file
 reference = """# Library Reference
@@ -306,10 +298,6 @@ html_favicon = "images/favicon.ico"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
-html_static_path = ["_static"]
-html_css_files = [
-    "custom.css",
-]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),

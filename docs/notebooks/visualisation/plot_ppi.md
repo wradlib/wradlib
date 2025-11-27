@@ -11,14 +11,6 @@ kernelspec:
   name: python3
 ---
 
-```{raw-cell}
-:tags: [hide-cell]
-This notebook is part of the wradlib documentation: https://docs.wradlib.org.
-
-Copyright (c) wradlib developers.
-Distributed under the MIT License. See LICENSE.txt for more info.
-```
-
 # Quick-view a sweep in polar coordinates
 
 

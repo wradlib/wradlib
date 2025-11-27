@@ -1,0 +1,15 @@
+# Licensing Overview
+
+This repository contains three categories of content under distinct licenses.
+
+1. **Source code files** (eg. `.py` files) are licensed under the
+   MIT License. See `LICENSE-MIT` for the full text.
+
+2. **Documentation and notebooks** (e.g. `.md`, `.myst`, and rendered HTML files),
+   including code cells within notebooks are licensed under the Creative Commons
+   Attribution–ShareAlike 4.0 International License (CC BY-SA 4.0). See
+   `LICENSE-CC-BY-SA-4.0` for the full text.
+
+When redistributing this repository in whole or in part, please retain all license
+files and notices. The applicable license for each file or directory is the one
+stated within or nearest to it.

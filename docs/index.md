@@ -67,7 +67,8 @@ This documentation is under steady development. It provides a complete library r
 
 # License
 
-{{wradlib}} is available under the open source [MIT License](https://opensource.org/license/mit).
+{{wradlib}} source code is available under the open source [MIT License](https://opensource.org/license/mit), see also [MIT LICENSE](../LICENSE-MIT).
+Notebooks and documentation are available under [CC BY-SA 4.0](../LICENSE-CC-BY-SA-4.0)
 
 # Indices and tables
 - {ref}`genindex`
