@@ -42,11 +42,11 @@ jobs:
         run: |
           ruff check .
       - name: Lint notebooks with ruff
-        run: nbqa ruff notebooks/**/*.md
+        run: nbqa ruff docs/notebooks/**/*.md
       - name: Lint notebooks with isort
-        run: nbqa isort notebooks/**/*.md
+        run: nbqa isort docs/notebooks/**/*.md
       - name: Check notebooks with black
-        run: nbqa black notebooks/**/*.md
+        run: nbqa black docs/notebooks/**/*.md
 
   build_0:
     name: wradlib unit tests - linux
