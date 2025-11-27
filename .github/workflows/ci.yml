@@ -34,13 +34,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install black black[jupyter] ruff
+          pip install black black[jupyter] isort nbqa ruff
       - name: Black style check
         run: |
           black --check .
       - name: Lint with ruff
         run: |
           ruff check .
+      - name: Lint notebooks with ruff
+        run: nbqa ruff notebooks/**/*.md
+      - name: Lint notebooks with isort
+        run: nbqa isort notebooks/**/*.md
+      - name: Check notebooks with black
+        run: nbqa black notebooks/**/*.md
 
   build_0:
     name: wradlib unit tests - linux
