@@ -245,7 +245,7 @@ html_context = {
     "doc_path": "docs",
     "edit_page_url_template": (
         "https://github.com/{{ github_user }}/{{ github_repo }}/edit/"
-        "{{ github_version }}/{{ doc_path }}/{{ file_name }}"
+        "{{ github_version }}/{{ doc_path }}{{ file_name }}"
     ),
 }
 
@@ -277,7 +277,7 @@ html_theme_options = {
             "type": "local",
             "name": "OpenRadarScience",
             "url": "https://openradarscience.org",
-            "icon": "https://raw.githubusercontent.com/openradar/openradar.github.io/main/_static/openradar_micro.svg",
+            "icon": "https://raw.githubusercontent.com/openradar/openradar.github.io/main/images/openradar_micro.svg",
         },
     ],
     "navbar_align": "right",
@@ -306,6 +306,10 @@ html_favicon = "images/favicon.ico"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
+html_static_path = ["_static"]
+html_css_files = [
+    "custom.css",
+]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
