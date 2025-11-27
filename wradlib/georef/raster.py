@@ -141,7 +141,7 @@ def read_gdal_coordinates(dataset, *, mode="center"):
 
     Examples
     --------
-    See :doc:`notebooks/classify/clutter_cloud`.
+    See :doc:`notebooks:notebooks/classify/clutter_cloud`.
     """
     coordinates_pixel = _pixel_coordinates(
         dataset.RasterXSize, dataset.RasterYSize, mode
@@ -168,7 +168,7 @@ def read_gdal_projection(dataset):
 
     Examples
     --------
-    See :doc:`notebooks/classify/clutter_cloud`.
+    See :doc:`notebooks:notebooks/classify/clutter_cloud`.
     """
     return pyproj.CRS.from_wkt(dataset.GetProjection())
 
@@ -191,7 +191,7 @@ def read_gdal_values(dataset, *, nodata=None):
 
     Examples
     --------
-    See :doc:`notebooks/classify/clutter_cloud`.
+    See :doc:`notebooks:notebooks/classify/clutter_cloud`.
     """
     nbands = dataset.RasterCount
 

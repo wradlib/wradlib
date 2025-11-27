@@ -7,6 +7,19 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development Version
+
+**New features**
+
+* Restructure and update documentation ({pull}`731`) by {at}`kmuehlbauer`
+
+**Maintenance**
+
+**Documentation**
+
+**Bugfixes**
+
+
 ## Version 2.5
 
 **New features**
@@ -25,7 +38,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **Documentation**
 
 * Port notebooks as myst markdown into examples/notebooks, adapt documentation pipeline ({pull}`714`) by {at}`kmuehlbauer`
-* Add practical guide for contributing ({pull}`703`) by {at}`kmuehlbauer`
+* Add practical guide for contributing ({pull}`703`) by {at}`egouden`
 
 **Bugfixes**
 

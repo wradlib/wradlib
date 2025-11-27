@@ -1,0 +1,13 @@
+{# extend the theme's default layout #}
+{% extends "!layout.html" %}
+
+{# inject a hidden license comment at the top of every HTML page #}
+{% block extrahead %}
+<!--
+This documentation is part of the wradlib project: https://docs.wradlib.org/.
+Copyright (c) 2016-2025 wradlib developers.
+Distributed under CC BY-SA 4.0.
+See https://github.com/wradlib/wradlib/blob/main/LICENSE.txt for details.
+-->
+{{ super() }}
+{% endblock %}

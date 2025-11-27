@@ -1170,6 +1170,7 @@ def cross_section_ppi(
         - A :py:class:`gdal:osgeo.osr.SpatialReference` instance
         - A type accepted by :py:meth:`pyproj.CRS.from_user_input` (e.g., EPSG code,
           PROJ string, dictionary, WKT, or any object with a `to_wkt()` method)
+
         Projection to use with :py:class:`wradlib.georef.xarray.georeference`, defaults to AEQD.
     npl : int, optional
         Number of points to make up the line between p1 and p2, in case the user gives two arbitrary points

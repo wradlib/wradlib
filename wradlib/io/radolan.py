@@ -300,7 +300,7 @@ def read_dx(filename):
 
     Examples
     --------
-    See :doc:`notebooks/fileio/legacy/read_dx`.
+    See :doc:`notebooks:notebooks/fileio/legacy/read_dx`.
     """
 
     azimuthbitmask = 2 ** (14 - 1)
@@ -879,7 +879,7 @@ def read_radolan_composite(f, *, missing=-9999, loaddata=True, fillmissing=False
 
     Examples
     --------
-    See :doc:`notebooks/fileio/radolan/radolan_format`.
+    See :doc:`radolan:notebooks/format`.
     """
     NODATA = missing
 
