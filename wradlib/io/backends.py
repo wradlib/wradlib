@@ -33,7 +33,7 @@ from xarray.core import indexing
 from xarray.core.utils import Frozen, FrozenDict, close_on_error
 from xarray.core.variable import Variable
 
-from wradlib.io.radolan import _radolan_file
+from wradlib.io.radolan import _open_radolan_odim_as_groups, _radolan_file
 
 RADOLAN_LOCK = SerializableLock()
 
@@ -130,6 +130,26 @@ class RadolanDataStore(AbstractDataStore):
         self._manager.close(**kwargs)
 
 
+def _normalize_filename_or_obj(filename_or_obj):
+    from xarray.backends.common import _normalize_path
+
+    if isinstance(filename_or_obj, bytes | memoryview):
+        return io.BytesIO(filename_or_obj)
+    else:
+        return _normalize_path(filename_or_obj)
+
+
+def _is_hdf5(filename_or_obj):
+    from xarray.backends.h5netcdf_ import (
+        try_read_magic_number_from_file_or_path,
+    )
+
+    filename_or_obj = _normalize_filename_or_obj(filename_or_obj)
+    magic_number = try_read_magic_number_from_file_or_path(filename_or_obj)
+    if magic_number is not None:
+        return magic_number.startswith(b"\211HDF\r\n\032\n")
+
+
 class RadolanBackendEntrypoint(BackendEntrypoint):
     """Xarray BackendEntrypoint for RADOLAN data."""
 
@@ -151,16 +171,29 @@ class RadolanBackendEntrypoint(BackendEntrypoint):
         copy=False,
         ancillary=False,
     ):
-        store = RadolanDataStore(
-            filename_or_obj,
-            fillmissing=fillmissing,
-            copy=copy,
-            ancillary=ancillary,
-        )
-        store_entrypoint = StoreBackendEntrypoint()
-        with close_on_error(store):
-            ds = store_entrypoint.open_dataset(
-                store,
+        if not _is_hdf5(filename_or_obj):
+            store = RadolanDataStore(
+                filename_or_obj,
+                fillmissing=fillmissing,
+                copy=copy,
+                ancillary=ancillary,
+            )
+            store_entrypoint = StoreBackendEntrypoint()
+            with close_on_error(store):
+                ds = store_entrypoint.open_dataset(
+                    store,
+                    mask_and_scale=mask_and_scale,
+                    decode_times=decode_times,
+                    concat_characters=concat_characters,
+                    decode_coords=decode_coords,
+                    drop_variables=drop_variables,
+                    use_cftime=use_cftime,
+                    decode_timedelta=decode_timedelta,
+                )
+            return ds
+        else:
+            return _open_radolan_odim_as_groups(
+                filename_or_obj,
                 mask_and_scale=mask_and_scale,
                 decode_times=decode_times,
                 concat_characters=concat_characters,
@@ -169,4 +202,3 @@ class RadolanBackendEntrypoint(BackendEntrypoint):
                 use_cftime=use_cftime,
                 decode_timedelta=decode_timedelta,
             )
-        return ds

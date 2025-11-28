@@ -38,7 +38,9 @@ import io
 import re
 
 import numpy as np
+import pyproj
 import xarray as xr
+import xradar as xd
 
 from wradlib import util
 from wradlib.georef import projection, rect
@@ -1037,6 +1039,11 @@ radolan = {
         "long_name": "relativ_rainfall_amount_to_30_year_average",
         "unit": "1",
     },
+    "ACRR": {
+        "standard_name": "rainfall_amount",
+        "long_name": "rainfall_amount",
+        "unit": "mm",
+    },
 }
 
 
@@ -1454,3 +1461,117 @@ def open_radolan_mfdataset(paths, **kwargs):
     if kwargs.get("concat_dim", False):
         kwargs["combine"] = "nested"
     return xr.open_mfdataset(paths, engine="radolan", **kwargs)
+
+
+def _get_odim_dataset(groups, dataset, data):
+    attrs = groups[f"/{dataset}/{data}/what"].attrs
+    quant = attrs["quantity"]
+    ds = groups[f"/{dataset}/{data}"].rename(data=quant)
+    ds[quant].attrs["add_offset"] = attrs["offset"]
+    ds[quant].attrs["scale_factor"] = attrs["gain"]
+    ds[quant].attrs["_FillValue"] = attrs["nodata"]
+    ds[quant].attrs["_Undetect"] = attrs["undetect"]
+    ds[quant].attrs.update(groups[f"/{dataset}/what"].attrs)
+    ds[quant].attrs.update(radolan[quant])
+    ds = ds.rename(phony_dim_0="y", phony_dim_1="x")
+
+    ds = xr.merge([groups["/"], ds])
+    ds.attrs["camethod"] = groups[f"/{dataset}/how"].attrs["camethod"]
+    ds.attrs["radarlocations"] = groups["/how"].attrs["nodes"]
+    ds.attrs["software"] = groups["/how"].attrs["software"]
+    ds.attrs["sw_version"] = groups["/how"].attrs["sw_version"]
+    ds.attrs["source"] = groups["/what"].attrs["source"]
+    ds.attrs["version"] = groups["/what"].attrs["version"]
+
+    return ds
+
+
+def _get_odim_time(what):
+    timestr = what["date"] + what["time"]
+    time = dt.datetime.strptime(timestr, "%Y%m%d%H%M%S")
+    time = int(time.replace(tzinfo=dt.timezone.utc).timestamp())
+    date_str = "1970-01-01T00:00:00Z"
+    date_unit = "seconds"
+    time_attrs = {
+        "standard_name": "time",
+        "units": f"{date_unit} since {date_str}",
+    }
+    time = np.array(
+        [
+            time,
+        ]
+    )
+    time = xr.DataArray(
+        time,
+        dims=[
+            "time",
+        ],
+        attrs=time_attrs,
+    )
+    return time
+
+
+def _get_odim_projection(where):
+    projdef = where["projdef"]
+    parts = projdef.split()
+    parts = [p for p in parts if not (p.startswith("+x_0=") or p.startswith("+y_0="))]
+    projdef = " ".join(parts)
+    proj_crs = pyproj.CRS.from_user_input(projdef)
+    return proj_crs
+
+
+def _get_radolan_coordinates(ds):
+    proj_crs = ds.xradar.get_crs()
+    x = ds.sizes["x"]
+    y = ds.sizes["y"]
+    xlocs, ylocs = rect.get_radolan_coordinates(
+        y,
+        x,
+        crs=proj_crs,
+        mode="center",
+    )
+    xattrs = {
+        "units": "m",
+        "long_name": "x coordinate of projection",
+        "standard_name": "projection_x_coordinate",
+    }
+
+    yattrs = {
+        "units": "m",
+        "long_name": "y coordinate of projection",
+        "standard_name": "projection_y_coordinate",
+    }
+
+    # flipping y-coordinate needed
+    ds = ds.assign_coords(y=ylocs[::-1], x=xlocs)
+    ds["x"].attrs = xattrs
+    ds["y"].attrs = yattrs
+
+    return ds
+
+
+def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
+    # use xarray h5netcdf to import groups
+    groups = xr.open_groups(
+        filename_or_obj, engine="h5netcdf", decode_cf=False, phony_dims="access"
+    )
+
+    # select group
+    grp = "/dataset1/data1"
+    _, dataset, data = grp.split("/")
+    ds = _get_odim_dataset(groups, dataset, data)
+
+    # dimension and coordinates
+    ds = ds.assign_coords(time=_get_odim_time(groups["/what"].attrs))
+
+    # handle projection
+    crs = _get_odim_projection(groups["/where"].attrs)
+    ds = xd.georeference.add_crs(ds, crs=crs)
+
+    # apply coordinates
+    ds = ds.pipe(_get_radolan_coordinates)
+
+    # merge and decode
+    ds = xr.decode_cf(ds, **kwargs)
+
+    return ds

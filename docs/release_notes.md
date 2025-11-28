@@ -12,10 +12,12 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 **New features**
 
 * Restructure and update documentation ({pull}`731`) by {at}`kmuehlbauer`
+* Implement ODIM_H5 RADOLAN reader ({pull}`717`) by {at}`kmuehlbauer`
 
 **Maintenance**
 
 * Add requirements_docs.txt, adapt pyproject.toml for smooth installation for doc-building ({pull}`732`) by {at}`kmuehlbauer`
+* Reinstate testing wradlib-notebooks ({pull}`717`) by {at}`kmuehlbauer`
 
 **Documentation**
 
