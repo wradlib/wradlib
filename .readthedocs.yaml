@@ -1,28 +1,17 @@
 version: 2
+
 build:
-  os: 'ubuntu-22.04'
+  os: ubuntu-24.04
   tools:
-    python: 'mambaforge-latest'
-  jobs:
-    pre_install:
-      - git update-index --assume-unchanged ci/requirements/readthedocs.yml docs/conf.py
-    pre_build:
-      - rsync -av examples/notebooks/ examples/render/
-      - find examples/render -name "*.md" -exec jupytext --to ipynb {} \;
-      - find examples/render -name "*.md" -delete
-      - rsync -av examples/render/ docs/notebooks/
-    build:
-      html:
-        - echo "First run"
-        - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
-        - echo "Second run"
-        - sphinx-build -j auto -v -b html docs/ $READTHEDOCS_OUTPUT/html
+    python: mambaforge-latest
 
 conda:
   environment: ci/requirements/readthedocs.yml
+
 sphinx:
   builder: html
   configuration: docs/conf.py
+
 python:
   install:
     - method: pip

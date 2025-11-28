@@ -163,7 +163,7 @@ def create_osr(projname, **kwargs):
 
     Examples
     --------
-    See :ref:`wradlib_workflow:georeferencing-and-projection`.
+    See :ref:`notebooks:notebooks/basics/wradlib_workflow:georeferencing and projection`.
     """
     crs = osr.SpatialReference()
     crs.ImportFromWkt(create_crs(projname, **kwargs).to_wkt())
@@ -207,7 +207,7 @@ def create_crs(projname, **kwargs):
 
     Examples
     --------
-    See :ref:`wradlib_workflow:georeferencing-and-projection`.
+    See :ref:`notebooks:notebooks/basics/wradlib_workflow:georeferencing and projection`.
     """
     aeqd_wkt = (
         'PROJCS["unnamed",'
@@ -321,7 +321,7 @@ def projstr_to_osr(projstr):
 
     Examples
     --------
-    See :ref:`radolan_grid:proj`.
+    See :ref:`radolan:projection`.
     """
     crs = osr.SpatialReference()
     crs.ImportFromProj4(projstr)
@@ -401,7 +401,7 @@ def reproject(*args, **kwargs):
 
     Examples
     --------
-    See :doc:`notebooks/georeferencing/georef`.
+    See :doc:`notebooks:notebooks/georeferencing/georef`.
     """
     if len(args) == 1:
         C = np.asanyarray(args[0])
@@ -520,7 +520,7 @@ def _reproject_xarray(obj, **kwargs):
 
     Examples
     --------
-    See :doc:`notebooks/georeferencing/georef`.
+    See :doc:`notebooks:notebooks/georeferencing/georef`.
     """
     obj = obj.copy()
     coords = kwargs.pop("coords", None)
@@ -536,7 +536,7 @@ def _reproject_xarray(obj, **kwargs):
     output_core_dims = input_core_dims
 
     # user overrides?
-    if src_crs := kwargs.get("src_crs") is None:
+    if (src_crs := kwargs.get("src_crs")) is None:
         # extract crs from obj
         src_crs = xd.georeference.get_crs(obj)
     else:
@@ -547,7 +547,7 @@ def _reproject_xarray(obj, **kwargs):
     src_crs = ensure_crs(src_crs)
     kwargs["src_crs"] = src_crs
 
-    if trg_crs := kwargs.get("trg_crs") is None:
+    if (trg_crs := kwargs.get("trg_crs")) is None:
         trg_crs = get_default_projection()
     trg_crs = ensure_crs(trg_crs)
     kwargs["trg_crs"] = trg_crs

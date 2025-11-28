@@ -123,7 +123,7 @@ def phidp_kdp_vulpiani(
 
     Examples
     --------
-    See :doc:`notebooks/verification/verification`.
+    See :doc:`notebooks:notebooks/verification/verification`.
 
     """
     if copy:

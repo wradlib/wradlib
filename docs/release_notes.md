@@ -11,8 +11,24 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **New features**
 
-* ENH: add hydrometeor partitioning ratio calculation from Pejcic et al. ({pull}`699`) by {at}`kmuehlbauer`
-* DOC: port notebooks as myst markdown into examples/notebooks, adapt documentation pipeline ({pull}`714`) by {at}`kmuehlbauer`
+* Restructure and update documentation ({pull}`731`) by {at}`kmuehlbauer`
+
+**Maintenance**
+
+* Add requirements_docs.txt, adapt pyproject.toml for smooth installation for doc-building ({pull}`732`) by {at}`kmuehlbauer`
+
+**Documentation**
+
+**Bugfixes**
+
+
+## Version 2.5
+
+**New features**
+
+* Add hydrometeor partitioning ratio calculation from Pejcic et al. ({pull}`699`) by {at}`kmuehlbauer`
+* Use pyproj instead of osgeo.osr ({pull}`720`) by {at}`kmuehlbauer`
+* Add transform sweep and enhance sweep_to_raster ({pull}`691`, {pull}`704`, {pull}`713`) by {at}`egouden`
 
 **Maintenance**
 
@@ -23,7 +39,15 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Documentation**
 
+* Port notebooks as myst markdown into examples/notebooks, adapt documentation pipeline ({pull}`714`) by {at}`kmuehlbauer`
+* Add practical guide for contributing ({pull}`703`) by {at}`egouden`
+
 **Bugfixes**
+
+* Fix argument handling in fuzzy classification wrapper ({pull}`722`) by {at}`juhi24`.
+* Fix usage of Path and str ({pull}`726`) by {at}`egouden`
+* Fix reproject function src_crs/trg_crs extraction from kwargs ({pull}`728`) by {at}`kmuehlbauer`
+
 
 ## Version 2.4
 

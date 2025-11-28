@@ -101,7 +101,7 @@ def correct_attenuation_hb(
 
     Examples
     --------
-    See :ref:`attenuation:hitschfeld-and-bordan`.
+    See :ref:`notebooks:notebooks/attenuation/attenuation:hitschfeld and bordan`.
     """
     if coefficients is None:
         coefficients = {"a": 0.000167, "b": 0.7, "gate_length": 1.0}

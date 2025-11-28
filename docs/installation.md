@@ -1,10 +1,10 @@
 # Installation
 
-## Anaconda/Conda
+## Conda/Mamba
 
-In order to run {{wradlib}}, you need to have a Python interpreter installed on your local computer, as well as [a number of Python packages](#dependencies). We recommend installing from [Anaconda](https://www.anaconda.com/download) as it includes Python, numerous required packages, and other useful tools (e.g. [Spyder](https://www.spyder-ide.org/)).
+In order to run {{wradlib}}, you need to have a Python interpreter installed on your local computer, as well as [a number of Python packages](#dependencies). We recommend using [conda-forge](https://conda-forge.org). Numerous required packages, and other useful tools (e.g. [Spyder](https://www.spyder-ide.org/)) can be easily installed.
 
-Using Anaconda the installation process is harmonised across platforms. Download and install the latest [Anaconda distribution](https://www.anaconda.com/download) for your specific OS. We recommend using the minimal distributions [Miniconda](https://conda.io/miniconda.html) or [Miniforge/Mambaforge](https://github.com/conda-forge/miniforge)  if you do not want to install a full scientific python stack.
+Using **conda-forge** the installation process is harmonised across platforms. Download and install the latest [Miniforge installer](https://conda-forge.org/download) for your specific OS.
 
 We are constantly performing tests with [conda-forge](https://conda-forge.org/) community channel (for the most recent 3 python versions).
 
@@ -15,24 +15,12 @@ $ python --version
 Python 3.11.0
 ```
 
-Now you can use the ``conda``/``mamba`` package and environment manager ([conda documentation](https://conda.io/docs/) / [mamba documenation](https://mamba.readthedocs.io/en/latest/)) to setup your {{wradlib}} installation.
-
-#. Add the conda-forge channel, where {{wradlib}} and its dependencies are located. Read more about the community effort [conda-forge](https://conda-forge.org):
-
-```bash
-$ conda config --add channels conda-forge
-```
-
-#. Use strict channel priority to prevent channel clashes:
-
-```bash
-$ conda config --set channel_priority strict
-```
+Now you can use the ``conda``/``mamba`` package and environment manager ([conda documentation](https://conda.io/docs/) / [mamba documentation](https://mamba.readthedocs.io/en/latest/)) to setup your {{wradlib}} installation.
 
 #. Create a new environment from scratch:
 
 ```bash
-$ conda create --name wradlib python=3.11
+$ conda create --name wradlib python=3.14
 ```
 
 #. Activate the {{wradlib}} environment:
@@ -49,7 +37,7 @@ $ conda activate wradlib
 
 Now you have a ``conda`` environment with a working {{wradlib}} installation.
 
-Test the integrity of your {{wradlib}} installation by opening a console window and typing calling the python interpreter:
+Test the integrity of your {{wradlib}} installation by opening a console window and calling the python interpreter:
 
 ```bash
 $ python
@@ -107,7 +95,7 @@ Afterwards it will check for any dependencies not met, yet.
 Be aware that using ``pip`` we can only look for python-module dependencies.
 For example the numpy module itself depends on some other libraries, which need to be present in order for the module to compile properly after being downloaded by ``pip``. We have no control over these dependencies and it is rather hard to give a complete overview.
 
-Therefore we recommend trying to satisfy the dependencies using your favorite package management system.
+Therefore, we recommend trying to satisfy the dependencies using your favorite package management system.
 
 Installing via ``pip`` tries to install all dependencies, but be sure to have all depending non-python libraries installed. Wheels are not available for all dependencies (eg. GDAL).
 
@@ -195,8 +183,8 @@ For development additional packages to run the test suite are needed:
 
 Depending on your OS and installation method you may encounter different problems. Here are some guidelines for attacking them.
 
-We strongly recommend using the Anaconda conda package and environment manager (see [](#installation)). Using [conda-forge](https://conda-forge.org) we will maintain the [wradlib-feedstock](https://github.com/conda-forge/wradlib-feedstock) for constant availability of recent {{wradlib}} versions.
+We strongly recommend using the conda/mamba package and environment manager (see [](#installation)). Using [conda-forge](https://conda-forge.org) we will maintain the [wradlib-feedstock](https://github.com/conda-forge/wradlib-feedstock) for constant availability of recent {{wradlib}} versions.
 
-If you can't use Anaconda/Miniconda, it is generally a good idea to use your systems package manager to install dependencies. This will also take account for other needed bindings, libs etc.
+If you can't use Miniforge, it is generally a good idea to use your systems package manager to install dependencies. This will also take account for other needed bindings, libs etc.
 
 If you encounter problems installing {{wradlib}}, check on your favorite search engine or create an [issue here](https://github.com/wradlib/wradlib/issues) with details on the problem or open a discussion topic on the [openradar-discourse](https://openradar.discourse.group/).

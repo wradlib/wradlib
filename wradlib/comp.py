@@ -107,8 +107,7 @@ def togrid(src, trg, radius, center, data, interpol, *args, **kwargs):
 
     Examples
     --------
-    See :ref:`wradlib_workflow:gridding`.
-
+    See :ref:`notebooks:notebooks/basics/wradlib_workflow:gridding`.
     """
     # get indices to select the subgrid from the composite grid
     ix = extract_circle(center, radius, trg)
@@ -243,7 +242,7 @@ def compose_weighted(radargrids, qualitygrids):
 
     Examples
     --------
-    See :doc:`notebooks/workflow/recipe1`.
+    See :doc:`notebooks:notebooks/workflow/recipe1`.
 
     See Also
     --------

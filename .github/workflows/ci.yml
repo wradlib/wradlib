@@ -24,7 +24,7 @@ jobs:
     name: lint and style checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up Python
@@ -34,13 +34,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install black black[jupyter] ruff
+          pip install black black[jupyter] isort nbqa ruff
       - name: Black style check
         run: |
           black --check .
       - name: Lint with ruff
         run: |
           ruff check .
+      - name: Lint notebooks with ruff
+        run: nbqa ruff docs/notebooks/**/*.md
+      - name: Lint notebooks with isort
+        run: nbqa isort docs/notebooks/**/*.md
+      - name: Check notebooks with black
+        run: nbqa black docs/notebooks/**/*.md
 
   build_0:
     name: wradlib unit tests - linux
@@ -58,7 +64,7 @@ jobs:
         python-version: ["3.10", "3.13"]
         numpy-version: ["2"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -117,7 +123,7 @@ jobs:
       matrix:
         python-version: [ "3.13" ]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -177,7 +183,7 @@ jobs:
       matrix:
         python-version: ["3.13"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -235,7 +241,7 @@ jobs:
       matrix:
         python-version: ["3.13"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -293,7 +299,7 @@ jobs:
       matrix:
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Install micromamba environment
@@ -325,19 +331,19 @@ jobs:
           echo $WRADLIB_DATA
           export WRADLIB_DATA=`realpath $WRADLIB_DATA`
           # create folder structure with all needed files, but *.md
-          cd examples
+          cd docs
           rsync -av --files-from=<(git ls-files) --exclude='*.md' ./ render/
           # debug
           pytest -n auto --verbose --durations=15 --cov-report xml:coverage.xml --cov=wradlib --pyargs notebooks
       - name: Build output
         run: |
-          cd examples
+          cd docs
           echo "Rendered from $GITHUB_SHA with $GITHUB_RUN_ID and $GITHUB_RUN_NUMBER" > render/render-info.txt
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
           name: render-output
-          path: examples/render/
+          path: docs/render/
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -420,7 +426,7 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up Python
@@ -450,7 +456,7 @@ jobs:
       run:
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up Python
