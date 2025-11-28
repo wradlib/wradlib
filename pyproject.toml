@@ -62,6 +62,7 @@ include = [
     "/README.md",
     "/requirements.txt",
     "/requirements_devel.txt",
+    "/requirements_docs.txt",
     "/requirements_optional.txt",
 ]
 
@@ -81,7 +82,15 @@ version-file = "wradlib/version.py"
 files = ["requirements.txt"]
 
 [tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
-dev = ["requirements_devel.txt"]
+dev = [
+    "requirements_devel.txt",
+    "requirements_optional.txt",
+]
+doc = [
+    "requirements_docs.txt",
+    "requirements_devel.txt",
+    "requirements_optional.txt",
+]
 opt = ["requirements_optional.txt"]
 
 [tool.black]

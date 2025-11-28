@@ -15,6 +15,8 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 **Maintenance**
 
+* Add requirements_docs.txt, adapt pyproject.toml for smooth installation for doc-building ({pull}`732`) by {at}`kmuehlbauer`
+
 **Documentation**
 
 **Bugfixes**

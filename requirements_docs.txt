@@ -1,0 +1,6 @@
+myst-nb
+pybtex
+sphinx
+sphinxcontrib-bibtex
+sphinx-copybutton
+sphinx-book-theme>=1.0
