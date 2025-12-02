@@ -140,6 +140,8 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
     de1200 = {"j_0": 470, "i_0": 600, "res": 1}
     extended = {"j_0": 600, "i_0": 800, "res": 1}
     de4800 = {"j_0": 470, "i_0": 600, "res": 0.25}
+    de2400 = {"j_0": 1550, "i_0": 1250, "res": 1}  # eg. EuCom-VII
+    eu5300 = {"j_0": 0, "i_0": 0, "res": 1}  # eg. EuComXL-VII
     griddefs = {
         (200, 200): station,
         (450, 450): tiny,
@@ -147,8 +149,10 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
         (900, 900): rx,
         (1100, 900): normal_wx,
         (1200, 1100): de1200,
+        (2400, 2400): de2400,
         (1500, 1400): extended,
         (4800, 4400): de4800,
+        (5300, 6500): eu5300,
     }
 
     mode = kwargs.get("mode", "radolan")
@@ -180,14 +184,26 @@ def get_radolan_coordinates(nrows=None, ncols=None, **kwargs):
         ncols += 1
         nrows += 1
 
-    # get from km to meter for meter-base projections
+    # handle crs correctly
     if crs is not None and crs != "trig":
         crs = projection.ensure_crs(crs)
-        lin = crs.axis_info[0].unit_conversion_factor
-        if lin == 1.0:
-            res *= 1000.0
-            j_0 *= 1000.0
-            i_0 *= 1000.0
+        proj_cf = crs.to_cf()
+        # For laea we need some preparation
+        # We'll use the original provided projection information
+        # and return x_0/y_0 with false_easting/false_northing
+        # This helps to build the coordinates with the correct values
+        if proj_cf["grid_mapping_name"] == "lambert_azimuthal_equal_area":
+            res = 1000.0
+            x_0 = -x_0 - res / 2
+            y_0 += nrows * 1000
+            y_0 = -y_0 + res / 2
+        else:
+            # get from km to meter for meter-base projections
+            lin = crs.axis_info[0].unit_conversion_factor
+            if lin == 1.0:
+                res *= 1000.0
+                j_0 *= 1000.0
+                i_0 *= 1000.0
 
     x_arr = np.arange(x_0 - j_0, x_0 - j_0 + ncols * res, res)
     y_arr = np.arange(y_0 - i_0, y_0 - i_0 + nrows * res, res)
