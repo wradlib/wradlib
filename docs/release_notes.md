@@ -18,6 +18,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * Add requirements_docs.txt, adapt pyproject.toml for smooth installation for doc-building ({pull}`732`) by {at}`kmuehlbauer`
 * Reinstate testing wradlib-notebooks ({pull}`717`) by {at}`kmuehlbauer`
+* Use wradlib-data from conda-forge ({pull}`733`) by {at}`kmuehlbauer`
 
 **Documentation**
 
