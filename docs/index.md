@@ -23,6 +23,7 @@ jupyter
 community
 notebooks/overview
 Tutorials and Examples <https://docs.wradlib.org/projects/notebooks>
+RADOLAN Guide <https://docs.wradlib.org/projects/radolan>
 reference
 bibliography
 weblinks
