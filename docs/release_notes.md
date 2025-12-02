@@ -13,6 +13,7 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * Restructure and update documentation ({pull}`731`) by {at}`kmuehlbauer`
 * Implement ODIM_H5 RADOLAN reader ({pull}`717`) by {at}`kmuehlbauer`
+* Add more grids and moments to radolan reader for new RADOLAN products ({pull}`735`) by {at}`kmuehlbauer`
 
 **Maintenance**
 
