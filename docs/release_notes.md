@@ -7,11 +7,10 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
-## Development Version
+## Version 2.6
 
 **New features**
 
-* Restructure and update documentation ({pull}`731`) by {at}`kmuehlbauer`
 * Implement ODIM_H5 RADOLAN reader ({pull}`717`) by {at}`kmuehlbauer`
 * Add more grids and moments to radolan reader for new RADOLAN products ({pull}`735`) by {at}`kmuehlbauer`
 
@@ -19,11 +18,11 @@ You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip i
 
 * Add requirements_docs.txt, adapt pyproject.toml for smooth installation for doc-building ({pull}`732`) by {at}`kmuehlbauer`
 * Reinstate testing wradlib-notebooks ({pull}`717`) by {at}`kmuehlbauer`
+* Use wradlib-data from conda-forge ({pull}`733`) by {at}`kmuehlbauer`
 
 **Documentation**
 
-**Bugfixes**
-
+* Restructure and update documentation ({pull}`731`) by {at}`kmuehlbauer`
 
 ## Version 2.5
 

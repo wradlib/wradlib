@@ -41,6 +41,7 @@ dependencies:
   - scipy
   - setuptools
   - tqdm
+  - wradlib_data
   - xarray >=2024.10.0
   - xradar >=0.8.0
   - xmltodict

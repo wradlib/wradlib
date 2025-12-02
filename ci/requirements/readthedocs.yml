@@ -53,8 +53,7 @@ dependencies:
   - sphinxcontrib-bibtex
   - sphinx-book-theme>=1.0
   - tqdm
+  - wradlib_data
   - xarray >=2024.10.0
   - xradar >=0.8.0
   - xmltodict
-  - pip:
-    - wradlib_data
