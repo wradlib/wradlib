@@ -1,4 +1,7 @@
+jupyter
+jupytext
 myst-nb
+nbformat
 pybtex
 sphinx
 sphinxcontrib-bibtex

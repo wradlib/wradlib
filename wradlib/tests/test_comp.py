@@ -315,8 +315,8 @@ def test_sweep_to_raster_geographic():
 
 def test_sweep_to_raster():
 
-    filename = DATASETS.fetch("DES_VOL_RAW_20240522_1600.nc")
-    datatree = xd.io.open_cfradial1_datatree(filename)
+    filename = DATASETS.fetch("71_20181220_060628.pvol.h5")
+    datatree = xd.io.open_odim_datatree(filename)
     sweep = datatree["sweep_0"].ds
 
     location = (sweep.longitude.values, sweep.latitude.values)

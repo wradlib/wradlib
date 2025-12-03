@@ -1,236 +1,233 @@
+# Contribute to wradlib
 
-# Contributing
+This is a practical guide for contributing. Check the [documentation](docs/dev_guide.md) for general information.
 
-This is a practical guide for contributing. Please check the [documentation](docs/dev_guide.md) for more general information.
+## Configure local repository
 
-## 1a Install environement using conda
-- Install miniconda3 on Windows and start Anaconda Powershell Prompt:
-``` powershell
-winget install --id=Anaconda.Miniconda3 -e --silent
-exit
-```
-- Create development environement (use "wradlib-dev" to keep wradlib for release):
+### Install git
+
 ```powershell
-conda config --add channels conda-forge
-conda create -n wradlib
-conda activate wradlib
+winget install --id Git.Git
 ```
-- Install wradlib package:
+
 ```bash
-conda install wradlib
+sudo apt install git
 ```
-- Install gdal optional packages:
+
+### Configure git user
+
 ```bash
-conda install libgdal-hdf5
-conda install libgdal-netcdf
+git config --global user.name "John Doe"
+git config --global user.email "john.doe@gmail.com"
 ```
 
-## 1b Install environement using pip on Windows
+### Generate SSH keys
 
-- Install latest version of python
-``` powershell
-winget install -e --id Python.Python.3.13
-exit
-```
-- Create virtual environement:
-``` powershell
-python -m venv $env:USERPROFILE/.venvs/wradlib
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-New-Item -Path $PROFILE -ItemType File -Force
-'Set-Alias wradlib "$env:UserProfile\.venvs\wradlib\Scripts\activate.ps1"' | Out-File -Append $PROFILE
-exit
-```
-- Activate and deactivate virtual environement:
-``` powershell
-wradlib
-deactivate
-```
-
-- Install build tools
-``` powershell
-winget install --id Git.Git -e --silent
-winget install -e --id Kitware.CMake --silent
-winget install --id Microsoft.VisualStudio.2022.BuildTools -e --accept-package-agreements --accept-source-agreements --override "--quiet --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
-```
-- Install gdal using vcpkg
-``` powershell
-cd $HOME
-git clone https://github.com/microsoft/vcpkg.git $VCPKG_PATH
-cd vcpkg
-.\bootstrap-vcpkg.bat
-.\vcpkg.exe install gdal[core,geos,hdf5,netcdf]:x64-windows
-[System.Environment]::SetEnvironmentVariable("Path", "$env:Path;$HOME\vcpkg\installed\x64-windows\bin", [System.EnvironmentVariableTarget]::User)
-[System.Environment]::SetEnvironmentVariable("GDAL_DATA", "$HOME\vcpkg\installed\x64-windows\share\gdal", [System.EnvironmentVariableTarget]::User)
-exit
-```
-
-- Install gdal python bidings using pip
-``` bash
-$env:INCLUDE = "$HOME\vcpkg\installed\x64-windows\include"
-$env:LIB = "$HOME\vcpkg\installed\x64-windows\lib"
-wradlib
-pip install numpy setuptools wheel
-pip install gdal
-```
-## 1c Install development environement on UNIX variants
-
-- Install build tools and dependencies:
-
-``` bash
-sudo apt install build-essential cmake git libgdal-dev python3-devel python3-pip python3-venv swig wget
-```
-
-``` bash
-sudo dnf install gcc gcc-c++ make cmake git gdal-devel proj-devel netcdf-devel hdf5-devel python3-devel python3-pip python3-virtualenv swig wget
-```
-
-- Create virtual environement
-``` bash
-python3 -m venv $HOME/.venvs/wradlib
-source  $HOME/.venvs/wradlib/bin/activate
-```
-
-- Build latest version of gdal:
-``` bash
-pip install --upgrade pip
-pip install setuptools numpy
-
-GDAL_VERSION=3.10.3
-
-PREFIX=$VIRTUAL_ENV
-export PATH=$PREFIX/bin:$PATH
-export LD_LIBRARY_PATH=$PREFIX/lib:$LD_LIBRARY_PATH
-export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-
-wget https://download.osgeo.org/gdal/$GDAL_VERSION/gdal-$GDAL_VERSION.tar.gz
-tar -xzf gdal-$GDAL_VERSION.tar.gz
-
-cmake ./gdal-$GDAL_VERSION -DCMAKE_INSTALL_PREFIX=$PREFIX -DBUILD_PYTHON_BINDINGS=ON
-make -j$(nproc) -C gdal-$GDAL_VERSION
-make install -C gdal-$GDAL_VERSION
-
-rm -rf gdal-$GDAL_VERSION gdal-$GDAL_VERSION.tar.gz
-
-gdalinfo --version
-python -c "from osgeo import gdal; print(gdal.__version__)"
-
-echo 'export LD_LIBRARY_PATH="$HOME/.venvs/wradlib/lib:$LD_LIBRARY_PATH"' >> ~/.bashrc
-```
-
-## 2 Install wradlib from repository
-
-- Activate virtual environement
-
-- Clone wradlib repository:
-``` bash
-git clone https://github.com/wradlib/wradlib.git
-cd wradlib
-```
-- Install all dependencies:
-``` bash
-pip install -e .[dev,opt]
-```
-- Run the test suite:
-``` bash
-python -m pytest -n auto
-```
-- Please report any errors with details on your system
-
-## 3 Configure local repository for development
-
-- Configure automatic SSH on windows:
-```powershell
-Start-Service ssh-agent
-Set-Service -Name ssh-agent -StartupType Automatic
-git config --global core.sshCommand "C:\\Windows\\System32\\OpenSSH\\ssh.exe"
-```
-
-- Configure automatic SSH on linux:
-```bash
-mkdir -p ~/.config/systemd/user
-cat > ~/.config/systemd/user/ssh-agent.service <<EOF
-[Unit]
-Description=SSH Agent
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/ssh-agent -D
-Restart=always
-
-[Install]
-WantedBy=default.target
-EOF
-
-systemctl --user enable ssh-agent
-systemctl --user start ssh-agent
-```
-
-- Generate SSH key and add it
 ```bash
 ssh-keygen -t ed25519
-ssh-add $HOME/.ssh/id_ed25519
-```
-
-- Copy the public key to your github account
-``` powershell
 cat $HOME/.ssh/id_ed25519.pub
 ```
 
-- Configure git user
-```bash
-git config --global user.name "Edouard Goudenhoofdt"
-git config --global user.email "egouden@outlook.com"
+### Add SSH keys to [GitHub account](https://github.com/settings/keys)
+
+### Configure SSH agent on Windows (run as admin):
+```powershell
+Start-Process powershell -Verb RunAs
+Start-Service ssh-agent
+Set-Service -Name ssh-agent -StartupType Automatic
+git config --global core.sshCommand "C:\\Windows\\System32\\OpenSSH\\ssh.exe"
+Restart-Computer
 ```
 
-- Configure fork with ssh and set upstream
+### Add SSH key to agent
+
 ```bash
-git remote remove origin
-git remote add origin git@github.com:egouden/wradlib.git
+ssh-add $HOME/.ssh/id_ed25519
+```
+
+### Fork wradlib on github
+
+### Clone and link
+
+```bash
+git clone git@github.com:jdoe/wradlib.git
+cd wradlib
 git remote add upstream https://github.com/wradlib/wradlib
 ```
 
-## 4 Work on your changes
+## Install/Update development environment
 
-- Update your fork
-``` bash
+### Install with conda (Linux, macOS, Windows)
+
+```sh
+conda env create -f environment.yml
+conda activate wradlib-dev
+conda update --all
+pip install -e .
+```
+
+### Install with package manager and uv (Linux, gdal>=3.9)
+
+```bash
+sudo apt update && sudo apt upgrade
+sudo apt install build-essential
+sudo apt install gdal-bin libgdal-dev proj-data python3 python3-dev
+sudo snap install astral-uv
+```
+
+```bash
+sudo dnf update
+sudo dnf install gcc gcc-c++ make automake autoconf libtool
+sudo dnf install gdal gdal-devel hdf5-devel netcdf-devel proj proj-data-us proj-devel --setopt=install_weak_deps=False
+sudo dnf install python3 python3-devel uv
+```
+
+```bash
+echo "alias activate='source .venv/bin/activate'" >> $HOME/.bashrc
+exit
+```
+
+```bash
+cd wradlib
+uv venv
+activate
+GDAL_VERSION=$(gdal-config --version)
+uv pip install -e .[dev] gdal==$GDAL_VERSION.* --no-binary h5py --no-binary netcdf4 --no-binary pyproj
+```
+
+### Install with vcpkg and uv (Windows)
+
+```powershell
+winget install -e --id Microsoft.VisualStudio.BuildTools --override "--quiet --add Microsoft.VisualStudio.Workload.VCTools"
+cd $HOME
+git clone --depth 1 https://github.com/microsoft/vcpkg.git
+cd vcpkg
+.\bootstrap-vcpkg.bat
+[System.Environment]::SetEnvironmentVariable("Path",$env:Path + ";$HOME\vcpkg",[System.EnvironmentVariableTarget]::User)
+exit
+```
+
+```powershell
+winget install --id Python.PythonInstallManager
+pymanager install py3.13
+winget install --id astral-sh.uv
+if (!(Test-Path $PROFILE)) { New-Item -ItemType File -Path $PROFILE -Force }
+Add-Content $PROFILE "`nfunction activate { . .\.venv\Scripts\Activate.ps1 }"
+exit
+```
+
+```powershell
+vcpkg install gdal[core,geos,hdf5,netcdf]
+vcpkg list gdal
+```
+
+```powershell
+cd $HOME\wradlib
+uv venv --python 3.13
+Add-Content .venv\Scripts\Activate.ps1 '$env:PATH = "$HOME\vcpkg\installed\x64-windows\bin;" + $env:PATH'
+Add-Content .venv\Scripts\Activate.ps1 '$env:INCLUDE = "$HOME\vcpkg\installed\x64-windows\include"'
+Add-Content .venv\Scripts\Activate.ps1 '$env:LIB = "$HOME\vcpkg\installed\x64-windows\lib"'
+activate
+uv pip install -e .[dev] gdal==3.12.0.*
+```
+
+```powershell
+winget install Amazon.AWSCLI
+$ProjDownloadDir = python -c "import pyproj; print(pyproj.datadir.get_user_data_dir())"
+aws s3 sync s3://cdn.proj.org $ProjDownloadDir --no-sign-request
+```
+
+```powershell
+vcpkg upgrade gdal --no-dry-run
+uv pip install -e .[dev] gdal==3.12.0.* --upgrade
+```
+
+### Install with spack and uv (Linux)
+
+```bash
+sudo apt install build-essential gfortran python3
+```
+
+```bash
+git clone --depth 1 https://github.com/spack/spack.git
+echo ". ~/spack/share/spack/setup-env.sh" >> .bashrc
+exit
+```
+
+```bash
+spack env create wradlib-dev
+spack env activate wradlib-dev
+spack add openblas
+spack add hdf5 ~mpi
+spack add netcdf-c ~mpi
+spack add gdal +geos +hdf5 +netcdf
+spack add python@3.14
+spack compiler find
+spack install
+```
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
+GDAL_VERSION=$(gdal-config --version)
+uv pip install -e wradlib[dev] gdal==$GDAL_VERSION.* --no-binary h5py --no-binary netcdf4 --no-binary pyproj
+```
+
+## Work on a bug fix, enhancement or new feature
+
+### Update local repository
+```bash
 git checkout main
 git fetch upstream main
 git rebase upstream/main
 git push origin main
 ```
-- Create a new branch
+
+### Run unit test and check coverage
 ```bash
-git checkout -b my-feature
+pytest -n auto --dist loadfile --verbose --doctest-modules --doctest-plus --durations=15 --cov-report xml --cov=wradlib
+diff-cover coverage.xml --compare-branch=main
 ```
-- Make changes using your favorite editor
-- Save your changes remotely
+
+### Run notebooks automatically and manually
 ```bash
-git log
-git commit -a -m "commit message as in git log"
-git push origin my-feature
+python -m pytest -n auto docs/notebooks/
+python -m jupyter notebook docs/render/composition/max_reflectivity.ipynb
 ```
-- Update your branch with latest version of wradlib
+
+### Build the documentation
 ```bash
-git fetch upstream main
-git rebase upstream/main
-pip install -e .
+python -m sphinx build -j auto -v -b html docs/ doc-build
 ```
-- Make new changes to existing branch
+
+### Create a branch
 ```bash
-git fetch upstream main
-git rebase upstream/main
+git checkout main
+git checkout -b my-branch
+python -m pre_commit run
+git commit -a -m "describe your changes as in git log"
+git push origin my-branch
+```
+
+### Update your branch
+```bash
+git checkout my-branch
+git rebase main
+python -m pytest --testmon
+python -m pre_commit run
 git commit -a --amend --date "$(date)"
-git push origin my-feature -f
+git push origin my-branch -f
 ```
-- Test your changes
-```bash
-python -m pytest -n auto
-```
-- Clean your code
-```bash
-black .
-ruff check
-ruff check --fix
-```
-- Start a pull request on github
-- Use draft mode when working on new changes
+
+### Submit your branch
+- Create a pull request.
+- Mark as draft.
+- Run all checks.
+- Mark as ready for a review.
+
+### Resubmit your branch
+- Mark as draft.
+- Answer reviewer comments.
+- Combine updates in a new commit.
+- Keep the final commit message.
+- Mark as ready for a review.

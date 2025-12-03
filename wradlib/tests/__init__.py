@@ -70,6 +70,7 @@ def get_wradlib_data_file(file):
     return wradlib_data.DATASETS.fetch(file)
 
 
+bottleneck = util.import_optional("bottleneck")
 cartopy = util.import_optional("cartopy")
 dask = util.import_optional("dask")
 gdal = util.import_optional("osgeo.gdal")
@@ -84,6 +85,11 @@ pyproj = util.import_optional("pyproj")
 requests = util.import_optional("requests")
 xmltodict = util.import_optional("xmltodict")
 
+
+requires_bottleneck = pytest.mark.skipif(
+    not util.has_import(bottleneck),
+    reason="requires bottleneck.",
+)
 
 requires_dask = pytest.mark.skipif(
     not util.has_import(dask),
