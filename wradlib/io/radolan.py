@@ -1501,14 +1501,16 @@ def _get_odim_dataset(groups, dataset, data):
     return ds
 
 
-def _get_odim_time(what):
-    timestr = what["date"] + what["time"]
+def _get_odim_time(what, prefix=None, dim="time"):
+    if prefix is None:
+        prefix = ""
+    timestr = what[f"{prefix}date"] + what[f"{prefix}time"]
     time = dt.datetime.strptime(timestr, "%Y%m%d%H%M%S")
     time = int(time.replace(tzinfo=dt.timezone.utc).timestamp())
     date_str = "1970-01-01T00:00:00Z"
     date_unit = "seconds"
     time_attrs = {
-        "standard_name": "time",
+        "standard_name": dim,
         "units": f"{date_unit} since {date_str}",
     }
     time = np.array(
@@ -1519,7 +1521,7 @@ def _get_odim_time(what):
     time = xr.DataArray(
         time,
         dims=[
-            "time",
+            dim,
         ],
         attrs=time_attrs,
     )
@@ -1591,6 +1593,14 @@ def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
 
     # dimension and coordinates
     ds = ds.assign_coords(time=_get_odim_time(groups["/what"].attrs))
+
+    # predictions?
+    # for now we only check known products
+    if groups["/dataset1/what"].attrs["prodname"][0:2] in ["RV", "RS", "WN"]:
+        pred_time = _get_odim_time(
+            groups["/dataset1/what"].attrs, "end", "prediction_time"
+        )
+        ds = ds.assign_coords(prediction_time=pred_time)
 
     # handle projection
     crs, crs_orig = _get_odim_projection(groups["/where"].attrs)
