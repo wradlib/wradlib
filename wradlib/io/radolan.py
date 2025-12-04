@@ -1044,6 +1044,21 @@ radolan = {
         "long_name": "rainfall_amount",
         "unit": "mm",
     },
+    "RATE": {
+        "standard_name": "rainfall_rate",
+        "long_name": "rainfall_rate",
+        "unit": "mm h-1",
+    },
+    "DBZH": {
+        "standard_name": "equivalent_reflectivity_factor",
+        "long_name": "equivalent_reflectivity_factor",
+        "unit": "dBZ",
+    },
+    "VIL": {
+        "standard_name": "vertically_integrated_ice",
+        "long_name": "vertically_integrated_ice",
+        "unit": "mm",
+    },
 }
 
 
@@ -1513,22 +1528,35 @@ def _get_odim_time(what):
 
 def _get_odim_projection(where):
     projdef = where["projdef"]
+    proj_crs_orig = pyproj.CRS.from_user_input(projdef)
     parts = projdef.split()
     parts = [p for p in parts if not (p.startswith("+x_0=") or p.startswith("+y_0="))]
     projdef = " ".join(parts)
     proj_crs = pyproj.CRS.from_user_input(projdef)
-    return proj_crs
+    return proj_crs, proj_crs_orig
 
 
-def _get_radolan_coordinates(ds):
-    proj_crs = ds.xradar.get_crs()
+def _get_radolan_coordinates(ds, crs):
     x = ds.sizes["x"]
     y = ds.sizes["y"]
+
+    # DWD/EU5300 is not Polar Stereographic
+    # but Lambert Azimuthal Equal-Area Projection
+    # -> taking information from the projection
+    proj_cf = crs.to_cf()
+    kwargs = {}
+    if proj_cf["grid_mapping_name"] == "lambert_azimuthal_equal_area":
+        kwargs.update(
+            lon=proj_cf["longitude_of_projection_origin"],
+            lat=proj_cf["latitude_of_projection_origin"],
+        )
+
     xlocs, ylocs = rect.get_radolan_coordinates(
         y,
         x,
-        crs=proj_crs,
+        crs=crs,
         mode="center",
+        **kwargs,
     )
     xattrs = {
         "units": "m",
@@ -1565,11 +1593,18 @@ def _open_radolan_odim_as_groups(filename_or_obj, **kwargs):
     ds = ds.assign_coords(time=_get_odim_time(groups["/what"].attrs))
 
     # handle projection
-    crs = _get_odim_projection(groups["/where"].attrs)
-    ds = xd.georeference.add_crs(ds, crs=crs)
+    crs, crs_orig = _get_odim_projection(groups["/where"].attrs)
 
     # apply coordinates
-    ds = ds.pipe(_get_radolan_coordinates)
+    # todo: Refactor this to use crs_orig in any case
+    #   We should be able to calculate the radolan coords from the projection
+    if crs.to_cf()["grid_mapping_name"] == "lambert_azimuthal_equal_area":
+        ds = ds.pipe(_get_radolan_coordinates, crs_orig)
+    else:
+        ds = ds.pipe(_get_radolan_coordinates, crs)
+
+    # add projection
+    ds = xd.georeference.add_crs(ds, crs=crs)
 
     # merge and decode
     ds = xr.decode_cf(ds, **kwargs)
