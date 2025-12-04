@@ -7,6 +7,16 @@ Please note that {{wradlib}} releases follow [semantic versioning](https://semve
 
 You can install the latest {{wradlib}} release from PyPI via ``$ python -m pip install wradlib`` or specific version via ``$ pip install wradlib==x.y.z``. The recommended installation process is described in {doc}`installation`.
 
+## Development Version
+
+**New features**
+
+* Improve contributing experience, update environments and tests ({pull}`736`) by {at}`egouden`
+
+**Bugfixes**
+
+* Fix importing of nowcast data (include prediction time) ({pull}`737`) by {at}`kmuehlbauer`
+
 ## Version 2.6
 
 **New features**
