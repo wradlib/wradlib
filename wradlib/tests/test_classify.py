@@ -298,6 +298,7 @@ def test_create_gpm_observations():
     assert out.sizes == {"obs": 4, "nscan": 284, "nray": 49, "nbin": 176}
 
 
+@requires_netcdf
 def test_create_gr_observations():
     input_file = get_wradlib_data_file("netcdf/KDDC_2018_0625_051138_min.cf")
     ds = xr.open_dataset(input_file, engine="cfradial1", group="sweep_2")

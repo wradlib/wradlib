@@ -22,6 +22,7 @@ from wradlib import georef, io, util, zonalstats
 from . import (
     get_wradlib_data_file,
     get_wradlib_data_file_or_filelike,
+    requires_bottleneck,
     requires_dask,
     requires_data_folder,
     requires_gdal,
@@ -267,6 +268,7 @@ def test_get_radiosonde(radiosonde):
         assert quant == radiosonde.res3
 
 
+@requires_bottleneck
 @pytest.mark.parametrize("res", [None, 1.0])
 def test_radiosonde_to_xarray(res):
     filename1 = get_wradlib_data_file("misc/radiosonde_10410_20140610_1200.h5")
@@ -403,7 +405,9 @@ def test_read_trmm():
 
     filename2 = "hdf5/IDR66_20141206_094829.vol.h5"
     gr2gpm_file = get_wradlib_data_file(filename2)
+
     gr_data = io.netcdf.read_generic_netcdf(gr2gpm_file)
+
     dset = gr_data["dataset2"]
     nray_gr = dset["where"]["nrays"]
     ngate_gr = dset["where"]["nbins"].astype("i4")
@@ -420,7 +424,10 @@ def test_read_trmm():
     lat = coords[..., 1]
     bbox = zonalstats.get_bbox(lon, lat)
 
-    io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox=bbox)
+    try:
+        io.hdf.read_trmm(trmm_2a23_file, trmm_2a25_file, bbox=bbox)
+    except OSError:
+        pytest.skip("HDF4 not supported")
 
 
 def radolan_files():
