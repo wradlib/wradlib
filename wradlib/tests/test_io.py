@@ -110,6 +110,7 @@ def test_read_dx(file_or_filelike):
     filename = "dx/raa00-dx_10908-0806021655-fbg---bin.gz"
     with get_wradlib_data_file_or_filelike(filename, file_or_filelike) as dxfile:
         data, attrs = io.radolan.read_dx(dxfile)
+        print(data, attrs)
 
 
 def test_write_polygon_to_text():

@@ -1397,16 +1397,29 @@ def docstring(func):
 
 
 def dim0(obj):
-    """Return major dimension (azimuth/elevation) of xarray object."""
-    if dim0 := set(obj.dims) & {"azimuth", "elevation"}:
-        return dim0.pop()
-    elif "time" in obj.dims:
-        return "time"
+    """Return major dimension (azimuth/elevation) of xarray object for FM301 or None."""
+    if "range" in obj.dims:
+        if dim0 := set(obj.dims) & {"azimuth", "elevation"}:
+            return dim0.pop()
+        elif "time" in obj.dims:
+            return "time"
+        else:
+            raise ValueError(
+                f"No CfRadial2/FM301 compliant dimension found in {obj.dims!r}. "
+                "Expected one of 'azimuth', 'elevation' or 'time'."
+            )
+    return None
+
+
+def core_dims(obj):
+    dim0 = obj.wrl.util.dim0()
+    if dim0 is None:
+        input_core_dims = None
+        output_core_dims = ((),)
     else:
-        raise ValueError(
-            f"No CfRadial2/FM301 compliant dimension found in {obj.dims!r}. "
-            "Expected one of 'azimuth', 'elevation' or 'time'."
-        )
+        input_core_dims = [[dim0, "range"]]
+        output_core_dims = [[dim0, "range"]]
+    return input_core_dims, output_core_dims
 
 
 def get_apply_ufunc_variables(obj, dim):
@@ -1501,6 +1514,13 @@ class UtilMethods(XarrayMethods):
             return dim0(self, *args, **kwargs)
         else:
             return dim0(self._obj, *args, **kwargs)
+
+    @docstring(core_dims)
+    def core_dims(self, *args, **kwargs):
+        if not isinstance(self, UtilMethods):
+            return core_dims(self, *args, **kwargs)
+        else:
+            return core_dims(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":

@@ -568,12 +568,12 @@ def correct_attenuation_constrained(
 
 @correct_attenuation_constrained.register(DataArray)
 def _correct_attenuation_constrained_xarray(obj, **kwargs):
-    dim0 = obj.wrl.util.dim0()
+    core_dims = obj.wrl.util.core_dims()
     out = apply_ufunc(
         correct_attenuation_constrained,
         obj,
-        input_core_dims=[[dim0, "range"]],
-        output_core_dims=[[dim0, "range"]],
+        input_core_dims=core_dims[0],
+        output_core_dims=core_dims[1],
         dask="parallelized",
         kwargs=kwargs,
         dask_gufunc_kwargs=dict(allow_rechunk=True),
