@@ -173,6 +173,7 @@ def _togrid_xarray(obj, trg, *args, **kwargs):
     return out
 
 
+@singledispatch
 def compose_ko(radargrids, qualitygrids):
     """Composes grids according to quality information using quality \
     information as a knockout criterion.
@@ -217,6 +218,28 @@ def compose_ko(radargrids, qualitygrids):
     ].reshape(radarinfo.shape[1:])
     radargrids.pop()
     qualitygrids.pop()
+
+    return composite
+
+
+@compose_ko.register(DataArray)
+def _compose_ko_xarray(radargrids, qualitygrids):
+    """
+    Xarray knockout composition:
+    select radar pixel with the highest quality per grid point.
+    """
+
+    # mask quality where radar data is missing
+    qualityinfo = qualitygrids.where(radargrids.notnull(), -np.inf)
+
+    # index of best radar per pixel
+    best = qualityinfo.argmax("radar")
+
+    # select radar value at that index
+    composite = radargrids.isel(radar=best)
+
+    composite.name = radargrids.name
+    composite.attrs = radargrids.attrs
 
     return composite
 
@@ -409,6 +432,13 @@ class CompMethods(XarrayMethods):
             return compose_weighted(self, *args, **kwargs)
         else:
             return compose_weighted(self._obj, *args, **kwargs)
+
+    @docstring(compose_ko)
+    def compose_ko(self, *args, **kwargs):
+        if not isinstance(self, CompMethods):
+            return compose_ko(self, *args, **kwargs)
+        else:
+            return compose_ko(self._obj, *args, **kwargs)
 
 
 if __name__ == "__main__":
