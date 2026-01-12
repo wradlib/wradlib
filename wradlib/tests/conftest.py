@@ -3,6 +3,7 @@
 # Distributed under the MIT License. See LICENSE.txt for more info.
 
 import pytest
+import xarray as xr
 
 from wradlib import georef, io, util
 
@@ -25,3 +26,17 @@ def dx_swp():
     fname = wradlib_data.DATASETS.fetch("dx/raa00-dx_10908-0806021655-fbg---bin.gz")
     data, attrs = io.read_dx(fname)
     return georef.create_xarray_dataarray(data)
+
+
+@pytest.fixture(scope="session")
+def dwd_swp():
+    fname = wradlib_data.DATASETS.fetch("dx/raa00-dx_10908-0806021655-fbg---bin.gz")
+    data, attrs = io.read_dx(fname)
+    return georef.create_xarray_dataarray(data)
+
+
+@pytest.fixture(scope="session")
+def gamic_swp():
+    fname = wradlib_data.DATASETS.fetch("hdf5/2014-08-10--182000.ppi.mvol")
+    swp = xr.open_dataset(fname, engine="gamic", group="sweep_0")
+    return swp
