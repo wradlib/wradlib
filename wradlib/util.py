@@ -1446,10 +1446,10 @@ def core_dims(obj):
 
     Examples
     --------
-    >>> in_dims, out_dims = core_dims(da)
+    >>> in_dims, out_dims = core_dims(da) #doctest: +SKIP
     >>> xr.apply_ufunc(func, da,
     ...                input_core_dims=in_dims,
-    ...                output_core_dims=out_dims)
+    ...                output_core_dims=out_dims) #doctest: +SKIP
     """
     dim0 = obj.wrl.util.dim0()
     if dim0 is None:
@@ -1551,8 +1551,8 @@ def aspect(obj):
 
     Examples
     --------
-    >>> ax = plt.gca()
-    >>> da.plot(ax=ax, aspect=aspect(da))
+    >>> ax = plt.gca() #doctest: +SKIP
+    >>> da.plot(ax=ax, aspect=aspect(da)) #doctest: +SKIP
     """
     return (float(obj.x.max()) - float(obj.x.min())) / (
         float(obj.y.max()) - float(obj.y.min())
